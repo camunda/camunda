@@ -62,14 +62,27 @@ final class DocumentIsolationAwsIT extends AbstractDocumentIsolationIT {
     System.setProperty("aws.region", MINIO.region());
 
     BROKER
-        .withProperty("camunda.document.aws.store-a.bucket-name", BUCKET_A)
-        .withProperty("camunda.document.aws.store-a.region", MINIO.region())
-        .withProperty("camunda.document.aws.store-b.bucket-name", BUCKET_B)
-        .withProperty("camunda.document.aws.store-b.region", MINIO.region())
-        .withProperty("camunda.document.default-store-id", STORE_A)
+        .withProperty("camunda.document.aws.store-default.bucket-name", BUCKET_B)
+        .withProperty("camunda.document.aws.store-default.region", MINIO.region())
+        .withProperty("camunda.document.aws.store-default.bucket-path", "default/")
+        .withProperty("camunda.document.default-store-id", STORE_DEFAULT)
+        .withProperty("camunda.physical-tenants.tenanta.document.aws.store-a.bucket-name", BUCKET_A)
+        .withProperty(
+            "camunda.physical-tenants.tenanta.document.aws.store-a.region", MINIO.region())
+        .withProperty("camunda.physical-tenants.tenanta.document.default-store-id", STORE_A)
         .withProperty("camunda.physical-tenants.tenanta.document.assigned[0]", STORE_A)
-        .withProperty("camunda.physical-tenants.tenantb.document.assigned[0]", STORE_B)
+        .withProperty("camunda.physical-tenants.tenantb.document.aws.store-b.bucket-name", BUCKET_B)
+        .withProperty(
+            "camunda.physical-tenants.tenantb.document.aws.store-b.region", MINIO.region())
         .withProperty("camunda.physical-tenants.tenantb.document.default-store-id", STORE_B)
+        .withProperty("camunda.physical-tenants.tenantb.document.assigned[0]", STORE_B)
+        .withProperty("camunda.physical-tenants.tenantc.document.aws.store-c.bucket-name", BUCKET_A)
+        .withProperty(
+            "camunda.physical-tenants.tenantc.document.aws.store-c.bucket-path", "tenantc/")
+        .withProperty(
+            "camunda.physical-tenants.tenantc.document.aws.store-c.region", MINIO.region())
+        .withProperty("camunda.physical-tenants.tenantc.document.default-store-id", STORE_C)
+        .withProperty("camunda.physical-tenants.tenantc.document.assigned[0]", STORE_C)
         .start();
 
     startClients(BROKER);

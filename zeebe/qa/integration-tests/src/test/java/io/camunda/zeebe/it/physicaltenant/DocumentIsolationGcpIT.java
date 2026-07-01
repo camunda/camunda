@@ -26,8 +26,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @ZeebeIntegration
 final class DocumentIsolationGcpIT extends AbstractDocumentIsolationIT {
 
-  private static final String BUCKET_A = "bucket-a";
-  private static final String BUCKET_B = "bucket-b";
+  // All three stores share one GCS bucket but use distinct prefixes, so the isolation tests
+  // exercise prefix-level separation rather than trivially separate buckets.
+  private static final String SHARED_BUCKET = "shared-bucket";
 
   @Container private static final GcsContainer GCS = new GcsContainer();
 
@@ -40,13 +41,12 @@ final class DocumentIsolationGcpIT extends AbstractDocumentIsolationIT {
   static void setUp() throws Exception {
     final var config =
         new GcsBackupConfig.Builder()
-            .withBucketName(BUCKET_A)
+            .withBucketName(SHARED_BUCKET)
             .withHost(GCS.externalEndpoint())
             .withoutAuthentication()
             .build();
     try (final var client = GcsBackupStore.buildClient(config)) {
-      client.create(BucketInfo.of(BUCKET_A));
-      client.create(BucketInfo.of(BUCKET_B));
+      client.create(BucketInfo.of(SHARED_BUCKET));
     }
 
     // Redirect GcpDocumentStoreProvider to the local fake-gcs-server.
@@ -59,12 +59,24 @@ final class DocumentIsolationGcpIT extends AbstractDocumentIsolationIT {
                 .getService();
 
     BROKER
-        .withProperty("camunda.document.gcp.store-a.bucket-name", BUCKET_A)
-        .withProperty("camunda.document.gcp.store-b.bucket-name", BUCKET_B)
-        .withProperty("camunda.document.default-store-id", STORE_A)
+        .withProperty("camunda.document.gcp.store-default.bucket-name", SHARED_BUCKET)
+        .withProperty("camunda.document.gcp.store-default.prefix", "")
+        .withProperty("camunda.document.default-store-id", STORE_DEFAULT)
+        .withProperty(
+            "camunda.physical-tenants.tenanta.document.gcp.store-a.bucket-name", SHARED_BUCKET)
+        .withProperty("camunda.physical-tenants.tenanta.document.gcp.store-a.prefix", "tenanta/")
+        .withProperty("camunda.physical-tenants.tenanta.document.default-store-id", STORE_A)
         .withProperty("camunda.physical-tenants.tenanta.document.assigned[0]", STORE_A)
-        .withProperty("camunda.physical-tenants.tenantb.document.assigned[0]", STORE_B)
+        .withProperty(
+            "camunda.physical-tenants.tenantb.document.gcp.store-b.bucket-name", SHARED_BUCKET)
+        .withProperty("camunda.physical-tenants.tenantb.document.gcp.store-b.prefix", "tenantb/")
         .withProperty("camunda.physical-tenants.tenantb.document.default-store-id", STORE_B)
+        .withProperty("camunda.physical-tenants.tenantb.document.assigned[0]", STORE_B)
+        .withProperty(
+            "camunda.physical-tenants.tenantc.document.gcp.store-c.bucket-name", SHARED_BUCKET)
+        .withProperty("camunda.physical-tenants.tenantc.document.gcp.store-c.prefix", "tenantc/")
+        .withProperty("camunda.physical-tenants.tenantc.document.default-store-id", STORE_C)
+        .withProperty("camunda.physical-tenants.tenantc.document.assigned[0]", STORE_C)
         .start();
 
     startClients(BROKER);

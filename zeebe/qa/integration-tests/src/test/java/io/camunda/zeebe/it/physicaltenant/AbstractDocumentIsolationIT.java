@@ -29,22 +29,31 @@ abstract class AbstractDocumentIsolationIT {
 
   protected static final String TENANT_A = "tenanta";
   protected static final String TENANT_B = "tenantb";
+  protected static final String TENANT_C = "tenantc";
   protected static final String STORE_A = "store-a";
   protected static final String STORE_B = "store-b";
+  protected static final String STORE_C = "store-c";
+  protected static final String STORE_DEFAULT = "store-default";
 
   protected static final PhysicalTenantsITHelper TENANTS =
       PhysicalTenantsITHelper.builder()
           .withTenant(PhysicalTenantsITHelper.DEFAULT_TENANT_ID, Storage.none())
           .withTenant(TENANT_A, Storage.none())
           .withTenant(TENANT_B, Storage.none())
+          .withTenant(TENANT_C, Storage.none())
           .build();
 
   protected static CamundaClient clientA;
   protected static CamundaClient clientB;
+  protected static CamundaClient clientC;
+  protected static CamundaClient clientDefault;
 
   protected static void startClients(final TestStandaloneBroker broker) {
     clientA = TENANTS.newClientBuilder(broker, TENANT_A).build();
     clientB = TENANTS.newClientBuilder(broker, TENANT_B).build();
+    clientC = TENANTS.newClientBuilder(broker, TENANT_C).build();
+    clientDefault =
+        TENANTS.newClientBuilder(broker, PhysicalTenantsITHelper.DEFAULT_TENANT_ID).build();
   }
 
   protected static void closeClients() {
@@ -54,11 +63,17 @@ abstract class AbstractDocumentIsolationIT {
     if (clientB != null) {
       clientB.close();
     }
+    if (clientC != null) {
+      clientC.close();
+    }
+    if (clientDefault != null) {
+      clientDefault.close();
+    }
   }
 
   @SuppressWarnings("resource")
   @Test
-  void shouldDenyReadOfDocumentOwnedByAnotherTenant() {
+  void shouldReturn400WhenReadingFromUnassignedStore() {
     // given
     final var ref = clientA.newCreateDocumentCommand().content("hello-from-a").send().join();
 
@@ -83,6 +98,19 @@ abstract class AbstractDocumentIsolationIT {
     // when / then
     assertThatThrownBy(
             () -> clientB.newDocumentContentGetRequest(ref.getDocumentId()).send().join())
+        .isInstanceOf(ProblemException.class)
+        .matches(e -> ((ProblemException) e).details().getStatus() == 404);
+  }
+
+  @SuppressWarnings("resource")
+  @Test
+  void shouldNotFindDocumentOwnedByTenantAFromTenantCStore() {
+    // given
+    final var ref = clientA.newCreateDocumentCommand().content("hello-from-a").send().join();
+
+    // when / then
+    assertThatThrownBy(
+            () -> clientC.newDocumentContentGetRequest(ref.getDocumentId()).send().join())
         .isInstanceOf(ProblemException.class)
         .matches(e -> ((ProblemException) e).details().getStatus() == 404);
   }
@@ -201,6 +229,24 @@ abstract class AbstractDocumentIsolationIT {
   }
 
   @Test
+  void shouldAllowDefaultTenantToUseItsStore() throws IOException {
+    // given / when
+    final var ref =
+        clientDefault
+            .newCreateDocumentCommand()
+            .content("hello-from-default")
+            .storeId(STORE_DEFAULT)
+            .send()
+            .join();
+
+    // then
+    assertThat(ref.getStoreId()).isEqualTo(STORE_DEFAULT);
+    try (final var stream = clientDefault.newDocumentContentGetRequest(ref).send().join()) {
+      assertThat(stream.readAllBytes()).isEqualTo("hello-from-default".getBytes());
+    }
+  }
+
+  @Test
   void shouldRejectAccessToUnassignedStore() {
     assertThatThrownBy(
             () ->
@@ -216,7 +262,7 @@ abstract class AbstractDocumentIsolationIT {
 
   @SuppressWarnings("resource")
   @Test
-  void shouldIsolateDocumentsBetweenTenantStores() {
+  void shouldReturn400WhenReadingDocumentFromUnassignedStore() {
     // given
     final var ref =
         clientA.newCreateDocumentCommand().content("secret-a").storeId(STORE_A).send().join();

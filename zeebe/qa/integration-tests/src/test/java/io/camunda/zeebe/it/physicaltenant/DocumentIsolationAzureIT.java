@@ -41,16 +41,35 @@ final class DocumentIsolationAzureIT extends AbstractDocumentIsolationIT {
     azureClient.createBlobContainer(CONTAINER_B);
 
     BROKER
-        .withProperty("camunda.document.azure.store-a.container-name", CONTAINER_A)
+        .withProperty("camunda.document.azure.store-default.container-name", CONTAINER_B)
+        .withProperty("camunda.document.azure.store-default.container-path", "default/")
         .withProperty(
-            "camunda.document.azure.store-a.connection-string", AZURITE.externalConnectionString())
-        .withProperty("camunda.document.azure.store-b.container-name", CONTAINER_B)
+            "camunda.document.azure.store-default.connection-string",
+            AZURITE.externalConnectionString())
+        .withProperty("camunda.document.default-store-id", STORE_DEFAULT)
         .withProperty(
-            "camunda.document.azure.store-b.connection-string", AZURITE.externalConnectionString())
-        .withProperty("camunda.document.default-store-id", STORE_A)
+            "camunda.physical-tenants.tenanta.document.azure.store-a.container-name", CONTAINER_A)
+        .withProperty(
+            "camunda.physical-tenants.tenanta.document.azure.store-a.connection-string",
+            AZURITE.externalConnectionString())
+        .withProperty("camunda.physical-tenants.tenanta.document.default-store-id", STORE_A)
         .withProperty("camunda.physical-tenants.tenanta.document.assigned[0]", STORE_A)
-        .withProperty("camunda.physical-tenants.tenantb.document.assigned[0]", STORE_B)
+        .withProperty(
+            "camunda.physical-tenants.tenantb.document.azure.store-b.container-name", CONTAINER_B)
+        .withProperty(
+            "camunda.physical-tenants.tenantb.document.azure.store-b.connection-string",
+            AZURITE.externalConnectionString())
         .withProperty("camunda.physical-tenants.tenantb.document.default-store-id", STORE_B)
+        .withProperty("camunda.physical-tenants.tenantb.document.assigned[0]", STORE_B)
+        .withProperty(
+            "camunda.physical-tenants.tenantc.document.azure.store-c.container-name", CONTAINER_A)
+        .withProperty(
+            "camunda.physical-tenants.tenantc.document.azure.store-c.container-path", "tenantc/")
+        .withProperty(
+            "camunda.physical-tenants.tenantc.document.azure.store-c.connection-string",
+            AZURITE.externalConnectionString())
+        .withProperty("camunda.physical-tenants.tenantc.document.default-store-id", STORE_C)
+        .withProperty("camunda.physical-tenants.tenantc.document.assigned[0]", STORE_C)
         .start();
 
     startClients(BROKER);
