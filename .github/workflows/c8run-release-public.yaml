@@ -146,7 +146,7 @@ jobs:
 
       - name: Camunda Download Center - Upload artifacts in own (minor) release
         if: ${{ !inputs.dryRun }}
-        uses: camunda/infra-global-github-actions/download-center-upload@1c317c29f01f213c82f601e971ac4d6d449071d2 # main
+        uses: camunda/infra-global-github-actions/download-center-upload@b4ba25e5825dccf0f4d25c103b63569a5d1d30c5 # main
         with:
           gcp_credentials: ${{ steps.secrets.outputs.GCP_CREDENTIALS_NAME }}
           version: ${{ steps.vars.outputs.minor }}
@@ -155,7 +155,7 @@ jobs:
 
       - name: Camunda Download Center - Upload artifacts in Camunda apps version
         if: ${{ !inputs.dryRun }}
-        uses: camunda/infra-global-github-actions/download-center-upload@1c317c29f01f213c82f601e971ac4d6d449071d2 # main
+        uses: camunda/infra-global-github-actions/download-center-upload@b4ba25e5825dccf0f4d25c103b63569a5d1d30c5 # main
         with:
           gcp_credentials: ${{ steps.secrets.outputs.GCP_CREDENTIALS_NAME }}
           version: ${{ inputs.camundaVersion }}
@@ -226,7 +226,7 @@ jobs:
     steps:
       - name: Generate GitHub token
         id: github-token
-        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@1c317c29f01f213c82f601e971ac4d6d449071d2 # main
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@b4ba25e5825dccf0f4d25c103b63569a5d1d30c5 # main
         with:
           github-app-id-vault-key: MONOREPO_DEVOPS_AUTOMATION_APP_ID
           github-app-id-vault-path: secret/data/products/camunda/ci/camunda
@@ -263,7 +263,7 @@ jobs:
         id: merge-queue
         if: ${{ steps.find-pr.outputs.pr_number != '' }}
         continue-on-error: true
-        uses: camunda/infra-global-github-actions/ensure-pr-passes-merge-queue@1c317c29f01f213c82f601e971ac4d6d449071d2 # main
+        uses: camunda/infra-global-github-actions/ensure-pr-passes-merge-queue@b4ba25e5825dccf0f4d25c103b63569a5d1d30c5 # main
         with:
           pr-number: ${{ steps.find-pr.outputs.pr_number }}
           app-token: ${{ steps.github-token.outputs.token }}
