@@ -113,6 +113,10 @@ public final class ProcessingStateMachine {
       "Expected to process record '{} {}' successfully on stream processor, but caught recoverable exception. Retry processing.";
   private static final String ERROR_MESSAGE_PROCESSING_FAILED_UNRECOVERABLE =
       "Expected to process record '{} {}' successfully on stream processor, but caught unrecoverable exception.";
+  private static final String WARN_MESSAGE_PROCESSING_RECORD_FROM_DIFFERENT_VERSION =
+      "Stopping processing because record '{} {}' could not be processed by this broker version. "
+          + "This is expected during a rolling upgrade; this broker will step down so a node on a "
+          + "compatible version can take over.";
   private static final String NOTIFY_PROCESSED_LISTENER_ERROR_MESSAGE =
       "Expected to invoke processed listener for record {} successfully, but exception was thrown.";
   private static final String NOTIFY_SKIPPED_LISTENER_ERROR_MESSAGE =
@@ -308,6 +312,19 @@ public final class ProcessingStateMachine {
           metadata,
           recoverableException);
       actor.schedule(PROCESSING_RETRY_DELAY, () -> processCommand(currentRecord));
+    } catch (final NoSuchProcessorException noSuchProcessorException) {
+      // a record written by a different broker version is expected during a rolling upgrade: log a
+      // clear message without a stack trace but still propagate so this broker steps down
+      if (!RecordMetadata.CURRENT_BROKER_VERSION.equals(metadata.getBrokerVersion())) {
+        LOG.warn(WARN_MESSAGE_PROCESSING_RECORD_FROM_DIFFERENT_VERSION, loggedEvent, metadata);
+      } else {
+        LOG.error(
+            ERROR_MESSAGE_PROCESSING_FAILED_UNRECOVERABLE,
+            loggedEvent,
+            metadata,
+            noSuchProcessorException);
+      }
+      throw noSuchProcessorException;
     } catch (final UnrecoverableException unrecoverableException) {
       LOG.error(ERROR_MESSAGE_PROCESSING_FAILED_UNRECOVERABLE, loggedEvent, metadata);
       throw unrecoverableException;
