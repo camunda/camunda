@@ -19,6 +19,7 @@ import {
 	mockGetUserTaskEndpoint,
 	mockUnassignTaskEndpoint,
 } from '#/shared-test-modules/mock-handlers';
+import {createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
 import {createUserTask} from '#/shared-test-modules/api-mocks/user-tasks';
 import {Notifications} from '#/shared/notifications/components/Notifications';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
@@ -32,26 +33,6 @@ const assignmentRequestSchema = assignTaskRequestBodySchema.extend({
 	assignee: z.literal(CURRENT_USER),
 	allowOverride: z.literal(false),
 });
-
-function createProblemDetail({
-	title = 'ERROR',
-	status = 500,
-	detail = 'Something went wrong',
-	instance = `/v2/user-tasks/${USER_TASK_KEY}/assignment`,
-}: {
-	title?: string;
-	status?: number;
-	detail?: string;
-	instance?: string;
-} = {}) {
-	return {
-		type: 'about:blank',
-		title,
-		status,
-		detail,
-		instance,
-	};
-}
 
 function getWrapper() {
 	const queryClient = new QueryClient({
@@ -153,7 +134,7 @@ describe('<AssignButton />', () => {
 		worker.use(
 			mockAssignTaskEndpoint({
 				successResponse: HttpResponse.json(
-					createProblemDetail({
+					createProblemDetails({
 						title: 'FORBIDDEN',
 						status: 403,
 						detail: "Unauthorized to perform operation 'UPDATE' on resource 'USER_TASK'",
@@ -179,7 +160,7 @@ describe('<AssignButton />', () => {
 		worker.use(
 			mockUnassignTaskEndpoint({
 				successResponse: HttpResponse.json(
-					createProblemDetail({
+					createProblemDetails({
 						title: 'FORBIDDEN',
 						status: 403,
 						detail: "Unauthorized to perform operation 'UPDATE' on resource 'USER_TASK'",
@@ -211,7 +192,7 @@ describe('<AssignButton />', () => {
 		worker.use(
 			mockAssignTaskEndpoint({
 				successResponse: HttpResponse.json(
-					createProblemDetail({
+					createProblemDetails({
 						title: 'CONFLICT',
 						status: 409,
 						detail: "Command rejected: Reason to deny: 'User not in candidate list'",
@@ -236,7 +217,7 @@ describe('<AssignButton />', () => {
 		worker.use(
 			mockAssignTaskEndpoint({
 				successResponse: HttpResponse.json(
-					createProblemDetail({title: 'DEADLINE_EXCEEDED', status: 504, detail: 'Request timed out'}),
+					createProblemDetails({title: 'DEADLINE_EXCEEDED', status: 504, detail: 'Request timed out'}),
 					{status: 504},
 				),
 			}),
@@ -281,7 +262,7 @@ describe('<AssignButton />', () => {
 		worker.use(
 			mockUnassignTaskEndpoint({
 				successResponse: HttpResponse.json(
-					createProblemDetail({
+					createProblemDetails({
 						title: 'DEADLINE_EXCEEDED',
 						status: 504,
 						detail: 'Request timed out',
