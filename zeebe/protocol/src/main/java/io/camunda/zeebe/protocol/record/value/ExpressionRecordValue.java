@@ -73,4 +73,20 @@ public interface ExpressionRecordValue extends RecordValue, TenantOwned, RecordV
    * @return the scope key, or {@code -1} if not set
    */
   long getScopeKey();
+
+  /**
+   * Returns the input value against which a {@link ExpressionType#UNARY} expression is evaluated.
+   *
+   * <p>Only relevant when {@link #getType()} is {@link ExpressionType#UNARY}; empty otherwise.
+   *
+   * @return the input value (never {@code null}, but can be empty)
+   */
+  String getInput();
+
+  /**
+   * Returns the type of the expression to evaluate.
+   *
+   * @return the expression type (never {@code null}, defaults to {@link ExpressionType#FEEL})
+   */
+  ExpressionType getType();
 }

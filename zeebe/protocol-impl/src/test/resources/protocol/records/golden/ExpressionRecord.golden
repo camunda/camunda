@@ -11,12 +11,14 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
+import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ExpressionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ExpressionType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +35,8 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
   private static final StringValue VARIABLES_KEY = new StringValue("variables");
   private static final StringValue SCOPE_KEY_KEY = new StringValue("scopeKey");
+  private static final StringValue INPUT_KEY = new StringValue("input");
+  private static final StringValue TYPE_KEY = new StringValue("type");
 
   private final StringProperty expressionProp = new StringProperty(EXPRESSION_KEY);
 
@@ -47,14 +51,21 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
 
   private final LongProperty scopeKeyProp = new LongProperty(SCOPE_KEY_KEY, -1L);
 
+  private final StringProperty inputProp = new StringProperty(INPUT_KEY, "");
+
+  private final EnumProperty<ExpressionType> typeProp =
+      new EnumProperty<>(TYPE_KEY, ExpressionType.class, ExpressionType.FEEL);
+
   public ExpressionRecord() {
-    super(6);
+    super(8);
     declareProperty(expressionProp)
         .declareProperty(resultValueProp)
         .declareProperty(warningsProp)
         .declareProperty(tenantIdProp)
         .declareProperty(variablesProp)
-        .declareProperty(scopeKeyProp);
+        .declareProperty(scopeKeyProp)
+        .declareProperty(inputProp)
+        .declareProperty(typeProp);
   }
 
   @Override
@@ -125,6 +136,26 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
 
   public ExpressionRecord setScopeKey(final long scopeKey) {
     scopeKeyProp.setValue(scopeKey);
+    return this;
+  }
+
+  @Override
+  public String getInput() {
+    return BufferUtil.bufferAsString(inputProp.getValue());
+  }
+
+  public ExpressionRecord setInput(final String input) {
+    inputProp.setValue(input);
+    return this;
+  }
+
+  @Override
+  public ExpressionType getType() {
+    return typeProp.getValue();
+  }
+
+  public ExpressionRecord setType(final ExpressionType type) {
+    typeProp.setValue(type);
     return this;
   }
 }
