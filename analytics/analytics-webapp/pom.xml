@@ -22,6 +22,12 @@
   <description>Minimal read/serving layer + UI for the analytics datasets: declare a dataset, build a
     report on it, and view it — querying the read-optimized H2 dataset the pipeline produces.</description>
 
+  <properties>
+    <!-- The design-system engine requires Node >= 24.15.0; pin above the repo-wide version.node. -->
+    <analytics.node.version>v24.16.0</analytics.node.version>
+    <skip.fe.build>false</skip.fe.build>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -43,6 +49,11 @@
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
     </dependency>
+    <!-- Merge the stored KLL sketches at read time for exact percentiles over an arbitrary range -->
+    <dependency>
+      <groupId>org.apache.datasketches</groupId>
+      <artifactId>datasketches-java</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
@@ -60,5 +71,61 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <!-- Build the React/Vite dashboard client into target/classes/static so the jar serves it. -->
+      <plugin>
+        <groupId>com.github.eirslett</groupId>
+        <artifactId>frontend-maven-plugin</artifactId>
+        <version>1.15.1</version>
+        <configuration>
+          <skip>${skip.fe.build}</skip>
+          <workingDirectory>${project.basedir}/client</workingDirectory>
+          <installDirectory>${project.basedir}/client/.node</installDirectory>
+        </configuration>
+        <executions>
+          <execution>
+            <id>install node and npm</id>
+            <goals>
+              <goal>install-node-and-npm</goal>
+            </goals>
+            <configuration>
+              <nodeVersion>${analytics.node.version}</nodeVersion>
+            </configuration>
+          </execution>
+          <execution>
+            <id>npm install</id>
+            <goals>
+              <goal>npm</goal>
+            </goals>
+            <configuration>
+              <arguments>install</arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <id>npm build</id>
+            <goals>
+              <goal>npm</goal>
+            </goals>
+            <!-- After process-resources so the resource copy never clobbers the Vite output. -->
+            <phase>process-classes</phase>
+            <configuration>
+              <arguments>run build</arguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <profile>
+      <id>skipFrontendBuild</id>
+      <properties>
+        <skip.fe.build>true</skip.fe.build>
+      </properties>
+    </profile>
+  </profiles>
 
 </project>
