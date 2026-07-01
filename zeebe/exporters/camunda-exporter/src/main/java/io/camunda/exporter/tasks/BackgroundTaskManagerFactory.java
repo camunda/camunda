@@ -198,6 +198,7 @@ public final class BackgroundTaskManagerFactory {
     return new OpenSearchIncidentUpdateRepository(
         partitionId,
         postImporterTemplate.getAlias(),
+        postImporterTemplate.getFullQualifiedName(),
         incidentTemplate.getAlias(),
         listViewTemplate.getAlias(),
         listViewTemplate.getFullQualifiedName(),
@@ -255,6 +256,7 @@ public final class BackgroundTaskManagerFactory {
     return new ElasticsearchIncidentUpdateRepository(
         partitionId,
         postImporterTemplate.getAlias(),
+        postImporterTemplate.getFullQualifiedName(),
         incidentTemplate.getAlias(),
         listViewTemplate.getAlias(),
         listViewTemplate.getFullQualifiedName(),
