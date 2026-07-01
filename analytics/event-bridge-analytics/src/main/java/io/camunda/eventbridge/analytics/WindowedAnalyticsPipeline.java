@@ -13,9 +13,12 @@ import io.camunda.eventbridge.client.TopicPartition;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecord;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecordConsumer;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +39,11 @@ import org.slf4j.LoggerFactory;
 public final class WindowedAnalyticsPipeline implements AutoCloseable {
 
   private static final Logger LOG = LoggerFactory.getLogger(WindowedAnalyticsPipeline.class);
-  private static final int MAX_RECORDS = 100;
+  // Pull large batches per sweep: fetches are capped by FETCH_MAX_BYTES (1 MiB/partition), and a
+  // big batch amortizes the poll round-trip, the single flush, and the per-partition commit over
+  // many records. A small cap (was 100) made the loop latency-bound — the consumer sat mostly idle
+  // waiting on round-trips while the log grew, so it fell behind under realistic load.
+  private static final int MAX_RECORDS = 5000;
   private static final Duration POLL_TIMEOUT = Duration.ofMillis(500);
   private static final Duration ERROR_BACKOFF = Duration.ofSeconds(1);
 
@@ -97,9 +104,19 @@ public final class WindowedAnalyticsPipeline implements AutoCloseable {
         processor.flush();
         // record how far the fold has consumed (start-from-offset on restart), then commit
         checkpointConsumedPositions(records);
+        // Commit once per partition, not once per record: offsets only advance via max, so
+        // committing the highest offset seen per partition is sufficient. Records arrive in offset
+        // order per partition, so the last occurrence per partition is the highest. Committing per
+        // record meant a blocking round-trip for every single event — the real throughput ceiling.
+        final Map<Integer, ZeebeRecord> lastPerPartition = new LinkedHashMap<>();
         for (final ZeebeRecord record : records) {
-          sourceConsumer.commit(record).join();
+          lastPerPartition.put(record.partitionId(), record);
         }
+        final List<CompletableFuture<Void>> commits = new ArrayList<>();
+        for (final ZeebeRecord record : lastPerPartition.values()) {
+          commits.add(sourceConsumer.commit(record));
+        }
+        CompletableFuture.allOf(commits.toArray(new CompletableFuture[0])).join();
       } catch (final RuntimeException e) {
         LOG.warn("Analytics pipeline poll failed; backing off", e);
         sleep();

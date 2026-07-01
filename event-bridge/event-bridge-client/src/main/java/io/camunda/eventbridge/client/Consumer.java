@@ -72,9 +72,9 @@ public final class Consumer {
   private final ConcurrentHashMap<TopicPartition, Long> nextPositions = new ConcurrentHashMap<>();
 
   /**
-   * Caller-requested start positions (see {@link #seek}). Consulted when a partition is assigned, so
-   * the consumer resumes from a position the caller has durably checkpointed rather than from the
-   * coordinator's committed offset or the reset policy.
+   * Caller-requested start positions (see {@link #seek}). Consulted when a partition is assigned,
+   * so the consumer resumes from a position the caller has durably checkpointed rather than from
+   * the coordinator's committed offset or the reset policy.
    */
   private final ConcurrentHashMap<TopicPartition, Long> startPositions = new ConcurrentHashMap<>();
 
@@ -245,8 +245,8 @@ public final class Consumer {
 
   /**
    * Requests that the next fetch for each given (topic, partition) start at the supplied position,
-   * resuming from a caller-checkpointed offset rather than the coordinator's committed offset or the
-   * reset policy. Pass the position <em>after</em> the last record the caller durably processed
+   * resuming from a caller-checkpointed offset rather than the coordinator's committed offset or
+   * the reset policy. Pass the position <em>after</em> the last record the caller durably processed
    * (i.e. {@code lastProcessed + 1}).
    *
    * <p>Safe to call before or after the partition is assigned: it takes effect immediately for
@@ -428,6 +428,11 @@ public final class Consumer {
     // that a mid-sweep signal does not advance positions for already-polled partitions.
     final Map<TopicPartition, Long> pendingPositions = new LinkedHashMap<>();
 
+    // Phase 1 — fire the fetch for every owned partition in parallel. fetchFromTopic returns
+    // immediately (async HTTP), so all partition leaders are queried concurrently and a sweep costs
+    // one round-trip, not one per partition (which made a multi-partition consumer latency-bound).
+    final Map<TopicPartition, Long> fromPositions = new LinkedHashMap<>();
+    final Map<TopicPartition, CompletableFuture<FetchResult>> inflight = new LinkedHashMap<>();
     for (final var tp : partitions) {
       checkNotClosed();
       long fromPosition = nextPositions.getOrDefault(tp, -1L);
@@ -436,11 +441,17 @@ public final class Consumer {
         fromPosition = resolveStartPosition(tp);
         nextPositions.put(tp, fromPosition);
       }
+      fromPositions.put(tp, fromPosition);
+      inflight.put(
+          tp, client.fetchFromTopic(tp.topic(), tp.partition(), fromPosition, FETCH_MAX_BYTES));
+    }
 
+    // Phase 2 — join and assemble in sorted partition order (deterministic merge order).
+    for (final var tp : partitions) {
+      final long fromPosition = fromPositions.get(tp);
       final FetchResult result;
       try {
-        result =
-            client.fetchFromTopic(tp.topic(), tp.partition(), fromPosition, FETCH_MAX_BYTES).join();
+        result = inflight.get(tp).join();
       } catch (final RuntimeException e) {
         // Partition not currently fetchable here (e.g. leadership moved); skip this sweep.
         LOG.debug("Fetch failed for {}; skipping this sweep", tp, e);
