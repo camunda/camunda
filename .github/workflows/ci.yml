@@ -64,6 +64,7 @@ jobs:
       docs-changes: ${{ steps.filter.outputs.docs-changes }}
       c8-e2e-test-suite-changes: ${{ steps.filter.outputs.c8-e2e-test-suite-changes }}
       deps-changed: ${{ steps.filter.outputs.deps-changed }}
+      load-test-setup-changes: ${{ steps.filter.outputs.load-test-setup-changes }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -205,6 +206,49 @@ jobs:
         timeout-minutes: 1
       - name: Check for missing junit-vintage-engine
         run: .ci/scripts/ci/check-junit-vintage-engine.sh .
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  load-test-golden-tests:
+    if: needs.detect-changes.outputs.load-test-setup-changes == 'true'
+    name: "Load Test / Golden File Tests"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@b4ba25e5825dccf0f4d25c103b63569a5d1d30c5 # main
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        timeout-minutes: 1
+        with:
+          persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version-file: load-tests/setup/test/go.mod
+          cache-dependency-path: load-tests/setup/test/go.sum
+      - name: Set up Helm
+        uses: asdf-vm/actions/install@b7bcd026f18772e44fe1026d729e1611cc435d47 # v4.0.1
+      - name: Run golden file tests
+        working-directory: load-tests/setup/test
+        run: make test
+      - name: How to update golden files
+        if: failure()
+        run: |
+          echo "::notice::Golden files differ from the rendered manifests."
+          echo "If the change is intentional, regenerate and commit them:"
+          echo "  cd load-tests/setup/test"
+          echo "  make update-golden"
+          echo "  git diff golden/    # review the change"
+          echo "  git add golden/ && git commit -m 'test: update golden files'"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -2089,6 +2133,7 @@ jobs:
       - integration-tests
       - java-checks
       - junit-vintage-check
+      - load-test-golden-tests
       - maven-spotless-linter
       - openapi-lint
       - openapi-x-added-in-version-check
