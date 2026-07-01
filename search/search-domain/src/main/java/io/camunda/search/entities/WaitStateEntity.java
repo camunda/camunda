@@ -15,6 +15,7 @@ import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record WaitStateEntity(
+    Long waitStateKey,
     Long processInstanceKey,
     Long elementInstanceKey,
     String elementId,
@@ -25,6 +26,7 @@ public record WaitStateEntity(
     String tenantId) {
 
   public WaitStateEntity {
+    Objects.requireNonNull(waitStateKey, "waitStateKey");
     Objects.requireNonNull(processInstanceKey, "processInstanceKey");
     Objects.requireNonNull(elementInstanceKey, "elementInstanceKey");
     Objects.requireNonNull(elementId, "elementId");
@@ -35,6 +37,7 @@ public record WaitStateEntity(
   }
 
   public static class Builder implements ObjectBuilder<WaitStateEntity> {
+    private @Nullable Long waitStateKey;
     private @Nullable Long processInstanceKey;
     private @Nullable Long elementInstanceKey;
     private @Nullable String elementId;
@@ -43,6 +46,11 @@ public record WaitStateEntity(
     private @Nullable String bpmnProcessId;
     private @Nullable WaitStateDetails details;
     private @Nullable String tenantId;
+
+    public Builder waitStateKey(final Long waitStateKey) {
+      this.waitStateKey = waitStateKey;
+      return this;
+    }
 
     public Builder processInstanceKey(final Long processInstanceKey) {
       this.processInstanceKey = processInstanceKey;
@@ -87,6 +95,7 @@ public record WaitStateEntity(
     @Override
     public WaitStateEntity build() {
       return new WaitStateEntity(
+          Objects.requireNonNull(waitStateKey, "waitStateKey"),
           Objects.requireNonNull(processInstanceKey, "processInstanceKey"),
           Objects.requireNonNull(elementInstanceKey, "elementInstanceKey"),
           Objects.requireNonNull(elementId, "elementId"),

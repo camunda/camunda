@@ -98,6 +98,7 @@ public class ElementInstanceControllerTest extends RestControllerTest {
   private static final SearchQueryResult<WaitStateEntity> DUMMY_WAIT_STATE_ITEMS =
       SearchQueryResult.of(
           new WaitStateEntity.Builder()
+              .waitStateKey(2251799813685251L)
               .bpmnProcessId("order-process")
               .processInstanceKey(2251799813685249L)
               .elementInstanceKey(2251799813685251L)
@@ -114,6 +115,7 @@ public class ElementInstanceControllerTest extends RestControllerTest {
                       .build())
               .build(),
           new WaitStateEntity.Builder()
+              .waitStateKey(2251799813685253L)
               .bpmnProcessId("order-process")
               .processInstanceKey(2251799813685249L)
               .elementInstanceKey(2251799813685253L)
@@ -128,6 +130,7 @@ public class ElementInstanceControllerTest extends RestControllerTest {
                       .build())
               .build(),
           new WaitStateEntity.Builder()
+              .waitStateKey(2251799813685261L)
               .bpmnProcessId("order-process")
               .processInstanceKey(2251799813685249L)
               .elementInstanceKey(2251799813685261L)
