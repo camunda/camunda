@@ -52,7 +52,7 @@ fi
 ### For a new namespace a new folder will be created
 
 # renovate: version=camunda-platform-8.10
-camunda_platform_helm_chart_version="15.0.0-alpha1"
+camunda_platform_helm_chart_version="15.0.0-alpha2"
 namespace="$1"
 
 # Add c8- prefix if not present
