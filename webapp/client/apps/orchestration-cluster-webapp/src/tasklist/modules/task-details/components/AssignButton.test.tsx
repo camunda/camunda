@@ -261,7 +261,7 @@ describe('<AssignButton />', () => {
 
 		worker.use(
 			mockGetUserTaskEndpoint({
-				successResponse: HttpResponse.json(createUserTask({assignee: CURRENT_USER, state: 'CREATED'})),
+				successResponse: HttpResponse.json(createUserTask({assignee: null, state: 'CREATED'})),
 			}),
 		);
 
@@ -346,6 +346,23 @@ describe('<AssignButton />', () => {
 
 		await expect.element(screen.getByText('Assigning...')).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Assign to me'})).not.toBeInTheDocument();
+
+		worker.use(
+			mockGetUserTaskEndpoint({
+				successResponse: HttpResponse.json(createUserTask({assignee: CURRENT_USER, state: 'CREATED'})),
+			}),
+		);
+
+		screen.rerender(
+			<AssignButton
+				userTaskKey={USER_TASK_KEY}
+				assignee={CURRENT_USER}
+				taskState="CREATED"
+				currentUser={CURRENT_USER}
+			/>,
+		);
+
+		await expect.element(screen.getByRole('button', {name: 'Unassign'})).toBeVisible();
 	});
 
 	it('should show unassigning state when mounted with an assigning assigned task', async ({worker}) => {
@@ -367,5 +384,17 @@ describe('<AssignButton />', () => {
 
 		await expect.element(screen.getByText('Unassigning...')).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Assign to me'})).not.toBeInTheDocument();
+
+		worker.use(
+			mockGetUserTaskEndpoint({
+				successResponse: HttpResponse.json(createUserTask({assignee: null, state: 'CREATED'})),
+			}),
+		);
+
+		screen.rerender(
+			<AssignButton userTaskKey={USER_TASK_KEY} assignee={null} taskState="CREATED" currentUser={CURRENT_USER} />,
+		);
+
+		await expect.element(screen.getByRole('button', {name: 'Assign to me'})).toBeVisible();
 	});
 });
