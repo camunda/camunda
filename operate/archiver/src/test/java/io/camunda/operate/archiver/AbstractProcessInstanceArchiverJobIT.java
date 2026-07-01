@@ -102,7 +102,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT extends ArchiverJobIT
             for (int i = 0; i < batchSize; i++) {
               instances.add(processInstanceForListViewEntity("2020-01-01T00:00:00+00:00"));
             }
-            instances.add(processInstanceForListViewEntity("2020-01-02T00:00:00+00:00"));
+            instances.add(processInstanceForListViewEntity("2020-01-01T00:00:10+00:00"));
 
             for (final var pi : instances) {
               store(listViewTemplate, pi);

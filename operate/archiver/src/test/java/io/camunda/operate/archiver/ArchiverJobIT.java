@@ -69,7 +69,7 @@ public abstract class ArchiverJobIT {
 
   protected static final int PARTITION_ID = 1;
   protected static final List<Integer> PARTITION_IDS = List.of(PARTITION_ID);
-  protected static final AtomicLong ID_GENERATOR = new AtomicLong(0);
+  protected static final AtomicLong ID_GENERATOR = new AtomicLong(100);
   protected static final String INDEX_PREFIX = "test-archiver";
   protected static final Duration ARCHIVE_TIMEOUT = Duration.ofSeconds(30);
 
