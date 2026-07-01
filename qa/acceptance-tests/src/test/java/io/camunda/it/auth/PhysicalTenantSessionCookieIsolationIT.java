@@ -14,6 +14,7 @@ import io.camunda.qa.util.cluster.TestWebappClient;
 import io.camunda.qa.util.multidb.MultiDbPhysicalTenants;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
+import io.camunda.security.spring.security.CamundaSecurityFilterChainConstants;
 import java.net.HttpCookie;
 import java.net.URI;
 import java.util.List;
@@ -48,7 +49,8 @@ public class PhysicalTenantSessionCookieIsolationIT {
   static final String TENANT_B = "tenantb";
 
   private static final String PT_ADMIN_PASSWORD = "ptadmin";
-  private static final String DEFAULT_SESSION_COOKIE = "camunda-session";
+  private static final String DEFAULT_SESSION_COOKIE =
+      CamundaSecurityFilterChainConstants.SESSION_COOKIE;
   private static final String ROOT_PATH = "/";
 
   @MultiDbTestApplication
@@ -73,7 +75,7 @@ public class PhysicalTenantSessionCookieIsolationIT {
 
   private static void assertSessionCookieScopedTo(
       final List<HttpCookie> cookies, final String tenantId) {
-    final String expectedName = "camunda-session-physical-tenants-" + tenantId;
+    final String expectedName = DEFAULT_SESSION_COOKIE + "-physical-tenants-" + tenantId;
     final String expectedPath = "/physical-tenants/" + tenantId;
 
     assertThat(cookies)
