@@ -6,6 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type {ProblemDetails} from '@camunda/camunda-api-zod-schemas/8.10';
+
 type PageInfo = {
 	totalItems: number;
 	startCursor: string | null;
@@ -21,4 +23,15 @@ function createPaginatedResponse<T>(overrides?: Partial<{items: T[]; page: PageI
 	};
 }
 
-export {createPaginatedResponse};
+function createProblemDetails(overrides?: Partial<ProblemDetails>): ProblemDetails {
+	return {
+		type: 'about:blank',
+		title: 'ERROR',
+		status: 500,
+		detail: 'Something went wrong',
+		instance: '/v2/user-tasks/2251799813685281/assignment',
+		...overrides,
+	};
+}
+
+export {createPaginatedResponse, createProblemDetails};
