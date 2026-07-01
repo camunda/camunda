@@ -14,10 +14,7 @@ describe('<SearchInput />', () => {
     render(<SearchInput value="" onChange={vi.fn()} onClear={vi.fn()} />);
     const input = screen.getByLabelText('Search instance history');
     expect(input).toBeInTheDocument();
-    expect(input).toHaveAttribute(
-      'placeholder',
-      'Element name or ID',
-    );
+    expect(input).toHaveAttribute('placeholder', 'Element name or ID');
   });
 
   it('reflects the value prop in the input', () => {
