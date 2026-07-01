@@ -27,6 +27,7 @@ import {Field, Form} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';
 import arrayMutators from 'final-form-arrays';
 import set from 'lodash/set';
+import {AdvancedStringFilter} from 'modules/components/AdvancedStringFilter';
 import {MultitenancySelect} from 'modules/multitenancy/MultitenancySelect';
 import {useCurrentUser} from 'modules/api/useCurrentUser.query';
 import {useIsMultitenancyEnabled} from 'modules/multitenancy/useIsMultitenancyEnabled';
@@ -441,16 +442,13 @@ const FieldsModal: React.FC<Props> = ({
                         )}
                       </Field>
 
-                      <Field name="businessId">
-                        {({input}) => (
-                          <TextInput
-                            {...input}
-                            id={input.name}
-                            labelText={t('customFiltersModalBusinessIdLabel')}
-                            className={styles.secondColumn}
-                          />
-                        )}
-                      </Field>
+                      <div className={styles.secondColumn}>
+                        <AdvancedStringFilter
+                          name="businessId"
+                          label={t('customFiltersModalBusinessIdLabel')}
+                          selectableOperators={['$eq', '$like', '$in']}
+                        />
+                      </div>
 
                       <FieldArray name="variables">
                         {({fields, meta: arrayMeta}) => (
