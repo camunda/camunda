@@ -51,9 +51,11 @@ public enum ExecutionLatencyMetricsDoc implements ExtendedMeterDocumentation {
   },
 
   /**
-   * The execution time of processing a complete process instance. Publishes both SLO histogram
-   * buckets (for cluster-level aggregation via {@code histogram_quantile()}) and pre-computed
-   * percentiles (p50, p90, p99) for convenience; see {@link ExecutionLatencyMetrics}.
+   * The execution time of processing a complete process instance. Publishes SLO histogram buckets;
+   * derive percentiles at query time via {@code histogram_quantile()}. Client-side percentiles are
+   * intentionally not published: the Prometheus registry emits a distribution as either a histogram
+   * or a summary, and once SLO buckets are configured the percentiles would be dropped. See {@link
+   * ExecutionLatencyMetrics}.
    */
   PROCESS_INSTANCE_EXECUTION {
     private static final Duration[] BUCKETS = {
