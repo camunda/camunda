@@ -241,20 +241,16 @@ public class CamundaMultiDBExtension
   private static final String PT_ADMIN_PASSWORD = "ptadmin";
 
   /**
-   * Physical-tenant IDs are embedded into SQL identifiers (schema/database name or table prefix)
-   * and into the per-PT namespace {@code <basePrefix>_<tenantId>}. Restricting them to lowercase
-   * alphanumeric (starting with a letter) keeps them valid, unambiguous identifiers on every
-   * supported dialect and rules out DDL injection via the bootstrap statements.
+   * PT ids are interpolated into SQL identifiers (schema/database names, table prefixes) by the
+   * bootstrap DDL, so restrict them to lowercase-alphanumeric starting with a letter — valid on
+   * every dialect and injection-safe.
    */
   private static final Pattern PHYSICAL_TENANT_ID_PATTERN = Pattern.compile("[a-z][a-z0-9]*");
 
   /**
-   * Maximum physical-tenant id length. The provisioned namespace is {@code <basePrefix>_<tenantId>}
-   * (a schema/database name, or an Oracle table prefix) where {@code basePrefix} is the
-   * 10-character run token, giving a namespace length of {@code 10 + 1 + tenantId.length()}. The
-   * binding constraint is Oracle's 30-character identifier limit — far stricter than, e.g.,
-   * MySQL/MariaDB's 64-character database name — so {@code 19} keeps the namespace at exactly
-   * {@code 10 + 1 + 19 = 30} characters, the longest id that still fits every supported dialect.
+   * Caps the PT id so the namespace {@code <basePrefix>_<tenantId>} (a 10-char run token plus the
+   * id) fits Oracle's 30-character identifier limit, the strictest supported dialect: {@code 10 + 1
+   * + 19 = 30}.
    */
   private static final int MAX_PHYSICAL_TENANT_ID_LENGTH = 19;
 
