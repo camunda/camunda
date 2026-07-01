@@ -24,6 +24,9 @@ import io.camunda.security.spring.security.ResourcePermissionService;
  * "*"} grants and exact resource-id matching are CSL's responsibility (handled by the wrapped
  * {@link ResourcePermissionService}; see <a
  * href="https://github.com/camunda/camunda-security-library/issues/179">CSL #179</a>).
+ *
+ * <p>The {@code authorizationEnabled} flag is forwarded to the wrapped {@link
+ * ResourcePermissionService}, which grants all when authorization is globally disabled.
  */
 public class IdentityToAdminComponentAliasAdapter implements ResourcePermissionPort {
 
@@ -33,8 +36,9 @@ public class IdentityToAdminComponentAliasAdapter implements ResourcePermissionP
   private final ResourcePermissionPort delegate;
 
   public IdentityToAdminComponentAliasAdapter(
-      final AuthorizationRepositoryPort authorizationRepository) {
-    this.delegate = new ResourcePermissionService(authorizationRepository);
+      final AuthorizationRepositoryPort authorizationRepository,
+      final boolean authorizationEnabled) {
+    this.delegate = new ResourcePermissionService(authorizationRepository, authorizationEnabled);
   }
 
   @Override
