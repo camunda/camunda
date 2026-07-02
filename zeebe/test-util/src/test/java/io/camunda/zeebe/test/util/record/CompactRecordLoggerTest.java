@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValu
 import io.camunda.zeebe.protocol.record.value.ImmutableUsageMetricRecordValue;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.IntervalType;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -201,7 +202,7 @@ class CompactRecordLoggerTest {
     }
 
     @Test
-    void shouldSummarizeAgentHistoryToolResultRecord() {
+    void shouldSummarizeAgentHistoryWithMultipleObjectContentTypes() {
       // given
       final var logger = new CompactRecordLogger(List.of());
       final var record =
@@ -218,7 +219,27 @@ class CompactRecordLoggerTest {
                       .addContent(
                           ImmutableAgentHistoryMessageContentValue.builder()
                               .withContentType(AgentHistoryContentType.OBJECT)
-                              .withObject(Map.of("orderId", "12345"))
+                              .withObject(Arrays.asList(Map.of("id", 1), Map.of("id", 2)))
+                              .build())
+                      .addContent(
+                          ImmutableAgentHistoryMessageContentValue.builder()
+                              .withContentType(AgentHistoryContentType.OBJECT)
+                              .withObject(Arrays.asList(10, 20, 30))
+                              .build())
+                      .addContent(
+                          ImmutableAgentHistoryMessageContentValue.builder()
+                              .withContentType(AgentHistoryContentType.OBJECT)
+                              .withObject(42)
+                              .build())
+                      .addContent(
+                          ImmutableAgentHistoryMessageContentValue.builder()
+                              .withContentType(AgentHistoryContentType.OBJECT)
+                              .withObject(true)
+                              .build())
+                      .addContent(
+                          ImmutableAgentHistoryMessageContentValue.builder()
+                              .withContentType(AgentHistoryContentType.OBJECT)
+                              .withObject("search-complete")
                               .build())
                       .build())
               .build();
@@ -231,7 +252,11 @@ class CompactRecordLoggerTest {
           .isEqualTo(
               """
               K1#3 TOOL_RESULT @K2 K3#1
-                     {orderId=12345}""");
+                     [{id=1}, {id=2}]
+                     [10, 20, 30]
+                     42
+                     true
+                     search-complete""");
     }
 
     @Test
