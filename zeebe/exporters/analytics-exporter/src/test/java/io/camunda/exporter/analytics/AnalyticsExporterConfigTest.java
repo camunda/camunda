@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.analytics;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -95,5 +96,28 @@ class AnalyticsExporterConfigTest {
         .doesNotThrowAnyException();
     assertThatCode(() -> new AnalyticsExporterConfig().setSamplingRate(1.0).validate())
         .doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldReturnSameBehaviorStringForEqualConfigs() {
+    // given
+    final var config = new AnalyticsExporterConfig().setSamplingRate(0.5);
+
+    // when
+    final var first = config.toBehaviorString();
+    final var second = config.toBehaviorString();
+
+    // then
+    assertThat(first).isEqualTo(second);
+  }
+
+  @Test
+  void shouldReturnDifferentBehaviorStringWhenSamplingRateChanges() {
+    // given
+    final var configA = new AnalyticsExporterConfig().setSamplingRate(0.5);
+    final var configB = new AnalyticsExporterConfig().setSamplingRate(0.25);
+
+    // when / then
+    assertThat(configA.toBehaviorString()).isNotEqualTo(configB.toBehaviorString());
   }
 }

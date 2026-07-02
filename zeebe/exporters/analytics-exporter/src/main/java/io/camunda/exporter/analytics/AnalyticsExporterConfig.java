@@ -130,4 +130,23 @@ public class AnalyticsExporterConfig {
     }
     return this;
   }
+
+  /**
+   * Returns a stable string encoding the config fields that affect which events are emitted and at
+   * what rate. Used as input to the exporter hash.
+   *
+   * <p><b>Included</b> (behavioral — affect which events are emitted or what they contain): {@code
+   * samplingRate}.
+   *
+   * <p><b>Excluded</b> (transport-only — affect delivery, not event semantics): {@code endpoint},
+   * {@code maxQueueSize}, {@code maxBatchSize}, {@code pushInterval}, {@code heartbeatInterval},
+   * {@code signing}.
+   *
+   * <p>When adding a new field to this class, decide explicitly: if it changes event selection or
+   * content, add it here; if it only affects delivery mechanics, leave it out and update the
+   * excluded list above.
+   */
+  String toBehaviorString() {
+    return "samplingRate=" + samplingRate;
+  }
 }
