@@ -11,8 +11,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.ClassRule;
@@ -179,5 +183,326 @@ public class ProcessInstanceBusinessIdExpressionContextTest {
             .getFirst()
             .getValue();
     assertThat(job.getRetries()).isEqualTo(3);
+  }
+
+  @Test
+  public void shouldResolveBusinessIdInUserTaskAssigneeExpression() {
+    // given
+    final var processId = "pi-ctx-bid-assignee";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask("task")
+                .zeebeUserTask()
+                .zeebeAssigneeExpression("camunda.processInstance.businessId")
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long pi =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withBusinessId(BUSINESS_ID).create();
+
+    // then
+    final var userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
+            .withProcessInstanceKey(pi)
+            .getFirst()
+            .getValue();
+    Assertions.assertThat(userTask).hasAssignee(BUSINESS_ID);
+  }
+
+  @Test
+  public void shouldResolveBusinessIdInUserTaskCandidateGroupsExpression() {
+    // given
+    final var processId = "pi-ctx-bid-candidate-groups";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask("task")
+                .zeebeUserTask()
+                .zeebeCandidateGroupsExpression("[camunda.processInstance.businessId]")
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long pi =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withBusinessId(BUSINESS_ID).create();
+
+    // then
+    final var userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(pi)
+            .getFirst()
+            .getValue();
+    Assertions.assertThat(userTask).hasCandidateGroupsList(BUSINESS_ID);
+  }
+
+  @Test
+  public void shouldResolveBusinessIdInUserTaskCandidateUsersExpression() {
+    // given
+    final var processId = "pi-ctx-bid-candidate-users";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask("task")
+                .zeebeUserTask()
+                .zeebeCandidateUsersExpression("[camunda.processInstance.businessId]")
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long pi =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withBusinessId(BUSINESS_ID).create();
+
+    // then
+    final var userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(pi)
+            .getFirst()
+            .getValue();
+    Assertions.assertThat(userTask).hasCandidateUsersList(BUSINESS_ID);
+  }
+
+  @Test
+  public void shouldResolveBusinessIdInExecutionListenerTypeExpression() {
+    // given
+    final var processId = "pi-ctx-bid-exec-listener";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask(
+                    "task",
+                    t ->
+                        t.zeebeJobType("exec-listener-task-job")
+                            .zeebeExecutionListener(
+                                el ->
+                                    el.start()
+                                        .typeExpression("camunda.processInstance.businessId")))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long pi =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withBusinessId(BUSINESS_ID).create();
+
+    // then
+    final var listenerJob =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(pi)
+            .withJobKind(JobKind.EXECUTION_LISTENER)
+            .getFirst()
+            .getValue();
+    assertThat(listenerJob.getType()).isEqualTo(BUSINESS_ID);
+  }
+
+  @Test
+  public void shouldResolveBusinessIdInTaskListenerTypeExpression() {
+    // given
+    final var processId = "pi-ctx-bid-task-listener";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask("task")
+                .zeebeUserTask()
+                .zeebeTaskListener(
+                    l -> l.completing().typeExpression("camunda.processInstance.businessId"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final long pi =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withBusinessId(BUSINESS_ID).create();
+
+    // when
+    ENGINE.userTask().ofInstance(pi).complete();
+
+    // then
+    final var listenerJob =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(pi)
+            .withJobKind(JobKind.TASK_LISTENER)
+            .getFirst()
+            .getValue();
+    assertThat(listenerJob.getType()).isEqualTo(BUSINESS_ID);
+  }
+
+  @Test
+  public void shouldResolveBusinessIdInMultiInstanceInputCollection() {
+    // given
+    final var processId = "pi-ctx-bid-mi-collection";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask(
+                    "task",
+                    t ->
+                        t.zeebeJobType("mi-collection-job")
+                            .multiInstance(
+                                m ->
+                                    m.sequential()
+                                        .zeebeInputCollectionExpression(
+                                            "[camunda.processInstance.businessId]")
+                                        .zeebeInputElement("element")))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long pi =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withBusinessId(BUSINESS_ID).create();
+
+    // then
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(pi)
+        .withType("mi-collection-job")
+        .await();
+    final var job =
+        ENGINE.jobs().withType("mi-collection-job").activate().getValue().getJobs().getFirst();
+    assertThat(job.getVariables()).containsEntry("element", BUSINESS_ID);
+  }
+
+  @Test
+  public void shouldResolveBusinessIdInUserTaskDueDateExpression() {
+    // given
+    final var processId = "pi-ctx-bid-due-date";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask("task")
+                .zeebeUserTask()
+                .zeebeDueDateExpression(
+                    "if camunda.processInstance.businessId = \"order-123\" then \"2040-01-01T00:00Z\" else null")
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long pi =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withBusinessId(BUSINESS_ID).create();
+
+    // then
+    final var userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(pi)
+            .getFirst()
+            .getValue();
+    assertThat(userTask.getDueDate()).isNotEmpty();
+  }
+
+  @Test
+  public void shouldResolveBusinessIdInUserTaskFollowUpDateExpression() {
+    // given
+    final var processId = "pi-ctx-bid-follow-up-date";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask("task")
+                .zeebeUserTask()
+                .zeebeFollowUpDateExpression(
+                    "if camunda.processInstance.businessId = \"order-123\" then \"2040-01-01T00:00Z\" else null")
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long pi =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withBusinessId(BUSINESS_ID).create();
+
+    // then
+    final var userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(pi)
+            .getFirst()
+            .getValue();
+    assertThat(userTask.getFollowUpDate()).isNotEmpty();
+  }
+
+  @Test
+  public void shouldResolveBusinessIdInUserTaskPriorityExpression() {
+    // given
+    final var processId = "pi-ctx-bid-priority";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask("task")
+                .zeebeUserTask()
+                .zeebeTaskPriorityExpression(
+                    "if camunda.processInstance.businessId = \"order-123\" then 50 else 1")
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long pi =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withBusinessId(BUSINESS_ID).create();
+
+    // then
+    final var userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(pi)
+            .getFirst()
+            .getValue();
+    Assertions.assertThat(userTask).hasPriority(50);
+  }
+
+  @Test
+  public void shouldResolveBusinessIdInMultiInstanceCompletionCondition() {
+    // given
+    final var processId = "pi-ctx-bid-mi-condition";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask(
+                    "task",
+                    t ->
+                        t.zeebeJobType("mi-condition-job")
+                            .multiInstance(
+                                m ->
+                                    m.sequential()
+                                        .zeebeInputCollectionExpression("[1, 2, 3]")
+                                        .zeebeInputElement("element")
+                                        .completionCondition(
+                                            "= numberOfCompletedInstances = 1 and camunda.processInstance.businessId = \"order-123\"")))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long pi =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withBusinessId(BUSINESS_ID).create();
+    ENGINE.job().ofInstance(pi).withType("mi-condition-job").complete();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(pi)
+                .withElementId("task")
+                .withElementType(BpmnElementType.MULTI_INSTANCE_BODY)
+                .exists())
+        .isTrue();
   }
 }
