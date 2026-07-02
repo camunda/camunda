@@ -388,7 +388,10 @@ jobs:
     # Delete the run-scoped GCS objects after consumers finish. The `utils-` prefix
     # exempts it from the check-results gate; artifacts self-expire (retention-days: 1)
     # and the bucket TTL covers runs cancelled/failed before this fires.
-    needs: [ build-distball, docker-checks, integration-tests ]
+    # Must list every GCS consumer so cleanup never deletes the m2 tarball out from under a
+    # still-running restore: docker-checks + integration-tests, plus the reusable database/
+    # webapp back-end-UT consumers wired via #52693 (they pull m2 from the same run prefix).
+    needs: [ build-distball, docker-checks, integration-tests, database-integration-tests, history-tests, identity-tests, operate-ci, tasklist-ci, optimize-ci ]
     # Clean up only when build-distball succeeded and no consumer failed or was cancelled
     # (skipped consumers -- both are conditional -- don't block cleanup). If any failed or was
     # cancelled, keep the GCS objects so "Re-run failed jobs" can re-fetch the distball --
