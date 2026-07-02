@@ -660,9 +660,9 @@ jobs:
       - name: Post AlwaysGreen failure feedback
         if: failure()
         continue-on-error: true
-        uses: ./.github/actions/post-failure-feedback
+        uses: camunda/c8-cross-component-e2e-tests/.github/actions/post-failure-feedback@main
         with:
-          failure_category: unknown
+          failure_category: test-infra
           stage: helm-integration
           owner_team: "@camunda/distribution"
           run_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
