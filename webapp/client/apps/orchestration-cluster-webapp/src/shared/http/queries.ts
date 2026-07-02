@@ -142,6 +142,18 @@ const queries = {
 			},
 		}),
 
+	getProcessDefinitionXml: (processDefinitionKey: string) =>
+		queryOptions({
+			queryKey: queryKeys.processDefinitionXml(processDefinitionKey),
+			queryFn: async (): Promise<string> => {
+				const {response, error} = await request(endpoints.getProcessDefinitionXml({processDefinitionKey}));
+				if (error !== null) {
+					throw error;
+				}
+				return response.text();
+			},
+		}),
+
 	getProcessDefinitionInstanceStatistics: (body: GetProcessDefinitionInstanceStatisticsRequestBody) =>
 		queryOptions({
 			queryKey: queryKeys.getProcessDefinitionInstanceStatistics(body),

@@ -22,6 +22,10 @@ class TaskDetailPage extends BasePage {
 		return this.page.goto(`/tasklist/${userTaskKey}${search ?? ''}`);
 	}
 
+	async gotoProcess(userTaskKey: string) {
+		return this.page.goto(`/tasklist/${userTaskKey}/process`);
+	}
+
 	get skeleton() {
 		return this.page.getByTestId('details-skeleton');
 	}
@@ -108,6 +112,38 @@ class TaskDetailPage extends BasePage {
 
 	taskName(name: string) {
 		return this.page.getByText(name);
+	}
+
+	processName(name: string) {
+		return this.processTabContent.getByText(name);
+	}
+
+	processVersion(version: number) {
+		return this.processTabContent.getByText(`Version: ${version}`);
+	}
+
+	get processDiagramZoomReset() {
+		return this.processTabContent.getByRole('button', {name: 'Reset diagram zoom'});
+	}
+
+	get processDiagramZoomIn() {
+		return this.processTabContent.getByRole('button', {name: 'Zoom in diagram'});
+	}
+
+	get processDiagramZoomOut() {
+		return this.processTabContent.getByRole('button', {name: 'Zoom out diagram'});
+	}
+
+	get processForbiddenError() {
+		return this.processTabContent.getByText("You don't have permission to view the process");
+	}
+
+	get processLoadError() {
+		return this.processTabContent.getByText('Process could not be loaded');
+	}
+
+	get processRetryButton() {
+		return this.processTabContent.getByRole('button', {name: 'Try again'});
 	}
 
 	async seedHideNotificationBanner() {
