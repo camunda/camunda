@@ -18,6 +18,7 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -143,24 +144,51 @@ public class SearchEngineSchemaInitializer implements InitializingBean, SchemaMa
     final SearchEngineConfiguration cfg = configs.get(physicalTenantId);
     final IndexDescriptors descSet = descriptors.get(physicalTenantId);
 
-    try (final ClientAdapter clientAdapter = ClientAdapter.of(cfg.connect());
-        final SchemaManager schemaManager =
-            new SchemaManager(
-                    clientAdapter.getSearchEngineClient(),
-                    descSet.indices(),
-                    descSet.templates(),
-                    cfg,
-                    clientAdapter.objectMapper())
-                .withMetrics(schemaManagerMetrics)) {
-      schemaManager.startup();
-      initialized.get(physicalTenantId).set(true);
-      LOGGER.info("Schema initialised for physical tenant '{}'", physicalTenantId);
+    initializeTenantSchema(
+        physicalTenantId,
+        () -> {
+          try (final ClientAdapter clientAdapter = ClientAdapter.of(cfg.connect());
+              final SchemaManager schemaManager =
+                  new SchemaManager(
+                          clientAdapter.getSearchEngineClient(),
+                          descSet.indices(),
+                          descSet.templates(),
+                          cfg,
+                          clientAdapter.objectMapper())
+                      .withMetrics(schemaManagerMetrics)) {
+            schemaManager.startup();
+            initialized.get(physicalTenantId).set(true);
+            LOGGER.info("Schema initialized for physical tenant '{}'", physicalTenantId);
+          }
+        });
+  }
+
+  /**
+   * Runs a tenant's schema startup and classifies failures: an {@link IOException} raised after the
+   * tenant was marked initialized can only stem from closing the search client and is benign; any
+   * other failure is a real initialization failure and must propagate.
+   */
+  @VisibleForTesting
+  void initializeTenantSchema(final String physicalTenantId, final TenantSchemaStartup startup) {
+    try {
+      startup.run();
     } catch (final IOException e) {
-      LOGGER.debug("Failed to close the search client for tenant '{}'", physicalTenantId, e);
-    } catch (final Exception e) {
-      LOGGER.error("Schema initialisation failed for physical tenant '{}'", physicalTenantId, e);
+      if (isInitialized(physicalTenantId)) {
+        LOGGER.debug("Failed to close the search client for tenant '{}'", physicalTenantId, e);
+        return;
+      }
+      LOGGER.error("Schema initialization failed for physical tenant '{}'", physicalTenantId, e);
+      throw new UncheckedIOException(e);
+    } catch (final RuntimeException e) {
+      LOGGER.error("Schema initialization failed for physical tenant '{}'", physicalTenantId, e);
       throw e;
     }
+  }
+
+  @VisibleForTesting
+  @FunctionalInterface
+  interface TenantSchemaStartup {
+    void run() throws IOException;
   }
 
   /**

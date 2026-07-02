@@ -27,6 +27,8 @@ import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -283,6 +285,68 @@ class SearchEngineSchemaInitializerTest {
       // then — wait a bit for the whenCompleteAsync callback to run
       executor.awaitTermination(2, TimeUnit.SECONDS);
       assertThat(executor.isShutdown()).isTrue();
+    }
+  }
+
+  @Nested
+  class TenantStartupFailureClassification {
+
+    @Test
+    void shouldPropagateIoExceptionFromStartupAsFailure() {
+      // given — tenant not initialized, so an IOException is a startup failure, not a close leak
+      final SearchEngineSchemaInitializer initializer = createInitializer();
+
+      // when/then
+      assertThatThrownBy(
+              () ->
+                  initializer.initializeTenantSchema(
+                      "default",
+                      () -> {
+                        throw new IOException("startup failed");
+                      }))
+          .isInstanceOf(UncheckedIOException.class)
+          .hasRootCauseMessage("startup failed");
+    }
+
+    @Test
+    void shouldTolerateIoExceptionFromClosingTheClient() throws Exception {
+      // given — the startup marks the tenant initialized before close throws
+      final SearchEngineSchemaInitializer initializer = createInitializer();
+      final Field field = SearchEngineSchemaInitializer.class.getDeclaredField("initialized");
+      field.setAccessible(true);
+      @SuppressWarnings("unchecked")
+      final Map<String, AtomicBoolean> map = (Map<String, AtomicBoolean>) field.get(initializer);
+
+      // when
+      assertThatNoException()
+          .isThrownBy(
+              () ->
+                  initializer.initializeTenantSchema(
+                      "default",
+                      () -> {
+                        map.get("default").set(true);
+                        throw new IOException("close failed");
+                      }));
+
+      // then
+      assertThat(initializer.isInitialized("default")).isTrue();
+    }
+
+    @Test
+    void shouldPropagateRuntimeExceptionFromStartup() {
+      // given
+      final SearchEngineSchemaInitializer initializer = createInitializer();
+
+      // when/then
+      assertThatThrownBy(
+              () ->
+                  initializer.initializeTenantSchema(
+                      "default",
+                      () -> {
+                        throw new IllegalStateException("boom");
+                      }))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessage("boom");
     }
   }
 
