@@ -31,7 +31,7 @@ jobs:
       test: ${{ steps.data.outputs.test }}
       operate: ${{ steps.data.outputs.operate }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Collect test data
         id: data
         run: |
@@ -109,7 +109,7 @@ jobs:
     needs: [ setup-typical-load-test, setup-rdbms-realistic-load-test, setup-realistic-test, setup-latency-test ]
     if: failure()
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Import Slack webhook from Vault
         id: slack-secrets
         uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
