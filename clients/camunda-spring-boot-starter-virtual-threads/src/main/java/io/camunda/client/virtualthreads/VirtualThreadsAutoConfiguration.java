@@ -47,7 +47,9 @@ import org.springframework.context.annotation.Lazy;
 public class VirtualThreadsAutoConfiguration {
 
   /**
-   * Fallback bean when Micrometer is not on the classpath.
+   * Fallback bean used when no {@link io.micrometer.core.instrument.MeterRegistry} bean is
+   * available — either because Micrometer is absent from the classpath, or because it is present
+   * but no registry bean has been configured.
    *
    * @return the configured executor service without metrics
    */
@@ -76,7 +78,10 @@ public class VirtualThreadsAutoConfiguration {
    */
   @Configuration(proxyBeanMethods = false)
   @ConditionalOnClass(
-      name = {"org.springframework.boot.actuate.autoconfigure.endpoint.EndpointAutoConfiguration"})
+      name = {
+        "io.micrometer.core.instrument.MeterRegistry",
+        "org.springframework.boot.actuate.autoconfigure.endpoint.EndpointAutoConfiguration"
+      })
   @ConditionalOnBean(type = "io.micrometer.core.instrument.MeterRegistry")
   static class MeteredConfiguration {
 

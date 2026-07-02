@@ -58,6 +58,20 @@ class VirtualThreadsAutoConfigurationTest {
   }
 
   @Test
+  void shouldFallBackToUnmeteredExecutorWhenMeterRegistryBeanMissing() {
+    // micrometer-core and actuator are on the classpath, but no MeterRegistry bean is configured —
+    // the context must still start using the unmetered executor (regression test for the startup
+    // failure this configuration guards against)
+    contextRunner()
+        .run(
+            context -> {
+              assertThat(context).hasSingleBean(CamundaClientExecutorService.class);
+              assertThat(context.getBean(CamundaClientExecutorService.class))
+                  .isNotInstanceOf(MeteredCamundaClientExecutorService.class);
+            });
+  }
+
+  @Test
   void shouldNotCreateMeteredExecutorWhenActuatorAbsent() {
     // micrometer is on test classpath, but actuator is filtered out — metered bean requires both
     contextRunner()
