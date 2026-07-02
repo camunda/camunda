@@ -20,4 +20,5 @@ export const Route = createFileRoute('/_auth/tasklist/_tasks/$userTaskKey/')({
 
 		return <TaskDetailsTaskPage task={task} currentUser={currentUser} search={search} />;
 	},
+	remountDeps: ({params: {userTaskKey}}) => [userTaskKey],
 });
