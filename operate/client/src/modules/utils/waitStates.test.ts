@@ -40,51 +40,21 @@ const jobDetails: WaitStateDetails = {
 };
 
 describe('getWaitStateLabel', () => {
-  it('should return null for an empty wait state list', () => {
-    expect(getWaitStateLabel([])).toBeNull();
+  it('should return null for a zero waiting count', () => {
+    expect(getWaitStateLabel(0)).toBeNull();
   });
 
-  it('should return "Waiting" for a single wait state', () => {
-    expect(getWaitStateLabel([buildWaitState(jobDetails)])).toBe('Waiting');
+  it('should return null for a negative waiting count', () => {
+    expect(getWaitStateLabel(-1)).toBeNull();
   });
 
-  it('should count all wait states, including timers', () => {
-    expect(
-      getWaitStateLabel([
-        buildWaitState({
-          waitStateType: 'TIMER',
-          dueDate: Date.parse('2026-01-01T00:00:00Z'),
-          repetitions: null,
-        }),
-        buildWaitState({
-          waitStateType: 'MESSAGE',
-          messageName: 'foo',
-          correlationKey: null,
-        }),
-      ]),
-    ).toBe('2 waiting');
+  it('should return "Waiting" for a single waiting instance', () => {
+    expect(getWaitStateLabel(1)).toBe('Waiting');
   });
 
-  it('should suffix the count with "+" when more wait states exist than returned', () => {
-    expect(
-      getWaitStateLabel(
-        [
-          buildWaitState(jobDetails),
-          buildWaitState({
-            waitStateType: 'MESSAGE',
-            messageName: 'foo',
-            correlationKey: null,
-          }),
-        ],
-        true,
-      ),
-    ).toBe('2+ waiting');
-  });
-
-  it('should not suffix "+" for a single wait state even when truncated', () => {
-    expect(getWaitStateLabel([buildWaitState(jobDetails)], true)).toBe(
-      'Waiting',
-    );
+  it('should return the count for multiple waiting instances', () => {
+    expect(getWaitStateLabel(2)).toBe('2 waiting');
+    expect(getWaitStateLabel(42)).toBe('42 waiting');
   });
 });
 

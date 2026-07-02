@@ -37,7 +37,7 @@ import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstance
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 import {mockSearchMessageSubscriptions} from 'modules/mocks/api/v2/messageSubscriptions/searchMessageSubscriptions';
 import {mockSearchAgentInstances} from 'modules/mocks/api/v2/agentInstances/searchAgentInstances';
-import {mockSearchElementInstanceInspection} from 'modules/mocks/api/v2/elementInstanceInspection/searchElementInstanceInspection';
+import {mockFetchProcessInstanceWaitStateStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstanceWaitStateStatistics';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {
   SearchParamsUpdater,
@@ -215,7 +215,7 @@ describe('TopPanel', () => {
 
     mockSearchAgentInstances().withSuccess(searchResult([]));
 
-    mockSearchElementInstanceInspection().withSuccess(searchResult([]));
+    mockFetchProcessInstanceWaitStateStatistics().withSuccess({items: []});
   });
 
   afterEach(() => {
@@ -462,28 +462,10 @@ describe('TopPanel', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should add an active overlay for a multi-instance body waiting for a beforeAll execution listener', async () => {
-    mockSearchElementInstanceInspection().withSuccess(
-      searchResult([
-        {
-          rootProcessInstanceKey: 'instance_id',
-          processInstanceKey: 'instance_id',
-          elementInstanceKey: '9999',
-          elementId: 'multi-instance-task',
-          elementType: 'MULTI_INSTANCE_BODY',
-          tenantId: '<default>',
-          bpmnProcessId: 'process-def-1',
-          details: {
-            waitStateType: 'JOB',
-            jobKey: '8888',
-            jobType: 'io.camunda:execution-listener:1',
-            jobKind: 'EXECUTION_LISTENER',
-            listenerEventType: 'BEFORE_ALL',
-            retries: null,
-          },
-        },
-      ]),
-    );
+  it('should add an active overlay for an element that is waiting but missing from element-instances statistics', async () => {
+    mockFetchProcessInstanceWaitStateStatistics().withSuccess({
+      items: [{elementId: 'multi-instance-task', waitingCount: 1}],
+    });
 
     render(<TopPanel />, {wrapper: getWrapper()});
 
