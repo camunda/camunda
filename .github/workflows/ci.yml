@@ -406,8 +406,9 @@ jobs:
     # and the bucket TTL covers runs cancelled/failed before this fires.
     # Must list every GCS consumer so cleanup never deletes the m2 tarball out from under a
     # still-running restore: docker-checks + integration-tests, plus the stable/8.8-only
-    # elasticsearch/opensearch IT jobs that also pull m2 from the same run prefix.
-    needs: [ build-distball, docker-checks, integration-tests, elasticsearch-integration-tests, opensearch-integration-tests ]
+    # elasticsearch/opensearch IT jobs and the reusable database/webapp back-end-UT consumers
+    # wired via #52693 (they all pull m2 from the same run prefix).
+    needs: [ build-distball, docker-checks, integration-tests, elasticsearch-integration-tests, opensearch-integration-tests, history-tests, identity-tests, physical-tenant-acceptance-tests, operate-ci, tasklist-ci, optimize-ci ]
     # Clean up only when build-distball succeeded and no consumer failed or was cancelled
     # (skipped consumers -- all are conditional -- don't block cleanup). If any failed or was
     # cancelled, keep the GCS objects so "Re-run failed jobs" can re-fetch the distball --
