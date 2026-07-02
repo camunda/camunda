@@ -728,20 +728,67 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
             executor);
   }
 
+  private CompletableFuture<Void> checkPreconditions(
+      final String policyName, final String indexNamePattern) {
+    final var indexCheck =
+        sendRequestAsync(
+                () ->
+                    genericClient.executeAsync(
+                        Requests.builder().method("HEAD").endpoint("/" + indexNamePattern).build()))
+            .thenApply(resp -> resp.getStatus() == 200);
+
+    final var policyCheck =
+        sendRequestAsync(
+                () ->
+                    genericClient.executeAsync(
+                        Requests.builder()
+                            .method("GET")
+                            .endpoint("/_plugins/_ism/policies/" + policyName)
+                            .build()))
+            .thenApply(resp -> resp.getStatus() == 200);
+
+    return indexCheck
+        .thenCombine(
+            policyCheck,
+            (indexExists, policyExists) -> {
+              final var missing = new ArrayList<String>();
+              if (!indexExists) {
+                missing.add("index '%s' does not exist".formatted(indexNamePattern));
+              }
+              if (!policyExists) {
+                missing.add("ISM policy '%s' does not exist".formatted(policyName));
+              }
+              return missing;
+            })
+        .thenCompose(
+            missing -> {
+              if (missing.isEmpty()) {
+                return CompletableFuture.completedFuture(null);
+              }
+              return CompletableFuture.failedFuture(
+                  new IllegalStateException(
+                      "Cannot apply ISM policy — " + String.join(", ", missing)));
+            });
+  }
+
   private CompletableFuture<Void> doApplyIsmPolicy(
       final String policyName, final String indexNamePattern) {
     logger.debug("Applying policy '{}' to indices: {}", policyName, indexNamePattern);
     final var jsonpMapper = genericClient._transport().jsonpMapper();
-    return sendRequestAsync(
-            () -> {
-              final var addRequest =
-                  Requests.builder()
-                      .method("POST")
-                      .endpoint("/_plugins/_ism/add/" + indexNamePattern)
-                      .json(new AddPolicyRequestBody(policyName), jsonpMapper)
-                      .build();
-              return genericClient.executeAsync(addRequest);
-            })
+    return checkPreconditions(policyName, indexNamePattern)
+        .thenComposeAsync(
+            ignored ->
+                sendRequestAsync(
+                    () -> {
+                      final var addRequest =
+                          Requests.builder()
+                              .method("POST")
+                              .endpoint("/_plugins/_ism/add/" + indexNamePattern)
+                              .json(new AddPolicyRequestBody(policyName), jsonpMapper)
+                              .build();
+                      return genericClient.executeAsync(addRequest);
+                    }),
+            executor)
         .thenComposeAsync(
             resp -> checkIsmResponse(resp, "add", policyName, indexNamePattern), executor)
         .thenComposeAsync(
