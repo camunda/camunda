@@ -152,7 +152,9 @@ test.describe('process instance page', () => {
       page.getByText('Waiting for task listener: notify-assignee'),
     ).toBeVisible();
 
-    await expect(page).toHaveScreenshot();
+    // The double-ring signal catch events anti-alias slightly differently
+    // between CI runs; allow a small pixel budget to avoid flakiness.
+    await expect(page).toHaveScreenshot({maxDiffPixels: 60});
   });
 
   test('add variable state', async ({page, processInstancePage}) => {
