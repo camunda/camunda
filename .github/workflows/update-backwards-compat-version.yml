@@ -73,7 +73,8 @@ jobs:
             echo "outcome=already-up-to-date" >> "$GITHUB_OUTPUT"
           else
             git checkout -b "${BRANCH}"
-            git commit -am "build(project): update backwards.compat.version to ${RELEASE_VERSION} after minor release"
+            # Commit only parent/pom.xml so unrelated changes can never sneak in.
+            git commit -m "build(project): update backwards.compat.version to ${RELEASE_VERSION} after minor release" -- parent/pom.xml
             echo "outcome=opened" >> "$GITHUB_OUTPUT"
             echo "branch=${BRANCH}" >> "$GITHUB_OUTPUT"
           fi
@@ -88,16 +89,19 @@ jobs:
         if: ${{ steps.update.outputs.outcome == 'opened' && !inputs.dryRun }}
         env:
           BRANCH: ${{ steps.update.outputs.branch }}
-        # The branch is exclusively owned by this workflow and its content is
-        # deterministic (a single backwards.compat.version bump). On a re-run
-        # after a partial failure the branch may already exist on origin from
-        # the previous attempt: reuse it as-is (the "Open PR" step below reuses
-        # or creates the matching PR) rather than force-overwriting it.
+        # The branch is workflow-owned. On a re-run it may already exist on
+        # origin: reuse it only if its parent/pom.xml matches this run, else
+        # fail rather than force-push (a reused PR must never point at a stale
+        # or diverged version).
         run: |
-          if git ls-remote --exit-code --heads origin "${BRANCH}" >/dev/null 2>&1; then
-            echo "Branch ${BRANCH} already exists on origin; reusing it."
-          else
+          git fetch origin "${BRANCH}:refs/remotes/origin/${BRANCH}" || true
+          if ! git show-ref --verify --quiet "refs/remotes/origin/${BRANCH}"; then
             git push origin "${BRANCH}"
+          elif git diff --quiet "origin/${BRANCH}" HEAD -- parent/pom.xml; then
+            echo "Branch ${BRANCH} already up to date on origin; reusing it."
+          else
+            echo "ERROR: origin/${BRANCH} has a different parent/pom.xml; refusing to force-push. Delete the branch or close the PR, then re-dispatch."
+            exit 1
           fi
       - name: Open PR to main
         id: pr
