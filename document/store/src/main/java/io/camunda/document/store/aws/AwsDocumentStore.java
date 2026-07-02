@@ -492,6 +492,9 @@ public class AwsDocumentStore implements DocumentStore {
   }
 
   private OffsetDateTime resolveEffectiveExpiry(final OffsetDateTime requestedExpiry) {
+    if (defaultTTL == null) {
+      return requestedExpiry;
+    }
     final OffsetDateTime maxExpiry = OffsetDateTime.now().plus(Duration.ofDays(defaultTTL));
     if (requestedExpiry == null || requestedExpiry.isEqual(maxExpiry)) {
       return null;
