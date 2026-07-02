@@ -53,7 +53,7 @@ public class GenericExceptionMapper {
   public ResponseEntity<ErrorResponseDto> handleMethodArgumentNotValidException(
       final MethodArgumentNotValidException exception) {
     return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-        .contentType(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .body(
             new ErrorResponseDto(
                 BAD_REQUEST_ERROR_CODE,
