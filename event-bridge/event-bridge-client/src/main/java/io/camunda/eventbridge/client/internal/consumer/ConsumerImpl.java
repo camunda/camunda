@@ -105,7 +105,7 @@ public final class ConsumerImpl implements Consumer {
       final List<TopicPartition> initialPartitions) {
     this.groupId = groupId;
     subscription = new SubscriptionState(fetcher, config.offsetResetPolicy());
-    buffer = new PrefetchBuffer(config.prefetchDepth());
+    buffer = new PrefetchBuffer(config.prefetchDepth(), config.maxBufferedBytes());
     prefetcher =
         new Prefetcher(
             fetcher,

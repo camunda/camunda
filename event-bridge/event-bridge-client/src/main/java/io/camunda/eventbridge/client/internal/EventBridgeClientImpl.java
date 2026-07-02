@@ -182,7 +182,7 @@ public final class EventBridgeClientImpl implements EventBridgeClient, Fetcher {
    * Default {@link Builder} implementation. Holds the resolved defaults and produces an immutable
    * {@link ClientConfig}: scheduler size {@code 1} (I/O is async on the HTTP client's executor),
    * {@code 5s} long-poll, {@code 1 MiB} fetch, {@code 0} min-bytes, prefetch depth {@code 1},
-   * {@code 3s} heartbeat, and the default hash {@link Partitioner}.
+   * {@code 64 MiB} max buffered, {@code 3s} heartbeat, and the default hash {@link Partitioner}.
    */
   public static final class BuilderImpl implements Builder {
 
@@ -193,6 +193,7 @@ public final class EventBridgeClientImpl implements EventBridgeClient, Fetcher {
     private int fetchMaxBytes = 1 << 20;
     private int fetchMinBytes = 0;
     private int prefetchDepth = 1;
+    private long maxBufferedBytes = 64L << 20;
     private long heartbeatIntervalMs = 3_000L;
     private Partitioner partitioner = Partitioner.defaultHash();
 
@@ -239,6 +240,12 @@ public final class EventBridgeClientImpl implements EventBridgeClient, Fetcher {
     }
 
     @Override
+    public Builder maxBufferedBytes(final long maxBufferedBytes) {
+      this.maxBufferedBytes = maxBufferedBytes;
+      return this;
+    }
+
+    @Override
     public Builder heartbeatInterval(final Duration heartbeatInterval) {
       heartbeatIntervalMs = heartbeatInterval.toMillis();
       return this;
@@ -264,6 +271,7 @@ public final class EventBridgeClientImpl implements EventBridgeClient, Fetcher {
               fetchMaxBytes,
               fetchMinBytes,
               prefetchDepth,
+              maxBufferedBytes,
               heartbeatIntervalMs,
               partitioner));
     }

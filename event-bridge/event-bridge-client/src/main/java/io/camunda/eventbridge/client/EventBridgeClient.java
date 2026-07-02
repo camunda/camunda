@@ -147,9 +147,9 @@ public interface EventBridgeClient extends AutoCloseable {
 
   /**
    * Returns a {@link ConsumerBuilder} for a managed, handler-based consumer that hides the poll
-   * loop: register a {@link MessageHandler}, {@link ConsumerBuilder#start()} it, and a background
-   * daemon thread polls, dispatches, and (by default) auto-commits. Delivers raw {@link Event}s
-   * unless a {@link Deserializer} is configured.
+   * loop: register a {@link MessageHandler}, {@link ConsumerBuilder#start()} it, and a loop on the
+   * client's shared virtual-thread executor polls, dispatches, and (by default) auto-commits.
+   * Delivers raw {@link Event}s unless a {@link Deserializer} is configured.
    */
   ConsumerBuilder<Event> consume();
 
@@ -221,6 +221,15 @@ public interface EventBridgeClient extends AutoCloseable {
      * buffer memory; higher depths pipeline further at proportional memory cost.
      */
     Builder prefetchDepth(int prefetchDepth);
+
+    /**
+     * Sets the maximum total payload bytes buffered across all partitions before the consumer stops
+     * issuing fetches (backpressure) until a {@code poll} drains it back under the cap. This bounds
+     * consumer heap independently of {@link #prefetchDepth(int)}, which only counts batches — a few
+     * large batches or many partitions could otherwise grow the buffer without limit. It is a soft
+     * cap: fetches already in flight still land. Defaults to {@code 64 MiB}.
+     */
+    Builder maxBufferedBytes(long maxBufferedBytes);
 
     /**
      * Sets the interval between scheduled heartbeats to the coordinator. Defaults to {@code 3s}. A

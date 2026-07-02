@@ -24,6 +24,8 @@ import io.camunda.eventbridge.client.Partitioner;
  * @param fetchMaxBytes max bytes requested per (topic, partition) fetch
  * @param fetchMinBytes min committed bytes the broker waits to accumulate before responding
  * @param prefetchDepth max prefetch depth per partition (buffered batches plus in-flight fetches)
+ * @param maxBufferedBytes max total payload bytes buffered across all partitions before the
+ *     consumer applies fetch backpressure
  * @param heartbeatIntervalMs interval between scheduled heartbeats to the coordinator
  * @param partitioner strategy routing a keyed record to a partition for {@code publishToTopic}
  */
@@ -35,5 +37,6 @@ public record ClientConfig(
     int fetchMaxBytes,
     int fetchMinBytes,
     int prefetchDepth,
+    long maxBufferedBytes,
     long heartbeatIntervalMs,
     Partitioner partitioner) {}
