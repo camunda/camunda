@@ -181,4 +181,16 @@
     WHERE WAIT_STATE_KEY = #{waitStateKey}
   </delete>
 
+  <delete id="deleteRootProcessInstanceRelatedData">
+    <bind name="tableName" value="'WAIT_STATE'"/>
+    <bind name="primaryKeyColumn" value="'WAIT_STATE_KEY'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.rootProcessInstanceHistoryDeletion"/>
+  </delete>
+
+  <delete id="deleteProcessInstanceRelatedData">
+    <bind name="tableName" value="'WAIT_STATE'"/>
+    <bind name="primaryKeyColumn" value="'WAIT_STATE_KEY'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
+  </delete>
+
 </mapper>

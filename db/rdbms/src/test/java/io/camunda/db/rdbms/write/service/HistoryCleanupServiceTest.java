@@ -54,6 +54,7 @@ class HistoryCleanupServiceTest {
   private UsageMetricWriter usageMetricWriter;
   private UsageMetricTUWriter usageMetricTUWriter;
   private AuditLogWriter auditLogWriter;
+  private WaitStateWriter waitStateWriter;
 
   private RdbmsWriterConfig.HistoryConfig historyConfig;
   private RdbmsWriters rdbmsWriters;
@@ -78,6 +79,7 @@ class HistoryCleanupServiceTest {
     usageMetricWriter = mock(UsageMetricWriter.class);
     usageMetricTUWriter = mock(UsageMetricTUWriter.class);
     auditLogWriter = mock(AuditLogWriter.class);
+    waitStateWriter = mock(WaitStateWriter.class);
     when(processInstanceReader.selectExpiredRootProcessInstances(anyInt(), any(), anyInt()))
         .thenReturn(java.util.Collections.emptyList());
 
@@ -96,6 +98,7 @@ class HistoryCleanupServiceTest {
     when(correlatedMessageSubscriptionWriter.deleteRootProcessInstanceRelatedData(any(), anyInt()))
         .thenReturn(0);
     when(auditLogWriter.deleteRootProcessInstanceRelatedData(any(), anyInt())).thenReturn(0);
+    when(waitStateWriter.deleteRootProcessInstanceRelatedData(any(), anyInt())).thenReturn(0);
 
     when(batchOperationWriter.cleanupHistory(any(), anyInt())).thenReturn(0);
     when(usageMetricWriter.cleanupMetrics(anyInt(), any(), anyInt())).thenReturn(0);
@@ -141,6 +144,7 @@ class HistoryCleanupServiceTest {
     when(rdbmsWriters.getMetrics())
         .thenReturn(mock(RdbmsWriterMetrics.class, Mockito.RETURNS_DEEP_STUBS));
     when(rdbmsWriters.getAuditLogWriter()).thenReturn(auditLogWriter);
+    when(rdbmsWriters.getWaitStateWriter()).thenReturn(waitStateWriter);
 
     historyCleanupService = new HistoryCleanupService(config, rdbmsWriters, processInstanceReader);
   }

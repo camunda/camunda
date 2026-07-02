@@ -7,17 +7,19 @@
  */
 package io.camunda.db.rdbms.write.service;
 
+import io.camunda.db.rdbms.sql.WaitStateMapper;
 import io.camunda.db.rdbms.write.domain.WaitStateDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 
-public class WaitStateWriter implements RdbmsWriter {
+public class WaitStateWriter extends ProcessInstanceDependant implements RdbmsWriter {
 
   private final ExecutionQueue executionQueue;
 
-  public WaitStateWriter(final ExecutionQueue executionQueue) {
+  public WaitStateWriter(final ExecutionQueue executionQueue, final WaitStateMapper mapper) {
+    super(mapper);
     this.executionQueue = executionQueue;
   }
 
