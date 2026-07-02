@@ -8,7 +8,7 @@
 
 import {useReducer} from 'react';
 import {Button, Tag, Tooltip} from '@carbon/react';
-import {Document, Maximize} from '@carbon/react/icons';
+import {Document, Maximize, Tools} from '@carbon/react/icons';
 import type {
   AgentInstanceHistoryItem,
   AgentInstanceHistoryRole,
@@ -158,6 +158,7 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
               aria-label={`"${tc.toolName}" tool call.`}
               disabled
             >
+              <Tools size={12} />
               {tc.toolName}
             </AttachmentButton>
           ))}
