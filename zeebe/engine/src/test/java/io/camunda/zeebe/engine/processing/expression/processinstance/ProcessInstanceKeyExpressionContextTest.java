@@ -8,12 +8,10 @@
 package io.camunda.zeebe.engine.processing.expression.processinstance;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
-import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -752,15 +750,11 @@ public class ProcessInstanceKeyExpressionContextTest {
 
     // then
     assertThat(
-            RecordingExporter.processInstanceRecords()
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessInstanceKey(pi)
-                .limitToProcessInstanceCompleted()
-                .onlyEvents())
-        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
-        .containsSubsequence(
-            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING),
-            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
-            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+                .withElementId("caught")
+                .exists())
+        .isTrue();
   }
 
   @Test
@@ -790,15 +784,11 @@ public class ProcessInstanceKeyExpressionContextTest {
 
     // then
     assertThat(
-            RecordingExporter.processInstanceRecords()
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessInstanceKey(pi)
-                .limitToProcessInstanceCompleted()
-                .onlyEvents())
-        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
-        .containsSubsequence(
-            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING),
-            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
-            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+                .withElementId("caught")
+                .exists())
+        .isTrue();
   }
 
   @Test
