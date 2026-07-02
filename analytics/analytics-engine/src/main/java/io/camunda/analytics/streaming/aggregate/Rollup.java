@@ -33,8 +33,8 @@ public interface Rollup<F> extends AutoCloseable {
   /**
    * Commit-interval tick: make the in-memory working state durable — write the cells changed (and
    * evict the ones finalized) since the last checkpoint, together with the consumed offsets, in one
-   * transaction. Decoupled from {@link #flush()} so many batches coalesce into one durable write
-   * (the Kafka-Streams record-cache model). Default: no-op for rollups that keep no durable state.
+   * transaction. Decoupled from {@link #flush()} so many batches coalesce into one durable write (a
+   * write-back record-cache model). Default: no-op for rollups that keep no durable state.
    */
   default void checkpoint() {}
 

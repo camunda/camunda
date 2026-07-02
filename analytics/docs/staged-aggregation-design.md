@@ -1,7 +1,7 @@
 # Staged analytics aggregation — design reference
 
 Status: **agreed target; building the per-writer-slot version now.** This is the reference for the
-Kafka-Streams/Samza-style staged model: `source → Stage 1 (base projection + combiner) → facts
+A staged stream-processing model: `source → Stage 1 (base projection + combiner) → facts
 topic (shuffle) → Stage 2 (reduce) → serving sink`.
 
 ## Principles

@@ -28,10 +28,9 @@ import org.slf4j.LoggerFactory;
  * the commit barrier — leaving the application to supply only its {@link Task} logic and the
  * source/state bindings.
  *
- * <p>Modeled on the Kafka Streams {@code StreamThread} / Samza {@code RunLoop}: the framework
- * drives user code, not the other way round. It depends on nothing but the EventBridge client and
- * the four SPIs in this package, so it is reusable by any consumer and knows nothing about what a
- * task does.
+ * <p>Inversion of control: the framework drives user code, not the other way round. It depends on
+ * nothing but the EventBridge client and the four SPIs in this package, so it is reusable by any
+ * consumer and knows nothing about what a task does.
  *
  * <p><b>Commit barrier — produce-before-commit.</b> On each commit tick the runtime (1) flushes
  * each task, which emits its produced output; (2) runs the {@code preCommitFlushes} so that output

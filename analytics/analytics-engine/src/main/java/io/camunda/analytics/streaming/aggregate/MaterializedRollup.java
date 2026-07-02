@@ -18,8 +18,8 @@ import java.util.function.ToLongFunction;
 
 /**
  * Holds the authoritative windowed aggregate locally and writes <em>full current values</em> to an
- * idempotent {@link ResultSink} — the sink-agnostic, exactly-once shape (Flink/Kafka-Streams
- * style): local state is the source of truth, the sink is a materialized view that converges.
+ * idempotent {@link ResultSink} — the sink-agnostic, exactly-once shape: local state is the source
+ * of truth, the sink is a materialized view that converges.
  *
  * <p>Three mechanisms make it correct under at-least-once delivery:
  *

@@ -23,10 +23,10 @@ import java.util.function.ToLongFunction;
 
 /**
  * A windowed rollup whose open-window accumulators live on the heap (the authoritative working set,
- * a write-back cache) and are periodically checkpointed to a RocksDB-backed state store — the
- * Kafka-Streams / Flink record-cache model. It replaces a write-through design (get+merge+put every
- * cell every batch, plus a full column-family scan to finalize) whose per-batch cost was the
- * throughput ceiling.
+ * a write-back cache) and are periodically checkpointed to a RocksDB-backed state store — a
+ * write-back record-cache model. It replaces a write-through design (get+merge+put every cell every
+ * batch, plus a full column-family scan to finalize) whose per-batch cost was the throughput
+ * ceiling.
  *
  * <p>Three clocks drive it, decoupled on purpose:
  *

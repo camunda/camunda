@@ -1,6 +1,6 @@
 # Optimize analytics pipeline (MVP) — handover
 
-A handover for building a Flink/Kafka-Streams-like **pre-aggregation pipeline** on top of the
+A handover for building a streaming **pre-aggregation pipeline** on top of the
 Event Bridge. Source vision: `~/Downloads/Optimize _aufbohren_.pdf` (deck "Optimize aufbohren",
 R. Smirnov). The deck argues Optimize's read-optimized, ad-hoc-query-over-unbounded-data design
 hits a scaling ceiling, and proposes a **Kappa architecture**: treat the OC export as a continuous
@@ -14,8 +14,8 @@ pipeline.
 ## FINAL DIRECTION (supersedes the in-broker design below)
 
 After exploring the trade-offs, the architecture is **consumer-based, self-contained,
-Kafka-Streams-style library** — *not* baked into the broker. Rationale: streaming-analytics systems
-deliberately separate compute from the log (Flink/Spark/Kafka-Streams all consume the bus, none are
+streaming-framework-style library** — *not* baked into the broker. Rationale: streaming-analytics systems
+deliberately separate compute from the log (Flink, Spark and similar all consume the bus, none are
 baked into it); in-broker also hit a hard publish-path problem (no programmatic cross-partition
 producer in the broker). The already-built `StandaloneAnalyticsPipeline` IS this design.
 
@@ -151,7 +151,7 @@ operational simplicity, which this delivers.
   leader/follower + checkpoint-location problem that co-location removes.
 - ❌ **Own dedicated Raft log for analytics** (a second log): rejected — the source topic is already
   a replicated log; a second one is artificial duplication.
-- ❌ **Changelog-topic per state store** (Kafka-Streams default): rejected — write amplification; the
+- ❌ **Changelog-topic per state store** (a common streaming-framework default): rejected — write amplification; the
   rewindable source + co-located snapshots cover recovery without it.
 - **State backends** are an **SPI** with two operational modes (the SPI hides get/put + position;
   the replication model around it differs):

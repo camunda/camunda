@@ -9,7 +9,7 @@ package io.camunda.eventbridge.streaming;
 
 /**
  * Decides what the {@link StreamRuntime} does when deserializing or processing a <em>single</em>
- * record throws — the analogue of Kafka Streams' deserialization/processing exception handlers.
+ * record throws — a pluggable deserialization/processing exception policy.
  *
  * <p>The default, {@link #FAIL_FAST}, stops the runtime so a restart reprocesses from the last
  * committed offset: a poison record or a processing bug is surfaced, never silently skipped. A

@@ -118,7 +118,7 @@ partial's `(count, total, min, max)`, rather than `+1, +dur, dur, dur`.
 
 ## Design lineage (borrowed concepts)
 
-| Concern | Kafka Streams | Flink | Ours |
+| Concern | Streaming framework | Flink | Ours |
 |---|---|---|---|
 | Fold step | `Processor.process` + `ProcessorContext` | `KeyedProcessFunction.processElement` | `Projector.apply(record, Collector)` |
 | Collect | `ProcessorContext.forward` | `Collector.collect` | `Collector<F>` |
