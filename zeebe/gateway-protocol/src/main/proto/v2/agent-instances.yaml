@@ -1060,7 +1060,11 @@ components:
     AgentInstanceObjectContent:
       type: object
       title: Object content
-      description: An arbitrary structured content block.
+      description: |
+        An arbitrary structured content block. Accepts any valid JSON value:
+        objects, arrays, numbers, booleans, or strings.
+        Use TEXT content for human-readable natural language;
+        use OBJECT content for machine-readable structured data.
       additionalProperties: false
       required:
         - contentType
@@ -1071,9 +1075,7 @@ components:
           type: string
           example: OBJECT
         object:
-          description: Arbitrary structured content.
-          type: object
-          additionalProperties: true
+          description: Arbitrary structured content — any valid JSON value (object, array, number, boolean, or string).
 
     AgentInstanceMessageContentTypeEnum:
       description: The content type discriminator for a history item content block.
