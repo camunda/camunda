@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
@@ -95,6 +96,39 @@ public class ImportPositionHolderOpenSearch extends ImportPositionHolderAbstract
         position);
 
     return position;
+  }
+
+  @Override
+  public boolean isPartitionCompletedImporting(final int partitionId) {
+    final SearchRequest searchRequest =
+        new SearchRequest.Builder()
+            .index(List.of(importPositionType.getAlias()))
+            .query(
+                q ->
+                    q.term(
+                        t ->
+                            t.field(TasklistImportPositionIndex.PARTITION_ID)
+                                .value(FieldValue.of(partitionId))))
+            .source(s -> s.filter(f -> f.includes(TasklistImportPositionIndex.FIELD_INDEX_NAME)))
+            .size(50)
+            .build();
+
+    try {
+      final SearchResponse<ImportPositionEntity> response =
+          osClient.search(searchRequest, ImportPositionEntity.class);
+      return response.hits().hits().stream()
+          .map(Hit::source)
+          .filter(Objects::nonNull)
+          .map(ImportPositionEntity::getIndexName)
+          .filter(Objects::nonNull)
+          .anyMatch(indexName -> indexName.contains("8.8"));
+    } catch (final Exception e) {
+      LOGGER.warn(
+          "Failed to retrieve import positions so importer completion may not resolve correctly for partition {}",
+          partitionId,
+          e);
+      return false;
+    }
   }
 
   @Override

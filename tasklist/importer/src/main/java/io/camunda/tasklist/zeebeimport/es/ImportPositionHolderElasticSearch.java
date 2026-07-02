@@ -18,9 +18,11 @@ import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -85,6 +87,32 @@ public class ImportPositionHolderElasticSearch extends ImportPositionHolderAbstr
         position);
 
     return position;
+  }
+
+  @Override
+  public boolean isPartitionCompletedImporting(final int partitionId) {
+    final SearchRequest searchRequest =
+        new SearchRequest(importPositionType.getAlias())
+            .source(
+                new SearchSourceBuilder()
+                    .query(termQuery(TasklistImportPositionIndex.PARTITION_ID, partitionId))
+                    .fetchSource(new String[] {TasklistImportPositionIndex.FIELD_INDEX_NAME}, null)
+                    .size(50));
+
+    try {
+      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      return Arrays.stream(response.getHits().getHits())
+          .map(hit -> hit.getSourceAsMap().get(TasklistImportPositionIndex.FIELD_INDEX_NAME))
+          .filter(Objects::nonNull)
+          .map(Object::toString)
+          .anyMatch(indexName -> indexName.contains("8.8"));
+    } catch (final Exception e) {
+      LOGGER.warn(
+          "Failed to retrieve import positions so importer completion may not resolve correctly for partition {}",
+          partitionId,
+          e);
+      return false;
+    }
   }
 
   @Override

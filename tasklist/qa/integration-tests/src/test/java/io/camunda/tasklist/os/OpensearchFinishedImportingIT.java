@@ -105,7 +105,6 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
     EXPORTER.open(new ExporterTestController());
 
     recordsReaderHolder.resetCountEmptyBatches();
-    recordsReaderHolder.resetPartitionsCompletedImporting();
     meterRegistry.clear();
     createInitialImportPositionDocuments();
   }
@@ -171,6 +170,39 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
     }
 
     // the import position for
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .until(
+            () -> {
+              zeebeImporter.performOneRoundOfImport();
+              return isRecordReaderIsCompleted("1-tenant");
+            });
+  }
+
+  @Test
+  public void shouldCompleteFromPersistedStateAfterRestartPastTenant880Records()
+      throws IOException {
+    // Regression test for #56595: after the TENANT reader advances its persisted position past the
+    // 8.8 tenant records but the process restarts before the required empty batches are counted,
+    // the reader must still complete by re-deriving the 8.8 boundary from the persisted
+    // import-position index (indexName contains "8.8"), not from a transient in-memory flag.
+
+    // given a 8.8 tenant record is read once so the persisted position advances past it
+    final var record = generateRecord(ValueType.TENANT, "8.8.0", 1);
+    EXPORTER.export(record);
+    openSearchClient.indices().refresh(new RefreshRequest.Builder().index("*").build());
+
+    zeebeImporter.performOneRoundOfImport();
+
+    // when the importer "restarts": any transient completion state is dropped, and the persisted
+    // position already sits past the 8.8 tenant records, so every subsequent batch is empty
+    recordsReaderHolder.resetCountEmptyBatches();
+
+    for (int i = 0; i < emptyBatches; i++) {
+      zeebeImporter.performOneRoundOfImport();
+    }
+
+    // then the reader still completes from persisted state
     Awaitility.await()
         .atMost(Duration.ofSeconds(30))
         .until(

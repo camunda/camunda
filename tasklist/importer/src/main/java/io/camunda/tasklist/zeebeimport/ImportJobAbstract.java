@@ -89,7 +89,10 @@ public abstract class ImportJobAbstract implements ImportJob {
       final var batchVersion = SemanticVersion.fromVersion(version);
 
       if (batchVersion.getMajor() == 8 && batchVersion.getMinor() == 8) {
-        recordsReaderHolder.addPartitionCompletedImporting(subBatch.getPartitionId());
+        // 8.8 records are not imported by the legacy importer; the persisted import-position
+        // document (whose indexName then contains "8.8") is what marks the partition as having
+        // reached the 8.8 boundary. Completion is re-derived from that persisted state in
+        // ImportPositionHolder#isPartitionCompletedImporting, so it survives restarts.
         return true;
       }
 
