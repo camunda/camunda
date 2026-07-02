@@ -753,6 +753,18 @@
       "matchDatasources": ["github-tags"],
       "matchFileNames": ["load-tests/setup/main/**"],
       "ignoreUnstable": false
+    },
+    {
+      "description": "Bump Docker images used by load tests ; keep the same major.minor and update only for patch releases",
+      "matchFileNames": [
+        "load-tests/setup/*/values/*.y*ml"
+      ],
+      "matchDatasources": ["docker"],
+      "matchPackageNames": [
+        "docker.io/camunda/zeebe",
+        "docker.io/camunda/camunda"
+      ],
+      "allowedVersions": "<= {{{major}}}.{{{minor}}}"
     }
   ],
   "ignorePaths": [
@@ -765,6 +777,12 @@
     "ignorePaths": [
       "zeebe/load-tests/**",
       "clients/go/vendor/**"
+    ]
+  },
+  "helm-values": {
+    "managerFilePatterns": [
+      "**/values.y*ml",
+      "load-tests/setup/*/values/*.y*ml"
     ]
   },
   "customManagers": [
