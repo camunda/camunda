@@ -41,6 +41,7 @@
     <version.agrona>2.4.1</version.agrona>
     <version.animal-sniffer>1.27</version.animal-sniffer>
     <version.assertj>3.27.7</version.assertj>
+    <version.assertj-assertions-generator>2.2.0</version.assertj-assertions-generator>
     <version.awaitility>4.3.0</version.awaitility>
     <version.bouncycastle>1.84</version.bouncycastle>
     <version.camunda>7.24.0</version.camunda>
