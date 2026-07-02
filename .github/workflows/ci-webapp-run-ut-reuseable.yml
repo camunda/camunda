@@ -24,12 +24,22 @@ on:
         description: "Canonical GitHub team handle owning the suite under test, e.g. '@camunda/data-layer'"
         required: true
         type: string
+      use-shared-distball:
+        required: false
+        type: boolean
+        default: false
+        description: >-
+          When true, restore the io.camunda SNAPSHOTs from the run-scoped GCS
+          artifact produced by ci.yml's build-distball job instead of running a
+          local build-zeebe reactor. Only safe when the run has a build-distball
+          job (i.e. via ci.yml). See #52693.
 
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
   TEST_OWNER: ${{ inputs.owner }}
   TEST_TYPE: Unit
   FLAKY_TEST_RERUN_COUNT: ${{ github.event_name == 'pull_request' && '3' || '7' }}
+  GCS_BUILD_CACHE_BUCKET: camunda-monorepo-ci-artifacts
 
 defaults:
   run:
@@ -44,7 +54,9 @@ jobs:
     name: "Unit - Back End - ${{ inputs.suiteName}}"
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 10
-    permissions: { }
+    permissions:
+      contents: read
+      id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Print metadata
@@ -57,7 +69,40 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      # When called from ci.yml (use-shared-distball=true) restore the io.camunda SNAPSHOTs
+      # build-distball archived to GCS instead of re-running the ~2 min reactor in each of the
+      # operate/tasklist/optimize back-end UT entries. github.run_id is stable across nested
+      # workflow_call, addressing the same run-scoped prefix build-distball wrote. See #52693.
+      - name: Fetch GCS build-cache credentials
+        if: ${{ inputs.use-shared-distball }}
+        id: gcs-secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/build-cache/monorepo-build-cache-sa SERVICE_ACCOUNT | GCS_SA;
+            secret/data/products/camunda/ci/build-cache/monorepo-build-cache-sa WORKLOAD_IDENTITY_PROVIDER | GCS_WIF;
+      - if: ${{ inputs.use-shared-distball }}
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          workload_identity_provider: ${{ steps.gcs-secrets.outputs.GCS_WIF }}
+          service_account: ${{ steps.gcs-secrets.outputs.GCS_SA }}
+      - if: ${{ inputs.use-shared-distball }}
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+      - name: Restore io.camunda SNAPSHOTs from GCS
+        if: ${{ inputs.use-shared-distball }}
+        run: |
+          set -euo pipefail
+          mkdir -p "${HOME}/.m2/repository/installed"
+          gcloud storage cp "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/m2-installed.tar" "${RUNNER_TEMP}/m2-installed.tar"
+          tar -xf "${RUNNER_TEMP}/m2-installed.tar" -C "${HOME}/.m2/repository/installed"
+      # Fallback when the run has no build-distball job: build the platform locally.
       - uses: ./.github/actions/build-zeebe
+        if: ${{ !inputs.use-shared-distball }}
         id: build-zeebe
         with:
           maven-extra-args: -T1C -Dquickly
