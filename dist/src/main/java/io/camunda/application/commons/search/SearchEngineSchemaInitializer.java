@@ -19,7 +19,6 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -112,11 +111,7 @@ public class SearchEngineSchemaInitializer implements InitializingBean, SchemaMa
     future.whenCompleteAsync(
         (result, error) -> {
           if (error != null) {
-            LOGGER.error(
-                "Failed to initialize search engine schema; physical tenants without an"
-                    + " initialized schema: {}",
-                uninitializedTenantIds(),
-                error);
+            LOGGER.warn("Failed to initialize search engine schema", error);
           } else {
             LOGGER.info("Search engine schema initialization complete.");
           }
@@ -129,56 +124,26 @@ public class SearchEngineSchemaInitializer implements InitializingBean, SchemaMa
       return;
     }
 
-    final SearchEngineConfiguration cfg = configs.get(physicalTenantId);
-    final IndexDescriptors descSet = descriptors.get(physicalTenantId);
+    final SearchEngineConfiguration configuration = configs.get(physicalTenantId);
+    final IndexDescriptors indexDescriptors = descriptors.get(physicalTenantId);
 
-    initializeTenantSchema(
-        physicalTenantId,
-        () -> {
-          try (final ClientAdapter clientAdapter = ClientAdapter.of(cfg.connect());
-              final SchemaManager schemaManager =
-                  new SchemaManager(
-                          clientAdapter.getSearchEngineClient(),
-                          descSet.indices(),
-                          descSet.templates(),
-                          cfg,
-                          clientAdapter.objectMapper())
-                      .withMetrics(schemaManagerMetrics)) {
-            schemaManager.startup();
-            initialized.get(physicalTenantId).set(true);
-            LOGGER.info("Schema initialized for physical tenant '{}'", physicalTenantId);
-          }
-        });
-  }
-
-  @VisibleForTesting
-  void initializeTenantSchema(final String physicalTenantId, final TenantSchemaStartup startup) {
-    try {
-      startup.run();
+    try (final ClientAdapter clientAdapter = ClientAdapter.of(configuration.connect());
+        final SchemaManager schemaManager =
+            new SchemaManager(
+                    clientAdapter.getSearchEngineClient(),
+                    indexDescriptors.indices(),
+                    indexDescriptors.templates(),
+                    configuration,
+                    clientAdapter.objectMapper())
+                .withMetrics(schemaManagerMetrics)) {
+      schemaManager.startup();
+      initialized.get(physicalTenantId).set(true);
     } catch (final IOException e) {
-      if (isInitialized(physicalTenantId)) {
-        LOGGER.debug("Failed to close the search client for tenant '{}'", physicalTenantId, e);
-        return;
+      if (!isInitialized(physicalTenantId)) {
+        throw new UncheckedIOException(e);
       }
-      LOGGER.error("Schema initialization failed for physical tenant '{}'", physicalTenantId, e);
-      throw new UncheckedIOException(e);
-    } catch (final RuntimeException e) {
-      LOGGER.error("Schema initialization failed for physical tenant '{}'", physicalTenantId, e);
-      throw e;
+      LOGGER.debug("Failed to close the search client", e);
     }
-  }
-
-  @VisibleForTesting
-  @FunctionalInterface
-  interface TenantSchemaStartup {
-    void run() throws IOException;
-  }
-
-  private List<String> uninitializedTenantIds() {
-    return initialized.entrySet().stream()
-        .filter(entry -> !entry.getValue().get())
-        .map(Map.Entry::getKey)
-        .toList();
   }
 
   /**
