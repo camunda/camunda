@@ -65,6 +65,11 @@ public class BackupListRequest extends BrokerRequest<BackupListResponse> {
   }
 
   @Override
+  public boolean shouldRouteToRecovery() {
+    return true;
+  }
+
+  @Override
   public BufferWriter getRequestWriter() {
     return null;
   }

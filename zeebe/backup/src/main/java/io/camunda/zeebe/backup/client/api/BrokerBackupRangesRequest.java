@@ -49,6 +49,11 @@ public class BrokerBackupRangesRequest extends BrokerRequest<BackupRangesRespons
   }
 
   @Override
+  public boolean shouldRouteToRecovery() {
+    return true;
+  }
+
+  @Override
   public BufferWriter getRequestWriter() {
     return null;
   }
