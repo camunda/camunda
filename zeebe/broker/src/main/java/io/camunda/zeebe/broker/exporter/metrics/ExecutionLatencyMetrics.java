@@ -36,9 +36,7 @@ public class ExecutionLatencyMetrics {
   public ExecutionLatencyMetrics(final MeterRegistry meterRegistry) {
 
     processInstanceExecutionTime =
-        MicrometerUtil.buildTimer(PROCESS_INSTANCE_EXECUTION)
-            .publishPercentiles(0.5, 0.9, 0.99)
-            .register(meterRegistry);
+        MicrometerUtil.buildTimer(PROCESS_INSTANCE_EXECUTION).register(meterRegistry);
     jobLifeTime = MicrometerUtil.buildTimer(JOB_LIFETIME).register(meterRegistry);
     jobActivationTime = MicrometerUtil.buildTimer(JOB_ACTIVATION_TIME).register(meterRegistry);
     currentCacheInstanceProcessInstances =
