@@ -51,7 +51,7 @@ spec:
         []
       containers:
         - name: zeebe-gateway
-          image: docker.io/camunda/zeebe:8.7.33
+          image: docker.io/camunda/zeebe:8.7.34
           imagePullPolicy: Always
           ports:
             - containerPort: 9600
