@@ -48,7 +48,7 @@ paths:
 
   /mode:
     patch:
-      x-eventually-consistent: false
+      x-eventually-consistent: true
       tags:
         - Recovery
       operationId: changeClusterMode
@@ -58,10 +58,12 @@ paths:
         - basicAuth: []
       summary: Change cluster mode
       description: >-
-        Transitions the cluster between processing and recovery mode. Entering recovery mode
-        deactivates all partitions so that only a restricted set of read-only operations remains
-        available; exiting recovery mode returns the cluster to normal processing. Returns the
-        planned cluster change so its progress can be tracked via the topology.
+        Transitions the cluster between processing and recovery mode. This is a non-blocking
+        operation: the request is acknowledged once the change has been accepted, before the
+        transition itself has completed. Entering recovery mode deactivates all partitions so
+        that only a restricted set of read-only operations remains available; exiting recovery
+        mode returns the cluster to normal processing. Returns the planned cluster change so its
+        progress can be monitored via the topology.
       parameters:
         - name: mode
           in: query
