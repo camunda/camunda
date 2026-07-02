@@ -30,7 +30,7 @@ import {
 import {MarkdownMessage} from './MarkdownMessage';
 import {MessageDetailsModal} from './MessageDetailsModal';
 
-type Actor = AgentInstanceHistoryRole | 'SYSTEM';
+type Actor = Exclude<AgentInstanceHistoryRole, 'TOOL_RESULT'> | 'SYSTEM';
 type ContentItem = AgentInstanceHistoryItem['content'][number];
 type ToolCall = AgentInstanceHistoryItem['toolCalls'][number];
 type Metrics = AgentInstanceHistoryItem['metrics'];
@@ -39,14 +39,12 @@ const readableTitleByActor: Record<Actor, string> = {
   SYSTEM: 'System prompt',
   USER: 'User message',
   ASSISTANT: 'Assistant message',
-  TOOL_RESULT: 'Tool result',
 };
 
 const labelByActor: Record<Actor, string> = {
   SYSTEM: 'System',
   USER: 'User',
   ASSISTANT: 'Assistant',
-  TOOL_RESULT: 'Tool Result',
 };
 
 function formatDuration(ms: number): string {
