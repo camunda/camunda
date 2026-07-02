@@ -79,6 +79,25 @@
       ]
     },
     {
+      "description": "Keep Spring versions in client-facing poms resolvable from Maven Central. Must stay after the HeroDevs NES rule above, since registryUrls replaces (not merges) and last match wins. See https://github.com/camunda/camunda/issues/56520.",
+      "matchDatasources": [
+        "maven"
+      ],
+      "matchPackageNames": [
+        "/^org\\.springframework(\\..+)?:/"
+      ],
+      "matchFileNames": [
+        "library-parent/pom.xml",
+        "clients/camunda-spring-boot-3-starter/pom.xml",
+        "clients/camunda-spring-boot-4-starter/pom.xml",
+        "testing/camunda-process-test-spring-boot-3/pom.xml",
+        "testing/camunda-process-test-spring-boot-4/pom.xml"
+      ],
+      "registryUrls": [
+        "https://maven-central.storage-download.googleapis.com/maven2"
+      ]
+    },
+    {
       "description": "Enable separateMinorPatch so updates to latest patch are not ignored in maintenance branches.",
       "separateMinorPatch": true,
       "matchBaseBranches": [
