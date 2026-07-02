@@ -16,6 +16,10 @@ permissions:
 
 # Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
 # Exception for main branch: complete builds for every commit needed for confidenence
+env:
+  SUITE_DIR: qa/c8-orchestration-cluster-e2e-test-suite
+  CLIENT_DIR: ./tasklist/client
+
 concurrency:
   cancel-in-progress: true
   group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
@@ -101,19 +105,21 @@ jobs:
           node-version: "22"
 
       - name: Install node dependencies
-        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
-        run: npm ci
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.SUITE_DIR }}
 
       - name: Install frontend dependencies
-        working-directory: ./tasklist/client
-        run: npm ci
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.CLIENT_DIR }}
 
       - name: Install Playwright
         run: npx playwright install --with-deps chromium
-        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+        working-directory: ${{ env.SUITE_DIR }}
 
       - name: Build frontend
-        working-directory: ./tasklist/client
+        working-directory: ${{ env.CLIENT_DIR }}
         run: npm run build
 
       - name: Setup Java
@@ -180,7 +186,7 @@ jobs:
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
           ZEEBE_REST_ADDRESS: "http://localhost:8080"
         run: npm run test -- --project=tasklist-${{ matrix.tasklist_mode }}-e2e
-        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+        working-directory: ${{ env.SUITE_DIR }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:

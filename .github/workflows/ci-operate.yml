@@ -37,6 +37,7 @@ env:
   TEST_OWNER: '@camunda/core-features'
   GHA_BEST_PRACTICES_LINTER: enabled
   TEST_PRODUCT: Operate
+  CLIENT_DIR: operate/client
 
 jobs:
   # run every time this CI file is called
@@ -118,7 +119,7 @@ jobs:
       TEST_TYPE: Unit
     defaults:
       run:
-        working-directory: operate/client
+        working-directory: ${{ env.CLIENT_DIR }}
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -127,8 +128,10 @@ jobs:
       - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: "22"
-      - run: npm ci
-        name: Install dependencies
+      - name: Install dependencies
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.CLIENT_DIR }}
       - run: npm run test
         name: Unit & Integration tests
       - name: Observe build status
@@ -153,7 +156,7 @@ jobs:
       TEST_PRODUCT: Operate
     defaults:
       run:
-        working-directory: operate/client
+        working-directory: ${{ env.CLIENT_DIR }}
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -162,8 +165,10 @@ jobs:
       - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: "22"
-      - run: npm ci
-        name: Install dependencies
+      - name: Install dependencies
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.CLIENT_DIR }}
       - run: npm run ts-check
         name: Type checks
       - name: Observe build status
@@ -188,7 +193,7 @@ jobs:
       TEST_PRODUCT: Operate
     defaults:
       run:
-        working-directory: operate/client
+        working-directory: ${{ env.CLIENT_DIR }}
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -197,8 +202,10 @@ jobs:
       - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: "22"
-      - run: npm ci
-        name: Install dependencies
+      - name: Install dependencies
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.CLIENT_DIR }}
       - run: npm run eslint
         name: ESLint
       - name: Observe build status
@@ -221,7 +228,7 @@ jobs:
       TEST_TYPE: Tool
     defaults:
       run:
-        working-directory: operate/client
+        working-directory: ${{ env.CLIENT_DIR }}
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -269,7 +276,7 @@ jobs:
       options: --user 1001:1000
     defaults:
       run:
-        working-directory: operate/client
+        working-directory: ${{ env.CLIENT_DIR }}
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
       - name: Check out repository code
@@ -281,7 +288,9 @@ jobs:
         with:
           node-version: "22"
       - name: Install node dependencies
-        run: npm ci
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.CLIENT_DIR }}
       - name: Build frontend
         run: npm run build
       - name: Run A11y tests
@@ -315,7 +324,7 @@ jobs:
       options: --user 1001:1000
     defaults:
       run:
-        working-directory: operate/client
+        working-directory: ${{ env.CLIENT_DIR }}
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
       - name: Check out repository code
@@ -327,7 +336,9 @@ jobs:
         with:
           node-version: "22"
       - name: Install node dependencies
-        run: npm ci
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.CLIENT_DIR }}
       - name: Build frontend
         run: npm run build:visual-regression
       - name: Run Visual regression tests
@@ -361,7 +372,7 @@ jobs:
       options: --user 1001:1000
     defaults:
       run:
-        working-directory: operate/client
+        working-directory: ${{ env.CLIENT_DIR }}
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -370,12 +381,14 @@ jobs:
       - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: "22"
-      - run: npm ci
-        name: Install dependencies
+      - name: Install dependencies
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.CLIENT_DIR }}
       - name: Build frontend
         run: npm run build
       - name: Run Playwright
-        working-directory: ./operate/client
+        working-directory: ${{ env.CLIENT_DIR }}
         run: npm run generate-screenshots
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
