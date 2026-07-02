@@ -467,8 +467,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # Only io.camunda reactor SNAPSHOTs are needed; drop the distro assemblies
-          # (shipped as the distball), sources/javadoc and bookkeeping to ~halve the payload.
+          # `installed/` is the split-local-repository partition holding only artifacts this
+          # reactor installed (see maven resolver split local repository), so archive the whole
+          # tree rather than filtering to io/camunda -- robust if the group id ever changes.
+          # Drop the distro assemblies (shipped as the distball), sources/javadoc and
+          # bookkeeping to ~halve the payload.
           tar \
             --exclude='*.tar.gz' \
             --exclude='*-sources.jar' \
@@ -476,7 +479,7 @@ jobs:
             --exclude='*.lastUpdated' \
             --exclude='_remote.repositories' \
             --exclude='*.repositories' \
-            -cf m2-installed.tar -C "${HOME}/.m2/repository/installed" io/camunda
+            -cf m2-installed.tar -C "${HOME}/.m2/repository/installed" .
           ls -lh m2-installed.tar
       # docker-checks (GitHub-hosted) consumes these via the artifact API.
       - name: Upload distball (artifact)
