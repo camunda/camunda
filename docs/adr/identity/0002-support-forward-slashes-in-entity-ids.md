@@ -132,3 +132,4 @@ without any routing changes.
   not just identity endpoints. Likewise, the relaxed Spring Security firewall is global. This is
   safe because `%2F` in a path segment is only meaningful if the application interprets it —
   existing endpoints with alphanumeric IDs are unaffected.
+
