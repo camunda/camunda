@@ -301,7 +301,7 @@ describe('<FieldsModal />', () => {
 						followUpDateFrom: new Date('2022-01-01'),
 						followUpDateTo: new Date('2022-01-01'),
 						taskId: 'task-0',
-						businessId: 'order-0',
+						businessId: 'eq_order-0',
 						variables: [{name: 'variable-0', value: '"value-0"'}],
 					}}
 					onClose={() => {}}

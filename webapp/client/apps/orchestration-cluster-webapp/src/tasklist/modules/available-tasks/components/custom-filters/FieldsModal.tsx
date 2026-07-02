@@ -40,6 +40,7 @@ import {
 import {ProcessesSelect} from './ProcessesSelect';
 import {ProcessesSelectErrorFallback} from './ProcessesSelectErrorFallback';
 import {MultitenancySelect} from './MultitenancySelect';
+import {AdvancedStringFilter} from './AdvancedStringFilter';
 import styles from './FieldsModal.module.scss';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 
@@ -400,16 +401,13 @@ const FieldsModal: React.FC<Props> = ({isOpen, onClose, onApply, onSave, onEdit,
 												)}
 											</Field>
 
-											<Field name="businessId">
-												{({input}) => (
-													<TextInput
-														{...input}
-														id={input.name}
-														labelText={t('tasklist.customFiltersModalBusinessIdLabel')}
-														className={styles.secondColumn}
-													/>
-												)}
-											</Field>
+											<div className={styles.secondColumn}>
+												<AdvancedStringFilter
+													name="businessId"
+													label={t('tasklist.customFiltersModalBusinessIdLabel')}
+													selectableOperators={['$eq', '$like', '$in']}
+												/>
+											</div>
 
 											<FieldArray name="variables">
 												{({fields, meta: arrayMeta}) => (

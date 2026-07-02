@@ -81,7 +81,7 @@ test.describe('Custom filters', () => {
 				schema: z.object({
 					filter: z.object({
 						state: z.literal('COMPLETED'),
-						businessId: z.literal('ORDER-2024-0042'),
+						businessId: z.object({$eq: z.literal('ORDER-2024-0042')}),
 					}),
 					sort: z.tuple([z.object({field: z.literal('creationDate'), order: z.literal('desc')})]),
 					page: z.object({limit: z.literal(50), from: z.literal(0)}),
@@ -107,7 +107,7 @@ test.describe('Custom filters', () => {
 		const params = new URL(page.url()).searchParams;
 		expect(params.get('filter')).toBe('custom');
 		expect(params.get('state')).toBe('COMPLETED');
-		expect(params.get('businessId')).toBe('ORDER-2024-0042');
+		expect(params.get('businessId')).toBe('eq_ORDER-2024-0042');
 	});
 
 	test('should save a named custom filter and show its link', async ({tasklistIndexPage}) => {
