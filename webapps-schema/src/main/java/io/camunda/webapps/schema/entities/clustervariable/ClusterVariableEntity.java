@@ -160,5 +160,5 @@ public class ClusterVariableEntity implements ExporterEntity<ClusterVariableEnti
         + '}';
   }
 
-  public record MetadataEntry(String key, String value, Long valueNumber) {}
+  public record MetadataEntry(String key, String value, Double valueNumber) {}
 }

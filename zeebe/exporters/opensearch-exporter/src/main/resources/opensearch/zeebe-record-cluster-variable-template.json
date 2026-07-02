@@ -41,19 +41,7 @@
               "type": "keyword"
             },
             "metadata": {
-              "type": "nested",
-              "dynamic": "strict",
-              "properties": {
-                "key": {
-                  "type": "keyword"
-                },
-                "value": {
-                  "type": "keyword"
-                },
-                "valueNumber": {
-                  "type": "long"
-                }
-              }
+              "enabled": false
             }
           }
         }

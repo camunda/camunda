@@ -39,7 +39,7 @@ class SecondaryStorageSchemaConstraintsTest {
 
   // Low-risk types — freely usable without additional justification.
   private static final Set<String> STANDARD_TYPES =
-      Set.of("keyword", "text", "long", "integer", "short", "date", "boolean", "object");
+      Set.of("keyword", "text", "long", "integer", "short", "double", "date", "boolean", "object");
 
   // Complex types — carry significant performance trade-offs; require justification and Data Layer
   // sign-off to extend.
