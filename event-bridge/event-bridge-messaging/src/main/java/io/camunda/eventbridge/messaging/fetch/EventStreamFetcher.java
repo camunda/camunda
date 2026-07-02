@@ -112,16 +112,24 @@ public final class EventStreamFetcher implements AutoCloseable {
           task.responseFuture().complete(null); // Or FetchResponse.empty()
 
       case final OutOfRange outOfRange ->
-          // Fast-Fail: Truncated or uncommitted Raft data. Trigger consumer offset reset.
+          // Fast-Fail: the offset is below the earliest retained record. Trigger consumer reset.
           task.responseFuture()
               .completeExceptionally(
                   new IllegalArgumentException("OFFSET_OUT_OF_RANGE: " + task.offset()));
 
       case final EndOfLog endOfLog -> {
-        // Tip of the log reached. Park to await new appends — unless the deadline has already
-        // passed (e.g. an immediate maxWaitMs=0 fetch, or a long-poll that just timed out and was
-        // re-dispatched), in which case complete empty so the request does not spin.
-        if (clock.millis() >= task.deadlineMs()) {
+        // No committed data at/after the requested offset yet — either it is beyond the highest
+        // committed position or written but not yet committed. A consumer reads only committed
+        // records, so commitPosition + 1 is the caught-up position: at or below it, park to await
+        // the next append; beyond it the consumer is ahead of the committed log and is reset,
+        // matching a fetch past the end of the log.
+        if (task.offset() > preReadWatermark.commitPosition() + 1) {
+          task.responseFuture()
+              .completeExceptionally(
+                  new IllegalArgumentException("OFFSET_OUT_OF_RANGE: " + task.offset()));
+        } else if (clock.millis() >= task.deadlineMs()) {
+          // Deadline already passed (an immediate maxWaitMs=0 fetch, or a long-poll that just timed
+          // out and was re-dispatched) — complete empty so the request does not spin.
           task.responseFuture().complete(null);
         } else {
           purgatory.park(task, actualMinBytes, preReadWatermark);
@@ -173,8 +181,15 @@ public final class EventStreamFetcher implements AutoCloseable {
       final IndexScanResult result = reader.scan(position, limit);
 
       return switch (result) {
+        // A below-earliest offset is unambiguously out of range and must reset the consumer.
         case final IndexScanResult.Truncated t -> OutOfRange.INSTANCE;
-        case final IndexScanResult.FutureOffset f -> OutOfRange.INSTANCE;
+        // FutureOffset = written but not yet committed (offset within the log, beyond the commit
+        // watermark); EndOfLog = offset past the end of the written log. Both mean "no committed
+        // data at/after this offset yet"; whether that is the caught-up position (park) or
+        // genuinely
+        // ahead of the committed log (reset) is decided in doEvaluateTask against the commit
+        // position.
+        case final IndexScanResult.FutureOffset f -> EndOfLog.INSTANCE;
         case final IndexScanResult.EndOfLog e -> EndOfLog.INSTANCE;
 
         case final IndexScanResult.Success success -> {
