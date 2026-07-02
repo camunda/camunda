@@ -20,6 +20,7 @@ import io.camunda.eventbridge.client.internal.consumer.ConsumerImpl;
 import io.camunda.eventbridge.client.internal.consumer.Fetcher;
 import io.camunda.eventbridge.client.internal.consumer.ManagedConsumer;
 import io.camunda.eventbridge.client.internal.producer.BatchPublisherImpl;
+import io.camunda.eventbridge.client.internal.producer.PublishBudget;
 import io.camunda.eventbridge.client.internal.transport.HttpTransport;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -54,6 +55,7 @@ public final class EventBridgeClientImpl implements EventBridgeClient, Fetcher {
   private final ExecutorService consumerExecutor;
   private final HttpTransport transport;
   private final TopicAdminImpl topicAdmin;
+  private final PublishBudget publishBudget;
 
   /** Constructs the client from a fully-resolved {@link ClientConfig}. */
   public EventBridgeClientImpl(final ClientConfig config) {
@@ -63,6 +65,7 @@ public final class EventBridgeClientImpl implements EventBridgeClient, Fetcher {
         Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("eb-consumer-", 0).factory());
     transport = new HttpTransport(config.gatewayUrl());
     topicAdmin = new TopicAdminImpl(transport);
+    publishBudget = new PublishBudget(config.maxPublishBytes());
   }
 
   // -------------------------------------------------------------------------
@@ -70,7 +73,7 @@ public final class EventBridgeClientImpl implements EventBridgeClient, Fetcher {
 
   @Override
   public BatchPublisher newBatch() {
-    return new BatchPublisherImpl(transport);
+    return new BatchPublisherImpl(transport, publishBudget);
   }
 
   @Override
@@ -175,6 +178,7 @@ public final class EventBridgeClientImpl implements EventBridgeClient, Fetcher {
   public void close() {
     consumerExecutor.shutdownNow();
     executor.shutdownNow();
+    publishBudget.close();
     transport.close();
   }
 
@@ -182,7 +186,8 @@ public final class EventBridgeClientImpl implements EventBridgeClient, Fetcher {
    * Default {@link Builder} implementation. Holds the resolved defaults and produces an immutable
    * {@link ClientConfig}: scheduler size {@code 1} (I/O is async on the HTTP client's executor),
    * {@code 5s} long-poll, {@code 1 MiB} fetch, {@code 0} min-bytes, prefetch depth {@code 1},
-   * {@code 64 MiB} max buffered, {@code 3s} heartbeat, and the default hash {@link Partitioner}.
+   * {@code 64 MiB} max buffered, {@code 32 MiB} max in-flight publish, {@code 3s} heartbeat, and
+   * the default hash {@link Partitioner}.
    */
   public static final class BuilderImpl implements Builder {
 
@@ -194,6 +199,7 @@ public final class EventBridgeClientImpl implements EventBridgeClient, Fetcher {
     private int fetchMinBytes = 0;
     private int prefetchDepth = 1;
     private long maxBufferedBytes = 64L << 20;
+    private long maxPublishBytes = 32L << 20;
     private long heartbeatIntervalMs = 3_000L;
     private Partitioner partitioner = Partitioner.defaultHash();
 
@@ -246,6 +252,12 @@ public final class EventBridgeClientImpl implements EventBridgeClient, Fetcher {
     }
 
     @Override
+    public Builder maxPublishBytes(final long maxPublishBytes) {
+      this.maxPublishBytes = maxPublishBytes;
+      return this;
+    }
+
+    @Override
     public Builder heartbeatInterval(final Duration heartbeatInterval) {
       heartbeatIntervalMs = heartbeatInterval.toMillis();
       return this;
@@ -272,6 +284,7 @@ public final class EventBridgeClientImpl implements EventBridgeClient, Fetcher {
               fetchMinBytes,
               prefetchDepth,
               maxBufferedBytes,
+              maxPublishBytes,
               heartbeatIntervalMs,
               partitioner));
     }

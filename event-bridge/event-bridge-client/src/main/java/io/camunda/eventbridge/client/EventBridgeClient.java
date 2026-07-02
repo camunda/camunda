@@ -232,6 +232,14 @@ public interface EventBridgeClient extends AutoCloseable {
     Builder maxBufferedBytes(long maxBufferedBytes);
 
     /**
+     * Sets the maximum total bytes of in-flight publish batches before {@code publishToTopic}
+     * applies backpressure (its returned future stays pending until earlier sends complete). This
+     * bounds producer heap when publishing outruns the network. A single batch larger than the cap
+     * is still admitted once nothing else is in flight. Defaults to {@code 32 MiB}.
+     */
+    Builder maxPublishBytes(long maxPublishBytes);
+
+    /**
      * Sets the interval between scheduled heartbeats to the coordinator. Defaults to {@code 3s}. A
      * shorter interval reacts faster to reassignments at the cost of more coordinator traffic; it
      * must stay well within the coordinator's session timeout.

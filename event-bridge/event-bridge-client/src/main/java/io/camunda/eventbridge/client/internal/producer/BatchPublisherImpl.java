@@ -22,14 +22,20 @@ import java.util.concurrent.CompletableFuture;
  * and publishes them as a single {@code application/octet-stream} POST via the shared {@link
  * HttpTransport}. The batch payload stays in the raw codec; the publish response is a protobuf
  * {@link PublishResponse} parsed here (the transport only carries bytes).
+ *
+ * <p>Each publish reserves its byte size from the client's shared {@link PublishBudget} before it
+ * is sent and releases it when the send completes, so a producer outrunning the network applies
+ * backpressure (the returned future stays pending) rather than buffering unboundedly.
  */
 public final class BatchPublisherImpl implements BatchPublisher {
 
   private final HttpTransport transport;
+  private final PublishBudget budget;
   private final BatchBuilder batchBuilder = new BatchBuilder();
 
-  public BatchPublisherImpl(final HttpTransport transport) {
+  public BatchPublisherImpl(final HttpTransport transport, final PublishBudget budget) {
     this.transport = transport;
+    this.budget = budget;
   }
 
   @Override
@@ -63,8 +69,18 @@ public final class BatchPublisherImpl implements BatchPublisher {
     }
 
     final String path = "/v1/topics/" + topic + "/partitions/" + partitionId + "/records";
-    return transport
-        .postOctetStream(path, batchBuilder.buildSegments())
+    final List<byte[]> segments = batchBuilder.buildSegments();
+    final long bytes = batchBuilder.sizeBytes();
+    // Reserve budget first; release only once the send completes, and only if the reservation was
+    // actually granted (release lives inside the acquire continuation, so a failed acquire frees
+    // nothing it never took).
+    return budget
+        .acquire(bytes)
+        .thenCompose(
+            ignore ->
+                transport
+                    .postOctetStream(path, segments)
+                    .whenComplete((response, error) -> budget.release(bytes)))
         .thenApply(this::parsePublishResponse);
   }
 
