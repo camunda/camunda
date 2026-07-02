@@ -277,39 +277,31 @@ final class ClusterApiUtilsTest {
   }
 
   /**
-   * Discovers all concrete implementations of ClusterConfigurationChangeOperation using reflection.
-   * This method automatically finds all nested classes that implement the interface.
+   * Discovers all concrete record implementations of ClusterConfigurationChangeOperation by
+   * recursively walking the sealed {@code permits} hierarchy.
+   *
+   * <p>This works regardless of whether subtypes are nested inside the top-level interface or
+   * defined in separate top-level files, because Java's {@code getPermittedSubclasses()} follows
+   * the compiler-enforced {@code permits} clause rather than physical class nesting.
    */
   private Set<Class<?>> discoverAllImplementations() {
-    final Set<Class<?>> implementations = new HashSet<>();
-
-    // Get all nested classes from the ClusterConfigurationChangeOperation interface
-    final Class<?>[] nestedClasses = ClusterConfigurationChangeOperation.class.getDeclaredClasses();
     if (!ClusterConfigurationChangeOperation.class.isSealed()) {
       throw new AssertionError("ClusterConfigurationChangeOperation must be sealed");
     }
+    final Set<Class<?>> implementations = new HashSet<>();
+    collectConcretePermittedSubtypes(ClusterConfigurationChangeOperation.class, implementations);
+    return implementations;
+  }
 
-    for (final Class<?> nestedClass : nestedClasses) {
-      // Check if it's a record that implements ClusterConfigurationChangeOperation
-      if (nestedClass.isRecord()
-          && ClusterConfigurationChangeOperation.class.isAssignableFrom(nestedClass)) {
-        implementations.add(nestedClass);
-      }
-
-      // Also check nested classes within nested interfaces (like ScaleUpOperation,
-      // PartitionChangeOperation)
-      if (nestedClass.isInterface()) {
-        final Class<?>[] subNestedClasses = nestedClass.getDeclaredClasses();
-        for (final Class<?> subNestedClass : subNestedClasses) {
-          if (subNestedClass.isRecord()
-              && ClusterConfigurationChangeOperation.class.isAssignableFrom(subNestedClass)) {
-            implementations.add(subNestedClass);
-          }
-        }
+  private static void collectConcretePermittedSubtypes(
+      final Class<?> sealedType, final Set<Class<?>> result) {
+    for (final Class<?> permitted : sealedType.getPermittedSubclasses()) {
+      if (permitted.isRecord()) {
+        result.add(permitted);
+      } else if (permitted.isSealed()) {
+        collectConcretePermittedSubtypes(permitted, result);
       }
     }
-
-    return implementations;
   }
 
   public static Stream<Arguments> provideClusterConfigurationWithExporters() {
