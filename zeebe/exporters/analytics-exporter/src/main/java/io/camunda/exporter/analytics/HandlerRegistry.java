@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Routes records to handlers by (ValueType, Intent) pairs. Supports multiple handlers per
@@ -28,6 +29,8 @@ import java.util.stream.Collectors;
  * and intents.
  */
 final class HandlerRegistry {
+
+  record HandlerEntry(ValueType valueType, Intent intent, Class<?> handlerClass) {}
 
   private final EnumMap<ValueType, Map<Intent, AnalyticsHandler<?>>> handlers =
       new EnumMap<>(ValueType.class);
@@ -57,6 +60,16 @@ final class HandlerRegistry {
     return handlers.entrySet().stream()
         .flatMap(e -> e.getValue().keySet().stream().map(intent -> Map.entry(e.getKey(), intent)))
         .collect(Collectors.toUnmodifiableSet());
+  }
+
+  /** Package-private production seam consumed by {@link AnalyticsExporterDigest}. */
+  Stream<HandlerEntry> handlerEntries() {
+    return handlers.entrySet().stream()
+        .flatMap(
+            e ->
+                e.getValue().entrySet().stream()
+                    .map(
+                        ie -> new HandlerEntry(e.getKey(), ie.getKey(), ie.getValue().getClass())));
   }
 
   /** Routes the record to its handler. Does nothing if no handler is registered. */

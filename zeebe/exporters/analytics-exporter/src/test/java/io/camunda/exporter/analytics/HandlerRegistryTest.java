@@ -9,6 +9,7 @@ package io.camunda.exporter.analytics;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
@@ -16,6 +17,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
@@ -143,6 +145,28 @@ class HandlerRegistryTest {
 
     // when / then — no exception
     registry.handle(record);
+  }
+
+  @Test
+  void shouldExposeRegisteredHandlerEntries() {
+    // given
+    final var registry =
+        new HandlerRegistry()
+            .register(
+                ValueType.PROCESS_INSTANCE_CREATION,
+                ProcessInstanceCreationIntent.CREATED,
+                record -> {})
+            .register(ValueType.USER_TASK, UserTaskIntent.CREATED, record -> {});
+
+    // when
+    final var entries = registry.handlerEntries().toList();
+
+    // then
+    assertThat(entries)
+        .extracting(HandlerRegistry.HandlerEntry::valueType, HandlerRegistry.HandlerEntry::intent)
+        .containsExactlyInAnyOrder(
+            tuple(ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATED),
+            tuple(ValueType.USER_TASK, UserTaskIntent.CREATED));
   }
 
   private static ExporterTestContext testContext() {
