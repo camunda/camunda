@@ -169,6 +169,7 @@
             <dep>io.camunda:camunda-security-protocol</dep>
             <dep>io.camunda:zeebe-stream-platform</dep>
             <dep>io.camunda:zeebe-workflow-engine</dep>
+            <dep>io.camunda:webapps-schema</dep>
             <dep>org.springframework:spring-beans</dep>
             <dep>org.springframework:spring-context</dep>
             <dep>org.springframework:spring-web</dep>
@@ -176,7 +177,6 @@
             <dep>com.fasterxml.jackson.core:jackson-databind</dep>
             <dep>jakarta.validation:jakarta.validation-api</dep>
             <dep>org.springframework.ai:spring-ai-mcp-annotations</dep>
-            <dep>io.camunda:webapps-schema</dep>
           </ignoredUsedUndeclaredDependencies>
         </configuration>
       </plugin>
