@@ -20,6 +20,7 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.TransportFactory;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamService;
+import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Collection;
 import java.util.Map;
@@ -48,7 +49,8 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
                 clusterServices.getCommunicationService(),
                 JobStreamServiceStep::readJobActivationProperties,
                 errorHandlerService,
-                new JobStreamMetrics(brokerStartupContext.getMeterRegistry()));
+                new JobStreamMetrics(brokerStartupContext.getMeterRegistry()),
+                StreamTopics.DEFAULT_GROUP);
     final var errorHandlerStarted = scheduler.submitActor(errorHandlerService);
 
     errorHandlerStarted.onComplete(

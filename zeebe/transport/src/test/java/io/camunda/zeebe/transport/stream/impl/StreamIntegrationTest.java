@@ -35,6 +35,7 @@ import io.camunda.zeebe.transport.stream.api.RemoteStreamService;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamer;
 import io.camunda.zeebe.transport.stream.api.StreamResponseException;
 import io.camunda.zeebe.transport.stream.impl.messages.ErrorCode;
+import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -408,7 +409,8 @@ final class StreamIntegrationTest {
                 return data;
               },
               dynamicErrorHandler,
-              RemoteStreamMetrics.noop());
+              RemoteStreamMetrics.noop(),
+              StreamTopics.DEFAULT_GROUP);
     }
 
     private void start() {
@@ -444,7 +446,9 @@ final class StreamIntegrationTest {
       final var factory = new TransportFactory(actorScheduler);
       streamService =
           factory.createRemoteStreamClient(
-              cluster.getCommunicationService(), ClientStreamMetrics.noop());
+              cluster.getCommunicationService(),
+              ClientStreamMetrics.noop(),
+              StreamTopics.DEFAULT_GROUP);
     }
 
     private void start() {

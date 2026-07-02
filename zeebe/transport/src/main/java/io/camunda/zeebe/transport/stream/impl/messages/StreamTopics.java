@@ -14,6 +14,8 @@ public enum StreamTopics {
   REMOVE_ALL("stream-remove-all"),
   RESTART_STREAMS("stream-recreate");
 
+  public static final String DEFAULT_GROUP = "default";
+
   private final String topic;
 
   StreamTopics(final String topic) {
@@ -22,5 +24,12 @@ public enum StreamTopics {
 
   public String topic() {
     return topic;
+  }
+
+  public String topic(final String physicalTenantId) {
+    if (DEFAULT_GROUP.equals(physicalTenantId)) {
+      return topic;
+    }
+    return physicalTenantId + "-" + topic;
   }
 }
