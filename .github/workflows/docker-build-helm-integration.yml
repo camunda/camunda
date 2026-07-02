@@ -771,7 +771,7 @@ jobs:
       - name: Post AlwaysGreen failure feedback
         if: failure()
         continue-on-error: true
-        uses: camunda/c8-cross-component-e2e-tests/.github/actions/post-failure-feedback@main
+        uses: ./.github/actions/post-failure-feedback
         with:
           failure_category: test-infra
           stage: helm-integration
@@ -1187,3 +1187,4 @@ jobs:
           name: alwaysgreen-failure-context-${{ github.job }}
           path: ${{ runner.temp }}/alwaysgreen-context-${{ github.job }}.json
           retention-days: 5
+
