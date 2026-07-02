@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.1">
 <title data-rh="true">CI Runbooks | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-56524/ci-runbooks/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="CI Runbooks | Camunda Platform"><meta data-rh="true" name="description" content="This page collects information on CI incident runbooks and alerts that affect"><meta data-rh="true" property="og:description" content="This page collects information on CI incident runbooks and alerts that affect"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-56524/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-56524/ci-runbooks/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-56524/ci-runbooks/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-56524/ci-runbooks/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"CI","item":"https://camunda.github.io/camunda/pr-preview/pr-56524/ci"},{"@type":"ListItem","position":2,"name":"CI Runbooks","item":"https://camunda.github.io/camunda/pr-preview/pr-56524/ci-runbooks"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-56524/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-56524/assets/js/runtime~main.b22f82c9.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-56524/assets/js/main.ccb11e4c.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-56524/assets/js/runtime~main.ca4ce601.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-56524/assets/js/main.2b2fcb62.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -96,7 +96,7 @@ cases in order to ensure CI stability again.</p>
 artifacts might not get built or uploaded to artifact repositories, and indicates CI instability
 since we expect only green builds. Unlike merge-queue failures which block PRs, base-branch failures
 affect artifact availability and release readiness.</p>
-<p>Each alert instance is grouped by workflow job name and thus span multiple base branches, and includes:</p>
+<p>Each alert instance is grouped by workflow job name and thus spans multiple base branches, and includes:</p>
 <ul>
 <li class="">Number of unsuccessful runs in the evaluation window</li>
 <li class="">Links to failed workflow runs in the evaluation window (useful for root cause analysis)</li>
