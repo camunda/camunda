@@ -457,6 +457,114 @@ func stripZstdJniNativeLibs(camundaVersion, osType, arch string) error {
 	return nil
 }
 
+// conscryptNativeSuffix returns the platform suffix used by conscrypt-openjdk-uber
+// to identify native library entries under META-INF/native/. Returns empty string
+// when the JAR has no native lib for the target platform (e.g., aarch64 builds),
+// in which case all native entries should be dropped.
+func conscryptNativeSuffix(osType, arch string) string {
+	switch osType {
+	case "linux":
+		switch arch {
+		case "x86_64":
+			return "-linux-x86_64."
+		}
+	case "darwin":
+		switch arch {
+		case "x86_64":
+			return "-osx-x86_64."
+		}
+	case "windows":
+		switch arch {
+		case "x86_64":
+			return "-windows-x86_64."
+		}
+	}
+	// No native lib exists for this platform (e.g., aarch64).
+	return ""
+}
+
+// isConscryptNativeEntry reports whether a ZIP entry is a conscrypt native lib.
+// These live under META-INF/native/ and end with a native extension.
+func isConscryptNativeEntry(name string) bool {
+	if !strings.HasPrefix(name, "META-INF/native/") {
+		return false
+	}
+	return strings.HasSuffix(name, ".so") || strings.HasSuffix(name, ".dylib") || strings.HasSuffix(name, ".dll")
+}
+
+// stripConscryptNativeLibs strips unused platform native libs from conscrypt JARs.
+// When no native lib exists for the target platform (aarch64), all native entries
+// are dropped — conscrypt falls back to JCA providers at runtime.
+func stripConscryptNativeLibs(camundaVersion, osType, arch string) error {
+	suffix := conscryptNativeSuffix(osType, arch)
+
+	pattern := filepath.Join("camunda-zeebe-"+camundaVersion, "lib", "conscrypt-openjdk-uber-*.jar")
+	jars, err := filepath.Glob(pattern)
+	if err != nil {
+		return fmt.Errorf("stripConscryptNativeLibs: failed to glob %s: %w", pattern, err)
+	}
+	if len(jars) == 0 {
+		log.Warn().Str("pattern", pattern).Msg("no conscrypt jar found; skipping native lib stripping")
+		return nil
+	}
+	if len(jars) > 1 {
+		log.Warn().Strs("jars", jars).Msg("multiple conscrypt jars found; stripping only the first")
+	}
+
+	// Pre-scan: count entries to drop and verify idempotency.
+	// When suffix is non-empty, also verify at least one entry matches —
+	// prevents silently dropping all native libs if the suffix mapping is wrong.
+	r, err := zip.OpenReader(jars[0])
+	if err != nil {
+		return fmt.Errorf("stripConscryptNativeLibs: open %s: %w", jars[0], err)
+	}
+	var toDrop int
+	var kept int
+	for _, f := range r.File {
+		if isConscryptNativeEntry(f.Name) {
+			if suffix == "" || !strings.Contains(f.Name, suffix) {
+				toDrop++
+			} else {
+				kept++
+			}
+		}
+	}
+	if err := r.Close(); err != nil {
+		return fmt.Errorf("stripConscryptNativeLibs: close %s: %w", jars[0], err)
+	}
+
+	if suffix != "" && toDrop > 0 && kept == 0 {
+		return fmt.Errorf("stripConscryptNativeLibs: native entries exist in %s but none match suffix %q: verify conscryptNativeSuffix mapping", jars[0], suffix)
+	}
+
+	if toDrop == 0 {
+		log.Info().Str("jar", jars[0]).Msg("no unused conscrypt native libs to strip (already stripped?)")
+		return nil
+	}
+
+	keepDesc := suffix
+	if keepDesc == "" {
+		keepDesc = "(none — no native lib for this platform)"
+	}
+	log.Info().Str("jar", jars[0]).Str("keeping", keepDesc).Int("dropping", toDrop).Msg("stripping unused conscrypt native libs")
+
+	shouldDrop := func(name string) bool {
+		if !isConscryptNativeEntry(name) {
+			return false
+		}
+		// No native lib for this platform: drop all native entries.
+		if suffix == "" {
+			return true
+		}
+		// Keep only the entry matching our platform suffix.
+		return !strings.Contains(name, suffix)
+	}
+	if _, err := rewriteJarDroppingEntries(jars[0], shouldDrop); err != nil {
+		return err
+	}
+	return nil
+}
+
 func getJavaArtifactsToken() (string, error) {
 	javaArtifactsUser := os.Getenv("JAVA_ARTIFACTS_USER")
 	javaArtifactsPassword := os.Getenv("JAVA_ARTIFACTS_PASSWORD")
@@ -894,6 +1002,10 @@ func New(camundaVersion, connectorsVersion string) error {
 
 	if err := stripZstdJniNativeLibs(camundaVersion, osType, architecture); err != nil {
 		return fmt.Errorf("package %s: failed to strip zstd-jni native libs: %w", osType, err)
+	}
+
+	if err := stripConscryptNativeLibs(camundaVersion, osType, architecture); err != nil {
+		return fmt.Errorf("package %s: failed to strip conscrypt native libs: %w", osType, err)
 	}
 
 	err = downloadAndExtract(connectorsFilePath, connectorsUrl, connectorsFilePath, ".", javaArtifactsToken, func(_, _ string) error { return nil })
