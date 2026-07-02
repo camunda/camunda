@@ -39,17 +39,23 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
   private final ClusterCommunicationService communicationService;
   private final ClientStreamRegistry<M> registry;
   private final ClientStreamApiHandler apiHandler;
+  private final String physicalTenantId;
 
   public ClientStreamServiceImpl(
-      final ClusterCommunicationService communicationService, final ClientStreamMetrics metrics) {
+      final ClusterCommunicationService communicationService,
+      final ClientStreamMetrics metrics,
+      final String physicalTenantId) {
     this.communicationService = communicationService;
+    this.physicalTenantId = physicalTenantId;
     registry = new ClientStreamRegistry<>(metrics);
 
     // ClientStreamRequestManager must use same actor as this because it is mutating shared
     // ClientStream objects.
     clientStreamManager =
         new ClientStreamManager<>(
-            registry, new ClientStreamRequestManager<>(communicationService, actor), metrics);
+            registry,
+            new ClientStreamRequestManager<>(communicationService, actor, physicalTenantId),
+            metrics);
     apiHandler = new ClientStreamApiHandler(clientStreamManager, actor);
   }
 
@@ -63,7 +69,7 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
         actor::run);
 
     communicationService.replyTo(
-        StreamTopics.RESTART_STREAMS.topic(),
+        StreamTopics.RESTART_STREAMS.topic(physicalTenantId),
         Function.identity(),
         apiHandler::handleRestartRequest,
         Function.identity(),

@@ -51,7 +51,8 @@ class ClientStreamManagerTest {
   private final ClientStreamManager<TestMetadata> clientStreamManager =
       new ClientStreamManager<>(
           registry,
-          new ClientStreamRequestManager<>(mockTransport, new TestConcurrencyControl()),
+          new ClientStreamRequestManager<>(
+              mockTransport, new TestConcurrencyControl(), StreamTopics.DEFAULT_GROUP),
           metrics);
 
   @BeforeEach

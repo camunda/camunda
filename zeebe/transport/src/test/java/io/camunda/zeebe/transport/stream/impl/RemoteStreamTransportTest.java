@@ -61,7 +61,8 @@ final class RemoteStreamTransportTest {
                 data.wrap(buffer, 0, buffer.capacity());
                 return data;
               }),
-          senderBackoffSupplier);
+          senderBackoffSupplier,
+          StreamTopics.DEFAULT_GROUP);
   private final AtomixCluster receiver = createClusterNode(nodes.get(1), nodes);
 
   @AfterEach
