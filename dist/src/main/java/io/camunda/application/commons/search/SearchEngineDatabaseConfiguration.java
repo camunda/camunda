@@ -47,14 +47,11 @@ public class SearchEngineDatabaseConfiguration {
       final SearchEngineSchemaManagerPropertiesOverride schemaManagerOverride) {
     return physicalTenantResolver.mapValues(
         tenantCamunda ->
-            SearchEngineConfiguration.of(
-                b ->
-                    b.connect(connectOverride.searchEngineConnectProperties(tenantCamunda))
-                        .index(indexOverride.searchEngineIndexProperties(tenantCamunda))
-                        .retention(retentionOverride.searchEngineRetentionProperties(tenantCamunda))
-                        .schemaManager(
-                            schemaManagerOverride.searchEngineSchemaManagerProperties(
-                                tenantCamunda))));
+            buildConfiguration(
+                connectOverride.searchEngineConnectProperties(tenantCamunda),
+                indexOverride.searchEngineIndexProperties(tenantCamunda),
+                retentionOverride.searchEngineRetentionProperties(tenantCamunda),
+                schemaManagerOverride.searchEngineSchemaManagerProperties(tenantCamunda)));
   }
 
   @Bean
@@ -81,18 +78,26 @@ public class SearchEngineDatabaseConfiguration {
       final SearchEngineIndexProperties searchEngineIndexProperties,
       final SearchEngineRetentionProperties searchEngineRetentionProperties,
       final SearchEngineSchemaManagerProperties searchEngineSchemaManagerProperties) {
+    return buildConfiguration(
+        searchEngineConnectProperties,
+        searchEngineIndexProperties,
+        searchEngineRetentionProperties,
+        searchEngineSchemaManagerProperties);
+  }
+
+  private static SearchEngineConfiguration buildConfiguration(
+      final SearchEngineConnectProperties connect,
+      final SearchEngineIndexProperties index,
+      final SearchEngineRetentionProperties retention,
+      final SearchEngineSchemaManagerProperties schemaManager) {
 
     // Override schema creation if database type is "none"
-    final DatabaseType databaseType = searchEngineConnectProperties.getTypeEnum();
+    final DatabaseType databaseType = connect.getTypeEnum();
     if (DatabaseConfig.NONE.equalsIgnoreCase(databaseType.name())) {
-      searchEngineSchemaManagerProperties.setCreateSchema(false);
+      schemaManager.setCreateSchema(false);
     }
 
     return SearchEngineConfiguration.of(
-        b ->
-            b.connect(searchEngineConnectProperties)
-                .index(searchEngineIndexProperties)
-                .retention(searchEngineRetentionProperties)
-                .schemaManager(searchEngineSchemaManagerProperties));
+        b -> b.connect(connect).index(index).retention(retention).schemaManager(schemaManager));
   }
 }
