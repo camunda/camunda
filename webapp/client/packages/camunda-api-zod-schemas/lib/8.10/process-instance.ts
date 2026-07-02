@@ -235,7 +235,7 @@ const getProcessInstanceWaitStateStatistics: Endpoint<Pick<ProcessInstance, 'pro
 
 const waitStateStatisticSchema = z.object({
 	elementId: z.string(),
-	waitingCount: z.number(),
+	waitingCount: z.number().int(),
 });
 type WaitStateStatistic = z.infer<typeof waitStateStatisticSchema>;
 
