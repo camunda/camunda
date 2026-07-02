@@ -73,11 +73,36 @@ final class OpensearchIncidentUpdateRepositoryIT extends IncidentUpdateRepositor
         .toList();
   }
 
-  private org.opensearch.client.transport.rest_client.RestClientTransport createTransport() {
-    final var restClient =
-        org.opensearch.client.RestClient.builder(HttpHost.create(CONTAINER.getHttpHostAddress()))
-            .build();
-    return new org.opensearch.client.transport.rest_client.RestClientTransport(
-        restClient, new org.opensearch.client.json.jackson.JacksonJsonpMapper());
+  @Override
+  protected Collection<RoutedDocument> searchWithRouting(
+      final String index, final String field, final List<String> terms) throws IOException {
+    final var client = new OpenSearchClient(transport);
+    final var values =
+        terms.stream().map(org.opensearch.client.opensearch._types.FieldValue::of).toList();
+    final var query =
+        org.opensearch.client.opensearch._types.query_dsl.QueryBuilders.terms()
+            .field(field)
+            .terms(v -> v.value(values))
+            .build()
+            .toQuery();
+    return client.search(s -> s.index(index).query(query), Object.class).hits().hits().stream()
+        .map(hit -> new RoutedDocument(hit.id(), hit.routing()))
+        .toList();
+  }
+
+  private OpenSearchTransport createTransport() {
+    try {
+      return ApacheHttpClient5TransportBuilder.builder(
+              HttpHost.create(CONTAINER.getHttpHostAddress()))
+          .setHttpClientConfigCallback(
+              httpClientBuilder -> {
+                httpClientBuilder.disableContentCompression();
+                return httpClientBuilder;
+              })
+          .setMapper(new JacksonJsonpMapper())
+          .build();
+    } catch (final Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 }

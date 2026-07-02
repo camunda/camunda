@@ -124,16 +124,19 @@ public class PostImporterQueueFromIncidentHandlerTest {
   }
 
   @Test
-  void shouldAddEntityOnFlush() {
+  void shouldAddEntityWithPartitionRoutingOnFlush() {
     // given
-    final PostImporterQueueEntity inputEntity = new PostImporterQueueEntity().setId("111");
+    final int partitionId = 3;
+    final PostImporterQueueEntity inputEntity =
+        new PostImporterQueueEntity().setId("111").setPartitionId(partitionId);
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
     underTest.flush(inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).add(indexName, inputEntity);
+    verify(mockRequest, times(1))
+        .addWithRouting(indexName, inputEntity, String.valueOf(partitionId));
   }
 
   @Test
