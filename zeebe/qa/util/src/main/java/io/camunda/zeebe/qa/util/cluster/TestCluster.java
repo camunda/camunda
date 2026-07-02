@@ -142,9 +142,11 @@ public final class TestCluster implements CloseableSilently {
             .toArray(CompletableFuture[]::new);
     try {
       CompletableFuture.allOf(started).get(2, TimeUnit.MINUTES);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException("Interrupted while starting cluster " + name, e);
     } catch (final Exception e) {
-      LOGGER.error("Failed to start cluster", e);
-      throw new RuntimeException(e);
+      throw new RuntimeException("Failed to start cluster " + name, e);
     }
     return this;
   }
