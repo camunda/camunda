@@ -98,7 +98,6 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
             item.role === 'TOOL_RESULT' ? (
               <ToolResultMessage
                 key={item.historyItemKey}
-                historyItemKey={item.historyItemKey}
                 availableTools={availableTools}
                 toolCalls={item.toolCalls}
                 result={item.content}

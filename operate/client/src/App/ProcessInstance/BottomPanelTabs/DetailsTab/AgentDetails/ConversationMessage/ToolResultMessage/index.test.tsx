@@ -13,7 +13,6 @@ describe('<ToolResultMessage />', () => {
   it('should render nothing without tool call information', () => {
     const {container} = render(
       <ToolResultMessage
-        historyItemKey="1"
         availableTools={[]}
         toolCalls={[]}
         result={[{contentType: 'TEXT', text: 'Tool output here'}]}
@@ -26,7 +25,6 @@ describe('<ToolResultMessage />', () => {
   it('should render the tool name and a result preview', () => {
     render(
       <ToolResultMessage
-        historyItemKey="1"
         availableTools={[]}
         toolCalls={[
           {toolCallId: '1', toolName: 'search', elementId: null, arguments: {}},
@@ -45,7 +43,6 @@ describe('<ToolResultMessage />', () => {
   it('should render a compact JSON preview for object content', () => {
     render(
       <ToolResultMessage
-        historyItemKey="1"
         availableTools={[]}
         toolCalls={[
           {toolCallId: '1', toolName: 'search', elementId: null, arguments: {}},
@@ -67,7 +64,6 @@ describe('<ToolResultMessage />', () => {
   it('should show a fallback message when the result has no content', () => {
     render(
       <ToolResultMessage
-        historyItemKey="1"
         availableTools={[]}
         toolCalls={[
           {toolCallId: '1', toolName: 'search', elementId: null, arguments: {}},
@@ -82,7 +78,6 @@ describe('<ToolResultMessage />', () => {
   it('should show a fallback message for unsupported content types', () => {
     render(
       <ToolResultMessage
-        historyItemKey="1"
         availableTools={[]}
         toolCalls={[
           {toolCallId: '1', toolName: 'search', elementId: null, arguments: {}},

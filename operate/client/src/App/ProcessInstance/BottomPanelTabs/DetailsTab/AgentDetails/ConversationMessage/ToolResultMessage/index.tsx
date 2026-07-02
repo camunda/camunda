@@ -37,14 +37,12 @@ const getResultPreview = (result: ContentItem[]): string => {
 };
 
 type ToolResultMessageProps = {
-  historyItemKey?: string;
   availableTools: AgentTool[];
   toolCalls: AgentInstanceToolCall[];
   result: ContentItem[];
 };
 
 const ToolResultMessage: React.FC<ToolResultMessageProps> = ({
-  historyItemKey,
   toolCalls,
   result,
 }) => {
@@ -59,7 +57,7 @@ const ToolResultMessage: React.FC<ToolResultMessageProps> = ({
   return (
     <Container
       $actor="TOOL_RESULT"
-      data-testid={`conversation-message${historyItemKey ? `-${historyItemKey}` : ''}`}
+      data-testid={`tool-call-result-${toolCall.toolCallId}`}
       aria-label={`Result for "${toolCall.toolName}" tool call`}
     >
       <ToolHeader>
