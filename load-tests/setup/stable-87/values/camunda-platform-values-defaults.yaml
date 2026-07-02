@@ -369,7 +369,7 @@ zeebe:
     ## @param zeebe.retention.enabled if true, the ILM Policy is created and applied to the index templates.
     enabled: true
     ## @param zeebe.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
-    minimumAge: 1d # Optimize needs time to import data before ILM cleanup
+    minimumAge: 3d # Optimize needs time to import data before ILM cleanup (see #56443)
   # @param core.env can be used to set extra environment variables in each broker container
   env:
     # Enable JSON logging for google cloud stackdriver

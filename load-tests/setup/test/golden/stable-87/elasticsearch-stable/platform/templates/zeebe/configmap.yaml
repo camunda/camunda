@@ -28,7 +28,7 @@ data:
                 prefix: "zeebe-record"
               retention:
                 enabled: true
-                minimumAge: "1d"
+                minimumAge: "3d"
                 policyName: "zeebe-record-retention-policy"
         gateway:
           enable: true
