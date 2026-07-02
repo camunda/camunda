@@ -84,7 +84,19 @@ public final class ElasticsearchConnector {
     if (security != null && security.isEnabled()) {
       setupSSLContext(httpAsyncClientBuilder, security);
     }
+
+    setupConnectionPool(httpAsyncClientBuilder, configuration);
     return httpAsyncClientBuilder;
+  }
+
+  private void setupConnectionPool(
+      final HttpAsyncClientBuilder httpAsyncClientBuilder, final ConnectConfiguration elsConfig) {
+    if (elsConfig.getMaxConnections() != null) {
+      httpAsyncClientBuilder.setMaxConnTotal(elsConfig.getMaxConnections());
+    }
+    if (elsConfig.getMaxConnectionsPerRoute() != null) {
+      httpAsyncClientBuilder.setMaxConnPerRoute(elsConfig.getMaxConnectionsPerRoute());
+    }
   }
 
   private void setupSSLContext(

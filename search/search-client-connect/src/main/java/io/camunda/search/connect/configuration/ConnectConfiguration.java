@@ -23,6 +23,8 @@ public class ConnectConfiguration {
 
   private Integer socketTimeout;
   private Integer connectTimeout;
+  private Integer maxConnections;
+  private Integer maxConnectionsPerRoute;
 
   private String url = URL_DEFAULT;
   private String username;
@@ -78,6 +80,22 @@ public class ConnectConfiguration {
 
   public void setConnectTimeout(Integer connectTimeout) {
     this.connectTimeout = connectTimeout;
+  }
+
+  public Integer getMaxConnections() {
+    return maxConnections;
+  }
+
+  public void setMaxConnections(Integer maxConnections) {
+    this.maxConnections = maxConnections;
+  }
+
+  public Integer getMaxConnectionsPerRoute() {
+    return maxConnectionsPerRoute;
+  }
+
+  public void setMaxConnectionsPerRoute(Integer maxConnectionsPerRoute) {
+    this.maxConnectionsPerRoute = maxConnectionsPerRoute;
   }
 
   public String getUrl() {
