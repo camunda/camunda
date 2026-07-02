@@ -60,7 +60,7 @@ const ToolResultMessage: React.FC<ToolResultMessageProps> = ({
     <Container
       $actor="TOOL_RESULT"
       data-testid={`conversation-message${historyItemKey ? `-${historyItemKey}` : ''}`}
-      aria-label={`Result for ${toolCall.toolName} tool call`}
+      aria-label={`Result for "${toolCall.toolName}" tool call`}
     >
       <ToolHeader>
         <Tools size={12} />

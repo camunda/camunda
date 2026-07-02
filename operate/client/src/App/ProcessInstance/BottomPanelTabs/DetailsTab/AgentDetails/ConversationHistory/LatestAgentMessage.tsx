@@ -36,7 +36,7 @@ const LatestAgentMessage: React.FC<LatestAgentMessageProps> = ({
     return <StatusHint>Failed to load latest agent message.</StatusHint>;
   }
 
-  if (data === null) {
+  if (data === null || data.role !== 'ASSISTANT') {
     return <StatusHint>The agent has not produced a message yet.</StatusHint>;
   }
 
