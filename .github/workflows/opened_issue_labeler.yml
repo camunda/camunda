@@ -71,9 +71,6 @@ jobs:
         roleId: ${{ secrets.VAULT_ROLE_ID }}
         secretId: ${{ secrets.VAULT_SECRET_ID }}
         exportEnv: false
-        # Reuses the QA-path Claude API key already used by the nightly-fix workflow.
-        # Alternative if QA-path access is ever restricted: add CLAUDE_API_KEY under
-        # secret/data/products/camunda/ci/camunda and read it here instead.
         secrets: |
           secret/data/products/qa/ci/common CLAUDE_API_KEY | ANTHROPIC_API_KEY ;
     - name: Set up Node
@@ -85,7 +82,7 @@ jobs:
         # renovate: datasource=npm depName=@anthropic-ai/claude-code
         CLAUDE_CODE_VERSION: '2.1.198'
       run: |
-        npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
+        npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
         claude --version
     - name: Run component auto-labeler
       env:

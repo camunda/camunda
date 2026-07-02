@@ -5,6 +5,7 @@ You are labeling a single GitHub issue in `camunda/camunda` that may be missing 
 Process issue number `$ISSUE_NUMBER` in repo `$REPO`. Use the `gh` CLI for all GitHub actions (`gh issue view`, `gh issue edit`, `gh issue comment`); `GH_TOKEN` is already set with write access. Do not touch any other issue.
 
 ## Step 1 — read and check idempotency
+
 Run: `gh issue view "$ISSUE_NUMBER" --repo "$REPO" --json number,title,body,labels,comments`
 
 If `$FORCE` is NOT `true`:
@@ -12,6 +13,7 @@ If `$FORCE` is NOT `true`:
 - If any existing comment body contains the marker `<!-- auto-project-label -->`: STOP — it has already been processed.
 
 ## Step 2 — determine the best-fit component
+
 Choose EXACTLY ONE label from the list at the bottom. Signal priority:
 1. Template markers in the body (e.g. `Zeebe-`, `Operate-`, `Identity-`, `Data Layer-`, `Optimize-`, `Tasklist-`, `C8-API-`, `Clients-`, `Feel-`, `Load Tests-`, `Spring Boot Starter-`, `Management Identity-`, `Camunda Process Test-`).
 2. Existing `area/*` and other labels on the issue.
@@ -21,6 +23,7 @@ Choose EXACTLY ONE label from the list at the bottom. Signal priority:
 Be opinionated: apply your best-fit even when confidence is low — the comment invites the author to correct it. Only decline to label when there is essentially ZERO signal (e.g. an empty body and an uninformative title with nothing to reason from).
 
 ## Step 3a — you can choose a component
+
 1. Apply the label and remove the stale tag in one command (include `--remove-label` ONLY if the issue currently has `needs component label`):
    `gh issue edit "$ISSUE_NUMBER" --repo "$REPO" --add-label "component/CHOSEN" --remove-label "needs component label"`
 2. Post a comment with `gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body "..."`. Choose wording by confidence.
@@ -57,6 +60,7 @@ This issue had no `component/*` label. My best-fit read is below, but I'm not hi
 <!-- auto-project-label -->
 
 ## Step 3b — you genuinely cannot choose (zero signal)
+
 1. Do NOT apply a component label.
 2. Ensure `needs component label` is present (add it only if the issue doesn't already have it): `gh issue edit "$ISSUE_NUMBER" --repo "$REPO" --add-label "needs component label"`
 3. Post exactly this comment:
@@ -70,11 +74,13 @@ I couldn't confidently determine a component for this issue from its title and d
 <!-- auto-project-label -->
 
 ## Rules
+
 - Assess ONCE. Every comment you post MUST end with the hidden marker `<!-- auto-project-label -->`.
 - Only ever add one `component/*` label and (optionally) remove `needs component label`. Never add, remove, or change any other label.
 - Exactly one component label.
 
 ## The 44 component/* labels (choose one, verbatim)
+
 <!-- Keep this list in sync with the component/* labels in camunda/camunda. Update manually when labels are added or removed. -->
 - component/camunda — affects the complete monorepo / cross-cutting (only for genuinely repo-wide work)
 - component/backend, component/frontend — broad; prefer something more specific when possible
@@ -86,3 +92,4 @@ I couldn't confidently determine a component for this issue from its title and d
 - component/data-layer — Data Layer team: search/query APIs, indices, secondary storage; component/rdbms — RDBMS support; component/db — database; component/document-handling — document storage/handling; component/schema-manager — schema management
 - component/feel-js, component/feel-scala — FEEL engines; component/mcp — OC MCP gateways
 - component/monitor — metrics/prometheus/grafana; component/load-tests — load tests; component/qa — QA infrastructure; component/build-pipeline — CI/build pipeline; component/release — monorepo release process; component/backup — backup
+
