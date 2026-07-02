@@ -94,7 +94,7 @@ test.describe.parallel('Complete User Task Tests', () => {
   });
 
   test('Complete user task - not found', async ({request}) => {
-    const unknownUserTaskKey = '2251799813694876';
+    const unknownUserTaskKey = '9999999999999999';
     const res = await completeUserTask(request, unknownUserTaskKey, {});
     await assertNotFoundRequest(
       res,

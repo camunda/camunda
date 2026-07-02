@@ -80,7 +80,7 @@ test.describe.parallel('Unassign User Task Tests', () => {
   });
 
   test('Unassign user task - not found', async ({request}) => {
-    const unknownUserTaskKey = '2251799813694876';
+    const unknownUserTaskKey = '9999999999999999';
     const res = await request.delete(
       buildUrl(`/user-tasks/${unknownUserTaskKey}/assignee`),
       {
