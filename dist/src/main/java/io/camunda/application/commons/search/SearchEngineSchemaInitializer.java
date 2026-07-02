@@ -19,6 +19,7 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -28,6 +29,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 
+/**
+ * Initializes the search engine schema for every physical tenant at startup, running up to {@link
+ * #MAX_PARALLEL_SCHEMA_INITS} tenant initializations in parallel.
+ *
+ * <p>Failure semantics: in synchronous mode (gateway enabled) any single tenant failure aborts
+ * application startup; in asynchronous mode a failure is logged at error level together with the
+ * tenants left without an initialized schema, and {@link #isInitialized()} / {@link
+ * #isInitialized(String)} keep reporting {@code false} for them. The RDBMS counterpart ({@code
+ * DefaultRdbmsSchemaManagerRegistry}) still initializes tenants sequentially; converging both sides
+ * on parallel per-tenant orchestration is tracked in
+ * https://github.com/camunda/camunda/issues/54299.
+ */
 public class SearchEngineSchemaInitializer implements InitializingBean, SchemaManagerContainer {
   private static final int MAX_PARALLEL_SCHEMA_INITS = 4;
   private static final Logger LOGGER = LoggerFactory.getLogger(SearchEngineSchemaInitializer.class);
@@ -128,7 +141,11 @@ public class SearchEngineSchemaInitializer implements InitializingBean, SchemaMa
     future.whenCompleteAsync(
         (result, error) -> {
           if (error != null) {
-            LOGGER.warn("Failed to initialize search engine schema", error);
+            LOGGER.error(
+                "Failed to initialize search engine schema; physical tenants without an"
+                    + " initialized schema: {}",
+                uninitializedTenantIds(),
+                error);
           } else {
             LOGGER.info("Search engine schema initialization complete.");
           }
@@ -189,6 +206,13 @@ public class SearchEngineSchemaInitializer implements InitializingBean, SchemaMa
   @FunctionalInterface
   interface TenantSchemaStartup {
     void run() throws IOException;
+  }
+
+  private List<String> uninitializedTenantIds() {
+    return initialized.entrySet().stream()
+        .filter(entry -> !entry.getValue().get())
+        .map(Map.Entry::getKey)
+        .toList();
   }
 
   /**
