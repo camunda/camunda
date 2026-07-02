@@ -808,6 +808,7 @@ jobs:
     permissions:
       contents: read
       id-token: write  # granted through to the reusable workflow's WIF GCS auth
+      actions: write   # reusable workflow's send-slack-notification job declares it; validated at startup even though ci.yml never triggers it
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.generate-db-versions.outputs.ci-database-matrix) }}
@@ -828,6 +829,7 @@ jobs:
     permissions:
       contents: read
       id-token: write  # granted through to the reusable workflow's WIF GCS auth
+      actions: write   # reusable workflow's send-slack-notification job declares it; validated at startup even though ci.yml never triggers it
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.generate-db-versions.outputs.ci-database-matrix) }}
@@ -852,6 +854,7 @@ jobs:
     permissions:
       contents: read
       id-token: write  # granted through to the reusable workflow's WIF GCS auth
+      actions: write   # reusable workflow's send-slack-notification job declares it; validated at startup even though ci.yml never triggers it
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.generate-db-versions.outputs.ci-database-matrix) }}
