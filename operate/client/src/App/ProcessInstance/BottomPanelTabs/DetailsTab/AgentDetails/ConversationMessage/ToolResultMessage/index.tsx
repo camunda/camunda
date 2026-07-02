@@ -24,15 +24,16 @@ import {Button} from '@carbon/react';
 type ContentItem = AgentInstanceHistoryItem['content'][number];
 
 const getResultPreview = (result: ContentItem[]): string => {
-  const entry = result[0];
-  if (!entry) {
-    return 'Tool result has no content.';
-  } else if (entry.contentType === 'TEXT') {
-    return entry.text;
-  } else if (entry.contentType === 'OBJECT') {
-    return JSON.stringify(entry.object);
-  } else {
-    return 'Tool result has no viewable content.';
+  const entry = result.find(
+    (item) => item.contentType === 'TEXT' || item.contentType === 'OBJECT',
+  );
+  switch (entry?.contentType) {
+    case 'TEXT':
+      return entry.text;
+    case 'OBJECT':
+      return JSON.stringify(entry.object);
+    default:
+      return 'The tool call did not return content.';
   }
 };
 

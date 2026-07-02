@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen} from 'modules/testing-library';
+import {render, screen, within} from 'modules/testing-library';
 import {ToolResultMessage} from './index';
 
 describe('<ToolResultMessage />', () => {
@@ -33,11 +33,12 @@ describe('<ToolResultMessage />', () => {
       />,
     );
 
-    expect(screen.getByRole('heading', {name: 'search'})).toBeInTheDocument();
-    expect(screen.getByText('Tool output here')).toBeInTheDocument();
-    expect(
-      screen.getByLabelText('Result for search tool call'),
-    ).toBeInTheDocument();
+    const message = within(
+      screen.getByRole('article', {name: 'Result for "search" tool call'}),
+    );
+
+    expect(message.getByRole('heading', {name: 'search'})).toBeInTheDocument();
+    expect(message.getByText('Tool output here')).toBeInTheDocument();
   });
 
   it('should render a compact JSON preview for object content', () => {
@@ -61,21 +62,7 @@ describe('<ToolResultMessage />', () => {
     ).toBeInTheDocument();
   });
 
-  it('should show a fallback message when the result has no content', () => {
-    render(
-      <ToolResultMessage
-        availableTools={[]}
-        toolCalls={[
-          {toolCallId: '1', toolName: 'search', elementId: null, arguments: {}},
-        ]}
-        result={[]}
-      />,
-    );
-
-    expect(screen.getByText('Tool result has no content.')).toBeInTheDocument();
-  });
-
-  it('should show a fallback message for unsupported content types', () => {
+  it('should show a fallback message when the result has no TEXT or OBJECT content', () => {
     render(
       <ToolResultMessage
         availableTools={[]}
@@ -106,7 +93,7 @@ describe('<ToolResultMessage />', () => {
     );
 
     expect(
-      screen.getByText('Tool result has no viewable content.'),
+      screen.getByText('The tool call did not return content.'),
     ).toBeInTheDocument();
   });
 });
