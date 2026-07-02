@@ -35,7 +35,7 @@ If confidence is High or Medium, use exactly:
 This issue had no `component/*` label, so I assessed the best fit and applied one.
 
 **Assessment:** `component/CHOSEN`
-**Confidence:** High
+**Confidence:** <High or Medium>
 **Reasoning:**
 - <concrete signal 1>
 - <concrete signal 2>
