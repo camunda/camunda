@@ -25,6 +25,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.util.EnsureUtil;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
@@ -91,6 +92,9 @@ public final class DbJobState implements JobState, MutableJobState {
   private final ColumnFamily<DbCompositeKey<DbLong, DbForeignKey<DbLong>>, DbNil>
       backoffColumnFamily;
   private long nextBackOffDueDate;
+
+  // In-memory, per-partition memory that the legacy JOB_ACTIVATABLE CF is globally drained.
+  private boolean legacyCfDrained = false;
 
   public DbJobState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -562,7 +566,7 @@ public final class DbJobState implements JobState, MutableJobState {
     // Each phase returns true if the batch still wants more jobs. Subsequent phases are skipped
     // when the batch is full to avoid redundant state reads.
     if (visitHighPriorityJobs(tenantIds, callback)
-        && visitLegacyActivatableJobs(tenantIds, callback)) {
+        && (legacyCfDrained || visitLegacyActivatableJobs(tenantIds, callback))) {
       visitNonPositivePriorityJobs(tenantIds, callback);
     }
   }
@@ -654,14 +658,22 @@ public final class DbJobState implements JobState, MutableJobState {
    * <p>The {@code deleteIfExists} call in {@link #makeJobNotActivatable} ensures that a legacy job
    * is removed from this CF the first time it is deactivated after the upgrade.
    *
+   * <p>If this type's prefix yields no entries, a global emptiness check is performed. The check
+   * uses a tenant-agnostic {@link ColumnFamily#isEmpty()} seek run <b>after</b> the prefix scan
+   * returns. If the CF is empty for every type and tenant, {@link #legacyCfDrained} is set so
+   * subsequent activations skip this phase entirely. A per-type empty result alone must never set
+   * the flag:
+   *
    * @return {@code true} if the batch still wants more jobs; {@code false} if the batch is full
    */
   private boolean visitLegacyActivatableJobs(
       final List<String> tenantIds, final BiFunction<Long, JobRecord, Boolean> callback) {
     final var batchNotFull = new boolean[] {true};
+    final var visitedAny = new boolean[] {false};
     activatableColumnFamily.whileEqualPrefix(
         jobTypeKey,
         entry -> {
+          visitedAny[0] = true; // an entry exists for this type prefix => CF is not globally empty
           if (!tenantIds.contains(entry.tenantKey().toString())) {
             return true;
           }
@@ -669,6 +681,20 @@ public final class DbJobState implements JobState, MutableJobState {
               visitJob(entry.wrappedKey().second().inner().getValue(), callback::apply);
           return batchNotFull[0];
         });
+    // Global confirmation runs AFTER the prefix scan returns. Only worth checking when this type
+    // yielded nothing; isEmpty() is the authoritative global gate.
+    if (batchNotFull[0] && !visitedAny[0]) {
+      // isEmpty() scans the whole CF regardless of type, and its visitor wraps the shared
+      // jobTypeKey field with the first entry it finds (of any type) before reporting non-empty.
+      // Phase 3 (visitNonPositivePriorityJobs) relies on jobTypeKey still holding the type
+      // queried by this call, so it must be restored before returning.
+      final DirectBuffer queriedType = BufferUtil.cloneBuffer(jobTypeKey.getBuffer());
+      final boolean globallyEmpty = activatableColumnFamily.isEmpty();
+      jobTypeKey.wrapBuffer(queriedType);
+      if (globallyEmpty) {
+        legacyCfDrained = true;
+      }
+    }
     return batchNotFull[0];
   }
 
