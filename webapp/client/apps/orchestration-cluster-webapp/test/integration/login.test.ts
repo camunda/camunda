@@ -10,6 +10,8 @@ import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
 import {
 	mockCurrentUserEndpoint,
+	mockGetIncidentProcessInstanceStatisticsByDefinitionEndpoint,
+	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
 	mockLicenseEndpoint,
 	mockLoginEndpoint,
@@ -44,6 +46,12 @@ test('should redirect to the initial page on success', async ({network, page, lo
 			successResponse: HttpResponse.json(createLicense()),
 		}),
 		mockGetProcessDefinitionInstanceStatisticsEndpoint({
+			successResponse: HttpResponse.json(createPaginatedResponse()),
+		}),
+		mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+			successResponse: HttpResponse.json(createPaginatedResponse()),
+		}),
+		mockGetIncidentProcessInstanceStatisticsByDefinitionEndpoint({
 			successResponse: HttpResponse.json(createPaginatedResponse()),
 		}),
 	);
@@ -87,6 +95,12 @@ test('should redirect to the referrer page', async ({network, page, loginPage}) 
 			successResponse: HttpResponse.json(licenseMock),
 		}),
 		mockGetProcessDefinitionInstanceStatisticsEndpoint({
+			successResponse: HttpResponse.json(createPaginatedResponse()),
+		}),
+		mockGetIncidentProcessInstanceStatisticsByErrorEndpoint({
+			successResponse: HttpResponse.json(createPaginatedResponse()),
+		}),
+		mockGetIncidentProcessInstanceStatisticsByDefinitionEndpoint({
 			successResponse: HttpResponse.json(createPaginatedResponse()),
 		}),
 	);

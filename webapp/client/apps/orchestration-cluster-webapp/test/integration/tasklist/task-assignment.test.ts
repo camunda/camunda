@@ -164,13 +164,14 @@ test.describe('Task assignment', () => {
 		await taskDetailPage.goto('2251799813685281');
 		await taskDetailPage.assignButton.click();
 
+		await expect(taskDetailPage.header.notifications.getByNotificationTitle('Task assignment delayed')).toBeVisible();
+
 		network.use(
 			mockGetUserTaskEndpoint({
 				successResponse: HttpResponse.json(assignedTask),
 			}),
 		);
 
-		await expect(taskDetailPage.header.notifications.getByNotificationTitle('Task assignment delayed')).toBeVisible();
 		await expect(taskDetailPage.assignButton).toBeVisible();
 	});
 
