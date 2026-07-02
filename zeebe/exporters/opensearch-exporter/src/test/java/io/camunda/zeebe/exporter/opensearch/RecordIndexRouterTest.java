@@ -122,14 +122,14 @@ final class RecordIndexRouterTest {
   }
 
   @Test
-  void shouldReturnPartitionIdAsRoutingFor() {
+  void shouldReturnDocumentIdAsRoutingFor() {
     // given
-    final var record = recordFactory.generateRecord(b -> b.withPartitionId(3));
+    final var record = recordFactory.generateRecord(b -> b.withPartitionId(3).withPosition(42));
 
     // when
     final var routing = router.routingFor(record);
 
     // then
-    assertThat(routing).isEqualTo("3");
+    assertThat(routing).isEqualTo("3-42").isEqualTo(router.idFor(record));
   }
 }

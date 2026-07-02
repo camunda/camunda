@@ -165,7 +165,7 @@ final class ElasticsearchExporterIT {
         .containsExactly(
             indexRouter.indexFor(record),
             indexRouter.idFor(record),
-            String.valueOf(record.getPartitionId()),
+            indexRouter.routingFor(record),
             record);
   }
 
@@ -317,7 +317,7 @@ final class ElasticsearchExporterIT {
           .containsExactly(
               indexRouter.indexFor(record),
               indexRouter.idFor(record),
-              String.valueOf(record.getPartitionId()));
+              indexRouter.routingFor(record));
     } else {
       assertThatThrownBy(() -> testClient.getExportedDocumentFor(record))
           .isInstanceOf(ElasticsearchException.class)
