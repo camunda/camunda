@@ -138,6 +138,10 @@ public class AgentInstanceHistorySearchIT {
             .join()
             .getHistoryItemKey();
 
+    // Complete the job so JobCompleteProcessor emits AGENT_HISTORY:COMMIT,
+    // causing history items to transition to COMMITTED and become searchable.
+    camundaClient.newCompleteCommand(jobKey).execute();
+
     waitForHistoryItemsToBeIndexed(camundaClient, agentInstanceKey, 3);
   }
 
