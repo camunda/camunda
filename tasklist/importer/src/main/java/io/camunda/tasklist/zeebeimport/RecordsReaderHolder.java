@@ -79,8 +79,9 @@ public class RecordsReaderHolder {
   public boolean isRecordReaderCompletedImporting(
       final int partitionId, final ImportValueType importValueType) {
     final var reader = getRecordsReader(partitionId, importValueType);
-    return countEmptyBatchesAfterImportingDone.get(reader)
-        >= tasklistProperties.getImporter().getCompletedReaderMinEmptyBatches();
+    return reader != null
+        && countEmptyBatchesAfterImportingDone.getOrDefault(reader, 0)
+            >= tasklistProperties.getImporter().getCompletedReaderMinEmptyBatches();
   }
 
   public void recordLatestLoadedPositionAsCompleted(
