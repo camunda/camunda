@@ -14,8 +14,8 @@ import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
 import io.camunda.archunit.DoNotIncludeTestsOrTestJars;
 
 /**
- * Enforces that SQL mapper write methods ({@code insert*}, {@code update*}, {@code execute*}) are
- * only called from within {@code io.camunda.db.rdbms.write.**}.
+ * Enforces that SQL mapper write methods ({@code insert*}, {@code update*}, {@code execute*},
+ * {@code delete*}) are only called from within {@code io.camunda.db.rdbms.write.**}.
  *
  * <p>All RDBMS writes must flow through {@code ExecutionQueue} for batching and transaction
  * management. Direct mapper write calls from outside the write layer bypass these guarantees.
@@ -30,7 +30,7 @@ class RdbmsExecutionQueueArchTest {
           .areDeclaredInClassesThat()
           .resideInAPackage("io.camunda.db.rdbms.sql..")
           .and()
-          .haveNameMatching("^(insert|update|execute).*")
+          .haveNameMatching("^(insert|update|execute|delete).*")
           .should()
           .onlyBeCalled()
           .byClassesThat()
