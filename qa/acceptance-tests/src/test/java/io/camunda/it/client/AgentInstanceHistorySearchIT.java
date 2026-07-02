@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.AgentInstanceHistoryContent;
+import io.camunda.client.api.command.AgentInstanceHistoryContent.ObjectContent;
 import io.camunda.client.api.search.enums.AgentInstanceHistoryRole;
 import io.camunda.client.api.search.response.AgentInstanceHistory;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
@@ -23,7 +24,9 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -132,7 +135,14 @@ public class AgentInstanceHistorySearchIT {
             .elementInstanceKey(elementInstanceKey)
             .jobKey(jobKey)
             .role(AgentInstanceHistoryRole.TOOL_RESULT)
-            .content(List.of(AgentInstanceHistoryContent.text("Search results: ...")))
+            .content(
+                List.of(
+                    AgentInstanceHistoryContent.object(
+                        Arrays.asList(Map.of("id", 1), Map.of("id", 2))),
+                    AgentInstanceHistoryContent.object(Arrays.asList(10, 20, 30)),
+                    AgentInstanceHistoryContent.object(42),
+                    AgentInstanceHistoryContent.object(true),
+                    AgentInstanceHistoryContent.object("search-complete")))
             .producedAt(OffsetDateTime.parse("2025-06-01T10:02:00Z"))
             .send()
             .join()
@@ -231,6 +241,33 @@ public class AgentInstanceHistorySearchIT {
     final var page2Keys =
         page2.items().stream().map(AgentInstanceHistory::getHistoryItemKey).toList();
     assertThat(page1Keys).doesNotContainAnyElementsOf(page2Keys);
+  }
+
+  @Test
+  void shouldReturnObjectContentForAllJsonValueTypes() {
+    // when
+    final var response =
+        camundaClient
+            .newAgentInstanceHistorySearchRequest(agentInstanceKey)
+            .filter(f -> f.historyItemKey(historyItemKey3))
+            .execute();
+
+    // then
+    assertThat(response.items())
+        .singleElement()
+        .satisfies(
+            item -> {
+              assertThat(item.getContent())
+                  .allSatisfy(c -> assertThat(c).isInstanceOf(ObjectContent.class));
+              assertThat(item.getContent())
+                  .extracting(c -> ((ObjectContent) c).getObject())
+                  .containsExactly(
+                      Arrays.asList(Map.of("id", 1), Map.of("id", 2)),
+                      Arrays.asList(10, 20, 30),
+                      42,
+                      true,
+                      "search-complete");
+            });
   }
 
   private static void waitForHistoryItemsToBeIndexed(
