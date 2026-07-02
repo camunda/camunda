@@ -14,17 +14,22 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +51,16 @@ public final class Consumer {
 
   /** Max bytes requested per (topic, partition) fetch in a poll sweep. */
   private static final int FETCH_MAX_BYTES = 1 << 20;
+
+  /**
+   * How long a background fetch parks on the broker (its {@code maxWaitMs}) before returning empty.
+   * An idle partition issues at most one fetch per this interval — no client spin — while the
+   * broker wakes it the instant data is committed (low latency when active).
+   */
+  private static final long LONG_POLL_MS = Long.getLong("eventbridge.consumer.longPollMs", 5_000L);
+
+  /** Backoff before re-fetching a partition whose fetch failed (e.g. a leadership move). */
+  private static final long FETCH_ERROR_BACKOFF_MS = 500L;
 
   private final ScheduledExecutorService executor;
   private final OffsetResetPolicy offsetResetPolicy;
@@ -77,6 +92,20 @@ public final class Consumer {
    * the coordinator's committed offset or the reset policy.
    */
   private final ConcurrentHashMap<TopicPartition, Long> startPositions = new ConcurrentHashMap<>();
+
+  // --- Background prefetch (Kafka ConsumerNetworkThread + FetchBuffer style) --------------------
+  // A background driver keeps at most one long-poll fetch in flight per owned partition; results
+  // land in a per-partition buffer. poll() only drains the buffers, blocking on a condition up to
+  // its timeout. So an idle poll parks on the broker (no spin), and fetch N+1 overlaps the caller's
+  // processing of batch N (pipelining). Like Kafka's FetchBuffer, buffer access is guarded by a
+  // lock and the wait/signal by its condition; a partition is only re-fetched once its buffer
+  // drains
+  // (natural back-pressure).
+  private final ReentrantLock bufferLock = new ReentrantLock();
+  private final Condition dataAvailable = bufferLock.newCondition();
+  private final Map<TopicPartition, ArrayDeque<Event>> buffers = new LinkedHashMap<>(); // guarded
+  private final Set<TopicPartition> inFlight = new HashSet<>(); // guarded by bufferLock
+  private int fetchGeneration; // bumped on seek/reassignment to discard stale in-flight fetches
 
   private volatile ScheduledFuture<?> scheduledHeartbeat;
 
@@ -255,11 +284,23 @@ public final class Consumer {
    * caller whose durable checkpoint is ahead of the committed offset resumes from the checkpoint.
    */
   public void seek(final Map<TopicPartition, Long> positions) {
-    positions.forEach(
-        (tp, position) -> {
-          startPositions.put(tp, position);
-          nextPositions.merge(tp, position, Math::max);
-        });
+    bufferLock.lock();
+    try {
+      // Invalidate any in-flight fetch started from the old cursor and drop stale buffered events,
+      // so the next fetch resumes from the seeked position.
+      fetchGeneration++;
+      positions.forEach(
+          (tp, position) -> {
+            startPositions.put(tp, position);
+            nextPositions.merge(tp, position, Math::max);
+            final ArrayDeque<Event> buf = buffers.get(tp);
+            if (buf != null) {
+              buf.clear();
+            }
+          });
+    } finally {
+      bufferLock.unlock();
+    }
   }
 
   /**
@@ -397,6 +438,10 @@ public final class Consumer {
 
           seedCommittedOffsets(hb.committedOffsets());
 
+          // A reassignment or freshly seeded offset may have added fetchable partitions — start
+          // prefetching so a poll() currently blocked on the buffer becomes responsive to them.
+          kick();
+
           final var state = hb.errorCode();
 
           LOG.info(
@@ -409,87 +454,168 @@ public final class Consumer {
   }
 
   /**
-   * Pulls the next batch of events from all currently owned (topic, partition)s, in sorted order,
-   * via the gateway topic-fetch endpoint (routed to each topic partition's leader).
+   * Returns the next batch of prefetched events across all owned (topic, partition)s, in sorted
+   * partition order, blocking up to {@code timeout} for the background prefetcher to deliver at
+   * least one record.
    *
-   * <p>Long-polls: {@code timeout} is passed to each fetch as its {@code maxWaitMs}, so the broker
-   * <em>parks</em> the request until data is committed or the timeout elapses (no client spin, no
-   * gateway↔broker ping-pong). This is exact for a single owned partition — the caller's thread
-   * blocks on the broker up to {@code timeout}. With several owned partitions the sweep joins them
-   * in order, so an idle earlier partition can delay a later partition's ready data by up to {@code
-   * timeout}; a multi-partition consumer that needs minimal latency wants a per-partition prefetch
-   * driver instead. (Today every consumer owns one partition.)
+   * <p>This does not itself hit the network: a background driver keeps a long-poll fetch in flight
+   * per owned partition (see {@link #kick()}) and fills a per-partition buffer, so an idle poll
+   * parks on the broker (no spin), a multi-partition consumer returns as soon as <em>any</em>
+   * partition delivers, and the next fetch overlaps the caller's processing of this batch
+   * (pipelining).
    *
-   * @param maxRecords maximum number of records to return per (topic, partition)
-   * @param timeout how long the broker may park each fetch waiting for new data
-   * @return list of events fetched (may be empty if no new records available)
+   * @param maxRecords maximum total number of records to return across all partitions
+   * @param timeout maximum time to wait for records to become available
+   * @return list of events fetched (may be empty if none arrived within {@code timeout})
    * @throws ConsumerClosedException if {@link #close()} has been called
    */
   public List<Event> poll(final int maxRecords, final Duration timeout) {
     checkNotClosed();
-    final List<Event> allEvents = new ArrayList<>();
+    kick(); // ensure a fetch is in flight for every empty, owned partition
 
-    final var partitions = new ArrayList<>(ownedPartitions);
-    Collections.sort(partitions);
-
-    // Collect position updates locally; apply them only after a full successful sweep so
-    // that a mid-sweep signal does not advance positions for already-polled partitions.
-    final Map<TopicPartition, Long> pendingPositions = new LinkedHashMap<>();
-
-    // Phase 1 — fire the fetch for every owned partition in parallel. Each is a long-poll
-    // (maxWaitMs
-    // = timeout): fetchFromTopic returns immediately (async HTTP) while the broker parks the
-    // request
-    // server-side until data arrives or the timeout elapses, so an idle sweep costs no client spin.
-    final long maxWaitMs = Math.max(0L, timeout.toMillis());
-    final Map<TopicPartition, Long> fromPositions = new LinkedHashMap<>();
-    final Map<TopicPartition, CompletableFuture<FetchResult>> inflight = new LinkedHashMap<>();
-    for (final var tp : partitions) {
-      checkNotClosed();
-      long fromPosition = nextPositions.getOrDefault(tp, -1L);
-      if (fromPosition == UNSET_POSITION) {
-        // No committed offset for this newly assigned partition — apply the reset policy.
-        fromPosition = resolveStartPosition(tp);
-        nextPositions.put(tp, fromPosition);
-      }
-      fromPositions.put(tp, fromPosition);
-      inflight.put(
-          tp,
-          client.fetchFromTopic(
-              tp.topic(), tp.partition(), fromPosition, FETCH_MAX_BYTES, 0, maxWaitMs));
-    }
-
-    // Phase 2 — join and assemble in sorted partition order (deterministic merge order).
-    for (final var tp : partitions) {
-      final long fromPosition = fromPositions.get(tp);
-      final FetchResult result;
-      try {
-        result = inflight.get(tp).join();
-      } catch (final RuntimeException e) {
-        // Partition not currently fetchable here (e.g. leadership moved); skip this sweep.
-        LOG.debug("Fetch failed for {}; skipping this sweep", tp, e);
-        continue;
-      }
-      if (!result.isSuccess()) {
-        continue;
-      }
-
-      long next = fromPosition;
-      int returned = 0;
-      for (final var entry : result.entries(fromPosition)) {
-        if (returned >= maxRecords) {
-          break;
+    final List<Event> out = new ArrayList<>();
+    final long deadlineNanos = System.nanoTime() + Math.max(0L, timeout.toNanos());
+    bufferLock.lock();
+    try {
+      while (!closed.get() && isBufferEmpty()) {
+        final long remaining = deadlineNanos - System.nanoTime();
+        if (remaining <= 0) {
+          return out; // nothing arrived within the timeout
         }
-        allEvents.add(
-            new Event(entry.getPosition(), tp.topic(), tp.partition(), entry.getValueCopy()));
-        next = entry.getPosition() + 1;
-        returned++;
+        try {
+          dataAvailable.awaitNanos(remaining);
+        } catch (final InterruptedException e) {
+          Thread.currentThread().interrupt();
+          return out;
+        }
       }
-      pendingPositions.put(tp, next);
+      drainInto(out, maxRecords);
+    } finally {
+      bufferLock.unlock();
     }
+    kick(); // pipeline: refill the partitions we just drained while the caller processes this batch
+    return out;
+  }
 
-    nextPositions.putAll(pendingPositions);
-    return allEvents;
+  /**
+   * Drains up to {@code maxRecords} buffered events in sorted partition order. Caller holds lock.
+   */
+  private void drainInto(final List<Event> out, final int maxRecords) {
+    final var partitions = new ArrayList<>(buffers.keySet());
+    Collections.sort(partitions);
+    for (final TopicPartition tp : partitions) {
+      final ArrayDeque<Event> buf = buffers.get(tp);
+      while (buf != null && !buf.isEmpty() && out.size() < maxRecords) {
+        out.add(buf.poll());
+      }
+      if (out.size() >= maxRecords) {
+        break;
+      }
+    }
+  }
+
+  /** True if no owned partition has buffered events. Caller holds {@link #bufferLock}. */
+  private boolean isBufferEmpty() {
+    for (final ArrayDeque<Event> buf : buffers.values()) {
+      if (!buf.isEmpty()) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Ensures every owned partition with an empty buffer and no in-flight fetch has a long-poll fetch
+   * issued. Idempotent and cheap to call often (on poll, after each fetch completes): the in-flight
+   * set prevents duplicate fetches, and a partition is only re-fetched once its buffer drains.
+   */
+  private void kick() {
+    if (closed.get()) {
+      return;
+    }
+    final List<TopicPartition> toFetch = new ArrayList<>();
+    final int gen;
+    bufferLock.lock();
+    try {
+      gen = fetchGeneration;
+      for (final TopicPartition tp : ownedPartitions) {
+        final ArrayDeque<Event> buf = buffers.get(tp);
+        if (!inFlight.contains(tp) && (buf == null || buf.isEmpty())) {
+          inFlight.add(tp);
+          toFetch.add(tp);
+        }
+      }
+    } finally {
+      bufferLock.unlock();
+    }
+    for (final TopicPartition tp : toFetch) {
+      issueFetch(tp, gen);
+    }
+  }
+
+  /** Issues a single long-poll fetch for {@code tp} from its current fetch cursor. */
+  private void issueFetch(final TopicPartition tp, final int gen) {
+    long from = nextPositions.getOrDefault(tp, -1L);
+    if (from == UNSET_POSITION) {
+      from = resolveStartPosition(tp);
+      nextPositions.put(tp, from);
+    }
+    final long fromPosition = from;
+    client
+        .fetchFromTopic(tp.topic(), tp.partition(), fromPosition, FETCH_MAX_BYTES, 0, LONG_POLL_MS)
+        .whenComplete((result, error) -> onFetchComplete(tp, gen, fromPosition, result, error));
+  }
+
+  /** Handles a completed background fetch: buffer new events, then re-arm. */
+  private void onFetchComplete(
+      final TopicPartition tp,
+      final int gen,
+      final long fromPosition,
+      final FetchResult result,
+      final Throwable error) {
+    boolean retryNow = false;
+    boolean retryDelayed = false;
+    bufferLock.lock();
+    try {
+      inFlight.remove(tp);
+      if (gen != fetchGeneration || !ownedPartitions.contains(tp)) {
+        return; // a seek/reassignment happened while this fetch was in flight — discard its result
+      }
+      if (error != null) {
+        LOG.debug("Fetch failed for {}; will retry", tp, error);
+        retryDelayed = true;
+      } else if (result != null && result.isSuccess()) {
+        final ArrayDeque<Event> buf = buffers.computeIfAbsent(tp, ignored -> new ArrayDeque<>());
+        long next = fromPosition;
+        for (final var entry : result.entries(fromPosition)) {
+          buf.add(new Event(entry.getPosition(), tp.topic(), tp.partition(), entry.getValueCopy()));
+          next = entry.getPosition() + 1;
+        }
+        if (buf.isEmpty()) {
+          // Parked long-poll returned empty (still at the tip) — re-arm immediately; the emptiness
+          // already cost LONG_POLL_MS of server-side waiting, so this is not a spin.
+          retryNow = true;
+        } else {
+          nextPositions.put(tp, next);
+          dataAvailable.signalAll();
+        }
+      } else if (result != null && result.statusCode() == 416) {
+        // OFFSET_OUT_OF_RANGE — cursor below the earliest retained record. Mark unresolved so the
+        // next fetch re-applies the reset policy (resolved off-lock in issueFetch).
+        LOG.warn("Fetch out of range for {} at {}; resetting", tp, fromPosition);
+        nextPositions.put(tp, UNSET_POSITION);
+        retryNow = true;
+      } else {
+        retryDelayed = true;
+      }
+    } finally {
+      bufferLock.unlock();
+    }
+    if (retryNow) {
+      kick();
+    } else if (retryDelayed && !closed.get()) {
+      executor.schedule(this::kick, FETCH_ERROR_BACKOFF_MS, TimeUnit.MILLISECONDS);
+    }
   }
 
   /**
@@ -532,6 +658,13 @@ public final class Consumer {
     closed.set(true);
     if (scheduledHeartbeat != null) {
       scheduledHeartbeat.cancel(false);
+    }
+    // Wake any poll() blocked on the buffer so it observes the closed flag and returns.
+    bufferLock.lock();
+    try {
+      dataAvailable.signalAll();
+    } finally {
+      bufferLock.unlock();
     }
   }
 
@@ -659,14 +792,25 @@ public final class Consumer {
   private void applyOwnedPartitions(final List<TopicPartition> partitions) {
     final var sorted = new ArrayList<>(partitions);
     Collections.sort(sorted);
-    nextPositions.keySet().retainAll(sorted);
-    for (final var tp : sorted) {
-      // Newly assigned: prefer a caller-requested start (seek), else start unresolved. A committed
-      // offset (seedCommittedOffsets) or the reset policy (resolved on first poll) then determines
-      // where an unresolved partition actually starts.
-      nextPositions.putIfAbsent(tp, startPositions.getOrDefault(tp, UNSET_POSITION));
+    bufferLock.lock();
+    try {
+      // Invalidate in-flight fetches (a partition may have moved leaders) and drop buffers for
+      // revoked partitions; retained partitions re-fetch from their preserved cursor on next kick.
+      fetchGeneration++;
+      nextPositions.keySet().retainAll(sorted);
+      buffers.keySet().retainAll(sorted);
+      inFlight.retainAll(sorted);
+      for (final var tp : sorted) {
+        // Newly assigned: prefer a caller-requested start (seek), else start unresolved. A
+        // committed
+        // offset (seedCommittedOffsets) or the reset policy (resolved on first fetch) then
+        // determines where an unresolved partition actually starts.
+        nextPositions.putIfAbsent(tp, startPositions.getOrDefault(tp, UNSET_POSITION));
+      }
+      ownedPartitions = Collections.unmodifiableList(sorted);
+    } finally {
+      bufferLock.unlock();
     }
-    ownedPartitions = Collections.unmodifiableList(sorted);
   }
 
   /** Groups owned partitions into the {@code topic -> [partition,...]} wire shape. */
