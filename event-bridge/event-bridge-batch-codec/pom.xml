@@ -19,12 +19,10 @@
   <artifactId>event-bridge-batch-codec</artifactId>
   <packaging>jar</packaging>
   <name>Event Bridge Batch Codec</name>
-  <description>
-    Dependency-free (pure JDK) definition of the EventBridge batch wire format: the layout constants
+  <description>Dependency-free (pure JDK) definition of the EventBridge batch wire format: the layout constants
     that are the single source of truth, plus a plain byte[] builder and reader. The broker's
     zero-copy Agrona accessors (event-bridge-protocol) read the same layout from these constants;
-    the client uses the pure builder/reader so it needs neither Agrona nor the broker protocol.
-  </description>
+    the client uses the pure builder/reader so it needs neither Agrona nor the broker protocol.</description>
 
   <properties>
     <maven.compiler.source>21</maven.compiler.source>

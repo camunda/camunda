@@ -60,11 +60,14 @@ public final class BatchReader {
           break;
         }
         final int entryLength = BatchFormat.getIntLE(data, entryOffset);
-        final int keyLength = BatchFormat.getIntLE(data, entryOffset + BatchFormat.ENTRY_LENGTH_SIZE);
+        final int keyLength =
+            BatchFormat.getIntLE(data, entryOffset + BatchFormat.ENTRY_LENGTH_SIZE);
         final int valueLength = entryLength - BatchFormat.KEY_LENGTH_SIZE - keyLength;
         final int keyOffset = entryOffset + BatchFormat.ENTRY_HEADER_SIZE;
         final int valueOffset = keyOffset + keyLength;
-        if (keyLength < 0 || valueLength < 0 || valueOffset + valueLength > batchOffset + totalSize) {
+        if (keyLength < 0
+            || valueLength < 0
+            || valueOffset + valueLength > batchOffset + totalSize) {
           break; // malformed
         }
 
