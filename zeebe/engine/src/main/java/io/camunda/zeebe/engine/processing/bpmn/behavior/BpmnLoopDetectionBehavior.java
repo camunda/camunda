@@ -150,7 +150,7 @@ public final class BpmnLoopDetectionBehavior {
    *     from {@code 1} for the first activation that breaches the threshold
    */
   private boolean shouldRaiseIncident(final long breachCount) {
-    return retryCooldown <= 1 || breachCount <= 1 || breachCount % retryCooldown == 0;
+    return retryCooldown <= 1 || (breachCount - 1) % retryCooldown == 0;
   }
 
   /**
