@@ -38,28 +38,33 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Integration test for <a href="https://github.com/camunda/camunda/issues/45215">#45215</a>.
- * Verifies the two backend layers this PR changes — the Tomcat connector and the Spring Security
- * firewall — accept requests whose URI contains {@code %2F}, instead of rejecting them with 400.
+ * Verifies the full stack — Tomcat connector, Spring Security firewall, and Spring MVC path
+ * matching — correctly handles {@code %2F} in URL path segments: the request reaches the controller
+ * AND the {@code @PathVariable} receives the decoded value with the slash intact.
  *
  * <p>This boots a real embedded Tomcat with Spring Security enabled — NOT a MockMvc test, because
  * MockMvc bypasses Tomcat's {@code EncodedSolidusHandling} check.
  *
- * <p>The Tomcat layer is configured via a {@link WebServerFactoryCustomizer} bean (mirroring
- * production wiring in {@link TomcatEncodedSlashConfig}), not via the {@code
- * server.tomcat.encoded-solidus-handling} property.
+ * <p>The three production beans that must cooperate are:
+ *
+ * <ol>
+ *   <li>{@link TomcatEncodedSlashConfig}: {@code PASS_THROUGH} — keeps {@code %2F} in the URI so
+ *       Tomcat's path normalizer never sees a literal {@code /} from the encoded slash.
+ *   <li>{@code WebSecurityConfig.encodedSlashFirewallCustomizer()}: {@code
+ *       allowUrlEncodedSlash(true)} — prevents Spring Security's {@link
+ *       org.springframework.security.web.firewall.StrictHttpFirewall} from rejecting {@code %2F}
+ *       with 400.
+ *   <li>{@link EncodedSlashMvcConfig}: {@code urlDecode=false} — prevents Spring MVC's {@link
+ *       org.springframework.web.util.UrlPathHelper} from decoding {@code %2F} to {@code /} before
+ *       path matching (which would introduce {@code //} and cause the path sanitizer to collapse it
+ *       to {@code /}, stripping the leading slash). After matching, {@code decodePathVariables()}
+ *       decodes the raw {@code %2FmyGroup} → {@code /myGroup} for the {@code @PathVariable}.
+ * </ol>
  *
  * <p><b>Scope:</b> this fix targets the {@code consolidated-auth} profile's {@code
- * WebSecurityConfig}. Optimize defines independent Spring Security configurations ({@code
- * CCSaaSSecurityConfigurerAdapter}, {@code CCSMSecurityConfigurerAdapter}) running in their own
- * application contexts; an equivalent customizer would be needed there if Optimize ever exposes
+ * WebSecurityConfig}. Optimize defines independent Spring Security configurations running in their
+ * own application contexts; an equivalent customizer would be needed there if Optimize ever exposes
  * path-variable entity IDs sourced from OIDC.
- *
- * <p><b>What this test does NOT assert:</b> the exact value of {@code @PathVariable} after binding.
- * On stable/8.8 the production matching strategy is {@code AntPathMatcher} (set in {@code
- * application.properties}), which collapses {@code //} during URI normalization and may strip the
- * leading {@code /} from the path-bound entity ID. End-to-end behavior on 8.8 — including the value
- * Camunda stores for the assigned group — must be verified manually with the reproduction script in
- * PR #52064.
  */
 @SpringBootTest(
     webEnvironment = WebEnvironment.RANDOM_PORT,
