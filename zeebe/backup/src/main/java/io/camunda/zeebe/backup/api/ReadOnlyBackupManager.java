@@ -42,6 +42,9 @@ public interface ReadOnlyBackupManager {
   ActorFuture<Collection<BackupStatus>> listBackups(String pattern);
 
   /**
+   * A member in recovery mode has no RocksDB state and answers from the last metadata manifest
+   * synced to the backup store.
+   *
    * @return all backup ranges for the partition
    */
   ActorFuture<Collection<BackupRangeStatus>> getBackupRangeStatus();
