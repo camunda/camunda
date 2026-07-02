@@ -59,7 +59,6 @@ type ConversationMessageProps = {
   historyItemKey?: string;
   metrics?: Metrics | null;
   toolCalls?: ToolCall[];
-  onToolCallClick?: (toolCall: ToolCall) => void;
 };
 
 const ConversationMessage: React.FC<ConversationMessageProps> = ({
@@ -68,7 +67,6 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
   historyItemKey,
   metrics = null,
   toolCalls = [],
-  onToolCallClick,
 }) => {
   const [messageDetails, dispatch] = useReducer(
     messageDetailsReducer,
@@ -154,22 +152,15 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
       {toolCalls.length > 0 && (
         <AttachmentsContainer>
           <AttachmentsLabel>Tool calls</AttachmentsLabel>
-          {toolCalls.map((tc) => {
-            const isDisabled = tc.elementId === null;
-            const label = isDisabled
-              ? `"${tc.toolName}" tool call.`
-              : `"${tc.toolName}" tool call. Click to open details.`;
-            return (
-              <AttachmentButton
-                key={tc.toolCallId}
-                aria-label={label}
-                disabled={isDisabled}
-                onClick={() => onToolCallClick?.(tc)}
-              >
-                {tc.toolName}
-              </AttachmentButton>
-            );
-          })}
+          {toolCalls.map((tc) => (
+            <AttachmentButton
+              key={tc.toolCallId}
+              aria-label={`"${tc.toolName}" tool call.`}
+              disabled
+            >
+              {tc.toolName}
+            </AttachmentButton>
+          ))}
         </AttachmentsContainer>
       )}
       {messageDetails.state === 'visible' && (

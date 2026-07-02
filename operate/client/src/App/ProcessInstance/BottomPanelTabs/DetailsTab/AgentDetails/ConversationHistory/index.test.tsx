@@ -396,7 +396,7 @@ describe('<ConversationHistory />', () => {
     ).toBeInTheDocument();
   });
 
-  it('should render tool calls and enable them when a tool links to an element', async () => {
+  it('should render tool calls', async () => {
     mockSearchAgentInstanceHistory().withSuccess(
       searchResult([
         mockAgentInstanceHistoryItem({
@@ -440,10 +440,8 @@ describe('<ConversationHistory />', () => {
       screen.getByTestId('conversation-message-1'),
     );
     expect(
-      assistantMessage.getByRole('button', {
-        name: '"greet" tool call. Click to open details.',
-      }),
-    ).toBeEnabled();
+      assistantMessage.getByRole('button', {name: '"greet" tool call.'}),
+    ).toBeDisabled();
     expect(
       assistantMessage.getByRole('button', {name: '"search" tool call.'}),
     ).toBeDisabled();

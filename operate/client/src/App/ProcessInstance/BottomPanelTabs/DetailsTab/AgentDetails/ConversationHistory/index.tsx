@@ -10,7 +10,6 @@ import {useState} from 'react';
 import {SkeletonText} from '@carbon/react';
 import type {QuerySortOrder} from '@camunda/camunda-api-zod-schemas/8.10';
 import {useAgentInstanceHistory} from 'modules/queries/agentInstances/useAgentInstanceHistory';
-import {useProcessInstanceElementSelectActions} from 'modules/hooks/useProcessInstanceElementSelection';
 import {ConversationMessage} from '../ConversationMessage';
 import {ConversationToggles} from './ConversationToggles';
 import {
@@ -42,7 +41,6 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
   const [sortOrder, setSortOrder] = useState<QuerySortOrder>('desc');
   const [isScoped, setIsScoped] = useState(true);
 
-  const {selectElement} = useProcessInstanceElementSelectActions();
   const {
     data,
     status,
@@ -98,11 +96,6 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
               content={item.content}
               toolCalls={item.toolCalls}
               metrics={item.metrics}
-              onToolCallClick={(toolCall) => {
-                if (toolCall.elementId !== null) {
-                  selectElement({elementId: toolCall.elementId});
-                }
-              }}
             />
           ))
         )}
