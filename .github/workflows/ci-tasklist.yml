@@ -250,7 +250,7 @@ jobs:
     env:
       TEST_TYPE: visual-regression
     container:
-      image: mcr.microsoft.com/playwright:v1.60.0
+      image: mcr.microsoft.com/playwright:v1.61.1
       options: --user 1001:1000
     defaults:
       run:
@@ -298,7 +298,7 @@ jobs:
     env:
       TEST_TYPE: Tool
     container:
-      image: mcr.microsoft.com/playwright:v1.60.0
+      image: mcr.microsoft.com/playwright:v1.61.1
       options: --user 1001:1000
     defaults:
       run:
