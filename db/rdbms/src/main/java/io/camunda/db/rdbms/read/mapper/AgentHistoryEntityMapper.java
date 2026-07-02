@@ -7,6 +7,8 @@
  */
 package io.camunda.db.rdbms.read.mapper;
 
+import static io.camunda.db.rdbms.read.NullSafeStrings.nullToEmpty;
+
 import io.camunda.db.rdbms.write.domain.AgentHistoryDbModel;
 import io.camunda.search.entities.AgentInstanceHistoryEntity;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.Metrics;
@@ -27,7 +29,7 @@ public class AgentHistoryEntityMapper {
         dbModel.processDefinitionId(),
         dbModel.tenantId(),
         dbModel.jobKey(),
-        dbModel.jobLease(),
+        nullToEmpty(dbModel.jobLease()),
         dbModel.iteration(),
         dbModel.role(),
         dbModel.contentItems() != null ? dbModel.contentItems() : List.of(),
