@@ -644,8 +644,22 @@ public final class TestHelper {
       final String batchOperationKey,
       final int expectedCompletedItems,
       final int expectedFailedItems) {
+    waitForBatchOperationCompleted(
+        camundaClient,
+        batchOperationKey,
+        expectedCompletedItems,
+        expectedFailedItems,
+        TIMEOUT_DATA_AVAILABILITY);
+  }
+
+  public static void waitForBatchOperationCompleted(
+      final CamundaClient camundaClient,
+      final String batchOperationKey,
+      final int expectedCompletedItems,
+      final int expectedFailedItems,
+      final Duration timeout) {
     Awaitility.await("should complete batch operation with correct completed/failed count")
-        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .atMost(timeout)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {

@@ -18,6 +18,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.time.Duration;
 import java.util.Map;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -63,6 +64,10 @@ public class ActivateJobIT {
 
   @BeforeAll
   static void setup() {
+    // The CamundaMultiDBExtension resets RecordingExporter (maximumWaitTime → 5s) in its
+    // beforeAll, which runs before this method. Override to 30s to tolerate slow CI runners
+    // where gateway-issued FAIL commands can take longer to propagate.
+    RecordingExporter.setMaximumWaitTime(Duration.ofSeconds(30).toMillis());
     grpcClient = BROKER.newClientBuilder().preferRestOverGrpc(false).build();
     grpcClient
         .newDeployResourceCommand()
