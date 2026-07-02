@@ -60,6 +60,7 @@ final class BulkIndexRequest {
   private static final String PRIORITY_PROPERTY = "priority";
   private static final String ELEMENT_TYPE_PROPERTY = "elementType";
   private static final String BUSINESS_ID_PROPERTY = "businessId";
+  private static final String LEASE_TOKEN_PROPERTY = "leaseToken";
   private final List<IndexOperation> operations = new ArrayList<>();
   private BulkIndexAction lastIndexedMetadata;
   private int memoryUsageBytes = 0;
@@ -179,7 +180,12 @@ final class BulkIndexRequest {
   @JsonIgnoreProperties({AUTH_INFO_PROPERTY})
   private static final class CommandDistributionMixin {}
 
-  @JsonIgnoreProperties({PRIORITY_PROPERTY, ELEMENT_TYPE_PROPERTY, BUSINESS_ID_PROPERTY})
+  @JsonIgnoreProperties({
+    PRIORITY_PROPERTY,
+    ELEMENT_TYPE_PROPERTY,
+    BUSINESS_ID_PROPERTY,
+    LEASE_TOKEN_PROPERTY
+  })
   private static final class JobMixin {}
 
   /** Shared by record values that only need to strip {@code businessId} for previous versions. */

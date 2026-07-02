@@ -516,6 +516,57 @@ final class BulkIndexRequestTest {
     }
 
     @Test
+    void shouldIndexJobRecordWithoutLeaseTokenOnPreviousVersion() throws IOException {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.JOB,
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(new JobRecord().setLeaseToken("lease-abc-123")));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("leaseToken"))
+          .describedAs(
+              "Expect that job records are NOT serialized with leaseToken on previous version")
+          .containsExactly(new Object[] {null});
+    }
+
+    @Test
+    void shouldIndexJobRecordWithLeaseTokenOnCurrentVersion() throws IOException {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.JOB,
+              r ->
+                  r.withBrokerVersion(VersionUtil.getVersion())
+                      .withValue(new JobRecord().setLeaseToken("lease-abc-123")));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("leaseToken"))
+          .describedAs("Expect that job records are serialized with leaseToken on current version")
+          .containsExactly("lease-abc-123");
+    }
+
+    @Test
     void shouldIndexUserTaskRecordWithoutBusinessIdOnPreviousVersion() throws IOException {
       // given
       final var record =
