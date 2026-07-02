@@ -15,16 +15,19 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Map;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -851,6 +854,283 @@ public class ProcessInstanceBusinessIdExpressionContextTest {
     assertThat(
             RecordingExporter.decisionEvaluationRecords(DecisionEvaluationIntent.EVALUATED)
                 .withDecisionId("decision")
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldResolveBusinessIdInsideEmbeddedSubprocess() {
+    // given
+    final var processId = "pi-ctx-bid-subprocess-scope";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .subProcess(
+                    "subprocess",
+                    s ->
+                        s.embeddedSubProcess()
+                            .startEvent()
+                            .serviceTask(
+                                "sub-task",
+                                t ->
+                                    t.zeebeJobType("subprocess-scope-bid-job")
+                                        .zeebeInputExpression(
+                                            "camunda.processInstance.businessId", "piBid"))
+                            .endEvent())
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long pi =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withBusinessId(BUSINESS_ID).create();
+
+    // then
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(pi)
+        .withType("subprocess-scope-bid-job")
+        .await();
+    final var job =
+        ENGINE
+            .jobs()
+            .withType("subprocess-scope-bid-job")
+            .activate()
+            .getValue()
+            .getJobs()
+            .getFirst();
+    assertThat(job.getVariables()).containsEntry("piBid", BUSINESS_ID);
+  }
+
+  @Test
+  public void shouldResolveToCallingBusinessIdInCallerScope() {
+    // given
+    final var parentProcessId = "pi-ctx-bid-caller-scope";
+    final var childProcessId = "child-caller";
+    final var parent =
+        Bpmn.createExecutableProcess(parentProcessId)
+            .startEvent()
+            .serviceTask(
+                "caller-task",
+                t ->
+                    t.zeebeJobType("caller-scope-bid-job")
+                        .zeebeInputExpression("camunda.processInstance.businessId", "callerBid"))
+            .callActivity("call", c -> c.zeebeProcessId(childProcessId))
+            .endEvent()
+            .done();
+    final var child = Bpmn.createExecutableProcess(childProcessId).startEvent().endEvent().done();
+    ENGINE
+        .deployment()
+        .withXmlResource("caller-bid-parent.bpmn", parent)
+        .withXmlResource("caller-bid-child.bpmn", child)
+        .deploy();
+
+    // when
+    final long parentPi =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(parentProcessId)
+            .withBusinessId(BUSINESS_ID)
+            .create();
+
+    // then
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(parentPi)
+        .withType("caller-scope-bid-job")
+        .await();
+    final var job =
+        ENGINE.jobs().withType("caller-scope-bid-job").activate().getValue().getJobs().getFirst();
+    assertThat(job.getVariables()).containsEntry("callerBid", BUSINESS_ID);
+  }
+
+  @Test
+  public void shouldResolveToParentBusinessIdInCalledScope() {
+    // given
+    final var parentProcessId = "pi-ctx-bid-called-scope";
+    final var childProcessId = "child-called";
+    final var parent =
+        Bpmn.createExecutableProcess(parentProcessId)
+            .startEvent()
+            .callActivity("call", c -> c.zeebeProcessId(childProcessId))
+            .endEvent()
+            .done();
+    final var child =
+        Bpmn.createExecutableProcess(childProcessId)
+            .startEvent()
+            .serviceTask(
+                "child-task",
+                t ->
+                    t.zeebeJobType("called-scope-bid-job")
+                        .zeebeInputExpression("camunda.processInstance.businessId", "childBid"))
+            .endEvent()
+            .done();
+    ENGINE
+        .deployment()
+        .withXmlResource("called-bid-parent.bpmn", parent)
+        .withXmlResource("called-bid-child.bpmn", child)
+        .deploy();
+
+    // when
+    ENGINE.processInstance().ofBpmnProcessId(parentProcessId).withBusinessId(BUSINESS_ID).create();
+
+    // then
+    final long childPi =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withBpmnProcessId(childProcessId)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst()
+            .getKey();
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(childPi)
+        .withType("called-scope-bid-job")
+        .await();
+    final var job =
+        ENGINE.jobs().withType("called-scope-bid-job").activate().getValue().getJobs().getFirst();
+    assertThat(job.getVariables()).containsEntry("childBid", BUSINESS_ID);
+  }
+
+  @Test
+  public void shouldReturnNullForBusinessIdInTimerStartEventDurationExpression() {
+    // given
+    final var processId = "pi-ctx-bid-timer-start-duration";
+
+    // when
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    // no process instance at a timer start event, so the businessId is null ->
+                    // PT1S (a real businessId -> PT1H)
+                    .timerWithDurationExpression(
+                        "if camunda.processInstance.businessId = null then \"PT1S\" else \"PT1H\"")
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long processDefinitionKey =
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
+    final long now = ENGINE.getClock().getCurrentTimeInMillis();
+
+    // then
+    final var timer =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .getFirst()
+            .getValue();
+    assertThat(timer.getDueDate()).isLessThan(now + 60_000L);
+  }
+
+  @Test
+  public void shouldReturnNullForBusinessIdInTimerStartEventCycleExpression() {
+    // given
+    final var processId = "pi-ctx-bid-timer-start-cycle";
+
+    // when
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    // no process instance at a timer start event, so the businessId is null ->
+                    // R1/PT1S (a real businessId -> R1/PT1H)
+                    .timerWithCycleExpression(
+                        "if camunda.processInstance.businessId = null then \"R1/PT1S\" else \"R1/PT1H\"")
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long processDefinitionKey =
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
+    final long now = ENGINE.getClock().getCurrentTimeInMillis();
+
+    // then
+    final var timer =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .getFirst()
+            .getValue();
+    assertThat(timer.getDueDate()).isLessThan(now + 60_000L);
+  }
+
+  @Test
+  public void shouldReturnNullForBusinessIdInTimerStartEventDateExpression() {
+    // given
+    final var processId = "pi-ctx-bid-timer-start-date";
+
+    // when
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .timerWithDateExpression(
+                        "if camunda.processInstance.businessId = null then \"2040-01-01T00:00:00Z\" else \"2020-01-01T00:00:00Z\"")
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long processDefinitionKey =
+        deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
+
+    // then
+    final var timer =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessDefinitionKey(processDefinitionKey)
+            .getFirst()
+            .getValue();
+    assertThat(timer.getDueDate()).isEqualTo(Instant.parse("2040-01-01T00:00:00Z").toEpochMilli());
+  }
+
+  @Test
+  public void shouldAcceptBusinessIdExpressionAtDeploymentTime() {
+    // given / when
+    final var processId = "pi-ctx-bid-validation";
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .serviceTask(
+                        "task", t -> t.zeebeJobTypeExpression("camunda.processInstance.businessId"))
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    // then
+    assertThat(deployment.getIntent()).isEqualTo(DeploymentIntent.CREATED);
+  }
+
+  @Test
+  public void shouldReturnNullForBusinessIdWhenNotSet() {
+    // given
+    final var processId = "pi-ctx-bid-unset";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .exclusiveGateway("gateway")
+                .conditionExpression("camunda.processInstance.businessId = null")
+                .serviceTask("null-branch", t -> t.zeebeJobType("null-branch-job"))
+                .endEvent()
+                .moveToLastExclusiveGateway()
+                .defaultFlow()
+                .serviceTask("set-branch", t -> t.zeebeJobType("set-branch-job"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long pi = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(pi)
+                .withElementId("null-branch")
                 .exists())
         .isTrue();
   }
