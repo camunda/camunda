@@ -47,7 +47,7 @@ jobs:
       is-main: ${{ steps.branch-info.outputs.is-main }}
       branch-name: ${{ steps.branch-info.outputs.branch-name }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0  # Fetch all history for git tags
 
@@ -369,7 +369,7 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.prepare-versions.outputs.matrix) }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ needs.prepare-versions.outputs.branch-name }}
           fetch-depth: 0
@@ -446,7 +446,7 @@ jobs:
       contents: read
       actions: read
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Restore previous tested combinations
         env:
@@ -528,7 +528,7 @@ jobs:
     if: always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
     permissions: {}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Import Secrets
         id: secrets
         uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80

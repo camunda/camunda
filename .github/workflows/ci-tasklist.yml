@@ -77,7 +77,7 @@ jobs:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@b4ba25e5825dccf0f4d25c103b63569a5d1d30c5 # main
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
@@ -113,7 +113,7 @@ jobs:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@b4ba25e5825dccf0f4d25c103b63569a5d1d30c5 # main
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
@@ -148,7 +148,7 @@ jobs:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@b4ba25e5825dccf0f4d25c103b63569a5d1d30c5 # main
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
@@ -184,7 +184,7 @@ jobs:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@b4ba25e5825dccf0f4d25c103b63569a5d1d30c5 # main
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
@@ -219,7 +219,7 @@ jobs:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@b4ba25e5825dccf0f4d25c103b63569a5d1d30c5 # main
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
@@ -258,7 +258,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@b4ba25e5825dccf0f4d25c103b63569a5d1d30c5 # main
       - name: Check out repository code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Setup NodeJS
@@ -306,7 +306,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@b4ba25e5825dccf0f4d25c103b63569a5d1d30c5 # main
       - name: Check out repository code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Setup NodeJS
@@ -441,7 +441,7 @@ jobs:
           - 5000:5000
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@b4ba25e5825dccf0f4d25c103b63569a5d1d30c5 # main
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
