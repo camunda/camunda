@@ -88,7 +88,7 @@ test.describe.parallel('Assign User Task Tests', () => {
   });
 
   test('Assign user task - not found', async ({request}) => {
-    const unknownUserTaskKey = '2251799813694876';
+    const unknownUserTaskKey = '9999999999999999';
     const res = await request.post(
       buildUrl(`/user-tasks/${unknownUserTaskKey}/assignment`),
       {

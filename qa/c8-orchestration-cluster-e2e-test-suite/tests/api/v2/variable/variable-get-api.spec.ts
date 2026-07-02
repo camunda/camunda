@@ -61,7 +61,7 @@ test.describe.parallel('Get Variable API Tests', () => {
   });
 
   test('Get Variable Not Found', async ({request}) => {
-    const unknownVariableKey = '2251799813694876';
+    const unknownVariableKey = '9999999999999999';
     const res = await request.get(
       buildUrl(`/variables/${unknownVariableKey}`),
       {
