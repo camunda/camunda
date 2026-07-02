@@ -1064,6 +1064,80 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+  spring-boot-compatibility-tests:
+    # Verifies the Spring Boot 4 modules (camunda-spring-boot-starter and
+    # camunda-process-test-spring) still build and pass their tests against a
+    # non-default Spring Boot 4 minor version. The version is set by the profile
+    # defined in library-parent/pom.xml.
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    name: "[Spring-Boot-Compatibility] ${{ matrix.name }}"
+    needs: [ detect-changes ]
+    runs-on: gcp-perf-core-8-default
+    timeout-minutes: 30
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    outputs:
+      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "4.1.x"
+            profile: "spring-boot-4.1"
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@b4ba25e5825dccf0f4d25c103b63569a5d1d30c5 # main
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: spring-boot-compatibility
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C -Dquickly
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
+      - name: Maven Test Build
+        shell: bash
+        # We run unit and integration tests here as there aren't that many tests in the modules.
+        # 'clean' forces recompilation against the profile's Spring Boot version rather than
+        # reusing the default-version artifacts produced by build-zeebe.
+        run: >
+          ./mvnw -T2 -B --no-snapshot-updates
+          -D skipChecks
+          -D surefire.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
+          -D failsafe.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
+          -P skipFrontendBuild,extract-flaky-tests,${{ matrix.profile }}
+          -pl clients/camunda-spring-boot-starter,clients/camunda-spring-boot-starter-virtual-threads,testing/camunda-process-test-spring
+          clean verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Analyze Test Runs
+        id: analyze-test-run
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
+        with:
+          name: "[Spring-Boot-Compatibility] ${{ matrix.name }}"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "spring-boot-compatibility/${{ matrix.name }}"
+          build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          detailed_junit_tests: true
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   docker-checks:
     if: needs.detect-changes.outputs.camunda-docker-tests == 'true'
     name: "Docker / Tool / Checks"
@@ -1783,6 +1857,7 @@ jobs:
       - renovatelint
       - setup-tests
       - shell-script-tests
+      - spring-boot-compatibility-tests
       - tasklist-ci
       - validate-pom-metadata
       - zeebe-ci

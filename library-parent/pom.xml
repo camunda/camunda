@@ -27,4 +27,16 @@
     <!-- No overrides as zeebe-parent was migrated to Spring Boot 4.0.0 -->
   </properties>
 
+  <profiles>
+    <profile>
+      <id>spring-boot-4.1</id>
+      <properties>
+        <!-- For testing Spring Boot 4.1 compatibility. Spring Boot 4.1.0 manages Spring
+             Framework 7.0.8 (same as the default Spring Boot 4.0.x), so version.spring is left
+             at the inherited default; only the Spring Boot version is overridden here. -->
+        <version.spring-boot>4.1.0</version.spring-boot>
+      </properties>
+    </profile>
+  </profiles>
+
 </project>
