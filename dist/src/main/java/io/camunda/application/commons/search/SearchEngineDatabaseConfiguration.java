@@ -21,6 +21,7 @@ import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.connect.configuration.DatabaseConfig;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
+import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -60,13 +61,18 @@ public class SearchEngineDatabaseConfiguration {
   public SearchEngineSchemaInitializer searchEngineSchemaInitializer(
       @Qualifier("searchEngineConfigurationsByTenant")
           final Map<String, SearchEngineConfiguration> searchEngineConfigurationsByTenant,
+      @Qualifier("physicalTenantScopedIndexDescriptors")
+          final Map<String, IndexDescriptors> physicalTenantScopedIndexDescriptors,
       final MeterRegistry meterRegistry,
       @Autowired(required = false)
           final Broker broker, // if present, then it will ensure that the broker is started first
       @Autowired(required = false) final BrokerCfg brokerCfg) {
     final boolean isGatewayEnabled = brokerCfg == null || brokerCfg.getGateway().isEnable();
     return new SearchEngineSchemaInitializer(
-        searchEngineConfigurationsByTenant, meterRegistry, isGatewayEnabled);
+        searchEngineConfigurationsByTenant,
+        physicalTenantScopedIndexDescriptors,
+        meterRegistry,
+        isGatewayEnabled);
   }
 
   @Bean

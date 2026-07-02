@@ -43,20 +43,20 @@ public class SearchEngineConnectPropertiesOverride {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(SearchEngineConnectPropertiesOverride.class);
 
-  private final Camunda camunda;
+  private final UnifiedConfiguration unifiedConfiguration;
   private final LegacySearchEngineConnectProperties legacySearchEngineConnectProperties;
 
   public SearchEngineConnectPropertiesOverride(
       final UnifiedConfiguration unifiedConfiguration,
       final LegacySearchEngineConnectProperties legacySearchEngineConnectProperties) {
-    camunda = unifiedConfiguration.getCamunda();
+    this.unifiedConfiguration = unifiedConfiguration;
     this.legacySearchEngineConnectProperties = legacySearchEngineConnectProperties;
   }
 
   @Bean
   @Primary
   public SearchEngineConnectProperties searchEngineConnectProperties() {
-    return searchEngineConnectProperties(camunda);
+    return searchEngineConnectProperties(unifiedConfiguration.getCamunda());
   }
 
   public SearchEngineConnectProperties searchEngineConnectProperties(final Camunda camunda) {

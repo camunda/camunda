@@ -25,6 +25,7 @@ import io.camunda.configuration.beans.LegacySearchEngineRetentionProperties;
 import io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
+import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.lang.reflect.Field;
 import java.util.Map;
@@ -57,7 +58,19 @@ class SearchEngineSchemaInitializerTest {
     camunda.getData().getSecondaryStorage().getElasticsearch().setUrl("http://localhost:9200");
     final PhysicalTenantResolver resolver =
         PhysicalTenantResolver.of(new MockEnvironment(), camunda);
-    return new SearchEngineSchemaInitializer(configsFor(resolver), new SimpleMeterRegistry(), true);
+    return newInitializer(resolver);
+  }
+
+  private static SearchEngineSchemaInitializer newInitializer(
+      final PhysicalTenantResolver resolver) {
+    return new SearchEngineSchemaInitializer(
+        configsFor(resolver), descriptorsFor(resolver), new SimpleMeterRegistry(), true);
+  }
+
+  /** Builds the per-tenant descriptors the same way the production bean does. */
+  private static Map<String, IndexDescriptors> descriptorsFor(
+      final PhysicalTenantResolver resolver) {
+    return new SearchClientReaderConfiguration().physicalTenantScopedIndexDescriptors(resolver);
   }
 
   private static Map<String, SearchEngineConfiguration> configsFor(
@@ -286,24 +299,31 @@ class SearchEngineSchemaInitializerTest {
           PhysicalTenantResolver.of(new MockEnvironment(), camunda);
 
       // when
-      final SearchEngineSchemaInitializer initializer =
-          new SearchEngineSchemaInitializer(configsFor(resolver), new SimpleMeterRegistry(), true);
+      final SearchEngineSchemaInitializer initializer = newInitializer(resolver);
 
       // then
       assertThat(initializer.isInitialized("default")).isFalse();
       assertThat(initializer.isInitialized()).isFalse();
-      assertThat(initializer.forTenant("default").indices()).isNotEmpty();
     }
 
     @Test
-    void shouldThrowForUnknownTenant() {
+    void shouldRejectMismatchedTenantKeySets() {
       // given
-      final SearchEngineSchemaInitializer initializer = createInitializer();
+      final Camunda camunda = new Camunda();
+      camunda.getData().getSecondaryStorage().setType(SecondaryStorageType.elasticsearch);
+      final PhysicalTenantResolver resolver =
+          PhysicalTenantResolver.of(new MockEnvironment(), camunda);
 
-      // when/then
-      assertThatThrownBy(() -> initializer.forTenant("unknown"))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("unknown");
+      // when/then — descriptors keyed by a different tenant id than the configs
+      assertThatThrownBy(
+              () ->
+                  new SearchEngineSchemaInitializer(
+                      configsFor(resolver),
+                      Map.of("other", new IndexDescriptors("prefix", true)),
+                      new SimpleMeterRegistry(),
+                      true))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("do not match");
     }
 
     @Test
@@ -342,13 +362,18 @@ class SearchEngineSchemaInitializerTest {
                       "camunda.physical-tenants.default.data.secondary-storage.type",
                       "elasticsearch",
                       "camunda.physical-tenants.tenantb.data.secondary-storage.type",
-                      "elasticsearch")));
+                      "elasticsearch",
+                      // authorization off => no per-tenant security.initialization block required
+                      "camunda.physical-tenants.tenantb.security.authorization.enabled",
+                      "false",
+                      // distinct prefix so both tenants may share the same connection
+                      "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.index-prefix",
+                      "tenantb")));
       final Camunda camunda = new Camunda();
       camunda.getData().getSecondaryStorage().setType(SecondaryStorageType.elasticsearch);
       camunda.getData().getSecondaryStorage().getElasticsearch().setUrl("http://es:9200");
       final PhysicalTenantResolver resolver = PhysicalTenantResolver.of(env, camunda);
-      final SearchEngineSchemaInitializer initializer =
-          new SearchEngineSchemaInitializer(configsFor(resolver), new SimpleMeterRegistry(), true);
+      final SearchEngineSchemaInitializer initializer = newInitializer(resolver);
 
       // when — flip readiness on only one tenant
       final Field field = SearchEngineSchemaInitializer.class.getDeclaredField("initialized");

@@ -39,21 +39,19 @@ public class SearchEngineSchemaInitializer implements InitializingBean, SchemaMa
 
   public SearchEngineSchemaInitializer(
       final Map<String, SearchEngineConfiguration> configsByTenant,
+      final Map<String, IndexDescriptors> descriptorsByTenant,
       final MeterRegistry meterRegistry,
       final boolean awaitSchemaInitialization) {
+    if (!configsByTenant.keySet().equals(descriptorsByTenant.keySet())) {
+      throw new IllegalStateException(
+          "Physical tenant ids of the search engine configurations %s and the index descriptors %s do not match"
+              .formatted(configsByTenant.keySet(), descriptorsByTenant.keySet()));
+    }
     schemaManagerMetrics = new SchemaManagerMetrics(meterRegistry);
     this.awaitSchemaInitialization = awaitSchemaInitialization;
 
     configs = configsByTenant;
-    descriptors =
-        configs.entrySet().stream()
-            .collect(
-                toUnmodifiableMap(
-                    Map.Entry::getKey,
-                    e ->
-                        new IndexDescriptors(
-                            e.getValue().connect().getIndexPrefix(),
-                            e.getValue().connect().getTypeEnum().isElasticSearch())));
+    descriptors = descriptorsByTenant;
     initialized =
         configs.keySet().stream()
             .collect(toUnmodifiableMap(id -> id, id -> new AtomicBoolean(false)));
@@ -189,14 +187,6 @@ public class SearchEngineSchemaInitializer implements InitializingBean, SchemaMa
       LOGGER.debug("JVM is shutting down, cannot add the schema initializer shutdown hook", e);
       return false;
     }
-  }
-
-  public IndexDescriptors forTenant(final String physicalTenantId) {
-    final IndexDescriptors d = descriptors.get(physicalTenantId);
-    if (d == null) {
-      throw new IllegalArgumentException("Unknown physical tenant: " + physicalTenantId);
-    }
-    return d;
   }
 
   @Override
