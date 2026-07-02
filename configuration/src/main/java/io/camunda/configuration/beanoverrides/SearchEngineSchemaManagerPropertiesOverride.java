@@ -57,8 +57,7 @@ public class SearchEngineSchemaManagerPropertiesOverride {
         camunda.getSystem().getUpgrade().getEnableVersionCheck());
 
     /* Clean-up properties */
-    unifiedConfiguration
-        .getCamunda()
+    camunda
         .getData()
         .getSecondaryStorage()
         .elasticsearchOrOpensearch()
