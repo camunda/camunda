@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.camunda</groupId>
+    <artifactId>analytics-parent</artifactId>
+    <version>8.10.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>analytics-engine</artifactId>
+  <packaging>jar</packaging>
+  <name>Analytics Engine</name>
+  <description>Domain-independent streaming framework for the analytics pipeline: a keyed state store
+    over RocksDB, a fold step that emits facts into a collector, mergeable aggregate functions, key
+    selection and tumbling windows, and an in-memory pre-aggregation (combiner) that keeps the
+    serving store off the per-fact path — composed by a lifecycle-managed stream processor.</description>
+
+  <dependencies>
+    <!-- RocksDB-backed ZeebeDb for the keyed state store -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-db</artifactId>
+    </dependency>
+    <!-- EnumValue / ScopedColumnFamily for the column-family enum bound -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-util</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.agrona</groupId>
+      <artifactId>agrona</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
+    </dependency>
+    <!-- Mergeable sketches for the approximate aggregates: HLL (distinct), KLL (quantiles), and
+         frequent items (top-k) — each with a commutative/associative union and byte serialization. -->
+    <dependency>
+      <groupId>org.apache.datasketches</groupId>
+      <artifactId>datasketches-java</artifactId>
+    </dependency>
+
+    <!-- Test -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+</project>
