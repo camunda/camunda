@@ -7,10 +7,9 @@
  */
 package io.camunda.eventbridge.analytics.stage;
 
-import io.camunda.analytics.streaming.StreamProcessor;
+import io.camunda.analytics.streaming.ProjectionStage;
 import io.camunda.analytics.streaming.aggregate.Rollup;
 import io.camunda.analytics.streaming.aggregate.TypeRoutingRollup;
-import io.camunda.analytics.streaming.state.rocksdb.RocksDbStateStoreProvider;
 import io.camunda.eventbridge.analytics.fact.ProcessDefinitionFact;
 import io.camunda.eventbridge.analytics.fact.ProcessExecutionFact;
 import io.camunda.eventbridge.analytics.metric.JdbcProcessDefinitionSink;
@@ -18,7 +17,9 @@ import io.camunda.eventbridge.analytics.projection.AnalyticsColumnFamilies;
 import io.camunda.eventbridge.analytics.projection.ProcessExecutionProjector;
 import io.camunda.eventbridge.analytics.projection.StateBackedProjectionStore;
 import io.camunda.eventbridge.client.EventBridgeClient;
+import io.camunda.eventbridge.streaming.StreamProcessor;
 import io.camunda.eventbridge.streaming.StreamRuntime;
+import io.camunda.eventbridge.streaming.state.rocksdb.RocksDbStateStoreProvider;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecord;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecordCodec;
 import io.camunda.zeebe.db.impl.DbBytes;
@@ -108,8 +109,8 @@ public final class AnalyticsProjectionStage {
     // The per-partition task: fold-then-combine over the source. Single source partition today, so
     // one task; the factory shape lets the runtime scale to task-per-partition when the source is
     // partitioned (which additionally needs per-partition state providers).
-    final StreamProcessorTask<ZeebeRecord> task =
-        new StreamProcessorTask<>(new StreamProcessor<ZeebeRecord>().register(projector, rollups));
+    final StreamProcessor<ZeebeRecord> task =
+        new StreamProcessor<ZeebeRecord>().add(new ProjectionStage<>(projector, rollups));
     final ZeebeRecordCodec codec = new ZeebeRecordCodec();
 
     final StreamRuntime<ZeebeRecord> runtime =

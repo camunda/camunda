@@ -7,9 +7,9 @@
  */
 package io.camunda.analytics.streaming.aggregate;
 
-import io.camunda.analytics.streaming.state.api.KeyValueStore;
 import io.camunda.analytics.streaming.window.TumblingWindows;
 import io.camunda.analytics.streaming.window.Windowed;
+import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.zeebe.db.impl.DbBytes;
 import io.camunda.zeebe.db.impl.DbLong;
 import java.nio.ByteBuffer;

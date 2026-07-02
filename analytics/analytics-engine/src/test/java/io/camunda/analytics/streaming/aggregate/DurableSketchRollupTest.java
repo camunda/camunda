@@ -10,11 +10,10 @@ package io.camunda.analytics.streaming.aggregate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
-import io.camunda.analytics.streaming.state.TestColumnFamilies;
-import io.camunda.analytics.streaming.state.api.KeyValueStore;
-import io.camunda.analytics.streaming.state.rocksdb.RocksDbStateStoreProvider;
 import io.camunda.analytics.streaming.window.TumblingWindows;
 import io.camunda.analytics.streaming.window.Windowed;
+import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
+import io.camunda.eventbridge.streaming.state.rocksdb.RocksDbStateStoreProvider;
 import io.camunda.zeebe.db.impl.DbBytes;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;

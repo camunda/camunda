@@ -7,8 +7,8 @@
  */
 package io.camunda.eventbridge.analytics.stage;
 
-import io.camunda.analytics.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.OffsetStore;
+import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import java.util.HashMap;

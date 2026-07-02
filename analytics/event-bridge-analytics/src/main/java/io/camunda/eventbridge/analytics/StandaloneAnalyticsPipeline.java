@@ -7,7 +7,7 @@
  */
 package io.camunda.eventbridge.analytics;
 
-import io.camunda.analytics.streaming.StreamProcessor;
+import io.camunda.analytics.streaming.ProjectionStage;
 import io.camunda.analytics.streaming.aggregate.AggregateFunction;
 import io.camunda.analytics.streaming.aggregate.Codec;
 import io.camunda.analytics.streaming.aggregate.DistinctCountAggregateFunction;
@@ -27,8 +27,6 @@ import io.camunda.analytics.streaming.aggregate.SumAggregateFunction;
 import io.camunda.analytics.streaming.aggregate.TopKAggregateFunction;
 import io.camunda.analytics.streaming.aggregate.TransactionRunner;
 import io.camunda.analytics.streaming.aggregate.TypeRoutingRollup;
-import io.camunda.analytics.streaming.state.api.KeyValueStore;
-import io.camunda.analytics.streaming.state.rocksdb.RocksDbStateStoreProvider;
 import io.camunda.analytics.streaming.window.TumblingWindows;
 import io.camunda.analytics.streaming.window.Windowed;
 import io.camunda.eventbridge.analytics.element.ElementExecutionFact;
@@ -74,6 +72,9 @@ import io.camunda.eventbridge.analytics.projection.AnalyticsColumnFamilies;
 import io.camunda.eventbridge.analytics.projection.ProcessExecutionProjector;
 import io.camunda.eventbridge.analytics.projection.StateBackedProjectionStore;
 import io.camunda.eventbridge.client.EventBridgeClient;
+import io.camunda.eventbridge.streaming.StreamProcessor;
+import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
+import io.camunda.eventbridge.streaming.state.rocksdb.RocksDbStateStoreProvider;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecord;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecordConsumer;
 import io.camunda.zeebe.db.impl.DbBytes;
@@ -708,7 +709,7 @@ public final class StandaloneAnalyticsPipeline {
     rollups.addAll(distinctRollups);
     rollups.addAll(topProcessesRollups);
     final StreamProcessor<ZeebeRecord> processor =
-        new StreamProcessor<ZeebeRecord>().register(projector, rollups);
+        new StreamProcessor<ZeebeRecord>().add(new ProjectionStage<>(projector, rollups));
 
     final ZeebeRecordConsumer source =
         ZeebeRecordConsumer.subscribe(client, group, instanceId, List.of(sourceTopic)).join();

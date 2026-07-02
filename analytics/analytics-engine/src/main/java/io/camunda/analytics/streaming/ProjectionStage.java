@@ -10,6 +10,7 @@ package io.camunda.analytics.streaming;
 import io.camunda.analytics.streaming.aggregate.Rollup;
 import io.camunda.analytics.streaming.fold.Collector;
 import io.camunda.analytics.streaming.fold.Projector;
+import io.camunda.eventbridge.streaming.Stage;
 import java.util.List;
 
 /**

@@ -12,7 +12,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.analytics.streaming.aggregate.AggregateFunction;
 import io.camunda.analytics.streaming.aggregate.InMemoryRollupStore;
 import io.camunda.analytics.streaming.aggregate.PreAggregatingRollup;
+import io.camunda.eventbridge.streaming.StreamProcessor;
+import io.camunda.eventbridge.streaming.StreamTopology;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -74,12 +77,13 @@ final class StreamTopologyTest {
     final Map<Integer, InMemoryRollupStore<String, Long>> stores = new HashMap<>();
     final StreamTopology<Sale> topology =
         new StreamTopology<Sale>()
-            .register(
-                partitionId -> (sale, out) -> out.collect(sale), // projector factory
+            .add(
                 partitionId -> {
                   final InMemoryRollupStore<String, Long> store = new InMemoryRollupStore<>(SUM);
                   stores.put(partitionId, store);
-                  return new PreAggregatingRollup<>(SUM, Sale::region, store, 1_000);
+                  return new ProjectionStage<Sale, Sale>(
+                      (sale, out) -> out.collect(sale),
+                      List.of(new PreAggregatingRollup<>(SUM, Sale::region, store, 1_000)));
                 });
 
     // when — each partition aggregates only its own facts

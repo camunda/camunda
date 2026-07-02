@@ -9,8 +9,9 @@ package io.camunda.analytics.streaming.aggregate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.analytics.streaming.StreamProcessor;
+import io.camunda.analytics.streaming.ProjectionStage;
 import io.camunda.analytics.streaming.fold.Projector;
+import io.camunda.eventbridge.streaming.StreamProcessor;
 import java.util.List;
 import java.util.Map;
 import java.util.function.ToLongFunction;
@@ -57,15 +58,19 @@ final class TransformingRollupTest {
 
     final StreamProcessor<Exec> processor =
         new StreamProcessor<Exec>()
-            .register(
-                derive,
-                List.of(
-                    new PreAggregatingRollup<>(
-                        sumOf(Exec::durationMs), Exec::region, byRegion, 1_000),
-                    new TransformingRollup<>(
-                        enrichWithTier,
+            .add(
+                new ProjectionStage<Exec, Exec>(
+                    derive,
+                    List.of(
                         new PreAggregatingRollup<>(
-                            sumOf(EnrichedExec::durationMs), EnrichedExec::tier, byTier, 1_000))));
+                            sumOf(Exec::durationMs), Exec::region, byRegion, 1_000),
+                        new TransformingRollup<>(
+                            enrichWithTier,
+                            new PreAggregatingRollup<>(
+                                sumOf(EnrichedExec::durationMs),
+                                EnrichedExec::tier,
+                                byTier,
+                                1_000)))));
 
     // when
     processor.init();

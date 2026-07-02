@@ -5,9 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.analytics.streaming.state.memory;
+package io.camunda.eventbridge.streaming.state.cache;
 
-import io.camunda.analytics.streaming.state.api.KeyValueStore;
+import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.util.buffer.BufferReader;
@@ -15,40 +15,61 @@ import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.function.BiConsumer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /**
- * A heap-backed {@link KeyValueStore} for tests — no RocksDB, no native library. Keys and values
- * are stored as their serialized bytes in a map ordered by unsigned-byte (lexicographic) key order,
- * so {@code forEach} and {@code prefixScan} match the order and prefix semantics of the RocksDB
- * store.
+ * A write-back cache over a durable {@link KeyValueStore}: the whole store is held on the heap (the
+ * authoritative working copy, loaded from the delegate on construction) and reads/writes never
+ * touch the delegate. {@link #checkpoint()} flushes the keys changed and deleted since the last
+ * checkpoint to the delegate in one pass — so, wrapped in the driver's checkpoint transaction, the
+ * base projection's writes coalesce into the same atomic cut as the rollups instead of writing
+ * through per record (the Kafka-Streams record-cache model, applied to a plain key-value store).
  *
- * <p>It mirrors the flyweight contract: reads wrap the shared key/value flyweights, valid only
- * until the next call.
+ * <p>Keys and values are stored as their serialized bytes in unsigned-byte order, matching the
+ * RocksDB delegate's {@code forEach}/{@code prefixScan} semantics. Not thread-safe (single-writer,
+ * like the rest of the pipeline).
+ *
+ * @param <K> the key type (a {@link DbKey} flyweight)
+ * @param <V> the value type (a {@link DbValue} flyweight)
  */
-public final class InMemoryKeyValueStore<K extends DbKey, V extends DbValue>
+public final class WriteBackKeyValueStore<K extends DbKey, V extends DbValue>
     implements KeyValueStore<K, V> {
 
+  private final KeyValueStore<K, V> delegate;
   private final K keyFlyweight;
   private final V valueFlyweight;
-  private final NavigableMap<byte[], byte[]> entries = new TreeMap<>(Arrays::compareUnsigned);
 
-  public InMemoryKeyValueStore(final K keyFlyweight, final V valueFlyweight) {
+  private final NavigableMap<byte[], byte[]> entries = new TreeMap<>(Arrays::compareUnsigned);
+  private final NavigableSet<byte[]> dirty = new TreeSet<>(Arrays::compareUnsigned);
+  private final NavigableSet<byte[]> deleted = new TreeSet<>(Arrays::compareUnsigned);
+
+  public WriteBackKeyValueStore(
+      final KeyValueStore<K, V> delegate, final K keyFlyweight, final V valueFlyweight) {
+    this.delegate = delegate;
     this.keyFlyweight = keyFlyweight;
     this.valueFlyweight = valueFlyweight;
+    delegate.forEach((key, value) -> entries.put(toBytes(key), toBytes(value)));
   }
 
   @Override
   public void put(final K key, final V value) {
-    entries.put(toBytes(key), toBytes(value));
+    final byte[] keyBytes = toBytes(key);
+    entries.put(keyBytes, toBytes(value));
+    dirty.add(keyBytes);
+    deleted.remove(keyBytes);
   }
 
   @Override
   public void delete(final K key) {
-    entries.remove(toBytes(key));
+    final byte[] keyBytes = toBytes(key);
+    entries.remove(keyBytes);
+    dirty.remove(keyBytes);
+    deleted.add(keyBytes);
   }
 
   @Override
@@ -69,7 +90,6 @@ public final class InMemoryKeyValueStore<K extends DbKey, V extends DbValue>
   @Override
   public void prefixScan(final DbKey prefix, final BiConsumer<K, V> visitor) {
     final byte[] prefixBytes = toBytes(prefix);
-    // entries with this prefix are contiguous from the first key >= prefix, in key order
     for (final Map.Entry<byte[], byte[]> entry : entries.tailMap(prefixBytes).entrySet()) {
       if (!startsWith(entry.getKey(), prefixBytes)) {
         break;
@@ -83,6 +103,23 @@ public final class InMemoryKeyValueStore<K extends DbKey, V extends DbValue>
     for (final Map.Entry<byte[], byte[]> entry : entries.entrySet()) {
       visit(entry, visitor);
     }
+  }
+
+  /**
+   * Writes the keys changed since the last checkpoint to the delegate and clears the change set.
+   */
+  public void checkpoint() {
+    for (final byte[] keyBytes : dirty) {
+      wrap(keyFlyweight, keyBytes);
+      wrap(valueFlyweight, entries.get(keyBytes));
+      delegate.put(keyFlyweight, valueFlyweight);
+    }
+    for (final byte[] keyBytes : deleted) {
+      wrap(keyFlyweight, keyBytes);
+      delegate.delete(keyFlyweight);
+    }
+    dirty.clear();
+    deleted.clear();
   }
 
   private void visit(final Map.Entry<byte[], byte[]> entry, final BiConsumer<K, V> visitor) {

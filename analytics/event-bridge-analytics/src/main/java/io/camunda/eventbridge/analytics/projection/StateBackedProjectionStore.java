@@ -7,11 +7,11 @@
  */
 package io.camunda.eventbridge.analytics.projection;
 
-import io.camunda.analytics.streaming.state.api.KeyValueStore;
-import io.camunda.analytics.streaming.state.api.StateStoreProvider;
-import io.camunda.analytics.streaming.state.cache.WriteBackKeyValueStore;
-import io.camunda.analytics.streaming.state.memory.InMemoryStateStoreProvider;
-import io.camunda.analytics.streaming.state.rocksdb.RocksDbStateStoreProvider;
+import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
+import io.camunda.eventbridge.streaming.state.api.StateStoreProvider;
+import io.camunda.eventbridge.streaming.state.cache.WriteBackKeyValueStore;
+import io.camunda.eventbridge.streaming.state.memory.InMemoryStateStoreProvider;
+import io.camunda.eventbridge.streaming.state.rocksdb.RocksDbStateStoreProvider;
 import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;

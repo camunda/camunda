@@ -13,6 +13,8 @@ import io.camunda.analytics.streaming.aggregate.AggregateFunction;
 import io.camunda.analytics.streaming.aggregate.InMemoryRollupStore;
 import io.camunda.analytics.streaming.aggregate.PreAggregatingRollup;
 import io.camunda.analytics.streaming.fold.Projector;
+import io.camunda.eventbridge.streaming.Stage;
+import io.camunda.eventbridge.streaming.StreamProcessor;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -48,11 +50,12 @@ final class StreamProcessorTest {
 
     final StreamProcessor<Order> processor =
         new StreamProcessor<Order>()
-            .register(
-                toSale,
-                List.of(
-                    new PreAggregatingRollup<>(SUM_AMOUNT, Sale::region, byRegion, 1000),
-                    new PreAggregatingRollup<>(SUM_AMOUNT, Sale::product, byProduct, 1000)));
+            .add(
+                new ProjectionStage<Order, Sale>(
+                    toSale,
+                    List.of(
+                        new PreAggregatingRollup<>(SUM_AMOUNT, Sale::region, byRegion, 1000),
+                        new PreAggregatingRollup<>(SUM_AMOUNT, Sale::product, byProduct, 1000))));
 
     // when
     processor.init();
@@ -85,10 +88,14 @@ final class StreamProcessorTest {
 
     final StreamProcessor<Order> processor =
         new StreamProcessor<Order>()
-            .register(
-                toSale, new PreAggregatingRollup<>(SUM_AMOUNT, Sale::region, salesByRegion, 1000))
-            .register(
-                toTouch, new PreAggregatingRollup<>(COUNT, Touch::region, touchesByRegion, 1000));
+            .add(
+                ProjectionStage.<Order, Sale>of(
+                    toSale,
+                    new PreAggregatingRollup<>(SUM_AMOUNT, Sale::region, salesByRegion, 1000)))
+            .add(
+                ProjectionStage.<Order, Touch>of(
+                    toTouch,
+                    new PreAggregatingRollup<>(COUNT, Touch::region, touchesByRegion, 1000)));
 
     // when
     processor.init();
@@ -109,7 +116,9 @@ final class StreamProcessorTest {
         (order, out) -> out.collect(new Sale(order.region(), order.product(), order.amount()));
     final StreamProcessor<Order> processor =
         new StreamProcessor<Order>()
-            .register(toSale, new PreAggregatingRollup<>(SUM_AMOUNT, Sale::region, byRegion, 1000));
+            .add(
+                ProjectionStage.<Order, Sale>of(
+                    toSale, new PreAggregatingRollup<>(SUM_AMOUNT, Sale::region, byRegion, 1000)));
 
     // when — a wall-clock tick flushes buffered partials mid-stream (no close)
     processor.process(new Order("EU", "widget", 100, true));

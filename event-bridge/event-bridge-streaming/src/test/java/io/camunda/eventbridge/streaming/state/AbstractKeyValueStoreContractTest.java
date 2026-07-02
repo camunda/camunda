@@ -5,11 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.analytics.streaming.state;
+package io.camunda.eventbridge.streaming.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.analytics.streaming.state.api.KeyValueStore;
+import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;

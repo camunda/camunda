@@ -9,7 +9,7 @@ package io.camunda.eventbridge.analytics.metric;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.analytics.streaming.StreamProcessor;
+import io.camunda.analytics.streaming.ProjectionStage;
 import io.camunda.analytics.streaming.aggregate.InMemoryRollupStore;
 import io.camunda.analytics.streaming.aggregate.Rollup;
 import io.camunda.analytics.streaming.dsl.Aggregation;
@@ -17,6 +17,7 @@ import io.camunda.analytics.streaming.fold.Projector;
 import io.camunda.analytics.streaming.window.TumblingWindows;
 import io.camunda.analytics.streaming.window.Windowed;
 import io.camunda.eventbridge.analytics.fact.ProcessInstanceExecutionTimeFact;
+import io.camunda.eventbridge.streaming.StreamProcessor;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -65,7 +66,10 @@ final class ExecutionTimeRollupExampleTest {
 
     final StreamProcessor<ProcessInstanceExecutionTimeFact> processor =
         new StreamProcessor<ProcessInstanceExecutionTimeFact>()
-            .register(derive, List.of(regionRollup, definitionRollup));
+            .add(
+                new ProjectionStage<
+                    ProcessInstanceExecutionTimeFact, ProcessInstanceExecutionTimeFact>(
+                    derive, List.of(regionRollup, definitionRollup)));
 
     processor.init();
     List.of(

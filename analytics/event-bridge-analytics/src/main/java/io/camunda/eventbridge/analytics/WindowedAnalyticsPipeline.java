@@ -7,10 +7,10 @@
  */
 package io.camunda.eventbridge.analytics;
 
-import io.camunda.analytics.streaming.StreamProcessor;
 import io.camunda.analytics.streaming.aggregate.TransactionRunner;
 import io.camunda.eventbridge.analytics.projection.BaseProjectionStore;
 import io.camunda.eventbridge.client.TopicPartition;
+import io.camunda.eventbridge.streaming.StreamProcessor;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecord;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecordConsumer;
 import java.time.Duration;

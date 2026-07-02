@@ -7,15 +7,15 @@
  */
 package io.camunda.eventbridge.analytics.stage;
 
-import io.camunda.analytics.streaming.StreamProcessor;
 import io.camunda.analytics.streaming.aggregate.MergingRollup;
 import io.camunda.analytics.streaming.shuffle.Partial;
 import io.camunda.analytics.streaming.shuffle.PartialCodec;
-import io.camunda.analytics.streaming.state.api.KeyValueStore;
-import io.camunda.analytics.streaming.state.rocksdb.RocksDbStateStoreProvider;
 import io.camunda.eventbridge.analytics.projection.AnalyticsColumnFamilies;
 import io.camunda.eventbridge.client.EventBridgeClient;
+import io.camunda.eventbridge.streaming.StreamProcessor;
 import io.camunda.eventbridge.streaming.StreamRuntime;
+import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
+import io.camunda.eventbridge.streaming.state.rocksdb.RocksDbStateStoreProvider;
 import io.camunda.zeebe.db.impl.DbBytes;
 import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
@@ -82,8 +82,8 @@ public final class AnalyticsAggregationStage {
           StageBuilders.merger(spec, slotStore, dataSource, provider::runInTransaction));
     }
 
-    final StreamProcessorTask<Partial> task =
-        new StreamProcessorTask<>(new StreamProcessor<Partial>().add(new MergeStage(mergers)));
+    final StreamProcessor<Partial> task =
+        new StreamProcessor<Partial>().add(new MergeStage(mergers));
 
     final StreamRuntime<Partial> runtime =
         StreamRuntime.<Partial>builder()
