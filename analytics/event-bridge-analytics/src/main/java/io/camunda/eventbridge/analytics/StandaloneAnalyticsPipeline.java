@@ -25,7 +25,9 @@ import io.camunda.analytics.streaming.aggregate.SourceCoordinate;
 import io.camunda.analytics.streaming.aggregate.StringCodec;
 import io.camunda.analytics.streaming.aggregate.SumAggregateFunction;
 import io.camunda.analytics.streaming.aggregate.TopKAggregateFunction;
+import io.camunda.analytics.streaming.aggregate.TransactionRunner;
 import io.camunda.analytics.streaming.aggregate.TypeRoutingRollup;
+import io.camunda.analytics.streaming.state.api.KeyValueStore;
 import io.camunda.analytics.streaming.state.rocksdb.RocksDbStateStoreProvider;
 import io.camunda.analytics.streaming.window.TumblingWindows;
 import io.camunda.analytics.streaming.window.Windowed;
@@ -68,18 +70,19 @@ import io.camunda.eventbridge.analytics.metric.RegionKey;
 import io.camunda.eventbridge.analytics.metric.RegionKeyCodec;
 import io.camunda.eventbridge.analytics.metric.SlaCohortAccumulatorCodec;
 import io.camunda.eventbridge.analytics.metric.SlaCohortAggregateFunction;
+import io.camunda.eventbridge.analytics.projection.AnalyticsColumnFamilies;
 import io.camunda.eventbridge.analytics.projection.ProcessExecutionProjector;
 import io.camunda.eventbridge.analytics.projection.StateBackedProjectionStore;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecord;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecordConsumer;
 import io.camunda.zeebe.db.impl.DbBytes;
-import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.ToLongFunction;
 import org.h2.jdbcx.JdbcDataSource;
 import org.slf4j.Logger;
@@ -93,8 +96,9 @@ import org.slf4j.LoggerFactory;
  * process-instance execution time (avg/min/max) by region, the per-element duration heatmap,
  * duration percentiles (p50/p75/p90/p99) by process definition and by element, the SLA-met and
  * no-incident percentages by definition, plus distinct-process and top-process (heavy-hitter)
- * rollups by tenant. Each rollup holds its windowed aggregate in its own RocksDB store and
- * converges an H2 serving table by idempotent full-value upsert ({@link
+ * rollups by tenant. The base projection and every rollup share one RocksDB (keyed by a per-rollup
+ * id), so one checkpoint transaction commits them and the consumed offset as a single atomic cut;
+ * each rollup converges an H2 serving table by idempotent full-value upsert ({@link
  * DurableMaterializedRollup}); the source is resumed from the base projection's checkpointed
  * position on restart (start-from-offset).
  *
@@ -143,17 +147,21 @@ public final class StandaloneAnalyticsPipeline {
     final EventBridgeClient client = EventBridgeClient.create(gateway);
     final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
 
-    // the single base projection (RocksDB local cache) — folded once, serving both metrics
-    final StateBackedProjectionStore store =
-        StateBackedProjectionStore.rocksDb(
-            new File("data/analytics-projection-" + instanceId), meterRegistry);
+    // one RocksDB for the whole stage: the base projection AND every rollup share it, so a single
+    // checkpoint transaction commits them and the offset as one atomic cut.
+    final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider =
+        RocksDbStateStoreProvider.open(new File("data/analytics-" + instanceId), meterRegistry);
+    final StateBackedProjectionStore store = StateBackedProjectionStore.fromProvider(provider);
     final ProcessExecutionProjector projector =
         new ProcessExecutionProjector(store, store.elementStarts());
 
-    // the rollups' durable aggregate state (RocksDB), separate from the base projection
-    final RocksDbStateStoreProvider<RollupColumnFamilies> rollupState =
-        RocksDbStateStoreProvider.open(
-            new File("data/analytics-rollups-" + instanceId), meterRegistry);
+    // all rollups share one cell store and one offset store, distinguished by a stable rollupId
+    // (assigned by construction order below); a new metric/dataset is a new id, not a new CF.
+    final KeyValueStore<DbBytes, DbBytes> rollupCells =
+        provider.keyValueStore(AnalyticsColumnFamilies.ROLLUP_CELLS, new DbBytes(), new DbBytes());
+    final KeyValueStore<DbBytes, DbLong> rollupOffsets =
+        provider.keyValueStore(AnalyticsColumnFamilies.ROLLUP_OFFSETS, new DbBytes(), new DbLong());
+    final AtomicInteger rollupIds = new AtomicInteger(1);
 
     final JdbcDataSource dataSource = new JdbcDataSource();
     dataSource.setURL(jdbcUrl);
@@ -179,6 +187,7 @@ public final class StandaloneAnalyticsPipeline {
         };
     final Rollup<ProcessInstanceExecutionTimeFact> regionRollup =
         new DurableMaterializedRollup<>(
+            rollupIds.getAndIncrement(),
             new ExecutionTimeAggregateFunction<>(ProcessInstanceExecutionTimeFact::durationMs),
             fact ->
                 new RegionKey(
@@ -192,13 +201,11 @@ public final class StandaloneAnalyticsPipeline {
             TumblingWindows.of(MINUTE_WINDOW_MS),
             ALLOWED_LATENESS_MS,
             regionSink,
-            rollupState.keyValueStore(
-                RollupColumnFamilies.REGION_CELLS, new DbBytes(), new DbBytes()),
-            rollupState.keyValueStore(
-                RollupColumnFamilies.REGION_OFFSETS, new DbInt(), new DbLong()),
+            rollupCells,
+            rollupOffsets,
             new RegionKeyCodec(),
             new ExecutionTimeAccumulatorCodec(),
-            rollupState::runInTransaction);
+            provider::runInTransaction);
 
     // metric 2 — per-element execution heatmap, same durable/idempotent machinery.
     final JdbcElementHeatmapSink heatmapSink =
@@ -218,6 +225,7 @@ public final class StandaloneAnalyticsPipeline {
         };
     final Rollup<ElementExecutionFact> heatmapRollup =
         new DurableMaterializedRollup<>(
+            rollupIds.getAndIncrement(),
             new ExecutionTimeAggregateFunction<>(ElementExecutionFact::durationMs),
             fact ->
                 new ElementKey(
@@ -232,13 +240,11 @@ public final class StandaloneAnalyticsPipeline {
             TumblingWindows.of(MINUTE_WINDOW_MS),
             ALLOWED_LATENESS_MS,
             heatmapSink,
-            rollupState.keyValueStore(
-                RollupColumnFamilies.HEATMAP_CELLS, new DbBytes(), new DbBytes()),
-            rollupState.keyValueStore(
-                RollupColumnFamilies.HEATMAP_OFFSETS, new DbInt(), new DbLong()),
+            rollupCells,
+            rollupOffsets,
             new ElementKeyCodec(),
             new ExecutionTimeAccumulatorCodec(),
-            rollupState::runInTransaction);
+            provider::runInTransaction);
 
     // metric 3 — process-instance duration percentiles (p50/p75/p90/p99) by process definition,
     // from the same completion fact as metric 1. These are the ranks Optimize's default duration
@@ -253,26 +259,10 @@ public final class StandaloneAnalyticsPipeline {
     // instead of thousands of 1m sketch blobs (see DashboardRepository#granularityFor).
     final List<Tier> defPctlTiers =
         List.of(
-            new Tier(
-                "1m",
-                MINUTE_WINDOW_MS,
-                RollupColumnFamilies.DEF_PCTL_CELLS,
-                RollupColumnFamilies.DEF_PCTL_OFFSETS),
-            new Tier(
-                "1h",
-                HOUR_WINDOW_MS,
-                RollupColumnFamilies.DEF_PCTL_1H_CELLS,
-                RollupColumnFamilies.DEF_PCTL_1H_OFFSETS),
-            new Tier(
-                "1d",
-                DAY_WINDOW_MS,
-                RollupColumnFamilies.DEF_PCTL_1D_CELLS,
-                RollupColumnFamilies.DEF_PCTL_1D_OFFSETS),
-            new Tier(
-                "total",
-                TOTAL_WINDOW_MS,
-                RollupColumnFamilies.DEF_PCTL_TOTAL_CELLS,
-                RollupColumnFamilies.DEF_PCTL_TOTAL_OFFSETS));
+            new Tier("1m", MINUTE_WINDOW_MS),
+            new Tier("1h", HOUR_WINDOW_MS),
+            new Tier("1d", DAY_WINDOW_MS),
+            new Tier("total", TOTAL_WINDOW_MS));
     final List<Rollup<ProcessExecutionFact>> defPercentileRollups = new ArrayList<>();
     for (final Tier tier : defPctlTiers) {
       final JdbcDefinitionDurationPercentileSink sink =
@@ -282,17 +272,18 @@ public final class StandaloneAnalyticsPipeline {
           new TypeRoutingRollup<ProcessExecutionFact, ProcessInstanceExecutionTimeFact>(
               ProcessInstanceExecutionTimeFact.class,
               buildRollup(
-                  rollupState,
+                  rollupIds.getAndIncrement(),
                   new QuantileAggregateFunction<>(fact -> (double) fact.durationMs()),
                   StandaloneAnalyticsPipeline::definitionKey,
                   ProcessInstanceExecutionTimeFact::endTime,
                   regionCoordinate,
                   tier.windowMs(),
                   sink,
-                  tier.cells(),
-                  tier.offsets(),
+                  rollupCells,
+                  rollupOffsets,
                   new DefinitionKeyCodec(),
-                  new KllDoublesSketchCodec())));
+                  new KllDoublesSketchCodec(),
+                  provider::runInTransaction)));
     }
 
     // metric 4 — per-element (flow-node) duration percentiles, complementing the heatmap's
@@ -300,26 +291,10 @@ public final class StandaloneAnalyticsPipeline {
     // hierarchy as the definition percentiles.
     final List<Tier> elemPctlTiers =
         List.of(
-            new Tier(
-                "1m",
-                MINUTE_WINDOW_MS,
-                RollupColumnFamilies.ELEM_PCTL_CELLS,
-                RollupColumnFamilies.ELEM_PCTL_OFFSETS),
-            new Tier(
-                "1h",
-                HOUR_WINDOW_MS,
-                RollupColumnFamilies.ELEM_PCTL_1H_CELLS,
-                RollupColumnFamilies.ELEM_PCTL_1H_OFFSETS),
-            new Tier(
-                "1d",
-                DAY_WINDOW_MS,
-                RollupColumnFamilies.ELEM_PCTL_1D_CELLS,
-                RollupColumnFamilies.ELEM_PCTL_1D_OFFSETS),
-            new Tier(
-                "total",
-                TOTAL_WINDOW_MS,
-                RollupColumnFamilies.ELEM_PCTL_TOTAL_CELLS,
-                RollupColumnFamilies.ELEM_PCTL_TOTAL_OFFSETS));
+            new Tier("1m", MINUTE_WINDOW_MS),
+            new Tier("1h", HOUR_WINDOW_MS),
+            new Tier("1d", DAY_WINDOW_MS),
+            new Tier("total", TOTAL_WINDOW_MS));
     final List<Rollup<ProcessExecutionFact>> elementPercentileRollups = new ArrayList<>();
     for (final Tier tier : elemPctlTiers) {
       final JdbcElementDurationPercentileSink sink =
@@ -329,7 +304,7 @@ public final class StandaloneAnalyticsPipeline {
           new TypeRoutingRollup<ProcessExecutionFact, ElementExecutionFact>(
               ElementExecutionFact.class,
               buildRollup(
-                  rollupState,
+                  rollupIds.getAndIncrement(),
                   new QuantileAggregateFunction<>(fact -> (double) fact.durationMs()),
                   fact ->
                       new ElementKey(
@@ -343,10 +318,11 @@ public final class StandaloneAnalyticsPipeline {
                   heatmapCoordinate,
                   tier.windowMs(),
                   sink,
-                  tier.cells(),
-                  tier.offsets(),
+                  rollupCells,
+                  rollupOffsets,
                   new ElementKeyCodec(),
-                  new KllDoublesSketchCodec())));
+                  new KllDoublesSketchCodec(),
+                  provider::runInTransaction)));
     }
 
     // metric 5 — % of instances meeting the duration SLA, by definition (Optimize's percentSLAMet),
@@ -372,6 +348,7 @@ public final class StandaloneAnalyticsPipeline {
     slaCohortSink.initSchema();
     final Rollup<SlaCohortFact> slaCohortRollup =
         new DurableMaterializedRollup<>(
+            rollupIds.getAndIncrement(),
             new SlaCohortAggregateFunction(slaMs),
             fact ->
                 new DefinitionKey(
@@ -384,13 +361,11 @@ public final class StandaloneAnalyticsPipeline {
             TumblingWindows.of(MINUTE_WINDOW_MS),
             COHORT_LATENESS_MS, // keep the start window open past the longest run for late outcomes
             slaCohortSink,
-            rollupState.keyValueStore(
-                RollupColumnFamilies.SLA_RATIO_CELLS, new DbBytes(), new DbBytes()),
-            rollupState.keyValueStore(
-                RollupColumnFamilies.SLA_RATIO_OFFSETS, new DbInt(), new DbLong()),
+            rollupCells,
+            rollupOffsets,
             new DefinitionKeyCodec(),
             new SlaCohortAccumulatorCodec(),
-            rollupState::runInTransaction,
+            provider::runInTransaction,
             acc -> acc.started() > 0 && acc.settled() >= acc.started()); // drained: all settled
 
     // completion-time distribution per START cohort: of the instances that started in a window, how
@@ -401,6 +376,7 @@ public final class StandaloneAnalyticsPipeline {
     durationBucketSink.initSchema();
     final Rollup<SlaCohortFact> durationBucketRollup =
         new DurableMaterializedRollup<>(
+            rollupIds.getAndIncrement(),
             new DurationBucketAggregateFunction(DURATION_BUCKETS_MS),
             fact ->
                 new DefinitionKey(
@@ -413,13 +389,11 @@ public final class StandaloneAnalyticsPipeline {
             TumblingWindows.of(MINUTE_WINDOW_MS),
             COHORT_LATENESS_MS,
             durationBucketSink,
-            rollupState.keyValueStore(
-                RollupColumnFamilies.DURATION_BUCKET_CELLS, new DbBytes(), new DbBytes()),
-            rollupState.keyValueStore(
-                RollupColumnFamilies.DURATION_BUCKET_OFFSETS, new DbInt(), new DbLong()),
+            rollupCells,
+            rollupOffsets,
             new DefinitionKeyCodec(),
             new DurationBucketAccumulatorCodec(),
-            rollupState::runInTransaction,
+            provider::runInTransaction,
             acc -> acc.started() > 0 && acc.settled() >= acc.started()); // drained: all settled
 
     // metric 6 — % of instances without an incident, by definition (Optimize's percentNoIncidents),
@@ -446,6 +420,7 @@ public final class StandaloneAnalyticsPipeline {
     incidentRatioSink.initSchema();
     final Rollup<IncidentCohortFact> incidentRatioRollup =
         new DurableMaterializedRollup<>(
+            rollupIds.getAndIncrement(),
             new NoIncidentCohortAggregateFunction(),
             fact ->
                 new DefinitionKey(
@@ -455,13 +430,11 @@ public final class StandaloneAnalyticsPipeline {
             TumblingWindows.of(MINUTE_WINDOW_MS),
             COHORT_LATENESS_MS,
             incidentRatioSink,
-            rollupState.keyValueStore(
-                RollupColumnFamilies.INCIDENT_RATIO_CELLS, new DbBytes(), new DbBytes()),
-            rollupState.keyValueStore(
-                RollupColumnFamilies.INCIDENT_RATIO_OFFSETS, new DbInt(), new DbLong()),
+            rollupCells,
+            rollupOffsets,
             new DefinitionKeyCodec(),
             new RatioAccumulatorCodec(),
-            rollupState::runInTransaction);
+            provider::runInTransaction);
 
     // metric 7 — distinct number of processes active per tenant, from the same fact. The
     // accumulator is an HLL sketch; the count is approximate but the register-wise merge is exact.
@@ -471,17 +444,7 @@ public final class StandaloneAnalyticsPipeline {
     // the finest tier is hourly (a per-minute distinct count over a low-cardinality set is noise),
     // with a 1d tier above it so a long range merges days rather than thousands of hours.
     final List<Tier> distinctTiers =
-        List.of(
-            new Tier(
-                "1h",
-                HOUR_WINDOW_MS,
-                RollupColumnFamilies.DISTINCT_CELLS,
-                RollupColumnFamilies.DISTINCT_OFFSETS),
-            new Tier(
-                "1d",
-                DAY_WINDOW_MS,
-                RollupColumnFamilies.DISTINCT_1D_CELLS,
-                RollupColumnFamilies.DISTINCT_1D_OFFSETS));
+        List.of(new Tier("1h", HOUR_WINDOW_MS), new Tier("1d", DAY_WINDOW_MS));
     final List<Rollup<ProcessExecutionFact>> distinctRollups = new ArrayList<>();
     for (final Tier tier : distinctTiers) {
       final JdbcTenantDistinctProcessSink sink =
@@ -491,7 +454,7 @@ public final class StandaloneAnalyticsPipeline {
           new TypeRoutingRollup<ProcessExecutionFact, ProcessInstanceExecutionTimeFact>(
               ProcessInstanceExecutionTimeFact.class,
               buildRollup(
-                  rollupState,
+                  rollupIds.getAndIncrement(),
                   new DistinctCountAggregateFunction<>(
                       ProcessInstanceExecutionTimeFact::bpmnProcessId),
                   ProcessInstanceExecutionTimeFact::tenantId,
@@ -499,10 +462,11 @@ public final class StandaloneAnalyticsPipeline {
                   regionCoordinate,
                   tier.windowMs(),
                   sink,
-                  tier.cells(),
-                  tier.offsets(),
+                  rollupCells,
+                  rollupOffsets,
                   new StringCodec(),
-                  new HllSketchCodec())));
+                  new HllSketchCodec(),
+                  provider::runInTransaction)));
     }
 
     // metric 8 — top processes by volume per tenant, from the same fact. The accumulator is a
@@ -513,26 +477,10 @@ public final class StandaloneAnalyticsPipeline {
     // for merge-on-read.
     final List<Tier> topkTiers =
         List.of(
-            new Tier(
-                "1m",
-                MINUTE_WINDOW_MS,
-                RollupColumnFamilies.TOPK_CELLS,
-                RollupColumnFamilies.TOPK_OFFSETS),
-            new Tier(
-                "1h",
-                HOUR_WINDOW_MS,
-                RollupColumnFamilies.TOPK_1H_CELLS,
-                RollupColumnFamilies.TOPK_1H_OFFSETS),
-            new Tier(
-                "1d",
-                DAY_WINDOW_MS,
-                RollupColumnFamilies.TOPK_1D_CELLS,
-                RollupColumnFamilies.TOPK_1D_OFFSETS),
-            new Tier(
-                "total",
-                TOTAL_WINDOW_MS,
-                RollupColumnFamilies.TOPK_TOTAL_CELLS,
-                RollupColumnFamilies.TOPK_TOTAL_OFFSETS));
+            new Tier("1m", MINUTE_WINDOW_MS),
+            new Tier("1h", HOUR_WINDOW_MS),
+            new Tier("1d", DAY_WINDOW_MS),
+            new Tier("total", TOTAL_WINDOW_MS));
     final List<Rollup<ProcessExecutionFact>> topProcessesRollups = new ArrayList<>();
     for (final Tier tier : topkTiers) {
       final JdbcTenantTopProcessesSink sink =
@@ -542,7 +490,7 @@ public final class StandaloneAnalyticsPipeline {
           new TypeRoutingRollup<ProcessExecutionFact, ProcessInstanceExecutionTimeFact>(
               ProcessInstanceExecutionTimeFact.class,
               buildRollup(
-                  rollupState,
+                  rollupIds.getAndIncrement(),
                   new TopKAggregateFunction<>(
                       ProcessInstanceExecutionTimeFact::bpmnProcessId,
                       TOP_K,
@@ -552,10 +500,11 @@ public final class StandaloneAnalyticsPipeline {
                   regionCoordinate,
                   tier.windowMs(),
                   sink,
-                  tier.cells(),
-                  tier.offsets(),
+                  rollupCells,
+                  rollupOffsets,
                   new StringCodec(),
-                  new ItemsSketchCodec())));
+                  new ItemsSketchCodec(),
+                  provider::runInTransaction)));
     }
 
     // instance lifecycle — the projector emits +1 on activation and -1 on completion/termination.
@@ -578,6 +527,7 @@ public final class StandaloneAnalyticsPipeline {
     activeSink.initSchema();
     final Rollup<ProcessInstanceLifecycleFact> activeRollup =
         new DurableMaterializedRollup<>(
+            rollupIds.getAndIncrement(),
             new SumAggregateFunction<>(ProcessInstanceLifecycleFact::delta),
             fact ->
                 new DefinitionKey(
@@ -590,13 +540,11 @@ public final class StandaloneAnalyticsPipeline {
             TumblingWindows.of(TOTAL_WINDOW_MS),
             ALLOWED_LATENESS_MS,
             activeSink,
-            rollupState.keyValueStore(
-                RollupColumnFamilies.ACTIVE_CELLS, new DbBytes(), new DbBytes()),
-            rollupState.keyValueStore(
-                RollupColumnFamilies.ACTIVE_OFFSETS, new DbInt(), new DbLong()),
+            rollupCells,
+            rollupOffsets,
             new DefinitionKeyCodec(),
             new LongCodec(),
-            rollupState::runInTransaction);
+            provider::runInTransaction);
 
     // activated instances — a windowed count of activations (the +1s); additive, so a read sums it
     // over the selected range to get "instances started in this range".
@@ -605,6 +553,7 @@ public final class StandaloneAnalyticsPipeline {
     activatedSink.initSchema();
     final Rollup<ProcessInstanceLifecycleFact> activatedRollup =
         new DurableMaterializedRollup<>(
+            rollupIds.getAndIncrement(),
             new SumAggregateFunction<>(fact -> fact.delta() > 0 ? 1L : 0L),
             fact ->
                 new DefinitionKey(
@@ -617,13 +566,11 @@ public final class StandaloneAnalyticsPipeline {
             TumblingWindows.of(MINUTE_WINDOW_MS),
             ALLOWED_LATENESS_MS,
             activatedSink,
-            rollupState.keyValueStore(
-                RollupColumnFamilies.ACTIVATED_CELLS, new DbBytes(), new DbBytes()),
-            rollupState.keyValueStore(
-                RollupColumnFamilies.ACTIVATED_OFFSETS, new DbInt(), new DbLong()),
+            rollupCells,
+            rollupOffsets,
             new DefinitionKeyCodec(),
             new LongCodec(),
-            rollupState::runInTransaction);
+            provider::runInTransaction);
 
     // incidents — the projector emits +1 on create and -1 on resolve, per flow node.
     final SourceCoordinate<IncidentFact> incidentCoordinate =
@@ -648,17 +595,18 @@ public final class StandaloneAnalyticsPipeline {
     incidentFrequencySink.initSchema();
     final Rollup<IncidentFact> incidentFrequencyRollup =
         buildRollup(
-            rollupState,
+            rollupIds.getAndIncrement(),
             new SumAggregateFunction<>(fact -> fact.delta() > 0 ? 1L : 0L),
             incidentKey,
             IncidentFact::timestamp,
             incidentCoordinate,
             MINUTE_WINDOW_MS,
             incidentFrequencySink,
-            RollupColumnFamilies.INCIDENT_FREQ_CELLS,
-            RollupColumnFamilies.INCIDENT_FREQ_OFFSETS,
+            rollupCells,
+            rollupOffsets,
             new IncidentKeyCodec(),
-            new LongCodec());
+            new LongCodec(),
+            provider::runInTransaction);
 
     // open incidents — a range-independent gauge: created minus resolved in one all-time bucket per
     // flow node = the number of incidents currently open.
@@ -666,17 +614,18 @@ public final class StandaloneAnalyticsPipeline {
     openIncidentsSink.initSchema();
     final Rollup<IncidentFact> openIncidentsRollup =
         buildRollup(
-            rollupState,
+            rollupIds.getAndIncrement(),
             new SumAggregateFunction<>(IncidentFact::delta),
             incidentKey,
             IncidentFact::timestamp,
             incidentCoordinate,
             TOTAL_WINDOW_MS,
             openIncidentsSink,
-            RollupColumnFamilies.INCIDENT_OPEN_CELLS,
-            RollupColumnFamilies.INCIDENT_OPEN_OFFSETS,
+            rollupCells,
+            rollupOffsets,
             new IncidentKeyCodec(),
-            new LongCodec());
+            new LongCodec(),
+            provider::runInTransaction);
 
     // incident duration — open→resolve time per flow node (count/total/max → avg on read), for the
     // incident-duration heatmap. Windowed by resolve time; reuses the execution-time aggregate.
@@ -697,17 +646,18 @@ public final class StandaloneAnalyticsPipeline {
     incidentDurationSink.initSchema();
     final Rollup<IncidentDurationFact> incidentDurationRollup =
         buildRollup(
-            rollupState,
+            rollupIds.getAndIncrement(),
             new ExecutionTimeAggregateFunction<>(IncidentDurationFact::durationMs),
             fact -> new IncidentKey(fact.bpmnProcessId(), fact.elementId(), fact.tenantId()),
             IncidentDurationFact::resolvedTimeMs,
             incidentDurationCoordinate,
             MINUTE_WINDOW_MS,
             incidentDurationSink,
-            RollupColumnFamilies.INCIDENT_DUR_CELLS,
-            RollupColumnFamilies.INCIDENT_DUR_OFFSETS,
+            rollupCells,
+            rollupOffsets,
             new IncidentKeyCodec(),
-            new ExecutionTimeAccumulatorCodec());
+            new ExecutionTimeAccumulatorCodec(),
+            provider::runInTransaction);
 
     // definitions — sink each deployed process's BPMN so the dashboard can render the model behind
     // the flow-node heatmap. Not windowed: a direct idempotent upsert by definition key.
@@ -764,7 +714,8 @@ public final class StandaloneAnalyticsPipeline {
         ZeebeRecordConsumer.subscribe(client, group, instanceId, List.of(sourceTopic)).join();
 
     final WindowedAnalyticsPipeline pipeline =
-        new WindowedAnalyticsPipeline(source, processor, store, sourceTopic);
+        new WindowedAnalyticsPipeline(
+            source, processor, store, sourceTopic, provider::runInTransaction);
     pipeline.start();
     LOG.info(
         "Analytics instance '{}' started: {} -> base projection -> durable rollups "
@@ -778,8 +729,7 @@ public final class StandaloneAnalyticsPipeline {
                 () -> {
                   pipeline.close();
                   try {
-                    rollupState.close();
-                    store.close();
+                    provider.close(); // the one RocksDB for the base projection and all rollups
                     client.close();
                   } catch (final Exception ignored) {
                     // shutting down
@@ -799,23 +749,24 @@ public final class StandaloneAnalyticsPipeline {
    * stamps on the row, and the pair of RocksDB column families holding that tier's cells and dedup
    * offsets. Each tier is an independent rollup fed the same facts.
    */
-  private record Tier(
-      String label, long windowMs, RollupColumnFamilies cells, RollupColumnFamilies offsets) {}
+  private record Tier(String label, long windowMs) {}
 
-  /** Builds one durable windowed rollup, wiring its cell/offset stores from the shared state. */
+  /** Builds one durable windowed rollup with a stable id over the shared cell/offset stores. */
   private static <F, K, ACC> Rollup<F> buildRollup(
-      final RocksDbStateStoreProvider<RollupColumnFamilies> state,
+      final int rollupId,
       final AggregateFunction<F, ACC, ?> aggregate,
       final KeySelector<F, K> keySelector,
       final ToLongFunction<F> eventTime,
       final SourceCoordinate<F> coordinate,
       final long windowMs,
       final ResultSink<Windowed<K>, ACC> sink,
-      final RollupColumnFamilies cells,
-      final RollupColumnFamilies offsets,
+      final KeyValueStore<DbBytes, DbBytes> cells,
+      final KeyValueStore<DbBytes, DbLong> offsets,
       final Codec<K> keyCodec,
-      final Codec<ACC> accCodec) {
+      final Codec<ACC> accCodec,
+      final TransactionRunner tx) {
     return new DurableMaterializedRollup<>(
+        rollupId,
         aggregate,
         keySelector,
         eventTime,
@@ -823,10 +774,10 @@ public final class StandaloneAnalyticsPipeline {
         TumblingWindows.of(windowMs),
         ALLOWED_LATENESS_MS,
         sink,
-        state.keyValueStore(cells, new DbBytes(), new DbBytes()),
-        state.keyValueStore(offsets, new DbInt(), new DbLong()),
+        cells,
+        offsets,
         keyCodec,
         accCodec,
-        state::runInTransaction);
+        tx);
   }
 }

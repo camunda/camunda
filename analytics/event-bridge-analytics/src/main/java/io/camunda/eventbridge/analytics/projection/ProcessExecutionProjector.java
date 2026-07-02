@@ -73,6 +73,13 @@ public final class ProcessExecutionProjector
   }
 
   @Override
+  public void checkpoint() {
+    // Flush the write-back-cached base projection (variables, element starts, incidents) to durable
+    // storage. Runs inside the runtime's checkpoint transaction, alongside the rollups and offset.
+    store.checkpoint();
+  }
+
+  @Override
   public void apply(final ZeebeRecord zeebeRecord, final Collector<ProcessExecutionFact> out) {
     final Record<?> record = zeebeRecord.record();
 

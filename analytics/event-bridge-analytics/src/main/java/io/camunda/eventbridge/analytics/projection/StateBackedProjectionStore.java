@@ -9,6 +9,7 @@ package io.camunda.eventbridge.analytics.projection;
 
 import io.camunda.analytics.streaming.state.api.KeyValueStore;
 import io.camunda.analytics.streaming.state.api.StateStoreProvider;
+import io.camunda.analytics.streaming.state.cache.WriteBackKeyValueStore;
 import io.camunda.analytics.streaming.state.memory.InMemoryStateStoreProvider;
 import io.camunda.analytics.streaming.state.rocksdb.RocksDbStateStoreProvider;
 import io.camunda.zeebe.db.impl.DbInt;
@@ -22,69 +23,100 @@ import java.util.Map;
 /**
  * The {@link BaseProjectionStore} on top of the {@code analytics-streaming} state library: one
  * store for per-instance variables, one for in-flight element start times (the process instance
- * keys into it like any element), and one for the per-partition consumed position — all opened from
- * a single {@link StateStoreProvider}. Backed by RocksDB in production ({@link #rocksDb}) or by the
- * heap in tests ({@link #inMemory}) — the fold logic is identical against either.
+ * keys into it like any element), one for the per-partition consumed position, and the incident
+ * flags/starts — all opened from a single {@link StateStoreProvider} shared with the rollups (one
+ * RocksDB per stage).
+ *
+ * <p>Every store is a {@link WriteBackKeyValueStore}: the projection is held on the heap and reads
+ * and writes never touch RocksDB during processing. {@link #checkpoint()} flushes all of them, so —
+ * called inside the driver's checkpoint transaction alongside the rollups — the base projection,
+ * the rollup cells, and the consumed offset commit as one atomic cut (no write-through per record).
+ * Backed by RocksDB in production ({@link #fromProvider}/{@link #rocksDb}) or by the heap in tests
+ * ({@link #inMemory}) — the fold logic is identical against either.
  */
 public final class StateBackedProjectionStore implements BaseProjectionStore, AutoCloseable {
 
   private final StateStoreProvider<AnalyticsColumnFamilies> provider;
+  private final boolean ownsProvider;
 
   private final DbLong instanceKey = new DbLong();
   private final PersistedVariables persistedVariables = new PersistedVariables();
-  private final KeyValueStore<DbLong, PersistedVariables> variables;
+  private final WriteBackKeyValueStore<DbLong, PersistedVariables> variables;
 
   private final DbInt positionKey = new DbInt();
   private final DbLong positionValue = new DbLong();
-  private final KeyValueStore<DbInt, DbLong> consumedPosition;
+  private final WriteBackKeyValueStore<DbInt, DbLong> consumedPosition;
 
-  private final KeyValueStore<DbString, DbLong> elementStarts;
+  private final WriteBackKeyValueStore<DbString, DbLong> elementStarts;
 
   private final DbLong incidentKey = new DbLong();
   private final DbLong incidentFlag = new DbLong();
-  private final KeyValueStore<DbLong, DbLong> incidents;
+  private final WriteBackKeyValueStore<DbLong, DbLong> incidents;
 
   private final DbLong incidentStartKey = new DbLong();
   private final DbLong incidentStartValue = new DbLong();
-  private final KeyValueStore<DbLong, DbLong> incidentStarts;
+  private final WriteBackKeyValueStore<DbLong, DbLong> incidentStarts;
 
-  private StateBackedProjectionStore(final StateStoreProvider<AnalyticsColumnFamilies> provider) {
+  private StateBackedProjectionStore(
+      final StateStoreProvider<AnalyticsColumnFamilies> provider, final boolean ownsProvider) {
     this.provider = provider;
+    this.ownsProvider = ownsProvider;
     variables =
-        provider.keyValueStore(
-            AnalyticsColumnFamilies.INSTANCE_VARIABLES, instanceKey, persistedVariables);
+        new WriteBackKeyValueStore<>(
+            provider.keyValueStore(
+                AnalyticsColumnFamilies.INSTANCE_VARIABLES, new DbLong(), new PersistedVariables()),
+            new DbLong(),
+            new PersistedVariables());
     consumedPosition =
-        provider.keyValueStore(
-            AnalyticsColumnFamilies.CONSUMED_POSITION, positionKey, positionValue);
+        new WriteBackKeyValueStore<>(
+            provider.keyValueStore(
+                AnalyticsColumnFamilies.CONSUMED_POSITION, new DbInt(), new DbLong()),
+            new DbInt(),
+            new DbLong());
     elementStarts =
-        provider.keyValueStore(AnalyticsColumnFamilies.ELEMENT_START, new DbString(), new DbLong());
+        new WriteBackKeyValueStore<>(
+            provider.keyValueStore(
+                AnalyticsColumnFamilies.ELEMENT_START, new DbString(), new DbLong()),
+            new DbString(),
+            new DbLong());
     incidents =
-        provider.keyValueStore(
-            AnalyticsColumnFamilies.INSTANCE_INCIDENT, new DbLong(), new DbLong());
+        new WriteBackKeyValueStore<>(
+            provider.keyValueStore(
+                AnalyticsColumnFamilies.INSTANCE_INCIDENT, new DbLong(), new DbLong()),
+            new DbLong(),
+            new DbLong());
     incidentStarts =
-        provider.keyValueStore(AnalyticsColumnFamilies.INCIDENT_START, new DbLong(), new DbLong());
+        new WriteBackKeyValueStore<>(
+            provider.keyValueStore(
+                AnalyticsColumnFamilies.INCIDENT_START, new DbLong(), new DbLong()),
+            new DbLong(),
+            new DbLong());
   }
 
   /**
-   * The per-element-instance activation-time store, on the same backing as the variables — so the
-   * whole base projection (variables + in-flight element starts) is one RocksDB instance. The
-   * process instance's own start is held here too, keyed like any element.
+   * The per-element-instance activation-time store. The process instance's own start is held here
+   * too, keyed like any element. Write-back cached, flushed on {@link #checkpoint()}.
    */
   public KeyValueStore<DbString, DbLong> elementStarts() {
     return elementStarts;
   }
 
-  /**
-   * A persistent store under {@code directory} (created if needed) — the production local cache.
-   */
+  /** Shares an already-open provider (the caller owns its lifecycle) — the production wiring. */
+  public static StateBackedProjectionStore fromProvider(
+      final StateStoreProvider<AnalyticsColumnFamilies> provider) {
+    return new StateBackedProjectionStore(provider, false);
+  }
+
+  /** A persistent store under {@code directory} (created if needed), owning its own provider. */
   public static StateBackedProjectionStore rocksDb(
       final File directory, final MeterRegistry meterRegistry) {
-    return new StateBackedProjectionStore(RocksDbStateStoreProvider.open(directory, meterRegistry));
+    return new StateBackedProjectionStore(
+        RocksDbStateStoreProvider.open(directory, meterRegistry), true);
   }
 
   /** A non-persistent store for offline unit tests. */
   public static StateBackedProjectionStore inMemory() {
-    return new StateBackedProjectionStore(new InMemoryStateStoreProvider<>());
+    return new StateBackedProjectionStore(new InMemoryStateStoreProvider<>(), true);
   }
 
   @Override
@@ -168,7 +200,21 @@ public final class StateBackedProjectionStore implements BaseProjectionStore, Au
   }
 
   @Override
+  public void checkpoint() {
+    variables.checkpoint();
+    elementStarts.checkpoint();
+    incidents.checkpoint();
+    incidentStarts.checkpoint();
+    consumedPosition.checkpoint();
+  }
+
+  @Override
   public void close() throws Exception {
-    provider.close();
+    if (ownsProvider) {
+      // We own the lifecycle (standalone/tests): flush the working state before closing so it
+      // survives a reopen. When the provider is shared, the driver's checkpoint owns durability.
+      checkpoint();
+      provider.close();
+    }
   }
 }

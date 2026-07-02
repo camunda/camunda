@@ -62,4 +62,11 @@ public interface BaseProjectionStore {
 
   /** The folded position of every source partition seen so far. */
   Map<Integer, Long> consumedPositions();
+
+  /**
+   * Flushes the working state (variables, element starts, incidents, consumed position) to durable
+   * storage. Called at the commit interval, inside the driver's checkpoint transaction, so the base
+   * projection commits atomically with the rollups and the source offset.
+   */
+  void checkpoint();
 }

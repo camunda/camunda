@@ -33,7 +33,13 @@
     <!-- Streaming seams: fold/collect, mergeable aggregate, pre-aggregation, windows -->
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>analytics-streaming</artifactId>
+      <artifactId>analytics-engine</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <!-- Generic stream-processing runtime (poll loop, task-per-partition, commit barrier) -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>event-bridge-streaming</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

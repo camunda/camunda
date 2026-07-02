@@ -109,6 +109,7 @@ final class ExecutionTimeRollupExampleTest {
         endTime,
         durationMs,
         true,
+        false,
         1,
         endTime,
         Map.of("region", region));
