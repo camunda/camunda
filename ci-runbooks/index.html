@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.1">
 <title data-rh="true">CI Runbooks | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/ci-runbooks/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="CI Runbooks | Camunda Platform"><meta data-rh="true" name="description" content="This page collects information on CI incident runbooks and alerts that affect"><meta data-rh="true" property="og:description" content="This page collects information on CI incident runbooks and alerts that affect"><link data-rh="true" rel="icon" href="/camunda/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/ci-runbooks/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/ci-runbooks/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/ci-runbooks/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"CI","item":"https://camunda.github.io/camunda/ci"},{"@type":"ListItem","position":2,"name":"CI Runbooks","item":"https://camunda.github.io/camunda/ci-runbooks"}]}</script><link rel="stylesheet" href="/camunda/assets/css/styles.44533d03.css">
-<script src="/camunda/assets/js/runtime~main.ae2ec511.js" defer="defer"></script>
-<script src="/camunda/assets/js/main.5cd52ea0.js" defer="defer"></script>
+<script src="/camunda/assets/js/runtime~main.35ebcf8e.js" defer="defer"></script>
+<script src="/camunda/assets/js/main.d23087c5.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -26,6 +26,7 @@ incidents affecting the monorepo CI.</p>
 <li class=""><a href="https://www.githubstatus.com/" target="_blank" rel="noopener noreferrer" class="">GitHub status</a> (Actions, PRs, API, Git, etc.)</li>
 <li class=""><a href="https://www.dockerstatus.com/" target="_blank" rel="noopener noreferrer" class="">DockerHub status</a> (Docker image push/pull)</li>
 <li class=""><a href="https://status.maven.org/" target="_blank" rel="noopener noreferrer" class="">Maven Central status</a> (Maven artifact up-/downloads)</li>
+<li class=""><a href="https://docs.minimus.io/status" target="_blank" rel="noopener noreferrer" class="">Minimus status</a> (Minimus Docker registry)</li>
 </ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="temporarily-disable-tests-to-lessen-impact">Temporarily Disable Tests To Lessen Impact<a href="#temporarily-disable-tests-to-lessen-impact" class="hash-link" aria-label="Direct link to Temporarily Disable Tests To Lessen Impact" title="Direct link to Temporarily Disable Tests To Lessen Impact" translate="no">​</a></h3>
 <p><strong>When:</strong> There is an incident caused by a flaky or failing test, that causes blockers
@@ -95,7 +96,7 @@ cases in order to ensure CI stability again.</p>
 artifacts might not get built or uploaded to artifact repositories, and indicates CI instability
 since we expect only green builds. Unlike merge-queue failures which block PRs, base-branch failures
 affect artifact availability and release readiness.</p>
-<p>Each alert instance is grouped by workflow job name and base branch, and includes:</p>
+<p>Each alert instance is grouped by workflow job name and thus spans multiple base branches, and includes:</p>
 <ul>
 <li class="">Number of unsuccessful runs in the evaluation window</li>
 <li class="">Links to failed workflow runs in the evaluation window (useful for root cause analysis)</li>
