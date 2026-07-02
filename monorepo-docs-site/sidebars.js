@@ -41,17 +41,27 @@ const sidebars = {
           items: [
             {
               type: 'category',
-              label: 'RDBMS',
+              label: 'Secondary Storage',
+              link: { type: 'doc', id: 'architecture/components/secondary-storage/index' },
               items: [
-                'architecture/components/rdbms/rdbms_architecture_docs',
-                'architecture/components/rdbms/developer-guide',
-                'architecture/components/rdbms/benchmarking',
+                'architecture/components/secondary-storage/working-with-secondary-storage',
+                'architecture/components/secondary-storage/archiving',
+                'architecture/components/secondary-storage/backup-and-restore',
                 {
                   type: 'category',
-                  label: 'ADRs',
+                  label: 'RDBMS',
                   items: [
-                    'architecture/components/rdbms/adr/use-mybatis-as-orm-framework',
-                    'architecture/components/rdbms/adr/use-liquibase-for-schema-management',
+                    'architecture/components/secondary-storage/rdbms/rdbms_architecture_docs',
+                    'architecture/components/secondary-storage/rdbms/developer-guide',
+                    'architecture/components/secondary-storage/rdbms/benchmarking',
+                    {
+                      type: 'category',
+                      label: 'ADRs',
+                      items: [
+                        'architecture/components/secondary-storage/rdbms/adr/use-mybatis-as-orm-framework',
+                        'architecture/components/secondary-storage/rdbms/adr/use-liquibase-for-schema-management',
+                      ],
+                    },
                   ],
                 },
               ],

@@ -1,44 +1,19 @@
+---
+title: Backup and Restore
+---
+
 # Backup and Restore: Secondary Storage
 
 This guide explains how Camunda 8 backs up and restores its secondary storage layer - covering
 Elasticsearch (ES) and OpenSearch (OS) indices in both the Orchestration Cluster (Operate,
 Tasklist, and shared Camunda indices) and Optimize, as well as the RDBMS secondary storage path.
 
-> **Scope**
-> This document covers the secondary storage layer only. Backup and restore of Zeebe's primary
-> storage (RocksDB partition state) is handled separately via the Zeebe broker backup mechanism
-> and the `zbctl` / `camunda-restore` CLI. Where the two interact - particularly for RDBMS-aware
-> restore - that interaction is explained in [§4](#4-rdbms-secondary-storage).
-
----
-
-## Table of Contents
-
-1. [Orchestration Cluster (ES/OS)](#1-orchestration-cluster-esos)
-
-- 1.1 [How Backups Are Taken](#11-how-backups-are-taken)
-- 1.2 [Backup Priority System](#12-backup-priority-system)
-- 1.3 [Snapshot Naming](#13-snapshot-naming)
-- 1.4 [Backup States](#14-backup-states)
-- 1.5 [Configuration](#15-configuration)
-- 1.6 [API / Actuator Endpoints](#16-api--actuator-endpoints)
-
-2. [Restore (Orchestration Cluster)](#2-restore-orchestration-cluster)
-3. [Optimize (ES/OS)](#3-optimize-esos)
-
-- 3.1 [How Optimize Backups Work](#31-how-optimize-backups-work)
-- 3.2 [Snapshot Naming (Optimize)](#32-snapshot-naming-optimize)
-- 3.3 [Restore (Optimize)](#33-restore-optimize)
-
-4. [RDBMS Secondary Storage](#4-rdbms-secondary-storage)
-
-- 4.1 [No ES/OS Snapshot Mechanism](#41-no-esos-snapshot-mechanism)
-- 4.2 [RDBMS-Aware Zeebe Restore](#42-rdbms-aware-zeebe-restore)
-
-5. [Key Classes and Locations](#5-key-classes-and-locations)
-6. [References](#6-references)
-
----
+:::info[Scope]
+This document covers the secondary storage layer only. Backup and restore of Zeebe's primary
+storage (RocksDB partition state) is handled separately via the Zeebe broker backup mechanism
+and the `zbctl` / `camunda-restore` CLI. Where the two interact - particularly for RDBMS-aware
+restore - that interaction is explained in [§4](#4-rdbms-secondary-storage).
+:::
 
 ## 1. Orchestration Cluster (ES/OS)
 
@@ -120,11 +95,13 @@ sequential snapshot parts** (empty parts are skipped):
 | 6    | **Prio 4 main**: `operate-decision`, `operate-decision-requirements`, `operate-process`, `tasklist-form`, `camunda-authorization`, `camunda-group`, `camunda-mapping-rule`, `camunda-persistent-web-session`, `camunda-role`, `camunda-tenant`, `camunda-user`, `camunda-usage-metric`, `camunda-usage-metric-tu`, `camunda-audit-log`, `camunda-audit-log-cleanup`, `camunda-cluster-variable`, `camunda-job-metrics-batch`, `camunda-global-listener` | Reference/static data; least likely to change between parts |
 | 7    | **Prio 4 dated**: archived shards for templated Prio 4 indices                                                                                                                                                                                                                                                                                                                                                                                          | Archived shards of Prio 4 templates                         |
 
-> **Archiving interaction**: Operate and Tasklist use a time-window archiving strategy (see
-> `docs/data-layer/archiving.md`) where completed data is periodically moved from "main" indices
-> into dated indices (e.g. `operate-list-view_2024-01-01`). Because dated shards are snapshottable
-> independently of main indices, each priority level produces two parts - the main index and its
-> dated variants - with the main index always snapshotted first.
+:::note[Archiving interaction]
+Operate and Tasklist use a time-window archiving strategy (see [Archiving](./archiving.md)) where
+completed data is periodically moved from "main" indices into dated indices (e.g.
+`operate-list-view_2024-01-01`). Because dated shards are snapshottable independently of main
+indices, each priority level produces two parts - the main index and its dated variants - with
+the main index always snapshotted first.
+:::
 
 #### Adding New Indices
 
@@ -207,15 +184,14 @@ Backups are triggered, monitored, and deleted via Spring Boot actuator endpoints
 Both endpoints are wired to the same `BackupServiceImpl` instance in the `HistoryBackupComponent`
 Spring configuration (active only when secondary storage is ES or OS).
 
-> **Not to be confused with the Zeebe broker backup endpoint**: The standalone Zeebe broker and
-> gateway also expose a `/actuator/backups` endpoint (active under the `broker` and `gateway`
-> Spring profiles) that manages **Zeebe RocksDB partition backups**, not secondary-storage
-> snapshots. The two endpoints serve entirely different backup systems. If you are running a
-> combined Camunda distribution, use `/actuator/backupHistory` for webapps secondary-storage
-> backups; the broker's `/actuator/backups` is only reachable on a standalone broker/gateway
-> process.
-
----
+:::warning[Not to be confused with the Zeebe broker backup endpoint]
+The standalone Zeebe broker and gateway also expose a `/actuator/backups` endpoint (active under
+the `broker` and `gateway` Spring profiles) that manages **Zeebe RocksDB partition backups**, not
+secondary-storage snapshots. The two endpoints serve entirely different backup systems. If you are
+running a combined Camunda distribution, use `/actuator/backupHistory` for webapps
+secondary-storage backups; the broker's `/actuator/backups` is only reachable on a standalone
+broker/gateway process.
+:::
 
 ## 2. Restore (Orchestration Cluster)
 
@@ -236,13 +212,12 @@ process:
 5. **Validate data integrity** - confirm that process instances, tasks, and incidents are visible
    and consistent.
 
-> **Consistency with Zeebe**: If you are performing a full cluster restore (Zeebe + secondary
-> storage), restore the Zeebe partition state first, then restore the ES/OS indices from a backup
-> taken at the same backup ID. The Camunda exporter will re-process any records that occurred
-> between the backup checkpoint and the present, so a small replay window after restore is expected
-> and normal.
-
----
+:::tip[Consistency with Zeebe]
+If you are performing a full cluster restore (Zeebe + secondary storage), restore the Zeebe
+partition state first, then restore the ES/OS indices from a backup taken at the same backup ID.
+The Camunda exporter will re-process any records that occurred between the backup checkpoint and
+the present, so a small replay window after restore is expected and normal.
+:::
 
 ## 3. Optimize (ES/OS)
 
@@ -250,8 +225,10 @@ Optimize has its **own independent backup implementation**, separate from the we
 described in §1. The two systems do not share a `BackupPriorityConfiguration` bean and their
 snapshots are stored under different name prefixes.
 
-> This is verified by `BackupPrioritiesTest`, which explicitly asserts that no Optimize index name
-> appears in the webapps `BackupPriorityConfiguration`.
+:::note
+This is verified by `BackupPrioritiesTest`, which explicitly asserts that no Optimize index name
+appears in the webapps `BackupPriorityConfiguration`.
+:::
 
 ### 3.1 How Optimize Backups Work
 
@@ -318,8 +295,6 @@ Optimize backup state uses its own `BackupState` enum: `COMPLETED`, `FAILED`, `I
 Restoring Part 2 before Part 1 is not supported and will produce an inconsistent state where entity
 data is ahead of the import pipeline's last recorded position.
 
----
-
 ## 4. RDBMS Secondary Storage
 
 When the secondary storage type is `rdbms` (PostgreSQL or compatible), the ES/OS snapshot
@@ -372,8 +347,6 @@ the secondary storage state (the exporter will simply re-process any gap after r
 | 5    | Zeebe partitions are restored in parallel                                         |
 | 6    | Start the cluster - the exporter will not re-send already-processed records       |
 
----
-
 ## 5. Key Classes and Locations
 
 |        Class / Interface        |      Module      |                                            Role                                            |
@@ -404,15 +377,13 @@ the secondary storage state (the exporter will simply re-process any gap after r
 | `RestorePointResolver`          | `zeebe/restore`  | Selects optimal backup checkpoint per partition aligned to RDBMS position                  |
 | `ExporterPositionMapper`        | `db/rdbms`       | Reads per-partition exporter positions from RDBMS during restore                           |
 
----
-
 ## 6. References
 
 |             Resource             |                                          Location                                           |
 |----------------------------------|---------------------------------------------------------------------------------------------|
-| Archiving (dated indices)        | `docs/data-layer/archiving.md`                                                              |
-| Secondary storage guide          | `docs/data-layer/working-with-secondary-storage.md`                                         |
-| RDBMS module documentation       | `docs/rdbms.md`                                                                             |
+| Archiving (dated indices)        | [archiving.md](./archiving.md)                                                              |
+| Secondary storage guide          | [working-with-secondary-storage.md](./working-with-secondary-storage.md)                    |
+| RDBMS module documentation       | [rdbms_architecture_docs.md](./rdbms/rdbms_architecture_docs.md)                            |
 | Operate backup/restore QA tests  | `operate/qa/backup-restore-tests/`                                                          |
 | Tasklist backup/restore QA tests | `tasklist/qa/backup-restore-tests/`                                                         |
 | Operate component backup doc     | `operate/webapp/docs/backup.md`                                                             |
