@@ -15,4 +15,8 @@
     <Class name="io.camunda.zeebe.engine.processing.scheduled.DueDateCheckScheduler"/>
     <Bug pattern="AT_STALE_THREAD_WRITE_OF_PRIMITIVE"/>
   </Match>
+  <Match>
+    <Class name="io.camunda.zeebe.engine.state.instance.DbJobState"/>
+    <Bug pattern="AT_STALE_THREAD_WRITE_OF_PRIMITIVE"/>
+  </Match>
 </FindBugsFilter>
