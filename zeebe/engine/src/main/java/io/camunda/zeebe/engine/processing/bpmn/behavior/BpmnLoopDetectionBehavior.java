@@ -25,20 +25,16 @@ import org.agrona.DirectBuffer;
  *
  * <p>The threshold can be overridden per {@link BpmnElementType}; a value of {@code 0} disables
  * detection for that type. Multi-instance children accumulate the count on the shared element-id
- * counter and are checked individually via {@link #checkMultiInstanceChildActivationThreshold};
- * {@link #checkBatchActivationThreshold} is a coarse pre-spawn guard that keeps a runaway parallel
- * batch from materialising thousands of doomed child instances at once.
+ * counter and are checked individually via {@link #checkMultiInstanceChildActivationThreshold}. The
+ * activation batch of a parallel multi-instance body stops spawning children once {@link
+ * #isChildActivationThresholdExceeded} reports the limit is crossed, so a runaway collection is
+ * bounded to a single incident on the crossing child.
  */
 public final class BpmnLoopDetectionBehavior {
 
   private static final String CONDITION_ERROR_ACTIVATION_COUNT_EXCEEDED =
       "Expected to activate element '%s' in process instance '%d', but the element has already"
           + " been activated %d times, exceeding the maximum activation threshold of %d.";
-
-  private static final String CONDITION_ERROR_BATCH_ACTIVATION_COUNT_EXCEEDED =
-      "Expected to activate the child instances of the parallel multi-instance body '%s' in process"
-          + " instance '%d', but activating the next batch of %d child instance(s) would exceed the"
-          + " maximum activation threshold of %d (already activated %d child instance(s)).";
 
   private final MutableElementInstanceState elementInstanceState;
   private final int maxActivations;
@@ -94,66 +90,6 @@ public final class BpmnLoopDetectionBehavior {
     final String message =
         CONDITION_ERROR_ACTIVATION_COUNT_EXCEEDED.formatted(
             elementId, context.getProcessInstanceKey(), activationCount, max);
-    return Either.left(new Failure(message, ErrorType.CONDITION_ERROR));
-  }
-
-  /**
-   * Coarse pre-spawn guard for <em>parallel</em> multi-instance bodies, called before the child
-   * batch is activated. It blocks the whole batch on the body (spawning no children) only when
-   * every child in the batch would breach the threshold, i.e. when the budget is already exhausted
-   * ({@code childActivationCount >= max}) or a single collection alone exceeds the limit ({@code
-   * batchSize > max}). This keeps a runaway collection from materialising thousands of doomed child
-   * instances.
-   *
-   * <p>A batch that merely tips the cumulative count over the threshold is <em>allowed</em> to
-   * spawn; the individual child activation that crosses the limit then raises the resolvable
-   * incident on the child via {@link #checkMultiInstanceChildActivationThreshold}. Because the
-   * guard fires before any child exists, its incident is raised on the (still activating) body.
-   *
-   * <p>The check is part of multi-instance body loop detection, so it is disabled when detection is
-   * disabled for the {@code MULTI_INSTANCE_BODY} type. The threshold is resolved against the inner
-   * element type, because the activations being guarded are for the spawned child instances.
-   *
-   * @param context the context of the {@code MULTI_INSTANCE_BODY} element being activated
-   * @param innerElementType the {@link BpmnElementType} of the inner activity whose children are
-   *     spawned in the batch
-   * @param batchSize the number of child instances that would be spawned in the next batch
-   * @return {@code Either.right(null)} when within bounds, or {@code Either.left} with a {@link
-   *     Failure} when the threshold is exceeded
-   */
-  public Either<Failure, Void> checkBatchActivationThreshold(
-      final BpmnElementContext context,
-      final BpmnElementType innerElementType,
-      final int batchSize) {
-    if (resolveMaxActivations(context.getBpmnElementType()) <= 0) {
-      // Loop detection is disabled for the multi-instance body, so the batch check is off too.
-      return Either.right(null);
-    }
-    // The batch spawns child instances, so the threshold is resolved against the inner (child)
-    // element type rather than the multi-instance body type.
-    final int max = resolveMaxActivations(innerElementType);
-    if (max <= 0) {
-      // Loop detection is disabled for the inner element type.
-      return Either.right(null);
-    }
-    // The counter accumulates child activations (the body itself is not counted), so it reflects
-    // how
-    // many children have already been activated across previous body activations.
-    final long childActivationCount =
-        elementInstanceState.getElementActivationCounter(
-            context.getProcessInstanceKey(), context.getElementId());
-
-    // Allow the batch to spawn when at least one child still fits and the collection alone stays
-    // within the limit. The child activation that crosses the threshold is caught individually by
-    // checkMultiInstanceChildActivationThreshold, which raises a resolvable incident on the child.
-    if (childActivationCount < max && batchSize <= max) {
-      return Either.right(null);
-    }
-
-    final String elementId = BufferUtil.bufferAsString(context.getElementId());
-    final String message =
-        CONDITION_ERROR_BATCH_ACTIVATION_COUNT_EXCEEDED.formatted(
-            elementId, context.getProcessInstanceKey(), batchSize, max, childActivationCount);
     return Either.left(new Failure(message, ErrorType.CONDITION_ERROR));
   }
 

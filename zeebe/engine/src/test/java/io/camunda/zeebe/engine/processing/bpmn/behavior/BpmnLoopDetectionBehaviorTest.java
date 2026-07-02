@@ -34,17 +34,12 @@ final class BpmnLoopDetectionBehaviorTest {
   private final MutableElementInstanceState elementInstanceState =
       mock(MutableElementInstanceState.class);
   private final BpmnElementContext serviceTaskContext = mock(BpmnElementContext.class);
-  private final BpmnElementContext multiInstanceContext = mock(BpmnElementContext.class);
 
   @BeforeEach
   void setUp() {
     when(serviceTaskContext.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
     when(serviceTaskContext.getElementId()).thenReturn(ELEMENT_ID);
     when(serviceTaskContext.getBpmnElementType()).thenReturn(BpmnElementType.SERVICE_TASK);
-
-    when(multiInstanceContext.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
-    when(multiInstanceContext.getElementId()).thenReturn(ELEMENT_ID);
-    when(multiInstanceContext.getBpmnElementType()).thenReturn(BpmnElementType.MULTI_INSTANCE_BODY);
   }
 
   private BpmnLoopDetectionBehavior behavior(
@@ -62,15 +57,11 @@ final class BpmnLoopDetectionBehaviorTest {
     return behavior.checkActivationThreshold(serviceTaskContext).isLeft();
   }
 
-  private boolean batchRaisesAt(
-      final BpmnLoopDetectionBehavior behavior,
-      final long childActivationCount,
-      final int batchSize) {
+  private boolean batchStopsAt(
+      final BpmnLoopDetectionBehavior behavior, final long childActivationCount) {
     activationCount(childActivationCount);
-    return behavior
-        .checkBatchActivationThreshold(
-            multiInstanceContext, BpmnElementType.SERVICE_TASK, batchSize)
-        .isLeft();
+    return behavior.isChildActivationThresholdExceeded(
+        PROCESS_INSTANCE_KEY, ELEMENT_ID, BpmnElementType.SERVICE_TASK);
   }
 
   private boolean childRaisesAt(final BpmnLoopDetectionBehavior behavior, final long count) {
@@ -145,59 +136,36 @@ final class BpmnLoopDetectionBehaviorTest {
   }
 
   // ---------------------------------------------------------------------------
-  // checkBatchActivationThreshold (coarse pre-spawn guard)
+  // isChildActivationThresholdExceeded (batch stop condition)
   // ---------------------------------------------------------------------------
 
   @Test
-  void shouldNotRaiseBatchWhenCollectionFitsInFreshBudget() {
+  void shouldNotStopBatchWithinThreshold() {
     final var behavior = behavior(4, Map.of(), 1);
 
-    // no children activated yet and the whole collection fits within the threshold
-    assertThat(batchRaisesAt(behavior, 0, 4)).isFalse();
+    // the counter is at the threshold but not beyond it, so the batch keeps spawning children
+    assertThat(batchStopsAt(behavior, 4)).isFalse();
   }
 
   @Test
-  void shouldRaiseBatchWhenCollectionAloneExceedsThreshold() {
+  void shouldStopBatchBeyondThreshold() {
     final var behavior = behavior(4, Map.of(), 1);
 
-    // a single collection larger than the threshold is blocked wholesale on the body
-    assertThat(batchRaisesAt(behavior, 0, 5)).isTrue();
+    assertThat(batchStopsAt(behavior, 5)).isTrue();
   }
 
   @Test
-  void shouldRaiseBatchWhenBudgetAlreadyExhausted() {
-    final var behavior = behavior(4, Map.of(), 1);
-
-    // the threshold is already reached by earlier child activations, so no further child fits
-    assertThat(batchRaisesAt(behavior, 4, 1)).isTrue();
-    assertThat(batchRaisesAt(behavior, 5, 2)).isTrue();
-  }
-
-  @Test
-  void shouldNotRaiseBatchForPartialOverflow() {
-    final var behavior = behavior(4, Map.of(), 1);
-
-    // 2 children already activated + a batch of 3 exceeds the threshold cumulatively, but at least
-    // one child still fits and the collection alone is within the limit, so the batch is allowed to
-    // spawn; the crossing child is caught by checkMultiInstanceChildActivationThreshold instead
-    assertThat(batchRaisesAt(behavior, 2, 3)).isFalse();
-  }
-
-  @Test
-  void shouldResolveBatchThresholdAgainstInnerType() {
+  void shouldResolveBatchStopThresholdAgainstInnerType() {
     // MULTI_INSTANCE_BODY falls back to the global default (10, enabled); SERVICE_TASK caps at 2
     final var behavior = behavior(10, Map.of(BpmnElementType.SERVICE_TASK, 2), 1);
 
-    // a collection of 3 exceeds the inner-type threshold of 2 even though the body threshold is 10
-    assertThat(batchRaisesAt(behavior, 0, 3)).isTrue();
-    // a collection of 2 fits the inner-type threshold of 2
-    assertThat(batchRaisesAt(behavior, 0, 2)).isFalse();
+    assertThat(batchStopsAt(behavior, 2)).isFalse();
+    assertThat(batchStopsAt(behavior, 3)).isTrue();
   }
 
   @Test
-  void shouldNotRaiseBatchWhenBodyTypeDisabled() {
-    // disabling MULTI_INSTANCE_BODY turns the batch guard off, even when the inner type would
-    // breach
+  void shouldNotStopBatchWhenBodyTypeDisabled() {
+    // disabling MULTI_INSTANCE_BODY turns the batch stop off, even when the inner type would breach
     final var behavior =
         behavior(
             10,
@@ -206,14 +174,14 @@ final class BpmnLoopDetectionBehaviorTest {
                 BpmnElementType.SERVICE_TASK, 2),
             1);
 
-    assertThat(batchRaisesAt(behavior, 0, 100)).isFalse();
+    assertThat(batchStopsAt(behavior, 100)).isFalse();
   }
 
   @Test
-  void shouldNotRaiseBatchWhenInnerTypeDisabled() {
+  void shouldNotStopBatchWhenInnerTypeDisabled() {
     final var behavior = behavior(10, Map.of(BpmnElementType.SERVICE_TASK, 0), 1);
 
-    assertThat(batchRaisesAt(behavior, 0, 100)).isFalse();
+    assertThat(batchStopsAt(behavior, 100)).isFalse();
   }
 
   // ---------------------------------------------------------------------------

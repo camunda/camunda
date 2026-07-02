@@ -147,11 +147,10 @@ public final class LoopDetectionMultiInstanceIncidentTest {
   // ---------------------------------------------------------------------------
 
   /**
-   * A <b>parallel</b> MI with a collection larger than {@code maxActivations} raises a
-   * loop-detection incident immediately on the {@code MULTI_INSTANCE_BODY} activation.
-   *
-   * <p>The engine projects {@code collection.size()} child activations and compares against the
-   * threshold before any child is activated. No jobs are created.
+   * A <b>parallel</b> MI with a collection larger than {@code maxActivations} activates children up
+   * to the threshold and raises the loop-detection incident on the child activation that crosses it
+   * (the {@code (maxActivations + 1)}th) — not on the multi-instance body. The batch stops at that
+   * child, so the collection is not materialised all at once.
    */
   @Test
   public void shouldRaiseIncidentForParallelMultiInstanceWhenCollectionExceedsMaxActivations() {
@@ -168,8 +167,8 @@ public final class LoopDetectionMultiInstanceIncidentTest {
             .withVariable("items", items)
             .create();
 
-    // then: incident fires on the MULTI_INSTANCE_BODY activation — no children are activated,
-    // no jobs are created.
+    // then: incident fires on the child activation that crosses the threshold (the (MAX + 1)th
+    // SERVICE_TASK activation), not on the multi-instance body
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
@@ -179,7 +178,8 @@ public final class LoopDetectionMultiInstanceIncidentTest {
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .withProcessInstanceKey(processInstanceKey)
             .withElementId(TASK_ID)
-            .withElementType(BpmnElementType.MULTI_INSTANCE_BODY)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .skip(MAX_ACTIVATIONS)
             .getFirst();
 
     assertIncidentCreated(incident, activatingRecord);
@@ -382,70 +382,25 @@ public final class LoopDetectionMultiInstanceIncidentTest {
   }
 
   /**
-   * Resolving the batch-guard incident on a parallel MI must let the retry activate the children,
-   * instead of re-raising the same incident. The guard is skipped during incident resolution, so
-   * the body proceeds and spawns the children up to the threshold.
+   * A parallel MI with a collection far larger than the threshold activates children only up to the
+   * threshold and then stops the batch at the crossing child, instead of activating every child and
+   * flooding the instance with one incident per child.
    */
   @Test
-  public void shouldActivateChildrenWhenResolvingParallelMultiInstanceBatchIncident() {
-    // given: a parallel MI whose collection exceeds the threshold -> batch guard incident on the
-    // body
-    final List<Integer> items =
-        IntStream.rangeClosed(1, LARGE_COLLECTION_SIZE).boxed().collect(Collectors.toList());
-    engine.deployment().withXmlResource(parallelMiProcess()).deploy();
-    final long processInstanceKey =
-        engine
-            .processInstance()
-            .ofBpmnProcessId(PARALLEL_PROCESS_ID)
-            .withVariable("items", items)
-            .create();
-
-    final Record<IncidentRecordValue> incident =
-        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst();
-    Assertions.assertThat(incident.getValue())
-        .hasElementId(TASK_ID)
-        .hasErrorType(ErrorType.CONDITION_ERROR);
-
-    // when: the loop-detection incident is resolved (retry)
-    engine.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
-
-    // then: the retry activates the children up to the threshold (a job is created for each)
-    final var jobs =
-        RecordingExporter.jobRecords(JobIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withType(JOB_TYPE)
-            .limit(MAX_ACTIVATIONS)
-            .collect(Collectors.toList());
-    assertThat(jobs).hasSize(MAX_ACTIVATIONS);
-  }
-
-  /**
-   * When a retried parallel MI batch has a collection far larger than the threshold, the batch must
-   * stop spawning children once one of them crosses the threshold (and raises an incident), instead
-   * of activating every child and flooding the instance with one incident per child.
-   */
-  @Test
-  public void shouldStopActivatingChildrenOnceThresholdIsCrossedOnRetry() {
+  public void shouldStopActivatingChildrenOnceThresholdIsCrossed() {
     // given: a parallel MI whose collection is far larger than the threshold
     final int largeCollectionSize = 50;
     final List<Integer> items =
         IntStream.rangeClosed(1, largeCollectionSize).boxed().collect(Collectors.toList());
     engine.deployment().withXmlResource(parallelMiProcess()).deploy();
+
+    // when: the instance is created, the batch activates children up to the threshold and stops
     final long processInstanceKey =
         engine
             .processInstance()
             .ofBpmnProcessId(PARALLEL_PROCESS_ID)
             .withVariable("items", items)
             .create();
-    final Record<IncidentRecordValue> incident =
-        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst();
-
-    // when: the batch guard incident is resolved (retry)
-    engine.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
 
     // then: the batch finishes early (a single ACTIVATED event) once the threshold is crossed
     RecordingExporter.processInstanceBatchRecords()
@@ -474,9 +429,8 @@ public final class LoopDetectionMultiInstanceIncidentTest {
    */
   @Test
   public void shouldRecoverChildWhenResolvingItsLoopDetectionIncident() {
-    // given: a parallel MI over the threshold; resolving the body guard activates the children up
-    // to
-    // the threshold, and the crossing child raises its own loop-detection incident
+    // given: a parallel MI over the threshold activates children up to the threshold, and the
+    // crossing child raises its own loop-detection incident
     final List<Integer> items =
         IntStream.rangeClosed(1, LARGE_COLLECTION_SIZE).boxed().collect(Collectors.toList());
     engine.deployment().withXmlResource(parallelMiProcess()).deploy();
@@ -487,17 +441,10 @@ public final class LoopDetectionMultiInstanceIncidentTest {
             .withVariable("items", items)
             .create();
 
-    final Record<IncidentRecordValue> bodyIncident =
-        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst();
-    engine.incident().ofInstance(processInstanceKey).withKey(bodyIncident.getKey()).resolve();
-
-    // the crossing child raises the next incident (the body incident was the first)
+    // the crossing child raises the loop-detection incident
     final Record<IncidentRecordValue> childIncident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
-            .skip(1)
             .getFirst();
 
     // when: the child's loop-detection incident is resolved
@@ -533,18 +480,10 @@ public final class LoopDetectionMultiInstanceIncidentTest {
             .withVariable("items", items)
             .create();
 
-    // resolve the body batch-guard incident so the first batch of children is activated
-    final Record<IncidentRecordValue> bodyIncident =
-        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst();
-    engine.incident().ofInstance(processInstanceKey).withKey(bodyIncident.getKey()).resolve();
-
     // resolve the crossing child's incident so it can run and, once finished, drain the tail item
     final Record<IncidentRecordValue> childIncident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
-            .skip(1)
             .getFirst();
     engine.incident().ofInstance(processInstanceKey).withKey(childIncident.getKey()).resolve();
 

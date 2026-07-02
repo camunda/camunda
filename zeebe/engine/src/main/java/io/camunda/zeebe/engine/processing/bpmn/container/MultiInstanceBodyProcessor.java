@@ -99,26 +99,6 @@ public final class MultiInstanceBodyProcessor
     return multiInstanceInputCollectionBehavior
         .initializeInputCollection(element, context)
         .flatMap(
-            inputCollection -> {
-              // For parallel MI, check whether this batch would push the cumulative child
-              // activations past the configured threshold before any child is spawned. The
-              // threshold
-              // is resolved for the inner activity's type, since that is what the spawned children
-              // are. Sequential MI creates children one-by-one (not in a batch) and is therefore
-              // excluded. The guard is skipped while resolving an incident so a retry actually
-              // activates the children instead of raising the same incident again.
-              if (!element.getLoopCharacteristics().isSequential()
-                  && !stateTransitionBehavior.isIncidentResolving()) {
-                return loopDetectionBehavior
-                    .checkBatchActivationThreshold(
-                        context,
-                        element.getInnerActivity().getElementType(),
-                        inputCollection.size())
-                    .map(ok -> inputCollection);
-              }
-              return Either.right(inputCollection);
-            })
-        .flatMap(
             inputCollection ->
                 eventSubscriptionBehavior
                     .subscribeToEvents(element, context)
