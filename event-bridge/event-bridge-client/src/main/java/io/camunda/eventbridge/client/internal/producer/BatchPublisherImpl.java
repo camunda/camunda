@@ -64,7 +64,7 @@ public final class BatchPublisherImpl implements BatchPublisher {
 
     final String path = "/v1/topics/" + topic + "/partitions/" + partitionId + "/records";
     return transport
-        .postOctetStream(path, batchBuilder.build())
+        .postOctetStream(path, batchBuilder.buildSegments())
         .thenApply(this::parsePublishResponse);
   }
 

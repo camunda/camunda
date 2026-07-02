@@ -60,6 +60,66 @@ public final class BatchBuilder {
     return entries.size();
   }
 
+  /** Total on-wire size of the batch in bytes (header + entries), as {@link #build()} emits. */
+  public int sizeBytes() {
+    return BatchFormat.totalSize(BatchFormat.batchLengthValue(entriesLength));
+  }
+
+  /**
+   * Emits the batch as an ordered list of byte[] segments — the header, then for each entry its
+   * framing, key and value — whose concatenation is byte-identical to {@link #build()}. Intended
+   * for zero-copy sending (e.g. {@code HttpRequest.BodyPublishers.ofByteArrays}): the caller's
+   * key/value arrays are referenced in place rather than copied into one contiguous buffer, so a
+   * large payload is never duplicated on the publish path.
+   *
+   * <p>The returned segments reference the added key/value arrays directly; callers must not mutate
+   * a published value until the send completes.
+   */
+  public List<byte[]> buildSegments() {
+    final int batchLength = BatchFormat.batchLengthValue(entriesLength);
+    final byte[] header = new byte[BatchFormat.HEADER_LENGTH];
+
+    // Header — position and timestamp are 0; the broker patches them on append.
+    BatchFormat.putLongLE(header, BatchFormat.POSITION_OFFSET, 0L);
+    BatchFormat.putIntLE(header, BatchFormat.BATCH_LENGTH_OFFSET, batchLength);
+    BatchFormat.putIntLE(header, BatchFormat.VERSION_OFFSET, BatchFormat.VERSION_1);
+    BatchFormat.putLongLE(header, BatchFormat.TIMESTAMP_OFFSET, 0L);
+    BatchFormat.putIntLE(header, BatchFormat.CRC_OFFSET, 0); // patched below
+    BatchFormat.putIntLE(header, BatchFormat.ATTRIBUTES_OFFSET, attributes);
+    BatchFormat.putIntLE(header, BatchFormat.ENTRY_COUNT_OFFSET, entries.size());
+    BatchFormat.putIntLE(header, BatchFormat.RESERVED_OFFSET, 0);
+
+    final List<byte[]> segments = new ArrayList<>(1 + entries.size() * 3);
+    segments.add(header);
+
+    // CRC-32C over [ATTRIBUTES_OFFSET .. end): the header tail, then every entry segment in order.
+    final var crc = new CRC32C();
+    crc.update(
+        header,
+        BatchFormat.ATTRIBUTES_OFFSET,
+        BatchFormat.HEADER_LENGTH - BatchFormat.ATTRIBUTES_OFFSET);
+
+    for (final Entry e : entries) {
+      final byte[] framing = new byte[BatchFormat.ENTRY_HEADER_SIZE];
+      final int entryLength = BatchFormat.KEY_LENGTH_SIZE + e.key.length + e.value.length;
+      BatchFormat.putIntLE(framing, 0, entryLength);
+      BatchFormat.putIntLE(framing, BatchFormat.ENTRY_LENGTH_SIZE, e.key.length);
+      segments.add(framing);
+      crc.update(framing);
+      if (e.key.length > 0) {
+        segments.add(e.key);
+        crc.update(e.key);
+      }
+      if (e.value.length > 0) {
+        segments.add(e.value);
+        crc.update(e.value);
+      }
+    }
+
+    BatchFormat.putIntLE(header, BatchFormat.CRC_OFFSET, (int) crc.getValue());
+    return segments;
+  }
+
   /** Emits the complete batch as a {@code byte[]}, ready to send to the broker. */
   public byte[] build() {
     final int batchLength = BatchFormat.batchLengthValue(entriesLength);

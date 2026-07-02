@@ -16,6 +16,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -169,18 +170,22 @@ public final class HttpTransport implements AutoCloseable {
   }
 
   /**
-   * Sends {@code POST path} with an {@code application/octet-stream} body (a pre-encoded batch) and
-   * accepts a protobuf response, returning the raw status and body bytes (publish-response parsing
-   * stays in the caller).
+   * Sends {@code POST path} with an {@code application/octet-stream} body assembled from the given
+   * batch {@code segments} (header, then per-entry framing/key/value) and accepts a protobuf
+   * response, returning the raw status and body bytes (publish-response parsing stays in the
+   * caller). The segments are sent via {@link HttpRequest.BodyPublishers#ofByteArrays} — the
+   * caller's key/value arrays are referenced, not concatenated into one buffer — so a large payload
+   * is not copied on the publish path.
    */
-  public CompletableFuture<BinaryResponse> postOctetStream(final String path, final byte[] body) {
+  public CompletableFuture<BinaryResponse> postOctetStream(
+      final String path, final List<byte[]> segments) {
     final var request =
         HttpRequest.newBuilder()
             .uri(uri(path))
             .timeout(DEFAULT_TIMEOUT)
             .header("Content-Type", "application/octet-stream")
             .header("Accept", PROTOBUF)
-            .POST(HttpRequest.BodyPublishers.ofByteArray(body))
+            .POST(HttpRequest.BodyPublishers.ofByteArrays(segments))
             .build();
     return sendAsyncBytes(request)
         .thenApply(response -> new BinaryResponse(response.statusCode(), response.body()));
