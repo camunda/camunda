@@ -113,7 +113,7 @@ jobs:
       - name: Install IntelliJ HTTP Client
         shell: bash
         run: |
-          curl -f -L -o ijhttp.zip "https://jb.gg/ijhttp/latest"
+          curl -f -L -o ijhttp.zip "https://download.jetbrains.com/resources/intellij/http-client/262.7132.23/intellij-http-client.zip"
           unzip ijhttp.zip
           ijhttp/ijhttp qa/http/c8run-tests/c8run-tests.http --private-env-file qa/http/http-client.private.env.json --env ${{ matrix.env }} --report -t 60000
 
