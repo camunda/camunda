@@ -14,7 +14,7 @@ metadata:
     camunda.io/purpose: load-test
 
     app.kubernetes.io/component: zeebe-gateway
-    app.kubernetes.io/version: "8.7.33"
+
   annotations:
     {}
 spec:
@@ -41,7 +41,7 @@ spec:
         camunda.io/purpose: load-test
 
         app.kubernetes.io/component: zeebe-gateway
-        app.kubernetes.io/version: "8.7.33"
+
       annotations:
 
     spec:
@@ -51,7 +51,7 @@ spec:
         []
       containers:
         - name: zeebe-gateway
-          image: docker.io/camunda/zeebe:TEST
+          image: docker.io/camunda/zeebe:8.7.33
           imagePullPolicy: Always
           ports:
             - containerPort: 9600

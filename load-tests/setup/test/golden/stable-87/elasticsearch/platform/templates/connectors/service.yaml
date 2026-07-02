@@ -14,7 +14,7 @@ metadata:
     camunda.io/purpose: load-test
 
     app.kubernetes.io/component: connectors
-    app.kubernetes.io/version: "8.7.20"
+
   annotations:
 spec:
   type: ClusterIP

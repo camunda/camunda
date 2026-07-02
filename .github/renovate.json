@@ -755,6 +755,9 @@
       "ignoreUnstable": false
     }
   ],
+  "ignorePaths": [
+      "load-tests/setup/test/golden/**"
+  ],
   "dockerfile": {
     "managerFilePatterns": [
       "/(^|\\/)([\\w-]+\\.)?[Dd]ockerfile$/"

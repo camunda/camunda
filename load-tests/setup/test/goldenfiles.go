@@ -26,10 +26,10 @@ var normalizePatterns = []struct {
 }{
 	// helm.sh/chart label embeds chart semver — changes on every chart bump.
 	{regexp.MustCompile(`(?m)^\s*helm\.sh/chart:.*$`), ""},
+	// app.kubernetes.io/version is a bit noisy and doesn't bring lot of information in the tests.
+	{regexp.MustCompile(`(?m)^\s*app\.kubernetes\.io/version:.*$`), ""},
 	// deadline-date is a date-stamped namespace label computed at scaffold time.
 	{regexp.MustCompile(`(?m)^(\s*deadline-date:).*$`), "${1} TEST_DATE"},
-	// Image tags rotate per build; keep the image name, normalize the tag to TEST.
-	{regexp.MustCompile(`(image:\s*[^:\s]+:)[^\s"]+`), "${1}TEST"},
 	// checksum/config is derived from ConfigMap content; its diff is captured
 	// by the ConfigMap's own golden file.
 	{regexp.MustCompile(`(?m)^\s*checksum/config:.*$`), ""},

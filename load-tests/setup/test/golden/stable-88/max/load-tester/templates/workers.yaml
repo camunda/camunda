@@ -32,7 +32,7 @@ spec:
           value: n2-standard-4
       containers:
         - name: worker
-          image: "registry.camunda.cloud/team-zeebe/worker:TEST"
+          image: "registry.camunda.cloud/team-zeebe/worker:SNAPSHOT"
           imagePullPolicy: Always
           env:
             - name: JDK_JAVA_OPTIONS

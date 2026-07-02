@@ -14,7 +14,7 @@ metadata:
     camunda.io/purpose: load-test
 
     app.kubernetes.io/component: zeebe-broker
-    app.kubernetes.io/version: "8.7.33"
+
   annotations:
 spec:
   replicas: 3
@@ -42,7 +42,7 @@ spec:
         camunda.io/purpose: load-test
 
         app.kubernetes.io/component: zeebe-broker
-        app.kubernetes.io/version: "8.7.33"
+
       annotations:
 
     spec:
@@ -52,7 +52,7 @@ spec:
         []
       containers:
         - name: zeebe
-          image: docker.io/camunda/zeebe:TEST
+          image: docker.io/camunda/zeebe:8.7.33
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: true

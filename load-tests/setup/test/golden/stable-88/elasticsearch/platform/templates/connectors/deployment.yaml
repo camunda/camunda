@@ -14,7 +14,7 @@ metadata:
     camunda.io/purpose: load-test
 
     app.kubernetes.io/component: connectors
-    app.kubernetes.io/version: "8.8.11"
+
   annotations:
     {}
 spec:
@@ -41,7 +41,7 @@ spec:
         camunda.io/purpose: load-test
 
         app.kubernetes.io/component: connectors
-        app.kubernetes.io/version: "8.8.11"
+
       annotations:
 
     spec:
@@ -51,7 +51,7 @@ spec:
         []
       containers:
         - name: connectors
-          image: camunda/connectors-bundle:TEST
+          image: camunda/connectors-bundle:8.8.11
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false

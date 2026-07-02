@@ -14,7 +14,7 @@ metadata:
     camunda.io/purpose: load-test
 
     app.kubernetes.io/component: tasklist
-    app.kubernetes.io/version: "8.7.29"
+
   annotations:
     {}
 spec:
@@ -41,7 +41,7 @@ spec:
         camunda.io/purpose: load-test
 
         app.kubernetes.io/component: tasklist
-        app.kubernetes.io/version: "8.7.29"
+
       annotations:
 
     spec:
@@ -51,7 +51,7 @@ spec:
         []
       containers:
         - name: tasklist
-          image: camunda/tasklist:TEST
+          image: camunda/tasklist:8.7.29
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
