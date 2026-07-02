@@ -28,11 +28,21 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 /** Verifies {@link ManagedConsumer} dispatch and per-batch auto-commit of the max offset. */
 final class ManagedConsumerTest {
+
+  private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+
+  @AfterEach
+  void tearDown() {
+    executor.shutdownNow();
+  }
 
   @Test
   void shouldDispatchRecordsAndAutoCommitMaxOffsetPerPartition() throws InterruptedException {
@@ -61,7 +71,7 @@ final class ManagedConsumerTest {
 
     // when
     final ManagedConsumer<Event> managed =
-        new ManagedConsumer<>(consumer, handler, null, true, 100, Duration.ofMillis(10));
+        new ManagedConsumer<>(consumer, executor, handler, null, true, 100, Duration.ofMillis(10));
     try {
       assertThat(committed.await(5, TimeUnit.SECONDS)).isTrue();
 
@@ -100,7 +110,8 @@ final class ManagedConsumerTest {
 
     // when
     final ManagedConsumer<String> managed =
-        new ManagedConsumer<>(consumer, handler, deserializer, false, 100, Duration.ofMillis(10));
+        new ManagedConsumer<>(
+            consumer, executor, handler, deserializer, false, 100, Duration.ofMillis(10));
     try {
       assertThat(dispatched.await(5, TimeUnit.SECONDS)).isTrue();
 

@@ -17,6 +17,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
 
 /**
  * Default {@link ConsumerBuilder} implementation. Subscribes an underlying {@link Consumer} through
@@ -30,6 +31,7 @@ import java.util.UUID;
 public final class ConsumerBuilderImpl<T> implements ConsumerBuilder<T> {
 
   private final EventBridgeClient client;
+  private final ExecutorService executor;
 
   private List<String> topics = List.of();
   private String group;
@@ -40,8 +42,9 @@ public final class ConsumerBuilderImpl<T> implements ConsumerBuilder<T> {
   private int pollSize = 100;
   private Duration pollTimeout = Duration.ofSeconds(1);
 
-  public ConsumerBuilderImpl(final EventBridgeClient client) {
+  public ConsumerBuilderImpl(final EventBridgeClient client, final ExecutorService executor) {
     this.client = client;
+    this.executor = executor;
   }
 
   @Override
@@ -106,6 +109,6 @@ public final class ConsumerBuilderImpl<T> implements ConsumerBuilder<T> {
     Objects.requireNonNull(handler, "handler is required");
     final Consumer consumer = client.subscribe(group, instanceId, topics).join();
     return new ManagedConsumer<>(
-        consumer, handler, deserializer, autoCommit, pollSize, pollTimeout);
+        consumer, executor, handler, deserializer, autoCommit, pollSize, pollTimeout);
   }
 }

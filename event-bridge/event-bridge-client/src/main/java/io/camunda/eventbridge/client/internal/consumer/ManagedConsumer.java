@@ -17,17 +17,27 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Managed, handler-based consumer: drives an underlying {@link Consumer} on a background daemon
- * thread that polls, deserializes (via an optional {@link Deserializer}), dispatches each record to
- * a {@link MessageHandler}, and — with auto-commit on — commits the max processed offset per
+ * Managed, handler-based consumer: drives an underlying {@link Consumer} on a single virtual thread
+ * that polls, deserializes (via an optional {@link Deserializer}), dispatches each record to a
+ * {@link MessageHandler}, and — with auto-commit on — commits the max processed offset per
  * partition after each batch. Analogous to the connector's record listener but generic.
  *
+ * <p>The loop is submitted to the client's shared virtual-thread executor rather than to a
+ * per-consumer one: the loop spends almost all its time parked on the long-poll, and a parked
+ * virtual thread releases its carrier rather than tying up a platform thread. This consumer owns
+ * only its submitted task ({@link #loop}); the executor's lifecycle belongs to the client. Virtual
+ * threads are always daemon, so the loop never keeps the JVM alive.
+ *
  * <p>{@link #close()} stops the loop, performs a final commit (when auto-commit is on), and closes
- * the underlying consumer. Idempotent.
+ * the underlying consumer, without touching the shared executor. Idempotent.
  *
  * @param <T> the record type delivered to the handler
  */
@@ -41,7 +51,10 @@ public final class ManagedConsumer<T> implements MessageConsumer {
   private final boolean autoCommit;
   private final int pollSize;
   private final Duration pollTimeout;
-  private final Thread thread;
+  private final Future<?> loop;
+
+  /** Counts down when the loop has fully exited, so {@link #close()} can await it. */
+  private final CountDownLatch stopped = new CountDownLatch(1);
 
   /** Highest processed offset per partition, committed once auto-commit fires. */
   private final Map<TopicPartition, Long> processed = new HashMap<>();
@@ -52,6 +65,7 @@ public final class ManagedConsumer<T> implements MessageConsumer {
 
   public ManagedConsumer(
       final Consumer consumer,
+      final ExecutorService executor,
       final MessageHandler<T> handler,
       final Deserializer<T> deserializer,
       final boolean autoCommit,
@@ -63,9 +77,7 @@ public final class ManagedConsumer<T> implements MessageConsumer {
     this.autoCommit = autoCommit;
     this.pollSize = pollSize;
     this.pollTimeout = pollTimeout;
-    thread = new Thread(this::runLoop, "eventbridge-consumer-" + consumer.getGroupId());
-    thread.setDaemon(true);
-    thread.start();
+    loop = executor.submit(this::runLoop);
   }
 
   @Override
@@ -74,24 +86,28 @@ public final class ManagedConsumer<T> implements MessageConsumer {
   }
 
   private void runLoop() {
-    while (running) {
-      final List<Event> batch;
-      try {
-        batch = consumer.poll(pollSize, pollTimeout);
-      } catch (final RuntimeException e) {
-        if (running) {
-          LOG.warn("Poll failed; retrying", e);
+    try {
+      while (running) {
+        final List<Event> batch;
+        try {
+          batch = consumer.poll(pollSize, pollTimeout);
+        } catch (final RuntimeException e) {
+          if (running) {
+            LOG.warn("Poll failed; retrying", e);
+          }
+          continue;
         }
-        continue;
-      }
 
-      for (final Event event : batch) {
-        dispatch(event);
-      }
+        for (final Event event : batch) {
+          dispatch(event);
+        }
 
-      if (autoCommit) {
-        commitProcessed();
+        if (autoCommit) {
+          commitProcessed();
+        }
       }
+    } finally {
+      stopped.countDown();
     }
   }
 
@@ -136,9 +152,9 @@ public final class ManagedConsumer<T> implements MessageConsumer {
       return;
     }
     running = false;
-    thread.interrupt();
+    loop.cancel(true); // interrupt the parked long-poll so the loop exits promptly
     try {
-      thread.join(Duration.ofSeconds(5).toMillis());
+      stopped.await(5, TimeUnit.SECONDS);
     } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
     }

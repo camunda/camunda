@@ -18,6 +18,7 @@ import io.camunda.eventbridge.client.internal.admin.TopicAdminImpl;
 import io.camunda.eventbridge.client.internal.consumer.ConsumerBuilderImpl;
 import io.camunda.eventbridge.client.internal.consumer.ConsumerImpl;
 import io.camunda.eventbridge.client.internal.consumer.Fetcher;
+import io.camunda.eventbridge.client.internal.consumer.ManagedConsumer;
 import io.camunda.eventbridge.client.internal.producer.BatchPublisherImpl;
 import io.camunda.eventbridge.client.internal.transport.HttpTransport;
 import java.nio.charset.StandardCharsets;
@@ -25,6 +26,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -37,11 +39,19 @@ import java.util.concurrent.ScheduledExecutorService;
  * <p>With coordinator and fetch I/O now issued asynchronously on the JDK HTTP client's own
  * executor, the scheduled executor here only drives heartbeat cadence and prefetch backoff; it
  * defaults to a single thread (configurable via {@link Builder#schedulerThreads(int)}).
+ *
+ * <p>A second, shared {@link #consumerExecutor} runs the poll loops of every {@link
+ * ManagedConsumer} created through {@link #consume()}. It is a thread-per-task executor backed by
+ * virtual threads (not a reused pool): each loop spends almost all its time parked on the
+ * long-poll, and a parked virtual thread releases its carrier. Owning it here — rather than per
+ * managed consumer — gives one lifecycle and consistent thread naming; it is shut down once in
+ * {@link #close()}.
  */
 public final class EventBridgeClientImpl implements EventBridgeClient, Fetcher {
 
   private final ClientConfig config;
   private final ScheduledExecutorService executor;
+  private final ExecutorService consumerExecutor;
   private final HttpTransport transport;
   private final TopicAdminImpl topicAdmin;
 
@@ -49,6 +59,8 @@ public final class EventBridgeClientImpl implements EventBridgeClient, Fetcher {
   public EventBridgeClientImpl(final ClientConfig config) {
     this.config = config;
     executor = Executors.newScheduledThreadPool(Math.max(1, config.schedulerThreads()));
+    consumerExecutor =
+        Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("eb-consumer-", 0).factory());
     transport = new HttpTransport(config.gatewayUrl());
     topicAdmin = new TopicAdminImpl(transport);
   }
@@ -137,7 +149,7 @@ public final class EventBridgeClientImpl implements EventBridgeClient, Fetcher {
 
   @Override
   public ConsumerBuilder<Event> consume() {
-    return new ConsumerBuilderImpl<>(this);
+    return new ConsumerBuilderImpl<>(this, consumerExecutor);
   }
 
   // -------------------------------------------------------------------------
@@ -161,6 +173,7 @@ public final class EventBridgeClientImpl implements EventBridgeClient, Fetcher {
 
   @Override
   public void close() {
+    consumerExecutor.shutdownNow();
     executor.shutdownNow();
     transport.close();
   }
