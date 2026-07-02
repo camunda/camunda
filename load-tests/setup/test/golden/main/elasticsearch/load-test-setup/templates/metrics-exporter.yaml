@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: metrics-exporter
-        image: registry.camunda.cloud/team-reliability-testing/metrics-exporter:TEST
+        image: registry.camunda.cloud/team-reliability-testing/metrics-exporter:latest
         args:
           - --es.addresses=http://elastic:9200
         ports:

@@ -14,7 +14,7 @@ metadata:
     camunda.io/purpose: load-test
 
     app.kubernetes.io/component: optimize
-    app.kubernetes.io/version: "8.10.0-alpha1"
+
   annotations:
     {}
 spec:
@@ -41,7 +41,7 @@ spec:
         camunda.io/purpose: load-test
 
         app.kubernetes.io/component: optimize
-        app.kubernetes.io/version: "8.10.0-alpha1"
+
       annotations:
 
     spec:
@@ -49,7 +49,7 @@ spec:
         - name: harbor-registry
       initContainers:
         - name: migration
-          image: camunda/optimize:TEST
+          image: camunda/optimize:8.10.0-alpha1
           command: ['./upgrade/upgrade.sh', '--skip-warning']
           securityContext:
             allowPrivilegeEscalation: false
@@ -106,7 +106,7 @@ spec:
               subPath: application.yml
       containers:
         - name: optimize
-          image: camunda/optimize:TEST
+          image: camunda/optimize:8.10.0-alpha1
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false

@@ -9,7 +9,6 @@ metadata:
     app.kubernetes.io/instance: c8-golden-stable-88-elasticsearch-stable
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: elasticsearch
-    app.kubernetes.io/version: 8.18.0
 
     app.kubernetes.io/component: master
     ## Istio Labels: https://istio.io/docs/ops/deployment/requirements/
@@ -31,7 +30,6 @@ spec:
         app.kubernetes.io/instance: c8-golden-stable-88-elasticsearch-stable
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/name: elasticsearch
-        app.kubernetes.io/version: 8.18.0
 
         app.kubernetes.io/component: master
         ## Istio Labels: https://istio.io/docs/ops/deployment/requirements/
@@ -70,7 +68,7 @@ spec:
       initContainers:
         ## Image that performs the sysctl operation to modify Kernel settings (needed sometimes to avoid boot errors)
         - name: sysctl
-          image: docker.io/bitnamilegacy/os-shell:TEST
+          image: docker.io/bitnamilegacy/os-shell:12-debian-12-r43
           imagePullPolicy: "IfNotPresent"
           command:
             - /bin/bash
@@ -99,7 +97,7 @@ spec:
               ephemeral-storage: 50Mi
               memory: 128Mi
         - name: copy-default-plugins
-          image: docker.io/bitnamilegacy/elasticsearch:TEST
+          image: docker.io/bitnamilegacy/elasticsearch:8.18.0
           imagePullPolicy: "IfNotPresent"
           securityContext:
             allowPrivilegeEscalation: false
@@ -143,7 +141,7 @@ spec:
               subPath: app-plugins-dir
       containers:
         - name: elasticsearch
-          image: docker.io/bitnamilegacy/elasticsearch:TEST
+          image: docker.io/bitnamilegacy/elasticsearch:8.18.0
           imagePullPolicy: "IfNotPresent"
           securityContext:
             allowPrivilegeEscalation: false

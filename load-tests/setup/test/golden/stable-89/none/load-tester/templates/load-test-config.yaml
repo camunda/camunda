@@ -8,7 +8,7 @@ metadata:
 
     app.kubernetes.io/name: camunda-load-tests
     app.kubernetes.io/instance: c8-golden-stable-89-none-test
-    app.kubernetes.io/version: "8.8.0"
+
     app.kubernetes.io/managed-by: Helm
 data:
   load-test-config.yaml: |

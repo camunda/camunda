@@ -32,7 +32,7 @@ spec:
           value: n2-standard-4
       containers:
         - name: customer-notification
-          image: "registry.camunda.cloud/team-zeebe/worker:TEST"
+          image: "registry.camunda.cloud/team-zeebe/worker:SNAPSHOT"
           imagePullPolicy: Always
           env:
             - name: JDK_JAVA_OPTIONS
@@ -174,7 +174,7 @@ spec:
           value: n2-standard-4
       containers:
         - name: dispute-process-request-get-vendor-info
-          image: "registry.camunda.cloud/team-zeebe/worker:TEST"
+          image: "registry.camunda.cloud/team-zeebe/worker:SNAPSHOT"
           imagePullPolicy: Always
           env:
             - name: JDK_JAVA_OPTIONS
@@ -307,7 +307,7 @@ spec:
           value: n2-standard-4
       containers:
         - name: dispute-process-request-proof-from-vendor
-          image: "registry.camunda.cloud/team-zeebe/worker:TEST"
+          image: "registry.camunda.cloud/team-zeebe/worker:SNAPSHOT"
           imagePullPolicy: Always
           env:
             - name: JDK_JAVA_OPTIONS
@@ -452,7 +452,7 @@ spec:
           value: n2-standard-4
       containers:
         - name: extract-data-from-document
-          image: "registry.camunda.cloud/team-zeebe/worker:TEST"
+          image: "registry.camunda.cloud/team-zeebe/worker:SNAPSHOT"
           imagePullPolicy: Always
           env:
             - name: JDK_JAVA_OPTIONS
@@ -585,7 +585,7 @@ spec:
           value: n2-standard-4
       containers:
         - name: inform-about-successful-claim
-          image: "registry.camunda.cloud/team-zeebe/worker:TEST"
+          image: "registry.camunda.cloud/team-zeebe/worker:SNAPSHOT"
           imagePullPolicy: Always
           env:
             - name: JDK_JAVA_OPTIONS
@@ -718,7 +718,7 @@ spec:
           value: n2-standard-4
       containers:
         - name: refunding
-          image: "registry.camunda.cloud/team-zeebe/worker:TEST"
+          image: "registry.camunda.cloud/team-zeebe/worker:SNAPSHOT"
           imagePullPolicy: Always
           env:
             - name: JDK_JAVA_OPTIONS

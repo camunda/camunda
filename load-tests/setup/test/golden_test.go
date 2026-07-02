@@ -219,10 +219,10 @@ func TestNormalize(t *testing.T) {
 
 	require.NotContains(t, got, "helm.sh/chart")
 	require.NotContains(t, got, "checksum/config")
+	require.NotContains(t, got, "app.kubernetes.io/version")
 	require.NotContains(t, got, "2025-12-31")            // date value normalized away
 	require.Contains(t, got, "deadline-date: TEST_DATE") // label kept, value normalized
-	require.Contains(t, got, "image: registry.example.com/camunda/zeebe:TEST")
-	require.Contains(t, got, `app.kubernetes.io/version: "8.6.0"`) // kept
+	require.Contains(t, got, "image: registry.example.com/camunda/zeebe:8.6.0")
 
 	// Idempotent.
 	require.Equal(t, got, normalize(got))
