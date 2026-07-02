@@ -58,8 +58,7 @@ class SearchEngineDatabaseConfigurationTest {
 
   @Test
   void shouldDisableSchemaCreationForNoneType() {
-    // given — the "none" type can only be supplied via the properties directly; the unified
-    // per-tenant configuration path rejects it up-front, but both paths share the same guard
+    // given
     final SearchEngineConnectProperties connect = new SearchEngineConnectProperties();
     connect.setType("none");
     final SearchEngineSchemaManagerProperties schemaManager =

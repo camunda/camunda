@@ -29,20 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 
-/**
- * Initializes the search engine schema for every physical tenant at startup, running up to {@link
- * #MAX_PARALLEL_SCHEMA_INITS} tenant initializations in parallel.
- *
- * <p>Failure semantics: in synchronous mode (gateway enabled) any single tenant failure aborts
- * application startup; in asynchronous mode a failure is logged at error level together with the
- * tenants left without an initialized schema, and {@link #isInitialized()} / {@link
- * #isInitialized(String)} keep reporting {@code false} for them. The RDBMS counterpart ({@code
- * DefaultRdbmsSchemaManagerRegistry}) still initializes tenants sequentially; converging both sides
- * on parallel per-tenant orchestration is tracked in
- * https://github.com/camunda/camunda/issues/54299.
- */
 public class SearchEngineSchemaInitializer implements InitializingBean, SchemaManagerContainer {
-  private static final int MAX_PARALLEL_SCHEMA_INITS = 4;
   private static final Logger LOGGER = LoggerFactory.getLogger(SearchEngineSchemaInitializer.class);
   private final SchemaManagerMetrics schemaManagerMetrics;
   private final boolean awaitSchemaInitialization;
@@ -56,11 +43,6 @@ public class SearchEngineSchemaInitializer implements InitializingBean, SchemaMa
       final Map<String, IndexDescriptors> descriptorsByTenant,
       final MeterRegistry meterRegistry,
       final boolean awaitSchemaInitialization) {
-    if (!configsByTenant.keySet().equals(descriptorsByTenant.keySet())) {
-      throw new IllegalStateException(
-          "Physical tenant ids of the search engine configurations %s and the index descriptors %s do not match"
-              .formatted(configsByTenant.keySet(), descriptorsByTenant.keySet()));
-    }
     schemaManagerMetrics = new SchemaManagerMetrics(meterRegistry);
     this.awaitSchemaInitialization = awaitSchemaInitialization;
 
@@ -78,33 +60,22 @@ public class SearchEngineSchemaInitializer implements InitializingBean, SchemaMa
         configs.size(),
         configs.keySet());
 
-    final int parallelism = Math.min(configs.size(), MAX_PARALLEL_SCHEMA_INITS);
-    final ExecutorService executor =
-        Executors.newFixedThreadPool(
-            parallelism,
-            runnable -> {
-              final Thread t = new Thread(runnable, "schema-init");
-              t.setDaemon(true);
-              return t;
-            });
-
+    final var executor = Executors.newSingleThreadExecutor();
     if (!addShutdownHook(executor)) {
       // skipping schema initialization as JVM is shutting down
       return;
     }
 
-    final CompletableFuture<?>[] futures =
-        configs.keySet().stream()
-            .map(
-                id -> CompletableFuture.runAsync(() -> startupSchemaManagerForTenant(id), executor))
-            .toArray(CompletableFuture[]::new);
-    final CompletableFuture<Void> all = CompletableFuture.allOf(futures);
-
+    final var future = CompletableFuture.runAsync(this::startupSchemaManagers, executor);
     if (awaitSchemaInitialization) {
-      synchronousSchemaInitialization(all, executor);
+      synchronousSchemaInitialization(future, executor);
     } else {
-      asyncSchemaInitialization(all, executor);
+      asyncSchemaInitialization(future, executor);
     }
+  }
+
+  private void startupSchemaManagers() {
+    configs.keySet().forEach(this::startupSchemaManagerForTenant);
   }
 
   @VisibleForTesting
@@ -180,11 +151,6 @@ public class SearchEngineSchemaInitializer implements InitializingBean, SchemaMa
         });
   }
 
-  /**
-   * Runs a tenant's schema startup and classifies failures: an {@link IOException} raised after the
-   * tenant was marked initialized can only stem from closing the search client and is benign; any
-   * other failure is a real initialization failure and must propagate.
-   */
   @VisibleForTesting
   void initializeTenantSchema(final String physicalTenantId, final TenantSchemaStartup startup) {
     try {

@@ -49,11 +49,9 @@ class SearchEngineSchemaInitializerTest {
   @BeforeAll
   @AfterAll
   static void clearStaticEnvironment() {
-    // Avoid leaking a previous test's environment into these unit tests.
     UnifiedConfigurationHelper.setCustomEnvironment(null);
   }
 
-  /** Builds an initializer with a single synthesized {@code default} tenant for an ES backend. */
   private SearchEngineSchemaInitializer createInitializer() {
     final Camunda camunda = new Camunda();
     camunda.getData().getSecondaryStorage().setType(SecondaryStorageType.elasticsearch);
@@ -69,7 +67,6 @@ class SearchEngineSchemaInitializerTest {
         configsFor(resolver), descriptorsFor(resolver), new SimpleMeterRegistry(), true);
   }
 
-  /** Builds the per-tenant descriptors the same way the production bean does. */
   private static Map<String, IndexDescriptors> descriptorsFor(
       final PhysicalTenantResolver resolver) {
     return new SearchClientReaderConfiguration().physicalTenantScopedIndexDescriptors(resolver);
@@ -102,7 +99,6 @@ class SearchEngineSchemaInitializerTest {
                                 tenantCamunda))));
   }
 
-  /** Sets the private {@code isShutdown} flag on the initializer via reflection. */
   private static void setShutdown(
       final SearchEngineSchemaInitializer initializer, final boolean value) {
     try {
@@ -138,13 +134,13 @@ class SearchEngineSchemaInitializerTest {
       // when
       initializer.synchronousSchemaInitialization(future, executor);
 
-      // then — no exception thrown, executor is closed
+      // then
       assertThat(executor.isShutdown()).isTrue();
     }
 
     @Test
     void shouldNotInterruptThreadOnShutdownTriggeredInterrupt() throws Exception {
-      // given — simulate shutdown-triggered interrupt
+      // given
       final var initializer = createInitializer();
       executor = Executors.newSingleThreadExecutor();
       setShutdown(initializer, true);
@@ -152,36 +148,36 @@ class SearchEngineSchemaInitializerTest {
       // Use an incomplete future so that future.get() blocks and sees the interrupt flag
       final var blockingFuture = new CompletableFuture<Void>();
 
-      // when — interrupt the thread so future.get() throws InterruptedException
+      // when
       Thread.currentThread().interrupt();
       initializer.synchronousSchemaInitialization(blockingFuture, executor);
 
-      // then — thread should NOT be interrupted (shutdown swallows the interrupt)
+      // then
       assertThat(Thread.currentThread().isInterrupted()).isFalse();
       assertThat(executor.isShutdown()).isTrue();
     }
 
     @Test
     void shouldReInterruptThreadOnNonShutdownInterrupt() throws Exception {
-      // given — NOT a shutdown, something else interrupted
+      // given
       final var initializer = createInitializer();
       executor = Executors.newSingleThreadExecutor();
       // isShutdown remains false (default)
 
       final var blockingFuture = new CompletableFuture<Void>();
 
-      // when — interrupt the current thread so future.get() throws InterruptedException
+      // when
       Thread.currentThread().interrupt();
       initializer.synchronousSchemaInitialization(blockingFuture, executor);
 
-      // then — thread should be re-interrupted
+      // then
       assertThat(Thread.currentThread().isInterrupted()).isTrue();
       assertThat(executor.isShutdown()).isTrue();
     }
 
     @Test
     void shouldSuppressExceptionDuringShutdown() {
-      // given — shutdown is in progress and the future fails with a non-interrupt exception.
+      // given
       // CompletableFuture.get() wraps the cause in ExecutionException, which falls into
       // the catch(Exception) block where isShutdown=true causes a silent return.
       final var initializer = createInitializer();
@@ -191,7 +187,7 @@ class SearchEngineSchemaInitializerTest {
       final var future = new CompletableFuture<Void>();
       future.completeExceptionally(new RuntimeException("ES connection failed"));
 
-      // when/then — should not throw, exception is suppressed during shutdown
+      // when/then
       assertThatNoException()
           .isThrownBy(() -> initializer.synchronousSchemaInitialization(future, executor));
       assertThat(executor.isShutdown()).isTrue();
@@ -199,7 +195,7 @@ class SearchEngineSchemaInitializerTest {
 
     @Test
     void shouldPropagateExceptionWhenNotShutdown() {
-      // given — NOT a shutdown, the future fails with a real error.
+      // given
       // CompletableFuture.get() wraps the cause in ExecutionException.
       final var initializer = createInitializer();
       executor = Executors.newSingleThreadExecutor();
@@ -209,7 +205,7 @@ class SearchEngineSchemaInitializerTest {
       final var future = new CompletableFuture<Void>();
       future.completeExceptionally(cause);
 
-      // when/then — ExecutionException wrapping the cause should propagate
+      // when/then
       assertThatThrownBy(() -> initializer.synchronousSchemaInitialization(future, executor))
           .isInstanceOf(ExecutionException.class)
           .hasCause(cause);
@@ -232,7 +228,7 @@ class SearchEngineSchemaInitializerTest {
         // expected
       }
 
-      // then — executor must be closed regardless
+      // then
       assertThat(executor.isShutdown()).isTrue();
     }
 
@@ -248,7 +244,7 @@ class SearchEngineSchemaInitializerTest {
       // when
       initializer.synchronousSchemaInitialization(blockingFuture, executor);
 
-      // then — executor must be closed regardless
+      // then
       assertThat(executor.isShutdown()).isTrue();
     }
   }
@@ -266,7 +262,7 @@ class SearchEngineSchemaInitializerTest {
       // when
       initializer.asyncSchemaInitialization(future, executor);
 
-      // then — wait a bit for the whenCompleteAsync callback to run
+      // then
       executor.awaitTermination(2, TimeUnit.SECONDS);
       assertThat(executor.isShutdown()).isTrue();
     }
@@ -282,7 +278,7 @@ class SearchEngineSchemaInitializerTest {
       // when
       initializer.asyncSchemaInitialization(future, executor);
 
-      // then — wait a bit for the whenCompleteAsync callback to run
+      // then
       executor.awaitTermination(2, TimeUnit.SECONDS);
       assertThat(executor.isShutdown()).isTrue();
     }
@@ -293,7 +289,7 @@ class SearchEngineSchemaInitializerTest {
 
     @Test
     void shouldPropagateIoExceptionFromStartupAsFailure() {
-      // given — tenant not initialized, so an IOException is a startup failure, not a close leak
+      // given
       final SearchEngineSchemaInitializer initializer = createInitializer();
 
       // when/then
@@ -310,7 +306,7 @@ class SearchEngineSchemaInitializerTest {
 
     @Test
     void shouldTolerateIoExceptionFromClosingTheClient() throws Exception {
-      // given — the startup marks the tenant initialized before close throws
+      // given
       final SearchEngineSchemaInitializer initializer = createInitializer();
       final Field field = SearchEngineSchemaInitializer.class.getDeclaredField("initialized");
       field.setAccessible(true);
@@ -371,35 +367,14 @@ class SearchEngineSchemaInitializerTest {
     }
 
     @Test
-    void shouldRejectMismatchedTenantKeySets() {
-      // given
-      final Camunda camunda = new Camunda();
-      camunda.getData().getSecondaryStorage().setType(SecondaryStorageType.elasticsearch);
-      final PhysicalTenantResolver resolver =
-          PhysicalTenantResolver.of(new MockEnvironment(), camunda);
-
-      // when/then — descriptors keyed by a different tenant id than the configs
-      assertThatThrownBy(
-              () ->
-                  new SearchEngineSchemaInitializer(
-                      configsFor(resolver),
-                      Map.of("other", new IndexDescriptors("prefix", true)),
-                      new SimpleMeterRegistry(),
-                      true))
-          .isInstanceOf(IllegalStateException.class)
-          .hasMessageContaining("do not match");
-    }
-
-    @Test
     void shouldReportPerTenantReadiness() throws Exception {
       // given
       final SearchEngineSchemaInitializer initializer = createInitializer();
 
-      // initially neither no-arg nor per-tenant readiness is true
       assertThat(initializer.isInitialized()).isFalse();
       assertThat(initializer.isInitialized("default")).isFalse();
 
-      // when — flip the per-tenant flag via reflection (simulating a successful init)
+      // when
       final Field field = SearchEngineSchemaInitializer.class.getDeclaredField("initialized");
       field.setAccessible(true);
       @SuppressWarnings("unchecked")
@@ -414,9 +389,7 @@ class SearchEngineSchemaInitializerTest {
 
     @Test
     void shouldReturnFalseForNoArgWhenNotAllTenantsReady() throws Exception {
-      // given — two explicitly declared tenants (default + tenantb), only one ready.
-      // We declare `default` explicitly to suppress the resolver's synthesized default entry,
-      // which would otherwise leave a third tenant permanently un-ready.
+      // given
       final MockEnvironment env = new MockEnvironment();
       env.getPropertySources()
           .addFirst(
@@ -427,10 +400,8 @@ class SearchEngineSchemaInitializerTest {
                       "elasticsearch",
                       "camunda.physical-tenants.tenantb.data.secondary-storage.type",
                       "elasticsearch",
-                      // authorization off => no per-tenant security.initialization block required
                       "camunda.physical-tenants.tenantb.security.authorization.enabled",
                       "false",
-                      // distinct prefix so both tenants may share the same connection
                       "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.index-prefix",
                       "tenantb")));
       final Camunda camunda = new Camunda();
@@ -439,7 +410,7 @@ class SearchEngineSchemaInitializerTest {
       final PhysicalTenantResolver resolver = PhysicalTenantResolver.of(env, camunda);
       final SearchEngineSchemaInitializer initializer = newInitializer(resolver);
 
-      // when — flip readiness on only one tenant
+      // when
       final Field field = SearchEngineSchemaInitializer.class.getDeclaredField("initialized");
       field.setAccessible(true);
       @SuppressWarnings("unchecked")
@@ -453,7 +424,7 @@ class SearchEngineSchemaInitializerTest {
       assertThat(initializer.isInitialized("tenantb")).isFalse();
       assertThat(initializer.isInitialized()).isFalse();
 
-      // when — flip the second tenant
+      // when
       map.get("tenantb").set(true);
 
       // then
