@@ -147,11 +147,15 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
     OpensearchUtil.searchAsync(searchRequestBuilder.build(), Object.class, osAsyncClient)
         .whenComplete(
             (response, e) -> {
-              final var timer = metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_QUERY);
-              startTimer.stop(timer);
+              try {
+                final var timer = metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_QUERY);
+                startTimer.stop(timer);
 
-              final var result = handleSearchResponse(response, e, errorMessage, batchExtractor);
-              result.ifRightOrLeft(batchFuture::complete, batchFuture::completeExceptionally);
+                final var result = handleSearchResponse(response, e, errorMessage, batchExtractor);
+                result.ifRightOrLeft(batchFuture::complete, batchFuture::completeExceptionally);
+              } catch (final Exception ex) {
+                batchFuture.completeExceptionally(ex);
+              }
             });
 
     return batchFuture;

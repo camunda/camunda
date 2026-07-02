@@ -31,11 +31,23 @@ public class ArchiverTest {
     when(operateProperties.getArchiver()).thenReturn(archiverProperties);
     when(archiverProperties.isRolloverEnabled()).thenReturn(true);
     // sub-day interval with a day-only format -> bucket end collapses, archiving would stall
-    when(archiverProperties.getRolloverInterval()).thenReturn("4h");
+    when(archiverProperties.getRolloverInterval()).thenReturn("1h");
     when(archiverProperties.getElsRolloverDateFormat()).thenReturn("date");
 
     assertThatThrownBy(() -> underTest.startArchiving())
         .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  public void shouldFailStartupWhenMultiUnitIntervalIsUsed() {
+    when(operateProperties.getArchiver()).thenReturn(archiverProperties);
+    when(archiverProperties.isRolloverEnabled()).thenReturn(true);
+    when(archiverProperties.getRolloverInterval()).thenReturn("2d");
+    when(archiverProperties.getElsRolloverDateFormat()).thenReturn("date");
+
+    assertThatThrownBy(() -> underTest.startArchiving())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Only single-unit values");
   }
 
   @Test

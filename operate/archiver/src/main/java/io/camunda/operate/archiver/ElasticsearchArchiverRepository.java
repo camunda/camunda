@@ -194,10 +194,16 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
     sendSearchRequest(searchRequest)
         .whenComplete(
             (response, e) -> {
-              final var timer = getArchiverQueryTimer();
-              startTimer.stop(timer);
-              final var result = handleSearchResponse(response, e, errorMessage, batchExtractor);
-              result.ifRightOrLeft(batchFuture::complete, batchFuture::completeExceptionally);
+              try {
+                final var timer = getArchiverQueryTimer();
+                startTimer.stop(timer);
+                final var result = handleSearchResponse(response, e, errorMessage, batchExtractor);
+                result.ifRightOrLeft(batchFuture::complete, batchFuture::completeExceptionally);
+              } catch (final Exception ex) {
+                // Ensure the future is always completed; an uncaught exception in whenComplete
+                // would otherwise leave batchFuture pending indefinitely.
+                batchFuture.completeExceptionally(ex);
+              }
             });
 
     return batchFuture;

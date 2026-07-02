@@ -149,6 +149,14 @@ public final class DateOfArchivedDocumentsUtil {
       throw new IllegalArgumentException("Invalid format: " + input);
     }
     final int amount = Integer.parseInt(matcher.group(1));
+
+    if (amount != 1) {
+      throw new IllegalArgumentException(
+          "Invalid rollover interval: "
+              + input
+              + ". Only single-unit values (e.g. 1d, 1w, 1M) are supported.");
+    }
+
     final String unit = matcher.group(2);
     return switch (unit) {
       case "s" -> new Temp(amount, ChronoUnit.SECONDS);
