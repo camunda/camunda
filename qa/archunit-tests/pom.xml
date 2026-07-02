@@ -176,6 +176,7 @@
             <dep>com.fasterxml.jackson.core:jackson-databind</dep>
             <dep>jakarta.validation:jakarta.validation-api</dep>
             <dep>org.springframework.ai:spring-ai-mcp-annotations</dep>
+            <dep>io.camunda:webapps-schema</dep>
           </ignoredUsedUndeclaredDependencies>
         </configuration>
       </plugin>
