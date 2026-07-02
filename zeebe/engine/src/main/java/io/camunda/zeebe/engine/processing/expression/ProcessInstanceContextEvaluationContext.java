@@ -69,6 +69,30 @@ public final class ProcessInstanceContextEvaluationContext implements ScopedEval
       return Either.left(BufferUtil.wrapArray(msgPackBytes));
     }
 
+    if ("businessId".equals(variableName)) {
+      final var elementInstance = elementInstanceState.getInstance(scopeKey);
+      if (elementInstance == null) {
+        return ScopedEvaluationContext.NONE_INSTANCE.getVariable(variableName);
+      }
+      final long processInstanceKey = elementInstance.getValue().getProcessInstanceKey();
+      final long elementInstanceKey = elementInstance.getValue().getElementInstanceKey();
+      // Business ID does not exist on all element instances, only on the process instance
+      final var processInstance =
+          processInstanceKey != elementInstanceKey
+              ? elementInstanceState.getInstance(processInstanceKey)
+              : elementInstance;
+      final String businessId =
+          processInstance == null ? null : processInstance.getValue().getBusinessId();
+      if (businessId == null || businessId.isEmpty()) {
+        return ScopedEvaluationContext.NONE_INSTANCE.getVariable(variableName);
+      }
+      final var writer = new MsgPackWriter();
+      final var buffer = new ExpandableArrayBuffer();
+      writer.wrap(buffer, 0);
+      writer.writeString(BufferUtil.wrapString(businessId));
+      return Either.left(new UnsafeBuffer(buffer, 0, writer.getOffset()));
+    }
+
     return ScopedEvaluationContext.NONE_INSTANCE.getVariable(variableName);
   }
 
