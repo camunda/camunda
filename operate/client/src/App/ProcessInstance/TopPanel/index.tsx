@@ -59,16 +59,9 @@ import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefi
 import {isCompensationAssociation} from 'modules/bpmn-js/utils/isCompensationAssociation';
 import {useProcessSequenceFlows} from 'modules/queries/sequenceFlows/useProcessSequenceFlows';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
-import {
-  MAX_WAIT_STATES,
-  useElementInstanceInspection,
-} from 'modules/queries/elementInstanceInspection/useElementInstanceInspection';
-import type {ElementInstanceInspection} from '@camunda/camunda-api-zod-schemas/8.10';
+import {useWaitStateStatistics} from 'modules/queries/waitStateStatistics/useWaitStateStatistics';
 import {getSubprocessOverlayFromIncidentElements} from 'modules/utils/elements';
-import {
-  getWaitStateLabel,
-  isBeforeAllExecutionListenerWaitState,
-} from 'modules/utils/waitStates';
+import {getWaitStateLabel} from 'modules/utils/waitStates';
 import type {
   AgentShinePayload,
   AgentStatusPayload,
@@ -89,16 +82,17 @@ const OVERLAY_TYPE_AGENT_STATUS = 'agentStatus';
 const OVERLAY_TYPE_AGENT_SHINE = 'agentShine';
 
 // Gateways and events are narrow (~36px) symbols.
-const NARROW_WAIT_STATE_ELEMENT_TYPES = new Set<string>([
-  'EXCLUSIVE_GATEWAY',
-  'PARALLEL_GATEWAY',
-  'INCLUSIVE_GATEWAY',
-  'EVENT_BASED_GATEWAY',
-  'START_EVENT',
-  'END_EVENT',
-  'INTERMEDIATE_CATCH_EVENT',
-  'INTERMEDIATE_THROW_EVENT',
-  'BOUNDARY_EVENT',
+const NARROW_WAIT_STATE_BPMN_TYPES = new Set<string>([
+  'bpmn:ExclusiveGateway',
+  'bpmn:ParallelGateway',
+  'bpmn:InclusiveGateway',
+  'bpmn:EventBasedGateway',
+  'bpmn:ComplexGateway',
+  'bpmn:StartEvent',
+  'bpmn:EndEvent',
+  'bpmn:IntermediateCatchEvent',
+  'bpmn:IntermediateThrowEvent',
+  'bpmn:BoundaryEvent',
 ]);
 
 const overlayPositions = {
@@ -144,8 +138,7 @@ const TopPanel: React.FC = observer(() => {
       sourceElementIdForMoveOperation || undefined,
     );
   const {data: processInstance} = useProcessInstance();
-  const {data: inspectionData} = useElementInstanceInspection({
-    processInstanceKey: processInstanceId,
+  const {data: waitStateStatistics} = useWaitStateStatistics({
     enabled:
       clientConfig.waitStatesEnabled && processInstance?.state === 'ACTIVE',
   });
@@ -205,20 +198,17 @@ const TopPanel: React.FC = observer(() => {
       ...subprocessOverlays,
     ];
 
-    if (inspectionData?.items?.length) {
-      const elementIdsInStats = new Set(statistics?.map(({id}) => id) ?? []);
-      for (const item of inspectionData.items) {
-        if (
-          isBeforeAllExecutionListenerWaitState(item) &&
-          !elementIdsInStats.has(item.elementId)
-        ) {
-          allElementStateOverlays.push({
-            payload: {elementState: 'active' as const},
-            type: OVERLAY_TYPE_STATE,
-            elementId: item.elementId,
-            position: overlayPositions.active,
-          });
-        }
+    // Some wait states (e.g. a BEFORE_ALL execution listener on a multi-instance
+    // body) are missing from element-instances stats; synthesize an active overlay.
+    const elementIdsInStats = new Set(statistics?.map(({id}) => id) ?? []);
+    for (const {elementId, waitingCount} of waitStateStatistics ?? []) {
+      if (waitingCount > 0 && !elementIdsInStats.has(elementId)) {
+        allElementStateOverlays.push({
+          payload: {elementState: 'active' as const},
+          type: OVERLAY_TYPE_STATE,
+          elementId,
+          position: overlayPositions.active,
+        });
       }
     }
 
@@ -233,20 +223,12 @@ const TopPanel: React.FC = observer(() => {
     statistics,
     businessObjects,
     isExecutionCountVisible,
-    inspectionData?.items,
+    waitStateStatistics,
   ]);
 
   const allWaitingStateOverlays = useMemo(() => {
-    if (!inspectionData?.items?.length) {
+    if (!waitStateStatistics?.length) {
       return [];
-    }
-
-    // Group wait states by elementId (show only 1 label per element)
-    const waitStatesByElement = new Map<string, ElementInstanceInspection[]>();
-    for (const item of inspectionData.items) {
-      const existing = waitStatesByElement.get(item.elementId) ?? [];
-      existing.push(item);
-      waitStatesByElement.set(item.elementId, existing);
     }
 
     const overlays: Array<{
@@ -256,13 +238,11 @@ const TopPanel: React.FC = observer(() => {
       payload: {label: string; centered: boolean};
     }> = [];
 
-    const hasMore = inspectionData.page?.totalItems > MAX_WAIT_STATES;
-
-    for (const [elementId, waitStates] of waitStatesByElement) {
-      const label = getWaitStateLabel(waitStates, hasMore);
+    for (const {elementId, waitingCount} of waitStateStatistics) {
+      const label = getWaitStateLabel(waitingCount);
       if (label) {
-        const isNarrowElement = waitStates.some((waitState) =>
-          NARROW_WAIT_STATE_ELEMENT_TYPES.has(waitState.elementType),
+        const isNarrowElement = NARROW_WAIT_STATE_BPMN_TYPES.has(
+          businessObjects?.[elementId]?.$type ?? '',
         );
         overlays.push({
           elementId,
@@ -274,7 +254,7 @@ const TopPanel: React.FC = observer(() => {
     }
 
     return overlays;
-  }, [inspectionData?.items, inspectionData?.page?.totalItems]);
+  }, [waitStateStatistics, businessObjects]);
 
   const {agentOverlays, elementsWithAgent} = useMemo(() => {
     if (!agentInstancesData?.items?.length) {

@@ -9,18 +9,13 @@
 import type {ElementInstanceInspection} from '@camunda/camunda-api-zod-schemas/8.10';
 import {formatDate} from 'modules/utils/date';
 
-function getWaitStateLabel(
-  waitStates: ElementInstanceInspection[],
-  hasMore = false,
-): string | null {
-  const count = waitStates.length;
-
-  if (count === 0) {
+function getWaitStateLabel(waitingCount: number): string | null {
+  if (waitingCount <= 0) {
     return null;
   }
 
-  if (count > 1) {
-    return `${count}${hasMore ? '+' : ''} waiting`;
+  if (waitingCount > 1) {
+    return `${waitingCount} waiting`;
   }
 
   return 'Waiting';
@@ -121,20 +116,4 @@ function getEarliestTimerDueDate(
   return earliestDueDate;
 }
 
-function isBeforeAllExecutionListenerWaitState(
-  item: ElementInstanceInspection,
-): boolean {
-  return (
-    item.elementType === 'MULTI_INSTANCE_BODY' &&
-    item.details.waitStateType === 'JOB' &&
-    item.details.jobKind === 'EXECUTION_LISTENER' &&
-    item.details.listenerEventType === 'BEFORE_ALL'
-  );
-}
-
-export {
-  getWaitStateLabel,
-  getWaitStateStatusItems,
-  getEarliestTimerDueDate,
-  isBeforeAllExecutionListenerWaitState,
-};
+export {getWaitStateLabel, getWaitStateStatusItems, getEarliestTimerDueDate};
