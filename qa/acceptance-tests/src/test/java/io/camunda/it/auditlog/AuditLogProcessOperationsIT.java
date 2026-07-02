@@ -764,6 +764,76 @@ public class AuditLogProcessOperationsIT {
     assertBatchAuditLog(auditLog, AuditLogOperationTypeEnum.CREATE, batchOperationKey);
   }
 
+  /**
+   * Regression test for <a href="https://github.com/camunda/camunda/issues/53681">#53681</a>: a
+   * batch CANCEL process instance operation used to fail with a primary key violation on the
+   * AUDIT_LOG table when using RDBMS (e.g. H2) secondary storage. Audit log keys are deterministic
+   * ({@code partitionId-position}) so that a re-delivered record is idempotent on Elasticsearch
+   * (upsert); on RDBMS the plain INSERT collided until the exporter was made idempotent on
+   * re-delivery. If the exporter stalls on such a violation, the per-instance CANCEL audit entries
+   * never reach the store. This test asserts the complete audit trail of the batch is written: the
+   * batch CREATE entry plus one CANCEL entry per process instance.
+   */
+  @Test
+  void shouldTrackAllAuditLogsForBatchProcessInstanceCancel(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // given - start multiple process instances
+    final var instance1 =
+        createProcessInstance(client, SERVICE_TASKS_PROCESS_ID, Map.of("batchCancelAll", "value1"));
+    final var instance2 =
+        createProcessInstance(client, SERVICE_TASKS_PROCESS_ID, Map.of("batchCancelAll", "value2"));
+    final long instance1Key = instance1.getProcessInstanceKey();
+    final long instance2Key = instance2.getProcessInstanceKey();
+
+    waitForProcessInstancesToStart(
+        client, f -> f.processInstanceKey(instance1Key).tenantId(TENANT_A), 1);
+    waitForProcessInstancesToStart(
+        client, f -> f.processInstanceKey(instance2Key).tenantId(TENANT_A), 1);
+
+    // when - cancel both instances using a batch operation
+    final var batchResult =
+        client
+            .newCreateBatchOperationCommand()
+            .processInstanceCancel()
+            .filter(f -> f.processInstanceKey(k -> k.in(List.of(instance1Key, instance2Key))))
+            .send()
+            .join();
+
+    final var batchOperationKey = batchResult.getBatchOperationKey();
+    waitForBatchOperationWithCorrectTotalCount(client, batchOperationKey, 2);
+    waitForBatchOperationCompleted(client, batchOperationKey, 2, 0);
+
+    // then - the batch CREATE audit log is written
+    final var batchAuditLogs =
+        awaitAuditLogEntry(
+            client,
+            AuditLogEntityTypeEnum.BATCH,
+            AuditLogOperationTypeEnum.CREATE,
+            batchOperationKey);
+    assertThat(batchAuditLogs).isNotEmpty();
+    assertBatchAuditLog(
+        batchAuditLogs.getFirst(), AuditLogOperationTypeEnum.CREATE, batchOperationKey);
+
+    // and - a CANCEL audit log is written for every process instance in the batch. These entries
+    // would be missing if the exporter stalled on a primary key violation while inserting them.
+    for (final var instance : List.of(instance1, instance2)) {
+      final var cancelAuditLogs =
+          awaitAuditLogEntry(
+              client,
+              AuditLogEntityTypeEnum.PROCESS_INSTANCE,
+              AuditLogOperationTypeEnum.CANCEL,
+              String.valueOf(instance.getProcessInstanceKey()));
+      assertThat(cancelAuditLogs).hasSize(1);
+      assertProcessInstanceAuditLog(
+          cancelAuditLogs.getFirst(),
+          AuditLogEntityTypeEnum.PROCESS_INSTANCE,
+          AuditLogOperationTypeEnum.CANCEL,
+          instance.getProcessInstanceKey(),
+          instance.getProcessDefinitionKey(),
+          SERVICE_TASKS_PROCESS_ID);
+    }
+  }
+
   @Test
   void shouldTrackBatchProcessInstanceMigrate(
       @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
