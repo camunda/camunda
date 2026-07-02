@@ -36,6 +36,7 @@ test.describe('wait states', () => {
         variables: waitStateProcessInstance.variables,
         xml: waitStateProcessInstance.xml,
         waitStates: waitStateProcessInstance.waitStates,
+        waitStateStatistics: waitStateProcessInstance.waitStateStatistics,
       }),
     );
 

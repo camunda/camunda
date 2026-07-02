@@ -14,28 +14,9 @@ const PROCESS_INSTANCE_KEY = '2251799813687144';
 const USER_TASK_INSTANCE_KEY = '2251799813687150';
 const SERVICE_TASK_INSTANCE_KEY = '2251799813687170';
 
-// Generate `count` SIGNAL wait states for a (narrow) signal catch event so the
-// diagram label renders e.g. "5 waiting" / "333 waiting" without hand-writing
-// hundreds of entries.
-function signalWaitStates(
-  elementId: string,
-  count: number,
-): ElementInstanceInspection[] {
-  return Array.from({length: count}, (_, index) => ({
-    rootProcessInstanceKey: null,
-    processInstanceKey: PROCESS_INSTANCE_KEY,
-    elementInstanceKey: `${elementId}-${index}`,
-    elementId,
-    elementType: 'INTERMEDIATE_CATCH_EVENT',
-    tenantId: '<default>',
-    bpmnProcessId: 'signalEventProcess',
-    details: {
-      waitStateType: 'SIGNAL',
-      signalName: 'startSignal1',
-    },
-  }));
-}
-
+// Only the elements whose details panel is opened by the test need search
+// items; the diagram waiting-badge counts come from the wait state statistics
+// endpoint (waitStateStatistics) instead.
 const waitStateItems: ElementInstanceInspection[] = [
   {
     rootProcessInstanceKey: null,
@@ -85,14 +66,6 @@ const waitStateItems: ElementInstanceInspection[] = [
       retries: 3,
     },
   },
-  // Four narrow signal catch events exercising 1-, 2- and 3-digit label widths
-  // ("Waiting", "5 waiting", "11 waiting", "333 waiting") and the narrow-element
-  // centering offset. Total stays below the 1000 cap so labels are not
-  // truncated ("N+ waiting").
-  ...signalWaitStates('Event_signal_1', 1),
-  ...signalWaitStates('Event_signal_5', 5),
-  ...signalWaitStates('Event_signal_11', 11),
-  ...signalWaitStates('Event_signal_333', 333),
 ];
 
 // A running instance with a Camunda user task (2 tokens, 2 wait states), a
@@ -333,6 +306,19 @@ const waitStateRunningInstance: InstanceMock = {
       endCursor: null,
       hasMoreTotalItems: false,
     },
+  },
+  // Diagram waiting-badge counts: exercises 1-, 2- and 3-digit label widths
+  // ("Waiting", "2 waiting", "5 waiting", "11 waiting", "333 waiting") and the
+  // narrow-element centering offset on the signal catch events.
+  waitStateStatistics: {
+    items: [
+      {elementId: 'Activity_0dex012', waitingCount: 2},
+      {elementId: 'Activity_charge', waitingCount: 1},
+      {elementId: 'Event_signal_1', waitingCount: 1},
+      {elementId: 'Event_signal_5', waitingCount: 5},
+      {elementId: 'Event_signal_11', waitingCount: 11},
+      {elementId: 'Event_signal_333', waitingCount: 333},
+    ],
   },
 };
 
