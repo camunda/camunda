@@ -14,9 +14,9 @@ import java.util.concurrent.CompletableFuture;
 public interface NodeIdProvider extends AutoCloseable {
 
   /**
-   * @param clusterSize the number of brokers in this node's zone
+   * @param brokerCountInZone the number of brokers in this node's zone
    */
-  CompletableFuture<Void> initialize(int clusterSize);
+  CompletableFuture<Void> initialize(int brokerCountInZone);
 
   /**
    * Scale the available node ids to the new cluster size
@@ -83,7 +83,7 @@ public interface NodeIdProvider extends AutoCloseable {
       public void close() throws Exception {}
 
       @Override
-      public CompletableFuture<Void> initialize(final int clusterSize) {
+      public CompletableFuture<Void> initialize(final int brokerCountInZone) {
         return CompletableFuture.completedFuture(null);
       }
 
