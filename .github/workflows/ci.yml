@@ -1070,7 +1070,7 @@ jobs:
     # non-default Spring Boot 4 minor version. The version is set by the profile
     # defined in library-parent/pom.xml.
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    name: "[Spring-Boot-Compatibility] ${{ matrix.name }}"
+    name: "Clients / Spring-Boot-Starter / Compatibility ${{ matrix.name }}"
     needs: [ detect-changes ]
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 30
@@ -1085,7 +1085,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: "4.1.x"
+          - name: "4.1"
             profile: "spring-boot-4.1"
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@b4ba25e5825dccf0f4d25c103b63569a5d1d30c5 # main
@@ -1128,13 +1128,13 @@ jobs:
         uses: ./.github/actions/collect-test-artifacts
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
-          name: "[Spring-Boot-Compatibility] ${{ matrix.name }}"
+          name: "Clients / Spring-Boot-Starter / Compatibility ${{ matrix.name }}"
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "spring-boot-compatibility/${{ matrix.name }}"
+          job_name: "spring-boot-starter-compatibility/${{ matrix.name }}"
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           detailed_junit_tests: true
