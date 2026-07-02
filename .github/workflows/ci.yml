@@ -906,6 +906,17 @@ jobs:
               "stressRun": 1
             },
             {
+              "group": "qa-clients",
+              "name": "Clients",
+              "maven-modules": "clients/camunda-spring-boot-starter,clients/camunda-spring-boot-3-starter,clients/camunda-spring-boot-starter-virtual-threads,clients/java",
+              "maven-build-threads": 1,
+              "maven-test-fork-count": 1,
+              "runs-on": "gcp-perf-core-8-default",
+              "owner": "@camunda/camundaex",
+              "module": "Clients",
+              "stressRun": 1
+            },
+            {
               "group": "qa-update",
               "name": "Zeebe QA - Update",
               "maven-modules": "zeebe/qa/update-tests",
