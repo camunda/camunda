@@ -36,6 +36,12 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   /** The connection timeout for ES and OS connector */
   private Duration connectionTimeout;
 
+  /** Total number of connections allowed in the ES and OS connector connection pool. */
+  private Integer maxConnections;
+
+  /** Maximum number of connections allowed per route in the ES and OS connector connection pool. */
+  private Integer maxConnectionsPerRoute;
+
   /** How many shards the search engine database uses for all indices. */
   private int numberOfShards = 1;
 
@@ -339,6 +345,43 @@ public abstract class DocumentBasedSecondaryStorageDatabase
 
   public void setConnectionTimeout(final Duration connectionTimeout) {
     this.connectionTimeout = connectionTimeout;
+  }
+
+  /**
+   * @throws IllegalArgumentException if configured with a non-positive value
+   */
+  public Integer getMaxConnections() {
+    validatePositive(".max-connections", maxConnections);
+    return maxConnections;
+  }
+
+  public void setMaxConnections(final Integer maxConnections) {
+    this.maxConnections = maxConnections;
+  }
+
+  /**
+   * @throws IllegalArgumentException if configured with a non-positive value
+   */
+  public Integer getMaxConnectionsPerRoute() {
+    validatePositive(".max-connections-per-route", maxConnectionsPerRoute);
+    return maxConnectionsPerRoute;
+  }
+
+  public void setMaxConnectionsPerRoute(final Integer maxConnectionsPerRoute) {
+    this.maxConnectionsPerRoute = maxConnectionsPerRoute;
+  }
+
+  /**
+   * Validates that a connection-pool limit, when set, is a positive value. A value of zero or less
+   * is a misconfiguration that would otherwise fail later with a cryptic Apache HttpClient error.
+   *
+   * @throws IllegalArgumentException if the value is set and not positive
+   */
+  private void validatePositive(final String propertySuffix, final Integer value) {
+    if (value != null && value <= 0) {
+      throw new IllegalArgumentException(
+          prefix() + propertySuffix + " must be a positive value, but was " + value);
+    }
   }
 
   public int getNumberOfReplicas() {
