@@ -115,7 +115,7 @@ final class RecoveryModeBackupAccessIT {
             });
 
     // Flush range/checkpoint metadata from RocksDB to the backup store. This is what
-    // RecoveryBackupService reads from (it has no access to the partition's RocksDB in
+    // RecoveryReadOnlyBackupManager reads from (it has no access to the partition's RocksDB in
     // recovery mode). The return value is the state at the moment of flush — use it as the
     // ground truth for the ranges assertion below.
     final var syncedState = backupActuator.syncMetadata();

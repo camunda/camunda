@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.partitioning.startup.steps.recovery;
 
+import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.azure.AzureBackupStore;
 import io.camunda.zeebe.backup.filesystem.FilesystemBackupStore;
@@ -28,12 +29,12 @@ import io.camunda.zeebe.scheduler.startup.StartupStep;
  * and range queries during recovery. A {@code NONE} store type leaves the store {@code null}, which
  * disables the backup API in recovery mode.
  */
-public record BackupStoreStep(int partitionId)
+public record RecoveryBackupStoreStep(PartitionId partitionId)
     implements StartupStep<RecoveryPartitionStartupContext> {
 
   @Override
   public String getName() {
-    return "Recovery Partition %d - Backup Store".formatted(partitionId);
+    return "Recovery Partition %d - Backup Store".formatted(partitionId.number());
   }
 
   @Override

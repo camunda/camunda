@@ -11,6 +11,7 @@ import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupRangeStatus;
 import io.camunda.zeebe.backup.api.BackupStatus;
+import io.camunda.zeebe.backup.api.ReadOnlyBackupManager;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
@@ -30,33 +31,53 @@ import java.time.Instant;
 import java.util.Collection;
 
 /**
- * Handles {@link RequestType#BACKUP} requests while a partition is in recovery mode. Only the
- * read-only subset of the backup API is supported: {@code QUERY_STATUS}, {@code LIST} and {@code
- * QUERY_RANGES}, all served by the {@link RecoveryBackupService} without touching the partition's
- * RocksDB state. All other request types are rejected as unsupported during recovery.
+ * Handles the read-only subset of the {@link RequestType#BACKUP} API — {@code QUERY_STATUS}, {@code
+ * LIST} and {@code QUERY_RANGES} — served from a {@link ReadOnlyBackupManager} without touching the
+ * partition's RocksDB state. All mutating request types are rejected as unsupported. This is the
+ * handler used while a partition is in recovery mode; the processing-mode {@link
+ * BackupApiRequestHandler} extends it to additionally serve the mutating request types.
  */
-public final class RecoveryBackupApiRequestHandler
-    extends AsyncApiRequestHandler<BackupApiRequestReader, BackupApiResponseWriter> {
+public sealed class ReadOnlyBackupApiRequestHandler
+    extends AsyncApiRequestHandler<BackupApiRequestReader, BackupApiResponseWriter>
+    permits BackupApiRequestHandler {
 
+  protected final PartitionId partitionId;
+  protected final boolean backupFeatureEnabled;
+  private final ReadOnlyBackupManager backupManager;
   private final AtomixServerTransport transport;
-  private final RecoveryBackupService backupService;
-  private final PartitionId partition;
-  private final int partitionId;
-  private final boolean backupFeatureEnabled;
 
-  public RecoveryBackupApiRequestHandler(
-      final AtomixServerTransport transport,
-      final RecoveryBackupService backupService,
+  public ReadOnlyBackupApiRequestHandler(
+      final ReadOnlyBackupManager backupManager,
       final PartitionId partition,
+      final AtomixServerTransport transport,
       final boolean backupFeatureEnabled) {
     super(BackupApiRequestReader::new, BackupApiResponseWriter::new);
+    this.backupManager = backupManager;
+    partitionId = partition;
     this.transport = transport;
-    this.backupService = backupService;
-    this.partition = partition;
-    partitionId = partition.number();
     this.backupFeatureEnabled = backupFeatureEnabled;
-    transport.unsubscribe(partition, RequestType.BACKUP);
-    transport.subscribe(partition, RequestType.BACKUP, this);
+  }
+
+  @Override
+  public String getName() {
+    return "ReadOnlyBackupApiRequestHandler";
+  }
+
+  @Override
+  public void onActorStarted() {
+    actor.run(
+        () ->
+            transport
+                .unsubscribe(partitionId, RequestType.BACKUP)
+                .thenAccept(v -> transport.subscribe(partitionId, RequestType.BACKUP, this)));
+  }
+
+  @Override
+  public void close() {
+    transport.unsubscribe(partitionId, RequestType.BACKUP);
+    // The broker is not the leader any more.
+    transport.subscribe(partitionId, RequestType.BACKUP, new NotPartitionLeaderHandler());
+    super.close();
   }
 
   @Override
@@ -76,30 +97,18 @@ public final class RecoveryBackupApiRequestHandler
       case LIST -> handleListBackupRequest(requestReader, responseWriter, errorWriter);
       case QUERY_RANGES -> handleQueryRangesRequest(responseWriter, errorWriter);
       default ->
-          CompletableActorFuture.completed(
-              unsupportedDuringRecovery(errorWriter, requestReader.type()));
+          CompletableActorFuture.completed(unsupportedReadOnly(errorWriter, requestReader.type()));
     };
   }
 
-  @Override
-  public String getName() {
-    return "RecoveryBackupApiRequestHandler";
-  }
-
-  @Override
-  public void close() {
-    transport.unsubscribe(partition, RequestType.BACKUP);
-    super.close();
-  }
-
-  private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>>
+  protected ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>>
       handleQueryStatusRequest(
           final BackupApiRequestReader requestReader,
           final BackupApiResponseWriter responseWriter,
           final ErrorResponseWriter errorWriter) {
     final ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> result =
         new CompletableActorFuture<>();
-    backupService
+    backupManager
         .getBackupStatus(requestReader.backupId())
         .onComplete(
             (status, error) -> {
@@ -113,13 +122,14 @@ public final class RecoveryBackupApiRequestHandler
     return result;
   }
 
-  private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> handleListBackupRequest(
-      final BackupApiRequestReader requestReader,
-      final BackupApiResponseWriter responseWriter,
-      final ErrorResponseWriter errorWriter) {
+  protected ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>>
+      handleListBackupRequest(
+          final BackupApiRequestReader requestReader,
+          final BackupApiResponseWriter responseWriter,
+          final ErrorResponseWriter errorWriter) {
     final ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> result =
         new CompletableActorFuture<>();
-    backupService
+    backupManager
         .listBackups(requestReader.pattern())
         .onComplete(
             (backups, error) -> {
@@ -134,12 +144,12 @@ public final class RecoveryBackupApiRequestHandler
     return result;
   }
 
-  private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>>
+  protected ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>>
       handleQueryRangesRequest(
           final BackupApiResponseWriter responseWriter, final ErrorResponseWriter errorWriter) {
     final ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> result =
         new CompletableActorFuture<>();
-    backupService
+    backupManager
         .getBackupRangeStatus()
         .onComplete(
             (ranges, error) -> {
@@ -154,7 +164,7 @@ public final class RecoveryBackupApiRequestHandler
                       .map(
                           r ->
                               new PartitionBackupRange(
-                                  partitionId,
+                                  partitionId.number(),
                                   fromCheckpointInfo(r.first()),
                                   fromCheckpointInfo(r.last())))
                       .toList());
@@ -163,7 +173,26 @@ public final class RecoveryBackupApiRequestHandler
     return result;
   }
 
-  private CheckpointInfo fromCheckpointInfo(final BackupRangeStatus.CheckpointInfo info) {
+  protected Either<ErrorResponseWriter, BackupApiResponseWriter> backupFeatureDisabledError(
+      final ErrorResponseWriter errorWriter) {
+    errorWriter
+        .errorCode(ErrorCode.UNSUPPORTED_MESSAGE)
+        .errorMessage(
+            "Cannot process backup requests. No backup store is configured. To use this feature, configure backup in broker configuration.");
+    return Either.left(errorWriter);
+  }
+
+  private Either<ErrorResponseWriter, BackupApiResponseWriter> unsupportedReadOnly(
+      final ErrorResponseWriter errorWriter, final BackupRequestType type) {
+    errorWriter
+        .errorCode(ErrorCode.UNSUPPORTED_MESSAGE)
+        .errorMessage(
+            "Backup request of type %s is not supported while the partition is in recovery mode."
+                .formatted(type));
+    return Either.left(errorWriter);
+  }
+
+  protected static CheckpointInfo fromCheckpointInfo(final BackupRangeStatus.CheckpointInfo info) {
     if (info == null) {
       return null;
     }
@@ -175,7 +204,8 @@ public final class RecoveryBackupApiRequestHandler
         Instant.ofEpochMilli(info.checkpointTimestamp()));
   }
 
-  private BackupListResponse buildBackupListResponse(final Collection<BackupStatus> backups) {
+  protected static BackupListResponse buildBackupListResponse(
+      final Collection<BackupStatus> backups) {
     final var statuses =
         backups.stream()
             .map(
@@ -191,7 +221,7 @@ public final class RecoveryBackupApiRequestHandler
     return new BackupListResponse(statuses);
   }
 
-  private BackupStatusResponse buildResponse(final BackupStatus status) {
+  protected static BackupStatusResponse buildResponse(final BackupStatus status) {
     final var response =
         new BackupStatusResponse()
             .setBackupId(status.id().checkpointId())
@@ -215,26 +245,7 @@ public final class RecoveryBackupApiRequestHandler
     return response;
   }
 
-  private Either<ErrorResponseWriter, BackupApiResponseWriter> unsupportedDuringRecovery(
-      final ErrorResponseWriter errorWriter, final BackupRequestType type) {
-    errorWriter
-        .errorCode(ErrorCode.UNSUPPORTED_MESSAGE)
-        .errorMessage(
-            "Backup request of type %s is not supported while the partition is in recovery mode."
-                .formatted(type));
-    return Either.left(errorWriter);
-  }
-
-  private Either<ErrorResponseWriter, BackupApiResponseWriter> backupFeatureDisabledError(
-      final ErrorResponseWriter errorWriter) {
-    errorWriter
-        .errorCode(ErrorCode.UNSUPPORTED_MESSAGE)
-        .errorMessage(
-            "Cannot process backup requests. No backup store is configured. To use this feature, configure backup in broker configuration.");
-    return Either.left(errorWriter);
-  }
-
-  private BackupStatusCode encodeStatusCode(
+  protected static BackupStatusCode encodeStatusCode(
       final io.camunda.zeebe.backup.api.BackupStatusCode statusCode) {
     return switch (statusCode) {
       case DOES_NOT_EXIST -> BackupStatusCode.DOES_NOT_EXIST;

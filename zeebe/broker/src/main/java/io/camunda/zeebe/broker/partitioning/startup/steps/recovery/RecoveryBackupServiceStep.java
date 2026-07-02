@@ -9,23 +9,24 @@ package io.camunda.zeebe.broker.partitioning.startup.steps.recovery;
 
 import static io.camunda.zeebe.scheduler.AsyncClosable.closeHelper;
 
+import io.atomix.primitive.partition.PartitionId;
+import io.camunda.zeebe.backup.management.ReadOnlyBackupService;
 import io.camunda.zeebe.broker.partitioning.RecoveryPartitionStartupContext;
-import io.camunda.zeebe.broker.transport.backupapi.RecoveryBackupService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupStep;
 
 /**
- * Registers the {@link RecoveryBackupService} that answers backup status, list and range queries
+ * Registers the {@link ReadOnlyBackupService} that answers backup status, list and range queries
  * from the backup store while the partition is in recovery mode. Skipped when no backup store is
  * configured.
  */
-public record BackupServiceStep(int partitionId)
+public record RecoveryBackupServiceStep(PartitionId partitionId)
     implements StartupStep<RecoveryPartitionStartupContext> {
 
   @Override
   public String getName() {
-    return "Recovery Partition %d - Backup Service".formatted(partitionId);
+    return "Recovery Partition %d - Backup Service".formatted(partitionId.number());
   }
 
   @Override
@@ -36,11 +37,8 @@ public record BackupServiceStep(int partitionId)
       return CompletableActorFuture.completed(context.setBackupService(null));
     }
     final var service =
-        new RecoveryBackupService(
-            context.getBrokerInfo().getNodeId(),
-            context.partitionId().number(),
-            store,
-            context.meterRegistry());
+        new ReadOnlyBackupService(
+            context.getBrokerInfo().getNodeId(), partitionId, store, context.meterRegistry());
     return context
         .schedulingService()
         .submitActor(service)

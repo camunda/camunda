@@ -18,6 +18,7 @@ import io.atomix.primitive.partition.PartitionId;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
+import io.camunda.zeebe.backup.management.ReadOnlyBackupService;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupRangesResponse;
@@ -47,7 +48,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class RecoveryBackupApiRequestHandlerTest {
+class ReadOnlyBackupApiRequestHandlerTest {
 
   private static final int PARTITION_ID = 1;
   private static final long BACKUP_ID = 10L;
@@ -56,19 +57,19 @@ class RecoveryBackupApiRequestHandlerTest {
   ControlledActorSchedulerExtension scheduler = new ControlledActorSchedulerExtension();
 
   @Mock AtomixServerTransport transport;
-  @Mock RecoveryBackupService backupService;
+  @Mock ReadOnlyBackupService backupService;
 
-  RecoveryBackupApiRequestHandler handler;
+  ReadOnlyBackupApiRequestHandler handler;
   ResponseReader serverOutput;
   CompletableFuture<Either<ErrorResponse, BufferReader>> responseFuture;
 
   @BeforeEach
   void setup() {
     handler =
-        new RecoveryBackupApiRequestHandler(
-            transport,
+        new ReadOnlyBackupApiRequestHandler(
             backupService,
             new PartitionId(Protocol.DEFAULT_PARTITION_GROUP_NAME, PARTITION_ID),
+            transport,
             true);
     scheduler.submitActor(handler);
     scheduler.workUntilDone();

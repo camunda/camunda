@@ -8,11 +8,11 @@
 package io.camunda.zeebe.broker.partitioning;
 
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.management.ReadOnlyBackupService;
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.broker.transport.backupapi.RecoveryBackupApiRequestHandler;
-import io.camunda.zeebe.broker.transport.backupapi.RecoveryBackupService;
+import io.camunda.zeebe.broker.transport.backupapi.ReadOnlyBackupApiRequestHandler;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -33,8 +33,8 @@ public final class RecoveryPartitionStartupContext {
   private final BrokerInfo brokerInfo;
   private final AtomixServerTransport gatewayBrokerTransport;
   private BackupStore backupStore;
-  private RecoveryBackupService backupService;
-  private RecoveryBackupApiRequestHandler backupApiRequestHandler;
+  private ReadOnlyBackupService backupService;
+  private ReadOnlyBackupApiRequestHandler backupApiRequestHandler;
 
   public RecoveryPartitionStartupContext(
       final PartitionId partitionId,
@@ -107,22 +107,22 @@ public final class RecoveryPartitionStartupContext {
     return this;
   }
 
-  public RecoveryBackupService getBackupService() {
+  public ReadOnlyBackupService getBackupService() {
     return backupService;
   }
 
   public RecoveryPartitionStartupContext setBackupService(
-      final RecoveryBackupService backupService) {
+      final ReadOnlyBackupService backupService) {
     this.backupService = backupService;
     return this;
   }
 
-  public RecoveryBackupApiRequestHandler getBackupApiRequestHandler() {
+  public ReadOnlyBackupApiRequestHandler getBackupApiRequestHandler() {
     return backupApiRequestHandler;
   }
 
   public RecoveryPartitionStartupContext setBackupApiRequestHandler(
-      final RecoveryBackupApiRequestHandler backupApiRequestHandler) {
+      final ReadOnlyBackupApiRequestHandler backupApiRequestHandler) {
     this.backupApiRequestHandler = backupApiRequestHandler;
     return this;
   }
