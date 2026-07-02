@@ -37,6 +37,7 @@ public class AnalyticsExporter implements Exporter {
   private MeterRegistry meterRegistry;
   private ScheduledTask metricFlushTask;
   private ScheduledTask heartbeatTask;
+  private String exporterDigest;
 
   public AnalyticsExporter() {
     this(new OtelSdkManager());
@@ -56,12 +57,19 @@ public class AnalyticsExporter implements Exporter {
 
     handlers = AnalyticsHandlerCatalog.build(otelSdkManager).apply(context);
     meterRegistry = context.getMeterRegistry();
+    try {
+      exporterDigest = AnalyticsExporterDigest.compute(handlers, config);
+    } catch (final Exception e) {
+      LOG.warn("Failed to compute exporter hash; resource attribute will be empty", e);
+      exporterDigest = "";
+    }
 
     LOG.info(
-        "Analytics exporter configured: endpoint={}, clusterId={}, partitionId={}",
+        "Analytics exporter configured: endpoint={}, clusterId={}, partitionId={}, exporterDigest={}",
         config.getEndpoint(),
         analyticsContext.clusterId(),
-        analyticsContext.partitionId());
+        analyticsContext.partitionId(),
+        exporterDigest);
   }
 
   @Override
@@ -72,7 +80,7 @@ public class AnalyticsExporter implements Exporter {
             .readMetadata()
             .map(AnalyticsExporterMetadata::deserialize)
             .orElse(new AnalyticsExporterMetadata());
-    otelSdkManager.initialize(config, analyticsContext, metadata, meterRegistry);
+    otelSdkManager.initialize(config, analyticsContext, metadata, exporterDigest, meterRegistry);
     scheduleMetricFlush();
     scheduleHeartbeat();
     LOG.info("Analytics exporter opened");

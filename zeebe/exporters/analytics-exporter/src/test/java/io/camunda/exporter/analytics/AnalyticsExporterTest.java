@@ -92,6 +92,9 @@ class AnalyticsExporterTest {
                   .containsEntry(AnalyticsAttributes.Tenant.ID, value.getTenantId())
                   .containsEntry(AnalyticsAttributes.Log.POSITION, record.getPosition())
                   .containsEntry(AnalyticsAttributes.Event.SEQUENCE_NUMBER, 1L);
+              assertThat(logRecord.getResource().getAttribute(AnalyticsAttributes.Exporter.DIGEST))
+                  .isNotNull()
+                  .isNotEmpty();
             });
   }
 
@@ -211,6 +214,7 @@ class AnalyticsExporterTest {
                   final AnalyticsExporterConfig cfg,
                   final AnalyticsExporterContext ctx,
                   final AnalyticsExporterMetadata meta,
+                  final String exporterDigest,
                   final io.micrometer.core.instrument.MeterRegistry registry) {
                 metadataHolder[0] = meta;
                 return this;
@@ -394,6 +398,7 @@ class AnalyticsExporterTest {
               final AnalyticsExporterConfig cfg,
               final AnalyticsExporterContext ctx,
               final AnalyticsExporterMetadata meta,
+              final String exporterDigest,
               final io.micrometer.core.instrument.MeterRegistry registry) {
             metadataHolder[0] = meta;
             return this;
