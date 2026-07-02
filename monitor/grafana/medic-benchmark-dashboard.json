@@ -1673,7 +1673,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "zeebe_health{namespace=~\"(c8-)?medic.*\"} ",
+          "expr": "zeebe_health{namespace=~\"(c8-)?medic.*|ecs-weekly.*\"} ",
           "format": "table",
           "instant": true,
           "interval": "",
@@ -1686,7 +1686,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "atomix_role{namespace=~\"(c8-)?medic.*\"} ",
+          "expr": "atomix_role{namespace=~\"(c8-)?medic.*|ecs-weekly.*\"} ",
           "format": "table",
           "instant": true,
           "interval": "",
@@ -1820,7 +1820,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "kube_pod_container_status_last_terminated_reason{namespace=~\"(c8-)?medic.*\", container=~\"zeebe|camunda\"}",
+          "expr": "kube_pod_container_status_last_terminated_reason{namespace=~\"(c8-)?medic.*|ecs-weekly.*\", container=~\"zeebe|camunda\"}",
           "interval": "",
           "legendFormat": "{{ pod }}",
           "range": true,
@@ -1947,7 +1947,7 @@
             "uid": "$DS_PROMETHEUS"
           },
           "editorMode": "code",
-          "expr": "max(kubelet_volume_stats_used_bytes{namespace=~\"(c8-)?medic.*\", persistentvolumeclaim=~\".*zeebe.*|.*camunda.*\"} / kubelet_volume_stats_capacity_bytes{namespace=~\"(c8-)?medic.*\", persistentvolumeclaim=~\".*zeebe.*|.*camunda.*\"}) by (namespace)",
+          "expr": "max(kubelet_volume_stats_used_bytes{namespace=~\"(c8-)?medic.*|ecs-weekly.*\", persistentvolumeclaim=~\".*zeebe.*|.*camunda.*\"} / kubelet_volume_stats_capacity_bytes{namespace=~\"(c8-)?medic.*|ecs-weekly.*\", persistentvolumeclaim=~\".*zeebe.*|.*camunda.*\"}) by (namespace)",
           "legendFormat": "{{persistentvolumeclaim}}",
           "range": true,
           "refId": "B"
