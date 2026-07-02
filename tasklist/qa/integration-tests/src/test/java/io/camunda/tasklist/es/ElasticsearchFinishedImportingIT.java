@@ -42,6 +42,8 @@ import org.awaitility.Awaitility;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.support.WriteRequest;
+import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.SearchHit;
@@ -166,32 +168,48 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
   }
 
   @Test
-  public void shouldCompleteFromPersistedStateAfterRestartPastTenant880Records()
+  public void shouldCompleteTenantReaderFromPersistedIndexNameWithoutReadingAn88Batch()
       throws IOException {
-    // Regression test for #56595: after the TENANT reader advances its persisted position past the
-    // 8.8 tenant records but the process restarts before the required empty batches are counted,
-    // the reader must still complete by re-deriving the 8.8 boundary from the persisted
-    // import-position index (indexName contains "8.8"), not from a transient in-memory flag.
+    // Regression test for #56595: completion of the partition must be re-derived from the
+    // *persisted* import-position state (indexName contains "8.8"), NOT from a transient in-memory
+    // flag that is only armed while physically reading a non-empty 8.8 batch in the current JVM.
+    // This reproduces the post-restart state: the 8.8 boundary exists only in the persisted
+    // import-position document and is never observed as a live batch. It fails on the old in-memory
+    // design (the boundary flag is never re-armed) and passes once completion reads persisted
+    // state.
 
-    // given a 8.8 tenant record is read once so the persisted position advances past it
-    final var record = generateRecord(ValueType.TENANT, "8.8.0", 1);
-    EXPORTER.export(record);
-    tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+    // given the readers have written their default (completed=false) import-position documents
+    recordsReaderHolder.getAllRecordsReaders().stream()
+        .map(RecordsReaderElasticSearch.class::cast)
+        .forEach(RecordsReaderAbstract::postConstruct);
+    await()
+        .atMost(Duration.ofSeconds(30))
+        .until(
+            () -> {
+              final var docs =
+                  tasklistEsClient.search(
+                      new SearchRequest(importPositionIndex.getFullQualifiedName())
+                          .source(new SearchSourceBuilder().size(100)),
+                      RequestOptions.DEFAULT);
+              return docs.getHits().getHits().length
+                  == recordsReaderHolder.getAllRecordsReaders().size();
+            });
 
-    zeebeImporter.performOneRoundOfImport();
+    // and the persisted 1-tenant document already carries an 8.8 indexName (simulated pre-restart
+    // state), while all in-memory boundary state is empty and no 8.8 batch is ever read
+    tasklistEsClient.update(
+        new UpdateRequest(importPositionIndex.getFullQualifiedName(), "1-tenant")
+            .doc(TasklistImportPositionIndex.FIELD_INDEX_NAME, "zeebe-record_tenant_8.8.0_")
+            .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE),
+        RequestOptions.DEFAULT);
 
-    // when the importer "restarts": any transient completion state is dropped, and the persisted
-    // position already sits past the 8.8 tenant records, so every subsequent batch is empty
-    recordsReaderHolder.resetCountEmptyBatches();
-
+    // when only empty import rounds run (nothing is exported, so every batch is empty)
     for (int i = 0; i < emptyBatches; i++) {
       zeebeImporter.performOneRoundOfImport();
     }
 
-    // then the reader still completes from persisted state
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(30))
-        .until(() -> isRecordReaderIsCompleted("1-tenant"));
+    // then the tenant reader still completes, purely from persisted state
+    await().atMost(Duration.ofSeconds(30)).until(() -> isRecordReaderIsCompleted("1-tenant"));
   }
 
   @Test

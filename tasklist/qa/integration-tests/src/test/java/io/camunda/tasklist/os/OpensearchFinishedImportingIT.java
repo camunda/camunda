@@ -44,6 +44,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch.core.GetRequest;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchRequest.Builder;
@@ -180,36 +181,42 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
   }
 
   @Test
-  public void shouldCompleteFromPersistedStateAfterRestartPastTenant880Records()
+  public void shouldCompleteTenantReaderFromPersistedIndexNameWithoutReadingAn88Batch()
       throws IOException {
-    // Regression test for #56595: after the TENANT reader advances its persisted position past the
-    // 8.8 tenant records but the process restarts before the required empty batches are counted,
-    // the reader must still complete by re-deriving the 8.8 boundary from the persisted
-    // import-position index (indexName contains "8.8"), not from a transient in-memory flag.
+    // Regression test for #56595 (see ES IT for the full rationale): completion of the partition
+    // must be re-derived from the *persisted* import-position state (indexName contains "8.8"), NOT
+    // from a transient in-memory flag that is only armed while physically reading a non-empty 8.8
+    // batch. This reproduces the post-restart state: the 8.8 boundary exists only in the persisted
+    // import-position document and is never observed as a live batch. It fails on the old in-memory
+    // design and passes once completion reads persisted state. The default import-position
+    // documents were already created in beforeEach via createInitialImportPositionDocuments().
 
-    // given a 8.8 tenant record is read once so the persisted position advances past it
-    final var record = generateRecord(ValueType.TENANT, "8.8.0", 1);
-    EXPORTER.export(record);
-    openSearchClient.indices().refresh(new RefreshRequest.Builder().index("*").build());
+    // given the persisted 1-tenant document carries an 8.8 indexName (simulated pre-restart state),
+    // while all in-memory boundary state is empty and no 8.8 batch is ever read
+    final var current =
+        openSearchClient
+            .get(
+                new GetRequest.Builder()
+                    .index(importPositionIndex.getFullQualifiedName())
+                    .id("1-tenant")
+                    .build(),
+                ImportPositionEntity.class)
+            .source();
+    current.setIndexName("zeebe-record_tenant_8.8.0_");
+    openSearchClient.index(
+        i ->
+            i.index(importPositionIndex.getFullQualifiedName())
+                .id("1-tenant")
+                .document(current)
+                .refresh(Refresh.True));
 
-    zeebeImporter.performOneRoundOfImport();
-
-    // when the importer "restarts": any transient completion state is dropped, and the persisted
-    // position already sits past the 8.8 tenant records, so every subsequent batch is empty
-    recordsReaderHolder.resetCountEmptyBatches();
-
+    // when only empty import rounds run (nothing is exported, so every batch is empty)
     for (int i = 0; i < emptyBatches; i++) {
       zeebeImporter.performOneRoundOfImport();
     }
 
-    // then the reader still completes from persisted state
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(30))
-        .until(
-            () -> {
-              zeebeImporter.performOneRoundOfImport();
-              return isRecordReaderIsCompleted("1-tenant");
-            });
+    // then the tenant reader still completes, purely from persisted state
+    await().atMost(Duration.ofSeconds(30)).until(() -> isRecordReaderIsCompleted("1-tenant"));
   }
 
   @Test
