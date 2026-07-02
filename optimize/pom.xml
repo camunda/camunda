@@ -61,7 +61,7 @@
     <!-- DATABASE -->
     <!-- Elasticsearch-->
     <version.elasticsearch.client>8.19.16</version.elasticsearch.client>
-    <version.elasticsearch-java-client>8.19.16</version.elasticsearch-java-client>
+    <version.elasticsearch-java-client>8.19.17</version.elasticsearch-java-client>
     <!-- The least supported elasticsearch version we should test against-->
     <elasticsearch.test.version>${version.elasticsearch.container}</elasticsearch.test.version>
     <!-- The least supported opensearch version we should test against-->
