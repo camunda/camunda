@@ -11,18 +11,16 @@ import {formatDate} from 'modules/utils/date';
 
 function getWaitStateLabel(
   waitStates: ElementInstanceInspection[],
+  hasMore = false,
 ): string | null {
-  if (waitStates.length === 0) {
+  const count = waitStates.length;
+
+  if (count === 0) {
     return null;
   }
 
-  // Timer wait states should not show a label on the diagram overlay
-  const nonTimerWaitStates = waitStates.filter(
-    (ws) => ws.details.waitStateType !== 'TIMER',
-  );
-
-  if (nonTimerWaitStates.length === 0) {
-    return null;
+  if (count > 1) {
+    return `${count}${hasMore ? '+' : ''} waiting`;
   }
 
   return 'Waiting';

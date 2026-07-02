@@ -326,6 +326,7 @@ export {instanceWithIncident} from './instanceWithIncident.mocks';
 export {orderProcessInstance} from './orderProcessInstance.mocks';
 export {runningInstance} from './runningInstance.mocks';
 export {waitStateProcessInstance} from './waitStateProcessInstance.mocks';
+export {waitStateRunningInstance} from './waitStateRunningInstance.mocks';
 export {runningOrderProcessInstance} from './runningOrderProcessInstance.mocks';
 export {compensationProcessInstance} from './compensationProcessInstance.mocks';
 export {documentReferenceProcessInstance} from './documentReferenceProcessInstance.mocks';

@@ -44,9 +44,11 @@ const WAITING_BADGE = {
   left: 0,
 };
 
+// Anchored at the horizontal center of a narrow (~36px) element; the label is
+// then centered via a CSS translateX(-50%), so any label width stays centered.
 const WAITING_BADGE_NARROW = {
   top: -36,
-  left: -20,
+  left: 18,
 };
 
 const AGENT_STATUS_TAG = {
