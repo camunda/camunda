@@ -31,7 +31,7 @@ on:
       forkCount:
         description: "The number of VMs to fork in parallel in order to execute the tests"
         required: false
-        default: 4
+        default: 12
         type: number
 
 defaults:
@@ -52,6 +52,7 @@ jobs:
       fail-fast: false
       matrix:
         database: [ elasticsearch, opensearch ]
+        shardIndex: [ 1, 2 ]
         include:
           - database: elasticsearch
             testProfile: docker-es
@@ -60,6 +61,14 @@ jobs:
     env:
       TASKLIST_TEST_DOCKER_IMAGE: localhost:5000/camunda/tasklist
       TASKLIST_TEST_DOCKER_IMAGE_TAG: current-test
+      # TaskControllerIT is a ~10 min monolith that a single fork cannot split, so it sets the
+      # floor for whichever shard holds it. Isolate it in shard 1; shard 2 runs the remaining 37
+      # classes, which fan out across the forks so their critical path is TaskStorePerfIT (~6 min)
+      # rather than their sum. The "Verify shard coverage" step fails the build if a new/renamed IT
+      # class is missing from both lists, which on this frozen stable branch is the only
+      # maintenance trigger.
+      SHARD1_CLASSES: "TaskControllerIT"
+      SHARD2_CLASSES: "UsageMetricIT,MetricIT,ZeebeConnectorIT,ProcessCacheIT,VariableSearchTermsQueryChunkIT,FeatureFlagIT,ElasticsearchConnectorIT,OpensearchConnectorIT,OldRoutesRedirectionControllerConsolidatedAuthIT,OldRoutesRedirectionControllerIT,HealthCheckIT,ClientConfigRestServiceIT,ProcessInternalControllerIT,FormControllerIT,VariablesControllerIT,TaskStorePerfIT,ZeebeUserTaskIT,ProcessExternalControllerIT,ProbesTestIT,ZeebeMigrateProcessTaskIT,TaskCompletionConcurrencyIT,ZeebeAdHocSubProcessIT,ZeebeMultipleProcessesIT,ElasticsearchConnectorSSLAuthIT,ElasticsearchConnectorBasicAuthNoClusterPrivilegesIT,ElasticsearchConnectorBasicAuthIT,ZeebeConnectorSecureIT,GenerateOpenApiIT,DevUtilExternalControllerIT,ModesWithTasklistUiDisabledIT,OnlyWebappIT,ModesWithTasklistDisabledIT,OpenSearchConnectorBasicAuthIT,StartupIT,OpenSearchConnectorSSLAuthIT,NoWebappIT,IndexControllerIT"
     services:
       # local registry is used as this job needs to push its docker image to be used by IT
       registry:
@@ -72,7 +81,7 @@ jobs:
         uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
         with:
           ref: refs/heads/${{ inputs.branch }}
-          fetch-depth: 0 # fetches all history for all branches and tags
+          fetch-depth: 1
 
       # Setup: configure Java, Maven, settings.xml
       - uses: ./.github/actions/setup-build
@@ -84,19 +93,37 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           minimus: true
-      - uses: ./.github/actions/build-zeebe
+      - name: Build Camunda (scoped)
         id: build-camunda
-        with:
-          maven-extra-args: -PskipFrontendBuild
+        run: ./mvnw -B -T1C -DskipTests -DskipChecks install -pl tasklist/qa/integration-tests -am -PskipFrontendBuild
 
-      # Run integration tests in parallel
+      # Fail fast if the committed shard lists no longer cover every IT class (new/renamed test).
+      - name: Verify shard coverage
+        id: shard
+        run: |
+          mapfile -t found < <(find tasklist/qa/integration-tests/src/test/java -name '*IT.java' -printf '%f\n' | sed 's/\.java$//' | sort)
+          known=$(printf '%s,%s' "$SHARD1_CLASSES" "$SHARD2_CLASSES" | tr ',' '\n' | sort)
+          missing=$(comm -23 <(printf '%s\n' "${found[@]}") <(printf '%s\n' "$known"))
+          if [ -n "$missing" ]; then
+            echo "::error::IT classes not assigned to any shard (update SHARD1_CLASSES/SHARD2_CLASSES):"
+            echo "$missing"
+            exit 1
+          fi
+          if [ "${{ matrix.shardIndex }}" = "1" ]; then tests="$SHARD1_CLASSES"; else tests="$SHARD2_CLASSES"; fi
+          echo "Shard ${{ matrix.shardIndex }} runs: ${tests}"
+          echo "tests=${tests}" >> "$GITHUB_OUTPUT"
+
+      # Run this shard's integration tests in parallel. Unit tests are covered by the unified
+      # Tasklist CI, so only the integration-tests module is exercised here.
       - name: Run Integration Tests
         run: |
           ./mvnw verify \
-            -f tasklist \
+            -pl tasklist/qa/integration-tests \
             -T${{ env.LIMITS_CPU }} \
             -P ${{ matrix.testProfile }},skipFrontendBuild \
             -B --fail-at-end \
+            -Dit.test=${{ steps.shard.outputs.tests }} \
+            -Dsurefire.failIfNoSpecifiedTests=false \
             -Dfailsafe.rerunFailingTestsCount=2 \
             -Dcamunda.data.secondary-storage.type=${{ matrix.database }} \
             -Dtasklist.currentVersion.docker.tag=${{ env.TASKLIST_TEST_DOCKER_IMAGE_TAG }} \
@@ -113,7 +140,7 @@ jobs:
         uses: ./.github/actions/collect-test-artifacts
         if: failure() || cancelled()
         with:
-          name: tasklist-test-results-${{ matrix.database }}
+          name: tasklist-test-results-${{ matrix.database }}-${{ matrix.shardIndex }}
           path: |
             **/failsafe-reports/
             **/surefire-reports/
@@ -124,7 +151,7 @@ jobs:
         uses: actions/upload-artifact@v6
         if: ${{ (success() || failure()) }}
         with:
-          name: jacoco-report-${{ steps.sanitize.outputs.branch_name }}-${{ matrix.database }}
+          name: jacoco-report-${{ steps.sanitize.outputs.branch_name }}-${{ matrix.database }}-${{ matrix.shardIndex }}
           path: ${{ github.workspace }}/test-coverage/target/site/jacoco-aggregate/
           retention-days: 2
 
@@ -134,7 +161,7 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "integration-tests/${{ matrix.database }}"
+          job_name: "integration-tests/${{ matrix.database }}-${{ matrix.shardIndex }}"
           build_status: ${{ job.status }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
