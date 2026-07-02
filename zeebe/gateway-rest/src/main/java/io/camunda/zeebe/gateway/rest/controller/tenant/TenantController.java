@@ -175,7 +175,8 @@ public class TenantController {
       final HttpServletRequest request) {
     return RequestMapper.toTenantMemberRequest(
             tenantId,
-            GroupIdPathResolver.resolveGroupId(request, groupId),
+            GroupIdPathResolver.resolveGroupId(
+                request, "/v2/tenants/" + tenantId + "/groups/", groupId),
             EntityType.GROUP,
             securityConfiguration.getCompiledGroupIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToTenant);
@@ -253,7 +254,8 @@ public class TenantController {
       final HttpServletRequest request) {
     return RequestMapper.toTenantMemberRequest(
             tenantId,
-            GroupIdPathResolver.resolveGroupId(request, groupId),
+            GroupIdPathResolver.resolveGroupId(
+                request, "/v2/tenants/" + tenantId + "/groups/", groupId),
             EntityType.GROUP,
             securityConfiguration.getCompiledGroupIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
@@ -479,5 +481,4 @@ public class TenantController {
                 .updateTenant(tenantRequest),
         ResponseMapper::toTenantUpdateResponse);
   }
-
 }
