@@ -109,6 +109,12 @@ func generateScenarios(versions []string, scenarios []scenario) []versionedScena
 				}
 			}
 
+			// Workload scenarios render only the load-tester chart, which is not
+			// snapshot-tested for stable versions.
+			if v != "main" && s.Workload != "" {
+				continue
+			}
+
 			scenario := versionedScenario{
 				Version:  v,
 				scenario: s,
@@ -160,7 +166,12 @@ func TestGoldenFiles(t *testing.T) {
 			}
 
 			renderAndAssert(t, s.Version, s.Name, "platform", ns, platformTarget, "")
-			renderAndAssert(t, s.Version, s.Name, "load-tester", ns, "template-load-test", "")
+			// The load-tester chart is only snapshot-tested on main; stable versions
+			// deploy it unchanged via install-load-test and template-load-test is
+			// not present in stable Makefiles.
+			if s.Version == "main" {
+				renderAndAssert(t, s.Version, s.Name, "load-tester", ns, "template-load-test", "")
+			}
 			renderAndAssert(t, s.Version, s.Name, "load-test-setup", ns, "template-load-test-setup", "")
 		})
 	}

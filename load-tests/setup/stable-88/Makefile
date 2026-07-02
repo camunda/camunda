@@ -259,17 +259,6 @@ template-load-test-setup:
 template-load-test-setup-chaos:
 	$(MAKE) template-load-test-setup chaos=true
 
-# Generates templates from the load test helm chart
-.PHONY: template-load-test
-template-load-test:
-	helm template $(namespace)-test $(helm_chart_load_tests) \
-		--namespace $(namespace) \
-		-f load-test-values.yaml \
-		$(_scenario_load_test_flags) \
-		$(_secondary_storage_load_test_flags) \
-		$(additional_load_test_configuration) \
-		--output-dir $(template_output_dir)
-
 # Print the resolved scenario flags without running any Helm commands
 .PHONY: print-scenario
 print-scenario:
