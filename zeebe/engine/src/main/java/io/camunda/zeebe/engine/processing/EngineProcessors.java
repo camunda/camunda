@@ -28,6 +28,7 @@ import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
+import io.camunda.zeebe.engine.metrics.TenantMetrics;
 import io.camunda.zeebe.engine.processing.agenthistory.AgentHistoryProcessors;
 import io.camunda.zeebe.engine.processing.agentinstance.AgentInstanceProcessors;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationSetupProcessors;
@@ -159,6 +160,7 @@ public final class EngineProcessors {
             typedRecordProcessorContext.getMeterRegistry(), processingState.getProcessState());
     final var authorizationCheckMetrics =
         new AuthorizationCheckMetrics(typedRecordProcessorContext.getMeterRegistry());
+    final var tenantMetrics = new TenantMetrics(typedRecordProcessorContext.getMeterRegistry());
 
     subscriptionCommandSender.setWriters(writers);
 
@@ -410,7 +412,13 @@ public final class EngineProcessors {
         config);
 
     UsageMetricsProcessors.addUsageMetricsProcessors(
-        typedRecordProcessors, config, clock, processingState, writers, keyGenerator);
+        typedRecordProcessors,
+        config,
+        clock,
+        processingState,
+        writers,
+        keyGenerator,
+        tenantMetrics);
 
     HistoryDeletionProcessors.addHistoryDeletionProcessors(
         typedRecordProcessors, writers, processingState, authCheckBehavior);
