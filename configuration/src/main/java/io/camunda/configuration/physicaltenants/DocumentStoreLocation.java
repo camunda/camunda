@@ -29,7 +29,11 @@ record DocumentStoreLocation(String provider, List<String> coordinates) {
    */
   static DocumentStoreLocation aws(final AwsStore store) {
     return new DocumentStoreLocation(
-        "aws", List.of(normalize(store.getBucketName()), normalize(store.getBucketPath())));
+        "aws",
+        List.of(
+            normalize(store.getBucketName()),
+            normalize(store.getBucketPath()),
+            normalize(store.getEndpoint())));
   }
 
   static DocumentStoreLocation gcp(final GcpStore store) {

@@ -88,6 +88,16 @@ public final class CamundaDocumentStoreConfigurationLoader
     putResolved(properties, AWS, storeId, "bucket-path", "BUCKET_PATH", store.getBucketPath());
     putResolved(properties, AWS, storeId, "region", "REGION", store.getRegion());
     putResolved(properties, AWS, storeId, "bucket-ttl", "BUCKET_TTL", store.getBucketTtl());
+    putResolved(properties, AWS, storeId, "endpoint", "ENDPOINT", store.getEndpoint());
+    putResolved(
+        properties, AWS, storeId, "force-path-style", "FORCE_PATH_STYLE", store.getForcePathStyle());
+    putResolved(
+        properties,
+        AWS,
+        storeId,
+        "chunked-encoding-enabled",
+        "CHUNKED_ENCODING_ENABLED",
+        store.getChunkedEncodingEnabled());
     return toRecord(storeId, AwsDocumentStoreProvider.class, properties);
   }
 
