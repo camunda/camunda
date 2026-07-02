@@ -54,6 +54,7 @@ final class BackupServiceImpl {
   private final DbBackupRangeState backupRangeState;
   private final DbCheckpointMetadataState checkpointMetadataState;
   private final BackupMetadataSyncer metadataSyncer;
+  private final BackupStoreQueries storeQueries;
   private final int partitionId;
   private ConcurrencyControl concurrencyControl;
 
@@ -70,6 +71,7 @@ final class BackupServiceImpl {
     this.checkpointMetadataState = checkpointMetadataState;
     this.partitionId = partitionId;
     metadataSyncer = new BackupMetadataSyncer(backupStore, meterRegistry);
+    storeQueries = new BackupStoreQueries(backupStore);
   }
 
   void close() {
@@ -263,35 +265,7 @@ final class BackupServiceImpl {
 
   ActorFuture<Optional<BackupStatus>> getBackupStatus(
       final int partitionId, final long checkpointId, final ConcurrencyControl executor) {
-    final ActorFuture<Optional<BackupStatus>> future = executor.createFuture();
-    final var pattern =
-        new BackupIdentifierWildcardImpl(
-            Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(checkpointId));
-    LOG.atDebug().addKeyValue("pattern", pattern).setMessage("Querying backup status").log();
-    executor.run(
-        () ->
-            backupStore
-                .list(pattern)
-                .whenCompleteAsync(
-                    (backupStatuses, throwable) -> {
-                      if (throwable != null) {
-                        LOG.atError()
-                            .addKeyValue("pattern", pattern)
-                            .setCause(throwable)
-                            .setMessage("Failed to query backup status")
-                            .log();
-                        future.completeExceptionally(throwable);
-                      } else {
-                        LOG.atTrace()
-                            .addKeyValue("pattern", pattern)
-                            .addKeyValue("found", backupStatuses.size())
-                            .setMessage("Queried backup status")
-                            .log();
-                        future.complete(backupStatuses.stream().max(BackupStatusCode.BY_STATUS));
-                      }
-                    },
-                    executor));
-    return future;
+    return storeQueries.getBackupStatus(partitionId, checkpointId, executor);
   }
 
   void failInProgressBackups(
@@ -417,21 +391,7 @@ final class BackupServiceImpl {
 
   ActorFuture<Collection<BackupStatus>> listBackups(
       final int partitionId, final String pattern, final ConcurrencyControl executor) {
-    final ActorFuture<Collection<BackupStatus>> availableBackupsFuture = executor.createFuture();
-    executor.run(
-        () ->
-            backupStore
-                .list(
-                    new BackupIdentifierWildcardImpl(
-                        Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(pattern)))
-                .thenAcceptAsync(availableBackupsFuture::complete, executor)
-                .exceptionallyAsync(
-                    error -> {
-                      availableBackupsFuture.completeExceptionally(error);
-                      return null;
-                    },
-                    executor));
-    return availableBackupsFuture;
+    return storeQueries.listBackups(partitionId, pattern, executor);
   }
 
   ActorFuture<Collection<BackupRangeStatus>> getBackupRangeStatus(

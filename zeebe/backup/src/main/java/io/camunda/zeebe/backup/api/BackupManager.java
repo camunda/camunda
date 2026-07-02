@@ -11,8 +11,14 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.Collection;
 import java.util.SequencedCollection;
 
-/** Manages backup of a partition * */
-public interface BackupManager {
+/**
+ * Manages backup of a partition. This is the full, read-write view of a partition's backups: it
+ * inherits the read-only query operations from {@link ReadOnlyBackupManager} and adds the mutating
+ * operations (take, delete, sync, clear). Only a partition leader with access to its RocksDB state
+ * can serve this interface. A member serving requests while in recovery mode exposes just the
+ * {@link ReadOnlyBackupManager} query subset instead — see {@code ReadOnlyBackupService}.
+ */
+public interface BackupManager extends ReadOnlyBackupManager {
 
   /**
    * Takes backup with id checkpointId using the provided partition count. The method returns
@@ -27,23 +33,6 @@ public interface BackupManager {
    * @return an ActorFuture with the result of the backup
    */
   ActorFuture<Void> takeBackup(final long checkpointId, BackupDescriptor backupDescriptor);
-
-  /**
-   * Get the status of the backup
-   *
-   * @param checkpointId id of the backup to get status for
-   * @return backup status
-   */
-  ActorFuture<BackupStatus> getBackupStatus(long checkpointId);
-
-  /**
-   * Get all available backups where status is one of {@link BackupStatusCode#COMPLETED}, {@link
-   * BackupStatusCode#FAILED}, {@link BackupStatusCode#IN_PROGRESS}
-   *
-   * @param pattern null, empty, a prefix ending in '*' or an exact backup id
-   * @return all backups with ids matching the pattern
-   */
-  ActorFuture<Collection<BackupStatus>> listBackups(final String pattern);
 
   /**
    * Deletes the backup.
@@ -70,11 +59,6 @@ public interface BackupManager {
    */
   void createFailedBackup(
       final long checkpointId, BackupDescriptor backupDescriptor, String failureReason);
-
-  /**
-   * @return all backup ranges for the partition
-   */
-  ActorFuture<Collection<BackupRangeStatus>> getBackupRangeStatus();
 
   /**
    * Force-write the backup metadata file for this partition using the provided checkpoints and
