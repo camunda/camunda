@@ -33,6 +33,7 @@ import io.micrometer.core.instrument.Timer;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import org.elasticsearch.action.ActionListener;
@@ -191,6 +192,44 @@ public class ElasticsearchArchiveRepositoryTest {
         }
       }
     }
+  }
+
+  @Test
+  void shouldDisallowPartialSearchResultsWhenGettingArchiveDocIdsBatch() {
+    // given
+    final SearchResponse searchResponse = mock(SearchResponse.class);
+    final var hits = mock(org.elasticsearch.search.SearchHits.class);
+    when(searchResponse.getHits()).thenReturn(hits);
+    when(hits.getHits()).thenReturn(new org.elasticsearch.search.SearchHit[0]);
+
+    final ArgumentCaptor<SearchRequest> captor = ArgumentCaptor.forClass(SearchRequest.class);
+
+    try (final MockedStatic<Timer> mockedTimer = mockStatic(Timer.class)) {
+      final Timer.Sample timerSample = mock(Timer.Sample.class);
+      mockedTimer.when(Timer::start).thenReturn(timerSample);
+
+      try (final MockedStatic<ElasticsearchUtil> mockedStatic =
+          mockStatic(ElasticsearchUtil.class)) {
+        mockedStatic
+            .when(() -> ElasticsearchUtil.searchAsync(captor.capture(), any(), any()))
+            .thenReturn(CompletableFuture.completedFuture(searchResponse));
+
+        // when
+        underTest
+            .getArchiveDocIdsBatch(
+                "source-index",
+                Map.of("key", List.of("1")),
+                Map.of(),
+                Map.of(),
+                10,
+                List.of(),
+                Runnable::run)
+            .join();
+      }
+    }
+
+    // then
+    assertThat(captor.getValue().allowPartialSearchResults()).isFalse();
   }
 
   @Test

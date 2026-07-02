@@ -37,6 +37,7 @@ import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.Either;
 import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.Timer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -359,15 +360,15 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
     return reindexFuture;
   }
 
-  private CompletableFuture<ArchiveByIdTaskSupplier.ArchiveDocIdsBatch<Object>>
-      getArchiveDocIdsBatch(
-          final String sourceIndexName,
-          final Map<String, List<Object>> keysByField,
-          final Map<String, String> inclusionFilters,
-          final Map<String, String> exclusionFilters,
-          final int batchSize,
-          final List<Object> searchAfter,
-          final Executor executor) {
+  @VisibleForTesting
+  CompletableFuture<ArchiveByIdTaskSupplier.ArchiveDocIdsBatch<Object>> getArchiveDocIdsBatch(
+      final String sourceIndexName,
+      final Map<String, List<Object>> keysByField,
+      final Map<String, String> inclusionFilters,
+      final Map<String, String> exclusionFilters,
+      final int batchSize,
+      final List<Object> searchAfter,
+      final Executor executor) {
     final var boolQ = boolQuery();
     keysByField.forEach((field, vals) -> boolQ.filter(termsQuery(field, vals)));
     inclusionFilters.forEach((field, val) -> boolQ.filter(termQuery(field, val)));
@@ -385,7 +386,10 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
     }
 
     final SearchRequest searchRequest =
-        new SearchRequest(sourceIndexName).source(searchSource).requestCache(false);
+        new SearchRequest(sourceIndexName)
+            .source(searchSource)
+            .allowPartialSearchResults(false)
+            .requestCache(false);
 
     LOGGER.trace(
         "Getting archive doc IDs batch from index '{}' with query '{}'",
