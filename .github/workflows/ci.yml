@@ -275,12 +275,13 @@ jobs:
 
   build-distball:
     name: "Build / Distribution Tarball"
-    # Build the distball once and share it, replacing a ~15 min reactor build in each
-    # consumer. Transport differs by runner: docker-checks (GitHub-hosted) uses the GHA
-    # artifact API; the integration-tests shards (self-hosted gcp-perf) use GCS, since
-    # the artifact API is throughput-capped on self-hosted runners. Gated on the union
-    # of both consumers' conditions so the artifact exists whenever one runs. See #52693.
-    if: needs.detect-changes.outputs.camunda-docker-tests == 'true' || needs.detect-changes.outputs.java-code-changes == 'true'
+    # Build the distball once and share it, replacing a reactor build in each consumer.
+    # Transport differs by runner: docker-checks (GitHub-hosted) uses the GHA artifact API;
+    # self-hosted gcp-perf consumers (integration-tests, and the reusable database/webapp-UT
+    # workflows) use GCS, since the artifact API is throughput-capped on self-hosted runners.
+    # Gated on the union of all consumers' conditions so the artifact exists whenever one runs;
+    # frontend-changes is included because the webapp back-end UTs run on it. See #52693.
+    if: needs.detect-changes.outputs.camunda-docker-tests == 'true' || needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true'
     needs: [ detect-changes ]
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 30
@@ -800,7 +801,10 @@ jobs:
   database-integration-tests:
     name: "Database Integration Tests / ${{ matrix.name }}"
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    needs: [ detect-changes, generate-db-versions ]
+    needs: [ detect-changes, generate-db-versions, build-distball ]
+    permissions:
+      contents: read
+      id-token: write  # granted through to the reusable workflow's WIF GCS auth
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.generate-db-versions.outputs.ci-database-matrix) }}
@@ -812,11 +816,15 @@ jobs:
       database-image-version: "${{ matrix.database-image-version }}"
       database-name: "${{ matrix.database-name }}"
       it-database-type: "${{ matrix.it-database-type }}"
+      use-shared-distball: true
 
   history-tests:
     name: "History Integration Tests / ${{ matrix.name }}"
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    needs: [ detect-changes, generate-db-versions ]
+    needs: [ detect-changes, generate-db-versions, build-distball ]
+    permissions:
+      contents: read
+      id-token: write  # granted through to the reusable workflow's WIF GCS auth
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.generate-db-versions.outputs.ci-database-matrix) }}
@@ -832,11 +840,15 @@ jobs:
       test-type: "history-tests"
       test-type-label: "History"
       runs-on: "gcp-perf-core-8-default"
+      use-shared-distball: true
 
   identity-tests:
     name: "Identity Integration Tests / ${{ matrix.name }}"
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    needs: [ detect-changes, generate-db-versions ]
+    needs: [ detect-changes, generate-db-versions, build-distball ]
+    permissions:
+      contents: read
+      id-token: write  # granted through to the reusable workflow's WIF GCS auth
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.generate-db-versions.outputs.ci-database-matrix) }}
@@ -851,6 +863,7 @@ jobs:
       maven-profiles: "identity-tests"
       test-type: "identity-tests"
       test-type-label: "Identity"
+      use-shared-distball: true
 
   rdbms-integration-tests:
     if: needs.detect-changes.outputs.rdbms-integration-tests == 'true'
@@ -1830,35 +1843,44 @@ jobs:
   tasklist-ci:
     if: needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true'
     name: "Tasklist"
-    needs: [ detect-changes ]
+    needs: [ detect-changes, build-distball ]
     uses: ./.github/workflows/ci-tasklist.yml
     secrets: inherit
-    permissions: { }
+    permissions:
+      contents: read
+      id-token: write  # granted through to the reusable back-end UT's WIF GCS auth
     with:
       runFeTests: ${{ needs.detect-changes.outputs.tasklist-frontend-changes  == 'true' }}
       runBeTests: ${{ needs.detect-changes.outputs.tasklist-backend-changes == 'true' || needs.detect-changes.outputs.zeebe-changes == 'true' }}
+      use-shared-distball: true
 
   operate-ci:
     if: needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true'
     name: "Operate"
-    needs: [ detect-changes ]
+    needs: [ detect-changes, build-distball ]
     uses: ./.github/workflows/ci-operate.yml
     secrets: inherit
-    permissions: { }
+    permissions:
+      contents: read
+      id-token: write  # granted through to the reusable back-end UT's WIF GCS auth
     with:
       runFeTests: ${{ needs.detect-changes.outputs.operate-frontend-changes == 'true' }}
       runBeTests: ${{ needs.detect-changes.outputs.operate-backend-changes == 'true' || needs.detect-changes.outputs.zeebe-changes == 'true'}}
+      use-shared-distball: true
 
   optimize-ci:
     if: ${{ needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true' }}
     name: "Optimize"
-    needs: [ detect-changes ]
+    needs: [ detect-changes, build-distball ]
     uses: ./.github/workflows/ci-optimize.yml
     secrets: inherit
-    permissions: { }
+    permissions:
+      contents: read
+      id-token: write  # granted through to the reusable back-end UT's WIF GCS auth
     with:
       runFeTests: ${{ needs.detect-changes.outputs.optimize-frontend-changes == 'true' }}
       runBeTests: ${{ needs.detect-changes.outputs.optimize-backend-changes == 'true' || needs.detect-changes.outputs.zeebe-changes == 'true' }}
+      use-shared-distball: true
 
   zeebe-ci:
     if: needs.detect-changes.outputs.zeebe-changes == 'true'

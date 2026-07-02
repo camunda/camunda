@@ -16,6 +16,11 @@ on:
         description: "Set to true if Operate back-end code was changed"
         type: boolean
         required: true
+      use-shared-distball:
+        description: "Restore the shared distball m2 from GCS in ci-webapp-run-ut-reuseable instead of build-zeebe. Set by ci.yml only (which has a build-distball job); leave false for standalone workflow_dispatch."
+        type: boolean
+        required: false
+        default: false
   workflow_call:
     inputs:
       runFeTests:
@@ -26,6 +31,11 @@ on:
         description: "Set to true if Operate back-end code was changed"
         type: boolean
         required: true
+      use-shared-distball:
+        description: "Restore the shared distball m2 from GCS in ci-webapp-run-ut-reuseable instead of build-zeebe. Set by ci.yml only (which has a build-distball job); leave false for standalone workflow_dispatch."
+        type: boolean
+        required: false
+        default: false
 
 defaults:
   run:
@@ -44,7 +54,11 @@ jobs:
   operate-backend-unit-tests:
     name: "Unit"
     uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
-    permissions: {} # GITHUB_TOKEN unused in this job
+    # When ci.yml sets use-shared-distball, the reusable workflow restores the shared distball
+    # m2 from GCS via WIF instead of running build-zeebe (see #52693); that needs id-token.
+    permissions:
+      contents: read
+      id-token: write
     secrets: inherit
     strategy:
       fail-fast: false
@@ -62,6 +76,7 @@ jobs:
       suite: ${{ matrix.suite }}
       suiteName: ${{ matrix.suiteName }}
       owner: ${{ matrix.owner }}
+      use-shared-distball: ${{ inputs.use-shared-distball }}
 
   # Checks to see if Operate can properly build itself
   build-operate-backend:
