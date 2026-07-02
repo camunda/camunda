@@ -60,6 +60,7 @@ runs:
   steps:
     - name: Render & post failure feedback
       shell: bash
+      continue-on-error: true
       env:
         FB_CATEGORY: ${{ inputs.failure_category }}
         FB_STAGE: ${{ inputs.stage }}
