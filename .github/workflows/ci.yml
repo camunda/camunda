@@ -533,12 +533,93 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+  build-camunda-docker-test-image:
+    name: "Build / Camunda Docker Test Image"
+    # Build the single-arch camunda test image once and share it to the integration-tests
+    # matrix, replacing a 5-8 min `build-platform-docker` in each shard. Built from the shared
+    # distball (the same UI-less distball the shards test against); transported via GCS because
+    # the shards run on self-hosted gcp-perf runners where the GHA artifact API is
+    # throughput-capped (see build-distball). docker-checks is untouched — it keeps its own
+    # multi-arch build. See #52693 / #54352.
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    needs: [ detect-changes, build-distball ]
+    runs-on: gcp-perf-core-8-default
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@b4ba25e5825dccf0f4d25c103b63569a5d1d30c5 # main
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        timeout-minutes: 1
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: build-shared
+          dockerhub-readonly: true  # pull the minimus hardened base image
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
+      - name: Fetch GCS build-cache credentials
+        id: gcs-secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/build-cache/monorepo-build-cache-sa SERVICE_ACCOUNT | GCS_SA;
+            secret/data/products/camunda/ci/build-cache/monorepo-build-cache-sa WORKLOAD_IDENTITY_PROVIDER | GCS_WIF;
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          workload_identity_provider: ${{ steps.gcs-secrets.outputs.GCS_WIF }}
+          service_account: ${{ steps.gcs-secrets.outputs.GCS_SA }}
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+      - name: Download distball from GCS
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist/target
+          gcloud storage cp "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/camunda-zeebe-*.tar.gz" dist/target/
+      # push: false → the action builds with --load, leaving `camunda/camunda:current-test`
+      # in the local daemon. The `current-test` tag MUST match integration-tests' DOCKER_IMAGE_TAG.
+      - uses: ./.github/actions/build-platform-docker
+        id: build-test-image
+        with:
+          repository: camunda/camunda
+          version: current-test
+          dockerfile: camunda.Dockerfile
+          platforms: linux/amd64
+          push: false
+      - name: Save + upload test image to GCS
+        shell: bash
+        # SA lacks storage.buckets.get, so gcloud's parallel-composite precheck fails; disable it.
+        env:
+          CLOUDSDK_STORAGE_PARALLEL_COMPOSITE_UPLOAD_ENABLED: "False"
+        run: |
+          set -euo pipefail
+          docker save camunda/camunda:current-test | gzip > camunda-docker-test-image.tar.gz
+          ls -lh camunda-docker-test-image.tar.gz
+          gcloud storage cp camunda-docker-test-image.tar.gz \
+            "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/camunda-docker-test-image.tar.gz"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   utils-cleanup-distball:
     name: "Cleanup / Distribution Tarball Artifact"
     # Delete the run-scoped GCS objects after consumers finish. The `utils-` prefix
     # exempts it from the check-results gate; artifacts self-expire (retention-days: 1)
     # and the bucket TTL covers runs cancelled before this fires.
-    needs: [ build-distball, docker-checks, integration-tests ]
+    needs: [ build-distball, build-camunda-docker-test-image, docker-checks, integration-tests ]
     if: always() && needs.build-distball.result != 'skipped'
     runs-on: ubuntu-slim  # short auth-and-delete job; no need for a full runner
     timeout-minutes: 10
@@ -1291,7 +1372,7 @@ jobs:
   integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "${{ matrix.module }} / Integration / ${{ matrix.name }} ITs (${{ matrix.stressRun }})"
-    needs: [ detect-changes, setup-tests, build-distball ]
+    needs: [ detect-changes, setup-tests, build-distball, build-camunda-docker-test-image ]
     timeout-minutes: 30
     permissions:
       contents: read
@@ -1378,13 +1459,18 @@ jobs:
           gcloud storage cp "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/camunda-zeebe-*.tar.gz" dist/target/
           gcloud storage cp "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/m2-installed.tar" "${RUNNER_TEMP}/m2-installed.tar"
           tar -xf "${RUNNER_TEMP}/m2-installed.tar" -C "${HOME}/.m2/repository/installed"
-      - uses: ./.github/actions/build-platform-docker
+      # Consume the shared camunda test image instead of a 5-8 min `build-platform-docker`.
+      # build-camunda-docker-test-image saved `camunda/camunda:current-test` to GCS; load it,
+      # re-tag to this shard's local registry and push (the tests resolve it from localhost:5000).
+      - name: Load shared camunda docker test image
         if: ${{ matrix.docker-file != '' }}
-        with:
-          repository: ${{ matrix.docker-repository }}
-          version: ${{ env.DOCKER_IMAGE_TAG }}
-          dockerfile: ${{ matrix.docker-file }}
-          push: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          gcloud storage cp "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/camunda-docker-test-image.tar.gz" "${RUNNER_TEMP}/"
+          docker load -i "${RUNNER_TEMP}/camunda-docker-test-image.tar.gz"
+          docker tag "camunda/camunda:${DOCKER_IMAGE_TAG}" "${{ matrix.docker-repository }}:${DOCKER_IMAGE_TAG}"
+          docker push "${{ matrix.docker-repository }}:${DOCKER_IMAGE_TAG}"
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Maven Test Build Integration
@@ -2358,6 +2444,7 @@ jobs:
     needs: # BELOW LIST IS IN ALPHABETICAL ORDER
       - actionlint
       - archunit-tests
+      - build-camunda-docker-test-image
       - build-distball
       - build-platform-frontend
       - c8-e2e-test-suite
