@@ -135,6 +135,7 @@ public class Document {
     private String endpoint;
     private Boolean forcePathStyle;
     private Boolean chunkedEncodingEnabled;
+    private Boolean supportLegacyMd5;
 
     public String getBucketName() {
       return bucketName;
@@ -190,6 +191,14 @@ public class Document {
 
     public void setChunkedEncodingEnabled(final Boolean chunkedEncodingEnabled) {
       this.chunkedEncodingEnabled = chunkedEncodingEnabled;
+    }
+
+    public Boolean getSupportLegacyMd5() {
+      return supportLegacyMd5;
+    }
+
+    public void setSupportLegacyMd5(final Boolean supportLegacyMd5) {
+      this.supportLegacyMd5 = supportLegacyMd5;
     }
   }
 

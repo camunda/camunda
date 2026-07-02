@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.http.HttpStatusCode;
+import software.amazon.awssdk.services.s3.LegacyMd5Plugin;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.S3Configuration;
@@ -98,7 +99,27 @@ public class AwsDocumentStore implements DocumentStore {
         bucketName,
         defaultTTL,
         bucketPath,
-        buildClient(endpointOverride, forcePathStyle, chunkedEncodingEnabled),
+        executor,
+        endpointOverride,
+        forcePathStyle,
+        chunkedEncodingEnabled,
+        null);
+  }
+
+  public AwsDocumentStore(
+      final String bucketName,
+      final Long defaultTTL,
+      final String bucketPath,
+      final ExecutorService executor,
+      final URI endpointOverride,
+      final Boolean forcePathStyle,
+      final Boolean chunkedEncodingEnabled,
+      final Boolean supportLegacyMd5) {
+    this(
+        bucketName,
+        defaultTTL,
+        bucketPath,
+        buildClient(endpointOverride, forcePathStyle, chunkedEncodingEnabled, supportLegacyMd5),
         executor,
         buildPresigner(endpointOverride, forcePathStyle, chunkedEncodingEnabled),
         Boolean.FALSE.equals(chunkedEncodingEnabled));
@@ -134,13 +155,20 @@ public class AwsDocumentStore implements DocumentStore {
   private static S3Client buildClient(
       final URI endpointOverride,
       final Boolean forcePathStyle,
-      final Boolean chunkedEncodingEnabled) {
-    if (endpointOverride == null && forcePathStyle == null && chunkedEncodingEnabled == null) {
+      final Boolean chunkedEncodingEnabled,
+      final Boolean supportLegacyMd5) {
+    if (endpointOverride == null
+        && forcePathStyle == null
+        && chunkedEncodingEnabled == null
+        && !Boolean.TRUE.equals(supportLegacyMd5)) {
       return S3Client.create();
     }
     final S3ClientBuilder builder = S3Client.builder();
     if (endpointOverride != null) {
       builder.endpointOverride(endpointOverride);
+    }
+    if (Boolean.TRUE.equals(supportLegacyMd5)) {
+      builder.addPlugin(LegacyMd5Plugin.create());
     }
     builder.serviceConfiguration(
         buildS3Configuration(endpointOverride, forcePathStyle, chunkedEncodingEnabled));

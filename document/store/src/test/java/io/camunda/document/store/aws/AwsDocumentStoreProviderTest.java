@@ -43,6 +43,7 @@ public class AwsDocumentStoreProviderTest {
                       any(),
                       eq((URI) null),
                       eq((Boolean) null),
+                      eq((Boolean) null),
                       eq((Boolean) null)))
           .thenReturn(mockDocumentStore);
 
@@ -151,6 +152,7 @@ public class AwsDocumentStoreProviderTest {
                       any(),
                       endpointCaptor.capture(),
                       pathStyleCaptor.capture(),
+                      any(),
                       any()))
           .thenReturn(mockDocumentStore);
 
@@ -180,7 +182,7 @@ public class AwsDocumentStoreProviderTest {
           .when(
               () ->
                   AwsDocumentStoreFactory.create(
-                      any(), any(), any(), any(), any(), pathStyleCaptor.capture(), any()))
+                      any(), any(), any(), any(), any(), pathStyleCaptor.capture(), any(), any()))
           .thenReturn(mockDocumentStore);
 
       final DocumentStoreConfigurationRecord configuration =
@@ -233,7 +235,7 @@ public class AwsDocumentStoreProviderTest {
           .when(
               () ->
                   AwsDocumentStoreFactory.create(
-                      any(), any(), any(), any(), any(), any(), chunkedCaptor.capture()))
+                      any(), any(), any(), any(), any(), any(), chunkedCaptor.capture(), any()))
           .thenReturn(mockDocumentStore);
 
       final DocumentStoreConfigurationRecord configuration =

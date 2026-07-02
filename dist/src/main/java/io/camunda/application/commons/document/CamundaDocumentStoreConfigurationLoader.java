@@ -98,6 +98,13 @@ public final class CamundaDocumentStoreConfigurationLoader
         "chunked-encoding-enabled",
         "CHUNKED_ENCODING_ENABLED",
         store.getChunkedEncodingEnabled());
+     putResolved(
+        properties,
+        AWS,
+        storeId,
+        "support-legacy-md5",
+        "SUPPORT_LEGACY_MD5",
+        store.getSupportLegacyMd5());
     return toRecord(storeId, AwsDocumentStoreProvider.class, properties);
   }
 
