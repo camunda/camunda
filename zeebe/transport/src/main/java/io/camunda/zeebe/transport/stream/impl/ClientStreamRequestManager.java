@@ -62,11 +62,15 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
 
   private final ClusterCommunicationService communicationService;
   private final ConcurrencyControl executor;
+  private final String physicalTenantId;
 
   ClientStreamRequestManager(
-      final ClusterCommunicationService communicationService, final ConcurrencyControl executor) {
+      final ClusterCommunicationService communicationService,
+      final ConcurrencyControl executor,
+      final String physicalTenantId) {
     this.communicationService = communicationService;
     this.executor = executor;
+    this.physicalTenantId = physicalTenantId;
   }
 
   /**
@@ -165,7 +169,11 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
     servers.forEach(
         serverId -> {
           communicationService.unicast(
-              StreamTopics.REMOVE.topic(), payload, Function.identity(), serverId, true);
+              StreamTopics.REMOVE.topic(physicalTenantId),
+              payload,
+              Function.identity(),
+              serverId,
+              true);
           purgeRegistration(streamId, serverId);
         });
   }
@@ -248,7 +256,7 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
 
     final var pendingRequest =
         communicationService.send(
-            StreamTopics.ADD.topic(),
+            StreamTopics.ADD.topic(physicalTenantId),
             request,
             Function.identity(),
             Function.identity(),
@@ -307,7 +315,7 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
 
     final var pendingRequest =
         communicationService.send(
-            StreamTopics.REMOVE.topic(),
+            StreamTopics.REMOVE.topic(physicalTenantId),
             request,
             Function.identity(),
             Function.identity(),
@@ -403,6 +411,10 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
   private void doRemoveAll(final MemberId brokerId) {
     // Do not wait for response, as this is expected to be called while shutting down.
     communicationService.unicast(
-        StreamTopics.REMOVE_ALL.topic(), REMOVE_ALL_REQUEST, Function.identity(), brokerId, true);
+        StreamTopics.REMOVE_ALL.topic(physicalTenantId),
+        REMOVE_ALL_REQUEST,
+        Function.identity(),
+        brokerId,
+        true);
   }
 }

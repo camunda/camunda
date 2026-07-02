@@ -51,7 +51,8 @@ final class ClientStreamRequestManagerTest {
   private final ClusterCommunicationService mockTransport = mock(ClusterCommunicationService.class);
   private final TestConcurrencyControl concurrencyControl = spy(new TestConcurrencyControl());
   private final ClientStreamRequestManager<TestMetadata> requestManager =
-      new ClientStreamRequestManager<>(mockTransport, concurrencyControl);
+      new ClientStreamRequestManager<>(
+          mockTransport, concurrencyControl, StreamTopics.DEFAULT_GROUP);
   private final AggregatedClientStream<TestMetadata> clientStream =
       new AggregatedClientStream<>(
           UUID.randomUUID(),
