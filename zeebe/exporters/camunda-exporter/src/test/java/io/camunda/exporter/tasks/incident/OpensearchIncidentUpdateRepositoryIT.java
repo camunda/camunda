@@ -73,6 +73,23 @@ final class OpensearchIncidentUpdateRepositoryIT extends IncidentUpdateRepositor
         .toList();
   }
 
+  @Override
+  protected Collection<RoutedDocument> searchWithRouting(
+      final String index, final String field, final List<String> terms) throws IOException {
+    final var client = new OpenSearchClient(transport);
+    final var values =
+        terms.stream().map(org.opensearch.client.opensearch._types.FieldValue::of).toList();
+    final var query =
+        org.opensearch.client.opensearch._types.query_dsl.QueryBuilders.terms()
+            .field(field)
+            .terms(v -> v.value(values))
+            .build()
+            .toQuery();
+    return client.search(s -> s.index(index).query(query), Object.class).hits().hits().stream()
+        .map(hit -> new RoutedDocument(hit.id(), hit.routing()))
+        .toList();
+  }
+
   private OpenSearchTransport createTransport() {
     try {
       return ApacheHttpClient5TransportBuilder.builder(
