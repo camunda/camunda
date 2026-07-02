@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+
 import io.camunda.zeebe.broker.jobstream.JobStreamMetrics;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.jobstream.RemoteJobStreamErrorHandlerService;
@@ -20,7 +22,6 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.TransportFactory;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamService;
-import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Collection;
 import java.util.Map;
@@ -50,7 +51,7 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
                 JobStreamServiceStep::readJobActivationProperties,
                 errorHandlerService,
                 new JobStreamMetrics(brokerStartupContext.getMeterRegistry()),
-                StreamTopics.DEFAULT_GROUP);
+                DEFAULT_PHYSICAL_TENANT_ID);
     final var errorHandlerStarted = scheduler.submitActor(errorHandlerService);
 
     errorHandlerStarted.onComplete(

@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.gateway.impl.stream;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+
 import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
@@ -16,7 +18,6 @@ import io.camunda.zeebe.transport.TransportFactory;
 import io.camunda.zeebe.transport.stream.api.ClientStream;
 import io.camunda.zeebe.transport.stream.api.ClientStreamService;
 import io.camunda.zeebe.transport.stream.api.ClientStreamer;
-import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
 
@@ -46,7 +47,7 @@ public final class JobStreamClientImpl implements JobStreamClient {
             .createRemoteStreamClient(
                 clusterCommunicationService,
                 new JobClientStreamMetrics(meterRegistry),
-                StreamTopics.DEFAULT_GROUP);
+                DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   @Override
