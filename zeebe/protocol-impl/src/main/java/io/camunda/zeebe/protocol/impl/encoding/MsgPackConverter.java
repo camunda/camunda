@@ -250,7 +250,8 @@ public final class MsgPackConverter {
     try {
       return MESSSAGE_PACK_OBJECT_MAPPER.readValue(msgpackBytes, clazz);
     } catch (final IOException e) {
-      throw new RuntimeException("Failed to deserialize MessagePack to Map", e);
+      throw new RuntimeException(
+          "Failed to deserialize MessagePack to " + clazz.getSimpleName(), e);
     }
   }
 

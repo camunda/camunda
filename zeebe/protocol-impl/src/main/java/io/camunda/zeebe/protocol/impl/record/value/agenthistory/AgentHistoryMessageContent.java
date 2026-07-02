@@ -9,22 +9,25 @@ package io.camunda.zeebe.protocol.impl.record.value.agenthistory;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.camunda.zeebe.msgpack.property.DocumentProperty;
+import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.document.DocumentReference;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue.AgentHistoryMessageContentValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.Map;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 @JsonIgnoreProperties({"encodedLength", "empty"})
 public final class AgentHistoryMessageContent extends ObjectValue
     implements AgentHistoryMessageContentValue {
+
+  private static final DirectBuffer NIL_OBJECT = new UnsafeBuffer(MsgPackHelper.NIL);
 
   private final EnumProperty<AgentHistoryContentType> contentTypeProp =
       new EnumProperty<>(
@@ -32,7 +35,7 @@ public final class AgentHistoryMessageContent extends ObjectValue
   private final StringProperty textProp = new StringProperty("text", "");
   private final ObjectProperty<DocumentReference> documentReferenceProp =
       new ObjectProperty<>("documentReference", new DocumentReference());
-  private final DocumentProperty objectProp = new DocumentProperty("object");
+  private final BinaryProperty objectProp = new BinaryProperty("object", NIL_OBJECT);
 
   public AgentHistoryMessageContent() {
     super(4);
@@ -68,8 +71,8 @@ public final class AgentHistoryMessageContent extends ObjectValue
   }
 
   @Override
-  public Map<String, Object> getObject() {
-    return MsgPackConverter.convertToMap(objectProp.getValue());
+  public Object getObject() {
+    return MsgPackConverter.convertToObject(objectProp.getValue(), Object.class);
   }
 
   public AgentHistoryMessageContent setObject(final DirectBuffer object) {
@@ -86,6 +89,11 @@ public final class AgentHistoryMessageContent extends ObjectValue
     setContentType(other.getContentType());
     setText(other.getText());
     getDocumentReference().copy(other.getDocumentReference());
-    setObject(BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(other.getObject())));
+    final var obj = other.getObject();
+    if (obj != null) {
+      setObject(BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(obj)));
+    } else {
+      setObject(NIL_OBJECT);
+    }
   }
 }
