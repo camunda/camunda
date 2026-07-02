@@ -241,17 +241,17 @@ public class ProcessInstanceWaitStateStatisticsIT {
     Awaitility.await("wait state reflects migrated element id")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
-        .until(
+        .untilAsserted(
             () ->
-                camundaClient
-                    .newElementInstanceWaitStateSearchRequest()
-                    .filter(f -> f.processInstanceKey(pik))
-                    .send()
-                    .join()
-                    .items()
-                    .getFirst()
-                    .getElementId(),
-            elementId -> elementId.equals("task-b"));
+                assertThat(
+                        camundaClient
+                            .newElementInstanceWaitStateSearchRequest()
+                            .filter(f -> f.processInstanceKey(pik))
+                            .send()
+                            .join()
+                            .items())
+                    .hasSize(1)
+                    .allSatisfy(item -> assertThat(item.getElementId()).isEqualTo("task-b")));
 
     // then
     final var actual = statistics(pik);
