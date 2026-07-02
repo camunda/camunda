@@ -20,6 +20,7 @@ public final class TenantMetrics {
   private static final String ORGANIZATION_ID =
       System.getenv().getOrDefault("CAMUNDA_CLOUD_ORGANIZATION_ID", "null");
 
+<<<<<<< HEAD
   /**
    * Accumulates every distinct tenant ID seen across export intervals since broker start. Access is
    * single-threaded: only the stream-processor thread writes or reads this set. In SaaS the
@@ -34,6 +35,17 @@ public final class TenantMetrics {
    * AtomicInteger.get()}, guaranteeing the scrape thread never sees a stale or partially-written
    * count. {@link #cumulativeTenants} itself is never read by the scrape thread.
    */
+=======
+  // Accumulates every distinct tenant ID seen across export intervals since broker start.
+  // Access is single-threaded: only the stream-processor thread writes or reads this set.
+  // In SaaS the cardinality is bounded by the number of tenants in an organization (typically
+  // in the tens to low hundreds), so unbounded growth is not a practical concern.
+  private final Set<String> cumulativeTenants = new HashSet<>();
+  // Mirrors cumulativeTenants.size() as a volatile value so the Prometheus scrape thread can
+  // read it safely. AtomicInteger.set() volatile-write happens-before AtomicInteger.get(),
+  // guaranteeing the scrape thread never sees a stale or partially-written count.
+  // cumulativeTenants itself is never read by the scrape thread.
+>>>>>>> aa0c3b2a (feat: expose zeebe.active.tenants.count Prometheus gauge)
   private final AtomicInteger activeTenantCount = new AtomicInteger(0);
 
   public TenantMetrics(final MeterRegistry registry) {
