@@ -59,6 +59,7 @@ public final class StreamRuntime<R> implements AutoCloseable {
   private final TransactionRunner transactionRunner;
   private final OffsetStore offsets;
   private final List<Runnable> preCommitFlushes;
+  private final RecordExceptionHandler recordExceptionHandler;
   private final int maxPoll;
   private final Duration pollTimeout;
   private final long commitIntervalNanos;
@@ -80,6 +81,7 @@ public final class StreamRuntime<R> implements AutoCloseable {
     transactionRunner = builder.transactionRunner;
     offsets = builder.offsets;
     preCommitFlushes = List.copyOf(builder.preCommitFlushes);
+    recordExceptionHandler = builder.recordExceptionHandler;
     maxPoll = builder.maxPoll;
     pollTimeout = builder.pollTimeout;
     commitIntervalNanos = builder.commitInterval.toNanos();
@@ -107,16 +109,18 @@ public final class StreamRuntime<R> implements AutoCloseable {
       try {
         final List<Event> events = consumer.poll(maxPoll, pollTimeout);
         for (final Event event : events) {
-          final R record =
-              deserializer.deserialize(event.payload(), event.partitionId(), event.position());
-          taskFor(event.partitionId()).process(record);
-          pending.merge(event.partitionId(), event.position(), Math::max);
+          if (!running) {
+            break; // stopped (shutdown, or a fail-fast record error) — skip the rest of the batch
+          }
+          handleRecord(event);
         }
         if (System.nanoTime() - lastCommit >= commitIntervalNanos) {
           commit();
           lastCommit = System.nanoTime();
         }
       } catch (final RuntimeException e) {
+        // Transient infrastructure failure (poll/commit): back off and retry. Record-level errors
+        // are handled per record by the RecordExceptionHandler, not here.
         LOG.warn(
             "Stream runtime '{}' loop failed; backing off {}ms", instanceId, errorBackoffMs, e);
         sleep(errorBackoffMs);
@@ -127,6 +131,46 @@ public final class StreamRuntime<R> implements AutoCloseable {
     tasks.values().forEach(Task::close);
     consumer.close();
     LOG.info("Stream runtime '{}' stopped", instanceId);
+  }
+
+  /**
+   * Deserializes and processes one record, applying the {@link RecordExceptionHandler} policy on
+   * failure: {@code SKIP} advances past the record; {@code FAIL} stops the runtime (a restart then
+   * reprocesses from the last commit — no silent record loss).
+   */
+  private void handleRecord(final Event event) {
+    final int partition = event.partitionId();
+    final long offset = event.position();
+    final R record;
+    try {
+      record = deserializer.deserialize(event.payload(), partition, offset);
+    } catch (final RuntimeException e) {
+      onRecordError(partition, offset, e);
+      return;
+    }
+    try {
+      taskFor(partition).process(record);
+    } catch (final RuntimeException e) {
+      onRecordError(partition, offset, e);
+      return;
+    }
+    pending.merge(partition, offset, Math::max);
+  }
+
+  private void onRecordError(final int partition, final long offset, final RuntimeException e) {
+    if (recordExceptionHandler.onError(partition, offset, e)
+        == RecordExceptionHandler.Decision.SKIP) {
+      LOG.warn("Skipping record {}-{} after error", partition, offset, e);
+      pending.merge(
+          partition, offset, Math::max); // advance past it so it commits and is not retried
+      return;
+    }
+    LOG.error(
+        "Fatal error on record {}-{}; stopping runtime (restart resumes from last commit)",
+        partition,
+        offset,
+        e);
+    running = false;
   }
 
   /** Requests a graceful stop; the loop observes it within one poll timeout. */
@@ -208,6 +252,7 @@ public final class StreamRuntime<R> implements AutoCloseable {
     private TransactionRunner transactionRunner;
     private OffsetStore offsets;
     private final List<Runnable> preCommitFlushes = new ArrayList<>();
+    private RecordExceptionHandler recordExceptionHandler = RecordExceptionHandler.FAIL_FAST;
     private int maxPoll = 5000;
     private Duration pollTimeout = Duration.ofMillis(500);
     private Duration commitInterval = Duration.ofSeconds(1);
@@ -262,6 +307,12 @@ public final class StreamRuntime<R> implements AutoCloseable {
      */
     public Builder<R> preCommitFlush(final Runnable flush) {
       preCommitFlushes.add(flush);
+      return this;
+    }
+
+    /** Policy for a record that fails to deserialize/process. Defaults to fail-fast. */
+    public Builder<R> recordExceptionHandler(final RecordExceptionHandler handler) {
+      recordExceptionHandler = handler;
       return this;
     }
 

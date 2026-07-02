@@ -181,6 +181,79 @@ final class StreamRuntimeTest {
     loop.join(TimeUnit.SECONDS.toMillis(5));
   }
 
+  @Test
+  void shouldSkipPoisonRecordAndCommitPastItWhenHandlerSaysSkip() throws Exception {
+    // given — a batch with a poison record (offset 5) before a good one (offset 6)
+    final List<String> processed = new ArrayList<>();
+    final Map<Integer, Long> committedOffsets = new HashMap<>();
+    final CountDownLatch offsetCommitted = new CountDownLatch(1);
+
+    final Consumer consumer = mock(Consumer.class);
+    final EventBridgeClient client = mock(EventBridgeClient.class);
+    when(client.subscribe(any(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(consumer));
+    when(consumer.sendHeartbeat()).thenReturn(CompletableFuture.completedFuture(null));
+    final Event poison = new Event(5L, TOPIC, 1, "bad".getBytes(StandardCharsets.UTF_8));
+    final Event good = new Event(6L, TOPIC, 1, "good".getBytes(StandardCharsets.UTF_8));
+    when(consumer.poll(anyInt(), any())).thenReturn(List.of(poison, good)).thenReturn(List.of());
+    when(consumer.commitOffset(any(), anyInt(), anyLong()))
+        .thenAnswer(
+            invocation -> {
+              committedOffsets.put(invocation.getArgument(1), invocation.getArgument(2));
+              offsetCommitted.countDown();
+              return CompletableFuture.completedFuture(null);
+            });
+
+    final StreamRuntime<String> runtime =
+        StreamRuntime.<String>builder()
+            .client(client)
+            .group("g")
+            .instanceId("i")
+            .sourceTopic(TOPIC)
+            .deserializer(
+                (payload, partition, offset) -> {
+                  final String value = new String(payload, StandardCharsets.UTF_8);
+                  if ("bad".equals(value)) {
+                    throw new IllegalStateException("poison");
+                  }
+                  return value;
+                })
+            .taskFactory(
+                partition ->
+                    new Task<>() {
+                      @Override
+                      public void process(final String record) {
+                        processed.add(record);
+                      }
+                    })
+            .transactionRunner(Runnable::run)
+            .offsetStore(
+                new OffsetStore() {
+                  @Override
+                  public Map<Integer, Long> restore() {
+                    return Map.of();
+                  }
+
+                  @Override
+                  public void store(final int partition, final long offset) {}
+                })
+            .recordExceptionHandler(
+                (partition, offset, error) -> RecordExceptionHandler.Decision.SKIP)
+            .commitInterval(Duration.ZERO)
+            .build();
+
+    // when
+    final Thread loop = new Thread(runtime::run, "runtime-under-test");
+    loop.start();
+    assertThat(offsetCommitted.await(5, TimeUnit.SECONDS)).isTrue();
+    runtime.stop();
+    loop.join(TimeUnit.SECONDS.toMillis(5));
+
+    // then — the good record was processed, the poison skipped, and the offset advanced past both
+    assertThat(processed).containsExactly("good");
+    assertThat(committedOffsets).containsEntry(1, 6L);
+  }
+
   @SuppressWarnings("unchecked")
   private static void doAnswerSeek(
       final Consumer consumer,
