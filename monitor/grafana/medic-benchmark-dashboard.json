@@ -1179,6 +1179,273 @@
         "x": 0,
         "y": 38
       },
+      "id": 320,
+      "panels": [],
+      "title": "ECS Weekly Load Tests",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "Flow node instances completed or terminated per second over all partitions.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "red",
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "color": "red",
+                  "text": "0"
+                }
+              },
+              "type": "special"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "green",
+                "value": 145
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 0,
+        "y": 39
+      },
+      "id": 321,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "titleSize": 10
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"ecs-weekly.*\", type!=\"PROCESS\", action!=\"activated\"}[$__rate_interval])) by (namespace)",
+          "instant": true,
+          "interval": "",
+          "legendFormat": "{{namespace}}",
+          "refId": "B"
+        }
+      ],
+      "title": "Overall FNI  per s",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "Process instances completed or terminated per second over all partitions.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "red",
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "color": "red",
+                  "text": "0"
+                }
+              },
+              "type": "special"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "green",
+                "value": 49
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 8,
+        "y": 39
+      },
+      "id": 322,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "titleSize": 10
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"ecs-weekly.*\", action=\"completed\", type=\"PROCESS\"}[$__rate_interval])) by (namespace)",
+          "instant": true,
+          "interval": "",
+          "legendFormat": "{{namespace}}",
+          "refId": "B"
+        }
+      ],
+      "title": "Completed processes per s",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "Tasks completed or terminated per second over all partitions.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "red",
+            "mode": "fixed"
+          },
+          "mappings": [
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "color": "red",
+                  "text": "0"
+                }
+              },
+              "type": "special"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 16,
+        "y": 39
+      },
+      "id": 323,
+      "options": {
+        "colorMode": "none",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "percentChangeColorMode": "standard",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "titleSize": 10
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "editorMode": "code",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"ecs-weekly.*\", action=\"completed\", type=\"SERVICE_TASK\"}[$__rate_interval])) by (namespace)",
+          "instant": true,
+          "interval": "",
+          "legendFormat": "{{namespace}}",
+          "refId": "B"
+        }
+      ],
+      "title": "Completed tasks per s",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 43
+      },
       "id": 284,
       "panels": [],
       "title": "Medic Load Tests Health",
@@ -1384,7 +1651,7 @@
         "h": 10,
         "w": 11,
         "x": 0,
-        "y": 39
+        "y": 44
       },
       "id": 243,
       "options": {
@@ -1538,7 +1805,7 @@
         "h": 5,
         "w": 13,
         "x": 11,
-        "y": 39
+        "y": 44
       },
       "id": 272,
       "options": {
@@ -1653,7 +1920,7 @@
         "h": 5,
         "w": 13,
         "x": 11,
-        "y": 44
+        "y": 49
       },
       "id": 39,
       "options": {
@@ -1695,7 +1962,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 49
+        "y": 54
       },
       "id": 290,
       "panels": [],
@@ -1747,7 +2014,7 @@
         "h": 4,
         "w": 8,
         "x": 0,
-        "y": 50
+        "y": 55
       },
       "id": 291,
       "options": {
@@ -1833,7 +2100,7 @@
         "h": 4,
         "w": 8,
         "x": 8,
-        "y": 50
+        "y": 55
       },
       "id": 292,
       "options": {
@@ -1915,7 +2182,7 @@
         "h": 4,
         "w": 8,
         "x": 16,
-        "y": 50
+        "y": 55
       },
       "id": 293,
       "options": {
@@ -2005,7 +2272,7 @@
         "h": 4,
         "w": 8,
         "x": 0,
-        "y": 54
+        "y": 59
       },
       "id": 301,
       "options": {
@@ -2107,7 +2374,7 @@
         "h": 4,
         "w": 8,
         "x": 8,
-        "y": 54
+        "y": 59
       },
       "id": 302,
       "options": {
@@ -2209,7 +2476,7 @@
         "h": 4,
         "w": 8,
         "x": 16,
-        "y": 54
+        "y": 59
       },
       "id": 303,
       "options": {
@@ -2450,7 +2717,7 @@
         "h": 9,
         "w": 11,
         "x": 0,
-        "y": 58
+        "y": 63
       },
       "id": 294,
       "options": {
@@ -2582,7 +2849,7 @@
         "h": 9,
         "w": 13,
         "x": 11,
-        "y": 58
+        "y": 63
       },
       "id": 296,
       "options": {
