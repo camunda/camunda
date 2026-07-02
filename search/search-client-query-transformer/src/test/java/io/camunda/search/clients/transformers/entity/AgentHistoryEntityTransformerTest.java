@@ -149,7 +149,7 @@ class AgentHistoryEntityTransformerTest {
     assertThat(item.contentType()).isEqualTo(ContentType.TEXT);
     assertThat(item.text()).isEqualTo("some text");
     assertThat(item.documentReference()).isNull();
-    assertThat(item.object()).isEmpty();
+    assertThat(item.object()).isNull();
   }
 
   @Test

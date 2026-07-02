@@ -80,11 +80,10 @@ public record AgentInstanceHistoryEntity(
       ContentType contentType,
       @Nullable String text,
       @Nullable DocumentReference documentReference,
-      @Nullable Map<String, Object> object) {
+      @Nullable Object object) {
 
     public ContentItem {
       Objects.requireNonNull(contentType, "contentType");
-      object = object != null ? new HashMap<>(object) : new HashMap<>();
     }
 
     public enum ContentType {
