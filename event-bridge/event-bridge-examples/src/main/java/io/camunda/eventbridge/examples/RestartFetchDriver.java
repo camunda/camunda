@@ -66,8 +66,8 @@ public final class RestartFetchDriver {
                 + f.lastBatchPosition()
                 + " hw="
                 + f.highWatermark()
-                + " status="
-                + f.statusCode());
+                + " outcome="
+                + f.outcome());
         int count = 0;
         for (final var e : f.entries(0)) {
           System.out.println(

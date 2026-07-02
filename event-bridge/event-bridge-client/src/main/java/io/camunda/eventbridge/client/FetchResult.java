@@ -10,53 +10,72 @@ package io.camunda.eventbridge.client;
 import io.camunda.eventbridge.batch.BatchReader;
 
 /**
- * Result of a fetch. Contains zero or more complete batches packed contiguously. Entry-level
- * iteration is handled client-side via {@link #entries(long)} using the pure {@link BatchReader}
- * (no Agrona / broker-protocol dependency).
+ * Result of a fetch: zero or more complete batches plus the partition's high watermark, classified
+ * by a semantic {@link Outcome}. This is a pure value type — it does <em>not</em> know about HTTP
+ * status codes. The transport maps a response to an outcome ({@link #parse(byte[])} for a body,
+ * {@link #outOfRange()} for a below-earliest cursor, {@link #failed(String)} otherwise), keeping
+ * transport concerns out of the payload.
  *
- * <p>Wire format parsed from the gateway:
+ * <p>Entry-level iteration is client-side via {@link #entries(long)} using the pure {@link
+ * BatchReader} (no Agrona / broker-protocol dependency).
+ *
+ * <p>Wire format of a successful body:
  *
  * <pre>firstBatchPosition(8) | lastBatchPosition(8) | highWatermark(8) | dataLength(4) | data</pre>
  */
 public final class FetchResult {
 
+  /** What a fetch produced. */
+  public enum Outcome {
+    /** Batches were returned. */
+    OK,
+    /** A valid response with no new data (caught up / long-poll timed out). */
+    EMPTY,
+    /** The requested offset is below the earliest retained record; the caller must reset. */
+    OUT_OF_RANGE,
+    /** The fetch failed (transport error or malformed response); see {@link #error()}. */
+    FAILED
+  }
+
   private static final int HEADER_SIZE = Long.BYTES * 3 + Integer.BYTES;
 
-  private final boolean success;
+  private final Outcome outcome;
   private final long firstBatchPosition;
   private final long lastBatchPosition;
   private final byte[] data;
   private final int dataLength;
   private final long highWatermark;
-  private final int statusCode;
   private final String error;
 
   private FetchResult(
-      final boolean success,
+      final Outcome outcome,
       final long firstBatchPosition,
       final long lastBatchPosition,
       final byte[] data,
       final int dataLength,
       final long highWatermark,
-      final int statusCode,
       final String error) {
-    this.success = success;
+    this.outcome = outcome;
     this.firstBatchPosition = firstBatchPosition;
     this.lastBatchPosition = lastBatchPosition;
     this.data = data;
     this.dataLength = dataLength;
     this.highWatermark = highWatermark;
-    this.statusCode = statusCode;
     this.error = error;
   }
 
-  /** Parses a binary fetch response body. */
-  static FetchResult parse(final int statusCode, final byte[] body) {
-    if (statusCode != 200) {
-      return error(statusCode, "Fetch failed: HTTP " + statusCode);
+  /**
+   * Parses a successful fetch body (the transport has already established a 200 response). A null
+   * or empty body, or a header advertising no data, is {@link Outcome#EMPTY}; a body that is
+   * present but truncated or overrunning is {@link Outcome#FAILED} (malformed) rather than silently
+   * treated as empty.
+   */
+  public static FetchResult parse(final byte[] body) {
+    if (body == null || body.length == 0) {
+      return empty(-1);
     }
-    if (body == null || body.length < HEADER_SIZE) {
-      return empty(0);
+    if (body.length < HEADER_SIZE) {
+      return failed("Malformed fetch response: " + body.length + " bytes < header " + HEADER_SIZE);
     }
 
     final long firstBatchPosition = readLong(body, 0);
@@ -68,41 +87,54 @@ public final class FetchResult {
       return empty(highWatermark);
     }
     // Don't trust the wire length: a negative or overrunning dataLength would blow up the
-    // arraycopy below. Treat it as a malformed response rather than crashing the caller.
+    // arraycopy.
     if (dataLength < 0 || body.length < HEADER_SIZE + dataLength) {
-      return error(
-          statusCode,
+      return failed(
           "Malformed fetch response: dataLength " + dataLength + " for body " + body.length);
     }
 
     final var batchData = new byte[dataLength];
     System.arraycopy(body, HEADER_SIZE, batchData, 0, dataLength);
-
     return new FetchResult(
-        true,
+        Outcome.OK,
         firstBatchPosition,
         lastBatchPosition,
         batchData,
         dataLength,
         highWatermark,
-        200,
         null);
   }
 
-  static FetchResult empty(final long highWatermark) {
-    return new FetchResult(true, 0, -1, new byte[0], 0, highWatermark, 200, null);
+  /** A valid, empty response with the given high watermark ({@code -1} if unknown). */
+  public static FetchResult empty(final long highWatermark) {
+    return new FetchResult(Outcome.EMPTY, 0, -1, new byte[0], 0, highWatermark, null);
   }
 
-  static FetchResult error(final int statusCode, final String error) {
-    return new FetchResult(false, 0, -1, new byte[0], 0, -1, statusCode, error);
+  /** The cursor is below the earliest retained record — the caller must reset its offset. */
+  public static FetchResult outOfRange() {
+    return new FetchResult(Outcome.OUT_OF_RANGE, 0, -1, new byte[0], 0, -1, "OFFSET_OUT_OF_RANGE");
   }
 
+  /** The fetch failed (transport error or malformed response). */
+  public static FetchResult failed(final String error) {
+    return new FetchResult(Outcome.FAILED, 0, -1, new byte[0], 0, -1, error);
+  }
+
+  public Outcome outcome() {
+    return outcome;
+  }
+
+  /** True if the fetch yielded a valid response (batches or a legitimate empty). */
   public boolean isSuccess() {
-    return success;
+    return outcome == Outcome.OK || outcome == Outcome.EMPTY;
   }
 
   public boolean isEmpty() {
     return dataLength == 0;
+  }
+
+  public boolean isOutOfRange() {
+    return outcome == Outcome.OUT_OF_RANGE;
   }
 
   public long firstBatchPosition() {
@@ -117,34 +149,8 @@ public final class FetchResult {
     return highWatermark;
   }
 
-  public int statusCode() {
-    return statusCode;
-  }
-
   public String error() {
     return error;
-  }
-
-  /**
-   * Consumer lag — positions between the last fetched position and the high watermark. 0 means
-   * fully caught up.
-   */
-  public long lag() {
-    if (lastBatchPosition < 0) {
-      return highWatermark;
-    }
-    return highWatermark - lastBatchPosition;
-  }
-
-  /**
-   * The offset to use in the next fetch (one past the last entry returned). If the fetch was empty,
-   * returns {@code requestedOffset} unchanged.
-   */
-  public long nextOffset(final long requestedOffset) {
-    if (lastBatchPosition < 0) {
-      return requestedOffset;
-    }
-    return lastBatchPosition + 1;
   }
 
   /**
@@ -174,18 +180,6 @@ public final class FetchResult {
 
     public long getPosition() {
       return entry.position();
-    }
-
-    public int getKeyLength() {
-      return entry.key().length;
-    }
-
-    public byte[] getKeyCopy() {
-      return entry.key();
-    }
-
-    public int getValueLength() {
-      return entry.value().length;
     }
 
     public byte[] getValueCopy() {
