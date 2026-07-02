@@ -117,7 +117,8 @@ without any routing changes.
 - The solution follows HTTP standards (RFC 3986) — no custom encoding schemes.
 - Fully backward compatible: `encodeURIComponent` is a no-op on alphanumeric strings, and the
   `DECODE` mode only affects requests that contain `%2F`.
-- No changes to controllers, service layer, or data model.
+- No changes to service layer or data model. Controller-level workarounds are required when
+  `ant_path_matcher` is enabled (stable/8.8).
 
 ### Negative
 
@@ -131,4 +132,3 @@ without any routing changes.
   not just identity endpoints. Likewise, the relaxed Spring Security firewall is global. This is
   safe because `%2F` in a path segment is only meaningful if the application interprets it —
   existing endpoints with alphanumeric IDs are unaffected.
-
