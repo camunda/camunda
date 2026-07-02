@@ -51,6 +51,26 @@ camunda.data.secondary-storage.elasticsearch.socket-timeout=10s
 
 If the unit of measure is missing, then milliseconds are used by default.
 
+### Connection pool tuning (Elasticsearch / OpenSearch)
+
+The HTTP client used to talk to the secondary storage exposes two connection-pool limits that can
+be tuned for high-throughput deployments:
+
+```
+camunda.data.secondary-storage.elasticsearch.max-connections=<int>
+camunda.data.secondary-storage.elasticsearch.max-connections-per-route=<int>
+```
+
+(and the equivalent `camunda.data.secondary-storage.opensearch.*` keys)
+
+* `max-connections` — total number of connections allowed in the client connection pool.
+* `max-connections-per-route` — maximum number of connections allowed per route. For Camunda this
+  is typically set to the same value as `max-connections`.
+
+Both default to unset, in which case the underlying Apache HttpClient defaults apply. They are
+useful when a component consumes many connections (e.g. running the archiver with a high thread
+count), which can otherwise exhaust the pool and throttle other operations such as health checks.
+
 ### Backwards compatibility with legacy configuration keys
 
 The Unified Configuration system replaces the legacy configuration properties. Nevertheless, in various cases, it is designed to work well even for Customers that have legacy configuration already defined, if possible.

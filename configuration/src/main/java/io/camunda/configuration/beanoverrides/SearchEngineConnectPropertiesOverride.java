@@ -132,6 +132,14 @@ public class SearchEngineConnectPropertiesOverride {
       if (connectionTimeout != null) {
         override.setConnectTimeout(Math.toIntExact(connectionTimeout.toMillis()));
       }
+      final var maxConnections = database.getMaxConnections();
+      if (maxConnections != null) {
+        override.setMaxConnections(maxConnections);
+      }
+      final var maxConnectionsPerRoute = database.getMaxConnectionsPerRoute();
+      if (maxConnectionsPerRoute != null) {
+        override.setMaxConnectionsPerRoute(maxConnectionsPerRoute);
+      }
       override.setIndexPrefix(database.getIndexPrefix());
       override.setProxy(database.getProxy());
     }

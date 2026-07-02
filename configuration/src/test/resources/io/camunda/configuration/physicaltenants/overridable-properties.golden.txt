@@ -111,6 +111,8 @@ data.secondary-storage.elasticsearch.history.database-name
 data.secondary-storage.elasticsearch.incident-notifier.database-name
 data.secondary-storage.elasticsearch.index-prefix
 data.secondary-storage.elasticsearch.interceptor-plugins
+data.secondary-storage.elasticsearch.max-connections
+data.secondary-storage.elasticsearch.max-connections-per-route
 data.secondary-storage.elasticsearch.number-of-replicas
 data.secondary-storage.elasticsearch.number-of-replicas-per-index
 data.secondary-storage.elasticsearch.number-of-shards
@@ -153,6 +155,8 @@ data.secondary-storage.opensearch.history.database-name
 data.secondary-storage.opensearch.incident-notifier.database-name
 data.secondary-storage.opensearch.index-prefix
 data.secondary-storage.opensearch.interceptor-plugins
+data.secondary-storage.opensearch.max-connections
+data.secondary-storage.opensearch.max-connections-per-route
 data.secondary-storage.opensearch.number-of-replicas
 data.secondary-storage.opensearch.number-of-replicas-per-index
 data.secondary-storage.opensearch.number-of-shards

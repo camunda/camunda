@@ -51,6 +51,8 @@ public class SecondaryStorageElasticsearchTest {
   private static final String EXPECTED_DATE_FORMAT = "date-format";
   private static final int EXPECTED_SOCKET_TIMEOUT = 20;
   private static final int EXPECTED_CONNECTION_TIMEOUT = 30;
+  private static final int EXPECTED_MAX_CONNECTIONS = 50;
+  private static final int EXPECTED_MAX_CONNECTIONS_PER_ROUTE = 50;
   private static final String EXPECTED_INDEX_PREFIX = "sample-index-prefix";
 
   private static final String EXPECTED_USERNAME = "testUsername";
@@ -135,6 +137,9 @@ public class SecondaryStorageElasticsearchTest {
         "camunda.data.secondary-storage.elasticsearch.connection-timeout="
             + EXPECTED_CONNECTION_TIMEOUT
             + "ms",
+        "camunda.data.secondary-storage.elasticsearch.max-connections=" + EXPECTED_MAX_CONNECTIONS,
+        "camunda.data.secondary-storage.elasticsearch.max-connections-per-route="
+            + EXPECTED_MAX_CONNECTIONS_PER_ROUTE,
         "camunda.data.secondary-storage.elasticsearch.history.els-rollover-date-format="
             + EXPECTED_HISTORY_ELS_ROLLOVER_DATE_FORMAT,
         "camunda.data.secondary-storage.elasticsearch.history.rollover-interval="
@@ -348,6 +353,10 @@ public class SecondaryStorageElasticsearchTest {
           .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
       assertThat(searchEngineConnectProperties.getConnectTimeout())
           .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
+      assertThat(searchEngineConnectProperties.getMaxConnections())
+          .isEqualTo(EXPECTED_MAX_CONNECTIONS);
+      assertThat(searchEngineConnectProperties.getMaxConnectionsPerRoute())
+          .isEqualTo(EXPECTED_MAX_CONNECTIONS_PER_ROUTE);
     }
 
     @Test
@@ -483,6 +492,9 @@ public class SecondaryStorageElasticsearchTest {
         "camunda.data.secondary-storage.elasticsearch.connection-timeout="
             + EXPECTED_CONNECTION_TIMEOUT
             + "ms",
+        "camunda.data.secondary-storage.elasticsearch.max-connections=" + EXPECTED_MAX_CONNECTIONS,
+        "camunda.data.secondary-storage.elasticsearch.max-connections-per-route="
+            + EXPECTED_MAX_CONNECTIONS_PER_ROUTE,
         "camunda.data.connectTimeout=" + EXPECTED_CONNECTION_TIMEOUT,
         "camunda.tasklist.elasticsearch.connectTimeout=" + EXPECTED_CONNECTION_TIMEOUT,
         "camunda.operate.elasticsearch.connectTimeout=" + EXPECTED_CONNECTION_TIMEOUT,
@@ -664,6 +676,10 @@ public class SecondaryStorageElasticsearchTest {
           .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
       assertThat(searchEngineConnectProperties.getConnectTimeout())
           .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
+      assertThat(searchEngineConnectProperties.getMaxConnections())
+          .isEqualTo(EXPECTED_MAX_CONNECTIONS);
+      assertThat(searchEngineConnectProperties.getMaxConnectionsPerRoute())
+          .isEqualTo(EXPECTED_MAX_CONNECTIONS_PER_ROUTE);
     }
 
     @Test
