@@ -42,7 +42,15 @@ public final class FetchResult {
   private final Outcome outcome;
   private final long firstBatchPosition;
   private final long lastBatchPosition;
-  private final byte[] data;
+
+  /**
+   * The full response body (including the header) for an {@link Outcome#OK} result, read from
+   * {@link #dataOffset} onward — the payload is never copied into a separate array; only per-entry
+   * key/value copies are made on demand. Empty for the non-OK factory results.
+   */
+  private final byte[] body;
+
+  private final int dataOffset;
   private final int dataLength;
   private final long highWatermark;
   private final String error;
@@ -51,14 +59,16 @@ public final class FetchResult {
       final Outcome outcome,
       final long firstBatchPosition,
       final long lastBatchPosition,
-      final byte[] data,
+      final byte[] body,
+      final int dataOffset,
       final int dataLength,
       final long highWatermark,
       final String error) {
     this.outcome = outcome;
     this.firstBatchPosition = firstBatchPosition;
     this.lastBatchPosition = lastBatchPosition;
-    this.data = data;
+    this.body = body;
+    this.dataOffset = dataOffset;
     this.dataLength = dataLength;
     this.highWatermark = highWatermark;
     this.error = error;
@@ -86,20 +96,20 @@ public final class FetchResult {
     if (dataLength == 0) {
       return empty(highWatermark);
     }
-    // Don't trust the wire length: a negative or overrunning dataLength would blow up the
-    // arraycopy.
+    // Don't trust the wire length: a negative or overrunning dataLength would blow up the reader.
     if (dataLength < 0 || body.length < HEADER_SIZE + dataLength) {
       return failed(
           "Malformed fetch response: dataLength " + dataLength + " for body " + body.length);
     }
 
-    final var batchData = new byte[dataLength];
-    System.arraycopy(body, HEADER_SIZE, batchData, 0, dataLength);
+    // Keep the response array as-is and read the batch region in place (offset HEADER_SIZE); the
+    // payload is never copied, only per-entry key/value copies are made when entries are iterated.
     return new FetchResult(
         Outcome.OK,
         firstBatchPosition,
         lastBatchPosition,
-        batchData,
+        body,
+        HEADER_SIZE,
         dataLength,
         highWatermark,
         null);
@@ -107,17 +117,18 @@ public final class FetchResult {
 
   /** A valid, empty response with the given high watermark ({@code -1} if unknown). */
   public static FetchResult empty(final long highWatermark) {
-    return new FetchResult(Outcome.EMPTY, 0, -1, new byte[0], 0, highWatermark, null);
+    return new FetchResult(Outcome.EMPTY, 0, -1, new byte[0], 0, 0, highWatermark, null);
   }
 
   /** The cursor is below the earliest retained record — the caller must reset its offset. */
   public static FetchResult outOfRange() {
-    return new FetchResult(Outcome.OUT_OF_RANGE, 0, -1, new byte[0], 0, -1, "OFFSET_OUT_OF_RANGE");
+    return new FetchResult(
+        Outcome.OUT_OF_RANGE, 0, -1, new byte[0], 0, 0, -1, "OFFSET_OUT_OF_RANGE");
   }
 
   /** The fetch failed (transport error or malformed response). */
   public static FetchResult failed(final String error) {
-    return new FetchResult(Outcome.FAILED, 0, -1, new byte[0], 0, -1, error);
+    return new FetchResult(Outcome.FAILED, 0, -1, new byte[0], 0, 0, -1, error);
   }
 
   public Outcome outcome() {
@@ -159,7 +170,7 @@ public final class FetchResult {
    * returned {@link FetchedEntry} owns copies of its key/value bytes.
    */
   public Iterable<FetchedEntry> entries(final long startOffset) {
-    return BatchReader.read(data, 0, dataLength, startOffset).stream()
+    return BatchReader.read(body, dataOffset, dataLength, startOffset).stream()
         .map(FetchedEntry::new)
         .toList();
   }

@@ -41,6 +41,28 @@
       <version>${project.version}</version>
     </dependency>
 
+    <!-- Generated protobuf coordination/admin messages (content-negotiated DTOs) -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>event-bridge-api-proto</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <!-- Batch codec: the negotiated publish/fetch paths build/read raw batches -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>event-bridge-batch-codec</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.protobuf</groupId>
+      <artifactId>protobuf-java</artifactId>
+    </dependency>
+    <!-- JsonFormat: drives the application/json representation of protobuf messages -->
+    <dependency>
+      <groupId>com.google.protobuf</groupId>
+      <artifactId>protobuf-java-util</artifactId>
+    </dependency>
+
     <!-- SWIM cluster for topology discovery -->
     <dependency>
       <groupId>io.camunda</groupId>

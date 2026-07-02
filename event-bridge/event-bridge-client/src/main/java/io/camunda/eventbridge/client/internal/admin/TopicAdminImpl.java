@@ -7,6 +7,8 @@
  */
 package io.camunda.eventbridge.client.internal.admin;
 
+import io.camunda.eventbridge.api.proto.TopicCreateRequest;
+import io.camunda.eventbridge.api.proto.TopicListResponse;
 import io.camunda.eventbridge.client.EventBridgeClient.TopicInfo;
 import io.camunda.eventbridge.client.internal.transport.HttpTransport;
 import java.net.URLEncoder;
@@ -16,7 +18,7 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * Topic administration over the gateway HTTP API: create, delete, and list topics. All requests are
- * routed through the single {@link HttpTransport}.
+ * routed through the single {@link HttpTransport} as binary protobuf.
  */
 public final class TopicAdminImpl {
 
@@ -32,24 +34,35 @@ public final class TopicAdminImpl {
    */
   public CompletableFuture<Void> createTopic(
       final String name, final int partitionCount, final int replicationFactor) {
-    return transport.postJson(
-        "/v1/topics",
-        new CreateTopicRequest(name, partitionCount, replicationFactor),
-        201,
-        "createTopic");
+    final var request =
+        TopicCreateRequest.newBuilder()
+            .setName(name)
+            .setPartitionCount(partitionCount)
+            .setReplicationFactor(replicationFactor)
+            .build();
+    return transport.postProtobuf("/v1/topics", request, 201, "createTopic");
   }
 
   /** Deletes a topic. Completes when the coordinator has accepted the request. */
   public CompletableFuture<Void> deleteTopic(final String name) {
-    return transport.deleteJson(
+    return transport.delete(
         "/v1/topics/" + URLEncoder.encode(name, StandardCharsets.UTF_8), 204, "deleteTopic");
   }
 
   /** Lists the registered topics. */
   public CompletableFuture<List<TopicInfo>> listTopics() {
-    return transport.getJson("/v1/topics", TopicInfo[].class, "listTopics").thenApply(List::of);
+    return transport
+        .getProtobuf("/v1/topics", TopicListResponse.parser(), "listTopics")
+        .thenApply(
+            response ->
+                response.getTopicsList().stream()
+                    .map(
+                        topic ->
+                            new TopicInfo(
+                                topic.getName(),
+                                topic.getPartitionCount(),
+                                topic.getReplicationFactor(),
+                                topic.getStatus()))
+                    .toList());
   }
-
-  /** Body of {@code POST /v1/topics}. */
-  private record CreateTopicRequest(String name, int partitionCount, int replicationFactor) {}
 }

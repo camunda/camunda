@@ -7,10 +7,10 @@
  */
 package io.camunda.eventbridge.client.internal.transport;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.Message;
+import com.google.protobuf.Parser;
 import io.camunda.eventbridge.client.EventBridgeException;
-import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -20,14 +20,21 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * The single HTTP transport for the Event Bridge client: the only class in the module that
- * references the JDK HTTP client. It owns the underlying {@link HttpClient} and the {@link
- * ObjectMapper}, builds requests against the gateway base URL, and exposes typed JSON and binary
- * operations so every caller (client facade, topic admin, consumer collaborators) routes through
- * one place.
+ * references the JDK HTTP client. It owns the underlying {@link HttpClient}, builds requests
+ * against the gateway base URL, and exposes typed protobuf and raw-binary operations so every
+ * caller (client facade, topic admin, consumer collaborators) routes through one place.
+ *
+ * <p>Coordination and admin messages travel as binary protobuf ({@code application/x-protobuf}):
+ * requests are serialized with {@link Message#toByteArray()} and responses parsed with a generated
+ * {@link Parser}. Publish and fetch stay on the raw batch codec ({@code application/octet-stream});
+ * the publish response is negotiated to protobuf so it can be parsed without JSON.
  *
  * <p>All operations are non-blocking and run on the shared HTTP client's executor.
  */
 public final class HttpTransport implements AutoCloseable {
+
+  /** Media type for the binary protobuf representation. */
+  public static final String PROTOBUF = "application/x-protobuf";
 
   /** Base request timeout applied to every non-fetch request. */
   private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(10);
@@ -37,27 +44,20 @@ public final class HttpTransport implements AutoCloseable {
 
   private final String gatewayUrl;
   private final HttpClient httpClient;
-  private final ObjectMapper objectMapper;
 
   /**
-   * Creates a transport rooted at {@code gatewayUrl} with a default {@link HttpClient} and {@link
-   * ObjectMapper} (lenient on unknown JSON fields the gateway may add).
+   * Creates a transport rooted at {@code gatewayUrl} with a default {@link HttpClient}.
    *
    * @param gatewayUrl base URL of the Event Bridge gateway, without a trailing slash
    */
   public HttpTransport(final String gatewayUrl) {
-    this(
-        gatewayUrl,
-        HttpClient.newBuilder().connectTimeout(CONNECT_TIMEOUT).build(),
-        new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false));
+    this(gatewayUrl, HttpClient.newBuilder().connectTimeout(CONNECT_TIMEOUT).build());
   }
 
-  /** Visible-for-testing constructor allowing an explicit client and mapper to be injected. */
-  public HttpTransport(
-      final String gatewayUrl, final HttpClient httpClient, final ObjectMapper objectMapper) {
+  /** Visible-for-testing constructor allowing an explicit client to be injected. */
+  public HttpTransport(final String gatewayUrl, final HttpClient httpClient) {
     this.gatewayUrl = gatewayUrl;
     this.httpClient = httpClient;
-    this.objectMapper = objectMapper;
   }
 
   /** Returns the gateway base URL this transport is rooted at (no trailing slash). */
@@ -66,41 +66,45 @@ public final class HttpTransport implements AutoCloseable {
   }
 
   // -------------------------------------------------------------------------
-  // JSON — async
+  // Protobuf — typed (status asserted by this transport)
 
-  /** Sends {@code GET path}, expecting HTTP 200, and parses the body as {@code type}. */
-  public <T> CompletableFuture<T> getJson(final String path, final Class<T> type, final String op) {
-    final var request = jsonRequest(path).GET().build();
-    return sendAsyncString(request)
+  /**
+   * Sends {@code POST path} with a protobuf {@code body}, expecting HTTP 200, and parses the
+   * response body with {@code parser}.
+   */
+  public <T extends Message> CompletableFuture<T> postProtobuf(
+      final String path, final Message body, final Parser<T> parser, final String op) {
+    return sendProtobuf("POST", path, body)
         .thenApply(
             response -> {
               expectStatus(response, 200, op);
-              return readBody(response.body(), type, op);
-            });
-  }
-
-  /** Sends {@code POST path} with a JSON {@code body}, expecting HTTP 200, and parses the body. */
-  public <T> CompletableFuture<T> postJson(
-      final String path, final Object body, final Class<T> type, final String op) {
-    final var request =
-        jsonRequest(path).POST(HttpRequest.BodyPublishers.ofString(writeBody(body, op))).build();
-    return sendAsyncString(request)
-        .thenApply(
-            response -> {
-              expectStatus(response, 200, op);
-              return readBody(response.body(), type, op);
+              return parse(response.body(), parser, op);
             });
   }
 
   /**
-   * Sends {@code POST path} with a JSON {@code body}, expecting {@code expectedStatus}, and
+   * Sends {@code GET path} accepting protobuf, expecting HTTP 200, and parses the response body
+   * with {@code parser}.
+   */
+  public <T extends Message> CompletableFuture<T> getProtobuf(
+      final String path, final Parser<T> parser, final String op) {
+    final var request =
+        protobufRequest(path).GET().header("Accept", PROTOBUF).timeout(DEFAULT_TIMEOUT).build();
+    return sendAsyncBytes(request)
+        .thenApply(
+            response -> {
+              expectStatus(response, 200, op);
+              return parse(response.body(), parser, op);
+            });
+  }
+
+  /**
+   * Sends {@code POST path} with a protobuf {@code body}, expecting {@code expectedStatus}, and
    * discarding the response body.
    */
-  public CompletableFuture<Void> postJson(
-      final String path, final Object body, final int expectedStatus, final String op) {
-    final var request =
-        jsonRequest(path).POST(HttpRequest.BodyPublishers.ofString(writeBody(body, op))).build();
-    return sendAsyncString(request)
+  public CompletableFuture<Void> postProtobuf(
+      final String path, final Message body, final int expectedStatus, final String op) {
+    return sendProtobuf("POST", path, body)
         .thenApply(
             response -> {
               expectStatus(response, expectedStatus, op);
@@ -109,10 +113,10 @@ public final class HttpTransport implements AutoCloseable {
   }
 
   /** Sends {@code DELETE path}, expecting {@code expectedStatus}, discarding the response body. */
-  public CompletableFuture<Void> deleteJson(
+  public CompletableFuture<Void> delete(
       final String path, final int expectedStatus, final String op) {
-    final var request = jsonRequest(path).DELETE().build();
-    return sendAsyncString(request)
+    final var request = protobufRequest(path).DELETE().timeout(DEFAULT_TIMEOUT).build();
+    return sendAsyncBytes(request)
         .thenApply(
             response -> {
               expectStatus(response, expectedStatus, op);
@@ -121,26 +125,21 @@ public final class HttpTransport implements AutoCloseable {
   }
 
   // -------------------------------------------------------------------------
-  // JSON — raw (per-status handling by the caller)
+  // Protobuf — raw (per-status handling by the caller)
 
   /**
-   * Sends {@code POST path} with a JSON {@code body} asynchronously and returns the raw response
-   * status and body without asserting a status. Callers that apply per-status handling (join,
-   * heartbeat, rejoin, commit) use this.
+   * Sends {@code POST path} with a protobuf {@code body} asynchronously and returns the raw
+   * response status and body without asserting a status. Callers that apply per-status handling
+   * (join, heartbeat, rejoin, commit) use this.
    */
-  public CompletableFuture<SyncResponse> postJsonRaw(
-      final String path, final Object body, final String op) {
-    final var request =
-        jsonRequest(path).POST(HttpRequest.BodyPublishers.ofString(writeBody(body, op))).build();
-    return sendAsyncString(request)
-        .thenApply(response -> new SyncResponse(response.statusCode(), response.body()));
+  public CompletableFuture<BinaryResponse> postProtobufRaw(
+      final String path, final Message body, final String op) {
+    return sendProtobuf("POST", path, body)
+        .thenApply(response -> new BinaryResponse(response.statusCode(), response.body()));
   }
 
-  /** A raw HTTP response reduced to its status code and string body. */
-  public record SyncResponse(int statusCode, String body) {}
-
   // -------------------------------------------------------------------------
-  // Binary
+  // Binary — raw batch (publish / fetch)
 
   /**
    * Sends {@code GET path} accepting {@code application/octet-stream} and returns the raw response
@@ -155,50 +154,43 @@ public final class HttpTransport implements AutoCloseable {
             .timeout(DEFAULT_TIMEOUT.plusMillis(maxWaitMs))
             .GET()
             .build();
-    return httpClient
-        .sendAsync(request, HttpResponse.BodyHandlers.ofByteArray())
+    return sendAsyncBytes(request)
         .thenApply(response -> new BinaryResponse(response.statusCode(), response.body()));
   }
 
   /**
-   * Sends {@code POST path} with an {@code application/octet-stream} body and returns the raw
-   * response status and string body (publish-response parsing stays in the caller).
+   * Sends {@code POST path} with an {@code application/octet-stream} body (a pre-encoded batch) and
+   * accepts a protobuf response, returning the raw status and body bytes (publish-response parsing
+   * stays in the caller).
    */
-  public CompletableFuture<SyncResponse> postOctetStream(final String path, final byte[] body) {
+  public CompletableFuture<BinaryResponse> postOctetStream(final String path, final byte[] body) {
     final var request =
         HttpRequest.newBuilder()
             .uri(uri(path))
             .timeout(DEFAULT_TIMEOUT)
             .header("Content-Type", "application/octet-stream")
+            .header("Accept", PROTOBUF)
             .POST(HttpRequest.BodyPublishers.ofByteArray(body))
             .build();
-    return sendAsyncString(request)
-        .thenApply(response -> new SyncResponse(response.statusCode(), response.body()));
+    return sendAsyncBytes(request)
+        .thenApply(response -> new BinaryResponse(response.statusCode(), response.body()));
   }
 
   /** A binary HTTP response reduced to its status code and body bytes. */
   public record BinaryResponse(int statusCode, byte[] body) {}
 
   // -------------------------------------------------------------------------
-  // JSON (de)serialization — shared with callers that parse bodies themselves
+  // protobuf (de)serialization — shared with callers that parse bodies themselves
 
   /**
-   * Parses {@code body} as {@code type}, wrapping any failure in an {@link EventBridgeException}.
+   * Parses {@code body} with {@code parser}, wrapping any failure in an {@link
+   * EventBridgeException}.
    */
-  public <T> T readBody(final String body, final Class<T> type, final String op) {
+  public <T extends Message> T parse(final byte[] body, final Parser<T> parser, final String op) {
     try {
-      return objectMapper.readValue(body, type);
-    } catch (final IOException e) {
+      return parser.parseFrom(body == null ? new byte[0] : body);
+    } catch (final InvalidProtocolBufferException e) {
       throw new EventBridgeException("Failed to parse " + op + " response", e);
-    }
-  }
-
-  /** Serializes {@code value} to JSON, wrapping any failure in an {@link EventBridgeException}. */
-  public String writeBody(final Object value, final String op) {
-    try {
-      return objectMapper.writeValueAsString(value);
-    } catch (final IOException e) {
-      throw new EventBridgeException("Failed to serialize " + op + " request", e);
     }
   }
 
@@ -209,15 +201,25 @@ public final class HttpTransport implements AutoCloseable {
 
   // -------------------------------------------------------------------------
 
-  private CompletableFuture<HttpResponse<String>> sendAsyncString(final HttpRequest request) {
-    return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString());
+  private CompletableFuture<HttpResponse<byte[]>> sendProtobuf(
+      final String method, final String path, final Message body) {
+    final var request =
+        protobufRequest(path)
+            .timeout(DEFAULT_TIMEOUT)
+            .method(method, HttpRequest.BodyPublishers.ofByteArray(body.toByteArray()))
+            .build();
+    return sendAsyncBytes(request);
   }
 
-  private HttpRequest.Builder jsonRequest(final String path) {
+  private CompletableFuture<HttpResponse<byte[]>> sendAsyncBytes(final HttpRequest request) {
+    return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofByteArray());
+  }
+
+  private HttpRequest.Builder protobufRequest(final String path) {
     return HttpRequest.newBuilder()
         .uri(uri(path))
-        .timeout(DEFAULT_TIMEOUT)
-        .header("Content-Type", "application/json");
+        .header("Content-Type", PROTOBUF)
+        .header("Accept", PROTOBUF);
   }
 
   private URI uri(final String path) {
@@ -225,10 +227,9 @@ public final class HttpTransport implements AutoCloseable {
   }
 
   private void expectStatus(
-      final HttpResponse<String> response, final int expected, final String op) {
+      final HttpResponse<byte[]> response, final int expected, final String op) {
     if (response.statusCode() != expected) {
-      throw new EventBridgeException(
-          op + " failed: HTTP " + response.statusCode() + " — " + response.body());
+      throw new EventBridgeException(op + " failed: HTTP " + response.statusCode());
     }
   }
 }

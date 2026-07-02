@@ -21,6 +21,7 @@
   <name>Event Bridge Parent</name>
 
   <modules>
+    <module>event-bridge-api-proto</module>
     <module>event-bridge-core</module>
     <module>event-bridge-batch-codec</module>
     <module>event-bridge-protocol</module>

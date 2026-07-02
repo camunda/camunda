@@ -16,11 +16,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.protobuf.Parser;
+import io.camunda.eventbridge.api.proto.JoinResponse;
 import io.camunda.eventbridge.client.ConsumerNotRegisteredException;
 import io.camunda.eventbridge.client.OffsetResetPolicy;
-import io.camunda.eventbridge.client.internal.consumer.CoordinationMessages.JoinResponse;
 import io.camunda.eventbridge.client.internal.transport.HttpTransport;
-import io.camunda.eventbridge.client.internal.transport.HttpTransport.SyncResponse;
+import io.camunda.eventbridge.client.internal.transport.HttpTransport.BinaryResponse;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -65,11 +66,13 @@ final class GroupCoordinatorCommitTest {
             1 << 20,
             0,
             5_000L);
-    // readBody delegates to a real ObjectMapper for the rejoin JoinResponse.
-    final var realTransport = new HttpTransport("http://localhost");
-    when(transport.readBody(any(), eq(JoinResponse.class), any()))
+    // parse delegates to the real protobuf parser for the rejoin JoinResponse.
+    when(transport.parse(any(), any(), any()))
         .thenAnswer(
-            inv -> realTransport.readBody(inv.getArgument(0), JoinResponse.class, "rejoin"));
+            inv -> {
+              final Parser<?> parser = inv.getArgument(1);
+              return parser.parseFrom((byte[]) inv.getArgument(0));
+            });
     coordinator =
         new GroupCoordinator(
             transport,
@@ -86,10 +89,9 @@ final class GroupCoordinatorCommitTest {
 
     // Establish an initial memberId via a one-off join so commit request paths can URL-encode it,
     // then clear invocations so each test asserts only its own commit/rejoin traffic.
-    when(transport.postJsonRaw(contains("/join"), any(), eq("rejoin")))
+    when(transport.postProtobufRaw(contains("/join"), any(), eq("rejoin")))
         .thenReturn(
-            CompletableFuture.completedFuture(
-                new SyncResponse(200, "{\"memberId\":\"c1\",\"memberEpoch\":1}")));
+            CompletableFuture.completedFuture(new BinaryResponse(200, joinResponse("c1", 1))));
     coordinator.rejoin().join();
     Mockito.clearInvocations(transport);
   }
@@ -102,20 +104,19 @@ final class GroupCoordinatorCommitTest {
   @Test
   void shouldRetryCommitOnceAfterRejoinWhenNotRegistered() {
     // given: first commit is rejected with 409, rejoin succeeds, retried commit succeeds (204)
-    when(transport.postJsonRaw(contains("/commit"), any(), eq("commitOffset")))
-        .thenReturn(CompletableFuture.completedFuture(new SyncResponse(409, "")))
-        .thenReturn(CompletableFuture.completedFuture(new SyncResponse(204, "")));
-    when(transport.postJsonRaw(contains("/join"), any(), eq("rejoin")))
+    when(transport.postProtobufRaw(contains("/commit"), any(), eq("commitOffset")))
+        .thenReturn(CompletableFuture.completedFuture(new BinaryResponse(409, new byte[0])))
+        .thenReturn(CompletableFuture.completedFuture(new BinaryResponse(204, new byte[0])));
+    when(transport.postProtobufRaw(contains("/join"), any(), eq("rejoin")))
         .thenReturn(
-            CompletableFuture.completedFuture(
-                new SyncResponse(200, "{\"memberId\":\"c1-2\",\"memberEpoch\":5}")));
+            CompletableFuture.completedFuture(new BinaryResponse(200, joinResponse("c1-2", 5))));
 
     // when
     coordinator.commitOffset("t1", 1, 42L).join();
 
     // then: exactly one rejoin and exactly two commit attempts
-    verify(transport, times(1)).postJsonRaw(contains("/join"), any(), eq("rejoin"));
-    verify(transport, times(2)).postJsonRaw(contains("/commit"), any(), eq("commitOffset"));
+    verify(transport, times(1)).postProtobufRaw(contains("/join"), any(), eq("rejoin"));
+    verify(transport, times(2)).postProtobufRaw(contains("/commit"), any(), eq("commitOffset"));
     assertThat(coordinator.memberId()).isEqualTo("c1-2");
     assertThat(coordinator.memberEpoch()).isEqualTo(5L);
   }
@@ -123,19 +124,26 @@ final class GroupCoordinatorCommitTest {
   @Test
   void shouldPropagateWhenRetriedCommitAlsoNotRegistered() {
     // given: both commit attempts are rejected, rejoin succeeds
-    when(transport.postJsonRaw(contains("/commit"), any(), eq("commitOffset")))
-        .thenReturn(CompletableFuture.completedFuture(new SyncResponse(404, "")))
-        .thenReturn(CompletableFuture.completedFuture(new SyncResponse(404, "")));
-    when(transport.postJsonRaw(contains("/join"), any(), eq("rejoin")))
+    when(transport.postProtobufRaw(contains("/commit"), any(), eq("commitOffset")))
+        .thenReturn(CompletableFuture.completedFuture(new BinaryResponse(404, new byte[0])))
+        .thenReturn(CompletableFuture.completedFuture(new BinaryResponse(404, new byte[0])));
+    when(transport.postProtobufRaw(contains("/join"), any(), eq("rejoin")))
         .thenReturn(
-            CompletableFuture.completedFuture(
-                new SyncResponse(200, "{\"memberId\":\"c1-2\",\"memberEpoch\":5}")));
+            CompletableFuture.completedFuture(new BinaryResponse(200, joinResponse("c1-2", 5))));
 
     // when / then: the second rejection propagates and there is no second rejoin
     assertThatThrownBy(() -> coordinator.commitOffset("t1", 1, 42L).join())
         .isInstanceOf(CompletionException.class)
         .hasCauseInstanceOf(ConsumerNotRegisteredException.class);
-    verify(transport, times(1)).postJsonRaw(contains("/join"), any(), eq("rejoin"));
-    verify(transport, times(2)).postJsonRaw(contains("/commit"), any(), eq("commitOffset"));
+    verify(transport, times(1)).postProtobufRaw(contains("/join"), any(), eq("rejoin"));
+    verify(transport, times(2)).postProtobufRaw(contains("/commit"), any(), eq("commitOffset"));
+  }
+
+  private static byte[] joinResponse(final String memberId, final long epoch) {
+    return JoinResponse.newBuilder()
+        .setMemberId(memberId)
+        .setMemberEpoch(epoch)
+        .build()
+        .toByteArray();
   }
 }

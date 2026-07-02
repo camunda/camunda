@@ -26,14 +26,15 @@
       <artifactId>event-bridge-batch-codec</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <!-- Jackson for JSON HTTP communication -->
+    <!-- Generated protobuf coordination/admin messages exchanged with the gateway -->
     <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>event-bridge-api-proto</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-core</artifactId>
+      <groupId>com.google.protobuf</groupId>
+      <artifactId>protobuf-java</artifactId>
     </dependency>
 
     <!-- Logging -->

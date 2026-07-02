@@ -7,16 +7,16 @@
  */
 package io.camunda.eventbridge.gateway.controller;
 
+import io.camunda.eventbridge.api.proto.PartitionTopology;
+import io.camunda.eventbridge.api.proto.TopicTopology;
+import io.camunda.eventbridge.api.proto.TopologyResponse;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
-import io.camunda.eventbridge.gateway.dto.PartitionTopology;
-import io.camunda.eventbridge.gateway.dto.TopicTopology;
-import io.camunda.eventbridge.gateway.dto.TopologyResponse;
 import io.camunda.eventbridge.protocol.request.coordination.ListTopicsResponse;
 import io.camunda.eventbridge.service.CoordinatorService;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,10 +27,16 @@ import org.springframework.web.bind.annotation.RestController;
  * each topic, how its partitions are placed across them. The placement is the coordinator's
  * registry assignment (the desired state), so it reflects what each broker is told to host. Useful
  * for understanding a running multi-broker cluster.
+ *
+ * <p>The response is a generated protobuf message, content-negotiated between {@code
+ * application/json} (humans/Postman) and {@code application/x-protobuf}.
  */
 @RestController
 @RequestMapping("/v1/topology")
 public class TopologyController {
+
+  private static final String JSON = MediaType.APPLICATION_JSON_VALUE;
+  private static final String PROTOBUF = "application/x-protobuf";
 
   private final CoordinatorService coordinatorService;
   private final int clusterSize;
@@ -41,7 +47,7 @@ public class TopologyController {
     clusterSize = Math.max(1, properties.cluster().clusterSize());
   }
 
-  @GetMapping
+  @GetMapping(produces = {JSON, PROTOBUF})
   public CompletableFuture<ResponseEntity<Object>> topology() {
     final var brokers = IntStream.range(0, clusterSize).boxed().toList();
     return coordinatorService
@@ -51,22 +57,39 @@ public class TopologyController {
               if (error != null) {
                 return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
               }
-              return ResponseEntity.ok((Object) new TopologyResponse(brokers, toTopologies(res)));
+              final var response =
+                  TopologyResponse.newBuilder()
+                      .addAllBrokers(brokers)
+                      .addAllTopics(toTopologies(res));
+              return ResponseEntity.ok((Object) response.build());
             });
   }
 
-  private static List<TopicTopology> toTopologies(final ListTopicsResponse response) {
+  private static Iterable<TopicTopology> toTopologies(final ListTopicsResponse response) {
     return response.getTopics().stream()
         .map(
-            topic ->
-                new TopicTopology(
-                    topic.name(),
-                    topic.partitionCount(),
-                    topic.replicationFactor(),
-                    topic.status(),
-                    topic.assignment().entrySet().stream()
-                        .map(e -> new PartitionTopology(e.getKey(), e.getValue()))
-                        .toList()))
+            topic -> {
+              final var builder =
+                  TopicTopology.newBuilder()
+                      .setName(nullToEmpty(topic.name()))
+                      .setPartitionCount(topic.partitionCount())
+                      .setReplicationFactor(topic.replicationFactor())
+                      .setStatus(nullToEmpty(topic.status()));
+              topic
+                  .assignment()
+                  .forEach(
+                      (partitionId, replicas) ->
+                          builder.addPartitions(
+                              PartitionTopology.newBuilder()
+                                  .setPartitionId(partitionId)
+                                  .addAllReplicas(replicas)
+                                  .build()));
+              return builder.build();
+            })
         .toList();
+  }
+
+  private static String nullToEmpty(final String value) {
+    return value == null ? "" : value;
   }
 }

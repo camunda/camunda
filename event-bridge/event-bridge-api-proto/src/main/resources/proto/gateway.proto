@@ -1,0 +1,173 @@
+// Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+// one or more contributor license agreements. See the NOTICE file distributed
+// with this work for additional information regarding copyright ownership.
+// Licensed under the Camunda License 1.0. You may not use this file
+// except in compliance with the Camunda License 1.0.
+
+syntax = "proto3";
+
+package io.camunda.eventbridge.api.proto;
+
+option java_package = "io.camunda.eventbridge.api.proto";
+option java_multiple_files = true;
+
+// A list of partition ids. protobuf maps cannot have repeated values directly,
+// so this wraps a partition list for use as a map value.
+message IntList {
+  repeated int32 values = 1;
+}
+
+// A partition-id -> committed-offset map. protobuf maps cannot have message
+// values keyed by int with list semantics, so this wraps a per-topic offset map.
+message OffsetMap {
+  map<int32, int64> offsets = 1;
+}
+
+// ---------------------------------------------------------------------------
+// Consumer group coordination
+
+// Body of POST /v1/groups/{group}/join.
+message JoinRequest {
+  repeated string topics = 1;
+  string instance_id = 2;
+}
+
+// Response to a join/rejoin request carrying the assigned member id and epoch.
+message JoinResponse {
+  string error_code = 1;
+  string member_id = 2;
+  int64 member_epoch = 3;
+}
+
+// Body of POST /v1/groups/{group}/consumers/{member}/heartbeat.
+message ConsumerHeartbeatRequest {
+  int64 epoch = 1;
+  map<string, IntList> owned_partitions = 2;
+}
+
+// Response to a heartbeat carrying either a delta (revoke/assign) or a full
+// reconciliation (assignment), plus any committed offsets to seed.
+message ConsumerHeartbeatResponse {
+  string error_code = 1;
+  string member_id = 2;
+  int64 member_epoch = 3;
+  map<string, IntList> revoke = 4;
+  map<string, IntList> assign = 5;
+  int64 assignment_epoch = 6;
+  map<string, IntList> assignment = 7;
+  map<string, OffsetMap> committed_offsets = 8;
+}
+
+// Body of POST /v1/groups/{group}/consumers/{member}/commit.
+message CommitRequest {
+  string topic = 1;
+  int32 partition_id = 2;
+  int64 position = 3;
+  int64 member_epoch = 4;
+}
+
+// Response to a commit request.
+message CommitResponse {
+  string error_code = 1;
+  int64 committed_position = 2;
+}
+
+// Body of POST /v1/groups/{group}/consumers/{member}/leave.
+message LeaveRequest {
+  string member_id = 1;
+  int64 member_epoch = 2;
+}
+
+// Response to a leave request.
+message LeaveResponse {
+  string error_code = 1;
+}
+
+// Response to GET /v1/groups/{group}/offsets — committed offsets grouped
+// topic -> (partition -> offset).
+message OffsetFetchResult {
+  string error_code = 1;
+  map<string, OffsetMap> committed_offsets = 2;
+}
+
+// ---------------------------------------------------------------------------
+// Topic administration
+
+// Body of POST /v1/topics.
+message TopicCreateRequest {
+  string name = 1;
+  int32 partition_count = 2;
+  int32 replication_factor = 3;
+}
+
+// A topic as held in the registry.
+message TopicInfo {
+  string name = 1;
+  int32 partition_count = 2;
+  int32 replication_factor = 3;
+  string status = 4;
+}
+
+// Response to GET /v1/topics.
+message TopicListResponse {
+  repeated TopicInfo topics = 1;
+}
+
+// ---------------------------------------------------------------------------
+// Cluster topology (GET /v1/topology)
+
+// A single topic partition and the broker node ids that replicate it.
+message PartitionTopology {
+  int32 partition_id = 1;
+  repeated int32 replicas = 2;
+}
+
+// A topic and how its partitions are placed across brokers.
+message TopicTopology {
+  string name = 1;
+  int32 partition_count = 2;
+  int32 replication_factor = 3;
+  string status = 4;
+  repeated PartitionTopology partitions = 5;
+}
+
+// Cluster topology: which brokers exist, and per topic how partitions are placed.
+message TopologyResponse {
+  repeated int32 brokers = 1;
+  repeated TopicTopology topics = 2;
+}
+
+// ---------------------------------------------------------------------------
+// Publish / fetch JSON+binary representations
+
+// A single publish entry (key may be empty).
+message Entry {
+  bytes key = 1;
+  bytes value = 2;
+}
+
+// Body of POST /v1/topics/{topic}/partitions/{partition} (negotiated path).
+message PublishRequest {
+  repeated Entry entries = 1;
+}
+
+// Response to a publish request: the log positions assigned by the broker.
+message PublishResponse {
+  repeated int64 log_positions = 1;
+}
+
+// A single fetched entry with its log position.
+message FetchEntry {
+  int64 position = 1;
+  bytes key = 2;
+  bytes value = 3;
+}
+
+// Response to a negotiated fetch (JSON / protobuf) — the octet-stream fetch
+// path keeps its raw batch layout.
+message FetchResponseJson {
+  int64 first_batch_position = 1;
+  int64 last_batch_position = 2;
+  int64 high_watermark = 3;
+  repeated FetchEntry entries = 4;
+}

@@ -7,15 +7,16 @@
  */
 package io.camunda.eventbridge.gateway.controller;
 
-import io.camunda.eventbridge.gateway.dto.CreateTopicRequest;
-import io.camunda.eventbridge.gateway.dto.TopicDto;
+import io.camunda.eventbridge.api.proto.TopicCreateRequest;
+import io.camunda.eventbridge.api.proto.TopicInfo;
+import io.camunda.eventbridge.api.proto.TopicListResponse;
+import io.camunda.eventbridge.protocol.request.coordination.CreateTopicRequest;
 import io.camunda.eventbridge.protocol.request.coordination.DeleteTopicRequest;
-import io.camunda.eventbridge.protocol.request.coordination.ListTopicsResponse;
 import io.camunda.eventbridge.protocol.request.coordination.ReassignTopicRequest;
 import io.camunda.eventbridge.service.CoordinatorService;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,9 +29,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Topic management: {@code POST /v1/topics}, {@code DELETE /v1/topics/{name}}, {@code GET
- * /v1/topics}. Routes to the coordinator shard that owns the global topic registry. Registers the
- * desired state only — provisioning the topic's Raft group happens asynchronously (later
- * increment), so a freshly created topic is reported {@code CREATING} until then.
+ * /v1/topics}. Requests and the list response are generated protobuf messages, content-negotiated
+ * between {@code application/json} (humans/Postman) and {@code application/x-protobuf} (the client
+ * SDK). Routes to the coordinator shard that owns the global topic registry. Registers the desired
+ * state only — provisioning the topic's Raft group happens asynchronously (later increment), so a
+ * freshly created topic is reported {@code CREATING} until then.
  *
  * <p>A {@code 503} means the coordinator was temporarily unreachable.
  */
@@ -38,20 +41,23 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/v1/topics")
 public class TopicController {
 
+  private static final String JSON = MediaType.APPLICATION_JSON_VALUE;
+  private static final String PROTOBUF = "application/x-protobuf";
+
   private final CoordinatorService coordinatorService;
 
   public TopicController(final CoordinatorService coordinatorService) {
     this.coordinatorService = coordinatorService;
   }
 
-  @PostMapping
+  @PostMapping(consumes = {JSON, PROTOBUF})
   public CompletableFuture<ResponseEntity<Object>> createTopic(
-      @RequestBody final CreateTopicRequest body) {
+      @RequestBody final TopicCreateRequest body) {
     final var request =
-        new io.camunda.eventbridge.protocol.request.coordination.CreateTopicRequest()
-            .setName(body.name() == null ? "" : body.name())
-            .setPartitionCount(body.partitionCount() == null ? 0 : body.partitionCount())
-            .setReplicationFactor(body.replicationFactor() == null ? 0 : body.replicationFactor());
+        new CreateTopicRequest()
+            .setName(body.getName())
+            .setPartitionCount(body.getPartitionCount())
+            .setReplicationFactor(body.getReplicationFactor());
     return coordinatorService
         .createTopic(request)
         .handleAsync(
@@ -93,7 +99,7 @@ public class TopicController {
             });
   }
 
-  @GetMapping
+  @GetMapping(produces = {JSON, PROTOBUF})
   public CompletableFuture<ResponseEntity<Object>> listTopics() {
     return coordinatorService
         .listTopics()
@@ -102,20 +108,23 @@ public class TopicController {
               if (error != null) {
                 return coordinatorUnavailable();
               }
-              return ResponseEntity.ok((Object) toDtos(res));
+              final var builder = TopicListResponse.newBuilder();
+              res.getTopics()
+                  .forEach(
+                      topic ->
+                          builder.addTopics(
+                              TopicInfo.newBuilder()
+                                  .setName(nullToEmpty(topic.name()))
+                                  .setPartitionCount(topic.partitionCount())
+                                  .setReplicationFactor(topic.replicationFactor())
+                                  .setStatus(nullToEmpty(topic.status()))
+                                  .build()));
+              return ResponseEntity.ok((Object) builder.build());
             });
   }
 
-  private static List<TopicDto> toDtos(final ListTopicsResponse response) {
-    return response.getTopics().stream()
-        .map(
-            topic ->
-                new TopicDto(
-                    topic.name(),
-                    topic.partitionCount(),
-                    topic.replicationFactor(),
-                    topic.status()))
-        .toList();
+  private static String nullToEmpty(final String value) {
+    return value == null ? "" : value;
   }
 
   private static ResponseEntity<Object> coordinatorUnavailable() {

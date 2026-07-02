@@ -7,19 +7,32 @@
  */
 package io.camunda.eventbridge.gateway.controller;
 
-import io.camunda.eventbridge.gateway.dto.CommitRequest;
-import io.camunda.eventbridge.gateway.dto.HeartbeatRequest;
-import io.camunda.eventbridge.gateway.dto.JoinGroupRequest;
-import io.camunda.eventbridge.gateway.dto.LeaveGroupRequest;
-import io.camunda.eventbridge.mapper.RequestMapper;
-import io.camunda.eventbridge.mapper.ResponseMapper;
+import io.camunda.eventbridge.api.proto.CommitRequest;
+import io.camunda.eventbridge.api.proto.CommitResponse;
+import io.camunda.eventbridge.api.proto.ConsumerHeartbeatRequest;
+import io.camunda.eventbridge.api.proto.ConsumerHeartbeatResponse;
+import io.camunda.eventbridge.api.proto.IntList;
+import io.camunda.eventbridge.api.proto.JoinRequest;
+import io.camunda.eventbridge.api.proto.JoinResponse;
+import io.camunda.eventbridge.api.proto.LeaveRequest;
+import io.camunda.eventbridge.api.proto.LeaveResponse;
+import io.camunda.eventbridge.api.proto.OffsetFetchResult;
+import io.camunda.eventbridge.api.proto.OffsetMap;
+import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetRequest;
 import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
+import io.camunda.eventbridge.protocol.request.coordination.HeartbeatRequest;
+import io.camunda.eventbridge.protocol.request.coordination.JoinGroupRequest;
+import io.camunda.eventbridge.protocol.request.coordination.LeaveGroupRequest;
 import io.camunda.eventbridge.protocol.request.coordination.OffsetFetchRequest;
 import io.camunda.eventbridge.protocol.topic.TopicPartition;
 import io.camunda.eventbridge.service.CoordinatorService;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,12 +43,16 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Handles consumer liveness signals: {@code POST /v1/consumers/{groupId}/{consumerId}/heartbeat}.
+ * Consumer-group coordination: join, heartbeat, leave, and offset commit. Every request and
+ * response uses a generated protobuf message and is content-negotiated: the same endpoint speaks
+ * both {@code application/json} (humans/Postman, via {@code JsonFormat}) and {@code
+ * application/x-protobuf} (the client SDK, binary). Spring picks the representation from the
+ * request's {@code Accept}/{@code Content-Type} headers.
  *
  * <p>The first heartbeat from an unknown consumer auto-registers it with the coordinator — no prior
  * subscribe call is needed. The response carries the current epoch plus delta assignments ({@code
  * revoke}/{@code assign}) or, when an epoch advance has occurred, a full assignment list ({@code
- * fullAssignment}) that the consumer must reconcile against.
+ * assignment}) that the consumer must reconcile against.
  *
  * <p>A {@code 503 Service Unavailable} response means the coordinator is temporarily unreachable.
  */
@@ -43,24 +60,27 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/v1/groups")
 public class CoordinationController {
 
-  private final CoordinatorService coordinatorService;
-  private final RequestMapper requestMapper;
-  private final ResponseMapper responseMapper;
+  private static final String JSON = MediaType.APPLICATION_JSON_VALUE;
+  private static final String PROTOBUF = "application/x-protobuf";
 
-  public CoordinationController(
-      final CoordinatorService coordinatorService,
-      final RequestMapper requestMapper,
-      final ResponseMapper responseMapper) {
+  private final CoordinatorService coordinatorService;
+
+  public CoordinationController(final CoordinatorService coordinatorService) {
     this.coordinatorService = coordinatorService;
-    this.requestMapper = requestMapper;
-    this.responseMapper = responseMapper;
   }
 
-  @PostMapping("/{groupId}/join")
+  @PostMapping(
+      value = "/{groupId}/join",
+      consumes = {JSON, PROTOBUF},
+      produces = {JSON, PROTOBUF})
   public CompletableFuture<ResponseEntity<Object>> joinGroup(
-      @PathVariable final String groupId, @RequestBody final JoinGroupRequest joinGroupRequest) {
+      @PathVariable final String groupId, @RequestBody final JoinRequest joinRequest) {
 
-    final var request = requestMapper.toJoinGroupRequest(groupId, joinGroupRequest);
+    final var request =
+        new JoinGroupRequest()
+            .setGroupId(groupId)
+            .setTopics(new ArrayList<>(joinRequest.getTopicsList()))
+            .setInstanceId(joinRequest.getInstanceId());
     return coordinatorService
         .joinGroup(request)
         .handleAsync(
@@ -68,17 +88,37 @@ public class CoordinationController {
               if (error != null) {
                 return CoordinatorErrors.toResponse(error);
               }
-              return ResponseEntity.ok((Object) responseMapper.toJoinGroupResponse(res));
+              final var body =
+                  JoinResponse.newBuilder()
+                      .setErrorCode(nullToEmpty(res.getErrorCode().getId()))
+                      .setMemberId(nullToEmpty(res.getMemberId()))
+                      .setMemberEpoch(res.getMemberEpoch())
+                      .build();
+              return ResponseEntity.ok((Object) body);
             });
   }
 
-  @PostMapping("/{groupId}/consumers/{memberId}/heartbeat")
+  @PostMapping(
+      value = "/{groupId}/consumers/{memberId}/heartbeat",
+      consumes = {JSON, PROTOBUF},
+      produces = {JSON, PROTOBUF})
   public CompletableFuture<ResponseEntity<Object>> heartbeat(
       @PathVariable final String groupId,
       @PathVariable final String memberId,
-      @RequestBody final HeartbeatRequest heartbeatRequest) {
+      @RequestBody final ConsumerHeartbeatRequest heartbeatRequest) {
 
-    final var request = requestMapper.toHeartbeatRequest(groupId, memberId, heartbeatRequest);
+    final List<TopicPartition> owned = new ArrayList<>();
+    heartbeatRequest
+        .getOwnedPartitionsMap()
+        .forEach(
+            (topic, partitions) ->
+                partitions.getValuesList().forEach(p -> owned.add(new TopicPartition(topic, p))));
+    final var request =
+        new HeartbeatRequest()
+            .setGroupId(groupId)
+            .setMemberId(memberId)
+            .setMemberEpoch(heartbeatRequest.getEpoch())
+            .setOwnedPartitions(owned);
     return coordinatorService
         .heartbeat(request)
         .handleAsync(
@@ -89,18 +129,35 @@ public class CoordinationController {
               // Surface the coordinator's error code as an HTTP status so the client can act on it
               // (e.g. rejoin on a fenced/unknown member) rather than silently treating every
               // heartbeat as a success.
-              return ResponseEntity.status(statusFor(res.getErrorCode()))
-                  .body(responseMapper.toHeartbeatResponse(res));
+              final var body =
+                  ConsumerHeartbeatResponse.newBuilder()
+                      .setErrorCode(nullToEmpty(res.getErrorCode().getId()))
+                      .setMemberId(nullToEmpty(res.getMemberId()))
+                      .setMemberEpoch(res.getMemberEpoch())
+                      .putAllRevoke(groupByTopic(res.getRevoke()))
+                      .putAllAssign(groupByTopic(res.getAssign()))
+                      .setAssignmentEpoch(res.getAssignmentEpoch())
+                      .putAllAssignment(groupByTopic(res.getAssignment()))
+                      .putAllCommittedOffsets(groupOffsetsByTopic(res.getCommittedOffsets()))
+                      .build();
+              return ResponseEntity.status(statusFor(res.getErrorCode())).body((Object) body);
             });
   }
 
-  @PostMapping("/{groupId}/consumers/{memberId}/leave")
+  @PostMapping(
+      value = "/{groupId}/consumers/{memberId}/leave",
+      consumes = {JSON, PROTOBUF},
+      produces = {JSON, PROTOBUF})
   public CompletableFuture<ResponseEntity<Object>> leaveGroup(
       @PathVariable final String groupId,
       @PathVariable final String memberId,
-      @RequestBody final LeaveGroupRequest leaveGroupRequest) {
+      @RequestBody final LeaveRequest leaveRequest) {
 
-    final var request = requestMapper.toLeaveGroupRequest(groupId, memberId, leaveGroupRequest);
+    final var request =
+        new LeaveGroupRequest()
+            .setGroupId(groupId)
+            .setMemberId(memberId)
+            .setMemberEpoch(leaveRequest.getMemberEpoch());
     return coordinatorService
         .leaveGroup(request)
         .handleAsync(
@@ -108,17 +165,31 @@ public class CoordinationController {
               if (error != null) {
                 return CoordinatorErrors.toResponse(error);
               }
-              return ResponseEntity.ok((Object) responseMapper.toLeaveGroupResponse(res));
+              final var body =
+                  LeaveResponse.newBuilder()
+                      .setErrorCode(nullToEmpty(res.getErrorCode().getId()))
+                      .build();
+              return ResponseEntity.ok((Object) body);
             });
   }
 
-  @PostMapping("/{groupId}/consumers/{memberId}/commit")
+  @PostMapping(
+      value = "/{groupId}/consumers/{memberId}/commit",
+      consumes = {JSON, PROTOBUF},
+      produces = {JSON, PROTOBUF})
   public CompletableFuture<ResponseEntity<Object>> commit(
       @PathVariable final String groupId,
       @PathVariable final String memberId,
       @RequestBody final CommitRequest commitRequest) {
 
-    final var request = requestMapper.toCommitRequest(groupId, memberId, commitRequest);
+    final var request =
+        new CommitOffsetRequest()
+            .setGroupId(groupId)
+            .setTopic(commitRequest.getTopic())
+            .setMemberId(memberId)
+            .setMemberEpoch(commitRequest.getMemberEpoch())
+            .setPartitionId(commitRequest.getPartitionId())
+            .setPosition(commitRequest.getPosition());
     return coordinatorService
         .commit(request)
         .handleAsync(
@@ -130,7 +201,12 @@ public class CoordinationController {
               if (error != null) {
                 return CoordinatorErrors.toResponse(error);
               }
-              return ResponseEntity.ok((Object) responseMapper.toCommitResponse(res));
+              final var body =
+                  CommitResponse.newBuilder()
+                      .setErrorCode(nullToEmpty(res.getErrorCode().getId()))
+                      .setCommittedPosition(res.getCommittedPosition())
+                      .build();
+              return ResponseEntity.ok((Object) body);
             });
   }
 
@@ -160,7 +236,9 @@ public class CoordinationController {
             });
   }
 
-  @GetMapping("/{groupId}/offsets")
+  @GetMapping(
+      value = "/{groupId}/offsets",
+      produces = {JSON, PROTOBUF})
   public CompletableFuture<ResponseEntity<Object>> offsets(
       @PathVariable final String groupId,
       @RequestParam(name = "partition", required = false) final List<String> partitions) {
@@ -175,9 +253,46 @@ public class CoordinationController {
               if (error != null) {
                 return coordinatorUnavailable();
               }
-              return ResponseEntity.status(statusFor(res.getErrorCode()))
-                  .body((Object) responseMapper.toOffsetFetchResponse(res));
+              final var body =
+                  OffsetFetchResult.newBuilder()
+                      .setErrorCode(nullToEmpty(res.getErrorCode().getId()))
+                      .putAllCommittedOffsets(groupOffsetsByTopic(res.getCommittedOffsets()))
+                      .build();
+              return ResponseEntity.status(statusFor(res.getErrorCode())).body((Object) body);
             });
+  }
+
+  /** Groups a flat partition list into {@code topic → IntList} (partitions sorted). */
+  private static Map<String, IntList> groupByTopic(final List<TopicPartition> partitions) {
+    final Map<String, List<Integer>> byTopic = new TreeMap<>();
+    partitions.forEach(
+        p -> byTopic.computeIfAbsent(p.topic(), ignored -> new ArrayList<>()).add(p.partition()));
+    final Map<String, IntList> result = new TreeMap<>();
+    byTopic.forEach(
+        (topic, ps) -> {
+          ps.sort(Integer::compareTo);
+          result.put(topic, IntList.newBuilder().addAllValues(ps).build());
+        });
+    return result;
+  }
+
+  /** Groups committed offsets into {@code topic → OffsetMap} (partitions sorted). */
+  private static Map<String, OffsetMap> groupOffsetsByTopic(
+      final Map<TopicPartition, Long> offsets) {
+    final Map<String, Map<Integer, Long>> byTopic = new TreeMap<>();
+    offsets.forEach(
+        (tp, offset) ->
+            byTopic
+                .computeIfAbsent(tp.topic(), ignored -> new TreeMap<>())
+                .put(tp.partition(), offset));
+    final Map<String, OffsetMap> result = new TreeMap<>();
+    byTopic.forEach(
+        (topic, m) -> result.put(topic, OffsetMap.newBuilder().putAllOffsets(m).build()));
+    return result;
+  }
+
+  private static String nullToEmpty(final String value) {
+    return value == null ? "" : value;
   }
 
   /**

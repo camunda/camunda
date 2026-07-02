@@ -7,11 +7,12 @@
  */
 package io.camunda.eventbridge.client.internal.producer;
 
+import io.camunda.eventbridge.api.proto.PublishResponse;
 import io.camunda.eventbridge.batch.BatchBuilder;
 import io.camunda.eventbridge.client.EventBridgeClient.BatchPublisher;
 import io.camunda.eventbridge.client.EventBridgeException;
 import io.camunda.eventbridge.client.internal.transport.HttpTransport;
-import io.camunda.eventbridge.client.internal.transport.HttpTransport.SyncResponse;
+import io.camunda.eventbridge.client.internal.transport.HttpTransport.BinaryResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -19,7 +20,8 @@ import java.util.concurrent.CompletableFuture;
 /**
  * Default {@link BatchPublisher} implementation: accumulates entries into a {@link BatchBuilder}
  * and publishes them as a single {@code application/octet-stream} POST via the shared {@link
- * HttpTransport}. The publish-response body is parsed here (the transport only carries bytes).
+ * HttpTransport}. The batch payload stays in the raw codec; the publish response is a protobuf
+ * {@link PublishResponse} parsed here (the transport only carries bytes).
  */
 public final class BatchPublisherImpl implements BatchPublisher {
 
@@ -66,14 +68,12 @@ public final class BatchPublisherImpl implements BatchPublisher {
         .thenApply(this::parsePublishResponse);
   }
 
-  private List<Long> parsePublishResponse(final SyncResponse response) {
+  private List<Long> parsePublishResponse(final BinaryResponse response) {
     if (response.statusCode() != 200) {
-      throw new EventBridgeException(
-          "publish failed: HTTP " + response.statusCode() + " — " + response.body());
+      throw new EventBridgeException("publish failed: HTTP " + response.statusCode());
     }
-    return transport.readBody(response.body(), PublishResponse.class, "publish").logPositions();
+    return transport
+        .parse(response.body(), PublishResponse.parser(), "publish")
+        .getLogPositionsList();
   }
-
-  /** Body of a publish response ({@code logPositions} assigned by the broker). */
-  private record PublishResponse(List<Long> logPositions) {}
 }

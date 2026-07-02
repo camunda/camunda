@@ -7,19 +7,20 @@
  */
 package io.camunda.eventbridge.client.internal.consumer;
 
+import io.camunda.eventbridge.api.proto.CommitRequest;
+import io.camunda.eventbridge.api.proto.ConsumerHeartbeatRequest;
+import io.camunda.eventbridge.api.proto.ConsumerHeartbeatResponse;
+import io.camunda.eventbridge.api.proto.IntList;
+import io.camunda.eventbridge.api.proto.JoinRequest;
+import io.camunda.eventbridge.api.proto.JoinResponse;
+import io.camunda.eventbridge.api.proto.LeaveRequest;
+import io.camunda.eventbridge.api.proto.OffsetMap;
 import io.camunda.eventbridge.client.ConsumerNotRegisteredException;
 import io.camunda.eventbridge.client.CoordinatorUnavailableException;
 import io.camunda.eventbridge.client.EventBridgeException;
 import io.camunda.eventbridge.client.TopicPartition;
-import io.camunda.eventbridge.client.internal.consumer.CoordinationMessages.CommitRequest;
-import io.camunda.eventbridge.client.internal.consumer.CoordinationMessages.HeartbeatRequest;
-import io.camunda.eventbridge.client.internal.consumer.CoordinationMessages.HeartbeatResponse;
-import io.camunda.eventbridge.client.internal.consumer.CoordinationMessages.JoinRequest;
-import io.camunda.eventbridge.client.internal.consumer.CoordinationMessages.JoinResponse;
-import io.camunda.eventbridge.client.internal.consumer.CoordinationMessages.LeaveRequest;
-import io.camunda.eventbridge.client.internal.consumer.CoordinationMessages.LeaveResponse;
 import io.camunda.eventbridge.client.internal.transport.HttpTransport;
-import io.camunda.eventbridge.client.internal.transport.HttpTransport.SyncResponse;
+import io.camunda.eventbridge.client.internal.transport.HttpTransport.BinaryResponse;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -43,9 +44,10 @@ import org.slf4j.LoggerFactory;
  * into the {@link SubscriptionState} (under the {@link PrefetchBuffer} lock) and kicks the {@link
  * Prefetcher}.
  *
- * <p>All HTTP is routed through the single {@link HttpTransport} and is non-blocking: join, the
- * heartbeat loop, rejoin, and commit issue async requests and chain their completion. The scheduler
- * is used only for heartbeat cadence and backoff, never to park a thread on a request.
+ * <p>All coordination messages travel as binary protobuf through the single {@link HttpTransport}
+ * and are non-blocking: join, the heartbeat loop, rejoin, and commit issue async requests and chain
+ * their completion. The scheduler is used only for heartbeat cadence and backoff, never to park a
+ * thread on a request.
  */
 public final class GroupCoordinator {
 
@@ -120,7 +122,7 @@ public final class GroupCoordinator {
   public CompletableFuture<Void> joinGroup() {
     final var future = new CompletableFuture<Void>();
     transport
-        .postJsonRaw(joinPath(), new JoinRequest(topics, instanceId), "join")
+        .postProtobufRaw(joinPath(), joinRequest(), "join")
         .handleAsync(
             (response, error) -> {
               if (error != null || response == null) {
@@ -133,11 +135,11 @@ public final class GroupCoordinator {
                 return future.completeExceptionally(new RuntimeException("Failed to Join Group"));
               }
 
-              final var body = transport.readBody(response.body(), JoinResponse.class, "join");
+              final var body = transport.parse(response.body(), JoinResponse.parser(), "join");
               applyJoinResponse(body);
               LOG.info(
                   "[JoinGroup][Consumer=%s] Consumer Group %s (state %s) with Member ID %s and Member Epoch %d; start send heartbeat"
-                      .formatted(instanceId, groupId, body.errorCode(), memberId, memberEpoch));
+                      .formatted(instanceId, groupId, body.getErrorCode(), memberId, memberEpoch));
               scheduleSendHeartbeat();
               return future.complete(null);
             },
@@ -150,10 +152,15 @@ public final class GroupCoordinator {
     return "/v1/groups/" + URLEncoder.encode(groupId, StandardCharsets.UTF_8) + "/join";
   }
 
+  /** Builds the join/rejoin request body. */
+  private JoinRequest joinRequest() {
+    return JoinRequest.newBuilder().addAllTopics(topics).setInstanceId(instanceId).build();
+  }
+
   /** Adopts the member id/epoch the coordinator assigned in a join/rejoin response. */
   private void applyJoinResponse(final JoinResponse body) {
-    memberId = body.memberId();
-    memberEpoch = body.memberEpoch() != null ? body.memberEpoch() : 0L;
+    memberId = body.getMemberId();
+    memberEpoch = body.getMemberEpoch();
   }
 
   public CompletableFuture<Void> leaveGroup() {
@@ -166,8 +173,10 @@ public final class GroupCoordinator {
             + URLEncoder.encode(memberId, StandardCharsets.UTF_8).replace("+", "%20")
             + "/leave";
 
+    final var body =
+        LeaveRequest.newBuilder().setMemberId(memberId).setMemberEpoch(memberEpoch).build();
     transport
-        .postJsonRaw(path, new LeaveRequest(memberId, memberEpoch), "leave")
+        .postProtobufRaw(path, body, "leave")
         .handleAsync(
             (response, error) -> {
               if (error != null || response == null) {
@@ -180,10 +189,9 @@ public final class GroupCoordinator {
                 return future.completeExceptionally(new RuntimeException("Failed to Leave Group"));
               }
 
-              final var body = transport.readBody(response.body(), LeaveResponse.class, "leave");
               LOG.info(
-                  "[LeaveGroup][Consumer=%s] Consumer Group %s (state %s) with Member ID %s and Member Epoch %d"
-                      .formatted(instanceId, groupId, body.errorCode(), memberId, memberEpoch));
+                  "[LeaveGroup][Consumer=%s] Consumer Group %s with Member ID %s and Member Epoch %d"
+                      .formatted(instanceId, groupId, memberId, memberEpoch));
 
               memberId = null;
               memberEpoch = -1;
@@ -234,11 +242,16 @@ public final class GroupCoordinator {
             + URLEncoder.encode(memberId, StandardCharsets.UTF_8).replace("+", "%20")
             + "/heartbeat";
 
+    final var body =
+        ConsumerHeartbeatRequest.newBuilder()
+            .setEpoch(memberEpoch)
+            .putAllOwnedPartitions(groupByTopic(snapshotOwned))
+            .build();
+
     // Chain the response handling on the executor so state mutations stay on a single-threaded
     // executor as before; the request itself runs on the HTTP client's executor (non-blocking).
     return transport
-        .postJsonRaw(
-            path, new HeartbeatRequest(memberEpoch, groupByTopic(snapshotOwned)), "heartbeat")
+        .postProtobufRaw(path, body, "heartbeat")
         .handleAsync(
             (httpResponse, error) ->
                 onHeartbeatResponse(snapshotEpoch, snapshotOwned, httpResponse, error),
@@ -255,7 +268,7 @@ public final class GroupCoordinator {
   private CompletableFuture<Void> onHeartbeatResponse(
       final long snapshotEpoch,
       final List<TopicPartition> snapshotOwned,
-      final SyncResponse httpResponse,
+      final BinaryResponse httpResponse,
       final Throwable error) {
     if (error != null || httpResponse == null) {
       throw new CoordinatorUnavailableException(
@@ -275,12 +288,12 @@ public final class GroupCoordinator {
       return rejoin().whenComplete((ignored, rejoinError) -> scheduleSendHeartbeat());
     }
     if (httpResponse.statusCode() != 200) {
-      throw new EventBridgeException(
-          "Heartbeat failed: HTTP " + httpResponse.statusCode() + " — " + httpResponse.body());
+      throw new EventBridgeException("Heartbeat failed: HTTP " + httpResponse.statusCode());
     }
 
-    final var hb = transport.readBody(httpResponse.body(), HeartbeatResponse.class, "heartbeat");
-    final long serverEpoch = hb.memberEpoch();
+    final var hb =
+        transport.parse(httpResponse.body(), ConsumerHeartbeatResponse.parser(), "heartbeat");
+    final long serverEpoch = hb.getMemberEpoch();
 
     if (serverEpoch < snapshotEpoch) {
       LOG.debug(
@@ -295,12 +308,12 @@ public final class GroupCoordinator {
     // applying the change here and reporting it next beat is the acknowledgement.
     if (serverEpoch > snapshotEpoch) {
       // Full reconciliation: replace owned partitions wholesale from the full assignment.
-      applyOwnedPartitions(flatten(hb.assignment()));
+      applyOwnedPartitions(flatten(hb.getAssignmentMap()));
       memberEpoch = serverEpoch;
     } else {
       // Delta path (serverEpoch == snapshotEpoch).
-      final var revoke = flatten(hb.revoke());
-      final var assign = flatten(hb.assign());
+      final var revoke = flatten(hb.getRevokeMap());
+      final var assign = flatten(hb.getAssignMap());
 
       if (!revoke.isEmpty() || !assign.isEmpty()) {
         final var newOwned = new ArrayList<>(snapshotOwned);
@@ -310,13 +323,13 @@ public final class GroupCoordinator {
       }
     }
 
-    subscription.seedCommittedOffsets(hb.committedOffsets());
+    subscription.seedCommittedOffsets(committedOffsets(hb.getCommittedOffsetsMap()));
 
     // A reassignment or freshly seeded offset may have added fetchable partitions — start
     // prefetching so a poll() currently blocked on the buffer becomes responsive to them.
     prefetcher.kick();
 
-    final var state = hb.errorCode();
+    final var state = hb.getErrorCode();
 
     LOG.info(
         "[Heartbeat][Consumer=%s] Consumer Group %s (state %s): memberId %s, memberEpoch: %d, ownedPartitions: %s"
@@ -339,7 +352,7 @@ public final class GroupCoordinator {
    */
   public CompletableFuture<Void> rejoin() {
     return transport
-        .postJsonRaw(joinPath(), new JoinRequest(topics, instanceId), "rejoin")
+        .postProtobufRaw(joinPath(), joinRequest(), "rejoin")
         .handleAsync(
             (response, error) -> {
               if (error != null || response == null) {
@@ -348,11 +361,10 @@ public final class GroupCoordinator {
                         + (error != null ? error.getMessage() : "no response"));
               }
               if (response.statusCode() != 200) {
-                throw new EventBridgeException(
-                    "Rejoin failed: HTTP " + response.statusCode() + " — " + response.body());
+                throw new EventBridgeException("Rejoin failed: HTTP " + response.statusCode());
               }
 
-              applyJoinResponse(transport.readBody(response.body(), JoinResponse.class, "rejoin"));
+              applyJoinResponse(transport.parse(response.body(), JoinResponse.parser(), "rejoin"));
               applyOwnedPartitions(List.of());
 
               LOG.info(
@@ -400,9 +412,16 @@ public final class GroupCoordinator {
             + URLEncoder.encode(memberId, StandardCharsets.UTF_8)
             + "/commit";
 
+    final var body =
+        CommitRequest.newBuilder()
+            .setTopic(topic)
+            .setPartitionId(partitionId)
+            .setPosition(position)
+            .setMemberEpoch(memberEpoch)
+            .build();
+
     return transport
-        .postJsonRaw(
-            path, new CommitRequest(topic, partitionId, position, memberEpoch), "commitOffset")
+        .postProtobufRaw(path, body, "commitOffset")
         .thenApply(
             response -> {
               if (response.statusCode() == 404 || response.statusCode() == 409) {
@@ -410,15 +429,11 @@ public final class GroupCoordinator {
                 throw new ConsumerNotRegisteredException(groupId, memberId);
               }
               if (response.statusCode() == 400) {
-                final String body = response.body();
-                if (body != null && body.contains("\"CONSUMER_NOT_REGISTERED\"")) {
-                  throw new ConsumerNotRegisteredException(groupId, memberId);
-                }
-                throw new EventBridgeException("commitOffset failed: HTTP 400 — " + body);
+                throw new EventBridgeException("commitOffset failed: HTTP 400");
               }
               if (response.statusCode() != 204 && response.statusCode() != 200) {
                 throw new EventBridgeException(
-                    "commitOffset failed: HTTP " + response.statusCode() + " — " + response.body());
+                    "commitOffset failed: HTTP " + response.statusCode());
               }
               return null;
             });
@@ -448,29 +463,40 @@ public final class GroupCoordinator {
         });
   }
 
-  /** Groups owned partitions into the {@code topic -> [partition,...]} wire shape. */
-  private static Map<String, List<Integer>> groupByTopic(final List<TopicPartition> partitions) {
+  /** Groups owned partitions into the {@code topic -> IntList} wire shape. */
+  private static Map<String, IntList> groupByTopic(final List<TopicPartition> partitions) {
     final Map<String, List<Integer>> byTopic = new LinkedHashMap<>();
     for (final var tp : partitions) {
       byTopic.computeIfAbsent(tp.topic(), ignored -> new ArrayList<>()).add(tp.partition());
     }
-    return byTopic;
+    final Map<String, IntList> result = new LinkedHashMap<>();
+    byTopic.forEach(
+        (topic, partitionsForTopic) ->
+            result.put(topic, IntList.newBuilder().addAllValues(partitionsForTopic).build()));
+    return result;
   }
 
-  /**
-   * Flattens a {@code topic -> [partition,...]} assignment map into a {@link TopicPartition} list.
-   */
-  private static List<TopicPartition> flatten(final Map<String, List<Integer>> byTopic) {
+  /** Flattens a {@code topic -> IntList} assignment map into a {@link TopicPartition} list. */
+  private static List<TopicPartition> flatten(final Map<String, IntList> byTopic) {
     if (byTopic == null || byTopic.isEmpty()) {
       return List.of();
     }
     final List<TopicPartition> result = new ArrayList<>();
     byTopic.forEach(
-        (topic, partitions) -> {
-          if (partitions != null) {
-            partitions.forEach(p -> result.add(new TopicPartition(topic, p)));
-          }
-        });
+        (topic, partitions) ->
+            partitions.getValuesList().forEach(p -> result.add(new TopicPartition(topic, p))));
     return Collections.unmodifiableList(result);
+  }
+
+  /** Converts the committed-offset wire shape into {@code topic -> (partition -> offset)}. */
+  private static Map<String, Map<Integer, Long>> committedOffsets(
+      final Map<String, OffsetMap> byTopic) {
+    if (byTopic == null || byTopic.isEmpty()) {
+      return Map.of();
+    }
+    final Map<String, Map<Integer, Long>> result = new LinkedHashMap<>();
+    byTopic.forEach(
+        (topic, offsets) -> result.put(topic, new LinkedHashMap<>(offsets.getOffsetsMap())));
+    return result;
   }
 }
