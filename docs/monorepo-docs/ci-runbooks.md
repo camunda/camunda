@@ -19,6 +19,7 @@ incidents affecting the monorepo CI.
 - [GitHub status](https://www.githubstatus.com/) (Actions, PRs, API, Git, etc.)
 - [DockerHub status](https://www.dockerstatus.com/) (Docker image push/pull)
 - [Maven Central status](https://status.maven.org/) (Maven artifact up-/downloads)
+- [Minimus status](https://docs.minimus.io/status) (Minimus Docker registry)
 
 ### Temporarily Disable Tests To Lessen Impact
 
@@ -109,7 +110,7 @@ artifacts might not get built or uploaded to artifact repositories, and indicate
 since we expect only green builds. Unlike merge-queue failures which block PRs, base-branch failures
 affect artifact availability and release readiness.
 
-Each alert instance is grouped by workflow job name and base branch, and includes:
+Each alert instance is grouped by workflow job name and thus spans multiple base branches, and includes:
 
 - Number of unsuccessful runs in the evaluation window
 - Links to failed workflow runs in the evaluation window (useful for root cause analysis)

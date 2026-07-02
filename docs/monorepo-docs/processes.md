@@ -187,6 +187,11 @@ From [IM - Roles and Responsibilities](https://confluence.camunda.com/display/HA
 - Communications Lead (CL)
 - Operations Lead (OL)
 
+#### Responses
+
+- Mitigation: removing or at least reducing the impact an incident has by temporary means
+- Fixing: addressing the root cause(s) of an incident to entirely remove the impact and future recurrence
+
 ### Steps
 
 Effective incident management is key to limiting the disruption caused by an incident and restoring normal business operations as quickly as possible.
