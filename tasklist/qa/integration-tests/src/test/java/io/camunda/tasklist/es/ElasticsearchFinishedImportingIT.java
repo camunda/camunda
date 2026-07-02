@@ -37,8 +37,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.HashMap;
-import org.awaitility.Awaitility;
+import java.util.Map;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -56,6 +55,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
+/**
+ * Mirrors {@code operate}'s {@code FinishedImportingIT}: in a real 8.7 -> 8.8 upgrade the only
+ * value type that receives an 8.8 record is {@link ValueType#TENANT} (auto-exported on upgrade, PR
+ * #38541); every other entity stops at 8.7. A record reader is therefore marked completed once
+ * <em>any</em> import-position document on its partition carries an 8.8 {@code indexName} (the
+ * tenant one) and the reader has since seen {@code completedReaderMinEmptyBatches} empty batches.
+ * Because completion is re-derived from the <em>persisted</em> import position (which is flushed
+ * asynchronously), the empty batches must only be counted after the 8.8 indexName has been
+ * persisted - hence {@link #waitForImportPositionToNotNull} between the 8.8 round and the empty
+ * rounds (see #56595).
+ */
 public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTest {
 
   private static final ElasticsearchExporter EXPORTER = new ElasticsearchExporter();
@@ -108,19 +118,19 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
   @Test
   public void shouldMarkRecordReadersAsCompletedIf880RecordReceived() throws IOException {
     // given
-    final var record = generateRecord(ValueType.JOB, "8.7.0", 1);
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
     EXPORTER.export(record);
     tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
-
     zeebeImporter.performOneRoundOfImport();
 
     // when
-    final var record2 = generateRecord(ValueType.JOB, "8.8.0", 1);
+    final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
     EXPORTER.export(record2);
     tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
 
-    // receives 8.7 record and marks partition as finished importing
+    // reads the 8.8 record and advances the persisted import position past the 8.8 boundary
     zeebeImporter.performOneRoundOfImport();
+    waitForImportPositionToNotNull(1, ImportValueType.PROCESS_INSTANCE);
 
     // then
     // require multiple checks to avoid race condition. If records are written to zeebe indices and
@@ -130,41 +140,96 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
       zeebeImporter.performOneRoundOfImport();
     }
 
-    // the import position for
-    Awaitility.await()
+    await()
         .atMost(Duration.ofSeconds(30))
-        .until(() -> isRecordReaderIsCompleted("1-job"));
+        .until(() -> isRecordReaderIsCompleted("1-process-instance"));
   }
 
   @Test
   public void shouldMarkRecordReadersAsCompletedIfTenantRecordReceived() throws IOException {
     // given
-    final var record = generateRecord(ValueType.JOB, "8.7.0", 1);
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
     EXPORTER.export(record);
     tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
-
     zeebeImporter.performOneRoundOfImport();
 
-    // when
+    // when the only 8.8 record is a TENANT record (as in a real 8.7 -> 8.8 upgrade)
     final var record2 = generateRecord(ValueType.TENANT, "8.8.0", 1);
     EXPORTER.export(record2);
     tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
-
-    // receives 8.7 record and marks partition as finished importing
     zeebeImporter.performOneRoundOfImport();
+    waitForImportPositionToNotNull(1, ImportValueType.TENANT);
 
     // then
-    // require multiple checks to avoid race condition. If records are written to zeebe indices and
-    // before a refresh, the record reader pulls the import batch is empty so it then says that the
-    // record reader is done when it is not.
     for (int i = 0; i < emptyBatches; i++) {
       zeebeImporter.performOneRoundOfImport();
     }
 
-    // the import position for
-    Awaitility.await()
+    await().atMost(Duration.ofSeconds(30)).until(() -> isRecordReaderIsCompleted("1-tenant"));
+  }
+
+  @Test
+  public void shouldMarkRecordReadersInSamePartitionAsTenantRecordAsCompleted() throws IOException {
+    // given records for two partitions that only ever reach 8.7
+    final var processInstanceRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+    final var processInstance2Record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 2);
+    EXPORTER.export(processInstanceRecord);
+    EXPORTER.export(processInstance2Record);
+    tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+    zeebeImporter.performOneRoundOfImport();
+
+    // when only partition 1 receives the 8.8 TENANT record
+    final var tenantRecord = generateRecord(ValueType.TENANT, "8.8.0", 1);
+    EXPORTER.export(tenantRecord);
+    tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+    zeebeImporter.performOneRoundOfImport();
+    waitForImportPositionToNotNull(1, ImportValueType.TENANT);
+
+    for (int i = 0; i <= emptyBatches; i++) {
+      zeebeImporter.performOneRoundOfImport();
+    }
+
+    // then the process-instance reader on partition 1 completes off the tenant boundary, while
+    // partition 2 (no 8.8 record) does not
+    await()
         .atMost(Duration.ofSeconds(30))
-        .until(() -> isRecordReaderIsCompleted("1-tenant"));
+        .until(
+            () ->
+                isRecordReaderIsCompleted("1-process-instance")
+                    && !isRecordReaderIsCompleted("2-process-instance"));
+  }
+
+  @Test
+  public void shouldMarkMultiplePartitionsAsCompletedIfTheyReceiveAn880Record() throws IOException {
+    // given
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+    final var partitionTwoRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 2);
+    EXPORTER.export(record);
+    EXPORTER.export(partitionTwoRecord);
+    tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+    zeebeImporter.performOneRoundOfImport();
+
+    // when both partitions reach the 8.8 boundary
+    final var tenantRecord = generateRecord(ValueType.TENANT, "8.8.0", 1);
+    final var partitionTwoRecord2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 2);
+    EXPORTER.export(tenantRecord);
+    EXPORTER.export(partitionTwoRecord2);
+    tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+    zeebeImporter.performOneRoundOfImport();
+    waitForImportPositionToNotNull(1, ImportValueType.TENANT);
+    waitForImportPositionToNotNull(2, ImportValueType.PROCESS_INSTANCE);
+
+    for (int i = 0; i <= emptyBatches; i++) {
+      zeebeImporter.performOneRoundOfImport();
+    }
+
+    // then
+    await()
+        .atMost(Duration.ofSeconds(30))
+        .until(() -> isRecordReaderIsCompleted("1-process-instance"));
+    await()
+        .atMost(Duration.ofSeconds(30))
+        .until(() -> isRecordReaderIsCompleted("2-process-instance"));
   }
 
   @Test
@@ -213,117 +278,8 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
   }
 
   @Test
-  public void shouldMarkMultiplePositionIndexAsCompletedIf880RecordReceived() throws IOException {
-    final var processInstanceRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
-    final var jobRecord = generateRecord(ValueType.JOB, "8.7.0", 1);
-    final var variableRecord = generateRecord(ValueType.VARIABLE, "8.7.0", 2);
-    EXPORTER.export(processInstanceRecord);
-    EXPORTER.export(jobRecord);
-    EXPORTER.export(variableRecord);
-
-    tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
-    zeebeImporter.performOneRoundOfImport();
-
-    // when
-    final var newVersionProcessInstanceRecord =
-        generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
-    EXPORTER.export(newVersionProcessInstanceRecord);
-    final var newVersionJobRecord = generateRecord(ValueType.JOB, "8.8.0", 1);
-    EXPORTER.export(newVersionJobRecord);
-
-    for (int i = 0; i <= emptyBatches; i++) {
-      // simulate existing variable records left to process so it is not marked as completed
-      final var decisionRecord2 = generateRecord(ValueType.VARIABLE, "8.7.0", 2);
-      EXPORTER.export(decisionRecord2);
-      tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
-
-      zeebeImporter.performOneRoundOfImport();
-    }
-
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(30))
-        .until(
-            () ->
-                isRecordReaderIsCompleted("1-process-instance")
-                    && isRecordReaderIsCompleted("1-job")
-                    && !isRecordReaderIsCompleted("2-variable"));
-  }
-
-  @Test
-  public void shouldMarkMultiplePartitionsAsCompletedIfTheyReceiveAn880Record() throws IOException {
-    // given
-    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
-    final var partitionTwoRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 2);
-    EXPORTER.export(record);
-    EXPORTER.export(partitionTwoRecord);
-    tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
-
-    zeebeImporter.performOneRoundOfImport();
-
-    // when
-    final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
-    final var partitionTwoRecord2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 2);
-    EXPORTER.export(record2);
-    EXPORTER.export(partitionTwoRecord2);
-    tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
-
-    for (int i = 0; i <= emptyBatches; i++) {
-      zeebeImporter.performOneRoundOfImport();
-    }
-
-    // the import position for
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(30))
-        .until(() -> isRecordReaderIsCompleted("1-process-instance"));
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(30))
-        .until(() -> isRecordReaderIsCompleted("2-process-instance"));
-  }
-
-  @Test
-  public void shouldNotSetCompletedToFalseForSubsequentRecordsAfterImportingDone()
-      throws IOException {
-    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
-    EXPORTER.export(record);
-    tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
-
-    zeebeImporter.performOneRoundOfImport();
-
-    // when
-    final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
-    EXPORTER.export(record2);
-    tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
-
-    // receives 8.7 record and marks partition as finished importing
-    zeebeImporter.performOneRoundOfImport();
-
-    // then
-    // require multiple checks to avoid race condition. If records are written to zeebe indices and
-    // before a refresh, the record reader pulls the import batch is empty so it then says that the
-    // record reader is done when it is not.
-    for (int i = 0; i < emptyBatches; i++) {
-      zeebeImporter.performOneRoundOfImport();
-    }
-
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(30))
-        .until(() -> isRecordReaderIsCompleted("1-process-instance"));
-
-    final var record3 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
-    EXPORTER.export(record3);
-    tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
-
-    zeebeImporter.performOneRoundOfImport();
-
-    Awaitility.await()
-        .during(Duration.ofSeconds(10))
-        .atMost(Duration.ofSeconds(12))
-        .until(() -> isRecordReaderIsCompleted("1-process-instance"));
-  }
-
-  @Test
   public void shouldNotMarkedAsCompletedViaMetricsWhenImportingIsNotDone() throws IOException {
-    // given
+    // given only 8.7 records (the 8.8 boundary is never reached)
     final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
     final var partitionTwoRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 2);
     EXPORTER.export(record);
@@ -336,7 +292,7 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
     }
 
     // then
-    Awaitility.await()
+    await()
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(
             () -> {
@@ -356,30 +312,31 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
     EXPORTER.export(record);
     EXPORTER.export(partitionTwoRecord);
     tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
-
     zeebeImporter.performOneRoundOfImport();
 
-    // when
-    final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
+    // when both partitions reach the 8.8 boundary
+    final var tenantRecord = generateRecord(ValueType.TENANT, "8.8.0", 1);
     final var partitionTwoRecord2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 2);
-    EXPORTER.export(record2);
+    EXPORTER.export(tenantRecord);
     EXPORTER.export(partitionTwoRecord2);
     tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+    zeebeImporter.performOneRoundOfImport();
+    waitForImportPositionToNotNull(1, ImportValueType.TENANT);
+    waitForImportPositionToNotNull(2, ImportValueType.PROCESS_INSTANCE);
 
-    for (int i = 0; i <= emptyBatches; i++) {
+    for (int i = 0; i < emptyBatches; i++) {
       zeebeImporter.performOneRoundOfImport();
     }
 
-    Awaitility.await()
+    await()
         .atMost(Duration.ofSeconds(30))
         .until(() -> isRecordReaderIsCompleted("1-process-instance"));
-    Awaitility.await()
+    await()
         .atMost(Duration.ofSeconds(30))
         .until(() -> isRecordReaderIsCompleted("2-process-instance"));
 
     // then
-
-    Awaitility.await()
+    await()
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(
             () -> {
@@ -389,6 +346,45 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
               assertThat(partitionOneImportStatus.value()).isEqualTo(1.0);
               assertThat(partitionTwoImportStatus.value()).isEqualTo(1.0);
             });
+  }
+
+  @Test
+  public void shouldNotSetCompletedToFalseForSubsequentRecordsAfterImportingDone()
+      throws IOException {
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+    EXPORTER.export(record);
+    tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+    zeebeImporter.performOneRoundOfImport();
+
+    // when the partition reaches the 8.8 boundary via the tenant record
+    final var tenantRecord = generateRecord(ValueType.TENANT, "8.8.0", 1);
+    EXPORTER.export(tenantRecord);
+    tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+    zeebeImporter.performOneRoundOfImport();
+    waitForImportPositionToNotNull(1, ImportValueType.TENANT);
+
+    // then
+    // require multiple checks to avoid race condition. If records are written to zeebe indices and
+    // before a refresh, the record reader pulls the import batch is empty so it then says that the
+    // record reader is done when it is not.
+    for (int i = 0; i < emptyBatches; i++) {
+      zeebeImporter.performOneRoundOfImport();
+    }
+
+    await()
+        .atMost(Duration.ofSeconds(30))
+        .until(() -> isRecordReaderIsCompleted("1-process-instance"));
+
+    // a subsequent 8.8 record must not reset completed back to false
+    final var record3 = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
+    EXPORTER.export(record3);
+    tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+    zeebeImporter.performOneRoundOfImport();
+
+    await()
+        .during(Duration.ofSeconds(10))
+        .atMost(Duration.ofSeconds(12))
+        .until(() -> isRecordReaderIsCompleted("1-process-instance"));
   }
 
   @Test
@@ -417,9 +413,55 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
     assertImportPositionMatchesRecord(record, ImportValueType.PROCESS_INSTANCE, 1);
   }
 
+  @Test
+  public void shouldWriteDefaultEmptyDefaultImportPositionDocumentsOnRecordReaderStart() {
+    recordsReaderHolder.getAllRecordsReaders().stream()
+        .map(RecordsReaderElasticSearch.class::cast)
+        .forEach(RecordsReaderAbstract::postConstruct);
+
+    await()
+        .atMost(Duration.ofSeconds(30))
+        .until(
+            () -> {
+              final var searchRequest =
+                  new SearchRequest(importPositionIndex.getFullQualifiedName());
+              searchRequest.source().size(100);
+
+              final var documents = tasklistEsClient.search(searchRequest, RequestOptions.DEFAULT);
+
+              // all initial import position documents created for each record reader
+              return documents.getHits().getHits().length
+                  == recordsReaderHolder.getAllRecordsReaders().size();
+            });
+  }
+
+  @Test
+  public void shouldMarkRecordReadersCompletedEvenIfZeebeIndicesDontExist() throws IOException {
+    // given only a TENANT 8.8 record exists; no other zeebe indices are created
+    final var record = generateRecord(ValueType.TENANT, "8.8.0", 1);
+    EXPORTER.export(record);
+    tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+
+    zeebeImporter.performOneRoundOfImport();
+    waitForImportPositionToNotNull(1, ImportValueType.TENANT);
+
+    // when
+    for (int i = 0; i <= emptyBatches; i++) {
+      zeebeImporter.performOneRoundOfImport();
+    }
+
+    // then every reader on the partition completes off the tenant boundary, even those whose zeebe
+    // indices never existed
+    for (final var type : ImportValueType.values()) {
+      await()
+          .atMost(Duration.ofSeconds(30))
+          .until(() -> isRecordReaderIsCompleted("1-" + type.getAliasTemplate()));
+    }
+  }
+
   private void assertImportPositionMatchesRecord(
       final Record<RecordValue> record, final ImportValueType type, final int partitionId) {
-    Awaitility.await()
+    await()
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(
             () -> {
@@ -438,48 +480,6 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
             });
   }
 
-  @Test
-  public void shouldWriteDefaultEmptyDefaultImportPositionDocumentsOnRecordReaderStart() {
-    recordsReaderHolder.getAllRecordsReaders().stream()
-        .map(RecordsReaderElasticSearch.class::cast)
-        .forEach(RecordsReaderAbstract::postConstruct);
-
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(30))
-        .until(
-            () -> {
-              final var searchRequest =
-                  new SearchRequest(importPositionIndex.getFullQualifiedName());
-              searchRequest.source().size(100);
-
-              final var documents = tasklistEsClient.search(searchRequest, RequestOptions.DEFAULT);
-
-              // all initial import position documents created for each record reader
-              return documents.getHits().getHits().length
-                  == recordsReaderHolder.getAllRecordsReaders().size();
-            });
-  }
-
-  @Test
-  public void shouldMarkRecordReadersCompletedEvenIfZeebeIndicesDontExist() throws IOException {
-    // given
-    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.8.0", 1);
-    EXPORTER.export(record);
-    tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
-
-    // when
-    for (int i = 0; i <= emptyBatches; i++) {
-      zeebeImporter.performOneRoundOfImport();
-    }
-
-    // then
-    for (final var type : ImportValueType.values()) {
-      await()
-          .atMost(Duration.ofSeconds(30))
-          .until(() -> isRecordReaderIsCompleted("1-" + type.getAliasTemplate()));
-    }
-  }
-
   @NotNull
   private static Gauge getGauge(final Metrics metrics, final String partition) {
     return metrics.getGauge(
@@ -490,27 +490,45 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
         "process-instance");
   }
 
+  /**
+   * Waits until the persisted import-position document for the given partition/value-type carries
+   * an 8.8 {@code indexName}. Completion is re-derived from persisted state and the import position
+   * is flushed asynchronously (importPositionUpdateInterval), so the empty-batch rounds must only
+   * run after this returns (see #56595).
+   */
+  private void waitForImportPositionToNotNull(
+      final int partitionId, final ImportValueType importValueType) {
+    await()
+        .atMost(Duration.ofSeconds(30))
+        .until(
+            () -> {
+              final var indexName =
+                  getImportPosition(partitionId + "-" + importValueType.getAliasTemplate())
+                      .get(TasklistImportPositionIndex.FIELD_INDEX_NAME);
+              return indexName != null && indexName.toString().contains("8.8");
+            });
+  }
+
   private boolean isRecordReaderIsCompleted(final String partitionIdFieldValue) throws IOException {
-    final var hits =
-        Arrays.stream(
-                tasklistEsClient
-                    .search(
-                        new SearchRequest(importPositionIndex.getFullQualifiedName())
-                            .source(new SearchSourceBuilder().size(100)),
-                        RequestOptions.DEFAULT)
-                    .getHits()
-                    .getHits())
-            .map(SearchHit::getSourceAsMap)
-            .toList();
-    if (hits.isEmpty()) {
-      return false;
-    }
     return (Boolean)
-        hits.stream()
-            .filter(hit -> hit.get(TasklistImportPositionIndex.ID).equals(partitionIdFieldValue))
-            .findFirst()
-            .orElse(new HashMap<>())
+        getImportPosition(partitionIdFieldValue)
             .getOrDefault(TasklistImportPositionIndex.COMPLETED, false);
+  }
+
+  private Map<String, Object> getImportPosition(final String partitionIdFieldValue)
+      throws IOException {
+    return Arrays.stream(
+            tasklistEsClient
+                .search(
+                    new SearchRequest(importPositionIndex.getFullQualifiedName())
+                        .source(new SearchSourceBuilder().size(100)),
+                    RequestOptions.DEFAULT)
+                .getHits()
+                .getHits())
+        .map(SearchHit::getSourceAsMap)
+        .filter(hit -> partitionIdFieldValue.equals(hit.get(TasklistImportPositionIndex.ID)))
+        .findFirst()
+        .orElse(Map.of());
   }
 
   private <T extends RecordValue> Record<T> generateRecord(
