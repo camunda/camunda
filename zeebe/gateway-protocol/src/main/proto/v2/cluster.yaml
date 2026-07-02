@@ -48,7 +48,7 @@ paths:
 
   /mode:
     patch:
-      x-eventually-consistent: true
+      x-eventually-consistent: false
       tags:
         - Recovery
       operationId: changeClusterMode
