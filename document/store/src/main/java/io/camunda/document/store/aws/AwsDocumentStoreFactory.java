@@ -28,8 +28,14 @@ public class AwsDocumentStoreFactory {
       final Boolean forcePathStyle,
       final Boolean chunkedEncodingEnabled) {
     return create(
-        bucketName, defaultTTL, bucketPath, executor, endpointOverride, forcePathStyle,
-        chunkedEncodingEnabled, null);
+        bucketName,
+        defaultTTL,
+        bucketPath,
+        executor,
+        endpointOverride,
+        forcePathStyle,
+        chunkedEncodingEnabled,
+        null);
   }
 
   public static AwsDocumentStore create(

@@ -126,8 +126,7 @@ public class AwsDocumentStoreProvider implements DocumentStoreProvider {
     return value == null ? null : Boolean.parseBoolean(value);
   }
 
-  private static Boolean getSupportLegacyMd5(
-      final DocumentStoreConfigurationRecord configuration) {
+  private static Boolean getSupportLegacyMd5(final DocumentStoreConfigurationRecord configuration) {
     final String value = configuration.properties().get(SUPPORT_LEGACY_MD5);
     return value == null ? null : Boolean.parseBoolean(value);
   }
