@@ -7,6 +7,8 @@
  */
 package io.camunda.db.rdbms.read.mapper;
 
+import static io.camunda.db.rdbms.read.NullSafeStrings.nullToEmpty;
+
 import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationErrorEntity;
@@ -15,7 +17,7 @@ public class BatchOperationEntityMapper {
 
   public static BatchOperationEntity toEntity(final BatchOperationDbModel dbModel) {
     return new BatchOperationEntity(
-        dbModel.batchOperationKey(),
+        nullToEmpty(dbModel.batchOperationKey()),
         dbModel.state(),
         dbModel.operationType(),
         dbModel.startDate(),
@@ -31,6 +33,8 @@ public class BatchOperationEntityMapper {
   public static BatchOperationErrorEntity toErrorEntity(
       final BatchOperationDbModel.BatchOperationErrorDbModel errorDbModel) {
     return new BatchOperationEntity.BatchOperationErrorEntity(
-        errorDbModel.partitionId(), errorDbModel.type(), errorDbModel.message());
+        errorDbModel.partitionId(),
+        nullToEmpty(errorDbModel.type()),
+        nullToEmpty(errorDbModel.message()));
   }
 }
