@@ -63,9 +63,13 @@ public final class ClusterActuatorAssert
   }
 
   public ClusterActuatorAssert hasCompletedChanges(final PlannedOperationsResponse response) {
+    return hasCompletedChanges(response.getChangeId());
+  }
+
+  public ClusterActuatorAssert hasCompletedChanges(final long changeId) {
     final var currentChange = actual.getTopology().getLastChange();
     Assertions.assertThat(currentChange).isNotNull();
-    Assertions.assertThat(currentChange.getId()).isEqualTo(response.getChangeId());
+    Assertions.assertThat(currentChange.getId()).isEqualTo(changeId);
     Assertions.assertThat(currentChange.getStatus())
         .isEqualTo(CompletedChange.StatusEnum.COMPLETED);
     return this;
