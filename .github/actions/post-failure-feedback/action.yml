@@ -1,0 +1,77 @@
+name: Post AlwaysGreen failure feedback
+description: >
+  Render one standardised AlwaysGreen failure message (Verdict / Evidence /
+  Next steps) and post it to the job summary, the PR (upserted), and Slack.
+  Best-effort — never fails the calling job. See the CI Failure Feedback Standard
+  in team-test-automation/docs/ci-failure-feedback-standard.md.
+
+inputs:
+  failure_category:
+    description: "infra | test-infra | flaky | product | test | external | unknown"
+    required: true
+  stage:
+    description: "Pipeline stage, e.g. helm-integration / saas-e2e"
+    required: true
+  owner_team:
+    description: "Team that owns triage for this stage"
+    required: false
+    default: "unknown"
+  run_url:
+    description: "URL of the failing run"
+    required: false
+    default: ""
+  status:
+    description: "failure | cancelled"
+    required: false
+    default: "failure"
+  evidence:
+    description: "Optional free-text evidence (failing step, key log line)"
+    required: false
+    default: ""
+  repo:
+    description: "owner/repo of the failing run (defaults to the calling repo)"
+    required: false
+    default: ""
+  pr:
+    description: >
+      PR number, or a merge_group head_ref to extract it from
+      (refs/heads/gh-readonly-queue/<base>/pr-<N>-<sha>). Empty to skip the PR comment.
+    required: false
+    default: ""
+  cookbook_url:
+    description: "Debugging cookbook link"
+    required: false
+    default: "https://github.com/camunda/c8-cross-component-e2e-tests/blob/main/docs/ci-debugging-cookbook.md"
+  slack_channel:
+    description: "Slack channel id/name for the proactive message (empty to skip)"
+    required: false
+    default: ""
+  slack_bot_token:
+    description: "Slack bot token (empty to skip Slack)"
+    required: false
+    default: ""
+  github_token:
+    description: "Token with PR write access (empty to skip the PR comment)"
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Render & post failure feedback
+      shell: bash
+      env:
+        FB_CATEGORY: ${{ inputs.failure_category }}
+        FB_STAGE: ${{ inputs.stage }}
+        FB_OWNER: ${{ inputs.owner_team }}
+        FB_RUN_URL: ${{ inputs.run_url }}
+        FB_STATUS: ${{ inputs.status }}
+        FB_EVIDENCE: ${{ inputs.evidence }}
+        FB_REPO: ${{ inputs.repo || github.repository }}
+        FB_PR: ${{ inputs.pr }}
+        FB_COOKBOOK_URL: ${{ inputs.cookbook_url }}
+        FB_SLACK_CHANNEL: ${{ inputs.slack_channel }}
+        SLACK_BOT_TOKEN: ${{ inputs.slack_bot_token }}
+        GH_TOKEN: ${{ inputs.github_token }}
+      run: node "$GITHUB_ACTION_PATH/feedback.mjs"
+
