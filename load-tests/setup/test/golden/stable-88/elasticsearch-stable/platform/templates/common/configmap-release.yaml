@@ -19,7 +19,7 @@ data:
   info: |-
     - name: c8-golden-stable-88-elasticsearch-stable
       namespace: c8-golden-stable-88-elasticsearch-stable
-      version: 13.8.0
+      version: 13.11.1
       tags:
       - dev
       custom-properties: []
@@ -30,19 +30,19 @@ data:
         url: http://localhost:18080/auth
       - name: Identity
         id: identity
-        version: 8.8.12
+        version: 8.8.13
         url: http://localhost:8080
         readiness: http://identity.c8-golden-stable-88-elasticsearch-stable:82/actuator/health
         metrics: http://identity.c8-golden-stable-88-elasticsearch-stable:82/actuator/prometheus
       - name: Optimize
         id: optimize
-        version: 8.8.24
+        version: 8.8.28
         url: http://localhost:8083
         readiness: http://optimize.c8-golden-stable-88-elasticsearch-stable:80/api/readyz
         metrics: http://optimize.c8-golden-stable-88-elasticsearch-stable:8092/actuator/prometheus
       - name: Connectors
         id: connectors
-        version: 8.8.11
+        version: 8.8.14
         url: http://connectors.c8-golden-stable-88-elasticsearch-stable:8080
         readiness: http://connectors.c8-golden-stable-88-elasticsearch-stable:8080/actuator/health/readiness
         metrics: http://connectors.c8-golden-stable-88-elasticsearch-stable:8080/actuator/prometheus

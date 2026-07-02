@@ -49,7 +49,6 @@ spec:
       imagePullSecrets:
         - name: harbor-registry
       initContainers:
-        []
       containers:
         - name: orchestration
           image: docker.io/camunda/camunda:8.8.28

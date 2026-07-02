@@ -48,10 +48,9 @@ spec:
       imagePullSecrets:
         - name: harbor-registry
       initContainers:
-        []
       containers:
         - name: connectors
-          image: camunda/connectors-bundle:8.8.11
+          image: camunda/connectors-bundle:8.8.14
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
