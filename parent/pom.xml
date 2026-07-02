@@ -98,7 +98,7 @@
     <version.prometheus>1.3.5</version.prometheus>
     <version.protobuf>4.35.0</version.protobuf>
     <version.protobuf-common>2.71.0</version.protobuf-common>
-    <version.micrometer>1.16.6</version.micrometer>
+    <version.micrometer>1.17.0</version.micrometer>
     <version.rocksdbjni>10.10.1.1</version.rocksdbjni>
     <version.sbe>1.38.1</version.sbe>
     <version.scala>3.8.3</version.scala>
@@ -118,7 +118,7 @@
     <version.rest-assured>6.0.0</version.rest-assured>
     <version.spring>7.0.8</version.spring>
     <version.spring-security>7.1.0</version.spring-security>
-    <version.spring-boot>4.0.7</version.spring-boot>
+    <version.spring-boot>4.1.0</version.spring-boot>
     <version.spring-ai>2.0.0-M7</version.spring-ai>
     <version.mcp-sdk>2.0.0-M3</version.mcp-sdk>
     <version.jsonschema-generator>5.0.0</version.jsonschema-generator>
@@ -131,7 +131,7 @@
     <version.jmock>2.13.1</version.jmock>
     <version.jmh>1.37</version.jmh>
     <version.json-smart>2.6.0</version.json-smart>
-    <version.byte-buddy>1.18.8-jdk5</version.byte-buddy>
+    <version.byte-buddy>1.18.10-jdk5</version.byte-buddy>
     <version.revapi>0.28.4</version.revapi>
     <version.resilience4j>2.4.0</version.resilience4j>
     <version.kotlin-stdlib>2.3.21</version.kotlin-stdlib>

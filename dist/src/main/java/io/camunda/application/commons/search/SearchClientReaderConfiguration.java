@@ -33,7 +33,7 @@ public class SearchClientReaderConfiguration {
           final var secondaryStorage = physicalTenantCfg.getData().getSecondaryStorage();
           return new IndexDescriptors(
               secondaryStorage
-                  .getElasticsearchOrOpensearch()
+                  .elasticsearchOrOpensearch()
                   .orElseThrow(
                       () ->
                           new IllegalStateException(

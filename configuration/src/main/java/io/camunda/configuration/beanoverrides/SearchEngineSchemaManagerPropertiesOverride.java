@@ -55,7 +55,7 @@ public class SearchEngineSchemaManagerPropertiesOverride {
         .getCamunda()
         .getData()
         .getSecondaryStorage()
-        .getElasticsearchOrOpensearch()
+        .elasticsearchOrOpensearch()
         .ifPresent(
             secondaryStorage -> {
               override.setPerformCleanup(secondaryStorage.isPerformCleanup());

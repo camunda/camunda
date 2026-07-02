@@ -93,7 +93,7 @@ public class SecondaryStorage {
     this.opensearch = opensearch;
   }
 
-  public Optional<DocumentBasedSecondaryStorageDatabase> getElasticsearchOrOpensearch() {
+  public Optional<DocumentBasedSecondaryStorageDatabase> elasticsearchOrOpensearch() {
     return switch (getType()) {
       case elasticsearch -> Optional.of(elasticsearch);
       case opensearch -> Optional.of(opensearch);
