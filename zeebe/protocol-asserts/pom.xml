@@ -46,7 +46,7 @@
       <plugin>
         <groupId>org.assertj</groupId>
         <artifactId>assertj-assertions-generator-maven-plugin</artifactId>
-        <version>2.2.0</version>
+        <version>${version.assertj-assertions-generator}</version>
         <configuration>
           <packages>
             <param>io.camunda.zeebe.protocol.record</param>
