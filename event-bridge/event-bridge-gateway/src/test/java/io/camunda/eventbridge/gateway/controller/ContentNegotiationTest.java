@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -25,8 +26,6 @@ import io.camunda.eventbridge.api.proto.ConsumerHeartbeatResponse;
 import io.camunda.eventbridge.api.proto.IntList;
 import io.camunda.eventbridge.api.proto.JoinRequest;
 import io.camunda.eventbridge.api.proto.JoinResponse;
-import io.camunda.eventbridge.api.proto.LeaveRequest;
-import io.camunda.eventbridge.api.proto.LeaveResponse;
 import io.camunda.eventbridge.api.proto.TopicCreateRequest;
 import io.camunda.eventbridge.api.proto.TopicListResponse;
 import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetResponse;
@@ -94,8 +93,11 @@ final class ContentNegotiationTest {
     mockMvc
         .perform(
             asyncPost(
-                "/v1/groups/g1/join", MediaType.APPLICATION_JSON, MediaType.APPLICATION_JSON, body))
-        .andExpect(status().isOk())
+                "/v1/groups/g1/members",
+                MediaType.APPLICATION_JSON,
+                MediaType.APPLICATION_JSON,
+                body))
+        .andExpect(status().isCreated())
         .andExpect(jsonPath("$.memberId").value("m1"))
         .andExpect(jsonPath("$.memberEpoch").value(7));
   }
@@ -107,8 +109,8 @@ final class ContentNegotiationTest {
 
     final MvcResult result =
         mockMvc
-            .perform(asyncPost("/v1/groups/g1/join", PROTOBUF, PROTOBUF, body))
-            .andExpect(status().isOk())
+            .perform(asyncPost("/v1/groups/g1/members", PROTOBUF, PROTOBUF, body))
+            .andExpect(status().isCreated())
             .andReturn();
 
     final var response = JoinResponse.parseFrom(result.getResponse().getContentAsByteArray());
@@ -140,7 +142,7 @@ final class ContentNegotiationTest {
     mockMvc
         .perform(
             asyncPost(
-                "/v1/groups/g1/consumers/m1/heartbeat",
+                "/v1/groups/g1/members/m1/heartbeat",
                 MediaType.APPLICATION_JSON,
                 MediaType.APPLICATION_JSON,
                 body))
@@ -160,7 +162,7 @@ final class ContentNegotiationTest {
 
     final MvcResult result =
         mockMvc
-            .perform(asyncPost("/v1/groups/g1/consumers/m1/heartbeat", PROTOBUF, PROTOBUF, body))
+            .perform(asyncPost("/v1/groups/g1/members/m1/heartbeat", PROTOBUF, PROTOBUF, body))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -199,7 +201,7 @@ final class ContentNegotiationTest {
     mockMvc
         .perform(
             asyncPost(
-                "/v1/groups/g1/consumers/m1/commit",
+                "/v1/groups/g1/members/m1/offsets",
                 MediaType.APPLICATION_JSON,
                 MediaType.APPLICATION_JSON,
                 body))
@@ -220,7 +222,7 @@ final class ContentNegotiationTest {
 
     final MvcResult result =
         mockMvc
-            .perform(asyncPost("/v1/groups/g1/consumers/m1/commit", PROTOBUF, PROTOBUF, body))
+            .perform(asyncPost("/v1/groups/g1/members/m1/offsets", PROTOBUF, PROTOBUF, body))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -240,39 +242,20 @@ final class ContentNegotiationTest {
   // Leave
 
   @Test
-  void shouldLeaveViaJson() throws Exception {
-    givenLeaveResponse();
-    final var body = LeaveRequest.newBuilder().setMemberId("m1").setMemberEpoch(7L).build();
-
-    mockMvc
-        .perform(
-            asyncPost(
-                "/v1/groups/g1/consumers/m1/leave",
-                MediaType.APPLICATION_JSON,
-                MediaType.APPLICATION_JSON,
-                body))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.errorCode").value("none"));
-  }
-
-  @Test
-  void shouldLeaveViaProtobuf() throws Exception {
-    givenLeaveResponse();
-    final var body = LeaveRequest.newBuilder().setMemberId("m1").setMemberEpoch(7L).build();
-
-    final MvcResult result =
-        mockMvc
-            .perform(asyncPost("/v1/groups/g1/consumers/m1/leave", PROTOBUF, PROTOBUF, body))
-            .andExpect(status().isOk())
-            .andReturn();
-
-    final var response = LeaveResponse.parseFrom(result.getResponse().getContentAsByteArray());
-    assertThat(response.getErrorCode()).isEqualTo("none");
-  }
-
-  private void givenLeaveResponse() {
+  void shouldLeaveViaDelete() throws Exception {
+    // given
     final var res = new LeaveGroupResponse().setErrorCode(CoordinationErrorCode.NONE);
     when(coordinatorService.leaveGroup(any())).thenReturn(CompletableFuture.completedFuture(res));
+
+    // when / then: a leave is a DELETE carrying the epoch as a query parameter, replying 204 with
+    // no body.
+    final MvcResult result =
+        mockMvc
+            .perform(dispatchAsync(delete("/v1/groups/g1/members/m1").param("epoch", "7")))
+            .andExpect(status().isNoContent())
+            .andReturn();
+
+    assertThat(result.getResponse().getContentAsByteArray()).isEmpty();
   }
 
   // -------------------------------------------------------------------------
@@ -336,6 +319,21 @@ final class ContentNegotiationTest {
     assertThat(response.getTopics(0).getName()).isEqualTo("t1");
     assertThat(response.getTopics(0).getPartitionCount()).isEqualTo(3);
     assertThat(response.getTopics(0).getStatus()).isEqualTo("READY");
+  }
+
+  // -------------------------------------------------------------------------
+  // Reassign topic
+
+  @Test
+  void shouldAcceptReassignment() throws Exception {
+    // given
+    when(coordinatorService.reassignTopic(any()))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when / then: a reassignment is provisioned asynchronously, so it is acknowledged with 202.
+    mockMvc
+        .perform(dispatchAsync(post("/v1/topics/t1/reassignments").param("replicationFactor", "3")))
+        .andExpect(status().isAccepted());
   }
 
   private void givenListTopicsResponse() {

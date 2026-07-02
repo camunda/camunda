@@ -108,7 +108,7 @@ public interface EventBridgeClient extends AutoCloseable {
   // Fetch
 
   /**
-   * Fetches batches from a partition of a topic ({@code GET /v1/topics/{topic}/.../fetch}), an
+   * Fetches batches from a partition of a topic ({@code GET /v1/topics/{topic}/.../records}), an
    * immediate read that returns whatever is available without waiting.
    */
   CompletableFuture<FetchResult> fetchFromTopic(

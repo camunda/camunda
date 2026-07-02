@@ -103,7 +103,7 @@ public final class EventBridgeClientImpl implements EventBridgeClient, Fetcher {
             + topic
             + "/partitions/"
             + partitionId
-            + "/fetch?offset="
+            + "/records?offset="
             + offset
             + "&maxBytes="
             + maxBytes

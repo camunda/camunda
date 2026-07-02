@@ -46,7 +46,7 @@ public final class TopicAdminImpl {
   /** Deletes a topic. Completes when the coordinator has accepted the request. */
   public CompletableFuture<Void> deleteTopic(final String name) {
     return transport.delete(
-        "/v1/topics/" + URLEncoder.encode(name, StandardCharsets.UTF_8), 204, "deleteTopic");
+        "/v1/topics/" + URLEncoder.encode(name, StandardCharsets.UTF_8), 204, "delete topic");
   }
 
   /** Lists the registered topics. */

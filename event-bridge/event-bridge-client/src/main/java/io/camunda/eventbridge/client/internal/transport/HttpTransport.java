@@ -138,6 +138,16 @@ public final class HttpTransport implements AutoCloseable {
         .thenApply(response -> new BinaryResponse(response.statusCode(), response.body()));
   }
 
+  /**
+   * Sends {@code DELETE path} asynchronously and returns the raw response status and body without
+   * asserting a status. Callers that apply per-status handling (leave) use this.
+   */
+  public CompletableFuture<BinaryResponse> deleteRaw(final String path, final String op) {
+    final var request = protobufRequest(path).DELETE().timeout(DEFAULT_TIMEOUT).build();
+    return sendAsyncBytes(request)
+        .thenApply(response -> new BinaryResponse(response.statusCode(), response.body()));
+  }
+
   // -------------------------------------------------------------------------
   // Binary — raw batch (publish / fetch)
 

@@ -83,7 +83,7 @@ public class TopicController {
             });
   }
 
-  @PostMapping("/{name}/reassign")
+  @PostMapping("/{name}/reassignments")
   public CompletableFuture<ResponseEntity<Object>> reassignTopic(
       @PathVariable final String name, @RequestParam final int replicationFactor) {
     final var request =
@@ -95,7 +95,8 @@ public class TopicController {
               if (error != null) {
                 return CoordinatorErrors.toResponse(error);
               }
-              return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+              // Reassignment is provisioned asynchronously, so acknowledge with 202 Accepted.
+              return ResponseEntity.status(HttpStatus.ACCEPTED).build();
             });
   }
 

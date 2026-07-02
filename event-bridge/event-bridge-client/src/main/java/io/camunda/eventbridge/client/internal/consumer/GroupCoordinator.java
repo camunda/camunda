@@ -13,7 +13,6 @@ import io.camunda.eventbridge.api.proto.ConsumerHeartbeatResponse;
 import io.camunda.eventbridge.api.proto.IntList;
 import io.camunda.eventbridge.api.proto.JoinRequest;
 import io.camunda.eventbridge.api.proto.JoinResponse;
-import io.camunda.eventbridge.api.proto.LeaveRequest;
 import io.camunda.eventbridge.api.proto.OffsetMap;
 import io.camunda.eventbridge.client.ConsumerNotRegisteredException;
 import io.camunda.eventbridge.client.CoordinatorUnavailableException;
@@ -131,7 +130,7 @@ public final class GroupCoordinator {
                         "Join group request failed: "
                             + (error != null ? error.getMessage() : "no response")));
               }
-              if (response.statusCode() != 200) {
+              if (response.statusCode() != 201) {
                 return future.completeExceptionally(new RuntimeException("Failed to Join Group"));
               }
 
@@ -147,9 +146,9 @@ public final class GroupCoordinator {
     return future;
   }
 
-  /** Builds the {@code /v1/groups/{group}/join} path (shared by join and rejoin). */
+  /** Builds the {@code /v1/groups/{group}/members} path (shared by join and rejoin). */
   private String joinPath() {
-    return "/v1/groups/" + URLEncoder.encode(groupId, StandardCharsets.UTF_8) + "/join";
+    return "/v1/groups/" + URLEncoder.encode(groupId, StandardCharsets.UTF_8) + "/members";
   }
 
   /** Builds the join/rejoin request body. */
@@ -166,17 +165,18 @@ public final class GroupCoordinator {
   public CompletableFuture<Void> leaveGroup() {
     final var future = new CompletableFuture<Void>();
 
+    // Leaving a member is a DELETE; the epoch travels as a query parameter and a successful
+    // removal replies 204 No Content (no body to parse).
     final var path =
         "/v1/groups/"
             + URLEncoder.encode(groupId, StandardCharsets.UTF_8)
-            + "/consumers/"
+            + "/members/"
             + URLEncoder.encode(memberId, StandardCharsets.UTF_8).replace("+", "%20")
-            + "/leave";
+            + "?epoch="
+            + memberEpoch;
 
-    final var body =
-        LeaveRequest.newBuilder().setMemberId(memberId).setMemberEpoch(memberEpoch).build();
     transport
-        .postProtobufRaw(path, body, "leave")
+        .deleteRaw(path, "leave")
         .handleAsync(
             (response, error) -> {
               if (error != null || response == null) {
@@ -185,7 +185,7 @@ public final class GroupCoordinator {
                         "Leave group request failed: "
                             + (error != null ? error.getMessage() : "no response")));
               }
-              if (response.statusCode() != 200) {
+              if (response.statusCode() != 204) {
                 return future.completeExceptionally(new RuntimeException("Failed to Leave Group"));
               }
 
@@ -238,7 +238,7 @@ public final class GroupCoordinator {
     final var path =
         "/v1/groups/"
             + URLEncoder.encode(groupId, StandardCharsets.UTF_8).replace("+", "%20")
-            + "/consumers/"
+            + "/members/"
             + URLEncoder.encode(memberId, StandardCharsets.UTF_8).replace("+", "%20")
             + "/heartbeat";
 
@@ -360,7 +360,7 @@ public final class GroupCoordinator {
                     "Rejoin request failed: "
                         + (error != null ? error.getMessage() : "no response"));
               }
-              if (response.statusCode() != 200) {
+              if (response.statusCode() != 201) {
                 throw new EventBridgeException("Rejoin failed: HTTP " + response.statusCode());
               }
 
@@ -408,9 +408,9 @@ public final class GroupCoordinator {
     final String path =
         "/v1/groups/"
             + URLEncoder.encode(groupId, StandardCharsets.UTF_8)
-            + "/consumers/"
+            + "/members/"
             + URLEncoder.encode(memberId, StandardCharsets.UTF_8)
-            + "/commit";
+            + "/offsets";
 
     final var body =
         CommitRequest.newBuilder()

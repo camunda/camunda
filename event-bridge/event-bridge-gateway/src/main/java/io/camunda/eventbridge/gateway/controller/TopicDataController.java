@@ -72,7 +72,7 @@ public class TopicDataController {
    * representation.
    */
   @PostMapping(
-      value = "/{topic}/partitions/{partitionId}",
+      value = "/{topic}/partitions/{partitionId}/records",
       consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE,
       produces = {JSON, PROTOBUF})
   public CompletableFuture<ResponseEntity<Object>> publish(
@@ -87,7 +87,7 @@ public class TopicDataController {
    * gateway encodes them into a batch via {@link BatchBuilder} before publishing.
    */
   @PostMapping(
-      value = "/{topic}/partitions/{partitionId}",
+      value = "/{topic}/partitions/{partitionId}/records",
       consumes = {JSON, PROTOBUF},
       produces = {JSON, PROTOBUF})
   public CompletableFuture<ResponseEntity<Object>> publishEntries(
@@ -128,7 +128,7 @@ public class TopicDataController {
 
   /** Raw-batch fetch (client SDK): compact binary layout the SDK parses directly. */
   @GetMapping(
-      value = "/{topic}/partitions/{partitionId}/fetch",
+      value = "/{topic}/partitions/{partitionId}/records",
       produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
   public CompletableFuture<ResponseEntity<byte[]>> fetch(
       @PathVariable final String topic,
@@ -161,7 +161,7 @@ public class TopicDataController {
    * FetchResponseJson} of entries, negotiated between JSON and protobuf.
    */
   @GetMapping(
-      value = "/{topic}/partitions/{partitionId}/fetch",
+      value = "/{topic}/partitions/{partitionId}/records",
       produces = {JSON, PROTOBUF})
   public CompletableFuture<ResponseEntity<Object>> fetchEntries(
       @PathVariable final String topic,

@@ -62,7 +62,7 @@ public final class BatchPublisherImpl implements BatchPublisher {
       return CompletableFuture.failedFuture(new IllegalStateException("Batch is empty"));
     }
 
-    final String path = "/v1/topics/" + topic + "/partitions/" + partitionId;
+    final String path = "/v1/topics/" + topic + "/partitions/" + partitionId + "/records";
     return transport
         .postOctetStream(path, batchBuilder.build())
         .thenApply(this::parsePublishResponse);

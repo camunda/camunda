@@ -89,9 +89,9 @@ final class GroupCoordinatorCommitTest {
 
     // Establish an initial memberId via a one-off join so commit request paths can URL-encode it,
     // then clear invocations so each test asserts only its own commit/rejoin traffic.
-    when(transport.postProtobufRaw(contains("/join"), any(), eq("rejoin")))
+    when(transport.postProtobufRaw(contains("/members"), any(), eq("rejoin")))
         .thenReturn(
-            CompletableFuture.completedFuture(new BinaryResponse(200, joinResponse("c1", 1))));
+            CompletableFuture.completedFuture(new BinaryResponse(201, joinResponse("c1", 1))));
     coordinator.rejoin().join();
     Mockito.clearInvocations(transport);
   }
@@ -104,19 +104,19 @@ final class GroupCoordinatorCommitTest {
   @Test
   void shouldRetryCommitOnceAfterRejoinWhenNotRegistered() {
     // given: first commit is rejected with 409, rejoin succeeds, retried commit succeeds (204)
-    when(transport.postProtobufRaw(contains("/commit"), any(), eq("commitOffset")))
+    when(transport.postProtobufRaw(contains("/offsets"), any(), eq("commitOffset")))
         .thenReturn(CompletableFuture.completedFuture(new BinaryResponse(409, new byte[0])))
         .thenReturn(CompletableFuture.completedFuture(new BinaryResponse(204, new byte[0])));
-    when(transport.postProtobufRaw(contains("/join"), any(), eq("rejoin")))
+    when(transport.postProtobufRaw(contains("/members"), any(), eq("rejoin")))
         .thenReturn(
-            CompletableFuture.completedFuture(new BinaryResponse(200, joinResponse("c1-2", 5))));
+            CompletableFuture.completedFuture(new BinaryResponse(201, joinResponse("c1-2", 5))));
 
     // when
     coordinator.commitOffset("t1", 1, 42L).join();
 
     // then: exactly one rejoin and exactly two commit attempts
-    verify(transport, times(1)).postProtobufRaw(contains("/join"), any(), eq("rejoin"));
-    verify(transport, times(2)).postProtobufRaw(contains("/commit"), any(), eq("commitOffset"));
+    verify(transport, times(1)).postProtobufRaw(contains("/members"), any(), eq("rejoin"));
+    verify(transport, times(2)).postProtobufRaw(contains("/offsets"), any(), eq("commitOffset"));
     assertThat(coordinator.memberId()).isEqualTo("c1-2");
     assertThat(coordinator.memberEpoch()).isEqualTo(5L);
   }
@@ -124,19 +124,19 @@ final class GroupCoordinatorCommitTest {
   @Test
   void shouldPropagateWhenRetriedCommitAlsoNotRegistered() {
     // given: both commit attempts are rejected, rejoin succeeds
-    when(transport.postProtobufRaw(contains("/commit"), any(), eq("commitOffset")))
+    when(transport.postProtobufRaw(contains("/offsets"), any(), eq("commitOffset")))
         .thenReturn(CompletableFuture.completedFuture(new BinaryResponse(404, new byte[0])))
         .thenReturn(CompletableFuture.completedFuture(new BinaryResponse(404, new byte[0])));
-    when(transport.postProtobufRaw(contains("/join"), any(), eq("rejoin")))
+    when(transport.postProtobufRaw(contains("/members"), any(), eq("rejoin")))
         .thenReturn(
-            CompletableFuture.completedFuture(new BinaryResponse(200, joinResponse("c1-2", 5))));
+            CompletableFuture.completedFuture(new BinaryResponse(201, joinResponse("c1-2", 5))));
 
     // when / then: the second rejection propagates and there is no second rejoin
     assertThatThrownBy(() -> coordinator.commitOffset("t1", 1, 42L).join())
         .isInstanceOf(CompletionException.class)
         .hasCauseInstanceOf(ConsumerNotRegisteredException.class);
-    verify(transport, times(1)).postProtobufRaw(contains("/join"), any(), eq("rejoin"));
-    verify(transport, times(2)).postProtobufRaw(contains("/commit"), any(), eq("commitOffset"));
+    verify(transport, times(1)).postProtobufRaw(contains("/members"), any(), eq("rejoin"));
+    verify(transport, times(2)).postProtobufRaw(contains("/offsets"), any(), eq("commitOffset"));
   }
 
   private static byte[] joinResponse(final String memberId, final long epoch) {

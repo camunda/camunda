@@ -14,8 +14,6 @@ import io.camunda.eventbridge.api.proto.ConsumerHeartbeatResponse;
 import io.camunda.eventbridge.api.proto.IntList;
 import io.camunda.eventbridge.api.proto.JoinRequest;
 import io.camunda.eventbridge.api.proto.JoinResponse;
-import io.camunda.eventbridge.api.proto.LeaveRequest;
-import io.camunda.eventbridge.api.proto.LeaveResponse;
 import io.camunda.eventbridge.api.proto.OffsetFetchResult;
 import io.camunda.eventbridge.api.proto.OffsetMap;
 import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetRequest;
@@ -34,6 +32,7 @@ import java.util.concurrent.CompletableFuture;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -70,7 +69,7 @@ public class CoordinationController {
   }
 
   @PostMapping(
-      value = "/{groupId}/join",
+      value = "/{groupId}/members",
       consumes = {JSON, PROTOBUF},
       produces = {JSON, PROTOBUF})
   public CompletableFuture<ResponseEntity<Object>> joinGroup(
@@ -94,12 +93,13 @@ public class CoordinationController {
                       .setMemberId(nullToEmpty(res.getMemberId()))
                       .setMemberEpoch(res.getMemberEpoch())
                       .build();
-              return ResponseEntity.ok((Object) body);
+              // A member is created, so respond 201 Created with its assigned id and epoch.
+              return ResponseEntity.status(HttpStatus.CREATED).body((Object) body);
             });
   }
 
   @PostMapping(
-      value = "/{groupId}/consumers/{memberId}/heartbeat",
+      value = "/{groupId}/members/{memberId}/heartbeat",
       consumes = {JSON, PROTOBUF},
       produces = {JSON, PROTOBUF})
   public CompletableFuture<ResponseEntity<Object>> heartbeat(
@@ -144,20 +144,14 @@ public class CoordinationController {
             });
   }
 
-  @PostMapping(
-      value = "/{groupId}/consumers/{memberId}/leave",
-      consumes = {JSON, PROTOBUF},
-      produces = {JSON, PROTOBUF})
+  @DeleteMapping("/{groupId}/members/{memberId}")
   public CompletableFuture<ResponseEntity<Object>> leaveGroup(
       @PathVariable final String groupId,
       @PathVariable final String memberId,
-      @RequestBody final LeaveRequest leaveRequest) {
+      @RequestParam(name = "epoch", defaultValue = "0") final long epoch) {
 
     final var request =
-        new LeaveGroupRequest()
-            .setGroupId(groupId)
-            .setMemberId(memberId)
-            .setMemberEpoch(leaveRequest.getMemberEpoch());
+        new LeaveGroupRequest().setGroupId(groupId).setMemberId(memberId).setMemberEpoch(epoch);
     return coordinatorService
         .leaveGroup(request)
         .handleAsync(
@@ -165,16 +159,14 @@ public class CoordinationController {
               if (error != null) {
                 return CoordinatorErrors.toResponse(error);
               }
-              final var body =
-                  LeaveResponse.newBuilder()
-                      .setErrorCode(nullToEmpty(res.getErrorCode().getId()))
-                      .build();
-              return ResponseEntity.ok((Object) body);
+              // Removing a member is a delete: 204 No Content, no body. A fenced/unknown member is
+              // still surfaced via the error mapping above.
+              return ResponseEntity.noContent().build();
             });
   }
 
   @PostMapping(
-      value = "/{groupId}/consumers/{memberId}/commit",
+      value = "/{groupId}/members/{memberId}/offsets",
       consumes = {JSON, PROTOBUF},
       produces = {JSON, PROTOBUF})
   public CompletableFuture<ResponseEntity<Object>> commit(
