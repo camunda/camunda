@@ -42,6 +42,9 @@ import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryResponseMapper;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import jakarta.servlet.http.HttpServletRequest;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -257,10 +260,12 @@ public class RoleController {
 
   @CamundaPutMapping(path = "/{roleId}/groups/{groupId}")
   public CompletableFuture<ResponseEntity<Object>> assignRoleToGroup(
-      @PathVariable final String roleId, @PathVariable final String groupId) {
+      @PathVariable final String roleId,
+      @PathVariable final String groupId,
+      final HttpServletRequest request) {
     return RequestMapper.toRoleMemberRequest(
             roleId,
-            groupId,
+            resolveGroupId(request, groupId),
             EntityType.GROUP,
             securityConfiguration.getCompiledIdValidationPattern(),
             securityConfiguration.getCompiledGroupIdValidationPattern())
@@ -322,10 +327,12 @@ public class RoleController {
 
   @CamundaDeleteMapping(path = "/{roleId}/groups/{groupId}")
   public CompletableFuture<ResponseEntity<Object>> unassignRoleFromGroup(
-      @PathVariable final String roleId, @PathVariable final String groupId) {
+      @PathVariable final String roleId,
+      @PathVariable final String groupId,
+      final HttpServletRequest request) {
     return RequestMapper.toRoleMemberRequest(
             roleId,
-            groupId,
+            resolveGroupId(request, groupId),
             EntityType.GROUP,
             securityConfiguration.getCompiledIdValidationPattern(),
             securityConfiguration.getCompiledGroupIdValidationPattern())
@@ -365,5 +372,21 @@ public class RoleController {
             roleServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .removeMember(request));
+  }
+
+  // AntPathMatcher (active via spring.mvc.pathmatch.matching-strategy=ant_path_matcher) normalizes
+  // double slashes, stripping the leading "/" from group IDs like "%2FmyGroup". Read the raw
+  // encoded URI instead and decode it to recover the full group ID.
+  private static String resolveGroupId(final HttpServletRequest request, final String fallback) {
+    try {
+      final String uri = request.getRequestURI();
+      final int idx = uri.lastIndexOf("/groups/");
+      if (idx < 0) {
+        return fallback;
+      }
+      return URLDecoder.decode(uri.substring(idx + "/groups/".length()), StandardCharsets.UTF_8);
+    } catch (final Exception e) {
+      return fallback;
+    }
   }
 }

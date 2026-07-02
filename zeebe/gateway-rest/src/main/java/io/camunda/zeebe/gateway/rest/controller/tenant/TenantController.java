@@ -52,6 +52,9 @@ import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryResponseMapper;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import jakarta.servlet.http.HttpServletRequest;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -168,10 +171,12 @@ public class TenantController {
 
   @CamundaPutMapping(path = "/{tenantId}/groups/{groupId}")
   public CompletableFuture<ResponseEntity<Object>> assignGroupToTenant(
-      @PathVariable final String tenantId, @PathVariable final String groupId) {
+      @PathVariable final String tenantId,
+      @PathVariable final String groupId,
+      final HttpServletRequest request) {
     return RequestMapper.toTenantMemberRequest(
             tenantId,
-            groupId,
+            resolveGroupId(request, groupId),
             EntityType.GROUP,
             securityConfiguration.getCompiledGroupIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToTenant);
@@ -244,10 +249,12 @@ public class TenantController {
 
   @CamundaDeleteMapping(path = "/{tenantId}/groups/{groupId}")
   public CompletableFuture<ResponseEntity<Object>> unassignGroupFromTenant(
-      @PathVariable final String tenantId, @PathVariable final String groupId) {
+      @PathVariable final String tenantId,
+      @PathVariable final String groupId,
+      final HttpServletRequest request) {
     return RequestMapper.toTenantMemberRequest(
             tenantId,
-            groupId,
+            resolveGroupId(request, groupId),
             EntityType.GROUP,
             securityConfiguration.getCompiledGroupIdValidationPattern())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
@@ -472,5 +479,21 @@ public class TenantController {
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .updateTenant(tenantRequest),
         ResponseMapper::toTenantUpdateResponse);
+  }
+
+  // AntPathMatcher (active via spring.mvc.pathmatch.matching-strategy=ant_path_matcher) normalizes
+  // double slashes, stripping the leading "/" from group IDs like "%2FmyGroup". Read the raw
+  // encoded URI instead and decode it to recover the full group ID.
+  private static String resolveGroupId(final HttpServletRequest request, final String fallback) {
+    try {
+      final String uri = request.getRequestURI();
+      final int idx = uri.lastIndexOf("/groups/");
+      if (idx < 0) {
+        return fallback;
+      }
+      return URLDecoder.decode(uri.substring(idx + "/groups/".length()), StandardCharsets.UTF_8);
+    } catch (final Exception e) {
+      return fallback;
+    }
   }
 }
