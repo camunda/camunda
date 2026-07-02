@@ -209,6 +209,41 @@ public class ProcessInstanceWaitStateStatisticsIT {
   }
 
   @Test
+  void shouldAggregateWaitingCountAcrossMultipleWaitStatesOnSameElement() {
+    // given — assignee set at creation together with an "assigning" task listener makes the user
+    // task enter ASSIGNING immediately, so the USER_TASK wait state and the JOB wait state for the
+    // assigning listener coexist on the same element
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("waitStateStatsUserTaskAssigning")
+            .startEvent()
+            .userTask(
+                "user-task",
+                t ->
+                    t.zeebeUserTask()
+                        .zeebeAssignee("initial-assignee")
+                        .zeebeTaskListener(l -> l.assigning().type("assigning-listener")))
+            .endEvent()
+            .done();
+    deployProcessAndWaitForIt(camundaClient, process, "waitStateStatsUserTaskAssigning.bpmn");
+    final long pik =
+        startProcessInstance(camundaClient, "waitStateStatsUserTaskAssigning")
+            .getProcessInstanceKey();
+    waitForWaitStates(pik, 2);
+
+    // when
+    final var actual = statistics(pik);
+
+    // then
+    assertThat(actual)
+        .singleElement()
+        .satisfies(
+            s -> {
+              assertThat(s.getElementId()).isEqualTo("user-task");
+              assertThat(s.getWaitingCount()).isEqualTo(2L);
+            });
+  }
+
+  @Test
   void shouldUpdateWaitingCountAfterMigration() {
     // given
     final BpmnModelInstance source =
