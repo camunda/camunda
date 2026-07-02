@@ -104,6 +104,13 @@ public final class AnalyticsAttributes {
     private Heartbeat() {}
   }
 
+  public static final class Exporter {
+    public static final AttributeKey<String> DIGEST =
+        AttributeKey.stringKey("camunda.exporter.digest");
+
+    private Exporter() {}
+  }
+
   public static final class UsageMetric {
     public static final AttributeKey<String> EVENT_TYPE =
         AttributeKey.stringKey("camunda.usage_metric.event_type");

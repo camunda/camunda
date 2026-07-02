@@ -98,7 +98,8 @@ class OtelSdkManagerTest {
             .initialize(
                 new AnalyticsExporterConfig().setEndpoint("http://localhost:1"),
                 AnalyticsExporterContext.create("test-license", "test-cluster", 1),
-                new AnalyticsExporterMetadata());
+                new AnalyticsExporterMetadata(),
+                "");
 
     // when — @Timeout is the assertion: if logEvent blocks, we die
     for (int i = 0; i < 10; i++) {
@@ -259,7 +260,8 @@ class OtelSdkManagerTest {
         }.initialize(
             new AnalyticsExporterConfig().setPushInterval("PT0.1S"),
             AnalyticsExporterContext.create("test-license", "test-cluster", 1),
-            new AnalyticsExporterMetadata(5L, 0));
+            new AnalyticsExporterMetadata(5L, 0),
+            "");
 
     // when
     manager.logEvent("test", 0L, log -> {});
@@ -305,7 +307,8 @@ class OtelSdkManagerTest {
             .setMaxBatchSize(maxBatchSize)
             .setPushInterval("PT0.1S"),
         AnalyticsExporterContext.create("test-license", "test-cluster", 1),
-        new AnalyticsExporterMetadata());
+        new AnalyticsExporterMetadata(),
+        "");
   }
 
   private static LogRecordExporter exporterFrom(
