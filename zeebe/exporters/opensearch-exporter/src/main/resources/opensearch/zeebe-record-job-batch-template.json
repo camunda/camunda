@@ -178,6 +178,9 @@
                 },
                 "businessId": {
                   "type": "keyword"
+                },
+                "leaseToken": {
+                  "type": "keyword"
                 }
               }
             },
