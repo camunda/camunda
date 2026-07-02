@@ -33,7 +33,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class ProcessInstanceExpressionContextTest {
+public class ProcessInstanceKeyExpressionContextTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
