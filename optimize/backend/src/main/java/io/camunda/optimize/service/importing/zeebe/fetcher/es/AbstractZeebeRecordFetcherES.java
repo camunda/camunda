@@ -70,7 +70,6 @@ public abstract class AbstractZeebeRecordFetcherES<T> extends AbstractZeebeRecor
                                     f ->
                                         f.field(getSortField(positionBasedImportPage))
                                             .order(SortOrder.Asc)))
-                        .routing(String.valueOf(partitionId))
                         .requestCache(false)),
             getRecordDtoClass());
     if (!searchResponse.shards().failures().isEmpty()
@@ -107,10 +106,7 @@ public abstract class AbstractZeebeRecordFetcherES<T> extends AbstractZeebeRecor
     }
     final CountRequest countRequest =
         CountRequest.of(
-            c ->
-                c.index(getIndexAlias())
-                    .query(buildPositionQuery(positionBasedImportPage))
-                    .routing(String.valueOf(partitionId)));
+            c -> c.index(getIndexAlias()).query(buildPositionQuery(positionBasedImportPage)));
     try {
       LOG.info(
           "Using the position query to see if there are new records in the {} index on partition {}",

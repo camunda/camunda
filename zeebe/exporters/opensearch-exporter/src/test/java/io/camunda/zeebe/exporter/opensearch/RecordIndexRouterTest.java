@@ -122,14 +122,97 @@ final class RecordIndexRouterTest {
   }
 
   @Test
-  void shouldReturnPartitionIdAsRoutingFor() {
+  void shouldNotSetRoutingForRecordOfCurrentVersion() {
     // given
-    final var record = recordFactory.generateRecord(b -> b.withPartitionId(3));
+    final var record =
+        recordFactory.generateRecord(
+            b -> b.withPartitionId(3).withBrokerVersion(VersionUtil.getVersionLowerCase()));
+
+    // when
+    final var routing = router.routingFor(record);
+
+    // then - a null routing lets OpenSearch hash the document id, spreading records over all shards
+    // instead of piling the few partition ids onto a subset of them
+    assertThat(routing).isNull();
+  }
+
+  @Test
+  void shouldNotSetRoutingForPreReleaseOfVersionIntroducingIdRouting() {
+    // given
+    final var record =
+        recordFactory.generateRecord(b -> b.withPartitionId(3).withBrokerVersion("8.11.0-alpha1"));
 
     // when
     final var routing = router.routingFor(record);
 
     // then
+    assertThat(routing).isNull();
+  }
+
+  @Test
+  void shouldNotSetRoutingForFirstVersionOfBackportedLine() {
+    // given
+    final var record =
+        recordFactory.generateRecord(b -> b.withPartitionId(3).withBrokerVersion("8.9.18"));
+
+    // when
+    final var routing = router.routingFor(record);
+
+    // then
+    assertThat(routing).isNull();
+  }
+
+  @Test
+  void shouldNotSetRoutingForLineNewerThanAnyKnownOne() {
+    // given - a record written by a newer broker, as happens when a broker re-exports records
+    // another broker has already written during an upgrade
+    final var record =
+        recordFactory.generateRecord(b -> b.withPartitionId(3).withBrokerVersion("8.12.0"));
+
+    // when
+    final var routing = router.routingFor(record);
+
+    // then
+    assertThat(routing).isNull();
+  }
+
+  @Test
+  void shouldRouteByPartitionIdForLastVersionOfLineBeforeIdRouting() {
+    // given - a record written before id routing reached its line, which is indexed into that
+    // version's index and must keep that index's routing scheme
+    final var record =
+        recordFactory.generateRecord(b -> b.withPartitionId(3).withBrokerVersion("8.9.17"));
+
+    // when
+    final var routing = router.routingFor(record);
+
+    // then
+    assertThat(routing).isEqualTo("3");
+  }
+
+  @Test
+  void shouldRouteByPartitionIdForLineThatNeverGotIdRouting() {
+    // given
+    final var record =
+        recordFactory.generateRecord(b -> b.withPartitionId(3).withBrokerVersion("8.7.40"));
+
+    // when
+    final var routing = router.routingFor(record);
+
+    // then
+    assertThat(routing).isEqualTo("3");
+  }
+
+  @Test
+  void shouldRouteByPartitionIdForUnparseableBrokerVersion() {
+    // given
+    final var record =
+        recordFactory.generateRecord(b -> b.withPartitionId(3).withBrokerVersion("not-a-version"));
+
+    // when
+    final var routing = router.routingFor(record);
+
+    // then - without a version to compare, the legacy routing is the safe choice
     assertThat(routing).isEqualTo("3");
   }
 }
