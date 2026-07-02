@@ -227,13 +227,13 @@ jobs:
 
       - name: "Read Java / Version Info"
         id: "pom-info"
-        uses: YunaBraska/java-info-action@69c249915ed5de0752199dcceebeba79c34d3952 # 3.0.9
+        uses: YunaBraska/java-info-action@2d794af8903c4a56dcec77a56e0e4bf72135f856 # 3.0.10
         with:
           work-dir: ./optimize
 
       - name: "Read Parent Pom Info"
         id: "parent-pom-info"
-        uses: YunaBraska/java-info-action@69c249915ed5de0752199dcceebeba79c34d3952 # 3.0.9
+        uses: YunaBraska/java-info-action@2d794af8903c4a56dcec77a56e0e4bf72135f856 # 3.0.10
         with:
           work-dir: .
 
