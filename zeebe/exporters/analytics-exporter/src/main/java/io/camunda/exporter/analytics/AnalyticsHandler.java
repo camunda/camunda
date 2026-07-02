@@ -11,10 +11,10 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 
 /**
- * Handler for a single analytics event type. Usable as a functional interface via method references
- * for simple handlers, or as a class for handlers with internal filtering logic.
+ * Handler for a single analytics event type. Implementations must be named classes (not lambdas or
+ * anonymous classes) so that {@link AnalyticsExporterDigest} can load and hash their bytecode
+ * deterministically.
  */
-@FunctionalInterface
 public interface AnalyticsHandler<T extends RecordValue> {
 
   void handle(Record<T> record);
