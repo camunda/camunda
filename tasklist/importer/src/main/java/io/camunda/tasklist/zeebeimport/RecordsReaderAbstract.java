@@ -304,7 +304,10 @@ public abstract class RecordsReaderAbstract implements RecordsReader, Runnable {
   }
 
   private void markRecordReaderCompletedIfMinimumEmptyBatchesReceived() {
-    if (recordsReaderHolder.hasPartitionCompletedImporting(partitionId)) {
+    // Re-derive the 8.8 boundary from the persisted import-position index on every empty-batch
+    // cycle instead of relying on a transient in-memory flag, so completion resolves correctly
+    // even after a restart that happened past the 8.8 records (see issue #56595).
+    if (importPositionHolder.isPartitionCompletedImporting(partitionId)) {
       recordsReaderHolder.incrementEmptyBatches(partitionId, importValueType);
     }
 

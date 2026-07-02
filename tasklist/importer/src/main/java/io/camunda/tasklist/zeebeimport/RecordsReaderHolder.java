@@ -37,8 +37,6 @@ public class RecordsReaderHolder {
 
   private Set<RecordsReader> recordsReader = null;
 
-  private final Set<Integer> partitionsCompletedImporting = ConcurrentHashMap.newKeySet();
-
   private final Map<RecordsReader, Integer> countEmptyBatchesAfterImportingDone =
       new ConcurrentHashMap<>();
 
@@ -73,14 +71,6 @@ public class RecordsReaderHolder {
     return recordsReader;
   }
 
-  public void addPartitionCompletedImporting(final int partitionId) {
-    partitionsCompletedImporting.add(partitionId);
-  }
-
-  public boolean hasPartitionCompletedImporting(final int partitionId) {
-    return partitionsCompletedImporting.contains(partitionId);
-  }
-
   public void incrementEmptyBatches(final int partitionId, final ImportValueType importValueType) {
     final var reader = getRecordsReader(partitionId, importValueType);
     countEmptyBatchesAfterImportingDone.merge(reader, 1, Integer::sum);
@@ -88,14 +78,10 @@ public class RecordsReaderHolder {
 
   public boolean isRecordReaderCompletedImporting(
       final int partitionId, final ImportValueType importValueType) {
-    if (hasPartitionCompletedImporting(partitionId)) {
-
-      final var reader = getRecordsReader(partitionId, importValueType);
-      return countEmptyBatchesAfterImportingDone.get(reader)
-          >= tasklistProperties.getImporter().getCompletedReaderMinEmptyBatches();
-    }
-
-    return false;
+    final var reader = getRecordsReader(partitionId, importValueType);
+    return reader != null
+        && countEmptyBatchesAfterImportingDone.getOrDefault(reader, 0)
+            >= tasklistProperties.getImporter().getCompletedReaderMinEmptyBatches();
   }
 
   public void recordLatestLoadedPositionAsCompleted(
@@ -111,11 +97,6 @@ public class RecordsReaderHolder {
   @VisibleForTesting
   public void resetCountEmptyBatches() {
     countEmptyBatchesAfterImportingDone.replaceAll((k, v) -> v = 0);
-  }
-
-  @VisibleForTesting
-  public void resetPartitionsCompletedImporting() {
-    partitionsCompletedImporting.clear();
   }
 
   public RecordsReader getRecordsReader(

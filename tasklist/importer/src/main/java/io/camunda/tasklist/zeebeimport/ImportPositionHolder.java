@@ -28,6 +28,14 @@ public interface ImportPositionHolder {
   public ImportPositionEntity getLatestLoadedPosition(String aliasTemplate, int partitionId)
       throws IOException;
 
+  /**
+   * Statelessly re-derives whether the given partition has reached the 8.8 boundary by querying the
+   * persisted import-position index: returns {@code true} when any import-position document for the
+   * partition has an {@code indexName} containing {@code "8.8"}. Restart-safe (does not rely on
+   * transient in-memory state). Fails safe by returning {@code false} on query errors.
+   */
+  public boolean isPartitionCompletedImporting(int partitionId);
+
   public void recordLatestLoadedPosition(ImportPositionEntity lastProcessedPosition);
 
   public void clearCache();
