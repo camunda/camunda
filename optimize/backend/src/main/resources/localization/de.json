@@ -26,6 +26,12 @@
     "processFilter": {
       "label": "Prozess",
       "placeholder": "Alle Prozesse"
+    },
+    "versionFilter": {
+      "label": "Version",
+      "all": "Alle Versionen",
+      "latest": "Neueste Version",
+      "version": "Version {version}"
     }
   },
   "navigation": {

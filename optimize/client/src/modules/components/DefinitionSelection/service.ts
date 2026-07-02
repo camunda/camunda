@@ -7,12 +7,12 @@
  */
 
 import {Tenant} from 'types';
-import {get, post} from 'request';
+import {post} from 'request';
+import {loadVersions} from 'services';
+import type {Version} from 'services';
 
-export type Version = {
-  version: string;
-  versionTag: string | null;
-};
+export {loadVersions};
+export type {Version};
 
 type DefintionWithTenants = {
   key: string;
@@ -21,21 +21,6 @@ type DefintionWithTenants = {
 };
 
 type DefintionWithVersions = {key: string; versions: string[]};
-
-export async function loadVersions(
-  type: string,
-  collectionId: string | null,
-  key: string
-): Promise<Version[]> {
-  const params: {filterByCollectionScope?: string} = {};
-  if (collectionId) {
-    params.filterByCollectionScope = collectionId;
-  }
-
-  const response = await get(`api/definition/${type}/${key}/versions`, params);
-
-  return response.json();
-}
 
 export async function loadTenants(
   type: string,
@@ -49,10 +34,7 @@ export async function loadTenants(
     payload.filterByCollectionScope = collectionId;
   }
 
-  const response = await post(
-    `api/definition/${type}/_resolveTenantsForVersions`,
-    payload
-  );
+  const response = await post(`api/definition/${type}/_resolveTenantsForVersions`, payload);
 
   return response.json();
 }

@@ -37,13 +37,13 @@ beforeEach(() => {
 });
 
 it('should show a loading state while the dashboard is being fetched', () => {
-  const node = shallow(<AgenticControlPlane/>);
+  const node = shallow(<AgenticControlPlane />);
 
   expect(node.find('Loading')).toExist();
 });
 
 it('should load the agentic dashboard on mount', async () => {
-  shallow(<AgenticControlPlane/>);
+  shallow(<AgenticControlPlane />);
 
   await runAllEffects();
 
@@ -51,7 +51,7 @@ it('should load the agentic dashboard on mount', async () => {
 });
 
 it('should render the dashboard once tiles are loaded', async () => {
-  const node = shallow(<AgenticControlPlane/>);
+  const node = shallow(<AgenticControlPlane />);
 
   await runAllEffects();
 
@@ -60,7 +60,7 @@ it('should render the dashboard once tiles are loaded', async () => {
 });
 
 it('should pass the default Last 30 days filter to DashboardRenderer', async () => {
-  const node = shallow(<AgenticControlPlane/>);
+  const node = shallow(<AgenticControlPlane />);
 
   await runAllEffects();
 
@@ -86,7 +86,7 @@ it('should pass the default Last 30 days filter to DashboardRenderer', async () 
 });
 
 it('should update the filter when the date preset changes', async () => {
-  const node = shallow(<AgenticControlPlane/>);
+  const node = shallow(<AgenticControlPlane />);
 
   await runAllEffects();
 
@@ -114,7 +114,7 @@ it('should update the filter when the date preset changes', async () => {
 });
 
 it('should render the page header with title and description', async () => {
-  const node = shallow(<AgenticControlPlane/>);
+  const node = shallow(<AgenticControlPlane />);
 
   await runAllEffects();
 
@@ -126,7 +126,7 @@ it('should pass the loaded tiles to DashboardRenderer', async () => {
   const tiles = [{id: 'report-1', position: {x: 0, y: 0}, dimensions: {width: 4, height: 3}}];
   (loadAgenticDashboard as jest.Mock).mockReturnValueOnce({tiles, availableFilters: []});
 
-  const node = shallow(<AgenticControlPlane/>);
+  const node = shallow(<AgenticControlPlane />);
 
   await runAllEffects();
 
@@ -141,7 +141,7 @@ it('should hide visibleInL0Only tiles when a process is selected', async () => {
   ];
   (loadAgenticDashboard as jest.Mock).mockReturnValueOnce({tiles, availableFilters: []});
 
-  const node = shallow(<AgenticControlPlane/>);
+  const node = shallow(<AgenticControlPlane />);
   await runAllEffects();
 
   (node.find('FilterBar').prop('onProcessScopeChange') as (v: string) => void)('my-process');
@@ -160,7 +160,7 @@ it('should hide visibleInL1Only tiles when no process is selected (L0)', async (
   ];
   (loadAgenticDashboard as jest.Mock).mockReturnValueOnce({tiles, availableFilters: []});
 
-  const node = shallow(<AgenticControlPlane/>);
+  const node = shallow(<AgenticControlPlane />);
   await runAllEffects();
 
   const visibleTiles = node.find('.kpi-section').find('DashboardRenderer').prop('tiles') as {
@@ -170,7 +170,7 @@ it('should hide visibleInL1Only tiles when no process is selected (L0)', async (
 });
 
 it('should include definitions in evaluate calls when a process is selected', async () => {
-  const node = shallow(<AgenticControlPlane/>);
+  const node = shallow(<AgenticControlPlane />);
   await runAllEffects();
 
   (node.find('FilterBar').prop('onProcessScopeChange') as (v: string) => void)('my-process');
@@ -188,7 +188,7 @@ it('should include definitions in evaluate calls when a process is selected', as
 });
 
 it('should pass empty definitions in evaluate calls when no process is selected', async () => {
-  const node = shallow(<AgenticControlPlane/>);
+  const node = shallow(<AgenticControlPlane />);
   await runAllEffects();
 
   const loadTile = node.find('.kpi-section').find('DashboardRenderer').prop('loadTile') as (
@@ -199,6 +199,60 @@ it('should pass empty definitions in evaluate calls when no process is selected'
   loadTile('report-id', [], {});
 
   expect(evaluateReport).toHaveBeenCalledWith('report-id', [], {}, []);
+});
+
+it('should include the selected version in evaluate definitions', async () => {
+  const node = shallow(<AgenticControlPlane />);
+  await runAllEffects();
+
+  (node.find('FilterBar').prop('onProcessScopeChange') as (v: string) => void)('my-process');
+  (node.find('FilterBar').prop('onVersionsChange') as (v: string[]) => void)(['3']);
+
+  const loadTile = node.find('.kpi-section').find('DashboardRenderer').prop('loadTile') as (
+    id: string,
+    filter: unknown[],
+    params: unknown
+  ) => void;
+  loadTile('report-id', [], {});
+
+  expect(evaluateReport).toHaveBeenCalledWith('report-id', [], {}, [
+    {key: 'my-process', versions: ['3']},
+  ]);
+});
+
+it('should pass the selected versions to FilterBar', async () => {
+  const node = shallow(<AgenticControlPlane />);
+  await runAllEffects();
+
+  (node.find('FilterBar').prop('onProcessScopeChange') as (v: string) => void)('my-process');
+  (node.find('FilterBar').prop('onVersionsChange') as (v: string[]) => void)(['2']);
+
+  expect(node.find('FilterBar').prop('versions')).toEqual(['2']);
+});
+
+it('should reset the version to all when the process scope changes', async () => {
+  const node = shallow(<AgenticControlPlane />);
+  await runAllEffects();
+
+  (node.find('FilterBar').prop('onProcessScopeChange') as (v: string) => void)('my-process');
+  (node.find('FilterBar').prop('onVersionsChange') as (v: string[]) => void)(['3']);
+  expect(node.find('FilterBar').prop('versions')).toEqual(['3']);
+
+  // selecting a different process must reset the version filter
+  (node.find('FilterBar').prop('onProcessScopeChange') as (v: string) => void)('other-process');
+
+  expect(node.find('FilterBar').prop('versions')).toEqual(['all']);
+
+  const loadTile = node.find('.kpi-section').find('DashboardRenderer').prop('loadTile') as (
+    id: string,
+    filter: unknown[],
+    params: unknown
+  ) => void;
+  loadTile('report-id', [], {});
+
+  expect(evaluateReport).toHaveBeenCalledWith('report-id', [], {}, [
+    {key: 'other-process', versions: ['all']},
+  ]);
 });
 
 it('should render a reliabilityAndToolCalls tile in its section in both L0 and L1', async () => {
@@ -213,7 +267,7 @@ it('should render a reliabilityAndToolCalls tile in its section in both L0 and L
   ];
   (loadAgenticDashboard as jest.Mock).mockReturnValueOnce({tiles, availableFilters: []});
 
-  const node = shallow(<AgenticControlPlane/>);
+  const node = shallow(<AgenticControlPlane />);
   await runAllEffects();
 
   // L0 (fleet view — no process selected)
@@ -243,7 +297,7 @@ it('should inject the configured top-N limit when evaluating a tile with a topN 
   ];
   (loadAgenticDashboard as jest.Mock).mockReturnValueOnce({tiles, availableFilters: []});
 
-  const node = shallow(<AgenticControlPlane/>);
+  const node = shallow(<AgenticControlPlane />);
   await runAllEffects();
 
   const loadTile = node.find('.token-section').find('DashboardRenderer').prop('loadTile') as (
@@ -260,7 +314,7 @@ it('should not inject a limit for token tiles without a topN config', async () =
   const tiles = [{id: 'token-trend', configuration: {section: 'token'}, position: {x: 0, y: 0}}];
   (loadAgenticDashboard as jest.Mock).mockReturnValueOnce({tiles, availableFilters: []});
 
-  const node = shallow(<AgenticControlPlane/>);
+  const node = shallow(<AgenticControlPlane />);
   await runAllEffects();
 
   const loadTile = node.find('.token-section').find('DashboardRenderer').prop('loadTile') as (

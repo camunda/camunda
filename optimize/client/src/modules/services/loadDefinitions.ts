@@ -13,6 +13,11 @@ export type Definition = {
   name: string | null;
 };
 
+export type Version = {
+  version: string;
+  versionTag: string | null;
+};
+
 export async function loadDefinitions(
   type: string,
   collectionId: string | null,
@@ -29,6 +34,22 @@ export async function loadDefinitions(
   }
 
   const response = await get(`api/definition/${type}/keys`, params);
+
+  return response.json();
+}
+
+export async function loadVersions(
+  type: string,
+  collectionId: string | null,
+  key: string
+): Promise<Version[]> {
+  const params: {filterByCollectionScope?: string} = {};
+
+  if (collectionId) {
+    params.filterByCollectionScope = collectionId;
+  }
+
+  const response = await get(`api/definition/${type}/${key}/versions`, params);
 
   return response.json();
 }

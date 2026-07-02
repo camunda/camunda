@@ -368,6 +368,37 @@ class AgenticReliabilityKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
   }
 
   @Test
+  void shouldReturnOnlyTheRequestedVersionWhenDefinitionVersionFilterApplied() {
+    final String procKey = "proc-fr-versioned";
+
+    // given version 1: 2 instances, 1 with incident → 50% (must be excluded when scoping to v2)
+    final ProcessInstanceDto v1WithIncident =
+        resolvedIncident(agenticInstance(procKey, "1", 100L, 50L));
+    final ProcessInstanceDto v1Clean = agenticInstance(procKey, "1", 100L, 50L).build();
+    // version 2: 4 instances, 1 with incident → 25% (the only bucket that must be returned)
+    final ProcessInstanceDto v2WithIncident =
+        resolvedIncident(agenticInstance(procKey, "2", 100L, 50L));
+    final List<ProcessInstanceDto> v2Clean =
+        repeat(3, () -> agenticInstance(procKey, "2", 100L, 50L).build());
+
+    persistProcessInstances(
+        Stream.of(List.of(v1WithIncident, v1Clean, v2WithIncident), v2Clean)
+            .flatMap(List::stream)
+            .toList());
+
+    // when scoping the definition filter to version 2 only
+    final ReportDataDefinitionDto scopedToV2 = new ReportDataDefinitionDto(procKey);
+    scopedToV2.setVersions(List.of("2"));
+    final List<MapResultEntryDto> buckets =
+        reports.evaluateMapData(
+            FAILURE_RATE_BY_VERSION_REPORT_ID, withDefinitions(List.of(scopedToV2)));
+
+    // then only the version 2 bucket appears, with its own scoped rate
+    assertThat(buckets).extracting(MapResultEntryDto::getKey).containsExactly("2");
+    assertThat(rateForVersion(buckets, "2")).isEqualTo(25.0);
+  }
+
+  @Test
   void shouldReturnNoErrorWhenNoCompletedAgenticInstancesMatch() {
     // given only running agentic and completed non-agentic instances — nothing to group
     final ProcessInstanceDto running =
