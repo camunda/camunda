@@ -12,9 +12,13 @@ jest.mock('translation', () => ({
   t: (key) => key,
 }));
 
+// generateLegends keeps module-level state (previouslyTruncated/viewMoreClicked) keyed by
+// chart.id. Using a unique id per chart instance keeps each test isolated and order-independent.
+let chartIdCounter = 0;
+
 function createChart({legendHeight = 200, outerRadius = 100, legendHitBoxes = [], labels = []}) {
   return {
-    id: 'test-chart',
+    id: `test-chart-${chartIdCounter++}`,
     _metasets: [{controller: {outerRadius}}],
     legend: {
       height: legendHeight,
