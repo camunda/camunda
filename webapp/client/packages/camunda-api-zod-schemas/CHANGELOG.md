@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.79
+
+### 🚀 Enhancements
+
+- Add wait state statistics endpoint to the 8.10 process-instance schema ([#56422](https://github.com/camunda/camunda/issues/56422))
+
+### ❤️ Contributors
+
+- Daniel Kelemen ([@danielkelemen](https://github.com/danielkelemen))
+
 ## v0.0.78
 
 ### 🚀 Enhancements
