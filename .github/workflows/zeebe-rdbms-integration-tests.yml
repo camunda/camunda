@@ -32,8 +32,17 @@ defaults:
     shell: bash
 
 jobs:
-  trigger-stable-8-9-nightly:
+  # Scheduled runs only trigger on the default branch (main), so we fan out this same
+  # workflow to the other branches listed in the matrix below via `gh workflow run`.
+  # Add/remove branches here to change which stable branches get a nightly run.
+  trigger-stable-nightly:
+    name: "Trigger nightly run / ${{ matrix.branch }}"
     if: github.event_name == 'schedule'
+    strategy:
+      fail-fast: false
+      matrix:
+        branch:
+          - stable/8.9
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -41,15 +50,16 @@ jobs:
       actions: write
     steps:
       - uses: actions/checkout@v6
-      - name: Trigger stable/8.9 nightly run
+      - name: Trigger ${{ matrix.branch }} nightly run
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run --ref stable/8.9 zeebe-rdbms-integration-tests.yml -f notify-slack-on-failure=true
+        run: gh workflow run --ref ${{ matrix.branch }} zeebe-rdbms-integration-tests.yml -f notify-slack-on-failure=true
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
+          job_name: "${{ env.GITHUB_JOB }}/${{ matrix.branch }}"
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
