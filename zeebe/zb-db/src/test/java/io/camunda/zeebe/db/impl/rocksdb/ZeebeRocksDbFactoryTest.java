@@ -115,7 +115,7 @@ final class ZeebeRocksDbFactoryTest {
             ColumnFamilyOptions::writeBufferSize,
             ColumnFamilyOptions::compactionPriority,
             ColumnFamilyOptions::numLevels)
-        .containsExactly(16_901_492L, CompactionPriority.OldestSmallestSeqFirst, 4);
+        .containsExactly(16_901_492L, CompactionPriority.OldestLargestSeqFirst, 4);
 
     // then - user options should override defaults
     assertThat(customOptions)
@@ -140,7 +140,7 @@ final class ZeebeRocksDbFactoryTest {
     assertThat(columnFamilyOptions.maxWriteBufferNumber()).isEqualTo(6);
     assertThat(columnFamilyOptions.writeBufferSize()).isEqualTo(3_380_298L);
     assertThat(columnFamilyOptions.compactionPriority())
-        .isEqualTo(CompactionPriority.OldestSmallestSeqFirst);
+        .isEqualTo(CompactionPriority.OldestLargestSeqFirst);
     assertThat(columnFamilyOptions.compactionStyle()).isEqualTo(CompactionStyle.LEVEL);
     assertThat(columnFamilyOptions.level0FileNumCompactionTrigger()).isEqualTo(6);
     assertThat(columnFamilyOptions.level0SlowdownWritesTrigger()).isEqualTo(9);
