@@ -60,6 +60,7 @@ const ResultPreview = styled.p`
   overflow: hidden;
   text-overflow: ellipsis;
   color: var(--cds-text-secondary);
+  max-inline-size: 100ch;
 `;
 
 export {Container, ToolHeader, ToolLabel, ToolActions, ResultPreview};
