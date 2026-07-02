@@ -177,7 +177,7 @@ You can specify a secondary storage type as the second argument:
 . ./newLoadTest.sh my-load-test-name none           # No secondary storage
 ```
 
-The `none` option runs load tests without any secondary storage, which disables Camunda exporters. This is useful for testing the core orchestration engine performance in isolation.
+The `none` option runs load tests without any secondary storage, which disables Camunda exporters. This is useful for testing the core orchestration engine performance in isolation. Optimize requires a secondary storage backend, so it is always forced off with `none`, regardless of the `enable_optimize` argument/input.
 
 #### Disabling Optimize
 

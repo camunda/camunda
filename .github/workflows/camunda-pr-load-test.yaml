@@ -108,6 +108,10 @@ jobs:
       scenario: 'max'
       secondary-storage-type: ${{ needs.sanitize-branch-name.outputs.storage-type }}
       reuse-tag: ${{ inputs.reuse-tag }}
+      # Optimize cannot run without a secondary storage backend: force it off
+      # for `none` rather than relying on camunda-load-test.yml's default
+      # (true), which would otherwise render an invalid config (#56506).
+      enable-optimize: ${{ needs.sanitize-branch-name.outputs.storage-type != 'none' }}
 
   await-benchmark:
     name: Await Benchmark

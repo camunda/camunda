@@ -58,6 +58,13 @@ var defaultScenarios = []scenario{
 	{Name: "rdbms", Storage: "postgresql", Optimize: false, Stable: false},
 	{Name: "rdbms-optimize", Storage: "postgresql", Optimize: true, Stable: false},
 	{Name: "none", Storage: "none", Optimize: false, Stable: false},
+	// Optimize cannot run without a secondary storage backend: the Makefile
+	// forces it off when Storage=none regardless of Optimize here (#56506).
+	// Its own golden fixture must show Optimize disabled (optimize.enabled:
+	// false, no optimize-elasticsearch overlay) just like the "none" scenario
+	// above — the namespace differs, so the rendered files aren't byte-identical,
+	// but the Optimize-related configuration must match.
+	{Name: "none-optimize-requested", Storage: "none", Optimize: true, Stable: false},
 	{Name: "elasticsearch-stable", Storage: "elasticsearch", Optimize: true, Stable: true},
 	{Name: "opensearch-stable", Storage: "opensearch", Optimize: true, Stable: true},
 	{Name: "rdbms-stable", Storage: "postgresql", Optimize: false, Stable: true},
@@ -107,6 +114,15 @@ func generateScenarios(versions []string, scenarios []scenario) []versionedScena
 					// Only elasticsearch is supported on 8.7
 					continue
 				}
+			}
+
+			if v != "main" && s.Name == "none-optimize-requested" {
+				// The none+enable_optimize=true fix (#56506) is intentionally
+				// not backported to versioned setup folders — see
+				// .github/instructions/load-tests.instructions.md. Stable
+				// folders still have the pre-fix Makefile logic, so this
+				// scenario is only meaningful on main.
+				continue
 			}
 
 			scenario := versionedScenario{

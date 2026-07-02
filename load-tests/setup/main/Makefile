@@ -72,8 +72,19 @@ else ifeq ($(secondary_storage),none)
 endif
 platform_values += -f camunda-platform-values-$(secondary_storage).yaml
 
+# Optimize cannot run without a secondary storage backend: when
+# secondary_storage=none, force it off regardless of the enable_optimize
+# input. Otherwise the optimize-elasticsearch overlay below would re-enable
+# Elasticsearch on top of the none values file's noSecondaryStorage=true,
+# producing a contradictory configuration (see #56506).
+ifeq ($(secondary_storage),none)
+	_optimize_enabled := false
+else
+	_optimize_enabled := $(enable_optimize)
+endif
+
 # Disable Optimize if not enabled
-ifneq ($(enable_optimize),true)
+ifneq ($(_optimize_enabled),true)
 	platform_values += --set optimize.enabled=false
 
 	ifneq ($(filter $(secondary_storage),postgresql mysql mariadb mssql oracle),)
@@ -98,8 +109,9 @@ else ifeq ($(secondary_storage),opensearch)
 	install_es_prom_exporter := true
 	es_prom_exporter_es_uri := http://opensearch:9200
 	_load_test_setup_flags += --set metricsExporter.database.url=http://opensearch:9200
-else ifeq ($(enable_optimize),true)
-	# Here, the secondary storage is either none or a RDBMS database.
+else ifeq ($(_optimize_enabled),true)
+	# Here, the secondary storage is a RDBMS database (never none — Optimize
+	# is always forced off above when secondary_storage=none).
 	# Elasticsearch is always used in this case as the backend for Optimize.
 	install_es_prom_exporter := true
 	es_prom_exporter_es_uri := http://elastic:9200
