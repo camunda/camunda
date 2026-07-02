@@ -24,7 +24,7 @@ import {
   WAITING_BADGE,
   AGENT_STATUS_TAG,
   AGENT_SHINE,
-  getNarrowWaitingBadgePosition,
+  WAITING_BADGE_NARROW,
 } from 'modules/bpmn-js/badgePositions';
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {computed} from 'mobx';
@@ -253,7 +253,7 @@ const TopPanel: React.FC = observer(() => {
       elementId: string;
       type: string;
       position: typeof WAITING_BADGE;
-      payload: {label: string};
+      payload: {label: string; centered: boolean};
     }> = [];
 
     const hasMore = inspectionData.page?.totalItems > MAX_WAIT_STATES;
@@ -267,10 +267,8 @@ const TopPanel: React.FC = observer(() => {
         overlays.push({
           elementId,
           type: OVERLAY_TYPE_WAITING_STATE,
-          position: isNarrowElement
-            ? getNarrowWaitingBadgePosition(waitStates.length)
-            : WAITING_BADGE,
-          payload: {label},
+          position: isNarrowElement ? WAITING_BADGE_NARROW : WAITING_BADGE,
+          payload: {label, centered: isNarrowElement},
         });
       }
     }
@@ -607,13 +605,17 @@ const TopPanel: React.FC = observer(() => {
                   );
                 })}
                 {waitingOverlays?.map((overlay) => {
-                  const payload = overlay.payload as {label: string};
+                  const payload = overlay.payload as {
+                    label: string;
+                    centered: boolean;
+                  };
 
                   return (
                     <WaitingStateOverlay
                       key={`waiting-${overlay.elementId}`}
                       container={overlay.container}
                       label={payload.label}
+                      centered={payload.centered}
                     />
                   );
                 })}

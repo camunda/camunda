@@ -127,7 +127,17 @@ test.describe('process instance page', () => {
       key: waitStateRunningInstance.detail.processInstanceKey,
     });
     await processInstancePage.resetZoomButton.click();
+    // allow the diagram (bpmn-js SVG) to finish rendering before screenshotting
     await page.waitForTimeout(500);
+    await expect(
+      page.getByTestId('waiting-state-overlay').first(),
+    ).toBeVisible();
+
+    // labels cover single- and multi-digit counts (and the narrow-element offset)
+    await expect(page.getByText('2 waiting')).toBeVisible();
+    await expect(page.getByText('5 waiting')).toBeVisible();
+    await expect(page.getByText('11 waiting')).toBeVisible();
+    await expect(page.getByText('333 waiting')).toBeVisible();
 
     // select the waiting user task and open its details
     await processInstancePage.diagram

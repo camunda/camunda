@@ -12,11 +12,12 @@ import {Container} from './styled';
 type Props = {
   container: HTMLElement;
   label: string;
+  centered?: boolean;
 };
 
-const WaitingStateOverlay: React.FC<Props> = ({container, label}) => {
+const WaitingStateOverlay: React.FC<Props> = ({container, label, centered}) => {
   return createPortal(
-    <Container data-testid="waiting-state-overlay">
+    <Container data-testid="waiting-state-overlay" $centered={centered}>
       <span>{label}</span>
     </Container>,
     container,
