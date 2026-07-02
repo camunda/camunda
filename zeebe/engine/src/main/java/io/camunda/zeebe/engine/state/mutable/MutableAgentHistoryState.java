@@ -19,4 +19,10 @@ public interface MutableAgentHistoryState extends AgentHistoryState {
    * Deletes the history item stored under {@code historyItemKey}, including the secondary index.
    */
   void delete(long historyItemKey);
+
+  /**
+   * Deletes the history item stored under {@code historyItemKey} using the provided {@code record}
+   * to locate the secondary index entry, avoiding an extra state lookup.
+   */
+  void delete(long historyItemKey, AgentHistoryRecord record);
 }

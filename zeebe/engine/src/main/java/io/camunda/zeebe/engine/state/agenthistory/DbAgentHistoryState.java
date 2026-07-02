@@ -100,10 +100,15 @@ public final class DbAgentHistoryState implements MutableAgentHistoryState {
     if (existing == null) {
       return;
     }
+    delete(key, existing);
+  }
+
+  @Override
+  public void delete(final long key, final AgentHistoryRecord record) {
     historyItemKey.wrapLong(key);
-    jobKey.wrapLong(existing.getJobKey());
-    jobLease.wrapString(existing.getJobLease());
-    agentHistoryColumnFamily.deleteExisting(historyItemKey);
-    byJobKeyColumnFamily.deleteExisting(jobKeyLeaseAndHistoryItemKey);
+    jobKey.wrapLong(record.getJobKey());
+    jobLease.wrapString(record.getJobLease());
+    agentHistoryColumnFamily.deleteIfExists(historyItemKey);
+    byJobKeyColumnFamily.deleteIfExists(jobKeyLeaseAndHistoryItemKey);
   }
 }
