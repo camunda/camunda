@@ -28,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -42,8 +43,9 @@ import org.slf4j.LoggerFactory;
  * into the {@link SubscriptionState} (under the {@link PrefetchBuffer} lock) and kicks the {@link
  * Prefetcher}.
  *
- * <p>All HTTP is routed through the single {@link HttpTransport}: join uses an async send; the
- * heartbeat loop, rejoin, and commit run on executor threads and use the blocking send.
+ * <p>All HTTP is routed through the single {@link HttpTransport} and is non-blocking: join, the
+ * heartbeat loop, rejoin, and commit issue async requests and chain their completion. The scheduler
+ * is used only for heartbeat cadence and backoff, never to park a thread on a request.
  */
 public final class GroupCoordinator {
 
@@ -60,6 +62,7 @@ public final class GroupCoordinator {
   private final List<String> topics;
   private final String instanceId;
   private final Runnable checkNotClosed;
+  private final long heartbeatIntervalMs;
 
   // Written from executor threads (join/heartbeat/leave), read from caller threads (commit) — must
   // be volatile for visibility, since the enclosing consumer is documented as thread-safe.
@@ -78,7 +81,8 @@ public final class GroupCoordinator {
       final String groupId,
       final List<String> topics,
       final String instanceId,
-      final Runnable checkNotClosed) {
+      final Runnable checkNotClosed,
+      final long heartbeatIntervalMs) {
     this.transport = transport;
     this.executor = executor;
     this.subscription = subscription;
@@ -89,6 +93,7 @@ public final class GroupCoordinator {
     this.topics = topics;
     this.instanceId = instanceId;
     this.checkNotClosed = checkNotClosed;
+    this.heartbeatIntervalMs = heartbeatIntervalMs;
   }
 
   public String memberId() {
@@ -212,172 +217,181 @@ public final class GroupCoordinator {
                             scheduleSendHeartbeat();
                           }
                         }),
-            3,
-            TimeUnit.SECONDS);
+            heartbeatIntervalMs,
+            TimeUnit.MILLISECONDS);
   }
 
   public CompletableFuture<Void> sendHeartbeat() {
-    return CompletableFuture.runAsync(
-        () -> {
-          checkNotClosed.run();
+    checkNotClosed.run();
 
-          final long snapshotEpoch = memberEpoch;
-          final List<TopicPartition> snapshotOwned = subscription.ownedPartitions();
+    final long snapshotEpoch = memberEpoch;
+    final List<TopicPartition> snapshotOwned = subscription.ownedPartitions();
 
-          final var path =
-              "/v1/groups/"
-                  + URLEncoder.encode(groupId, StandardCharsets.UTF_8).replace("+", "%20")
-                  + "/consumers/"
-                  + URLEncoder.encode(memberId, StandardCharsets.UTF_8).replace("+", "%20")
-                  + "/heartbeat";
+    final var path =
+        "/v1/groups/"
+            + URLEncoder.encode(groupId, StandardCharsets.UTF_8).replace("+", "%20")
+            + "/consumers/"
+            + URLEncoder.encode(memberId, StandardCharsets.UTF_8).replace("+", "%20")
+            + "/heartbeat";
 
-          final SyncResponse httpResponse;
-          try {
-            httpResponse =
-                transport.sendJsonSync(
-                    path,
-                    new HeartbeatRequest(memberEpoch, groupByTopic(snapshotOwned)),
-                    "heartbeat");
-          } catch (final EventBridgeException e) {
-            throw new CoordinatorUnavailableException(
-                "Heartbeat HTTP request failed: " + e.getMessage());
-          }
+    // Chain the response handling on the executor so state mutations stay on a single-threaded
+    // executor as before; the request itself runs on the HTTP client's executor (non-blocking).
+    return transport
+        .postJsonRaw(
+            path, new HeartbeatRequest(memberEpoch, groupByTopic(snapshotOwned)), "heartbeat")
+        .handleAsync(
+            (httpResponse, error) ->
+                onHeartbeatResponse(snapshotEpoch, snapshotOwned, httpResponse, error),
+            executor)
+        .thenCompose(future -> future);
+  }
 
-          if (httpResponse.statusCode() == 503) {
-            throw new CoordinatorUnavailableException(
-                "Heartbeat rejected — coordinator unavailable");
-          }
-          if (httpResponse.statusCode() == 409) {
-            // Fenced or unknown member (stale epoch, or the coordinator failed over and lost
-            // in-memory membership). Re-register instead of heartbeating forever as a ghost.
-            LOG.warn(
-                "[Heartbeat][Consumer={}] membership fenced/unknown (409); rejoining group {}",
-                instanceId,
-                groupId);
-            rejoinSync();
-            scheduleSendHeartbeat();
-            return;
-          }
-          if (httpResponse.statusCode() != 200) {
-            throw new EventBridgeException(
-                "Heartbeat failed: HTTP "
-                    + httpResponse.statusCode()
-                    + " — "
-                    + httpResponse.body());
-          }
+  /**
+   * Applies a heartbeat response on the executor thread, preserving the original semantics
+   * (stale-response discard, delta vs. full reconciliation, offset seeding, reschedule) and turning
+   * a 409-fence into an async rejoin-then-reschedule. Returns the future the outer heartbeat future
+   * completes from.
+   */
+  private CompletableFuture<Void> onHeartbeatResponse(
+      final long snapshotEpoch,
+      final List<TopicPartition> snapshotOwned,
+      final SyncResponse httpResponse,
+      final Throwable error) {
+    if (error != null || httpResponse == null) {
+      throw new CoordinatorUnavailableException(
+          "Heartbeat HTTP request failed: " + (error != null ? error.getMessage() : "no response"));
+    }
 
-          final var hb =
-              transport.readBody(httpResponse.body(), HeartbeatResponse.class, "heartbeat");
-          final long serverEpoch = hb.memberEpoch();
+    if (httpResponse.statusCode() == 503) {
+      throw new CoordinatorUnavailableException("Heartbeat rejected — coordinator unavailable");
+    }
+    if (httpResponse.statusCode() == 409) {
+      // Fenced or unknown member (stale epoch, or the coordinator failed over and lost in-memory
+      // membership). Re-register instead of heartbeating forever as a ghost.
+      LOG.warn(
+          "[Heartbeat][Consumer={}] membership fenced/unknown (409); rejoining group {}",
+          instanceId,
+          groupId);
+      return rejoin().whenComplete((ignored, rejoinError) -> scheduleSendHeartbeat());
+    }
+    if (httpResponse.statusCode() != 200) {
+      throw new EventBridgeException(
+          "Heartbeat failed: HTTP " + httpResponse.statusCode() + " — " + httpResponse.body());
+    }
 
-          if (serverEpoch < snapshotEpoch) {
-            LOG.debug(
-                "Ignoring stale heartbeat response (server epoch {} < client epoch {})",
-                serverEpoch,
-                snapshotEpoch);
-            return;
-          }
+    final var hb = transport.readBody(httpResponse.body(), HeartbeatResponse.class, "heartbeat");
+    final long serverEpoch = hb.memberEpoch();
 
-          // Note: no explicit ACK is sent for either path. The coordinator confirms a revocation
-          // from the ownedPartitions this consumer reports in its next heartbeat (see
-          // GroupReconciliation); applying the change here and reporting it next beat is the
-          // acknowledgement.
-          if (serverEpoch > snapshotEpoch) {
-            // Full reconciliation: replace owned partitions wholesale from the full assignment.
-            applyOwnedPartitions(flatten(hb.assignment()));
-            memberEpoch = serverEpoch;
-          } else {
-            // Delta path (serverEpoch == snapshotEpoch).
-            final var revoke = flatten(hb.revoke());
-            final var assign = flatten(hb.assign());
+    if (serverEpoch < snapshotEpoch) {
+      LOG.debug(
+          "Ignoring stale heartbeat response (server epoch {} < client epoch {})",
+          serverEpoch,
+          snapshotEpoch);
+      return CompletableFuture.completedFuture(null);
+    }
 
-            if (!revoke.isEmpty() || !assign.isEmpty()) {
-              final var newOwned = new ArrayList<>(snapshotOwned);
-              newOwned.removeAll(revoke);
-              newOwned.addAll(assign);
-              applyOwnedPartitions(newOwned);
-            }
-          }
+    // Note: no explicit ACK is sent for either path. The coordinator confirms a revocation from the
+    // ownedPartitions this consumer reports in its next heartbeat (see GroupReconciliation);
+    // applying the change here and reporting it next beat is the acknowledgement.
+    if (serverEpoch > snapshotEpoch) {
+      // Full reconciliation: replace owned partitions wholesale from the full assignment.
+      applyOwnedPartitions(flatten(hb.assignment()));
+      memberEpoch = serverEpoch;
+    } else {
+      // Delta path (serverEpoch == snapshotEpoch).
+      final var revoke = flatten(hb.revoke());
+      final var assign = flatten(hb.assign());
 
-          subscription.seedCommittedOffsets(hb.committedOffsets());
+      if (!revoke.isEmpty() || !assign.isEmpty()) {
+        final var newOwned = new ArrayList<>(snapshotOwned);
+        newOwned.removeAll(revoke);
+        newOwned.addAll(assign);
+        applyOwnedPartitions(newOwned);
+      }
+    }
 
-          // A reassignment or freshly seeded offset may have added fetchable partitions — start
-          // prefetching so a poll() currently blocked on the buffer becomes responsive to them.
-          prefetcher.kick();
+    subscription.seedCommittedOffsets(hb.committedOffsets());
 
-          final var state = hb.errorCode();
+    // A reassignment or freshly seeded offset may have added fetchable partitions — start
+    // prefetching so a poll() currently blocked on the buffer becomes responsive to them.
+    prefetcher.kick();
 
-          LOG.info(
-              "[Heartbeat][Consumer=%s] Consumer Group %s (state %s): memberId %s, memberEpoch: %d, ownedPartitions: %s"
-                  .formatted(
-                      instanceId,
-                      groupId,
-                      state,
-                      memberId,
-                      memberEpoch,
-                      subscription.ownedPartitions()));
+    final var state = hb.errorCode();
 
-          scheduleSendHeartbeat();
-        },
-        executor);
+    LOG.info(
+        "[Heartbeat][Consumer=%s] Consumer Group %s (state %s): memberId %s, memberEpoch: %d, ownedPartitions: %s"
+            .formatted(
+                instanceId, groupId, state, memberId, memberEpoch, subscription.ownedPartitions()));
+
+    scheduleSendHeartbeat();
+    return CompletableFuture.completedFuture(null);
   }
 
   /**
    * Re-registers this consumer with the coordinator after it has been fenced or the coordinator
-   * lost its membership (e.g. a coordinator failover wiped the in-memory registry). Synchronous:
-   * callers are already on an executor thread (the heartbeat loop or a commit retry).
+   * lost its membership (e.g. a coordinator failover wiped the in-memory registry). Non-blocking:
+   * the request is issued asynchronously and its result applied on the executor thread.
    *
    * <p>Acquires a fresh {@code memberId}/{@code memberEpoch} and drops owned partitions; the
    * coordinator reassigns them on the next heartbeat and re-seeds committed offsets. Fetch
    * positions for retained partitions are preserved (and only ever advanced via {@code max}), so
    * resumption is at-least-once.
    */
-  public void rejoinSync() {
-    final SyncResponse response;
-    try {
-      response = transport.sendJsonSync(joinPath(), new JoinRequest(topics, instanceId), "rejoin");
-    } catch (final CoordinatorUnavailableException e) {
-      throw e;
-    } catch (final EventBridgeException e) {
-      throw new CoordinatorUnavailableException("Rejoin request failed: " + e.getMessage());
-    }
+  public CompletableFuture<Void> rejoin() {
+    return transport
+        .postJsonRaw(joinPath(), new JoinRequest(topics, instanceId), "rejoin")
+        .handleAsync(
+            (response, error) -> {
+              if (error != null || response == null) {
+                throw new CoordinatorUnavailableException(
+                    "Rejoin request failed: "
+                        + (error != null ? error.getMessage() : "no response"));
+              }
+              if (response.statusCode() != 200) {
+                throw new EventBridgeException(
+                    "Rejoin failed: HTTP " + response.statusCode() + " — " + response.body());
+              }
 
-    if (response.statusCode() != 200) {
-      throw new EventBridgeException(
-          "Rejoin failed: HTTP " + response.statusCode() + " — " + response.body());
-    }
+              applyJoinResponse(transport.readBody(response.body(), JoinResponse.class, "rejoin"));
+              applyOwnedPartitions(List.of());
 
-    applyJoinResponse(transport.readBody(response.body(), JoinResponse.class, "rejoin"));
-    applyOwnedPartitions(List.of());
-
-    LOG.info(
-        "[Rejoin][Consumer={}] group {} rejoined as member {} (epoch {})",
-        instanceId,
-        groupId,
-        memberId,
-        memberEpoch);
+              LOG.info(
+                  "[Rejoin][Consumer={}] group {} rejoined as member {} (epoch {})",
+                  instanceId,
+                  groupId,
+                  memberId,
+                  memberEpoch);
+              return null;
+            },
+            executor);
   }
 
   public CompletableFuture<Void> commitOffset(
       final String topic, final int partitionId, final long position) {
-    return CompletableFuture.runAsync(
-        () -> {
-          checkNotClosed.run();
-          try {
-            doCommitOffset(topic, partitionId, position);
-          } catch (final ConsumerNotRegisteredException e) {
-            LOG.warn(
-                "Consumer not registered on commitOffset; rejoining and retrying once: {}",
-                e.getMessage());
-            rejoinSync();
-            // Retry exactly once with the fresh membership; any exception (including a repeated
-            // ConsumerNotRegisteredException, e.g. the partition is no longer owned) propagates.
-            doCommitOffset(topic, partitionId, position);
-          }
-        });
+    checkNotClosed.run();
+    return doCommitOffset(topic, partitionId, position)
+        .handle(
+            (ignored, error) -> {
+              final Throwable cause = unwrap(error);
+              if (cause instanceof ConsumerNotRegisteredException) {
+                LOG.warn(
+                    "Consumer not registered on commitOffset; rejoining and retrying once: {}",
+                    cause.getMessage());
+                // Retry exactly once with fresh membership; any exception on the retry (including a
+                // repeated ConsumerNotRegisteredException, e.g. the partition is no longer owned)
+                // propagates.
+                return rejoin().thenCompose(v -> doCommitOffset(topic, partitionId, position));
+              }
+              if (error != null) {
+                return CompletableFuture.<Void>failedFuture(cause);
+              }
+              return CompletableFuture.<Void>completedFuture(null);
+            })
+        .thenCompose(future -> future);
   }
 
-  private void doCommitOffset(final String topic, final int partitionId, final long position) {
+  private CompletableFuture<Void> doCommitOffset(
+      final String topic, final int partitionId, final long position) {
     // Commit goes to the coordinator (owns membership + epoch), which fences stale commits.
     final String path =
         "/v1/groups/"
@@ -386,25 +400,36 @@ public final class GroupCoordinator {
             + URLEncoder.encode(memberId, StandardCharsets.UTF_8)
             + "/commit";
 
-    final SyncResponse response =
-        transport.sendJsonSync(
-            path, new CommitRequest(topic, partitionId, position, memberEpoch), "commitOffset");
+    return transport
+        .postJsonRaw(
+            path, new CommitRequest(topic, partitionId, position, memberEpoch), "commitOffset")
+        .thenApply(
+            response -> {
+              if (response.statusCode() == 404 || response.statusCode() == 409) {
+                // 409: fenced/unknown member — the coordinator rejected the commit.
+                throw new ConsumerNotRegisteredException(groupId, memberId);
+              }
+              if (response.statusCode() == 400) {
+                final String body = response.body();
+                if (body != null && body.contains("\"CONSUMER_NOT_REGISTERED\"")) {
+                  throw new ConsumerNotRegisteredException(groupId, memberId);
+                }
+                throw new EventBridgeException("commitOffset failed: HTTP 400 — " + body);
+              }
+              if (response.statusCode() != 204 && response.statusCode() != 200) {
+                throw new EventBridgeException(
+                    "commitOffset failed: HTTP " + response.statusCode() + " — " + response.body());
+              }
+              return null;
+            });
+  }
 
-    if (response.statusCode() == 404 || response.statusCode() == 409) {
-      // 409: fenced/unknown member — the coordinator rejected the commit (no longer a silent 200).
-      throw new ConsumerNotRegisteredException(groupId, memberId);
+  /** Unwraps a {@link CompletionException} to its underlying cause, if any. */
+  private static Throwable unwrap(final Throwable error) {
+    if (error instanceof CompletionException && error.getCause() != null) {
+      return error.getCause();
     }
-    if (response.statusCode() == 400) {
-      final String body = response.body();
-      if (body != null && body.contains("\"CONSUMER_NOT_REGISTERED\"")) {
-        throw new ConsumerNotRegisteredException(groupId, memberId);
-      }
-      throw new EventBridgeException("commitOffset failed: HTTP 400 — " + body);
-    }
-    if (response.statusCode() != 204 && response.statusCode() != 200) {
-      throw new EventBridgeException(
-          "commitOffset failed: HTTP " + response.statusCode() + " — " + response.body());
-    }
+    return error;
   }
 
   /**

@@ -23,7 +23,7 @@ import java.util.concurrent.CompletableFuture;
  *
  * <p>All methods are thread-safe.
  */
-public interface Consumer {
+public interface Consumer extends AutoCloseable {
 
   /** Registers this consumer with the coordinator and starts the heartbeat loop. */
   CompletableFuture<Void> joinGroup();
@@ -80,8 +80,10 @@ public interface Consumer {
 
   /**
    * Closes this consumer handle. Idempotent. After close, all method calls throw {@link
-   * ConsumerClosedException}.
+   * ConsumerClosedException}. Declared without a checked exception to satisfy {@link AutoCloseable}
+   * for try-with-resources use.
    */
+  @Override
   void close();
 
   /** Returns the consumer group id. */

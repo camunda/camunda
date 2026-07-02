@@ -10,8 +10,8 @@ package io.camunda.eventbridge.client.internal.consumer;
 import io.camunda.eventbridge.client.Consumer;
 import io.camunda.eventbridge.client.ConsumerClosedException;
 import io.camunda.eventbridge.client.Event;
-import io.camunda.eventbridge.client.OffsetResetPolicy;
 import io.camunda.eventbridge.client.TopicPartition;
+import io.camunda.eventbridge.client.internal.ClientConfig;
 import io.camunda.eventbridge.client.internal.transport.HttpTransport;
 import java.time.Duration;
 import java.util.Collections;
@@ -46,13 +46,13 @@ public final class ConsumerImpl implements Consumer {
    * @param fetcher the fetch capability (typically the client facade)
    * @param transport the shared HTTP transport used for coordinator requests
    * @param executor the client's shared scheduled executor
-   * @param offsetResetPolicy start policy for newly assigned partitions with no committed offset
+   * @param config the client configuration (offset reset, fetch/prefetch tuning)
    */
   public ConsumerImpl(
       final Fetcher fetcher,
       final HttpTransport transport,
       final ScheduledExecutorService executor,
-      final OffsetResetPolicy offsetResetPolicy,
+      final ClientConfig config,
       final String groupId,
       final List<String> topics,
       final String instanceId) {
@@ -60,7 +60,7 @@ public final class ConsumerImpl implements Consumer {
         fetcher,
         transport,
         executor,
-        offsetResetPolicy,
+        config,
         groupId,
         topics == null ? List.of() : List.copyOf(topics),
         instanceId,
@@ -76,7 +76,7 @@ public final class ConsumerImpl implements Consumer {
       final Fetcher fetcher,
       final HttpTransport transport,
       final ScheduledExecutorService executor,
-      final OffsetResetPolicy offsetResetPolicy,
+      final ClientConfig config,
       final String groupId,
       final String consumerId,
       final List<TopicPartition> initialPartitions,
@@ -85,7 +85,7 @@ public final class ConsumerImpl implements Consumer {
         fetcher,
         transport,
         executor,
-        offsetResetPolicy,
+        config,
         groupId,
         List.of(),
         consumerId,
@@ -97,16 +97,25 @@ public final class ConsumerImpl implements Consumer {
       final Fetcher fetcher,
       final HttpTransport transport,
       final ScheduledExecutorService executor,
-      final OffsetResetPolicy offsetResetPolicy,
+      final ClientConfig config,
       final String groupId,
       final List<String> topics,
       final String instanceId,
       final long initialEpoch,
       final List<TopicPartition> initialPartitions) {
     this.groupId = groupId;
-    subscription = new SubscriptionState(fetcher, offsetResetPolicy);
-    buffer = new PrefetchBuffer();
-    prefetcher = new Prefetcher(fetcher, executor, subscription, buffer, closed::get);
+    subscription = new SubscriptionState(fetcher, config.offsetResetPolicy());
+    buffer = new PrefetchBuffer(config.prefetchDepth());
+    prefetcher =
+        new Prefetcher(
+            fetcher,
+            executor,
+            subscription,
+            buffer,
+            closed::get,
+            config.fetchMaxBytes(),
+            config.fetchMinBytes(),
+            config.longPollMs());
     coordinator =
         new GroupCoordinator(
             transport,
@@ -118,7 +127,8 @@ public final class ConsumerImpl implements Consumer {
             groupId,
             topics,
             instanceId,
-            this::checkNotClosed);
+            this::checkNotClosed,
+            config.heartbeatIntervalMs());
     coordinator.presetEpoch(initialEpoch);
     if (initialPartitions != null) {
       coordinator.applyOwnedPartitions(initialPartitions);

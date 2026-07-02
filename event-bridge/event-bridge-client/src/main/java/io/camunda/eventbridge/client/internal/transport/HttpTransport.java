@@ -25,9 +25,7 @@ import java.util.concurrent.CompletableFuture;
  * operations so every caller (client facade, topic admin, consumer collaborators) routes through
  * one place.
  *
- * <p>All async operations run on the shared HTTP client's executor. The one blocking send ({@link
- * #sendJsonSync}) exists for callers that are already running on an executor thread and want a
- * straight-line request/response.
+ * <p>All operations are non-blocking and run on the shared HTTP client's executor.
  */
 public final class HttpTransport implements AutoCloseable {
 
@@ -123,12 +121,12 @@ public final class HttpTransport implements AutoCloseable {
   }
 
   // -------------------------------------------------------------------------
-  // JSON — sync
+  // JSON — raw (per-status handling by the caller)
 
   /**
    * Sends {@code POST path} with a JSON {@code body} asynchronously and returns the raw response
-   * status and body without asserting a status. Callers that apply per-status handling (join) use
-   * this.
+   * status and body without asserting a status. Callers that apply per-status handling (join,
+   * heartbeat, rejoin, commit) use this.
    */
   public CompletableFuture<SyncResponse> postJsonRaw(
       final String path, final Object body, final String op) {
@@ -138,29 +136,7 @@ public final class HttpTransport implements AutoCloseable {
         .thenApply(response -> new SyncResponse(response.statusCode(), response.body()));
   }
 
-  /**
-   * Sends {@code POST path} with a JSON {@code body} and returns the raw response, blocking the
-   * calling thread. Intended for callers already running on an executor thread (the heartbeat loop,
-   * rejoin, and commit paths) that want a straight-line request/response with per-status handling.
-   *
-   * @return the raw string-bodied HTTP response
-   */
-  public SyncResponse sendJsonSync(final String path, final Object body, final String op) {
-    final var request =
-        jsonRequest(path).POST(HttpRequest.BodyPublishers.ofString(writeBody(body, op))).build();
-    final HttpResponse<String> response;
-    try {
-      response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-    } catch (final IOException | InterruptedException e) {
-      if (e instanceof InterruptedException) {
-        Thread.currentThread().interrupt();
-      }
-      throw new EventBridgeException(op + " HTTP request failed: " + e.getMessage(), e);
-    }
-    return new SyncResponse(response.statusCode(), response.body());
-  }
-
-  /** A synchronous HTTP response reduced to its status code and string body. */
+  /** A raw HTTP response reduced to its status code and string body. */
   public record SyncResponse(int statusCode, String body) {}
 
   // -------------------------------------------------------------------------

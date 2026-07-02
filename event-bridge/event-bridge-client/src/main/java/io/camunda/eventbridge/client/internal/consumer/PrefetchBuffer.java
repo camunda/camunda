@@ -13,11 +13,10 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -25,11 +24,16 @@ import java.util.concurrent.locks.ReentrantLock;
  * Bounded per-partition buffer holding prefetched {@link Event}s, together with the concurrency
  * primitives that coordinate the background fetcher and a blocked {@code poll}.
  *
- * <p>All mutable state — the per-partition deques, the in-flight set, and the fetch generation
- * counter — is guarded by a single {@link ReentrantLock}; the {@link Condition} on that lock lets a
- * poll park until data is available (or the buffer is signalled on close). The generation counter
- * is bumped on any seek or reassignment so that fetches issued from a stale cursor can be discarded
- * when they complete.
+ * <p>All mutable state — the per-partition deques, the in-flight fetch counts, and the fetch
+ * generation counter — is guarded by a single {@link ReentrantLock}; the {@link Condition} on that
+ * lock lets a poll park until data is available (or the buffer is signalled on close). The
+ * generation counter is bumped on any seek or reassignment so that fetches issued from a stale
+ * cursor can be discarded when they complete.
+ *
+ * <p>Prefetch depth bounds how many fetches per partition may be outstanding at once: a partition
+ * is eligible for another fetch while its in-flight count plus a slot for any buffered batch is
+ * below the configured depth. Depth {@code 1} therefore re-fetches only once the buffer drains (the
+ * historical behavior); a higher depth lets that many fetches pipeline.
  *
  * <p>Callers that need to combine a position update with a buffer mutation atomically run both
  * under {@link #runLocked(Runnable)} so the whole critical section observes a single lock hold.
@@ -39,8 +43,22 @@ public final class PrefetchBuffer {
   private final ReentrantLock lock = new ReentrantLock();
   private final Condition dataAvailable = lock.newCondition();
   private final Map<TopicPartition, ArrayDeque<Event>> buffers = new LinkedHashMap<>();
-  private final Set<TopicPartition> inFlight = new HashSet<>();
+  private final Map<TopicPartition, Integer> inFlight = new HashMap<>();
+  private final int prefetchDepth;
   private int fetchGeneration;
+
+  /** Creates a buffer with the historical depth-1 behavior. */
+  public PrefetchBuffer() {
+    this(1);
+  }
+
+  /**
+   * Creates a buffer that permits up to {@code prefetchDepth} outstanding fetches (buffered batch
+   * plus in-flight) per partition.
+   */
+  public PrefetchBuffer(final int prefetchDepth) {
+    this.prefetchDepth = Math.max(1, prefetchDepth);
+  }
 
   /** Runs {@code action} while holding the buffer lock. */
   public void runLocked(final Runnable action) {
@@ -78,13 +96,13 @@ public final class PrefetchBuffer {
    */
   public void retain(final Collection<TopicPartition> retained) {
     buffers.keySet().retainAll(retained);
-    inFlight.retainAll(retained);
+    inFlight.keySet().retainAll(retained);
   }
 
   /**
-   * Marks every owned partition with an empty buffer and no in-flight fetch as in-flight and
-   * returns them. The returned list is the set of partitions the caller should now fetch. Acquires
-   * the lock.
+   * Claims fetch slots for every owned partition still below its prefetch depth and returns them.
+   * The returned list may contain a partition multiple times when the depth permits more than one
+   * new in-flight fetch this kick; the caller issues one fetch per occurrence. Acquires the lock.
    *
    * @return the fetch generation captured under the lock, and the partitions claimed for fetching
    */
@@ -96,9 +114,12 @@ public final class PrefetchBuffer {
       gen = fetchGeneration;
       for (final TopicPartition tp : owned) {
         final ArrayDeque<Event> buf = buffers.get(tp);
-        if (!inFlight.contains(tp) && (buf == null || buf.isEmpty())) {
-          inFlight.add(tp);
+        final int bufferedSlot = (buf != null && !buf.isEmpty()) ? 1 : 0;
+        int occupied = inFlight.getOrDefault(tp, 0) + bufferedSlot;
+        while (occupied < prefetchDepth) {
+          inFlight.merge(tp, 1, Integer::sum);
           toFetch.add(tp);
+          occupied++;
         }
       }
     } finally {
@@ -110,9 +131,9 @@ public final class PrefetchBuffer {
   /** The generation and partitions returned by {@link #claim(List)}. */
   public record Claim(int generation, List<TopicPartition> partitions) {}
 
-  /** Removes the in-flight marker for {@code tp}. Caller must hold the lock. */
+  /** Decrements the in-flight count for {@code tp}. Caller must hold the lock. */
   public void clearInFlight(final TopicPartition tp) {
-    inFlight.remove(tp);
+    inFlight.computeIfPresent(tp, (ignored, count) -> count <= 1 ? null : count - 1);
   }
 
   /** Appends {@code event} to {@code tp}'s buffer, creating it if absent. Caller holds lock. */

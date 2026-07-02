@@ -8,15 +8,22 @@
 package io.camunda.eventbridge.client.internal;
 
 import io.camunda.eventbridge.client.Consumer;
+import io.camunda.eventbridge.client.ConsumerBuilder;
+import io.camunda.eventbridge.client.Event;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.client.FetchResult;
 import io.camunda.eventbridge.client.OffsetResetPolicy;
+import io.camunda.eventbridge.client.Partitioner;
 import io.camunda.eventbridge.client.internal.admin.TopicAdminImpl;
+import io.camunda.eventbridge.client.internal.consumer.ConsumerBuilderImpl;
 import io.camunda.eventbridge.client.internal.consumer.ConsumerImpl;
 import io.camunda.eventbridge.client.internal.consumer.Fetcher;
 import io.camunda.eventbridge.client.internal.producer.BatchPublisherImpl;
 import io.camunda.eventbridge.client.internal.transport.HttpTransport;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -26,20 +33,23 @@ import java.util.concurrent.ScheduledExecutorService;
  * HTTP entry point) and a scheduled executor, wiring publish (via {@link BatchPublisherImpl}),
  * fetch (via this class implementing {@link Fetcher}), topic administration (via {@link
  * TopicAdminImpl}), and consumer-group consumption (via {@link ConsumerImpl}).
+ *
+ * <p>With coordinator and fetch I/O now issued asynchronously on the JDK HTTP client's own
+ * executor, the scheduled executor here only drives heartbeat cadence and prefetch backoff; it
+ * defaults to a single thread (configurable via {@link Builder#schedulerThreads(int)}).
  */
 public final class EventBridgeClientImpl implements EventBridgeClient, Fetcher {
 
+  private final ClientConfig config;
   private final ScheduledExecutorService executor;
-  private final OffsetResetPolicy offsetResetPolicy;
   private final HttpTransport transport;
   private final TopicAdminImpl topicAdmin;
 
-  public EventBridgeClientImpl(final String gatewayUrl, final OffsetResetPolicy offsetResetPolicy) {
-    final var normalizedUrl =
-        gatewayUrl.endsWith("/") ? gatewayUrl.substring(0, gatewayUrl.length() - 1) : gatewayUrl;
-    this.offsetResetPolicy = offsetResetPolicy;
-    executor = Executors.newScheduledThreadPool(4);
-    transport = new HttpTransport(normalizedUrl);
+  /** Constructs the client from a fully-resolved {@link ClientConfig}. */
+  public EventBridgeClientImpl(final ClientConfig config) {
+    this.config = config;
+    executor = Executors.newScheduledThreadPool(Math.max(1, config.schedulerThreads()));
+    transport = new HttpTransport(config.gatewayUrl());
     topicAdmin = new TopicAdminImpl(transport);
   }
 
@@ -61,6 +71,14 @@ public final class EventBridgeClientImpl implements EventBridgeClient, Fetcher {
   public CompletableFuture<List<Long>> publishToTopic(
       final String topic, final int partitionId, final byte[] value) {
     return newBatch().add(value).publishToTopic(topic, partitionId);
+  }
+
+  @Override
+  public CompletableFuture<List<Long>> publishRouted(
+      final String topic, final int partitionCount, final String key, final byte[] value) {
+    final byte[] keyBytes = key == null ? null : key.getBytes(StandardCharsets.UTF_8);
+    final int partition = config.partitioner().partition(topic, keyBytes, partitionCount);
+    return newBatch().add(key, value).publishToTopic(topic, partition);
   }
 
   // -------------------------------------------------------------------------
@@ -113,8 +131,13 @@ public final class EventBridgeClientImpl implements EventBridgeClient, Fetcher {
   public CompletableFuture<Consumer> subscribe(
       final String groupId, final String consumerId, final List<String> topics) {
     final var consumer =
-        new ConsumerImpl(this, transport, executor, offsetResetPolicy, groupId, topics, consumerId);
+        new ConsumerImpl(this, transport, executor, config, groupId, topics, consumerId);
     return consumer.joinGroup().handle((ignore, error) -> consumer);
+  }
+
+  @Override
+  public ConsumerBuilder<Event> consume() {
+    return new ConsumerBuilderImpl<>(this);
   }
 
   // -------------------------------------------------------------------------
@@ -140,5 +163,96 @@ public final class EventBridgeClientImpl implements EventBridgeClient, Fetcher {
   public void close() {
     executor.shutdownNow();
     transport.close();
+  }
+
+  /**
+   * Default {@link Builder} implementation. Holds the resolved defaults and produces an immutable
+   * {@link ClientConfig}: scheduler size {@code 1} (I/O is async on the HTTP client's executor),
+   * {@code 5s} long-poll, {@code 1 MiB} fetch, {@code 0} min-bytes, prefetch depth {@code 1},
+   * {@code 3s} heartbeat, and the default hash {@link Partitioner}.
+   */
+  public static final class BuilderImpl implements Builder {
+
+    private String gatewayUrl;
+    private OffsetResetPolicy offsetResetPolicy = OffsetResetPolicy.EARLIEST;
+    private int schedulerThreads = 1;
+    private long longPollMs = Long.getLong("eventbridge.consumer.longPollMs", 5_000L);
+    private int fetchMaxBytes = 1 << 20;
+    private int fetchMinBytes = 0;
+    private int prefetchDepth = 1;
+    private long heartbeatIntervalMs = 3_000L;
+    private Partitioner partitioner = Partitioner.defaultHash();
+
+    @Override
+    public Builder gateway(final String gatewayUrl) {
+      this.gatewayUrl = gatewayUrl;
+      return this;
+    }
+
+    @Override
+    public Builder offsetReset(final OffsetResetPolicy offsetResetPolicy) {
+      this.offsetResetPolicy = offsetResetPolicy;
+      return this;
+    }
+
+    @Override
+    public Builder schedulerThreads(final int schedulerThreads) {
+      this.schedulerThreads = schedulerThreads;
+      return this;
+    }
+
+    @Override
+    public Builder longPollMs(final long longPollMs) {
+      this.longPollMs = longPollMs;
+      return this;
+    }
+
+    @Override
+    public Builder fetchMaxBytes(final int fetchMaxBytes) {
+      this.fetchMaxBytes = fetchMaxBytes;
+      return this;
+    }
+
+    @Override
+    public Builder fetchMinBytes(final int fetchMinBytes) {
+      this.fetchMinBytes = fetchMinBytes;
+      return this;
+    }
+
+    @Override
+    public Builder prefetchDepth(final int prefetchDepth) {
+      this.prefetchDepth = prefetchDepth;
+      return this;
+    }
+
+    @Override
+    public Builder heartbeatInterval(final Duration heartbeatInterval) {
+      heartbeatIntervalMs = heartbeatInterval.toMillis();
+      return this;
+    }
+
+    @Override
+    public Builder partitioner(final Partitioner partitioner) {
+      this.partitioner = partitioner;
+      return this;
+    }
+
+    @Override
+    public EventBridgeClient build() {
+      Objects.requireNonNull(gatewayUrl, "gateway URL is required");
+      final var normalizedUrl =
+          gatewayUrl.endsWith("/") ? gatewayUrl.substring(0, gatewayUrl.length() - 1) : gatewayUrl;
+      return new EventBridgeClientImpl(
+          new ClientConfig(
+              normalizedUrl,
+              offsetResetPolicy,
+              schedulerThreads,
+              longPollMs,
+              fetchMaxBytes,
+              fetchMinBytes,
+              prefetchDepth,
+              heartbeatIntervalMs,
+              partitioner));
+    }
   }
 }

@@ -17,30 +17,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Background fetcher that keeps at most one long-poll fetch in flight per owned partition, filling
- * the {@link PrefetchBuffer}. Runs on the client's shared scheduled executor via asynchronous
- * {@code fetchFromTopic(...).whenComplete(...)} callbacks — no dedicated thread.
+ * Background fetcher that keeps up to a configurable prefetch depth of long-poll fetches in flight
+ * per owned partition, filling the {@link PrefetchBuffer}. Runs on the client's shared scheduled
+ * executor via asynchronous {@code fetchFromTopic(...).whenComplete(...)} callbacks — no dedicated
+ * thread.
  *
- * <p>{@link #kick()} is idempotent and cheap to call often: it claims every empty, owned partition
- * that has no fetch in flight and issues a long-poll fetch for it. When a fetch completes, its
- * result is buffered (waking a parked poll), an empty parked long-poll re-arms immediately, and a
- * failed or out-of-range fetch is retried (immediately on reset, after a backoff on error). A fetch
- * whose generation no longer matches — because a seek or reassignment happened while it was in
- * flight — is discarded.
+ * <p>{@link #kick()} is idempotent and cheap to call often: it claims every owned partition still
+ * below its prefetch depth (fewer buffered batches plus in-flight fetches than {@code
+ * prefetchDepth}) and issues a long-poll fetch for it. With depth {@code 1} a partition re-fetches
+ * only once its buffer drains; a higher depth lets that many fetches pipeline. When a fetch
+ * completes, its result is buffered (waking a parked poll), an empty parked long-poll re-arms
+ * immediately, and a failed or out-of-range fetch is retried (immediately on reset, after a backoff
+ * on error). A fetch whose generation no longer matches — because a seek or reassignment happened
+ * while it was in flight — is discarded.
  */
 public final class Prefetcher {
 
   private static final Logger LOG = LoggerFactory.getLogger(Prefetcher.class);
-
-  /** Max bytes requested per (topic, partition) fetch. */
-  private static final int FETCH_MAX_BYTES = 1 << 20;
-
-  /**
-   * How long a background fetch parks on the broker (its {@code maxWaitMs}) before returning empty.
-   * An idle partition issues at most one fetch per this interval — no client spin — while the
-   * broker wakes it the instant data is committed (low latency when active).
-   */
-  private static final long LONG_POLL_MS = Long.getLong("eventbridge.consumer.longPollMs", 5_000L);
 
   /** Backoff before re-fetching a partition whose fetch failed (e.g. a leadership move). */
   private static final long FETCH_ERROR_BACKOFF_MS = 500L;
@@ -51,23 +44,42 @@ public final class Prefetcher {
   private final PrefetchBuffer buffer;
   private final BooleanSupplier closed;
 
+  /** Max bytes requested per (topic, partition) fetch. */
+  private final int fetchMaxBytes;
+
+  /** Min committed bytes the broker waits to accumulate before responding. */
+  private final int fetchMinBytes;
+
+  /**
+   * How long a background fetch parks on the broker (its {@code maxWaitMs}) before returning empty.
+   * An idle partition issues at most one fetch per this interval — no client spin — while the
+   * broker wakes it the instant data is committed (low latency when active).
+   */
+  private final long longPollMs;
+
   public Prefetcher(
       final Fetcher fetcher,
       final ScheduledExecutorService executor,
       final SubscriptionState subscription,
       final PrefetchBuffer buffer,
-      final BooleanSupplier closed) {
+      final BooleanSupplier closed,
+      final int fetchMaxBytes,
+      final int fetchMinBytes,
+      final long longPollMs) {
     this.fetcher = fetcher;
     this.executor = executor;
     this.subscription = subscription;
     this.buffer = buffer;
     this.closed = closed;
+    this.fetchMaxBytes = fetchMaxBytes;
+    this.fetchMinBytes = fetchMinBytes;
+    this.longPollMs = longPollMs;
   }
 
   /**
-   * Ensures every owned partition with an empty buffer and no in-flight fetch has a long-poll fetch
-   * issued. Idempotent and cheap to call often (on poll, after each fetch completes): the in-flight
-   * set prevents duplicate fetches, and a partition is only re-fetched once its buffer drains.
+   * Ensures every owned partition still below its prefetch depth has a long-poll fetch issued.
+   * Idempotent and cheap to call often (on poll, after each fetch completes): the in-flight count
+   * plus buffered batches are bounded by the prefetch depth per partition.
    */
   public void kick() {
     if (closed.getAsBoolean()) {
@@ -88,7 +100,8 @@ public final class Prefetcher {
     }
     final long fromPosition = from;
     fetcher
-        .fetchFromTopic(tp.topic(), tp.partition(), fromPosition, FETCH_MAX_BYTES, 0, LONG_POLL_MS)
+        .fetchFromTopic(
+            tp.topic(), tp.partition(), fromPosition, fetchMaxBytes, fetchMinBytes, longPollMs)
         .whenComplete((result, error) -> onFetchComplete(tp, gen, fromPosition, result, error));
   }
 

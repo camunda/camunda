@@ -8,6 +8,7 @@
 package io.camunda.eventbridge.client;
 
 import io.camunda.eventbridge.client.internal.EventBridgeClientImpl;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -63,7 +64,15 @@ public interface EventBridgeClient extends AutoCloseable {
    */
   static EventBridgeClient create(
       final String gatewayUrl, final OffsetResetPolicy offsetResetPolicy) {
-    return new EventBridgeClientImpl(gatewayUrl, offsetResetPolicy);
+    return builder().gateway(gatewayUrl).offsetReset(offsetResetPolicy).build();
+  }
+
+  /**
+   * Returns a {@link Builder} for configuring a client (gateway URL, offset reset policy, scheduler
+   * sizing, fetch/prefetch tuning, and partitioning strategy) before {@link Builder#build()}.
+   */
+  static Builder builder() {
+    return new EventBridgeClientImpl.BuilderImpl();
   }
 
   // -------------------------------------------------------------------------
@@ -78,6 +87,22 @@ public interface EventBridgeClient extends AutoCloseable {
 
   /** Publishes a single keyless entry to a partition of a topic. */
   CompletableFuture<List<Long>> publishToTopic(String topic, int partitionId, byte[] value);
+
+  /**
+   * Publishes a single keyed entry, routing it to a partition via the configured {@link
+   * Partitioner} over {@code partitionCount} partitions (partitions are 1-indexed).
+   *
+   * <p>Named distinctly from {@link #publishToTopic(String, int, String, byte[])} because that
+   * overload treats its {@code int} argument as an explicit partition id, whereas here the {@code
+   * int} is the partition <em>count</em> the partitioner maps the key into.
+   *
+   * @param topic the topic to publish to
+   * @param partitionCount the number of partitions the topic has
+   * @param key the record key used to select the partition
+   * @param value the record payload
+   */
+  CompletableFuture<List<Long>> publishRouted(
+      String topic, int partitionCount, String key, byte[] value);
 
   // -------------------------------------------------------------------------
   // Fetch
@@ -120,6 +145,14 @@ public interface EventBridgeClient extends AutoCloseable {
    */
   CompletableFuture<Consumer> subscribe(String groupId, String consumerId, List<String> topics);
 
+  /**
+   * Returns a {@link ConsumerBuilder} for a managed, handler-based consumer that hides the poll
+   * loop: register a {@link MessageHandler}, {@link ConsumerBuilder#start()} it, and a background
+   * daemon thread polls, dispatches, and (by default) auto-commits. Delivers raw {@link Event}s
+   * unless a {@link Deserializer} is configured.
+   */
+  ConsumerBuilder<Event> consume();
+
   // -------------------------------------------------------------------------
   // Topic administration
 
@@ -144,6 +177,68 @@ public interface EventBridgeClient extends AutoCloseable {
 
   /** A topic as reported by the registry. */
   record TopicInfo(String name, int partitionCount, int replicationFactor, String status) {}
+
+  /**
+   * Fluent builder for an {@link EventBridgeClient}. Surfaces the previously-hardcoded consumer
+   * constants (long-poll duration, fetch sizing, prefetch depth) plus scheduler sizing and the
+   * partitioning strategy. Unset options fall back to the documented defaults.
+   */
+  interface Builder {
+
+    /** Sets the gateway base URL (e.g. {@code "http://localhost:8080"}). Required. */
+    Builder gateway(String gatewayUrl);
+
+    /** Sets the offset reset policy for newly assigned partitions. Defaults to {@code EARLIEST}. */
+    Builder offsetReset(OffsetResetPolicy offsetResetPolicy);
+
+    /**
+     * Sets the size of the scheduled executor used for heartbeat cadence and prefetch backoff. I/O
+     * runs asynchronously on the JDK HTTP client's own executor, so a single thread suffices.
+     * Defaults to {@code 1}.
+     */
+    Builder schedulerThreads(int schedulerThreads);
+
+    /**
+     * Sets how long a background fetch parks on the broker before returning empty, in milliseconds.
+     * Defaults to {@code 5000}.
+     */
+    Builder longPollMs(long longPollMs);
+
+    /** Sets the max bytes requested per (topic, partition) fetch. Defaults to {@code 1 << 20}. */
+    Builder fetchMaxBytes(int fetchMaxBytes);
+
+    /**
+     * Sets the minimum committed bytes the broker waits to accumulate before responding to a
+     * background fetch. Defaults to {@code 0} (return as soon as any record is available).
+     */
+    Builder fetchMinBytes(int fetchMinBytes);
+
+    /**
+     * Sets the max prefetch depth per partition (buffered batches plus in-flight fetches). Depth
+     * {@code 1} (the default) keeps one in-flight fetch per partition and re-fetches only once the
+     * buffer drains — correct and bounded memory. Depth {@code 2} enables fetch/process pipelining
+     * (the next batch is fetched while the caller processes the current one) at roughly {@code 2x}
+     * buffer memory; higher depths pipeline further at proportional memory cost.
+     */
+    Builder prefetchDepth(int prefetchDepth);
+
+    /**
+     * Sets the interval between scheduled heartbeats to the coordinator. Defaults to {@code 3s}. A
+     * shorter interval reacts faster to reassignments at the cost of more coordinator traffic; it
+     * must stay well within the coordinator's session timeout.
+     */
+    Builder heartbeatInterval(Duration heartbeatInterval);
+
+    /**
+     * Sets the strategy that routes a keyed record to a partition for {@link
+     * EventBridgeClient#publishRouted(String, int, String, byte[])}. Defaults to {@link
+     * Partitioner#defaultHash()}.
+     */
+    Builder partitioner(Partitioner partitioner);
+
+    /** Builds the configured client. */
+    EventBridgeClient build();
+  }
 
   /** Fluent builder for publishing a batch of entries in a single request. */
   interface BatchPublisher {
