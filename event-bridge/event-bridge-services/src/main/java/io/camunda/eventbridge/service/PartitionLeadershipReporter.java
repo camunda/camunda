@@ -7,8 +7,8 @@
  */
 package io.camunda.eventbridge.service;
 
-import io.camunda.eventbridge.core.partition.PartitionLeaderReporter;
 import io.camunda.eventbridge.broker.request.coordination.BrokerReportPartitionLeaderRequest;
+import io.camunda.eventbridge.core.partition.PartitionLeaderReporter;
 import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.time.Duration;

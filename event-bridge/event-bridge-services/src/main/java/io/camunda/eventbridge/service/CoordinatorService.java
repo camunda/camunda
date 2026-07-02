@@ -148,13 +148,11 @@ public class CoordinatorService {
    * null}/blank one fans out to every coordinator shard and merges, since groups are distributed
    * across shards by group id.
    */
-  public CompletableFuture<List<GroupDescription>> describeGroups(
-      final String groupId) {
+  public CompletableFuture<List<GroupDescription>> describeGroups(final String groupId) {
     if (groupId != null && !groupId.isEmpty()) {
       return describeShard(groupId, shardFor(groupId));
     }
-    final List<CompletableFuture<List<GroupDescription>>> perShard =
-        new ArrayList<>();
+    final List<CompletableFuture<List<GroupDescription>>> perShard = new ArrayList<>();
     for (int shard = 1; shard <= coordinatorPartitionCount; shard++) {
       perShard.add(describeShard("", shard));
     }
@@ -174,8 +172,7 @@ public class CoordinatorService {
         .thenApplyAsync(r -> toDescriptions(r.getResponse()), executor);
   }
 
-  private static List<GroupDescription> toDescriptions(
-      final DescribeGroupsResponse response) {
+  private static List<GroupDescription> toDescriptions(final DescribeGroupsResponse response) {
     // map during iteration — mapGroups reuses one flyweight per element
     return response.mapGroups(
         group ->

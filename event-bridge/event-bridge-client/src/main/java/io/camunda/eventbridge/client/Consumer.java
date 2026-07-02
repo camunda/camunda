@@ -412,8 +412,16 @@ public final class Consumer {
    * Pulls the next batch of events from all currently owned (topic, partition)s, in sorted order,
    * via the gateway topic-fetch endpoint (routed to each topic partition's leader).
    *
+   * <p>Long-polls: {@code timeout} is passed to each fetch as its {@code maxWaitMs}, so the broker
+   * <em>parks</em> the request until data is committed or the timeout elapses (no client spin, no
+   * gateway↔broker ping-pong). This is exact for a single owned partition — the caller's thread
+   * blocks on the broker up to {@code timeout}. With several owned partitions the sweep joins them
+   * in order, so an idle earlier partition can delay a later partition's ready data by up to {@code
+   * timeout}; a multi-partition consumer that needs minimal latency wants a per-partition prefetch
+   * driver instead. (Today every consumer owns one partition.)
+   *
    * @param maxRecords maximum number of records to return per (topic, partition)
-   * @param timeout currently unused (reserved for long-poll support)
+   * @param timeout how long the broker may park each fetch waiting for new data
    * @return list of events fetched (may be empty if no new records available)
    * @throws ConsumerClosedException if {@link #close()} has been called
    */
@@ -428,9 +436,12 @@ public final class Consumer {
     // that a mid-sweep signal does not advance positions for already-polled partitions.
     final Map<TopicPartition, Long> pendingPositions = new LinkedHashMap<>();
 
-    // Phase 1 — fire the fetch for every owned partition in parallel. fetchFromTopic returns
-    // immediately (async HTTP), so all partition leaders are queried concurrently and a sweep costs
-    // one round-trip, not one per partition (which made a multi-partition consumer latency-bound).
+    // Phase 1 — fire the fetch for every owned partition in parallel. Each is a long-poll
+    // (maxWaitMs
+    // = timeout): fetchFromTopic returns immediately (async HTTP) while the broker parks the
+    // request
+    // server-side until data arrives or the timeout elapses, so an idle sweep costs no client spin.
+    final long maxWaitMs = Math.max(0L, timeout.toMillis());
     final Map<TopicPartition, Long> fromPositions = new LinkedHashMap<>();
     final Map<TopicPartition, CompletableFuture<FetchResult>> inflight = new LinkedHashMap<>();
     for (final var tp : partitions) {
@@ -443,7 +454,9 @@ public final class Consumer {
       }
       fromPositions.put(tp, fromPosition);
       inflight.put(
-          tp, client.fetchFromTopic(tp.topic(), tp.partition(), fromPosition, FETCH_MAX_BYTES));
+          tp,
+          client.fetchFromTopic(
+              tp.topic(), tp.partition(), fromPosition, FETCH_MAX_BYTES, 0, maxWaitMs));
     }
 
     // Phase 2 — join and assemble in sorted partition order (deterministic merge order).

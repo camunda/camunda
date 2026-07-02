@@ -11,6 +11,7 @@ import io.camunda.eventbridge.broker.request.fetch.BrokerFetchRequest;
 import io.camunda.eventbridge.protocol.request.FetchResponse;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import org.springframework.stereotype.Component;
@@ -22,6 +23,9 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class FetchService {
+
+  /** Extra time added on top of maxWaitMs for the broker request timeout of a long-poll fetch. */
+  private static final Duration LONG_POLL_TIMEOUT_SLACK = Duration.ofSeconds(5);
 
   private final BrokerClient brokerClient;
   private final ExecutorService executor;
@@ -51,6 +55,14 @@ public class FetchService {
     request.setPartitionGroup(partitionGroup);
     request.setup(partitionId, readOffset, maxBytes, minBytes, maxWaitMs);
 
-    return brokerClient.sendRequest(request).thenApplyAsync(BrokerResponse::getResponse, executor);
+    // A long-poll fetch is parked on the broker for up to maxWaitMs; the broker request timeout
+    // must
+    // outlast the park, otherwise the transport aborts a legitimately parked request. An immediate
+    // fetch (maxWaitMs = 0) uses the BrokerClient default timeout.
+    final var pending =
+        maxWaitMs > 0
+            ? brokerClient.sendRequest(request, LONG_POLL_TIMEOUT_SLACK.plusMillis(maxWaitMs))
+            : brokerClient.sendRequest(request);
+    return pending.thenApplyAsync(BrokerResponse::getResponse, executor);
   }
 }

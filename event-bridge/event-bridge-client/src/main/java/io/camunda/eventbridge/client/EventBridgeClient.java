@@ -125,9 +125,34 @@ public final class EventBridgeClient implements AutoCloseable {
   // -------------------------------------------------------------------------
   // Fetch
 
-  /** Fetches batches from a partition of a topic ({@code GET /v1/topics/{topic}/.../fetch}). */
+  /**
+   * Fetches batches from a partition of a topic ({@code GET /v1/topics/{topic}/.../fetch}), an
+   * immediate read that returns whatever is available without waiting.
+   */
   public CompletableFuture<FetchResult> fetchFromTopic(
       final String topic, final int partitionId, final long offset, final int maxBytes) {
+    return fetchFromTopic(topic, partitionId, offset, maxBytes, 0, 0L);
+  }
+
+  /**
+   * Fetches batches from a partition of a topic, optionally long-polling.
+   *
+   * <p>When {@code maxWaitMs > 0}, the broker <em>parks</em> the request (no gateway↔broker
+   * ping-pong) until at least {@code minBytes} of new data is committed or {@code maxWaitMs}
+   * elapses, then returns. With {@code minBytes = 0} this is "wait for the first record, up to
+   * {@code maxWaitMs}" — the efficient replacement for client-side spin-polling. When {@code
+   * maxWaitMs = 0} it is an immediate read.
+   *
+   * @param minBytes minimum committed bytes the broker waits to accumulate before responding
+   * @param maxWaitMs maximum time the broker parks the request before returning what it has
+   */
+  public CompletableFuture<FetchResult> fetchFromTopic(
+      final String topic,
+      final int partitionId,
+      final long offset,
+      final int maxBytes,
+      final int minBytes,
+      final long maxWaitMs) {
     final var uri =
         URI.create(
             gatewayUrl
@@ -138,13 +163,19 @@ public final class EventBridgeClient implements AutoCloseable {
                 + "/fetch?offset="
                 + offset
                 + "&maxBytes="
-                + maxBytes);
+                + maxBytes
+                + "&minBytes="
+                + minBytes
+                + "&maxWaitMs="
+                + maxWaitMs);
 
     final var request =
         HttpRequest.newBuilder()
             .uri(uri)
             .header("Accept", "application/octet-stream")
-            .timeout(Duration.ofSeconds(10))
+            // The HTTP timeout must outlast the server-side park, else the client aborts a
+            // legitimately parked long-poll: base timeout + the broker's max wait.
+            .timeout(Duration.ofSeconds(10).plusMillis(maxWaitMs))
             .GET()
             .build();
 
