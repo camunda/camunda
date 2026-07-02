@@ -7,6 +7,9 @@
  */
 package io.camunda.eventbridge.gateway.controller;
 
+import static io.camunda.eventbridge.gateway.controller.GatewayResponses.JSON;
+import static io.camunda.eventbridge.gateway.controller.GatewayResponses.PROTOBUF;
+
 import io.camunda.eventbridge.api.proto.TopicCreateRequest;
 import io.camunda.eventbridge.api.proto.TopicInfo;
 import io.camunda.eventbridge.api.proto.TopicListResponse;
@@ -16,7 +19,6 @@ import io.camunda.eventbridge.protocol.request.coordination.ReassignTopicRequest
 import io.camunda.eventbridge.service.CoordinatorService;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -41,9 +43,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/v1/topics")
 public class TopicController {
 
-  private static final String JSON = MediaType.APPLICATION_JSON_VALUE;
-  private static final String PROTOBUF = "application/x-protobuf";
-
   private final CoordinatorService coordinatorService;
 
   public TopicController(final CoordinatorService coordinatorService) {
@@ -51,7 +50,7 @@ public class TopicController {
   }
 
   @PostMapping(consumes = {JSON, PROTOBUF})
-  public CompletableFuture<ResponseEntity<Object>> createTopic(
+  public CompletableFuture<ResponseEntity<?>> createTopic(
       @RequestBody final TopicCreateRequest body) {
     final var request =
         new CreateTopicRequest()
@@ -63,28 +62,28 @@ public class TopicController {
         .handleAsync(
             (res, error) -> {
               if (error != null) {
-                return CoordinatorErrors.toResponse(error);
+                return GatewayResponses.fromCoordinatorError(error);
               }
               return ResponseEntity.status(HttpStatus.CREATED).build();
             });
   }
 
   @DeleteMapping("/{name}")
-  public CompletableFuture<ResponseEntity<Object>> deleteTopic(@PathVariable final String name) {
+  public CompletableFuture<ResponseEntity<?>> deleteTopic(@PathVariable final String name) {
     final var request = new DeleteTopicRequest().setName(name);
     return coordinatorService
         .deleteTopic(request)
         .handleAsync(
             (res, error) -> {
               if (error != null) {
-                return CoordinatorErrors.toResponse(error);
+                return GatewayResponses.fromCoordinatorError(error);
               }
               return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
             });
   }
 
   @PostMapping("/{name}/reassignments")
-  public CompletableFuture<ResponseEntity<Object>> reassignTopic(
+  public CompletableFuture<ResponseEntity<?>> reassignTopic(
       @PathVariable final String name, @RequestParam final int replicationFactor) {
     final var request =
         new ReassignTopicRequest().setName(name).setReplicationFactor(replicationFactor);
@@ -93,7 +92,7 @@ public class TopicController {
         .handleAsync(
             (res, error) -> {
               if (error != null) {
-                return CoordinatorErrors.toResponse(error);
+                return GatewayResponses.fromCoordinatorError(error);
               }
               // Reassignment is provisioned asynchronously, so acknowledge with 202 Accepted.
               return ResponseEntity.status(HttpStatus.ACCEPTED).build();
@@ -101,13 +100,13 @@ public class TopicController {
   }
 
   @GetMapping(produces = {JSON, PROTOBUF})
-  public CompletableFuture<ResponseEntity<Object>> listTopics() {
+  public CompletableFuture<ResponseEntity<?>> listTopics() {
     return coordinatorService
         .listTopics()
         .handleAsync(
             (res, error) -> {
               if (error != null) {
-                return coordinatorUnavailable();
+                return GatewayResponses.coordinatorUnavailable();
               }
               final var builder = TopicListResponse.newBuilder();
               res.getTopics()
@@ -120,15 +119,11 @@ public class TopicController {
                                   .setReplicationFactor(topic.replicationFactor())
                                   .setStatus(nullToEmpty(topic.status()))
                                   .build()));
-              return ResponseEntity.ok((Object) builder.build());
+              return ResponseEntity.ok(builder.build());
             });
   }
 
   private static String nullToEmpty(final String value) {
     return value == null ? "" : value;
-  }
-
-  private static ResponseEntity<Object> coordinatorUnavailable() {
-    return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
   }
 }

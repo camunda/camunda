@@ -7,6 +7,9 @@
  */
 package io.camunda.eventbridge.gateway.controller;
 
+import static io.camunda.eventbridge.gateway.controller.GatewayResponses.JSON;
+import static io.camunda.eventbridge.gateway.controller.GatewayResponses.PROTOBUF;
+
 import com.google.protobuf.ByteString;
 import io.camunda.eventbridge.api.proto.FetchEntry;
 import io.camunda.eventbridge.api.proto.FetchResponseJson;
@@ -52,9 +55,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/v1/topics")
 public class TopicDataController {
 
-  private static final String JSON = MediaType.APPLICATION_JSON_VALUE;
-  private static final String PROTOBUF = "application/x-protobuf";
-
   private final PublishService publishService;
   private final FetchService fetchService;
 
@@ -75,7 +75,7 @@ public class TopicDataController {
       value = "/{topic}/partitions/{partitionId}/records",
       consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE,
       produces = {JSON, PROTOBUF})
-  public CompletableFuture<ResponseEntity<Object>> publish(
+  public CompletableFuture<ResponseEntity<?>> publish(
       @PathVariable final String topic,
       @PathVariable final int partitionId,
       @RequestBody final byte[] body) {
@@ -90,7 +90,7 @@ public class TopicDataController {
       value = "/{topic}/partitions/{partitionId}/records",
       consumes = {JSON, PROTOBUF},
       produces = {JSON, PROTOBUF})
-  public CompletableFuture<ResponseEntity<Object>> publishEntries(
+  public CompletableFuture<ResponseEntity<?>> publishEntries(
       @PathVariable final String topic,
       @PathVariable final int partitionId,
       @RequestBody final PublishRequest request) {
@@ -102,7 +102,7 @@ public class TopicDataController {
     return publishBatch(topic, partitionId, builder.build());
   }
 
-  private CompletableFuture<ResponseEntity<Object>> publishBatch(
+  private CompletableFuture<ResponseEntity<?>> publishBatch(
       final String topic, final int partitionId, final byte[] batch) {
     return publishService
         .publish(TopicGroups.name(topic), partitionId, batch)
@@ -110,9 +110,9 @@ public class TopicDataController {
             (res, error) -> {
               if (error != null) {
                 return ResponseEntity.internalServerError()
-                    .body((Object) ("Publish failed: " + rootMessage(error)));
+                    .body("Publish failed: " + rootMessage(error));
               }
-              return ResponseEntity.ok((Object) toPublishResponse(res));
+              return ResponseEntity.ok(toPublishResponse(res));
             });
   }
 
@@ -163,7 +163,7 @@ public class TopicDataController {
   @GetMapping(
       value = "/{topic}/partitions/{partitionId}/records",
       produces = {JSON, PROTOBUF})
-  public CompletableFuture<ResponseEntity<Object>> fetchEntries(
+  public CompletableFuture<ResponseEntity<?>> fetchEntries(
       @PathVariable final String topic,
       @PathVariable final int partitionId,
       @RequestParam(defaultValue = "0") final long offset,
@@ -181,7 +181,7 @@ public class TopicDataController {
                 }
                 return ResponseEntity.internalServerError().build();
               }
-              return ResponseEntity.ok((Object) toFetchResponseJson(response, offset));
+              return ResponseEntity.ok(toFetchResponseJson(response, offset));
             });
   }
 

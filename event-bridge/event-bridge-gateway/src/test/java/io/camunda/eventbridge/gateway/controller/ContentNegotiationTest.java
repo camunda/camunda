@@ -71,7 +71,7 @@ final class ContentNegotiationTest {
     coordinatorService = Mockito.mock(CoordinatorService.class);
     mockMvc =
         MockMvcBuilders.standaloneSetup(
-                new CoordinationController(coordinatorService),
+                new ConsumerGroupController(coordinatorService),
                 new TopicController(coordinatorService))
             .setControllerAdvice(new GlobalExceptionHandler())
             .setMessageConverters(

@@ -7,6 +7,9 @@
  */
 package io.camunda.eventbridge.gateway.controller;
 
+import static io.camunda.eventbridge.gateway.controller.GatewayResponses.JSON;
+import static io.camunda.eventbridge.gateway.controller.GatewayResponses.PROTOBUF;
+
 import io.camunda.eventbridge.api.proto.PartitionTopology;
 import io.camunda.eventbridge.api.proto.TopicTopology;
 import io.camunda.eventbridge.api.proto.TopologyResponse;
@@ -15,8 +18,6 @@ import io.camunda.eventbridge.protocol.request.coordination.ListTopicsResponse;
 import io.camunda.eventbridge.service.CoordinatorService;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -35,9 +36,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/v1/topology")
 public class TopologyController {
 
-  private static final String JSON = MediaType.APPLICATION_JSON_VALUE;
-  private static final String PROTOBUF = "application/x-protobuf";
-
   private final CoordinatorService coordinatorService;
   private final int clusterSize;
 
@@ -48,20 +46,20 @@ public class TopologyController {
   }
 
   @GetMapping(produces = {JSON, PROTOBUF})
-  public CompletableFuture<ResponseEntity<Object>> topology() {
+  public CompletableFuture<ResponseEntity<?>> topology() {
     final var brokers = IntStream.range(0, clusterSize).boxed().toList();
     return coordinatorService
         .listTopics()
         .handleAsync(
             (res, error) -> {
               if (error != null) {
-                return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+                return GatewayResponses.coordinatorUnavailable();
               }
               final var response =
                   TopologyResponse.newBuilder()
                       .addAllBrokers(brokers)
                       .addAllTopics(toTopologies(res));
-              return ResponseEntity.ok((Object) response.build());
+              return ResponseEntity.ok(response.build());
             });
   }
 

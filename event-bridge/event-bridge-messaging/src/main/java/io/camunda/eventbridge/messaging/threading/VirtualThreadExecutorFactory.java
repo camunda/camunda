@@ -22,7 +22,6 @@ public final class VirtualThreadExecutorFactory implements ExecutorServiceFactor
 
   @Override
   public ExecutorService create(final String name) {
-    Executors.newScheduledThreadPool(4, Thread.ofVirtual().name(name + "-", 0).factory());
     return Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name(name + "-", 0).factory());
   }
 }

@@ -7,6 +7,9 @@
  */
 package io.camunda.eventbridge.gateway.controller;
 
+import static io.camunda.eventbridge.gateway.controller.GatewayResponses.JSON;
+import static io.camunda.eventbridge.gateway.controller.GatewayResponses.PROTOBUF;
+
 import io.camunda.eventbridge.api.proto.CommitRequest;
 import io.camunda.eventbridge.api.proto.CommitResponse;
 import io.camunda.eventbridge.api.proto.ConsumerHeartbeatRequest;
@@ -17,7 +20,6 @@ import io.camunda.eventbridge.api.proto.JoinResponse;
 import io.camunda.eventbridge.api.proto.OffsetFetchResult;
 import io.camunda.eventbridge.api.proto.OffsetMap;
 import io.camunda.eventbridge.protocol.request.coordination.CommitOffsetRequest;
-import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
 import io.camunda.eventbridge.protocol.request.coordination.HeartbeatRequest;
 import io.camunda.eventbridge.protocol.request.coordination.JoinGroupRequest;
 import io.camunda.eventbridge.protocol.request.coordination.LeaveGroupRequest;
@@ -30,7 +32,6 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,9 +43,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Consumer-group coordination: join, heartbeat, leave, and offset commit. Every request and
- * response uses a generated protobuf message and is content-negotiated: the same endpoint speaks
- * both {@code application/json} (humans/Postman, via {@code JsonFormat}) and {@code
+ * Consumer groups under {@code /v1/groups}: join, heartbeat, leave, offset commit, and describe.
+ * Every request and response uses a generated protobuf message and is content-negotiated: the same
+ * endpoint speaks both {@code application/json} (humans/Postman, via {@code JsonFormat}) and {@code
  * application/x-protobuf} (the client SDK, binary). Spring picks the representation from the
  * request's {@code Accept}/{@code Content-Type} headers.
  *
@@ -57,14 +58,11 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/v1/groups")
-public class CoordinationController {
-
-  private static final String JSON = MediaType.APPLICATION_JSON_VALUE;
-  private static final String PROTOBUF = "application/x-protobuf";
+public class ConsumerGroupController {
 
   private final CoordinatorService coordinatorService;
 
-  public CoordinationController(final CoordinatorService coordinatorService) {
+  public ConsumerGroupController(final CoordinatorService coordinatorService) {
     this.coordinatorService = coordinatorService;
   }
 
@@ -72,7 +70,7 @@ public class CoordinationController {
       value = "/{groupId}/members",
       consumes = {JSON, PROTOBUF},
       produces = {JSON, PROTOBUF})
-  public CompletableFuture<ResponseEntity<Object>> joinGroup(
+  public CompletableFuture<ResponseEntity<?>> joinGroup(
       @PathVariable final String groupId, @RequestBody final JoinRequest joinRequest) {
 
     final var request =
@@ -85,7 +83,7 @@ public class CoordinationController {
         .handleAsync(
             (res, error) -> {
               if (error != null) {
-                return CoordinatorErrors.toResponse(error);
+                return GatewayResponses.fromCoordinatorError(error);
               }
               final var body =
                   JoinResponse.newBuilder()
@@ -94,7 +92,7 @@ public class CoordinationController {
                       .setMemberEpoch(res.getMemberEpoch())
                       .build();
               // A member is created, so respond 201 Created with its assigned id and epoch.
-              return ResponseEntity.status(HttpStatus.CREATED).body((Object) body);
+              return ResponseEntity.status(HttpStatus.CREATED).body(body);
             });
   }
 
@@ -102,7 +100,7 @@ public class CoordinationController {
       value = "/{groupId}/members/{memberId}/heartbeat",
       consumes = {JSON, PROTOBUF},
       produces = {JSON, PROTOBUF})
-  public CompletableFuture<ResponseEntity<Object>> heartbeat(
+  public CompletableFuture<ResponseEntity<?>> heartbeat(
       @PathVariable final String groupId,
       @PathVariable final String memberId,
       @RequestBody final ConsumerHeartbeatRequest heartbeatRequest) {
@@ -124,7 +122,7 @@ public class CoordinationController {
         .handleAsync(
             (res, error) -> {
               if (error != null) {
-                return coordinatorUnavailable();
+                return GatewayResponses.coordinatorUnavailable();
               }
               // Surface the coordinator's error code as an HTTP status so the client can act on it
               // (e.g. rejoin on a fenced/unknown member) rather than silently treating every
@@ -140,12 +138,13 @@ public class CoordinationController {
                       .putAllAssignment(groupByTopic(res.getAssignment()))
                       .putAllCommittedOffsets(groupOffsetsByTopic(res.getCommittedOffsets()))
                       .build();
-              return ResponseEntity.status(statusFor(res.getErrorCode())).body((Object) body);
+              return ResponseEntity.status(GatewayResponses.statusFor(res.getErrorCode()))
+                  .body(body);
             });
   }
 
   @DeleteMapping("/{groupId}/members/{memberId}")
-  public CompletableFuture<ResponseEntity<Object>> leaveGroup(
+  public CompletableFuture<ResponseEntity<?>> leaveGroup(
       @PathVariable final String groupId,
       @PathVariable final String memberId,
       @RequestParam(name = "epoch", defaultValue = "0") final long epoch) {
@@ -157,7 +156,7 @@ public class CoordinationController {
         .handleAsync(
             (res, error) -> {
               if (error != null) {
-                return CoordinatorErrors.toResponse(error);
+                return GatewayResponses.fromCoordinatorError(error);
               }
               // Removing a member is a delete: 204 No Content, no body. A fenced/unknown member is
               // still surfaced via the error mapping above.
@@ -169,7 +168,7 @@ public class CoordinationController {
       value = "/{groupId}/members/{memberId}/offsets",
       consumes = {JSON, PROTOBUF},
       produces = {JSON, PROTOBUF})
-  public CompletableFuture<ResponseEntity<Object>> commit(
+  public CompletableFuture<ResponseEntity<?>> commit(
       @PathVariable final String groupId,
       @PathVariable final String memberId,
       @RequestBody final CommitRequest commitRequest) {
@@ -187,51 +186,51 @@ public class CoordinationController {
         .handleAsync(
             (res, error) -> {
               // A fenced/unknown member must NOT read as a successful commit: the broker rejects
-              // the
-              // command and this maps it to a status (404/409) the client treats as "rejoin then
-              // retry", instead of a silent 200.
+              // the command and this maps it to a status (404/409) the client treats as "rejoin
+              // then retry", instead of a silent 200.
               if (error != null) {
-                return CoordinatorErrors.toResponse(error);
+                return GatewayResponses.fromCoordinatorError(error);
               }
               final var body =
                   CommitResponse.newBuilder()
                       .setErrorCode(nullToEmpty(res.getErrorCode().getId()))
                       .setCommittedPosition(res.getCommittedPosition())
                       .build();
-              return ResponseEntity.ok((Object) body);
+              return ResponseEntity.ok(body);
             });
   }
 
   @GetMapping
-  public CompletableFuture<ResponseEntity<Object>> listGroups() {
+  public CompletableFuture<ResponseEntity<?>> listGroups() {
     return coordinatorService
         .describeGroups(null)
         .handleAsync(
             (groups, error) ->
-                error != null ? coordinatorUnavailable() : ResponseEntity.ok((Object) groups));
+                error != null
+                    ? GatewayResponses.coordinatorUnavailable()
+                    : ResponseEntity.ok(groups));
   }
 
   @GetMapping("/{groupId}")
-  public CompletableFuture<ResponseEntity<Object>> describeGroup(
-      @PathVariable final String groupId) {
+  public CompletableFuture<ResponseEntity<?>> describeGroup(@PathVariable final String groupId) {
     return coordinatorService
         .describeGroups(groupId)
         .handleAsync(
             (groups, error) -> {
               if (error != null) {
-                return coordinatorUnavailable();
+                return GatewayResponses.coordinatorUnavailable();
               }
               if (groups.isEmpty()) {
                 return ResponseEntity.notFound().build();
               }
-              return ResponseEntity.ok((Object) groups.get(0));
+              return ResponseEntity.ok(groups.get(0));
             });
   }
 
   @GetMapping(
       value = "/{groupId}/offsets",
       produces = {JSON, PROTOBUF})
-  public CompletableFuture<ResponseEntity<Object>> offsets(
+  public CompletableFuture<ResponseEntity<?>> offsets(
       @PathVariable final String groupId,
       @RequestParam(name = "partition", required = false) final List<String> partitions) {
     final var request = new OffsetFetchRequest().setGroupId(groupId);
@@ -243,14 +242,15 @@ public class CoordinationController {
         .handleAsync(
             (res, error) -> {
               if (error != null) {
-                return coordinatorUnavailable();
+                return GatewayResponses.coordinatorUnavailable();
               }
               final var body =
                   OffsetFetchResult.newBuilder()
                       .setErrorCode(nullToEmpty(res.getErrorCode().getId()))
                       .putAllCommittedOffsets(groupOffsetsByTopic(res.getCommittedOffsets()))
                       .build();
-              return ResponseEntity.status(statusFor(res.getErrorCode())).body((Object) body);
+              return ResponseEntity.status(GatewayResponses.statusFor(res.getErrorCode()))
+                  .body(body);
             });
   }
 
@@ -285,32 +285,6 @@ public class CoordinationController {
 
   private static String nullToEmpty(final String value) {
     return value == null ? "" : value;
-  }
-
-  /**
-   * Maps a coordinator error code to the HTTP status the client reacts to.
-   *
-   * <ul>
-   *   <li>{@code 200} — success, or a normal rebalance the client keeps polling through.
-   *   <li>{@code 409} — the member is fenced/unknown (stale epoch, or the coordinator failed over
-   *       and lost in-memory membership): the client must rejoin.
-   *   <li>{@code 400} — malformed request (invalid group id).
-   *   <li>{@code 500} — unexpected coordinator error.
-   * </ul>
-   */
-  private static HttpStatus statusFor(final CoordinationErrorCode code) {
-    return switch (code) {
-      case NONE, REBALANCE_IN_PROGRESS -> HttpStatus.OK;
-      case UNKNOWN_MEMBER_ID, FENCED_MEMBER_EPOCH, FENCED_MEMBER_ACTIVE, NOT_PARTITION_OWNER ->
-          HttpStatus.CONFLICT;
-      case INVALID_GROUP_ID -> HttpStatus.BAD_REQUEST;
-      default -> HttpStatus.INTERNAL_SERVER_ERROR;
-    };
-  }
-
-  /** The coordinator partition leader was unreachable; the client should retry. */
-  private static ResponseEntity<Object> coordinatorUnavailable() {
-    return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
   }
 
   /** Parses a {@code topic:partition} query parameter into a {@link TopicPartition}. */
