@@ -7,36 +7,54 @@
  */
 package io.camunda.application.commons.rest;
 
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
+import org.springframework.security.web.firewall.StrictHttpFirewall;
 import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.util.UrlPathHelper;
 
 /**
- * Configures Spring MVC's {@link UrlPathHelper} to not pre-decode the request URI before path
- * matching. This is required so that {@code %2F} (an encoded forward slash) in a path segment is
- * treated as an opaque segment token rather than decoded to {@code /} (which would introduce an
- * extra path separator and cause the path normalizer to collapse {@code //myGroup} → {@code
- * myGroup}, silently stripping the leading slash).
+ * Configures the three layers required to handle {@code %2F} (encoded forward slash) in URL path
+ * segments — Tomcat connector, Spring Security firewall, and Spring MVC path matching — so that
+ * entity IDs containing forward slashes (e.g., OIDC group IDs like {@code /myGroup} from Keycloak)
+ * round-trip correctly through the REST layer.
  *
- * <p>With {@code urlDecode=false}:
+ * <p>This class is unconditional (no {@code @Profile}) so it applies regardless of the active
+ * authentication profile. The three cooperating layers are:
  *
  * <ol>
- *   <li>The path {@code /roles/admin/groups/%2FmyGroup} is matched as-is by {@code AntPathMatcher},
- *       binding {@code {groupId}} to the raw value {@code %2FmyGroup}.
- *   <li>{@link UrlPathHelper#decodePathVariables(jakarta.servlet.http.HttpServletRequest,
- *       java.util.Map)} then decodes each path variable individually, so {@code @PathVariable
- *       String groupId} receives {@code /myGroup} (with the slash preserved).
+ *   <li>{@link TomcatEncodedSlashConfig}: {@code PASS_THROUGH} — keeps {@code %2F} in the URI so
+ *       Tomcat's path normalizer never sees a literal {@code /} from the encoded slash.
+ *   <li>{@link #encodedSlashFirewallCustomizer()} below: {@code allowUrlEncodedSlash(true)} —
+ *       prevents Spring Security's {@link StrictHttpFirewall} from rejecting {@code %2F} with 400.
+ *       This bean is defined here (not in a profile-specific {@code WebSecurityConfig}) so it is
+ *       always registered.
+ *   <li>{@link #configurePathMatch} below: {@code urlDecode=false} — prevents Spring MVC's {@link
+ *       UrlPathHelper} from decoding {@code %2F} to {@code /} before path matching (which would
+ *       introduce {@code //} and cause the path sanitizer to collapse it to {@code /}, stripping
+ *       the leading slash). After matching, {@code decodePathVariables()} decodes the raw {@code
+ *       %2FmyGroup} → {@code /myGroup} for the {@code @PathVariable}.
  * </ol>
- *
- * <p>All other percent-encoded path variable values (e.g., {@code %40} for {@code @}) are decoded
- * by the same {@code decodePathVariables()} call, so the change is transparent to callers.
  *
  * @see TomcatEncodedSlashConfig
  * @see <a href="https://github.com/camunda/camunda/issues/45215">Issue #45215</a>
  */
 @Configuration
 public class EncodedSlashMvcConfig implements WebMvcConfigurer {
+
+  /**
+   * Allows {@code %2F} through Spring Security's {@link StrictHttpFirewall}. Without this, the
+   * firewall rejects any request whose URI contains {@code %2F} with a 400 before it reaches any
+   * controller.
+   */
+  @Bean
+  public WebSecurityCustomizer encodedSlashFirewallCustomizer() {
+    final var firewall = new StrictHttpFirewall();
+    firewall.setAllowUrlEncodedSlash(true);
+    return web -> web.httpFirewall(firewall);
+  }
 
   @Override
   public void configurePathMatch(final PathMatchConfigurer configurer) {

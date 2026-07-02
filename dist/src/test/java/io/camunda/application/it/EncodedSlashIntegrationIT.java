@@ -9,6 +9,7 @@ package io.camunda.application.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.application.commons.rest.EncodedSlashMvcConfig;
 import io.camunda.application.commons.rest.TomcatEncodedSlashConfig;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -28,9 +29,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.firewall.StrictHttpFirewall;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -50,10 +49,10 @@ import org.springframework.web.bind.annotation.RestController;
  * <ol>
  *   <li>{@link TomcatEncodedSlashConfig}: {@code PASS_THROUGH} — keeps {@code %2F} in the URI so
  *       Tomcat's path normalizer never sees a literal {@code /} from the encoded slash.
- *   <li>{@code WebSecurityConfig.encodedSlashFirewallCustomizer()}: {@code
+ *   <li>{@link EncodedSlashMvcConfig#encodedSlashFirewallCustomizer()}: {@code
  *       allowUrlEncodedSlash(true)} — prevents Spring Security's {@link
  *       org.springframework.security.web.firewall.StrictHttpFirewall} from rejecting {@code %2F}
- *       with 400.
+ *       with 400. Defined unconditionally so it applies across all auth profiles.
  *   <li>{@link EncodedSlashMvcConfig}: {@code urlDecode=false} — prevents Spring MVC's {@link
  *       org.springframework.web.util.UrlPathHelper} from decoding {@code %2F} to {@code /} before
  *       path matching (which would introduce {@code //} and cause the path sanitizer to collapse it
@@ -61,10 +60,10 @@ import org.springframework.web.bind.annotation.RestController;
  *       decodes the raw {@code %2FmyGroup} → {@code /myGroup} for the {@code @PathVariable}.
  * </ol>
  *
- * <p><b>Scope:</b> this fix targets the {@code consolidated-auth} profile's {@code
- * WebSecurityConfig}. Optimize defines independent Spring Security configurations running in their
- * own application contexts; an equivalent customizer would be needed there if Optimize ever exposes
- * path-variable entity IDs sourced from OIDC.
+ * <p><b>Scope:</b> the Tomcat, firewall, and MVC configs live in the {@code dist} module without a
+ * profile condition, so they apply to all auth profiles. Optimize defines independent Spring
+ * Security configurations running in their own application contexts; an equivalent customizer would
+ * be needed there if Optimize ever exposes path-variable entity IDs sourced from OIDC.
  */
 @SpringBootTest(
     webEnvironment = WebEnvironment.RANDOM_PORT,
@@ -81,8 +80,12 @@ class EncodedSlashIntegrationIT {
 
     // then — neither Tomcat nor Spring Security's StrictHttpFirewall rejects the request with 400
     assertThat(response.statusCode())
-        .as("Tomcat (DECODE) and StrictHttpFirewall (allowUrlEncodedSlash) should let %2F through")
+        .as(
+            "Tomcat (PASS_THROUGH) and StrictHttpFirewall (allowUrlEncodedSlash) should let %2F through")
         .isNotEqualTo(400);
+    assertThat(response.body())
+        .as("@PathVariable should receive the decoded value with the slash intact")
+        .isEqualTo("/myGroup");
   }
 
   @Test
@@ -135,15 +138,15 @@ class EncodedSlashIntegrationIT {
 
   /**
    * Minimal Spring Boot context: embedded Tomcat + Spring Security + test controller. Mirrors the
-   * two production beans that must cooperate for encoded slashes to work:
+   * three production beans that must cooperate for encoded slashes to work:
    *
    * <ol>
-   *   <li>{@link TomcatEncodedSlashConfig} — Tomcat connector layer
-   *   <li>{@code WebSecurityConfig.encodedSlashFirewallCustomizer()} — Spring Security layer
+   *   <li>{@link TomcatEncodedSlashConfig} — Tomcat connector layer (PASS_THROUGH)
+   *   <li>{@link EncodedSlashMvcConfig} — Spring Security firewall + Spring MVC path matching
    * </ol>
    *
-   * <p>We don't import the full {@code WebSecurityConfig} because it requires the entire Camunda
-   * service layer. Instead we replicate just the firewall customizer bean inline.
+   * <p>The firewall customizer is no longer inline here; it lives in {@link EncodedSlashMvcConfig}
+   * so it applies unconditionally across all auth profiles.
    */
   @SpringBootConfiguration
   @EnableAutoConfiguration
@@ -156,20 +159,15 @@ class EncodedSlashIntegrationIT {
       return factory ->
           factory.addConnectorCustomizers(
               (TomcatConnectorCustomizer)
-                  connector -> {
-                    // DECODE converts %2F → / at the Tomcat level (before Spring MVC).
-                    // PASS_THROUGH keeps %2F in the URI but Tomcat 10.1+ still rejects it during
-                    // path normalization. DECODE avoids this by decoding before the check.
-                    connector.setEncodedSolidusHandling(EncodedSolidusHandling.DECODE.getValue());
-                  });
+                  connector ->
+                      connector.setEncodedSolidusHandling(
+                          EncodedSolidusHandling.PASS_THROUGH.getValue()));
     }
 
-    /** Spring Security layer: allow %2F through the firewall. */
+    /** Spring MVC layer: don't pre-decode the URI before path matching. */
     @Bean
-    public WebSecurityCustomizer encodedSlashFirewallCustomizer() {
-      final var firewall = new StrictHttpFirewall();
-      firewall.setAllowUrlEncodedSlash(true);
-      return web -> web.httpFirewall(firewall);
+    public EncodedSlashMvcConfig encodedSlashMvcConfig() {
+      return new EncodedSlashMvcConfig();
     }
 
     @Bean

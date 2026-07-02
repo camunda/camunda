@@ -215,21 +215,6 @@ public class WebSecurityConfig {
   private static final KeyValues CAMUNDA_AUTHENTICATION_OBSERVATION_DOMAIN_IDENTITY_TAGS =
       KeyValues.of("domain", "identity");
 
-  /**
-   * Allows encoded slashes ({@code %2F}) in request URIs. Required for entity IDs containing
-   * forward slashes (e.g., OIDC group IDs like {@code /myGroup} from Keycloak). Without this, the
-   * default {@link StrictHttpFirewall} rejects any request whose URI contains {@code %2F} with a
-   * 400 error before it reaches any controller.
-   *
-   * @see <a href="https://github.com/camunda/camunda/issues/45215">Issue #45215</a>
-   */
-  @Bean
-  public WebSecurityCustomizer encodedSlashFirewallCustomizer() {
-    final var firewall = new StrictHttpFirewall();
-    firewall.setAllowUrlEncodedSlash(true);
-    return web -> web.httpFirewall(firewall);
-  }
-
   @Bean
   @Order(ORDER_UNPROTECTED)
   public SecurityFilterChain unprotectedPathsSecurityFilterChain(
