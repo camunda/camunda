@@ -8,25 +8,51 @@
 package io.camunda.db.rdbms.read.service;
 
 import io.camunda.db.rdbms.read.RdbmsReaderConfig;
+import io.camunda.db.rdbms.read.domain.WaitStateStatisticsDbQuery;
+import io.camunda.db.rdbms.sql.WaitStateMapper;
 import io.camunda.search.clients.reader.WaitStateStatisticsReader;
 import io.camunda.search.entities.WaitStateStatisticsEntity;
 import io.camunda.search.query.WaitStateStatisticsQuery;
+import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.core.authz.ResourceAccessChecks;
 import java.util.Collections;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-// STUB: returns an empty result. The data-layer task implements the GROUP BY query
-// (SELECT element_id, COUNT(*) ... GROUP BY element_id). See issue #56254 / parent #56239.
 public class WaitStateStatisticsDbReader extends AbstractEntityReader<WaitStateStatisticsEntity>
     implements WaitStateStatisticsReader {
 
-  public WaitStateStatisticsDbReader(final RdbmsReaderConfig readerConfig) {
+  private static final Logger LOG = LoggerFactory.getLogger(WaitStateStatisticsDbReader.class);
+
+  private final WaitStateMapper waitStateMapper;
+
+  public WaitStateStatisticsDbReader(
+      final WaitStateMapper waitStateMapper, final RdbmsReaderConfig readerConfig) {
     super(null, readerConfig);
+    this.waitStateMapper = waitStateMapper;
   }
 
   @Override
   public List<WaitStateStatisticsEntity> aggregate(
       final WaitStateStatisticsQuery query, final ResourceAccessChecks resourceAccessChecks) {
-    return Collections.emptyList();
+
+    if (shouldReturnEmptyResult(resourceAccessChecks)) {
+      return Collections.emptyList();
+    }
+
+    final var authorizedResourceIds =
+        resourceAccessChecks
+            .getAuthorizedResourceIdsByType()
+            .getOrDefault(AuthorizationResourceType.PROCESS_DEFINITION.name(), List.of());
+
+    LOG.trace(
+        "[RDBMS DB] Query wait state statistics with {}", query.filter().processInstanceKey());
+    return waitStateMapper.waitStateStatistics(
+        WaitStateStatisticsDbQuery.of(
+            b ->
+                b.filter(query.filter())
+                    .authorizedResourceIds(authorizedResourceIds)
+                    .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())));
   }
 }

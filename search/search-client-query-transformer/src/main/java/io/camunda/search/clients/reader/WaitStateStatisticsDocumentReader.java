@@ -7,6 +7,7 @@
  */
 package io.camunda.search.clients.reader;
 
+import io.camunda.search.aggregation.result.WaitStateStatisticsAggregationResult;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.entities.WaitStateStatisticsEntity;
 import io.camunda.search.query.WaitStateStatisticsQuery;
@@ -14,8 +15,6 @@ import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.List;
 
-// STUB: returns an empty result. The data-layer task implements the terms aggregation
-// (group by elementId on the wait_state index). See issue #56254 / parent #56239.
 public class WaitStateStatisticsDocumentReader extends DocumentBasedReader
     implements WaitStateStatisticsReader {
 
@@ -27,6 +26,8 @@ public class WaitStateStatisticsDocumentReader extends DocumentBasedReader
   @Override
   public List<WaitStateStatisticsEntity> aggregate(
       final WaitStateStatisticsQuery query, final ResourceAccessChecks resourceAccessChecks) {
-    return List.of();
+    return getSearchExecutor()
+        .aggregate(query, WaitStateStatisticsAggregationResult.class, resourceAccessChecks)
+        .items();
   }
 }
