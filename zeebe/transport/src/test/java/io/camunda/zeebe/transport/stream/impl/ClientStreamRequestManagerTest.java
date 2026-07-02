@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.transport.stream.impl;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -52,7 +53,7 @@ final class ClientStreamRequestManagerTest {
   private final TestConcurrencyControl concurrencyControl = spy(new TestConcurrencyControl());
   private final ClientStreamRequestManager<TestMetadata> requestManager =
       new ClientStreamRequestManager<>(
-          mockTransport, concurrencyControl, StreamTopics.DEFAULT_GROUP);
+          mockTransport, concurrencyControl, DEFAULT_PHYSICAL_TENANT_ID);
   private final AggregatedClientStream<TestMetadata> clientStream =
       new AggregatedClientStream<>(
           UUID.randomUUID(),
@@ -64,9 +65,21 @@ final class ClientStreamRequestManagerTest {
   void setup() {
     when(mockTransport.send(any(), any(), any(), any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(null));
-    when(mockTransport.send(eq(StreamTopics.ADD.topic()), any(), any(), any(), any(), any()))
+    when(mockTransport.send(
+            eq(StreamTopics.ADD.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            any(),
+            any()))
         .thenReturn(CompletableFuture.completedFuture(addStreamSuccess));
-    when(mockTransport.send(eq(StreamTopics.REMOVE.topic()), any(), any(), any(), any(), any()))
+    when(mockTransport.send(
+            eq(StreamTopics.REMOVE.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            any(),
+            any()))
         .thenReturn(CompletableFuture.completedFuture(removeStreamSuccess));
     clientStream.open(requestManager, Collections.emptySet());
   }
@@ -78,7 +91,12 @@ final class ClientStreamRequestManagerTest {
     final var serverId = MemberId.anonymous();
     final var pendingRequest = new CompletableFuture<byte[]>();
     when(mockTransport.<byte[], byte[]>send(
-            eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any()))
+            eq(StreamTopics.REMOVE.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any()))
         .thenReturn(pendingRequest);
     requestManager.add(clientStream, serverId);
     requestManager.remove(clientStream, serverId);
@@ -88,7 +106,13 @@ final class ClientStreamRequestManagerTest {
 
     // then - should only have sent one ADD request (the initial one)
     verify(mockTransport, times(1))
-        .send(eq(StreamTopics.ADD.topic()), any(), any(), any(), eq(serverId), any());
+        .send(
+            eq(StreamTopics.ADD.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
   }
 
   @Test
@@ -103,7 +127,13 @@ final class ClientStreamRequestManagerTest {
 
     // then - only one request sent ever
     verify(mockTransport, times(1))
-        .send(eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any());
+        .send(
+            eq(StreamTopics.REMOVE.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
   }
 
   @Test
@@ -120,12 +150,24 @@ final class ClientStreamRequestManagerTest {
 
     // then - no request sent until we complete the future
     verify(mockTransport, never())
-        .send(eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any());
+        .send(
+            eq(StreamTopics.REMOVE.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
 
     // then - completes once future is completed
     pendingRequest.complete(removeStreamSuccess);
     verify(mockTransport, times(1))
-        .send(eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any());
+        .send(
+            eq(StreamTopics.REMOVE.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
   }
 
   @Test
@@ -134,7 +176,12 @@ final class ClientStreamRequestManagerTest {
     final var serverId = MemberId.anonymous();
     final var pendingRequest = new CompletableFuture<byte[]>();
     when(mockTransport.<byte[], byte[]>send(
-            eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any()))
+            eq(StreamTopics.REMOVE.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any()))
         .thenReturn(pendingRequest);
     requestManager.add(clientStream, serverId);
     requestManager.remove(clientStream, serverId);
@@ -144,7 +191,13 @@ final class ClientStreamRequestManagerTest {
 
     // then - only one request should have been sent
     verify(mockTransport, times(1))
-        .send(eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any());
+        .send(
+            eq(StreamTopics.REMOVE.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
   }
 
   @Test
@@ -162,12 +215,24 @@ final class ClientStreamRequestManagerTest {
 
     // then - no request sent until we complete the future
     verify(mockTransport, never())
-        .send(eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any());
+        .send(
+            eq(StreamTopics.REMOVE.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
 
     // then - completes once future is completed
     pendingRequest.completeExceptionally(new RuntimeException("failed"));
     verify(mockTransport, times(1))
-        .send(eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any());
+        .send(
+            eq(StreamTopics.REMOVE.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
   }
 
   @Test
@@ -180,7 +245,13 @@ final class ClientStreamRequestManagerTest {
 
     // then
     verify(mockTransport)
-        .send(eq(StreamTopics.ADD.topic()), any(), any(), any(), eq(serverId), any());
+        .send(
+            eq(StreamTopics.ADD.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
     assertThat(clientStream.isConnected(serverId)).isTrue();
   }
 
@@ -188,7 +259,13 @@ final class ClientStreamRequestManagerTest {
   void shouldRetryWhenAddRequestFails() {
     // given
     final var serverId = MemberId.anonymous();
-    when(mockTransport.send(eq(StreamTopics.ADD.topic()), any(), any(), any(), eq(serverId), any()))
+    when(mockTransport.send(
+            eq(StreamTopics.ADD.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any()))
         .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Expected")))
         .thenReturn(CompletableFuture.completedFuture(addStreamSuccess));
 
@@ -197,7 +274,13 @@ final class ClientStreamRequestManagerTest {
 
     // then
     verify(mockTransport, times(2))
-        .send(eq(StreamTopics.ADD.topic()), any(), any(), any(), eq(serverId), any());
+        .send(
+            eq(StreamTopics.ADD.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
     assertThat(clientStream.isConnected(serverId)).isTrue();
   }
 
@@ -208,7 +291,13 @@ final class ClientStreamRequestManagerTest {
     final var errorResponseBuffer =
         BufferUtil.bufferAsArray(new ErrorResponse().code(code).message("Failed"));
     final var serverId = MemberId.anonymous();
-    when(mockTransport.send(eq(StreamTopics.ADD.topic()), any(), any(), any(), eq(serverId), any()))
+    when(mockTransport.send(
+            eq(StreamTopics.ADD.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any()))
         .thenReturn(CompletableFuture.completedFuture(errorResponseBuffer))
         .thenReturn(CompletableFuture.completedFuture(addStreamSuccess));
 
@@ -217,7 +306,13 @@ final class ClientStreamRequestManagerTest {
 
     // then
     verify(mockTransport, times(2))
-        .send(eq(StreamTopics.ADD.topic()), any(), any(), any(), eq(serverId), any());
+        .send(
+            eq(StreamTopics.ADD.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
     assertThat(clientStream.isConnected(serverId)).isTrue();
   }
 
@@ -232,7 +327,13 @@ final class ClientStreamRequestManagerTest {
 
     // then
     verify(mockTransport)
-        .send(eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any());
+        .send(
+            eq(StreamTopics.REMOVE.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
     assertThat(clientStream.isConnected(serverId)).isFalse();
   }
 
@@ -248,7 +349,13 @@ final class ClientStreamRequestManagerTest {
 
     // then
     verify(mockTransport)
-        .send(eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any());
+        .send(
+            eq(StreamTopics.REMOVE.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
     assertThat(clientStream.isConnected(serverId)).isTrue();
   }
 
@@ -262,7 +369,13 @@ final class ClientStreamRequestManagerTest {
 
     // then
     verify(mockTransport, never())
-        .send(eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any());
+        .send(
+            eq(StreamTopics.REMOVE.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
     assertThat(clientStream.isConnected(serverId)).isFalse();
   }
 
@@ -272,7 +385,12 @@ final class ClientStreamRequestManagerTest {
     final var serverId = MemberId.anonymous();
     requestManager.add(clientStream, serverId);
     when(mockTransport.send(
-            eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any()))
+            eq(StreamTopics.REMOVE.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any()))
         .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Expected")))
         .thenReturn(CompletableFuture.completedFuture(removeStreamSuccess));
 
@@ -281,7 +399,13 @@ final class ClientStreamRequestManagerTest {
 
     // then
     verify(mockTransport, times(2))
-        .send(eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any());
+        .send(
+            eq(StreamTopics.REMOVE.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
     assertThat(clientStream.isConnected(serverId)).isFalse();
   }
 
@@ -293,7 +417,12 @@ final class ClientStreamRequestManagerTest {
         BufferUtil.bufferAsArray(new ErrorResponse().code(code).message("Failed"));
     final var serverId = MemberId.anonymous();
     when(mockTransport.send(
-            eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any()))
+            eq(StreamTopics.REMOVE.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any()))
         .thenReturn(CompletableFuture.completedFuture(errorResponseBuffer))
         .thenReturn(CompletableFuture.completedFuture(removeStreamSuccess));
     requestManager.add(clientStream, serverId);
@@ -303,7 +432,13 @@ final class ClientStreamRequestManagerTest {
 
     // then
     verify(mockTransport, times(1))
-        .send(eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any());
+        .send(
+            eq(StreamTopics.REMOVE.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
     verify(concurrencyControl, never()).schedule(any(), any());
     assertThat(clientStream.isConnected(serverId)).isFalse();
   }
@@ -325,7 +460,13 @@ final class ClientStreamRequestManagerTest {
 
     // then
     verify(mockTransport, times(1))
-        .send(eq(StreamTopics.ADD.topic()), any(), any(), any(), eq(serverId), any());
+        .send(
+            eq(StreamTopics.ADD.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
     assertThat(clientStream.isConnected(serverId)).isFalse();
     assertThat(registration.state()).isEqualTo(State.CLOSED);
   }
@@ -346,7 +487,13 @@ final class ClientStreamRequestManagerTest {
 
     // then
     verify(mockTransport, times(1))
-        .send(eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any());
+        .send(
+            eq(StreamTopics.REMOVE.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
     assertThat(clientStream.isConnected(serverId)).isFalse();
   }
 
@@ -358,7 +505,12 @@ final class ClientStreamRequestManagerTest {
     final var serverId = MemberId.anonymous();
     requestManager.add(clientStream, serverId);
     when(mockTransport.<byte[], byte[]>send(
-            eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any()))
+            eq(StreamTopics.REMOVE.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any()))
         .thenReturn(pendingRequest);
 
     // whe
@@ -367,7 +519,13 @@ final class ClientStreamRequestManagerTest {
 
     // then
     verify(mockTransport, times(1))
-        .send(eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any());
+        .send(
+            eq(StreamTopics.REMOVE.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
     verify(concurrencyControl, never()).schedule(any(), any());
     assertThat(clientStream.isConnected(serverId)).isFalse();
   }
@@ -379,7 +537,12 @@ final class ClientStreamRequestManagerTest {
     final var serverId = MemberId.anonymous();
     requestManager.add(clientStream, serverId);
     when(mockTransport.<byte[], byte[]>send(
-            eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any()))
+            eq(StreamTopics.REMOVE.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any()))
         .thenReturn(pendingRequest);
 
     // whe
@@ -388,7 +551,13 @@ final class ClientStreamRequestManagerTest {
 
     // then
     verify(mockTransport, times(1))
-        .send(eq(StreamTopics.REMOVE.topic()), any(), any(), any(), eq(serverId), any());
+        .send(
+            eq(StreamTopics.REMOVE.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
     verify(concurrencyControl, never()).schedule(any(), any());
     assertThat(clientStream.isConnected(serverId)).isFalse();
   }
@@ -399,7 +568,12 @@ final class ClientStreamRequestManagerTest {
     final var pendingRequest = new CompletableFuture<byte[]>();
     final var serverId = MemberId.anonymous();
     when(mockTransport.<byte[], byte[]>send(
-            eq(StreamTopics.ADD.topic()), any(), any(), any(), eq(serverId), any()))
+            eq(StreamTopics.ADD.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any()))
         .thenReturn(pendingRequest);
 
     // when - remove all, which will close all registrations
@@ -409,7 +583,13 @@ final class ClientStreamRequestManagerTest {
 
     // then
     verify(mockTransport, times(1))
-        .send(eq(StreamTopics.ADD.topic()), any(), any(), any(), eq(serverId), any());
+        .send(
+            eq(StreamTopics.ADD.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
     assertThat(clientStream.isConnected(serverId)).isFalse();
   }
 
@@ -425,9 +605,19 @@ final class ClientStreamRequestManagerTest {
 
     // then
     verify(mockTransport)
-        .unicast(eq(StreamTopics.REMOVE_ALL.topic()), any(), any(), eq(server1), anyBoolean());
+        .unicast(
+            eq(StreamTopics.REMOVE_ALL.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            eq(server1),
+            anyBoolean());
     verify(mockTransport)
-        .unicast(eq(StreamTopics.REMOVE_ALL.topic()), any(), any(), eq(server2), anyBoolean());
+        .unicast(
+            eq(StreamTopics.REMOVE_ALL.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            eq(server2),
+            anyBoolean());
   }
 
   private static Stream<MessagingException> provideMessagingFailures() {

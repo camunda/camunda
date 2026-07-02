@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.transport.stream.impl;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.AtomixCluster;
@@ -35,7 +36,6 @@ import io.camunda.zeebe.transport.stream.api.RemoteStreamService;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamer;
 import io.camunda.zeebe.transport.stream.api.StreamResponseException;
 import io.camunda.zeebe.transport.stream.impl.messages.ErrorCode;
-import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -410,7 +410,7 @@ final class StreamIntegrationTest {
               },
               dynamicErrorHandler,
               RemoteStreamMetrics.noop(),
-              StreamTopics.DEFAULT_GROUP);
+              DEFAULT_PHYSICAL_TENANT_ID);
     }
 
     private void start() {
@@ -448,7 +448,7 @@ final class StreamIntegrationTest {
           factory.createRemoteStreamClient(
               cluster.getCommunicationService(),
               ClientStreamMetrics.noop(),
-              StreamTopics.DEFAULT_GROUP);
+              DEFAULT_PHYSICAL_TENANT_ID);
     }
 
     private void start() {

@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.transport.stream.impl;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.scheduler.Actor;
@@ -91,7 +93,7 @@ public final class RemoteStreamerImpl<M, P extends BufferWriter> extends Actor
 
   private CompletableFuture<byte[]> send(final PushStreamRequest request, final MemberId receiver) {
     return transport.send(
-        StreamTopics.PUSH.topic(),
+        StreamTopics.PUSH.topic(DEFAULT_PHYSICAL_TENANT_ID),
         request,
         BufferUtil::bufferAsArray,
         Function.identity(),
