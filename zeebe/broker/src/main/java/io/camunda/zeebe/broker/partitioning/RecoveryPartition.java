@@ -38,7 +38,8 @@ public final class RecoveryPartition {
     return new RecoveryPartition(
         context,
         new StartupProcess<>(
-            Map.of(ACTOR_PROP_PARTITION_ID,
+            Map.of(
+                ACTOR_PROP_PARTITION_ID,
                 String.valueOf(partitionId.number()),
                 ACTOR_PROP_PHYSICAL_TENANT,
                 partitionId.group()),

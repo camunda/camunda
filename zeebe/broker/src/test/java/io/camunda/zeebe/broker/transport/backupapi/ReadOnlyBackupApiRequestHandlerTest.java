@@ -14,12 +14,12 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 
-import io.atomix.primitive.partition.PartitionId;
+import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.management.ReadOnlyBackupService;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupRangesResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupRequest;
@@ -68,7 +68,7 @@ class ReadOnlyBackupApiRequestHandlerTest {
     handler =
         new ReadOnlyBackupApiRequestHandler(
             backupService,
-            new PartitionId(Protocol.DEFAULT_PARTITION_GROUP_NAME, PARTITION_ID),
+            new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, PARTITION_ID),
             transport,
             true);
     scheduler.submitActor(handler);

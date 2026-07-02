@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.backupapi;
 
-import io.atomix.primitive.partition.PartitionId;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupRangeStatus;
 import io.camunda.zeebe.backup.api.BackupStatus;
@@ -51,16 +51,25 @@ public sealed class ReadOnlyBackupApiRequestHandler
       final PartitionId partition,
       final AtomixServerTransport transport,
       final boolean backupFeatureEnabled) {
-    super(BackupApiRequestReader::new, BackupApiResponseWriter::new);
+    super(
+        "ReadOnlyBackupApi", partition, BackupApiRequestReader::new, BackupApiResponseWriter::new);
     this.backupManager = backupManager;
     partitionId = partition;
     this.transport = transport;
     this.backupFeatureEnabled = backupFeatureEnabled;
   }
 
-  @Override
-  public String getName() {
-    return "ReadOnlyBackupApiRequestHandler";
+  public ReadOnlyBackupApiRequestHandler(
+      final String name,
+      final ReadOnlyBackupManager backupManager,
+      final PartitionId partition,
+      final AtomixServerTransport transport,
+      final boolean backupFeatureEnabled) {
+    super(name, partition, BackupApiRequestReader::new, BackupApiResponseWriter::new);
+    this.backupManager = backupManager;
+    partitionId = partition;
+    this.transport = transport;
+    this.backupFeatureEnabled = backupFeatureEnabled;
   }
 
   @Override

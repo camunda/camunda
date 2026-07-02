@@ -29,8 +29,6 @@ import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Optional;
-import java.util.Map;
 import java.util.SequencedCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -182,7 +180,7 @@ public final class BackupService extends Actor implements BackupManager {
 
     final var future = new CompletableActorFuture<BackupStatus>();
     internalBackupManager
-        .getBackupStatus(partitionId, checkpointId, actor)
+        .getBackupStatus(partitionId.number(), checkpointId, actor)
         .onComplete(
             (backupStatus, throwable) -> {
               if (throwable != null) {
@@ -203,7 +201,8 @@ public final class BackupService extends Actor implements BackupManager {
   @Override
   public ActorFuture<Collection<BackupStatus>> listBackups(final String pattern) {
     final var operationMetrics = metrics.startListingBackups();
-    final var resultFuture = internalBackupManager.listBackups(partitionId, pattern, actor);
+    final var resultFuture =
+        internalBackupManager.listBackups(partitionId.number(), pattern, actor);
     resultFuture.onComplete(operationMetrics::complete);
     resultFuture.onComplete(
         (ignore, error) -> {

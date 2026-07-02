@@ -8,7 +8,6 @@
 package io.camunda.zeebe.broker.transport.backupapi;
 
 import io.camunda.cluster.PartitionId;
-import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
@@ -61,17 +60,12 @@ public final class BackupApiRequestHandler extends ReadOnlyBackupApiRequestHandl
       final DbBackupRangeState backupRangeState,
       final PartitionId partition,
       final boolean backupFeatureEnabled) {
-    super("BackupApi",backupManager, partition, transport, backupFeatureEnabled);
+    super("BackupApi", backupManager, partition, transport, backupFeatureEnabled);
     this.logStreamWriter = logStreamWriter;
     this.backupManager = backupManager;
     this.checkpointState = checkpointState;
     this.checkpointMetadataState = checkpointMetadataState;
     this.backupRangeState = backupRangeState;
-  }
-
-  @Override
-  public String getName() {
-    return "BackupApiRequestHandler";
   }
 
   @Override

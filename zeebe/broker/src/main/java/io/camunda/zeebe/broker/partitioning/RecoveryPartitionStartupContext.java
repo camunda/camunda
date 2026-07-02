@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.management.ReadOnlyBackupService;
-import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.transport.backupapi.ReadOnlyBackupApiRequestHandler;

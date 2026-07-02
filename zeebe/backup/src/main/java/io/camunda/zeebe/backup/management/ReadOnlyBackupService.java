@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.backup.management;
 
-import io.atomix.primitive.partition.PartitionId;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.backup.api.BackupRangeStatus;
 import io.camunda.zeebe.backup.api.BackupRangeStatus.CheckpointInfo;
 import io.camunda.zeebe.backup.api.BackupStatus;
@@ -48,15 +48,11 @@ public final class ReadOnlyBackupService extends Actor implements ReadOnlyBackup
       final PartitionId partition,
       final BackupStore backupStore,
       final MeterRegistry meterRegistry) {
+    super("ReadOnlyBackupService", partition);
     this.nodeId = nodeId;
     this.partition = partition;
     storeQueries = new BackupStoreQueries(backupStore);
     metadataSyncer = new BackupMetadataSyncer(backupStore, meterRegistry);
-  }
-
-  @Override
-  public String getName() {
-    return buildActorName("ReadOnlyBackupService", partition.number());
   }
 
   @Override

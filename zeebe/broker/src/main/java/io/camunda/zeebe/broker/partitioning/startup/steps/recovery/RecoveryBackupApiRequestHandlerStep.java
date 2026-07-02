@@ -9,7 +9,7 @@ package io.camunda.zeebe.broker.partitioning.startup.steps.recovery;
 
 import static io.camunda.zeebe.scheduler.AsyncClosable.closeHelper;
 
-import io.atomix.primitive.partition.PartitionId;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.partitioning.RecoveryPartitionStartupContext;
 import io.camunda.zeebe.broker.transport.backupapi.ReadOnlyBackupApiRequestHandler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
