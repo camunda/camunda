@@ -360,6 +360,42 @@ final class AgentHistoryHandlerTest {
   }
 
   @Test
+  void shouldMapNonMapObjectContent() {
+    // given — OBJECT content with a non-map value (array of scalars)
+    final var arrayValue = List.of(10, 20, 30);
+    final var contentItem =
+        ImmutableAgentHistoryMessageContentValue.builder()
+            .withContentType(io.camunda.zeebe.protocol.record.value.AgentHistoryContentType.OBJECT)
+            .withText("")
+            .withObject(arrayValue)
+            .build();
+    final var recordValue =
+        ImmutableAgentHistoryRecordValue.builder()
+            .from(buildMinimalRecordValue(1L, 1))
+            .withContent(List.of(contentItem))
+            .build();
+    final Record<AgentHistoryRecordValue> record =
+        factory.generateRecord(
+            ValueType.AGENT_HISTORY,
+            r -> r.withIntent(AgentHistoryIntent.CREATED).withValue(recordValue));
+    final var entity = new AgentHistoryEntity().setId("1");
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getContent())
+        .singleElement()
+        .satisfies(
+            content -> {
+              assertThat(content.contentType()).isEqualTo(AgentHistoryContentType.OBJECT);
+              assertThat(content.text()).isNull();
+              assertThat(content.documentReference()).isNull();
+              assertThat(content.object()).isEqualTo(arrayValue);
+            });
+  }
+
+  @Test
   void shouldThrowOnUnspecifiedContentType() {
     // given — UNSPECIFIED is the protocol sentinel; it cannot occur for a real exported record
     final var unspecifiedItem =
