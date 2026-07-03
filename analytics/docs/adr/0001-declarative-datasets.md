@@ -166,7 +166,15 @@ id-keyed `ROLLUP_CELLS`):
 
 1. **One composite measure, not many meters.** Execution time is a single accumulator
    `{count, sum, min, max, KLL}` with `merge`; it serves count, total, avg (=sum/count), min, max,
-   and any percentile. So min/max/avg/total/p50/p95/p99 is **one meter**, not seven.
+   and any percentile. So min/max/avg/total/p50/p95/p99 is **one meter**, not seven. Composition
+   extends across the lifecycle: a process/element *summary* meter is one accumulator holding
+   per-transition counts (`activated` / `completed` / `terminated` / …) **plus** the duration
+   summary, folded from a single transition-tagged fact — so "how many instances were activated /
+   completed / terminated" and the duration stats come from one cell, not many meters. A composite
+   meter is still just one `AggregateFunction` with a struct accumulator whose `add` dispatches on
+   the fact's transition (read through `FactRow`); it needs transition-tagged generic facts, so the
+   full lifecycle-summary composite lands with the generic fact/projector (Phase 2) — the
+   duration-summary composite (Phase 1.4) is designed as the struct it grows into.
 2. **Filters and coarser group-bys are report-time views, never new datasets.** Mergeability means a
    fine-grain cube answers any coarser query by re-aggregating. A `WHERE`/`GROUP BY` that only
    references dimensions already in the grain adds zero pipelines and zero storage — it is view logic.
