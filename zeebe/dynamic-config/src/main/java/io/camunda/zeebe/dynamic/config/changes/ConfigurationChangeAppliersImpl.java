@@ -36,19 +36,19 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
   private final ClusterMembershipChangeExecutor clusterMembershipChangeExecutor;
   private final PartitionScalingChangeExecutor partitionScalingChangeExecutor;
   private final ClusterChangeExecutor clusterChangeExecutor;
-  private final ModeChangeExecutor recoveryModeChangeExecutor;
+  private final ModeChangeExecutor modeChangeExecutor;
 
   public ConfigurationChangeAppliersImpl(
       final PartitionChangeExecutor partitionChangeExecutor,
       final ClusterMembershipChangeExecutor clusterMembershipChangeExecutor,
       final PartitionScalingChangeExecutor partitionScalingChangeExecutor,
       final ClusterChangeExecutor clusterChangeExecutor,
-      final ModeChangeExecutor recoveryModeChangeExecutor) {
+      final ModeChangeExecutor modeChangeExecutor) {
     this.partitionChangeExecutor = partitionChangeExecutor;
     this.clusterMembershipChangeExecutor = clusterMembershipChangeExecutor;
     this.partitionScalingChangeExecutor = partitionScalingChangeExecutor;
     this.clusterChangeExecutor = clusterChangeExecutor;
-    this.recoveryModeChangeExecutor = recoveryModeChangeExecutor;
+    this.modeChangeExecutor = modeChangeExecutor;
   }
 
   @Override
@@ -142,13 +142,12 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
       case final ModeChangeOperation modeChangeOperation ->
           switch (modeChangeOperation.mode()) {
             case RECOVERING ->
-                new EnterRecoveryApplier(
-                    modeChangeOperation.memberId(), recoveryModeChangeExecutor);
+                new EnterRecoveryApplier(modeChangeOperation.memberId(), modeChangeExecutor);
             case PROCESSING ->
-                new ExitRecoveryApplier(modeChangeOperation.memberId(), recoveryModeChangeExecutor);
+                new ExitRecoveryApplier(modeChangeOperation.memberId(), modeChangeExecutor);
           };
       case final AwaitModeChangeOperation awaitModeChangeOperation ->
-          new AwaitModeChangeApplier(awaitModeChangeOperation.mode(), recoveryModeChangeExecutor);
+          new AwaitModeChangeApplier(awaitModeChangeOperation.mode(), modeChangeExecutor);
     };
   }
 }

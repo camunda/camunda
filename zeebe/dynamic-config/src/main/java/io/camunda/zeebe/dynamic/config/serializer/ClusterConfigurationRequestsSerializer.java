@@ -118,7 +118,7 @@ public interface ClusterConfigurationRequestsSerializer {
   UpdatePartitionDistributorConfigRequest decodeUpdatePartitionDistributorConfigRequest(
       byte[] bytes);
 
-  byte[] encodeModeChangeRequest(ModeChangeRequest recoveryModeRequest);
+  byte[] encodeModeChangeRequest(ModeChangeRequest modeChangeRequest);
 
   ModeChangeRequest decodeModeChangeRequest(byte[] encodedRequest);
 }

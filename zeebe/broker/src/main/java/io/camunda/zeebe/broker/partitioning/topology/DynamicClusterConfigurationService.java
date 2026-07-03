@@ -62,9 +62,9 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
   }
 
   @Override
-  public void registerModeChangeExecutor(final ModeChangeExecutor recoveryModeChangeExecutor) {
+  public void registerModeChangeExecutor(final ModeChangeExecutor modeChangeExecutor) {
     if (clusterConfigurationManagerService != null) {
-      clusterConfigurationManagerService.registerModeChangeExecutor(recoveryModeChangeExecutor);
+      clusterConfigurationManagerService.registerModeChangeExecutor(modeChangeExecutor);
     } else {
       throw new IllegalStateException(
           "Cannot register mode change executor before the topology manager is started");

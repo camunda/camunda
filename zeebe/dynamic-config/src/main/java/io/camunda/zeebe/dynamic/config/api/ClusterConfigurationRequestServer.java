@@ -53,7 +53,7 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
     registerUpdatePartitionDistributionHandler();
     registerForceRemoveBrokersRequestHandler();
     registerPurgeRequestHandler();
-    registerEnterRecoveryHandler();
+    registerModeChangeHandler();
   }
 
   @Override
@@ -226,13 +226,11 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
         this::encodeResponse);
   }
 
-  private void registerEnterRecoveryHandler() {
+  private void registerModeChangeHandler() {
     communicationService.replyTo(
         ClusterConfigurationRequestTopics.MODE_CHANGE.topic(),
         serializer::decodeModeChangeRequest,
-        request -> {
-          return mapResponse(clusterConfigurationManagementApi.enterRecovery(request));
-        },
+        request -> mapResponse(clusterConfigurationManagementApi.modeChange(request)),
         this::encodeResponse);
   }
 

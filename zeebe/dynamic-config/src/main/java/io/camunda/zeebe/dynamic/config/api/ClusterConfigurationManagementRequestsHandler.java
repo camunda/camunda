@@ -220,10 +220,10 @@ public final class ClusterConfigurationManagementRequestsHandler
   }
 
   @Override
-  public ActorFuture<ClusterConfigurationChangeResponse> enterRecovery(
-      final ModeChangeRequest recoveryModeRequest) {
+  public ActorFuture<ClusterConfigurationChangeResponse> modeChange(
+      final ModeChangeRequest modeChangeRequest) {
     return handleRequest(
-        recoveryModeRequest.dryRun(), new ModeChangeRequestTransformer(recoveryModeRequest.mode()));
+        modeChangeRequest.dryRun(), new ModeChangeRequestTransformer(modeChangeRequest.mode()));
   }
 
   @Override

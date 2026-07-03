@@ -81,8 +81,7 @@ public interface ClusterConfigurationManagementApi {
   ActorFuture<ClusterConfigurationChangeResponse> enableExporter(
       ExporterEnableRequest enableRequest);
 
-  ActorFuture<ClusterConfigurationChangeResponse> enterRecovery(
-      ModeChangeRequest recoveryModeRequest);
+  ActorFuture<ClusterConfigurationChangeResponse> modeChange(ModeChangeRequest modeChangeRequest);
 
   ActorFuture<ClusterConfiguration> cancelTopologyChange(
       ClusterConfigurationManagementRequest.CancelChangeRequest cancelChangeRequest);
