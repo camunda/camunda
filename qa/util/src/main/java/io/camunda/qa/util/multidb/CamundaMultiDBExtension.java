@@ -233,12 +233,12 @@ public class CamundaMultiDBExtension
   public static final Duration TIMEOUT_DATABASE_EXPORTER_READINESS = Duration.ofMinutes(3);
   public static final Duration TIMEOUT_DATABASE_READINESS = Duration.ofMinutes(3);
   public static final String KEYCLOAK_REALM = "camunda";
+  public static final String PT_ADMIN_PASSWORD = "ptadmin";
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaMultiDBExtension.class);
   private static final String EXTENSION_COORDINATION_KEY = "extension-running";
   private static final String EXTENSION_NAME = "CamundaMultiDBExtension";
   private static final String PREFERRED_EXTENSION_PROPERTY = "camunda.test.preferred.extension";
   private static final String PREFERRED_EXTENSION_MULTIDB = "multi-db";
-  private static final String PT_ADMIN_PASSWORD = "ptadmin";
 
   /**
    * PT ids are interpolated into SQL identifiers (schema/database names, table prefixes) by the
@@ -277,6 +277,11 @@ public class CamundaMultiDBExtension
 
   public CamundaMultiDBExtension(final TestStandaloneApplication<?> testApplication) {
     defaultTestApplication = testApplication;
+  }
+
+  /** The conventional admin username for a physical tenant: {@code <tenantId>-admin}. */
+  public static String physicalTenantAdminUsername(final String physicalTenantId) {
+    return physicalTenantId + "-admin";
   }
 
   private static ExtensionContext.Store coordinationStore(final ExtensionContext context) {
@@ -421,7 +426,7 @@ public class CamundaMultiDBExtension
               + applicationUnderTest.application.getClass().getName());
     }
     final var rootInit = springApplication.unifiedConfig().getSecurity().getInitialization();
-    final String adminUsername = tenantId + "-admin";
+    final String adminUsername = physicalTenantAdminUsername(tenantId);
 
     // Derive per-PT storage config based on the active database type.
     final String ptUrl;
@@ -517,7 +522,7 @@ public class CamundaMultiDBExtension
   private MultiPhysicalTenantClients buildMultiPhysicalTenantClients(final List<String> tenantIds) {
     final Map<String, CamundaClient> clients = new LinkedHashMap<>();
     for (final String tenantId : tenantIds) {
-      final String adminUsername = tenantId + "-admin";
+      final String adminUsername = physicalTenantAdminUsername(tenantId);
       final String base =
           applicationUnderTest.application.restAddress().toString().replaceAll("/+$", "");
       final URI restAddress = URI.create(base + "/physical-tenants/" + tenantId);

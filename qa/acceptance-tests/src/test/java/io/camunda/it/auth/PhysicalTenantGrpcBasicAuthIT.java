@@ -7,6 +7,8 @@
  */
 package io.camunda.it.auth;
 
+import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.PT_ADMIN_PASSWORD;
+import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.physicalTenantAdminUsername;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -55,7 +57,6 @@ final class PhysicalTenantGrpcBasicAuthIT {
 
   private static final String TENANT_A = "tenanta";
   private static final String TENANT_B = "tenantb";
-  private static final String PT_ADMIN_PASSWORD = "ptadmin";
 
   @Test
   void shouldRouteAbsentHeaderToDefaultPhysicalTenant() {
@@ -107,14 +108,16 @@ final class PhysicalTenantGrpcBasicAuthIT {
   void shouldAuthenticateTenantACredentialsOnlyInTenantA() {
     // given — tenanta-admin credentials, seeded only in PT-A's user store
     // when / then — accepted on PT-A
-    try (final var homeClient = grpcClient(TENANT_A, adminUsername(TENANT_A), PT_ADMIN_PASSWORD)) {
+    try (final var homeClient =
+        grpcClient(TENANT_A, physicalTenantAdminUsername(TENANT_A), PT_ADMIN_PASSWORD)) {
       assertThatNoException()
           .as("tenanta-admin is accepted on its home PT")
           .isThrownBy(() -> homeClient.newTopologyRequest().send().join());
     }
 
     // when / then — rejected on PT-B whose store does not contain these credentials
-    try (final var wrongTenant = grpcClient(TENANT_B, adminUsername(TENANT_A), PT_ADMIN_PASSWORD)) {
+    try (final var wrongTenant =
+        grpcClient(TENANT_B, physicalTenantAdminUsername(TENANT_A), PT_ADMIN_PASSWORD)) {
       assertThatThrownBy(() -> wrongTenant.newTopologyRequest().send().join())
           .as("tenanta-admin exists only in PT-A's store")
           .hasRootCauseInstanceOf(StatusRuntimeException.class)
@@ -130,14 +133,16 @@ final class PhysicalTenantGrpcBasicAuthIT {
   void shouldAuthenticateTenantBCredentialsOnlyInTenantB() {
     // given — tenantb-admin credentials, seeded only in PT-B's user store
     // when / then — accepted on PT-B
-    try (final var homeClient = grpcClient(TENANT_B, adminUsername(TENANT_B), PT_ADMIN_PASSWORD)) {
+    try (final var homeClient =
+        grpcClient(TENANT_B, physicalTenantAdminUsername(TENANT_B), PT_ADMIN_PASSWORD)) {
       assertThatNoException()
           .as("tenantb-admin is accepted on its home PT")
           .isThrownBy(() -> homeClient.newTopologyRequest().send().join());
     }
 
     // when / then — rejected on PT-A whose store does not contain these credentials
-    try (final var wrongTenant = grpcClient(TENANT_A, adminUsername(TENANT_B), PT_ADMIN_PASSWORD)) {
+    try (final var wrongTenant =
+        grpcClient(TENANT_A, physicalTenantAdminUsername(TENANT_B), PT_ADMIN_PASSWORD)) {
       assertThatThrownBy(() -> wrongTenant.newTopologyRequest().send().join())
           .as("tenantb-admin exists only in PT-B's store")
           .hasRootCauseInstanceOf(StatusRuntimeException.class)
@@ -147,10 +152,6 @@ final class PhysicalTenantGrpcBasicAuthIT {
                   assertThat(((StatusRuntimeException) e).getStatus().getCode())
                       .isEqualTo(Status.Code.UNAUTHENTICATED));
     }
-  }
-
-  private static String adminUsername(final String tenantId) {
-    return tenantId + "-admin";
   }
 
   /**
