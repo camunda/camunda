@@ -7,28 +7,13 @@
  */
 package io.camunda.eventbridge.analytics.stage;
 
-import io.camunda.analytics.fact.ProcessDefinitionFact;
-import io.camunda.analytics.fact.ProcessExecutionFact;
 import io.camunda.analytics.metric.JdbcProcessDefinitionSink;
-import io.camunda.analytics.projection.AnalyticsColumnFamilies;
-import io.camunda.analytics.projection.ProcessExecutionProjector;
 import io.camunda.analytics.projection.SourceRecord;
-import io.camunda.analytics.projection.StateBackedProjectionStore;
 import io.camunda.eventbridge.client.EventBridgeClient;
-import io.camunda.eventbridge.streaming.ProjectionStage;
-import io.camunda.eventbridge.streaming.StreamProcessor;
 import io.camunda.eventbridge.streaming.StreamRuntime;
-import io.camunda.eventbridge.streaming.aggregate.Rollup;
-import io.camunda.eventbridge.streaming.aggregate.TypeRoutingRollup;
-import io.camunda.eventbridge.streaming.state.rocksdb.RocksDbStateStoreProvider;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecordCodec;
-import io.camunda.zeebe.db.impl.DbBytes;
-import io.camunda.zeebe.db.impl.DbLong;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.io.File;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
 import org.h2.jdbcx.JdbcDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,41 +61,16 @@ public final class AnalyticsProjectionStage {
       LOG.info("Facts topic {} already exists", factsTopic);
     }
 
-    final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider =
-        RocksDbStateStoreProvider.open(
-            new File("data/analytics-stage1-" + instanceId), meterRegistry);
-    final StateBackedProjectionStore store = StateBackedProjectionStore.fromProvider(provider);
-    final ProcessExecutionProjector projector =
-        new ProcessExecutionProjector(store, store.elementStarts());
-    final EventBridgePartialPublisher publisher =
-        new EventBridgePartialPublisher(client, factsTopic, factsPartitions);
-
-    final List<Rollup<ProcessExecutionFact>> rollups = new ArrayList<>();
-    for (final MetricSpec<?, ?, ?> spec : Metrics.specs(slaMs)) {
-      rollups.add(
-          StageBuilders.combiner(
-              spec,
-              provider.keyValueStore(
-                  AnalyticsColumnFamilies.ROLLUP_CELLS, new DbBytes(), new DbBytes()),
-              provider.keyValueStore(
-                  AnalyticsColumnFamilies.ROLLUP_OFFSETS, new DbBytes(), new DbLong()),
-              publisher,
-              provider::runInTransaction));
-    }
-    // Process definitions are metadata (the BPMN XML), not a windowed aggregate — they bypass the
-    // shuffle and are written directly to the serving store so the dashboard can render the model.
+    // Process definitions are metadata (the BPMN XML), not a windowed aggregate — routed straight
+    // to
+    // the serving store so the dashboard can render the model; shared across shards (idempotent).
     final JdbcDataSource dataSource = new JdbcDataSource();
     dataSource.setURL(jdbcUrl);
     dataSource.setUser(jdbcUser);
     final JdbcProcessDefinitionSink definitionSink = new JdbcProcessDefinitionSink(dataSource);
     definitionSink.initSchema();
-    rollups.add(new TypeRoutingRollup<>(ProcessDefinitionFact.class, definitionSink));
 
-    // The per-partition task: fold-then-combine over the source. Single source partition today, so
-    // one task; the factory shape lets the runtime scale to task-per-partition when the source is
-    // partitioned (which additionally needs per-partition state providers).
-    final StreamProcessor<SourceRecord> task =
-        new StreamProcessor<SourceRecord>().add(new ProjectionStage<>(projector, rollups));
+    final String stateDir = "data/analytics-stage1-" + instanceId;
     final ZeebeRecordCodec codec = new ZeebeRecordCodec();
 
     final StreamRuntime<SourceRecord> runtime =
@@ -126,12 +86,20 @@ public final class AnalyticsProjectionStage {
             // event time = the Zeebe record timestamp, so the runtime advances stream time and
             // finalizes closed windows even for keys that stop receiving records.
             .timestampExtractor(sourceRecord -> sourceRecord.record().getTimestamp())
-            .taskFactory(partition -> task)
-            .transactionRunner(provider::runInTransaction)
-            .offsetStore(new ProjectionOffsetStore(store))
-            // Produce-before-commit: publish the partials durably before the source offset
-            // advances.
-            .preCommitFlush(publisher::flush)
+            // One self-contained shard per source partition: its own RocksDB, projection, combiners
+            // and publisher, owning its durability (restore/commit) — the runtime dedups its resume
+            // gap and drives its per-partition atomic commit.
+            .taskFactory(
+                partition ->
+                    ProjectionShard.open(
+                        partition,
+                        client,
+                        stateDir,
+                        factsTopic,
+                        factsPartitions,
+                        slaMs,
+                        definitionSink,
+                        meterRegistry))
             .maxPoll(MAX_RECORDS)
             .pollTimeout(POLL_TIMEOUT)
             .commitInterval(CHECKPOINT_INTERVAL)
