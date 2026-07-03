@@ -5,8 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.analytics.dataset;
+package io.camunda.analytics.aggregation;
 
+import io.camunda.analytics.dataset.CompiledProjection;
+import io.camunda.analytics.dataset.FilterPredicate;
+import io.camunda.analytics.dataset.RegisteredDataset;
 import io.camunda.analytics.dataset.store.DatasetWriter;
 import io.camunda.analytics.dimension.DimensionColumn;
 import io.camunda.analytics.fact.Fact;

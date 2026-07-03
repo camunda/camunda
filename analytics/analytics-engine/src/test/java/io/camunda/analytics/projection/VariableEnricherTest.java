@@ -9,6 +9,7 @@ package io.camunda.analytics.projection;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.analytics.dataset.EnrichmentTiming;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 

@@ -10,7 +10,6 @@ package io.camunda.analytics.dataset;
 import io.camunda.analytics.dimension.DimensionType;
 import io.camunda.analytics.fact.FactType;
 import io.camunda.analytics.meter.Meter;
-import io.camunda.analytics.projection.EnrichmentTiming;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;

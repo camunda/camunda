@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.camunda</groupId>
+    <artifactId>analytics-parent</artifactId>
+    <version>8.10.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>analytics-model</artifactId>
+  <packaging>jar</packaging>
+  <name>Analytics Model</name>
+  <description>The analytics domain vocabulary shared by every module: dataset declarations and their
+    compiled form, dimensions and keys, facts, and the meter catalog with its mergeable aggregate
+    functions (additive, sketch, composite). Pure data + aggregate logic — no processing runtime, no
+    serving backend.</description>
+
+  <dependencies>
+    <!-- Mergeable aggregate + record-value SPIs the meters/sketches implement -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>event-bridge-streaming</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <!-- msgpack property framework for the dimension-key + accumulator record flyweights -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-msgpack-value</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.agrona</groupId>
+      <artifactId>agrona</artifactId>
+    </dependency>
+    <!-- Mergeable sketches for the approximate aggregates: HLL, KLL quantiles, frequent items -->
+    <dependency>
+      <groupId>org.apache.datasketches</groupId>
+      <artifactId>datasketches-java</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+</project>

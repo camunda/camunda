@@ -8,7 +8,6 @@
 package io.camunda.analytics.dataset;
 
 import io.camunda.analytics.fact.FactType;
-import io.camunda.analytics.projection.EnrichmentTiming;
 import java.util.List;
 import java.util.Map;
 

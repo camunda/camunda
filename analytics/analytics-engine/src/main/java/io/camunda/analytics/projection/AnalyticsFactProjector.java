@@ -7,6 +7,7 @@
  */
 package io.camunda.analytics.projection;
 
+import io.camunda.analytics.dataset.EnrichmentTiming;
 import io.camunda.analytics.fact.Fact;
 import io.camunda.analytics.fact.FactType;
 import io.camunda.analytics.fact.Transition;

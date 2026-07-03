@@ -25,6 +25,12 @@
     serving store off the per-fact path — composed by a lifecycle-managed stream processor.</description>
 
   <dependencies>
+    <!-- The analytics vocabulary (facts, dimensions, meters, compiled datasets) the pipeline folds -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>analytics-model</artifactId>
+      <version>${project.version}</version>
+    </dependency>
     <!-- The streaming framework: state stores (KeyValueStore, RocksDb/InMemory/WriteBack) live here,
          bundled with the runtime like Kafka Streams bundles its state stores. -->
     <dependency>

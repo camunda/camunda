@@ -24,6 +24,7 @@
     aggregates them into read-optimized datasets for reports.</description>
 
   <modules>
+    <module>analytics-model</module>
     <module>analytics-engine</module>
     <module>analytics-store-rdbms</module>
     <module>analytics-store-document</module>

@@ -9,6 +9,7 @@ package io.camunda.analytics.dataset;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.analytics.aggregation.CubeMeterAggregation;
 import io.camunda.analytics.dimension.DimensionColumn;
 import io.camunda.analytics.dimension.DimensionKey;
 import io.camunda.analytics.dimension.DimensionKeySelector;

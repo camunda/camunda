@@ -8,7 +8,6 @@
 package io.camunda.analytics.dataset;
 
 import io.camunda.analytics.dimension.DimensionType;
-import io.camunda.analytics.projection.EnrichmentTiming;
 import java.util.Objects;
 
 /**
@@ -19,6 +18,13 @@ import java.util.Objects;
  * into the cube's {@code DimensionSchema}.
  */
 public record DimensionSpec(String name, DimensionType type, EnrichmentTiming enrichment) {
+
+  /**
+   * The namespace prefix for a variable dimension: a dimension named {@code var.<name>} groups by
+   * the process variable {@code <name>}. The projector stamps facts with this prefix and the
+   * compiler detects variable dimensions by it — a model-level naming convention.
+   */
+  public static final String VARIABLE_PREFIX = "var.";
 
   public DimensionSpec {
     Objects.requireNonNull(name, "name");

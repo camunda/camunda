@@ -13,8 +13,6 @@ import io.camunda.analytics.dimension.DimensionSchema;
 import io.camunda.analytics.meter.Meter;
 import io.camunda.analytics.meter.MeterCatalog;
 import io.camunda.analytics.meter.MeterRegistry;
-import io.camunda.analytics.projection.AnalyticsFactProjector;
-import io.camunda.analytics.projection.EnrichmentTiming;
 import io.camunda.eventbridge.streaming.window.TumblingWindows;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -49,7 +47,7 @@ public final class DatasetCompiler {
     final Map<String, EnrichmentTiming> enrichment = new LinkedHashMap<>();
     for (final DimensionSpec dimension : declaration.dimensions()) {
       columns.add(new DimensionColumn(dimension.name(), dimension.type()));
-      if (dimension.name().startsWith(AnalyticsFactProjector.VAR_PREFIX)) {
+      if (dimension.name().startsWith(DimensionSpec.VARIABLE_PREFIX)) {
         enrichment.put(dimension.name(), dimension.enrichment());
       }
     }
@@ -98,7 +96,7 @@ public final class DatasetCompiler {
     final Map<String, EnrichmentTiming> enrichment = new LinkedHashMap<>();
     for (final DimensionSpec dimension : declaration.dimensions()) {
       columns.add(new DimensionColumn(dimension.name(), dimension.type()));
-      if (dimension.name().startsWith(AnalyticsFactProjector.VAR_PREFIX)) {
+      if (dimension.name().startsWith(DimensionSpec.VARIABLE_PREFIX)) {
         enrichment.put(dimension.name(), dimension.enrichment());
       }
     }

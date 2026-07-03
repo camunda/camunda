@@ -20,7 +20,6 @@ import io.camunda.analytics.meter.InMemoryMeterIdStore;
 import io.camunda.analytics.meter.Meter;
 import io.camunda.analytics.meter.MeterCatalog;
 import io.camunda.analytics.meter.MeterRegistry;
-import io.camunda.analytics.projection.EnrichmentTiming;
 import org.junit.jupiter.api.Test;
 
 final class DatasetCompilerTest {

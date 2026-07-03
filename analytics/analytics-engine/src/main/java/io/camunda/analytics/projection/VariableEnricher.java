@@ -7,6 +7,7 @@
  */
 package io.camunda.analytics.projection;
 
+import io.camunda.analytics.dataset.EnrichmentTiming;
 import java.util.Map;
 
 /**
