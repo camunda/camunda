@@ -95,8 +95,8 @@ public final class ZeebeRuntimeValidators {
                         .isOptional()
                         .satisfiesIfStatic(
                             staticExpression ->
-                                !BusinessIdValidator.exceedsMaxLength(
-                                    staticExpression.getExpression()),
+                                BusinessIdValidator.validate(staticExpression.getExpression())
+                                    .isRight(),
                             "be no longer than %d characters"
                                 .formatted(BusinessIdValidator.MAX_BUSINESS_ID_LENGTH)))
             .build(expressionLanguage),

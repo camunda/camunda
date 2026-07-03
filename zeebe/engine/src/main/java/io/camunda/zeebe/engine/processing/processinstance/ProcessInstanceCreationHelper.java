@@ -440,16 +440,13 @@ public class ProcessInstanceCreationHelper {
   }
 
   private Either<Rejection, ?> validateBusinessIdFormat(final String businessId) {
-    if (!BusinessIdValidator.exceedsMaxLength(businessId)) {
-      return VALID;
-    }
-    return Either.left(
-        new Rejection(
-            RejectionType.INVALID_ARGUMENT,
-            """
-            Expected to create instance of process with a valid business id, \
-            but the business id exceeds the max length of %d."""
-                .formatted(BusinessIdValidator.MAX_BUSINESS_ID_LENGTH)));
+    return BusinessIdValidator.validate(businessId)
+        .mapLeft(
+            reason ->
+                new Rejection(
+                    RejectionType.INVALID_ARGUMENT,
+                    "Expected to create instance of process with a valid business id, but the business id %s."
+                        .formatted(reason)));
   }
 
   private Either<Rejection, ?> validateBusinessIdUniqueness(

@@ -7,12 +7,15 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
+import io.camunda.zeebe.util.Either;
+
 /**
- * Central definition of the Business ID length constraint, shared by the process-instance creation
+ * Central definition of the Business ID validation rules, shared by the process-instance creation
  * path (which turns a violation into a command rejection), the call-activity resolution path (which
  * turns it into a runtime incident), and the deployment validation path (which rejects a static
  * literal that violates the rule at deploy time). Callers adapt the outcome to their own result
- * type; this class owns only the rule.
+ * type; this class owns the rules and the reason describing a violation, so a future rule change
+ * only has to happen here.
  */
 public final class BusinessIdValidator {
 
@@ -22,11 +25,20 @@ public final class BusinessIdValidator {
   private BusinessIdValidator() {}
 
   /**
-   * @param businessId the Business ID to check, may be {@code null}
-   * @return {@code true} if the Business ID is non-null and longer than {@link
-   *     #MAX_BUSINESS_ID_LENGTH}
+   * Validates the given Business ID against all Business ID rules.
+   *
+   * @param businessId the Business ID to validate, may be {@code null}
+   * @return a {@link Either#left(Object) left} with the reason the Business ID is invalid, or a
+   *     {@link Either#right(Object) right} with the validated Business ID
    */
-  public static boolean exceedsMaxLength(final String businessId) {
+  public static Either<String, String> validate(final String businessId) {
+    if (exceedsMaxLength(businessId)) {
+      return Either.left("exceeds the max length of %d".formatted(MAX_BUSINESS_ID_LENGTH));
+    }
+    return Either.right(businessId);
+  }
+
+  private static boolean exceedsMaxLength(final String businessId) {
     return businessId != null && businessId.length() > MAX_BUSINESS_ID_LENGTH;
   }
 }

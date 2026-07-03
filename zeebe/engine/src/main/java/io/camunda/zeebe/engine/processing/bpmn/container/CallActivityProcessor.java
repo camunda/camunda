@@ -289,7 +289,7 @@ public final class CallActivityProcessor
       return Either.right(context.getBusinessId());
     }
     if (businessIdExpression.isStatic()) {
-      return validateBusinessIdLength(businessIdExpression.getExpression(), context);
+      return validateBusinessId(businessIdExpression.getExpression(), context);
     }
     return expressionProcessor
         .evaluateAnyExpression(
@@ -301,7 +301,7 @@ public final class CallActivityProcessor
       final EvaluationResult result, final BpmnElementContext context) {
     return switch (result.getType()) {
       // An empty string is a valid discard, a non-empty one is used (subject to the length check).
-      case STRING -> validateBusinessIdLength(result.getString(), context);
+      case STRING -> validateBusinessId(result.getString(), context);
       // A null result is either an intentional discard ('=null') or a coerced null from an
       // unresolvable variable — only the latter is an incident.
       case NULL -> resolveNullBusinessId(result, context);
@@ -326,17 +326,16 @@ public final class CallActivityProcessor
     return Either.right("");
   }
 
-  private Either<Failure, String> validateBusinessIdLength(
+  private Either<Failure, String> validateBusinessId(
       final String businessId, final BpmnElementContext context) {
-    if (BusinessIdValidator.exceedsMaxLength(businessId)) {
-      return Either.left(
-          new Failure(
-              "Expected to resolve a valid business id for the call activity, but it exceeds the max length of %d."
-                  .formatted(BusinessIdValidator.MAX_BUSINESS_ID_LENGTH),
-              ErrorType.EXTRACT_VALUE_ERROR,
-              context.getElementInstanceKey()));
-    }
-    return Either.right(businessId);
+    return BusinessIdValidator.validate(businessId)
+        .mapLeft(
+            reason ->
+                new Failure(
+                    "Expected to resolve a valid business id for the call activity, but it %s."
+                        .formatted(reason),
+                    ErrorType.EXTRACT_VALUE_ERROR,
+                    context.getElementInstanceKey()));
   }
 
   private Failure nonStringBusinessIdFailure(
