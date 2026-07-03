@@ -10,10 +10,12 @@ package io.camunda.eventbridge.client.internal.consumer;
 import io.camunda.eventbridge.client.Consumer;
 import io.camunda.eventbridge.client.ConsumerClosedException;
 import io.camunda.eventbridge.client.Event;
+import io.camunda.eventbridge.client.RebalanceListener;
 import io.camunda.eventbridge.client.TopicPartition;
 import io.camunda.eventbridge.client.internal.ClientConfig;
 import io.camunda.eventbridge.client.internal.transport.HttpTransport;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -164,6 +166,26 @@ public final class ConsumerImpl implements Consumer {
                 buffer.clear(tp);
               });
         });
+  }
+
+  @Override
+  public void seekToBeginning(final Collection<TopicPartition> partitions) {
+    buffer.runLocked(
+        () -> {
+          // Discard in-flight fetches and buffered events, then force each cursor to the start so
+          // the next fetch replays from the beginning (rebuild).
+          buffer.bumpGeneration();
+          for (final TopicPartition tp : partitions) {
+            subscription.rewindToBeginning(tp);
+            buffer.clear(tp);
+          }
+        });
+    prefetcher.kick();
+  }
+
+  @Override
+  public void rebalanceListener(final RebalanceListener listener) {
+    coordinator.setRebalanceListener(listener);
   }
 
   @Override

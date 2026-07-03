@@ -8,6 +8,7 @@
 package io.camunda.eventbridge.client;
 
 import java.time.Duration;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -46,6 +47,21 @@ public interface Consumer extends AutoCloseable {
    * caller whose durable checkpoint is ahead of the committed offset resumes from the checkpoint.
    */
   void seek(Map<TopicPartition, Long> positions);
+
+  /**
+   * Rewinds the given (topic, partition)s to the start of the log, so the next fetch replays from
+   * the beginning regardless of any committed or checkpointed offset. Unlike {@link #seek}, this
+   * forces the position backwards — used to rebuild per-partition state from the source when a
+   * partition is (re)assigned to a member that has no local state for it.
+   */
+  void seekToBeginning(Collection<TopicPartition> partitions);
+
+  /**
+   * Registers a listener notified when this consumer's partition assignment changes on a rebalance.
+   * Replaces any previously registered listener; pass {@code null} to clear. Set it before {@link
+   * #joinGroup}/first heartbeat so the initial assignment is observed.
+   */
+  void rebalanceListener(RebalanceListener listener);
 
   /**
    * Returns the next batch of prefetched events across all owned (topic, partition)s, in sorted

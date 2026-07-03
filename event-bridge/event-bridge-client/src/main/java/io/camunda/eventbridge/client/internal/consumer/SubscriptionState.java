@@ -84,6 +84,17 @@ public final class SubscriptionState {
     nextPositions.merge(tp, position, Math::max);
   }
 
+  /**
+   * Forces {@code tp} back to the start of the log (offset {@code 0}), overriding any advanced
+   * cursor — unlike {@link #recordSeek}, which only advances. Used to rebuild per-partition state
+   * by replaying from the beginning; the broker's reset policy clamps to the oldest retained record
+   * if offset {@code 0} has been compacted/aged out.
+   */
+  public void rewindToBeginning(final TopicPartition tp) {
+    startPositions.put(tp, 0L);
+    nextPositions.put(tp, 0L);
+  }
+
   /** Returns the next fetch position for {@code tp}, defaulting to oldest-retained ({@code -1}). */
   public long nextPosition(final TopicPartition tp) {
     return nextPositions.getOrDefault(tp, -1L);

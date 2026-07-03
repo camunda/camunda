@@ -17,6 +17,7 @@ import io.camunda.eventbridge.api.proto.OffsetMap;
 import io.camunda.eventbridge.client.ConsumerNotRegisteredException;
 import io.camunda.eventbridge.client.CoordinatorUnavailableException;
 import io.camunda.eventbridge.client.EventBridgeException;
+import io.camunda.eventbridge.client.RebalanceListener;
 import io.camunda.eventbridge.client.TopicPartition;
 import io.camunda.eventbridge.client.internal.transport.HttpTransport;
 import io.camunda.eventbridge.client.internal.transport.HttpTransport.BinaryResponse;
@@ -54,6 +55,9 @@ public final class GroupCoordinator {
 
   private final HttpTransport transport;
   private final ScheduledExecutorService executor;
+  private static final RebalanceListener NO_OP_REBALANCE_LISTENER = new RebalanceListener() {};
+
+  private volatile RebalanceListener rebalanceListener = NO_OP_REBALANCE_LISTENER;
   private final SubscriptionState subscription;
   private final PrefetchBuffer buffer;
   private final Prefetcher prefetcher;
@@ -455,12 +459,38 @@ public final class GroupCoordinator {
    */
   public void applyOwnedPartitions(final List<TopicPartition> partitions) {
     final List<TopicPartition> sorted = subscription.sorted(partitions);
+    final List<TopicPartition> previous = subscription.ownedPartitions();
     buffer.runLocked(
         () -> {
           buffer.bumpGeneration();
           subscription.applyOwnedPartitions(sorted);
           buffer.retain(sorted);
         });
+    notifyRebalance(previous, sorted);
+  }
+
+  /** Sets the rebalance listener (never null); replaces any previous one. */
+  void setRebalanceListener(final RebalanceListener listener) {
+    rebalanceListener = listener == null ? NO_OP_REBALANCE_LISTENER : listener;
+  }
+
+  /**
+   * Notifies the listener of the assignment delta, outside the buffer lock so the listener may call
+   * back into the consumer (e.g. {@code seekToBeginning}) without deadlock. Revoked first, then
+   * assigned, mirroring the acquire-after-release ordering a caller expects.
+   */
+  private void notifyRebalance(
+      final List<TopicPartition> previous, final List<TopicPartition> current) {
+    final List<TopicPartition> revoked = new ArrayList<>(previous);
+    revoked.removeAll(current);
+    final List<TopicPartition> assigned = new ArrayList<>(current);
+    assigned.removeAll(previous);
+    if (!revoked.isEmpty()) {
+      rebalanceListener.onPartitionsRevoked(revoked);
+    }
+    if (!assigned.isEmpty()) {
+      rebalanceListener.onPartitionsAssigned(assigned);
+    }
   }
 
   /** Groups owned partitions into the {@code topic -> IntList} wire shape. */
