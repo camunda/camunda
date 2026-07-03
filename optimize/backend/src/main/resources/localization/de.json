@@ -1614,7 +1614,9 @@
       "agenticKpiToolCallsName": "Tool-Aufrufe gesamt",
       "agenticKpiToolCallsDescription": "Gesamtzahl der Tool-Aufrufe durch Agenten in abgeschlossenen agentischen Prozessinstanzen im gewählten Zeitraum.",
       "agenticToolCallsHeatmapName": "Tool-Aufrufe je Prozessknoten",
-      "agenticToolCallsHeatmapDescription": "Gesamtzahl der Tool-Aufrufe je Prozessknoten über abgeschlossene agentische Prozessinstanzen, als Heatmap auf dem Prozessdiagramm dargestellt."
+      "agenticToolCallsHeatmapDescription": "Gesamtzahl der Tool-Aufrufe je Prozessknoten über abgeschlossene agentische Prozessinstanzen, als Heatmap auf dem Prozessdiagramm dargestellt.",
+      "agenticDurationHeatmapName": "Dauer je Prozessknoten",
+      "agenticDurationHeatmapDescription": "Durchschnittliche Dauer je Prozessknoten über abgeschlossene agentische Prozessinstanzen, als Heatmap auf dem Prozessdiagramm dargestellt."
     }
   },
   "managementDashboard": {

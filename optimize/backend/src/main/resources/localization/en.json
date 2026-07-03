@@ -1614,7 +1614,9 @@
       "agenticKpiToolCallsName": "Total tool calls",
       "agenticKpiToolCallsDescription": "Total number of tool calls made by agents in completed agentic process instances in the selected period.",
       "agenticToolCallsHeatmapName": "Tool calls per flow node",
-      "agenticToolCallsHeatmapDescription": "Total tool calls made per flow node across completed agentic process instances, shown as a heat map overlay on the process diagram."
+      "agenticToolCallsHeatmapDescription": "Total tool calls made per flow node across completed agentic process instances, shown as a heat map overlay on the process diagram.",
+      "agenticDurationHeatmapName": "Duration per flow node",
+      "agenticDurationHeatmapDescription": "Average duration per flow node across completed agentic process instances, shown as a heat map overlay on the process diagram."
     }
   },
   "managementDashboard": {
