@@ -26,7 +26,8 @@ const useWaitStateStatistics = (params: UseWaitStateStatisticsParams = {}) => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const {data: isProcessInstanceRunning} = useIsProcessInstanceRunning();
 
-  const isEnabled = enabled && !!processInstanceId;
+  const isEnabled =
+    enabled && !!processInstanceId && !!isProcessInstanceRunning;
 
   return useQuery<
     GetProcessInstanceWaitStateStatisticsResponseBody,

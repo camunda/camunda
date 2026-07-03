@@ -140,8 +140,7 @@ const TopPanel: React.FC = observer(() => {
     );
   const {data: processInstance} = useProcessInstance();
   const {data: waitStateStatistics} = useWaitStateStatistics({
-    enabled:
-      clientConfig.waitStatesEnabled && processInstance?.state === 'ACTIVE',
+    enabled: clientConfig.waitStatesEnabled,
   });
   const {data: agentInstancesData} = useProcessInstanceAgentInstances();
   const modificationsByElement = useModificationsByElement();
