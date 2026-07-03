@@ -107,11 +107,13 @@ public class PermissionsBehavior {
         command.getIntent());
     final var auth = claimsConverter.convert(authorizations);
     final var cslPermType = AuthzModelMapper.fromProtocol(permissionType);
-    final var result =
         authCheckPort.check(
             auth,
             RequiredAuthorization.of(
-                b -> b.authorization().permissionType(cslPermType).resourceId("*")));
+                b ->
+                    b.authorization()
+                        .permissionType(cslPermType)
+                        .resourceId(AuthorizationScope.WILDCARD_CHAR)));
     if (result.isLeft()) {
       LOG.debug(
           "Authorization check rejected for command {}: {}",
