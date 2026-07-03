@@ -28,7 +28,7 @@ ifeq ($(scenario),latency)
 _scenario_load_test_flags := --set starter.rate=1 --set workers.worker.replicas=1
 _scenario_platform_flags  :=
 else ifeq ($(scenario),realistic)
-_scenario_load_test_flags := -f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml
+_scenario_load_test_flags := -f load-test-values-realistic-benchmark.yaml
 _scenario_platform_flags  :=
 else ifeq ($(scenario),typical)
 _scenario_load_test_flags := --set starter.rate=50 --set workers.worker.replicas=6 --set starter.bpmnXmlPath=bpmn/typical_process.bpmn

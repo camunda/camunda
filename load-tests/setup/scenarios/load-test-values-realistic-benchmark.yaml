@@ -1,0 +1,199 @@
+# Realistic benchmark scenario values, vendored from
+# https://github.com/camunda/camunda-load-tests-helm/blob/main/charts/camunda-load-tests/values-realistic-benchmark.yaml
+# Vendored locally so the realistic load test renders without a network fetch at
+# deploy time. Update this file when the upstream values-realistic-benchmark.yaml changes.
+
+# Workers configuration for the to be deployed worker application
+workers:
+  worker: null
+
+  #####
+  # Request documents from customer
+  customer-notification:
+    # Workers.worker.replicas defines how many replicas of the load test should be deployed
+    replicas: 1
+    # Workers.worker.capacity defines how many jobs the worker should activate and work on
+    capacity: 30
+    # Workers.worker.jobType defines the job type which should be used by the worker
+    jobType: "customer_notification"
+    # Workers.worker.payloadPath defines the path (inside the worker app) to the payload resource
+    # that should be used to complete the corresponding jobs
+    payloadPath: "bpmn/emptyPayload.json"
+    # Workers.worker.payloadPath defines the delay of the worker before completing a job
+    completionDelay: 300ms
+    message:
+      name: "dispute_process_receive_documents"
+      correlationVariable: "correlationKey"
+    # Workers.worker.logLevel defines the logging level for the load test
+    logLevel: "INFO"
+    # Workers.worker.resources defines the resources for the load test
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 500m
+        memory: 512Mi
+
+  #####
+  # Store information and get customer info
+  extract-data-from-document:
+    # Workers.worker.replicas defines how many replicas of the load test should be deployed
+    replicas: 1
+    # Workers.worker.capacity defines how many jobs the worker should activate and work on
+    capacity: 30
+    # Workers.worker.jobType defines the job type which should be used by the worker
+    jobType: "extract_data_from_document"
+    # Workers.worker.payloadPath defines the path (inside the worker app) to the payload resource
+    # that should be used to complete the corresponding jobs
+    payloadPath: "bpmn/emptyPayload.json"
+    # Workers.worker.payloadPath defines the delay of the worker before completing a job
+    completionDelay: 300ms
+    # Workers.worker.logLevel defines the logging level for the load test
+    logLevel: "INFO"
+    # Workers.worker.resources defines the resources for the load test
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 500m
+        memory: 512Mi
+
+  #####
+  # Request proof from vendor
+  dispute-process-request-proof-from-vendor:
+    # Workers.worker.replicas defines how many replicas of the load test should be deployed
+    replicas: 1
+    # Workers.worker.capacity defines how many jobs the worker should activate and work on
+    capacity: 60
+    # Workers.worker.threads defines how many threads the worker can use to work on jobs
+    threads: 30
+    # Workers.worker.jobType defines the job type which should be used by the worker
+    jobType: "dispute_process_request_proof_from_vendor"
+    # Workers.worker.payloadPath defines the path (inside the worker app) to the payload resource
+    # that should be used to complete the corresponding jobs
+    payloadPath: "bpmn/emptyPayload.json"
+    # Workers.worker.payloadPath defines the delay of the worker before completing a job
+    completionDelay: 300ms
+    # Workers.dispute-request-documents.message enables sending a message from a worker
+    message:
+      name: "dispute_process_refund_approved"
+      correlationVariable: "correlationKey"
+    # Workers.worker.logLevel defines the logging level for the load test
+    logLevel: "INFO"
+    # Workers.worker.resources defines the resources for the load test
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 500m
+        memory: 512Mi
+
+  ######
+  # Get vendor info
+  dispute-process-request-get-vendor-info:
+    # Workers.worker.replicas defines how many replicas of the load test should be deployed
+    replicas: 1
+    # Workers.worker.capacity defines how many jobs the worker should activate and work on
+    capacity: 30
+    # Workers.worker.jobType defines the job type which should be used by the worker
+    jobType: "dispute_process_request_get_vendor_info"
+    # Workers.worker.payloadPath defines the path (inside the worker app) to the payload resource
+    # that should be used to complete the corresponding jobs
+    payloadPath: "bpmn/emptyPayload.json"
+    # Workers.worker.payloadPath defines the delay of the worker before completing a job
+    completionDelay: 10ms
+    # Workers.dispute-request-documents.message enables sending a message from a worker
+    # Workers.worker.logLevel defines the logging level for the load test
+    logLevel: "INFO"
+    # Workers.worker.resources defines the resources for the load test
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 500m
+        memory: 512Mi
+
+  #####
+  # Refund payment
+  refunding:
+    # Workers.worker.replicas defines how many replicas of the load test should be deployed
+    replicas: 1
+    # Workers.worker.capacity defines how many jobs the worker should activate and work on
+    capacity: 30
+    # Workers.worker.threads defines how many threads the worker can use to work on jobs
+    threads: 30
+    # Workers.worker.jobType defines the job type which should be used by the worker
+    jobType: "refunding"
+    # Workers.worker.payloadPath defines the path (inside the worker app) to the payload resource
+    # that should be used to complete the corresponding jobs
+    payloadPath: "bpmn/emptyPayload.json"
+    # Workers.worker.payloadPath defines the delay of the worker before completing a job
+    completionDelay: 300ms
+    # Workers.worker.logLevel defines the logging level for the load test
+    logLevel: "INFO"
+    # Workers.worker.resources defines the resources for the load test
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 500m
+        memory: 512Mi
+
+  #####
+  # Inform customer about successful claim
+  inform-about-successful-claim:
+    # Workers.worker.replicas defines how many replicas of the load test should be deployed
+    replicas: 1
+    # Workers.worker.capacity defines how many jobs the worker should activate and work on
+    capacity: 30
+    # Workers.worker.jobType defines the job type which should be used by the worker
+    jobType: "inform_about_successful_claim"
+    # Workers.worker.payloadPath defines the path (inside the worker app) to the payload resource
+    # that should be used to complete the corresponding jobs
+    payloadPath: "bpmn/emptyPayload.json"
+    # Workers.worker.payloadPath defines the delay of the worker before completing a job
+    completionDelay: 300ms
+    # Workers.worker.logLevel defines the logging level for the load test
+    logLevel: "INFO"
+    # Workers.worker.resources defines the resources for the load test
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 500m
+        memory: 512Mi
+
+#################################################################################################
+#################################################################################################
+#################################################################################################
+
+# Starter configuration for the to be deployed starter application
+starter:
+  # Starter.replicas defines how many replicas of the application should be deployed
+  replicas: 1
+  # Starter.rate defines with which rate process instances should be created by the starter
+  rate: 1
+  # Starter.logLevel defines the logging level for the load test starter
+  logLevel: "INFO"
+  # Starter.processId defines the process ID, that should be used for creating new process instances
+  processId: "bankDisputeHandling"
+  # Starter.payloadPath defines the path (inside the starter app) to the payload resource
+  # that should be used to create the corresponding process instance
+  payloadPath: "bpmn/realistic/realisticPayload.json"
+  # Starter.bpmnXmlPath defines the path (inside the starter app) to the main bpmn XML resource that should be deployed
+  bpmnXmlPath: "bpmn/realistic/bankCustomerComplaintDisputeHandling.bpmn"
+  # Starter.extraBpmnModels can be used to specify paths (inside the starter app) to extra resources that should be deployed
+  extraResources:
+    [
+      "bpmn/realistic/refundingProcess.bpmn",
+      "bpmn/realistic/determineFraudRatingConfidence.dmn",
+    ]
+  # Starter.businessKey can be used to specify a businessKey variable, inside a unique identifier is stored for
+  # each created process instance
+  businessKey: "customerId"

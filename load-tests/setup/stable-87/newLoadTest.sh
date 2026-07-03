@@ -150,6 +150,7 @@ cp -v  "Makefile"                                                "$TARGET_DIRECT
 cp -rv ../charts/                                                "$TARGET_DIRECTORY/"
 cp -v  "values/camunda-platform-override-values.yaml"            "$TARGET_DIRECTORY/"
 cp -v  "values/load-test-values.yaml"                            "$TARGET_DIRECTORY/"
+cp -v  "../scenarios/load-test-values-realistic-benchmark.yaml"            "$TARGET_DIRECTORY/"
 cp -v  "values/values-stable.yaml"                               "$TARGET_DIRECTORY/"
 cp -v  "values/camunda-platform-values-defaults.yaml"            "$TARGET_DIRECTORY/"
 cp -v  "values/camunda-platform-values-${secondaryStorage}.yaml" "$TARGET_DIRECTORY/"
