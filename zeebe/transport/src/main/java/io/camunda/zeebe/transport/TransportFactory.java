@@ -57,18 +57,22 @@ public final class TransportFactory {
       final ClusterCommunicationService clusterCommunicationService,
       final Function<DirectBuffer, M> metadataFactory,
       final RemoteStreamErrorHandler<P> errorHandler,
-      final RemoteStreamMetrics metrics) {
+      final RemoteStreamMetrics metrics,
+      final String physicalTenantId) {
     final RemoteStreamRegistry<M> registry = new RemoteStreamRegistry<>(metrics);
     return new RemoteStreamServiceImpl<>(
         new RemoteStreamerImpl<>(clusterCommunicationService, registry, errorHandler, metrics),
         new RemoteStreamTransport<>(
-            clusterCommunicationService, new RemoteStreamApiHandler<>(registry, metadataFactory)),
+            clusterCommunicationService,
+            new RemoteStreamApiHandler<>(registry, metadataFactory),
+            physicalTenantId),
         registry);
   }
 
   public <M extends BufferWriter> ClientStreamService<M> createRemoteStreamClient(
       final ClusterCommunicationService clusterCommunicationService,
-      final ClientStreamMetrics metrics) {
-    return new ClientStreamServiceImpl<>(clusterCommunicationService, metrics);
+      final ClientStreamMetrics metrics,
+      final String physicalTenantId) {
+    return new ClientStreamServiceImpl<>(clusterCommunicationService, metrics, physicalTenantId);
   }
 }

@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.transport.stream.impl;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.scheduler.Actor;
@@ -39,31 +41,37 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
   private final ClusterCommunicationService communicationService;
   private final ClientStreamRegistry<M> registry;
   private final ClientStreamApiHandler apiHandler;
+  private final String physicalTenantId;
 
   public ClientStreamServiceImpl(
-      final ClusterCommunicationService communicationService, final ClientStreamMetrics metrics) {
+      final ClusterCommunicationService communicationService,
+      final ClientStreamMetrics metrics,
+      final String physicalTenantId) {
     this.communicationService = communicationService;
+    this.physicalTenantId = physicalTenantId;
     registry = new ClientStreamRegistry<>(metrics);
 
     // ClientStreamRequestManager must use same actor as this because it is mutating shared
     // ClientStream objects.
     clientStreamManager =
         new ClientStreamManager<>(
-            registry, new ClientStreamRequestManager<>(communicationService, actor), metrics);
+            registry,
+            new ClientStreamRequestManager<>(communicationService, actor, physicalTenantId),
+            metrics);
     apiHandler = new ClientStreamApiHandler(clientStreamManager, actor);
   }
 
   @Override
   protected void onActorStarted() {
     communicationService.replyToAsync(
-        StreamTopics.PUSH.topic(),
+        StreamTopics.PUSH.topic(DEFAULT_PHYSICAL_TENANT_ID),
         MessageUtil::parsePushRequest,
         apiHandler::handlePushRequest,
         BufferUtil::bufferAsArray,
         actor::run);
 
     communicationService.replyTo(
-        StreamTopics.RESTART_STREAMS.topic(),
+        StreamTopics.RESTART_STREAMS.topic(physicalTenantId),
         Function.identity(),
         apiHandler::handleRestartRequest,
         Function.identity(),

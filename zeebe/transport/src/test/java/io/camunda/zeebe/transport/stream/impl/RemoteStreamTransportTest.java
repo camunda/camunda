@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.transport.stream.impl;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.AtomixCluster;
@@ -61,7 +62,8 @@ final class RemoteStreamTransportTest {
                 data.wrap(buffer, 0, buffer.capacity());
                 return data;
               }),
-          senderBackoffSupplier);
+          senderBackoffSupplier,
+          DEFAULT_PHYSICAL_TENANT_ID);
   private final AtomixCluster receiver = createClusterNode(nodes.get(1), nodes);
 
   @AfterEach
@@ -122,7 +124,7 @@ final class RemoteStreamTransportTest {
       newReceiver
           .getCommunicationService()
           .replyTo(
-              StreamTopics.RESTART_STREAMS.topic(),
+              StreamTopics.RESTART_STREAMS.topic(DEFAULT_PHYSICAL_TENANT_ID),
               Function.identity(),
               (id, ignored) -> ArrayUtil.EMPTY_BYTE_ARRAY,
               Function.identity(),
@@ -140,7 +142,7 @@ final class RemoteStreamTransportTest {
     receiver
         .getCommunicationService()
         .replyTo(
-            StreamTopics.RESTART_STREAMS.topic(),
+            StreamTopics.RESTART_STREAMS.topic(DEFAULT_PHYSICAL_TENANT_ID),
             Function.identity(),
             (id, ignored) -> {
               throw new RuntimeException("I have become error, destroyer of worlds");

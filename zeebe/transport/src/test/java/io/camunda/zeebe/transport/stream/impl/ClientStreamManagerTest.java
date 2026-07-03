@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.transport.stream.impl;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -51,17 +52,30 @@ class ClientStreamManagerTest {
   private final ClientStreamManager<TestMetadata> clientStreamManager =
       new ClientStreamManager<>(
           registry,
-          new ClientStreamRequestManager<>(mockTransport, new TestConcurrencyControl()),
+          new ClientStreamRequestManager<>(
+              mockTransport, new TestConcurrencyControl(), DEFAULT_PHYSICAL_TENANT_ID),
           metrics);
 
   @BeforeEach
   void setup() {
     when(mockTransport.send(any(), any(), any(), any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(ArrayUtil.EMPTY_BYTE_ARRAY));
-    when(mockTransport.send(eq(StreamTopics.ADD.topic()), any(), any(), any(), any(), any()))
+    when(mockTransport.send(
+            eq(StreamTopics.ADD.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            any(),
+            any()))
         .thenReturn(
             CompletableFuture.completedFuture(BufferUtil.bufferAsArray(new AddStreamResponse())));
-    when(mockTransport.send(eq(StreamTopics.REMOVE.topic()), any(), any(), any(), any(), any()))
+    when(mockTransport.send(
+            eq(StreamTopics.REMOVE.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            any(),
+            any()))
         .thenReturn(
             CompletableFuture.completedFuture(
                 BufferUtil.bufferAsArray(new RemoveStreamResponse())));
