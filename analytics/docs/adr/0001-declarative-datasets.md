@@ -96,7 +96,11 @@ become the same mechanism.
      separate gauge type.
    - **mergeable-sketch** — `PERCENTILE` (KLL), `DISTINCT` (HLL), `TOPK` (frequent-items); the
      timer/summary/histogram family.
-   - **ratio / cohort** — matched/total, a derived additive.
+   - **ratio / cohort** — matched/total, a derived additive. **Implemented** (`RATIO`): a fact
+     increments `total` and, when its measure satisfies a threshold comparison
+     (`le`/`lt`/`ge`/`gt`/`eq`/`ne`), also `matched`; the ratio is derived on read. The classic
+     cohorts are declarations, not bespoke Java — SLA-compliant share is `duration <= sla`,
+     no-incident share is `incidentCount == 0`.
    - **`LAST_VALUE`** / `FIRST_VALUE` (value-as-of gauge, e.g. "latest `amount`/`status` per
      instance") is a **mergeable max-by/min-by monoid**, not a heavy non-additive kind: carry the
      value with its source position (or event-time + tiebreak) and merge keeps the larger/smaller
@@ -311,7 +315,10 @@ removed; the merger takes a `DatasetWriter`, chosen once from config via `Databa
   projector + declaration-driven wiring; the specialized cohort metrics (SLA, no-incident) are
   re-expressed as dataset declarations over the canonical facts. No parallel paths remain: one
   projector, one fact model, one shuffle, one sink. (The generic pieces added in Phase 2 are the
-  canonical replacement, not a duplicate to maintain.)
+  canonical replacement, not a duplicate to maintain.) **Implemented**, including the generic
+  `RATIO` meter and a **projected (raw) dataset kind** (`DatasetKind.PROJECTED`): a flat, keyed row
+  list (e.g. completed instances enriched with variables) written straight from Stage 1 as an
+  idempotent per-key upsert — no windowing, no shuffle, replay-safe.
 - **Phase 4 — Sink/SchemaManager SPI.** SPI + RDBMS impl (`db/rdbms`) first, then ES + OS impls
   (`search-client`). Declaring a dataset calls `SchemaManager.ensure`.
 - **Phase 5 — Reports.** `ReportDefinition` + per-backend query generator; the current dashboards
