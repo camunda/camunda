@@ -7,9 +7,13 @@
  */
 package io.camunda.it.rdbms.db;
 
-import io.camunda.db.rdbms.sql.TableMetricsMapper;
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+
+import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import java.util.Map;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,7 +24,10 @@ public class TableMetricsIT {
 
   @TestTemplate
   public void shouldCountTableRows(final CamundaRdbmsTestApplication testApplication) {
-    final var tableMetricsMapper = testApplication.bean(TableMetricsMapper.class);
+    final Map<String, RdbmsMapperBundle> rdbmsMapperBundles =
+        testApplication.bean("rdbmsMapperBundles");
+    final var tableMetricsMapper =
+        rdbmsMapperBundles.get(DEFAULT_PHYSICAL_TENANT_ID).tableMetricsMapper();
 
     final String tableName = "AUTHORIZATIONS";
 
@@ -30,5 +37,6 @@ public class TableMetricsIT {
     // having any number here is sufficient for the test because it shows that the SQL is working
     // asserting for a specific number would make the test fragile as the statistics are
     // eventual consistent and only a rough number for each vendor
+    assertThat(rowCount).isGreaterThanOrEqualTo(0);
   }
 }

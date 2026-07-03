@@ -17,7 +17,6 @@ import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.db.rdbms.RdbmsServiceFactory;
 import io.camunda.db.rdbms.read.RdbmsTenantReaders;
 import io.camunda.db.rdbms.read.service.RdbmsTableRowCountMetrics;
-import io.camunda.db.rdbms.sql.TableMetricsMapper;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.search.clients.CamundaSearchClients;
 import io.camunda.search.clients.auth.ResourceAccessDelegatingController;
@@ -51,10 +50,13 @@ public class RdbmsConfiguration {
 
   @Bean
   public RdbmsTableRowCountMetrics rdbmsTableRowCountMetrics(
-      final TableMetricsMapper tableMetricsMapper, final Camunda configuration) {
+      final Map<String, RdbmsMapperBundle> rdbmsMapperBundles, final Camunda configuration) {
     final var metricsConfig = configuration.getData().getSecondaryStorage().getRdbms().getMetrics();
+    final var tableMetricsMappers =
+        rdbmsMapperBundles.entrySet().stream()
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().tableMetricsMapper()));
     return new RdbmsTableRowCountMetrics(
-        tableMetricsMapper, metricsConfig.getTableRowCountCacheDuration());
+        tableMetricsMappers, metricsConfig.getTableRowCountCacheDuration());
   }
 
   @Bean
