@@ -39,7 +39,7 @@ class SecondaryStorageSchemaConstraintsTest {
 
   // Low-risk types — freely usable without additional justification.
   private static final Set<String> STANDARD_TYPES =
-      Set.of("keyword", "text", "long", "integer", "short", "date", "boolean", "object");
+      Set.of("keyword", "text", "long", "integer", "short", "double", "date", "boolean", "object");
 
   // Complex types — carry significant performance trade-offs; require justification and Data Layer
   // sign-off to extend.
@@ -48,6 +48,12 @@ class SecondaryStorageSchemaConstraintsTest {
   // content).
   // join:   creates parent-child relationships with a hidden join field; expensive at query time.
   private static final Set<String> COMPLEX_TYPES = Set.of("binary", "join");
+
+  // "nested" is not approved for general use — it indexes each array entry as a hidden separate
+  // document, which is expensive at query time. Field-specific exceptions, granted by the Data
+  // Layer team, are listed here as "<file>:<fieldPath>".
+  private static final Set<String> NESTED_TYPE_EXCEPTIONS =
+      Set.of("camunda-cluster-variable.json:metadata");
 
   // Fields whose names end with "id" or "key" are identifiers — must not use text.
   private static final Pattern IDENTIFIER_FIELD_PATTERN = Pattern.compile("(?i).*(id|key)$");
@@ -68,8 +74,8 @@ class SecondaryStorageSchemaConstraintsTest {
       for (final var template : loadTemplates(dir)) {
         final var root = MAPPER.readTree(template.toFile());
         final var mappings = root.path("mappings");
-        final var label = dirLabel(dir) + "/" + template.getFileName();
-        walkProperties(mappings.path("properties"), label, "", violations);
+        walkProperties(
+            mappings.path("properties"), template.getFileName().toString(), "", violations);
       }
     }
 
@@ -241,7 +247,9 @@ class SecondaryStorageSchemaConstraintsTest {
       final JsonNode typeNode = fieldDef.path("type");
       if (!typeNode.isMissingNode()) {
         final String type = typeNode.asText();
-        if (!ALL_ALLOWED_TYPES.contains(type)) {
+        final boolean isApprovedNestedException =
+            "nested".equals(type) && NESTED_TYPE_EXCEPTIONS.contains(fileName + ":" + fieldPath);
+        if (!ALL_ALLOWED_TYPES.contains(type) && !isApprovedNestedException) {
           violations.add(
               "[%s] Field '%s' uses disallowed type '%s'".formatted(fileName, fieldPath, type));
         }
