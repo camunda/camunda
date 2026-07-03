@@ -9,8 +9,8 @@ package io.camunda.eventbridge.streaming.aggregate;
 
 import io.camunda.eventbridge.streaming.TransactionRunner;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
-import io.camunda.eventbridge.streaming.window.TumblingWindows;
 import io.camunda.eventbridge.streaming.window.Windowed;
+import io.camunda.eventbridge.streaming.window.Windows;
 import io.camunda.zeebe.db.impl.DbBytes;
 import io.camunda.zeebe.db.impl.DbLong;
 import java.nio.ByteBuffer;
@@ -73,8 +73,7 @@ public final class DurableMaterializedRollup<F, K, ACC> implements Rollup<F> {
   private final KeySelector<F, K> keySelector;
   private final ToLongFunction<F> eventTime;
   private final SourceCoordinate<F> coordinate;
-  private final TumblingWindows windows;
-  private final long allowedLatenessMs;
+  private final Windows windows;
   private final ResultSink<Windowed<K>, ACC> sink;
 
   private final KeyValueStore<DbBytes, DbBytes> cellStore;
@@ -113,8 +112,7 @@ public final class DurableMaterializedRollup<F, K, ACC> implements Rollup<F> {
       final KeySelector<F, K> keySelector,
       final ToLongFunction<F> eventTime,
       final SourceCoordinate<F> coordinate,
-      final TumblingWindows windows,
-      final long allowedLatenessMs,
+      final Windows windows,
       final ResultSink<Windowed<K>, ACC> sink,
       final KeyValueStore<DbBytes, DbBytes> cellStore,
       final KeyValueStore<DbBytes, DbLong> offsetStore,
@@ -128,7 +126,6 @@ public final class DurableMaterializedRollup<F, K, ACC> implements Rollup<F> {
         eventTime,
         coordinate,
         windows,
-        allowedLatenessMs,
         sink,
         cellStore,
         offsetStore,
@@ -144,8 +141,7 @@ public final class DurableMaterializedRollup<F, K, ACC> implements Rollup<F> {
       final KeySelector<F, K> keySelector,
       final ToLongFunction<F> eventTime,
       final SourceCoordinate<F> coordinate,
-      final TumblingWindows windows,
-      final long allowedLatenessMs,
+      final Windows windows,
       final ResultSink<Windowed<K>, ACC> sink,
       final KeyValueStore<DbBytes, DbBytes> cellStore,
       final KeyValueStore<DbBytes, DbLong> offsetStore,
@@ -159,7 +155,6 @@ public final class DurableMaterializedRollup<F, K, ACC> implements Rollup<F> {
     this.eventTime = eventTime;
     this.coordinate = coordinate;
     this.windows = windows;
-    this.allowedLatenessMs = allowedLatenessMs;
     this.sink = sink;
     this.cellStore = cellStore;
     this.offsetStore = offsetStore;
@@ -196,7 +191,7 @@ public final class DurableMaterializedRollup<F, K, ACC> implements Rollup<F> {
     // wiping counts (e.g. a late completion resetting a start cohort's "started" to 0). The dedup
     // position is still advanced so the source offset progresses.
     if (maxEventTime != Long.MIN_VALUE
-        && windowStart + windows.sizeMs() + allowedLatenessMs <= maxEventTime) {
+        && windowStart + windows.sizeMs() + windows.graceMs() <= maxEventTime) {
       return;
     }
     final Windowed<K> key = new Windowed<>(keySelector.getKey(fact), windowStart);
@@ -302,7 +297,7 @@ public final class DurableMaterializedRollup<F, K, ACC> implements Rollup<F> {
     if (maxEventTime == Long.MIN_VALUE) {
       return;
     }
-    final long watermark = maxEventTime - allowedLatenessMs;
+    final long watermark = maxEventTime - windows.graceMs();
     final Iterator<Map.Entry<Windowed<K>, ACC>> it = cells.entrySet().iterator();
     while (it.hasNext()) {
       final Map.Entry<Windowed<K>, ACC> entry = it.next();

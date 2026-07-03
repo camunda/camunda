@@ -12,8 +12,8 @@ import io.camunda.eventbridge.streaming.aggregate.AggregateFunction;
 import io.camunda.eventbridge.streaming.aggregate.Codec;
 import io.camunda.eventbridge.streaming.aggregate.ResultSink;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
-import io.camunda.eventbridge.streaming.window.TumblingWindows;
 import io.camunda.eventbridge.streaming.window.Windowed;
+import io.camunda.eventbridge.streaming.window.Windows;
 import io.camunda.zeebe.db.impl.DbBytes;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -48,8 +48,7 @@ public final class MergingRollup<K, ACC> {
 
   private final int aggId;
   private final AggregateFunction<?, ACC, ?> aggregate;
-  private final TumblingWindows windows;
-  private final long allowedLatenessMs;
+  private final Windows windows;
   private final ResultSink<Windowed<K>, ACC> sink;
   private final KeyValueStore<DbBytes, DbBytes> slotStore;
   private final Codec<K> keyCodec;
@@ -73,31 +72,19 @@ public final class MergingRollup<K, ACC> {
   public MergingRollup(
       final int aggId,
       final AggregateFunction<?, ACC, ?> aggregate,
-      final TumblingWindows windows,
-      final long allowedLatenessMs,
+      final Windows windows,
       final ResultSink<Windowed<K>, ACC> sink,
       final KeyValueStore<DbBytes, DbBytes> slotStore,
       final Codec<K> keyCodec,
       final Codec<ACC> accCodec,
       final TransactionRunner tx) {
-    this(
-        aggId,
-        aggregate,
-        windows,
-        allowedLatenessMs,
-        sink,
-        slotStore,
-        keyCodec,
-        accCodec,
-        tx,
-        acc -> false);
+    this(aggId, aggregate, windows, sink, slotStore, keyCodec, accCodec, tx, acc -> false);
   }
 
   public MergingRollup(
       final int aggId,
       final AggregateFunction<?, ACC, ?> aggregate,
-      final TumblingWindows windows,
-      final long allowedLatenessMs,
+      final Windows windows,
       final ResultSink<Windowed<K>, ACC> sink,
       final KeyValueStore<DbBytes, DbBytes> slotStore,
       final Codec<K> keyCodec,
@@ -107,7 +94,6 @@ public final class MergingRollup<K, ACC> {
     this.aggId = aggId;
     this.aggregate = aggregate;
     this.windows = windows;
-    this.allowedLatenessMs = allowedLatenessMs;
     this.sink = sink;
     this.slotStore = slotStore;
     this.keyCodec = keyCodec;
@@ -126,7 +112,7 @@ public final class MergingRollup<K, ACC> {
     // Drop partials whose window has already closed and been evicted — folding them would resurrect
     // an evicted cell and the idempotent sink would overwrite the finalized row with a partial.
     if (maxEventTime != Long.MIN_VALUE
-        && windowStart + windows.sizeMs() + allowedLatenessMs <= maxEventTime) {
+        && windowStart + windows.sizeMs() + windows.graceMs() <= maxEventTime) {
       return;
     }
     final Windowed<K> cell = new Windowed<>(keyCodec.decode(partial.key()), windowStart);
@@ -186,7 +172,7 @@ public final class MergingRollup<K, ACC> {
     if (maxEventTime == Long.MIN_VALUE) {
       return;
     }
-    final long watermark = maxEventTime - allowedLatenessMs;
+    final long watermark = maxEventTime - windows.graceMs();
     final Iterator<Map.Entry<Windowed<K>, Map<Integer, ACC>>> it = slots.entrySet().iterator();
     while (it.hasNext()) {
       final Map.Entry<Windowed<K>, Map<Integer, ACC>> entry = it.next();

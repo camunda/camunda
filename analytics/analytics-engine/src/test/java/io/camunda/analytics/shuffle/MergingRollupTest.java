@@ -62,8 +62,7 @@ final class MergingRollupTest {
     return new MergingRollup<>(
         aggId,
         SUM,
-        TumblingWindows.of(HOUR),
-        LATENESS,
+        TumblingWindows.ofSizeAndGrace(HOUR, LATENESS),
         resultSink,
         slots,
         KEY_CODEC,

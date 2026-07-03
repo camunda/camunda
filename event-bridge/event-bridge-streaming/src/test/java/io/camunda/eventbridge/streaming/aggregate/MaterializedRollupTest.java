@@ -62,7 +62,12 @@ final class MaterializedRollupTest {
   private MaterializedRollup<Sale, String, Long> newRollup() {
     sink = new InMemoryResultSink<>();
     return new MaterializedRollup<>(
-        SUM, Sale::region, Sale::timestamp, COORD, TumblingWindows.of(HOUR), LATENESS, sink);
+        SUM,
+        Sale::region,
+        Sale::timestamp,
+        COORD,
+        TumblingWindows.ofSizeAndGrace(HOUR, LATENESS),
+        sink);
   }
 
   @Test

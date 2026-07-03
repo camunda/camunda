@@ -7,8 +7,8 @@
  */
 package io.camunda.eventbridge.streaming.aggregate;
 
-import io.camunda.eventbridge.streaming.window.TumblingWindows;
 import io.camunda.eventbridge.streaming.window.Windowed;
+import io.camunda.eventbridge.streaming.window.Windows;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -45,8 +45,7 @@ public final class MaterializedRollup<F, K, ACC> implements Rollup<F> {
   private final KeySelector<F, K> keySelector;
   private final ToLongFunction<F> eventTime;
   private final SourceCoordinate<F> coordinate;
-  private final TumblingWindows windows;
-  private final long allowedLatenessMs;
+  private final Windows windows;
   private final ResultSink<Windowed<K>, ACC> sink;
 
   private final Map<Windowed<K>, ACC> cells = new HashMap<>();
@@ -59,15 +58,13 @@ public final class MaterializedRollup<F, K, ACC> implements Rollup<F> {
       final KeySelector<F, K> keySelector,
       final ToLongFunction<F> eventTime,
       final SourceCoordinate<F> coordinate,
-      final TumblingWindows windows,
-      final long allowedLatenessMs,
+      final Windows windows,
       final ResultSink<Windowed<K>, ACC> sink) {
     this.aggregate = aggregate;
     this.keySelector = keySelector;
     this.eventTime = eventTime;
     this.coordinate = coordinate;
     this.windows = windows;
-    this.allowedLatenessMs = allowedLatenessMs;
     this.sink = sink;
   }
 
@@ -122,7 +119,7 @@ public final class MaterializedRollup<F, K, ACC> implements Rollup<F> {
     if (maxEventTime == Long.MIN_VALUE) {
       return;
     }
-    final long watermark = maxEventTime - allowedLatenessMs;
+    final long watermark = maxEventTime - windows.graceMs();
     final Iterator<Map.Entry<Windowed<K>, ACC>> it = cells.entrySet().iterator();
     while (it.hasNext()) {
       final Map.Entry<Windowed<K>, ACC> entry = it.next();
