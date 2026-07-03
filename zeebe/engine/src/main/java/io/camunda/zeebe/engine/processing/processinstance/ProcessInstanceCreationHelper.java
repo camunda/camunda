@@ -62,7 +62,6 @@ public class ProcessInstanceCreationHelper {
           BpmnElementType.BOUNDARY_EVENT,
           BpmnElementType.UNSPECIFIED);
   private static final Either<Rejection, Object> VALID = Either.right(null);
-  private static final int MAX_BUSINESS_ID_LENGTH = 256;
   private static final int MAX_REPORTED_INVALID_ELEMENT_IDS = 5;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final ProcessState processState;
@@ -441,10 +440,7 @@ public class ProcessInstanceCreationHelper {
   }
 
   private Either<Rejection, ?> validateBusinessIdFormat(final String businessId) {
-    if (businessId == null) {
-      return VALID;
-    }
-    if (businessId.length() <= MAX_BUSINESS_ID_LENGTH) {
+    if (!BusinessIdValidator.exceedsMaxLength(businessId)) {
       return VALID;
     }
     return Either.left(
@@ -453,7 +449,7 @@ public class ProcessInstanceCreationHelper {
             """
             Expected to create instance of process with a valid business id, \
             but the business id exceeds the max length of %d."""
-                .formatted(MAX_BUSINESS_ID_LENGTH)));
+                .formatted(BusinessIdValidator.MAX_BUSINESS_ID_LENGTH)));
   }
 
   private Either<Rejection, ?> validateBusinessIdUniqueness(
