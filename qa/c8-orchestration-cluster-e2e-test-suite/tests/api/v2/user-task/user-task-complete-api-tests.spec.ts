@@ -93,7 +93,8 @@ test.describe.parallel('Complete User Task Tests', () => {
     await assertStatusCode(res, 400);
   });
 
-  test('Complete user task - not found', async ({request}) => {
+  // Skipped due to bug #56635: https://github.com/camunda/camunda/issues/56635
+  test.skip('Complete user task - not found', async ({request}) => {
     const unknownUserTaskKey = '9999999999999999';
     const res = await completeUserTask(request, unknownUserTaskKey, {});
     await assertNotFoundRequest(

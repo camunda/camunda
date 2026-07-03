@@ -253,7 +253,8 @@ test.describe.serial('Global Task Listener API Tests - Search and Sort', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Search Global Task Listeners - filter by eventTypes', async ({
+  // Skipped due to bug #56636: https://github.com/camunda/camunda/issues/56636
+  test.skip('Search Global Task Listeners - filter by eventTypes', async ({
     request,
   }) => {
     await expect(async () => {
