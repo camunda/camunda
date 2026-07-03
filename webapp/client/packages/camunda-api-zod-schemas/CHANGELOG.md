@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.80
+
+### 🩹 Fixes
+
+- Make optional `DocumentMetadata` fields (`expiresAt`, `processDefinitionId`, `processInstanceKey`, `customProperties`) optional in the 8.10 document schema, so connector-produced document references that omit these keys are recognized as documents ([#56657](https://github.com/camunda/camunda/issues/56657))
+
+### ❤️ Contributors
+
+- Omran Abazid ([@OmranAbazid](https://github.com/OmranAbazid))
+
 ## v0.0.79
 
 ### 🚀 Enhancements

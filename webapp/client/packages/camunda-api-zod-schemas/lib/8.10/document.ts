@@ -16,7 +16,7 @@ const documentMetadataSchema = z.object({
 	size: z.number(),
 	processDefinitionId: z.string().nullish(),
 	processInstanceKey: z.string().nullish(),
-	customProperties: z.record(z.string(), z.unknown()).optional(),
+	customProperties: z.record(z.string(), z.unknown()).nullish(),
 });
 type DocumentMetadata = z.infer<typeof documentMetadataSchema>;
 
