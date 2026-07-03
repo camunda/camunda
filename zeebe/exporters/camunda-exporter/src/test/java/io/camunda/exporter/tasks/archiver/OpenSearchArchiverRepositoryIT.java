@@ -57,7 +57,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.http.HttpHost;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
@@ -102,11 +101,12 @@ final class OpenSearchArchiverRepositoryIT {
   private final RetentionConfiguration retention = new RetentionConfiguration();
   private final OpenSearchClient testClient = createOpenSearchClient();
   @AutoClose private final ExecutorService executor = Executors.newSingleThreadExecutor();
+
+  private final String testUniqueId = UUID.randomUUID().toString();
   private final String zeebeIndexPrefix = "zeebe-record";
-  private final String zeebeIndex = zeebeIndexPrefix + "-" + UUID.randomUUID();
+  private final String zeebeIndex = zeebeIndexPrefix + "-" + testUniqueId;
 
   private TestExporterResourceProvider resourceProvider;
-  private String testPrefix;
   private HistoryConfiguration config;
   private String archiverBlockedIndex;
   private String processInstanceIndex;
@@ -121,15 +121,14 @@ final class OpenSearchArchiverRepositoryIT {
 
   @BeforeEach
   void beforeEach() {
-    testPrefix = RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
     config = new HistoryConfiguration();
 
     // Scope policy names to this test run so cleanup doesn't affect other tests
-    retention.setPolicyName(testPrefix + "-default-policy");
-    retention.setUsageMetricsPolicyName(testPrefix + "-usage-metrics-policy");
+    retention.setPolicyName(testUniqueId + "-default-policy");
+    retention.setUsageMetricsPolicyName(testUniqueId + "-usage-metrics-policy");
     config.setRetention(retention);
 
-    resourceProvider = new TestExporterResourceProvider(testPrefix, false);
+    resourceProvider = new TestExporterResourceProvider(testUniqueId, false);
     processInstanceIndex =
         resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class).getFullQualifiedName();
     batchOperationIndex =
@@ -233,7 +232,7 @@ final class OpenSearchArchiverRepositoryIT {
       disabledReason = "Excluding from AWS OS IT CI - policy modification not allowed")
   void shouldSetIndexLifeCycleOnAllValidIndexes(final boolean withPrefix) throws IOException {
     // given
-    final var prefix = withPrefix ? testPrefix : "";
+    final var prefix = withPrefix ? testUniqueId : "";
     resourceProvider = new TestExporterResourceProvider(prefix, true);
     processInstanceIndex =
         resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class).getFullQualifiedName();
@@ -271,10 +270,10 @@ final class OpenSearchArchiverRepositoryIT {
     indices.addAll(untouchedIndices);
 
     final String customPolicyName =
-        withPrefix ? testPrefix + "-custom-default-policy" : "custom-default-policy";
+        withPrefix ? testUniqueId + "-custom-default-policy" : "custom-default-policy";
 
     final String customUsageMetricsPolicyName =
-        withPrefix ? testPrefix + "-custom-usage-metrics-policy" : "custom-usage-metrics-policy";
+        withPrefix ? testUniqueId + "-custom-usage-metrics-policy" : "custom-usage-metrics-policy";
 
     retention.setEnabled(true);
     retention.setPolicyName(customPolicyName);
@@ -1503,7 +1502,7 @@ final class OpenSearchArchiverRepositoryIT {
   private void startupSchema() {
     final var searchEngineClient = new OpensearchEngineClient(testClient, objectMapper);
     final var connectConfig = new ConnectConfiguration();
-    connectConfig.setIndexPrefix(testPrefix);
+    connectConfig.setIndexPrefix(testUniqueId);
     connectConfig.setUrl(SEARCH_DB.esUrl());
     connectConfig.setType(DatabaseType.OPENSEARCH.toString());
     final var schemaManagerConfig = new SchemaManagerConfiguration();
@@ -1805,7 +1804,7 @@ final class OpenSearchArchiverRepositoryIT {
               .indices()
               .get(
                   g ->
-                      g.index(testPrefix + "*", zeebeIndexPrefix + "*", ARCHIVER_IDX_PREFIX + "*")
+                      g.index(testUniqueId + "*", zeebeIndexPrefix + "*", ARCHIVER_IDX_PREFIX + "*")
                           .ignoreUnavailable(true)
                           .allowNoIndices(true))
               .result()
@@ -1847,7 +1846,7 @@ final class OpenSearchArchiverRepositoryIT {
           final var policyId = policy.get("_id");
           if (policyId != null) {
             final var policyName = policyId.asText();
-            if (!policyName.startsWith(testPrefix)) {
+            if (!policyName.startsWith(testUniqueId)) {
               continue;
             }
 
