@@ -9,8 +9,8 @@ package io.camunda.eventbridge.streaming.window;
 
 /**
  * A grouping key scoped to a window: the base key plus the start of the event-time window it falls
- * into. Produced by {@code Grouped.windowedBy(...)}, it is the key a windowed aggregate is stored
- * under — so {@code (region, hour)} cells are independent rows.
+ * into. It is the key a windowed aggregate is stored under — so {@code (key, hour)} cells are
+ * independent rows.
  *
  * @param <K> the base key type
  */

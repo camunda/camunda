@@ -13,7 +13,7 @@ import java.util.function.ToLongFunction;
  * A mergeable running sum of a signed long extracted from each value. With a {@code +1 / -1}
  * extractor and a single (all-time) window it is a gauge — e.g. in-flight instances = sum of {@code
  * +1} on start and {@code -1} on completion. {@code merge} is addition, so it pre-aggregates and
- * combines across partitions exactly like {@link CountAggregateFunction}.
+ * combines across partitions.
  *
  * @param <F> the value type
  */
