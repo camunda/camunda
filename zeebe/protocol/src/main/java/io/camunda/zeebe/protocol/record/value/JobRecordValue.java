@@ -141,6 +141,20 @@ public interface JobRecordValue
   String getBusinessId();
 
   /**
+   * Returns the current lease token of this job. The token is an opaque, engine-generated value
+   * handed to a worker when the job is activated with a lease; it lets the engine distinguish items
+   * produced by a particular activation from those of superseded activations.
+   *
+   * <p>The lease token persists on the job across timeouts and retries and is only advanced by a
+   * subsequent leased activation. Mutating a leased job (complete, fail, throw an error, or update
+   * the timeout) requires providing the matching lease token, except when the timeout is updated
+   * through a batch operation.
+   *
+   * @return the current lease token, or an empty string when the job has no active lease
+   */
+  String getLeaseToken();
+
+  /**
    * @return the bpmn process id of the corresponding process definition
    */
   @Override

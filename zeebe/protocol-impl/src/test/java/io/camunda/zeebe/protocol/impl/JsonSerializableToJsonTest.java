@@ -887,6 +887,7 @@ final class JsonSerializableToJsonTest {
                       "retries": 3,
                       "priority": 0,
                       "businessId": "",
+                      "leaseToken": "",
                       "jobKind": "BPMN_ELEMENT",
                       "jobListenerEventType": "UNSPECIFIED",
                       "retryBackoff": 1002,
@@ -1056,7 +1057,8 @@ final class JsonSerializableToJsonTest {
                       .setRootProcessInstanceKey(rootProcessInstanceKey)
                       .setIsJobToUserTaskMigration(true)
                       .setPriority(42)
-                      .setBusinessId("biz-42");
+                      .setBusinessId("biz-42")
+                      .setLeaseToken("lease-abc-123");
 
               record.setCustomHeaders(wrapArray(MsgPackConverter.convertToMsgPack(customHeaders)));
               return record;
@@ -1078,6 +1080,7 @@ final class JsonSerializableToJsonTest {
                   "retries": 12,
                   "priority": 42,
                   "businessId": "biz-42",
+                  "leaseToken": "lease-abc-123",
                   "jobKind": "BPMN_ELEMENT",
                   "jobListenerEventType": "UNSPECIFIED",
                   "retryBackoff": 1003,
@@ -1158,6 +1161,7 @@ final class JsonSerializableToJsonTest {
                   "retries": -1,
                   "priority": 0,
                   "businessId": "",
+                  "leaseToken": "",
                   "jobKind": "BPMN_ELEMENT",
                   "jobListenerEventType": "UNSPECIFIED",
                   "retryBackoff": 0,
@@ -1223,6 +1227,7 @@ final class JsonSerializableToJsonTest {
                   "retries": -1,
                   "priority": 0,
                   "businessId": "",
+                  "leaseToken": "",
                   "jobKind": "BPMN_ELEMENT",
                   "jobListenerEventType": "UNSPECIFIED",
                   "retryBackoff": 0,
