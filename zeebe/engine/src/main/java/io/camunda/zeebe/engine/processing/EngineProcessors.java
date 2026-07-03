@@ -346,15 +346,6 @@ public final class EngineProcessors {
         commandDistributionBehavior,
         securityConfig);
 
-    GroupProcessors.addGroupProcessors(
-        typedRecordProcessors,
-        processingState,
-        authCheckBehavior,
-        keyGenerator,
-        writers,
-        commandDistributionBehavior,
-        securityConfig);
-
     ScalingProcessors.addScalingProcessors(
         commandDistributionBehavior,
         bpmnBehaviors,
@@ -502,6 +493,16 @@ public final class EngineProcessors {
         authCheckBehavior,
         securityConfig,
         authorizationScopeStateAdapter);
+
+    GroupProcessors.addGroupProcessors(
+        typedRecordProcessors,
+        processingState,
+        authzService,
+        claimsConverter,
+        keyGenerator,
+        writers,
+        commandDistributionBehavior,
+        securityConfig);
   }
 
   private static TypedRecordProcessor<UserTaskRecord> createUserTaskProcessor(
