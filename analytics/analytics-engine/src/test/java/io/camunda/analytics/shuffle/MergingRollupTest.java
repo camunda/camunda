@@ -11,8 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.eventbridge.streaming.aggregate.AggregateFunction;
 import io.camunda.eventbridge.streaming.aggregate.InMemoryResultSink;
-import io.camunda.eventbridge.streaming.aggregate.LongCodec;
-import io.camunda.eventbridge.streaming.aggregate.StringCodec;
+import io.camunda.eventbridge.streaming.aggregate.LongRecordValue;
+import io.camunda.eventbridge.streaming.aggregate.StringRecordValue;
 import io.camunda.eventbridge.streaming.aggregate.SumAggregateFunction;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.state.rocksdb.RocksDbStateStoreProvider;
@@ -33,8 +33,8 @@ final class MergingRollupTest {
 
   private static final AggregateFunction<Object, Long, Long> SUM =
       new SumAggregateFunction<>(o -> 0L);
-  private static final StringCodec KEY_CODEC = new StringCodec();
-  private static final LongCodec ACC_CODEC = new LongCodec();
+  private static final StringRecordValue KEY_CODEC = new StringRecordValue();
+  private static final LongRecordValue ACC_CODEC = new LongRecordValue();
 
   @TempDir private Path dataDir;
   private RocksDbStateStoreProvider<TestColumnFamilies> provider;
@@ -72,7 +72,7 @@ final class MergingRollupTest {
 
   private static Partial partial(
       final int aggId, final String key, final long window, final int writer, final long value) {
-    return new Partial(aggId, KEY_CODEC.encode(key), window, writer, ACC_CODEC.encode(value));
+    return new Partial(aggId, KEY_CODEC.toBytes(key), window, writer, ACC_CODEC.toBytes(value));
   }
 
   @Test

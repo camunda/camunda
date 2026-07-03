@@ -12,7 +12,7 @@ import io.camunda.analytics.shuffle.FactPublishSink;
 import io.camunda.analytics.shuffle.MergingRollup;
 import io.camunda.analytics.shuffle.PartialPublisher;
 import io.camunda.analytics.shuffle.WriterKey;
-import io.camunda.analytics.shuffle.WriterKeyCodec;
+import io.camunda.analytics.shuffle.WriterKeyValue;
 import io.camunda.eventbridge.streaming.TransactionRunner;
 import io.camunda.eventbridge.streaming.aggregate.DurableMaterializedRollup;
 import io.camunda.eventbridge.streaming.aggregate.Rollup;
@@ -48,11 +48,11 @@ final class StageBuilders {
             spec.eventTime(),
             spec.coordinate(),
             TumblingWindows.ofSizeAndGrace(spec.windowMs(), spec.latenessMs()),
-            new FactPublishSink<>(spec.aggId(), spec.keyCodec(), spec.accCodec(), publisher),
+            new FactPublishSink<>(spec.aggId(), spec.keyValue(), spec.accValue(), publisher),
             cells,
             offsets,
-            new WriterKeyCodec<>(spec.keyCodec()),
-            spec.accCodec(),
+            new WriterKeyValue<>(spec.keyValue()),
+            spec.accValue(),
             tx,
             spec.drained());
     return new TypeRoutingRollup<>(spec.factType(), combiner);
@@ -72,8 +72,8 @@ final class StageBuilders {
         TumblingWindows.ofSizeAndGrace(spec.windowMs(), spec.latenessMs()),
         spec.sinkFactory().apply(dataSource),
         slots,
-        spec.keyCodec(),
-        spec.accCodec(),
+        spec.keyValue(),
+        spec.accValue(),
         tx,
         spec.drained());
   }

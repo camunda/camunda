@@ -17,7 +17,7 @@ final class DistinctCountAggregateFunctionTest {
 
   private final DistinctCountAggregateFunction<String> distinct =
       new DistinctCountAggregateFunction<>(Function.identity());
-  private final HllSketchCodec codec = new HllSketchCodec();
+  private final HllSketchValue codec = new HllSketchValue();
 
   @Test
   void shouldEstimateDistinctCountIgnoringDuplicates() {
@@ -71,7 +71,7 @@ final class DistinctCountAggregateFunctionTest {
   }
 
   @Test
-  void shouldRoundTripThroughCodec() {
+  void shouldRoundTripThroughRecordValue() {
     // given
     HllSketch acc = distinct.createAccumulator();
     for (int i = 0; i < 1000; i++) {
@@ -79,7 +79,7 @@ final class DistinctCountAggregateFunctionTest {
     }
 
     // when
-    final HllSketch restored = codec.decode(codec.encode(acc));
+    final HllSketch restored = codec.fromBytes(codec.toBytes(acc));
 
     // then the estimate is preserved
     assertThat(distinct.getResult(restored).estimate())

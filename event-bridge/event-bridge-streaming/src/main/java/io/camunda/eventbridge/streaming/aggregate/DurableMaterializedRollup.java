@@ -78,8 +78,8 @@ public final class DurableMaterializedRollup<F, K, ACC> implements Rollup<F> {
 
   private final KeyValueStore<DbBytes, DbBytes> cellStore;
   private final KeyValueStore<DbBytes, DbLong> offsetStore;
-  private final Codec<K> keyCodec;
-  private final Codec<ACC> accCodec;
+  private final RecordValue<K> keyValue;
+  private final RecordValue<ACC> accValue;
   private final TransactionRunner tx;
 
   // Optional early-finalization predicate: a window is finalized as soon as its accumulator reports
@@ -116,8 +116,8 @@ public final class DurableMaterializedRollup<F, K, ACC> implements Rollup<F> {
       final ResultSink<Windowed<K>, ACC> sink,
       final KeyValueStore<DbBytes, DbBytes> cellStore,
       final KeyValueStore<DbBytes, DbLong> offsetStore,
-      final Codec<K> keyCodec,
-      final Codec<ACC> accCodec,
+      final RecordValue<K> keyValue,
+      final RecordValue<ACC> accValue,
       final TransactionRunner tx) {
     this(
         rollupId,
@@ -129,8 +129,8 @@ public final class DurableMaterializedRollup<F, K, ACC> implements Rollup<F> {
         sink,
         cellStore,
         offsetStore,
-        keyCodec,
-        accCodec,
+        keyValue,
+        accValue,
         tx,
         acc -> false); // no early drain — pure time-based retention
   }
@@ -145,8 +145,8 @@ public final class DurableMaterializedRollup<F, K, ACC> implements Rollup<F> {
       final ResultSink<Windowed<K>, ACC> sink,
       final KeyValueStore<DbBytes, DbBytes> cellStore,
       final KeyValueStore<DbBytes, DbLong> offsetStore,
-      final Codec<K> keyCodec,
-      final Codec<ACC> accCodec,
+      final RecordValue<K> keyValue,
+      final RecordValue<ACC> accValue,
       final TransactionRunner tx,
       final Predicate<ACC> drained) {
     this.rollupId = rollupId;
@@ -158,8 +158,8 @@ public final class DurableMaterializedRollup<F, K, ACC> implements Rollup<F> {
     this.sink = sink;
     this.cellStore = cellStore;
     this.offsetStore = offsetStore;
-    this.keyCodec = keyCodec;
-    this.accCodec = accCodec;
+    this.keyValue = keyValue;
+    this.accValue = accValue;
     this.tx = tx;
     this.drained = drained;
     recover();
@@ -263,12 +263,12 @@ public final class DurableMaterializedRollup<F, K, ACC> implements Rollup<F> {
         });
     cellStore.prefixScan(
         rollupPrefix,
-        (key, value) -> cells.put(decodeKey(key.getBytes()), accCodec.decode(value.getBytes())));
+        (key, value) -> cells.put(decodeKey(key.getBytes()), accValue.fromBytes(value.getBytes())));
   }
 
   private void writeDurableCell(final Windowed<K> windowed, final ACC acc) {
     cellKey.wrapBytes(encodeKey(windowed));
-    cellValue.wrapBytes(accCodec.encode(acc));
+    cellValue.wrapBytes(accValue.toBytes(acc));
     cellStore.put(cellKey, cellValue);
   }
 
@@ -325,7 +325,7 @@ public final class DurableMaterializedRollup<F, K, ACC> implements Rollup<F> {
 
   /** Cell key: {@code rollupId ++ windowStart ++ codec(groupingKey)}. */
   private byte[] encodeKey(final Windowed<K> windowed) {
-    final byte[] keyBytes = keyCodec.encode(windowed.key());
+    final byte[] keyBytes = keyValue.toBytes(windowed.key());
     return ByteBuffer.allocate(Integer.BYTES + Long.BYTES + keyBytes.length)
         .putInt(rollupId)
         .putLong(windowed.windowStart())
@@ -339,7 +339,7 @@ public final class DurableMaterializedRollup<F, K, ACC> implements Rollup<F> {
     final long windowStart = buffer.getLong();
     final byte[] keyBytes = new byte[buffer.remaining()];
     buffer.get(keyBytes);
-    return new Windowed<>(keyCodec.decode(keyBytes), windowStart);
+    return new Windowed<>(keyValue.fromBytes(keyBytes), windowStart);
   }
 
   /** Offset key: {@code rollupId ++ partitionId} (the watermark uses {@link #WATERMARK_SLOT}). */

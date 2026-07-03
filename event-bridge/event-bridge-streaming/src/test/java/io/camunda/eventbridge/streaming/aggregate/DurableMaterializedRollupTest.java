@@ -17,8 +17,6 @@ import io.camunda.eventbridge.streaming.window.Windowed;
 import io.camunda.zeebe.db.impl.DbBytes;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -68,31 +66,8 @@ final class DurableMaterializedRollupTest {
         }
       };
 
-  private static final Codec<String> KEY_CODEC =
-      new Codec<>() {
-        @Override
-        public byte[] encode(final String value) {
-          return value.getBytes(StandardCharsets.UTF_8);
-        }
-
-        @Override
-        public String decode(final byte[] bytes) {
-          return new String(bytes, StandardCharsets.UTF_8);
-        }
-      };
-
-  private static final Codec<Long> ACC_CODEC =
-      new Codec<>() {
-        @Override
-        public byte[] encode(final Long value) {
-          return ByteBuffer.allocate(Long.BYTES).putLong(value).array();
-        }
-
-        @Override
-        public Long decode(final byte[] bytes) {
-          return ByteBuffer.wrap(bytes).getLong();
-        }
-      };
+  private static final StringRecordValue KEY_CODEC = new StringRecordValue();
+  private static final LongRecordValue ACC_CODEC = new LongRecordValue();
 
   @TempDir private Path dataDir;
   private RocksDbStateStoreProvider<TestColumnFamilies> provider;

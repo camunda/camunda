@@ -17,7 +17,7 @@ final class RatioAggregateFunctionTest {
   // "SLA met" = value at or below 100
   private final RatioAggregateFunction<Integer> slaMet =
       new RatioAggregateFunction<>(v -> v <= 100);
-  private final RatioAccumulatorCodec codec = new RatioAccumulatorCodec();
+  private final RatioAccumulatorRecordValue codec = new RatioAccumulatorRecordValue();
 
   @Test
   void shouldComputeFractionSatisfyingThePredicate() {
@@ -61,11 +61,11 @@ final class RatioAggregateFunctionTest {
   }
 
   @Test
-  void shouldRoundTripThroughCodec() {
+  void shouldRoundTripThroughRecordValue() {
     // given
     final RatioAccumulator acc = new RatioAccumulator(7L, 10L);
 
     // when / then
-    assertThat(codec.decode(codec.encode(acc))).isEqualTo(acc);
+    assertThat(codec.fromBytes(codec.toBytes(acc))).isEqualTo(acc);
   }
 }

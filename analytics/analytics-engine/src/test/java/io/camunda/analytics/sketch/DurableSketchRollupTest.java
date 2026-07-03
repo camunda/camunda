@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.within;
 import io.camunda.eventbridge.streaming.aggregate.DurableMaterializedRollup;
 import io.camunda.eventbridge.streaming.aggregate.InMemoryResultSink;
 import io.camunda.eventbridge.streaming.aggregate.SourceCoordinate;
-import io.camunda.eventbridge.streaming.aggregate.StringCodec;
+import io.camunda.eventbridge.streaming.aggregate.StringRecordValue;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.state.rocksdb.RocksDbStateStoreProvider;
 import io.camunda.eventbridge.streaming.window.TumblingWindows;
@@ -31,7 +31,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Exercises a sketch-backed metric ({@link QuantileAggregateFunction}) through the RocksDB {@link
- * DurableMaterializedRollup}, so the sketch {@link Codec} is validated on the real durable path:
+ * DurableMaterializedRollup}, so the sketch record flyweight is validated on the real durable path:
  * decode the stored cell, merge the batch partial, re-encode — across flushes and across a restart.
  */
 final class DurableSketchRollupTest {
@@ -91,8 +91,8 @@ final class DurableSketchRollupTest {
         sink,
         cells,
         offsets,
-        new StringCodec(),
-        new KllDoublesSketchCodec(),
+        new StringRecordValue(),
+        new KllDoublesSketchValue(),
         provider::runInTransaction);
   }
 

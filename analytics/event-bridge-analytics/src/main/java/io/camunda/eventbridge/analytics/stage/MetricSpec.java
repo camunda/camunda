@@ -9,8 +9,8 @@ package io.camunda.eventbridge.analytics.stage;
 
 import io.camunda.analytics.fact.ProcessExecutionFact;
 import io.camunda.eventbridge.streaming.aggregate.AggregateFunction;
-import io.camunda.eventbridge.streaming.aggregate.Codec;
 import io.camunda.eventbridge.streaming.aggregate.KeySelector;
+import io.camunda.eventbridge.streaming.aggregate.RecordValue;
 import io.camunda.eventbridge.streaming.aggregate.ResultSink;
 import io.camunda.eventbridge.streaming.aggregate.SourceCoordinate;
 import io.camunda.eventbridge.streaming.window.Windowed;
@@ -42,8 +42,8 @@ public record MetricSpec<F extends ProcessExecutionFact, K, ACC>(
     SourceCoordinate<F> coordinate,
     long windowMs,
     long latenessMs,
-    Codec<K> keyCodec,
-    Codec<ACC> accCodec,
+    RecordValue<K> keyValue,
+    RecordValue<ACC> accValue,
     Predicate<ACC> drained,
     Function<JdbcDataSource, ResultSink<Windowed<K>, ACC>> sinkFactory) {
 
@@ -56,8 +56,8 @@ public record MetricSpec<F extends ProcessExecutionFact, K, ACC>(
       final SourceCoordinate<ProcessExecutionFact> coordinate,
       final long windowMs,
       final long latenessMs,
-      final Codec<K> keyCodec,
-      final Codec<ACC> accCodec,
+      final RecordValue<K> keyValue,
+      final RecordValue<ACC> accValue,
       final Predicate<ACC> drained,
       final Function<JdbcDataSource, ResultSink<Windowed<K>, ACC>> sinkFactory) {
     return new MetricSpec<>(
@@ -69,8 +69,8 @@ public record MetricSpec<F extends ProcessExecutionFact, K, ACC>(
         coordinate,
         windowMs,
         latenessMs,
-        keyCodec,
-        accCodec,
+        keyValue,
+        accValue,
         drained,
         sinkFactory);
   }

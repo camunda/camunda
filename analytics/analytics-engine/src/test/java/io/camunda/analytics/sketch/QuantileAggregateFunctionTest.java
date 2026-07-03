@@ -17,7 +17,7 @@ final class QuantileAggregateFunctionTest {
 
   private final QuantileAggregateFunction<Double> quantile =
       new QuantileAggregateFunction<>(Double::doubleValue);
-  private final KllDoublesSketchCodec codec = new KllDoublesSketchCodec();
+  private final KllDoublesSketchValue codec = new KllDoublesSketchValue();
 
   @Test
   void shouldComputeMedianMinMaxAndCount() {
@@ -62,7 +62,7 @@ final class QuantileAggregateFunctionTest {
   }
 
   @Test
-  void shouldRoundTripThroughCodec() {
+  void shouldRoundTripThroughRecordValue() {
     // given
     KllDoublesSketch acc = quantile.createAccumulator();
     for (int i = 1; i <= 100; i++) {
@@ -70,7 +70,7 @@ final class QuantileAggregateFunctionTest {
     }
 
     // when the accumulator is serialized and read back
-    final KllDoublesSketch restored = codec.decode(codec.encode(acc));
+    final KllDoublesSketch restored = codec.fromBytes(codec.toBytes(acc));
 
     // then the restored sketch yields the same estimates
     final QuantileResult before = quantile.getResult(acc);

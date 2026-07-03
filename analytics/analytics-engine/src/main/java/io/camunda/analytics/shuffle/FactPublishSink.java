@@ -7,7 +7,7 @@
  */
 package io.camunda.analytics.shuffle;
 
-import io.camunda.eventbridge.streaming.aggregate.Codec;
+import io.camunda.eventbridge.streaming.aggregate.RecordValue;
 import io.camunda.eventbridge.streaming.aggregate.ResultSink;
 import io.camunda.eventbridge.streaming.window.Windowed;
 
@@ -24,18 +24,18 @@ import io.camunda.eventbridge.streaming.window.Windowed;
 public final class FactPublishSink<K, ACC> implements ResultSink<Windowed<WriterKey<K>>, ACC> {
 
   private final int aggId;
-  private final Codec<K> keyCodec;
-  private final Codec<ACC> accCodec;
+  private final RecordValue<K> keyValue;
+  private final RecordValue<ACC> accValue;
   private final PartialPublisher publisher;
 
   public FactPublishSink(
       final int aggId,
-      final Codec<K> keyCodec,
-      final Codec<ACC> accCodec,
+      final RecordValue<K> keyValue,
+      final RecordValue<ACC> accValue,
       final PartialPublisher publisher) {
     this.aggId = aggId;
-    this.keyCodec = keyCodec;
-    this.accCodec = accCodec;
+    this.keyValue = keyValue;
+    this.accValue = accValue;
     this.publisher = publisher;
   }
 
@@ -45,9 +45,9 @@ public final class FactPublishSink<K, ACC> implements ResultSink<Windowed<Writer
     publisher.publish(
         new Partial(
             aggId,
-            keyCodec.encode(writerKey.key()),
+            keyValue.toBytes(writerKey.key()),
             windowed.windowStart(),
             writerKey.writer(),
-            accCodec.encode(value)));
+            accValue.toBytes(value)));
   }
 }

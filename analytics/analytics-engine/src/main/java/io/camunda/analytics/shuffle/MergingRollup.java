@@ -9,7 +9,7 @@ package io.camunda.analytics.shuffle;
 
 import io.camunda.eventbridge.streaming.TransactionRunner;
 import io.camunda.eventbridge.streaming.aggregate.AggregateFunction;
-import io.camunda.eventbridge.streaming.aggregate.Codec;
+import io.camunda.eventbridge.streaming.aggregate.RecordValue;
 import io.camunda.eventbridge.streaming.aggregate.ResultSink;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.window.Windowed;
@@ -51,8 +51,8 @@ public final class MergingRollup<K, ACC> {
   private final Windows windows;
   private final ResultSink<Windowed<K>, ACC> sink;
   private final KeyValueStore<DbBytes, DbBytes> slotStore;
-  private final Codec<K> keyCodec;
-  private final Codec<ACC> accCodec;
+  private final RecordValue<K> keyValue;
+  private final RecordValue<ACC> accValue;
   private final TransactionRunner tx;
   private final Predicate<ACC> drained;
 
@@ -75,10 +75,10 @@ public final class MergingRollup<K, ACC> {
       final Windows windows,
       final ResultSink<Windowed<K>, ACC> sink,
       final KeyValueStore<DbBytes, DbBytes> slotStore,
-      final Codec<K> keyCodec,
-      final Codec<ACC> accCodec,
+      final RecordValue<K> keyValue,
+      final RecordValue<ACC> accValue,
       final TransactionRunner tx) {
-    this(aggId, aggregate, windows, sink, slotStore, keyCodec, accCodec, tx, acc -> false);
+    this(aggId, aggregate, windows, sink, slotStore, keyValue, accValue, tx, acc -> false);
   }
 
   public MergingRollup(
@@ -87,8 +87,8 @@ public final class MergingRollup<K, ACC> {
       final Windows windows,
       final ResultSink<Windowed<K>, ACC> sink,
       final KeyValueStore<DbBytes, DbBytes> slotStore,
-      final Codec<K> keyCodec,
-      final Codec<ACC> accCodec,
+      final RecordValue<K> keyValue,
+      final RecordValue<ACC> accValue,
       final TransactionRunner tx,
       final Predicate<ACC> drained) {
     this.aggId = aggId;
@@ -96,8 +96,8 @@ public final class MergingRollup<K, ACC> {
     this.windows = windows;
     this.sink = sink;
     this.slotStore = slotStore;
-    this.keyCodec = keyCodec;
-    this.accCodec = accCodec;
+    this.keyValue = keyValue;
+    this.accValue = accValue;
     this.tx = tx;
     this.drained = drained;
     recover();
@@ -115,8 +115,8 @@ public final class MergingRollup<K, ACC> {
         && windowStart + windows.sizeMs() + windows.graceMs() <= maxEventTime) {
       return;
     }
-    final Windowed<K> cell = new Windowed<>(keyCodec.decode(partial.key()), windowStart);
-    final ACC acc = accCodec.decode(partial.acc());
+    final Windowed<K> cell = new Windowed<>(keyValue.fromBytes(partial.key()), windowStart);
+    final ACC acc = accValue.fromBytes(partial.acc());
     slots.computeIfAbsent(cell, c -> new HashMap<>()).put(partial.writer(), acc);
     changedSinceFlush.add(cell);
     final SlotRef<K> ref = new SlotRef<>(cell, partial.writer());
@@ -200,14 +200,14 @@ public final class MergingRollup<K, ACC> {
           final SlotRef<K> ref = decodeSlotKey(key.getBytes());
           slots
               .computeIfAbsent(ref.cell(), c -> new HashMap<>())
-              .put(ref.writer(), accCodec.decode(value.getBytes()));
+              .put(ref.writer(), accValue.fromBytes(value.getBytes()));
           maxEventTime = Math.max(maxEventTime, ref.cell().windowStart() + windows.sizeMs());
         });
   }
 
   private void writeSlot(final SlotRef<K> ref, final ACC acc) {
     slotKey.wrapBytes(encodeSlotKey(ref));
-    slotValue.wrapBytes(accCodec.encode(acc));
+    slotValue.wrapBytes(accValue.toBytes(acc));
     slotStore.put(slotKey, slotValue);
   }
 
@@ -218,7 +218,7 @@ public final class MergingRollup<K, ACC> {
 
   /** Slot key: {@code aggId ++ windowStart ++ writer ++ codec(key)}. */
   private byte[] encodeSlotKey(final SlotRef<K> ref) {
-    final byte[] keyBytes = keyCodec.encode(ref.cell().key());
+    final byte[] keyBytes = keyValue.toBytes(ref.cell().key());
     return ByteBuffer.allocate(Integer.BYTES + Long.BYTES + Integer.BYTES + keyBytes.length)
         .putInt(aggId)
         .putLong(ref.cell().windowStart())
@@ -234,6 +234,6 @@ public final class MergingRollup<K, ACC> {
     final int writer = buffer.getInt();
     final byte[] keyBytes = new byte[buffer.remaining()];
     buffer.get(keyBytes);
-    return new SlotRef<>(new Windowed<>(keyCodec.decode(keyBytes), windowStart), writer);
+    return new SlotRef<>(new Windowed<>(keyValue.fromBytes(keyBytes), windowStart), writer);
   }
 }

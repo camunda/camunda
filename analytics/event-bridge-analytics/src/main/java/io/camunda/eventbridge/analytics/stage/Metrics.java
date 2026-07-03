@@ -9,7 +9,7 @@ package io.camunda.eventbridge.analytics.stage;
 
 import io.camunda.analytics.element.ElementExecutionFact;
 import io.camunda.analytics.element.ElementKey;
-import io.camunda.analytics.element.ElementKeyCodec;
+import io.camunda.analytics.element.ElementKeyValue;
 import io.camunda.analytics.element.JdbcElementDurationPercentileSink;
 import io.camunda.analytics.element.JdbcElementHeatmapSink;
 import io.camunda.analytics.fact.IncidentCohortFact;
@@ -19,15 +19,15 @@ import io.camunda.analytics.fact.ProcessInstanceExecutionTimeFact;
 import io.camunda.analytics.fact.ProcessInstanceLifecycleFact;
 import io.camunda.analytics.fact.SlaCohortFact;
 import io.camunda.analytics.metric.DefinitionKey;
-import io.camunda.analytics.metric.DefinitionKeyCodec;
+import io.camunda.analytics.metric.DefinitionKeyValue;
 import io.camunda.analytics.metric.DurationBucketAccumulator;
-import io.camunda.analytics.metric.DurationBucketAccumulatorCodec;
+import io.camunda.analytics.metric.DurationBucketAccumulatorValue;
 import io.camunda.analytics.metric.DurationBucketAggregateFunction;
 import io.camunda.analytics.metric.ExecutionTimeAccumulator;
-import io.camunda.analytics.metric.ExecutionTimeAccumulatorCodec;
+import io.camunda.analytics.metric.ExecutionTimeAccumulatorValue;
 import io.camunda.analytics.metric.ExecutionTimeAggregateFunction;
 import io.camunda.analytics.metric.IncidentKey;
-import io.camunda.analytics.metric.IncidentKeyCodec;
+import io.camunda.analytics.metric.IncidentKeyValue;
 import io.camunda.analytics.metric.JdbcActivatedInstancesSink;
 import io.camunda.analytics.metric.JdbcActiveInstancesSink;
 import io.camunda.analytics.metric.JdbcDefinitionDurationPercentileSink;
@@ -42,21 +42,21 @@ import io.camunda.analytics.metric.JdbcTenantDistinctProcessSink;
 import io.camunda.analytics.metric.JdbcTenantTopProcessesSink;
 import io.camunda.analytics.metric.NoIncidentCohortAggregateFunction;
 import io.camunda.analytics.metric.RegionKey;
-import io.camunda.analytics.metric.RegionKeyCodec;
+import io.camunda.analytics.metric.RegionKeyValue;
 import io.camunda.analytics.metric.SlaCohortAccumulator;
-import io.camunda.analytics.metric.SlaCohortAccumulatorCodec;
+import io.camunda.analytics.metric.SlaCohortAccumulatorValue;
 import io.camunda.analytics.metric.SlaCohortAggregateFunction;
 import io.camunda.analytics.sketch.DistinctCountAggregateFunction;
-import io.camunda.analytics.sketch.HllSketchCodec;
-import io.camunda.analytics.sketch.ItemsSketchCodec;
-import io.camunda.analytics.sketch.KllDoublesSketchCodec;
+import io.camunda.analytics.sketch.HllSketchValue;
+import io.camunda.analytics.sketch.ItemsSketchValue;
+import io.camunda.analytics.sketch.KllDoublesSketchValue;
 import io.camunda.analytics.sketch.QuantileAggregateFunction;
 import io.camunda.analytics.sketch.TopKAggregateFunction;
-import io.camunda.eventbridge.streaming.aggregate.LongCodec;
+import io.camunda.eventbridge.streaming.aggregate.LongRecordValue;
 import io.camunda.eventbridge.streaming.aggregate.RatioAccumulator;
-import io.camunda.eventbridge.streaming.aggregate.RatioAccumulatorCodec;
+import io.camunda.eventbridge.streaming.aggregate.RatioAccumulatorRecordValue;
 import io.camunda.eventbridge.streaming.aggregate.SourceCoordinate;
-import io.camunda.eventbridge.streaming.aggregate.StringCodec;
+import io.camunda.eventbridge.streaming.aggregate.StringRecordValue;
 import io.camunda.eventbridge.streaming.aggregate.SumAggregateFunction;
 import java.util.ArrayList;
 import java.util.List;
@@ -157,8 +157,8 @@ public final class Metrics {
             EXEC_COORD,
             MINUTE_WINDOW_MS,
             ALLOWED_LATENESS_MS,
-            new RegionKeyCodec(),
-            new ExecutionTimeAccumulatorCodec(),
+            new RegionKeyValue(),
+            new ExecutionTimeAccumulatorValue(),
             noDrain(),
             ds -> {
               final var initSink =
@@ -178,8 +178,8 @@ public final class Metrics {
             ELEMENT_COORD,
             MINUTE_WINDOW_MS,
             ALLOWED_LATENESS_MS,
-            new ElementKeyCodec(),
-            new ExecutionTimeAccumulatorCodec(),
+            new ElementKeyValue(),
+            new ExecutionTimeAccumulatorValue(),
             noDrain(),
             ds -> {
               final var initSink = new JdbcElementHeatmapSink(ds, MINUTE_WINDOW_MS);
@@ -215,8 +215,8 @@ public final class Metrics {
             SLA_COORD,
             MINUTE_WINDOW_MS,
             COHORT_LATENESS_MS,
-            new DefinitionKeyCodec(),
-            new SlaCohortAccumulatorCodec(),
+            new DefinitionKeyValue(),
+            new SlaCohortAccumulatorValue(),
             acc -> acc.started() > 0 && acc.settled() >= acc.started(),
             ds -> {
               final var initSink = new JdbcSlaCohortSink(ds, MINUTE_WINDOW_MS, slaMs);
@@ -240,8 +240,8 @@ public final class Metrics {
             SLA_COORD,
             MINUTE_WINDOW_MS,
             COHORT_LATENESS_MS,
-            new DefinitionKeyCodec(),
-            new DurationBucketAccumulatorCodec(),
+            new DefinitionKeyValue(),
+            new DurationBucketAccumulatorValue(),
             acc -> acc.started() > 0 && acc.settled() >= acc.started(),
             ds -> {
               final var initSink = new JdbcDurationBucketSink(ds, MINUTE_WINDOW_MS);
@@ -262,8 +262,8 @@ public final class Metrics {
             INCIDENT_COHORT_COORD,
             MINUTE_WINDOW_MS,
             COHORT_LATENESS_MS,
-            new DefinitionKeyCodec(),
-            new RatioAccumulatorCodec(),
+            new DefinitionKeyValue(),
+            new RatioAccumulatorRecordValue(),
             noDrain(),
             ds -> {
               final var initSink = new JdbcDefinitionRatioSink(ds, MINUTE_WINDOW_MS, "no_incident");
@@ -292,8 +292,8 @@ public final class Metrics {
             LIFECYCLE_COORD,
             TOTAL_WINDOW_MS,
             ALLOWED_LATENESS_MS,
-            new DefinitionKeyCodec(),
-            new LongCodec(),
+            new DefinitionKeyValue(),
+            new LongRecordValue(),
             noDrain(),
             ds -> {
               final var initSink = new JdbcActiveInstancesSink(ds);
@@ -312,8 +312,8 @@ public final class Metrics {
             LIFECYCLE_COORD,
             MINUTE_WINDOW_MS,
             ALLOWED_LATENESS_MS,
-            new DefinitionKeyCodec(),
-            new LongCodec(),
+            new DefinitionKeyValue(),
+            new LongRecordValue(),
             noDrain(),
             ds -> {
               final var initSink = new JdbcActivatedInstancesSink(ds, MINUTE_WINDOW_MS);
@@ -332,8 +332,8 @@ public final class Metrics {
             INCIDENT_COORD,
             MINUTE_WINDOW_MS,
             ALLOWED_LATENESS_MS,
-            new IncidentKeyCodec(),
-            new LongCodec(),
+            new IncidentKeyValue(),
+            new LongRecordValue(),
             noDrain(),
             ds -> {
               final var initSink = new JdbcIncidentFrequencySink(ds, MINUTE_WINDOW_MS);
@@ -352,8 +352,8 @@ public final class Metrics {
             INCIDENT_COORD,
             TOTAL_WINDOW_MS,
             ALLOWED_LATENESS_MS,
-            new IncidentKeyCodec(),
-            new LongCodec(),
+            new IncidentKeyValue(),
+            new LongRecordValue(),
             noDrain(),
             ds -> {
               final var initSink = new JdbcOpenIncidentsSink(ds);
@@ -372,8 +372,8 @@ public final class Metrics {
             INCIDENT_DUR_COORD,
             MINUTE_WINDOW_MS,
             ALLOWED_LATENESS_MS,
-            new IncidentKeyCodec(),
-            new ExecutionTimeAccumulatorCodec(),
+            new IncidentKeyValue(),
+            new ExecutionTimeAccumulatorValue(),
             noDrain(),
             ds -> {
               final var initSink = new JdbcIncidentDurationSink(ds, MINUTE_WINDOW_MS);
@@ -399,8 +399,8 @@ public final class Metrics {
             EXEC_COORD,
             windowMs,
             ALLOWED_LATENESS_MS,
-            new DefinitionKeyCodec(),
-            new KllDoublesSketchCodec(),
+            new DefinitionKeyValue(),
+            new KllDoublesSketchValue(),
             noDrain(),
             ds -> {
               final var initSink = new JdbcDefinitionDurationPercentileSink(ds, windowMs, label);
@@ -424,8 +424,8 @@ public final class Metrics {
             ELEMENT_COORD,
             windowMs,
             ALLOWED_LATENESS_MS,
-            new ElementKeyCodec(),
-            new KllDoublesSketchCodec(),
+            new ElementKeyValue(),
+            new KllDoublesSketchValue(),
             noDrain(),
             ds -> {
               final var initSink = new JdbcElementDurationPercentileSink(ds, windowMs, label);
@@ -449,8 +449,8 @@ public final class Metrics {
             EXEC_COORD,
             windowMs,
             ALLOWED_LATENESS_MS,
-            new StringCodec(),
-            new HllSketchCodec(),
+            new StringRecordValue(),
+            new HllSketchValue(),
             noDrain(),
             ds -> {
               final var initSink = new JdbcTenantDistinctProcessSink(ds, windowMs, label);
@@ -477,8 +477,8 @@ public final class Metrics {
             EXEC_COORD,
             windowMs,
             ALLOWED_LATENESS_MS,
-            new StringCodec(),
-            new ItemsSketchCodec(),
+            new StringRecordValue(),
+            new ItemsSketchValue(),
             noDrain(),
             ds -> {
               final var initSink = new JdbcTenantTopProcessesSink(ds, windowMs, label);

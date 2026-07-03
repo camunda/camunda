@@ -17,7 +17,7 @@ final class TopKAggregateFunctionTest {
 
   private final TopKAggregateFunction<String> topK =
       new TopKAggregateFunction<>(Function.identity());
-  private final ItemsSketchCodec codec = new ItemsSketchCodec();
+  private final ItemsSketchValue codec = new ItemsSketchValue();
 
   private static ItemsSketch<String> skewed(final TopKAggregateFunction<String> agg) {
     ItemsSketch<String> acc = agg.createAccumulator();
@@ -86,12 +86,12 @@ final class TopKAggregateFunctionTest {
   }
 
   @Test
-  void shouldRoundTripThroughCodec() {
+  void shouldRoundTripThroughRecordValue() {
     // given
     final ItemsSketch<String> acc = skewed(topK);
 
     // when
-    final ItemsSketch<String> restored = codec.decode(codec.encode(acc));
+    final ItemsSketch<String> restored = codec.fromBytes(codec.toBytes(acc));
 
     // then the ranking is preserved
     assertThat(topK.getResult(restored).items())
