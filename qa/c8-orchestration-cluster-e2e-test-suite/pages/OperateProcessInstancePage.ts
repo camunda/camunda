@@ -313,7 +313,7 @@ class OperateProcessInstancePage {
   ): Promise<Locator> {
     return this.page
       .getByTestId('instance-history')
-      .getByRole('tree', { name: /instance history/i })
+      .getByRole('tree', {name: /instance history/i})
       .getByRole('treeitem', {name: parentElementName, exact: true});
   }
 
@@ -322,9 +322,9 @@ class OperateProcessInstancePage {
   ): Promise<Locator> {
     return this.page
       .getByTestId('instance-history')
-      .getByRole('tree', { name: /instance history/i })
-      .getByRole('treeitem', { name: parentElementName, exact: true })
-      .getByRole('group', { name: parentElementName, exact: true });
+      .getByRole('tree', {name: /instance history/i})
+      .getByRole('treeitem', {name: parentElementName, exact: true})
+      .getByRole('group', {name: parentElementName, exact: true});
   }
 
   async getHistoryElementsDataByName(itemName: string) {
@@ -355,16 +355,21 @@ class OperateProcessInstancePage {
   ): Promise<void> {
     await waitForAssertion({
       assertion: async () => {
-        const filteredElementsData =
-          await this.getHistoryElementsDataByName(itemName);
-        await expect.poll(() => filteredElementsData.length).toBeGreaterThan(0);
-        if (filteredElementsData.length !== expectedStatus.length) {
-          throw new Error(`Number does not match expected count.`);
-        }
-        expect(filteredElementsData.length).toBe(expectedStatus.length);
-        for (let i = 0; i < filteredElementsData.length; i++) {
-          expect(filteredElementsData[i].icon).toBe(expectedStatus[i]);
-        }
+        // Re-fetch the history rows on every poll iteration so late-rendering
+        // items are picked up in place. The previous implementation captured
+        // the array once and polled its (constant) length, so any timing gap
+        // fell straight through to onFailure. Reloading the page collapses the
+        // expanded history tree and permanently hides nested items, so
+        // transient timing must be allowed to resolve here before we reload.
+        await expect
+          .poll(
+            async () =>
+              (await this.getHistoryElementsDataByName(itemName)).map(
+                (element) => element.icon,
+              ),
+            {timeout: 30_000},
+          )
+          .toEqual(expectedStatus);
       },
       onFailure: async () => {
         await this.page.reload();
