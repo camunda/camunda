@@ -94,7 +94,7 @@ public class AgenticControlDashboardServiceTest {
     assertThat(saved.isAgenticControlDashboard()).isTrue();
     assertThat(saved.isManagementDashboard()).isFalse();
     assertThat(saved.getCollectionId()).isNull();
-    assertThat(saved.getTiles()).hasSize(14);
+    assertThat(saved.getTiles()).hasSize(15);
   }
 
   @Test
@@ -182,7 +182,8 @@ public class AgenticControlDashboardServiceTest {
             AgenticControlDashboardService.KPI_DURATION_P95_REPORT_ID,
             AgenticControlDashboardService.FAILURE_RATE_BY_VERSION_REPORT_ID,
             AgenticControlDashboardService.KPI_TOOL_CALLS_REPORT_ID,
-            AgenticControlDashboardService.TOOL_CALLS_HEATMAP_REPORT_ID);
+            AgenticControlDashboardService.TOOL_CALLS_HEATMAP_REPORT_ID,
+            AgenticControlDashboardService.DURATION_HEATMAP_REPORT_ID);
   }
 
   @Test
@@ -243,7 +244,7 @@ public class AgenticControlDashboardServiceTest {
     underTest.reconcile();
 
     // then reports are upserted and dashboard tiles are updated, but dashboard is not recreated
-    verify(reportWriter, times(14))
+    verify(reportWriter, times(15))
         .createOrUpdateSingleProcessReport(any(), any(), any(), any(), any(), any());
     verify(dashboardWriter, never()).saveDashboard(any());
     verify(dashboardWriter).updateDashboard(any(), any());
@@ -352,7 +353,9 @@ public class AgenticControlDashboardServiceTest {
               AgenticControlDashboardService.KPI_TOOL_CALLS_NAME,
               AgenticControlDashboardService.KPI_TOOL_CALLS_DESCRIPTION,
               AgenticControlDashboardService.TOOL_CALLS_HEATMAP_NAME,
-              AgenticControlDashboardService.TOOL_CALLS_HEATMAP_DESCRIPTION);
+              AgenticControlDashboardService.TOOL_CALLS_HEATMAP_DESCRIPTION,
+              AgenticControlDashboardService.DURATION_HEATMAP_NAME,
+              AgenticControlDashboardService.DURATION_HEATMAP_DESCRIPTION);
     }
   }
 
@@ -941,6 +944,100 @@ public class AgenticControlDashboardServiceTest {
     verify(reportWriter, times(2))
         .createOrUpdateSingleProcessReport(
             eq(AgenticControlDashboardService.TOOL_CALLS_HEATMAP_REPORT_ID),
+            any(),
+            any(),
+            any(),
+            any(),
+            any());
+  }
+
+  @Test
+  void shouldSeedDurationHeatmapReportWithFlowNodeViewAndGroupBy() {
+    // given
+    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
+    final ArgumentCaptor<ProcessReportDataDto> dataCaptor =
+        ArgumentCaptor.forClass(ProcessReportDataDto.class);
+
+    // when
+    underTest.reconcile();
+
+    // then the report is upserted with the deterministic ID and localization keys
+    verify(reportWriter)
+        .createOrUpdateSingleProcessReport(
+            eq(AgenticControlDashboardService.DURATION_HEATMAP_REPORT_ID),
+            isNull(),
+            dataCaptor.capture(),
+            eq(AgenticControlDashboardService.DURATION_HEATMAP_NAME),
+            eq(AgenticControlDashboardService.DURATION_HEATMAP_DESCRIPTION),
+            isNull());
+
+    final ProcessReportDataDto reportData = dataCaptor.getValue();
+    // view: FLOW_NODE + DURATION, grouped by flow node and rendered as a heat map
+    assertThat(reportData.getView().getEntity()).isEqualTo(ProcessViewEntity.FLOW_NODE);
+    assertThat(reportData.getView().getProperties()).containsExactly(ViewProperty.DURATION);
+    assertThat(reportData.getGroupBy()).isInstanceOf(FlowNodesGroupByDto.class);
+    assertThat(reportData.getVisualization()).isEqualTo(ProcessVisualization.HEAT);
+    // average duration per flow node (a single aggregation, no unused percentiles)
+    assertThat(reportData.getConfiguration().getAggregationTypes())
+        .extracting(AggregationDto::getType)
+        .containsExactly(AggregationType.AVERAGE);
+    // filters: completedInstancesOnly + hasAgentInstances, no fixed definition (scoped by the
+    // frontend's process selection)
+    assertThat(reportData.getFilter())
+        .hasAtLeastOneElementOfType(CompletedInstancesOnlyFilterDto.class);
+    assertThat(reportData.getFilter()).hasAtLeastOneElementOfType(HasAgentInstancesFilterDto.class);
+    assertThat(reportData.getDefinitions()).isEmpty();
+    assertThat(reportData.isAgenticControlReport()).isTrue();
+  }
+
+  @Test
+  void shouldUseDeterministicDurationHeatmapReportId() {
+    // when / then
+    assertThat(AgenticControlDashboardService.DURATION_HEATMAP_REPORT_ID)
+        .isEqualTo(
+            java.util
+                .UUID
+                .nameUUIDFromBytes(
+                    "agentic-duration-heatmap".getBytes(java.nio.charset.StandardCharsets.UTF_8))
+                .toString());
+  }
+
+  @Test
+  void shouldMarkDurationHeatmapTileAsL1OnlyInDurationSectionAtCorrectPositionAndDimensions() {
+    // given
+    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
+
+    // when
+    underTest.reconcile();
+
+    // then the tile is L1-only (a heat map needs a single process definition's BPMN XML to render)
+    // and lives in the duration section
+    final DashboardDefinitionRestDto saved = captureSavedDashboard();
+    final DashboardReportTileDto heatmapTile =
+        tileById(saved, AgenticControlDashboardService.DURATION_HEATMAP_REPORT_ID);
+
+    assertThat(heatmapTile.getPosition().getX()).isZero();
+    assertThat(heatmapTile.getPosition().getY()).isEqualTo(14);
+    assertThat(heatmapTile.getDimensions().getWidth()).isEqualTo(18);
+    assertThat(heatmapTile.getDimensions().getHeight()).isEqualTo(4);
+    assertThat(heatmapTile.getConfiguration())
+        .isEqualTo(Map.of("section", "duration", "visibleInL1Only", true));
+  }
+
+  @Test
+  void shouldUpsertDurationHeatmapReportOnWarmRestart() {
+    // given the dashboard already exists (warm restart)
+    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID))
+        .thenReturn(Optional.of(new DashboardDefinitionRestDto()));
+
+    // when
+    underTest.reconcile();
+    underTest.reconcile();
+
+    // then the heatmap report is upserted on every reconcile
+    verify(reportWriter, times(2))
+        .createOrUpdateSingleProcessReport(
+            eq(AgenticControlDashboardService.DURATION_HEATMAP_REPORT_ID),
             any(),
             any(),
             any(),
