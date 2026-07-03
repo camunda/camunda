@@ -97,10 +97,18 @@ become the same mechanism.
    - **mergeable-sketch** — `PERCENTILE` (KLL), `DISTINCT` (HLL), `TOPK` (frequent-items); the
      timer/summary/histogram family.
    - **ratio / cohort** — matched/total, a derived additive.
-   - **`LAST_VALUE`** (last-observed-value gauge) is a genuinely distinct **non-additive** kind whose
-     merge keeps the max-event-time value; it needs ordering (the shuffle's non-commutative path).
-     Recognised but **deferred** — every gauge we have today is a level (additive), so YAGNI until a
-     true last-write-wins use case appears.
+   - **`LAST_VALUE`** / `FIRST_VALUE` (value-as-of gauge, e.g. "latest `amount`/`status` per
+     instance") is a **mergeable max-by/min-by monoid**, not a heavy non-additive kind: carry the
+     value with its source position (or event-time + tiebreak) and merge keeps the larger/smaller
+     position. Exact, commutative + associative, and segment-delta-safe — no sketch, no
+     non-commutative shuffle. A **strong near-term candidate** for the meter set (process analytics is
+     full of "value as of" semantics), not a speculative deferral.
+   - **Positional / sequential state** ("Nth retry", loop count) is **per-instance base-projection
+     state** (like the incident flags / element starts already persisted), not a meter; a running
+     total is a read-time `SUM() OVER (ORDER BY window)` over an additive meter. **Session/gap
+     windows** are deferred — BPMN gives explicit lifecycle boundaries, so gap-inference is only
+     needed if analytics expands to user-behavior (Tasklist clickstreams), where the interval-merge +
+     watermark cost would be justified.
 
 2. **Fact (generic).** The base projection keeps its domain fold but emits a generic
    `Fact = (factType, dimensions: Map, measures: Map, eventTime, sourceCoordinate)` for a small set
@@ -282,8 +290,28 @@ removed; the merger takes a `DatasetWriter`, chosen once from config via `Databa
   from the registry. Removes the 24-id hand list and the per-metric key/acc classes.
 - **Phase 2 — Generic fact + base projection.** Generic `Fact`; refactor `ProcessExecutionProjector`
   to emit it; variable-enrichment timing policy.
+- **Phase 2b — Shuffle redesign** (before Phase 3 wires the generic pipeline). Three coupled changes
+  to the Stage-1→Stage-2 transport:
+  - **Segment-delta aggregation.** Stage 1 seals an *immutable delta* per `(aggId, key, window,
+    sourcePartition, segment)`; Stage 2 merges each delta once into a single running cell (one
+    accumulator per cell + a per-partition `segWatermark` for dedup), replacing per-writer full-value
+    slots. Meters are already mergeable, so deltas drop in. Tradeoff: a delta emits only when its
+    segment seals → latency = segment fill time (the `STRIDE` knob); strong at high throughput.
+  - **Single serving sink.** Everything — including today's directly-written process-definition
+    metadata — becomes a shuffled fact, so the serving write happens only in Stage 2. One write path,
+    no Stage-1 sink.
+  - **Versioned shuffle envelope.** Wrap the shuffled payload in a metadata header modelled on
+    `ZeebeRecordCodec`'s frame (`version | producedAt | schemaVersion | producerCoordinate |
+    payload`), replacing the bare `Partial`/`PartialCodec`, so the wire format can evolve and stamp
+    time/version.
 - **Phase 3 — Dataset declaration + compiler.** Structured declaration first (SQL-like parser
   deferred); wire both stages to instantiate per-dataset combiners/mergers from the compiled wiring.
+  **Deletes the old typed path wholesale** — `ProcessExecutionProjector`, the per-metric fact
+  records, `MetricSpec`/`Metrics`, and the bespoke `Jdbc*Sink`s — replacing it with the generic
+  projector + declaration-driven wiring; the specialized cohort metrics (SLA, no-incident) are
+  re-expressed as dataset declarations over the canonical facts. No parallel paths remain: one
+  projector, one fact model, one shuffle, one sink. (The generic pieces added in Phase 2 are the
+  canonical replacement, not a duplicate to maintain.)
 - **Phase 4 — Sink/SchemaManager SPI.** SPI + RDBMS impl (`db/rdbms`) first, then ES + OS impls
   (`search-client`). Declaring a dataset calls `SchemaManager.ensure`.
 - **Phase 5 — Reports.** `ReportDefinition` + per-backend query generator; the current dashboards
