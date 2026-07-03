@@ -160,9 +160,7 @@ public class MappingRuleUpdateAuthorizationTest {
     Assertions.assertThat(rejection)
         .hasRejectionType(RejectionType.FORBIDDEN)
         .hasRejectionReason(
-            "Insufficient permissions to perform operation 'UPDATE' on resource 'MAPPING_RULE', required resource identifiers are one of '[*, "
-                + id
-                + "]'");
+            "Insufficient permissions to perform operation 'UPDATE' on resource 'MAPPING_RULE'");
   }
 
   private UserRecordValue createUser() {

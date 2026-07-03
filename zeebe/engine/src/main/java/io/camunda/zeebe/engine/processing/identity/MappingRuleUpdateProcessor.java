@@ -8,8 +8,6 @@
 package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -24,7 +22,9 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public class MappingRuleUpdateProcessor
     implements DistributedTypedRecordProcessor<MappingRuleRecord> {
   private static final String MAPPING_RULE_NULL_VALUE_ERROR_MESSAGE =
@@ -35,7 +35,7 @@ public class MappingRuleUpdateProcessor
       "Expected to update mapping rule with id '%s', but a mapping rule with this id does not exist.";
 
   private final MappingRuleState mappingRuleState;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final PermissionsBehavior permissionsBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
@@ -44,12 +44,12 @@ public class MappingRuleUpdateProcessor
 
   public MappingRuleUpdateProcessor(
       final MappingRuleState mappingRuleState,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final PermissionsBehavior permissionsBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
     this.mappingRuleState = mappingRuleState;
-    this.authCheckBehavior = authCheckBehavior;
+    this.permissionsBehavior = permissionsBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
@@ -90,14 +90,9 @@ public class MappingRuleUpdateProcessor
       return;
     }
 
-    final var authorizationRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.MAPPING_RULE)
-            .permissionType(PermissionType.UPDATE)
-            .addResourceId(mappingRuleId)
-            .build();
-    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
+    final var isAuthorized =
+        permissionsBehavior.isAuthorized(
+            command, AuthorizationResourceType.MAPPING_RULE, PermissionType.UPDATE, mappingRuleId);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());

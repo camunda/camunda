@@ -354,14 +354,6 @@ public final class EngineProcessors {
         commandDistributionBehavior,
         securityConfig);
 
-    MappingRuleProcessors.addMappingRuleProcessors(
-        typedRecordProcessors,
-        processingState,
-        authCheckBehavior,
-        keyGenerator,
-        writers,
-        commandDistributionBehavior);
-
     IdentitySetupProcessors.addIdentitySetupProcessors(
         keyGenerator, typedRecordProcessors, writers, securityConfig, config);
 
@@ -496,6 +488,16 @@ public final class EngineProcessors {
         securityConfig);
 
     RoleProcessors.addRoleProcessors(
+        typedRecordProcessors,
+        processingState,
+        authzService,
+        claimsConverter,
+        keyGenerator,
+        writers,
+        commandDistributionBehavior,
+        securityConfig);
+
+    MappingRuleProcessors.addMappingRuleProcessors(
         typedRecordProcessors,
         processingState,
         authzService,
