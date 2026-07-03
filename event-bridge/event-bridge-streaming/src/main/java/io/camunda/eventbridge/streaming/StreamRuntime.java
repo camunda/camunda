@@ -40,9 +40,15 @@ import org.slf4j.LoggerFactory;
  * commits the source offset. A crash therefore replays rather than loses, and any re-emitted output
  * is deduplicated downstream by idempotent overwrite.
  *
- * <p><b>Threading.</b> {@link #run()} drives processing, punctuation, and commit on its own thread;
- * one task per partition means tasks never need locks. Not thread-safe; call {@link #run()} from a
- * single thread and {@link #stop()} from any thread (e.g. a shutdown hook).
+ * <p><b>Threading.</b> A runtime is single-threaded by design: {@link #run()} owns one consumer and
+ * drives poll, processing, punctuation, and commit on its own thread, processing one record at a
+ * time across the partitions that consumer is assigned. One task per partition therefore means
+ * tasks never need locks. Horizontal parallelism does not come from fanning a consumer's partitions
+ * out to worker threads — that would make every poll cycle wait for its slowest partition; it comes
+ * from running several runtimes, each with its own consumer, via {@link StreamRuntimeGroup}: the
+ * group coordinator splits the source partitions across the members and their loops run
+ * independently, so a slow partition delays only the member that owns it. Not thread-safe; call
+ * {@link #run()} from a single thread and {@link #stop()} from any thread (e.g. a shutdown hook).
  *
  * @param <R> the decoded record type
  */
