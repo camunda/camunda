@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.test.generator;
 
+import static io.camunda.zeebe.protocol.record.value.BpmnElementType.AD_HOC_SUB_PROCESS;
 import static io.camunda.zeebe.protocol.record.value.BpmnElementType.SUB_PROCESS;
 
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -53,7 +54,8 @@ final class BpmnFlowParser {
           Map.entry("exclusiveGateway", BpmnElementType.EXCLUSIVE_GATEWAY),
           Map.entry("eventBasedGateway", BpmnElementType.EVENT_BASED_GATEWAY),
           Map.entry("parallelGateway", BpmnElementType.PARALLEL_GATEWAY),
-          Map.entry("subProcess", SUB_PROCESS));
+          Map.entry("subProcess", SUB_PROCESS),
+          Map.entry("adHocSubProcess", AD_HOC_SUB_PROCESS));
 
   private BpmnFlowParser() {}
 
@@ -101,18 +103,40 @@ final class BpmnFlowParser {
    * sub-process body) into an immutable {@link ProcessGraph}.
    */
   private static ProcessGraph buildScope(final Element scope) {
+    return buildScope(scope, true);
+  }
+
+  /**
+   * Builds the scope of an {@code adHocSubProcess}. Unlike a regular scope, ad-hoc sub-processes
+   * have no {@code startEvent}: per real BPMN/Zeebe semantics their children are plain activities
+   * (optionally linked by {@code sequenceFlow} for a deterministic simulated order), so the first
+   * child in document order is used as the synthetic walk entry point.
+   */
+  private static ProcessGraph buildAdHocScope(final Element scope) {
+    return buildScope(scope, false);
+  }
+
+  private static ProcessGraph buildScope(final Element scope, final boolean requireStartEvent) {
     final List<Element> flowElements =
         childElements(scope).filter(el -> ELEMENT_TYPES.containsKey(el.getLocalName())).toList();
 
     final String startId =
-        flowElements.stream()
-            .filter(el -> ELEMENT_TYPES.get(el.getLocalName()) == BpmnElementType.START_EVENT)
-            .map(el -> el.getAttribute("id"))
-            .findFirst()
-            .orElseThrow(
-                () ->
-                    new IllegalStateException(
-                        "No startEvent in scope: " + scope.getAttribute("id")));
+        requireStartEvent
+            ? flowElements.stream()
+                .filter(el -> ELEMENT_TYPES.get(el.getLocalName()) == BpmnElementType.START_EVENT)
+                .map(el -> el.getAttribute("id"))
+                .findFirst()
+                .orElseThrow(
+                    () ->
+                        new IllegalStateException(
+                            "No startEvent in scope: " + scope.getAttribute("id")))
+            : flowElements.stream()
+                .findFirst()
+                .map(el -> el.getAttribute("id"))
+                .orElseThrow(
+                    () ->
+                        new IllegalStateException(
+                            "No child activities in ad-hoc scope: " + scope.getAttribute("id")));
 
     final Map<String, BpmnElementType> types =
         flowElements.stream()
@@ -122,14 +146,22 @@ final class BpmnFlowParser {
 
     final Map<String, ProcessGraph> subScopes =
         flowElements.stream()
-            .filter(el -> ELEMENT_TYPES.get(el.getLocalName()) == SUB_PROCESS)
+            .filter(el -> isContainer(ELEMENT_TYPES.get(el.getLocalName())))
             .collect(
                 Collectors.toUnmodifiableMap(
-                    el -> el.getAttribute("id"), BpmnFlowParser::buildScope));
+                    el -> el.getAttribute("id"),
+                    el ->
+                        ELEMENT_TYPES.get(el.getLocalName()) == SUB_PROCESS
+                            ? buildScope(el)
+                            : buildAdHocScope(el)));
 
     final Map<String, List<String>> successors = buildSuccessors(scope, types.keySet());
 
     return new ProcessGraph(startId, types, successors, subScopes);
+  }
+
+  private static boolean isContainer(final BpmnElementType type) {
+    return type == SUB_PROCESS || type == AD_HOC_SUB_PROCESS;
   }
 
   private static Map<String, List<String>> buildSuccessors(

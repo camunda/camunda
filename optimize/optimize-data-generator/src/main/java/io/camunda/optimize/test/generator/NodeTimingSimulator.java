@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.test.generator;
 
+import static io.camunda.zeebe.protocol.record.value.BpmnElementType.AD_HOC_SUB_PROCESS;
 import static io.camunda.zeebe.protocol.record.value.BpmnElementType.END_EVENT;
 import static io.camunda.zeebe.protocol.record.value.BpmnElementType.EVENT_BASED_GATEWAY;
 import static io.camunda.zeebe.protocol.record.value.BpmnElementType.EXCLUSIVE_GATEWAY;
@@ -71,7 +72,8 @@ class NodeTimingSimulator {
         || type == END_EVENT
         || type == EXCLUSIVE_GATEWAY
         || type == EVENT_BASED_GATEWAY
-        || type == SUB_PROCESS;
+        || type == SUB_PROCESS
+        || type == AD_HOC_SUB_PROCESS;
   }
 
   /** Returns a random weight; ~15 % of calls produce a high-outlier weight (3–5×). */

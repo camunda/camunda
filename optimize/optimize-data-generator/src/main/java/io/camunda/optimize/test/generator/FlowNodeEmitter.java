@@ -8,6 +8,7 @@
 package io.camunda.optimize.test.generator;
 
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
+import static io.camunda.zeebe.protocol.record.value.BpmnElementType.AD_HOC_SUB_PROCESS;
 import static io.camunda.zeebe.protocol.record.value.BpmnElementType.SERVICE_TASK;
 import static io.camunda.zeebe.protocol.record.value.BpmnElementType.SUB_PROCESS;
 import static io.camunda.zeebe.protocol.record.value.BpmnElementType.USER_TASK;
@@ -53,8 +54,9 @@ class FlowNodeEmitter {
     {"gpt-4o-mini", "openai"},
   };
 
-  // AD_HOC tools are modelled in BPMN (elementId present); they become available after the agent
-  // reads the BPMN schema during INITIALIZING — i.e. before the first THINKING update.
+  // Elements bound to a real agent node in the BPMN templates (see AGENT_ELEMENT_IDS). The tool
+  // task IDs below are the inner activities of the ad-hoc sub-process agent
+  // (bpmn/generator/customer-onboarding.bpmn, element "ai-document-review-agent").
   private static final List<AgentTool> ADHOC_TOOLS =
       List.of(
           new AgentTool(
@@ -74,8 +76,17 @@ class FlowNodeEmitter {
           new AgentTool("MCP_slack___post_message", "Post update to a Slack channel"),
           new AgentTool("MCP_s3___read_file", "Read file content from S3"));
 
-  // Synthetic element ID used for the AI agent task node (not in real BPMN files)
-  private static final String AGENT_ELEMENT_ID = "ai-agent-task";
+  // Synthetic element IDs for the 3 real agent BPMN patterns (each embedded in exactly one
+  // generator template): AHSP ad-hoc sub-process, inline "AI Agent Task" service task, and
+  // "External Agent" service task with a zeebe:agentDefinition extension element. A plain
+  // service task/standalone LLM call without one of these real BPMN shapes is not an agent and
+  // never produces an agent-instance record.
+  static final Set<String> AGENT_ELEMENT_IDS =
+      Set.of(
+          "ai-document-review-agent", // customer-onboarding.bpmn — AHSP
+          "risk-assessment-agent-task", // loan-approval.bpmn — AI Agent Task
+          "external-fraud-review-agent-task" // fraud-dispute-handling.bpmn — External Agent
+          );
 
   private final ZeebeRecordFactory factory;
   private final NodeTimingSimulator timingSimulator;
@@ -114,7 +125,7 @@ class FlowNodeEmitter {
         continue;
       }
       final FlowNode node = layout.get(ni);
-      if (node.type() == SUB_PROCESS) {
+      if (node.type() == SUB_PROCESS || node.type() == AD_HOC_SUB_PROCESS) {
         collectSubProcess(flowWalkCtx, ni, walkState);
       } else {
         final long nodeStartMs = timings != null ? timings[ni] : window.startMs();
@@ -176,10 +187,34 @@ class FlowNodeEmitter {
    * <p>Metrics in UPDATED/COMPLETED records carry engine-aggregated running totals, matching the
    * spec's dual-semantics contract.
    */
+  /**
+   * Returns the full agent instance lifecycle records (CREATED → UPDATED… → COMPLETED) for one
+   * process instance, simulating a realistic agentic execution.
+   *
+   * <p>{@code agentNode} must be one of the real BPMN agent elements (see {@link
+   * #AGENT_ELEMENT_IDS}) present in this instance's execution path — the emitted records are
+   * anchored to its actual {@code elementId} and element-instance key so they correlate with the
+   * matching flow-node record.
+   *
+   * <p>Lifecycle variants:
+   *
+   * <ul>
+   *   <li><b>Active instance</b>: CREATED + 1 UPDATED (agent still running)
+   *   <li><b>Terminated instance</b>: CREATED + 1 UPDATED + COMPLETED (cut short)
+   *   <li><b>Completed instance</b>: CREATED + 2–4 UPDATED + COMPLETED (full run)
+   * </ul>
+   *
+   * <p>Metrics in UPDATED/COMPLETED records carry engine-aggregated running totals, matching the
+   * spec's dual-semantics contract.
+   */
   List<BulkOperation> agentInstanceOps(
-      final InstanceContext ctx, final InstanceWindow window, final long agentInstanceKey) {
+      final InstanceContext ctx,
+      final InstanceWindow window,
+      final long agentInstanceKey,
+      final FlowNode agentNode) {
 
-    final long elemInstKey = ctx.instanceKey() * NODE_KEY_MULTIPLIER + 99L;
+    final String elementId = agentNode.id();
+    final long elemInstKey = ctx.instanceKey() * NODE_KEY_MULTIPLIER + agentNode.index();
     final long duration = window.endMs() - window.startMs();
     final long startMs = window.startMs();
 
@@ -218,7 +253,7 @@ class FlowNodeEmitter {
             new AgentInstanceEvent(
                 agentInstanceKey,
                 elemInstKey,
-                AGENT_ELEMENT_ID,
+                elementId,
                 "CREATED",
                 AgentInstanceStatus.INITIALIZING,
                 model,
@@ -243,7 +278,7 @@ class FlowNodeEmitter {
                 new AgentInstanceEvent(
                     agentInstanceKey,
                     elemInstKey,
-                    AGENT_ELEMENT_ID,
+                    elementId,
                     "UPDATED",
                     AgentInstanceStatus.TOOL_DISCOVERY,
                     model,
@@ -269,7 +304,7 @@ class FlowNodeEmitter {
               new AgentInstanceEvent(
                   agentInstanceKey,
                   elemInstKey,
-                  AGENT_ELEMENT_ID,
+                  elementId,
                   "UPDATED",
                   AgentInstanceStatus.THINKING,
                   model,
@@ -302,7 +337,7 @@ class FlowNodeEmitter {
                 new AgentInstanceEvent(
                     agentInstanceKey,
                     elemInstKey,
-                    AGENT_ELEMENT_ID,
+                    elementId,
                     "UPDATED",
                     AgentInstanceStatus.TOOL_DISCOVERY,
                     model,
@@ -328,7 +363,7 @@ class FlowNodeEmitter {
               new AgentInstanceEvent(
                   agentInstanceKey,
                   elemInstKey,
-                  AGENT_ELEMENT_ID,
+                  elementId,
                   "UPDATED",
                   AgentInstanceStatus.THINKING,
                   model,
@@ -355,7 +390,7 @@ class FlowNodeEmitter {
                 new AgentInstanceEvent(
                     agentInstanceKey,
                     elemInstKey,
-                    AGENT_ELEMENT_ID,
+                    elementId,
                     "UPDATED",
                     AgentInstanceStatus.TOOL_DISCOVERY,
                     model,
@@ -383,7 +418,7 @@ class FlowNodeEmitter {
               new AgentInstanceEvent(
                   agentInstanceKey,
                   elemInstKey,
-                  AGENT_ELEMENT_ID,
+                  elementId,
                   "UPDATED",
                   AgentInstanceStatus.THINKING,
                   model,
@@ -409,7 +444,7 @@ class FlowNodeEmitter {
               new AgentInstanceEvent(
                   agentInstanceKey,
                   elemInstKey,
-                  AGENT_ELEMENT_ID,
+                  elementId,
                   "UPDATED",
                   AgentInstanceStatus.TOOL_CALLING,
                   model,
@@ -437,7 +472,7 @@ class FlowNodeEmitter {
                 new AgentInstanceEvent(
                     agentInstanceKey,
                     elemInstKey,
-                    AGENT_ELEMENT_ID,
+                    elementId,
                     "UPDATED",
                     AgentInstanceStatus.THINKING,
                     model,
@@ -462,7 +497,7 @@ class FlowNodeEmitter {
               new AgentInstanceEvent(
                   agentInstanceKey,
                   elemInstKey,
-                  AGENT_ELEMENT_ID,
+                  elementId,
                   "UPDATED",
                   AgentInstanceStatus.IDLE,
                   model,
@@ -486,7 +521,7 @@ class FlowNodeEmitter {
             new AgentInstanceEvent(
                 agentInstanceKey,
                 elemInstKey,
-                AGENT_ELEMENT_ID,
+                elementId,
                 "COMPLETED",
                 AgentInstanceStatus.COMPLETED,
                 model,

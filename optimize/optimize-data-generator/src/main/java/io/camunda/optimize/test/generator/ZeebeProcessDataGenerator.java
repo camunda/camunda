@@ -290,13 +290,19 @@ public class ZeebeProcessDataGenerator {
             ? emitter.incidentOps(instanceContext, executionPath, instanceWindow)
             : List.of();
 
-    final boolean hasAgentInstance = random.nextDouble() < config.agentInstanceRate;
+    final Optional<FlowNode> agentNode =
+        executionPath.stream()
+            .filter(n -> FlowNodeEmitter.AGENT_ELEMENT_IDS.contains(n.id()))
+            .findFirst();
+    final boolean hasAgentInstance =
+        agentNode.isPresent() && random.nextDouble() < config.agentInstanceRate;
     final List<BulkOperation> agentInstanceOps =
         hasAgentInstance
             ? emitter.agentInstanceOps(
                 instanceContext,
                 instanceWindow,
-                instanceContext.instanceKey() * FlowNodeEmitter.AGENT_INSTANCE_KEY_MULTIPLIER)
+                instanceContext.instanceKey() * FlowNodeEmitter.AGENT_INSTANCE_KEY_MULTIPLIER,
+                agentNode.get())
             : List.of();
 
     final var userTasksOps = flowNodeOps.ut();

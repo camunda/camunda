@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.test.generator;
 
+import static io.camunda.zeebe.protocol.record.value.BpmnElementType.AD_HOC_SUB_PROCESS;
 import static io.camunda.zeebe.protocol.record.value.BpmnElementType.EVENT_BASED_GATEWAY;
 import static io.camunda.zeebe.protocol.record.value.BpmnElementType.EXCLUSIVE_GATEWAY;
 import static io.camunda.zeebe.protocol.record.value.BpmnElementType.SUB_PROCESS;
@@ -89,16 +90,18 @@ final class ProcessGraph {
   }
 
   /**
-   * If {@code type} is {@link io.camunda.zeebe.protocol.record.value.BpmnElementType#SUB_PROCESS},
-   * walks the sub-scope and appends its nodes into the shared walk state consecutively after the
-   * parent. Does nothing for all other element types.
+   * If {@code type} is a sub-process container ({@link
+   * io.camunda.zeebe.protocol.record.value.BpmnElementType#SUB_PROCESS} or {@link
+   * io.camunda.zeebe.protocol.record.value.BpmnElementType#AD_HOC_SUB_PROCESS}), walks the
+   * sub-scope and appends its nodes into the shared walk state consecutively after the parent. Does
+   * nothing for all other element types.
    */
   private void expandSubProcess(
       final String id,
       final BpmnElementType type,
       final int parentIndex,
       final WalkState walkState) {
-    if (type != SUB_PROCESS) {
+    if (type != SUB_PROCESS && type != AD_HOC_SUB_PROCESS) {
       return;
     }
     final ProcessGraph sub = subScopes.get(id);

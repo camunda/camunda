@@ -50,6 +50,16 @@ public class ElasticSearchConfiguration {
   }
 
   @JsonIgnore
+  public Integer getMaxConnPerRoute() {
+    return connection.getMaxConnPerRoute();
+  }
+
+  @JsonIgnore
+  public Integer getMaxConnTotal() {
+    return connection.getMaxConnTotal();
+  }
+
+  @JsonIgnore
   public ProxyConfiguration getProxyConfig() {
     final ProxyConfiguration proxyConfiguration = connection.getProxy();
     if (proxyConfiguration != null) {

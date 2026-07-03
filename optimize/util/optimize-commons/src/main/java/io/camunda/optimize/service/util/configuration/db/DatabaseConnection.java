@@ -20,6 +20,8 @@ public class DatabaseConnection {
   protected Integer responseConsumerBufferLimitInMb;
   protected String pathPrefix;
   protected Boolean skipHostnameVerification;
+  protected Integer maxConnPerRoute;
+  protected Integer maxConnTotal;
 
   @JsonProperty("nodes")
   protected List<DatabaseConnectionNodeConfiguration> connectionNodes;
@@ -49,6 +51,14 @@ public class DatabaseConnection {
     return this.skipHostnameVerification;
   }
 
+  public Integer getMaxConnPerRoute() {
+    return this.maxConnPerRoute;
+  }
+
+  public Integer getMaxConnTotal() {
+    return this.maxConnTotal;
+  }
+
   public List<DatabaseConnectionNodeConfiguration> getConnectionNodes() {
     return this.connectionNodes;
   }
@@ -75,6 +85,14 @@ public class DatabaseConnection {
 
   public void setSkipHostnameVerification(final Boolean skipHostnameVerification) {
     this.skipHostnameVerification = skipHostnameVerification;
+  }
+
+  public void setMaxConnPerRoute(final Integer maxConnPerRoute) {
+    this.maxConnPerRoute = maxConnPerRoute;
+  }
+
+  public void setMaxConnTotal(final Integer maxConnTotal) {
+    this.maxConnTotal = maxConnTotal;
   }
 
   @JsonProperty("nodes")

@@ -149,6 +149,17 @@ public class ElasticsearchClientBuilder {
         httpClientBuilder.setSSLHostnameVerifier((s, sslSession) -> true);
       }
 
+      final Integer maxConnPerRoute =
+          configurationService.getElasticSearchConfiguration().getMaxConnPerRoute();
+      if (maxConnPerRoute != null) {
+        httpClientBuilder.setMaxConnPerRoute(maxConnPerRoute);
+      }
+      final Integer maxConnTotal =
+          configurationService.getElasticSearchConfiguration().getMaxConnTotal();
+      if (maxConnTotal != null) {
+        httpClientBuilder.setMaxConnTotal(maxConnTotal);
+      }
+
       return httpClientBuilder;
     };
   }

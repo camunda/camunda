@@ -92,8 +92,10 @@ public final class GeneratorConfig {
   public final double updateRate;
 
   /**
-   * Fraction of generated instances that also receive an agent instance lifecycle (CREATED →
-   * UPDATED… → COMPLETED). Range [0.0, 1.0]. Default is {@code 0.3}.
+   * Fraction of instances whose process definition contains a real agent BPMN element (AHSP, inline
+   * AI Agent Task, or External Agent — see {@link FlowNodeEmitter#AGENT_ELEMENT_IDS}) that also
+   * receive an agent instance lifecycle (CREATED → UPDATED… → COMPLETED). Instances of processes
+   * without an agent element never receive one. Range [0.0, 1.0]. Default is {@code 0.3}.
    */
   public final double agentInstanceRate;
 
