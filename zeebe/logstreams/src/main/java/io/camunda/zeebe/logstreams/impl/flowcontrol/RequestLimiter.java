@@ -19,8 +19,6 @@ public final class RequestLimiter extends AbstractLimiter<Intent> {
   private RequestLimiter(final CommandRateLimiterBuilder builder, final LogStreamMetrics metrics) {
     super(builder);
     this.metrics = metrics;
-    metrics.setInflightRequests(0);
-    metrics.setRequestLimit(getLimit());
   }
 
   @Override
