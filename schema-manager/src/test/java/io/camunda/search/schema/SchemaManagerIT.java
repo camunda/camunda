@@ -136,11 +136,19 @@ public class SchemaManagerIT {
     // when
     initialiseResources(schemaManager);
 
-    // then
+    // then — replicas always follow global; shards on plain index/ descriptors are pinned to 1
+    // by the descriptor default regardless of the global knob (templates still follow global)
     final var retrievedIndex = searchClientAdapter.getIndexAsNode(index.getFullQualifiedName());
-
     assertThat(retrievedIndex.at("/settings/index/number_of_replicas").asInt()).isEqualTo(10);
-    assertThat(retrievedIndex.at("/settings/index/number_of_shards").asInt()).isEqualTo(10);
+    assertThat(retrievedIndex.at("/settings/index/number_of_shards").asInt()).isEqualTo(1);
+
+    final var retrievedTemplate =
+        searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+    assertThat(
+            retrievedTemplate
+                .at("/index_template/template/settings/index/number_of_shards")
+                .asInt())
+        .isEqualTo(10);
   }
 
   @TestTemplate

@@ -7,6 +7,8 @@
  */
 package io.camunda.webapps.schema.descriptors;
 
+import java.util.OptionalInt;
+
 public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
   public static final String SCHEMA_FOLDER_OPENSEARCH = "/schema/opensearch/create";
@@ -65,6 +67,31 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
         formattedIndexPrefix(),
         getComponentName(),
         getIndexName());
+  }
+
+  /**
+   * Returns the descriptor-level default shard count used when creating this index.
+   *
+   * <p>Precedence in {@code SchemaManager}:
+   *
+   * <ol>
+   *   <li>Explicit per-index override via {@code index.shardsByIndexName} config — always wins.
+   *   <li>This method — overriding it pins a specific index to a fixed shard count regardless of
+   *       the global knob.
+   *   <li>{@code index.numberOfShards} global config — used when this method returns {@code
+   *       OptionalInt.empty()}.
+   * </ol>
+   *
+   * <p>Plain {@code index/} descriptors (this class) default to <b>1 primary shard</b> because they
+   * hold config/definition/singleton data that never benefits from sharding. {@link
+   * AbstractTemplateDescriptor} overrides this back to {@code empty()} so volume-oriented template
+   * indices follow the operator-configured global knob. Individual descriptors that must be pinned
+   * regardless of their base class (e.g. {@code PostImporterQueueTemplate}, {@code MetadataIndex})
+   * override this method explicitly.
+   */
+  @Override
+  public OptionalInt getDefaultShardCount() {
+    return OptionalInt.of(1);
   }
 
   @Override

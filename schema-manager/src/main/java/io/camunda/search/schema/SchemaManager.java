@@ -281,7 +281,7 @@ public class SchemaManager implements CloseableSilently {
   }
 
   private void updateIndexSettings(final IndexDescriptor indexDescriptor) {
-    final var indexSettingsFromConfig = getIndexSettingsFromConfig(indexDescriptor.getIndexName());
+    final var indexSettingsFromConfig = getIndexSettingsFromConfig(indexDescriptor);
     if (indexDescriptor instanceof final IndexTemplateDescriptor indexTemplateDescriptor) {
       searchEngineClient.updateIndexTemplateSettings(
           indexTemplateDescriptor, indexSettingsFromConfig);
@@ -311,7 +311,7 @@ public class SchemaManager implements CloseableSilently {
                         () -> {
                           LOG.debug("Create missing index '{}'", descriptor.getFullQualifiedName());
                           searchEngineClient.createIndex(
-                              descriptor, getIndexSettingsFromConfig(descriptor.getIndexName()));
+                              descriptor, getIndexSettingsFromConfig(descriptor));
                         },
                         virtualThreadExecutor))
             .toArray(CompletableFuture[]::new);
@@ -379,7 +379,7 @@ public class SchemaManager implements CloseableSilently {
   private void createIndexTemplate(final IndexTemplateDescriptor descriptor) {
     try {
       searchEngineClient.createIndexTemplate(
-          descriptor, getIndexSettingsFromConfig(descriptor.getIndexName()), true);
+          descriptor, getIndexSettingsFromConfig(descriptor), true);
       LOG.debug(
           "Index template '{}', has been created / already exists", descriptor.getTemplateName());
 
@@ -417,9 +417,7 @@ public class SchemaManager implements CloseableSilently {
         LOG.debug(
             "Updating template: '{}'", ((IndexTemplateDescriptor) descriptor).getTemplateName());
         searchEngineClient.createIndexTemplate(
-            (IndexTemplateDescriptor) descriptor,
-            getIndexSettingsFromConfig(descriptor.getIndexName()),
-            false);
+            (IndexTemplateDescriptor) descriptor, getIndexSettingsFromConfig(descriptor), false);
       } else {
         LOG.info(
             "Index alias: '{}'. New fields will be added '{}'",
@@ -454,13 +452,10 @@ public class SchemaManager implements CloseableSilently {
     LOG.debug("Deleted archived indices '{}'", archivedIndices);
   }
 
-  private IndexConfiguration getIndexSettingsFromConfig(final String indexName) {
+  private IndexConfiguration getIndexSettingsFromConfig(final IndexDescriptor descriptor) {
+    final var indexName = descriptor.getIndexName();
     final var templateReplicas = getNumberOfReplicasFromConfig(indexName);
-    final var templateShards =
-        config
-            .index()
-            .getShardsByIndexName()
-            .getOrDefault(indexName, config.index().getNumberOfShards());
+    final var templateShards = getNumberOfShardsFromConfig(indexName, descriptor);
 
     final var settings = new IndexConfiguration();
     settings.setNumberOfShards(templateShards);
@@ -469,6 +464,15 @@ public class SchemaManager implements CloseableSilently {
     final var refreshInterval = getRefreshIntervalFromConfig(indexName);
     settings.setRefreshInterval(refreshInterval);
     return settings;
+  }
+
+  private int getNumberOfShardsFromConfig(
+      final String indexName, final IndexDescriptor descriptor) {
+    final var explicit = config.index().getShardsByIndexName().get(indexName);
+    if (explicit != null) {
+      return explicit;
+    }
+    return descriptor.getDefaultShardCount().orElse(config.index().getNumberOfShards());
   }
 
   private int getNumberOfReplicasFromConfig(final String indexName) {

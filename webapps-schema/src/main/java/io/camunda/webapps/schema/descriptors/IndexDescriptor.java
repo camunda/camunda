@@ -8,6 +8,7 @@
 package io.camunda.webapps.schema.descriptors;
 
 import java.util.Optional;
+import java.util.OptionalInt;
 
 public interface IndexDescriptor {
 
@@ -38,6 +39,10 @@ public interface IndexDescriptor {
   String getIndexNameWithoutVersion();
 
   String getVersion();
+
+  default OptionalInt getDefaultShardCount() {
+    return OptionalInt.empty();
+  }
 
   default Optional<String> getTenantIdField() {
     return Optional.empty();
