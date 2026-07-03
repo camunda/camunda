@@ -12,6 +12,7 @@ import io.atomix.raft.partition.RaftPartition;
 import io.camunda.cluster.PartitionId;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
+import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
@@ -19,6 +20,7 @@ import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.jar.ExternalJarLoadException;
 import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 
@@ -78,7 +80,8 @@ public interface PartitionManager {
     final var perTenantExporterRepository =
         perTenantBrokerConfig == brokerStartupContext.getBrokerConfiguration()
             ? brokerStartupContext.getExporterRepository()
-            : buildExporterRepository(perTenantBrokerConfig);
+            : buildExporterRepository(
+                perTenantBrokerConfig, brokerStartupContext.getPredefinedExporterDescriptors());
     return new PartitionManagerImpl(
         physicalTenantId,
         brokerStartupContext.getConcurrencyControl(),
@@ -106,8 +109,12 @@ public interface PartitionManager {
   }
 
   private static ExporterRepository buildExporterRepository(
-      final io.camunda.zeebe.broker.system.configuration.BrokerCfg brokerCfg) {
-    final var repository = new ExporterRepository();
+      final io.camunda.zeebe.broker.system.configuration.BrokerCfg brokerCfg,
+      final List<ExporterDescriptor> predefinedExporterDescriptors) {
+    // seed with predefined (e.g. Spring-injected) descriptors: they cannot be re-created from
+    // configuration by class-name loading, and load() below skips ids that are already present —
+    // mirroring how the shared root repository treats them
+    final var repository = new ExporterRepository(predefinedExporterDescriptors);
     repository.setLicenseKey(brokerCfg.getLicenseKey());
     for (final var entry : brokerCfg.getExporters().entrySet()) {
       try {

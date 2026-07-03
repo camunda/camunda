@@ -23,6 +23,7 @@ import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
+import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
@@ -64,6 +65,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final ActorSchedulingService actorScheduler;
   private final BrokerHealthCheckService healthCheckService;
   private final ExporterRepository exporterRepository;
+  private final List<ExporterDescriptor> predefinedExporterDescriptors;
   private final ClusterServicesImpl clusterServices;
   private final BrokerClient brokerClient;
   private final List<PartitionListener> partitionListeners = new ArrayList<>();
@@ -102,6 +104,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final ActorSchedulingService actorScheduler,
       final BrokerHealthCheckService healthCheckService,
       final ExporterRepository exporterRepository,
+      final List<ExporterDescriptor> predefinedExporterDescriptors,
       final ClusterServicesImpl clusterServices,
       final BrokerClient brokerClient,
       final List<PartitionListener> additionalPartitionListeners,
@@ -122,6 +125,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.actorScheduler = requireNonNull(actorScheduler);
     this.healthCheckService = requireNonNull(healthCheckService);
     this.exporterRepository = requireNonNull(exporterRepository);
+    this.predefinedExporterDescriptors = List.copyOf(predefinedExporterDescriptors);
     this.clusterServices = requireNonNull(clusterServices);
     this.identityConfiguration = identityConfiguration;
     this.brokerClient = brokerClient;
@@ -275,6 +279,11 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public ExporterRepository getExporterRepository() {
     return exporterRepository;
+  }
+
+  @Override
+  public List<ExporterDescriptor> getPredefinedExporterDescriptors() {
+    return predefinedExporterDescriptors;
   }
 
   @Override

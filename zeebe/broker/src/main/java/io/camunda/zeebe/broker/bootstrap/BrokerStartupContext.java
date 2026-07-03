@@ -20,6 +20,7 @@ import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
+import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
@@ -106,6 +107,13 @@ public interface BrokerStartupContext {
   void setDiskSpaceUsageMonitor(DiskSpaceUsageMonitor diskSpaceUsageMonitor);
 
   ExporterRepository getExporterRepository();
+
+  /**
+   * Returns the exporter descriptors that were predefined (e.g. injected as Spring beans) rather
+   * than loaded from the exporter configuration. Per-physical-tenant exporter repositories are
+   * seeded with these, since predefined exporters cannot be re-created by class-name loading.
+   */
+  List<ExporterDescriptor> getPredefinedExporterDescriptors();
 
   /** Returns all currently registered partition managers, keyed by physical tenant ID. */
   Map<String, PartitionManager> getPartitionManagers();

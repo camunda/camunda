@@ -63,6 +63,11 @@ public final class Broker implements AutoCloseable {
     this.systemContext = systemContext;
     this.exporterRepository = exporterRepository;
 
+    // at this point the repository contains only predefined (e.g. Spring-injected) descriptors;
+    // buildExporterRepository below merges the configured exporters into the same instance
+    final var predefinedExporterDescriptors =
+        List.copyOf(exporterRepository.getExporters().values());
+
     final ActorScheduler scheduler = this.systemContext.getScheduler();
     final BrokerInfo localBroker = createBrokerInfo(getConfig());
     final var cluster = getConfig().getCluster();
@@ -84,6 +89,7 @@ public final class Broker implements AutoCloseable {
             scheduler,
             healthCheckService,
             buildExporterRepository(getConfig()),
+            predefinedExporterDescriptors,
             new ClusterServicesImpl(systemContext.getCluster()),
             systemContext.getBrokerClient(),
             additionalPartitionListeners,
