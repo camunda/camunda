@@ -9,6 +9,8 @@ package io.camunda.analytics.meter;
 
 import io.camunda.analytics.metric.ExecutionTimeAccumulatorValue;
 import io.camunda.analytics.metric.ExecutionTimeAggregateFunction;
+import io.camunda.analytics.metric.ExecutionTimeSummaryAggregateFunction;
+import io.camunda.analytics.metric.ExecutionTimeSummaryValue;
 import io.camunda.analytics.metric.HistogramAggregateFunction;
 import io.camunda.analytics.metric.HistogramValue;
 import io.camunda.analytics.sketch.DistinctCountAggregateFunction;
@@ -47,6 +49,7 @@ public final class MeterCatalog {
   public static final String SUM = "sum";
   public static final String LEVEL = "level";
   public static final String EXECUTION_TIME = "execution_time";
+  public static final String EXECUTION_TIME_SUMMARY = "execution_time_summary";
   public static final String HISTOGRAM = "histogram";
   public static final String PERCENTILE = "percentile";
   public static final String DISTINCT = "distinct";
@@ -104,6 +107,14 @@ public final class MeterCatalog {
                 EXECUTION_TIME,
                 m -> new ExecutionTimeAggregateFunction<>(m.requireMeasure()::asLong),
                 m -> new ExecutionTimeAccumulatorValue()))
+        .register(
+            new MeterType<>(
+                EXECUTION_TIME_SUMMARY,
+                m ->
+                    new ExecutionTimeSummaryAggregateFunction<>(
+                        m.requireMeasure()::asLong,
+                        m.doubleArrayParam("ranks", QuantileAggregateFunction.DEFAULT_RANKS)),
+                m -> new ExecutionTimeSummaryValue()))
         .register(
             new MeterType<>(
                 HISTOGRAM,

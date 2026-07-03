@@ -1,0 +1,84 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.analytics.metric;
+
+import org.apache.datasketches.kll.KllDoublesSketch;
+
+/**
+ * The composite execution-time accumulator: exact {@code count}/{@code total}/{@code min}/{@code
+ * max} <em>and</em> a KLL sketch, fused into one cell. One fold serves the whole duration family —
+ * count, total, average ({@code total/count}, derived on read), min, max, and any percentile — so a
+ * dataset needs a single meter for what would otherwise be several. This is the "one composite
+ * measure, not seven" win for process-instance analytics.
+ *
+ * <p>Every field merges commutatively/associatively (additive counts, min/max, KLL union), so the
+ * summary pre-aggregates across partitions like {@code count}/{@code sum}. Empty uses sentinel
+ * min/max so the first observation sets both. A single instance is mutated per cell by the
+ * single-writer fold; {@code merge} produces a fresh summary.
+ *
+ * <p>Designed to grow: a later lifecycle-summary composite adds per-transition counts
+ * (activated/completed/terminated) alongside these duration stats, folded from a transition-tagged
+ * fact.
+ */
+public final class ExecutionTimeSummary {
+
+  private long count;
+  private long totalMs;
+  private long minMs;
+  private long maxMs;
+  private final KllDoublesSketch sketch;
+
+  public ExecutionTimeSummary(
+      final long count,
+      final long totalMs,
+      final long minMs,
+      final long maxMs,
+      final KllDoublesSketch sketch) {
+    this.count = count;
+    this.totalMs = totalMs;
+    this.minMs = minMs;
+    this.maxMs = maxMs;
+    this.sketch = sketch;
+  }
+
+  public static ExecutionTimeSummary empty() {
+    return new ExecutionTimeSummary(
+        0L, 0L, Long.MAX_VALUE, Long.MIN_VALUE, KllDoublesSketch.newHeapInstance());
+  }
+
+  /**
+   * Folds one observation into this accumulator (mutating), keeping stats and the sketch in step.
+   */
+  public void record(final long durationMs) {
+    count++;
+    totalMs += durationMs;
+    minMs = Math.min(minMs, durationMs);
+    maxMs = Math.max(maxMs, durationMs);
+    sketch.update(durationMs);
+  }
+
+  public long count() {
+    return count;
+  }
+
+  public long totalMs() {
+    return totalMs;
+  }
+
+  public long minMs() {
+    return minMs;
+  }
+
+  public long maxMs() {
+    return maxMs;
+  }
+
+  public KllDoublesSketch sketch() {
+    return sketch;
+  }
+}
