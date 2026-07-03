@@ -46,10 +46,15 @@ import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.Meter.Id;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.ToDoubleFunction;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 @NullMarked
 public final class LogStreamMetricsImpl implements LogStreamMetrics {
@@ -74,6 +79,9 @@ public final class LogStreamMetricsImpl implements LogStreamMetrics {
   private final Timer commitLatency;
   private final Timer appendLatency;
 
+  private final Set<Id> registeredRequestRateMeters = new HashSet<>();
+  private final Set<Id> registeredWriteRateMeters = new HashSet<>();
+
   public LogStreamMetricsImpl(final MeterRegistry registry) {
     this.registry = registry;
     deferredAppends = registerCounter(TOTAL_DEFERRED_APPEND_COUNT);
@@ -85,18 +93,10 @@ public final class LogStreamMetricsImpl implements LogStreamMetrics {
 
     registerGauge(INFLIGHT_APPENDS, inflightAppends);
     registerGauge(INFLIGHT_REQUESTS, inflightRequests);
-    registerGauge(REQUEST_LIMIT, requestLimit);
     registerGauge(LAST_COMMITTED_POSITION, lastCommitted);
     registerGauge(LAST_WRITTEN_POSITION, lastWritten);
     registerGauge(EXPORTING_RATE, exportingRate);
-    registerGauge(WRITE_RATE_MAX_LIMIT, writeRateMaxLimit);
-
-    Gauge.builder(WRITE_RATE_LIMIT.getName(), writeRateLimit, LogStreamMetricsImpl::longToDouble)
-        .description(WRITE_RATE_LIMIT.getDescription())
-        .register(registry);
-    Gauge.builder(PARTITION_LOAD.getName(), partitionLoad, LogStreamMetricsImpl::longToDouble)
-        .description(PARTITION_LOAD.getDescription())
-        .register(registry);
+    registerGauge(PARTITION_LOAD, partitionLoad, LogStreamMetricsImpl::longToDouble, null);
   }
 
   @Override
@@ -215,6 +215,31 @@ public final class LogStreamMetricsImpl implements LogStreamMetrics {
     writeRateLimit.set(Double.doubleToLongBits(value));
   }
 
+  @Override
+  public void registerRequestRateMetrics() {
+    registerGauge(REQUEST_LIMIT, requestLimit, registeredRequestRateMeters);
+  }
+
+  @Override
+  public void deregisterRequestRateMetrics() {
+    registeredRequestRateMeters.forEach(registry::remove);
+  }
+
+  @Override
+  public void registerWriteRateMetrics() {
+    registerGauge(WRITE_RATE_MAX_LIMIT, writeRateMaxLimit, registeredWriteRateMeters);
+    registerGauge(
+        WRITE_RATE_LIMIT,
+        writeRateLimit,
+        LogStreamMetricsImpl::longToDouble,
+        registeredWriteRateMeters);
+  }
+
+  @Override
+  public void deregisterWriteRateMetrics() {
+    registeredWriteRateMeters.forEach(registry::remove);
+  }
+
   private Counter registerRecordAppendedCounter(
       final RecordType recordType, final ValueType valueType, final Intent intent) {
     return Counter.builder(RECORD_APPENDED.getName())
@@ -235,17 +260,37 @@ public final class LogStreamMetricsImpl implements LogStreamMetrics {
   }
 
   private void registerGauge(final ExtendedMeterDocumentation doc, final AtomicLong gauge) {
-    Gauge.builder(doc.getName(), gauge, AtomicLong::get)
-        .description(doc.getDescription())
-        .register(registry);
+    registerGauge(doc, gauge, AtomicLong::get, null);
   }
 
-  private Counter registerCounter(final ExtendedMeterDocumentation doc) {
-    return Counter.builder(doc.getName()).description(doc.getDescription()).register(registry);
+  private void registerGauge(
+      final ExtendedMeterDocumentation doc,
+      final AtomicLong gauge,
+      @Nullable final Set<Id> registeredGauges) {
+    registerGauge(doc, gauge, AtomicLong::get, registeredGauges);
+  }
+
+  private void registerGauge(
+      final ExtendedMeterDocumentation doc,
+      final AtomicLong gauge,
+      final ToDoubleFunction<AtomicLong> valueFunction,
+      @Nullable final Set<Id> registeredGauges) {
+    final var id =
+        Gauge.builder(doc.getName(), gauge, valueFunction)
+            .description(doc.getDescription())
+            .register(registry)
+            .getId();
+    if (registeredGauges != null) {
+      registeredGauges.add(id);
+    }
   }
 
   private static double longToDouble(final AtomicLong value) {
     return Double.longBitsToDouble(value.get());
+  }
+
+  private Counter registerCounter(final ExtendedMeterDocumentation doc) {
+    return Counter.builder(doc.getName()).description(doc.getDescription()).register(registry);
   }
 
   private static FlowControlOutcome tagForRejection(final Rejection reason) {
