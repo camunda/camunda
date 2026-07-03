@@ -35,7 +35,7 @@ public class AssertionPropertiesTest {
     // then
     assertThat(assertionProperties.getAssertionTimeout()).isEmpty();
     assertThat(assertionProperties.getAssertionInterval()).isEmpty();
-    assertThat(assertionProperties.getElementInstancePageLimit()).isEmpty();
+    assertThat(assertionProperties.getQueryPageLimit()).isEmpty();
   }
 
   @Test
@@ -54,23 +54,23 @@ public class AssertionPropertiesTest {
   }
 
   @Test
-  void shouldReadElementInstancePageLimit() {
+  void shouldReadQueryPageLimit() {
     // given
     final Properties properties = new Properties();
-    properties.setProperty("assertion.elementInstancePageLimit", "500");
+    properties.setProperty("assertion.queryPageLimit", "500");
 
     // when
     final AssertionProperties assertionProperties = new AssertionProperties(properties);
 
     // then
-    assertThat(assertionProperties.getElementInstancePageLimit()).contains(500);
+    assertThat(assertionProperties.getQueryPageLimit()).contains(500);
   }
 
   @Test
-  void shouldRejectInvalidElementInstancePageLimit() {
+  void shouldRejectInvalidQueryPageLimit() {
     // given
     final Properties properties = new Properties();
-    properties.setProperty("assertion.elementInstancePageLimit", "not-a-number");
+    properties.setProperty("assertion.queryPageLimit", "not-a-number");
 
     // when / then
     assertThatThrownBy(() -> new AssertionProperties(properties))
@@ -83,7 +83,7 @@ public class AssertionPropertiesTest {
     final Properties properties = new Properties();
     properties.setProperty("assertion.timeout", "${ASSERTION_TIMEOUT}");
     properties.setProperty("assertion.interval", "${ASSERTION_INTERVAL}");
-    properties.setProperty("assertion.elementInstancePageLimit", "${ELEMENT_INSTANCE_PAGE_LIMIT}");
+    properties.setProperty("assertion.queryPageLimit", "${QUERY_PAGE_LIMIT}");
 
     // when
     final AssertionProperties assertionProperties = new AssertionProperties(properties);
@@ -91,6 +91,6 @@ public class AssertionPropertiesTest {
     // then
     assertThat(assertionProperties.getAssertionTimeout()).isEmpty();
     assertThat(assertionProperties.getAssertionInterval()).isEmpty();
-    assertThat(assertionProperties.getElementInstancePageLimit()).isEmpty();
+    assertThat(assertionProperties.getQueryPageLimit()).isEmpty();
   }
 }

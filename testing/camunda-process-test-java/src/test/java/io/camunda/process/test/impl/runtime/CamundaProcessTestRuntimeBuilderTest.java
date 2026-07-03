@@ -143,25 +143,24 @@ public class CamundaProcessTestRuntimeBuilderTest {
   }
 
   @Test
-  void shouldUseDefaultElementInstancePageLimit() {
+  void shouldUseDefaultQueryPageLimit() {
     // expect
-    assertThat(runtimeBuilder.getElementInstancePageLimit()).isEqualTo(100);
+    assertThat(runtimeBuilder.getQueryPageLimit()).isEqualTo(100);
   }
 
   @Test
-  void shouldOverrideElementInstancePageLimit() {
+  void shouldOverrideQueryPageLimit() {
     // when
-    runtimeBuilder.withElementInstancePageLimit(500);
+    runtimeBuilder.withQueryPageLimit(500);
 
     // then
-    assertThat(runtimeBuilder.getElementInstancePageLimit()).isEqualTo(500);
+    assertThat(runtimeBuilder.getQueryPageLimit()).isEqualTo(500);
   }
 
   @Test
-  void shouldRejectNonPositiveElementInstancePageLimit() {
+  void shouldRejectNonPositiveQueryPageLimit() {
     // when/then
-    org.assertj.core.api.Assertions.assertThatThrownBy(
-            () -> runtimeBuilder.withElementInstancePageLimit(0))
+    org.assertj.core.api.Assertions.assertThatThrownBy(() -> runtimeBuilder.withQueryPageLimit(0))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("must be greater than 0");
   }

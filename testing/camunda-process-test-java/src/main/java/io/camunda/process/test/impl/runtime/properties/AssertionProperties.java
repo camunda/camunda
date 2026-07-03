@@ -24,12 +24,11 @@ public class AssertionProperties {
 
   public static final String PROPERTY_NAME_ASSERTION_TIMEOUT = "assertion.timeout";
   public static final String PROPERTY_NAME_ASSERTION_INTERVAL = "assertion.interval";
-  public static final String PROPERTY_NAME_ELEMENT_INSTANCE_PAGE_LIMIT =
-      "assertion.elementInstancePageLimit";
+  public static final String PROPERTY_NAME_QUERY_PAGE_LIMIT = "assertion.queryPageLimit";
 
   private final Duration assertionTimeout;
   private final Duration assertionInterval;
-  private final Integer elementInstancePageLimit;
+  private final Integer queryPageLimit;
 
   public AssertionProperties(final Properties properties) {
     assertionTimeout =
@@ -40,9 +39,9 @@ public class AssertionProperties {
         PropertiesUtil.getPropertyOrNull(
             properties, PROPERTY_NAME_ASSERTION_INTERVAL, Duration::parse);
 
-    elementInstancePageLimit =
+    queryPageLimit =
         PropertiesUtil.getPropertyOrNull(
-            properties, PROPERTY_NAME_ELEMENT_INSTANCE_PAGE_LIMIT, Integer::parseInt);
+            properties, PROPERTY_NAME_QUERY_PAGE_LIMIT, Integer::parseInt);
   }
 
   public Optional<Duration> getAssertionTimeout() {
@@ -54,13 +53,14 @@ public class AssertionProperties {
   }
 
   /**
-   * The page size used when fetching element instances for assertions and coverage reporting.
-   * Defaults to 100 if not configured.
+   * The page size used when fetching entities (element instances, process instances, variables,
+   * user tasks, decision instances, etc.) for assertions and coverage reporting. Defaults to 100 if
+   * not configured.
    *
-   * <p>Can be set via the {@code assertion.elementInstancePageLimit} property or the {@code
-   * CAMUNDA_PROCESSTEST_ASSERTION_ELEMENTINSTANCEPAGELIMIT} environment variable.
+   * <p>Can be set via the {@code assertion.queryPageLimit} property or the {@code
+   * CAMUNDA_PROCESSTEST_ASSERTION_QUERYPAGELIMIT} environment variable.
    */
-  public Optional<Integer> getElementInstancePageLimit() {
-    return Optional.ofNullable(elementInstancePageLimit);
+  public Optional<Integer> getQueryPageLimit() {
+    return Optional.ofNullable(queryPageLimit);
   }
 }

@@ -111,10 +111,10 @@ public class CamundaProcessTestRuntimeBuilder {
       CamundaProcessTestRuntimeDefaults.ASSERTION_PROPERTIES.getAssertionTimeout();
   private Optional<Duration> assertionInterval =
       CamundaProcessTestRuntimeDefaults.ASSERTION_PROPERTIES.getAssertionInterval();
-  private int elementInstancePageLimit =
+  private int queryPageLimit =
       CamundaProcessTestRuntimeDefaults.ASSERTION_PROPERTIES
-          .getElementInstancePageLimit()
-          .orElse(CamundaDataSource.DEFAULT_ELEMENT_INSTANCE_PAGE_LIMIT);
+          .getQueryPageLimit()
+          .orElse(CamundaDataSource.DEFAULT_QUERY_PAGE_LIMIT);
 
   // ============ For testing =================
 
@@ -319,20 +319,19 @@ public class CamundaProcessTestRuntimeBuilder {
   }
 
   /**
-   * Sets the page size used when fetching element instances for assertions and coverage reporting.
-   * Increase this if a process instance under test can produce more than the default 100 element
-   * instances, otherwise the latest-started (often terminal) elements may be excluded from
-   * assertions and coverage results.
+   * Sets the page size used when fetching entities (element instances, process instances,
+   * variables, user tasks, decision instances, etc.) for assertions and coverage reporting.
+   * Increase this if a process instance under test can produce more than the default 100 entities,
+   * otherwise the latest-started (often terminal) entities may be excluded from assertions and
+   * coverage results.
    *
-   * @param elementInstancePageLimit the maximum number of element instances to fetch per process
-   *     instance, must be greater than 0
+   * @param queryPageLimit the maximum number of entities to fetch per query, must be greater than 0
    */
-  public CamundaProcessTestRuntimeBuilder withElementInstancePageLimit(
-      final int elementInstancePageLimit) {
-    if (elementInstancePageLimit <= 0) {
-      throw new IllegalArgumentException("elementInstancePageLimit must be greater than 0");
+  public CamundaProcessTestRuntimeBuilder withQueryPageLimit(final int queryPageLimit) {
+    if (queryPageLimit <= 0) {
+      throw new IllegalArgumentException("queryPageLimit must be greater than 0");
     }
-    this.elementInstancePageLimit = elementInstancePageLimit;
+    this.queryPageLimit = queryPageLimit;
     return this;
   }
 
@@ -505,7 +504,7 @@ public class CamundaProcessTestRuntimeBuilder {
     return assertionInterval;
   }
 
-  public int getElementInstancePageLimit() {
-    return elementInstancePageLimit;
+  public int getQueryPageLimit() {
+    return queryPageLimit;
   }
 }
