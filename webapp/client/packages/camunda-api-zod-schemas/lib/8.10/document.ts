@@ -12,11 +12,11 @@ import {API_VERSION, type Endpoint} from './common';
 const documentMetadataSchema = z.object({
 	contentType: z.string(),
 	fileName: z.string(),
-	expiresAt: z.string().nullable(),
+	expiresAt: z.string().nullish(),
 	size: z.number(),
-	processDefinitionId: z.string().nullable(),
-	processInstanceKey: z.string().nullable(),
-	customProperties: z.record(z.string(), z.unknown()),
+	processDefinitionId: z.string().nullish(),
+	processInstanceKey: z.string().nullish(),
+	customProperties: z.record(z.string(), z.unknown()).optional(),
 });
 type DocumentMetadata = z.infer<typeof documentMetadataSchema>;
 
