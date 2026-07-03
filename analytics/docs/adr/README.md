@@ -1,0 +1,12 @@
+# Architecture Decision Records — analytics
+
+Module-scoped ADRs for the Optimize analytics pipeline (`analytics/analytics-engine`,
+`analytics/event-bridge-analytics`, `analytics/analytics-webapp`). See the repo-wide
+`docs/adr/README.md` for the tier structure and the streaming library's own
+`event-bridge/event-bridge-streaming/docs/adr/` for runtime-level decisions this builds on.
+
+## Index
+
+- [0001 — Declarative datasets as the source of truth](0001-declarative-datasets.md)
+</content>
+</invoke>
