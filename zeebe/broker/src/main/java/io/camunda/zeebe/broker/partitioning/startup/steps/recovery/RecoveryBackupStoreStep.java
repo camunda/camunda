@@ -9,16 +9,8 @@ package io.camunda.zeebe.broker.partitioning.startup.steps.recovery;
 
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.backup.api.BackupStore;
-import io.camunda.zeebe.backup.azure.AzureBackupStore;
-import io.camunda.zeebe.backup.filesystem.FilesystemBackupStore;
-import io.camunda.zeebe.backup.gcs.GcsBackupStore;
-import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.partitioning.RecoveryPartitionStartupContext;
-import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
-import io.camunda.zeebe.broker.system.configuration.backup.FilesystemBackupStoreConfig;
-import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
-import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupStep;
@@ -43,7 +35,7 @@ public record RecoveryBackupStoreStep(PartitionId partitionId)
     final var backupCfg = context.getBrokerCfg().getData().getBackup();
     final BackupStore store;
     try {
-      store = createStore(backupCfg);
+      store = BackupCfg.BackupStoreFactory.createStore(backupCfg);
     } catch (final Exception e) {
       return CompletableActorFuture.completedExceptionally(e);
     }
@@ -71,17 +63,5 @@ public record RecoveryBackupStoreStep(PartitionId partitionId)
             },
             context.getConcurrencyControl());
     return closed;
-  }
-
-  private static BackupStore createStore(final BackupCfg backupCfg) {
-    return switch (backupCfg.getStore()) {
-      case NONE -> null;
-      case S3 -> S3BackupStore.of(S3BackupStoreConfig.toStoreConfig(backupCfg.getS3()));
-      case GCS -> GcsBackupStore.of(GcsBackupStoreConfig.toStoreConfig(backupCfg.getGcs()));
-      case AZURE -> AzureBackupStore.of(AzureBackupStoreConfig.toStoreConfig(backupCfg.getAzure()));
-      case FILESYSTEM ->
-          FilesystemBackupStore.of(
-              FilesystemBackupStoreConfig.toStoreConfig(backupCfg.getFilesystem()));
-    };
   }
 }
