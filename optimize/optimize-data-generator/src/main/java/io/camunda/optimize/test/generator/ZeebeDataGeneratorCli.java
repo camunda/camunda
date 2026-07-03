@@ -18,6 +18,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import io.camunda.optimize.dto.zeebe.definition.ZeebeProcessDefinitionDataDto;
@@ -238,10 +239,16 @@ public final class ZeebeDataGeneratorCli {
         restClient, mapper, esClient, new OptimizeIndexNameService(prefix));
   }
 
-  abstract static class ZeebeRecordDtoMixin {
-    @JsonIgnore
-    abstract int getRecordVersion();
-  }
+  @JsonIgnoreProperties({
+    "authorizations", // stripped by the real ES exporter; absent from the strict zeebe-record
+    // template
+    "agent", // stripped by the real ES exporter
+    "requestChannelType", // null Record envelope field, not in the strict template
+    "requestToolName", // null Record envelope field, not in the strict template
+    "dateForTimestamp", // Optimize DTO convenience getter, not a real Zeebe record field
+    "recordVersion" // getter throws UnsupportedOperationException; not populated by the generator
+  })
+  abstract static class ZeebeRecordDtoMixin {}
 
   abstract static class ProcessDefinitionDataMixin {
     @JsonIgnore
@@ -262,6 +269,9 @@ public final class ZeebeDataGeneratorCli {
   abstract static class UserTaskDataMixin {
     @JsonIgnore
     abstract int getPriority();
+
+    @JsonIgnore
+    abstract String getBusinessId(); // not in the strict user-task template; unused in Optimize
   }
 
   /** Groups the Elasticsearch connection parameters passed via CLI arguments. */
