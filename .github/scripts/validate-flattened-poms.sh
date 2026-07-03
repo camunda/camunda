@@ -86,17 +86,26 @@ resolve_parent_pom() {
     # Normalize path so caller comparisons / cycle detection work consistently.
     ( cd "$(dirname "${parent_candidate}")" && printf '%s/%s\n' "$(pwd -P)" "$(basename "${parent_candidate}")" )
   fi
+  # Always succeed: "no local parent found" is a normal outcome, not an error. A
+  # non-zero return here would abort under `set -e` if a caller ever invokes this
+  # outside an if/&&/|| context.
+  return 0
 }
 
-# Returns 0 (true) if `maven.javadoc.skip` is set to `true` anywhere in the local
-# POM chain (self -> parent -> ...). Stops at the first non-local parent.
-javadoc_skip_set_in_chain() {
+# Walks the local POM chain (self -> parent -> ...), stopping at the first non-local
+# parent, and evaluates a predicate against each POM. The predicate is a function name
+# invoked as `predicate <pom_path>`; its exit status is interpreted per-POM:
+#   0 -> match: stop and return 0 (true)
+#   2 -> definitive miss: stop and return 1 (false), short-circuiting ancestors
+#   other -> no decision: continue to the parent
+# Returns 1 (false) if no POM in the chain yields a match.
+walk_pom_chain() {
   local file_path="$1"
+  local predicate="$2"
   local visited=()
   while [[ -n "${file_path}" && -f "${file_path}" ]]; do
     # Cycle guard.
-    local already
-    already=0
+    local already=0 v
     for v in "${visited[@]+"${visited[@]}"}"; do
       if [[ "${v}" == "${file_path}" ]]; then
         already=1
@@ -107,45 +116,59 @@ javadoc_skip_set_in_chain() {
       break
     fi
     visited+=("${file_path}")
-    local skip
-    skip="$(read_pom_property "${file_path}" "maven.javadoc.skip")"
-    if [[ "${skip}" == "true" ]]; then
+
+    # Capture the predicate's status without tripping `set -e` when it returns
+    # non-zero (a normal "no match"/"miss" signal, not a failure).
+    local status=0
+    "${predicate}" "${file_path}" || status=$?
+    if [[ "${status}" -eq 0 ]]; then
       return 0
+    elif [[ "${status}" -eq 2 ]]; then
+      return 1
     fi
+
     file_path="$(resolve_parent_pom "${file_path}")"
   done
   return 1
 }
 
-# Returns 0 (true) if `empty-javadoc-jar` execution is declared on `maven-jar-plugin`
-# anywhere in the local POM chain (self -> parent -> ...), in either <build><plugins>
-# or <build><pluginManagement><plugins>. Stops at the first non-local parent.
-empty_javadoc_jar_declared_in_chain() {
-  local file_path="$1"
-  local visited=()
-  while [[ -n "${file_path}" && -f "${file_path}" ]]; do
-    local already
-    already=0
-    for v in "${visited[@]+"${visited[@]}"}"; do
-      if [[ "${v}" == "${file_path}" ]]; then
-        already=1
-        break
-      fi
-    done
-    if [[ "${already}" -eq 1 ]]; then
-      break
-    fi
-    visited+=("${file_path}")
-    local count
-    # Match `empty-javadoc-jar` execution on maven-jar-plugin in either
-    # <build><plugins> or <build><pluginManagement><plugins>.
-    count="$(xmllint --xpath "count(/*[local-name()='project']/*[local-name()='build']//*[local-name()='plugin'][*[local-name()='artifactId']='maven-jar-plugin']//*[local-name()='execution'][*[local-name()='id']='empty-javadoc-jar'])" "${file_path}" 2>/dev/null || echo 0)"
-    if [[ "${count}" -gt 0 ]]; then
-      return 0
-    fi
-    file_path="$(resolve_parent_pom "${file_path}")"
-  done
+# Predicate for walk_pom_chain. Nearest definition of `maven.javadoc.skip` wins:
+#   `true`  -> 0 (skip active)
+#   `false` -> 2 (skip explicitly disabled; short-circuit ancestors)
+#   unset   -> 1 (no decision; defer to parent)
+_pom_javadoc_skip() {
+  local skip
+  skip="$(read_pom_property "$1" "maven.javadoc.skip")"
+  if [[ "${skip}" == "true" ]]; then
+    return 0
+  elif [[ "${skip}" == "false" ]]; then
+    return 2
+  fi
   return 1
+}
+
+# Predicate for walk_pom_chain. Returns 0 if an `empty-javadoc-jar` execution is
+# declared on maven-jar-plugin in either <build><plugins> or
+# <build><pluginManagement><plugins>, otherwise 1 (defer to parent).
+_pom_declares_empty_javadoc_jar() {
+  local count
+  count="$(xmllint --xpath "count(/*[local-name()='project']/*[local-name()='build']//*[local-name()='plugin'][*[local-name()='artifactId']='maven-jar-plugin']//*[local-name()='execution'][*[local-name()='id']='empty-javadoc-jar'])" "$1" 2>/dev/null || echo 0)"
+  if [[ "${count}" -gt 0 ]]; then
+    return 0
+  fi
+  return 1
+}
+
+# Returns 0 (true) if `maven.javadoc.skip` resolves to `true` via the nearest
+# definition in the local POM chain (self -> parent -> ...).
+javadoc_skip_set_in_chain() {
+  walk_pom_chain "$1" _pom_javadoc_skip
+}
+
+# Returns 0 (true) if `empty-javadoc-jar` execution is declared on `maven-jar-plugin`
+# anywhere in the local POM chain (self -> parent -> ...).
+empty_javadoc_jar_declared_in_chain() {
+  walk_pom_chain "$1" _pom_declares_empty_javadoc_jar
 }
 
 failures=0
