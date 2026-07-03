@@ -35,6 +35,9 @@ env:
   DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
   GHA_BEST_PRACTICES_LINTER: enabled
   FLAKY_TEST_RERUN_COUNT: ${{ github.event_name == 'pull_request' && '3' || '7' }}
+  # Run-scoped CI artifact bucket (camunda-ci, europe-west1 = same region as the
+  # gcp-perf runners, so traffic is non-billable). See camunda/team-infrastructure#1079.
+  GCS_BUILD_CACHE_BUCKET: camunda-monorepo-ci-artifacts
 
 jobs:
   detect-changes:
@@ -276,6 +279,173 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       # Not running Maven Spotless here since it is checked in a dedicated job
       - run: ./mvnw -T1C -B -D skipTests -Dspotless.check.skip=true -P !autoFormat,checkFormat,spotbugs,skipFrontendBuild verify
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  build-distball:
+    name: "Build / Distribution Tarball"
+    # Build the distball once and share it, replacing a ~15 min reactor build in each
+    # consumer. Transport differs by runner: docker-checks (GitHub-hosted) uses the GHA
+    # artifact API; the integration-tests shards (self-hosted gcp-perf) use GCS, since
+    # the artifact API is throughput-capped on self-hosted runners. Gated on the union
+    # of both consumers' conditions so the artifact exists whenever one runs. See #52693.
+    if: needs.detect-changes.outputs.camunda-docker-tests == 'true' || needs.detect-changes.outputs.java-code-changes == 'true'
+    needs: [ detect-changes ]
+    runs-on: gcp-perf-core-8-default
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@b4ba25e5825dccf0f4d25c103b63569a5d1d30c5 # main
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        timeout-minutes: 1
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: build-shared
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
+      - name: Log distball size
+        run: ls -lh "${{ steps.build-zeebe.outputs.distball }}"
+      # build-zeebe installs this run's io.camunda SNAPSHOTs into ~/.m2; consumers
+      # resolve them via `mvn verify`, but the GHA Maven cache never propagates
+      # locally-installed SNAPSHOTs between jobs, so archive them for the consumers.
+      - name: Archive local Maven SNAPSHOT artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Only io.camunda reactor SNAPSHOTs are needed; drop the distro assemblies
+          # (shipped as the distball), sources/javadoc and bookkeeping to ~halve the payload.
+          tar \
+            --exclude='*.tar.gz' \
+            --exclude='*-sources.jar' \
+            --exclude='*-javadoc.jar' \
+            --exclude='*.lastUpdated' \
+            --exclude='_remote.repositories' \
+            --exclude='*.repositories' \
+            -cf m2-installed.tar -C "${HOME}/.m2/repository/installed" io/camunda
+          ls -lh m2-installed.tar
+      # docker-checks (GitHub-hosted) consumes these via the artifact API.
+      - name: Upload distball (artifact)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: distball-${{ github.run_id }}
+          path: ${{ steps.build-zeebe.outputs.distball }}
+          retention-days: 1
+          compression-level: 0  # tarball is already gzipped
+          if-no-files-found: error
+      - name: Upload local Maven SNAPSHOT artifacts (artifact)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: m2-installed-${{ github.run_id }}
+          path: m2-installed.tar
+          retention-days: 1
+          compression-level: 6
+          if-no-files-found: error
+      # integration-tests' gcp-perf shards consume these from GCS (ingress is free).
+      - name: Fetch GCS build-cache credentials
+        id: gcs-secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/build-cache/monorepo-build-cache-sa SERVICE_ACCOUNT | GCS_SA;
+            secret/data/products/camunda/ci/build-cache/monorepo-build-cache-sa WORKLOAD_IDENTITY_PROVIDER | GCS_WIF;
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          workload_identity_provider: ${{ steps.gcs-secrets.outputs.GCS_WIF }}
+          service_account: ${{ steps.gcs-secrets.outputs.GCS_SA }}
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+      - name: Upload distball + SNAPSHOTs to GCS
+        shell: bash
+        # SA lacks storage.buckets.get, so gcloud's parallel-composite precheck fails; disable it.
+        env:
+          CLOUDSDK_STORAGE_PARALLEL_COMPOSITE_UPLOAD_ENABLED: "False"
+        run: |
+          set -euo pipefail
+          gcloud storage cp "${{ steps.build-zeebe.outputs.distball }}" \
+            "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/$(basename "${{ steps.build-zeebe.outputs.distball }}")"
+          gcloud storage cp m2-installed.tar \
+            "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/m2-installed.tar"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  utils-cleanup-distball:
+    name: "Cleanup / Distribution Tarball Artifact"
+    # Delete the run-scoped GCS objects after consumers finish. The `utils-` prefix
+    # exempts it from the check-results gate; artifacts self-expire (retention-days: 1)
+    # and the bucket TTL covers runs cancelled/failed before this fires.
+    # Must list every GCS consumer so cleanup never deletes the m2 tarball out from under a
+    # still-running restore: docker-checks + integration-tests, plus the stable/8.8-only
+    # elasticsearch/opensearch IT jobs that also pull m2 from the same run prefix.
+    needs: [ build-distball, docker-checks, integration-tests, elasticsearch-integration-tests, opensearch-integration-tests ]
+    # Clean up only when build-distball succeeded and no consumer failed or was cancelled
+    # (skipped consumers -- all are conditional -- don't block cleanup). If any failed or was
+    # cancelled, keep the GCS objects so "Re-run failed jobs" can re-fetch the distball --
+    # build-distball won't re-run (it already succeeded) so it won't re-upload. Orphaned objects
+    # on failed runs are reaped by the bucket TTL (Infra-owned).
+    if: >-
+      always()
+      && needs.build-distball.result == 'success'
+      && !contains(needs.*.result, 'failure')
+      && !contains(needs.*.result, 'cancelled')
+    runs-on: ubuntu-slim  # short auth-and-delete job; no need for a full runner
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@b4ba25e5825dccf0f4d25c103b63569a5d1d30c5 # main
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        timeout-minutes: 1
+      - name: Fetch GCS build-cache credentials
+        id: gcs-secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/build-cache/monorepo-build-cache-sa SERVICE_ACCOUNT | GCS_SA;
+            secret/data/products/camunda/ci/build-cache/monorepo-build-cache-sa WORKLOAD_IDENTITY_PROVIDER | GCS_WIF;
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          workload_identity_provider: ${{ steps.gcs-secrets.outputs.GCS_WIF }}
+          service_account: ${{ steps.gcs-secrets.outputs.GCS_SA }}
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+      - name: Delete run-scoped GCS objects
+        shell: bash
+        run: |
+          set -euo pipefail
+          gcloud storage rm --recursive "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/" \
+            || echo "No objects to delete for run ${GITHUB_RUN_ID}"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -619,10 +789,12 @@ jobs:
 
   elasticsearch-integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    needs: [ detect-changes, generate-db-versions ]
+    needs: [ detect-changes, generate-db-versions, build-distball ]
     name: "General / Integration / Elasticsearch ITs"
     timeout-minutes: 20
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      contents: read
+      id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
     runs-on: gcp-perf-core-16-default
     strategy:
       fail-fast: false
@@ -670,11 +842,36 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      # Build the platform before running the integration tests; skipping frontend
-      - uses: ./.github/actions/build-zeebe
-        id: build-zeebe
+      # Consume the shared distball from GCS instead of a local reactor build. These shards
+      # run on self-hosted gcp-perf runners where the artifact API is throughput-capped, so
+      # they pull from GCS (same-region, non-billable). See build-distball.
+      - name: Fetch GCS build-cache credentials
+        id: gcs-secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
-          maven-extra-args: -T1C -Dquickly
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/build-cache/monorepo-build-cache-sa SERVICE_ACCOUNT | GCS_SA;
+            secret/data/products/camunda/ci/build-cache/monorepo-build-cache-sa WORKLOAD_IDENTITY_PROVIDER | GCS_WIF;
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          workload_identity_provider: ${{ steps.gcs-secrets.outputs.GCS_WIF }}
+          service_account: ${{ steps.gcs-secrets.outputs.GCS_SA }}
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+      # Restore the io.camunda SNAPSHOTs archived by build-distball for `mvn verify` below
+      # (the GHA Maven cache doesn't carry locally-installed SNAPSHOTs between jobs).
+      - name: Download distball + SNAPSHOTs from GCS
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist/target "${HOME}/.m2/repository/installed"
+          gcloud storage cp "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/camunda-zeebe-*.tar.gz" dist/target/
+          gcloud storage cp "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/m2-installed.tar" "${RUNNER_TEMP}/m2-installed.tar"
+          tar -xf "${RUNNER_TEMP}/m2-installed.tar" -C "${HOME}/.m2/repository/installed"
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       # Run specific integration tests with ES service container
@@ -721,10 +918,12 @@ jobs:
 
   opensearch-integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    needs: [ detect-changes, generate-db-versions ]
+    needs: [ detect-changes, generate-db-versions, build-distball ]
     name: "General / Integration / OpenSearch ITs"
     timeout-minutes: 20
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      contents: read
+      id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
     runs-on: gcp-perf-core-16-default
     strategy:
       fail-fast: false
@@ -778,11 +977,36 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      # Build the platform before running the integration tests; skipping frontend
-      - uses: ./.github/actions/build-zeebe
-        id: build-zeebe
+      # Consume the shared distball from GCS instead of a local reactor build. These shards
+      # run on self-hosted gcp-perf runners where the artifact API is throughput-capped, so
+      # they pull from GCS (same-region, non-billable). See build-distball.
+      - name: Fetch GCS build-cache credentials
+        id: gcs-secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
-          maven-extra-args: -T1C -Dquickly
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/build-cache/monorepo-build-cache-sa SERVICE_ACCOUNT | GCS_SA;
+            secret/data/products/camunda/ci/build-cache/monorepo-build-cache-sa WORKLOAD_IDENTITY_PROVIDER | GCS_WIF;
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          workload_identity_provider: ${{ steps.gcs-secrets.outputs.GCS_WIF }}
+          service_account: ${{ steps.gcs-secrets.outputs.GCS_SA }}
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+      # Restore the io.camunda SNAPSHOTs archived by build-distball for `mvn verify` below
+      # (the GHA Maven cache doesn't carry locally-installed SNAPSHOTs between jobs).
+      - name: Download distball + SNAPSHOTs from GCS
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist/target "${HOME}/.m2/repository/installed"
+          gcloud storage cp "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/camunda-zeebe-*.tar.gz" dist/target/
+          gcloud storage cp "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/m2-installed.tar" "${RUNNER_TEMP}/m2-installed.tar"
+          tar -xf "${RUNNER_TEMP}/m2-installed.tar" -C "${HOME}/.m2/repository/installed"
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       # Run specific integration tests with OS service container
@@ -957,9 +1181,11 @@ jobs:
   integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "${{ matrix.module }} / Integration / ${{ matrix.name }} ITs"
-    needs: [ detect-changes, setup-tests ]
+    needs: [ detect-changes, setup-tests, build-distball ]
     timeout-minutes: 30
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      contents: read
+      id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
     runs-on: ${{ matrix.runs-on }}
     strategy:
       fail-fast: false
@@ -1125,14 +1351,40 @@ jobs:
         with:
           minimus: true
           dockerhub-readonly: true
-          maven-cache-key-modifier: it-${{ matrix.group }}
+          maven-cache-key-modifier: build-shared
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      - uses: ./.github/actions/build-zeebe
-        id: build-zeebe
+      # Consume the shared distball instead of a ~15 min reactor build. These shards run
+      # on self-hosted gcp-perf runners where the artifact API is throughput-capped, so
+      # they pull from GCS (same-region, non-billable). See build-distball.
+      - name: Fetch GCS build-cache credentials
+        id: gcs-secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
         with:
-          maven-extra-args: -T1C -PskipFrontendBuild
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/build-cache/monorepo-build-cache-sa SERVICE_ACCOUNT | GCS_SA;
+            secret/data/products/camunda/ci/build-cache/monorepo-build-cache-sa WORKLOAD_IDENTITY_PROVIDER | GCS_WIF;
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          workload_identity_provider: ${{ steps.gcs-secrets.outputs.GCS_WIF }}
+          service_account: ${{ steps.gcs-secrets.outputs.GCS_SA }}
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+      # Restore the io.camunda SNAPSHOTs archived by build-distball for `mvn verify` below
+      # (the GHA Maven cache doesn't carry locally-installed SNAPSHOTs between jobs).
+      - name: Download distball + SNAPSHOTs from GCS
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist/target "${HOME}/.m2/repository/installed"
+          gcloud storage cp "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/camunda-zeebe-*.tar.gz" dist/target/
+          gcloud storage cp "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/m2-installed.tar" "${RUNNER_TEMP}/m2-installed.tar"
+          tar -xf "${RUNNER_TEMP}/m2-installed.tar" -C "${HOME}/.m2/repository/installed"
       - uses: ./.github/actions/build-platform-docker
         if: ${{ matrix.docker-file != '' }}
         with:
@@ -1140,7 +1392,6 @@ jobs:
           version: ${{ env.DOCKER_IMAGE_TAG }}
           dockerfile: ${{ matrix.docker-file }}
           push: true
-          distball: ${{ steps.build-zeebe.outputs.distball }}
       - uses: ./.github/actions/build-platform-docker
         if: ${{ matrix.group == 'root' }}
         with:
@@ -1148,7 +1399,6 @@ jobs:
           version: ${{ env.DOCKER_IMAGE_TAG }}
           dockerfile: operate.Dockerfile
           push: true
-          distball: ${{ steps.build-zeebe.outputs.distball }}
       - uses: ./.github/actions/build-platform-docker
         if: ${{ matrix.group == 'root' }}
         with:
@@ -1156,7 +1406,6 @@ jobs:
           version: ${{ env.DOCKER_IMAGE_TAG }}
           dockerfile: tasklist.Dockerfile
           push: true
-          distball: ${{ steps.build-zeebe.outputs.distball }}
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Maven Test Build Integration
@@ -1272,7 +1521,7 @@ jobs:
   docker-checks:
     if: needs.detect-changes.outputs.camunda-docker-tests == 'true'
     name: "Docker / Tool / Checks"
-    needs: [ detect-changes, generate-db-versions ]
+    needs: [ detect-changes, generate-db-versions, build-distball ]
     runs-on: ubuntu-latest
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
@@ -1312,16 +1561,39 @@ jobs:
         uses: github/codeql-action/upload-sarif@9e0d7b8d25671d64c341c19c0152d693099fb5ba # v4.35.5
         with:
           sarif_file: ./hadolint.sarif
-      - uses: ./.github/actions/build-zeebe
-        id: build-camunda
+      - uses: ./.github/actions/setup-build
         with:
-          maven-extra-args: -PskipFrontendBuild,-include-optimize
+          maven-cache-key-modifier: build-shared
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
+      # Consume the shared distball instead of a ~15 min reactor build; GitHub-hosted,
+      # so it stays on the GHA artifact API.
+      - name: Download distball
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: distball-${{ github.run_id }}
+          path: dist/target/
+      # Restore the io.camunda SNAPSHOTs archived by build-distball for the `mvn -pl dist/
+      # verify` step below (the GHA Maven cache doesn't carry locally-installed SNAPSHOTs).
+      - name: Download local Maven SNAPSHOT artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: m2-installed-${{ github.run_id }}
+          path: ${{ runner.temp }}
+      - name: Restore local Maven SNAPSHOT artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "${HOME}/.m2/repository/installed"
+          tar -xf "${{ runner.temp }}/m2-installed.tar" -C "${HOME}/.m2/repository/installed"
       - uses: ./.github/actions/build-platform-docker
         id: build-camunda-docker
         with:
           # we use a local registry for pushing
           repository: ${{ env.LOCAL_DOCKER_IMAGE }}
-          distball: ${{ steps.build-camunda.outputs.distball }}
           platforms: ${{ env.DOCKER_PLATFORMS }}
           dockerfile: camunda.Dockerfile
           # push is needed for multi-arch images as buildkit does not support loading them locally
@@ -2041,6 +2313,7 @@ jobs:
     needs: # BELOW LIST IS IN ALPHABETICAL ORDER
       - actionlint
       - archunit-tests
+      - build-distball
       - build-platform-frontend
       - client-components
       - commitlint
