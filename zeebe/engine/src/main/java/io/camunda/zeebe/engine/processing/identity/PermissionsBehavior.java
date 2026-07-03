@@ -33,8 +33,6 @@ import org.slf4j.Logger;
 @NullMarked
 public class PermissionsBehavior {
 
-  private static final Logger LOG = Loggers.ENGINE_IDENTITY_LOGGER;
-
   public static final String PERMISSIONS_FOR_RESOURCE_IDENTIFIER_ALREADY_EXISTS_MESSAGE =
       "Expected to create authorization for owner '%s' for resource identifier '%s', but an authorization for this resource identifier already exists.";
   public static final String PERMISSIONS_FOR_RESOURCE_PROPERTY_NAME_ALREADY_EXISTS_MESSAGE =
@@ -43,6 +41,8 @@ public class PermissionsBehavior {
       "Expected to update authorization with key %s, but an authorization with this key does not exist";
   public static final String AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_DELETION =
       "Expected to delete authorization with key %s, but an authorization with this key does not exist";
+
+  private static final Logger LOG = Loggers.ENGINE_IDENTITY_LOGGER;
 
   private final AuthorizationState authorizationState;
   private final AuthorizationCheckPort authCheckPort;

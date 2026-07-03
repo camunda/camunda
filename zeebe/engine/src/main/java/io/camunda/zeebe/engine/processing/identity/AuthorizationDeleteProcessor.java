@@ -43,11 +43,11 @@ import org.slf4j.Logger;
 public class AuthorizationDeleteProcessor
     implements DistributedTypedRecordProcessor<AuthorizationRecord> {
 
-  private static final Logger LOG = Loggers.ENGINE_IDENTITY_LOGGER;
-
   public static final String AUTHORIZATION_OWNER_PROTECTED_ERROR_MESSAGE =
       "Expected to delete authorization with key %s, but it belongs to default role '%s' "
           + "whose authorizations cannot be deleted.";
+
+  private static final Logger LOG = Loggers.ENGINE_IDENTITY_LOGGER;
 
   private final KeyGenerator keyGenerator;
   private final CommandDistributionBehavior distributionBehavior;

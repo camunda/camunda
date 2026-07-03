@@ -23,8 +23,6 @@ import org.slf4j.Logger;
 
 public class AuthorizationEntityValidator {
 
-  private static final Logger LOG = Loggers.ENGINE_IDENTITY_LOGGER;
-
   public static final String MAPPING_RULE_DOES_NOT_EXIST_ERROR_MESSAGE =
       "Expected to create or update authorization with ownerId or resourceId '%s', but a mapping rule with this ID does not exist.";
   public static final String ROLE_DOES_NOT_EXIST_ERROR_MESSAGE =
@@ -45,6 +43,8 @@ public class AuthorizationEntityValidator {
       "Expected to %s authorization, but resource matcher is UNSPECIFIED. Please specify a valid resource matcher (ID, ANY or PROPERTY).";
   public static final String MATCHER_NOT_SUPPORTED_ERROR_MESSAGE =
       "Expected to %s authorization, but resource matcher '%s' is not supported.";
+
+  private static final Logger LOG = Loggers.ENGINE_IDENTITY_LOGGER;
 
   private final UserState userState;
   private final MappingRuleState mappingRuleState;
