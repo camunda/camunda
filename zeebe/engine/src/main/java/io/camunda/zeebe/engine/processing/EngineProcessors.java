@@ -337,15 +337,6 @@ public final class EngineProcessors {
         securityConfig,
         config);
 
-    RoleProcessors.addRoleProcessors(
-        typedRecordProcessors,
-        processingState,
-        authCheckBehavior,
-        keyGenerator,
-        writers,
-        commandDistributionBehavior,
-        securityConfig);
-
     ScalingProcessors.addScalingProcessors(
         commandDistributionBehavior,
         bpmnBehaviors,
@@ -495,6 +486,16 @@ public final class EngineProcessors {
         authorizationScopeStateAdapter);
 
     GroupProcessors.addGroupProcessors(
+        typedRecordProcessors,
+        processingState,
+        authzService,
+        claimsConverter,
+        keyGenerator,
+        writers,
+        commandDistributionBehavior,
+        securityConfig);
+
+    RoleProcessors.addRoleProcessors(
         typedRecordProcessors,
         processingState,
         authzService,

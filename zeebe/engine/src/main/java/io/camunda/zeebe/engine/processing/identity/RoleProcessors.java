@@ -8,30 +8,36 @@
 package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.security.core.authz.LazyTokenClaimsConverter;
+import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public class RoleProcessors {
   public static void addRoleProcessors(
       final TypedRecordProcessors typedRecordProcessors,
       final ProcessingState processingState,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final AuthorizationCheckPort authCheckPort,
+      final LazyTokenClaimsConverter claimsConverter,
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
       final EngineSecurityConfig securityConfig) {
+    final var permissionsBehavior =
+        new PermissionsBehavior(processingState, authCheckPort, claimsConverter, securityConfig);
     typedRecordProcessors.onCommand(
         ValueType.ROLE,
         RoleIntent.CREATE,
         new RoleCreateProcessor(
             processingState.getRoleState(),
-            authCheckBehavior,
+            permissionsBehavior,
             keyGenerator,
             writers,
             commandDistributionBehavior));
@@ -41,7 +47,7 @@ public class RoleProcessors {
         new RoleUpdateProcessor(
             processingState.getRoleState(),
             keyGenerator,
-            authCheckBehavior,
+            permissionsBehavior,
             writers,
             commandDistributionBehavior));
     typedRecordProcessors.onCommand(
@@ -49,7 +55,7 @@ public class RoleProcessors {
         RoleIntent.ADD_ENTITY,
         new RoleAddEntityProcessor(
             processingState,
-            authCheckBehavior,
+            permissionsBehavior,
             keyGenerator,
             writers,
             commandDistributionBehavior,
@@ -59,7 +65,7 @@ public class RoleProcessors {
         RoleIntent.REMOVE_ENTITY,
         new RoleRemoveEntityProcessor(
             processingState,
-            authCheckBehavior,
+            permissionsBehavior,
             keyGenerator,
             writers,
             commandDistributionBehavior));
@@ -68,7 +74,7 @@ public class RoleProcessors {
         RoleIntent.DELETE,
         new RoleDeleteProcessor(
             processingState,
-            authCheckBehavior,
+            permissionsBehavior,
             keyGenerator,
             writers,
             commandDistributionBehavior));
