@@ -33,6 +33,15 @@ public interface Stage<R> {
   /** Event-time progress: finalize closed windows, prune state. */
   default void advanceStreamTime(final long streamTimeMs) {}
 
+  /**
+   * Whether this stage holds buffered writes that should be checkpointed before the regular
+   * interval — e.g. a bounded cache is full. Bubbles up to {@link Task#needsCheckpoint()}. Default
+   * {@code false}.
+   */
+  default boolean needsCheckpoint() {
+    return false;
+  }
+
   /** Called once on shutdown — final flush + release. */
   default void close() {}
 }

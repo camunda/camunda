@@ -254,6 +254,73 @@ final class StreamRuntimeTest {
     assertThat(committedOffsets).containsEntry(1, 6L);
   }
 
+  @Test
+  void shouldForceCommitWhenATaskIsOverCapacity() throws Exception {
+    // given — a task that asks to be checkpointed (as a full bounded cache would), and a commit
+    // clock so slow only the memory-pressure path can trigger the barrier
+    final Map<Integer, Long> committedOffsets = new HashMap<>();
+    final CountDownLatch offsetCommitted = new CountDownLatch(1);
+
+    final Consumer consumer = mock(Consumer.class);
+    final EventBridgeClient client = mock(EventBridgeClient.class);
+    when(client.subscribe(any(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(consumer));
+    when(consumer.sendHeartbeat()).thenReturn(CompletableFuture.completedFuture(null));
+    final Event event = new Event(5L, TOPIC, 1, "a".getBytes(StandardCharsets.UTF_8));
+    when(consumer.poll(anyInt(), any())).thenReturn(List.of(event)).thenReturn(List.of());
+    when(consumer.commitOffset(any(), anyInt(), anyLong()))
+        .thenAnswer(
+            invocation -> {
+              committedOffsets.put(invocation.getArgument(1), invocation.getArgument(2));
+              offsetCommitted.countDown();
+              return CompletableFuture.completedFuture(null);
+            });
+
+    final Task<String> alwaysFull =
+        new Task<>() {
+          @Override
+          public void process(final String record) {}
+
+          @Override
+          public boolean needsCheckpoint() {
+            return true;
+          }
+        };
+
+    final StreamRuntime<String> runtime =
+        StreamRuntime.<String>builder()
+            .client(client)
+            .group("g")
+            .instanceId("i")
+            .sourceTopic(TOPIC)
+            .deserializer(
+                (payload, partition, offset) -> new String(payload, StandardCharsets.UTF_8))
+            .taskFactory(partition -> alwaysFull)
+            .transactionRunner(Runnable::run)
+            .offsetStore(
+                new OffsetStore() {
+                  @Override
+                  public Map<Integer, Long> restore() {
+                    return Map.of();
+                  }
+
+                  @Override
+                  public void store(final int partition, final long offset) {}
+                })
+            .commitInterval(Duration.ofHours(1))
+            .build();
+
+    // when
+    final Thread loop = new Thread(runtime::run, "runtime-under-test");
+    loop.start();
+
+    // then — the offset was committed promptly, driven by needsCheckpoint(), not the commit clock
+    assertThat(offsetCommitted.await(5, TimeUnit.SECONDS)).isTrue();
+    assertThat(committedOffsets).containsEntry(1, 5L);
+    runtime.stop();
+    loop.join(TimeUnit.SECONDS.toMillis(5));
+  }
+
   @SuppressWarnings("unchecked")
   private static void doAnswerSeek(
       final Consumer consumer,

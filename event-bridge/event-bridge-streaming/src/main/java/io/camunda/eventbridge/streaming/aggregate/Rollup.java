@@ -41,6 +41,14 @@ public interface Rollup<F> extends AutoCloseable {
   /** Event-time progress: finalize windows that have closed, prune state. Default: no-op. */
   default void advanceStreamTime(final long streamTimeMs) {}
 
+  /**
+   * Whether this rollup holds buffered state that should be checkpointed before the regular
+   * interval — e.g. a bounded cache is full. Default: no-op ({@code false}).
+   */
+  default boolean needsCheckpoint() {
+    return false;
+  }
+
   /** Final flush + release. */
   @Override
   void close();

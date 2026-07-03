@@ -67,6 +67,16 @@ public final class StreamProcessor<R> implements Task<R>, AutoCloseable {
   }
 
   @Override
+  public boolean needsCheckpoint() {
+    for (final Stage<R> stage : stages) {
+      if (stage.needsCheckpoint()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @Override
   public void close() {
     stages.forEach(Stage::close);
   }

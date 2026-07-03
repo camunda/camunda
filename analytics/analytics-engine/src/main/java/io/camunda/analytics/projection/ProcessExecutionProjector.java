@@ -79,6 +79,12 @@ public final class ProcessExecutionProjector
   }
 
   @Override
+  public boolean needsCheckpoint() {
+    // The bounded caches are full and need the commit barrier to flush and free them.
+    return store.needsCheckpoint();
+  }
+
+  @Override
   public void apply(final SourceRecord sourceRecord, final Collector<ProcessExecutionFact> out) {
     final Record<?> record = sourceRecord.record();
 

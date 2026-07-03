@@ -137,6 +137,30 @@ final class CachingKeyValueStoreTest {
     assertThat(seen).containsExactly("a=1", "b=2", "c=30");
   }
 
+  @Test
+  void shouldReportOverCapacityWhileDirtyThenClearAfterCheckpoint() {
+    // given — a tiny budget
+    final CountingDelegate delegate = new CountingDelegate();
+    final CachingKeyValueStore<DbString, DbLong> cache = cacheOver(delegate, 64);
+
+    // when — buffered (dirty) writes pile up past the budget; being un-flushed, they cannot evict
+    for (int i = 0; i < 50; i++) {
+      put(cache, "k" + i, i);
+    }
+
+    // then — the cache is over capacity, and nothing leaked to the delegate ahead of the commit
+    assertThat(cache.overCapacity()).isTrue();
+    assertThat(get(delegate, "k0")).isEqualTo(-1L);
+
+    // when — the commit barrier flushes them as one atomic cut
+    cache.checkpoint();
+
+    // then — flushed durably, marked clean, and trimmed back under budget
+    assertThat(cache.overCapacity()).isFalse();
+    assertThat(get(delegate, "k0")).isEqualTo(0L);
+    assertThat(get(delegate, "k49")).isEqualTo(49L);
+  }
+
   private static CachingKeyValueStore<DbString, DbLong> cacheOver(
       final KeyValueStore<DbString, DbLong> delegate, final long maxBytes) {
     return new CachingKeyValueStore<>(delegate, new DbString(), new DbLong(), maxBytes);

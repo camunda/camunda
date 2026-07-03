@@ -68,6 +68,19 @@ public final class ProjectionStage<R, F> implements Stage<R> {
   }
 
   @Override
+  public boolean needsCheckpoint() {
+    if (projector.needsCheckpoint()) {
+      return true;
+    }
+    for (final Rollup<F> rollup : rollups) {
+      if (rollup.needsCheckpoint()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @Override
   public void close() {
     projector.close();
     rollups.forEach(Rollup::close);

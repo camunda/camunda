@@ -38,6 +38,15 @@ public interface Projector<R, F> {
    */
   default void checkpoint() {}
 
+  /**
+   * Whether the projector's state should be checkpointed before the regular interval — e.g. its
+   * bounded write-back cache is full. Bubbles up so the runtime runs the commit barrier early.
+   * Default {@code false}.
+   */
+  default boolean needsCheckpoint() {
+    return false;
+  }
+
   /** Called once on shutdown — release resources. */
   default void close() {}
 }

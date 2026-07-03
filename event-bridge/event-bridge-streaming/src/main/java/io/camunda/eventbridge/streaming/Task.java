@@ -41,6 +41,16 @@ public interface Task<R> {
    */
   default void advanceStreamTime(final long streamTimeMs) {}
 
+  /**
+   * Whether the task should be checkpointed before the regular commit interval — e.g. a bounded
+   * cache has filled with buffered writes that only the commit barrier can flush durably (an atomic
+   * cut with the offset), after which the memory is reclaimed. Checked by the runtime per record;
+   * default {@code false}.
+   */
+  default boolean needsCheckpoint() {
+    return false;
+  }
+
   /** Called once on shutdown — release resources. */
   default void close() {}
 }

@@ -127,6 +127,15 @@ public final class StreamRuntime<R> implements AutoCloseable {
             break; // stopped (shutdown, or a fail-fast record error) — skip the rest of the batch
           }
           handleRecord(event);
+          // Memory-pressure commit: when a task's bounded state is full of buffered writes, run the
+          // barrier now so they flush durably (an atomic cut with the offset) and the memory frees
+          // —
+          // the change-log-free equivalent of a cache-full flush. Independent of the commit clock.
+          final Task<R> task = tasks.get(event.partitionId());
+          if (task != null && task.needsCheckpoint()) {
+            commit();
+            lastCommit = System.nanoTime();
+          }
         }
         // Freshness clock: flush emitted output and advance event-time on the punctuation tick, so
         // latency stays bounded and closed windows finalize even for keys with no new records —

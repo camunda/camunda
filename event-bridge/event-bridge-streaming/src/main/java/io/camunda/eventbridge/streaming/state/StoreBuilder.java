@@ -83,12 +83,25 @@ public final class StoreBuilder<
 
   /** Materializes the store from {@code provider}, applying caching if configured. */
   public KeyValueStore<K, V> build(final StateStoreProvider<CF> provider) {
-    final KeyValueStore<K, V> delegate =
-        provider.keyValueStore(columnFamily, keyFlyweight.get(), valueFlyweight.get());
     if (cacheMaxBytes == 0) {
-      return delegate;
+      return provider.keyValueStore(columnFamily, keyFlyweight.get(), valueFlyweight.get());
+    }
+    return buildCache(provider);
+  }
+
+  /**
+   * Materializes a caching store, returning the concrete {@link CachingKeyValueStore} so the caller
+   * can drive its {@link io.camunda.eventbridge.streaming.state.api.Checkpointable#checkpoint()}
+   * and observe {@link CachingKeyValueStore#overCapacity()}. Requires {@link #withCaching} first.
+   */
+  public CachingKeyValueStore<K, V> buildCache(final StateStoreProvider<CF> provider) {
+    if (cacheMaxBytes == 0) {
+      throw new IllegalStateException("caching not enabled; call withCaching(maxBytes) first");
     }
     return new CachingKeyValueStore<>(
-        delegate, keyFlyweight.get(), valueFlyweight.get(), cacheMaxBytes);
+        provider.keyValueStore(columnFamily, keyFlyweight.get(), valueFlyweight.get()),
+        keyFlyweight.get(),
+        valueFlyweight.get(),
+        cacheMaxBytes);
   }
 }

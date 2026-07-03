@@ -190,6 +190,18 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
         entry.dirty = false;
       }
     }
+    // Everything is clean now, so the pinned working set can finally be trimmed back to budget.
+    evictIfNeeded();
+  }
+
+  /**
+   * Whether the cache is over its byte budget because dirty (un-flushable) entries could not be
+   * evicted. It is a signal to the runtime to run the commit barrier now: {@link #checkpoint()}
+   * flushes those entries as one atomic cut with the offset, after which they are clean and
+   * evicted. Flushing them any earlier would put durable state ahead of the committed offset.
+   */
+  public boolean overCapacity() {
+    return approxBytes > maxBytes;
   }
 
   private void evictIfNeeded() {

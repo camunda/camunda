@@ -69,4 +69,13 @@ public interface BaseProjectionStore {
    * projection commits atomically with the rollups and the source offset.
    */
   void checkpoint();
+
+  /**
+   * Whether the store's bounded caches are full and need the commit barrier to flush them durably
+   * (an atomic cut with the offset) so the memory can be reclaimed. Bubbles up to the runtime,
+   * which checkpoints early when true. Default {@code false} for stores that keep no bounded cache.
+   */
+  default boolean needsCheckpoint() {
+    return false;
+  }
 }
