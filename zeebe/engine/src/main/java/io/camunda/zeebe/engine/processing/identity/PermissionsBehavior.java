@@ -75,7 +75,7 @@ public class PermissionsBehavior {
       final TypedRecord<R> command,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType) {
-    return isAuthorized(command, resourceType, permissionType, "*");
+    return isAuthorized(command, resourceType, permissionType, AuthorizationScope.WILDCARD_CHAR);
   }
 
   public <R extends UnifiedRecordValue> Either<Rejection, R> isAuthorized(
@@ -101,6 +101,9 @@ public class PermissionsBehavior {
     }
     if (authorizations.get(Authorization.AUTHORIZED_USERNAME) == null
         && authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) == null) {
+      // No principal identity present: the CSL claims converter would throw. Mirror main's
+      // non-throwing contract — authorize when authorization checks are disabled (these identity
+      // resources are not tenant-owned, so the multi-tenancy check is a no-op), otherwise reject.
       if (!securityConfig.isAuthorizationsEnabled()) {
         return Either.right(command.getValue());
       }
