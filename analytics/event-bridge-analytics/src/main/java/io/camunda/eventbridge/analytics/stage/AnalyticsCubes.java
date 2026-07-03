@@ -11,12 +11,13 @@ import io.camunda.analytics.dataset.ActiveCube;
 import io.camunda.analytics.dataset.ActiveProjection;
 import io.camunda.analytics.dataset.DatasetCompiler;
 import io.camunda.analytics.dataset.DatasetDeclaration;
+import io.camunda.analytics.dataset.DatasetKind;
 import io.camunda.analytics.dataset.DatasetRegistry;
 import io.camunda.analytics.dataset.RegisteredDataset;
+import io.camunda.analytics.dataset.store.MetadataStore;
 import io.camunda.analytics.dimension.DimensionType;
 import io.camunda.analytics.fact.FactType;
 import io.camunda.analytics.fact.Transition;
-import io.camunda.analytics.meter.InMemoryMeterIdStore;
 import io.camunda.analytics.meter.Meter;
 import io.camunda.analytics.meter.MeterCatalog;
 import io.camunda.analytics.meter.MeterRegistry;
@@ -25,15 +26,16 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The seeded set of standard cubes, expressed as {@link DatasetDeclaration}s — the declaration-
- * driven replacement for the hand-wired standard dashboards. Both stages call {@link #seed()} to
- * obtain identical {@link ActiveCube}s: the compiler resolves each declaration deterministically
- * against fresh registries, so compiling the same declarations in the same order yields the same
- * {@code cubeId}s and {@code aggId}s in both processes without any shared state.
+ * The standard dashboards as {@link DatasetDeclaration}s and the metadata-plane load path. The
+ * database is the source of truth for which datasets exist: {@link #bootstrap} writes the standard
+ * declarations once (allocating stable {@code cubeId}s and, by compiling, persisting {@code
+ * aggId}s), and both stages call {@link #loadCubes}/{@link #loadProjections} to reload the specs
+ * and compile them. Because the {@code aggId}s are pre-allocated at bootstrap and reloaded from the
+ * store, both stages see identical ids without racing to allocate.
  *
- * <p>Cubes are activated from the start of history (empty activation vector) — appropriate for the
- * dev/seed path. The control plane will supply per-partition activation watermarks when datasets
- * are provisioned at runtime.
+ * <p>Declarations are seeded with an empty activation vector (from the start of history) — the
+ * control plane will supply per-partition activation watermarks when datasets are provisioned at
+ * runtime.
  */
 public final class AnalyticsCubes {
 
@@ -43,37 +45,62 @@ public final class AnalyticsCubes {
 
   private AnalyticsCubes() {}
 
-  /** Compiles the standard declarations into runnable cubes; deterministic and side-effect free. */
-  public static List<ActiveCube> seed() {
+  /**
+   * Writes the standard declarations into the metadata store if it is empty (idempotent bootstrap).
+   * Allocates a stable {@code cubeId} per dataset and, by compiling the aggregated cubes, allocates
+   * and persists their {@code aggId}s — so the stages later reload ids rather than racing to mint
+   * them. A single control-plane invocation; concurrent first-run bootstraps are rejected by the
+   * unique dataset name.
+   */
+  public static void bootstrap(final MetadataStore metadataStore) {
+    if (!metadataStore.datasetSpecStore().isEmpty()) {
+      return;
+    }
+    final DatasetRegistry registry = new DatasetRegistry();
     final DatasetCompiler compiler =
         new DatasetCompiler(
-            MeterCatalog.withDefaults(), new MeterRegistry(new InMemoryMeterIdStore()));
-    final DatasetRegistry registry = new DatasetRegistry();
-    final List<ActiveCube> cubes = new ArrayList<>();
+            MeterCatalog.withDefaults(), new MeterRegistry(metadataStore.meterIdStore()));
     for (final DatasetDeclaration declaration : declarations()) {
       final RegisteredDataset registered = registry.admit(declaration, Map.of());
-      cubes.add(new ActiveCube(registered, compiler.compile(registered.cubeId(), declaration)));
+      metadataStore.datasetSpecStore().save(registered);
+      compiler.compile(registered.cubeId(), declaration); // side effect: allocate + persist aggIds
+    }
+    for (final DatasetDeclaration declaration : projectionDeclarations()) {
+      metadataStore.datasetSpecStore().save(registry.admit(declaration, Map.of()));
+    }
+  }
+
+  /**
+   * Loads the aggregated cubes from the metadata store and compiles them (ids come from the store).
+   */
+  public static List<ActiveCube> loadCubes(final MetadataStore metadataStore) {
+    final DatasetCompiler compiler =
+        new DatasetCompiler(
+            MeterCatalog.withDefaults(), new MeterRegistry(metadataStore.meterIdStore()));
+    final List<ActiveCube> cubes = new ArrayList<>();
+    for (final RegisteredDataset registered : metadataStore.datasetSpecStore().loadAll()) {
+      if (registered.declaration().kind() == DatasetKind.AGGREGATED) {
+        cubes.add(
+            new ActiveCube(
+                registered, compiler.compile(registered.cubeId(), registered.declaration())));
+      }
     }
     return List.copyOf(cubes);
   }
 
-  /**
-   * Compiles the seeded projected (raw) datasets into runnable projections; deterministic and
-   * side-effect free. Uses its own registry so cube ids (and thus agg ids) are unaffected — both
-   * stages must derive identical cube ids from {@link #seed()}, and projections do not participate
-   * in the shuffle.
-   */
-  public static List<ActiveProjection> seedProjections() {
+  /** Loads the projected (raw) datasets from the metadata store and compiles them. */
+  public static List<ActiveProjection> loadProjections(final MetadataStore metadataStore) {
     final DatasetCompiler compiler =
         new DatasetCompiler(
-            MeterCatalog.withDefaults(), new MeterRegistry(new InMemoryMeterIdStore()));
-    final DatasetRegistry registry = new DatasetRegistry();
+            MeterCatalog.withDefaults(), new MeterRegistry(metadataStore.meterIdStore()));
     final List<ActiveProjection> projections = new ArrayList<>();
-    for (final DatasetDeclaration declaration : projectionDeclarations()) {
-      final RegisteredDataset registered = registry.admit(declaration, Map.of());
-      projections.add(
-          new ActiveProjection(
-              registered, compiler.compileProjection(registered.cubeId(), declaration)));
+    for (final RegisteredDataset registered : metadataStore.datasetSpecStore().loadAll()) {
+      if (registered.declaration().kind() == DatasetKind.PROJECTED) {
+        projections.add(
+            new ActiveProjection(
+                registered,
+                compiler.compileProjection(registered.cubeId(), registered.declaration())));
+      }
     }
     return List.copyOf(projections);
   }

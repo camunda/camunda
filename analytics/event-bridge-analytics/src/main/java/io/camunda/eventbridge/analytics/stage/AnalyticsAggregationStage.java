@@ -8,9 +8,11 @@
 package io.camunda.eventbridge.analytics.stage;
 
 import io.camunda.analytics.dataset.ActiveCube;
+import io.camunda.analytics.dataset.store.MetadataStore;
 import io.camunda.analytics.shuffle.ShuffleEnvelope;
 import io.camunda.analytics.shuffle.ShuffleEnvelopeCodec;
 import io.camunda.analytics.store.rdbms.RdbmsDatasetStore;
+import io.camunda.analytics.store.rdbms.metadata.RdbmsMetadataStore;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.streaming.StreamRuntime;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -58,7 +60,12 @@ public final class AnalyticsAggregationStage {
     dataSource.setURL(jdbcUrl);
     dataSource.setUser(jdbcUser);
 
-    final List<ActiveCube> cubes = AnalyticsCubes.seed();
+    // Load the same specs Stage 1 bootstrapped from the metadata plane (migrate + bootstrap are
+    // idempotent, so this is safe whichever stage starts first on a fresh database).
+    final MetadataStore metadataStore = new RdbmsMetadataStore(dataSource);
+    metadataStore.migrate();
+    AnalyticsCubes.bootstrap(metadataStore);
+    final List<ActiveCube> cubes = AnalyticsCubes.loadCubes(metadataStore);
     final String stateDir = "data/analytics-stage2-" + instanceId;
 
     final StreamRuntime<ShuffleEnvelope> runtime =

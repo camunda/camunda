@@ -9,8 +9,10 @@ package io.camunda.eventbridge.analytics.stage;
 
 import io.camunda.analytics.dataset.ActiveCube;
 import io.camunda.analytics.dataset.ActiveProjection;
+import io.camunda.analytics.dataset.store.MetadataStore;
 import io.camunda.analytics.projection.SourceRecord;
 import io.camunda.analytics.store.rdbms.RdbmsDatasetStore;
+import io.camunda.analytics.store.rdbms.metadata.RdbmsMetadataStore;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.streaming.StreamRuntime;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecordCodec;
@@ -70,8 +72,13 @@ public final class AnalyticsProjectionStage {
     dataSource.setURL(jdbcUrl);
     dataSource.setUser(jdbcUser);
 
-    final List<ActiveCube> cubes = AnalyticsCubes.seed();
-    final List<ActiveProjection> projections = AnalyticsCubes.seedProjections();
+    // The metadata plane is the source of truth: migrate the schema, bootstrap the standard
+    // declarations once (idempotent), then load the specs the stage runs.
+    final MetadataStore metadataStore = new RdbmsMetadataStore(dataSource);
+    metadataStore.migrate();
+    AnalyticsCubes.bootstrap(metadataStore);
+    final List<ActiveCube> cubes = AnalyticsCubes.loadCubes(metadataStore);
+    final List<ActiveProjection> projections = AnalyticsCubes.loadProjections(metadataStore);
     final String stateDir = "data/analytics-stage1-" + instanceId;
     final ZeebeRecordCodec codec = new ZeebeRecordCodec();
 
