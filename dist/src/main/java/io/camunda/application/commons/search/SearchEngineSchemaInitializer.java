@@ -7,6 +7,8 @@
  */
 package io.camunda.application.commons.search;
 
+import static java.util.stream.Collectors.toUnmodifiableMap;
+
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.SchemaManagerContainer;
@@ -16,6 +18,8 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -26,35 +30,51 @@ import org.springframework.beans.factory.InitializingBean;
 
 public class SearchEngineSchemaInitializer implements InitializingBean, SchemaManagerContainer {
   private static final Logger LOGGER = LoggerFactory.getLogger(SearchEngineSchemaInitializer.class);
-  private final SearchEngineConfiguration searchEngineConfiguration;
-  private final SchemaManagerMetrics schemaManagerMetrics;
+  private final MeterRegistry meterRegistry;
   private final boolean awaitSchemaInitialization;
   private final AtomicBoolean isShutdown = new AtomicBoolean(false);
-  private final AtomicBoolean initialized = new AtomicBoolean(false);
+  private final Map<String, SearchEngineConfiguration> configs;
+  private final Map<String, IndexDescriptors> descriptors;
+  private final Map<String, AtomicBoolean> initialized;
 
   public SearchEngineSchemaInitializer(
-      final SearchEngineConfiguration searchEngineConfiguration,
+      final Map<String, SearchEngineConfiguration> configsByTenant,
+      final Map<String, IndexDescriptors> descriptorsByTenant,
       final MeterRegistry meterRegistry,
       final boolean awaitSchemaInitialization) {
-    this.searchEngineConfiguration = searchEngineConfiguration;
-    schemaManagerMetrics = new SchemaManagerMetrics(meterRegistry);
+    this.meterRegistry = meterRegistry;
     this.awaitSchemaInitialization = awaitSchemaInitialization;
+
+    configs = configsByTenant;
+    descriptors = descriptorsByTenant;
+    initialized =
+        configs.keySet().stream()
+            .collect(toUnmodifiableMap(id -> id, id -> new AtomicBoolean(false)));
   }
 
   @Override
   public void afterPropertiesSet() throws Exception {
-    LOGGER.info("Initializing search engine schema...");
+    LOGGER.info(
+        "Initializing search engine schema for {} physical tenant(s): {}",
+        configs.size(),
+        configs.keySet());
+
     final var executor = Executors.newSingleThreadExecutor();
     if (!addShutdownHook(executor)) {
       // skipping schema initialization as JVM is shutting down
       return;
     }
-    final var future = CompletableFuture.runAsync(this::startupSchemaManager, executor);
+
+    final var future = CompletableFuture.runAsync(this::startupSchemaManagers, executor);
     if (awaitSchemaInitialization) {
       synchronousSchemaInitialization(future, executor);
     } else {
       asyncSchemaInitialization(future, executor);
     }
+  }
+
+  private void startupSchemaManagers() {
+    configs.keySet().forEach(this::startupSchemaManagerForTenant);
   }
 
   @VisibleForTesting
@@ -99,23 +119,29 @@ public class SearchEngineSchemaInitializer implements InitializingBean, SchemaMa
         });
   }
 
-  private void startupSchemaManager() {
-    final var indexDescriptors =
-        new IndexDescriptors(
-            searchEngineConfiguration.connect().getIndexPrefix(),
-            searchEngineConfiguration.connect().getTypeEnum().isElasticSearch());
-    try (final ClientAdapter clientAdapter = ClientAdapter.of(searchEngineConfiguration.connect());
+  private void startupSchemaManagerForTenant(final String physicalTenantId) {
+    if (isShutdown.get()) {
+      return;
+    }
+
+    final SearchEngineConfiguration configuration = configs.get(physicalTenantId);
+    final IndexDescriptors indexDescriptors = descriptors.get(physicalTenantId);
+
+    try (final ClientAdapter clientAdapter = ClientAdapter.of(configuration.connect());
         final SchemaManager schemaManager =
             new SchemaManager(
                     clientAdapter.getSearchEngineClient(),
                     indexDescriptors.indices(),
                     indexDescriptors.templates(),
-                    searchEngineConfiguration,
+                    configuration,
                     clientAdapter.objectMapper())
-                .withMetrics(schemaManagerMetrics)) {
+                .withMetrics(new SchemaManagerMetrics(meterRegistry, physicalTenantId))) {
       schemaManager.startup();
-      initialized.set(true);
+      initialized.get(physicalTenantId).set(true);
     } catch (final IOException e) {
+      if (!isInitialized(physicalTenantId)) {
+        throw new UncheckedIOException(e);
+      }
       LOGGER.debug("Failed to close the search client", e);
     }
   }
@@ -146,14 +172,21 @@ public class SearchEngineSchemaInitializer implements InitializingBean, SchemaMa
     }
   }
 
+  @Override
+  public boolean isInitialized(final String physicalTenantId) {
+    final AtomicBoolean flag = initialized.get(physicalTenantId);
+    return flag != null && flag.get();
+  }
+
   /**
-   * Returns true if the schema initialization completed successfully. This can be used by dependent
-   * components to check if they should proceed with their initialization.
+   * Returns true if the schema initialization completed successfully for <em>all</em> physical
+   * tenants. This can be used by dependent components to check if they should proceed with their
+   * initialization.
    *
-   * @return true if schema initialization completed successfully, false otherwise
+   * @return true if schema initialization completed successfully for all tenants, false otherwise
    */
   @Override
   public boolean isInitialized() {
-    return initialized.get();
+    return !initialized.isEmpty() && initialized.values().stream().allMatch(AtomicBoolean::get);
   }
 }
