@@ -94,7 +94,7 @@ public final class FlowControl {
           ActorClock::currentTimeMillis, Duration.ofMinutes(5), Duration.ofSeconds(10));
   @Nullable private RateLimitThrottle writeRateThrottle;
   private volatile long lastWrittenPosition = -1;
-  private volatile long lastExportedPosition;
+  private volatile long lastExportedPosition = -1;
 
   private final RingBuffer inFlight;
 
