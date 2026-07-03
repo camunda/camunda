@@ -62,15 +62,11 @@ final class TransformingRollupTest {
                 new ProjectionStage<Exec, Exec>(
                     derive,
                     List.of(
-                        new PreAggregatingRollup<>(
-                            sumOf(Exec::durationMs), Exec::region, byRegion, 1_000),
+                        new PreAggregatingRollup<>(sumOf(Exec::durationMs), Exec::region, byRegion),
                         new TransformingRollup<>(
                             enrichWithTier,
                             new PreAggregatingRollup<>(
-                                sumOf(EnrichedExec::durationMs),
-                                EnrichedExec::tier,
-                                byTier,
-                                1_000)))));
+                                sumOf(EnrichedExec::durationMs), EnrichedExec::tier, byTier)))));
 
     // when
     processor.init();

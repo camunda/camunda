@@ -14,10 +14,12 @@ import java.util.Map;
  * PreAggregator} (the combiner), and flushes merged partials into a {@link RollupStore}. A fact
  * thus touches the durable store at most once per key per flush, not once per fact.
  *
- * <p>Flushes when the buffer reaches {@code maxBufferedKeys} (size), on {@link #flush()}
- * (wall-clock tick), and on {@link #close()} (final). The buffer is ephemeral and rebuildable:
- * since the runtime advances the source offset only after a flush, a lost buffer is reconstructed
- * by replay.
+ * <p>The combiner drains on {@link #flush()} (the runtime's commit tick) and on {@link #close()}
+ * (final) — <em>not</em> on any per-operator record or key count. Between flushes the buffer holds
+ * at most the distinct keys seen in one commit interval; bounding memory below that (KS's
+ * bytes-based record cache) is a state-layer concern, not baked into the aggregation. The buffer is
+ * ephemeral and rebuildable: since the runtime advances the source offset only after a flush, a
+ * lost buffer is reconstructed by replay.
  *
  * @param <F> the fact type
  * @param <K> the grouping key type
@@ -28,29 +30,19 @@ public final class PreAggregatingRollup<F, K, ACC> implements Rollup<F> {
   private final KeySelector<F, K> keySelector;
   private final PreAggregator<F, K, ACC> combiner;
   private final RollupStore<K, ACC> store;
-  private final int maxBufferedKeys;
 
   public PreAggregatingRollup(
       final AggregateFunction<F, ACC, ?> aggregate,
       final KeySelector<F, K> keySelector,
-      final RollupStore<K, ACC> store,
-      final int maxBufferedKeys) {
-    if (maxBufferedKeys <= 0) {
-      throw new IllegalArgumentException(
-          "maxBufferedKeys must be positive, was " + maxBufferedKeys);
-    }
+      final RollupStore<K, ACC> store) {
     this.keySelector = keySelector;
     this.combiner = new PreAggregator<>(aggregate);
     this.store = store;
-    this.maxBufferedKeys = maxBufferedKeys;
   }
 
   @Override
   public void accept(final F fact) {
     combiner.add(keySelector.getKey(fact), fact);
-    if (combiner.size() >= maxBufferedKeys) {
-      flush();
-    }
   }
 
   @Override

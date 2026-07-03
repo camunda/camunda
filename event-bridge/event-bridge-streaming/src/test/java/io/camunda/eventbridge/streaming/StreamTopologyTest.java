@@ -81,7 +81,7 @@ final class StreamTopologyTest {
                   stores.put(partitionId, store);
                   return new ProjectionStage<Sale, Sale>(
                       (sale, out) -> out.collect(sale),
-                      List.of(new PreAggregatingRollup<>(SUM, Sale::region, store, 1_000)));
+                      List.of(new PreAggregatingRollup<>(SUM, Sale::region, store)));
                 });
 
     // when — each partition aggregates only its own facts

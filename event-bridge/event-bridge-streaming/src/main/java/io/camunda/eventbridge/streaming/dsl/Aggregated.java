@@ -23,9 +23,6 @@ import io.camunda.eventbridge.streaming.aggregate.RollupStore;
  */
 public final class Aggregated<F, K, ACC> {
 
-  /** Default combiner size before an automatic flush. */
-  public static final int DEFAULT_MAX_BUFFERED_KEYS = 10_000;
-
   private final KeySelector<F, K> keySelector;
   private final AggregateFunction<F, ACC, ?> metric;
 
@@ -34,13 +31,11 @@ public final class Aggregated<F, K, ACC> {
     this.metric = metric;
   }
 
-  /** Materializes into {@code store}, flushing the combiner after {@code maxBufferedKeys} keys. */
-  public Rollup<F> into(final RollupStore<K, ACC> store, final int maxBufferedKeys) {
-    return new PreAggregatingRollup<>(metric, keySelector, store, maxBufferedKeys);
-  }
-
-  /** Materializes into {@code store} with the default combiner size. */
+  /**
+   * Materializes into {@code store}. The combiner drains on the runtime's commit tick (and on
+   * close) — there is no per-key-count flush.
+   */
   public Rollup<F> into(final RollupStore<K, ACC> store) {
-    return into(store, DEFAULT_MAX_BUFFERED_KEYS);
+    return new PreAggregatingRollup<>(metric, keySelector, store);
   }
 }

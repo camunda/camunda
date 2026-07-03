@@ -42,7 +42,7 @@ final class PreAggregatingRollupTest {
   void shouldCoalesceFactsForSameKeyAndFlushOnDemand() {
     // given
     final InMemoryRollupStore<String, Long> store = new InMemoryRollupStore<>(SUM);
-    final var rollup = new PreAggregatingRollup<>(SUM, Sale::region, store, 100);
+    final var rollup = new PreAggregatingRollup<>(SUM, Sale::region, store);
 
     // when — two EU sales buffered (no per-fact store write), then an explicit flush
     rollup.accept(new Sale("EU", 100));
@@ -55,16 +55,23 @@ final class PreAggregatingRollupTest {
   }
 
   @Test
-  void shouldAutoFlushWhenBufferReachesMaxKeys() {
-    // given — flush once two distinct keys are buffered
+  void shouldBufferAllKeysUntilFlush() {
+    // given — no per-key-count flush: facts stay buffered until the commit-tick flush
     final InMemoryRollupStore<String, Long> store = new InMemoryRollupStore<>(SUM);
-    final var rollup = new PreAggregatingRollup<>(SUM, Sale::region, store, 2);
+    final var rollup = new PreAggregatingRollup<>(SUM, Sale::region, store);
 
-    // when
+    // when — two distinct keys buffered, no explicit flush yet
     rollup.accept(new Sale("EU", 100));
-    rollup.accept(new Sale("US", 70)); // second key trips the size flush
+    rollup.accept(new Sale("US", 70));
 
-    // then — both written without an explicit flush
+    // then — nothing written until flush
+    assertThat(store.get("EU")).isEmpty();
+    assertThat(store.get("US")).isEmpty();
+
+    // when — the commit tick flushes
+    rollup.flush();
+
+    // then — both drained together
     assertThat(store.get("EU")).contains(100L);
     assertThat(store.get("US")).contains(70L);
   }
@@ -73,7 +80,7 @@ final class PreAggregatingRollupTest {
   void shouldFlushRemainderOnClose() {
     // given
     final InMemoryRollupStore<String, Long> store = new InMemoryRollupStore<>(SUM);
-    final var rollup = new PreAggregatingRollup<>(SUM, Sale::region, store, 1000);
+    final var rollup = new PreAggregatingRollup<>(SUM, Sale::region, store);
     rollup.accept(new Sale("EU", 100));
 
     // when

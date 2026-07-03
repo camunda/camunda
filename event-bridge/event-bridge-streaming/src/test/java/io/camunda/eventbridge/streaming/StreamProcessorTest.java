@@ -52,8 +52,8 @@ final class StreamProcessorTest {
                 new ProjectionStage<Order, Sale>(
                     toSale,
                     List.of(
-                        new PreAggregatingRollup<>(SUM_AMOUNT, Sale::region, byRegion, 1000),
-                        new PreAggregatingRollup<>(SUM_AMOUNT, Sale::product, byProduct, 1000))));
+                        new PreAggregatingRollup<>(SUM_AMOUNT, Sale::region, byRegion),
+                        new PreAggregatingRollup<>(SUM_AMOUNT, Sale::product, byProduct))));
 
     // when
     processor.init();
@@ -88,12 +88,10 @@ final class StreamProcessorTest {
         new StreamProcessor<Order>()
             .add(
                 ProjectionStage.<Order, Sale>of(
-                    toSale,
-                    new PreAggregatingRollup<>(SUM_AMOUNT, Sale::region, salesByRegion, 1000)))
+                    toSale, new PreAggregatingRollup<>(SUM_AMOUNT, Sale::region, salesByRegion)))
             .add(
                 ProjectionStage.<Order, Touch>of(
-                    toTouch,
-                    new PreAggregatingRollup<>(COUNT, Touch::region, touchesByRegion, 1000)));
+                    toTouch, new PreAggregatingRollup<>(COUNT, Touch::region, touchesByRegion)));
 
     // when
     processor.init();
@@ -116,7 +114,7 @@ final class StreamProcessorTest {
         new StreamProcessor<Order>()
             .add(
                 ProjectionStage.<Order, Sale>of(
-                    toSale, new PreAggregatingRollup<>(SUM_AMOUNT, Sale::region, byRegion, 1000)));
+                    toSale, new PreAggregatingRollup<>(SUM_AMOUNT, Sale::region, byRegion)));
 
     // when — a wall-clock tick flushes buffered partials mid-stream (no close)
     processor.process(new Order("EU", "widget", 100, true));
