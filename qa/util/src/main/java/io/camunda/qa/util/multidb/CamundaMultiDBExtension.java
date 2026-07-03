@@ -17,6 +17,7 @@ import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.multidb.TestEntityCollector.TestEntityCollection;
 import io.camunda.qa.util.multidb.TestEntityConfigurer.ConfigurationTestEntities;
+import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
@@ -517,6 +518,19 @@ public class CamundaMultiDBExtension
             init.setDefaultRoles(rootInit.getDefaultRoles());
           }
         });
+
+    // A non-default physical tenant must declare its assigned authentication provider when
+    // running with OIDC; it does not inherit from root (PhysicalTenantAssignedProvidersValidation).
+    final var authenticationMethod =
+        springApplication.unifiedConfig().getSecurity().getAuthentication().getMethod();
+    final String assignedProviderProperty =
+        "camunda.physical-tenants."
+            + physicalTenantId
+            + ".security.authentication.providers.assigned[0]";
+    if (AuthenticationMethod.OIDC.equals(authenticationMethod)
+        && springApplication.property(assignedProviderProperty, String.class, null) == null) {
+      springApplication.withProperty(assignedProviderProperty, "oidc");
+    }
   }
 
   private MultiPhysicalTenantClients buildMultiPhysicalTenantClients(final List<String> tenantIds) {

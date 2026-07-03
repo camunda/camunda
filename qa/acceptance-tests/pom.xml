@@ -862,7 +862,8 @@
               <groups>multi-db-test</groups>
               <excludedGroups>rdbms, history, multi-db-physical-tenants</excludedGroups>
               <excludes>
-                <exclude>${identity-packages}</exclude>
+                <!-- Excluded under physical tenant pending follow-up; see #56134. -->
+                <exclude>**/auth/UsageMetricAuthorizationIT.java</exclude>
                 <exclude>**/*$*.java</exclude>
                 <!-- Cluster purge is not routed to the per-tenant secondary store, so purged
                      entities still surface in tenant-scoped search. -->
