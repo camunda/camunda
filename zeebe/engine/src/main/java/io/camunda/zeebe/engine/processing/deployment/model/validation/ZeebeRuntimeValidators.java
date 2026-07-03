@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.deployment.model.validation;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.model.validation.ZeebeExpressionValidator.ExpressionVerification;
+import io.camunda.zeebe.engine.processing.processinstance.BusinessIdValidator;
 import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
 import io.camunda.zeebe.model.bpmn.instance.Condition;
 import io.camunda.zeebe.model.bpmn.instance.ConditionExpression;
@@ -88,7 +89,16 @@ public final class ZeebeRuntimeValidators {
             .hasValidExpression(
                 ZeebeCalledElement::getProcessId, ExpressionVerification::isMandatory)
             .hasValidExpression(
-                ZeebeCalledElement::getBusinessId, ExpressionVerification::isOptional)
+                ZeebeCalledElement::getBusinessId,
+                expression ->
+                    expression
+                        .isOptional()
+                        .satisfiesIfStatic(
+                            staticExpression ->
+                                BusinessIdValidator.validate(staticExpression.getExpression())
+                                    .isRight(),
+                            "be no longer than %d characters"
+                                .formatted(BusinessIdValidator.MAX_BUSINESS_ID_LENGTH)))
             .build(expressionLanguage),
         // ----------------------------------------
         ZeebeExpressionValidator.verifyThat(TimerEventDefinition.class)

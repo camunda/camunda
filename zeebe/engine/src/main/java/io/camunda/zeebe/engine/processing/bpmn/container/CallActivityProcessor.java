@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.container;
 
+import io.camunda.zeebe.el.EvaluationResult;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
@@ -21,12 +22,14 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehav
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
+import io.camunda.zeebe.engine.processing.processinstance.BusinessIdValidator;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 public final class CallActivityProcessor
@@ -262,18 +265,19 @@ public final class CallActivityProcessor
   }
 
   /**
-   * Resolves the Business ID to assign to the child process instance, per ADR 0003-810 (D2/D3):
+   * Resolves the Business ID to assign to the child process instance, per ADR 0003-810 (D2/D3/D4):
    *
    * <ul>
    *   <li><b>inherit</b> (no configuration) — keep the parent's Business ID, preserving the 8.9
    *       behavior;
-   *   <li><b>literal/empty</b> (static expression) — use the configured value verbatim, so a
-   *       numeric or reserved-word literal is not coerced and an empty value yields no Business ID;
-   *   <li><b>FEEL</b> (dynamic expression) — evaluate at the call-activity element-instance scope.
+   *   <li><b>literal/empty</b> (static expression) — use the configured value verbatim (subject to
+   *       the length constraint), so a numeric or reserved-word literal is not coerced and an empty
+   *       value yields no Business ID;
+   *   <li><b>FEEL</b> (dynamic expression) — evaluate the raw result at the call-activity
+   *       element-instance scope and interpret it: an explicit null or an empty string discards the
+   *       Business ID (no incident), while an unresolvable variable, a non-string/non-null type, or
+   *       an over-long value raises a resolvable incident.
    * </ul>
-   *
-   * <p>The evaluation is threaded through the {@link Either} chain so that a FEEL failure can
-   * surface as an incident (handled in a follow-up feature).
    */
   private Either<Failure, String> resolveChildBusinessId(
       final BpmnElementContext context, final ExecutableCallActivity element) {
@@ -282,10 +286,73 @@ public final class CallActivityProcessor
       return Either.right(context.getBusinessId());
     }
     if (businessIdExpression.isStatic()) {
-      return Either.right(businessIdExpression.getExpression());
+      return validateBusinessId(businessIdExpression.getExpression(), context);
     }
-    return expressionProcessor.evaluateStringExpression(
-        businessIdExpression, context.getElementInstanceKey(), context.getTenantId());
+    return expressionProcessor
+        .evaluateAnyExpression(
+            businessIdExpression, context.getElementInstanceKey(), context.getTenantId())
+        .flatMap(result -> resolveBusinessIdFromResult(result, context));
+  }
+
+  private Either<Failure, String> resolveBusinessIdFromResult(
+      final EvaluationResult result, final BpmnElementContext context) {
+    return switch (result.getType()) {
+      // An empty string is a valid discard, a non-empty one is used (subject to the length check).
+      case STRING -> validateBusinessId(result.getString(), context);
+      // A null result is either an intentional discard ('=null') or a coerced null from a failed
+      // evaluation — only the latter is an incident.
+      case NULL -> resolveNullBusinessId(result, context);
+      default -> Either.left(nonStringBusinessIdFailure(result, context));
+    };
+  }
+
+  private Either<Failure, String> resolveNullBusinessId(
+      final EvaluationResult result, final BpmnElementContext context) {
+    // A null accompanied by evaluation warnings was coerced from a failure (e.g. a missing
+    // variable, function, or property), so it is an incident; an intentional '=null' reports no
+    // warnings and discards the Business ID.
+    if (!result.getWarnings().isEmpty()) {
+      return Either.left(
+          new Failure(
+              "Expected to resolve the business id for the call activity from expression '%s', but it evaluated to null.%s"
+                  .formatted(result.getExpression(), formatWarnings(result)),
+              ErrorType.EXTRACT_VALUE_ERROR,
+              context.getElementInstanceKey()));
+    }
+    // Explicit null (e.g. '=null'): intentionally discard the Business ID.
+    return Either.right("");
+  }
+
+  private Either<Failure, String> validateBusinessId(
+      final String businessId, final BpmnElementContext context) {
+    return BusinessIdValidator.validate(businessId)
+        .mapLeft(
+            reason ->
+                new Failure(
+                    "Expected to resolve a valid business id for the call activity, but it %s."
+                        .formatted(reason),
+                    ErrorType.EXTRACT_VALUE_ERROR,
+                    context.getElementInstanceKey()));
+  }
+
+  private Failure nonStringBusinessIdFailure(
+      final EvaluationResult result, final BpmnElementContext context) {
+    return new Failure(
+        "Expected the business id for the call activity to resolve to a string, but expression '%s' evaluated to '%s'."
+            .formatted(result.getExpression(), result.getType()),
+        ErrorType.EXTRACT_VALUE_ERROR,
+        context.getElementInstanceKey());
+  }
+
+  private static String formatWarnings(final EvaluationResult result) {
+    final var warnings = result.getWarnings();
+    if (warnings.isEmpty()) {
+      return "";
+    }
+    return " The evaluation reported the following warnings:\n"
+        + warnings.stream()
+            .map(warning -> "[%s] %s".formatted(warning.getType(), warning.getMessage()))
+            .collect(Collectors.joining("\n"));
   }
 
   private Either<Failure, DeployedProcess> getCalledProcess(
