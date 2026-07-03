@@ -55,6 +55,8 @@ kubectl label namespace "$namespace" camunda.io/purpose=load-test --overwrite
 kubectl label namespace "$namespace" camunda.io/created-by="$git_author" --overwrite
 
 cp -rv saas-default/ $namespace
+# Vendored realistic-benchmark values, shared with the self-managed setups.
+cp -v scenarios/load-test-values-realistic-benchmark.yaml $namespace/
 cd $namespace
 
 
