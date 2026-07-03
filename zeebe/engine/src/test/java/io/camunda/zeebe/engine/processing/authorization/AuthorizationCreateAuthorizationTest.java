@@ -130,6 +130,47 @@ public class AuthorizationCreateAuthorizationTest {
             "Insufficient permissions to perform operation 'CREATE' on resource 'AUTHORIZATION'");
   }
 
+  @Test
+  public void shouldReflectNewlyGrantedAuthorizationImmediately() {
+    // given
+    final var user = createUser();
+    final var targetUser = createUser();
+
+    // prime the scope cache: user has no AUTHORIZATION:CREATE permission yet → rejected
+    engine
+        .authorization()
+        .newAuthorization()
+        .withOwnerId(targetUser.getUsername())
+        .withOwnerType(AuthorizationOwnerType.USER)
+        .withResourceType(AuthorizationResourceType.RESOURCE)
+        .withResourceMatcher(WILDCARD.getMatcher())
+        .withResourceId(WILDCARD.getResourceId())
+        .withPermissions(PermissionType.CREATE)
+        .expectRejection()
+        .create(user.getUsername());
+
+    // when — grant the user AUTHORIZATION:CREATE permission (invalidates scope cache)
+    addAuthorizationToUser(user, AuthorizationResourceType.AUTHORIZATION, PermissionType.CREATE);
+
+    // then — user can now create immediately (cache was invalidated, not serving stale empty set)
+    engine
+        .authorization()
+        .newAuthorization()
+        .withOwnerId(targetUser.getUsername())
+        .withOwnerType(AuthorizationOwnerType.USER)
+        .withResourceType(AuthorizationResourceType.RESOURCE)
+        .withResourceMatcher(WILDCARD.getMatcher())
+        .withResourceId(WILDCARD.getResourceId())
+        .withPermissions(PermissionType.CREATE)
+        .create(user.getUsername());
+
+    assertThat(
+            RecordingExporter.authorizationRecords(AuthorizationIntent.CREATED)
+                .withOwnerId(targetUser.getUsername())
+                .exists())
+        .isTrue();
+  }
+
   private UserRecordValue createUser() {
     return engine
         .user()

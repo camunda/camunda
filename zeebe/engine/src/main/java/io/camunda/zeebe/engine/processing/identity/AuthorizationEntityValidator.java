@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
@@ -18,8 +19,10 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRe
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
+import org.slf4j.Logger;
 
 public class AuthorizationEntityValidator {
+
   public static final String MAPPING_RULE_DOES_NOT_EXIST_ERROR_MESSAGE =
       "Expected to create or update authorization with ownerId or resourceId '%s', but a mapping rule with this ID does not exist.";
   public static final String ROLE_DOES_NOT_EXIST_ERROR_MESSAGE =
@@ -41,6 +44,8 @@ public class AuthorizationEntityValidator {
   public static final String MATCHER_NOT_SUPPORTED_ERROR_MESSAGE =
       "Expected to %s authorization, but resource matcher '%s' is not supported.";
 
+  private static final Logger LOG = Loggers.ENGINE_IDENTITY_LOGGER;
+
   private final UserState userState;
   private final MappingRuleState mappingRuleState;
   private final GroupState groupState;
@@ -61,9 +66,15 @@ public class AuthorizationEntityValidator {
     final var record = command.getValue();
     final boolean localUserEnabled = securityConfig.getAuthentication().isCamundaUsersEnabled();
     final boolean localGroupEnabled = securityConfig.getAuthentication().isCamundaGroupsEnabled();
+    LOG.trace(
+        "Checking owner/resource existence for {} '{}' on resource type '{}'",
+        record.getOwnerType(),
+        record.getOwnerId(),
+        record.getResourceType());
     switch (record.getOwnerType()) {
       case GROUP:
         if (localGroupEnabled && groupState.get(record.getOwnerId()).isEmpty()) {
+          LOG.debug("Owner group '{}' does not exist", record.getOwnerId());
           return Either.left(
               new Rejection(
                   RejectionType.NOT_FOUND,
@@ -72,6 +83,7 @@ public class AuthorizationEntityValidator {
         break;
       case MAPPING_RULE:
         if (mappingRuleState.get(record.getOwnerId()).isEmpty()) {
+          LOG.debug("Owner mapping rule '{}' does not exist", record.getOwnerId());
           return Either.left(
               new Rejection(
                   RejectionType.NOT_FOUND,
@@ -80,6 +92,7 @@ public class AuthorizationEntityValidator {
         break;
       case ROLE:
         if (roleState.getRole(record.getOwnerId()).isEmpty()) {
+          LOG.debug("Owner role '{}' does not exist", record.getOwnerId());
           return Either.left(
               new Rejection(
                   RejectionType.NOT_FOUND,
@@ -88,6 +101,7 @@ public class AuthorizationEntityValidator {
         break;
       case USER:
         if (localUserEnabled && userState.getUser(record.getOwnerId()).isEmpty()) {
+          LOG.debug("Owner user '{}' does not exist", record.getOwnerId());
           return Either.left(
               new Rejection(
                   RejectionType.NOT_FOUND,
@@ -101,6 +115,7 @@ public class AuthorizationEntityValidator {
       switch (record.getResourceType()) {
         case GROUP:
           if (localGroupEnabled && groupState.get(record.getResourceId()).isEmpty()) {
+            LOG.debug("Resource group '{}' does not exist", record.getResourceId());
             return Either.left(
                 new Rejection(
                     RejectionType.NOT_FOUND,
@@ -109,6 +124,7 @@ public class AuthorizationEntityValidator {
           break;
         case MAPPING_RULE:
           if (mappingRuleState.get(record.getResourceId()).isEmpty()) {
+            LOG.debug("Resource mapping rule '{}' does not exist", record.getResourceId());
             return Either.left(
                 new Rejection(
                     RejectionType.NOT_FOUND,
@@ -117,6 +133,7 @@ public class AuthorizationEntityValidator {
           break;
         case ROLE:
           if (roleState.getRole(record.getResourceId()).isEmpty()) {
+            LOG.debug("Resource role '{}' does not exist", record.getResourceId());
             return Either.left(
                 new Rejection(
                     RejectionType.NOT_FOUND,
@@ -125,6 +142,7 @@ public class AuthorizationEntityValidator {
           break;
         case USER:
           if (localUserEnabled && userState.getUser(record.getResourceId()).isEmpty()) {
+            LOG.debug("Resource user '{}' does not exist", record.getResourceId());
             return Either.left(
                 new Rejection(
                     RejectionType.NOT_FOUND,

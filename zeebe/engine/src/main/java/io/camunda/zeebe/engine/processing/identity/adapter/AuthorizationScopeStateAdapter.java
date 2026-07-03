@@ -32,7 +32,7 @@ import org.slf4j.Logger;
 @NullMarked
 public final class AuthorizationScopeStateAdapter implements AuthorizationScopeRepositoryPort {
 
-  private static final Logger LOG = Loggers.ENGINE_PROCESSING_LOGGER;
+  private static final Logger LOG = Loggers.ENGINE_IDENTITY_LOGGER;
 
   private final AuthorizationState authorizationState;
   private final LoadingCache<
@@ -47,6 +47,11 @@ public final class AuthorizationScopeStateAdapter implements AuthorizationScopeR
             .expireAfterWrite(config.getAuthorizationsCacheTtl())
             .maximumSize(config.getAuthorizationsCacheCapacity())
             .build(new ScopeCacheLoader(authorizationState));
+  }
+
+  /** Invalidates all cached authorization scopes, forcing fresh loads on next access. */
+  public void invalidateAll() {
+    scopeCache.invalidateAll();
   }
 
   /** Returns all authorized scopes for the given owners, resource type, and permission type. */
