@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
@@ -105,8 +106,7 @@ public class PermissionsBehavior {
         permissionType,
         command.getIntent());
     final var auth = claimsConverter.convert(authorizations);
-    final var cslPermType =
-        io.camunda.security.api.model.authz.PermissionType.valueOf(permissionType.name());
+    final var cslPermType = AuthzModelMapper.fromProtocol(permissionType);
     final var result =
         authCheckPort.check(
             auth,
