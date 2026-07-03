@@ -22,7 +22,9 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public class GroupCreateProcessor implements DistributedTypedRecordProcessor<GroupRecord> {
 
   public static final String GROUP_ALREADY_EXISTS_ERROR_MESSAGE =

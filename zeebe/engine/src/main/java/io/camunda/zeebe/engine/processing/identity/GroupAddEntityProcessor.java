@@ -29,7 +29,9 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<GroupRecord> {
   private static final String ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE =
       "Expected to add entity with ID '%s' to group with ID '%s', but the entity is already assigned to this group.";

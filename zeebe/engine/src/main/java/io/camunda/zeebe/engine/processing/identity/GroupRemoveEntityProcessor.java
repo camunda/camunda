@@ -27,7 +27,9 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcessor<GroupRecord> {
   private static final String ENTITY_NOT_ASSIGNED_ERROR_MESSAGE =
       "Expected to remove entity with ID '%s' from group with ID '%s', but the entity is not assigned to this group.";
