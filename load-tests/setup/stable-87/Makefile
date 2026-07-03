@@ -90,6 +90,10 @@ ifeq ($(secondary_storage),elasticsearch)
 	additional_load_test_setup_configuration += --set metricsExporter.database.url=http://elastic:9200
 endif
 
+ifeq ($(chaos),true)
+	additional_load_test_setup_configuration += --set chaosKiller.enabled=true
+endif
+
 .PHONY: all
 all: install
 
