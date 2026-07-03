@@ -6,3 +6,4 @@ structure.
 ## Index
 
 - [0001 — Scope of materialized tables and richer joins](0001-materialized-tables-and-richer-joins.md)
+- [0002 — Rebalance handoff for sharded partition state](0002-rebalance-state-handoff.md)
