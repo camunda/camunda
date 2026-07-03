@@ -190,6 +190,15 @@ author: "$git_author"
 deadlineDate: "$deadline_date"
 # Can be unset using "topologyZone: ~"
 topologyZone: $availability_zone
+# Propagated to the camunda-load-tests (load-tester) subchart via Helm global
+# coalescing. These replace the former __AUTHOR__ / __AVAILABILITY_ZONE__ sed
+# placeholders and deep-merge with the static keys in
+# load-tester-values-defaults.yaml.
+global:
+  commonLabels:
+    camunda.io/created-by: "$git_author"
+  nodeSelector:
+    topology.kubernetes.io/zone: $availability_zone
 camundaManagementUrl: "http://zeebe-gateway:9600"
 
 loadTest:

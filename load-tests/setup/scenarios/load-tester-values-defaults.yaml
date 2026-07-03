@@ -1,6 +1,8 @@
 global:
   commonLabels:
-    camunda.io/created-by: __AUTHOR__
+    # camunda.io/created-by is injected at scaffold time as a real Helm value via
+    # the generated load-test-setup-values.yaml (see newLoadTest.sh), so it is
+    # not baked into this committed file.
     camunda.io/purpose: load-test
   image:
     repository: registry.camunda.cloud/team-zeebe
@@ -12,7 +14,8 @@ global:
 
   nodeSelector:
     component: benchmark-n2-standard-4
-    topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
+    # topology.kubernetes.io/zone is injected at scaffold time as a real Helm
+    # value via the generated load-test-setup-values.yaml (see newLoadTest.sh).
 
   tolerations:
     - key: nodepool

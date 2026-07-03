@@ -39,6 +39,7 @@ install-load-test:
 		--set saas.credentials.zeebeGrpcAddress="$${ZEEBE_GRPC_ADDRESS}" \
 		--set saas.credentials.authorizationAudience="$${ZEEBE_TOKEN_AUDIENCE}" \
 		-f load-test-values.yaml \
+		-f load-test-values-generated.yaml \
 		$(additional_load_test_configuration)
 
 .PHONY: clean
