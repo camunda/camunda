@@ -34,18 +34,26 @@ function deriveCompletionStatus(snapshot: SnapshotFrom<typeof taskCompletionMach
 
 function useTaskCompletion({
 	userTaskKey,
+	currentUser,
 	taskState,
+	assignee,
 	onComplete,
 }: {
 	userTaskKey: string;
+	currentUser: string;
 	taskState: UserTask['state'];
+	assignee: string | null;
 	onComplete: () => void;
 }) {
 	const queryClient = useQueryClient();
 
 	const actorRef = useActorRef(taskCompletionMachine, {
-		input: {queryClient, userTaskKey, initialTaskState: taskState},
+		input: {queryClient, userTaskKey, currentUser, initialTaskState: taskState, initialAssignee: assignee},
 	});
+
+	useEffect(() => {
+		actorRef.send({type: 'task.updated', taskState, assignee});
+	}, [actorRef, taskState, assignee]);
 
 	useEffect(() => {
 		const subscription = actorRef.on('task.completed', onComplete);
@@ -56,11 +64,15 @@ function useTaskCompletion({
 	}, [actorRef, onComplete]);
 
 	const status = useSelector(actorRef, deriveCompletionStatus);
+	const isCompletionAllowed = useSelector(actorRef, (snapshot) => snapshot.can({type: 'task.complete'}));
+	const isHidden = useSelector(actorRef, (snapshot) => snapshot.context.taskState === 'COMPLETED');
 	const isBusy = status === 'active';
 	const complete = useCallback(() => actorRef.send({type: 'task.complete'}), [actorRef]);
 
 	return {
 		status,
+		isCompletionAllowed,
+		isHidden,
 		isBusy,
 		complete,
 	};

@@ -36,22 +36,18 @@ const TaskDetailsTaskPage: React.FC<Props> = ({task, currentUser, search}) => {
 		});
 		navigate({to: '/tasklist', search});
 	}, [navigate, search, customFilter]);
-	const {status, complete} = useTaskCompletion({
+	const {status, isCompletionAllowed, isHidden, complete} = useTaskCompletion({
 		userTaskKey: task.userTaskKey,
+		currentUser: currentUser.username,
 		taskState: task.state,
+		assignee: task.assignee,
 		onComplete,
 	});
-	const canCompleteTask = currentUser.username === task.assignee && task.state === 'CREATED';
 
 	return (
 		<div className={styles.container} data-testid="task-tab-content">
 			<div className={styles.footer}>
-				<CompleteTaskButton
-					status={status}
-					onClick={complete}
-					isHidden={task.state === 'COMPLETED'}
-					isDisabled={!canCompleteTask}
-				/>
+				<CompleteTaskButton status={status} onClick={complete} isHidden={isHidden} isDisabled={!isCompletionAllowed} />
 			</div>
 		</div>
 	);

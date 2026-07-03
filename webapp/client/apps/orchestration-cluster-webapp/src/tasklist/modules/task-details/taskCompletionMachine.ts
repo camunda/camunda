@@ -24,13 +24,21 @@ type CompletionFailure = {reason: 'timeout'} | {reason: 'failed'; subtitle?: str
 type MachineInput = {
 	queryClient: QueryClient;
 	userTaskKey: string;
+	currentUser: string;
 	initialTaskState: UserTask['state'];
+	initialAssignee: string | null;
 };
 
-type MachineContext = Omit<MachineInput, 'initialTaskState'> & {
+type MachineContext = Omit<MachineInput, 'initialTaskState' | 'initialAssignee'> & {
 	initialTaskState: UserTask['state'] | null;
+	taskState: UserTask['state'];
+	assignee: string | null;
 	pollRetryCount: number;
 };
+
+type TaskCompletionEvent =
+	| {type: 'task.complete'}
+	| {type: 'task.updated'; taskState: UserTask['state']; assignee: string | null};
 
 type TaskCompletionStatusTag = 'status:completing' | 'status:completion_successful' | 'status:completion_failed';
 
@@ -84,7 +92,7 @@ const taskCompletionMachine = setup({
 	types: {
 		context: {} as MachineContext,
 		input: {} as MachineInput,
-		events: {} as {type: 'task.complete'},
+		events: {} as TaskCompletionEvent,
 		emitted: {} as {type: 'task.completed'},
 		tags: {} as TaskCompletionStatusTag,
 	},
@@ -96,8 +104,17 @@ const taskCompletionMachine = setup({
 		isTimeout: (_, params: {error: CompletionFailure | undefined}) => params.error?.reason === 'timeout',
 		isTaskCompleted: (_, params: {task: UserTask | undefined}) => params.task?.state === 'COMPLETED',
 		isInitiallyCompleting: ({context}) => context.initialTaskState === 'COMPLETING',
+		canCompleteTask: ({context}) => context.currentUser === context.assignee && context.taskState === 'CREATED',
 	},
 	actions: {
+		updateTask: assign(({event}) =>
+			event.type === 'task.updated'
+				? {
+						taskState: event.taskState,
+						assignee: event.assignee,
+					}
+				: {},
+		),
 		setOptimisticCompleting: ({context}) => {
 			const {queryClient, userTaskKey} = context;
 			const currentTask = queryClient.getQueryData<UserTask>(queries.getUserTask(userTaskKey).queryKey);
@@ -167,13 +184,22 @@ const taskCompletionMachine = setup({
 	},
 }).createMachine({
 	id: 'taskCompletion',
-	context: ({input}) => ({...input, pollRetryCount: 0}),
+	context: ({input}) => ({
+		queryClient: input.queryClient,
+		userTaskKey: input.userTaskKey,
+		currentUser: input.currentUser,
+		initialTaskState: input.initialTaskState,
+		taskState: input.initialTaskState,
+		assignee: input.initialAssignee,
+		pollRetryCount: 0,
+	}),
 	initial: 'Idle',
 	states: {
 		Idle: {
 			always: [{guard: 'isInitiallyCompleting', target: 'AwaitingCompletion', actions: 'clearInitialTaskState'}],
 			on: {
-				'task.complete': {target: 'Completing'},
+				'task.complete': {guard: 'canCompleteTask', target: 'Completing'},
+				'task.updated': {actions: 'updateTask'},
 			},
 		},
 
