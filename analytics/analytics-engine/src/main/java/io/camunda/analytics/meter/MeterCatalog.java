@@ -13,6 +13,8 @@ import io.camunda.analytics.metric.ExecutionTimeSummaryAggregateFunction;
 import io.camunda.analytics.metric.ExecutionTimeSummaryValue;
 import io.camunda.analytics.metric.HistogramAggregateFunction;
 import io.camunda.analytics.metric.HistogramValue;
+import io.camunda.analytics.metric.LifecycleSummaryAggregateFunction;
+import io.camunda.analytics.metric.LifecycleSummaryValue;
 import io.camunda.analytics.sketch.DistinctCountAggregateFunction;
 import io.camunda.analytics.sketch.HllSketchValue;
 import io.camunda.analytics.sketch.ItemsSketchValue;
@@ -50,6 +52,7 @@ public final class MeterCatalog {
   public static final String LEVEL = "level";
   public static final String EXECUTION_TIME = "execution_time";
   public static final String EXECUTION_TIME_SUMMARY = "execution_time_summary";
+  public static final String LIFECYCLE_SUMMARY = "lifecycle_summary";
   public static final String HISTOGRAM = "histogram";
   public static final String PERCENTILE = "percentile";
   public static final String DISTINCT = "distinct";
@@ -115,6 +118,14 @@ public final class MeterCatalog {
                         m.requireMeasure()::asLong,
                         m.doubleArrayParam("ranks", QuantileAggregateFunction.DEFAULT_RANKS)),
                 m -> new ExecutionTimeSummaryValue()))
+        .register(
+            new MeterType<>(
+                LIFECYCLE_SUMMARY,
+                m ->
+                    new LifecycleSummaryAggregateFunction(
+                        m.requireMeasure(),
+                        m.doubleArrayParam("ranks", QuantileAggregateFunction.DEFAULT_RANKS)),
+                m -> new LifecycleSummaryValue()))
         .register(
             new MeterType<>(
                 HISTOGRAM,

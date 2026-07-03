@@ -191,6 +191,8 @@ final class MeterCatalogTest {
             MeterCatalog.SUM,
             MeterCatalog.LEVEL,
             MeterCatalog.EXECUTION_TIME,
+            MeterCatalog.EXECUTION_TIME_SUMMARY,
+            MeterCatalog.LIFECYCLE_SUMMARY,
             MeterCatalog.HISTOGRAM,
             MeterCatalog.PERCENTILE,
             MeterCatalog.DISTINCT,
