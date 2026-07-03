@@ -150,6 +150,8 @@ do this automatically).
 ```java
 public final class FileBasedSecretStore implements SecretStore {
 
+  private static final Logger LOG = LoggerFactory.getLogger(FileBasedSecretStore.class);
+
   private final Path filePath;
 
   public FileBasedSecretStore(final Path filePath) {
@@ -162,11 +164,14 @@ public final class FileBasedSecretStore implements SecretStore {
     try {
       props = loadProperties();
     } catch (final UncheckedIOException e) {
+      LOG.warn("Failed to load secrets file '{}': {}", filePath, e.getCause().getMessage());
       final var msg = "Failed to load secrets file: " + e.getCause().getMessage();
       return refs.stream().collect(toMap(
           ref -> ref,
           ref -> new SecretResolutionResult.Failed(STORE_UNAVAILABLE, msg, e.getCause())));
     }
+    // Never log resolved values — only ref names and counts are safe to log
+    LOG.debug("Resolving {} secret refs from '{}'", refs.size(), filePath);
     return refs.stream().collect(toMap(
         ref -> ref,
         ref -> {
@@ -180,7 +185,9 @@ public final class FileBasedSecretStore implements SecretStore {
 
   @Override
   public Collection<SecretRef> list() {
-    return loadProperties().stringPropertyNames().stream()
+    final var props = loadProperties();
+    LOG.debug("Listing {} secrets from '{}'", props.size(), filePath);
+    return props.stringPropertyNames().stream()
         .map(SecretRef::new)
         .toList();
   }
