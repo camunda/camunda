@@ -9,8 +9,8 @@ package io.camunda.eventbridge.streaming.aggregate;
 
 /**
  * Consumes derived values and maintains a pre-aggregated, grouped result. One projector's values
- * can fan out to several aggregations, each grouping differently (e.g. by region and by definition)
- * — that is how multiple aggregations are built over the same value.
+ * can fan out to several aggregations, each grouping by a different key — that is how multiple
+ * aggregations are built over the same value.
  *
  * <p>Driven by two clocks (see {@code StreamProcessor}): {@link #flush()} on a wall-clock tick
  * keeps latency bounded and drains idle partials; {@link #advanceStreamTime(long)} on event-time

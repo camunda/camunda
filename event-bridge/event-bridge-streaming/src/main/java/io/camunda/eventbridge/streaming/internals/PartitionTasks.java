@@ -5,8 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.eventbridge.streaming;
+package io.camunda.eventbridge.streaming.internals;
 
+import io.camunda.eventbridge.streaming.Task;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -20,13 +21,13 @@ import java.util.function.IntFunction;
  *
  * @param <R> the decoded record type
  */
-final class PartitionTasks<R> {
+public final class PartitionTasks<R> {
 
   private final IntFunction<Task<R>> taskFactory;
   private final Map<Integer, Task<R>> tasks = new HashMap<>();
   private final Map<Integer, Long> restored = new HashMap<>();
 
-  PartitionTasks(final IntFunction<Task<R>> taskFactory) {
+  public PartitionTasks(final IntFunction<Task<R>> taskFactory) {
     this.taskFactory = taskFactory;
   }
 
@@ -34,7 +35,7 @@ final class PartitionTasks<R> {
    * Seeds restored baselines from runtime-managed committed offsets (a task that owns its
    * durability instead records its own baseline in {@link #taskFor}).
    */
-  void seedRestored(final Map<Integer, Long> committed) {
+  public void seedRestored(final Map<Integer, Long> committed) {
     restored.putAll(committed);
   }
 
@@ -42,7 +43,7 @@ final class PartitionTasks<R> {
    * Materializes and initialises a task on first use; a task that owns its durability also records
    * its restored offset baseline so the runtime can dedup its resume gap.
    */
-  Task<R> taskFor(final int partition) {
+  public Task<R> taskFor(final int partition) {
     return tasks.computeIfAbsent(
         partition,
         p -> {
@@ -56,14 +57,14 @@ final class PartitionTasks<R> {
   }
 
   /** The already-materialized task for {@code partition}, or {@code null}. */
-  Task<R> get(final int partition) {
+  public Task<R> get(final int partition) {
     return tasks.get(partition);
   }
 
   /**
    * The offset at or below which {@code partition}'s records are already folded (dedup baseline).
    */
-  long baseline(final int partition) {
+  public long baseline(final int partition) {
     return restored.getOrDefault(partition, Task.NO_OFFSET);
   }
 
@@ -79,7 +80,7 @@ final class PartitionTasks<R> {
   }
 
   /** Closes every task on shutdown. */
-  void closeAll() {
+  public void closeAll() {
     tasks.values().forEach(Task::close);
   }
 }

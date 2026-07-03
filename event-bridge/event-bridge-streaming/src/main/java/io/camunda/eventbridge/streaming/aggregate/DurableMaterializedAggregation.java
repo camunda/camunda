@@ -35,7 +35,7 @@ import java.util.function.ToLongFunction;
  *   <li>{@link #accept} folds each value into the heap cell and advances the event-time watermark —
  *       no I/O.
  *   <li>{@link #flush()} (per batch) converges the serving {@link ResultSink} for the cells changed
- *       since the last flush — dashboard freshness, but nothing is made durable.
+ *       since the last flush — serving-view freshness, but nothing is made durable.
  *   <li>{@link #checkpoint()} (per commit interval) finalizes closed windows, then writes the cells
  *       changed (and deletes the ones evicted) since the last checkpoint together with the consumed
  *       source positions in <em>one</em> transaction. Because it runs far less often than a batch,

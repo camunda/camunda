@@ -5,11 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.eventbridge.streaming;
+package io.camunda.eventbridge.streaming.internals;
 
 import io.camunda.eventbridge.client.Consumer;
 import io.camunda.eventbridge.client.RebalanceListener;
 import io.camunda.eventbridge.client.TopicPartition;
+import io.camunda.eventbridge.streaming.Task;
 import java.util.Collection;
 import java.util.List;
 import java.util.Queue;
@@ -27,13 +28,13 @@ import org.slf4j.LoggerFactory;
  *
  * @param <R> the decoded record type
  */
-final class RebalanceCoordinator<R> {
+public final class RebalanceCoordinator<R> {
 
   private static final Logger LOG = LoggerFactory.getLogger(RebalanceCoordinator.class);
 
   private final PartitionTasks<R> tasks;
   private final CommitBarrier<R> commitBarrier;
-  private final Punctuator<R> punctuator;
+  private final PunctuationDriver<R> punctuator;
   private final Consumer consumer;
   private final String sourceTopic;
   private final String instanceId;
@@ -41,10 +42,10 @@ final class RebalanceCoordinator<R> {
   private final Queue<Integer> newlyAssigned = new ConcurrentLinkedQueue<>();
   private final Queue<Integer> newlyRevoked = new ConcurrentLinkedQueue<>();
 
-  RebalanceCoordinator(
+  public RebalanceCoordinator(
       final PartitionTasks<R> tasks,
       final CommitBarrier<R> commitBarrier,
-      final Punctuator<R> punctuator,
+      final PunctuationDriver<R> punctuator,
       final Consumer consumer,
       final String sourceTopic,
       final String instanceId) {
@@ -57,7 +58,7 @@ final class RebalanceCoordinator<R> {
   }
 
   /** Registers the listener so assignment deltas are recorded for {@link #apply()} to process. */
-  void register() {
+  public void register() {
     consumer.rebalanceListener(
         new RebalanceListener() {
           @Override
@@ -83,7 +84,7 @@ final class RebalanceCoordinator<R> {
   /**
    * Applies pending deltas on the run thread: release revoked partitions, then acquire new ones.
    */
-  void apply() {
+  public void apply() {
     for (Integer partition; (partition = newlyRevoked.poll()) != null; ) {
       release(partition);
     }

@@ -11,6 +11,10 @@ import io.camunda.eventbridge.client.Consumer;
 import io.camunda.eventbridge.client.Event;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.client.TopicPartition;
+import io.camunda.eventbridge.streaming.internals.CommitBarrier;
+import io.camunda.eventbridge.streaming.internals.PartitionTasks;
+import io.camunda.eventbridge.streaming.internals.PunctuationDriver;
+import io.camunda.eventbridge.streaming.internals.RebalanceCoordinator;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,9 +31,9 @@ import org.slf4j.LoggerFactory;
  * A generic stream-processing runtime over an EventBridge consumer group. It owns the poll loop,
  * the two-clock cadence, restore, and shutdown, and wires four cohesive collaborators: {@link
  * PartitionTasks} (the per-partition task registry + dedup baseline), {@link CommitBarrier} (the
- * per-partition produce-before-commit), {@link Punctuator} (the freshness/event-time ticks), and
- * {@link RebalanceCoordinator} (assignment deltas → acquire/release). The application supplies only
- * its {@link Task} logic and the source/state bindings.
+ * per-partition produce-before-commit), {@link PunctuationDriver} (the freshness/event-time ticks),
+ * and {@link RebalanceCoordinator} (assignment deltas → acquire/release). The application supplies
+ * only its {@link Task} logic and the source/state bindings.
  *
  * <p>Inversion of control: the framework drives user code, not the other way round. It depends on
  * nothing but the EventBridge client and the SPIs in this package, so it is reusable by any
@@ -77,7 +81,7 @@ public final class StreamRuntime<R> implements AutoCloseable {
   // Collaborators, constructed in run() once the consumer exists.
   private PartitionTasks<R> tasks;
   private CommitBarrier<R> commitBarrier;
-  private Punctuator<R> punctuator;
+  private PunctuationDriver<R> punctuator;
   private RebalanceCoordinator<R> rebalance;
 
   private volatile boolean running;
@@ -114,7 +118,7 @@ public final class StreamRuntime<R> implements AutoCloseable {
     running = true;
     consumer = client.subscribe(group, instanceId, List.of(sourceTopic)).join();
     tasks = new PartitionTasks<>(taskFactory);
-    punctuator = new Punctuator<>(tasks, timestampExtractor);
+    punctuator = new PunctuationDriver<>(tasks, timestampExtractor);
     commitBarrier =
         new CommitBarrier<>(
             tasks, consumer, sourceTopic, transactionRunner, offsets, preCommitFlushes);

@@ -5,8 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.eventbridge.streaming;
+package io.camunda.eventbridge.streaming.internals;
 
+import io.camunda.eventbridge.streaming.Task;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.ToLongFunction;
@@ -21,13 +22,14 @@ import java.util.function.ToLongFunction;
  *
  * @param <R> the decoded record type
  */
-final class Punctuator<R> {
+public final class PunctuationDriver<R> {
 
   private final PartitionTasks<R> tasks;
   private final ToLongFunction<R> timestampExtractor;
   private final Map<Integer, Long> streamTime = new HashMap<>();
 
-  Punctuator(final PartitionTasks<R> tasks, final ToLongFunction<R> timestampExtractor) {
+  public PunctuationDriver(
+      final PartitionTasks<R> tasks, final ToLongFunction<R> timestampExtractor) {
     this.tasks = tasks;
     this.timestampExtractor = timestampExtractor;
   }
@@ -35,7 +37,7 @@ final class Punctuator<R> {
   /**
    * Advances {@code partition}'s stream time from a processed record (no-op without an extractor).
    */
-  void observe(final int partition, final R record) {
+  public void observe(final int partition, final R record) {
     if (timestampExtractor != null) {
       streamTime.merge(partition, timestampExtractor.applyAsLong(record), Math::max);
     }
@@ -47,7 +49,7 @@ final class Punctuator<R> {
   }
 
   /** The freshness tick: flush, wall-clock punctuation, and event-time punctuation per task. */
-  void punctuate() {
+  public void punctuate() {
     final long wallClockMs = System.currentTimeMillis();
     for (final Map.Entry<Integer, Task<R>> entry : tasks.entries()) {
       final Task<R> task = entry.getValue();

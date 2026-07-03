@@ -5,9 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.eventbridge.streaming;
+package io.camunda.eventbridge.streaming.internals;
 
 import io.camunda.eventbridge.client.Consumer;
+import io.camunda.eventbridge.streaming.OffsetStore;
+import io.camunda.eventbridge.streaming.Task;
+import io.camunda.eventbridge.streaming.TransactionRunner;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +24,7 @@ import java.util.Map;
  *
  * @param <R> the decoded record type
  */
-final class CommitBarrier<R> {
+public final class CommitBarrier<R> {
 
   private final PartitionTasks<R> tasks;
   private final Consumer consumer;
@@ -31,7 +34,7 @@ final class CommitBarrier<R> {
   private final List<Runnable> preCommitFlushes;
   private final Map<Integer, Long> pending = new HashMap<>();
 
-  CommitBarrier(
+  public CommitBarrier(
       final PartitionTasks<R> tasks,
       final Consumer consumer,
       final String sourceTopic,
@@ -49,12 +52,12 @@ final class CommitBarrier<R> {
   /**
    * Records the highest processed offset for {@code partition} to be committed on the next barrier.
    */
-  void recordProcessed(final int partition, final long offset) {
+  public void recordProcessed(final int partition, final long offset) {
     pending.merge(partition, offset, Math::max);
   }
 
   /** Commits every pending partition (see class javadoc). No-op when nothing was processed. */
-  void commit() {
+  public void commit() {
     if (pending.isEmpty()) {
       return;
     }

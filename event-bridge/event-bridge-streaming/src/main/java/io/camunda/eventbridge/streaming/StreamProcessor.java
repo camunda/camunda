@@ -20,7 +20,7 @@ import java.util.List;
  * <p>It is the generic execution model of the streaming framework and implements {@link Task}, so a
  * {@link StreamRuntime} drives it directly. What the stages <em>do</em> (fold-then-aggregate,
  * merge, enrich) is the application's concern — it {@link #add(Stage) adds} the stages it needs
- * (e.g. the fold-then-aggregate {@code ProjectionStage} from the analytics engine).
+ * (e.g. the fold-then-aggregate {@link ProjectionStage}).
  *
  * <p>Single-writer: not thread-safe; one processor per source partition.
  *
