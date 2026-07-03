@@ -277,7 +277,7 @@ public class DynamicNodeIdScalingIT {
   @Nested
   class ZonedScaleUp extends ScaleUp {
 
-    private final List<Zone> zones;
+    protected final List<Zone> zones;
 
     ZonedScaleUp() {
       zones = List.of(new Zone("zoneA", 1, 1, 1000), new Zone("zoneB", 1, 1, 100));
@@ -318,12 +318,21 @@ public class DynamicNodeIdScalingIT {
 
     @Override
     protected String zone() {
-      return ZONES.stream().filter(Optional::isPresent).findFirst().get().get();
+      return zones.getFirst().name();
     }
 
     @Override
     protected String clusterName() {
       return "zoned-" + CLUSTER_NAME;
+    }
+  }
+
+  @Nested
+  class ZonedScaleUpZoneB extends ZonedScaleUp {
+
+    @Override
+    protected String zone() {
+      return zones.get(1).name();
     }
   }
 
@@ -448,10 +457,10 @@ public class DynamicNodeIdScalingIT {
   @Nested
   class ZonedScaleDown extends ScaleDown {
 
-    private final List<Zone> zones;
+    protected final List<Zone> zones;
 
     ZonedScaleDown() {
-      zones = List.of(new Zone("zoneA", 2, 1, 1000), new Zone("zoneB", 1, 1, 100));
+      zones = List.of(new Zone("zoneA", 2, 1, 1000), new Zone("zoneB", 2, 1, 100));
       testCluster =
           TestCluster.builder()
               .withName("zoned-" + CLUSTER_NAME)
@@ -476,12 +485,12 @@ public class DynamicNodeIdScalingIT {
 
     @Override
     protected int initialClusterSize() {
-      return 3;
+      return 4;
     }
 
     @Override
     protected int targetClusterSize() {
-      return 2;
+      return 3;
     }
 
     @Override
@@ -497,6 +506,15 @@ public class DynamicNodeIdScalingIT {
     @Override
     protected int replicationFactor() {
       return zones.stream().mapToInt(Zone::numberOfReplicas).sum();
+    }
+  }
+
+  @Nested
+  class ZonedScaleDownZoneB extends ZonedScaleDown {
+
+    @Override
+    protected String zone() {
+      return zones.get(1).name();
     }
   }
 }
