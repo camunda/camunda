@@ -74,9 +74,8 @@ class SecondaryStorageSchemaConstraintsTest {
       for (final var template : loadTemplates(dir)) {
         final var root = MAPPER.readTree(template.toFile());
         final var mappings = root.path("mappings");
-        final var label = dirLabel(dir) + "/" + template.getFileName();
         walkProperties(
-            mappings.path("properties"), label, template.getFileName().toString(), "", violations);
+            mappings.path("properties"), template.getFileName().toString(), "", violations);
       }
     }
 
@@ -234,7 +233,6 @@ class SecondaryStorageSchemaConstraintsTest {
   private void walkProperties(
       final JsonNode propertiesNode,
       final String fileName,
-      final String rawFileName,
       final String parentPath,
       final List<String> violations) {
     if (propertiesNode == null || propertiesNode.isMissingNode()) {
@@ -250,7 +248,7 @@ class SecondaryStorageSchemaConstraintsTest {
       if (!typeNode.isMissingNode()) {
         final String type = typeNode.asText();
         final boolean isApprovedNestedException =
-            "nested".equals(type) && NESTED_TYPE_EXCEPTIONS.contains(rawFileName + ":" + fieldPath);
+            "nested".equals(type) && NESTED_TYPE_EXCEPTIONS.contains(fileName + ":" + fieldPath);
         if (!ALL_ALLOWED_TYPES.contains(type) && !isApprovedNestedException) {
           violations.add(
               "[%s] Field '%s' uses disallowed type '%s'".formatted(fileName, fieldPath, type));
@@ -263,11 +261,10 @@ class SecondaryStorageSchemaConstraintsTest {
       }
 
       // Recurse into sub-properties of object and nested fields.
-      walkProperties(fieldDef.path("properties"), fileName, rawFileName, fieldPath, violations);
+      walkProperties(fieldDef.path("properties"), fileName, fieldPath, violations);
 
       // Recurse into multi-field "fields" blocks (e.g. keyword + text sub-fields).
-      walkProperties(
-          fieldDef.path("fields"), fileName, rawFileName, fieldPath + ".fields", violations);
+      walkProperties(fieldDef.path("fields"), fileName, fieldPath + ".fields", violations);
     }
   }
 
