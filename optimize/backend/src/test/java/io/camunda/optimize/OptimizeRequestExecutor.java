@@ -19,8 +19,11 @@ import static jakarta.ws.rs.HttpMethod.PUT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import io.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
+import io.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 import io.camunda.optimize.exception.OptimizeIntegrationTestException;
+import io.camunda.optimize.rest.PublicApiRestService;
 import io.camunda.optimize.service.security.AuthCookieService;
 import io.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import io.camunda.optimize.tomcat.OptimizeResourceConstants;
@@ -31,6 +34,7 @@ import jakarta.ws.rs.client.ClientResponseFilter;
 import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.client.Invocation;
 import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -228,6 +232,21 @@ public class OptimizeRequestExecutor {
     path = METRICS_ENDPOINT + "/" + OVERALL_IMPORT_TIME_METRIC.getName();
     method = GET;
     mediaType = MediaType.APPLICATION_JSON_VALUE;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildModifyVariableLabelsRequest(
+      final DefinitionVariableLabelsDto definitionVariableLabelsDto) {
+    path = PublicApiRestService.PUBLIC_PATH + PublicApiRestService.LABELS_SUB_PATH;
+    method = POST;
+    body = Entity.json(definitionVariableLabelsDto);
+    return this;
+  }
+
+  @VisibleForTesting
+  public OptimizeRequestExecutor withBearerToken(final String token) {
+    requestHeaders.put(HttpHeaders.AUTHORIZATION, "Bearer " + token);
+    authCookie = null;
     return this;
   }
 
