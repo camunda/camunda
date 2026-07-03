@@ -12,30 +12,31 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.analytics.shuffle.sbe.Operation;
 import io.camunda.analytics.shuffle.sbe.PayloadKind;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 final class ShuffleEnvelopeCodecTest {
 
   private static ShuffleEnvelope envelope(
-      final PayloadKind kind, final Operation operation, final byte[] payload) {
+      final PayloadKind kind,
+      final Operation operation,
+      final boolean moreChunks,
+      final List<CellDelta> cells) {
     return new ShuffleEnvelope(
-        1_700_000_000_000L,
-        7,
-        42,
-        new byte[] {1, 2, 3},
-        60_000L,
-        3,
-        128L,
-        kind,
-        operation,
-        payload);
+        1_700_000_000_000L, 7, 3, 128L, 0, moreChunks, kind, operation, cells);
   }
 
   @Test
-  void shouldRoundTripAggregateDelta() {
-    // given
+  void shouldRoundTripABatchOfCellDeltas() {
+    // given a segment batch with two cell deltas (different keys / aggregations)
     final ShuffleEnvelope original =
-        envelope(PayloadKind.AGGREGATE_DELTA, Operation.MERGE, new byte[] {9, 8, 7, 6});
+        envelope(
+            PayloadKind.AGGREGATE_DELTA,
+            Operation.MERGE,
+            false,
+            List.of(
+                new CellDelta(1, 60_000L, new byte[] {1, 2}, new byte[] {9, 9}),
+                new CellDelta(2, 60_000L, new byte[] {3}, new byte[] {8, 8, 8})));
 
     // when
     final ShuffleEnvelope decoded =
@@ -43,6 +44,7 @@ final class ShuffleEnvelopeCodecTest {
 
     // then (recursive comparison so the byte[] fields compare by content)
     assertThat(decoded).usingRecursiveComparison().isEqualTo(original);
+    assertThat(decoded.cells()).hasSize(2);
     assertThat(decoded.payloadKind()).isEqualTo(PayloadKind.AGGREGATE_DELTA);
     assertThat(decoded.operation()).isEqualTo(Operation.MERGE);
     assertThat(decoded.segment()).isEqualTo(128L);
@@ -50,37 +52,57 @@ final class ShuffleEnvelopeCodecTest {
   }
 
   @Test
-  void shouldRoundTripReferenceUpsert() {
-    // given a reference record (e.g. process-definition metadata) riding the same shuffle
+  void shouldCarryTheMoreChunksFlagForATruncatedBatch() {
+    // given a chunk that is not the last for its (partition, segment)
     final ShuffleEnvelope original =
-        envelope(PayloadKind.REFERENCE, Operation.UPSERT, new byte[] {0, 0});
+        envelope(
+            PayloadKind.AGGREGATE_DELTA,
+            Operation.MERGE,
+            true,
+            List.of(new CellDelta(1, 0L, new byte[] {1}, new byte[] {2})));
 
-    // when
+    // then the "more follows" flag round-trips, so the batch is self-describing on the wire
+    assertThat(ShuffleEnvelopeCodec.decode(ShuffleEnvelopeCodec.encode(original)).moreChunks())
+        .isTrue();
+  }
+
+  @Test
+  void shouldRoundTripAReferenceUpsert() {
+    // given a reference record (idempotent by key — needs no segment dedup)
+    final ShuffleEnvelope original =
+        envelope(
+            PayloadKind.REFERENCE,
+            Operation.UPSERT,
+            false,
+            List.of(new CellDelta(0, 0L, new byte[] {7}, new byte[] {0, 0})));
+
+    // then dispatch fields are readable from the header alone
     final ShuffleEnvelope decoded =
         ShuffleEnvelopeCodec.decode(ShuffleEnvelopeCodec.encode(original));
-
-    // then Stage 2 can dispatch on (payloadKind, operation) from the header alone
     assertThat(decoded.payloadKind()).isEqualTo(PayloadKind.REFERENCE);
     assertThat(decoded.operation()).isEqualTo(Operation.UPSERT);
     assertThat(decoded).usingRecursiveComparison().isEqualTo(original);
   }
 
   @Test
-  void shouldRoundTripEmptyKeyAndPayload() {
-    final ShuffleEnvelope original = envelope(PayloadKind.REFERENCE, Operation.DELETE, new byte[0]);
-    final ShuffleEnvelope decoded =
-        ShuffleEnvelopeCodec.decode(ShuffleEnvelopeCodec.encode(original));
-    assertThat(decoded.operation()).isEqualTo(Operation.DELETE);
-    assertThat(decoded.payload()).isEmpty();
+  void shouldRoundTripAnEmptyBatch() {
+    final ShuffleEnvelope original =
+        envelope(PayloadKind.AGGREGATE_DELTA, Operation.MERGE, false, List.of());
+    assertThat(ShuffleEnvelopeCodec.decode(ShuffleEnvelopeCodec.encode(original)).cells())
+        .isEmpty();
   }
 
   @Test
   void shouldEncodeDeterministically() {
     // given
     final ShuffleEnvelope original =
-        envelope(PayloadKind.AGGREGATE_DELTA, Operation.MERGE, new byte[] {5, 5, 5});
+        envelope(
+            PayloadKind.AGGREGATE_DELTA,
+            Operation.MERGE,
+            false,
+            List.of(new CellDelta(1, 0L, new byte[] {5, 5}, new byte[] {6})));
 
-    // then the same envelope encodes to identical bytes (re-emit safe), and re-encode is stable
+    // then the same envelope encodes to identical bytes (re-emit safe), stable across re-encode
     final byte[] first = ShuffleEnvelopeCodec.encode(original);
     assertThat(ShuffleEnvelopeCodec.encode(original)).isEqualTo(first);
     assertThat(ShuffleEnvelopeCodec.encode(ShuffleEnvelopeCodec.decode(first))).isEqualTo(first);
@@ -90,7 +112,12 @@ final class ShuffleEnvelopeCodecTest {
   void shouldRejectFrameOfAnotherSchema() {
     // given a frame whose SBE schemaId (uint16 at header offset 4, little-endian) is corrupted
     final byte[] frame =
-        ShuffleEnvelopeCodec.encode(envelope(PayloadKind.REFERENCE, Operation.UPSERT, new byte[0]));
+        ShuffleEnvelopeCodec.encode(
+            envelope(
+                PayloadKind.REFERENCE,
+                Operation.UPSERT,
+                false,
+                List.of(new CellDelta(0, 0L, new byte[] {1}, new byte[] {1}))));
     frame[4] = (byte) 0xFF;
 
     // then decoding refuses rather than mis-reading another schema's message

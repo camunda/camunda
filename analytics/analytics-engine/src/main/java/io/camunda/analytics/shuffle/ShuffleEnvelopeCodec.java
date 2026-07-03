@@ -9,20 +9,22 @@ package io.camunda.analytics.shuffle;
 
 import io.camunda.analytics.shuffle.sbe.MessageHeaderDecoder;
 import io.camunda.analytics.shuffle.sbe.MessageHeaderEncoder;
-import io.camunda.analytics.shuffle.sbe.Operation;
-import io.camunda.analytics.shuffle.sbe.PayloadKind;
 import io.camunda.analytics.shuffle.sbe.ShuffleEnvelopeDecoder;
+import io.camunda.analytics.shuffle.sbe.ShuffleEnvelopeDecoder.CellsDecoder;
 import io.camunda.analytics.shuffle.sbe.ShuffleEnvelopeEncoder;
+import io.camunda.analytics.shuffle.sbe.ShuffleEnvelopeEncoder.CellsEncoder;
+import java.util.ArrayList;
+import java.util.List;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * SBE codec for {@link ShuffleEnvelope}, the analytics shuffle wire format — the same
- * generated-encoder/decoder approach the Event Bridge uses for its own protocol, rather than a
- * hand-rolled frame. Versioning and schema evolution come from the SBE {@code messageHeader}
- * (schemaId + version); a frame that is not this schema/message is rejected. Deterministic:
- * encoding depends only on the envelope's fields.
+ * generated-encoder/decoder approach the Event Bridge uses for its own protocol. Versioning and
+ * schema evolution come from the SBE {@code messageHeader}; a frame that is not this schema/message
+ * is rejected. Deterministic: encoding depends only on the envelope's fields, so a re-emitted batch
+ * serialises identically.
  */
 public final class ShuffleEnvelopeCodec {
 
@@ -31,18 +33,23 @@ public final class ShuffleEnvelopeCodec {
   public static byte[] encode(final ShuffleEnvelope envelope) {
     final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
     final ShuffleEnvelopeEncoder encoder = new ShuffleEnvelopeEncoder();
-    encoder
-        .wrapAndApplyHeader(buffer, 0, new MessageHeaderEncoder())
-        .producedAt(envelope.producedAt())
-        .schemaVersion(envelope.schemaVersion())
-        .aggId(envelope.aggId())
-        .windowStart(envelope.windowStart())
-        .producerPartition(envelope.producerPartition())
-        .segment(envelope.segment())
-        .payloadKind(envelope.payloadKind())
-        .operation(envelope.operation());
-    encoder.putKey(envelope.key(), 0, envelope.key().length);
-    encoder.putPayload(envelope.payload(), 0, envelope.payload().length);
+    final CellsEncoder cells =
+        encoder
+            .wrapAndApplyHeader(buffer, 0, new MessageHeaderEncoder())
+            .producedAt(envelope.producedAt())
+            .schemaVersion(envelope.schemaVersion())
+            .producerPartition(envelope.producerPartition())
+            .segment(envelope.segment())
+            .chunk(envelope.chunk())
+            .moreChunks((short) (envelope.moreChunks() ? 1 : 0))
+            .payloadKind(envelope.payloadKind())
+            .operation(envelope.operation())
+            .cellsCount(envelope.cells().size());
+    for (final CellDelta cell : envelope.cells()) {
+      cells.next().aggId(cell.aggId()).windowStart(cell.windowStart());
+      cells.putKey(cell.key(), 0, cell.key().length);
+      cells.putPayload(cell.payload(), 0, cell.payload().length);
+    }
 
     final int length = MessageHeaderEncoder.ENCODED_LENGTH + encoder.encodedLength();
     final byte[] frame = new byte[length];
@@ -67,28 +74,33 @@ public final class ShuffleEnvelopeCodec {
     decoder.wrap(buffer, header.encodedLength(), header.blockLength(), header.version());
     final long producedAt = decoder.producedAt();
     final int schemaVersion = decoder.schemaVersion();
-    final int aggId = decoder.aggId();
-    final long windowStart = decoder.windowStart();
     final int producerPartition = decoder.producerPartition();
     final long segment = decoder.segment();
-    final PayloadKind payloadKind = decoder.payloadKind();
-    final Operation operation = decoder.operation();
-    // variable-length fields must be read in schema order: key, then payload
-    final byte[] key = new byte[decoder.keyLength()];
-    decoder.getKey(key, 0, key.length);
-    final byte[] payload = new byte[decoder.payloadLength()];
-    decoder.getPayload(payload, 0, payload.length);
+    final int chunk = decoder.chunk();
+    final boolean moreChunks = decoder.moreChunks() != 0;
+    final var payloadKind = decoder.payloadKind();
+    final var operation = decoder.operation();
+
+    final List<CellDelta> cells = new ArrayList<>();
+    for (final CellsDecoder cell : decoder.cells()) {
+      final int aggId = cell.aggId();
+      final long windowStart = cell.windowStart();
+      final byte[] key = new byte[cell.keyLength()];
+      cell.getKey(key, 0, key.length);
+      final byte[] payload = new byte[cell.payloadLength()];
+      cell.getPayload(payload, 0, payload.length);
+      cells.add(new CellDelta(aggId, windowStart, key, payload));
+    }
 
     return new ShuffleEnvelope(
         producedAt,
         schemaVersion,
-        aggId,
-        key,
-        windowStart,
         producerPartition,
         segment,
+        chunk,
+        moreChunks,
         payloadKind,
         operation,
-        payload);
+        cells);
   }
 }
