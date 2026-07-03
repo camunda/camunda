@@ -13,10 +13,22 @@
     SELECT COUNT(*) FROM ANALYTICS_DATASET
   </select>
 
-  <select id="selectDatasets"
+  <select id="searchDatasets"
     resultType="io.camunda.analytics.store.rdbms.metadata.row.DatasetRow">
     SELECT CUBE_ID, NAME, SOURCE_FACT, KIND, KEY_FIELD, LATENESS_MS, SCHEMA_VERSION
-    FROM ANALYTICS_DATASET ORDER BY CUBE_ID
+    FROM ANALYTICS_DATASET
+    <where>
+      <if test="name != null">AND NAME = #{name}</if>
+      <if test="sourceFact != null">AND SOURCE_FACT = #{sourceFact}</if>
+      <if test="kind != null">AND KIND = #{kind}</if>
+    </where>
+    ORDER BY CUBE_ID
+  </select>
+
+  <select id="selectDatasetById"
+    resultType="io.camunda.analytics.store.rdbms.metadata.row.DatasetRow">
+    SELECT CUBE_ID, NAME, SOURCE_FACT, KIND, KEY_FIELD, LATENESS_MS, SCHEMA_VERSION
+    FROM ANALYTICS_DATASET WHERE CUBE_ID = #{cubeId}
   </select>
 
   <insert id="insertDataset"

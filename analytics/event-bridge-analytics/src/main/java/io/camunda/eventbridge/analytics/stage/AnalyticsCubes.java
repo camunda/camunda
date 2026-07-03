@@ -14,6 +14,7 @@ import io.camunda.analytics.dataset.DatasetDeclaration;
 import io.camunda.analytics.dataset.DatasetKind;
 import io.camunda.analytics.dataset.DatasetRegistry;
 import io.camunda.analytics.dataset.RegisteredDataset;
+import io.camunda.analytics.dataset.store.DatasetSpecQuery;
 import io.camunda.analytics.dataset.store.MetadataStore;
 import io.camunda.analytics.dimension.DimensionType;
 import io.camunda.analytics.fact.FactType;
@@ -62,11 +63,11 @@ public final class AnalyticsCubes {
             MeterCatalog.withDefaults(), new MeterRegistry(metadataStore.meterIdStore()));
     for (final DatasetDeclaration declaration : declarations()) {
       final RegisteredDataset registered = registry.admit(declaration, Map.of());
-      metadataStore.datasetSpecStore().save(registered);
+      metadataStore.datasetSpecStore().create(registered);
       compiler.compile(registered.cubeId(), declaration); // side effect: allocate + persist aggIds
     }
     for (final DatasetDeclaration declaration : projectionDeclarations()) {
-      metadataStore.datasetSpecStore().save(registry.admit(declaration, Map.of()));
+      metadataStore.datasetSpecStore().create(registry.admit(declaration, Map.of()));
     }
   }
 
@@ -78,12 +79,11 @@ public final class AnalyticsCubes {
         new DatasetCompiler(
             MeterCatalog.withDefaults(), new MeterRegistry(metadataStore.meterIdStore()));
     final List<ActiveCube> cubes = new ArrayList<>();
-    for (final RegisteredDataset registered : metadataStore.datasetSpecStore().loadAll()) {
-      if (registered.declaration().kind() == DatasetKind.AGGREGATED) {
-        cubes.add(
-            new ActiveCube(
-                registered, compiler.compile(registered.cubeId(), registered.declaration())));
-      }
+    for (final RegisteredDataset registered :
+        metadataStore.datasetSpecStore().search(DatasetSpecQuery.byKind(DatasetKind.AGGREGATED))) {
+      cubes.add(
+          new ActiveCube(
+              registered, compiler.compile(registered.cubeId(), registered.declaration())));
     }
     return List.copyOf(cubes);
   }
@@ -94,13 +94,12 @@ public final class AnalyticsCubes {
         new DatasetCompiler(
             MeterCatalog.withDefaults(), new MeterRegistry(metadataStore.meterIdStore()));
     final List<ActiveProjection> projections = new ArrayList<>();
-    for (final RegisteredDataset registered : metadataStore.datasetSpecStore().loadAll()) {
-      if (registered.declaration().kind() == DatasetKind.PROJECTED) {
-        projections.add(
-            new ActiveProjection(
-                registered,
-                compiler.compileProjection(registered.cubeId(), registered.declaration())));
-      }
+    for (final RegisteredDataset registered :
+        metadataStore.datasetSpecStore().search(DatasetSpecQuery.byKind(DatasetKind.PROJECTED))) {
+      projections.add(
+          new ActiveProjection(
+              registered,
+              compiler.compileProjection(registered.cubeId(), registered.declaration())));
     }
     return List.copyOf(projections);
   }

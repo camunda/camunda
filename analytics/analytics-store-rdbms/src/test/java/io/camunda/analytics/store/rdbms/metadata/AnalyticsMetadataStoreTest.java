@@ -11,8 +11,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.analytics.dataset.DatasetDeclaration;
+import io.camunda.analytics.dataset.DatasetKind;
 import io.camunda.analytics.dataset.DatasetRegistry;
 import io.camunda.analytics.dataset.RegisteredDataset;
+import io.camunda.analytics.dataset.store.DatasetSpecQuery;
 import io.camunda.analytics.dataset.store.MetadataStore;
 import io.camunda.analytics.dimension.DimensionType;
 import io.camunda.analytics.fact.FactType;
@@ -73,14 +75,22 @@ final class AnalyticsMetadataStoreTest {
                 .build(),
             Map.of());
 
-    // when persisted and reloaded
+    // when persisted
     assertThat(store.datasetSpecStore().isEmpty()).isTrue();
-    store.datasetSpecStore().save(sla);
-    store.datasetSpecStore().save(raw);
+    store.datasetSpecStore().create(sla);
+    store.datasetSpecStore().create(raw);
 
-    // then the reconstructed specs equal the originals (declaration + activation + ids)
+    // then create/read/search all round-trip the reconstructed specs (declaration + activation +
+    // ids)
     assertThat(store.datasetSpecStore().isEmpty()).isFalse();
-    assertThat(store.datasetSpecStore().loadAll()).containsExactlyInAnyOrder(sla, raw);
+    assertThat(store.datasetSpecStore().search(DatasetSpecQuery.all()))
+        .containsExactlyInAnyOrder(sla, raw);
+    assertThat(store.datasetSpecStore().read(sla.cubeId())).contains(sla);
+    assertThat(store.datasetSpecStore().read(999L)).isEmpty();
+    assertThat(store.datasetSpecStore().search(DatasetSpecQuery.byName("raw-instances")))
+        .containsExactly(raw);
+    assertThat(store.datasetSpecStore().search(DatasetSpecQuery.byKind(DatasetKind.PROJECTED)))
+        .containsExactly(raw);
   }
 
   @Test

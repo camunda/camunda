@@ -12,6 +12,7 @@ import io.camunda.analytics.dataset.DatasetKind;
 import io.camunda.analytics.dataset.DimensionSpec;
 import io.camunda.analytics.dataset.FilterPredicate;
 import io.camunda.analytics.dataset.RegisteredDataset;
+import io.camunda.analytics.dataset.store.DatasetSpecQuery;
 import io.camunda.analytics.dataset.store.DatasetSpecStore;
 import io.camunda.analytics.dimension.DimensionType;
 import io.camunda.analytics.fact.FactType;
@@ -28,6 +29,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -56,7 +58,7 @@ final class RdbmsDatasetSpecStore implements DatasetSpecStore {
   }
 
   @Override
-  public void save(final RegisteredDataset registered) {
+  public void create(final RegisteredDataset registered) {
     final DatasetDeclaration declaration = registered.declaration();
     final long cubeId = registered.cubeId();
     try (SqlSession session = sessionFactory.openSession()) {
@@ -113,39 +115,64 @@ final class RdbmsDatasetSpecStore implements DatasetSpecStore {
   }
 
   @Override
-  public List<RegisteredDataset> loadAll() {
+  public Optional<RegisteredDataset> read(final long cubeId) {
     try (SqlSession session = sessionFactory.openSession()) {
       final DatasetSpecMapper mapper = session.getMapper(DatasetSpecMapper.class);
-      final Map<Long, List<FilterPredicate>> filters = filtersByCube(mapper.selectFilters());
-      final Map<Long, List<DimensionSpec>> dimensions = dimensionsByCube(mapper.selectDimensions());
-      final Map<Long, List<Meter>> meters =
-          metersByCube(mapper.selectMeters(), mapper.selectMeterParams());
-      final Map<Long, List<Long>> windows = windowsByCube(mapper.selectWindows());
-      final Map<Long, Map<Integer, Long>> activation = activationByCube(mapper.selectActivation());
-
-      final List<RegisteredDataset> datasets = new ArrayList<>();
-      for (final DatasetRow row : mapper.selectDatasets()) {
-        final long cubeId = row.getCubeId();
-        final DatasetDeclaration declaration =
-            new DatasetDeclaration(
-                row.getName(),
-                FactType.valueOf(row.getSourceFact()),
-                DatasetKind.valueOf(row.getKind()),
-                filters.getOrDefault(cubeId, List.of()),
-                dimensions.getOrDefault(cubeId, List.of()),
-                meters.getOrDefault(cubeId, List.of()),
-                windows.getOrDefault(cubeId, List.of()),
-                row.getKeyField(),
-                row.getLatenessMs());
-        datasets.add(
-            new RegisteredDataset(
-                cubeId,
-                declaration,
-                activation.getOrDefault(cubeId, Map.of()),
-                row.getSchemaVersion()));
-      }
-      return datasets;
+      final DatasetRow row = mapper.selectDatasetById(cubeId);
+      return row == null ? Optional.empty() : Optional.of(assemble(mapper, List.of(row)).get(0));
     }
+  }
+
+  @Override
+  public List<RegisteredDataset> search(final DatasetSpecQuery query) {
+    try (SqlSession session = sessionFactory.openSession()) {
+      final DatasetSpecMapper mapper = session.getMapper(DatasetSpecMapper.class);
+      final List<DatasetRow> rows =
+          mapper.searchDatasets(
+              query.name(),
+              query.sourceFact() == null ? null : query.sourceFact().name(),
+              query.kind() == null ? null : query.kind().name());
+      return assemble(mapper, rows);
+    }
+  }
+
+  /**
+   * Loads the child rows once and rebuilds a {@link RegisteredDataset} for each matched dataset.
+   */
+  private static List<RegisteredDataset> assemble(
+      final DatasetSpecMapper mapper, final List<DatasetRow> datasetRows) {
+    if (datasetRows.isEmpty()) {
+      return List.of();
+    }
+    final Map<Long, List<FilterPredicate>> filters = filtersByCube(mapper.selectFilters());
+    final Map<Long, List<DimensionSpec>> dimensions = dimensionsByCube(mapper.selectDimensions());
+    final Map<Long, List<Meter>> meters =
+        metersByCube(mapper.selectMeters(), mapper.selectMeterParams());
+    final Map<Long, List<Long>> windows = windowsByCube(mapper.selectWindows());
+    final Map<Long, Map<Integer, Long>> activation = activationByCube(mapper.selectActivation());
+
+    final List<RegisteredDataset> datasets = new ArrayList<>(datasetRows.size());
+    for (final DatasetRow row : datasetRows) {
+      final long cubeId = row.getCubeId();
+      final DatasetDeclaration declaration =
+          new DatasetDeclaration(
+              row.getName(),
+              FactType.valueOf(row.getSourceFact()),
+              DatasetKind.valueOf(row.getKind()),
+              filters.getOrDefault(cubeId, List.of()),
+              dimensions.getOrDefault(cubeId, List.of()),
+              meters.getOrDefault(cubeId, List.of()),
+              windows.getOrDefault(cubeId, List.of()),
+              row.getKeyField(),
+              row.getLatenessMs());
+      datasets.add(
+          new RegisteredDataset(
+              cubeId,
+              declaration,
+              activation.getOrDefault(cubeId, Map.of()),
+              row.getSchemaVersion()));
+    }
+    return datasets;
   }
 
   private static Map<Long, List<FilterPredicate>> filtersByCube(final List<FilterRow> rows) {

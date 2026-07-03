@@ -15,6 +15,7 @@ import io.camunda.analytics.store.rdbms.metadata.row.MeterParamRow;
 import io.camunda.analytics.store.rdbms.metadata.row.MeterRow;
 import io.camunda.analytics.store.rdbms.metadata.row.WindowRow;
 import java.util.List;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * MyBatis mapper for the normalized dataset-spec tables. SQL lives in the co-located XML mapper
@@ -26,7 +27,13 @@ public interface DatasetSpecMapper {
 
   long countDatasets();
 
-  List<DatasetRow> selectDatasets();
+  /** Dynamic search: each non-null argument is an equality filter (see the XML {@code <where>}). */
+  List<DatasetRow> searchDatasets(
+      @Param("name") String name,
+      @Param("sourceFact") String sourceFact,
+      @Param("kind") String kind);
+
+  DatasetRow selectDatasetById(@Param("cubeId") long cubeId);
 
   void insertDataset(DatasetRow row);
 

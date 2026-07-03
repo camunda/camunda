@@ -9,22 +9,29 @@ package io.camunda.analytics.dataset.store;
 
 import io.camunda.analytics.dataset.RegisteredDataset;
 import java.util.List;
+import java.util.Optional;
 
 /**
- * The backend-neutral persistence of dataset specs — the metadata plane's source of truth for which
- * datasets exist. The control plane bootstraps declarations here once; both stages reload the full
- * {@link RegisteredDataset}s and compile them, so a dataset change is a data change, not a
- * redeploy. A backend module implements this (RDBMS as normalized columns; an index for ES/OS);
- * callers depend on the interface, never on a {@code DataSource} or SQL.
+ * The backend-neutral control-plane store of dataset specs — the source of truth for which datasets
+ * exist, supporting <b>create</b>, <b>read</b>, and <b>search</b>. The control plane creates
+ * declarations here; both stages read/search them and compile them, so a dataset change is a data
+ * change, not a redeploy. A backend module implements this over RDBMS (normalized rows), ES, or OS
+ * (a spec document); callers depend on the interface and the neutral {@link RegisteredDataset} /
+ * {@link DatasetSpecQuery}, never on SQL or a client.
  */
 public interface DatasetSpecStore {
 
   /** Whether any dataset spec is stored (drives the idempotent bootstrap). */
   boolean isEmpty();
 
-  /** Persists one registered dataset (its declaration, activation vector, and schema version). */
-  void save(RegisteredDataset registered);
+  /** Persists one dataset spec (its declaration, activation vector, and schema version). */
+  void create(RegisteredDataset spec);
 
-  /** Reloads every stored spec. */
-  List<RegisteredDataset> loadAll();
+  /** Reads a single spec by its {@code cubeId}, or empty if absent. */
+  Optional<RegisteredDataset> read(long cubeId);
+
+  /**
+   * Returns the specs matching {@code query}; {@link DatasetSpecQuery#all()} returns every spec.
+   */
+  List<RegisteredDataset> search(DatasetSpecQuery query);
 }
