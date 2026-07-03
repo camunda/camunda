@@ -24,10 +24,18 @@ See [CSL ADR-0016](https://github.com/camunda/camunda-security-library/blob/main
 
 ## The translation boundary
 
-`AuthzModelMapper` (in the `service` module) is the single point that translates between Zeebe protocol enum values and CSL enum values. It sits at the seam between the engine layer and the layers above.
+`AuthzModelMapper` (in the `security-protocol` module, `io.camunda.zeebe.protocol.record.mapper`) is the single point that translates between Zeebe protocol enum values and CSL enum values. It sits at the seam between the engine layer and the layers above.
 
 - If you are writing code **above** `AuthzModelMapper` (Service, Search, Exporter, Persistence): use CSL enums.
 - If you are writing code **below** it (engine, processor, log-stream): use Zeebe protocol enums.
+
+### Engine code calling a CSL port
+
+There is one case where engine-layer code sits below the seam yet must still translate: when it
+calls **out into a CSL port** (e.g. `AuthorizationCheckPort`), which speaks CSL enums. Translate at
+the call site with `AuthzModelMapper.fromProtocol(...)` — do **not** hand-roll
+`CslEnum.valueOf(protocolEnum.name())`. Example: `PermissionsBehavior` converts a protocol
+`PermissionType` before invoking `AuthorizationCheckPort.check(...)`.
 
 ## Adding a new ResourceType or PermissionType
 
