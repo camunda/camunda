@@ -34,6 +34,7 @@ import io.camunda.operate.schema.templates.ProcessInstanceDependant;
 import io.camunda.operate.schema.templates.SequenceFlowTemplate;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.MetricAssert;
+import io.camunda.operate.util.MetricAssert.ValueMatcher;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.ZeebeTestUtil;
@@ -71,6 +72,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.test.context.ContextConfiguration;
 
 @ContextConfiguration(initializers = ManagementPropertyRemoval.class)
@@ -101,6 +103,8 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
 
   private ProcessInstancesArchiverJob processInstancesArchiverJob;
 
+  private ProcessInstancesByIdArchiverJob processInstancesByIdArchiverJob;
+
   private final Random random = new Random();
 
   private DateTimeFormatter dateTimeFormatter;
@@ -121,6 +125,16 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
             processInstanceDependantTemplates,
             metrics,
             archiver.getArchiverRepository());
+    processInstancesByIdArchiverJob =
+        beanFactory.getBean(
+            ProcessInstancesByIdArchiverJob.class,
+            archiver,
+            partitionHolder.getPartitionIds(),
+            processInstanceTemplate,
+            processInstanceDependantTemplates,
+            metrics,
+            archiver.getArchiverRepository(),
+            buildScheduler());
     cancelProcessInstanceHandler.setZeebeClient(super.getClient());
     clearMetrics();
   }
@@ -236,16 +250,12 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
 
     resetZeebeTime();
 
-    final ProcessInstancesByIdArchiverJob job =
-        beanFactory.getBean(
-            ProcessInstancesByIdArchiverJob.class, archiver, partitionHolder.getPartitionIds());
-
     // when
-    assertThat(job.archiveNextBatch().join()).isEqualTo(count1);
+    assertThat(processInstancesByIdArchiverJob.archiveNextBatch().join()).isEqualTo(count1);
     searchTestRule.refreshSerchIndexes();
-    assertThat(job.archiveNextBatch().join()).isEqualTo(count2);
+    assertThat(processInstancesByIdArchiverJob.archiveNextBatch().join()).isEqualTo(count2);
     searchTestRule.refreshSerchIndexes();
-    assertThat(job.archiveNextBatch().join()).isEqualTo(0);
+    assertThat(processInstancesByIdArchiverJob.archiveNextBatch().join()).isEqualTo(0);
     searchTestRule.refreshSerchIndexes();
 
     // then
@@ -259,7 +269,7 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
     assertThatMetricsFrom(
         mockMvc,
         allOf(
-            new MetricAssert.ValueMatcher(
+            new ValueMatcher(
                 "operate_archived_process_instances_total",
                 d -> d.doubleValue() == count1 + count2),
             containsString("operate_archiver_request_duration")));
@@ -289,14 +299,10 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
 
       resetZeebeTime();
 
-      final ProcessInstancesByIdArchiverJob job =
-          beanFactory.getBean(
-              ProcessInstancesByIdArchiverJob.class, archiver, partitionHolder.getPartitionIds());
-
       // when
-      assertThat(job.archiveNextBatch().join()).isEqualTo(count);
+      assertThat(processInstancesByIdArchiverJob.archiveNextBatch().join()).isEqualTo(count);
       searchTestRule.refreshSerchIndexes();
-      assertThat(job.archiveNextBatch().join()).isEqualTo(0);
+      assertThat(processInstancesByIdArchiverJob.archiveNextBatch().join()).isEqualTo(0);
       searchTestRule.refreshSerchIndexes();
 
       // then — all docs must be in destination index despite multiple searchAfter pages
@@ -682,11 +688,11 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
     resetZeebeTime();
 
     // when
-    assertThat(processInstancesArchiverJob.archiveNextBatch().join()).isEqualTo(1);
+    assertThat(processInstancesByIdArchiverJob.archiveNextBatch().join()).isEqualTo(1);
     searchTestRule.refreshSerchIndexes();
 
     // then
-    assertInstancesInCorrectIndex(1, Arrays.asList(processInstanceKey), endDate, true);
+    assertInstancesInCorrectIndex(1, List.of(processInstanceKey), endDate, true);
   }
 
   private void deployProcessWithOneActivity(final String processId, final String activityId) {
@@ -882,5 +888,14 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
         // 4. Enable the operation executor
         .then()
         .enableOperationExecutor();
+  }
+
+  protected static ThreadPoolTaskScheduler buildScheduler() {
+    final var scheduler = new ThreadPoolTaskScheduler();
+    scheduler.setPoolSize(1);
+    scheduler.setThreadNamePrefix("archiver-test-");
+    scheduler.setDaemon(true);
+    scheduler.initialize();
+    return scheduler;
   }
 }
