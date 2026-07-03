@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.eventbridge.streaming.shuffle;
+package io.camunda.analytics.shuffle;
 
 /**
  * Publishes {@link Partial}s to the facts topic (the shuffle). The library defines the contract;

@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.eventbridge.streaming.shuffle;
+package io.camunda.analytics.shuffle;
 
 /**
  * A pre-aggregated windowed partial — the unit shuffled from Stage 1 (combiner) to Stage 2

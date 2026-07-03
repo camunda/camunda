@@ -5,8 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.eventbridge.streaming.aggregate;
+package io.camunda.analytics.shuffle;
 
+import io.camunda.eventbridge.streaming.aggregate.Codec;
 import java.nio.ByteBuffer;
 
 /**

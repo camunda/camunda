@@ -8,15 +8,15 @@
 package io.camunda.eventbridge.analytics.stage;
 
 import io.camunda.analytics.fact.ProcessExecutionFact;
+import io.camunda.analytics.shuffle.FactPublishSink;
+import io.camunda.analytics.shuffle.MergingRollup;
+import io.camunda.analytics.shuffle.PartialPublisher;
+import io.camunda.analytics.shuffle.WriterKey;
+import io.camunda.analytics.shuffle.WriterKeyCodec;
 import io.camunda.eventbridge.streaming.TransactionRunner;
 import io.camunda.eventbridge.streaming.aggregate.DurableMaterializedRollup;
-import io.camunda.eventbridge.streaming.aggregate.FactPublishSink;
-import io.camunda.eventbridge.streaming.aggregate.MergingRollup;
 import io.camunda.eventbridge.streaming.aggregate.Rollup;
 import io.camunda.eventbridge.streaming.aggregate.TypeRoutingRollup;
-import io.camunda.eventbridge.streaming.aggregate.WriterKey;
-import io.camunda.eventbridge.streaming.aggregate.WriterKeyCodec;
-import io.camunda.eventbridge.streaming.shuffle.PartialPublisher;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.window.TumblingWindows;
 import io.camunda.zeebe.db.impl.DbBytes;

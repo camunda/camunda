@@ -7,11 +7,11 @@
  */
 package io.camunda.eventbridge.analytics.stage;
 
+import io.camunda.analytics.shuffle.Partial;
+import io.camunda.analytics.shuffle.PartialCodec;
+import io.camunda.analytics.shuffle.PartialPublisher;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.client.EventBridgeClient.BatchPublisher;
-import io.camunda.eventbridge.streaming.shuffle.Partial;
-import io.camunda.eventbridge.streaming.shuffle.PartialCodec;
-import io.camunda.eventbridge.streaming.shuffle.PartialPublisher;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;

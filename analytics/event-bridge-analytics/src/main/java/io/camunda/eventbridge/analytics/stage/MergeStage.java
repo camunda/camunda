@@ -7,9 +7,9 @@
  */
 package io.camunda.eventbridge.analytics.stage;
 
+import io.camunda.analytics.shuffle.MergingRollup;
+import io.camunda.analytics.shuffle.Partial;
 import io.camunda.eventbridge.streaming.Stage;
-import io.camunda.eventbridge.streaming.aggregate.MergingRollup;
-import io.camunda.eventbridge.streaming.shuffle.Partial;
 import java.util.Map;
 
 /**
