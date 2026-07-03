@@ -15,17 +15,55 @@ package io.camunda.eventbridge.streaming;
  *
  * <p>There is exactly one Task per source partition and the runtime drives it from a single thread,
  * so a Task never needs synchronization and is guaranteed per-partition single-writer semantics.
- * The runtime owns offsets and durability; a Task owns only its processing state.
+ *
+ * <p><b>Durability model.</b> By default the runtime owns durability: it persists the consumed
+ * offset and calls {@link #checkpoint()} / {@link #preCommitFlush()} around a shared transaction. A
+ * task that owns per-partition state (its own state backend, offset store and output sink — the
+ * sharded model) instead returns {@code true} from {@link #ownsDurability()} and takes over: the
+ * runtime then calls {@link #restore()} to recover its state and last offset, and {@link
+ * #commit(long)} to make one atomic per-partition cut. This is what lets each partition be an
+ * isolated shard.
  *
  * @param <R> the decoded record type the task consumes
  */
 public interface Task<R> {
+
+  /** Offset value meaning "nothing committed yet for this partition". */
+  long NO_OFFSET = -1L;
 
   /** Processes one source record (in per-partition offset order). */
   void process(R record);
 
   /** Called once after durable state has been restored, before any {@link #process}. */
   default void init() {}
+
+  /**
+   * Whether this task owns its partition's durability (its own state backend, offset store and
+   * output sink) rather than deferring to the runtime's shared offset store and transaction. When
+   * {@code true} the runtime drives {@link #restore()} and {@link #commit(long)} instead of {@link
+   * #checkpoint()} + its own offset store. Default {@code false}.
+   */
+  default boolean ownsDurability() {
+    return false;
+  }
+
+  /**
+   * Restores this partition's durable state and returns the last committed source offset (or {@link
+   * #NO_OFFSET}), so the runtime can skip records already folded into that state. Called once when
+   * the task is materialized, before any {@link #process}. Only consulted when {@link
+   * #ownsDurability()} is {@code true}.
+   */
+  default long restore() {
+    return NO_OFFSET;
+  }
+
+  /**
+   * The produce-before-commit barrier for this partition: make produced output durable, then
+   * persist state and {@code offset} in one atomic transaction the task owns. Only called when
+   * {@link #ownsDurability()} is {@code true}; otherwise the runtime persists the offset and calls
+   * {@link #checkpoint()} in its own transaction.
+   */
+  default void commit(final long offset) {}
 
   /** Emit buffered/produced output so latency stays bounded (called before {@link #checkpoint}). */
   default void flush() {}

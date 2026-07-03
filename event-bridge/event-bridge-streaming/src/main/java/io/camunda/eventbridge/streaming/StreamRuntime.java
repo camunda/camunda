@@ -77,6 +77,14 @@ public final class StreamRuntime<R> implements AutoCloseable {
   private final Map<Integer, Task<R>> tasks = new HashMap<>();
   private final Map<Integer, Long> pending = new HashMap<>();
 
+  /**
+   * Per-partition last committed offset known at startup/materialization: records at or below it
+   * are already folded into durable state and are skipped. For runtime-managed offsets this equals
+   * the sought offset (so it never skips live records); for a self-owning task it is what lets the
+   * shard resume by deduplicating the small replay gap instead of seeking.
+   */
+  private final Map<Integer, Long> restored = new HashMap<>();
+
   /** Per-partition stream time: the max event timestamp seen, for event-time punctuation. */
   private final Map<Integer, Long> streamTime = new HashMap<>();
 
@@ -173,6 +181,10 @@ public final class StreamRuntime<R> implements AutoCloseable {
   private void handleRecord(final Event event) {
     final int partition = event.partitionId();
     final long offset = event.position();
+    final Task<R> task = taskFor(partition);
+    if (offset <= restored.getOrDefault(partition, Task.NO_OFFSET)) {
+      return; // already folded into restored state — the resume-gap dedup for a self-owning shard
+    }
     final R record;
     try {
       record = deserializer.deserialize(event.payload(), partition, offset);
@@ -181,7 +193,7 @@ public final class StreamRuntime<R> implements AutoCloseable {
       return;
     }
     try {
-      taskFor(partition).process(record);
+      task.process(record);
     } catch (final RuntimeException e) {
       onRecordError(partition, offset, e);
       return;
@@ -244,6 +256,9 @@ public final class StreamRuntime<R> implements AutoCloseable {
   /** Seeks each partition to just after its last committed offset (co-committed with state). */
   private void restore() {
     final Map<Integer, Long> committed = offsets.restore();
+    // Remember the baseline so per-record dedup never re-folds an already-committed record. Tasks
+    // that own their durability restore their own baseline lazily in taskFor instead.
+    restored.putAll(committed);
     if (committed.isEmpty()) {
       return;
     }
@@ -261,6 +276,11 @@ public final class StreamRuntime<R> implements AutoCloseable {
         p -> {
           final Task<R> task = taskFactory.apply(p);
           task.init();
+          if (task.ownsDurability()) {
+            // A self-owning shard restores its own state and offset; the runtime dedups past that
+            // baseline rather than seeking (the source resumes from the broker's committed offset).
+            restored.put(p, task.restore());
+          }
           return task;
         });
   }
@@ -287,16 +307,21 @@ public final class StreamRuntime<R> implements AutoCloseable {
       final int partition = entry.getKey();
       final long offset = entry.getValue();
       final Task<R> task = tasks.get(partition);
-      task.preCommitFlush();
-      // Store the offset first, then checkpoint: if the offset store is write-back cached and
-      // shares
-      // the task's backing store, the checkpoint flushes it in this same transaction, so this
-      // partition's state and offset land as one atomic cut.
-      transactionRunner.runInTransaction(
-          () -> {
-            offsets.store(partition, offset);
-            task.checkpoint();
-          });
+      if (task.ownsDurability()) {
+        // The shard makes its own atomic cut: its output durable, then its state and offset in its
+        // own transaction.
+        task.commit(offset);
+      } else {
+        task.preCommitFlush();
+        // Store the offset first, then checkpoint: if the offset store is write-back cached and
+        // shares the task's backing store, the checkpoint flushes it in this same transaction, so
+        // this partition's state and offset land as one atomic cut.
+        transactionRunner.runInTransaction(
+            () -> {
+              offsets.store(partition, offset);
+              task.checkpoint();
+            });
+      }
       consumer.commitOffset(sourceTopic, partition, offset).join();
     }
     pending.clear();
@@ -319,8 +344,19 @@ public final class StreamRuntime<R> implements AutoCloseable {
     private String sourceTopic;
     private MessageDeserializer<R> deserializer;
     private IntFunction<Task<R>> taskFactory;
-    private TransactionRunner transactionRunner;
-    private OffsetStore offsets;
+    // Runtime-managed durability. Optional: a task that owns its durability (ownsDurability()) uses
+    // its own transaction and offset store instead, so these stay at their no-op defaults.
+    private TransactionRunner transactionRunner = Runnable::run;
+    private OffsetStore offsets =
+        new OffsetStore() {
+          @Override
+          public Map<Integer, Long> restore() {
+            return Map.of();
+          }
+
+          @Override
+          public void store(final int partition, final long offset) {}
+        };
     private final List<Runnable> preCommitFlushes = new ArrayList<>();
     private RecordExceptionHandler recordExceptionHandler = RecordExceptionHandler.FAIL_FAST;
     private ToLongFunction<R> timestampExtractor;
@@ -435,8 +471,6 @@ public final class StreamRuntime<R> implements AutoCloseable {
       Objects.requireNonNull(sourceTopic, "sourceTopic");
       Objects.requireNonNull(deserializer, "deserializer");
       Objects.requireNonNull(taskFactory, "taskFactory");
-      Objects.requireNonNull(transactionRunner, "transactionRunner");
-      Objects.requireNonNull(offsets, "offsetStore");
       return new StreamRuntime<>(this);
     }
   }

@@ -457,6 +457,76 @@ final class StreamRuntimeTest {
     assertThat(preCommitFlushes.get()).isEqualTo(2);
   }
 
+  @Test
+  void shouldDelegateDurabilityToAnOwningTaskAndDedupTheResumeGap() throws Exception {
+    // given — a self-owning task restored at offset 4; the batch replays 3,4 and adds 5
+    final List<String> processed = new ArrayList<>();
+    final List<Long> committedByTask = new ArrayList<>();
+    final CountDownLatch committed = new CountDownLatch(1);
+
+    final Consumer consumer = mock(Consumer.class);
+    final EventBridgeClient client = mock(EventBridgeClient.class);
+    when(client.subscribe(any(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(consumer));
+    when(consumer.sendHeartbeat()).thenReturn(CompletableFuture.completedFuture(null));
+    final Event onThree = new Event(3L, TOPIC, 1, "c".getBytes(StandardCharsets.UTF_8));
+    final Event onFour = new Event(4L, TOPIC, 1, "d".getBytes(StandardCharsets.UTF_8));
+    final Event onFive = new Event(5L, TOPIC, 1, "e".getBytes(StandardCharsets.UTF_8));
+    when(consumer.poll(anyInt(), any()))
+        .thenReturn(List.of(onThree, onFour, onFive))
+        .thenReturn(List.of());
+    when(consumer.commitOffset(any(), anyInt(), anyLong()))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    final Task<String> owningTask =
+        new Task<>() {
+          @Override
+          public boolean ownsDurability() {
+            return true;
+          }
+
+          @Override
+          public long restore() {
+            return 4L;
+          }
+
+          @Override
+          public void process(final String record) {
+            processed.add(record);
+          }
+
+          @Override
+          public void commit(final long offset) {
+            committedByTask.add(offset);
+            committed.countDown();
+          }
+        };
+
+    // no transactionRunner / offsetStore supplied — an owning task provides its own
+    final StreamRuntime<String> runtime =
+        StreamRuntime.<String>builder()
+            .client(client)
+            .group("g")
+            .instanceId("i")
+            .sourceTopic(TOPIC)
+            .deserializer(
+                (payload, partition, offset) -> new String(payload, StandardCharsets.UTF_8))
+            .taskFactory(partition -> owningTask)
+            .commitInterval(Duration.ZERO)
+            .build();
+
+    // when
+    final Thread loop = new Thread(runtime::run, "runtime-under-test");
+    loop.start();
+    assertThat(committed.await(5, TimeUnit.SECONDS)).isTrue();
+    runtime.stop();
+    loop.join(TimeUnit.SECONDS.toMillis(5));
+
+    // then — offsets 3 and 4 were deduped, only 5 processed, and the task made its own commit
+    assertThat(processed).containsExactly("e");
+    assertThat(committedByTask).contains(5L);
+  }
+
   @SuppressWarnings("unchecked")
   private static void doAnswerSeek(
       final Consumer consumer,
