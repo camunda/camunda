@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.streaming.state.cache;
 
+import io.camunda.eventbridge.streaming.state.api.Checkpointable;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
@@ -38,7 +39,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  * @param <V> the value type (a {@link DbValue} flyweight)
  */
 public final class WriteBackKeyValueStore<K extends DbKey, V extends DbValue>
-    implements KeyValueStore<K, V> {
+    implements KeyValueStore<K, V>, Checkpointable {
 
   private final KeyValueStore<K, V> delegate;
   private final K keyFlyweight;
@@ -108,6 +109,7 @@ public final class WriteBackKeyValueStore<K extends DbKey, V extends DbValue>
   /**
    * Writes the keys changed since the last checkpoint to the delegate and clears the change set.
    */
+  @Override
   public void checkpoint() {
     for (final byte[] keyBytes : dirty) {
       wrap(keyFlyweight, keyBytes);
