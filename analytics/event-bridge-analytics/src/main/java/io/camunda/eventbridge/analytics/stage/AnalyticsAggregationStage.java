@@ -7,23 +7,13 @@
  */
 package io.camunda.eventbridge.analytics.stage;
 
-import io.camunda.analytics.projection.AnalyticsColumnFamilies;
 import io.camunda.analytics.shuffle.MergingRollup;
 import io.camunda.analytics.shuffle.Partial;
 import io.camunda.analytics.shuffle.PartialCodec;
 import io.camunda.eventbridge.client.EventBridgeClient;
-import io.camunda.eventbridge.streaming.StreamProcessor;
 import io.camunda.eventbridge.streaming.StreamRuntime;
-import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
-import io.camunda.eventbridge.streaming.state.rocksdb.RocksDbStateStoreProvider;
-import io.camunda.zeebe.db.impl.DbBytes;
-import io.camunda.zeebe.db.impl.DbInt;
-import io.camunda.zeebe.db.impl.DbLong;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.io.File;
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
 import org.h2.jdbcx.JdbcDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,24 +56,7 @@ public final class AnalyticsAggregationStage {
     dataSource.setURL(jdbcUrl);
     dataSource.setUser(jdbcUser);
 
-    final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider =
-        RocksDbStateStoreProvider.open(
-            new File("data/analytics-stage2-" + instanceId), meterRegistry);
-    final KeyValueStore<DbBytes, DbBytes> slotStore =
-        provider.keyValueStore(AnalyticsColumnFamilies.SLOT_CELLS, new DbBytes(), new DbBytes());
-    final KeyValueStore<DbInt, DbLong> factsOffsets =
-        provider.keyValueStore(
-            AnalyticsColumnFamilies.CONSUMED_POSITION, new DbInt(), new DbLong());
-
-    final Map<Integer, MergingRollup<?, ?>> mergers = new HashMap<>();
-    for (final MetricSpec<?, ?, ?> spec : Metrics.specs(slaMs)) {
-      mergers.put(
-          spec.aggId(),
-          StageBuilders.merger(spec, slotStore, dataSource, provider::runInTransaction));
-    }
-
-    final StreamProcessor<Partial> task =
-        new StreamProcessor<Partial>().add(new MergeStage(mergers));
+    final String stateDir = "data/analytics-stage2-" + instanceId;
 
     final StreamRuntime<Partial> runtime =
         StreamRuntime.<Partial>builder()
@@ -92,9 +65,12 @@ public final class AnalyticsAggregationStage {
             .instanceId(instanceId)
             .sourceTopic(factsTopic)
             .deserializer((payload, partition, offset) -> PartialCodec.decode(payload))
-            .taskFactory(partition -> task)
-            .transactionRunner(provider::runInTransaction)
-            .offsetStore(new KeyValueOffsetStore(factsOffsets))
+            // One self-contained shard per facts partition: its own RocksDB merge slots + offset
+            // and
+            // the per-aggId mergers, owning its durability (restore/commit).
+            .taskFactory(
+                partition ->
+                    AggregationShard.open(partition, stateDir, slaMs, dataSource, meterRegistry))
             .maxPoll(MAX_RECORDS)
             .pollTimeout(POLL_TIMEOUT)
             .commitInterval(CHECKPOINT_INTERVAL)
