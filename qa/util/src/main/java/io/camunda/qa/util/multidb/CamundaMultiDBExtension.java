@@ -523,12 +523,13 @@ public class CamundaMultiDBExtension
     // running with OIDC; it does not inherit from root (PhysicalTenantAssignedProvidersValidation).
     final var authenticationMethod =
         springApplication.unifiedConfig().getSecurity().getAuthentication().getMethod();
-    if (AuthenticationMethod.OIDC.equals(authenticationMethod)) {
-      springApplication.withProperty(
-          "camunda.physical-tenants."
-              + physicalTenantId
-              + ".security.authentication.providers.assigned[0]",
-          "oidc");
+    final String assignedProviderProperty =
+        "camunda.physical-tenants."
+            + physicalTenantId
+            + ".security.authentication.providers.assigned[0]";
+    if (AuthenticationMethod.OIDC.equals(authenticationMethod)
+        && springApplication.property(assignedProviderProperty, String.class, null) == null) {
+      springApplication.withProperty(assignedProviderProperty, "oidc");
     }
   }
 
