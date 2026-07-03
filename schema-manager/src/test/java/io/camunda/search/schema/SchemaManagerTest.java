@@ -373,7 +373,7 @@ class SchemaManagerTest {
     }
 
     @Test
-    void shouldUseOneShardForAbstractIndexDescriptorByDefault() {
+    void shouldUseGlobalForAbstractIndexDescriptorByDefault() {
       // given
       cfg.index().setNumberOfShards(3);
       final var index = new TestIndexDescriptor("test", "mappings.json");
@@ -385,7 +385,7 @@ class SchemaManagerTest {
       // then
       final var captor = ArgumentCaptor.forClass(IndexConfiguration.class);
       verify(client).createIndex(eq(index), captor.capture());
-      assertThat(captor.getValue().getNumberOfShards()).isEqualTo(1);
+      assertThat(captor.getValue().getNumberOfShards()).isEqualTo(3);
     }
 
     @Test
@@ -402,6 +402,21 @@ class SchemaManagerTest {
       final var captor = ArgumentCaptor.forClass(IndexConfiguration.class);
       verify(client).createIndexTemplate(eq(template), captor.capture(), eq(true));
       assertThat(captor.getValue().getNumberOfShards()).isEqualTo(3);
+    }
+
+    @Test
+    void shouldPinMetadataIndexToOneShard() {
+      // given
+      cfg.index().setNumberOfShards(5);
+      final var mgr = buildManager(List.of(metaIndex), List.of());
+
+      // when
+      mgr.startup();
+
+      // then
+      final var captor = ArgumentCaptor.forClass(IndexConfiguration.class);
+      verify(client).createIndex(eq(metaIndex), captor.capture());
+      assertThat(captor.getValue().getNumberOfShards()).isEqualTo(1);
     }
 
     @Test
