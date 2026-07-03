@@ -10,10 +10,12 @@ package io.camunda.zeebe.engine.processing.incident;
 import static io.camunda.zeebe.engine.processing.incident.IncidentHelper.assertIncidentCreated;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.processing.processinstance.BusinessIdValidator;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
+import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -27,6 +29,7 @@ import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -485,6 +488,174 @@ public final class CallActivityIncidentTest {
         .containsExactly(
             List.of(parentProcessInstanceKey, callActivityInstanceKey),
             List.of(childProcessInstanceKey, failingElementInstanceKey));
+  }
+
+  @Test
+  public void shouldNotCreateIncidentWhenBusinessIdIsExplicitNull() {
+    // given - an explicit null discards the business id
+    deployParentWithChildBusinessId("=null");
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(parentProcessId)
+            .withBusinessId("parent-business-id")
+            .create();
+
+    // then - no incident; the child is created with no business id
+    Assertions.assertThat(getChildProcessInstance(processInstanceKey).getValue()).hasBusinessId("");
+  }
+
+  @Test
+  public void shouldNotCreateIncidentWhenBusinessIdFeelEvaluatesToEmptyString() {
+    // given - a FEEL expression evaluating to an empty string is treated like '=null'
+    deployParentWithChildBusinessId("=\"\"");
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(parentProcessId)
+            .withBusinessId("parent-business-id")
+            .create();
+
+    // then - no incident; the child is created with no business id
+    Assertions.assertThat(getChildProcessInstance(processInstanceKey).getValue()).hasBusinessId("");
+  }
+
+  @Test
+  public void shouldCreateIncidentWhenBusinessIdVariableNotExists() {
+    // given - a FEEL expression referencing a variable that is never provided
+    deployParentWithChildBusinessId("=businessIdVar");
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
+
+    // then
+    final Record<IncidentRecordValue> incident = getIncident(processInstanceKey);
+    final Record<ProcessInstanceRecordValue> elementInstance =
+        getCallActivityInstance(processInstanceKey);
+
+    assertIncidentCreated(incident, elementInstance)
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            """
+            Expected to resolve the business id for the call activity from expression 'businessIdVar', but it evaluated to null. \
+            The evaluation reported the following warnings:
+            [NO_VARIABLE_FOUND] No variable found with name 'businessIdVar'""");
+  }
+
+  @Test
+  public void shouldCreateIncidentWhenBusinessIdExceedsMaxLength() {
+    // given - a literal business id longer than the allowed maximum
+    deployParentWithChildBusinessId("b".repeat(257));
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
+
+    // then
+    final Record<IncidentRecordValue> incident = getIncident(processInstanceKey);
+    final Record<ProcessInstanceRecordValue> elementInstance =
+        getCallActivityInstance(processInstanceKey);
+
+    assertIncidentCreated(incident, elementInstance)
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "Expected to resolve a valid business id for the call activity, but it exceeds the max length of 256.");
+  }
+
+  @Test
+  public void shouldCreateIncidentWhenBusinessIdFeelResolvesToTooLongValue() {
+    // given - a FEEL expression whose variable resolves to a value longer than the maximum
+    deployParentWithChildBusinessId("=businessIdVar");
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(parentProcessId)
+            .withVariable(
+                "businessIdVar", "b".repeat(BusinessIdValidator.MAX_BUSINESS_ID_LENGTH + 1))
+            .create();
+
+    // then
+    final Record<IncidentRecordValue> incident = getIncident(processInstanceKey);
+    final Record<ProcessInstanceRecordValue> elementInstance =
+        getCallActivityInstance(processInstanceKey);
+
+    assertIncidentCreated(incident, elementInstance)
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "Expected to resolve a valid business id for the call activity, but it exceeds the max length of %d."
+                .formatted(BusinessIdValidator.MAX_BUSINESS_ID_LENGTH));
+  }
+
+  @Test
+  public void shouldCreateIncidentWhenBusinessIdResolvesToNonString() {
+    // given - a FEEL expression that resolves to a number
+    deployParentWithChildBusinessId("=42");
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
+
+    // then
+    final Record<IncidentRecordValue> incident = getIncident(processInstanceKey);
+    final Record<ProcessInstanceRecordValue> elementInstance =
+        getCallActivityInstance(processInstanceKey);
+
+    assertIncidentCreated(incident, elementInstance)
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "Expected the business id for the call activity to resolve to a string, but expression '42' evaluated to 'NUMBER'.");
+  }
+
+  @Test
+  public void shouldResolveIncidentAfterProvidingBusinessIdVariable() {
+    // given - a missing-variable incident at the call activity
+    deployParentWithChildBusinessId("=businessIdVar");
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
+    final Record<IncidentRecordValue> incident = getIncident(processInstanceKey);
+
+    // when - the variable is provided and the incident is resolved
+    ENGINE
+        .variables()
+        .ofScope(processInstanceKey)
+        .withDocument(Map.of("businessIdVar", "resolved-business-id"))
+        .update();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    // then - the child is created with the now-resolvable business id
+    Assertions.assertThat(getChildProcessInstance(processInstanceKey).getValue())
+        .hasBusinessId("resolved-business-id");
+  }
+
+  private void deployParentWithChildBusinessId(final String businessId) {
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "wf-parent.bpmn",
+            Bpmn.createExecutableProcess(parentProcessId)
+                .startEvent()
+                .callActivity(
+                    "call", c -> c.zeebeProcessId(childProcessId).zeebeBusinessId(businessId))
+                .done())
+        .withXmlResource(
+            "wf-child.bpmn",
+            Bpmn.createExecutableProcess(childProcessId).startEvent().endEvent().done())
+        .deploy();
+  }
+
+  private Record<ProcessInstanceRecordValue> getChildProcessInstance(
+      final long parentProcessInstanceKey) {
+    return RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withParentProcessInstanceKey(parentProcessInstanceKey)
+        .withElementType(BpmnElementType.PROCESS)
+        .getFirst();
   }
 
   private Record<ProcessInstanceRecordValue> getCallActivityInstance(
