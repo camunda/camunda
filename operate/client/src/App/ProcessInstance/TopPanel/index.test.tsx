@@ -462,9 +462,9 @@ describe('TopPanel', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should add an active overlay for an element that is waiting but missing from element-instances statistics', async () => {
+  it('should add an active overlay for a waiting multi-instance body missing from element-instances statistics', async () => {
     mockFetchProcessInstanceWaitStateStatistics().withSuccess({
-      items: [{elementId: 'multi-instance-task', waitingCount: 1}],
+      items: [{elementId: 'multi-instance-service-task', waitingCount: 1}],
     });
 
     render(<TopPanel />, {wrapper: getWrapper()});
@@ -476,14 +476,15 @@ describe('TopPanel', () => {
       expect(
         diagramOverlaysStore.state.overlays.find(
           ({elementId, type}) =>
-            elementId === 'multi-instance-task' && type === 'elementState',
+            elementId === 'multi-instance-service-task' &&
+            type === 'elementState',
         ),
       ).toBeDefined();
     });
 
     const activeOverlay = diagramOverlaysStore.state.overlays.find(
       ({elementId, type}) =>
-        elementId === 'multi-instance-task' && type === 'elementState',
+        elementId === 'multi-instance-service-task' && type === 'elementState',
     );
 
     const payload = activeOverlay?.payload as {
@@ -492,5 +493,26 @@ describe('TopPanel', () => {
     };
     expect(payload?.elementState).toBe('active');
     expect(payload?.count).toBeUndefined();
+  });
+
+  it('should not add an active overlay for a waiting non-multi-instance element missing from statistics', async () => {
+    // service-task-3 is a plain task absent from element-instances stats; a
+    // waiting count alone must not synthesize an active overlay for it.
+    mockFetchProcessInstanceWaitStateStatistics().withSuccess({
+      items: [{elementId: 'service-task-3', waitingCount: 1}],
+    });
+
+    render(<TopPanel />, {wrapper: getWrapper()});
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('diagram-spinner'),
+    );
+
+    expect(
+      diagramOverlaysStore.state.overlays.find(
+        ({elementId, type}) =>
+          elementId === 'service-task-3' && type === 'elementState',
+      ),
+    ).toBeUndefined();
   });
 });

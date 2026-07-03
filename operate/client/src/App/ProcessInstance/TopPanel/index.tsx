@@ -57,6 +57,7 @@ import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusiness
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {isCompensationAssociation} from 'modules/bpmn-js/utils/isCompensationAssociation';
+import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {useProcessSequenceFlows} from 'modules/queries/sequenceFlows/useProcessSequenceFlows';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useWaitStateStatistics} from 'modules/queries/waitStateStatistics/useWaitStateStatistics';
@@ -198,11 +199,15 @@ const TopPanel: React.FC = observer(() => {
       ...subprocessOverlays,
     ];
 
-    // Some wait states (e.g. a BEFORE_ALL execution listener on a multi-instance
-    // body) are missing from element-instances stats; synthesize an active overlay.
+    // A waiting MI body with no active inner instance (BEFORE_ALL listener) is
+    // absent from element-instances stats; synthesize an active overlay for it.
     const elementIdsInStats = new Set(statistics?.map(({id}) => id) ?? []);
     for (const {elementId, waitingCount} of waitStateStatistics ?? []) {
-      if (waitingCount > 0 && !elementIdsInStats.has(elementId)) {
+      if (
+        waitingCount > 0 &&
+        !elementIdsInStats.has(elementId) &&
+        isMultiInstance(businessObjects?.[elementId])
+      ) {
         allElementStateOverlays.push({
           payload: {elementState: 'active' as const},
           type: OVERLAY_TYPE_STATE,
