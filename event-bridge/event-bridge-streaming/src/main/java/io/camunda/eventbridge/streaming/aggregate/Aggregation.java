@@ -18,7 +18,7 @@ package io.camunda.eventbridge.streaming.aggregate;
  *
  * @param <F> the fact type consumed
  */
-public interface Rollup<F> extends AutoCloseable {
+public interface Aggregation<F> extends AutoCloseable {
 
   /** Folds one fact into its group cell (typically into an in-memory pre-aggregation buffer). */
   void accept(F fact);

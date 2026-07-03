@@ -10,7 +10,7 @@ package io.camunda.analytics.sketch;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
-import io.camunda.eventbridge.streaming.aggregate.DurableMaterializedRollup;
+import io.camunda.eventbridge.streaming.aggregate.DurableMaterializedAggregation;
 import io.camunda.eventbridge.streaming.aggregate.InMemoryResultSink;
 import io.camunda.eventbridge.streaming.aggregate.SourceCoordinate;
 import io.camunda.eventbridge.streaming.aggregate.StringRecordValue;
@@ -31,8 +31,9 @@ import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Exercises a sketch-backed metric ({@link QuantileAggregateFunction}) through the RocksDB {@link
- * DurableMaterializedRollup}, so the sketch record flyweight is validated on the real durable path:
- * decode the stored cell, merge the batch partial, re-encode — across flushes and across a restart.
+ * DurableMaterializedAggregation}, so the sketch record flyweight is validated on the real durable
+ * path: decode the stored cell, merge the batch partial, re-encode — across flushes and across a
+ * restart.
  */
 final class DurableSketchRollupTest {
 
@@ -76,12 +77,12 @@ final class DurableSketchRollupTest {
     sink = new InMemoryResultSink<>();
   }
 
-  private DurableMaterializedRollup<Duration, String, KllDoublesSketch> newRollup() {
+  private DurableMaterializedAggregation<Duration, String, KllDoublesSketch> newRollup() {
     final KeyValueStore<DbBytes, DbBytes> cells =
         provider.keyValueStore(TestColumnFamilies.CELLS, new DbBytes(), new DbBytes());
     final KeyValueStore<DbBytes, DbLong> offsets =
         provider.keyValueStore(TestColumnFamilies.OFFSETS, new DbBytes(), new DbLong());
-    return new DurableMaterializedRollup<>(
+    return new DurableMaterializedAggregation<>(
         1,
         QUANTILE,
         Duration::region,

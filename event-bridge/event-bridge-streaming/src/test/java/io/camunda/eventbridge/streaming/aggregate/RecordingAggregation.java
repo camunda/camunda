@@ -12,24 +12,24 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Test-only {@link Rollup} double: folds facts by key into an in-memory map, buffering until {@link
- * #flush()} (or {@link #close()}), and exposes the merged value per key via {@link #get}. Used by
- * the processor/topology/transforming plumbing tests to assert that facts reach a rollup — the
- * production materialization model is {@link MaterializedRollup}/{@link ResultSink}, exercised by
- * the aggregation tests, not this helper.
+ * Test-only {@link Aggregation} double: folds facts by key into an in-memory map, buffering until
+ * {@link #flush()} (or {@link #close()}), and exposes the merged value per key via {@link #get}.
+ * Used by the processor/topology/transforming plumbing tests to assert that facts reach a rollup —
+ * the production materialization model is {@link MaterializedAggregation}/{@link ResultSink},
+ * exercised by the aggregation tests, not this helper.
  *
  * @param <F> the fact type
  * @param <K> the grouping key type
  * @param <ACC> the accumulator type
  */
-public final class RecordingRollup<F, K, ACC> implements Rollup<F> {
+public final class RecordingAggregation<F, K, ACC> implements Aggregation<F> {
 
   private final AggregateFunction<F, ACC, ?> aggregate;
   private final KeySelector<F, K> keySelector;
   private final Map<K, ACC> buffered = new HashMap<>();
   private final Map<K, ACC> committed = new HashMap<>();
 
-  public RecordingRollup(
+  public RecordingAggregation(
       final AggregateFunction<F, ACC, ?> aggregate, final KeySelector<F, K> keySelector) {
     this.aggregate = aggregate;
     this.keySelector = keySelector;

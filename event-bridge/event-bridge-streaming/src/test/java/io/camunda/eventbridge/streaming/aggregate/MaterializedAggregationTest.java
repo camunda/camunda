@@ -13,7 +13,7 @@ import io.camunda.eventbridge.streaming.window.TumblingWindows;
 import io.camunda.eventbridge.streaming.window.Windowed;
 import org.junit.jupiter.api.Test;
 
-final class MaterializedRollupTest {
+final class MaterializedAggregationTest {
 
   private static final long HOUR = 3_600_000L;
   private static final long LATENESS = 60_000L;
@@ -57,11 +57,11 @@ final class MaterializedRollupTest {
       };
 
   private InMemoryResultSink<Windowed<String>, Long> sink;
-  private MaterializedRollup<Sale, String, Long> rollup;
+  private MaterializedAggregation<Sale, String, Long> rollup;
 
-  private MaterializedRollup<Sale, String, Long> newRollup() {
+  private MaterializedAggregation<Sale, String, Long> newRollup() {
     sink = new InMemoryResultSink<>();
-    return new MaterializedRollup<>(
+    return new MaterializedAggregation<>(
         SUM,
         Sale::region,
         Sale::timestamp,

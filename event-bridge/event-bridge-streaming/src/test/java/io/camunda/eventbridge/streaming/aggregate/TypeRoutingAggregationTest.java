@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-final class TypeRoutingRollupTest {
+final class TypeRoutingAggregationTest {
 
   private interface Fact {}
 
@@ -22,7 +22,7 @@ final class TypeRoutingRollupTest {
   private record B(int v) implements Fact {}
 
   /** A rollup that just records what it accepted. */
-  private static final class Recording<T> implements Rollup<T> {
+  private static final class Recording<T> implements Aggregation<T> {
     final List<T> accepted = new ArrayList<>();
 
     @Override
@@ -41,7 +41,7 @@ final class TypeRoutingRollupTest {
   void shouldRouteOnlyMatchingSubtype() {
     // given — a fan-out of mixed facts routed to an A-only rollup
     final Recording<A> aRollup = new Recording<>();
-    final Rollup<Fact> routed = new TypeRoutingRollup<>(A.class, aRollup);
+    final Aggregation<Fact> routed = new TypeRoutingAggregation<>(A.class, aRollup);
 
     // when
     routed.accept(new A(1));

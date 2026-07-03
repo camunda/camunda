@@ -14,9 +14,9 @@ import io.camunda.eventbridge.streaming.window.Windowed;
 /**
  * The Stage-1 combiner's sink: instead of writing to a serving store, it publishes each changed
  * cell's current full value as a {@link Partial} to the facts topic (the shuffle). The combiner is
- * a {@code DurableMaterializedRollup} keyed by {@link WriterKey}, so every cell carries its writer
- * (source partition); this sink strips the writer back out of the key, tags the partial with it,
- * and routes by the <em>inner</em> key so all writers of a cell reach one Stage-2 reducer.
+ * a {@code DurableMaterializedAggregation} keyed by {@link WriterKey}, so every cell carries its
+ * writer (source partition); this sink strips the writer back out of the key, tags the partial with
+ * it, and routes by the <em>inner</em> key so all writers of a cell reach one Stage-2 reducer.
  *
  * @param <K> the base grouping key type
  * @param <ACC> the accumulator type

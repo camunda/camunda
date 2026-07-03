@@ -11,11 +11,11 @@ import io.camunda.eventbridge.streaming.fold.Collector;
 import io.camunda.eventbridge.streaming.fold.Projector;
 
 /**
- * A {@link Rollup} that expands each fact before it reaches a downstream rollup: it runs the fact
- * through a {@link Projector} (the enricher) and forwards the result on. This is how one already
- * derived fact feeds another dataset with additional data — the enricher typically adds fields from
- * a state-store lookup (a stream-table join), so the downstream dataset is built without
- * re-deriving or re-fetching the base fact.
+ * A {@link Aggregation} that expands each fact before it reaches a downstream rollup: it runs the
+ * fact through a {@link Projector} (the enricher) and forwards the result on. This is how one
+ * already derived fact feeds another dataset with additional data — the enricher typically adds
+ * fields from a state-store lookup (a stream-table join), so the downstream dataset is built
+ * without re-deriving or re-fetching the base fact.
  *
  * <p>Place it alongside the base rollup in a {@link ProjectionStage}: the projector emits the base
  * fact once, and it fans out to both the base rollup and this one, which enriches and forwards to
@@ -24,13 +24,13 @@ import io.camunda.eventbridge.streaming.fold.Projector;
  * @param <A> the incoming fact type
  * @param <B> the enriched fact type the downstream rollup consumes
  */
-public final class TransformingRollup<A, B> implements Rollup<A> {
+public final class TransformingAggregation<A, B> implements Aggregation<A> {
 
   private final Projector<A, B> enricher;
-  private final Rollup<B> downstream;
+  private final Aggregation<B> downstream;
   private final Collector<B> toDownstream;
 
-  public TransformingRollup(final Projector<A, B> enricher, final Rollup<B> downstream) {
+  public TransformingAggregation(final Projector<A, B> enricher, final Aggregation<B> downstream) {
     this.enricher = enricher;
     this.downstream = downstream;
     this.toDownstream = downstream::accept;

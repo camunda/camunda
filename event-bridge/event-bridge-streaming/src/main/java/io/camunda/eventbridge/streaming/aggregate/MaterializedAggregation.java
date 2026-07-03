@@ -39,7 +39,7 @@ import java.util.function.ToLongFunction;
  * @param <K> the (pre-window) grouping key type
  * @param <ACC> the accumulator type
  */
-public final class MaterializedRollup<F, K, ACC> implements Rollup<F> {
+public final class MaterializedAggregation<F, K, ACC> implements Aggregation<F> {
 
   private final AggregateFunction<F, ACC, ?> aggregate;
   private final KeySelector<F, K> keySelector;
@@ -53,7 +53,7 @@ public final class MaterializedRollup<F, K, ACC> implements Rollup<F> {
   private final Map<Integer, Long> appliedPosition = new HashMap<>();
   private long maxEventTime = Long.MIN_VALUE;
 
-  public MaterializedRollup(
+  public MaterializedAggregation(
       final AggregateFunction<F, ACC, ?> aggregate,
       final KeySelector<F, K> keySelector,
       final ToLongFunction<F> eventTime,

@@ -63,7 +63,7 @@ import java.util.function.ToLongFunction;
  * @param <K> the (pre-window) grouping key type
  * @param <ACC> the accumulator type
  */
-public final class DurableMaterializedRollup<F, K, ACC> implements Rollup<F> {
+public final class DurableMaterializedAggregation<F, K, ACC> implements Aggregation<F> {
 
   /** Reserved offset-store partition slot (no real partition uses it) holding the watermark. */
   private static final int WATERMARK_SLOT = -1;
@@ -106,7 +106,7 @@ public final class DurableMaterializedRollup<F, K, ACC> implements Rollup<F> {
   private final Map<Integer, Long> appliedPosition = new HashMap<>();
   private long maxEventTime = Long.MIN_VALUE;
 
-  public DurableMaterializedRollup(
+  public DurableMaterializedAggregation(
       final int rollupId,
       final AggregateFunction<F, ACC, ?> aggregate,
       final KeySelector<F, K> keySelector,
@@ -135,7 +135,7 @@ public final class DurableMaterializedRollup<F, K, ACC> implements Rollup<F> {
         acc -> false); // no early drain — pure time-based retention
   }
 
-  public DurableMaterializedRollup(
+  public DurableMaterializedAggregation(
       final int rollupId,
       final AggregateFunction<F, ACC, ?> aggregate,
       final KeySelector<F, K> keySelector,

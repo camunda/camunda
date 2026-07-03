@@ -23,7 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-final class DurableMaterializedRollupTest {
+final class DurableMaterializedAggregationTest {
 
   private static final long HOUR = 3_600_000L;
   private static final long LATENESS = 60_000L;
@@ -88,17 +88,17 @@ final class DurableMaterializedRollupTest {
     sink = new InMemoryResultSink<>();
   }
 
-  private DurableMaterializedRollup<Sale, String, Long> newRollup() {
+  private DurableMaterializedAggregation<Sale, String, Long> newRollup() {
     return newRollup(1, sink);
   }
 
-  private DurableMaterializedRollup<Sale, String, Long> newRollup(
+  private DurableMaterializedAggregation<Sale, String, Long> newRollup(
       final int rollupId, final InMemoryResultSink<Windowed<String>, Long> resultSink) {
     final KeyValueStore<DbBytes, DbBytes> cells =
         provider.keyValueStore(TestColumnFamilies.CELLS, new DbBytes(), new DbBytes());
     final KeyValueStore<DbBytes, DbLong> offsets =
         provider.keyValueStore(TestColumnFamilies.OFFSETS, new DbBytes(), new DbLong());
-    return new DurableMaterializedRollup<>(
+    return new DurableMaterializedAggregation<>(
         rollupId,
         SUM,
         Sale::region,

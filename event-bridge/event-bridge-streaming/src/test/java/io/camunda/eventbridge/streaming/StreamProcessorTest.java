@@ -10,7 +10,7 @@ package io.camunda.eventbridge.streaming;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.eventbridge.streaming.aggregate.AggregateFunction;
-import io.camunda.eventbridge.streaming.aggregate.RecordingRollup;
+import io.camunda.eventbridge.streaming.aggregate.RecordingAggregation;
 import io.camunda.eventbridge.streaming.fold.Projector;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -35,10 +35,10 @@ final class StreamProcessorTest {
   @Test
   void shouldFanOneFactToMultipleAggregations() {
     // given — completed orders become Sale facts, aggregated by region AND by product
-    final RecordingRollup<Sale, String, Long> byRegion =
-        new RecordingRollup<>(SUM_AMOUNT, Sale::region);
-    final RecordingRollup<Sale, String, Long> byProduct =
-        new RecordingRollup<>(SUM_AMOUNT, Sale::product);
+    final RecordingAggregation<Sale, String, Long> byRegion =
+        new RecordingAggregation<>(SUM_AMOUNT, Sale::region);
+    final RecordingAggregation<Sale, String, Long> byProduct =
+        new RecordingAggregation<>(SUM_AMOUNT, Sale::product);
 
     final Projector<Order, Sale> toSale =
         (order, out) -> {
@@ -69,10 +69,10 @@ final class StreamProcessorTest {
   @Test
   void shouldDeriveDifferentFactTypesFromOneRecordViaMultipleProjectors() {
     // given — two projectors over the same record: one emits Sales, one emits Touches
-    final RecordingRollup<Sale, String, Long> salesByRegion =
-        new RecordingRollup<>(SUM_AMOUNT, Sale::region);
-    final RecordingRollup<Touch, String, Long> touchesByRegion =
-        new RecordingRollup<>(COUNT, Touch::region);
+    final RecordingAggregation<Sale, String, Long> salesByRegion =
+        new RecordingAggregation<>(SUM_AMOUNT, Sale::region);
+    final RecordingAggregation<Touch, String, Long> touchesByRegion =
+        new RecordingAggregation<>(COUNT, Touch::region);
 
     final Projector<Order, Sale> toSale =
         (order, out) -> {
@@ -101,8 +101,8 @@ final class StreamProcessorTest {
   @Test
   void shouldExposeResultsAfterWallClockFlushWithoutClose() {
     // given
-    final RecordingRollup<Sale, String, Long> byRegion =
-        new RecordingRollup<>(SUM_AMOUNT, Sale::region);
+    final RecordingAggregation<Sale, String, Long> byRegion =
+        new RecordingAggregation<>(SUM_AMOUNT, Sale::region);
     final Projector<Order, Sale> toSale =
         (order, out) -> out.collect(new Sale(order.region(), order.product(), order.amount()));
     final StreamProcessor<Order> processor =

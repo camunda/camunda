@@ -8,7 +8,7 @@
 package io.camunda.analytics.metric;
 
 import io.camunda.analytics.fact.ProcessDefinitionFact;
-import io.camunda.eventbridge.streaming.aggregate.Rollup;
+import io.camunda.eventbridge.streaming.aggregate.Aggregation;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -20,12 +20,12 @@ import javax.sql.DataSource;
 /**
  * A non-windowed sink for process-definition facts: upserts each definition's BPMN XML into {@code
  * process_definition} (keyed by {@code process_definition_key}) so the dashboard can render the
- * model behind the flow-node heatmap. Implemented as a {@link Rollup} — the fold fans {@code
+ * model behind the flow-node heatmap. Implemented as a {@link Aggregation} — the fold fans {@code
  * PROCESS} facts to it like any other — but it carries no windowed state; {@code accept} writes the
  * whole value by key, so redelivery converges. A small in-memory seen-set skips redundant writes
  * for definitions already persisted this run.
  */
-public final class JdbcProcessDefinitionSink implements Rollup<ProcessDefinitionFact> {
+public final class JdbcProcessDefinitionSink implements Aggregation<ProcessDefinitionFact> {
 
   private static final String CREATE =
       """

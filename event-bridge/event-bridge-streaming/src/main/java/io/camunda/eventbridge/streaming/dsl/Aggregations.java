@@ -11,13 +11,13 @@ import io.camunda.eventbridge.streaming.aggregate.KeySelector;
 
 /**
  * Entry point for the fluent aggregation builder — sugar over the core primitives that reads like a
- * grouped-stream aggregation: {@code Aggregation.groupBy(key).windowedBy(window,
- * time).aggregate(metric).into(store)} builds a {@code Rollup}. Register the resulting rollup(s)
- * with a projector to derive the facts once and feed several aggregations.
+ * grouped-stream aggregation: {@code Aggregations.groupBy(key).windowedBy(window,
+ * time).aggregate(metric).into(store)} builds a {@code Aggregation}. Register the resulting
+ * rollup(s) with a projector to derive the facts once and feed several aggregations.
  */
-public final class Aggregation {
+public final class Aggregations {
 
-  private Aggregation() {}
+  private Aggregations() {}
 
   /** Groups facts by the selected key. */
   public static <F, K> Grouped<F, K> groupBy(final KeySelector<F, K> keySelector) {

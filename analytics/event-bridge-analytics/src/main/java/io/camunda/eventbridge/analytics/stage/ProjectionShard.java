@@ -19,8 +19,8 @@ import io.camunda.eventbridge.streaming.ProjectionStage;
 import io.camunda.eventbridge.streaming.StreamProcessor;
 import io.camunda.eventbridge.streaming.Task;
 import io.camunda.eventbridge.streaming.TransactionRunner;
-import io.camunda.eventbridge.streaming.aggregate.Rollup;
-import io.camunda.eventbridge.streaming.aggregate.TypeRoutingRollup;
+import io.camunda.eventbridge.streaming.aggregate.Aggregation;
+import io.camunda.eventbridge.streaming.aggregate.TypeRoutingAggregation;
 import io.camunda.eventbridge.streaming.state.rocksdb.RocksDbStateStoreProvider;
 import io.camunda.zeebe.db.impl.DbBytes;
 import io.camunda.zeebe.db.impl.DbLong;
@@ -89,7 +89,7 @@ public final class ProjectionShard implements Task<SourceRecord>, AutoCloseable 
     final EventBridgePartialPublisher publisher =
         new EventBridgePartialPublisher(client, factsTopic, factsPartitions);
 
-    final List<Rollup<ProcessExecutionFact>> rollups = new ArrayList<>();
+    final List<Aggregation<ProcessExecutionFact>> rollups = new ArrayList<>();
     for (final MetricSpec<?, ?, ?> spec : Metrics.specs(slaMs)) {
       rollups.add(
           StageBuilders.combiner(
@@ -104,7 +104,7 @@ public final class ProjectionShard implements Task<SourceRecord>, AutoCloseable 
     // Process definitions are metadata (the BPMN XML), not a windowed aggregate — routed straight
     // to
     // the serving store; the upsert is idempotent, so seeing one on several shards is harmless.
-    rollups.add(new TypeRoutingRollup<>(ProcessDefinitionFact.class, definitionSink));
+    rollups.add(new TypeRoutingAggregation<>(ProcessDefinitionFact.class, definitionSink));
 
     final StreamProcessor<SourceRecord> processor =
         new StreamProcessor<SourceRecord>().add(new ProjectionStage<>(projector, rollups));

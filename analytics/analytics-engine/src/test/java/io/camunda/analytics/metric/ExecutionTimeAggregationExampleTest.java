@@ -12,10 +12,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.analytics.fact.ProcessInstanceExecutionTimeFact;
 import io.camunda.eventbridge.streaming.ProjectionStage;
 import io.camunda.eventbridge.streaming.StreamProcessor;
+import io.camunda.eventbridge.streaming.aggregate.Aggregation;
 import io.camunda.eventbridge.streaming.aggregate.InMemoryResultSink;
-import io.camunda.eventbridge.streaming.aggregate.Rollup;
 import io.camunda.eventbridge.streaming.aggregate.SourceCoordinate;
-import io.camunda.eventbridge.streaming.dsl.Aggregation;
+import io.camunda.eventbridge.streaming.dsl.Aggregations;
 import io.camunda.eventbridge.streaming.fold.Projector;
 import io.camunda.eventbridge.streaming.window.TumblingWindows;
 import io.camunda.eventbridge.streaming.window.Windowed;
@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
  * projector. (Wiring — turning consumed records into these facts — is separate; here a
  * fact-deriving projector stands in.)
  */
-final class ExecutionTimeRollupExampleTest {
+final class ExecutionTimeAggregationExampleTest {
 
   private static final long HOUR = 3_600_000L;
 
@@ -60,15 +60,15 @@ final class ExecutionTimeRollupExampleTest {
     final InMemoryResultSink<Windowed<Long>, ExecutionTimeAccumulator> byDefinition =
         new InMemoryResultSink<>();
 
-    final Rollup<ProcessInstanceExecutionTimeFact> regionRollup =
-        Aggregation.<ProcessInstanceExecutionTimeFact, String>groupBy(
-                ExecutionTimeRollupExampleTest::region)
+    final Aggregation<ProcessInstanceExecutionTimeFact> regionRollup =
+        Aggregations.<ProcessInstanceExecutionTimeFact, String>groupBy(
+                ExecutionTimeAggregationExampleTest::region)
             .windowedBy(hourly, ProcessInstanceExecutionTimeFact::endTime)
             .aggregate(metric)
             .into(byRegion, COORD);
 
-    final Rollup<ProcessInstanceExecutionTimeFact> definitionRollup =
-        Aggregation.<ProcessInstanceExecutionTimeFact, Long>groupBy(
+    final Aggregation<ProcessInstanceExecutionTimeFact> definitionRollup =
+        Aggregations.<ProcessInstanceExecutionTimeFact, Long>groupBy(
                 ProcessInstanceExecutionTimeFact::processDefinitionKey)
             .windowedBy(hourly, ProcessInstanceExecutionTimeFact::endTime)
             .aggregate(metric)

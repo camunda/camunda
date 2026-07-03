@@ -18,11 +18,11 @@ import java.util.function.ToLongFunction;
 import org.junit.jupiter.api.Test;
 
 /**
- * One derived fact feeds two datasets: a base rollup, and — via {@link TransformingRollup} — a
+ * One derived fact feeds two datasets: a base rollup, and — via {@link TransformingAggregation} — a
  * second rollup over an enriched fact (extra data from a lookup), without re-deriving the base
  * fact.
  */
-final class TransformingRollupTest {
+final class TransformingAggregationTest {
 
   private record Exec(String region, long durationMs, String customerId) {}
 
@@ -35,10 +35,10 @@ final class TransformingRollupTest {
   void shouldEnrichAFactForAnotherDatasetWithoutReDeriving() {
     // given — derivations counted so we can prove the base fact is produced once
     final int[] derivations = {0};
-    final RecordingRollup<Exec, String, Long> byRegion =
-        new RecordingRollup<>(sumOf(Exec::durationMs), Exec::region);
-    final RecordingRollup<EnrichedExec, String, Long> byTier =
-        new RecordingRollup<>(sumOf(EnrichedExec::durationMs), EnrichedExec::tier);
+    final RecordingAggregation<Exec, String, Long> byRegion =
+        new RecordingAggregation<>(sumOf(Exec::durationMs), Exec::region);
+    final RecordingAggregation<EnrichedExec, String, Long> byTier =
+        new RecordingAggregation<>(sumOf(EnrichedExec::durationMs), EnrichedExec::tier);
 
     // the enricher: expand Exec -> EnrichedExec by looking up the customer's tier
     final Projector<Exec, EnrichedExec> enrichWithTier =
@@ -60,7 +60,8 @@ final class TransformingRollupTest {
         new StreamProcessor<Exec>()
             .add(
                 new ProjectionStage<Exec, Exec>(
-                    derive, List.of(byRegion, new TransformingRollup<>(enrichWithTier, byTier))));
+                    derive,
+                    List.of(byRegion, new TransformingAggregation<>(enrichWithTier, byTier))));
 
     // when
     processor.init();

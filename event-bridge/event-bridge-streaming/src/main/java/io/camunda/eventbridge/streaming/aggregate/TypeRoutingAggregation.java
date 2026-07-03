@@ -17,12 +17,12 @@ package io.camunda.eventbridge.streaming.aggregate;
  * @param <F> the fan-out (supertype) the projector emits
  * @param <S> the subtype this rollup consumes
  */
-public final class TypeRoutingRollup<F, S extends F> implements Rollup<F> {
+public final class TypeRoutingAggregation<F, S extends F> implements Aggregation<F> {
 
   private final Class<S> type;
-  private final Rollup<S> downstream;
+  private final Aggregation<S> downstream;
 
-  public TypeRoutingRollup(final Class<S> type, final Rollup<S> downstream) {
+  public TypeRoutingAggregation(final Class<S> type, final Aggregation<S> downstream) {
     this.type = type;
     this.downstream = downstream;
   }

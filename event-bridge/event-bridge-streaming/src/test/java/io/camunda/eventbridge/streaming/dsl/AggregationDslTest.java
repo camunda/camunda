@@ -10,14 +10,14 @@ package io.camunda.eventbridge.streaming.dsl;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.eventbridge.streaming.aggregate.AggregateFunction;
+import io.camunda.eventbridge.streaming.aggregate.Aggregation;
 import io.camunda.eventbridge.streaming.aggregate.InMemoryResultSink;
-import io.camunda.eventbridge.streaming.aggregate.Rollup;
 import io.camunda.eventbridge.streaming.aggregate.SourceCoordinate;
 import io.camunda.eventbridge.streaming.window.TumblingWindows;
 import io.camunda.eventbridge.streaming.window.Windowed;
 import org.junit.jupiter.api.Test;
 
-/** The fluent builder produces a windowed, grouped MaterializedRollup into a ResultSink. */
+/** The fluent builder produces a windowed, grouped MaterializedAggregation into a ResultSink. */
 final class AggregationDslTest {
 
   private record Sale(String region, long amount, long timestamp, long position) {}
@@ -62,8 +62,8 @@ final class AggregationDslTest {
   void shouldBuildAWindowedGroupedRollup() {
     // given — group by region, windowed per second, materialized into a serving sink
     final InMemoryResultSink<Windowed<String>, Long> sink = new InMemoryResultSink<>();
-    final Rollup<Sale> byRegion =
-        Aggregation.<Sale, String>groupBy(Sale::region)
+    final Aggregation<Sale> byRegion =
+        Aggregations.<Sale, String>groupBy(Sale::region)
             .windowedBy(TumblingWindows.of(1_000), Sale::timestamp)
             .aggregate(SUM)
             .into(sink, COORD);

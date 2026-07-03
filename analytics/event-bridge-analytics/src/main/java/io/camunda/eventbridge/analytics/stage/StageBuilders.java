@@ -14,9 +14,9 @@ import io.camunda.analytics.shuffle.PartialPublisher;
 import io.camunda.analytics.shuffle.WriterKey;
 import io.camunda.analytics.shuffle.WriterKeyValue;
 import io.camunda.eventbridge.streaming.TransactionRunner;
-import io.camunda.eventbridge.streaming.aggregate.DurableMaterializedRollup;
-import io.camunda.eventbridge.streaming.aggregate.Rollup;
-import io.camunda.eventbridge.streaming.aggregate.TypeRoutingRollup;
+import io.camunda.eventbridge.streaming.aggregate.Aggregation;
+import io.camunda.eventbridge.streaming.aggregate.DurableMaterializedAggregation;
+import io.camunda.eventbridge.streaming.aggregate.TypeRoutingAggregation;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.window.TumblingWindows;
 import io.camunda.zeebe.db.impl.DbBytes;
@@ -29,18 +29,19 @@ final class StageBuilders {
   private StageBuilders() {}
 
   /**
-   * Stage 1: a windowed combiner (a {@code DurableMaterializedRollup} keyed by {@link WriterKey} so
-   * each cell folds one source partition) that publishes its cells as partials to the facts topic.
-   * Wrapped in a {@link TypeRoutingRollup} so it takes only its fact subtype from the projection.
+   * Stage 1: a windowed combiner (a {@code DurableMaterializedAggregation} keyed by {@link
+   * WriterKey} so each cell folds one source partition) that publishes its cells as partials to the
+   * facts topic. Wrapped in a {@link TypeRoutingAggregation} so it takes only its fact subtype from
+   * the projection.
    */
-  static <F extends ProcessExecutionFact, K, ACC> Rollup<ProcessExecutionFact> combiner(
+  static <F extends ProcessExecutionFact, K, ACC> Aggregation<ProcessExecutionFact> combiner(
       final MetricSpec<F, K, ACC> spec,
       final KeyValueStore<DbBytes, DbBytes> cells,
       final KeyValueStore<DbBytes, DbLong> offsets,
       final PartialPublisher publisher,
       final TransactionRunner tx) {
-    final DurableMaterializedRollup<F, WriterKey<K>, ACC> combiner =
-        new DurableMaterializedRollup<>(
+    final DurableMaterializedAggregation<F, WriterKey<K>, ACC> combiner =
+        new DurableMaterializedAggregation<>(
             spec.aggId(),
             spec.aggregate(),
             fact ->
@@ -55,7 +56,7 @@ final class StageBuilders {
             spec.accValue(),
             tx,
             spec.drained());
-    return new TypeRoutingRollup<>(spec.factType(), combiner);
+    return new TypeRoutingAggregation<>(spec.factType(), combiner);
   }
 
   /**
