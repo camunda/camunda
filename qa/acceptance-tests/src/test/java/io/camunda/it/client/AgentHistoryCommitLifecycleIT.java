@@ -27,11 +27,9 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
 @CompatibilityTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
 public class AgentHistoryCommitLifecycleIT {
 
   private static final String SERVICE_TASK_ID = "agentTask";
