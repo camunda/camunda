@@ -140,9 +140,21 @@ public class SchemaManagerIT {
 
     // then
     final var retrievedIndex = searchClientAdapter.getIndexAsNode(index.getFullQualifiedName());
-
     assertThat(retrievedIndex.at("/settings/index/number_of_replicas").asInt()).isEqualTo(10);
     assertThat(retrievedIndex.at("/settings/index/number_of_shards").asInt()).isEqualTo(10);
+
+    final var retrievedTemplate =
+        searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
+    assertThat(
+            retrievedTemplate
+                .at("/index_template/template/settings/index/number_of_replicas")
+                .asInt())
+        .isEqualTo(10);
+    assertThat(
+            retrievedTemplate
+                .at("/index_template/template/settings/index/number_of_shards")
+                .asInt())
+        .isEqualTo(10);
   }
 
   @TestTemplate

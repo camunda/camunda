@@ -10,9 +10,11 @@ package io.camunda.search.schema;
 import static io.camunda.search.schema.SchemaMetadataStore.SCHEMA_VERSION_METADATA_ID;
 import static io.camunda.webapps.schema.descriptors.index.MetadataIndex.ID;
 import static io.camunda.webapps.schema.descriptors.index.MetadataIndex.VALUE;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -20,6 +22,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.search.schema.exceptions.IncompatibleVersionException;
 import io.camunda.search.schema.utils.TestIndexDescriptor;
@@ -27,6 +30,7 @@ import io.camunda.search.schema.utils.TestTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
+import io.camunda.webapps.schema.descriptors.template.PostImporterQueueTemplate;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -39,6 +43,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentCaptor;
 
 class SchemaManagerTest {
 
@@ -337,6 +342,115 @@ class SchemaManagerTest {
     when(searchEngineClient.getDocument(
             metadataIndex.getFullQualifiedName(), SCHEMA_VERSION_METADATA_ID))
         .thenReturn(versionDoc);
+  }
+
+  @Nested
+  class ShardCountPrecedenceTest {
+
+    private SearchEngineClient client;
+    private SearchEngineConfiguration cfg;
+    private MetadataIndex metaIndex;
+
+    @BeforeEach
+    void setUp() {
+      client = mock(SearchEngineClient.class);
+      cfg = SearchEngineConfiguration.of(c -> c);
+      cfg.schemaManager().setCreateSchema(true);
+      cfg.schemaManager().getRetry().setMaxRetries(1);
+      cfg.connect().setIndexPrefix("test");
+      metaIndex = new MetadataIndex("test", true);
+      when(client.indexExists(metaIndex.getFullQualifiedName())).thenReturn(true);
+    }
+
+    private SchemaManager buildManager(
+        final List<IndexDescriptor> indices, final List<IndexTemplateDescriptor> templates) {
+      final var mgr =
+          new SchemaManager(
+              client, indices, templates, cfg, mock(IndexSchemaValidator.class), "8.9.0", null);
+      when(client.getDocument(metaIndex.getFullQualifiedName(), SCHEMA_VERSION_METADATA_ID))
+          .thenReturn(null);
+      return mgr;
+    }
+
+    @Test
+    void shouldUseGlobalForAbstractIndexDescriptorByDefault() {
+      // given
+      cfg.index().setNumberOfShards(3);
+      final var index = new TestIndexDescriptor("test", "mappings.json");
+      final var mgr = buildManager(List.of(metaIndex, index), List.of());
+
+      // when
+      mgr.startup();
+
+      // then
+      final var captor = ArgumentCaptor.forClass(IndexConfiguration.class);
+      verify(client).createIndex(eq(index), captor.capture());
+      assertThat(captor.getValue().getNumberOfShards()).isEqualTo(3);
+    }
+
+    @Test
+    void shouldUseGlobalShardCountForAbstractTemplateDescriptorByDefault() {
+      // given
+      cfg.index().setNumberOfShards(3);
+      final var template = new TestTemplateDescriptor("test", "mappings.json");
+      final var mgr = buildManager(List.of(metaIndex), List.of(template));
+
+      // when
+      mgr.startup();
+
+      // then
+      final var captor = ArgumentCaptor.forClass(IndexConfiguration.class);
+      verify(client).createIndexTemplate(eq(template), captor.capture(), eq(true));
+      assertThat(captor.getValue().getNumberOfShards()).isEqualTo(3);
+    }
+
+    @Test
+    void shouldPinMetadataIndexToOneShard() {
+      // given
+      cfg.index().setNumberOfShards(5);
+      final var mgr = buildManager(List.of(metaIndex), List.of());
+
+      // when
+      mgr.startup();
+
+      // then
+      final var captor = ArgumentCaptor.forClass(IndexConfiguration.class);
+      verify(client).createIndex(eq(metaIndex), captor.capture());
+      assertThat(captor.getValue().getNumberOfShards()).isEqualTo(1);
+    }
+
+    @Test
+    void shouldPinPostImporterQueueTemplateToOneShard() {
+      // given
+      cfg.index().setNumberOfShards(5);
+      final var template = new PostImporterQueueTemplate("test", true);
+      final var mgr = buildManager(List.of(metaIndex), List.of(template));
+
+      // when
+      mgr.startup();
+
+      // then
+      final var captor = ArgumentCaptor.forClass(IndexConfiguration.class);
+      verify(client).createIndexTemplate(eq(template), captor.capture(), eq(true));
+      assertThat(captor.getValue().getNumberOfShards()).isEqualTo(1);
+    }
+
+    @Test
+    void shouldRespectExplicitShardsByIndexNameOverDescriptorDefault() {
+      // given — descriptor default would be 1, but explicit config says 7
+      cfg.index().setNumberOfShards(3);
+      cfg.index().getShardsByIndexName().put("test", 7);
+      final var index = new TestIndexDescriptor("test", "mappings.json");
+      final var mgr = buildManager(List.of(metaIndex, index), List.of());
+
+      // when
+      mgr.startup();
+
+      // then
+      final var captor = ArgumentCaptor.forClass(IndexConfiguration.class);
+      verify(client).createIndex(eq(index), captor.capture());
+      assertThat(captor.getValue().getNumberOfShards()).isEqualTo(7);
+    }
   }
 
   @Nested
