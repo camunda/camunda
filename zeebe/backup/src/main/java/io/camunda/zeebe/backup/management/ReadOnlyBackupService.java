@@ -64,18 +64,16 @@ public final class ReadOnlyBackupService extends Actor implements ReadOnlyBackup
   @Override
   public ActorFuture<BackupStatus> getBackupStatus(final long checkpointId) {
     final ActorFuture<BackupStatus> result = actor.createFuture();
-    actor.run(
-        () ->
-            storeQueries
-                .getBackupStatus(partition.number(), checkpointId, actor)
-                .onComplete(
-                    (status, error) -> {
-                      if (error != null) {
-                        result.completeExceptionally(error);
-                      } else {
-                        result.complete(status.orElseGet(() -> doesNotExist(checkpointId)));
-                      }
-                    }));
+    storeQueries
+        .getBackupStatus(partition.number(), checkpointId, actor)
+        .onComplete(
+            (status, error) -> {
+              if (error != null) {
+                result.completeExceptionally(error);
+              } else {
+                result.complete(status.orElseGet(() -> doesNotExist(checkpointId)));
+              }
+            });
     return result;
   }
 
@@ -83,8 +81,7 @@ public final class ReadOnlyBackupService extends Actor implements ReadOnlyBackup
   @Override
   public ActorFuture<Collection<BackupStatus>> listBackups(final String pattern) {
     final ActorFuture<Collection<BackupStatus>> result = actor.createFuture();
-    actor.run(
-        () -> storeQueries.listBackups(partition.number(), pattern, actor).onComplete(result));
+    storeQueries.listBackups(partition.number(), pattern, actor).onComplete(result);
     return result;
   }
 
