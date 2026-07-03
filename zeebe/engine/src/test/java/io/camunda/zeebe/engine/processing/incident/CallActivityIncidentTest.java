@@ -548,26 +548,6 @@ public final class CallActivityIncidentTest {
   }
 
   @Test
-  public void shouldCreateIncidentWhenBusinessIdExceedsMaxLength() {
-    // given - a literal business id longer than the allowed maximum
-    deployParentWithChildBusinessId("b".repeat(257));
-
-    // when
-    final long processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
-
-    // then
-    final Record<IncidentRecordValue> incident = getIncident(processInstanceKey);
-    final Record<ProcessInstanceRecordValue> elementInstance =
-        getCallActivityInstance(processInstanceKey);
-
-    assertIncidentCreated(incident, elementInstance)
-        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
-        .hasErrorMessage(
-            "Expected to resolve a valid business id for the call activity, but it exceeds the max length of 256.");
-  }
-
-  @Test
   public void shouldCreateIncidentWhenBusinessIdFeelResolvesToTooLongValue() {
     // given - a FEEL expression whose variable resolves to a value longer than the maximum
     deployParentWithChildBusinessId("=businessIdVar");

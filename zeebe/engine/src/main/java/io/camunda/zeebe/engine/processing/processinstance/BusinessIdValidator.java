@@ -9,9 +9,10 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 /**
  * Central definition of the Business ID length constraint, shared by the process-instance creation
- * path (which turns a violation into a command rejection) and the call-activity resolution path
- * (which turns it into a runtime incident). Callers adapt the outcome to their own result type;
- * this class owns only the rule.
+ * path (which turns a violation into a command rejection), the call-activity resolution path (which
+ * turns it into a runtime incident), and the deployment validation path (which rejects a static
+ * literal that violates the rule at deploy time). Callers adapt the outcome to their own result
+ * type; this class owns only the rule.
  */
 public final class BusinessIdValidator {
 

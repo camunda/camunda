@@ -50,16 +50,17 @@ Business ID to null (matching 8.9 engine behaviour for an absent Business ID). A
 literal Business ID.
 
 **D4. Invalid runtime values raise a resolvable incident; discards do not.** A child `businessId`
-defined with an invalid FEEL expression rejects the process on deployment. At runtime,
-when the child instance is created:
+defined with an invalid FEEL expression, or a **static literal that exceeds the maximum length** (256
+characters), rejects the process on deployment — both are statically knowable, so they fail fast. At
+runtime, when the child instance is created:
 
 - an **explicit `=null`**, an **empty literal** (`businessId=""`), and a **FEEL expression that
   evaluates to null or an empty string** all **discard** the child Business ID — the child starts with
   no Business ID and **no incident** is raised (consistent with the engine-wide "empty string = not
   set" convention);
 - an incident is raised only when a **FEEL expression references a missing/unresolvable variable**
-  (coerced to null, reported via a `NO_VARIABLE_FOUND` warning), when a resolved value (**FEEL or
-  literal**) **exceeds the maximum length** (256 characters), or when a **FEEL expression resolves to
+  (coerced to null, reported via a `NO_VARIABLE_FOUND` warning), when a **FEEL expression evaluates to
+  a value that exceeds the maximum length** (256 characters), or when a **FEEL expression resolves to
   a non-string, non-null type** (e.g. number, boolean, list).
 
 Incidents are resolvable: correcting the variables or the expression and retrying activation creates
