@@ -37,20 +37,20 @@ type QueryDecisionRequirementsResponseBody = z.infer<typeof queryDecisionRequire
 const getDecisionRequirementsXmlResponseBodySchema = z.string();
 type GetDecisionRequirementsXmlResponseBody = z.infer<typeof getDecisionRequirementsXmlResponseBodySchema>;
 
-const queryDecisionRequirements: Endpoint = {
+const queryDecisionRequirements = {
 	method: 'POST',
-	getUrl: () => `/${API_VERSION}/decision-requirements/search`,
-};
+	getUrl: () => `/${API_VERSION}/decision-requirements/search` as const,
+} as const satisfies Endpoint;
 
-const getDecisionRequirements: Endpoint<Pick<DecisionRequirements, 'decisionRequirementsKey'>> = {
+const getDecisionRequirements = {
 	method: 'GET',
-	getUrl: ({decisionRequirementsKey}) => `/${API_VERSION}/decision-requirements/${decisionRequirementsKey}`,
-};
+	getUrl: ({decisionRequirementsKey}) => `/${API_VERSION}/decision-requirements/${decisionRequirementsKey}` as const,
+} as const satisfies Endpoint<Pick<DecisionRequirements, 'decisionRequirementsKey'>>;
 
-const getDecisionRequirementsXml: Endpoint<Pick<DecisionRequirements, 'decisionRequirementsKey'>> = {
+const getDecisionRequirementsXml = {
 	method: 'GET',
-	getUrl: ({decisionRequirementsKey}) => `/${API_VERSION}/decision-requirements/${decisionRequirementsKey}/xml`,
-};
+	getUrl: ({decisionRequirementsKey}) => `/${API_VERSION}/decision-requirements/${decisionRequirementsKey}/xml` as const,
+} as const satisfies Endpoint<Pick<DecisionRequirements, 'decisionRequirementsKey'>>;
 
 export {
 	decisionRequirementsSchema,

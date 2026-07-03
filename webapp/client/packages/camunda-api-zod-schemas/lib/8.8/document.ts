@@ -52,10 +52,7 @@ const documentLinkSchema = z.object({
 });
 type DocumentLink = z.infer<typeof documentLinkSchema>;
 
-const createDocument: Endpoint<{
-	storeId?: string;
-	documentId: string;
-}> = {
+const createDocument = {
 	method: 'POST',
 	getUrl({storeId, documentId}) {
 		const searchParams = new URLSearchParams();
@@ -66,13 +63,14 @@ const createDocument: Endpoint<{
 			searchParams.set('documentId', documentId);
 		}
 		const query = searchParams.toString();
-		return `/${API_VERSION}/documents${query ? `?${query}` : ''}`;
+		return `/${API_VERSION}/documents${query ? `?${query}` : ''}` as const;
 	},
-};
-
-const createDocuments: Endpoint<{
+} as const satisfies Endpoint<{
 	storeId?: string;
-}> = {
+	documentId: string;
+}>;
+
+const createDocuments = {
 	method: 'POST',
 	getUrl({storeId} = {}) {
 		const searchParams = new URLSearchParams();
@@ -80,15 +78,13 @@ const createDocuments: Endpoint<{
 			searchParams.set('storeId', storeId);
 		}
 		const query = searchParams.toString();
-		return `/${API_VERSION}/documents/batch${query ? `?${query}` : ''}`;
+		return `/${API_VERSION}/documents/batch${query ? `?${query}` : ''}` as const;
 	},
-};
-
-const getDocument: Endpoint<{
-	documentId: string;
+} as const satisfies Endpoint<{
 	storeId?: string;
-	contentHash?: string;
-}> = {
+}>;
+
+const getDocument = {
 	method: 'GET',
 	getUrl({documentId, storeId, contentHash}) {
 		const searchParams = new URLSearchParams();
@@ -99,14 +95,15 @@ const getDocument: Endpoint<{
 			searchParams.set('contentHash', contentHash);
 		}
 		const query = searchParams.toString();
-		return `/${API_VERSION}/documents/${documentId}${query ? `?${query}` : ''}`;
+		return `/${API_VERSION}/documents/${documentId}${query ? `?${query}` : ''}` as const;
 	},
-};
-
-const deleteDocument: Endpoint<{
+} as const satisfies Endpoint<{
 	documentId: string;
 	storeId?: string;
-}> = {
+	contentHash?: string;
+}>;
+
+const deleteDocument = {
 	method: 'DELETE',
 	getUrl({documentId, storeId}) {
 		const searchParams = new URLSearchParams();
@@ -114,15 +111,14 @@ const deleteDocument: Endpoint<{
 			searchParams.set('storeId', storeId);
 		}
 		const query = searchParams.toString();
-		return `/${API_VERSION}/documents/${documentId}${query ? `?${query}` : ''}`;
+		return `/${API_VERSION}/documents/${documentId}${query ? `?${query}` : ''}` as const;
 	},
-};
-
-const createDocumentLink: Endpoint<{
+} as const satisfies Endpoint<{
 	documentId: string;
 	storeId?: string;
-	contentHash?: string;
-}> = {
+}>;
+
+const createDocumentLink = {
 	method: 'POST',
 	getUrl({documentId, storeId, contentHash}) {
 		const searchParams = new URLSearchParams();
@@ -133,9 +129,13 @@ const createDocumentLink: Endpoint<{
 			searchParams.set('contentHash', contentHash);
 		}
 		const query = searchParams.toString();
-		return `/${API_VERSION}/documents/${documentId}/links${query ? `?${query}` : ''}`;
+		return `/${API_VERSION}/documents/${documentId}/links${query ? `?${query}` : ''}` as const;
 	},
-};
+} as const satisfies Endpoint<{
+	documentId: string;
+	storeId?: string;
+	contentHash?: string;
+}>;
 
 export {
 	documentMetadataSchema,

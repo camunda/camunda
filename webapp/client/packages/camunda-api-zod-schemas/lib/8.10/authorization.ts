@@ -130,30 +130,30 @@ type GetAuthorizationResponseBody = z.infer<typeof getAuthorizationResponseBodyS
 const queryAuthorizationsResponseBodySchema = getQueryResponseBodySchema(authorizationSchema);
 type QueryAuthorizationsResponseBody = z.infer<typeof queryAuthorizationsResponseBodySchema>;
 
-const createAuthorization: Endpoint = {
+const createAuthorization = {
 	method: 'POST',
-	getUrl: () => `/${API_VERSION}/authorizations`,
-};
+	getUrl: () => `/${API_VERSION}/authorizations` as const,
+} as const satisfies Endpoint;
 
-const updateAuthorization: Endpoint<{authorizationKey: string}> = {
+const updateAuthorization = {
 	method: 'PUT',
-	getUrl: ({authorizationKey}) => `/${API_VERSION}/authorizations/${authorizationKey}`,
-};
+	getUrl: ({authorizationKey}) => `/${API_VERSION}/authorizations/${authorizationKey}` as const,
+} as const satisfies Endpoint<{authorizationKey: string}>;
 
-const getAuthorization: Endpoint<{authorizationKey: string}> = {
+const getAuthorization = {
 	method: 'GET',
-	getUrl: ({authorizationKey}) => `/${API_VERSION}/authorizations/${authorizationKey}`,
-};
+	getUrl: ({authorizationKey}) => `/${API_VERSION}/authorizations/${authorizationKey}` as const,
+} as const satisfies Endpoint<{authorizationKey: string}>;
 
-const deleteAuthorization: Endpoint<{authorizationKey: string}> = {
+const deleteAuthorization = {
 	method: 'DELETE',
-	getUrl: ({authorizationKey}) => `/${API_VERSION}/authorizations/${authorizationKey}`,
-};
+	getUrl: ({authorizationKey}) => `/${API_VERSION}/authorizations/${authorizationKey}` as const,
+} as const satisfies Endpoint<{authorizationKey: string}>;
 
-const queryAuthorizations: Endpoint = {
+const queryAuthorizations = {
 	method: 'POST',
-	getUrl: () => `/${API_VERSION}/authorizations/search`,
-};
+	getUrl: () => `/${API_VERSION}/authorizations/search` as const,
+} as const satisfies Endpoint;
 
 export {
 	permissionTypeSchema,

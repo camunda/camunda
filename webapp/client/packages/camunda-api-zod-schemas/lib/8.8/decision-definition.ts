@@ -102,25 +102,25 @@ const evaluateDecisionResponseBodySchema = z.object({
 });
 type EvaluateDecisionResponseBody = z.infer<typeof evaluateDecisionResponseBodySchema>;
 
-const queryDecisionDefinitions: Endpoint = {
+const queryDecisionDefinitions = {
 	method: 'POST',
-	getUrl: () => `/${API_VERSION}/decision-definitions/search`,
-};
+	getUrl: () => `/${API_VERSION}/decision-definitions/search` as const,
+} as const satisfies Endpoint;
 
-const getDecisionDefinition: Endpoint<{decisionDefinitionKey: string}> = {
+const getDecisionDefinition = {
 	method: 'GET',
-	getUrl: ({decisionDefinitionKey}) => `/${API_VERSION}/decision-definitions/${decisionDefinitionKey}`,
-};
+	getUrl: ({decisionDefinitionKey}) => `/${API_VERSION}/decision-definitions/${decisionDefinitionKey}` as const,
+} as const satisfies Endpoint<{decisionDefinitionKey: string}>;
 
-const getDecisionDefinitionXml: Endpoint<{decisionDefinitionKey: string}> = {
+const getDecisionDefinitionXml = {
 	method: 'GET',
-	getUrl: ({decisionDefinitionKey}) => `/${API_VERSION}/decision-definitions/${decisionDefinitionKey}/xml`,
-};
+	getUrl: ({decisionDefinitionKey}) => `/${API_VERSION}/decision-definitions/${decisionDefinitionKey}/xml` as const,
+} as const satisfies Endpoint<{decisionDefinitionKey: string}>;
 
-const evaluateDecision: Endpoint = {
+const evaluateDecision = {
 	method: 'POST',
-	getUrl: () => `/${API_VERSION}/decision-definitions/evaluation`,
-};
+	getUrl: () => `/${API_VERSION}/decision-definitions/evaluation` as const,
+} as const satisfies Endpoint;
 
 export {
 	decisionDefinitionSchema,

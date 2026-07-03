@@ -24,14 +24,14 @@ type GetUsageMetricsParams = {
 	endTime: string;
 };
 
-const getUsageMetrics: Endpoint<GetUsageMetricsParams> = {
+const getUsageMetrics = {
 	method: 'GET',
 	getUrl: ({startTime, endTime}) =>
 		`/${API_VERSION}/usage-metrics?${new URLSearchParams({
 			startTime,
 			endTime,
-		}).toString()}`,
-};
+		}).toString()}` as const,
+} as const satisfies Endpoint<GetUsageMetricsParams>;
 
 export {getUsageMetrics, usageMetricsSchema, getUsageMetricsResponseBodySchema};
 export type {UsageMetrics, GetUsageMetricsResponseBody, GetUsageMetricsParams};
