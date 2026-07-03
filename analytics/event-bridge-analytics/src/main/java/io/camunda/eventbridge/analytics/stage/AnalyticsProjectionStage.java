@@ -7,12 +7,13 @@
  */
 package io.camunda.eventbridge.analytics.stage;
 
-import io.camunda.eventbridge.analytics.fact.ProcessDefinitionFact;
-import io.camunda.eventbridge.analytics.fact.ProcessExecutionFact;
-import io.camunda.eventbridge.analytics.metric.JdbcProcessDefinitionSink;
-import io.camunda.eventbridge.analytics.projection.AnalyticsColumnFamilies;
-import io.camunda.eventbridge.analytics.projection.ProcessExecutionProjector;
-import io.camunda.eventbridge.analytics.projection.StateBackedProjectionStore;
+import io.camunda.analytics.fact.ProcessDefinitionFact;
+import io.camunda.analytics.fact.ProcessExecutionFact;
+import io.camunda.analytics.metric.JdbcProcessDefinitionSink;
+import io.camunda.analytics.projection.AnalyticsColumnFamilies;
+import io.camunda.analytics.projection.ProcessExecutionProjector;
+import io.camunda.analytics.projection.SourceRecord;
+import io.camunda.analytics.projection.StateBackedProjectionStore;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.streaming.ProjectionStage;
 import io.camunda.eventbridge.streaming.StreamProcessor;
@@ -20,7 +21,6 @@ import io.camunda.eventbridge.streaming.StreamRuntime;
 import io.camunda.eventbridge.streaming.aggregate.Rollup;
 import io.camunda.eventbridge.streaming.aggregate.TypeRoutingRollup;
 import io.camunda.eventbridge.streaming.state.rocksdb.RocksDbStateStoreProvider;
-import io.camunda.eventbridge.zeebe.connector.ZeebeRecord;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecordCodec;
 import io.camunda.zeebe.db.impl.DbBytes;
 import io.camunda.zeebe.db.impl.DbLong;
@@ -109,23 +109,20 @@ public final class AnalyticsProjectionStage {
     // The per-partition task: fold-then-combine over the source. Single source partition today, so
     // one task; the factory shape lets the runtime scale to task-per-partition when the source is
     // partitioned (which additionally needs per-partition state providers).
-    final StreamProcessor<ZeebeRecord> task =
-        new StreamProcessor<ZeebeRecord>().add(new ProjectionStage<>(projector, rollups));
+    final StreamProcessor<SourceRecord> task =
+        new StreamProcessor<SourceRecord>().add(new ProjectionStage<>(projector, rollups));
     final ZeebeRecordCodec codec = new ZeebeRecordCodec();
 
-    final StreamRuntime<ZeebeRecord> runtime =
-        StreamRuntime.<ZeebeRecord>builder()
+    final StreamRuntime<SourceRecord> runtime =
+        StreamRuntime.<SourceRecord>builder()
             .client(client)
             .group(group)
             .instanceId(instanceId)
             .sourceTopic(sourceTopic)
             .deserializer(
                 (payload, partition, offset) ->
-                    new ZeebeRecord(
-                        sourceTopic,
-                        partition,
-                        offset,
-                        codec.deserialize(payload, partition, offset)))
+                    new SourceRecord(
+                        partition, offset, codec.deserialize(payload, partition, offset)))
             .taskFactory(partition -> task)
             .transactionRunner(provider::runInTransaction)
             .offsetStore(new ProjectionOffsetStore(store))

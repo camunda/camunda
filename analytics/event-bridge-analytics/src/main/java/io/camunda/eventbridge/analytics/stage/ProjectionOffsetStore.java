@@ -7,7 +7,7 @@
  */
 package io.camunda.eventbridge.analytics.stage;
 
-import io.camunda.eventbridge.analytics.projection.StateBackedProjectionStore;
+import io.camunda.analytics.projection.StateBackedProjectionStore;
 import io.camunda.eventbridge.streaming.OffsetStore;
 import java.util.Map;
 

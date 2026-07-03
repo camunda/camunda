@@ -7,7 +7,7 @@
  */
 package io.camunda.eventbridge.analytics.stage;
 
-import io.camunda.eventbridge.analytics.fact.ProcessExecutionFact;
+import io.camunda.analytics.fact.ProcessExecutionFact;
 import io.camunda.eventbridge.streaming.aggregate.AggregateFunction;
 import io.camunda.eventbridge.streaming.aggregate.Codec;
 import io.camunda.eventbridge.streaming.aggregate.KeySelector;

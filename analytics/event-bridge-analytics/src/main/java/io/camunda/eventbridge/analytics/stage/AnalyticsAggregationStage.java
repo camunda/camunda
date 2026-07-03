@@ -7,7 +7,7 @@
  */
 package io.camunda.eventbridge.analytics.stage;
 
-import io.camunda.eventbridge.analytics.projection.AnalyticsColumnFamilies;
+import io.camunda.analytics.projection.AnalyticsColumnFamilies;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.streaming.StreamProcessor;
 import io.camunda.eventbridge.streaming.StreamRuntime;

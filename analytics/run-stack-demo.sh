@@ -4,7 +4,7 @@
 #
 #   1. a fresh Event Bridge cluster that AUTO-CREATES topic 'zeebe-records'
 #   2. an OC cluster (StandaloneCamunda) with the ZeebeRecordExporter wired in (REST :8088)
-#   3. the analytics pipeline (StandaloneAnalyticsPipeline) -> shared H2 file DB (AUTO_SERVER)
+#   3. the analytics pipeline (Stage 1 projection + Stage 2 aggregation) -> shared H2 file DB (AUTO_SERVER)
 #   4. the analytics webapp (Spring Boot) on :8090, reading the SAME H2 DB
 #   5. a continuous driver deploying + running THREE processes (order / payment-with-gateway /
 #      shipping) with real service tasks + job workers, tagged with a 'region' variable
@@ -90,7 +90,6 @@ stop() {
     io.camunda.application.StandaloneEventBridge \
     io.camunda.eventbridge.analytics.stage.AnalyticsProjectionStage \
     io.camunda.eventbridge.analytics.stage.AnalyticsAggregationStage \
-    io.camunda.eventbridge.analytics.StandaloneAnalyticsPipeline \
     io.camunda.analytics.webapp.AnalyticsWebappApplication \
     io.camunda.eventbridge.examples.MultiProcessDemoDriver; do
     pkill -9 -f "${cls}" 2>/dev/null || true

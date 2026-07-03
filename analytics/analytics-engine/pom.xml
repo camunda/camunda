@@ -46,6 +46,11 @@
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-util</artifactId>
     </dependency>
+    <!-- msgpack property framework for the persisted-variable holder in the base projection -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-msgpack-value</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.agrona</groupId>
       <artifactId>agrona</artifactId>
@@ -62,6 +67,12 @@
     </dependency>
 
     <!-- Test -->
+    <!-- builds Zeebe records (CopiedRecord/RecordMetadata/...) for the projector test -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol-impl</artifactId>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>

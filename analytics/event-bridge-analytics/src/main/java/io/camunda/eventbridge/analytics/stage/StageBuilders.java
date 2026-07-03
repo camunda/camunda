@@ -7,7 +7,7 @@
  */
 package io.camunda.eventbridge.analytics.stage;
 
-import io.camunda.eventbridge.analytics.fact.ProcessExecutionFact;
+import io.camunda.analytics.fact.ProcessExecutionFact;
 import io.camunda.eventbridge.streaming.TransactionRunner;
 import io.camunda.eventbridge.streaming.aggregate.DurableMaterializedRollup;
 import io.camunda.eventbridge.streaming.aggregate.FactPublishSink;
