@@ -400,6 +400,7 @@ jobs:
     # Delete the run-scoped GCS objects after consumers finish. The `utils-` prefix
     # exempts it from the check-results gate; artifacts self-expire (retention-days: 1)
     # and the bucket TTL covers runs cancelled/failed before this fires.
+<<<<<<< HEAD
     # Must list every GCS consumer so cleanup never deletes the m2 tarball out from under a
     # still-running restore: docker-checks + integration-tests, plus the stable/8.8-only
     # elasticsearch/opensearch IT jobs that also pull m2 from the same run prefix.
@@ -409,6 +410,13 @@ jobs:
     # cancelled, keep the GCS objects so "Re-run failed jobs" can re-fetch the distball --
     # build-distball won't re-run (it already succeeded) so it won't re-upload. Orphaned objects
     # on failed runs are reaped by the bucket TTL (Infra-owned).
+=======
+    needs: [ build-distball, docker-checks, integration-tests ]
+    # Only clean up when every consumer succeeded. If any failed or was cancelled, keep the
+    # GCS objects so "Re-run failed jobs" can re-fetch the distball -- build-distball won't
+    # re-run (it already succeeded) so it won't re-upload. Orphaned objects on failed runs are
+    # reaped by the bucket TTL (Infra-owned).
+>>>>>>> 5e1d8465 (ci: keep shared distball in GCS when a consumer fails)
     if: >-
       always()
       && needs.build-distball.result == 'success'
