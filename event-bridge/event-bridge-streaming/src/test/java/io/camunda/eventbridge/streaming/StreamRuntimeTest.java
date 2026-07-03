@@ -527,6 +527,70 @@ final class StreamRuntimeTest {
     assertThat(committedByTask).contains(5L);
   }
 
+  @Test
+  void shouldProcessRecordsGroupedByPartitionNotInterleaved() throws Exception {
+    // given — one poll batch interleaving two partitions: p1@1, p2@1, p1@2, p2@2
+    final List<String> processed = new ArrayList<>();
+    final CountDownLatch allProcessed = new CountDownLatch(4);
+
+    final Consumer consumer = mock(Consumer.class);
+    final EventBridgeClient client = mock(EventBridgeClient.class);
+    when(client.subscribe(any(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(consumer));
+    when(consumer.sendHeartbeat()).thenReturn(CompletableFuture.completedFuture(null));
+    when(consumer.poll(anyInt(), any()))
+        .thenReturn(
+            List.of(
+                new Event(1L, TOPIC, 1, "a".getBytes(StandardCharsets.UTF_8)),
+                new Event(1L, TOPIC, 2, "x".getBytes(StandardCharsets.UTF_8)),
+                new Event(2L, TOPIC, 1, "b".getBytes(StandardCharsets.UTF_8)),
+                new Event(2L, TOPIC, 2, "y".getBytes(StandardCharsets.UTF_8))))
+        .thenReturn(List.of());
+    when(consumer.commitOffset(any(), anyInt(), anyLong()))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    final Task<String> task =
+        new Task<>() {
+          @Override
+          public void process(final String record) {
+            processed.add(record);
+            allProcessed.countDown();
+          }
+        };
+
+    final StreamRuntime<String> runtime =
+        StreamRuntime.<String>builder()
+            .client(client)
+            .group("g")
+            .instanceId("i")
+            .sourceTopic(TOPIC)
+            .deserializer(
+                (payload, partition, offset) -> new String(payload, StandardCharsets.UTF_8))
+            .taskFactory(partition -> task)
+            .transactionRunner(Runnable::run)
+            .offsetStore(
+                new OffsetStore() {
+                  @Override
+                  public Map<Integer, Long> restore() {
+                    return Map.of();
+                  }
+
+                  @Override
+                  public void store(final int partition, final long offset) {}
+                })
+            .build();
+
+    // when
+    final Thread loop = new Thread(runtime::run, "runtime-under-test");
+    loop.start();
+    assertThat(allProcessed.await(5, TimeUnit.SECONDS)).isTrue();
+    runtime.stop();
+    loop.join(TimeUnit.SECONDS.toMillis(5));
+
+    // then — partition 1's records ran contiguously, then partition 2's (not a,x,b,y interleaved)
+    assertThat(processed).containsExactly("a", "b", "x", "y");
+  }
+
   @SuppressWarnings("unchecked")
   private static void doAnswerSeek(
       final Consumer consumer,

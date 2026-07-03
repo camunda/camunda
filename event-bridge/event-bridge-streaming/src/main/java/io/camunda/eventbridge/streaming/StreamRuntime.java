@@ -14,6 +14,7 @@ import io.camunda.eventbridge.client.TopicPartition;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -131,16 +132,29 @@ public final class StreamRuntime<R> implements AutoCloseable {
     while (running) {
       try {
         final List<Event> events = consumer.poll(maxPoll, pollTimeout);
+        // Group the poll batch by partition and process each partition's records contiguously, so a
+        // partition's task and its state cache stay hot rather than ping-ponging between partitions
+        // per record. Within a partition, records keep their offset order; across partitions the
+        // order is irrelevant (each is an independent shard).
+        final Map<Integer, List<Event>> byPartition = new LinkedHashMap<>();
         for (final Event event : events) {
+          byPartition.computeIfAbsent(event.partitionId(), p -> new ArrayList<>()).add(event);
+        }
+        for (final Map.Entry<Integer, List<Event>> partitionBatch : byPartition.entrySet()) {
           if (!running) {
             break; // stopped (shutdown, or a fail-fast record error) — skip the rest of the batch
           }
-          handleRecord(event);
-          // Memory-pressure commit: when a task's bounded state is full of buffered writes, run the
-          // barrier now so they flush durably (an atomic cut with the offset) and the memory frees
-          // —
-          // the change-log-free equivalent of a cache-full flush. Independent of the commit clock.
-          final Task<R> task = tasks.get(event.partitionId());
+          for (final Event event : partitionBatch.getValue()) {
+            if (!running) {
+              break;
+            }
+            handleRecord(event);
+          }
+          // Memory-pressure commit: when this partition's bounded state is full of buffered writes,
+          // run the barrier now so they flush durably (an atomic cut with the offset) and the
+          // memory
+          // frees — the change-log-free equivalent of a cache-full flush, independent of the clock.
+          final Task<R> task = tasks.get(partitionBatch.getKey());
           if (task != null && task.needsCheckpoint()) {
             commit();
             lastCommit = System.nanoTime();
