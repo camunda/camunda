@@ -471,10 +471,10 @@ final class BulkIndexRequestTest {
           .hasSize(1)
           .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
           .extracting(source -> source.get("value"))
-          .extracting(source -> ((Map<String, Object>) source).get("businessId"))
           .describedAs(
               "Expect that job records are NOT serialized with businessId on previous version")
-          .containsExactly(new Object[] {null});
+          .allSatisfy(
+              value -> assertThat((Map<String, Object>) value).doesNotContainKey("businessId"));
     }
 
     @Test
@@ -522,10 +522,10 @@ final class BulkIndexRequestTest {
           .hasSize(1)
           .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
           .extracting(source -> source.get("value"))
-          .extracting(source -> ((Map<String, Object>) source).get("leaseToken"))
           .describedAs(
               "Expect that job records are NOT serialized with leaseToken on previous version")
-          .containsExactly(new Object[] {null});
+          .allSatisfy(
+              value -> assertThat((Map<String, Object>) value).doesNotContainKey("leaseToken"));
     }
 
     @Test
