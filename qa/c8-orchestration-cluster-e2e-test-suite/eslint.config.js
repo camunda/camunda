@@ -67,6 +67,7 @@ export default [
             'expect',
             'expectJobsByType',
             'expectProcessState',
+            'expectStartSubscriptionCount',
           ],
         },
       ],
