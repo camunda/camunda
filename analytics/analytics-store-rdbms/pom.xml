@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.camunda</groupId>
+    <artifactId>analytics-parent</artifactId>
+    <version>8.10.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>analytics-store-rdbms</artifactId>
+  <packaging>jar</packaging>
+  <name>Analytics Store RDBMS</name>
+  <description>The RDBMS backend of the analytics serving store: a MyBatis-based implementation of
+    the neutral DatasetSchemaManager / DatasetWriter / DatasetQueryClient seams. Provisions each
+    dataset's table at runtime from its compiled schema, upserts cells/rows dialect-aware (H2,
+    PostgreSQL), and transforms the neutral fetch spec into SQL.</description>
+
+  <dependencies>
+    <!-- The neutral serving SPI + compiled dataset/schema model -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>analytics-engine</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <!-- Dynamic SQL construction + execution, idiomatic with db/rdbms -->
+    <dependency>
+      <groupId>org.mybatis</groupId>
+      <artifactId>mybatis</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+</project>

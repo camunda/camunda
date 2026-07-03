@@ -25,6 +25,7 @@
 
   <modules>
     <module>analytics-engine</module>
+    <module>analytics-store-rdbms</module>
     <module>event-bridge-analytics</module>
     <module>analytics-webapp</module>
   </modules>
