@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.camunda.analytics.store.rdbms.metadata.MeterIdMapper">
+
+  <select id="selectAll"
+    resultType="io.camunda.analytics.store.rdbms.metadata.row.MeterIdRow">
+    SELECT CUBE_ID, METER_NAME, AGG_ID FROM ANALYTICS_METER_ID
+  </select>
+
+  <insert id="insert"
+    parameterType="io.camunda.analytics.store.rdbms.metadata.row.MeterIdRow">
+    INSERT INTO ANALYTICS_METER_ID (CUBE_ID, METER_NAME, AGG_ID)
+    VALUES (#{cubeId}, #{meterName}, #{aggId})
+  </insert>
+</mapper>
