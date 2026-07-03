@@ -40,10 +40,10 @@ import java.util.Map;
  * {@code DEPLOYED} definition fact.
  *
  * <p>This is the canonical, small fact set; the specialized cohort metrics (SLA, no-incident) are
- * expressed later as dataset declarations over these facts rather than as bespoke fold outputs. The
- * fold is a deterministic function of the in-order, per-partition source stream. It reuses the
- * shared {@link BaseProjectionStore} (variables, incident flags/starts); the live typed {@code
- * ProcessExecutionProjector} is unchanged until Phase 3 retires it.
+ * expressed as dataset declarations over these facts rather than as bespoke fold outputs. The fold
+ * is a deterministic function of the in-order, per-partition source stream and reuses the shared
+ * {@link BaseProjectionStore} (variables, incident flags/starts). It is the sole projector — the
+ * generic replacement for the retired per-metric typed projectors.
  *
  * <p>Variable dimensions are stamped namespaced as {@code var.<name>} so they never collide with a
  * structural field. Enrichment uses the at-completion snapshot ({@link EnrichmentTiming#EVENT_TIME}

@@ -7,26 +7,28 @@
  */
 package io.camunda.eventbridge.analytics.stage;
 
-import io.camunda.analytics.shuffle.MergingRollup;
-import io.camunda.analytics.shuffle.Partial;
-import io.camunda.analytics.shuffle.PartialCodec;
+import io.camunda.analytics.dataset.ActiveCube;
+import io.camunda.analytics.shuffle.ShuffleEnvelope;
+import io.camunda.analytics.shuffle.ShuffleEnvelopeCodec;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.streaming.StreamRuntime;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
+import java.util.List;
 import org.h2.jdbcx.JdbcDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Stage 2 of the staged pipeline: consume the facts topic (partials produced by Stage-1 combiners,
- * partitioned by grouping key so each cell has a single owner), merge them per {@code aggId} into
- * the global windowed aggregate via a {@link MergingRollup} (per-writer slots), and converge the
- * idempotent serving sink — so dashboard reads hit one cell (O(1)).
+ * Stage 2 of the staged pipeline: consume the facts topic ({@link ShuffleEnvelope}s of sealed
+ * segment deltas produced by Stage 1, partitioned by grouping key so each cell has a single owner),
+ * dedup each batch, merge each cell delta once per {@code aggId} into the global windowed
+ * aggregate, and converge the idempotent serving sink — so dashboard reads hit one cell (O(1)).
  *
- * <p>This class only <em>wires</em> the stage: a {@link MergeStage} dispatches each partial to its
- * merger, and a {@link StreamRuntime} owns the poll loop, restore, and the commit barrier — the
- * slots + the facts-topic offset commit as one atomic cut, then the coordinator offset last.
+ * <p>This class only <em>wires</em> the stage: it seeds the same active cubes as Stage 1 (identical
+ * cube/agg ids) and hands one {@link CubeAggregationShard} per facts partition to a {@link
+ * StreamRuntime}, which owns the poll loop, restore, and the commit barrier — the merged cells +
+ * the facts-topic offset commit as one atomic cut, then the coordinator offset last.
  */
 public final class AnalyticsAggregationStage {
 
@@ -48,7 +50,6 @@ public final class AnalyticsAggregationStage {
     final String jdbcUrl =
         System.getProperty("jdbcUrl", "jdbc:h2:file:./data/analytics-dataset;DB_CLOSE_DELAY=-1");
     final String jdbcUser = System.getProperty("jdbcUser", "sa");
-    final long slaMs = Long.getLong("slaMs", 300_000L);
 
     final EventBridgeClient client = EventBridgeClient.create(gateway);
     final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
@@ -56,21 +57,22 @@ public final class AnalyticsAggregationStage {
     dataSource.setURL(jdbcUrl);
     dataSource.setUser(jdbcUser);
 
+    final List<ActiveCube> cubes = AnalyticsCubes.seed();
     final String stateDir = "data/analytics-stage2-" + instanceId;
 
-    final StreamRuntime<Partial> runtime =
-        StreamRuntime.<Partial>builder()
+    final StreamRuntime<ShuffleEnvelope> runtime =
+        StreamRuntime.<ShuffleEnvelope>builder()
             .client(client)
             .group(group)
             .instanceId(instanceId)
             .sourceTopic(factsTopic)
-            .deserializer((payload, partition, offset) -> PartialCodec.decode(payload))
-            // One self-contained shard per facts partition: its own RocksDB merge slots + offset
-            // and
-            // the per-aggId mergers, owning its durability (restore/commit).
+            .deserializer((payload, partition, offset) -> ShuffleEnvelopeCodec.decode(payload))
+            // One self-contained shard per facts partition: its own RocksDB cells + offset and the
+            // per-aggId mergers, owning its durability (restore/commit).
             .taskFactory(
                 partition ->
-                    AggregationShard.open(partition, stateDir, slaMs, dataSource, meterRegistry))
+                    CubeAggregationShard.open(
+                        partition, stateDir, dataSource, cubes, meterRegistry))
             .maxPoll(MAX_RECORDS)
             .pollTimeout(POLL_TIMEOUT)
             .commitInterval(CHECKPOINT_INTERVAL)

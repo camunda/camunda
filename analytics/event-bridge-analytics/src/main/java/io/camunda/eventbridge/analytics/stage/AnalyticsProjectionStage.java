@@ -7,27 +7,27 @@
  */
 package io.camunda.eventbridge.analytics.stage;
 
-import io.camunda.analytics.metric.JdbcProcessDefinitionSink;
+import io.camunda.analytics.dataset.ActiveCube;
 import io.camunda.analytics.projection.SourceRecord;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.streaming.StreamRuntime;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecordCodec;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
-import org.h2.jdbcx.JdbcDataSource;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Stage 1 of the staged pipeline: consume {@code zeebe-records}, fold once into the base
- * projection, and run a per-metric <em>combiner</em> that pre-aggregates each source partition's
- * facts into windowed partials, published to the facts topic (the shuffle).
+ * Stage 1 of the staged pipeline: consume {@code zeebe-records}, fold once into the base projection
+ * via the generic {@code AnalyticsFactProjector}, and seal each active cube-meter's per-source-
+ * partition segment deltas into the shuffle (the facts topic).
  *
- * <p>This class only <em>wires</em> the stage: it builds the processing topology (projector +
- * combiners) and hands it to a {@link StreamRuntime}, which owns the poll loop, restore, and the
- * produce-before-commit barrier. One RocksDB holds the base projection and the combiner cells; the
- * runtime makes them + the consumed source offset one atomic cut, publishing the partials (via the
- * {@code preCommitFlush}) before the offset advances so a crash replays rather than loses.
+ * <p>This class only <em>wires</em> the stage: it seeds the active cubes ({@link AnalyticsCubes})
+ * and hands one {@link CubeProjectionShard} per source partition to a {@link StreamRuntime}, which
+ * owns the poll loop, restore, and the produce-before-commit barrier. One RocksDB holds the base
+ * projection and the sealed segment cells; the shard publishes the sealed deltas before its
+ * segment-safe offset advances, so a crash replays the open segments rather than losing them.
  */
 public final class AnalyticsProjectionStage {
 
@@ -46,12 +46,10 @@ public final class AnalyticsProjectionStage {
     final String sourceTopic = System.getProperty("sourceTopic", "zeebe-records");
     final String factsTopic = System.getProperty("factsTopic", "analytics-facts");
     final int factsPartitions = Integer.getInteger("factsPartitions", 1);
+    final int segmentStride = Integer.getInteger("segmentStride", 1000);
+    final int schemaVersion = Integer.getInteger("shuffleSchemaVersion", 1);
     final String instanceId =
         System.getProperty("instanceId", "stage1-" + ProcessHandle.current().pid());
-    final long slaMs = Long.getLong("slaMs", 300_000L);
-    final String jdbcUrl =
-        System.getProperty("jdbcUrl", "jdbc:h2:file:./data/analytics-dataset;DB_CLOSE_DELAY=-1");
-    final String jdbcUser = System.getProperty("jdbcUser", "sa");
 
     final EventBridgeClient client = EventBridgeClient.create(gateway);
     final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
@@ -61,15 +59,7 @@ public final class AnalyticsProjectionStage {
       LOG.info("Facts topic {} already exists", factsTopic);
     }
 
-    // Process definitions are metadata (the BPMN XML), not a windowed aggregate — routed straight
-    // to
-    // the serving store so the dashboard can render the model; shared across shards (idempotent).
-    final JdbcDataSource dataSource = new JdbcDataSource();
-    dataSource.setURL(jdbcUrl);
-    dataSource.setUser(jdbcUser);
-    final JdbcProcessDefinitionSink definitionSink = new JdbcProcessDefinitionSink(dataSource);
-    definitionSink.initSchema();
-
+    final List<ActiveCube> cubes = AnalyticsCubes.seed();
     final String stateDir = "data/analytics-stage1-" + instanceId;
     final ZeebeRecordCodec codec = new ZeebeRecordCodec();
 
@@ -86,19 +76,20 @@ public final class AnalyticsProjectionStage {
             // event time = the Zeebe record timestamp, so the runtime advances stream time and
             // finalizes closed windows even for keys that stop receiving records.
             .timestampExtractor(sourceRecord -> sourceRecord.record().getTimestamp())
-            // One self-contained shard per source partition: its own RocksDB, projection, combiners
-            // and publisher, owning its durability (restore/commit) — the runtime dedups its resume
-            // gap and drives its per-partition atomic commit.
+            // One self-contained shard per source partition: its own RocksDB, projection, per-cube
+            // sealing aggregations and publisher, owning its durability (restore/commit) — the
+            // runtime dedups its resume gap and drives its per-partition atomic commit.
             .taskFactory(
                 partition ->
-                    ProjectionShard.open(
+                    CubeProjectionShard.open(
                         partition,
                         client,
                         stateDir,
                         factsTopic,
                         factsPartitions,
-                        slaMs,
-                        definitionSink,
+                        segmentStride,
+                        schemaVersion,
+                        cubes,
                         meterRegistry))
             .maxPoll(MAX_RECORDS)
             .pollTimeout(POLL_TIMEOUT)
@@ -106,7 +97,12 @@ public final class AnalyticsProjectionStage {
             .errorBackoff(ERROR_BACKOFF)
             .build();
 
-    LOG.info("Analytics Stage 1 '{}': {} -> combiners -> {}", instanceId, sourceTopic, factsTopic);
+    LOG.info(
+        "Analytics Stage 1 '{}': {} -> {} cube(s) -> {}",
+        instanceId,
+        sourceTopic,
+        cubes.size(),
+        factsTopic);
     Runtime.getRuntime().addShutdownHook(new Thread(runtime::stop, "stage1-shutdown"));
     runtime.run();
   }
