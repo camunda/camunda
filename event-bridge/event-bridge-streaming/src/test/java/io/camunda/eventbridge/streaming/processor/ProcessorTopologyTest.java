@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.Test;
 
 final class ProcessorTopologyTest {
@@ -64,24 +63,19 @@ final class ProcessorTopologyTest {
   @Test
   void shouldFireWallClockPunctuatorAtItsInterval() {
     // given — a processor scheduling a 100ms wall-clock tick, over a controllable clock
-    final AtomicLong clock = new AtomicLong(1_000);
     final Collecting sink = new Collecting();
     final ProcessorTopology<String> topology =
         ProcessorTopology.<String>builder()
             .source("tick", new Ticking(PunctuationType.WALL_CLOCK_TIME, 100))
             .processor("sink", sink, "tick")
-            .wallClock(clock::get)
             .build();
     topology.init();
 
-    // when — flushes advance the clock; the first flush only primes the schedule
-    topology.flush(); // primes at t=1000
-    clock.set(1_050);
-    topology.flush(); // 50ms elapsed — no fire
-    clock.set(1_100);
-    topology.flush(); // 100ms elapsed — fire
-    clock.set(1_250);
-    topology.flush(); // 150ms elapsed — fire
+    // when — the runtime supplies the wall-clock time each tick; the first tick only primes
+    topology.punctuateWallClock(1_000); // primes at t=1000
+    topology.punctuateWallClock(1_050); // 50ms elapsed — no fire
+    topology.punctuateWallClock(1_100); // 100ms elapsed — fire
+    topology.punctuateWallClock(1_250); // 150ms elapsed — fire
 
     // then
     assertThat(sink.received).containsExactly("tick@1100", "tick@1250");
@@ -98,9 +92,9 @@ final class ProcessorTopologyTest {
             .build();
     topology.init();
 
-    // when — stream time advances; wall-clock flushes must not fire a stream-time punctuator
+    // when — stream time advances; a wall-clock tick must not fire a stream-time punctuator
     topology.advanceStreamTime(10_000); // primes
-    topology.flush();
+    topology.punctuateWallClock(999_999);
     topology.advanceStreamTime(10_500); // +500 — no fire
     topology.advanceStreamTime(11_000); // +1000 — fire
 

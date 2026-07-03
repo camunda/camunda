@@ -16,7 +16,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.LongSupplier;
 
 /**
  * A graph of {@link Processor}s driven as one {@link Stage}: records enter at the source and flow
@@ -25,12 +24,12 @@ import java.util.function.LongSupplier;
  * fold-then-rollup of {@code ProjectionStage}.
  *
  * <p>The topology also owns punctuation: processors register {@link Punctuator}s via {@link
- * ProcessorContext#schedule}, and the stage's two lifecycle ticks drive them — {@link #flush()}
- * runs the {@link PunctuationType#WALL_CLOCK_TIME} punctuators (bounded latency, idle-timeout work)
- * and {@link #advanceStreamTime(long)} the {@link PunctuationType#STREAM_TIME} ones (window
- * finalization, retention). State stores are added by name and connected to the processors allowed
- * to reach them; their durability is the runtime's concern (the driver's checkpoint), not the
- * topology's.
+ * ProcessorContext#schedule}, and the runtime's two punctuation ticks drive them — {@link
+ * #punctuateWallClock(long)} runs the {@link PunctuationType#WALL_CLOCK_TIME} punctuators (bounded
+ * latency, idle-timeout work) and {@link #advanceStreamTime(long)} the {@link
+ * PunctuationType#STREAM_TIME} ones (window finalization, retention). State stores are added by
+ * name and connected to the processors allowed to reach them; their durability is the runtime's
+ * concern (the driver's checkpoint), not the topology's.
  *
  * <p>Single-writer: one topology per source partition, driven on the runtime thread.
  *
@@ -42,7 +41,6 @@ public final class ProcessorTopology<R> implements Stage<R> {
   private final List<ProcessorNode<?, ?>> nodes;
   private final Map<String, Object> stores;
   private final Map<String, Set<String>> storesByProcessor;
-  private final LongSupplier wallClockMs;
   private final List<ScheduledPunctuator> punctuators = new ArrayList<>();
 
   private ProcessorTopology(final Builder<R> builder) {
@@ -50,7 +48,6 @@ public final class ProcessorTopology<R> implements Stage<R> {
     nodes = List.copyOf(builder.nodes.values());
     stores = Map.copyOf(builder.stores);
     storesByProcessor = Map.copyOf(builder.storesByProcessor);
-    wallClockMs = builder.wallClockMs;
   }
 
   public static <R> Builder<R> builder() {
@@ -73,10 +70,10 @@ public final class ProcessorTopology<R> implements Stage<R> {
     source.deliver(record);
   }
 
-  /** Wall-clock punctuation tick. */
+  /** Wall-clock punctuation tick — the runtime supplies the current wall-clock time. */
   @Override
-  public void flush() {
-    fire(PunctuationType.WALL_CLOCK_TIME, wallClockMs.getAsLong());
+  public void punctuateWallClock(final long wallClockMs) {
+    fire(PunctuationType.WALL_CLOCK_TIME, wallClockMs);
   }
 
   /** Event-time punctuation tick. */
@@ -176,7 +173,6 @@ public final class ProcessorTopology<R> implements Stage<R> {
     private final Map<String, Object> stores = new HashMap<>();
     private final Map<String, Set<String>> storesByProcessor = new HashMap<>();
     private String sourceName;
-    private LongSupplier wallClockMs = System::currentTimeMillis;
 
     private Builder() {}
 
@@ -215,14 +211,6 @@ public final class ProcessorTopology<R> implements Stage<R> {
         requireNode(processor);
         storesByProcessor.computeIfAbsent(processor, key -> new HashSet<>()).add(name);
       }
-      return this;
-    }
-
-    /**
-     * Overrides the wall-clock source (for tests). Defaults to {@link System#currentTimeMillis}.
-     */
-    public Builder<R> wallClock(final LongSupplier wallClockMs) {
-      this.wallClockMs = wallClockMs;
       return this;
     }
 

@@ -192,15 +192,19 @@ public final class StreamRuntime<R> implements AutoCloseable {
   }
 
   /**
-   * Freshness/event-time punctuation for every materialized task: flush emitted output (bounded
-   * latency) and, when a timestamp extractor is configured, advance the task's stream time so
-   * closed windows finalize even without new records. Does not make state durable — that is {@link
-   * #commit()}.
+   * Punctuation for every materialized task on the freshness tick: flush emitted output (bounded
+   * latency), fire the wall-clock tick (so idle partitions still do time-driven work), and — when a
+   * timestamp extractor is configured — advance the task's stream time so closed windows finalize.
+   * Does not make state durable — that is {@link #commit()}.
    */
   private void punctuate() {
+    final long wallClockMs = System.currentTimeMillis();
     for (final Map.Entry<Integer, Task<R>> entry : tasks.entrySet()) {
       final Task<R> task = entry.getValue();
       task.flush();
+      // Wall-clock tick: fires even for a fully idle partition (no event-time progress), so
+      // time-driven work still runs. Event-time punctuation advances only as records arrive.
+      task.punctuateWallClock(wallClockMs);
       if (timestampExtractor != null) {
         final Long partitionStreamTime = streamTime.get(entry.getKey());
         if (partitionStreamTime != null) {

@@ -321,6 +321,66 @@ final class StreamRuntimeTest {
     loop.join(TimeUnit.SECONDS.toMillis(5));
   }
 
+  @Test
+  void shouldPunctuateWallClockOnTheTickAfterAPartitionGoesIdle() throws Exception {
+    // given — one record materializes the task, then the partition is idle forever
+    final CountDownLatch wallClockTicks = new CountDownLatch(2);
+
+    final Consumer consumer = mock(Consumer.class);
+    final EventBridgeClient client = mock(EventBridgeClient.class);
+    when(client.subscribe(any(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(consumer));
+    when(consumer.sendHeartbeat()).thenReturn(CompletableFuture.completedFuture(null));
+    final Event event = new Event(5L, TOPIC, 1, "a".getBytes(StandardCharsets.UTF_8));
+    when(consumer.poll(anyInt(), any())).thenReturn(List.of(event)).thenReturn(List.of());
+    when(consumer.commitOffset(any(), anyInt(), anyLong()))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    final Task<String> task =
+        new Task<>() {
+          @Override
+          public void process(final String record) {}
+
+          @Override
+          public void punctuateWallClock(final long wallClockMs) {
+            wallClockTicks.countDown();
+          }
+        };
+
+    final StreamRuntime<String> runtime =
+        StreamRuntime.<String>builder()
+            .client(client)
+            .group("g")
+            .instanceId("i")
+            .sourceTopic(TOPIC)
+            .deserializer(
+                (payload, partition, offset) -> new String(payload, StandardCharsets.UTF_8))
+            .taskFactory(partition -> task)
+            .transactionRunner(Runnable::run)
+            .offsetStore(
+                new OffsetStore() {
+                  @Override
+                  public Map<Integer, Long> restore() {
+                    return Map.of();
+                  }
+
+                  @Override
+                  public void store(final int partition, final long offset) {}
+                })
+            .punctuationInterval(Duration.ofMillis(20))
+            .commitInterval(Duration.ofHours(1))
+            .build();
+
+    // when
+    final Thread loop = new Thread(runtime::run, "runtime-under-test");
+    loop.start();
+
+    // then — the wall-clock tick keeps firing on the idle partition's task
+    assertThat(wallClockTicks.await(5, TimeUnit.SECONDS)).isTrue();
+    runtime.stop();
+    loop.join(TimeUnit.SECONDS.toMillis(5));
+  }
+
   @SuppressWarnings("unchecked")
   private static void doAnswerSeek(
       final Consumer consumer,

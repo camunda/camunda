@@ -42,6 +42,13 @@ public interface Rollup<F> extends AutoCloseable {
   default void advanceStreamTime(final long streamTimeMs) {}
 
   /**
+   * Wall-clock punctuation tick: finalize/emit on real time even when no facts are arriving (an
+   * idle grouping), for callers that want idle windows to close by wall clock rather than event
+   * time. Default: no-op — the standard model finalizes on {@link #advanceStreamTime}.
+   */
+  default void punctuateWallClock(final long wallClockMs) {}
+
+  /**
    * Whether this rollup holds buffered state that should be checkpointed before the regular
    * interval — e.g. a bounded cache is full. Default: no-op ({@code false}).
    */

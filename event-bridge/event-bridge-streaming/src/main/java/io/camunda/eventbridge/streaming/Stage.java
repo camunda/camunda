@@ -34,6 +34,12 @@ public interface Stage<R> {
   default void advanceStreamTime(final long streamTimeMs) {}
 
   /**
+   * Wall-clock punctuation tick: run time-driven work (e.g. finalize windows whose grace has
+   * elapsed in real time) even for an idle partition with no event-time progress. Default: no-op.
+   */
+  default void punctuateWallClock(final long wallClockMs) {}
+
+  /**
    * Whether this stage holds buffered writes that should be checkpointed before the regular
    * interval — e.g. a bounded cache is full. Bubbles up to {@link Task#needsCheckpoint()}. Default
    * {@code false}.

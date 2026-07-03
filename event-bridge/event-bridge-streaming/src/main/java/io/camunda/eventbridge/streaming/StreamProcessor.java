@@ -66,6 +66,12 @@ public final class StreamProcessor<R> implements Task<R>, AutoCloseable {
     stages.forEach(stage -> stage.advanceStreamTime(streamTimeMs));
   }
 
+  /** Wall-clock tick: run time-driven work on every stage, even for idle partitions. */
+  @Override
+  public void punctuateWallClock(final long wallClockMs) {
+    stages.forEach(stage -> stage.punctuateWallClock(wallClockMs));
+  }
+
   @Override
   public boolean needsCheckpoint() {
     for (final Stage<R> stage : stages) {

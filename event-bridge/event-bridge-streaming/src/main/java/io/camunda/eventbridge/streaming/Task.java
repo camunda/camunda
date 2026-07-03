@@ -42,6 +42,14 @@ public interface Task<R> {
   default void advanceStreamTime(final long streamTimeMs) {}
 
   /**
+   * Wall-clock punctuation: the runtime calls this on the punctuation tick with the current
+   * wall-clock time, so time-driven work runs even for a fully idle partition that produces no
+   * event-time progress — finalizing a window whose grace has elapsed in real time, or timing out
+   * stale state. Complements {@link #advanceStreamTime}, which advances only as records arrive.
+   */
+  default void punctuateWallClock(final long wallClockMs) {}
+
+  /**
    * Whether the task should be checkpointed before the regular commit interval — e.g. a bounded
    * cache has filled with buffered writes that only the commit barrier can flush durably (an atomic
    * cut with the offset), after which the memory is reclaimed. Checked by the runtime per record;

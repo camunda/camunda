@@ -68,6 +68,11 @@ public final class ProjectionStage<R, F> implements Stage<R> {
   }
 
   @Override
+  public void punctuateWallClock(final long wallClockMs) {
+    rollups.forEach(rollup -> rollup.punctuateWallClock(wallClockMs));
+  }
+
+  @Override
   public boolean needsCheckpoint() {
     if (projector.needsCheckpoint()) {
       return true;
