@@ -537,9 +537,18 @@ jobs:
     name: "Cleanup / Distribution Tarball Artifact"
     # Delete the run-scoped GCS objects after consumers finish. The `utils-` prefix
     # exempts it from the check-results gate; artifacts self-expire (retention-days: 1)
-    # and the bucket TTL covers runs cancelled before this fires.
+    # and the bucket TTL covers runs cancelled/failed before this fires.
     needs: [ build-distball, docker-checks, integration-tests ]
-    if: always() && needs.build-distball.result != 'skipped'
+    # Clean up only when build-distball succeeded and no consumer failed or was cancelled
+    # (skipped consumers -- both are conditional -- don't block cleanup). If any failed or was
+    # cancelled, keep the GCS objects so "Re-run failed jobs" can re-fetch the distball --
+    # build-distball won't re-run (it already succeeded) so it won't re-upload. Orphaned objects
+    # on failed runs are reaped by the bucket TTL (Infra-owned).
+    if: >-
+      always()
+      && needs.build-distball.result == 'success'
+      && !contains(needs.*.result, 'failure')
+      && !contains(needs.*.result, 'cancelled')
     runs-on: ubuntu-slim  # short auth-and-delete job; no need for a full runner
     timeout-minutes: 10
     permissions:
