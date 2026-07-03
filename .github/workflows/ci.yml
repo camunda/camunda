@@ -1987,7 +1987,7 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "spring-boot-starter-compatibility/${{ matrix.name }}"
+          job_name: "spring-boot-compatibility-tests/${{ matrix.name }}"
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           detailed_junit_tests: true
