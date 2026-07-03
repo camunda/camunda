@@ -515,4 +515,31 @@ describe('TopPanel', () => {
       ),
     ).toBeUndefined();
   });
+
+  it('should render a waiting overlay with a count label for a waiting element', async () => {
+    mockFetchProcessInstanceWaitStateStatistics().withSuccess({
+      items: [
+        {elementId: 'service-task-7', waitingCount: 5},
+        {elementId: 'service-task-1', waitingCount: 1},
+      ],
+    });
+
+    render(<TopPanel />, {wrapper: getWrapper()});
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('diagram-spinner'),
+    );
+
+    await waitFor(() => {
+      expect(
+        diagramOverlaysStore.state.overlays.some(
+          ({elementId, type}) =>
+            elementId === 'service-task-7' && type === 'waitingState',
+        ),
+      ).toBe(true);
+    });
+
+    expect(await screen.findByText('5 waiting')).toBeInTheDocument();
+    expect(screen.getByText('Waiting')).toBeInTheDocument();
+  });
 });
