@@ -11,6 +11,7 @@ import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.util.ClusterVariableUtil;
 import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableEntity;
+import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableEntity.MetadataEntry;
 import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableScope;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -18,6 +19,7 @@ import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class ClusterVariableCreatedUpdatedHandler
@@ -87,6 +89,17 @@ public class ClusterVariableCreatedUpdatedHandler
       entity.setFullValue(null);
       entity.setIsPreview(false);
     }
+
+    final Map<String, Object> metadata = recordValue.getMetadata();
+    entity.setMetadata(
+        metadata.entrySet().stream()
+            .map(
+                e ->
+                    new MetadataEntry(
+                        e.getKey(),
+                        String.valueOf(e.getValue()),
+                        e.getValue() instanceof Number n ? n.doubleValue() : null))
+            .toList());
   }
 
   @Override
