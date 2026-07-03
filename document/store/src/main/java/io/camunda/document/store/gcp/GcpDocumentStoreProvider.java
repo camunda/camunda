@@ -19,11 +19,7 @@ import java.util.function.Supplier;
 
 public class GcpDocumentStoreProvider implements DocumentStoreProvider {
 
-  /**
-   * Null in production. Tests may set this before the broker starts to redirect the GCS client to a
-   * local emulator without touching document store configuration.
-   */
-  @VisibleForTesting public static volatile Supplier<Storage> storageOverride = null;
+  @VisibleForTesting private static volatile Supplier<Storage> storageOverride = null;
 
   private static final String BUCKET_NAME_PROPERTY = "BUCKET";
   private static final String PREFIX_PROPERTY = "PREFIX";
@@ -33,13 +29,26 @@ public class GcpDocumentStoreProvider implements DocumentStoreProvider {
   @Override
   public DocumentStore createDocumentStore(
       final DocumentStoreConfigurationRecord configuration, final ExecutorService executorService) {
+    final Supplier<Storage> override = storageOverride;
     return new GcpDocumentStore(
         getBucketNameProperty(configuration),
         getPrefixProperty(configuration),
-        storageOverride != null
-            ? storageOverride.get()
-            : StorageOptions.getDefaultInstance().getService(),
+        override != null ? override.get() : StorageOptions.getDefaultInstance().getService(),
         executorService);
+  }
+
+  /**
+   * Redirects the GCS client to an emulator. Call before the broker starts; always call {@link
+   * #clearStorageOverrideForTests()} in an {@code @AfterAll} block.
+   */
+  @VisibleForTesting
+  public static void setStorageOverrideForTests(final Supplier<Storage> override) {
+    storageOverride = override;
+  }
+
+  @VisibleForTesting
+  public static void clearStorageOverrideForTests() {
+    storageOverride = null;
   }
 
   private String getBucketNameProperty(final DocumentStoreConfigurationRecord configuration) {

@@ -24,6 +24,25 @@ import org.junit.jupiter.api.Test;
  * Contract tests for physical-tenant document store isolation. Subclasses supply the store-specific
  * broker setup via {@code @BeforeAll} / {@code @AfterAll} and call {@link
  * #startClients(TestStandaloneBroker)} / {@link #closeClients()} from those hooks.
+ *
+ * <p>Tenant → store mapping (1:1, each tenant assigned only its own store)
+ *
+ * <p>Physical backing per subclass:
+ *
+ * <ul>
+ *   <li><b>Local</b>: 4 separate directories, one per store — trivially isolated.
+ *   <li><b>GCP</b>: 1 shared bucket for all 4 stores; isolation via prefix ({@code tenanta/},
+ *       {@code tenantb/}, {@code tenantc/}, {@code ""} for default).
+ *   <li><b>AWS</b>: 2 buckets — {@code bucket-a} holds store-a (no prefix) + store-c (prefix {@code
+ *       tenantc/}); {@code bucket-b} holds store-b (no prefix) + store-default (prefix {@code
+ *       default/}).
+ *   <li><b>Azure</b>: 2 containers — {@code container-a} holds store-a (no prefix) + store-c
+ *       (prefix {@code tenantc/}); {@code container-b} holds store-b (no prefix) + store-default
+ *       (prefix {@code default/}).
+ * </ul>
+ *
+ * <p>AWS and Azure are the hardest cases: tenanta and tenantc share the same bucket/container, so
+ * isolation is purely prefix-level.
  */
 abstract class AbstractDocumentIsolationIT {
 
@@ -169,8 +188,8 @@ abstract class AbstractDocumentIsolationIT {
     // survives.
     try {
       clientB.newDeleteDocumentCommand(ref.getDocumentId()).send().join();
-    } catch (final Exception ignored) {
-      // do nothing
+    } catch (final ProblemException e) {
+      assertThat(e.details().getStatus()).isEqualTo(404);
     }
 
     // then

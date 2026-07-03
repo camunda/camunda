@@ -50,13 +50,13 @@ final class DocumentIsolationGcpIT extends AbstractDocumentIsolationIT {
     }
 
     // Redirect GcpDocumentStoreProvider to the local fake-gcs-server.
-    GcpDocumentStoreProvider.storageOverride =
+    GcpDocumentStoreProvider.setStorageOverrideForTests(
         () ->
             StorageOptions.newBuilder()
                 .setHost(GCS.externalEndpoint())
                 .setCredentials(NoCredentials.getInstance())
                 .build()
-                .getService();
+                .getService());
 
     BROKER
         .withProperty("camunda.document.gcp.store-default.bucket-name", SHARED_BUCKET)
@@ -85,6 +85,6 @@ final class DocumentIsolationGcpIT extends AbstractDocumentIsolationIT {
   @AfterAll
   static void tearDown() {
     closeClients();
-    GcpDocumentStoreProvider.storageOverride = null;
+    GcpDocumentStoreProvider.clearStorageOverrideForTests();
   }
 }
