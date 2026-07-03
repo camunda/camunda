@@ -38,6 +38,8 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
 
   BannedInstanceState getBannedInstanceState();
 
+  SuspensionState getSuspensionState();
+
   VariableState getVariableState();
 
   ClusterVariableState getClusterVariableState();

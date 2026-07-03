@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
 import io.camunda.zeebe.model.bpmn.util.time.Interval;
@@ -45,12 +46,15 @@ public final class TimerTriggerProcessor implements TypedRecordProcessor<TimerRe
       "Expected to find a process definition with key '%d', but no such definition was found";
   private static final String NO_ACTIVE_TIMER_MESSAGE =
       "Expected to trigger a timer with key '%d', but the timer is not active anymore";
+  private static final String PROCESS_INSTANCE_SUSPENDED_MESSAGE =
+      "Expected to trigger a timer with key '%d', but the process instance is suspended";
   private static final DirectBuffer NO_VARIABLES = new UnsafeBuffer();
 
   private final CatchEventBehavior catchEventBehavior;
   private final ProcessState processState;
   private final ElementInstanceState elementInstanceState;
   private final MutableTimerInstanceState timerInstanceState;
+  private final SuspensionState suspensionState;
   private final ExpressionProcessor expressionProcessor;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -70,6 +74,7 @@ public final class TimerTriggerProcessor implements TypedRecordProcessor<TimerRe
     processState = processingState.getProcessState();
     elementInstanceState = processingState.getElementInstanceState();
     timerInstanceState = processingState.getTimerState();
+    suspensionState = processingState.getSuspensionState();
     keyGenerator = processingState.getKeyGenerator();
     eventHandle =
         new EventHandle(
@@ -103,6 +108,17 @@ public final class TimerTriggerProcessor implements TypedRecordProcessor<TimerRe
           record,
           RejectionType.NOT_FOUND,
           NO_PROCESS_DEFINITION_FOUND_MESSAGE.formatted(processDefinitionKey));
+      return;
+    }
+
+    // process instance suspend/resume (POC #56552): leave the timer scheduled (do not consume the
+    // TRIGGER command) so the periodic due-date check keeps re-attempting it until resume.
+    if (!isStartEvent(elementInstanceKey)
+        && suspensionState.isSuspended(timer.getProcessInstanceKey())) {
+      rejectionWriter.appendRejection(
+          record,
+          RejectionType.INVALID_STATE,
+          PROCESS_INSTANCE_SUSPENDED_MESSAGE.formatted(record.getKey()));
       return;
     }
 

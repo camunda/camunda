@@ -24,11 +24,13 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutionListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -37,10 +39,13 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.slf4j.Logger;
@@ -49,6 +54,18 @@ import org.slf4j.Logger;
 public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessInstanceRecord> {
 
   private static final Logger LOGGER = Loggers.PROCESS_PROCESSOR_LOGGER;
+
+  /**
+   * Forward-progress BPMN element commands (POC #56552): diverted into the suspend buffer instead
+   * of being processed while the target process instance is suspended. {@code TERMINATE_ELEMENT}
+   * and {@code CONTINUE_TERMINATING_ELEMENT} are intentionally excluded so cancellation still works
+   * on a suspended instance.
+   */
+  private static final Set<ProcessInstanceIntent> BUFFERABLE_ON_SUSPEND =
+      EnumSet.of(
+          ProcessInstanceIntent.ACTIVATE_ELEMENT,
+          ProcessInstanceIntent.COMPLETE_ELEMENT,
+          ProcessInstanceIntent.COMPLETE_EXECUTION_LISTENER);
 
   private final BpmnElementContextImpl context = new BpmnElementContextImpl();
 
@@ -63,6 +80,9 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
   private final EventTriggerBehavior eventTriggerBehavior;
   private final VariableBehavior variableBehavior;
   private final EventScopeInstanceState eventScopeInstanceState;
+  private final SuspensionState suspensionState;
+  private final StateWriter stateWriter;
+  private final KeyGenerator keyGenerator;
 
   public BpmnStreamProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -73,6 +93,9 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     processState = processingState.getProcessState();
 
     rejectionWriter = writers.rejection();
+    stateWriter = writers.state();
+    suspensionState = processingState.getSuspensionState();
+    keyGenerator = processingState.getKeyGenerator();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     stateTransitionGuard = bpmnBehaviors.stateTransitionGuard();
     stateTransitionBehavior =
@@ -107,6 +130,25 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     // initialize
     final var intent = (ProcessInstanceIntent) record.getIntent();
     final var recordValue = record.getValue();
+
+    // process instance suspend/resume (POC #56552): divert forward-progress element commands
+    // into the buffer instead of processing them while the target instance is suspended.
+    // TERMINATE_ELEMENT/CONTINUE_TERMINATING_ELEMENT are not in BUFFERABLE_ON_SUSPEND, so
+    // cancellation still proceeds on a suspended instance.
+    if (BUFFERABLE_ON_SUSPEND.contains(intent)
+        && suspensionState.isSuspended(recordValue.getProcessInstanceKey())) {
+      bufferCommand(record.getKey(), intent, recordValue);
+      return;
+    }
+
+    // process instance suspend/resume (POC #56552): cancelling a suspended instance still
+    // discards its buffer — reuses the RESUMED event's applier semantics (clear flag + buffer)
+    // since the instance is being torn down and the buffered commands would otherwise leak.
+    if (intent == ProcessInstanceIntent.TERMINATE_ELEMENT
+        && recordValue.getBpmnElementType() == BpmnElementType.PROCESS
+        && suspensionState.isSuspended(recordValue.getProcessInstanceKey())) {
+      stateWriter.appendFollowUpEvent(record.getKey(), ProcessInstanceIntent.RESUMED, recordValue);
+    }
 
     context.init(record.getKey(), recordValue, intent);
 
@@ -420,6 +462,29 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
                   context.getElementInstanceKey(),
                   eventTrigger.getElementId());
             });
+  }
+
+  /**
+   * Diverts a forward-progress element command into the suspend buffer (POC #56552). A key is
+   * generated via {@code KeyGenerator} to serve as the buffering event's own record key, which
+   * doubles as the FIFO sequence in {@code SuspensionState} — monotonic per partition and
+   * deterministically recovered on replay. The original command's key (the element instance key)
+   * and intent travel on the record's internal {@code bufferedOriginalKey} / {@code
+   * bufferedElementIntent} fields so {@code ProcessInstanceResumeProcessor} can replay the command
+   * verbatim on resume.
+   */
+  private void bufferCommand(
+      final long originalKey,
+      final ProcessInstanceIntent originalIntent,
+      final ProcessInstanceRecord recordValue) {
+    final var bufferedRecord = new ProcessInstanceRecord();
+    bufferedRecord.copyFrom(recordValue);
+    bufferedRecord.setBufferedOriginalKey(originalKey);
+    bufferedRecord.setBufferedElementIntent(originalIntent.value());
+
+    final long bufferEventKey = keyGenerator.nextKey();
+    stateWriter.appendFollowUpEvent(
+        bufferEventKey, ProcessInstanceIntent.ELEMENT_COMMAND_BUFFERED, bufferedRecord);
   }
 
   private ExecutableFlowElement getElement(

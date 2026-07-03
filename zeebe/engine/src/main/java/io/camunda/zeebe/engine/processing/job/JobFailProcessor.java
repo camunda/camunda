@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
+import io.camunda.zeebe.engine.processing.common.SuspendedInstanceCommandCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -66,6 +67,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
   private final IncidentMetrics incidentMetrics;
+  private final SuspendedInstanceCommandCheck suspendedInstanceCheck;
 
   public JobFailProcessor(
       final ProcessingState state,
@@ -86,12 +88,14 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
     variableBehavior = bpmnBehaviors.variableBehavior();
     jobActivationBehavior = bpmnBehaviors.jobActivationBehavior();
     this.authCheckBehavior = authCheckBehavior;
+    suspendedInstanceCheck = new SuspendedInstanceCommandCheck(state.getSuspensionState());
     preconditionChecker =
         new JobCommandPreconditionValidator(
             jobState,
             state.getBannedInstanceState(),
             "fail",
             List.of(State.ACTIVATABLE, State.ACTIVATED),
+            List.of(this::checkProcessInstanceNotSuspended),
             authCheckBehavior);
     this.keyGenerator = keyGenerator;
     this.jobBackoffChecker = jobBackoffChecker;
@@ -205,6 +209,11 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
       case JobKind.TASK_LISTENER -> ErrorType.TASK_LISTENER_NO_RETRIES;
       case JobKind.AD_HOC_SUB_PROCESS -> ErrorType.AD_HOC_SUB_PROCESS_NO_RETRIES;
     };
+  }
+
+  private Either<Rejection, JobRecord> checkProcessInstanceNotSuspended(
+      final TypedRecord<JobRecord> command, final JobRecord job) {
+    return suspendedInstanceCheck.check(job);
   }
 
   private Either<Rejection, JobRecord> checkAuthorization(

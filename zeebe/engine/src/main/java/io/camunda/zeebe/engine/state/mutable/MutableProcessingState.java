@@ -50,6 +50,9 @@ public interface MutableProcessingState extends ProcessingState {
   MutableBannedInstanceState getBannedInstanceState();
 
   @Override
+  MutableSuspensionState getSuspensionState();
+
+  @Override
   MutableVariableState getVariableState();
 
   @Override

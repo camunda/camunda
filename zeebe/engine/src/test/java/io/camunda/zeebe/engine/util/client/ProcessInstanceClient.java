@@ -392,6 +392,59 @@ public final class ProcessInstanceClient {
       return this;
     }
 
+    public Record<ProcessInstanceRecordValue> suspend() {
+      writeSuspendResumeCommand(ProcessInstanceIntent.SUSPEND);
+      return RecordingExporter.processInstanceRecords()
+          .withRecordKey(processInstanceKey)
+          .withIntent(ProcessInstanceIntent.SUSPENDED)
+          .withProcessInstanceKey(processInstanceKey)
+          .getFirst();
+    }
+
+    public Record<ProcessInstanceRecordValue> suspendExpectRejection() {
+      writeSuspendResumeCommand(ProcessInstanceIntent.SUSPEND);
+      return RecordingExporter.processInstanceRecords()
+          .onlyCommandRejections()
+          .withIntent(ProcessInstanceIntent.SUSPEND)
+          .withRecordKey(processInstanceKey)
+          .getFirst();
+    }
+
+    public Record<ProcessInstanceRecordValue> resume() {
+      writeSuspendResumeCommand(ProcessInstanceIntent.RESUME);
+      return RecordingExporter.processInstanceRecords()
+          .withRecordKey(processInstanceKey)
+          .withIntent(ProcessInstanceIntent.RESUMED)
+          .withProcessInstanceKey(processInstanceKey)
+          .getFirst();
+    }
+
+    public Record<ProcessInstanceRecordValue> resumeExpectRejection() {
+      writeSuspendResumeCommand(ProcessInstanceIntent.RESUME);
+      return RecordingExporter.processInstanceRecords()
+          .onlyCommandRejections()
+          .withIntent(ProcessInstanceIntent.RESUME)
+          .withRecordKey(processInstanceKey)
+          .getFirst();
+    }
+
+    private void writeSuspendResumeCommand(final ProcessInstanceIntent intent) {
+      if (partition == DEFAULT_PARTITION) {
+        partition =
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getPartitionId();
+      }
+
+      writer.writeCommandOnPartition(
+          partition,
+          processInstanceKey,
+          intent,
+          new ProcessInstanceRecord().setProcessInstanceKey(processInstanceKey),
+          authorizedTenants);
+    }
+
     public ProcessInstanceModificationClient modification() {
       return new ProcessInstanceModificationClient(writer, processInstanceKey, authorizedTenants);
     }

@@ -59,6 +59,17 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   public static final StringValue ROOT_PROCESS_INSTANCE_KEY =
       new StringValue("rootProcessInstanceKey");
   public static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
+  // Internal-only (POC #56552): carries the original element-command intent when this record is
+  // used as the value of an ELEMENT_COMMAND_BUFFERED event, so the command can be replayed on
+  // resume. Not part of the public ProcessInstanceRecordValue interface and excluded from JSON
+  // export.
+  public static final StringValue BUFFERED_ELEMENT_INTENT_KEY =
+      new StringValue("bufferedElementIntent");
+  // Internal-only (POC #56552): carries the original command's record key (the element instance
+  // key) alongside bufferedElementIntent, since the record itself has no elementInstanceKey field
+  // — the BpmnStreamProcessor relies on the command's record key for that.
+  public static final StringValue BUFFERED_ORIGINAL_KEY_KEY =
+      new StringValue("bufferedOriginalKey");
 
   private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final IntegerProperty versionProp = new IntegerProperty(VERSION_KEY, -1);
@@ -99,8 +110,15 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
 
   private final StringProperty businessIdProp = new StringProperty(BUSINESS_ID_KEY, "");
 
+  // Internal-only (POC #56552). Default -1 == "not a buffered command".
+  private final IntegerProperty bufferedElementIntentProp =
+      new IntegerProperty(BUFFERED_ELEMENT_INTENT_KEY, -1);
+  // Internal-only (POC #56552). Default -1 == "not a buffered command".
+  private final LongProperty bufferedOriginalKeyProp =
+      new LongProperty(BUFFERED_ORIGINAL_KEY_KEY, -1L);
+
   public ProcessInstanceRecord() {
-    super(17);
+    super(19);
     declareProperty(bpmnElementTypeProp)
         .declareProperty(elementIdProp)
         .declareProperty(bpmnProcessIdProp)
@@ -117,7 +135,9 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
         .declareProperty(callingElementPathProp)
         .declareProperty(tagsProp)
         .declareProperty(rootProcessInstanceKeyProp)
-        .declareProperty(businessIdProp);
+        .declareProperty(businessIdProp)
+        .declareProperty(bufferedElementIntentProp)
+        .declareProperty(bufferedOriginalKeyProp);
   }
 
   public void wrap(final ProcessInstanceRecord record) {
@@ -383,6 +403,34 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
 
   public ProcessInstanceRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  /**
+   * Internal-only (POC #56552): the original element-command intent value that was buffered while
+   * the process instance is suspended, or {@code -1} if this record is not a buffered command.
+   */
+  @JsonIgnore
+  public int getBufferedElementIntent() {
+    return bufferedElementIntentProp.getValue();
+  }
+
+  public ProcessInstanceRecord setBufferedElementIntent(final int intentValue) {
+    bufferedElementIntentProp.setValue(intentValue);
+    return this;
+  }
+
+  /**
+   * Internal-only (POC #56552): the original command's record key (the element instance key), or
+   * {@code -1} if this record is not a buffered command.
+   */
+  @JsonIgnore
+  public long getBufferedOriginalKey() {
+    return bufferedOriginalKeyProp.getValue();
+  }
+
+  public ProcessInstanceRecord setBufferedOriginalKey(final long originalKey) {
+    bufferedOriginalKeyProp.setValue(originalKey);
     return this;
   }
 }

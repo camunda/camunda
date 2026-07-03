@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocSubProcessUtils;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
+import io.camunda.zeebe.engine.processing.common.SuspendedInstanceCommandCheck;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
@@ -133,6 +134,7 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
   private final TypedRejectionWriter rejectionWriter;
 
   private final boolean includeVariablesInJobCompletedEvent;
+  private final SuspendedInstanceCommandCheck suspendedInstanceCheck;
 
   public JobCompleteProcessor(
       final ProcessingState state,
@@ -151,6 +153,7 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     this.includeVariablesInJobCompletedEvent = includeVariablesInJobCompletedEvent;
+    suspendedInstanceCheck = new SuspendedInstanceCommandCheck(state.getSuspensionState());
     preconditionChecker =
         new JobCommandPreconditionValidator(
             state.getJobState(),
@@ -158,6 +161,7 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
             "complete",
             List.of(State.ACTIVATABLE, State.ACTIVATED),
             List.of(
+                this::checkProcessInstanceNotSuspended,
                 this::checkAdHocSubprocessActivationTargetsAreValid,
                 this::checkAdHocSubprocessInstanceIsActive,
                 this::checkAdHocSubProcessCompletionConditionNotFulfilledForElementActivation,
@@ -335,6 +339,11 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
         targetAdHocSubProcessInstanceValue.getBpmnProcessIdBuffer(),
         targetAdHocSubProcessInstanceValue.getTenantId(),
         completingJobRecord.getVariablesBuffer());
+  }
+
+  private Either<Rejection, JobRecord> checkProcessInstanceNotSuspended(
+      final TypedRecord<JobRecord> command, final JobRecord job) {
+    return suspendedInstanceCheck.check(job);
   }
 
   private Either<Rejection, JobRecord>

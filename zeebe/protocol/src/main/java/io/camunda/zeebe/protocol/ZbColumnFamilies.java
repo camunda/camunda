@@ -328,7 +328,14 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   AGENT_HISTORY(150, PARTITION_LOCAL),
   // secondary index: (jobKey, jobLease, historyItemKey) → ∅; supports prefix iteration by job key
   // or job key + lease
-  AGENT_HISTORY_BY_JOB_KEY(151, PARTITION_LOCAL);
+  AGENT_HISTORY_BY_JOB_KEY(151, PARTITION_LOCAL),
+
+  // process instance suspend/resume (POC #56552)
+  // marker CF: presence of processInstanceKey → instance is suspended
+  SUSPENDED_PROCESS_INSTANCES(152, PARTITION_LOCAL),
+  // FIFO buffer of forward-progress element commands diverted while suspended, keyed by
+  // (processInstanceKey, logPosition) so iteration by PI prefix drains in original order
+  BUFFERED_PROCESS_INSTANCE_COMMANDS(153, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

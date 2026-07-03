@@ -67,9 +67,27 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
    *
    * <p>This event is not applied to the state, but is used for auditing reasons.
    */
-  CANCELING((short) 16);
+  CANCELING((short) 16),
 
-  private static final Set<ProcessInstanceIntent> PROCESS_INSTANCE_COMMANDS = EnumSet.of(CANCEL);
+  // --- Process instance suspend/resume (POC #56552) ---
+
+  /** Command to suspend a (root) process instance, freezing its forward progression. */
+  SUSPEND((short) 17, false),
+  /** Event marking that a process instance has been suspended. */
+  SUSPENDED((short) 18, false),
+  /** Command to resume a previously suspended process instance. */
+  RESUME((short) 19, false),
+  /** Event marking that a process instance has been resumed; drains buffered commands. */
+  RESUMED((short) 20, false),
+  /**
+   * Event capturing a forward-progress BPMN element command that was diverted into the buffer while
+   * the process instance is suspended. The original element command intent travels on the record's
+   * internal {@code bufferedElementIntent} field so it can be replayed verbatim on resume.
+   */
+  ELEMENT_COMMAND_BUFFERED((short) 21, false);
+
+  private static final Set<ProcessInstanceIntent> PROCESS_INSTANCE_COMMANDS =
+      EnumSet.of(CANCEL, SUSPEND, RESUME);
   private static final Set<ProcessInstanceIntent> BPMN_ELEMENT_COMMANDS =
       EnumSet.of(
           ACTIVATE_ELEMENT,
@@ -130,6 +148,16 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
         return SEQUENCE_FLOW_DELETED;
       case 16:
         return CANCELING;
+      case 17:
+        return SUSPEND;
+      case 18:
+        return SUSPENDED;
+      case 19:
+        return RESUME;
+      case 20:
+        return RESUMED;
+      case 21:
+        return ELEMENT_COMMAND_BUFFERED;
       default:
         return Intent.UNKNOWN;
     }
@@ -154,6 +182,9 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
       case ANCESTOR_MIGRATED:
       case SEQUENCE_FLOW_DELETED:
       case CANCELING:
+      case SUSPENDED:
+      case RESUMED:
+      case ELEMENT_COMMAND_BUFFERED:
         return true;
       default:
         return false;

@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
+import io.camunda.zeebe.engine.processing.common.SuspendedInstanceCommandCheck;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -46,6 +47,9 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
   private static final String ALREADY_CLOSING_MESSAGE =
       "Expected to correlate process message subscription with element key '%d' and message name '%s', "
           + "but it is already closing";
+  private static final String PROCESS_INSTANCE_SUSPENDED_MESSAGE =
+      "Expected to correlate process message subscription with element key '%d' and message name '%s', "
+          + "but the process instance is suspended";
 
   private final ProcessMessageSubscriptionState subscriptionState;
   private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
@@ -57,6 +61,7 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
   private final SideEffectWriter sideEffectWriter;
 
   private final EventHandle eventHandle;
+  private final SuspendedInstanceCommandCheck suspendedInstanceCheck;
 
   public ProcessMessageSubscriptionCorrelateProcessor(
       final ProcessMessageSubscriptionState subscriptionState,
@@ -81,6 +86,8 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
             processState,
             bpmnBehaviors.eventTriggerBehavior(),
             bpmnBehaviors.stateBehavior());
+    suspendedInstanceCheck =
+        new SuspendedInstanceCommandCheck(processingState.getSuspensionState());
   }
 
   @Override
@@ -96,6 +103,11 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
 
     if (subscription == null) {
       rejectCommand(command, RejectionType.NOT_FOUND, NO_SUBSCRIPTION_FOUND_MESSAGE);
+      return;
+
+    } else if (suspendedInstanceCheck.check(record).isLeft()) {
+      // process instance suspend/resume (POC #56552): no side effects while suspended
+      rejectCommand(command, RejectionType.INVALID_STATE, PROCESS_INSTANCE_SUSPENDED_MESSAGE);
       return;
 
     } else if (subscription.isClosing()) {

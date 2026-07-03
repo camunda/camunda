@@ -29,6 +29,8 @@ import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreatio
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationHelper;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationMigrateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceModificationModifyProcessor;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceResumeProcessor;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceSuspendProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -85,7 +87,12 @@ public final class BpmnProcessors {
     final var keyGenerator = processingState.getKeyGenerator();
 
     addProcessInstanceCommandProcessor(
-        writers, typedRecordProcessors, processingState, asyncRequestBehavior, authCheckBehavior);
+        writers,
+        typedRecordProcessors,
+        processingState,
+        asyncRequestBehavior,
+        authCheckBehavior,
+        timerChecker);
 
     final var bpmnStreamProcessor =
         new BpmnStreamProcessor(
@@ -157,12 +164,30 @@ public final class BpmnProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final ProcessingState processingState,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final DueDateTimerCheckScheduler timerChecker) {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE,
         ProcessInstanceIntent.CANCEL,
         new ProcessInstanceCancelProcessor(
             processingState, writers, asyncRequestBehavior, authCheckBehavior));
+
+    // process instance suspend/resume (POC #56552); no authz in the POC
+    typedRecordProcessors.onCommand(
+        ValueType.PROCESS_INSTANCE,
+        ProcessInstanceIntent.SUSPEND,
+        new ProcessInstanceSuspendProcessor(
+            processingState.getElementInstanceState(),
+            processingState.getSuspensionState(),
+            writers));
+    typedRecordProcessors.onCommand(
+        ValueType.PROCESS_INSTANCE,
+        ProcessInstanceIntent.RESUME,
+        new ProcessInstanceResumeProcessor(
+            processingState.getElementInstanceState(),
+            processingState.getSuspensionState(),
+            writers,
+            timerChecker));
   }
 
   private static void addBpmnStepProcessor(
