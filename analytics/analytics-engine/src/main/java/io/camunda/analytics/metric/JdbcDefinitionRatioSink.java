@@ -7,7 +7,6 @@
  */
 package io.camunda.analytics.metric;
 
-import io.camunda.eventbridge.streaming.aggregate.RatioAccumulator;
 import io.camunda.eventbridge.streaming.aggregate.ResultSink;
 import io.camunda.eventbridge.streaming.window.Windowed;
 import java.sql.Connection;
