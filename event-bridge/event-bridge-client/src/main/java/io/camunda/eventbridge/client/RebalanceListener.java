@@ -15,9 +15,10 @@ import java.util.Collection;
  * recover a newly-assigned one.
  *
  * <p><b>Threading.</b> The callbacks fire from whichever thread applies the assignment change (the
- * background heartbeat), which is <em>not</em> the caller's poll/process thread. Keep them cheap
- * and non-blocking — record the change and act on it from the processing thread — since they run
- * while the consumer holds its internal lock.
+ * background heartbeat), which is <em>not</em> the caller's poll/process thread. They run outside
+ * the consumer's internal lock, so a callback may call back into the consumer (e.g. {@link
+ * Consumer#seekToBeginning}); still, keep them cheap — the recommended pattern is to record the
+ * delta and act on it from the processing thread.
  */
 public interface RebalanceListener {
 

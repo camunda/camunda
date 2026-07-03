@@ -10,14 +10,18 @@ package io.camunda.eventbridge.streaming;
 import io.camunda.eventbridge.client.Consumer;
 import io.camunda.eventbridge.client.Event;
 import io.camunda.eventbridge.client.EventBridgeClient;
+import io.camunda.eventbridge.client.RebalanceListener;
 import io.camunda.eventbridge.client.TopicPartition;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.IntFunction;
 import java.util.function.ToLongFunction;
 import org.slf4j.Logger;
@@ -49,8 +53,10 @@ import org.slf4j.LoggerFactory;
  * out to worker threads — that would make every poll cycle wait for its slowest partition; it comes
  * from running several runtimes, each with its own consumer, via {@link StreamRuntimeGroup}: the
  * group coordinator splits the source partitions across the members and their loops run
- * independently, so a slow partition delays only the member that owns it. Not thread-safe; call
- * {@link #run()} from a single thread and {@link #stop()} from any thread (e.g. a shutdown hook).
+ * independently, so a slow partition delays only the member that owns it. Rebalance callbacks fire
+ * on the client's heartbeat thread but only record the assignment delta; the run loop applies it
+ * (release revoked tasks, acquire/rebuild assigned ones) so all task state stays single-threaded.
+ * Not thread-safe; call {@link #run()} from a single thread and {@link #stop()} from any thread.
  *
  * @param <R> the decoded record type
  */
@@ -89,6 +95,11 @@ public final class StreamRuntime<R> implements AutoCloseable {
   /** Per-partition stream time: the max event timestamp seen, for event-time punctuation. */
   private final Map<Integer, Long> streamTime = new HashMap<>();
 
+  // Rebalance deltas recorded by the (off-thread) rebalance callback and drained by the run loop,
+  // so all task materialization/release happens single-threaded on the run thread.
+  private final Queue<Integer> newlyAssigned = new ConcurrentLinkedQueue<>();
+  private final Queue<Integer> newlyRevoked = new ConcurrentLinkedQueue<>();
+
   private volatile boolean running;
   private volatile Consumer consumer;
 
@@ -122,6 +133,10 @@ public final class StreamRuntime<R> implements AutoCloseable {
   public void run() {
     running = true;
     consumer = client.subscribe(group, instanceId, List.of(sourceTopic)).join();
+    // Register before the first heartbeat so the initial assignment is observed. The callback runs
+    // on the heartbeat thread and only records the delta; the run loop applies it
+    // (single-threaded).
+    registerRebalanceListener();
     // Trigger the initial assignment now rather than waiting for the first scheduled heartbeat.
     consumer.sendHeartbeat().join();
     restore();
@@ -131,6 +146,7 @@ public final class StreamRuntime<R> implements AutoCloseable {
     long lastPunctuation = System.nanoTime();
     while (running) {
       try {
+        applyRebalance();
         final List<Event> events = consumer.poll(maxPoll, pollTimeout);
         // Group the poll batch by partition and process each partition's records contiguously, so a
         // partition's task and its state cache stay hot rather than ping-ponging between partitions
@@ -318,27 +334,102 @@ public final class StreamRuntime<R> implements AutoCloseable {
     }
     preCommitFlushes.forEach(Runnable::run);
     for (final Map.Entry<Integer, Long> entry : pending.entrySet()) {
-      final int partition = entry.getKey();
-      final long offset = entry.getValue();
-      final Task<R> task = tasks.get(partition);
-      if (task.ownsDurability()) {
-        // The shard makes its own atomic cut: its output durable, then its state and offset in its
-        // own transaction.
-        task.commit(offset);
-      } else {
-        task.preCommitFlush();
-        // Store the offset first, then checkpoint: if the offset store is write-back cached and
-        // shares the task's backing store, the checkpoint flushes it in this same transaction, so
-        // this partition's state and offset land as one atomic cut.
-        transactionRunner.runInTransaction(
-            () -> {
-              offsets.store(partition, offset);
-              task.checkpoint();
-            });
-      }
-      consumer.commitOffset(sourceTopic, partition, offset).join();
+      commitPartition(entry.getKey(), entry.getValue());
     }
     pending.clear();
+  }
+
+  /** The per-partition atomic cut: make the partition's output durable, persist state + offset. */
+  private void commitPartition(final int partition, final long offset) {
+    final Task<R> task = tasks.get(partition);
+    if (task.ownsDurability()) {
+      // The shard makes its own atomic cut: its output durable, then its state and offset in its
+      // own transaction.
+      task.commit(offset);
+    } else {
+      task.preCommitFlush();
+      // Store the offset first, then checkpoint: if the offset store is write-back cached and
+      // shares
+      // the task's backing store, the checkpoint flushes it in this same transaction, so this
+      // partition's state and offset land as one atomic cut.
+      transactionRunner.runInTransaction(
+          () -> {
+            offsets.store(partition, offset);
+            task.checkpoint();
+          });
+    }
+    consumer.commitOffset(sourceTopic, partition, offset).join();
+  }
+
+  /**
+   * Records assignment deltas from the (off-thread) rebalance callback for the run loop to apply.
+   */
+  private void registerRebalanceListener() {
+    consumer.rebalanceListener(
+        new RebalanceListener() {
+          @Override
+          public void onPartitionsAssigned(final Collection<TopicPartition> partitions) {
+            enqueue(newlyAssigned, partitions);
+          }
+
+          @Override
+          public void onPartitionsRevoked(final Collection<TopicPartition> partitions) {
+            enqueue(newlyRevoked, partitions);
+          }
+
+          private void enqueue(final Queue<Integer> queue, final Collection<TopicPartition> tps) {
+            for (final TopicPartition tp : tps) {
+              if (sourceTopic.equals(tp.topic())) {
+                queue.add(tp.partition());
+              }
+            }
+          }
+        });
+  }
+
+  /**
+   * Applies pending assignment deltas on the run thread: release revoked partitions (commit + close
+   * their task), then acquire newly-assigned ones (materialize and, for a self-owning shard with no
+   * local state, rewind to the source start to rebuild).
+   */
+  private void applyRebalance() {
+    for (Integer partition; (partition = newlyRevoked.poll()) != null; ) {
+      releasePartition(partition);
+    }
+    for (Integer partition; (partition = newlyAssigned.poll()) != null; ) {
+      acquirePartition(partition);
+    }
+  }
+
+  private void acquirePartition(final int partition) {
+    final Task<R> task = taskFor(partition);
+    if (task.ownsDurability()
+        && restored.getOrDefault(partition, Task.NO_OFFSET) == Task.NO_OFFSET) {
+      // A shard reassigned to a member with no local state for it: replay the source from the start
+      // to rebuild (the change-log-free handoff — see ADR 0002).
+      consumer.seekToBeginning(List.of(new TopicPartition(sourceTopic, partition)));
+      LOG.info(
+          "Stream runtime '{}' rebuilding partition {} from the source start",
+          instanceId,
+          partition);
+    }
+  }
+
+  private void releasePartition(final int partition) {
+    final Task<R> task = tasks.remove(partition);
+    if (task == null) {
+      return;
+    }
+    // Commit the partition's last work before handing it off, then release its state.
+    final Long offset = pending.remove(partition);
+    if (offset != null) {
+      task.flush();
+      preCommitFlushes.forEach(Runnable::run);
+      commitPartition(partition, offset);
+    }
+    task.close();
+    restored.remove(partition);
+    streamTime.remove(partition);
   }
 
   private static void sleep(final long millis) {
