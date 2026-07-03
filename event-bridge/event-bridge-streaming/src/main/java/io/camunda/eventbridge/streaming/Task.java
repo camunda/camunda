@@ -33,6 +33,14 @@ public interface Task<R> {
   /** Make working state durable; invoked inside the runtime's checkpoint transaction. */
   default void checkpoint() {}
 
+  /**
+   * Event-time punctuation: the runtime calls this with the partition's stream time (the max event
+   * timestamp seen so far, supplied by the runtime's timestamp extractor) on the punctuation tick,
+   * so time-driven work — closing/finalizing windows, pruning state — advances even for keys that
+   * received no new records. No-op when the runtime has no timestamp extractor configured.
+   */
+  default void advanceStreamTime(final long streamTimeMs) {}
+
   /** Called once on shutdown — release resources. */
   default void close() {}
 }

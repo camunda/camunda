@@ -61,6 +61,7 @@ public final class StreamProcessor<R> implements Task<R>, AutoCloseable {
   }
 
   /** Event-time progress: advance finalization/retention on every stage. */
+  @Override
   public void advanceStreamTime(final long streamTimeMs) {
     stages.forEach(stage -> stage.advanceStreamTime(streamTimeMs));
   }

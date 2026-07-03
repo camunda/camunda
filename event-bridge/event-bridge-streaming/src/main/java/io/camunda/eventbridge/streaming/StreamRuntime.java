@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.IntFunction;
+import java.util.function.ToLongFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,13 +60,18 @@ public final class StreamRuntime<R> implements AutoCloseable {
   private final OffsetStore offsets;
   private final List<Runnable> preCommitFlushes;
   private final RecordExceptionHandler recordExceptionHandler;
+  private final ToLongFunction<R> timestampExtractor;
   private final int maxPoll;
   private final Duration pollTimeout;
   private final long commitIntervalNanos;
+  private final long punctuationIntervalNanos;
   private final long errorBackoffMs;
 
   private final Map<Integer, Task<R>> tasks = new HashMap<>();
   private final Map<Integer, Long> pending = new HashMap<>();
+
+  /** Per-partition stream time: the max event timestamp seen, for event-time punctuation. */
+  private final Map<Integer, Long> streamTime = new HashMap<>();
 
   private volatile boolean running;
   private volatile Consumer consumer;
@@ -81,9 +87,11 @@ public final class StreamRuntime<R> implements AutoCloseable {
     offsets = builder.offsets;
     preCommitFlushes = List.copyOf(builder.preCommitFlushes);
     recordExceptionHandler = builder.recordExceptionHandler;
+    timestampExtractor = builder.timestampExtractor;
     maxPoll = builder.maxPoll;
     pollTimeout = builder.pollTimeout;
     commitIntervalNanos = builder.commitInterval.toNanos();
+    punctuationIntervalNanos = builder.punctuationInterval.toNanos();
     errorBackoffMs = builder.errorBackoff.toMillis();
   }
 
@@ -104,6 +112,7 @@ public final class StreamRuntime<R> implements AutoCloseable {
     LOG.info("Stream runtime '{}' started on topic '{}'", instanceId, sourceTopic);
 
     long lastCommit = System.nanoTime();
+    long lastPunctuation = System.nanoTime();
     while (running) {
       try {
         final List<Event> events = consumer.poll(maxPoll, pollTimeout);
@@ -113,6 +122,14 @@ public final class StreamRuntime<R> implements AutoCloseable {
           }
           handleRecord(event);
         }
+        // Freshness clock: flush emitted output and advance event-time on the punctuation tick, so
+        // latency stays bounded and closed windows finalize even for keys with no new records —
+        // independent of (and more frequent than) the durable commit clock.
+        if (System.nanoTime() - lastPunctuation >= punctuationIntervalNanos) {
+          punctuate();
+          lastPunctuation = System.nanoTime();
+        }
+        // Durability clock: the produce-before-commit barrier makes state + offsets one atomic cut.
         if (System.nanoTime() - lastCommit >= commitIntervalNanos) {
           commit();
           lastCommit = System.nanoTime();
@@ -154,6 +171,28 @@ public final class StreamRuntime<R> implements AutoCloseable {
       return;
     }
     pending.merge(partition, offset, Math::max);
+    if (timestampExtractor != null) {
+      streamTime.merge(partition, timestampExtractor.applyAsLong(record), Math::max);
+    }
+  }
+
+  /**
+   * Freshness/event-time punctuation for every materialized task: flush emitted output (bounded
+   * latency) and, when a timestamp extractor is configured, advance the task's stream time so
+   * closed windows finalize even without new records. Does not make state durable — that is {@link
+   * #commit()}.
+   */
+  private void punctuate() {
+    for (final Map.Entry<Integer, Task<R>> entry : tasks.entrySet()) {
+      final Task<R> task = entry.getValue();
+      task.flush();
+      if (timestampExtractor != null) {
+        final Long partitionStreamTime = streamTime.get(entry.getKey());
+        if (partitionStreamTime != null) {
+          task.advanceStreamTime(partitionStreamTime);
+        }
+      }
+    }
   }
 
   private void onRecordError(final int partition, final long offset, final RuntimeException e) {
@@ -252,9 +291,11 @@ public final class StreamRuntime<R> implements AutoCloseable {
     private OffsetStore offsets;
     private final List<Runnable> preCommitFlushes = new ArrayList<>();
     private RecordExceptionHandler recordExceptionHandler = RecordExceptionHandler.FAIL_FAST;
+    private ToLongFunction<R> timestampExtractor;
     private int maxPoll = 5000;
     private Duration pollTimeout = Duration.ofMillis(500);
     private Duration commitInterval = Duration.ofSeconds(1);
+    private Duration punctuationInterval = Duration.ofMillis(500);
     private Duration errorBackoff = Duration.ofSeconds(1);
 
     private Builder() {}
@@ -315,6 +356,17 @@ public final class StreamRuntime<R> implements AutoCloseable {
       return this;
     }
 
+    /**
+     * Extracts a record's event timestamp so the runtime can advance per-partition stream time and
+     * drive event-time punctuation ({@link Task#advanceStreamTime}). Optional: without it the
+     * punctuation tick still flushes for freshness, but windows finalize only as new records
+     * arrive.
+     */
+    public Builder<R> timestampExtractor(final ToLongFunction<R> timestampExtractor) {
+      this.timestampExtractor = timestampExtractor;
+      return this;
+    }
+
     public Builder<R> maxPoll(final int maxPoll) {
       this.maxPoll = maxPoll;
       return this;
@@ -327,6 +379,15 @@ public final class StreamRuntime<R> implements AutoCloseable {
 
     public Builder<R> commitInterval(final Duration commitInterval) {
       this.commitInterval = commitInterval;
+      return this;
+    }
+
+    /**
+     * The freshness/punctuation cadence: how often the runtime flushes emitted output and advances
+     * stream time, independent of the durable {@link #commitInterval}. Defaults to {@code 500ms}.
+     */
+    public Builder<R> punctuationInterval(final Duration punctuationInterval) {
+      this.punctuationInterval = punctuationInterval;
       return this;
     }
 

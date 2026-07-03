@@ -123,6 +123,9 @@ public final class AnalyticsProjectionStage {
                 (payload, partition, offset) ->
                     new SourceRecord(
                         partition, offset, codec.deserialize(payload, partition, offset)))
+            // event time = the Zeebe record timestamp, so the runtime advances stream time and
+            // finalizes closed windows even for keys that stop receiving records.
+            .timestampExtractor(sourceRecord -> sourceRecord.record().getTimestamp())
             .taskFactory(partition -> task)
             .transactionRunner(provider::runInTransaction)
             .offsetStore(new ProjectionOffsetStore(store))
