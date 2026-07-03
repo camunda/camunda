@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+
+<!--
+  SBE message schema for the analytics shuffle (Stage 1 combiner -> Stage 2 reducer).
+
+  Schema id: 300 (chosen to avoid collision with Zeebe's schemas and the Event Bridge protocol's
+  id 200). The SBE messageHeader carries schemaId + version, so the wire format is versioned and
+  evolvable natively — new fields append and bump the schema version, old readers skip them via
+  blockLength. Modelled on how Zeebe's RecordMetadata is SBE-encoded: the header lets Stage 2
+  dispatch on payloadKind + operation without decoding the payload, just as RecordMetadata's
+  valueType + intent drive the event appliers.
+-->
+<sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
+  package="io.camunda.analytics.shuffle.sbe"
+  id="300"
+  version="1"
+  semanticVersion="${project.version}"
+  description="Analytics Shuffle Schema"
+  byteOrder="littleEndian">
+
+  <types>
+    <composite name="messageHeader" description="Message identifiers and length of message root">
+      <type name="blockLength" primitiveType="uint16"/>
+      <type name="templateId" primitiveType="uint16"/>
+      <type name="schemaId" primitiveType="uint16"/>
+      <type name="version" primitiveType="uint16"/>
+    </composite>
+
+    <composite name="varDataEncoding">
+      <type name="length" primitiveType="uint32" maxValue="2147483647"/>
+      <type name="varData" primitiveType="uint8" length="0"/>
+    </composite>
+
+    <!-- What the payload IS (the "valueType" analog): drives which Stage-2 handler applies it. -->
+    <enum name="PayloadKind" encodingType="uint8">
+      <validValue name="AGGREGATE_DELTA">0</validValue>
+      <validValue name="REFERENCE">1</validValue>
+    </enum>
+
+    <!-- What Stage 2 should DO with it (the "intent" analog). -->
+    <enum name="Operation" encodingType="uint8">
+      <validValue name="MERGE">0</validValue>
+      <validValue name="UPSERT">1</validValue>
+      <validValue name="DELETE">2</validValue>
+    </enum>
+  </types>
+
+  <!--
+    One shuffled record. Fixed header fields carry everything routing (aggId, key), windowing,
+    dedup (producerPartition + segment), and dispatch (payloadKind + operation) need; the payload
+    trails as variable-length data (the encoded aggregate delta or reference record).
+  -->
+  <sbe:message name="ShuffleEnvelope" id="1">
+    <field name="producedAt" id="1" type="int64"/>
+    <field name="schemaVersion" id="2" type="int32"/>
+    <field name="aggId" id="3" type="int32"/>
+    <field name="windowStart" id="4" type="int64"/>
+    <field name="producerPartition" id="5" type="int32"/>
+    <field name="segment" id="6" type="int64"/>
+    <field name="payloadKind" id="7" type="PayloadKind"/>
+    <field name="operation" id="8" type="Operation"/>
+    <data name="key" id="9" type="varDataEncoding"/>
+    <data name="payload" id="10" type="varDataEncoding"/>
+  </sbe:message>
+
+</sbe:messageSchema>

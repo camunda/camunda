@@ -85,4 +85,45 @@
     </dependency>
   </dependencies>
 
+  <build>
+    <plugins>
+      <!-- Add the generated SBE sources (the analytics shuffle wire format) to the compile roots -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>add-source</id>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <phase>generate-sources</phase>
+            <configuration>
+              <sources combine.children="append">
+                <source>${project.build.directory}/generated-sources/sbe</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- SBE code generation from the analytics shuffle schema -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>generate-sbe</id>
+            <phase>generate-sources</phase>
+            <configuration>
+              <arguments>
+                <argument>${project.build.resources[0].directory}/sbe/analytics-shuffle.xml</argument>
+              </arguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
 </project>
