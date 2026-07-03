@@ -124,6 +124,49 @@ public class FlowControlTest {
   }
 
   @Test
+  void shouldNotThrottleBeforeFirstExport() {
+    // given — a fresh FlowControl (as created on every leader transition) with throttling enabled
+    // and a partition that has already written far past the acceptable backlog
+    final var meterRegistry = new SimpleMeterRegistry();
+    final var metrics = new LogStreamMetricsImpl(meterRegistry);
+    final var minRate = 700L;
+    final var writeRateLimit =
+        new RateLimit(
+            true,
+            7000,
+            Duration.ZERO,
+            new Throttling(true, 300_000L, minRate, Duration.ofSeconds(15)));
+    final var fc =
+        new FlowControl(metrics, StabilizingAIMDLimit.newBuilder().build(), writeRateLimit);
+    final var intent = ProcessInstanceCreationIntent.CREATE;
+    final var context = new UserCommand(intent);
+    final var result =
+        fc.tryAcquire(
+            context,
+            List.of(
+                LogAppendEntry.of(
+                    new RecordMetadata()
+                        .recordType(RecordType.COMMAND)
+                        .valueType(ValueType.PROCESS_INSTANCE_CREATION)
+                        .intent(intent),
+                    new UnifiedRecordValue(0))));
+    final var writtenPosition = 4_700_000_000L;
+    final var listener = fc.registerEntry(writtenPosition, result.get());
+
+    // when — the first record is written, but nothing has been exported yet
+    listener.onWrite(1, writtenPosition);
+
+    // then — the throttle must not engage: with lastExportedPosition still uninitialized, the
+    // backlog is unknown, so the write rate must not be clamped down to minRate. Before the fix,
+    // lastExportedPosition defaulted to 0, producing a backlog equal to the entire written
+    // position and clamping the rate to minRate.
+    assertThat(meterRegistry.get("zeebe.flow.control.write.rate.limit").gauge().value())
+        .as("write rate must not be throttled before the first export observation")
+        .isNotEqualTo((double) minRate)
+        .isZero();
+  }
+
+  @Test
   void shouldReduceRequestLimitWhenRingBufferWrapsAround() {
     // given — small ring buffer so wraparound happens quickly
     final var meterRegistry = new SimpleMeterRegistry();
