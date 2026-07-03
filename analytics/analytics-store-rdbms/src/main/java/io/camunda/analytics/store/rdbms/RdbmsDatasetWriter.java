@@ -12,12 +12,14 @@ import io.camunda.analytics.dataset.CompiledProjection;
 import io.camunda.analytics.dataset.store.DatasetWriter;
 import io.camunda.analytics.dimension.DimensionColumn;
 import io.camunda.analytics.dimension.DimensionKey;
+import io.camunda.analytics.dimension.DimensionType;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 
@@ -138,9 +140,7 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
       final String keyColumn,
       final List<String> updateColumns) {
     final String placeholders =
-        java.util.stream.IntStream.range(0, columnCount)
-            .mapToObj(i -> "?")
-            .collect(Collectors.joining(", "));
+        IntStream.range(0, columnCount).mapToObj(i -> "?").collect(Collectors.joining(", "));
     if (dialect == RdbmsDialect.POSTGRESQL) {
       final String setClause =
           updateColumns.stream().map(c -> c + " = EXCLUDED." + c).collect(Collectors.joining(", "));
@@ -186,7 +186,7 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
   private static void bind(
       final PreparedStatement statement,
       final int index,
-      final io.camunda.analytics.dimension.DimensionType type,
+      final DimensionType type,
       final Object value)
       throws SQLException {
     if (value == null) {
