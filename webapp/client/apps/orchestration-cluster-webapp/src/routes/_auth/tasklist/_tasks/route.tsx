@@ -34,12 +34,10 @@ export const Route = createFileRoute('/_auth/tasklist/_tasks')({
 	notFoundComponent: () => {
 		throw notFound({routeId: '/_auth/tasklist'});
 	},
-	beforeLoad: async ({context: {queryClient}, search, matches, location}) => {
+	beforeLoad: async ({context: {queryClient}, search, location}) => {
 		const isAutoSelectNextTaskEnabled = getStateLocally('tasklist.autoSelectNextTask') === true;
 		const isFromTaskCompletion = location.state.tasklistAutoSelectSource === 'task-completion';
-		const taskDetailsMatch = matches.find((match) => match.routeId === '/_auth/tasklist/_tasks/$userTaskKey');
-		const shouldAutoSelectNextTask =
-			isAutoSelectNextTaskEnabled && isFromTaskCompletion && taskDetailsMatch === undefined;
+		const shouldAutoSelectNextTask = isAutoSelectNextTaskEnabled && isFromTaskCompletion;
 		const currentUser = await queryClient.ensureQueryData(queries.getCurrentUser());
 		const queryOptions = queries.queryUserTasks(getTasksRequestBody(search, {currentUsername: currentUser.username}));
 		const {pages} = await queryClient.ensureInfiniteQueryData(queryOptions);
