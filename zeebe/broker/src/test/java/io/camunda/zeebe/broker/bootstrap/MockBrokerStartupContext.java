@@ -378,7 +378,10 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
         physicalTenantId,
         id ->
             new PhysicalTenantEngineContext(
-                securityConfiguration, brokerRequestAuthorizationConverter, featureFlags));
+                securityConfiguration,
+                brokerRequestAuthorizationConverter,
+                featureFlags,
+                brokerConfiguration));
   }
 
   public void setPhysicalTenantEngineContext(

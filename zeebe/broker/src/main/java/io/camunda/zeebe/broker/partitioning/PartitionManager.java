@@ -12,9 +12,12 @@ import io.atomix.raft.partition.RaftPartition;
 import io.camunda.cluster.PartitionId;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
+import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
+import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.util.jar.ExternalJarLoadException;
 import java.util.Collection;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
@@ -68,11 +71,19 @@ public interface PartitionManager {
       final String physicalTenantId,
       final TopologyManagerImpl topologyManager) {
     final var engineContext = brokerStartupContext.getPhysicalTenantEngineContext(physicalTenantId);
+    final var perTenantBrokerConfig = engineContext.brokerConfig();
+    // The default tenant's engine context carries the root BrokerCfg itself; reuse the shared
+    // repository already loaded by the Broker (it may also contain predefined descriptors
+    // injected by embedding applications and tests).
+    final var perTenantExporterRepository =
+        perTenantBrokerConfig == brokerStartupContext.getBrokerConfiguration()
+            ? brokerStartupContext.getExporterRepository()
+            : buildExporterRepository(perTenantBrokerConfig);
     return new PartitionManagerImpl(
         physicalTenantId,
         brokerStartupContext.getConcurrencyControl(),
         brokerStartupContext.getActorSchedulingService(),
-        brokerStartupContext.getBrokerConfiguration(),
+        perTenantBrokerConfig,
         brokerStartupContext.getBrokerInfo(),
         brokerStartupContext.getClusterServices(),
         brokerStartupContext.getHealthCheckService(),
@@ -80,7 +91,7 @@ public interface PartitionManager {
         brokerStartupContext.getPartitionListeners(),
         brokerStartupContext.getPartitionRaftListeners(),
         brokerStartupContext.getSnapshotApiRequestHandler(),
-        brokerStartupContext.getExporterRepository(),
+        perTenantExporterRepository,
         brokerStartupContext.getGatewayBrokerTransport(),
         brokerStartupContext.getJobStreamService().jobStreamer(),
         brokerStartupContext.getClusterConfigurationService(),
@@ -92,6 +103,21 @@ public interface PartitionManager {
         engineContext.authorizationConverter(),
         engineContext.featureFlags(),
         topologyManager);
+  }
+
+  private static ExporterRepository buildExporterRepository(
+      final io.camunda.zeebe.broker.system.configuration.BrokerCfg brokerCfg) {
+    final var repository = new ExporterRepository();
+    repository.setLicenseKey(brokerCfg.getLicenseKey());
+    for (final var entry : brokerCfg.getExporters().entrySet()) {
+      try {
+        repository.load(entry.getKey(), entry.getValue());
+      } catch (final ExporterLoadException | ExternalJarLoadException e) {
+        throw new IllegalStateException(
+            "Failed to load per-tenant exporter with configuration: " + entry.getValue(), e);
+      }
+    }
+    return repository;
   }
 
   static RecoveryPartitionManager createRecoveryPartitionManager(

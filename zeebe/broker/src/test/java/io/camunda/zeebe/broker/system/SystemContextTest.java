@@ -589,10 +589,11 @@ final class SystemContextTest {
     // given
     final var tenantId = PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
     final var flags = FeatureFlags.createDefaultForTests();
+    final var brokerCfg = new BrokerCfg();
     final var ctx =
         new SystemContext(
             SystemContext.DEFAULT_SHUTDOWN_TIMEOUT,
-            new BrokerCfg(),
+            brokerCfg,
             null,
             mock(ActorScheduler.class),
             mock(AtomixCluster.class),
@@ -603,7 +604,8 @@ final class SystemContextTest {
                 new PhysicalTenantEngineContext(
                     EngineSecurityConfigurations.defaultConfig(),
                     mock(BrokerRequestAuthorizationConverter.class),
-                    flags)),
+                    flags,
+                    brokerCfg)),
             ignored -> mock(UserServices.class),
             mock(PasswordEncoder.class),
             authConfig -> mock(JwtDecoder.class),
@@ -672,7 +674,8 @@ final class SystemContextTest {
                     new PhysicalTenantEngineContext(
                         configsByTenant.get(tenantId),
                         convertersByTenant.get(tenantId),
-                        FeatureFlags.createDefaultForTests())));
+                        FeatureFlags.createDefaultForTests(),
+                        brokerCfg)));
     return new SystemContext(
         SystemContext.DEFAULT_SHUTDOWN_TIMEOUT,
         brokerCfg,

@@ -224,9 +224,13 @@ class PartitionManagerStepTest {
       final var secCfg = EngineSecurityConfigurations.unauthenticatedAndUnauthorized();
       final var conv = new BrokerRequestAuthorizationConverter(secCfg);
       testBrokerStartupContext.setPhysicalTenantEngineContext(
-          PHYSICAL_TENANT_ID, new PhysicalTenantEngineContext(secCfg, conv, flagsA));
+          PHYSICAL_TENANT_ID,
+          new PhysicalTenantEngineContext(
+              secCfg, conv, flagsA, testBrokerStartupContext.getBrokerConfiguration()));
       testBrokerStartupContext.setPhysicalTenantEngineContext(
-          secondTenantId, new PhysicalTenantEngineContext(secCfg, conv, flagsB));
+          secondTenantId,
+          new PhysicalTenantEngineContext(
+              secCfg, conv, flagsB, testBrokerStartupContext.getBrokerConfiguration()));
 
       final var secondFuture = CONCURRENCY_CONTROL.<BrokerStartupContext>createFuture();
       final var secondStep = new PartitionManagerStep(secondTenantId);

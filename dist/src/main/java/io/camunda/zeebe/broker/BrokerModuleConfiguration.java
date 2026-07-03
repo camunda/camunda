@@ -10,7 +10,10 @@ package io.camunda.zeebe.broker;
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Processing;
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
@@ -27,6 +30,7 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.PhysicalTenantEngineContext;
 import io.camunda.zeebe.broker.system.SystemContext;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.CloseableSilently;
@@ -80,6 +84,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private final SearchClientsProxy searchClientsProxy;
   private final NodeIdProvider nodeIdProvider;
   private final PhysicalTenantIds physicalTenantIds;
+  private final BrokerBasedPropertiesOverride brokerBasedPropertiesOverride;
+  private final UnifiedConfiguration unifiedConfiguration;
 
   private Broker broker;
 
@@ -94,6 +100,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       final BrokerShutdownHelper shutdownHelper,
       final MeterRegistry meterRegistry,
       final PhysicalTenantResolver physicalTenantResolver,
+      final BrokerBasedPropertiesOverride brokerBasedPropertiesOverride,
+      final UnifiedConfiguration unifiedConfiguration,
       // The ServiceRegistry is not available if you want to start-up the Standalone Broker
       @Autowired(required = false) final ServiceRegistry serviceRegistry,
       final PasswordEncoder passwordEncoder,
@@ -111,8 +119,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.brokerClient = brokerClient;
     this.shutdownHelper = shutdownHelper;
     this.meterRegistry = meterRegistry;
-    this.physicalTenantEngineContexts =
-        physicalTenantResolver.mapValues(this::buildPhysicalTenantEngineContext);
+    this.brokerBasedPropertiesOverride = brokerBasedPropertiesOverride;
+    this.unifiedConfiguration = unifiedConfiguration;
     this.serviceRegistry = serviceRegistry;
     this.passwordEncoder = passwordEncoder;
     this.scopedJwtDecoderFactory = scopedJwtDecoderFactory;
@@ -120,6 +128,9 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.searchClientsProxy = searchClientsProxy;
     this.nodeIdProvider = nodeIdProvider;
     this.physicalTenantIds = physicalTenantIds;
+    // must run after all fields are assigned: buildPhysicalTenantEngineContext reads them
+    physicalTenantEngineContexts =
+        physicalTenantResolver.mapValues(this::buildPhysicalTenantEngineContext);
   }
 
   @Bean
@@ -187,8 +198,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     }
   }
 
-  private PhysicalTenantEngineContext buildPhysicalTenantEngineContext(
-      final io.camunda.configuration.Camunda camunda) {
+  private PhysicalTenantEngineContext buildPhysicalTenantEngineContext(final Camunda camunda) {
     final var s = camunda.getSecurity();
     final var securityConfig =
         new EngineSecurityConfig(
@@ -200,7 +210,26 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             s.getCompiledGroupIdValidationPattern());
     final var authorizationConverter = new BrokerRequestAuthorizationConverter(securityConfig);
     final var featureFlags = buildFeatureFlags(camunda.getProcessing());
-    return new PhysicalTenantEngineContext(securityConfig, authorizationConverter, featureFlags);
+    return new PhysicalTenantEngineContext(
+        securityConfig, authorizationConverter, featureFlags, buildBrokerConfig(camunda));
+  }
+
+  private BrokerCfg buildBrokerConfig(final Camunda tenantConfig) {
+    // The resolver maps the default tenant to the root Camunda object unless it is explicitly
+    // declared under camunda.physical-tenants.default.*. For the root object, reuse the root
+    // BrokerBasedProperties bean directly: it is the exact configuration the broker always ran
+    // with, including legacy zeebe.broker.* properties that per-tenant keys cannot express.
+    if (tenantConfig == unifiedConfiguration.getCamunda()) {
+      return configuration.config();
+    }
+    final var brokerConfig = brokerBasedPropertiesOverride.convert(tenantConfig);
+    // stamp nodeId/nodeVersion and resolve relative paths, mirroring what
+    // BrokerBasedConfiguration does for the root BrokerBasedProperties bean
+    final var nodeInstance = nodeIdProvider.currentNodeInstance();
+    brokerConfig.getCluster().setNodeId(nodeInstance.id());
+    brokerConfig.getCluster().setNodeVersion(nodeInstance.version().version());
+    brokerConfig.init(configuration.workingDirectory().path().toAbsolutePath().toString());
+    return brokerConfig;
   }
 
   private FeatureFlags buildFeatureFlags(final Processing p) {

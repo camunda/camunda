@@ -9,13 +9,18 @@ package io.camunda.zeebe.broker.system;
 
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.util.FeatureFlags;
 
 /**
  * Bundles all per-physical-tenant objects required to bootstrap the engine for a given physical
  * tenant. Passed as a single unit through the broker startup chain instead of three parallel maps.
+ *
+ * <p>BrokerConfig included here contains the configuration for the physical tenant. It differs from
+ * the root BrokerCfg for the properties that are overridden for this physical tenant.
  */
 public record PhysicalTenantEngineContext(
     EngineSecurityConfig securityConfig,
     BrokerRequestAuthorizationConverter authorizationConverter,
-    FeatureFlags featureFlags) {}
+    FeatureFlags featureFlags,
+    BrokerCfg brokerConfig) {}

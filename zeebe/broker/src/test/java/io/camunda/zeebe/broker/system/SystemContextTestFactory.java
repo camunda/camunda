@@ -108,7 +108,10 @@ public final class SystemContextTestFactory {
         singleValueMap(
             physicalTenantIds,
             new PhysicalTenantEngineContext(
-                securityConfiguration, brokerRequestAuthorizationConverter, featureFlags)),
+                securityConfiguration,
+                brokerRequestAuthorizationConverter,
+                featureFlags,
+                brokerCfg)),
         tenantId -> userServices,
         passwordEncoder,
         authConfig -> jwtDecoder,
