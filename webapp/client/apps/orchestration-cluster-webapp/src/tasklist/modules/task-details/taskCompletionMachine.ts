@@ -206,59 +206,14 @@ const taskCompletionMachine = setup({
 		},
 
 		CompletionDelayed: {
-			entry: ['setOptimisticCompleting', 'notifyCompletionDelayed', 'trackCompletionDelayed', 'resetRetryCount'],
+			entry: ['setOptimisticCompleting', 'notifyCompletionDelayed', 'trackCompletionDelayed'],
 			tags: 'status:completing',
-			initial: 'Fetching',
-			states: {
-				Fetching: {
-					invoke: {
-						src: 'fetchUserTask',
-						input: ({context}) => ({queryClient: context.queryClient, userTaskKey: context.userTaskKey}),
-						onDone: [
-							{
-								guard: {type: 'isTaskCompleted', params: ({event}) => ({task: event.output})},
-								target: '#taskCompletion.CompletionSucceeded',
-								actions: {type: 'commitTask', params: ({event}) => ({task: event.output})},
-							},
-							{target: 'Waiting', actions: 'incrementRetryCount'},
-						],
-						onError: {target: 'Waiting', actions: 'incrementRetryCount'},
-					},
-				},
-				Waiting: {
-					after: {
-						POLL_DELAY: {target: 'Fetching'},
-					},
-				},
-			},
+			always: {target: 'PollingCompletion'},
 		},
 
 		AwaitingCompletion: {
-			entry: 'resetRetryCount',
 			tags: 'status:completing',
-			initial: 'Fetching',
-			states: {
-				Fetching: {
-					invoke: {
-						src: 'fetchUserTask',
-						input: ({context}) => ({queryClient: context.queryClient, userTaskKey: context.userTaskKey}),
-						onDone: [
-							{
-								guard: {type: 'isTaskCompleted', params: ({event}) => ({task: event.output})},
-								target: '#taskCompletion.CompletionSucceeded',
-								actions: {type: 'commitTask', params: ({event}) => ({task: event.output})},
-							},
-							{target: 'Waiting', actions: 'incrementRetryCount'},
-						],
-						onError: {target: 'Waiting', actions: 'incrementRetryCount'},
-					},
-				},
-				Waiting: {
-					after: {
-						POLL_DELAY: {target: 'Fetching'},
-					},
-				},
-			},
+			always: {target: 'PollingCompletion'},
 		},
 
 		PollingCompletion: {
