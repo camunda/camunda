@@ -42,10 +42,10 @@ public final class SegmentSealingAggregation<IN, K, ACC> implements Aggregation<
 
   private static final long NO_SEGMENT = -1L;
 
-  private final AggregateFunction<IN, ACC, ?> aggregate;
-  private final KeySelector<IN, K> keySelector;
-  private final SourceCoordinate<IN> coordinate;
-  private final ToLongFunction<IN> eventTime;
+  private final AggregateFunction<? super IN, ACC, ?> aggregate;
+  private final KeySelector<? super IN, K> keySelector;
+  private final SourceCoordinate<? super IN> coordinate;
+  private final ToLongFunction<? super IN> eventTime;
   private final Windows windows;
   private final Segments segments;
   private final SegmentSink<K, ACC> sink;
@@ -55,10 +55,10 @@ public final class SegmentSealingAggregation<IN, K, ACC> implements Aggregation<
   private int sourcePartition = -1;
 
   public SegmentSealingAggregation(
-      final AggregateFunction<IN, ACC, ?> aggregate,
-      final KeySelector<IN, K> keySelector,
-      final SourceCoordinate<IN> coordinate,
-      final ToLongFunction<IN> eventTime,
+      final AggregateFunction<? super IN, ACC, ?> aggregate,
+      final KeySelector<? super IN, K> keySelector,
+      final SourceCoordinate<? super IN> coordinate,
+      final ToLongFunction<? super IN> eventTime,
       final Windows windows,
       final Segments segments,
       final SegmentSink<K, ACC> sink) {
