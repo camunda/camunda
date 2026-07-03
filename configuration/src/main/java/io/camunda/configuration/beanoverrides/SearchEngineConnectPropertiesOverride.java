@@ -56,13 +56,9 @@ public class SearchEngineConnectPropertiesOverride {
   @Bean
   @Primary
   public SearchEngineConnectProperties searchEngineConnectProperties() {
-    return searchEngineConnectProperties(unifiedConfiguration.getCamunda());
-  }
-
-  public SearchEngineConnectProperties searchEngineConnectProperties(final Camunda camunda) {
     final SearchEngineConnectProperties override = new SearchEngineConnectProperties();
     BeanUtils.copyProperties(legacySearchEngineConnectProperties, override);
-    new Converter(camunda).applyTo(override);
+    new Converter(unifiedConfiguration.getCamunda()).applyTo(override);
     return override;
   }
 

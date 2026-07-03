@@ -47,13 +47,9 @@ public class SearchEngineRetentionPropertiesOverride {
   @Bean
   @Primary
   public SearchEngineRetentionProperties searchEngineRetentionProperties() {
-    return searchEngineRetentionProperties(unifiedConfiguration.getCamunda());
-  }
-
-  public SearchEngineRetentionProperties searchEngineRetentionProperties(final Camunda camunda) {
     final SearchEngineRetentionProperties override = new SearchEngineRetentionProperties();
     BeanUtils.copyProperties(legacySearchEngineRetentionProperties, override);
-    applyTo(camunda, override);
+    applyTo(unifiedConfiguration.getCamunda(), override);
     return override;
   }
 

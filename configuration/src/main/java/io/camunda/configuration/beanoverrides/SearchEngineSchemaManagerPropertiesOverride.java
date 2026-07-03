@@ -45,14 +45,9 @@ public class SearchEngineSchemaManagerPropertiesOverride {
   @Bean
   @Primary
   public SearchEngineSchemaManagerProperties searchEngineSchemaManagerProperties() {
-    return searchEngineSchemaManagerProperties(unifiedConfiguration.getCamunda());
-  }
-
-  public SearchEngineSchemaManagerProperties searchEngineSchemaManagerProperties(
-      final Camunda camunda) {
     final SearchEngineSchemaManagerProperties override = new SearchEngineSchemaManagerProperties();
     BeanUtils.copyProperties(legacySearchEngineSchemaManagerProperties, override);
-    applyTo(camunda, override);
+    applyTo(unifiedConfiguration.getCamunda(), override);
     return override;
   }
 

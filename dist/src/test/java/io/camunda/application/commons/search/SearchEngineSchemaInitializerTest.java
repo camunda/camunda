@@ -13,16 +13,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
-import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride.Converter;
 import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineSchemaManagerPropertiesOverride;
-import io.camunda.configuration.beans.LegacySearchEngineConnectProperties;
-import io.camunda.configuration.beans.LegacySearchEngineIndexProperties;
-import io.camunda.configuration.beans.LegacySearchEngineRetentionProperties;
-import io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties;
+import io.camunda.configuration.beans.SearchEngineIndexProperties;
+import io.camunda.configuration.beans.SearchEngineRetentionProperties;
+import io.camunda.configuration.beans.SearchEngineSchemaManagerProperties;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
@@ -72,29 +70,21 @@ class SearchEngineSchemaInitializerTest {
 
   private static Map<String, SearchEngineConfiguration> configsFor(
       final PhysicalTenantResolver resolver) {
-    final UnifiedConfiguration unifiedConfig = new UnifiedConfiguration();
-    final SearchEngineConnectPropertiesOverride connectOverride =
-        new SearchEngineConnectPropertiesOverride(
-            unifiedConfig, new LegacySearchEngineConnectProperties());
-    final SearchEngineIndexPropertiesOverride indexOverride =
-        new SearchEngineIndexPropertiesOverride(
-            unifiedConfig, new LegacySearchEngineIndexProperties());
-    final SearchEngineRetentionPropertiesOverride retentionOverride =
-        new SearchEngineRetentionPropertiesOverride(
-            unifiedConfig, new LegacySearchEngineRetentionProperties());
-    final SearchEngineSchemaManagerPropertiesOverride schemaManagerOverride =
-        new SearchEngineSchemaManagerPropertiesOverride(
-            unifiedConfig, new LegacySearchEngineSchemaManagerProperties());
     return resolver.mapValues(
-        tenantCamunda ->
-            SearchEngineConfiguration.of(
-                b ->
-                    b.connect(connectOverride.searchEngineConnectProperties(tenantCamunda))
-                        .index(indexOverride.searchEngineIndexProperties(tenantCamunda))
-                        .retention(retentionOverride.searchEngineRetentionProperties(tenantCamunda))
-                        .schemaManager(
-                            schemaManagerOverride.searchEngineSchemaManagerProperties(
-                                tenantCamunda))));
+        tenantCamunda -> {
+          final var index = new SearchEngineIndexProperties();
+          SearchEngineIndexPropertiesOverride.applyTo(tenantCamunda, index);
+          final var retention = new SearchEngineRetentionProperties();
+          SearchEngineRetentionPropertiesOverride.applyTo(tenantCamunda, retention);
+          final var schemaManager = new SearchEngineSchemaManagerProperties();
+          SearchEngineSchemaManagerPropertiesOverride.applyTo(tenantCamunda, schemaManager);
+          return SearchEngineConfiguration.of(
+              b ->
+                  b.connect(new Converter(tenantCamunda).convert())
+                      .index(index)
+                      .retention(retention)
+                      .schemaManager(schemaManager));
+        });
   }
 
   private static void setShutdown(

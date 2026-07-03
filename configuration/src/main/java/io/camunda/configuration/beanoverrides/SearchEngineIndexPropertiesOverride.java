@@ -45,13 +45,9 @@ public class SearchEngineIndexPropertiesOverride {
   @Bean
   @Primary
   public SearchEngineIndexProperties searchEngineIndexProperties() {
-    return searchEngineIndexProperties(unifiedConfiguration.getCamunda());
-  }
-
-  public SearchEngineIndexProperties searchEngineIndexProperties(final Camunda camunda) {
     final SearchEngineIndexProperties override = new SearchEngineIndexProperties();
     BeanUtils.copyProperties(legacySearchEngineIndexProperties, override);
-    applyTo(camunda, override);
+    applyTo(unifiedConfiguration.getCamunda(), override);
     return override;
   }
 

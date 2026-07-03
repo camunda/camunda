@@ -11,16 +11,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
-import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride.Converter;
 import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineSchemaManagerPropertiesOverride;
-import io.camunda.configuration.beans.LegacySearchEngineConnectProperties;
-import io.camunda.configuration.beans.LegacySearchEngineIndexProperties;
-import io.camunda.configuration.beans.LegacySearchEngineRetentionProperties;
-import io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.configuration.beans.SearchEngineIndexProperties;
 import io.camunda.configuration.beans.SearchEngineRetentionProperties;
@@ -42,26 +37,20 @@ class SearchEngineDatabaseConfigurationTest {
   }
 
   private static Map<String, SearchEngineConfiguration> configsByTenant(final Camunda camunda) {
-    final UnifiedConfiguration unifiedConfig = new UnifiedConfiguration();
-    final var connectOverride =
-        new SearchEngineConnectPropertiesOverride(
-            unifiedConfig, new LegacySearchEngineConnectProperties());
-    final var indexOverride =
-        new SearchEngineIndexPropertiesOverride(
-            unifiedConfig, new LegacySearchEngineIndexProperties());
-    final var retentionOverride =
-        new SearchEngineRetentionPropertiesOverride(
-            unifiedConfig, new LegacySearchEngineRetentionProperties());
-    final var schemaManagerOverride =
-        new SearchEngineSchemaManagerPropertiesOverride(
-            unifiedConfig, new LegacySearchEngineSchemaManagerProperties());
+    final var connect = new Converter(camunda).convert();
+    final var index = new SearchEngineIndexProperties();
+    SearchEngineIndexPropertiesOverride.applyTo(camunda, index);
+    final var retention = new SearchEngineRetentionProperties();
+    SearchEngineRetentionPropertiesOverride.applyTo(camunda, retention);
+    final var schemaManager = new SearchEngineSchemaManagerProperties();
+    SearchEngineSchemaManagerPropertiesOverride.applyTo(camunda, schemaManager);
     return new SearchEngineDatabaseConfiguration()
         .searchEngineConfigurationsByTenant(
             PhysicalTenantResolver.of(new MockEnvironment(), camunda),
-            connectOverride.searchEngineConnectProperties(camunda),
-            indexOverride.searchEngineIndexProperties(camunda),
-            retentionOverride.searchEngineRetentionProperties(camunda),
-            schemaManagerOverride.searchEngineSchemaManagerProperties(camunda));
+            connect,
+            index,
+            retention,
+            schemaManager);
   }
 
   @Test
