@@ -340,7 +340,7 @@ jobs:
           message_ts=$(echo "$response" | jq -r '
             [(.messages // [])[] | select(
               .bot_id != null and
-              (.blocks[]?.text?.text? // "" | test("Stale Backport PRs"))
+              (.blocks[]?.text?.text? // "" | test("Stale Backport PRs"; "i"))
             )] | first | .ts // ""')
 
           if [[ -n "$message_ts" ]]; then
@@ -420,7 +420,7 @@ jobs:
             [(.items // [])[] | select(
               .type == "message" and
               .message.bot_id != null and
-              (.message.blocks[]?.text?.text? // "" | test("Stale Backport PRs"))
+              (.message.blocks[]?.text?.text? // "" | test("Stale Backport PRs"; "i"))
             ) | .message.ts] | .[]' | while read -r ts; do
             echo "Unpinning old message: $ts" >&2
             resp=$(curl -s -X POST "https://slack.com/api/pins.remove" \
