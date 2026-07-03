@@ -22,6 +22,9 @@ import java.util.List;
 import org.apache.hc.client5.http.async.methods.SimpleHttpRequest;
 import org.apache.hc.client5.http.async.methods.SimpleHttpResponse;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
+import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
+import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManager;
+import org.apache.hc.client5.http.nio.AsyncClientConnectionManager;
 import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.core5.concurrent.FutureCallback;
 import org.assertj.core.api.Assertions;
@@ -30,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.opensearch.client.transport.aws.AwsSdk2Transport;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5Transport;
@@ -143,6 +147,42 @@ class OpensearchConnectorTest {
 
     Assertions.assertThat(reqWrapper.getFirstHeader(KEY_CUSTOM_HEADER).getValue())
         .isEqualTo(VALUE_CUSTOM_HEADER);
+  }
+
+  @Test
+  void shouldConfigureConnectionPoolLimitsWhenSet() {
+    // given
+    final var configuration = new ConnectConfiguration();
+    configuration.setMaxConnections(75);
+    configuration.setMaxConnectionsPerRoute(40);
+    final var connector =
+        new OpensearchConnector(configuration, new ObjectMapper(), null, new PluginRepository());
+    final var builder = Mockito.mock(HttpAsyncClientBuilder.class);
+
+    // when
+    connector.configureHttpClient(builder, configuration);
+
+    // then
+    final var captor = ArgumentCaptor.forClass(AsyncClientConnectionManager.class);
+    Mockito.verify(builder).setConnectionManager(captor.capture());
+    final var connectionManager = (PoolingAsyncClientConnectionManager) captor.getValue();
+    Assertions.assertThat(connectionManager.getMaxTotal()).isEqualTo(75);
+    Assertions.assertThat(connectionManager.getDefaultMaxPerRoute()).isEqualTo(40);
+  }
+
+  @Test
+  void shouldNotConfigureConnectionManagerWhenNothingSet() {
+    // given
+    final var configuration = new ConnectConfiguration();
+    final var connector =
+        new OpensearchConnector(configuration, new ObjectMapper(), null, new PluginRepository());
+    final var builder = Mockito.mock(HttpAsyncClientBuilder.class);
+
+    // when
+    connector.configureHttpClient(builder, configuration);
+
+    // then
+    Mockito.verify(builder, Mockito.never()).setConnectionManager(Mockito.any());
   }
 
   private static CloseableHttpAsyncClient getOpensearchApacheClient(

@@ -24,6 +24,8 @@ public class ConnectConfiguration {
   private String fieldDateFormat = FIELD_DATE_FORMAT_DEFAULT;
   private Integer socketTimeout;
   private Integer connectTimeout;
+  private Integer maxConnections;
+  private Integer maxConnectionsPerRoute;
   private String url = URL_DEFAULT;
   private String username;
   private String password;
@@ -92,6 +94,43 @@ public class ConnectConfiguration {
 
   public void setConnectTimeout(final Integer connectTimeout) {
     this.connectTimeout = connectTimeout;
+  }
+
+  /**
+   * @throws IllegalArgumentException if configured with a non-positive value
+   */
+  public Integer getMaxConnections() {
+    validatePositive("maxConnections", maxConnections);
+    return maxConnections;
+  }
+
+  public void setMaxConnections(final Integer maxConnections) {
+    this.maxConnections = maxConnections;
+  }
+
+  /**
+   * @throws IllegalArgumentException if configured with a non-positive value
+   */
+  public Integer getMaxConnectionsPerRoute() {
+    validatePositive("maxConnectionsPerRoute", maxConnectionsPerRoute);
+    return maxConnectionsPerRoute;
+  }
+
+  public void setMaxConnectionsPerRoute(final Integer maxConnectionsPerRoute) {
+    this.maxConnectionsPerRoute = maxConnectionsPerRoute;
+  }
+
+  /**
+   * Validates that a connection-pool limit, when set, is a positive value. A value of zero or less
+   * is a misconfiguration that would otherwise fail later with a cryptic Apache HttpClient error.
+   *
+   * @throws IllegalArgumentException if the value is set and not positive
+   */
+  private void validatePositive(final String propertyName, final Integer value) {
+    if (value != null && value <= 0) {
+      throw new IllegalArgumentException(
+          propertyName + " must be a positive value, but was " + value);
+    }
   }
 
   public String getUrl() {
