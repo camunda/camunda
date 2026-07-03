@@ -19,8 +19,10 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 public final class ProcessEngineMetrics {
@@ -38,6 +40,9 @@ public final class ProcessEngineMetrics {
   private final Map<EngineAction, Counter> evaluatedDmnElements = new EnumMap<>(EngineAction.class);
   private final AtomicLong activeProcessInstances = new AtomicLong(0);
   private boolean isActiveProcessInstanceGaugeRegistered = false;
+  private final Set<String> seenTenantIds = new HashSet<>();
+  private final AtomicLong activeTenantCount = new AtomicLong(0);
+  private boolean isActiveTenantGaugeRegistered = false;
 
   public ProcessEngineMetrics(
       final MeterRegistry registry, final long initialActiveRootProcessInstances) {
@@ -68,6 +73,7 @@ public final class ProcessEngineMetrics {
 
     if (isRootProcessInstance(elementType, context.getParentProcessInstanceKey())) {
       increaseRootProcessInstance(EngineAction.ACTIVATED);
+      tenantActivated(context.getTenantId());
     }
   }
 
@@ -198,6 +204,24 @@ public final class ProcessEngineMetrics {
           .tag(EngineKeyNames.ORGANIZATION_ID.asString(), ORGANIZATION_ID)
           .register(registry);
       isActiveProcessInstanceGaugeRegistered = true;
+    }
+  }
+
+  private void tenantActivated(final String tenantId) {
+    if (seenTenantIds.add(tenantId)) {
+      registerActiveTenantGaugeIfNeeded();
+      activeTenantCount.set(seenTenantIds.size());
+    }
+  }
+
+  private void registerActiveTenantGaugeIfNeeded() {
+    if (!isActiveTenantGaugeRegistered) {
+      final var meterDoc = EngineMetricsDoc.ACTIVE_TENANTS;
+      Gauge.builder(meterDoc.getName(), activeTenantCount, AtomicLong::get)
+          .description(meterDoc.getDescription())
+          .tag(EngineKeyNames.ORGANIZATION_ID.asString(), ORGANIZATION_ID)
+          .register(registry);
+      isActiveTenantGaugeRegistered = true;
     }
   }
 }
