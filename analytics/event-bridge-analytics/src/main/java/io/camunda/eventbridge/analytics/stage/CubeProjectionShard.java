@@ -116,8 +116,7 @@ public final class CubeProjectionShard implements Task<SourceRecord>, AutoClosea
     final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider =
         RocksDbStateStoreProvider.open(new File(baseDir + "-p" + partition), meterRegistry);
     final StateBackedProjectionStore store = StateBackedProjectionStore.fromProvider(provider);
-    final AnalyticsFactProjector projector =
-        new AnalyticsFactProjector(store, store.elementStarts());
+    final AnalyticsFactProjector projector = new AnalyticsFactProjector(store);
     final EnvelopePublisher publisher =
         new EnvelopePublisher(
             new EventBridgeEnvelopeTransport(client, factsTopic),

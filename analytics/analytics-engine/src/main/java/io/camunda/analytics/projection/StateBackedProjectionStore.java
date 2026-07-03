@@ -8,7 +8,6 @@
 package io.camunda.analytics.projection;
 
 import io.camunda.eventbridge.streaming.state.StoreBuilder;
-import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.state.api.StateStoreProvider;
 import io.camunda.eventbridge.streaming.state.cache.CachingKeyValueStore;
 import io.camunda.eventbridge.streaming.state.memory.InMemoryStateStoreProvider;
@@ -55,6 +54,8 @@ public final class StateBackedProjectionStore implements BaseProjectionStore, Au
   private final DbLong positionValue = new DbLong();
   private final CachingKeyValueStore<DbInt, DbLong> consumedPosition;
 
+  private final DbString elementStartKey = new DbString();
+  private final DbLong elementStartValue = new DbLong();
   private final CachingKeyValueStore<DbString, DbLong> elementStarts;
 
   private final DbLong incidentKey = new DbLong();
@@ -100,14 +101,6 @@ public final class StateBackedProjectionStore implements BaseProjectionStore, Au
     // Checkpoint/capacity order: the base-projection stores then the consumed position, all inside
     // the one commit transaction, so they land as a single atomic cut.
     caches = List.of(variables, elementStarts, incidents, incidentStarts, consumedPosition);
-  }
-
-  /**
-   * The per-element-instance activation-time store. The process instance's own start is held here
-   * too, keyed like any element. Bounded, read-through cached; flushed on {@link #checkpoint()}.
-   */
-  public KeyValueStore<DbString, DbLong> elementStarts() {
-    return elementStarts;
   }
 
   /** Shares an already-open provider (the caller owns its lifecycle) — the production wiring. */
@@ -170,6 +163,24 @@ public final class StateBackedProjectionStore implements BaseProjectionStore, Au
   public void clearIncident(final long processInstanceKey) {
     incidentKey.wrapLong(processInstanceKey);
     incidents.delete(incidentKey);
+  }
+
+  @Override
+  public void recordElementStart(
+      final long processInstanceKey, final String elementId, final long startTimeMs) {
+    elementStartKey.wrapString(processInstanceKey + ":" + elementId);
+    elementStartValue.wrapLong(startTimeMs);
+    elementStarts.put(elementStartKey, elementStartValue);
+  }
+
+  @Override
+  public long takeElementStart(final long processInstanceKey, final String elementId) {
+    elementStartKey.wrapString(processInstanceKey + ":" + elementId);
+    final long start = elementStarts.get(elementStartKey).map(DbLong::getValue).orElse(NO_POSITION);
+    if (start != NO_POSITION) {
+      elementStarts.delete(elementStartKey);
+    }
+    return start;
   }
 
   @Override

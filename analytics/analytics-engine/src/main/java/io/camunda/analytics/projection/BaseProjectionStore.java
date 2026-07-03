@@ -12,11 +12,10 @@ import java.util.Map;
 /**
  * The base-projection (read-model) store: per-instance variables (for enriching derived facts) plus
  * the per-source-partition position up to which the source stream has been folded. Start times —
- * for the process instance and for every element alike — live in the shared element-start store
- * (see {@code StateBackedProjectionStore#elementStarts()}), since a process instance is just the
- * root element. RocksDB serves as the local fast cache; an implementation may back it with an
- * external store. The consumed position is read back on startup to resume the source from where the
- * fold left off (start-from-offset).
+ * for the process instance and for every element alike — are recorded here too (the process
+ * instance keys in like any element, since it is just the root element). RocksDB serves as the
+ * local fast cache; an implementation may back it with an external store. The consumed position is
+ * read back on startup to resume the source from where the fold left off (start-from-offset).
  */
 public interface BaseProjectionStore {
 
@@ -45,6 +44,16 @@ public interface BaseProjectionStore {
    * Clears the incident flag for {@code processInstanceKey} (called when it reaches a terminal).
    */
   void clearIncident(long processInstanceKey);
+
+  /** Records the activation time of {@code elementId} within {@code processInstanceKey}. */
+  void recordElementStart(long processInstanceKey, String elementId, long startTimeMs);
+
+  /**
+   * Returns and removes the activation time of {@code elementId} within {@code processInstanceKey},
+   * or {@link #NO_POSITION} if none is recorded (e.g. a completion seen without its activation
+   * during replay).
+   */
+  long takeElementStart(long processInstanceKey, String elementId);
 
   /** Records the create time of the incident open on {@code elementInstanceKey}. */
   void putIncidentStart(long elementInstanceKey, long createTimeMs);

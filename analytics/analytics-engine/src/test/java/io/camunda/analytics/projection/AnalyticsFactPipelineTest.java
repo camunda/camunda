@@ -9,6 +9,7 @@ package io.camunda.analytics.projection;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.analytics.dataset.DimensionSpec;
 import io.camunda.analytics.dimension.DimensionColumn;
 import io.camunda.analytics.dimension.DimensionKey;
 import io.camunda.analytics.dimension.DimensionKeySelector;
@@ -103,8 +104,7 @@ final class AnalyticsFactPipelineTest {
     run();
     final DimensionSchema byRegion =
         DimensionSchema.of(
-            new DimensionColumn(
-                AnalyticsFactProjector.VAR_PREFIX + "region", DimensionType.STRING));
+            new DimensionColumn(DimensionSpec.VARIABLE_PREFIX + "region", DimensionType.STRING));
 
     // when the execution-time-summary meter aggregates completed instances grouped by region
     final Map<DimensionKey, ?> cells =
