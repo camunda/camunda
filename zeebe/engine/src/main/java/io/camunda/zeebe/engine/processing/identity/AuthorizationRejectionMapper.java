@@ -26,10 +26,13 @@ public final class AuthorizationRejectionMapper {
     return switch (rejection) {
       case AuthorizationRejection.Tenant t ->
           new Rejection(RejectionType.FORBIDDEN, TENANT_MSG.formatted(t.tenantId()));
-      case AuthorizationRejection.Permission p ->
-          new Rejection(
-              RejectionType.FORBIDDEN,
-              FORBIDDEN_MSG.formatted(p.permissionType(), p.resourceType()));
+      case AuthorizationRejection.Permission p -> forbidden(p.permissionType(), p.resourceType());
     };
+  }
+
+  /** Builds a FORBIDDEN rejection with the standard insufficient-permissions message. */
+  static Rejection forbidden(final Object permissionType, final Object resourceType) {
+    return new Rejection(
+        RejectionType.FORBIDDEN, FORBIDDEN_MSG.formatted(permissionType, resourceType));
   }
 }

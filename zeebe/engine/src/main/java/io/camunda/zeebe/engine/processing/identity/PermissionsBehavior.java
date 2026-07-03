@@ -85,6 +85,21 @@ public class PermissionsBehavior {
           securityConfig.isMultiTenancyChecksEnabled());
       return Either.right(command.getValue());
     }
+    if (authorizations.get(Authorization.AUTHORIZED_USERNAME) == null
+        && authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) == null) {
+      // No principal identity present: the CSL claims converter would throw. Mirror main's
+      // non-throwing contract — authorize when authorization checks are disabled (authorization
+      // commands are not tenant-owned, so the multi-tenancy check is a no-op), otherwise reject.
+      if (!securityConfig.isAuthorizationsEnabled()) {
+        return Either.right(command.getValue());
+      }
+      LOG.debug(
+          "Rejecting command {}: neither username nor clientId claim is present",
+          command.getIntent());
+      return Either.left(
+          AuthorizationRejectionMapper.forbidden(
+              permissionType, AuthorizationResourceType.AUTHORIZATION));
+    }
     LOG.trace(
         "Checking {} permission on AUTHORIZATION resource for command {}",
         permissionType,
