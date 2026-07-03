@@ -92,8 +92,10 @@ public final class FlowControl {
       new RateMeasurement(
           ActorClock::currentTimeMillis, Duration.ofMinutes(5), Duration.ofSeconds(10));
   private RateLimitThrottle writeRateThrottle;
-  private volatile long lastWrittenPosition = -1;
-  private volatile long lastExportedPosition = -1;
+  private volatile long lastWrittenPosition =
+      -1; // Initially a sentinel value to not throttle until the first write
+  private volatile long lastExportedPosition =
+      -1; // Initially a sentinel value to not throttle until the first export
 
   private final RingBuffer inFlight;
 
