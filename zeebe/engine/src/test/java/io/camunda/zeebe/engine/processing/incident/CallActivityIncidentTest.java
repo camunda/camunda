@@ -548,6 +548,28 @@ public final class CallActivityIncidentTest {
   }
 
   @Test
+  public void shouldCreateIncidentWhenBusinessIdFeelEvaluatesToNullWithNonVariableWarning() {
+    // given - a FEEL expression that coerces to null through a failure other than a missing
+    // variable (here: an unknown function)
+    deployParentWithChildBusinessId("=unknownFunction()");
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
+
+    // then - any null accompanied by evaluation warnings is an incident, not an intentional discard
+    final Record<IncidentRecordValue> incident = getIncident(processInstanceKey);
+    final Record<ProcessInstanceRecordValue> elementInstance =
+        getCallActivityInstance(processInstanceKey);
+
+    assertIncidentCreated(incident, elementInstance).hasErrorType(ErrorType.EXTRACT_VALUE_ERROR);
+    assertThat(incident.getValue().getErrorMessage())
+        .contains(
+            "Expected to resolve the business id for the call activity from expression 'unknownFunction()', but it evaluated to null.")
+        .contains("The evaluation reported the following warnings:");
+  }
+
+  @Test
   public void shouldCreateIncidentWhenBusinessIdFeelResolvesToTooLongValue() {
     // given - a FEEL expression whose variable resolves to a value longer than the maximum
     deployParentWithChildBusinessId("=businessIdVar");

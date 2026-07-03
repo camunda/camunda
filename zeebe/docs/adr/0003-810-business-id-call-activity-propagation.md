@@ -58,10 +58,11 @@ runtime, when the child instance is created:
   evaluates to null or an empty string** all **discard** the child Business ID — the child starts with
   no Business ID and **no incident** is raised (consistent with the engine-wide "empty string = not
   set" convention);
-- an incident is raised only when a **FEEL expression references a missing/unresolvable variable**
-  (coerced to null, reported via a `NO_VARIABLE_FOUND` warning), when a **FEEL expression evaluates to
-  a value that exceeds the maximum length** (256 characters), or when a **FEEL expression resolves to
-  a non-string, non-null type** (e.g. number, boolean, list).
+- an incident is raised when a **FEEL expression evaluates to null but reports evaluation warnings**
+  (i.e. the null was coerced from a failure such as a missing variable, function, or property, as
+  opposed to an intentional `=null`), when a **FEEL expression evaluates to a value that exceeds the
+  maximum length** (256 characters), or when a **FEEL expression resolves to a non-string, non-null
+  type** (e.g. number, boolean, list).
 
 Incidents are resolvable: correcting the variables or the expression and retrying activation creates
 the child with the intended Business ID.

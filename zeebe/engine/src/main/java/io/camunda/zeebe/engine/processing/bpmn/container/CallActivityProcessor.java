@@ -47,9 +47,6 @@ public final class CallActivityProcessor
   private static final String UNABLE_TO_TERMINATE_FROM_STATE_MESSAGE =
       "Expected to terminate call activity after child terminated, but call activity cannot be terminated from state '%s'";
 
-  /** The FEEL evaluation warning type signaling that a referenced variable could not be found. */
-  private static final String NO_VARIABLE_FOUND_WARNING = "NO_VARIABLE_FOUND";
-
   private final ExpressionProcessor expressionProcessor;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final BpmnStateBehavior stateBehavior;
@@ -302,8 +299,8 @@ public final class CallActivityProcessor
     return switch (result.getType()) {
       // An empty string is a valid discard, a non-empty one is used (subject to the length check).
       case STRING -> validateBusinessId(result.getString(), context);
-      // A null result is either an intentional discard ('=null') or a coerced null from an
-      // unresolvable variable — only the latter is an incident.
+      // A null result is either an intentional discard ('=null') or a coerced null from a failed
+      // evaluation — only the latter is an incident.
       case NULL -> resolveNullBusinessId(result, context);
       default -> Either.left(nonStringBusinessIdFailure(result, context));
     };
@@ -311,10 +308,10 @@ public final class CallActivityProcessor
 
   private Either<Failure, String> resolveNullBusinessId(
       final EvaluationResult result, final BpmnElementContext context) {
-    final var coercedFromMissingVariable =
-        result.getWarnings().stream()
-            .anyMatch(warning -> NO_VARIABLE_FOUND_WARNING.equals(warning.getType()));
-    if (coercedFromMissingVariable) {
+    // A null accompanied by evaluation warnings was coerced from a failure (e.g. a missing
+    // variable, function, or property), so it is an incident; an intentional '=null' reports no
+    // warnings and discards the Business ID.
+    if (!result.getWarnings().isEmpty()) {
       return Either.left(
           new Failure(
               "Expected to resolve the business id for the call activity from expression '%s', but it evaluated to null.%s"
