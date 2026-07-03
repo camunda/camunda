@@ -27,8 +27,6 @@
     <module>analytics-engine</module>
     <module>analytics-store-rdbms</module>
     <module>analytics-store-document</module>
-    <module>analytics-store-elasticsearch</module>
-    <module>analytics-store-opensearch</module>
     <module>event-bridge-analytics</module>
     <module>analytics-webapp</module>
   </modules>
