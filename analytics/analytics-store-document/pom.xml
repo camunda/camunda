@@ -37,6 +37,19 @@
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-query-transformer</artifactId>
     </dependency>
+    <!-- The ES/OS implementations of the neutral clients + the connectors (auth/TLS reused) -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client-elasticsearch</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client-opensearch</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client-connect</artifactId>
+    </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>

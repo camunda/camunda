@@ -1,0 +1,13 @@
+{
+  "dynamic": false,
+  "properties": {
+    "cubeId": { "type": "long" },
+    "declaration": {
+      "properties": {
+        "name": { "type": "keyword" },
+        "sourceFact": { "type": "keyword" },
+        "kind": { "type": "keyword" }
+      }
+    }
+  }
+}

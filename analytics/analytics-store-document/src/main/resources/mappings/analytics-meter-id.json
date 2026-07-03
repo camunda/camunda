@@ -1,0 +1,9 @@
+{
+  "mappings": {
+    "properties": {
+      "cubeId": { "type": "long" },
+      "meterName": { "type": "keyword" },
+      "aggId": { "type": "integer" }
+    }
+  }
+}
