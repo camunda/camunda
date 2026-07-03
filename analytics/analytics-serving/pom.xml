@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.camunda</groupId>
+    <artifactId>analytics-parent</artifactId>
+    <version>8.10.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>analytics-serving</artifactId>
+  <packaging>jar</packaging>
+  <name>Analytics Serving</name>
+  <description>The backend-neutral serving/control-plane abstraction: the store SPIs
+    (DatasetSchemaManager/Writer/QueryClient + MetadataStore/DatasetSpecStore), the neutral query
+    model, and the query planner + executor that compile a report into a fetch spec and reduce the
+    fetched cells. No backend and no processing runtime — a backend module implements the SPIs.</description>
+
+  <dependencies>
+    <!-- The vocabulary the SPIs and query planner/executor operate over -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>analytics-model</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <!-- AggregateFunction (merge/finalize) that the executor drives during app-merge -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>event-bridge-streaming</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+</project>

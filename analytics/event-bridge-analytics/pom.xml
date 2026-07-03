@@ -30,10 +30,16 @@
       <artifactId>event-bridge-zeebe-connector</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <!-- Streaming seams: fold/collect, mergeable aggregate, pre-aggregation, windows -->
+    <!-- The processing engine (projection → aggregation/seal → shuffle) -->
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>analytics-engine</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <!-- The serving/control-plane SPIs + query planner/executor the shards drive -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>analytics-serving</artifactId>
       <version>${project.version}</version>
     </dependency>
     <!-- RDBMS serving-store backend selected for DatabaseType.RDBMS -->

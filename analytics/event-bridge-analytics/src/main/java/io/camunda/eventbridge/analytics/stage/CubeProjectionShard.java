@@ -8,7 +8,6 @@
 package io.camunda.eventbridge.analytics.stage;
 
 import io.camunda.analytics.aggregation.CubeMeterAggregation;
-import io.camunda.analytics.aggregation.ProjectionRowAggregation;
 import io.camunda.analytics.dataset.ActiveCube;
 import io.camunda.analytics.dataset.ActiveProjection;
 import io.camunda.analytics.dataset.CompiledMeter;

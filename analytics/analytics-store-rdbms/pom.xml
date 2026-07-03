@@ -25,10 +25,15 @@
     PostgreSQL), and transforms the neutral fetch spec into SQL.</description>
 
   <dependencies>
-    <!-- The neutral serving SPI + compiled dataset/schema model -->
+    <!-- The neutral serving SPI + the dataset/schema model it operates over -->
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>analytics-engine</artifactId>
+      <artifactId>analytics-serving</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>analytics-model</artifactId>
       <version>${project.version}</version>
     </dependency>
     <!-- Dynamic SQL construction + execution, idiomatic with db/rdbms -->

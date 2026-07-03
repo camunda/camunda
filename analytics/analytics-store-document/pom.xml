@@ -26,10 +26,15 @@
     mapping and query building.</description>
 
   <dependencies>
-    <!-- The neutral serving/control-plane SPIs + compiled dataset model -->
+    <!-- The neutral serving/control-plane SPIs + the dataset model they operate over -->
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>analytics-engine</artifactId>
+      <artifactId>analytics-serving</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>analytics-model</artifactId>
       <version>${project.version}</version>
     </dependency>
     <!-- OC's neutral document clients (DocumentBasedSearchClient/WriteClient) + query DSL -->

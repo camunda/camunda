@@ -25,6 +25,7 @@
 
   <modules>
     <module>analytics-model</module>
+    <module>analytics-serving</module>
     <module>analytics-engine</module>
     <module>analytics-store-rdbms</module>
     <module>analytics-store-document</module>
