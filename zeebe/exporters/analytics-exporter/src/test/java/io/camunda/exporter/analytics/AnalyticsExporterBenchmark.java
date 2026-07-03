@@ -144,7 +144,7 @@ public class AnalyticsExporterBenchmark {
               final AnalyticsExporterContext context,
               final MicrometerMeterProvider bridge) {
             return SdkLoggerProvider.builder()
-                .setResource(OtelSdkManager.buildResource(context, ""))
+                .setResource(OtelSdkManager.buildResource(context))
                 .addLogRecordProcessor(SimpleLogRecordProcessor.create(NOOP_EXPORTER))
                 .build();
           }

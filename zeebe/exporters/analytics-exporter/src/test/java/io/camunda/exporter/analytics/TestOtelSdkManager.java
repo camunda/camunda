@@ -56,7 +56,7 @@ public final class TestOtelSdkManager {
               final AnalyticsExporterContext context,
               final MicrometerMeterProvider bridge) {
             return SdkLoggerProvider.builder()
-                .setResource(OtelSdkManager.buildResource(context, exporterDigest))
+                .setResource(OtelSdkManager.buildResource(context))
                 .addLogRecordProcessor(SimpleLogRecordProcessor.create(logExporter))
                 .build();
           }
@@ -66,7 +66,7 @@ public final class TestOtelSdkManager {
               final AnalyticsExporterContext context, final ManualMetricReader reader) {
             // Bypass ManualMetricReader — use InMemoryMetricReader for synchronous test collection
             return SdkMeterProvider.builder()
-                .setResource(OtelSdkManager.buildResource(context, exporterDigest))
+                .setResource(OtelSdkManager.buildResource(context))
                 .registerMetricReader(metricReader)
                 .build();
           }
@@ -75,7 +75,6 @@ public final class TestOtelSdkManager {
         config,
         AnalyticsExporterContext.create("test-license", "test-cluster", 1),
         new AnalyticsExporterMetadata(),
-        "",
         meterRegistry);
     return manager;
   }

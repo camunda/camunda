@@ -13,12 +13,12 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.VisibleForTesting;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Routes records to handlers by (ValueType, Intent) pairs. Supports multiple handlers per
@@ -29,8 +29,6 @@ import java.util.stream.Stream;
  * and intents.
  */
 final class HandlerRegistry {
-
-  record HandlerEntry(ValueType valueType, Intent intent, Class<?> handlerClass) {}
 
   private final EnumMap<ValueType, Map<Intent, AnalyticsHandler<?>>> handlers =
       new EnumMap<>(ValueType.class);
@@ -63,13 +61,8 @@ final class HandlerRegistry {
   }
 
   /** Package-private production seam consumed by {@link AnalyticsExporterDigest}. */
-  Stream<HandlerEntry> handlerEntries() {
-    return handlers.entrySet().stream()
-        .flatMap(
-            e ->
-                e.getValue().entrySet().stream()
-                    .map(
-                        ie -> new HandlerEntry(e.getKey(), ie.getKey(), ie.getValue().getClass())));
+  Map<ValueType, Map<Intent, AnalyticsHandler<?>>> registeredHandlers() {
+    return Collections.unmodifiableMap(handlers);
   }
 
   /** Routes the record to its handler. Does nothing if no handler is registered. */

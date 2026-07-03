@@ -22,7 +22,6 @@ import static io.camunda.exporter.analytics.AnalyticsAttributes.SERVICE_NAME;
 
 import io.camunda.exporter.analytics.sampling.HashSampler;
 import io.camunda.zeebe.util.VersionUtil;
-import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.opentelemetry.api.common.Attributes;
@@ -62,9 +61,6 @@ public class OtelSdkManager implements AutoCloseable {
 
   private double defaultSamplingRate = HashSampler.MAX_SAMPLE_RATE;
 
-  @VisibleForTesting
-  String exporterDigest = ""; // package-private: accessed by test subclass TestOtelSdkManager
-
   private OpenTelemetrySdk sdk;
   private Logger otelLogger;
   private Meter otelMeter;
@@ -76,8 +72,7 @@ public class OtelSdkManager implements AutoCloseable {
   OtelSdkManager initialize(
       final AnalyticsExporterConfig config,
       final AnalyticsExporterContext context,
-      final AnalyticsExporterMetadata metadata,
-      final String exporterDigest) {
+      final AnalyticsExporterMetadata metadata) {
     return initialize(config, context, metadata, new SimpleMeterRegistry());
   }
 
@@ -88,7 +83,6 @@ public class OtelSdkManager implements AutoCloseable {
       final MeterRegistry meterRegistry) {
     this.metadata = metadata;
     this.defaultSamplingRate = config.getSamplingRate();
-    this.exporterDigest = exporterDigest;
     counters.clear();
     metricWindow.reset();
 
@@ -205,7 +199,7 @@ public class OtelSdkManager implements AutoCloseable {
       final AnalyticsExporterContext context,
       final MicrometerMeterProvider bridge) {
     return SdkLoggerProvider.builder()
-        .setResource(buildResource(context, exporterDigest))
+        .setResource(buildResource(context))
         .setMeterProvider(() -> bridge)
         .addLogRecordProcessor(
             BatchLogRecordProcessor.builder(createLogExporter(config, context, bridge))
@@ -271,20 +265,19 @@ public class OtelSdkManager implements AutoCloseable {
   protected SdkMeterProvider createMeterProvider(
       final AnalyticsExporterContext context, final ManualMetricReader reader) {
     return SdkMeterProvider.builder()
-        .setResource(buildResource(context, exporterDigest))
+        .setResource(buildResource(context))
         .registerMetricReader(reader)
         .build();
   }
 
-  static Resource buildResource(
-      final AnalyticsExporterContext context, final String exporterDigest) {
+  static Resource buildResource(final AnalyticsExporterContext context) {
     return Resource.getDefault()
         .merge(
             Resource.builder()
                 .put(SERVICE_NAME, SERVICE_NAME_VALUE)
                 .put(CLUSTER_ID, context.clusterId())
                 .put(PARTITION_ID, context.partitionId())
-                .put(DIGEST, exporterDigest)
+                .put(DIGEST, context.exporterDigest())
                 .build());
   }
 }

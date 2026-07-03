@@ -133,7 +133,7 @@ public class AnalyticsExporterConfig {
 
   /**
    * Returns a stable string encoding the config fields that affect which events are emitted and at
-   * what rate. Used as input to the exporter hash.
+   * what rate. Used as input to the exporter digest.
    *
    * <p><b>Included</b> (behavioral — affect which events are emitted or what they contain): {@code
    * samplingRate}.
@@ -146,7 +146,7 @@ public class AnalyticsExporterConfig {
    * content, add it here; if it only affects delivery mechanics, leave it out and update the
    * excluded list above.
    */
-  String toBehaviorString() {
+  String toExporterDigestString() {
     return "samplingRate=" + samplingRate;
   }
 }

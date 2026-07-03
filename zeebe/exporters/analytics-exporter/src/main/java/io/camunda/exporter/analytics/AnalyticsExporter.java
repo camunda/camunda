@@ -37,7 +37,6 @@ public class AnalyticsExporter implements Exporter {
   private MeterRegistry meterRegistry;
   private ScheduledTask metricFlushTask;
   private ScheduledTask heartbeatTask;
-  private String exporterDigest;
 
   public AnalyticsExporter() {
     this(new OtelSdkManager());
@@ -51,25 +50,30 @@ public class AnalyticsExporter implements Exporter {
   public void configure(final Context context) {
     config = context.getConfiguration().instantiate(AnalyticsExporterConfig.class).validate();
 
-    analyticsContext =
-        AnalyticsExporterContext.create(
-            resolveLicenseKey(context), resolveClusterId(context), context.getPartitionId());
-
     handlers = AnalyticsHandlerCatalog.build(otelSdkManager).apply(context);
     meterRegistry = context.getMeterRegistry();
+
+    String exporterDigest;
     try {
       exporterDigest = AnalyticsExporterDigest.compute(handlers, config);
     } catch (final Exception e) {
-      LOG.warn("Failed to compute exporter hash; resource attribute will be empty", e);
+      LOG.warn("Failed to compute exporter digest; resource attribute will be empty", e);
       exporterDigest = "";
     }
+
+    analyticsContext =
+        AnalyticsExporterContext.create(
+            resolveLicenseKey(context),
+            resolveClusterId(context),
+            context.getPartitionId(),
+            exporterDigest);
 
     LOG.info(
         "Analytics exporter configured: endpoint={}, clusterId={}, partitionId={}, exporterDigest={}",
         config.getEndpoint(),
         analyticsContext.clusterId(),
         analyticsContext.partitionId(),
-        exporterDigest);
+        analyticsContext.exporterDigest());
   }
 
   @Override
@@ -80,7 +84,7 @@ public class AnalyticsExporter implements Exporter {
             .readMetadata()
             .map(AnalyticsExporterMetadata::deserialize)
             .orElse(new AnalyticsExporterMetadata());
-    otelSdkManager.initialize(config, analyticsContext, metadata, exporterDigest, meterRegistry);
+    otelSdkManager.initialize(config, analyticsContext, metadata, meterRegistry);
     scheduleMetricFlush();
     scheduleHeartbeat();
     LOG.info("Analytics exporter opened");

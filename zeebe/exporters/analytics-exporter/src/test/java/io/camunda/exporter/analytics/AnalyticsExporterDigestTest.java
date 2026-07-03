@@ -10,8 +10,6 @@ package io.camunda.exporter.analytics;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.exporter.analytics.handler.ProcessInstanceCreationHandler;
-import io.camunda.exporter.analytics.handler.UserTaskCreatedHandler;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -21,8 +19,6 @@ import org.junit.jupiter.api.Test;
 
 class AnalyticsExporterDigestTest {
 
-  private static final OtelSdkManager SDK_MANAGER = new OtelSdkManager();
-
   @Test
   void shouldProduceSameHashForIdenticalInput() {
     // given
@@ -31,7 +27,7 @@ class AnalyticsExporterDigestTest {
             .register(
                 ValueType.PROCESS_INSTANCE_CREATION,
                 ProcessInstanceCreationIntent.CREATED,
-                new ProcessInstanceCreationHandler(SDK_MANAGER));
+                new StubHandlerAlpha());
     final var config = new AnalyticsExporterConfig().setSamplingRate(1.0);
 
     // when
@@ -51,21 +47,15 @@ class AnalyticsExporterDigestTest {
             .register(
                 ValueType.PROCESS_INSTANCE_CREATION,
                 ProcessInstanceCreationIntent.CREATED,
-                new ProcessInstanceCreationHandler(SDK_MANAGER))
-            .register(
-                ValueType.USER_TASK,
-                UserTaskIntent.CREATED,
-                new UserTaskCreatedHandler(SDK_MANAGER));
+                new StubHandlerAlpha())
+            .register(ValueType.USER_TASK, UserTaskIntent.CREATED, new StubHandlerBeta());
     final var registryB =
         new HandlerRegistry()
-            .register(
-                ValueType.USER_TASK,
-                UserTaskIntent.CREATED,
-                new UserTaskCreatedHandler(SDK_MANAGER))
+            .register(ValueType.USER_TASK, UserTaskIntent.CREATED, new StubHandlerBeta())
             .register(
                 ValueType.PROCESS_INSTANCE_CREATION,
                 ProcessInstanceCreationIntent.CREATED,
-                new ProcessInstanceCreationHandler(SDK_MANAGER));
+                new StubHandlerAlpha());
 
     // when / then
     assertThat(AnalyticsExporterDigest.compute(registryA, config))
@@ -81,17 +71,14 @@ class AnalyticsExporterDigestTest {
             .register(
                 ValueType.PROCESS_INSTANCE_CREATION,
                 ProcessInstanceCreationIntent.CREATED,
-                new ProcessInstanceCreationHandler(SDK_MANAGER));
+                new StubHandlerAlpha());
     final var registryB =
         new HandlerRegistry()
             .register(
                 ValueType.PROCESS_INSTANCE_CREATION,
                 ProcessInstanceCreationIntent.CREATED,
-                new ProcessInstanceCreationHandler(SDK_MANAGER))
-            .register(
-                ValueType.USER_TASK,
-                UserTaskIntent.CREATED,
-                new UserTaskCreatedHandler(SDK_MANAGER));
+                new StubHandlerAlpha())
+            .register(ValueType.USER_TASK, UserTaskIntent.CREATED, new StubHandlerBeta());
 
     // when / then
     assertThat(AnalyticsExporterDigest.compute(registryA, config))
@@ -128,7 +115,7 @@ class AnalyticsExporterDigestTest {
             .register(
                 ValueType.PROCESS_INSTANCE_CREATION,
                 ProcessInstanceCreationIntent.CREATED,
-                new ProcessInstanceCreationHandler(SDK_MANAGER));
+                new StubHandlerAlpha());
     final var configA = new AnalyticsExporterConfig().setSamplingRate(1.0);
     final var configB = new AnalyticsExporterConfig().setSamplingRate(0.5);
 

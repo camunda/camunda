@@ -9,6 +9,8 @@ package io.camunda.exporter.analytics;
 
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 
 /**
  * Handler for a single analytics event type. Implementations must be named classes (not lambdas or
@@ -18,4 +20,31 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 public interface AnalyticsHandler<T extends RecordValue> {
 
   void handle(Record<T> record);
+
+  /**
+   * Returns the bytecode of this handler's class, used by {@link AnalyticsExporterDigest} to
+   * compute a digest that detects handler implementation changes. Override to include additional
+   * identity (e.g. constructor parameters) in the digest.
+   *
+   * <p>Lambdas, anonymous classes, and local classes are rejected because they have no stable
+   * {@code .class} resource on the classpath.
+   */
+  default byte[] digestInput() {
+    final var clazz = getClass();
+    if (clazz.isSynthetic() || clazz.isAnonymousClass() || clazz.isLocalClass()) {
+      throw new IllegalArgumentException(
+          "Handler class must be a named class — lambdas, anonymous classes, and local classes"
+              + " are not supported because their bytecode is not stable across JVM restarts: "
+              + clazz.getName());
+    }
+    final var resourcePath = "/" + clazz.getName().replace('.', '/') + ".class";
+    try (final var stream = clazz.getResourceAsStream(resourcePath)) {
+      if (stream == null) {
+        throw new IllegalStateException("Cannot load class bytes for: " + clazz.getName());
+      }
+      return stream.readAllBytes();
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to read class bytes for: " + clazz.getName(), e);
+    }
+  }
 }

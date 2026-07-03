@@ -214,7 +214,6 @@ class AnalyticsExporterTest {
                   final AnalyticsExporterConfig cfg,
                   final AnalyticsExporterContext ctx,
                   final AnalyticsExporterMetadata meta,
-                  final String exporterDigest,
                   final io.micrometer.core.instrument.MeterRegistry registry) {
                 metadataHolder[0] = meta;
                 return this;
@@ -398,7 +397,6 @@ class AnalyticsExporterTest {
               final AnalyticsExporterConfig cfg,
               final AnalyticsExporterContext ctx,
               final AnalyticsExporterMetadata meta,
-              final String exporterDigest,
               final io.micrometer.core.instrument.MeterRegistry registry) {
             metadataHolder[0] = meta;
             return this;

@@ -9,7 +9,6 @@ package io.camunda.exporter.analytics;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
@@ -148,7 +147,7 @@ class HandlerRegistryTest {
   }
 
   @Test
-  void shouldExposeRegisteredHandlerEntries() {
+  void shouldExposeRegisteredHandlers() {
     // given
     final var registry =
         new HandlerRegistry()
@@ -159,14 +158,14 @@ class HandlerRegistryTest {
             .register(ValueType.USER_TASK, UserTaskIntent.CREATED, record -> {});
 
     // when
-    final var entries = registry.handlerEntries().toList();
+    final var registered = registry.registeredHandlers();
 
     // then
-    assertThat(entries)
-        .extracting(HandlerRegistry.HandlerEntry::valueType, HandlerRegistry.HandlerEntry::intent)
-        .containsExactlyInAnyOrder(
-            tuple(ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATED),
-            tuple(ValueType.USER_TASK, UserTaskIntent.CREATED));
+    assertThat(registered).containsKey(ValueType.PROCESS_INSTANCE_CREATION);
+    assertThat(registered).containsKey(ValueType.USER_TASK);
+    assertThat(registered.get(ValueType.PROCESS_INSTANCE_CREATION))
+        .containsKey(ProcessInstanceCreationIntent.CREATED);
+    assertThat(registered.get(ValueType.USER_TASK)).containsKey(UserTaskIntent.CREATED);
   }
 
   private static ExporterTestContext testContext() {

@@ -99,25 +99,36 @@ class AnalyticsExporterConfigTest {
   }
 
   @Test
-  void shouldReturnSameBehaviorStringForEqualConfigs() {
+  void shouldReturnSameDigestStringForEqualConfigs() {
     // given
     final var config = new AnalyticsExporterConfig().setSamplingRate(0.5);
 
     // when
-    final var first = config.toBehaviorString();
-    final var second = config.toBehaviorString();
+    final var first = config.toExporterDigestString();
+    final var second = config.toExporterDigestString();
 
     // then
     assertThat(first).isEqualTo(second);
   }
 
   @Test
-  void shouldReturnDifferentBehaviorStringWhenSamplingRateChanges() {
+  void shouldReturnDifferentDigestStringWhenSamplingRateChanges() {
     // given
     final var configA = new AnalyticsExporterConfig().setSamplingRate(0.5);
     final var configB = new AnalyticsExporterConfig().setSamplingRate(0.25);
 
     // when / then
-    assertThat(configA.toBehaviorString()).isNotEqualTo(configB.toBehaviorString());
+    assertThat(configA.toExporterDigestString()).isNotEqualTo(configB.toExporterDigestString());
+  }
+
+  @Test
+  void shouldReturnSameDigestStringWhenNonBehaviorConfigChanges() {
+    // given
+    final var configA = new AnalyticsExporterConfig().setSamplingRate(1.0);
+    final var configB =
+        new AnalyticsExporterConfig().setSamplingRate(1.0).setEndpoint("https://other.example.com");
+
+    // when / then
+    assertThat(configA.toExporterDigestString()).isEqualTo(configB.toExporterDigestString());
   }
 }

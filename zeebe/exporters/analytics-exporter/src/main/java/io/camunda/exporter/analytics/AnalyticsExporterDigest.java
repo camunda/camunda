@@ -12,37 +12,29 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HexFormat;
+import java.util.Map;
+import java.util.stream.Stream;
 
 /**
  * Computes a deterministic SHA-256 hash over:
  *
  * <ol>
  *   <li>The (ValueType, Intent, handler class name, handler bytecode) of every registered handler,
- *       sorted by "valueType:intent" to eliminate registration-order variance.
+ *       sorted by "valueType:intent" to eliminate registration-order variance. The bytecode is
+ *       obtained via {@link AnalyticsHandler#digestInput()}, which each handler supplies.
  *   <li>The exporter version string — a release backstop that catches changes to helpers or
- *       constants called from a handler whose own bytecode did not change (e.g. renaming an event
- *       name constant in {@link AnalyticsAttributes}).
+ *       constants called from a handler whose own bytecode did not change.
  *   <li>The behavior-affecting configuration fields (see {@link
- *       AnalyticsExporterConfig#toBehaviorString()}).
+ *       AnalyticsExporterConfig#toExporterDigestString()}).
+ *   <li>The bytecode of {@link AnalyticsAttributes} and all its nested classes — detects renames of
+ *       attribute key strings, which don't show up in handler bytecodes.
  * </ol>
  *
  * <p><b>Constraint:</b> handler implementations must be named, top-level or static nested classes.
- * Lambdas and anonymous classes are rejected at compute time because their JVM-generated names are
- * non-deterministic across restarts and they have no backing {@code .class} resource on the
- * classpath.
- *
- * <p><b>Limitation:</b> Java compiles each class into its own {@code .class} file. When a handler
- * reads a constant from another class (e.g. {@link AnalyticsAttributes.Event}), the handler's file
- * stores only a <em>symbolic reference</em> — the name of the field — not the value the field
- * holds. So if you change the <em>value</em> of a constant (e.g. rename the OTel attribute key
- * string from {@code "camunda.event.name"} to {@code "event.name"}), the handler's {@code .class}
- * file is byte-for-byte identical and the hash does not change. Note: renaming the Java field
- * itself (e.g. {@code NAME} → {@code EVENT_NAME}) <em>is</em> detected because the symbolic
- * reference in the bytecode changes. The version string (step 2) is the safety net: bump {@link
- * AnalyticsExporterVersion} in any release that ships a behavioral change in a shared class, even
- * if no handler file was edited.
+ * Lambda rejection now lives in {@link AnalyticsHandler#digestInput()}.
  */
 final class AnalyticsExporterDigest {
 
@@ -58,17 +50,21 @@ final class AnalyticsExporterDigest {
     try {
       final var digest = MessageDigest.getInstance("SHA-256");
 
-      registry
-          .handlerEntries()
-          .sorted(Comparator.comparing(e -> e.valueType().name() + ":" + e.intent().name()))
+      registry.registeredHandlers().entrySet().stream()
+          .flatMap(
+              e ->
+                  e.getValue().entrySet().stream()
+                      .map(
+                          ie ->
+                              Map.entry(
+                                  e.getKey().name() + ":" + ie.getKey().name(), ie.getValue())))
+          .sorted(Map.Entry.comparingByKey())
           .forEach(
               e -> {
-                digest.update(
-                    (e.valueType().name() + ":" + e.intent().name() + ":")
-                        .getBytes(StandardCharsets.UTF_8));
-                digest.update(e.handlerClass().getName().getBytes(StandardCharsets.UTF_8));
+                digest.update((e.getKey() + ":").getBytes(StandardCharsets.UTF_8));
+                digest.update(e.getValue().getClass().getName().getBytes(StandardCharsets.UTF_8));
                 digest.update(SEPARATOR);
-                digest.update(loadClassBytes(e.handlerClass()));
+                digest.update(e.getValue().digestInput());
                 digest.update(SEPARATOR);
               });
 
@@ -76,7 +72,22 @@ final class AnalyticsExporterDigest {
       digest.update(AnalyticsExporterVersion.get().getBytes(StandardCharsets.UTF_8));
       digest.update(SEPARATOR);
 
-      digest.update(config.toBehaviorString().getBytes(StandardCharsets.UTF_8));
+      digest.update(config.toExporterDigestString().getBytes(StandardCharsets.UTF_8));
+      digest.update(SEPARATOR);
+
+      // Hash AnalyticsAttributes (outer class + all nested classes, sorted for stability).
+      // This detects renames of attribute key strings, which don't show up in handler bytecodes.
+      Stream.concat(
+              Stream.of(AnalyticsAttributes.class),
+              Arrays.stream(AnalyticsAttributes.class.getDeclaredClasses()))
+          .sorted(Comparator.comparing(Class::getName))
+          .forEach(
+              c -> {
+                digest.update(c.getName().getBytes(StandardCharsets.UTF_8));
+                digest.update(SEPARATOR);
+                digest.update(loadBytes(c));
+                digest.update(SEPARATOR);
+              });
 
       return HexFormat.of().formatHex(digest.digest());
     } catch (final NoSuchAlgorithmException e) {
@@ -84,13 +95,7 @@ final class AnalyticsExporterDigest {
     }
   }
 
-  private static byte[] loadClassBytes(final Class<?> clazz) {
-    if (clazz.isSynthetic() || clazz.isAnonymousClass() || clazz.isLocalClass()) {
-      throw new IllegalArgumentException(
-          "Handler class must be a named class — lambdas, anonymous classes, and local classes"
-              + " are not supported because their bytecode is not stable across JVM restarts: "
-              + clazz.getName());
-    }
+  private static byte[] loadBytes(final Class<?> clazz) {
     final var resourcePath = "/" + clazz.getName().replace('.', '/') + ".class";
     try (final var stream = clazz.getResourceAsStream(resourcePath)) {
       if (stream == null) {
