@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.bpmn.activity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.processing.processinstance.BusinessIdValidator;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -146,6 +147,25 @@ public final class CallActivityBusinessIdTest {
 
     // then - the expression is evaluated at the call-activity scope and assigned to the child
     Assertions.assertThat(childProcessInstance(parentKey).getValue()).hasBusinessId("child-xyz");
+  }
+
+  @Test
+  public void shouldAcceptFeelBusinessIdAtMaxLength() {
+    // given - a FEEL businessId that resolves to exactly the maximum allowed length
+    deploy(parentProcess(c -> c.zeebeBusinessId("=businessIdVar")));
+    final String maxLengthBusinessId = "a".repeat(BusinessIdValidator.MAX_BUSINESS_ID_LENGTH);
+
+    // when
+    final long parentKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PARENT_PROCESS_ID)
+            .withVariable("businessIdVar", maxLengthBusinessId)
+            .create();
+
+    // then - the value at the boundary is accepted (no incident) and assigned to the child
+    Assertions.assertThat(childProcessInstance(parentKey).getValue())
+        .hasBusinessId(maxLengthBusinessId);
   }
 
   @Test
