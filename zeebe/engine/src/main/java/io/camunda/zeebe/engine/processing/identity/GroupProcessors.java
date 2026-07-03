@@ -17,7 +17,9 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public class GroupProcessors {
   public static void addGroupProcessors(
       final TypedRecordProcessors typedRecordProcessors,
