@@ -26,15 +26,18 @@ import java.util.Objects;
 public record DatasetDeclaration(
     String name,
     FactType sourceFact,
+    DatasetKind kind,
     List<FilterPredicate> filters,
     List<DimensionSpec> dimensions,
     List<Meter> meters,
     List<Long> windowSizesMs,
+    String keyField,
     long latenessMs) {
 
   public DatasetDeclaration {
     Objects.requireNonNull(name, "name");
     Objects.requireNonNull(sourceFact, "sourceFact");
+    kind = kind == null ? DatasetKind.AGGREGATED : kind;
     if (name.isBlank()) {
       throw new IllegalArgumentException("dataset name must not be blank");
     }
@@ -44,16 +47,36 @@ public record DatasetDeclaration(
     windowSizesMs = List.copyOf(windowSizesMs == null ? List.of() : windowSizesMs);
     requireUnique(dimensions.stream().map(DimensionSpec::name).toList(), "dimension");
     requireUnique(meters.stream().map(Meter::name).toList(), "meter");
-    if (meters.isEmpty()) {
-      throw new IllegalArgumentException("dataset '" + name + "' declares no meters");
-    }
-    if (windowSizesMs.isEmpty()) {
-      throw new IllegalArgumentException("dataset '" + name + "' declares no window tiers");
-    }
-    for (final long windowMs : windowSizesMs) {
-      if (windowMs <= 0) {
+    if (kind == DatasetKind.PROJECTED) {
+      // A projected (raw) dataset is a flat, keyed row list — no windowed aggregation.
+      if (keyField == null || keyField.isBlank()) {
         throw new IllegalArgumentException(
-            "dataset '" + name + "' has a non-positive window size: " + windowMs);
+            "projected dataset '" + name + "' declares no key field");
+      }
+      if (dimensions.isEmpty()) {
+        throw new IllegalArgumentException(
+            "projected dataset '" + name + "' declares no projected columns");
+      }
+      if (!meters.isEmpty() || !windowSizesMs.isEmpty()) {
+        throw new IllegalArgumentException(
+            "projected dataset '" + name + "' must not declare meters or windows");
+      }
+    } else {
+      if (keyField != null) {
+        throw new IllegalArgumentException(
+            "aggregated dataset '" + name + "' must not declare a key field");
+      }
+      if (meters.isEmpty()) {
+        throw new IllegalArgumentException("dataset '" + name + "' declares no meters");
+      }
+      if (windowSizesMs.isEmpty()) {
+        throw new IllegalArgumentException("dataset '" + name + "' declares no window tiers");
+      }
+      for (final long windowMs : windowSizesMs) {
+        if (windowMs <= 0) {
+          throw new IllegalArgumentException(
+              "dataset '" + name + "' has a non-positive window size: " + windowMs);
+        }
       }
     }
     if (latenessMs < 0) {
@@ -80,11 +103,23 @@ public record DatasetDeclaration(
     private final List<DimensionSpec> dimensions = new ArrayList<>();
     private final List<Meter> meters = new ArrayList<>();
     private final List<Long> windowSizesMs = new ArrayList<>();
+    private DatasetKind kind = DatasetKind.AGGREGATED;
+    private String keyField;
     private long latenessMs;
 
     private Builder(final String name, final FactType sourceFact) {
       this.name = name;
       this.sourceFact = sourceFact;
+    }
+
+    /**
+     * Marks this as a projected (raw) dataset keyed by {@code keyField}: the declared dimensions
+     * are the projected row columns, and no meters/windows may be declared.
+     */
+    public Builder projectedBy(final String keyField) {
+      kind = DatasetKind.PROJECTED;
+      this.keyField = keyField;
+      return this;
     }
 
     public Builder filterEquals(final String field, final String value) {
@@ -120,7 +155,7 @@ public record DatasetDeclaration(
 
     public DatasetDeclaration build() {
       return new DatasetDeclaration(
-          name, sourceFact, filters, dimensions, meters, windowSizesMs, latenessMs);
+          name, sourceFact, kind, filters, dimensions, meters, windowSizesMs, keyField, latenessMs);
     }
   }
 }

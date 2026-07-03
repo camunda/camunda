@@ -8,6 +8,7 @@
 package io.camunda.analytics.dataset.jdbc;
 
 import io.camunda.analytics.dataset.CompiledDataset;
+import io.camunda.analytics.dataset.CompiledProjection;
 import io.camunda.analytics.dimension.DimensionColumn;
 import io.camunda.analytics.dimension.DimensionKey;
 import io.camunda.analytics.dimension.DimensionType;
@@ -109,8 +110,64 @@ public final class JdbcDatasetStore {
     }
   }
 
+  /** Creates the projected (raw) dataset's table if absent: a primary key plus one typed column. */
+  public void ensureProjection(final CompiledProjection projection) {
+    final String columns =
+        projection.columns().stream()
+            .map(column -> column(column.name()) + " " + sqlType(column.type()))
+            .collect(Collectors.joining(", "));
+    final String ddl =
+        "CREATE TABLE IF NOT EXISTS "
+            + projectionTable(projection)
+            + " (row_key VARCHAR PRIMARY KEY"
+            + (columns.isEmpty() ? "" : ", " + columns)
+            + ")";
+    try (Connection connection = dataSource.getConnection();
+        Statement statement = connection.createStatement()) {
+      statement.execute(ddl);
+    } catch (final SQLException e) {
+      throw new IllegalStateException(
+          "failed to create projection table for " + projection.name(), e);
+    }
+  }
+
+  /**
+   * Idempotently upserts one raw row keyed by {@code rowKey}; {@code values} align to the
+   * projection's declared columns. Re-writing the same row on replay is a no-op overwrite.
+   */
+  public void upsertRow(
+      final CompiledProjection projection, final String rowKey, final List<Object> values) {
+    final List<DimensionColumn> columns = projection.columns();
+    final String columnNames =
+        columns.stream().map(c -> column(c.name())).collect(Collectors.joining(", "));
+    final String placeholders = columns.stream().map(c -> "?").collect(Collectors.joining(", "));
+    final String sql =
+        "MERGE INTO "
+            + projectionTable(projection)
+            + " (row_key"
+            + (columnNames.isEmpty() ? "" : ", " + columnNames)
+            + ") KEY (row_key) VALUES (?"
+            + (placeholders.isEmpty() ? "" : ", " + placeholders)
+            + ")";
+    try (Connection connection = dataSource.getConnection();
+        PreparedStatement statement = connection.prepareStatement(sql)) {
+      int index = 1;
+      statement.setString(index++, rowKey);
+      for (int i = 0; i < columns.size(); i++) {
+        bind(statement, index++, columns.get(i).type(), values.get(i));
+      }
+      statement.executeUpdate();
+    } catch (final SQLException e) {
+      throw new IllegalStateException("failed to upsert row into " + projection.name(), e);
+    }
+  }
+
   private static String table(final CompiledDataset dataset) {
     return "dataset_" + dataset.cubeId();
+  }
+
+  private static String projectionTable(final CompiledProjection projection) {
+    return "projection_" + projection.cubeId();
   }
 
   /** A deterministic primary key over the dimension values and the window/tier coordinate. */

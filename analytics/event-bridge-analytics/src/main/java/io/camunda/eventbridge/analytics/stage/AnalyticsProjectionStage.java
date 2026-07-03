@@ -8,6 +8,7 @@
 package io.camunda.eventbridge.analytics.stage;
 
 import io.camunda.analytics.dataset.ActiveCube;
+import io.camunda.analytics.dataset.ActiveProjection;
 import io.camunda.analytics.projection.SourceRecord;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.streaming.StreamRuntime;
@@ -15,6 +16,7 @@ import io.camunda.eventbridge.zeebe.connector.ZeebeRecordCodec;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.List;
+import org.h2.jdbcx.JdbcDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +52,9 @@ public final class AnalyticsProjectionStage {
     final int schemaVersion = Integer.getInteger("shuffleSchemaVersion", 1);
     final String instanceId =
         System.getProperty("instanceId", "stage1-" + ProcessHandle.current().pid());
+    final String jdbcUrl =
+        System.getProperty("jdbcUrl", "jdbc:h2:file:./data/analytics-dataset;DB_CLOSE_DELAY=-1");
+    final String jdbcUser = System.getProperty("jdbcUser", "sa");
 
     final EventBridgeClient client = EventBridgeClient.create(gateway);
     final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
@@ -59,7 +64,13 @@ public final class AnalyticsProjectionStage {
       LOG.info("Facts topic {} already exists", factsTopic);
     }
 
+    // Projected (raw) datasets are written straight to the serving store from Stage 1.
+    final JdbcDataSource dataSource = new JdbcDataSource();
+    dataSource.setURL(jdbcUrl);
+    dataSource.setUser(jdbcUser);
+
     final List<ActiveCube> cubes = AnalyticsCubes.seed();
+    final List<ActiveProjection> projections = AnalyticsCubes.seedProjections();
     final String stateDir = "data/analytics-stage1-" + instanceId;
     final ZeebeRecordCodec codec = new ZeebeRecordCodec();
 
@@ -90,6 +101,8 @@ public final class AnalyticsProjectionStage {
                         segmentStride,
                         schemaVersion,
                         cubes,
+                        projections,
+                        dataSource,
                         meterRegistry))
             .maxPoll(MAX_RECORDS)
             .pollTimeout(POLL_TIMEOUT)
@@ -98,10 +111,11 @@ public final class AnalyticsProjectionStage {
             .build();
 
     LOG.info(
-        "Analytics Stage 1 '{}': {} -> {} cube(s) -> {}",
+        "Analytics Stage 1 '{}': {} -> {} cube(s) + {} projection(s) -> {}",
         instanceId,
         sourceTopic,
         cubes.size(),
+        projections.size(),
         factsTopic);
     Runtime.getRuntime().addShutdownHook(new Thread(runtime::stop, "stage1-shutdown"));
     runtime.run();

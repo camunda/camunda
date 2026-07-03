@@ -41,6 +41,10 @@ public final class DatasetCompiler {
   }
 
   public CompiledDataset compile(final long cubeId, final DatasetDeclaration declaration) {
+    if (declaration.kind() == DatasetKind.PROJECTED) {
+      throw new IllegalArgumentException(
+          "projected dataset '" + declaration.name() + "' must be compiled via compileProjection");
+    }
     final List<DimensionColumn> columns = new ArrayList<>();
     final Map<String, EnrichmentTiming> enrichment = new LinkedHashMap<>();
     for (final DimensionSpec dimension : declaration.dimensions()) {
@@ -77,5 +81,30 @@ public final class DatasetCompiler {
         new DimensionKeySelector(grain),
         meters,
         schema);
+  }
+
+  /**
+   * Compiles a {@link DatasetKind#PROJECTED} declaration into a runnable {@link
+   * CompiledProjection}: the fact binding (source fact, filters, per-variable enrichment) and the
+   * declared dimensions as the projected row columns. No meters/windows/aggIds — a projected row is
+   * written directly, not shuffled and reduced.
+   */
+  public CompiledProjection compileProjection(
+      final long cubeId, final DatasetDeclaration declaration) {
+    if (declaration.kind() != DatasetKind.PROJECTED) {
+      throw new IllegalArgumentException("dataset '" + declaration.name() + "' is not projected");
+    }
+    final List<DimensionColumn> columns = new ArrayList<>();
+    final Map<String, EnrichmentTiming> enrichment = new LinkedHashMap<>();
+    for (final DimensionSpec dimension : declaration.dimensions()) {
+      columns.add(new DimensionColumn(dimension.name(), dimension.type()));
+      if (dimension.name().startsWith(AnalyticsFactProjector.VAR_PREFIX)) {
+        enrichment.put(dimension.name(), dimension.enrichment());
+      }
+    }
+    final FactBinding factBinding =
+        new FactBinding(declaration.sourceFact(), declaration.filters(), enrichment);
+    return new CompiledProjection(
+        cubeId, declaration.name(), factBinding, declaration.keyField(), columns);
   }
 }

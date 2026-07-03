@@ -8,6 +8,7 @@
 package io.camunda.eventbridge.analytics.stage;
 
 import io.camunda.analytics.dataset.ActiveCube;
+import io.camunda.analytics.dataset.ActiveProjection;
 import io.camunda.analytics.dataset.DatasetCompiler;
 import io.camunda.analytics.dataset.DatasetDeclaration;
 import io.camunda.analytics.dataset.DatasetRegistry;
@@ -56,6 +57,27 @@ public final class AnalyticsCubes {
     return List.copyOf(cubes);
   }
 
+  /**
+   * Compiles the seeded projected (raw) datasets into runnable projections; deterministic and
+   * side-effect free. Uses its own registry so cube ids (and thus agg ids) are unaffected — both
+   * stages must derive identical cube ids from {@link #seed()}, and projections do not participate
+   * in the shuffle.
+   */
+  public static List<ActiveProjection> seedProjections() {
+    final DatasetCompiler compiler =
+        new DatasetCompiler(
+            MeterCatalog.withDefaults(), new MeterRegistry(new InMemoryMeterIdStore()));
+    final DatasetRegistry registry = new DatasetRegistry();
+    final List<ActiveProjection> projections = new ArrayList<>();
+    for (final DatasetDeclaration declaration : projectionDeclarations()) {
+      final RegisteredDataset registered = registry.admit(declaration, Map.of());
+      projections.add(
+          new ActiveProjection(
+              registered, compiler.compileProjection(registered.cubeId(), declaration)));
+    }
+    return List.copyOf(projections);
+  }
+
   /** The standard dashboards as declarations (order is stable — it fixes cube/agg ids). */
   private static List<DatasetDeclaration> declarations() {
     return List.of(
@@ -100,6 +122,20 @@ public final class AnalyticsCubes {
             .dimension("elementId", DimensionType.STRING)
             .meter(Meter.of("count", MeterCatalog.COUNT))
             .window(ONE_MINUTE_MS)
+            .build());
+  }
+
+  /** The seeded projected (raw) datasets: flat, keyed rows rather than windowed aggregates. */
+  private static List<DatasetDeclaration> projectionDeclarations() {
+    return List.of(
+        // Raw completed process instances, enriched with the region variable, keyed by instance.
+        DatasetDeclaration.builder("raw-completed-instances", FactType.PROCESS_INSTANCE)
+            .filterEquals("transition", Transition.COMPLETED.name())
+            .projectedBy("processInstanceKey")
+            .dimension("bpmnProcessId", DimensionType.STRING)
+            .dimension("durationMs", DimensionType.LONG)
+            .dimension("hadIncident", DimensionType.BOOLEAN)
+            .dimension("var.region", DimensionType.STRING)
             .build());
   }
 }

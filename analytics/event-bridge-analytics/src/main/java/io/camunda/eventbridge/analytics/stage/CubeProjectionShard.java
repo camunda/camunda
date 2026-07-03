@@ -8,8 +8,11 @@
 package io.camunda.eventbridge.analytics.stage;
 
 import io.camunda.analytics.dataset.ActiveCube;
+import io.camunda.analytics.dataset.ActiveProjection;
 import io.camunda.analytics.dataset.CompiledMeter;
 import io.camunda.analytics.dataset.CubeMeterAggregation;
+import io.camunda.analytics.dataset.ProjectionRowAggregation;
+import io.camunda.analytics.dataset.jdbc.JdbcDatasetStore;
 import io.camunda.analytics.dimension.DimensionKey;
 import io.camunda.analytics.dimension.DimensionKeyValue;
 import io.camunda.analytics.fact.Fact;
@@ -32,6 +35,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,6 +105,8 @@ public final class CubeProjectionShard implements Task<SourceRecord>, AutoClosea
       final int segmentStride,
       final int schemaVersion,
       final List<ActiveCube> cubes,
+      final List<ActiveProjection> projections,
+      final DataSource dataSource,
       final MeterRegistry meterRegistry) {
     final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider =
         RocksDbStateStoreProvider.open(new File(baseDir + "-p" + partition), meterRegistry);
@@ -121,6 +127,18 @@ public final class CubeProjectionShard implements Task<SourceRecord>, AutoClosea
     }
 
     final List<Aggregation<Fact>> aggregations = new ArrayList<>(meters);
+    // Projected (raw) datasets write rows straight to the serving store (idempotent by key, no
+    // shuffle); they run in the same fold but do not constrain the segment-safe commit offset.
+    if (!projections.isEmpty()) {
+      final JdbcDatasetStore datasetStore = new JdbcDatasetStore(dataSource);
+      for (final ActiveProjection projection : projections) {
+        datasetStore.ensureProjection(projection.compiled());
+        aggregations.add(
+            new ProjectionRowAggregation(
+                projection.registered(), projection.compiled(), datasetStore));
+      }
+    }
+
     final StreamProcessor<SourceRecord> processor =
         new StreamProcessor<SourceRecord>().add(new ProjectionStage<>(projector, aggregations));
     return new CubeProjectionShard(
@@ -205,12 +223,17 @@ public final class CubeProjectionShard implements Task<SourceRecord>, AutoClosea
     // offset (only past segments every meter has sealed) atomically. The runtime's offset is
     // ignored in favour of the segment-safe offset so a crash replays the open segments.
     publisher.flush();
+    // With meters, commit only past segments every meter has sealed. With no meters (a
+    // projection-only shard), the rows are already written and idempotent, so the runtime's
+    // consumed offset is safe.
     final long safe =
-        meters.stream()
-            .mapToLong(CubeMeterAggregation::safeOffset)
-            .filter(position -> position >= 0)
-            .min()
-            .orElse(-1L);
+        meters.isEmpty()
+            ? offset
+            : meters.stream()
+                .mapToLong(CubeMeterAggregation::safeOffset)
+                .filter(position -> position >= 0)
+                .min()
+                .orElse(-1L);
     if (safe >= 0) {
       transactionRunner.runInTransaction(
           () -> {

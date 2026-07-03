@@ -10,6 +10,7 @@ package io.camunda.analytics.dataset.jdbc;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.analytics.dataset.CompiledDataset;
+import io.camunda.analytics.dataset.CompiledProjection;
 import io.camunda.analytics.dataset.DatasetCompiler;
 import io.camunda.analytics.dataset.DatasetDeclaration;
 import io.camunda.analytics.dimension.DimensionKey;
@@ -22,6 +23,7 @@ import io.camunda.analytics.meter.MeterRegistry;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.List;
 import java.util.UUID;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.Test;
@@ -91,6 +93,62 @@ final class JdbcDatasetStoreTest {
     assertThat(countRows()).isEqualTo(3);
     assertThat(readRow("EU", 100L, 0L)[1]).containsExactly(1);
     assertThat(readRow("EU", 100L, WINDOW)[1]).containsExactly(2);
+  }
+
+  @Test
+  void shouldUpsertProjectedRowsKeyedByPrimaryKeyIdempotently() {
+    // given a provisioned projected (raw) dataset table
+    final CompiledProjection projection =
+        new DatasetCompiler(
+                MeterCatalog.withDefaults(), new MeterRegistry(new InMemoryMeterIdStore()))
+            .compileProjection(
+                7L,
+                DatasetDeclaration.builder("raw-instances", FactType.PROCESS_INSTANCE)
+                    .projectedBy("processInstanceKey")
+                    .dimension("bpmnProcessId", DimensionType.STRING)
+                    .dimension("durationMs", DimensionType.LONG)
+                    .dimension("hadIncident", DimensionType.BOOLEAN)
+                    .build());
+    store.ensureProjection(projection);
+
+    // when two distinct instances are written, then one is re-written (a replay)
+    store.upsertRow(projection, "1001", List.of("order", 1_500L, false));
+    store.upsertRow(projection, "1002", List.of("ship", 42_000L, true));
+    store.upsertRow(projection, "1001", List.of("order", 1_500L, false));
+
+    // then there are two rows and the re-emit did not duplicate the first
+    assertThat(countProjectionRows()).isEqualTo(2);
+    final Object[] row = readProjectionRow("1002");
+    assertThat(row[0]).isEqualTo("ship");
+    assertThat(row[1]).isEqualTo(42_000L);
+    assertThat(row[2]).isEqualTo(true);
+  }
+
+  private Object[] readProjectionRow(final String rowKey) {
+    final String sql =
+        "SELECT bpmnProcessId, durationMs, hadIncident FROM projection_7 WHERE row_key = ?";
+    try (Connection connection = dataSource.getConnection();
+        PreparedStatement statement = connection.prepareStatement(sql)) {
+      statement.setString(1, rowKey);
+      try (ResultSet rs = statement.executeQuery()) {
+        assertThat(rs.next()).isTrue();
+        return new Object[] {rs.getString(1), rs.getLong(2), rs.getBoolean(3)};
+      }
+    } catch (final Exception e) {
+      throw new IllegalStateException(e);
+    }
+  }
+
+  private int countProjectionRows() {
+    try (Connection connection = dataSource.getConnection();
+        PreparedStatement statement =
+            connection.prepareStatement("SELECT COUNT(*) FROM projection_7");
+        ResultSet rs = statement.executeQuery()) {
+      rs.next();
+      return rs.getInt(1);
+    } catch (final Exception e) {
+      throw new IllegalStateException(e);
+    }
   }
 
   private byte[][] readRow(final String region, final long defKey, final long windowStart) {
