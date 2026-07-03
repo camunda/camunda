@@ -23,7 +23,7 @@ describe('<AutoSelectNextTaskToggle />', () => {
 	it('should render the auto-select toggle defaulting to off', async () => {
 		const screen = await render(<AutoSelectNextTaskToggle />);
 
-		const toggle = screen.getByRole('switch', {name: SWITCH_NAME, checked: false});
+		const toggle = screen.getByRole('switch', {name: SWITCH_NAME});
 		await expect.element(toggle).toBeVisible();
 		await expect.element(toggle).not.toBeChecked();
 	});
@@ -39,32 +39,34 @@ describe('<AutoSelectNextTaskToggle />', () => {
 
 		const screen = await render(<AutoSelectNextTaskToggle />);
 
-		await expect.element(screen.getByRole('switch', {name: SWITCH_NAME, checked: true})).toBeChecked();
+		await expect.element(screen.getByRole('switch', {name: SWITCH_NAME})).toBeChecked();
 	});
 
 	it('should enable auto-select and store the preference locally', async () => {
 		const screen = await render(<AutoSelectNextTaskToggle />);
+		const toggle = screen.getByRole('switch', {name: SWITCH_NAME});
 
-		await userEvent.click(screen.getByRole('switch', {name: SWITCH_NAME, checked: false}), {force: true});
+		await userEvent.click(toggle, {force: true});
 
-		await expect.element(screen.getByRole('switch', {name: SWITCH_NAME, checked: true})).toBeChecked();
+		await expect.element(toggle).toBeChecked();
 		expect(getStateLocally('tasklist.autoSelectNextTask')).toBe(true);
 	});
 
 	it('should disable auto-select and store the preference locally', async () => {
 		storeStateLocally('tasklist.autoSelectNextTask', true);
 		const screen = await render(<AutoSelectNextTaskToggle />);
+		const toggle = screen.getByRole('switch', {name: SWITCH_NAME});
 
-		await expect.element(screen.getByRole('switch', {name: SWITCH_NAME, checked: true})).toBeChecked();
+		await expect.element(toggle).toBeChecked();
 
-		await userEvent.click(screen.getByRole('switch', {name: SWITCH_NAME, checked: true}), {force: true});
+		await userEvent.click(toggle, {force: true});
 
-		await expect.element(screen.getByRole('switch', {name: SWITCH_NAME, checked: false})).not.toBeChecked();
+		await expect.element(toggle).not.toBeChecked();
 		expect(getStateLocally('tasklist.autoSelectNextTask')).toBe(false);
 
-		await userEvent.click(screen.getByRole('switch', {name: SWITCH_NAME, checked: false}), {force: true});
+		await userEvent.click(toggle, {force: true});
 
-		await expect.element(screen.getByRole('switch', {name: SWITCH_NAME, checked: true})).toBeChecked();
+		await expect.element(toggle).toBeChecked();
 		expect(getStateLocally('tasklist.autoSelectNextTask')).toBe(true);
 	});
 });

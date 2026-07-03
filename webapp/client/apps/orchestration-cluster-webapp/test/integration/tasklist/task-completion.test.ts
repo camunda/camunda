@@ -101,6 +101,13 @@ test.describe('Task completion', () => {
 	});
 
 	test('should navigate to the next open task when auto-select is enabled', async ({network, taskDetailPage, page}) => {
+		const assigningTask = createUserTask({
+			userTaskKey: '2251799813685283',
+			name: 'Assigning purchase request after auto-select',
+			processName: 'Purchase process',
+			assignee: currentUser.username,
+			state: 'ASSIGNING',
+		});
 		const nextTask = createUserTask({
 			userTaskKey: '2251799813685282',
 			name: 'Review purchase request after auto-select',
@@ -123,7 +130,7 @@ test.describe('Task completion', () => {
 			mockQueryUserTasksEndpoint({
 				successResponse: HttpResponse.json(
 					createQueryUserTasksResponse({
-						items: [completedTask, nextTask],
+						items: [completedTask, assigningTask, nextTask],
 					}),
 				),
 			}),

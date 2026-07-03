@@ -109,6 +109,28 @@ test.describe('Tasks panel', () => {
 		await expect(tasklistIndexPage.taskItem('Review contract')).toBeVisible();
 	});
 
+	test('should not auto-select a task on direct navigation when auto-select is enabled', async ({
+		network,
+		page,
+		tasklistIndexPage,
+	}) => {
+		await page.addInitScript(`localStorage.setItem('tasklist.autoSelectNextTask', JSON.stringify(true))`);
+		network.use(
+			mockQueryUserTasksEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryUserTasksResponse({
+						items: [createUserTask({userTaskKey: '2251799813685281', name: 'Approve purchase order'})],
+					}),
+				),
+			}),
+		);
+
+		await tasklistIndexPage.goto();
+
+		await expect(page).toHaveURL('/tasklist');
+		await expect(tasklistIndexPage.taskItem('Approve purchase order')).toBeVisible();
+	});
+
 	test('should show the empty state', async ({network, tasklistIndexPage}) => {
 		network.use(
 			mockQueryUserTasksEndpoint({

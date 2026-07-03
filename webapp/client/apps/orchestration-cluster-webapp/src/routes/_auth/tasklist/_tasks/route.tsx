@@ -34,21 +34,24 @@ export const Route = createFileRoute('/_auth/tasklist/_tasks')({
 	notFoundComponent: () => {
 		throw notFound({routeId: '/_auth/tasklist'});
 	},
-	beforeLoad: async ({context: {queryClient}, search, matches}) => {
-		const autoSelectNextTask = getStateLocally('tasklist.autoSelectNextTask') ?? false;
-		const currentUser = await queryClient.ensureQueryData(queries.getCurrentUser());
-		const data = await queryClient.ensureInfiniteQueryData(
-			queries.queryUserTasks(getTasksRequestBody(search, {currentUsername: currentUser.username})),
-		);
+	beforeLoad: async ({context: {queryClient}, search, matches, location}) => {
+		const isAutoSelectNextTaskEnabled = getStateLocally('tasklist.autoSelectNextTask') === true;
+		const isFromTaskCompletion = location.state.tasklistAutoSelectSource === 'task-completion';
 		const taskDetailsMatch = matches.find((match) => match.routeId === '/_auth/tasklist/_tasks/$userTaskKey');
-		const tasks = data.pages.flatMap((page) => page.items);
-		const nextOpenTask = tasks[0];
+		const shouldAutoSelectNextTask =
+			isAutoSelectNextTaskEnabled && isFromTaskCompletion && taskDetailsMatch === undefined;
+		const currentUser = await queryClient.ensureQueryData(queries.getCurrentUser());
+		const queryOptions = queries.queryUserTasks(getTasksRequestBody(search, {currentUsername: currentUser.username}));
+		const {pages} = await queryClient.ensureInfiniteQueryData(queryOptions);
+		const tasks = pages.flatMap((page) => page.items);
+		const nextOpenTaskIndex = tasks.findIndex(({state}) => state === 'CREATED');
+		const nextOpenTask = tasks[nextOpenTaskIndex];
 
-		if (autoSelectNextTask && taskDetailsMatch === undefined && nextOpenTask !== undefined) {
+		if (shouldAutoSelectNextTask && nextOpenTask !== undefined) {
 			tracking.track({
 				eventName: 'tasklist:task-opened',
 				by: 'auto-select',
-				position: 0,
+				position: nextOpenTaskIndex,
 				filter: search.filter,
 				sorting: search.sortBy,
 			});
@@ -56,10 +59,9 @@ export const Route = createFileRoute('/_auth/tasklist/_tasks')({
 				to: '/tasklist/$userTaskKey',
 				params: {userTaskKey: nextOpenTask.userTaskKey},
 				search,
+				replace: true,
 			});
 		}
-
-		return data;
 	},
 	component: function TasksLayoutRoute() {
 		const search = Route.useSearch();

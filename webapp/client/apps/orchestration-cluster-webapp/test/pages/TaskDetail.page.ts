@@ -95,7 +95,7 @@ class TaskDetailPage extends BasePage {
 	}
 
 	get autoSelectNextTaskSwitch() {
-		return this.page.getByRole('switch', {name: 'Auto-select first available task', checked: false});
+		return this.page.getByRole('switch', {name: 'Auto-select first available task'});
 	}
 
 	get completingTaskStatus() {
