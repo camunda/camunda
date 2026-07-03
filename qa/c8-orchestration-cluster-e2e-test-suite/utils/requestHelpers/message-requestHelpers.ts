@@ -10,6 +10,7 @@ import type {APIRequestContext} from 'playwright-core';
 import {expect} from '@playwright/test';
 import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
 import {validateResponse} from 'json-body-assertions';
+import {defaultAssertionOptions} from '../constants';
 
 export interface CorrelatedMessageSubscription {
   correlationKey: string;
@@ -62,4 +63,79 @@ export async function searchCorrelatedMessageSubscriptions(
     intervals: [5_000, 10_000, 15_000, 25_000, 35_000],
     timeout: 180_000,
   });
+}
+
+export const MESSAGE_SUBSCRIPTIONS_SEARCH_ENDPOINT =
+  '/message-subscriptions/search';
+
+export interface StartEventMessageSubscription {
+  processDefinitionId: string;
+  processDefinitionKey: string;
+  messageSubscriptionType: string;
+}
+
+async function findStartEventSubscription(
+  request: APIRequestContext,
+  processDefinitionId: string,
+  processDefinitionKey: string,
+): Promise<StartEventMessageSubscription | undefined> {
+  const res = await request.post(
+    buildUrl(MESSAGE_SUBSCRIPTIONS_SEARCH_ENDPOINT),
+    {
+      headers: jsonHeaders(),
+      data: {
+        filter: {processDefinitionId, messageSubscriptionType: 'START_EVENT'},
+      },
+    },
+  );
+  await assertStatusCode(res, 200);
+  await validateResponse(
+    {
+      path: MESSAGE_SUBSCRIPTIONS_SEARCH_ENDPOINT,
+      method: 'POST',
+      status: '200',
+    },
+    res,
+  );
+  const json = await res.json();
+  return json.items.find(
+    (it: StartEventMessageSubscription) =>
+      it.processDefinitionKey === processDefinitionKey,
+  );
+}
+
+export async function expectStartSubscriptionPresent(
+  request: APIRequestContext,
+  processDefinitionId: string,
+  processDefinitionKey: string,
+): Promise<void> {
+  await expect(async () => {
+    const item = await findStartEventSubscription(
+      request,
+      processDefinitionId,
+      processDefinitionKey,
+    );
+    expect(
+      item,
+      `Expected a START_EVENT subscription for processDefinitionKey ${processDefinitionKey}`,
+    ).toBeDefined();
+  }).toPass(defaultAssertionOptions);
+}
+
+export async function expectStartSubscriptionAbsent(
+  request: APIRequestContext,
+  processDefinitionId: string,
+  processDefinitionKey: string,
+): Promise<void> {
+  await expect(async () => {
+    const item = await findStartEventSubscription(
+      request,
+      processDefinitionId,
+      processDefinitionKey,
+    );
+    expect(
+      item,
+      `Expected no START_EVENT subscription for processDefinitionKey ${processDefinitionKey}`,
+    ).toBeUndefined();
+  }).toPass(defaultAssertionOptions);
 }

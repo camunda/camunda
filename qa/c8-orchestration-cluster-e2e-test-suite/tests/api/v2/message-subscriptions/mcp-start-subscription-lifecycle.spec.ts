@@ -6,75 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test, expect, type APIRequestContext} from '@playwright/test';
+import {test} from '@playwright/test';
 import {buildUrl, jsonHeaders, assertStatusCode} from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
 import {deploy} from '../../../../utils/zeebeClient';
+import {
+  expectStartSubscriptionPresent,
+  expectStartSubscriptionAbsent,
+} from '@requestHelpers';
 
-const subscriptionAssertionOptions = {
-  intervals: [5_000, 10_000, 15_000],
-  timeout: 30_000,
-};
-
-async function findStartSubscription(
-  request: APIRequestContext,
-  processDefinitionId: string,
-  processDefinitionKey: string,
-) {
-  const res = await request.post(buildUrl('/message-subscriptions/search'), {
-    headers: jsonHeaders(),
-    data: {
-      filter: {processDefinitionId, messageSubscriptionType: 'START_EVENT'},
-    },
-  });
-  await assertStatusCode(res, 200);
-  await validateResponse(
-    {path: '/message-subscriptions/search', method: 'POST', status: '200'},
-    res,
-  );
-  const json = await res.json();
-  return json.items.find(
-    (it: {processDefinitionKey: string}) =>
-      it.processDefinitionKey === processDefinitionKey,
-  );
-}
-
-async function expectStartSubscriptionPresent(
-  request: APIRequestContext,
-  processDefinitionId: string,
-  processDefinitionKey: string,
-) {
-  await expect(async () => {
-    const item = await findStartSubscription(
-      request,
-      processDefinitionId,
-      processDefinitionKey,
-    );
-    expect(
-      item,
-      `Expected a START_EVENT subscription for processDefinitionKey ${processDefinitionKey}`,
-    ).toBeDefined();
-  }).toPass(subscriptionAssertionOptions);
-}
-
-async function expectStartSubscriptionAbsent(
-  request: APIRequestContext,
-  processDefinitionId: string,
-  processDefinitionKey: string,
-) {
-  await expect(async () => {
-    const item = await findStartSubscription(
-      request,
-      processDefinitionId,
-      processDefinitionKey,
-    );
-    expect(
-      item,
-      `Expected no START_EVENT subscription for processDefinitionKey ${processDefinitionKey}`,
-    ).toBeUndefined();
-  }).toPass(subscriptionAssertionOptions);
-}
-
+/* eslint-disable playwright/expect-expect */
 test.describe('MCP Start-Subscription Lifecycle API Tests', () => {
   test('SC-LIF-01 — history-deleting a definition removes its MESSAGE_START_EVENT_SUBSCRIPTION', async ({
     request,

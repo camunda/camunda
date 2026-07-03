@@ -96,6 +96,10 @@ export {
   type CorrelatedMessageSubscription,
   searchCorrelatedMessageSubscriptions,
   CORRELATED_MESSAGE_SUBSCRIPTION_SEARCH_ENDPOINT,
+  type StartEventMessageSubscription,
+  expectStartSubscriptionPresent,
+  expectStartSubscriptionAbsent,
+  MESSAGE_SUBSCRIPTIONS_SEARCH_ENDPOINT,
 } from './message-requestHelpers';
 export {
   createGlobalTaskListener,
