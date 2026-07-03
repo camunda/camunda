@@ -51,7 +51,11 @@ public class SearchEngineIndexPropertiesOverride {
   public SearchEngineIndexProperties searchEngineIndexProperties(final Camunda camunda) {
     final SearchEngineIndexProperties override = new SearchEngineIndexProperties();
     BeanUtils.copyProperties(legacySearchEngineIndexProperties, override);
+    applyTo(camunda, override);
+    return override;
+  }
 
+  public static void applyTo(final Camunda camunda, final SearchEngineIndexProperties override) {
     final SecondaryStorage secondaryStorage = camunda.getData().getSecondaryStorage();
 
     final DocumentBasedSecondaryStorageDatabase database =
@@ -74,7 +78,5 @@ public class SearchEngineIndexPropertiesOverride {
     if (!database.getRefreshIntervalByIndexName().isEmpty()) {
       override.setRefreshIntervalByIndexName(database.getRefreshIntervalByIndexName());
     }
-
-    return override;
   }
 }

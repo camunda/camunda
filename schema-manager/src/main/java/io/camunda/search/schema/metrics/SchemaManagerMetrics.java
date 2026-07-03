@@ -20,11 +20,18 @@ public class SchemaManagerMetrics {
   private final Timer schemaInitTimer;
 
   public SchemaManagerMetrics(final MeterRegistry meterRegistry) {
+    this(meterRegistry, null);
+  }
+
+  public SchemaManagerMetrics(final MeterRegistry meterRegistry, final String physicalTenantId) {
     this.meterRegistry = meterRegistry;
-    schemaInitTimer =
+    final var builder =
         Timer.builder(NAMESPACE + ".init.time")
-            .description("Duration of initializing the schema in the secondary storage")
-            .register(meterRegistry);
+            .description("Duration of initializing the schema in the secondary storage");
+    if (physicalTenantId != null) {
+      builder.tag("physicalTenant", physicalTenantId);
+    }
+    schemaInitTimer = builder.register(meterRegistry);
   }
 
   public CloseableSilently startSchemaInitTimer() {

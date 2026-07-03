@@ -43,17 +43,25 @@ class SearchEngineDatabaseConfigurationTest {
 
   private static Map<String, SearchEngineConfiguration> configsByTenant(final Camunda camunda) {
     final UnifiedConfiguration unifiedConfig = new UnifiedConfiguration();
+    final var connectOverride =
+        new SearchEngineConnectPropertiesOverride(
+            unifiedConfig, new LegacySearchEngineConnectProperties());
+    final var indexOverride =
+        new SearchEngineIndexPropertiesOverride(
+            unifiedConfig, new LegacySearchEngineIndexProperties());
+    final var retentionOverride =
+        new SearchEngineRetentionPropertiesOverride(
+            unifiedConfig, new LegacySearchEngineRetentionProperties());
+    final var schemaManagerOverride =
+        new SearchEngineSchemaManagerPropertiesOverride(
+            unifiedConfig, new LegacySearchEngineSchemaManagerProperties());
     return new SearchEngineDatabaseConfiguration()
         .searchEngineConfigurationsByTenant(
             PhysicalTenantResolver.of(new MockEnvironment(), camunda),
-            new SearchEngineConnectPropertiesOverride(
-                unifiedConfig, new LegacySearchEngineConnectProperties()),
-            new SearchEngineIndexPropertiesOverride(
-                unifiedConfig, new LegacySearchEngineIndexProperties()),
-            new SearchEngineRetentionPropertiesOverride(
-                unifiedConfig, new LegacySearchEngineRetentionProperties()),
-            new SearchEngineSchemaManagerPropertiesOverride(
-                unifiedConfig, new LegacySearchEngineSchemaManagerProperties()));
+            connectOverride.searchEngineConnectProperties(camunda),
+            indexOverride.searchEngineIndexProperties(camunda),
+            retentionOverride.searchEngineRetentionProperties(camunda),
+            schemaManagerOverride.searchEngineSchemaManagerProperties(camunda));
   }
 
   @Test

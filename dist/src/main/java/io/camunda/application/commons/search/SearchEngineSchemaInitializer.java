@@ -30,7 +30,7 @@ import org.springframework.beans.factory.InitializingBean;
 
 public class SearchEngineSchemaInitializer implements InitializingBean, SchemaManagerContainer {
   private static final Logger LOGGER = LoggerFactory.getLogger(SearchEngineSchemaInitializer.class);
-  private final SchemaManagerMetrics schemaManagerMetrics;
+  private final MeterRegistry meterRegistry;
   private final boolean awaitSchemaInitialization;
   private final AtomicBoolean isShutdown = new AtomicBoolean(false);
   private final Map<String, SearchEngineConfiguration> configs;
@@ -42,7 +42,7 @@ public class SearchEngineSchemaInitializer implements InitializingBean, SchemaMa
       final Map<String, IndexDescriptors> descriptorsByTenant,
       final MeterRegistry meterRegistry,
       final boolean awaitSchemaInitialization) {
-    schemaManagerMetrics = new SchemaManagerMetrics(meterRegistry);
+    this.meterRegistry = meterRegistry;
     this.awaitSchemaInitialization = awaitSchemaInitialization;
 
     configs = configsByTenant;
@@ -135,7 +135,7 @@ public class SearchEngineSchemaInitializer implements InitializingBean, SchemaMa
                     indexDescriptors.templates(),
                     configuration,
                     clientAdapter.objectMapper())
-                .withMetrics(schemaManagerMetrics)) {
+                .withMetrics(new SchemaManagerMetrics(meterRegistry, physicalTenantId))) {
       schemaManager.startup();
       initialized.get(physicalTenantId).set(true);
     } catch (final IOException e) {

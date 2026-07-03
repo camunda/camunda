@@ -53,21 +53,24 @@ public class SearchEngineRetentionPropertiesOverride {
   public SearchEngineRetentionProperties searchEngineRetentionProperties(final Camunda camunda) {
     final SearchEngineRetentionProperties override = new SearchEngineRetentionProperties();
     BeanUtils.copyProperties(legacySearchEngineRetentionProperties, override);
-
-    populateFromRetention(camunda, override);
-    populateFromSecondaryStorage(camunda, override);
-
+    applyTo(camunda, override);
     return override;
   }
 
-  private void populateFromRetention(
+  public static void applyTo(
+      final Camunda camunda, final SearchEngineRetentionProperties override) {
+    populateFromRetention(camunda, override);
+    populateFromSecondaryStorage(camunda, override);
+  }
+
+  private static void populateFromRetention(
       final Camunda camunda, final SearchEngineRetentionProperties override) {
     final Retention retention = camunda.getData().getSecondaryStorage().getRetention();
     override.setEnabled(retention.isEnabled());
     override.setMinimumAge(retention.getMinimumAge());
   }
 
-  private void populateFromSecondaryStorage(
+  private static void populateFromSecondaryStorage(
       final Camunda camunda, final SearchEngineRetentionProperties override) {
     final SecondaryStorage secondaryStorage = camunda.getData().getSecondaryStorage();
 

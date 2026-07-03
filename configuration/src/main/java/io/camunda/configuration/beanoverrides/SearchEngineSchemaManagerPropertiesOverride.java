@@ -52,7 +52,12 @@ public class SearchEngineSchemaManagerPropertiesOverride {
       final Camunda camunda) {
     final SearchEngineSchemaManagerProperties override = new SearchEngineSchemaManagerProperties();
     BeanUtils.copyProperties(legacySearchEngineSchemaManagerProperties, override);
+    applyTo(camunda, override);
+    return override;
+  }
 
+  public static void applyTo(
+      final Camunda camunda, final SearchEngineSchemaManagerProperties override) {
     override.setVersionCheckRestrictionEnabled(
         camunda.getSystem().getUpgrade().getEnableVersionCheck());
 
@@ -65,7 +70,5 @@ public class SearchEngineSchemaManagerPropertiesOverride {
             secondaryStorage -> {
               override.setPerformCleanup(secondaryStorage.isPerformCleanup());
             });
-
-    return override;
   }
 }
