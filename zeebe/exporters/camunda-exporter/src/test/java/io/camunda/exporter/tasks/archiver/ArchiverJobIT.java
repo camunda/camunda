@@ -45,6 +45,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import org.agrona.CloseHelper;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,6 +71,7 @@ public abstract class ArchiverJobIT<T extends ArchiverJob> {
   protected CamundaExporterMetrics exporterMetrics;
   protected ExecutorService executor;
   protected Context context;
+  private String testPrefix;
 
   private final List<AutoCloseable> resourcesToClose = new ArrayList<>();
   private LifecyclePolicyNameVerifier lifecyclePolicyNameVerifier;
@@ -80,6 +82,7 @@ public abstract class ArchiverJobIT<T extends ArchiverJob> {
     exporterMetrics = new CamundaExporterMetrics(context.getMeterRegistry());
     executor = Executors.newSingleThreadExecutor();
     lifecyclePolicyNameVerifier = new LifecyclePolicyNameVerifier();
+    testPrefix = RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
   }
 
   @AfterEach
@@ -119,6 +122,7 @@ public abstract class ArchiverJobIT<T extends ArchiverJob> {
   void withArchiverJob(final ExporterConfiguration config, final ArchiveJobConsumer<T> jobConsumer)
       throws Exception {
     config.getHistory().getRetention().setEnabled(true);
+    config.getHistory().getRetention().setPolicyName(testPrefix + "-camunda-retention-policy");
     config.getIndex().setNumberOfShards(3);
     createSchemas(config);
 
@@ -234,7 +238,7 @@ public abstract class ArchiverJobIT<T extends ArchiverJob> {
   }
 
   protected String getExpectedLifecyclePolicyName() {
-    return "camunda-retention-policy";
+    return testPrefix + "-camunda-retention-policy";
   }
 
   private ExporterResourceProvider exporterResourceProvider(final ExporterConfiguration config) {

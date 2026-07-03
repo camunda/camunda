@@ -100,17 +100,17 @@ final class OpenSearchArchiverRepositoryIT {
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final ConnectConfiguration connectConfiguration = new ConnectConfiguration();
   private final RetentionConfiguration retention = new RetentionConfiguration();
-  private String archiverBlockedIndex;
-  private HistoryConfiguration config;
-  private String processInstanceIndex;
-  private String batchOperationIndex;
   private final OpenSearchClient testClient = createOpenSearchClient();
+  @AutoClose private final ExecutorService executor = Executors.newSingleThreadExecutor();
   private final String zeebeIndexPrefix = "zeebe-record";
   private final String zeebeIndex = zeebeIndexPrefix + "-" + UUID.randomUUID();
+
   private TestExporterResourceProvider resourceProvider;
-  private String indexPrefix;
-  private final ObjectMapper objectMapper = TestObjectMapper.objectMapper();
-  @AutoClose private final ExecutorService executor = Executors.newSingleThreadExecutor();
+  private String testPrefix;
+  private HistoryConfiguration config;
+  private String archiverBlockedIndex;
+  private String processInstanceIndex;
+  private String batchOperationIndex;
 
   @AfterEach
   void afterEach() {
@@ -121,10 +121,15 @@ final class OpenSearchArchiverRepositoryIT {
 
   @BeforeEach
   void beforeEach() {
+    testPrefix = RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
     config = new HistoryConfiguration();
+
+    // Scope policy names to this test run so cleanup doesn't affect other tests
+    retention.setPolicyName(testPrefix + "-default-policy");
+    retention.setUsageMetricsPolicyName(testPrefix + "-usage-metrics-policy");
     config.setRetention(retention);
-    indexPrefix = RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
-    resourceProvider = new TestExporterResourceProvider(indexPrefix, false);
+
+    resourceProvider = new TestExporterResourceProvider(testPrefix, false);
     processInstanceIndex =
         resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class).getFullQualifiedName();
     batchOperationIndex =
@@ -228,7 +233,7 @@ final class OpenSearchArchiverRepositoryIT {
       disabledReason = "Excluding from AWS OS IT CI - policy modification not allowed")
   void shouldSetIndexLifeCycleOnAllValidIndexes(final boolean withPrefix) throws IOException {
     // given
-    final var prefix = withPrefix ? indexPrefix : "";
+    final var prefix = withPrefix ? testPrefix : "";
     resourceProvider = new TestExporterResourceProvider(prefix, true);
     processInstanceIndex =
         resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class).getFullQualifiedName();
@@ -265,9 +270,15 @@ final class OpenSearchArchiverRepositoryIT {
     indices.addAll(usageMetricsIndices);
     indices.addAll(untouchedIndices);
 
+    final String customPolicyName =
+        withPrefix ? testPrefix + "-custom-default-policy" : "custom-default-policy";
+
+    final String customUsageMetricsPolicyName =
+        withPrefix ? testPrefix + "-custom-usage-metrics-policy" : "custom-usage-metrics-policy";
+
     retention.setEnabled(true);
-    retention.setPolicyName("default-policy");
-    retention.setUsageMetricsPolicyName("custom-usage-metrics-policy");
+    retention.setPolicyName(customPolicyName);
+    retention.setUsageMetricsPolicyName(customUsageMetricsPolicyName);
 
     createLifeCyclePolicies();
     for (final var index : indices) {
@@ -282,16 +293,16 @@ final class OpenSearchArchiverRepositoryIT {
     // verify that the usage metrics policy was applied to all usage metric indices
     for (final var index : usageMetricsIndices) {
       assertThat(fetchPolicyForIndexWithAwait(index))
-          .as("Expected 'custom-usage-metrics-policy' policy to be applied for %s", index)
+          .as("Expected '%s' policy to be applied for %s", customUsageMetricsPolicyName, index)
           .isNotNull()
-          .isEqualTo("custom-usage-metrics-policy");
+          .isEqualTo(customUsageMetricsPolicyName);
     }
     // verify that the default policy was applied to all other indices
     for (final var index : historicalIndices) {
       assertThat(fetchPolicyForIndexWithAwait(index))
-          .as("Expected 'default-policy' policy to be applied for %s", index)
+          .as("Expected '%s' policy to be applied for %s", customPolicyName, index)
           .isNotNull()
-          .isEqualTo("default-policy");
+          .isEqualTo(customPolicyName);
     }
 
     for (final var index : untouchedIndices) {
@@ -989,7 +1000,7 @@ final class OpenSearchArchiverRepositoryIT {
     // ensure all templates are created
     startupSchema();
     // create indices for all templates with a date in the index name
-    final var searchClientAdapter = new SearchClientAdapter(testClient, objectMapper);
+    final var searchClientAdapter = new SearchClientAdapter(testClient, MAPPER);
     final String date = "2026-01-10";
     for (final var indexTemplate : resourceProvider.getIndexTemplateDescriptors()) {
       searchClientAdapter.createIndex(indexTemplate.getIndexPattern().replace("*", date), 0);
@@ -1056,8 +1067,7 @@ final class OpenSearchArchiverRepositoryIT {
                                 .build())
                         .get();
 
-                final var json =
-                    objectMapper.readTree(response.getBody().orElseThrow().bodyAsString());
+                final var json = MAPPER.readTree(response.getBody().orElseThrow().bodyAsString());
                 // Check runtime index (should not have ISM policy)
                 assertThat(
                         json.get(template.getFullQualifiedName())
@@ -1493,7 +1503,7 @@ final class OpenSearchArchiverRepositoryIT {
   private void startupSchema() {
     final var searchEngineClient = new OpensearchEngineClient(testClient, objectMapper);
     final var connectConfig = new ConnectConfiguration();
-    connectConfig.setIndexPrefix(indexPrefix);
+    connectConfig.setIndexPrefix(testPrefix);
     connectConfig.setUrl(SEARCH_DB.esUrl());
     connectConfig.setType(DatabaseType.OPENSEARCH.toString());
     final var schemaManagerConfig = new SchemaManagerConfiguration();
@@ -1785,8 +1795,8 @@ final class OpenSearchArchiverRepositoryIT {
 
   private void deleteTestIndices() {
     // Delete only indices that were created by this test class. Criteria:
-    //  - start with dynamic indexPrefix (runtime & historical indices created via templates)
-    //  - start with zeebeIndexPrefix (simulated existing zeebe indices used in tests)
+    //  - start with dynamic testPrefix (runtime & historical indices created via templates)
+    //  - start with ZEEBE_INDEX_PREFIX (simulated existing zeebe indices used in tests)
     //  - start with ARCHIVER_IDX_PREFIX (ad‑hoc indices for generic operations tests)
     final var indicesToDelete = new ArrayList<String>();
     try {
@@ -1795,7 +1805,7 @@ final class OpenSearchArchiverRepositoryIT {
               .indices()
               .get(
                   g ->
-                      g.index(indexPrefix + "*", zeebeIndexPrefix + "*", ARCHIVER_IDX_PREFIX + "*")
+                      g.index(testPrefix + "*", zeebeIndexPrefix + "*", ARCHIVER_IDX_PREFIX + "*")
                           .ignoreUnavailable(true)
                           .allowNoIndices(true))
               .result()
@@ -1830,13 +1840,17 @@ final class OpenSearchArchiverRepositoryIT {
       final var jsonString = listResponse.getBody().orElseThrow().bodyAsString();
       final var json = MAPPER.readTree(jsonString);
 
-      // Extract policy names and delete each one
+      // Extract policy names and delete each one that start with the test prefix
       final var policies = json.get("policies");
       if (policies != null && policies.isArray()) {
         for (final var policy : policies) {
           final var policyId = policy.get("_id");
           if (policyId != null) {
             final var policyName = policyId.asText();
+            if (!policyName.startsWith(testPrefix)) {
+              continue;
+            }
+
             try {
               final var deleteRequest =
                   Requests.builder()
