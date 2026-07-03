@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.core.authz.AuthorizationChecker;
 import io.camunda.security.core.authz.AuthorizationService;
 import io.camunda.security.core.authz.LazyTokenClaimsConverter;
@@ -167,25 +168,6 @@ public final class EngineProcessors {
     final var authCheckBehavior =
         new AuthorizationCheckBehavior(
             processingState, securityConfig, config, authorizationCheckMetrics);
-    final var membershipStateAdapter =
-        new MembershipStateAdapter(
-            processingState.getMappingRuleState(), processingState.getMembershipState(), config);
-    final var authorizationScopeStateAdapter =
-        new AuthorizationScopeStateAdapter(processingState.getAuthorizationState(), config);
-    final var authorizationChecker = new AuthorizationChecker(authorizationScopeStateAdapter);
-    final var claimsConverter =
-        new LazyTokenClaimsConverter(
-            Authorization.AUTHORIZED_USERNAME,
-            Authorization.AUTHORIZED_CLIENT_ID,
-            false,
-            membershipStateAdapter);
-    final var propertyEvaluatorRegistry = new PropertyAuthorizationEvaluatorRegistry(List.of());
-    final var authzService =
-        new AuthorizationService(
-            authorizationChecker,
-            propertyEvaluatorRegistry,
-            securityConfig.isAuthorizationsEnabled(),
-            securityConfig.isMultiTenancyChecksEnabled());
     final var asyncRequestBehavior =
         new AsyncRequestBehavior(processingState.getKeyGenerator(), writers.state());
     final var transientProcessMessageSubscriptionState =
@@ -343,17 +325,15 @@ public final class EngineProcessors {
         commandDistributionBehavior,
         authCheckBehavior);
 
-    AuthorizationProcessors.addAuthorizationProcessors(
+    addIdentityProcessors(
         keyGenerator,
         typedRecordProcessors,
         processingState,
         writers,
         commandDistributionBehavior,
-        authzService,
-        claimsConverter,
         authCheckBehavior,
         securityConfig,
-        authorizationScopeStateAdapter);
+        config);
 
     RoleProcessors.addRoleProcessors(
         typedRecordProcessors,
@@ -467,6 +447,53 @@ public final class EngineProcessors {
         keyGenerator, typedRecordProcessors, writers, authCheckBehavior, processingState);
 
     return typedRecordProcessors;
+  }
+
+  /**
+   * Wires the identity/authorization subsystem: builds the CSL {@link AuthorizationService}
+   * together with its supporting state adapters and claims converter, then registers the
+   * authorization command processors on the given {@link TypedRecordProcessors}.
+   */
+  private static void addIdentityProcessors(
+      final KeyGenerator keyGenerator,
+      final TypedRecordProcessors typedRecordProcessors,
+      final MutableProcessingState processingState,
+      final Writers writers,
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final EngineSecurityConfig securityConfig,
+      final EngineConfiguration config) {
+    final var membershipStateAdapter =
+        new MembershipStateAdapter(
+            processingState.getMappingRuleState(), processingState.getMembershipState(), config);
+    final var authorizationScopeStateAdapter =
+        new AuthorizationScopeStateAdapter(processingState.getAuthorizationState(), config);
+    final var authorizationChecker = new AuthorizationChecker(authorizationScopeStateAdapter);
+    final var claimsConverter =
+        new LazyTokenClaimsConverter(
+            Authorization.AUTHORIZED_USERNAME,
+            Authorization.AUTHORIZED_CLIENT_ID,
+            false,
+            membershipStateAdapter);
+    final var propertyEvaluatorRegistry = new PropertyAuthorizationEvaluatorRegistry(List.of());
+    final var authzService =
+        new AuthorizationService(
+            authorizationChecker,
+            propertyEvaluatorRegistry,
+            securityConfig.isAuthorizationsEnabled(),
+            securityConfig.isMultiTenancyChecksEnabled());
+
+    AuthorizationProcessors.addAuthorizationProcessors(
+        keyGenerator,
+        typedRecordProcessors,
+        processingState,
+        writers,
+        commandDistributionBehavior,
+        authzService,
+        claimsConverter,
+        authCheckBehavior,
+        securityConfig,
+        authorizationScopeStateAdapter);
   }
 
   private static TypedRecordProcessor<UserTaskRecord> createUserTaskProcessor(
