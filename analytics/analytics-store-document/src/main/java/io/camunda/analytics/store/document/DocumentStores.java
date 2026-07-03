@@ -7,6 +7,7 @@
  */
 package io.camunda.analytics.store.document;
 
+import io.camunda.analytics.dataset.store.DatasetStore;
 import io.camunda.analytics.dataset.store.MetadataStore;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.DatabaseConfig;
@@ -18,8 +19,8 @@ import io.camunda.search.os.clients.OpensearchSearchClient;
 /**
  * Builds the document-backed stores for Elasticsearch or OpenSearch from a {@link
  * ConnectConfiguration}, choosing the backend by {@link ConnectConfiguration#getType()}. This is
- * the only place a concrete backend is named: it wires OC's connector + search client (read/write)
- * with our {@link DocumentSchemaClient} (schema); everything above is backend-neutral.
+ * the only place a concrete backend is named: it constructs OC's search client, which implements
+ * all three neutral seams (read + write + schema); everything above is backend-neutral.
  */
 public final class DocumentStores {
 
@@ -27,13 +28,34 @@ public final class DocumentStores {
 
   /** The control-plane metadata store for the configured document backend. */
   public static MetadataStore metadataStore(final ConnectConfiguration configuration) {
-    if (DatabaseConfig.OPENSEARCH.equals(configuration.getType())) {
-      final OpensearchSearchClient client =
-          new OpensearchSearchClient(new OpensearchConnector(configuration).createClient());
+    if (isOpensearch(configuration)) {
+      final OpensearchSearchClient client = opensearchClient(configuration);
       return new DocumentMetadataStore(client, client, client);
     }
-    final ElasticsearchSearchClient client =
-        new ElasticsearchSearchClient(new ElasticsearchConnector(configuration).createClient());
+    final ElasticsearchSearchClient client = elasticsearchClient(configuration);
     return new DocumentMetadataStore(client, client, client);
+  }
+
+  /** The serving store (schema/writer/query) for the configured document backend. */
+  public static DatasetStore datasetStore(final ConnectConfiguration configuration) {
+    if (isOpensearch(configuration)) {
+      final OpensearchSearchClient client = opensearchClient(configuration);
+      return new DocumentDatasetStore(client, client, client);
+    }
+    final ElasticsearchSearchClient client = elasticsearchClient(configuration);
+    return new DocumentDatasetStore(client, client, client);
+  }
+
+  private static boolean isOpensearch(final ConnectConfiguration configuration) {
+    return DatabaseConfig.OPENSEARCH.equals(configuration.getType());
+  }
+
+  private static ElasticsearchSearchClient elasticsearchClient(
+      final ConnectConfiguration configuration) {
+    return new ElasticsearchSearchClient(new ElasticsearchConnector(configuration).createClient());
+  }
+
+  private static OpensearchSearchClient opensearchClient(final ConnectConfiguration configuration) {
+    return new OpensearchSearchClient(new OpensearchConnector(configuration).createClient());
   }
 }
