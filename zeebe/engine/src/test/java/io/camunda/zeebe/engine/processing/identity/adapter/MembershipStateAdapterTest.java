@@ -159,6 +159,26 @@ final class MembershipStateAdapterTest {
   }
 
   @Test
+  void shouldNotAddMappingRuleGroupsWhenGroupsClaimIsPresent() {
+    // given — OIDC mode: groups are supplied via the token claim, and a matched mapping rule is
+    // also a member of a group. The mapping-rule group must NOT widen the principal's groups. This
+    // matches main's ClaimsExtractor.getGroups, which ignores mapping-rule group memberships when a
+    // groups claim is present.
+    final var mappingRuleId = UUID.randomUUID().toString();
+    createGroupAndAssignEntity(mappingRuleId, EntityType.MAPPING_RULE);
+    final var query =
+        new MembershipQuery(
+                Map.of(USER_GROUPS_CLAIMS, List.of("claim-group")), "userId", PrincipalType.USER)
+            .withMappingRuleIds(List.of(mappingRuleId));
+
+    // when
+    final var result = adapter.groupIds(query);
+
+    // then
+    assertThat(result).containsExactly("claim-group");
+  }
+
+  @Test
   void shouldReturnRoleIdsForPrincipalAndGroups() {
     // given
     final var userId = Strings.newRandomValidIdentityId();
