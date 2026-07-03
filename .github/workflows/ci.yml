@@ -539,10 +539,11 @@ jobs:
     # exempts it from the check-results gate; artifacts self-expire (retention-days: 1)
     # and the bucket TTL covers runs cancelled/failed before this fires.
     needs: [ build-distball, docker-checks, integration-tests ]
-    # Only clean up when every consumer succeeded. If any failed or was cancelled, keep the
-    # GCS objects so "Re-run failed jobs" can re-fetch the distball -- build-distball won't
-    # re-run (it already succeeded) so it won't re-upload. Orphaned objects on failed runs are
-    # reaped by the bucket TTL (Infra-owned).
+    # Clean up only when build-distball succeeded and no consumer failed or was cancelled
+    # (skipped consumers -- both are conditional -- don't block cleanup). If any failed or was
+    # cancelled, keep the GCS objects so "Re-run failed jobs" can re-fetch the distball --
+    # build-distball won't re-run (it already succeeded) so it won't re-upload. Orphaned objects
+    # on failed runs are reaped by the bucket TTL (Infra-owned).
     if: >-
       always()
       && needs.build-distball.result == 'success'
