@@ -51,12 +51,7 @@ public sealed class ReadOnlyBackupApiRequestHandler
       final PartitionId partition,
       final AtomixServerTransport transport,
       final boolean backupFeatureEnabled) {
-    super(
-        "ReadOnlyBackupApi", partition, BackupApiRequestReader::new, BackupApiResponseWriter::new);
-    this.backupManager = backupManager;
-    partitionId = partition;
-    this.transport = transport;
-    this.backupFeatureEnabled = backupFeatureEnabled;
+    this("ReadOnlyBackupApi", backupManager, partition, transport, backupFeatureEnabled);
   }
 
   public ReadOnlyBackupApiRequestHandler(
@@ -74,19 +69,21 @@ public sealed class ReadOnlyBackupApiRequestHandler
 
   @Override
   public void onActorStarted() {
-    actor.run(
-        () ->
-            transport
-                .unsubscribe(partitionId, RequestType.BACKUP)
-                .thenAccept(v -> transport.subscribe(partitionId, RequestType.BACKUP, this)));
+    transport
+        .unsubscribe(partitionId, RequestType.BACKUP)
+        .thenAccept(v -> transport.subscribe(partitionId, RequestType.BACKUP, this), actor);
   }
 
   @Override
-  public void close() {
-    transport.unsubscribe(partitionId, RequestType.BACKUP);
-    // The broker is not the leader any more.
-    transport.subscribe(partitionId, RequestType.BACKUP, new NotPartitionLeaderHandler());
-    super.close();
+  public ActorFuture<Void> closeAsync() {
+    return transport
+        .unsubscribe(partitionId, RequestType.BACKUP)
+        .thenAccept(
+            ignored ->
+                transport.subscribe(
+                    partitionId, RequestType.BACKUP, new NotPartitionLeaderHandler()),
+            actor)
+        .andThen(ignored -> super.closeAsync(), actor);
   }
 
   @Override
