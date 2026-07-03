@@ -29,9 +29,36 @@ final class RdbmsNames {
     return "projection_" + cubeId;
   }
 
-  /** Sanitises a declared dimension/meter name into a safe SQL identifier. */
+  /** Postgres caps identifiers at 63 bytes; stay under it for every target dialect. */
+  private static final int MAX_IDENTIFIER_LENGTH = 60;
+
+  /** The allowlist a declared name must match once its namespace dot is folded to an underscore. */
+  private static final java.util.regex.Pattern SAFE_IDENTIFIER =
+      java.util.regex.Pattern.compile("[A-Za-z_][A-Za-z0-9_]*");
+
+  /**
+   * Maps a declared dimension/meter name to a SQL column identifier, <b>validating</b> rather than
+   * silently rewriting it. Column identifiers cannot be parameter-bound, so they are the one place
+   * declared (and, for {@code var.*} dimensions, user-influenced) text reaches SQL text; this is
+   * the injection boundary. The only transformation is folding the {@code var.region} namespace dot
+   * to an underscore; the result must then be a plain identifier ({@code [A-Za-z_][A-Za-z0-9_]*})
+   * within the length cap, or the declaration is rejected. Anything carrying a quote, semicolon,
+   * whitespace, or other metacharacter fails the allowlist and throws — it is never coerced into
+   * "valid" SQL.
+   */
   static String column(final String name) {
-    return name.replaceAll("[^A-Za-z0-9_]", "_");
+    final String identifier = name.replace('.', '_');
+    if (!SAFE_IDENTIFIER.matcher(identifier).matches()
+        || identifier.length() > MAX_IDENTIFIER_LENGTH) {
+      throw new IllegalArgumentException(
+          "unsafe SQL identifier derived from declared name '"
+              + name
+              + "'; names must be [A-Za-z_][A-Za-z0-9_]* (dots allowed for var.* namespaces) and at"
+              + " most "
+              + MAX_IDENTIFIER_LENGTH
+              + " chars");
+    }
+    return identifier;
   }
 
   /** A deterministic primary key over the dimension values and the window/tier coordinate. */

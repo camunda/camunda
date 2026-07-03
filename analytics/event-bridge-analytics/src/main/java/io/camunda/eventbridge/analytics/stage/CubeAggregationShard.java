@@ -9,7 +9,8 @@ package io.camunda.eventbridge.analytics.stage;
 
 import io.camunda.analytics.dataset.ActiveCube;
 import io.camunda.analytics.dataset.CompiledMeter;
-import io.camunda.analytics.dataset.jdbc.JdbcDatasetStore;
+import io.camunda.analytics.dataset.store.DatasetStore;
+import io.camunda.analytics.dataset.store.DatasetWriter;
 import io.camunda.analytics.dimension.DimensionKey;
 import io.camunda.analytics.dimension.DimensionKeyValue;
 import io.camunda.analytics.meter.BoundMeter;
@@ -34,7 +35,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,6 +67,8 @@ public final class CubeAggregationShard implements Task<ShuffleEnvelope>, AutoCl
   private final Map<Integer, CellApplier> byAggId;
   private final List<SegmentMergingAggregation<?, ?>> mergers;
   private final TransactionRunner transactionRunner;
+  private final DatasetStore datasetStore;
+  private final DatasetWriter servingWriter;
   private final AutoCloseable resource;
 
   private final DbInt offsetKey = new DbInt();
@@ -79,6 +81,8 @@ public final class CubeAggregationShard implements Task<ShuffleEnvelope>, AutoCl
       final Map<Integer, CellApplier> byAggId,
       final List<SegmentMergingAggregation<?, ?>> mergers,
       final TransactionRunner transactionRunner,
+      final DatasetStore datasetStore,
+      final DatasetWriter servingWriter,
       final AutoCloseable resource) {
     this.partition = partition;
     this.factsOffsets = factsOffsets;
@@ -86,13 +90,15 @@ public final class CubeAggregationShard implements Task<ShuffleEnvelope>, AutoCl
     this.byAggId = byAggId;
     this.mergers = mergers;
     this.transactionRunner = transactionRunner;
+    this.datasetStore = datasetStore;
+    this.servingWriter = servingWriter;
     this.resource = resource;
   }
 
   public static CubeAggregationShard open(
       final int partition,
       final String baseDir,
-      final DataSource dataSource,
+      final DatasetStore datasetStore,
       final List<ActiveCube> cubes,
       final MeterRegistry meterRegistry) {
     final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider =
@@ -102,15 +108,15 @@ public final class CubeAggregationShard implements Task<ShuffleEnvelope>, AutoCl
     final KeyValueStore<DbInt, DbLong> factsOffsets =
         provider.keyValueStore(
             AnalyticsColumnFamilies.CONSUMED_POSITION, new DbInt(), new DbLong());
-    final JdbcDatasetStore store = new JdbcDatasetStore(dataSource);
+    final DatasetWriter writer = datasetStore.writer();
 
     final Map<Integer, CellApplier> byAggId = new HashMap<>();
     final List<SegmentMergingAggregation<?, ?>> mergers = new ArrayList<>();
     for (final ActiveCube cube : cubes) {
-      store.ensure(cube.compiled());
+      datasetStore.schemaManager().ensure(cube.compiled());
       for (final CompiledMeter meter : cube.compiled().meters()) {
         final SegmentMergingAggregation<DimensionKey, ?> merger =
-            wire(cube, meter, store, cellStore, provider::runInTransaction, byAggId);
+            wire(cube, meter, writer, cellStore, provider::runInTransaction, byAggId);
         mergers.add(merger);
       }
     }
@@ -121,6 +127,8 @@ public final class CubeAggregationShard implements Task<ShuffleEnvelope>, AutoCl
         byAggId,
         mergers,
         provider::runInTransaction,
+        datasetStore,
+        writer,
         provider);
   }
 
@@ -130,7 +138,7 @@ public final class CubeAggregationShard implements Task<ShuffleEnvelope>, AutoCl
   private static <ACC> SegmentMergingAggregation<DimensionKey, ACC> wire(
       final ActiveCube cube,
       final CompiledMeter meter,
-      final JdbcDatasetStore store,
+      final DatasetWriter writer,
       final KeyValueStore<DbBytes, DbBytes> cellStore,
       final TransactionRunner tx,
       final Map<Integer, CellApplier> byAggId) {
@@ -143,7 +151,7 @@ public final class CubeAggregationShard implements Task<ShuffleEnvelope>, AutoCl
             bound.aggregate(),
             meter.windows(),
             new CubeServingSink<>(
-                store,
+                writer,
                 cube.compiled(),
                 meter.meterName(),
                 meter.windowMs(),
@@ -197,6 +205,13 @@ public final class CubeAggregationShard implements Task<ShuffleEnvelope>, AutoCl
 
   @Override
   public void commit(final long offset) {
+    // Produce-before-commit: converge the sinks and make the serving rows durable first (the
+    // serving
+    // store is external to RocksDB), then persist the merged cells + the facts offset atomically.
+    // The serving upsert is idempotent, so a crash between the two replays and re-merges
+    // harmlessly.
+    mergers.forEach(SegmentMergingAggregation::flush);
+    servingWriter.flush();
     transactionRunner.runInTransaction(
         () -> {
           offsetKey.wrapInt(partition);
@@ -208,6 +223,11 @@ public final class CubeAggregationShard implements Task<ShuffleEnvelope>, AutoCl
 
   @Override
   public void close() {
+    try {
+      datasetStore.close();
+    } catch (final Exception e) {
+      LOG.warn("Failed to close serving store for facts partition {}", partition, e);
+    }
     try {
       resource.close();
     } catch (final Exception e) {

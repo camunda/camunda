@@ -7,7 +7,7 @@
  */
 package io.camunda.analytics.dataset;
 
-import io.camunda.analytics.dataset.jdbc.JdbcDatasetStore;
+import io.camunda.analytics.dataset.store.DatasetWriter;
 import io.camunda.analytics.dimension.DimensionColumn;
 import io.camunda.analytics.fact.Fact;
 import io.camunda.analytics.fact.FactType;
@@ -33,17 +33,17 @@ public final class ProjectionRowAggregation implements Aggregation<Fact> {
   private final RegisteredDataset dataset;
   private final List<FilterPredicate> filters;
   private final CompiledProjection projection;
-  private final JdbcDatasetStore store;
+  private final DatasetWriter writer;
 
   public ProjectionRowAggregation(
       final RegisteredDataset dataset,
       final CompiledProjection projection,
-      final JdbcDatasetStore store) {
+      final DatasetWriter writer) {
     this.factType = projection.factBinding().factType();
     this.dataset = dataset;
     this.filters = List.copyOf(projection.factBinding().filters());
     this.projection = projection;
-    this.store = store;
+    this.writer = writer;
   }
 
   @Override
@@ -61,7 +61,7 @@ public final class ProjectionRowAggregation implements Aggregation<Fact> {
     for (final DimensionColumn column : projection.columns()) {
       values.add(fact.get(column.name()));
     }
-    store.upsertRow(projection, String.valueOf(key), values);
+    writer.upsertRow(projection, String.valueOf(key), values);
   }
 
   private boolean matchesFilters(final Fact fact) {

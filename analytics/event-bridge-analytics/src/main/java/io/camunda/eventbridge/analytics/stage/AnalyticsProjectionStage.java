@@ -10,6 +10,7 @@ package io.camunda.eventbridge.analytics.stage;
 import io.camunda.analytics.dataset.ActiveCube;
 import io.camunda.analytics.dataset.ActiveProjection;
 import io.camunda.analytics.projection.SourceRecord;
+import io.camunda.analytics.store.rdbms.RdbmsDatasetStore;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.streaming.StreamRuntime;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecordCodec;
@@ -102,7 +103,7 @@ public final class AnalyticsProjectionStage {
                         schemaVersion,
                         cubes,
                         projections,
-                        dataSource,
+                        new RdbmsDatasetStore(dataSource),
                         meterRegistry))
             .maxPoll(MAX_RECORDS)
             .pollTimeout(POLL_TIMEOUT)

@@ -70,6 +70,20 @@ final class RdbmsDatasetStoreTest {
   }
 
   @Test
+  void shouldAcceptSafeIdentifiersAndRejectInjectionAttempts() {
+    // given — legitimate declared names, including a namespaced variable dimension
+    assertThat(RdbmsNames.column("bpmnProcessId")).isEqualTo("bpmnProcessId");
+    assertThat(RdbmsNames.column("var.region")).isEqualTo("var_region");
+
+    // then — anything carrying SQL metacharacters is rejected, not coerced into valid SQL
+    org.assertj.core.api.Assertions.assertThatThrownBy(
+            () -> RdbmsNames.column("count\"; DROP TABLE dataset_1; --"))
+        .isInstanceOf(IllegalArgumentException.class);
+    org.assertj.core.api.Assertions.assertThatThrownBy(() -> RdbmsNames.column("a b"))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
   void shouldWriteCellsAndServeThemThroughTheExecutor() {
     // given a provisioned cube with per-window counts written idempotently
     store.schemaManager().ensure(dataset);

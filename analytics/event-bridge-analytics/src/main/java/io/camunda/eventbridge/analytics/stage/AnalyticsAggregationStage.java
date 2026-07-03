@@ -10,6 +10,7 @@ package io.camunda.eventbridge.analytics.stage;
 import io.camunda.analytics.dataset.ActiveCube;
 import io.camunda.analytics.shuffle.ShuffleEnvelope;
 import io.camunda.analytics.shuffle.ShuffleEnvelopeCodec;
+import io.camunda.analytics.store.rdbms.RdbmsDatasetStore;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.streaming.StreamRuntime;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -72,7 +73,11 @@ public final class AnalyticsAggregationStage {
             .taskFactory(
                 partition ->
                     CubeAggregationShard.open(
-                        partition, stateDir, dataSource, cubes, meterRegistry))
+                        partition,
+                        stateDir,
+                        new RdbmsDatasetStore(dataSource),
+                        cubes,
+                        meterRegistry))
             .maxPoll(MAX_RECORDS)
             .pollTimeout(POLL_TIMEOUT)
             .commitInterval(CHECKPOINT_INTERVAL)

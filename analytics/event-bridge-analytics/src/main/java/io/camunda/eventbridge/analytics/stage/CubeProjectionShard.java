@@ -12,7 +12,8 @@ import io.camunda.analytics.dataset.ActiveProjection;
 import io.camunda.analytics.dataset.CompiledMeter;
 import io.camunda.analytics.dataset.CubeMeterAggregation;
 import io.camunda.analytics.dataset.ProjectionRowAggregation;
-import io.camunda.analytics.dataset.jdbc.JdbcDatasetStore;
+import io.camunda.analytics.dataset.store.DatasetStore;
+import io.camunda.analytics.dataset.store.DatasetWriter;
 import io.camunda.analytics.dimension.DimensionKey;
 import io.camunda.analytics.dimension.DimensionKeyValue;
 import io.camunda.analytics.fact.Fact;
@@ -35,7 +36,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,6 +77,8 @@ public final class CubeProjectionShard implements Task<SourceRecord>, AutoClosea
   private final TransactionRunner transactionRunner;
   private final EnvelopePublisher publisher;
   private final List<CubeMeterAggregation> meters;
+  private final DatasetStore datasetStore;
+  private final DatasetWriter servingWriter;
   private final AutoCloseable resource;
 
   CubeProjectionShard(
@@ -86,6 +88,8 @@ public final class CubeProjectionShard implements Task<SourceRecord>, AutoClosea
       final TransactionRunner transactionRunner,
       final EnvelopePublisher publisher,
       final List<CubeMeterAggregation> meters,
+      final DatasetStore datasetStore,
+      final DatasetWriter servingWriter,
       final AutoCloseable resource) {
     this.partition = partition;
     this.store = store;
@@ -93,6 +97,8 @@ public final class CubeProjectionShard implements Task<SourceRecord>, AutoClosea
     this.transactionRunner = transactionRunner;
     this.publisher = publisher;
     this.meters = meters;
+    this.datasetStore = datasetStore;
+    this.servingWriter = servingWriter;
     this.resource = resource;
   }
 
@@ -106,7 +112,7 @@ public final class CubeProjectionShard implements Task<SourceRecord>, AutoClosea
       final int schemaVersion,
       final List<ActiveCube> cubes,
       final List<ActiveProjection> projections,
-      final DataSource dataSource,
+      final DatasetStore datasetStore,
       final MeterRegistry meterRegistry) {
     final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider =
         RocksDbStateStoreProvider.open(new File(baseDir + "-p" + partition), meterRegistry);
@@ -126,23 +132,28 @@ public final class CubeProjectionShard implements Task<SourceRecord>, AutoClosea
       }
     }
 
+    final DatasetWriter writer = datasetStore.writer();
     final List<Aggregation<Fact>> aggregations = new ArrayList<>(meters);
     // Projected (raw) datasets write rows straight to the serving store (idempotent by key, no
     // shuffle); they run in the same fold but do not constrain the segment-safe commit offset.
-    if (!projections.isEmpty()) {
-      final JdbcDatasetStore datasetStore = new JdbcDatasetStore(dataSource);
-      for (final ActiveProjection projection : projections) {
-        datasetStore.ensureProjection(projection.compiled());
-        aggregations.add(
-            new ProjectionRowAggregation(
-                projection.registered(), projection.compiled(), datasetStore));
-      }
+    for (final ActiveProjection projection : projections) {
+      datasetStore.schemaManager().ensureProjection(projection.compiled());
+      aggregations.add(
+          new ProjectionRowAggregation(projection.registered(), projection.compiled(), writer));
     }
 
     final StreamProcessor<SourceRecord> processor =
         new StreamProcessor<SourceRecord>().add(new ProjectionStage<>(projector, aggregations));
     return new CubeProjectionShard(
-        partition, store, processor, provider::runInTransaction, publisher, meters, provider);
+        partition,
+        store,
+        processor,
+        provider::runInTransaction,
+        publisher,
+        meters,
+        datasetStore,
+        writer,
+        provider);
   }
 
   /** Builds one cube meter's sealing aggregation + shuffle sink, capturing the accumulator type. */
@@ -223,6 +234,9 @@ public final class CubeProjectionShard implements Task<SourceRecord>, AutoClosea
     // offset (only past segments every meter has sealed) atomically. The runtime's offset is
     // ignored in favour of the segment-safe offset so a crash replays the open segments.
     publisher.flush();
+    // Projected rows go to the external serving store; make them durable before the offset advances
+    // (idempotent by key, so a crash between the two replays and re-writes harmlessly).
+    servingWriter.flush();
     // With meters, commit only past segments every meter has sealed. With no meters (a
     // projection-only shard), the rows are already written and idempotent, so the runtime's
     // consumed offset is safe.
@@ -246,6 +260,11 @@ public final class CubeProjectionShard implements Task<SourceRecord>, AutoClosea
   @Override
   public void close() {
     processor.close();
+    try {
+      datasetStore.close();
+    } catch (final Exception e) {
+      LOG.warn("Failed to close serving store for partition {}", partition, e);
+    }
     try {
       resource.close();
     } catch (final Exception e) {
