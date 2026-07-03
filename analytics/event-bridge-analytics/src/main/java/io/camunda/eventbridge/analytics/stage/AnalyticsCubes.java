@@ -38,6 +38,7 @@ public final class AnalyticsCubes {
 
   private static final long ONE_MINUTE_MS = 60_000L;
   private static final long ONE_HOUR_MS = 3_600_000L;
+  private static final long SLA_THRESHOLD_MS = 300_000L;
 
   private AnalyticsCubes() {}
 
@@ -72,6 +73,18 @@ public final class AnalyticsCubes {
             .meter(Meter.of("p95", MeterCatalog.PERCENTILE, "durationMs"))
             .window(ONE_MINUTE_MS)
             .window(ONE_HOUR_MS)
+            .build(),
+        // SLA-compliant share of completed instances per process definition (a ratio cohort).
+        DatasetDeclaration.builder("process-sla", FactType.PROCESS_INSTANCE)
+            .filterEquals("transition", Transition.COMPLETED.name())
+            .dimension("bpmnProcessId", DimensionType.STRING)
+            .meter(
+                new Meter(
+                    "sla_compliance",
+                    MeterCatalog.RATIO,
+                    "durationMs",
+                    Map.of("op", "le", "threshold", Long.toString(SLA_THRESHOLD_MS))))
+            .window(ONE_MINUTE_MS)
             .build(),
         // Flow-node execution counts per (process, element).
         DatasetDeclaration.builder("element-throughput", FactType.ELEMENT)

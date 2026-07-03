@@ -52,6 +52,21 @@ public record Meter(String name, String type, String measureField, Map<String, S
     return value == null || value.isBlank() ? defaultValue : Integer.parseInt(value.trim());
   }
 
+  public double doubleParam(final String key, final double defaultValue) {
+    final String value = params.get(key);
+    return value == null || value.isBlank() ? defaultValue : Double.parseDouble(value.trim());
+  }
+
+  /** A required string param; throws if absent or blank. */
+  public String requireParam(final String key) {
+    final String value = params.get(key);
+    if (value == null || value.isBlank()) {
+      throw new IllegalArgumentException(
+          "meter '" + name + "' (" + type + ") requires param '" + key + "'");
+    }
+    return value.trim();
+  }
+
   public double[] doubleArrayParam(final String key, final double[] defaultValue) {
     final String value = params.get(key);
     if (value == null || value.isBlank()) {

@@ -15,6 +15,8 @@ import io.camunda.analytics.metric.HistogramAggregateFunction;
 import io.camunda.analytics.metric.HistogramValue;
 import io.camunda.analytics.metric.LifecycleSummaryAggregateFunction;
 import io.camunda.analytics.metric.LifecycleSummaryValue;
+import io.camunda.analytics.metric.RatioAccumulatorValue;
+import io.camunda.analytics.metric.RatioAggregateFunction;
 import io.camunda.analytics.sketch.DistinctCountAggregateFunction;
 import io.camunda.analytics.sketch.HllSketchValue;
 import io.camunda.analytics.sketch.ItemsSketchValue;
@@ -24,6 +26,7 @@ import io.camunda.analytics.sketch.TopKAggregateFunction;
 import io.camunda.eventbridge.streaming.aggregate.LongRecordValue;
 import io.camunda.eventbridge.streaming.aggregate.SumAggregateFunction;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -39,11 +42,12 @@ import java.util.Set;
  *       signed ±1 deltas; covers counters and level-gauges), {@link #EXECUTION_TIME} (count/total/
  *       min/max, average derived on read), {@link #HISTOGRAM} (bucket counts over thresholds);
  *   <li><b>mergeable-sketch</b> — {@link #PERCENTILE} (KLL), {@link #DISTINCT} (HLL), {@link
- *       #TOP_K} (frequent-items).
+ *       #TOP_K} (frequent-items);
+ *   <li><b>ratio</b> — {@link #RATIO} (matched/total under a threshold predicate), the generic
+ *       part-of-whole meter that expresses SLA-compliance and no-incident cohorts as declarations.
  * </ul>
  *
- * Ratio/cohort meters, and a non-additive last-value gauge, are deferred to the declaration-driven
- * metric port.
+ * A non-additive last-value gauge is deferred to the declaration-driven metric port.
  */
 public final class MeterCatalog {
 
@@ -57,6 +61,7 @@ public final class MeterCatalog {
   public static final String PERCENTILE = "percentile";
   public static final String DISTINCT = "distinct";
   public static final String TOP_K = "top_k";
+  public static final String RATIO = "ratio";
 
   private final Map<String, MeterType<?, ?>> types = new HashMap<>();
 
@@ -154,6 +159,16 @@ public final class MeterCatalog {
                         m.requireMeasure()::asString,
                         m.intParam("k", TopKAggregateFunction.DEFAULT_K),
                         TopKAggregateFunction.DEFAULT_MAX_MAP_SIZE),
-                m -> new ItemsSketchValue()));
+                m -> new ItemsSketchValue()))
+        .register(
+            new MeterType<>(
+                RATIO,
+                m ->
+                    new RatioAggregateFunction<>(
+                        m.requireMeasure()::asDouble,
+                        RatioAggregateFunction.Comparison.valueOf(
+                            m.requireParam("op").toUpperCase(Locale.ROOT)),
+                        m.doubleParam("threshold", 0.0)),
+                m -> new RatioAccumulatorValue()));
   }
 }
