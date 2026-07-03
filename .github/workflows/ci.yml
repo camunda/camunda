@@ -2060,10 +2060,12 @@ jobs:
       - uses: camunda/infra-global-github-actions/start-build-monitor@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         timeout-minutes: 1
-      - name: Install bats
-        run: sudo apt-get install -y bats
+      - name: Install bats and xmllint
+        run: sudo apt-get install -y bats libxml2-utils
       - name: Run ci-relevance tests
         run: bats .github/scripts/ci-relevance/check.bats
+      - name: Run flattened-pom validation tests
+        run: bats .github/scripts/validate-flattened-poms.bats
       - name: Observe build status
         if: always()
         continue-on-error: true
