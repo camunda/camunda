@@ -11,6 +11,7 @@ import static io.camunda.it.util.TestHelper.deployProcessAndWaitForIt;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.MigrationPlan;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -19,6 +20,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.CallActivityBuilder;
 import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.awaitility.Awaitility;
@@ -111,13 +113,63 @@ public class CallActivityBusinessIdIT {
         .isEqualTo("order-parent-child");
   }
 
+  @Test
+  void shouldResolveBusinessIdIncidentAfterMigratingToFixedVersion() {
+    // given - a source version whose call activity Business ID references a variable that is
+    // never provided (raising an incident), and a target version that resolves it from an
+    // available variable
+    final String childProcessId = "child-migrate";
+    deployChild(childProcessId);
+    final long sourceDefinitionKey =
+        deployParent(
+            "parent-migrate-source", childProcessId, c -> c.zeebeBusinessId("=missingVar"));
+    final long targetDefinitionKey =
+        deployParent("parent-migrate-target", childProcessId, c -> c.zeebeBusinessId("=orderId"));
+
+    final ProcessInstanceEvent parent =
+        client
+            .newCreateInstanceCommand()
+            .processDefinitionKey(sourceDefinitionKey)
+            .variables(Map.of("orderId", "migrated-business-id"))
+            .execute();
+    final long incidentKey = awaitIncidentKey(parent.getProcessInstanceKey());
+
+    // when - the instance is migrated to the fixed version and the incident is resolved
+    client
+        .newMigrateProcessInstanceCommand(parent.getProcessInstanceKey())
+        .migrationPlan(
+            MigrationPlan.newBuilder()
+                .withTargetProcessDefinitionKey(targetDefinitionKey)
+                .addMappingInstruction("call", "call")
+                .build())
+        .send()
+        .join();
+    client.newResolveIncidentCommand(incidentKey).send().join();
+
+    // then - the child is created with the Business ID re-evaluated from the migrated definition
+    assertThat(awaitChild(parent.getProcessInstanceKey()).getBusinessId())
+        .isEqualTo("migrated-business-id");
+  }
+
   private static String deployParentWithChild(
       final String suffix, final Consumer<CallActivityBuilder> callActivityCustomizer) {
     final String childProcessId = "child-" + suffix;
     final String parentProcessId = "parent-" + suffix;
+    deployChild(childProcessId);
+    deployParent(parentProcessId, childProcessId, callActivityCustomizer);
+    return parentProcessId;
+  }
 
+  private static void deployChild(final String childProcessId) {
     final BpmnModelInstance child =
         Bpmn.createExecutableProcess(childProcessId).startEvent().endEvent().done();
+    deployProcessAndWaitForIt(client, child, childProcessId + ".bpmn");
+  }
+
+  private static long deployParent(
+      final String parentProcessId,
+      final String childProcessId,
+      final Consumer<CallActivityBuilder> callActivityCustomizer) {
     final BpmnModelInstance parent =
         Bpmn.createExecutableProcess(parentProcessId)
             .startEvent()
@@ -129,10 +181,8 @@ public class CallActivityBusinessIdIT {
                 })
             .endEvent()
             .done();
-
-    deployProcessAndWaitForIt(client, child, childProcessId + ".bpmn");
-    deployProcessAndWaitForIt(client, parent, parentProcessId + ".bpmn");
-    return parentProcessId;
+    return deployProcessAndWaitForIt(client, parent, parentProcessId + ".bpmn")
+        .getProcessDefinitionKey();
   }
 
   private static ProcessInstanceEvent startParent(
@@ -165,5 +215,25 @@ public class CallActivityBusinessIdIT {
               child.set(items.getFirst());
             });
     return child.get();
+  }
+
+  private static long awaitIncidentKey(final long processInstanceKey) {
+    final AtomicLong incidentKey = new AtomicLong();
+    Awaitility.await("incident is exported to the search index")
+        .atMost(Duration.ofSeconds(30))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var items =
+                  client
+                      .newIncidentSearchRequest()
+                      .filter(f -> f.processInstanceKey(processInstanceKey))
+                      .send()
+                      .join()
+                      .items();
+              assertThat(items).hasSize(1);
+              incidentKey.set(items.getFirst().getIncidentKey());
+            });
+    return incidentKey.get();
   }
 }

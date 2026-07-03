@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.incident;
 
 import static io.camunda.zeebe.engine.processing.incident.IncidentHelper.assertIncidentCreated;
+import static io.camunda.zeebe.engine.processing.processinstance.migration.MigrationTestUtil.extractProcessDefinitionKeyByProcessId;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.processing.processinstance.BusinessIdValidator;
@@ -612,6 +613,59 @@ public final class CallActivityIncidentTest {
     // then - the child is created with the now-resolvable business id
     Assertions.assertThat(getChildProcessInstance(processInstanceKey).getValue())
         .hasBusinessId("resolved-business-id");
+  }
+
+  @Test
+  public void shouldResolveBusinessIdIncidentAfterMigratingToFixedVersion() {
+    // given - a source version whose call activity business id references a variable that is
+    // never provided, and a target version whose call activity resolves it from an available one
+    final String sourceProcessId = Strings.newRandomValidBpmnId();
+    final String targetProcessId = Strings.newRandomValidBpmnId();
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                "wf-child.bpmn",
+                Bpmn.createExecutableProcess(childProcessId).startEvent().endEvent().done())
+            .withXmlResource(
+                "wf-source.bpmn",
+                Bpmn.createExecutableProcess(sourceProcessId)
+                    .startEvent()
+                    .callActivity(
+                        "call",
+                        c -> c.zeebeProcessId(childProcessId).zeebeBusinessId("=businessIdVar"))
+                    .done())
+            .withXmlResource(
+                "wf-target.bpmn",
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .callActivity(
+                        "call", c -> c.zeebeProcessId(childProcessId).zeebeBusinessId("=orderId"))
+                    .done())
+            .deploy();
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(sourceProcessId)
+            .withVariable("orderId", "migrated-business-id")
+            .create();
+    final Record<IncidentRecordValue> incident = getIncident(processInstanceKey);
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    // when - the instance is migrated to the fixed version and the incident is resolved
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("call", "call")
+        .migrate();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    // then - the child is created with the business id re-evaluated from the migrated definition
+    Assertions.assertThat(getChildProcessInstance(processInstanceKey).getValue())
+        .hasBusinessId("migrated-business-id");
   }
 
   private void deployParentWithChildBusinessId(final String businessId) {
