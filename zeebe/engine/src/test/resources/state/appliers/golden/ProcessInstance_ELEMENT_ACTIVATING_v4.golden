@@ -55,7 +55,7 @@ final class ProcessInstanceElementActivatingV4Applier
     cleanupSequenceFlowsTaken(value);
     final var flowScopeInstance = elementInstanceState.getInstance(value.getFlowScopeKey());
 
-    if (shouldIncrementActivationCounter(value, flowScopeInstance)) {
+    if (shouldIncrementActivationCounter(value)) {
       elementInstanceState.incrementElementActivationCounter(
           value.getProcessInstanceKey(), value.getElementIdBuffer());
     }
@@ -322,8 +322,7 @@ final class ProcessInstanceElementActivatingV4Applier
    * {@link LoopDetectionFilter#shouldCount} so the counter increment and the activation check (in
    * {@code BpmnStreamProcessor}) are consistent.
    */
-  private boolean shouldIncrementActivationCounter(
-      final ProcessInstanceRecord value, final ElementInstance flowScopeInstance) {
-    return LoopDetectionFilter.shouldCount(processState, value, flowScopeInstance);
+  private boolean shouldIncrementActivationCounter(final ProcessInstanceRecord value) {
+    return LoopDetectionFilter.shouldCount(value);
   }
 }
