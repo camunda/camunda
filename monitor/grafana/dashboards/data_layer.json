@@ -3112,7 +3112,7 @@
               },
               "editorMode": "builder",
               "exemplar": true,
-              "expr": "rate(zeebe_rdbms_exporter_failed_flush_total{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", pod=~\"$pod\"}[$__rate_interval]) / rate(zeebe_camunda_exporter_flush_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", pod=~\"$pod\"}[$__rate_interval])",
+              "expr": "rate(zeebe_rdbms_exporter_failed_flush_total{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", pod=~\"$pod\"}[$__rate_interval]) / rate(zeebe_rdbms_exporter_flush_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", pod=~\"$pod\"}[$__rate_interval])",
               "interval": "",
               "legendFormat": "{{pod}} Exporter {{partition}}",
               "range": true,
@@ -3699,14 +3699,14 @@
           "text": "All",
           "value": "$__all"
         },
-        "definition": "label_values(atomix_role{cluster=\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", pod=~\"$pod\"},partition)",
+        "definition": "label_values(atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", pod=~\"$pod\"},partition)",
         "includeAll": true,
         "multi": true,
         "name": "partition",
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(atomix_role{cluster=\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", pod=~\"$pod\"},partition)",
+          "query": "label_values(atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", pod=~\"$pod\"},partition)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 2,
