@@ -9,14 +9,12 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="io.camunda.analytics.store.rdbms.metadata.DatasetSpecMapper">
 
-  <select id="countDatasets" resultType="long">
-    SELECT COUNT(*) FROM ANALYTICS_DATASET
+  <select id="countSpecs" resultType="long">
+    SELECT COUNT(*) FROM ANALYTICS_DATASET_SPEC
   </select>
 
-  <select id="searchDatasets"
-    resultType="io.camunda.analytics.store.rdbms.metadata.row.DatasetRow">
-    SELECT CUBE_ID, NAME, SOURCE_FACT, KIND, KEY_FIELD, LATENESS_MS, SCHEMA_VERSION
-    FROM ANALYTICS_DATASET
+  <select id="searchSpecs" resultType="io.camunda.analytics.store.rdbms.metadata.row.SpecRow">
+    SELECT CUBE_ID, NAME, SOURCE_FACT, KIND, SPEC FROM ANALYTICS_DATASET_SPEC
     <where>
       <if test="name != null">AND NAME = #{name}</if>
       <if test="sourceFact != null">AND SOURCE_FACT = #{sourceFact}</if>
@@ -25,85 +23,12 @@
     ORDER BY CUBE_ID
   </select>
 
-  <select id="selectDatasetById"
-    resultType="io.camunda.analytics.store.rdbms.metadata.row.DatasetRow">
-    SELECT CUBE_ID, NAME, SOURCE_FACT, KIND, KEY_FIELD, LATENESS_MS, SCHEMA_VERSION
-    FROM ANALYTICS_DATASET WHERE CUBE_ID = #{cubeId}
+  <select id="selectSpecById" resultType="io.camunda.analytics.store.rdbms.metadata.row.SpecRow">
+    SELECT CUBE_ID, NAME, SOURCE_FACT, KIND, SPEC FROM ANALYTICS_DATASET_SPEC WHERE CUBE_ID = #{cubeId}
   </select>
 
-  <insert id="insertDataset"
-    parameterType="io.camunda.analytics.store.rdbms.metadata.row.DatasetRow">
-    INSERT INTO ANALYTICS_DATASET
-      (CUBE_ID, NAME, SOURCE_FACT, KIND, KEY_FIELD, LATENESS_MS, SCHEMA_VERSION)
-    VALUES (#{cubeId}, #{name}, #{sourceFact}, #{kind}, #{keyField}, #{latenessMs}, #{schemaVersion})
-  </insert>
-
-  <select id="selectFilters"
-    resultType="io.camunda.analytics.store.rdbms.metadata.row.FilterRow">
-    SELECT CUBE_ID, ORDINAL, FIELD, OPERATOR, FILTER_VALUE
-    FROM ANALYTICS_DATASET_FILTER ORDER BY CUBE_ID, ORDINAL
-  </select>
-
-  <insert id="insertFilter"
-    parameterType="io.camunda.analytics.store.rdbms.metadata.row.FilterRow">
-    INSERT INTO ANALYTICS_DATASET_FILTER (CUBE_ID, ORDINAL, FIELD, OPERATOR, FILTER_VALUE)
-    VALUES (#{cubeId}, #{ordinal}, #{field}, #{operator}, #{filterValue})
-  </insert>
-
-  <select id="selectDimensions"
-    resultType="io.camunda.analytics.store.rdbms.metadata.row.DimensionRow">
-    SELECT CUBE_ID, ORDINAL, NAME, DIM_TYPE, ENRICHMENT
-    FROM ANALYTICS_DATASET_DIMENSION ORDER BY CUBE_ID, ORDINAL
-  </select>
-
-  <insert id="insertDimension"
-    parameterType="io.camunda.analytics.store.rdbms.metadata.row.DimensionRow">
-    INSERT INTO ANALYTICS_DATASET_DIMENSION (CUBE_ID, ORDINAL, NAME, DIM_TYPE, ENRICHMENT)
-    VALUES (#{cubeId}, #{ordinal}, #{name}, #{dimType}, #{enrichment})
-  </insert>
-
-  <select id="selectMeters"
-    resultType="io.camunda.analytics.store.rdbms.metadata.row.MeterRow">
-    SELECT CUBE_ID, ORDINAL, NAME, METER_TYPE, MEASURE_FIELD
-    FROM ANALYTICS_DATASET_METER ORDER BY CUBE_ID, ORDINAL
-  </select>
-
-  <insert id="insertMeter"
-    parameterType="io.camunda.analytics.store.rdbms.metadata.row.MeterRow">
-    INSERT INTO ANALYTICS_DATASET_METER (CUBE_ID, ORDINAL, NAME, METER_TYPE, MEASURE_FIELD)
-    VALUES (#{cubeId}, #{ordinal}, #{name}, #{meterType}, #{measureField})
-  </insert>
-
-  <select id="selectMeterParams"
-    resultType="io.camunda.analytics.store.rdbms.metadata.row.MeterParamRow">
-    SELECT CUBE_ID, METER_ORDINAL, PARAM_KEY, PARAM_VALUE FROM ANALYTICS_DATASET_METER_PARAM
-  </select>
-
-  <insert id="insertMeterParam"
-    parameterType="io.camunda.analytics.store.rdbms.metadata.row.MeterParamRow">
-    INSERT INTO ANALYTICS_DATASET_METER_PARAM (CUBE_ID, METER_ORDINAL, PARAM_KEY, PARAM_VALUE)
-    VALUES (#{cubeId}, #{meterOrdinal}, #{paramKey}, #{paramValue})
-  </insert>
-
-  <select id="selectWindows"
-    resultType="io.camunda.analytics.store.rdbms.metadata.row.WindowRow">
-    SELECT CUBE_ID, ORDINAL, WINDOW_MS FROM ANALYTICS_DATASET_WINDOW ORDER BY CUBE_ID, ORDINAL
-  </select>
-
-  <insert id="insertWindow"
-    parameterType="io.camunda.analytics.store.rdbms.metadata.row.WindowRow">
-    INSERT INTO ANALYTICS_DATASET_WINDOW (CUBE_ID, ORDINAL, WINDOW_MS)
-    VALUES (#{cubeId}, #{ordinal}, #{windowMs})
-  </insert>
-
-  <select id="selectActivation"
-    resultType="io.camunda.analytics.store.rdbms.metadata.row.ActivationRow">
-    SELECT CUBE_ID, PARTITION_ID, ACTIVATION_POSITION FROM ANALYTICS_DATASET_ACTIVATION
-  </select>
-
-  <insert id="insertActivation"
-    parameterType="io.camunda.analytics.store.rdbms.metadata.row.ActivationRow">
-    INSERT INTO ANALYTICS_DATASET_ACTIVATION (CUBE_ID, PARTITION_ID, ACTIVATION_POSITION)
-    VALUES (#{cubeId}, #{partitionId}, #{activationPosition})
+  <insert id="insertSpec" parameterType="io.camunda.analytics.store.rdbms.metadata.row.SpecRow">
+    INSERT INTO ANALYTICS_DATASET_SPEC (CUBE_ID, NAME, SOURCE_FACT, KIND, SPEC)
+    VALUES (#{cubeId}, #{name}, #{sourceFact}, #{kind}, #{spec})
   </insert>
 </mapper>

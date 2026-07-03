@@ -7,34 +7,33 @@
  */
 package io.camunda.analytics.store.rdbms.metadata.row;
 
-/** Row model for {@code ANALYTICS_DATASET}. */
-public final class DatasetRow {
+/**
+ * Row model for {@code ANALYTICS_DATASET_SPEC}: the searchable scalar columns plus the full spec as
+ * a JSON string. The spec is small, config-like, mostly immutable and read wholesale, so it is
+ * stored as an opaque document rather than normalized into child tables; only {@code name}/{@code
+ * sourceFact}/{@code kind} are searched.
+ */
+public final class SpecRow {
 
   private long cubeId;
   private String name;
   private String sourceFact;
   private String kind;
-  private String keyField;
-  private long latenessMs;
-  private int schemaVersion;
+  private String spec;
 
-  public DatasetRow() {}
+  public SpecRow() {}
 
-  public DatasetRow(
+  public SpecRow(
       final long cubeId,
       final String name,
       final String sourceFact,
       final String kind,
-      final String keyField,
-      final long latenessMs,
-      final int schemaVersion) {
+      final String spec) {
     this.cubeId = cubeId;
     this.name = name;
     this.sourceFact = sourceFact;
     this.kind = kind;
-    this.keyField = keyField;
-    this.latenessMs = latenessMs;
-    this.schemaVersion = schemaVersion;
+    this.spec = spec;
   }
 
   public long getCubeId() {
@@ -69,27 +68,11 @@ public final class DatasetRow {
     this.kind = kind;
   }
 
-  public String getKeyField() {
-    return keyField;
+  public String getSpec() {
+    return spec;
   }
 
-  public void setKeyField(final String keyField) {
-    this.keyField = keyField;
-  }
-
-  public long getLatenessMs() {
-    return latenessMs;
-  }
-
-  public void setLatenessMs(final long latenessMs) {
-    this.latenessMs = latenessMs;
-  }
-
-  public int getSchemaVersion() {
-    return schemaVersion;
-  }
-
-  public void setSchemaVersion(final int schemaVersion) {
-    this.schemaVersion = schemaVersion;
+  public void setSpec(final String spec) {
+    this.spec = spec;
   }
 }

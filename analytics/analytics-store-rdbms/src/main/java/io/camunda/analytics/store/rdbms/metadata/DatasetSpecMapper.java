@@ -7,57 +7,27 @@
  */
 package io.camunda.analytics.store.rdbms.metadata;
 
-import io.camunda.analytics.store.rdbms.metadata.row.ActivationRow;
-import io.camunda.analytics.store.rdbms.metadata.row.DatasetRow;
-import io.camunda.analytics.store.rdbms.metadata.row.DimensionRow;
-import io.camunda.analytics.store.rdbms.metadata.row.FilterRow;
-import io.camunda.analytics.store.rdbms.metadata.row.MeterParamRow;
-import io.camunda.analytics.store.rdbms.metadata.row.MeterRow;
-import io.camunda.analytics.store.rdbms.metadata.row.WindowRow;
+import io.camunda.analytics.store.rdbms.metadata.row.SpecRow;
 import java.util.List;
 import org.apache.ibatis.annotations.Param;
 
 /**
- * MyBatis mapper for the normalized dataset-spec tables. SQL lives in the co-located XML mapper
- * (OC's convention); columns map to the row models via {@code mapUnderscoreToCamelCase}. {@link
- * RdbmsDatasetSpecStore} assembles the rows back into {@link
- * io.camunda.analytics.dataset.RegisteredDataset}s.
+ * MyBatis mapper for {@code ANALYTICS_DATASET_SPEC}. SQL lives in the co-located XML mapper (OC's
+ * convention); columns map to {@link SpecRow} via {@code mapUnderscoreToCamelCase}. The spec is a
+ * JSON document column, so there are no child tables — just the searchable scalar columns and the
+ * blob.
  */
 public interface DatasetSpecMapper {
 
-  long countDatasets();
+  long countSpecs();
 
   /** Dynamic search: each non-null argument is an equality filter (see the XML {@code <where>}). */
-  List<DatasetRow> searchDatasets(
+  List<SpecRow> searchSpecs(
       @Param("name") String name,
       @Param("sourceFact") String sourceFact,
       @Param("kind") String kind);
 
-  DatasetRow selectDatasetById(@Param("cubeId") long cubeId);
+  SpecRow selectSpecById(@Param("cubeId") long cubeId);
 
-  void insertDataset(DatasetRow row);
-
-  List<FilterRow> selectFilters();
-
-  void insertFilter(FilterRow row);
-
-  List<DimensionRow> selectDimensions();
-
-  void insertDimension(DimensionRow row);
-
-  List<MeterRow> selectMeters();
-
-  void insertMeter(MeterRow row);
-
-  List<MeterParamRow> selectMeterParams();
-
-  void insertMeterParam(MeterParamRow row);
-
-  List<WindowRow> selectWindows();
-
-  void insertWindow(WindowRow row);
-
-  List<ActivationRow> selectActivation();
-
-  void insertActivation(ActivationRow row);
+  void insertSpec(SpecRow row);
 }

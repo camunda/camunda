@@ -12,70 +12,15 @@
   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
-  <changeSet id="8.10.0-analytics-dataset" author="camunda">
-    <createTable tableName="ANALYTICS_DATASET">
+  <changeSet id="8.10.0-analytics-dataset-spec" author="camunda">
+    <createTable tableName="ANALYTICS_DATASET_SPEC">
       <column name="CUBE_ID" type="BIGINT"><constraints primaryKey="true" nullable="false"/></column>
       <column name="NAME" type="VARCHAR(255)"><constraints nullable="false" unique="true"/></column>
       <column name="SOURCE_FACT" type="VARCHAR(64)"><constraints nullable="false"/></column>
       <column name="KIND" type="VARCHAR(32)"><constraints nullable="false"/></column>
-      <column name="KEY_FIELD" type="VARCHAR(255)"/>
-      <column name="LATENESS_MS" type="BIGINT"><constraints nullable="false"/></column>
-      <column name="SCHEMA_VERSION" type="INT"><constraints nullable="false"/></column>
-    </createTable>
-  </changeSet>
-
-  <changeSet id="8.10.0-analytics-dataset-filter" author="camunda">
-    <createTable tableName="ANALYTICS_DATASET_FILTER">
-      <column name="CUBE_ID" type="BIGINT"><constraints primaryKey="true" nullable="false"/></column>
-      <column name="ORDINAL" type="INT"><constraints primaryKey="true" nullable="false"/></column>
-      <column name="FIELD" type="VARCHAR(255)"><constraints nullable="false"/></column>
-      <column name="OPERATOR" type="VARCHAR(32)"><constraints nullable="false"/></column>
-      <column name="FILTER_VALUE" type="VARCHAR(4000)"><constraints nullable="false"/></column>
-    </createTable>
-  </changeSet>
-
-  <changeSet id="8.10.0-analytics-dataset-dimension" author="camunda">
-    <createTable tableName="ANALYTICS_DATASET_DIMENSION">
-      <column name="CUBE_ID" type="BIGINT"><constraints primaryKey="true" nullable="false"/></column>
-      <column name="ORDINAL" type="INT"><constraints primaryKey="true" nullable="false"/></column>
-      <column name="NAME" type="VARCHAR(255)"><constraints nullable="false"/></column>
-      <column name="DIM_TYPE" type="VARCHAR(32)"><constraints nullable="false"/></column>
-      <column name="ENRICHMENT" type="VARCHAR(32)"><constraints nullable="false"/></column>
-    </createTable>
-  </changeSet>
-
-  <changeSet id="8.10.0-analytics-dataset-meter" author="camunda">
-    <createTable tableName="ANALYTICS_DATASET_METER">
-      <column name="CUBE_ID" type="BIGINT"><constraints primaryKey="true" nullable="false"/></column>
-      <column name="ORDINAL" type="INT"><constraints primaryKey="true" nullable="false"/></column>
-      <column name="NAME" type="VARCHAR(255)"><constraints nullable="false"/></column>
-      <column name="METER_TYPE" type="VARCHAR(64)"><constraints nullable="false"/></column>
-      <column name="MEASURE_FIELD" type="VARCHAR(255)"/>
-    </createTable>
-  </changeSet>
-
-  <changeSet id="8.10.0-analytics-dataset-meter-param" author="camunda">
-    <createTable tableName="ANALYTICS_DATASET_METER_PARAM">
-      <column name="CUBE_ID" type="BIGINT"><constraints primaryKey="true" nullable="false"/></column>
-      <column name="METER_ORDINAL" type="INT"><constraints primaryKey="true" nullable="false"/></column>
-      <column name="PARAM_KEY" type="VARCHAR(255)"><constraints primaryKey="true" nullable="false"/></column>
-      <column name="PARAM_VALUE" type="VARCHAR(4000)"><constraints nullable="false"/></column>
-    </createTable>
-  </changeSet>
-
-  <changeSet id="8.10.0-analytics-dataset-window" author="camunda">
-    <createTable tableName="ANALYTICS_DATASET_WINDOW">
-      <column name="CUBE_ID" type="BIGINT"><constraints primaryKey="true" nullable="false"/></column>
-      <column name="ORDINAL" type="INT"><constraints primaryKey="true" nullable="false"/></column>
-      <column name="WINDOW_MS" type="BIGINT"><constraints nullable="false"/></column>
-    </createTable>
-  </changeSet>
-
-  <changeSet id="8.10.0-analytics-dataset-activation" author="camunda">
-    <createTable tableName="ANALYTICS_DATASET_ACTIVATION">
-      <column name="CUBE_ID" type="BIGINT"><constraints primaryKey="true" nullable="false"/></column>
-      <column name="PARTITION_ID" type="INT"><constraints primaryKey="true" nullable="false"/></column>
-      <column name="ACTIVATION_POSITION" type="BIGINT"><constraints nullable="false"/></column>
+      <!-- The full RegisteredDataset as JSON: the spec is small, config-like, mostly immutable and
+           read wholesale, so it is stored as an opaque document; only the columns above are searched. -->
+      <column name="SPEC" type="CLOB"><constraints nullable="false"/></column>
     </createTable>
   </changeSet>
 
