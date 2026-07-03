@@ -614,7 +614,7 @@ public class CompactRecordLogger {
           }
           case OBJECT -> {
             final var object = block.getObject();
-            if (object != null && !object.isEmpty()) {
+            if (object != null) {
               result.append(indent).append(StringUtils.abbreviate(object.toString(), 50));
             }
           }

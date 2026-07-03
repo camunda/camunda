@@ -2210,7 +2210,7 @@ public final class SearchQueryResponseMapper {
       case OBJECT ->
           AgentInstanceObjectContent.Builder.create()
               .contentType(item.contentType().name())
-              .object(requireNonNullElse(item.object(), Collections.emptyMap()))
+              .object(item.object())
               .build();
     };
   }

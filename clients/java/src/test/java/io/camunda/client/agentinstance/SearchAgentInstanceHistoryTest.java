@@ -30,6 +30,7 @@ import io.camunda.client.api.command.AgentInstanceHistoryToolCall;
 import io.camunda.client.api.search.enums.AgentInstanceHistoryCommitStatus;
 import io.camunda.client.api.search.enums.AgentInstanceHistoryRole;
 import io.camunda.client.api.search.response.AgentInstanceHistory;
+import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.protocol.rest.AgentInstanceDocumentContent;
 import io.camunda.client.protocol.rest.AgentInstanceHistoryCommitStatusEnum;
 import io.camunda.client.protocol.rest.AgentInstanceHistoryItemMetrics;
@@ -48,7 +49,9 @@ import io.camunda.client.protocol.rest.SortOrderEnum;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
 import java.time.OffsetDateTime;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
@@ -290,7 +293,7 @@ class SearchAgentInstanceHistoryTest extends ClientRestTest {
             .items(Collections.singletonList(provided)));
 
     // when
-    final io.camunda.client.api.search.response.SearchResponse<AgentInstanceHistory> result =
+    final SearchResponse<AgentInstanceHistory> result =
         client.newAgentInstanceHistorySearchRequest(AGENT_INSTANCE_KEY).send().join();
 
     // then
@@ -359,7 +362,7 @@ class SearchAgentInstanceHistoryTest extends ClientRestTest {
                                         .documentReference(ref))))));
 
     // when
-    final io.camunda.client.api.search.response.SearchResponse<AgentInstanceHistory> result =
+    final SearchResponse<AgentInstanceHistory> result =
         client.newAgentInstanceHistorySearchRequest(AGENT_INSTANCE_KEY).send().join();
 
     // then
@@ -393,12 +396,91 @@ class SearchAgentInstanceHistoryTest extends ClientRestTest {
                                         ._object(obj))))));
 
     // when
-    final io.camunda.client.api.search.response.SearchResponse<AgentInstanceHistory> result =
+    final SearchResponse<AgentInstanceHistory> result =
         client.newAgentInstanceHistorySearchRequest(AGENT_INSTANCE_KEY).send().join();
 
     // then
     final AgentInstanceHistoryContent content = result.items().get(0).getContent().get(0);
     assertThat(content).isInstanceOf(ObjectContent.class);
-    assertThat(((ObjectContent) content).getObject()).containsEntry("key", "value");
+    assertThat(((ObjectContent) content).getObject()).isEqualTo(obj);
+  }
+
+  @Test
+  void shouldMapArrayObjectContent() {
+    // given — OBJECT content with a JSON array value
+    final List<Integer> arr = Arrays.asList(10, 20, 30);
+    gatewayService.onAgentInstanceHistorySearchRequest(
+        AGENT_INSTANCE_KEY,
+        Instancio.create(AgentInstanceHistorySearchQueryResult.class)
+            .items(
+                Collections.singletonList(
+                    Instancio.create(AgentInstanceHistoryItemResult.class)
+                        .historyItemKey("1")
+                        .agentInstanceKey("1")
+                        .elementInstanceKey("1")
+                        .jobKey("1")
+                        .producedAt(null)
+                        .content(
+                            Collections.singletonList(
+                                (AgentInstanceMessageContent)
+                                    new AgentInstanceObjectContent()
+                                        .contentType("OBJECT")
+                                        ._object(arr))))));
+
+    // when
+    final SearchResponse<AgentInstanceHistory> result =
+        client.newAgentInstanceHistorySearchRequest(AGENT_INSTANCE_KEY).send().join();
+
+    // then
+    assertThat(result.items())
+        .first()
+        .satisfies(
+            item ->
+                assertThat(item.getContent())
+                    .first()
+                    .satisfies(
+                        c -> {
+                          assertThat(c).isInstanceOf(ObjectContent.class);
+                          assertThat(((ObjectContent) c).getObject()).isEqualTo(arr);
+                        }));
+  }
+
+  @Test
+  void shouldMapScalarObjectContent() {
+    // given — OBJECT content with a scalar integer value
+    gatewayService.onAgentInstanceHistorySearchRequest(
+        AGENT_INSTANCE_KEY,
+        Instancio.create(AgentInstanceHistorySearchQueryResult.class)
+            .items(
+                Collections.singletonList(
+                    Instancio.create(AgentInstanceHistoryItemResult.class)
+                        .historyItemKey("1")
+                        .agentInstanceKey("1")
+                        .elementInstanceKey("1")
+                        .jobKey("1")
+                        .producedAt(null)
+                        .content(
+                            Collections.singletonList(
+                                (AgentInstanceMessageContent)
+                                    new AgentInstanceObjectContent()
+                                        .contentType("OBJECT")
+                                        ._object(42))))));
+
+    // when
+    final SearchResponse<AgentInstanceHistory> result =
+        client.newAgentInstanceHistorySearchRequest(AGENT_INSTANCE_KEY).send().join();
+
+    // then
+    assertThat(result.items())
+        .first()
+        .satisfies(
+            item ->
+                assertThat(item.getContent())
+                    .first()
+                    .satisfies(
+                        c -> {
+                          assertThat(c).isInstanceOf(ObjectContent.class);
+                          assertThat(((ObjectContent) c).getObject()).isEqualTo(42);
+                        }));
   }
 }

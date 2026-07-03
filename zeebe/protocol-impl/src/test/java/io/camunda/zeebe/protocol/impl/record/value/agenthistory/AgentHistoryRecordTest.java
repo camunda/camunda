@@ -16,7 +16,12 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 final class AgentHistoryRecordTest {
 
@@ -152,6 +157,44 @@ final class AgentHistoryRecordTest {
     final var object = content.get(2);
     assertThat(object.getContentType()).isEqualTo(AgentHistoryContentType.OBJECT);
     assertThat(object.getObject()).isEqualTo(objectData);
+  }
+
+  static Stream<Arguments> objectContentValues() {
+    return Stream.of(
+        Arguments.of(Named.named("map", Map.of("key", "value")), Map.class),
+        Arguments.of(
+            Named.named("array of objects", List.of(Map.of("id", 1), Map.of("id", 2))), List.class),
+        Arguments.of(Named.named("array of scalars", List.of(10, 20, 30)), List.class),
+        Arguments.of(Named.named("number", 42), Integer.class),
+        Arguments.of(Named.named("boolean", true), Boolean.class),
+        Arguments.of(Named.named("string scalar", "hello"), String.class));
+  }
+
+  @ParameterizedTest(name = "shouldRoundTripObjectContent [{0}]")
+  @MethodSource("objectContentValues")
+  void shouldRoundTripObjectContentViaMsgPack(final Object value, final Class<?> expectedType) {
+    // given
+    final var content =
+        new AgentHistoryMessageContent()
+            .setContentType(AgentHistoryContentType.OBJECT)
+            .setObject(BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(value)));
+
+    // when
+    final var copy = new AgentHistoryMessageContent();
+    copy.copy(content);
+
+    // then
+    assertThat(copy.getObject()).isInstanceOf(expectedType).isEqualTo(value);
+  }
+
+  @Test
+  void shouldReturnNullObjectForUnsetProperty() {
+    // given
+    final var content =
+        new AgentHistoryMessageContent().setContentType(AgentHistoryContentType.TEXT);
+
+    // then
+    assertThat(content.getObject()).isNull();
   }
 
   @Test

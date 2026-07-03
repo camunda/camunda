@@ -39,7 +39,6 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.jspecify.annotations.NullMarked;
@@ -226,8 +225,8 @@ public class AgentInstanceMapper {
     return result;
   }
 
-  private DirectBuffer toMsgPackBuffer(final Map<String, Object> map) {
-    return BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(map));
+  private DirectBuffer toMsgPackBuffer(final Object value) {
+    return BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(value));
   }
 
   private void fillDocumentReferenceMetadata(

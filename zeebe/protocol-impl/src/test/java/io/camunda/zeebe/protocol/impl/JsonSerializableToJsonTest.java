@@ -5071,19 +5071,19 @@ final class JsonSerializableToJsonTest {
               "contentType": "TEXT",
               "text": "I will extract the line items from the invoice.",
               "documentReference": { "documentId": "", "storeId": "", "contentHash": "", "metadata": { "contentType": "", "fileName": "", "expiresAt": -1, "size": -1, "processDefinitionId": "", "processInstanceKey": -1, "customProperties": {} } },
-              "object": {}
+              "object": null
             },
             {
               "contentType": "DOCUMENT",
               "text": "",
               "documentReference": { "documentId": "doc-001", "storeId": "gcs-store", "contentHash": "sha256-doc001", "metadata": { "contentType": "", "fileName": "", "expiresAt": -1, "size": -1, "processDefinitionId": "", "processInstanceKey": -1, "customProperties": {} } },
-              "object": {}
+              "object": null
             },
             {
               "contentType": "DOCUMENT",
               "text": "",
               "documentReference": { "documentId": "doc-002", "storeId": "s3-store", "contentHash": "sha256-doc002", "metadata": { "contentType": "application/pdf", "fileName": "invoice.pdf", "expiresAt": 1748860800000, "size": 10240, "processDefinitionId": "order-process", "processInstanceKey": 2251799813685249, "customProperties": { "region": "eu-west", "version": 2, "active": true } } },
-              "object": {}
+              "object": null
             },
             {
               "contentType": "OBJECT",
@@ -5105,6 +5105,89 @@ final class JsonSerializableToJsonTest {
           "processInstanceKey": -1,
           "rootProcessInstanceKey": -1,
           "bpmnProcessId": "process",
+          "processDefinitionKey": -1
+        }
+        """
+      },
+      {
+        "AgentHistoryRecord OBJECT content types",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final AgentHistoryRecord record = new AgentHistoryRecord();
+              record.addContent(
+                  new AgentHistoryMessageContent()
+                      .setContentType(AgentHistoryContentType.OBJECT)
+                      .setObject(
+                          wrapArray(
+                              MsgPackConverter.convertToMsgPack(
+                                  List.of(Map.of("id", 1), Map.of("id", 2))))));
+              record.addContent(
+                  new AgentHistoryMessageContent()
+                      .setContentType(AgentHistoryContentType.OBJECT)
+                      .setObject(
+                          wrapArray(MsgPackConverter.convertToMsgPack(List.of(10, 20, 30)))));
+              record.addContent(
+                  new AgentHistoryMessageContent()
+                      .setContentType(AgentHistoryContentType.OBJECT)
+                      .setObject(wrapArray(MsgPackConverter.convertToMsgPack(42))));
+              record.addContent(
+                  new AgentHistoryMessageContent()
+                      .setContentType(AgentHistoryContentType.OBJECT)
+                      .setObject(wrapArray(MsgPackConverter.convertToMsgPack(true))));
+              record.addContent(
+                  new AgentHistoryMessageContent()
+                      .setContentType(AgentHistoryContentType.OBJECT)
+                      .setObject(wrapArray(MsgPackConverter.convertToMsgPack((Object) "hello"))));
+              return record;
+            },
+        """
+        {
+          "agentHistoryKey": -1,
+          "agentInstanceKey": -1,
+          "elementInstanceKey": -1,
+          "jobKey": -1,
+          "jobLease": "",
+          "iteration": 0,
+          "role": "UNSPECIFIED",
+          "producedAt": -1,
+          "content": [
+            {
+              "contentType": "OBJECT",
+              "text": "",
+              "documentReference": { "documentId": "", "storeId": "", "contentHash": "", "metadata": { "contentType": "", "fileName": "", "expiresAt": -1, "size": -1, "processDefinitionId": "", "processInstanceKey": -1, "customProperties": {} } },
+              "object": [{"id": 1}, {"id": 2}]
+            },
+            {
+              "contentType": "OBJECT",
+              "text": "",
+              "documentReference": { "documentId": "", "storeId": "", "contentHash": "", "metadata": { "contentType": "", "fileName": "", "expiresAt": -1, "size": -1, "processDefinitionId": "", "processInstanceKey": -1, "customProperties": {} } },
+              "object": [10, 20, 30]
+            },
+            {
+              "contentType": "OBJECT",
+              "text": "",
+              "documentReference": { "documentId": "", "storeId": "", "contentHash": "", "metadata": { "contentType": "", "fileName": "", "expiresAt": -1, "size": -1, "processDefinitionId": "", "processInstanceKey": -1, "customProperties": {} } },
+              "object": 42
+            },
+            {
+              "contentType": "OBJECT",
+              "text": "",
+              "documentReference": { "documentId": "", "storeId": "", "contentHash": "", "metadata": { "contentType": "", "fileName": "", "expiresAt": -1, "size": -1, "processDefinitionId": "", "processInstanceKey": -1, "customProperties": {} } },
+              "object": true
+            },
+            {
+              "contentType": "OBJECT",
+              "text": "",
+              "documentReference": { "documentId": "", "storeId": "", "contentHash": "", "metadata": { "contentType": "", "fileName": "", "expiresAt": -1, "size": -1, "processDefinitionId": "", "processInstanceKey": -1, "customProperties": {} } },
+              "object": "hello"
+            }
+          ],
+          "toolCalls": [],
+          "metrics": { "inputTokens": 0, "outputTokens": 0, "durationMs": 0 },
+          "tenantId": "<default>",
+          "processInstanceKey": -1,
+          "rootProcessInstanceKey": -1,
+          "bpmnProcessId": "",
           "processDefinitionKey": -1
         }
         """

@@ -16,7 +16,6 @@
 package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.DocumentReferenceResponse;
-import java.util.Map;
 
 /**
  * A content block in an agent instance history item. Use the static factory methods to create
@@ -43,10 +42,11 @@ public interface AgentInstanceHistoryContent {
   /**
    * Creates an arbitrary-object content block.
    *
-   * @param object the key-value map. Must not be null.
+   * @param object any valid JSON value (object, array, number, boolean, or string). Must not be
+   *     null.
    * @return an {@link AgentInstanceHistoryContent} of type OBJECT
    */
-  static AgentInstanceHistoryContent object(final Map<String, Object> object) {
+  static AgentInstanceHistoryContent object(final Object object) {
     if (object == null) {
       throw new IllegalArgumentException("object must not be null");
     }
@@ -87,9 +87,9 @@ public interface AgentInstanceHistoryContent {
 
   /** Arbitrary structured content block ({@code contentType = "OBJECT"}). */
   final class ObjectContent implements AgentInstanceHistoryContent {
-    private final Map<String, Object> object;
+    private final Object object;
 
-    public ObjectContent(final Map<String, Object> object) {
+    public ObjectContent(final Object object) {
       this.object = object;
     }
 
@@ -98,7 +98,7 @@ public interface AgentInstanceHistoryContent {
       return "OBJECT";
     }
 
-    public Map<String, Object> getObject() {
+    public Object getObject() {
       return object;
     }
   }

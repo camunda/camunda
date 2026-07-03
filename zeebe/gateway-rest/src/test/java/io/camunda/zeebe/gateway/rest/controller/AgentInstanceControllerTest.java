@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryReco
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -927,6 +928,58 @@ class AgentInstanceControllerTest extends RestControllerTest {
                   assertThat(meta.getProcessDefinitionId()).isEqualTo("invoice-process");
                   assertThat(meta.getProcessInstanceKey()).isEqualTo(ELEMENT_INSTANCE_KEY);
                   assertThat(meta.getCustomProperties()).containsEntry("source", "email");
+                }),
+            any());
+  }
+
+  @Test
+  void shouldCreateAgentHistoryItemWithNonMapObjectContent() {
+    // given
+    final var responseRecord = new AgentHistoryRecord();
+    responseRecord.setAgentHistoryKey(HISTORY_ITEM_KEY);
+    when(agentHistoryServices.createAgentHistoryItem(any(AgentHistoryRecord.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(responseRecord));
+
+    final var requestBody =
+        """
+        {
+          "elementInstanceKey": "%d",
+          "jobKey": "%d",
+          "jobLease": "lease-abc",
+          "role": "TOOL_RESULT",
+          "content": [
+            { "contentType": "OBJECT", "object": [10, 20, 30] },
+            { "contentType": "OBJECT", "object": 42 }
+          ],
+          "producedAt": "2025-06-01T12:00:00Z"
+        }
+        """
+            .formatted(ELEMENT_INSTANCE_KEY, JOB_KEY);
+
+    // when / then
+    webClient
+        .post()
+        .uri(AGENT_INSTANCES_URL + "/%d/history".formatted(AGENT_INSTANCE_KEY))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestBody)
+        .exchange()
+        .expectStatus()
+        .isCreated();
+
+    verify(agentHistoryServices)
+        .createAgentHistoryItem(
+            assertArg(
+                record -> {
+                  assertThat(record.getContent()).hasSize(2);
+                  final var arrayContent = record.getContent().get(0);
+                  assertThat(arrayContent.getContentType())
+                      .isEqualTo(AgentHistoryContentType.OBJECT);
+                  assertThat(arrayContent.getObject()).isEqualTo(List.of(10, 20, 30));
+                  final var scalarContent = record.getContent().get(1);
+                  assertThat(scalarContent.getContentType())
+                      .isEqualTo(AgentHistoryContentType.OBJECT);
+                  assertThat(scalarContent.getObject()).isEqualTo(42);
                 }),
             any());
   }
