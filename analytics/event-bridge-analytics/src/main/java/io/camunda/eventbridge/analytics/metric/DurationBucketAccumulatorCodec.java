@@ -7,7 +7,7 @@
  */
 package io.camunda.eventbridge.analytics.metric;
 
-import io.camunda.analytics.streaming.aggregate.Codec;
+import io.camunda.eventbridge.streaming.aggregate.Codec;
 import java.nio.ByteBuffer;
 
 /** Byte codec for {@link DurationBucketAccumulator}: started, band count, then each band. */

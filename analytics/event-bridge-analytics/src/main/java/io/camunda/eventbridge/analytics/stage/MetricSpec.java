@@ -7,13 +7,13 @@
  */
 package io.camunda.eventbridge.analytics.stage;
 
-import io.camunda.analytics.streaming.aggregate.AggregateFunction;
-import io.camunda.analytics.streaming.aggregate.Codec;
-import io.camunda.analytics.streaming.aggregate.KeySelector;
-import io.camunda.analytics.streaming.aggregate.ResultSink;
-import io.camunda.analytics.streaming.aggregate.SourceCoordinate;
-import io.camunda.analytics.streaming.window.Windowed;
 import io.camunda.eventbridge.analytics.fact.ProcessExecutionFact;
+import io.camunda.eventbridge.streaming.aggregate.AggregateFunction;
+import io.camunda.eventbridge.streaming.aggregate.Codec;
+import io.camunda.eventbridge.streaming.aggregate.KeySelector;
+import io.camunda.eventbridge.streaming.aggregate.ResultSink;
+import io.camunda.eventbridge.streaming.aggregate.SourceCoordinate;
+import io.camunda.eventbridge.streaming.window.Windowed;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.ToLongFunction;

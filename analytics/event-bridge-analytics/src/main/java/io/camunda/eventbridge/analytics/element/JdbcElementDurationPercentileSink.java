@@ -7,8 +7,8 @@
  */
 package io.camunda.eventbridge.analytics.element;
 
-import io.camunda.analytics.streaming.aggregate.ResultSink;
-import io.camunda.analytics.streaming.window.Windowed;
+import io.camunda.eventbridge.streaming.aggregate.ResultSink;
+import io.camunda.eventbridge.streaming.window.Windowed;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;

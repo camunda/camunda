@@ -7,10 +7,10 @@
  */
 package io.camunda.eventbridge.analytics.metric;
 
-import io.camunda.analytics.streaming.aggregate.AggregateFunction;
-import io.camunda.analytics.streaming.aggregate.RatioAccumulator;
-import io.camunda.analytics.streaming.aggregate.RatioResult;
 import io.camunda.eventbridge.analytics.fact.IncidentCohortFact;
+import io.camunda.eventbridge.streaming.aggregate.AggregateFunction;
+import io.camunda.eventbridge.streaming.aggregate.RatioAccumulator;
+import io.camunda.eventbridge.streaming.aggregate.RatioResult;
 
 /**
  * The forward-looking, per-instance no-incident metric over a start cohort. Reuses {@link

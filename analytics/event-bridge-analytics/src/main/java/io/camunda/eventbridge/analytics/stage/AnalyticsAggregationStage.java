@@ -7,13 +7,13 @@
  */
 package io.camunda.eventbridge.analytics.stage;
 
-import io.camunda.analytics.streaming.aggregate.MergingRollup;
-import io.camunda.analytics.streaming.shuffle.Partial;
-import io.camunda.analytics.streaming.shuffle.PartialCodec;
 import io.camunda.eventbridge.analytics.projection.AnalyticsColumnFamilies;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.streaming.StreamProcessor;
 import io.camunda.eventbridge.streaming.StreamRuntime;
+import io.camunda.eventbridge.streaming.aggregate.MergingRollup;
+import io.camunda.eventbridge.streaming.shuffle.Partial;
+import io.camunda.eventbridge.streaming.shuffle.PartialCodec;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.state.rocksdb.RocksDbStateStoreProvider;
 import io.camunda.zeebe.db.impl.DbBytes;

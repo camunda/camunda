@@ -7,7 +7,7 @@
  */
 package io.camunda.eventbridge.analytics.metric;
 
-import io.camunda.analytics.streaming.aggregate.Codec;
+import io.camunda.eventbridge.streaming.aggregate.Codec;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;

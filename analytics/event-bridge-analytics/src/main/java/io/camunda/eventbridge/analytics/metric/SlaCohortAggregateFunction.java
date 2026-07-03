@@ -7,9 +7,9 @@
  */
 package io.camunda.eventbridge.analytics.metric;
 
-import io.camunda.analytics.streaming.aggregate.AggregateFunction;
-import io.camunda.analytics.streaming.aggregate.RatioResult;
 import io.camunda.eventbridge.analytics.fact.SlaCohortFact;
+import io.camunda.eventbridge.streaming.aggregate.AggregateFunction;
+import io.camunda.eventbridge.streaming.aggregate.RatioResult;
 
 /**
  * The forward-looking SLA-met metric over a <em>start cohort</em>: {@code total} counts every

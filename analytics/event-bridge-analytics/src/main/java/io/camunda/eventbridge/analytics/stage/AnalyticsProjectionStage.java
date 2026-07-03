@@ -7,9 +7,6 @@
  */
 package io.camunda.eventbridge.analytics.stage;
 
-import io.camunda.analytics.streaming.ProjectionStage;
-import io.camunda.analytics.streaming.aggregate.Rollup;
-import io.camunda.analytics.streaming.aggregate.TypeRoutingRollup;
 import io.camunda.eventbridge.analytics.fact.ProcessDefinitionFact;
 import io.camunda.eventbridge.analytics.fact.ProcessExecutionFact;
 import io.camunda.eventbridge.analytics.metric.JdbcProcessDefinitionSink;
@@ -17,8 +14,11 @@ import io.camunda.eventbridge.analytics.projection.AnalyticsColumnFamilies;
 import io.camunda.eventbridge.analytics.projection.ProcessExecutionProjector;
 import io.camunda.eventbridge.analytics.projection.StateBackedProjectionStore;
 import io.camunda.eventbridge.client.EventBridgeClient;
+import io.camunda.eventbridge.streaming.ProjectionStage;
 import io.camunda.eventbridge.streaming.StreamProcessor;
 import io.camunda.eventbridge.streaming.StreamRuntime;
+import io.camunda.eventbridge.streaming.aggregate.Rollup;
+import io.camunda.eventbridge.streaming.aggregate.TypeRoutingRollup;
 import io.camunda.eventbridge.streaming.state.rocksdb.RocksDbStateStoreProvider;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecord;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecordCodec;

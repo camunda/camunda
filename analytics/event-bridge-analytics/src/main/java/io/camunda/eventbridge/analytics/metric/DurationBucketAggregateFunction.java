@@ -7,8 +7,8 @@
  */
 package io.camunda.eventbridge.analytics.metric;
 
-import io.camunda.analytics.streaming.aggregate.AggregateFunction;
 import io.camunda.eventbridge.analytics.fact.SlaCohortFact;
+import io.camunda.eventbridge.streaming.aggregate.AggregateFunction;
 
 /**
  * The completion-time distribution over a start cohort: of the instances that started in a window,

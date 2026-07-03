@@ -7,8 +7,6 @@
  */
 package io.camunda.eventbridge.analytics.projection;
 
-import io.camunda.analytics.streaming.fold.Collector;
-import io.camunda.analytics.streaming.fold.Projector;
 import io.camunda.eventbridge.analytics.element.ElementExecutionFact;
 import io.camunda.eventbridge.analytics.fact.IncidentCohortFact;
 import io.camunda.eventbridge.analytics.fact.IncidentDurationFact;
@@ -18,6 +16,8 @@ import io.camunda.eventbridge.analytics.fact.ProcessExecutionFact;
 import io.camunda.eventbridge.analytics.fact.ProcessInstanceExecutionTimeFact;
 import io.camunda.eventbridge.analytics.fact.ProcessInstanceLifecycleFact;
 import io.camunda.eventbridge.analytics.fact.SlaCohortFact;
+import io.camunda.eventbridge.streaming.fold.Collector;
+import io.camunda.eventbridge.streaming.fold.Projector;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.state.memory.InMemoryKeyValueStore;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecord;

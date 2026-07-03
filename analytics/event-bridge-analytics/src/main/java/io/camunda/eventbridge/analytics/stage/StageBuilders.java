@@ -7,18 +7,18 @@
  */
 package io.camunda.eventbridge.analytics.stage;
 
-import io.camunda.analytics.streaming.aggregate.DurableMaterializedRollup;
-import io.camunda.analytics.streaming.aggregate.FactPublishSink;
-import io.camunda.analytics.streaming.aggregate.MergingRollup;
-import io.camunda.analytics.streaming.aggregate.Rollup;
-import io.camunda.analytics.streaming.aggregate.TransactionRunner;
-import io.camunda.analytics.streaming.aggregate.TypeRoutingRollup;
-import io.camunda.analytics.streaming.aggregate.WriterKey;
-import io.camunda.analytics.streaming.aggregate.WriterKeyCodec;
-import io.camunda.analytics.streaming.shuffle.PartialPublisher;
-import io.camunda.analytics.streaming.window.TumblingWindows;
 import io.camunda.eventbridge.analytics.fact.ProcessExecutionFact;
+import io.camunda.eventbridge.streaming.TransactionRunner;
+import io.camunda.eventbridge.streaming.aggregate.DurableMaterializedRollup;
+import io.camunda.eventbridge.streaming.aggregate.FactPublishSink;
+import io.camunda.eventbridge.streaming.aggregate.MergingRollup;
+import io.camunda.eventbridge.streaming.aggregate.Rollup;
+import io.camunda.eventbridge.streaming.aggregate.TypeRoutingRollup;
+import io.camunda.eventbridge.streaming.aggregate.WriterKey;
+import io.camunda.eventbridge.streaming.aggregate.WriterKeyCodec;
+import io.camunda.eventbridge.streaming.shuffle.PartialPublisher;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
+import io.camunda.eventbridge.streaming.window.TumblingWindows;
 import io.camunda.zeebe.db.impl.DbBytes;
 import io.camunda.zeebe.db.impl.DbLong;
 import org.h2.jdbcx.JdbcDataSource;

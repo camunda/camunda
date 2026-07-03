@@ -7,16 +7,16 @@
  */
 package io.camunda.eventbridge.analytics.stage;
 
-import io.camunda.analytics.streaming.aggregate.MergingRollup;
-import io.camunda.analytics.streaming.shuffle.Partial;
 import io.camunda.eventbridge.streaming.Stage;
+import io.camunda.eventbridge.streaming.aggregate.MergingRollup;
+import io.camunda.eventbridge.streaming.shuffle.Partial;
 import java.util.Map;
 
 /**
  * Stage 2's work as a {@link Stage}: route each shuffled {@link Partial} to the {@link
  * MergingRollup} for its {@code aggId}, and share the rollups' flush/checkpoint lifecycle. Wrapping
- * it in a {@link io.camunda.analytics.streaming.StreamProcessor} lets Stage 2 reuse the same {@link
- * StreamProcessorTask} runtime seam as Stage 1.
+ * it in a {@link io.camunda.eventbridge.streaming.StreamProcessor} lets Stage 2 reuse the same
+ * {@link StreamProcessorTask} runtime seam as Stage 1.
  */
 final class MergeStage implements Stage<Partial> {
 

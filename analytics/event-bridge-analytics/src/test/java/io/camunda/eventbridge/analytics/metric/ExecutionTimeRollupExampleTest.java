@@ -9,15 +9,15 @@ package io.camunda.eventbridge.analytics.metric;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.analytics.streaming.ProjectionStage;
-import io.camunda.analytics.streaming.aggregate.InMemoryRollupStore;
-import io.camunda.analytics.streaming.aggregate.Rollup;
-import io.camunda.analytics.streaming.dsl.Aggregation;
-import io.camunda.analytics.streaming.fold.Projector;
-import io.camunda.analytics.streaming.window.TumblingWindows;
-import io.camunda.analytics.streaming.window.Windowed;
 import io.camunda.eventbridge.analytics.fact.ProcessInstanceExecutionTimeFact;
+import io.camunda.eventbridge.streaming.ProjectionStage;
 import io.camunda.eventbridge.streaming.StreamProcessor;
+import io.camunda.eventbridge.streaming.aggregate.InMemoryRollupStore;
+import io.camunda.eventbridge.streaming.aggregate.Rollup;
+import io.camunda.eventbridge.streaming.dsl.Aggregation;
+import io.camunda.eventbridge.streaming.fold.Projector;
+import io.camunda.eventbridge.streaming.window.TumblingWindows;
+import io.camunda.eventbridge.streaming.window.Windowed;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;

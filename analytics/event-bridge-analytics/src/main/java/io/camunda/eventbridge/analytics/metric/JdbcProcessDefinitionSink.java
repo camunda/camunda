@@ -7,8 +7,8 @@
  */
 package io.camunda.eventbridge.analytics.metric;
 
-import io.camunda.analytics.streaming.aggregate.Rollup;
 import io.camunda.eventbridge.analytics.fact.ProcessDefinitionFact;
+import io.camunda.eventbridge.streaming.aggregate.Rollup;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;

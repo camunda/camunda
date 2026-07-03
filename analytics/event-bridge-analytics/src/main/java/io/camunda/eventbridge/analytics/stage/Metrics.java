@@ -7,18 +7,12 @@
  */
 package io.camunda.eventbridge.analytics.stage;
 
-import io.camunda.analytics.streaming.aggregate.DistinctCountAggregateFunction;
-import io.camunda.analytics.streaming.aggregate.HllSketchCodec;
-import io.camunda.analytics.streaming.aggregate.ItemsSketchCodec;
-import io.camunda.analytics.streaming.aggregate.KllDoublesSketchCodec;
-import io.camunda.analytics.streaming.aggregate.LongCodec;
-import io.camunda.analytics.streaming.aggregate.QuantileAggregateFunction;
-import io.camunda.analytics.streaming.aggregate.RatioAccumulator;
-import io.camunda.analytics.streaming.aggregate.RatioAccumulatorCodec;
-import io.camunda.analytics.streaming.aggregate.SourceCoordinate;
-import io.camunda.analytics.streaming.aggregate.StringCodec;
-import io.camunda.analytics.streaming.aggregate.SumAggregateFunction;
-import io.camunda.analytics.streaming.aggregate.TopKAggregateFunction;
+import io.camunda.analytics.sketch.DistinctCountAggregateFunction;
+import io.camunda.analytics.sketch.HllSketchCodec;
+import io.camunda.analytics.sketch.ItemsSketchCodec;
+import io.camunda.analytics.sketch.KllDoublesSketchCodec;
+import io.camunda.analytics.sketch.QuantileAggregateFunction;
+import io.camunda.analytics.sketch.TopKAggregateFunction;
 import io.camunda.eventbridge.analytics.element.ElementExecutionFact;
 import io.camunda.eventbridge.analytics.element.ElementKey;
 import io.camunda.eventbridge.analytics.element.ElementKeyCodec;
@@ -58,6 +52,12 @@ import io.camunda.eventbridge.analytics.metric.RegionKeyCodec;
 import io.camunda.eventbridge.analytics.metric.SlaCohortAccumulator;
 import io.camunda.eventbridge.analytics.metric.SlaCohortAccumulatorCodec;
 import io.camunda.eventbridge.analytics.metric.SlaCohortAggregateFunction;
+import io.camunda.eventbridge.streaming.aggregate.LongCodec;
+import io.camunda.eventbridge.streaming.aggregate.RatioAccumulator;
+import io.camunda.eventbridge.streaming.aggregate.RatioAccumulatorCodec;
+import io.camunda.eventbridge.streaming.aggregate.SourceCoordinate;
+import io.camunda.eventbridge.streaming.aggregate.StringCodec;
+import io.camunda.eventbridge.streaming.aggregate.SumAggregateFunction;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
