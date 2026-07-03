@@ -18,8 +18,8 @@ class TaskDetailPage extends BasePage {
 		this.header = new Header(page, 'Camunda Tasklist');
 	}
 
-	async goto(userTaskKey: string) {
-		return this.page.goto(`/tasklist/${userTaskKey}`);
+	async goto(userTaskKey: string, search?: string) {
+		return this.page.goto(`/tasklist/${userTaskKey}${search ?? ''}`);
 	}
 
 	get skeleton() {
@@ -88,6 +88,18 @@ class TaskDetailPage extends BasePage {
 
 	get unassignmentSuccessful() {
 		return this.page.getByText('Unassignment successful');
+	}
+
+	get completeTaskButton() {
+		return this.page.getByRole('button', {name: /^Complete Task$/i});
+	}
+
+	get completingTaskStatus() {
+		return this.page.getByText('Completing task...');
+	}
+
+	get completionFailed() {
+		return this.page.getByText('Completion failed');
 	}
 
 	taskName(name: string) {

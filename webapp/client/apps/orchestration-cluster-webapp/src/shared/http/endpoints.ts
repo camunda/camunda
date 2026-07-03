@@ -16,6 +16,7 @@ import {
 	type GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
 	type QueryBatchOperationsRequestBody,
 	type AssignTaskRequestBody,
+	type CompleteTaskRequestBody,
 	type UserTask,
 	type ProcessDefinition,
 } from '@camunda/camunda-api-zod-schemas/8.10';
@@ -174,6 +175,14 @@ const endpoints = {
 		new Request(getFullURL(unifiedAPIEndpoints.unassignTask.getUrl({userTaskKey})), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.unassignTask.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	completeTask: ({userTaskKey, ...body}: Pick<UserTask, 'userTaskKey'> & CompleteTaskRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.completeTask.getUrl({userTaskKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.completeTask.method,
+			body: JSON.stringify(body),
 			headers: {'Content-Type': 'application/json'},
 		}),
 };

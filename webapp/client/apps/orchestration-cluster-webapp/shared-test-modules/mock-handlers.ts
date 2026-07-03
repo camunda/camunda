@@ -89,6 +89,11 @@ const mockUnassignTaskEndpoint = createEndpointMock({
 	method: endpoints.unassignTask.method,
 });
 
+const mockCompleteTaskEndpoint = createEndpointMock({
+	endpoint: endpoints.completeTask.getUrl({userTaskKey: ':userTaskKey'}),
+	method: endpoints.completeTask.method as 'POST',
+});
+
 export {
 	mockCurrentUserEndpoint,
 	mockLoginEndpoint,
@@ -99,6 +104,7 @@ export {
 	mockGetUserTaskEndpoint,
 	mockAssignTaskEndpoint,
 	mockUnassignTaskEndpoint,
+	mockCompleteTaskEndpoint,
 	mockQueryUserTasksEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
