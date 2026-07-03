@@ -86,7 +86,7 @@ public class SecurityHeadersBasicAuthIT extends SecurityHeadersBaseIT {
             .uri(createUri(camundaClient, path))
             .header(HttpHeaders.AUTHORIZATION, basicAuthentication())
             .build();
-    return HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+    return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
   }
 
   @Override
