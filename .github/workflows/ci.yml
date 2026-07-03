@@ -1079,8 +1079,6 @@ jobs:
       TEST_OWNER: '@camunda/camundaex'
       TEST_PRODUCT: Camunda
       TEST_TYPE: Integration
-    outputs:
-      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     strategy:
       fail-fast: false
       matrix:
