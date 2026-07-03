@@ -10,8 +10,7 @@ package io.camunda.eventbridge.streaming;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.eventbridge.streaming.aggregate.AggregateFunction;
-import io.camunda.eventbridge.streaming.aggregate.InMemoryRollupStore;
-import io.camunda.eventbridge.streaming.aggregate.PreAggregatingRollup;
+import io.camunda.eventbridge.streaming.aggregate.RecordingRollup;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -72,16 +71,16 @@ final class StreamTopologyTest {
   @Test
   void shouldBuildProjectionStagesWithPartitionLocalState() {
     // given — a per-partition serving store, captured so the test can read each back
-    final Map<Integer, InMemoryRollupStore<String, Long>> stores = new HashMap<>();
+    final Map<Integer, RecordingRollup<Sale, String, Long>> stores = new HashMap<>();
     final StreamTopology<Sale> topology =
         new StreamTopology<Sale>()
             .add(
                 partitionId -> {
-                  final InMemoryRollupStore<String, Long> store = new InMemoryRollupStore<>(SUM);
+                  final RecordingRollup<Sale, String, Long> store =
+                      new RecordingRollup<>(SUM, Sale::region);
                   stores.put(partitionId, store);
                   return new ProjectionStage<Sale, Sale>(
-                      (sale, out) -> out.collect(sale),
-                      List.of(new PreAggregatingRollup<>(SUM, Sale::region, store)));
+                      (sale, out) -> out.collect(sale), List.of(store));
                 });
 
     // when — each partition aggregates only its own facts

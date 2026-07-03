@@ -12,8 +12,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.analytics.fact.ProcessInstanceExecutionTimeFact;
 import io.camunda.eventbridge.streaming.ProjectionStage;
 import io.camunda.eventbridge.streaming.StreamProcessor;
-import io.camunda.eventbridge.streaming.aggregate.InMemoryRollupStore;
+import io.camunda.eventbridge.streaming.aggregate.InMemoryResultSink;
 import io.camunda.eventbridge.streaming.aggregate.Rollup;
+import io.camunda.eventbridge.streaming.aggregate.SourceCoordinate;
 import io.camunda.eventbridge.streaming.dsl.Aggregation;
 import io.camunda.eventbridge.streaming.fold.Projector;
 import io.camunda.eventbridge.streaming.window.TumblingWindows;
@@ -33,31 +34,45 @@ final class ExecutionTimeRollupExampleTest {
 
   private static final long HOUR = 3_600_000L;
 
+  // dedup coordinate: the fact's origin (source partition + position on the source log)
+  private static final SourceCoordinate<ProcessInstanceExecutionTimeFact> COORD =
+      new SourceCoordinate<>() {
+        @Override
+        public int partition(final ProcessInstanceExecutionTimeFact fact) {
+          return fact.sourcePartitionId();
+        }
+
+        @Override
+        public long position(final ProcessInstanceExecutionTimeFact fact) {
+          return fact.sourcePosition();
+        }
+      };
+
   @Test
   void executionTimeByRegionAndByDefinitionPreAggregatedHourly() {
     final TumblingWindows hourly = TumblingWindows.of(HOUR);
     final ExecutionTimeAggregateFunction<ProcessInstanceExecutionTimeFact> metric =
         new ExecutionTimeAggregateFunction<>(ProcessInstanceExecutionTimeFact::durationMs);
 
-    // two serving stores, two groupings of the same fact, keyed by Windowed<base key>
-    final InMemoryRollupStore<Windowed<String>, ExecutionTimeAccumulator> byRegion =
-        new InMemoryRollupStore<>(metric);
-    final InMemoryRollupStore<Windowed<Long>, ExecutionTimeAccumulator> byDefinition =
-        new InMemoryRollupStore<>(metric);
+    // two serving sinks, two groupings of the same fact, keyed by Windowed<base key>
+    final InMemoryResultSink<Windowed<String>, ExecutionTimeAccumulator> byRegion =
+        new InMemoryResultSink<>();
+    final InMemoryResultSink<Windowed<Long>, ExecutionTimeAccumulator> byDefinition =
+        new InMemoryResultSink<>();
 
     final Rollup<ProcessInstanceExecutionTimeFact> regionRollup =
         Aggregation.<ProcessInstanceExecutionTimeFact, String>groupBy(
                 ExecutionTimeRollupExampleTest::region)
             .windowedBy(hourly, ProcessInstanceExecutionTimeFact::endTime)
             .aggregate(metric)
-            .into(byRegion);
+            .into(byRegion, COORD);
 
     final Rollup<ProcessInstanceExecutionTimeFact> definitionRollup =
         Aggregation.<ProcessInstanceExecutionTimeFact, Long>groupBy(
                 ProcessInstanceExecutionTimeFact::processDefinitionKey)
             .windowedBy(hourly, ProcessInstanceExecutionTimeFact::endTime)
             .aggregate(metric)
-            .into(byDefinition);
+            .into(byDefinition, COORD);
 
     // in production this is the process-instance fold, Projector<ZeebeRecord, fact>; here it just
     // forwards the facts a completed instance would yield
@@ -73,10 +88,10 @@ final class ExecutionTimeRollupExampleTest {
 
     processor.init();
     List.of(
-            completion("EU", 600L, 500L), // hour 0
-            completion("EU", 1_200L, 300L), // hour 0
-            completion("US", 3_000L, 700L), // hour 0
-            completion("EU", HOUR + 900L, 800L)) // hour 1
+            completion("EU", 600L, 500L, 1L), // hour 0
+            completion("EU", 1_200L, 300L, 2L), // hour 0
+            completion("US", 3_000L, 700L, 3L), // hour 0
+            completion("EU", HOUR + 900L, 800L, 4L)) // hour 1
         .forEach(processor::process);
     processor.close(); // final flush
 
@@ -102,7 +117,7 @@ final class ExecutionTimeRollupExampleTest {
   }
 
   private static ProcessInstanceExecutionTimeFact completion(
-      final String region, final long endTime, final long durationMs) {
+      final String region, final long endTime, final long durationMs, final long position) {
     return new ProcessInstanceExecutionTimeFact(
         endTime,
         77L,
@@ -115,7 +130,7 @@ final class ExecutionTimeRollupExampleTest {
         true,
         false,
         1,
-        endTime,
+        position,
         Map.of("region", region));
   }
 }

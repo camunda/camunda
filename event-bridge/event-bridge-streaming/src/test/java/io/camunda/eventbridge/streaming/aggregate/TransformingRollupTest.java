@@ -35,10 +35,10 @@ final class TransformingRollupTest {
   void shouldEnrichAFactForAnotherDatasetWithoutReDeriving() {
     // given — derivations counted so we can prove the base fact is produced once
     final int[] derivations = {0};
-    final InMemoryRollupStore<String, Long> byRegion =
-        new InMemoryRollupStore<>(sumOf(Exec::durationMs));
-    final InMemoryRollupStore<String, Long> byTier =
-        new InMemoryRollupStore<>(sumOf(EnrichedExec::durationMs));
+    final RecordingRollup<Exec, String, Long> byRegion =
+        new RecordingRollup<>(sumOf(Exec::durationMs), Exec::region);
+    final RecordingRollup<EnrichedExec, String, Long> byTier =
+        new RecordingRollup<>(sumOf(EnrichedExec::durationMs), EnrichedExec::tier);
 
     // the enricher: expand Exec -> EnrichedExec by looking up the customer's tier
     final Projector<Exec, EnrichedExec> enrichWithTier =
@@ -60,13 +60,7 @@ final class TransformingRollupTest {
         new StreamProcessor<Exec>()
             .add(
                 new ProjectionStage<Exec, Exec>(
-                    derive,
-                    List.of(
-                        new PreAggregatingRollup<>(sumOf(Exec::durationMs), Exec::region, byRegion),
-                        new TransformingRollup<>(
-                            enrichWithTier,
-                            new PreAggregatingRollup<>(
-                                sumOf(EnrichedExec::durationMs), EnrichedExec::tier, byTier)))));
+                    derive, List.of(byRegion, new TransformingRollup<>(enrichWithTier, byTier))));
 
     // when
     processor.init();

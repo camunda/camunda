@@ -10,8 +10,7 @@ package io.camunda.eventbridge.streaming;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.eventbridge.streaming.aggregate.AggregateFunction;
-import io.camunda.eventbridge.streaming.aggregate.InMemoryRollupStore;
-import io.camunda.eventbridge.streaming.aggregate.PreAggregatingRollup;
+import io.camunda.eventbridge.streaming.aggregate.RecordingRollup;
 import io.camunda.eventbridge.streaming.fold.Projector;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -36,8 +35,10 @@ final class StreamProcessorTest {
   @Test
   void shouldFanOneFactToMultipleAggregations() {
     // given — completed orders become Sale facts, aggregated by region AND by product
-    final InMemoryRollupStore<String, Long> byRegion = new InMemoryRollupStore<>(SUM_AMOUNT);
-    final InMemoryRollupStore<String, Long> byProduct = new InMemoryRollupStore<>(SUM_AMOUNT);
+    final RecordingRollup<Sale, String, Long> byRegion =
+        new RecordingRollup<>(SUM_AMOUNT, Sale::region);
+    final RecordingRollup<Sale, String, Long> byProduct =
+        new RecordingRollup<>(SUM_AMOUNT, Sale::product);
 
     final Projector<Order, Sale> toSale =
         (order, out) -> {
@@ -48,12 +49,7 @@ final class StreamProcessorTest {
 
     final StreamProcessor<Order> processor =
         new StreamProcessor<Order>()
-            .add(
-                new ProjectionStage<Order, Sale>(
-                    toSale,
-                    List.of(
-                        new PreAggregatingRollup<>(SUM_AMOUNT, Sale::region, byRegion),
-                        new PreAggregatingRollup<>(SUM_AMOUNT, Sale::product, byProduct))));
+            .add(new ProjectionStage<Order, Sale>(toSale, List.of(byRegion, byProduct)));
 
     // when
     processor.init();
@@ -73,8 +69,10 @@ final class StreamProcessorTest {
   @Test
   void shouldDeriveDifferentFactTypesFromOneRecordViaMultipleProjectors() {
     // given — two projectors over the same record: one emits Sales, one emits Touches
-    final InMemoryRollupStore<String, Long> salesByRegion = new InMemoryRollupStore<>(SUM_AMOUNT);
-    final InMemoryRollupStore<String, Long> touchesByRegion = new InMemoryRollupStore<>(COUNT);
+    final RecordingRollup<Sale, String, Long> salesByRegion =
+        new RecordingRollup<>(SUM_AMOUNT, Sale::region);
+    final RecordingRollup<Touch, String, Long> touchesByRegion =
+        new RecordingRollup<>(COUNT, Touch::region);
 
     final Projector<Order, Sale> toSale =
         (order, out) -> {
@@ -86,12 +84,8 @@ final class StreamProcessorTest {
 
     final StreamProcessor<Order> processor =
         new StreamProcessor<Order>()
-            .add(
-                ProjectionStage.<Order, Sale>of(
-                    toSale, new PreAggregatingRollup<>(SUM_AMOUNT, Sale::region, salesByRegion)))
-            .add(
-                ProjectionStage.<Order, Touch>of(
-                    toTouch, new PreAggregatingRollup<>(COUNT, Touch::region, touchesByRegion)));
+            .add(ProjectionStage.<Order, Sale>of(toSale, salesByRegion))
+            .add(ProjectionStage.<Order, Touch>of(toTouch, touchesByRegion));
 
     // when
     processor.init();
@@ -107,14 +101,12 @@ final class StreamProcessorTest {
   @Test
   void shouldExposeResultsAfterWallClockFlushWithoutClose() {
     // given
-    final InMemoryRollupStore<String, Long> byRegion = new InMemoryRollupStore<>(SUM_AMOUNT);
+    final RecordingRollup<Sale, String, Long> byRegion =
+        new RecordingRollup<>(SUM_AMOUNT, Sale::region);
     final Projector<Order, Sale> toSale =
         (order, out) -> out.collect(new Sale(order.region(), order.product(), order.amount()));
     final StreamProcessor<Order> processor =
-        new StreamProcessor<Order>()
-            .add(
-                ProjectionStage.<Order, Sale>of(
-                    toSale, new PreAggregatingRollup<>(SUM_AMOUNT, Sale::region, byRegion)));
+        new StreamProcessor<Order>().add(ProjectionStage.<Order, Sale>of(toSale, byRegion));
 
     // when — a wall-clock tick flushes buffered partials mid-stream (no close)
     processor.process(new Order("EU", "widget", 100, true));
