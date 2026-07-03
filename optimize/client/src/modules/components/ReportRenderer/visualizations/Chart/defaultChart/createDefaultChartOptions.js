@@ -26,7 +26,7 @@ const {createDurationFormattingOptions, duration} = formatters;
 
 export default function createDefaultChartOptions({report, targetValue, theme, formatter}) {
   const {
-    data: {visualization, view, groupBy, configuration},
+    data: {visualization, view, groupBy, configuration, agenticControlReport},
     result,
   } = report;
   const {precision} = configuration;
@@ -57,6 +57,7 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
         measures: result.measures,
         entity: view.entity,
         autoSkip: canBeInterpolated(groupBy),
+        agenticControlReport,
       });
       break;
     default:
@@ -133,6 +134,7 @@ export function createBarOptions({
   groupedByDurationMaxValue = false,
   isHyper,
   visualization,
+  agenticControlReport = false,
 }) {
   const {stackedBar, xLabel, yLabel, logScale, pointMarkers, horizontalBar} = configuration;
   const isHyperNumber = isHyper && visualization === 'number';
@@ -235,6 +237,19 @@ export function createBarOptions({
       font: ({chart}) => ({
         size: Math.min(12, Math.round(chart.height / 32)),
       }),
+      // Agentic control plane charts: keep long category/date labels legible by enforcing a
+      // minimum tick font size and rotating labels instead of letting Chart.js shrink or truncate
+      // them. Opt-in via the agenticControlReport flag; all other reports are left unchanged.
+      ...(agenticControlReport
+        ? {
+            autoSkip: true,
+            maxRotation: 45,
+            minRotation: 0,
+            font: ({chart}) => ({
+              size: Math.max(11, Math.min(12, Math.round(chart.height / 32))),
+            }),
+          }
+        : {}),
     },
     stacked: stacked || isHyperNumber,
     ...groupBy,

@@ -9,7 +9,7 @@
 import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 import update from 'immutability-helper';
-import {loadVariables} from 'services';
+import {loadVariables, formatters} from 'services';
 
 import {Number} from './Number';
 import ProgressBar from './ProgressBar';
@@ -283,6 +283,48 @@ it('should fall back to measure property formatter when valueFormat is not set',
   );
 
   expect(node.find('.data')).toIncludeText('42');
+});
+
+describe('agentic control plane duration formatting', () => {
+  const durationReport = update(report, {
+    data: {view: {properties: {$set: ['duration']}}},
+    result: {
+      measures: {
+        $set: [{data: 5000, property: 'duration', aggregationType: {type: 'avg', value: null}}],
+      },
+    },
+  });
+
+  it('should request short duration notation for agentic control reports', () => {
+    const durationSpy = jest.fn((value) => `${value}-short`);
+    const original = formatters.duration;
+    formatters.duration = durationSpy;
+
+    try {
+      shallow(
+        <Number report={update(durationReport, {data: {agenticControlReport: {$set: true}}})} />
+      );
+
+      // the third positional argument (shortNotation) is true only for agentic tiles
+      expect(durationSpy).toHaveBeenCalledWith(5000, undefined, true);
+    } finally {
+      formatters.duration = original;
+    }
+  });
+
+  it('should keep verbose duration notation for non-agentic reports', () => {
+    const durationSpy = jest.fn((value) => `${value}-verbose`);
+    const original = formatters.duration;
+    formatters.duration = durationSpy;
+
+    try {
+      shallow(<Number report={durationReport} />);
+
+      expect(durationSpy).toHaveBeenCalledWith(5000, undefined, undefined);
+    } finally {
+      formatters.duration = original;
+    }
+  });
 });
 
 describe('overlay prop', () => {

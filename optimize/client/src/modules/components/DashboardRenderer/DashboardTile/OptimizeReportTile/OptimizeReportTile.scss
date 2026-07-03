@@ -69,12 +69,23 @@
   // shift when the delta badge renders alongside it.
   &.hasComparisonPeriod .visualization .Number .container {
     font-size: 48px;
+    // Keep the value + badge within the tile; the badge wraps below the number
+    // instead of overflowing horizontally when the value is wide.
+    max-width: 100%;
 
     .data {
-      display: inline-flex;
+      display: flex;
+      flex-wrap: wrap;
       align-items: center;
+      justify-content: center;
       gap: 8px;
+      max-width: 100%;
       font-size: inherit;
+
+      // The badge keeps its intrinsic size and never shrinks the number.
+      .cds--tag {
+        flex-shrink: 0;
+      }
     }
   }
 }

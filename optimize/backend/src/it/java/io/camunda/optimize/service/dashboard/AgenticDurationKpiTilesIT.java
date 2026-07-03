@@ -12,7 +12,9 @@ import static io.camunda.optimize.AgenticInstanceFixtures.agenticInstanceWithDur
 import static io.camunda.optimize.AgenticInstanceFixtures.agenticInstanceWithTokens;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.DURATION_STABILITY_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_AVG_DURATION_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_DURATION_P50_DESCRIPTION;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_DURATION_P50_REPORT_ID;
+import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_DURATION_P95_DESCRIPTION;
 import static io.camunda.optimize.service.dashboard.AgenticControlDashboardService.KPI_DURATION_P95_REPORT_ID;
 import static io.camunda.optimize.service.dashboard.AgenticReportFilters.noExtraFilters;
 import static io.camunda.optimize.service.dashboard.AgenticReportFilters.rollingEndDateFilter;
@@ -26,8 +28,10 @@ import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinition
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.result.MeasureDto;
 import io.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
+import io.camunda.optimize.service.db.reader.ReportReader;
 import io.camunda.optimize.service.db.report.result.MapCommandResult;
 import io.camunda.optimize.service.report.ReportEvaluationService;
 import java.time.OffsetDateTime;
@@ -42,6 +46,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 class AgenticDurationKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
 
   private AgenticReportEvaluator reports;
+  private ReportReader reportReader;
 
   @BeforeEach
   void setUp() {
@@ -49,6 +54,22 @@ class AgenticDurationKpiTilesIT extends AbstractBrokerlessZeebeCCSMIT {
     reports =
         new AgenticReportEvaluator(
             embeddedOptimizeExtension.getBean(ReportEvaluationService.class));
+    reportReader = embeddedOptimizeExtension.getBean(ReportReader.class);
+  }
+
+  @Test
+  void shouldPersistDescriptionAsSubtitleForDurationPercentileTiles() {
+    // given the agentic reports were seeded by the reconcile above
+
+    // then each duration percentile NUMBER tile carries its description as the subtitle override
+    assertThat(subtitleOf(KPI_DURATION_P50_REPORT_ID)).isEqualTo(KPI_DURATION_P50_DESCRIPTION);
+    assertThat(subtitleOf(KPI_DURATION_P95_REPORT_ID)).isEqualTo(KPI_DURATION_P95_DESCRIPTION);
+  }
+
+  private String subtitleOf(final String reportId) {
+    final ProcessReportDataDto data =
+        (ProcessReportDataDto) reportReader.getReport(reportId).orElseThrow().getData();
+    return data.getConfiguration().getSubtitle();
   }
 
   @Test

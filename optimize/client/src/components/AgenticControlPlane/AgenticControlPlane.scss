@@ -59,4 +59,14 @@
     line-height: 1.2;
     color: var(--cds-text-secondary);
   }
+
+  // KPI number tiles fit their value to the box with fitty and render the subtitle and delta
+  // badge around it. The inherited overflow:auto on the value wrappers otherwise paints a
+  // spurious 1–2px vertical scrollbar beside the value once those elements stack into a short
+  // tile. The value is always sized to fit here, so render it without an internal scrollbar.
+  // Scoped to this dashboard so number tiles elsewhere keep their default overflow behaviour.
+  .Number,
+  .Number .container {
+    overflow: visible;
+  }
 }

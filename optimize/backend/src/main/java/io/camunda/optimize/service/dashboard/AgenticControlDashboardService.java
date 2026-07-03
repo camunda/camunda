@@ -229,6 +229,11 @@ public class AgenticControlDashboardService {
             .groupBy(new NoneGroupByDto())
             .distributedBy(new NoneDistributedByDto())
             .visualization(ProcessVisualization.NUMBER)
+            // Surface the description as the tile subtitle instead of the auto-derived label.
+            .configuration(
+                SingleReportConfigurationDto.builder()
+                    .subtitle(KPI_EXECUTION_COMPLETED_DESCRIPTION)
+                    .build())
             .filter(
                 ProcessFilterBuilder.filter()
                     .completedInstancesOnly()
@@ -260,6 +265,11 @@ public class AgenticControlDashboardService {
             .groupBy(new NoneGroupByDto())
             .distributedBy(new NoneDistributedByDto())
             .visualization(ProcessVisualization.NUMBER)
+            // Surface the description as the tile subtitle instead of the auto-derived label.
+            .configuration(
+                SingleReportConfigurationDto.builder()
+                    .subtitle(KPI_EXECUTION_AVG_DURATION_DESCRIPTION)
+                    .build())
             .filter(
                 ProcessFilterBuilder.filter()
                     .completedInstancesOnly()
@@ -291,6 +301,11 @@ public class AgenticControlDashboardService {
             .groupBy(new NoneGroupByDto())
             .distributedBy(new NoneDistributedByDto())
             .visualization(ProcessVisualization.NUMBER)
+            // Surface the description as the tile subtitle instead of the auto-derived label.
+            .configuration(
+                SingleReportConfigurationDto.builder()
+                    .subtitle(KPI_EXECUTION_INCIDENT_RATE_DESCRIPTION)
+                    .build())
             .filter(
                 ProcessFilterBuilder.filter()
                     .completedInstancesOnly()
@@ -543,6 +558,8 @@ public class AgenticControlDashboardService {
       final PositionDto position) {
     final SingleReportConfigurationDto config = new SingleReportConfigurationDto();
     config.setAggregationTypes(new AggregationDto(AggregationType.PERCENTILE, percentile));
+    // Surface the description as the tile subtitle instead of the auto-derived label.
+    config.setSubtitle(descriptionKey);
     final ProcessReportDataDto reportData =
         ProcessReportDataDto.builder()
             .definitions(Collections.emptyList())
@@ -663,11 +680,13 @@ public class AgenticControlDashboardService {
             .groupBy(new NoneGroupByDto())
             .distributedBy(new NoneDistributedByDto())
             .visualization(ProcessVisualization.NUMBER)
+            // Surface the description as the tile subtitle instead of the auto-derived label.
             .configuration(
                 SingleReportConfigurationDto.builder()
                     .aggregationTypes(
                         new LinkedHashSet<>(
                             Collections.singletonList(new AggregationDto(AggregationType.SUM))))
+                    .subtitle(KPI_TOOL_CALLS_DESCRIPTION)
                     .build())
             .filter(
                 ProcessFilterBuilder.filter()

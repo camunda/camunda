@@ -557,6 +557,40 @@ public class AgenticControlDashboardServiceTest {
   }
 
   @Test
+  void shouldExposeAllNumberTileDescriptionsAsSubtitles() {
+    // given
+    when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID)).thenReturn(Optional.empty());
+
+    // when
+    underTest.reconcile();
+
+    // then every KPI number tile surfaces its description as the subtitle override so the tile
+    // shows
+    // a human-readable description instead of the auto-derived measure label
+    assertThat(capturedSubtitle(AgenticControlDashboardService.KPI_COMPLETED_REPORT_ID))
+        .isEqualTo(AgenticControlDashboardService.KPI_EXECUTION_COMPLETED_DESCRIPTION);
+    assertThat(capturedSubtitle(AgenticControlDashboardService.KPI_AVG_DURATION_REPORT_ID))
+        .isEqualTo(AgenticControlDashboardService.KPI_EXECUTION_AVG_DURATION_DESCRIPTION);
+    assertThat(capturedSubtitle(AgenticControlDashboardService.KPI_INCIDENT_RATE_REPORT_ID))
+        .isEqualTo(AgenticControlDashboardService.KPI_EXECUTION_INCIDENT_RATE_DESCRIPTION);
+    assertThat(capturedSubtitle(AgenticControlDashboardService.KPI_DURATION_P50_REPORT_ID))
+        .isEqualTo(AgenticControlDashboardService.KPI_DURATION_P50_DESCRIPTION);
+    assertThat(capturedSubtitle(AgenticControlDashboardService.KPI_DURATION_P95_REPORT_ID))
+        .isEqualTo(AgenticControlDashboardService.KPI_DURATION_P95_DESCRIPTION);
+    assertThat(capturedSubtitle(AgenticControlDashboardService.KPI_TOOL_CALLS_REPORT_ID))
+        .isEqualTo(AgenticControlDashboardService.KPI_TOOL_CALLS_DESCRIPTION);
+  }
+
+  private String capturedSubtitle(final String reportId) {
+    final ArgumentCaptor<ProcessReportDataDto> captor =
+        ArgumentCaptor.forClass(ProcessReportDataDto.class);
+    verify(reportWriter)
+        .createOrUpdateSingleProcessReport(
+            eq(reportId), isNull(), captor.capture(), any(), any(), isNull());
+    return captor.getValue().getConfiguration().getSubtitle();
+  }
+
+  @Test
   void shouldUpsertTokenTrendReportOnWarmRestart() {
     // given
     when(dashboardReader.getDashboard(AGENTIC_DASHBOARD_ID))
