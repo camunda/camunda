@@ -970,6 +970,19 @@
         <version>${project.version}</version>
       </dependency>
 
+      <!-- Camunda Secret Store modules -->
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-secret-store-api</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-secret-store-file</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
       <!-- Camunda Process Testing modules -->
 
       <dependency>

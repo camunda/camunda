@@ -47,6 +47,7 @@
     <module>testing</module>
     <module>document</module>
     <module>security</module>
+    <module>secret-store</module>
     <module>cluster</module>
     <module>configuration</module>
     <module>load-tests/load-tester</module>
