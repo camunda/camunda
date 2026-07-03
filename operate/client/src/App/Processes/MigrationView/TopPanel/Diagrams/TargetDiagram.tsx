@@ -15,7 +15,7 @@ import {TargetVersionField} from './TargetVersionField';
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {Diagram} from 'modules/components/Diagram';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
-import {ModificationBadgeOverlay} from 'App/ProcessInstance/TopPanel/ModificationBadgeOverlay';
+import {ModificationBadgeOverlay} from 'modules/components/ModificationBadgeOverlay';
 import {useProcessInstancesElementStates} from 'modules/queries/processInstancesStatistics/useElementStates';
 import {useMigrationTargetXml} from 'modules/queries/processDefinitions/useMigrationTargetXml';
 import {getMigrationProcessInstancesFilter} from 'modules/queries/processInstancesStatistics/filters';

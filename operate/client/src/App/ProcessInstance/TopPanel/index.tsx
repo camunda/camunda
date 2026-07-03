@@ -13,105 +13,34 @@ import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {tracking} from 'modules/tracking';
 import {modificationsStore} from 'modules/stores/modifications';
 import {Container, DiagramPanel} from './styled';
-import {
-  CANCELED_BADGE,
-  MODIFICATIONS,
-  ACTIVE_BADGE,
-  INCIDENTS_BADGE,
-  COMPLETED_BADGE,
-  COMPLETED_END_EVENT_BADGE,
-  SUBPROCESS_WITH_INCIDENTS,
-  WAITING_BADGE,
-  AGENT_STATUS_TAG,
-  AGENT_SHINE,
-  WAITING_BADGE_NARROW,
-} from 'modules/bpmn-js/badgePositions';
 import {DiagramShell} from 'modules/components/DiagramShell';
-import {computed} from 'mobx';
-import {type OverlayPosition} from 'bpmn-js/lib/NavigatedViewer';
 import {Diagram} from 'modules/components/Diagram';
-import {ModificationBadgeOverlay} from './ModificationBadgeOverlay';
 import {ModificationInfoBanner} from './ModificationInfoBanner';
 import {ModificationDropdown} from './ModificationDropdown';
-import {AgentStatusOverlay} from './AgentStatusOverlay';
-import {AgentShineOverlay} from './AgentShineOverlay';
-import {StateOverlay} from 'modules/components/StateOverlay';
-import {WaitingStateOverlay} from 'modules/components/WaitingStateOverlay';
-import {useProcessInstanceAgentInstances} from 'modules/queries/agentInstances/useProcessInstanceAgentInstances';
-import {executionCountToggleStore} from 'modules/stores/executionCountToggle';
-import {useElementStatistics} from 'modules/queries/elementInstancesStatistics/useElementStatistics';
+import {DiagramOverlays} from './DiagramOverlays';
+import {useDiagramOverlaysData} from './DiagramOverlays/useDiagramOverlaysData';
 import {useSelectableElements} from 'modules/queries/elementInstancesStatistics/useSelectableElements';
 import {useExecutedElements} from 'modules/queries/elementInstancesStatistics/useExecutedElements';
-import {useModificationsByElement} from 'modules/hooks/modifications';
 import {useModifiableElements} from 'modules/hooks/processInstanceDetailsDiagram';
 import {
   useTotalRunningInstancesByElement,
   useTotalRunningInstancesForElement,
   useTotalRunningInstancesVisibleForElement,
 } from 'modules/queries/elementInstancesStatistics/useTotalRunningInstancesForElement';
-import {
-  finishMovingToken,
-  hasPendingCancelOrMoveModification,
-} from 'modules/utils/modifications';
+import {finishMovingToken} from 'modules/utils/modifications';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {isCompensationAssociation} from 'modules/bpmn-js/utils/isCompensationAssociation';
-import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {useProcessSequenceFlows} from 'modules/queries/sequenceFlows/useProcessSequenceFlows';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
-import {useWaitStateStatistics} from 'modules/queries/waitStateStatistics/useWaitStateStatistics';
-import {getSubprocessOverlayFromIncidentElements} from 'modules/utils/elements';
-import {getWaitStateLabel} from 'modules/utils/waitStates';
-import type {
-  AgentShinePayload,
-  AgentStatusPayload,
-  ElementState,
-  OverlayData,
-} from 'modules/bpmn-js/overlayTypes';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {isRequestError} from 'modules/request';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {useDrillDownNavigation} from 'modules/hooks/useDrilldownNavigation';
 import {getAncestorScopeType} from 'modules/utils/processInstanceDetailsDiagram';
-import {getClientConfig} from 'modules/utils/getClientConfig';
-
-const OVERLAY_TYPE_STATE = 'elementState';
-const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
-const OVERLAY_TYPE_WAITING_STATE = 'waitingState';
-const OVERLAY_TYPE_AGENT_STATUS = 'agentStatus';
-const OVERLAY_TYPE_AGENT_SHINE = 'agentShine';
-
-// Gateways and events are narrow (~36px) symbols.
-const NARROW_WAIT_STATE_BPMN_TYPES = new Set<string>([
-  'bpmn:ExclusiveGateway',
-  'bpmn:ParallelGateway',
-  'bpmn:InclusiveGateway',
-  'bpmn:EventBasedGateway',
-  'bpmn:ComplexGateway',
-  'bpmn:StartEvent',
-  'bpmn:EndEvent',
-  'bpmn:IntermediateCatchEvent',
-  'bpmn:IntermediateThrowEvent',
-  'bpmn:BoundaryEvent',
-]);
-
-const overlayPositions = {
-  active: ACTIVE_BADGE,
-  incidents: INCIDENTS_BADGE,
-  canceled: CANCELED_BADGE,
-  completed: COMPLETED_BADGE,
-  completedEndEvents: COMPLETED_END_EVENT_BADGE,
-  subprocessWithIncidents: SUBPROCESS_WITH_INCIDENTS,
-} as const;
-
-type ModificationBadgePayload = {
-  newTokenCount: number;
-  cancelledTokenCount: number;
-};
 
 const TopPanel: React.FC = observer(() => {
-  const clientConfig = getClientConfig();
   const {
     clearSelection,
     selectedElementId,
@@ -124,7 +53,6 @@ const TopPanel: React.FC = observer(() => {
     sourceElementIdForMoveOperation,
     sourceElementInstanceKeyForMoveOperation,
   } = modificationsStore.state;
-  const {data: statistics} = useElementStatistics();
   const {data: selectableElements} = useSelectableElements();
   const {data: executedElements} = useExecutedElements();
   const {data: totalRunningInstancesByElement} =
@@ -139,11 +67,6 @@ const TopPanel: React.FC = observer(() => {
       sourceElementIdForMoveOperation || undefined,
     );
   const {data: processInstance} = useProcessInstance();
-  const {data: waitStateStatistics} = useWaitStateStatistics({
-    enabled: clientConfig.waitStatesEnabled,
-  });
-  const {data: agentInstancesData} = useProcessInstanceAgentInstances();
-  const modificationsByElement = useModificationsByElement();
   const affectedTokenCount = sourceElementInstanceKeyForMoveOperation
     ? 1
     : totalMoveOperationRunningInstances || 1;
@@ -154,7 +77,6 @@ const TopPanel: React.FC = observer(() => {
   const {data: processedSequenceFlowsFromHook} =
     useProcessSequenceFlows(processInstanceId);
   const processDefinitionKey = useProcessDefinitionKeyContext();
-  const {isExecutionCountVisible} = executionCountToggleStore.state;
 
   const {data: selectedElementRunningInstancesCount} =
     useTotalRunningInstancesForElement(selectedElementId ?? undefined);
@@ -174,137 +96,6 @@ const TopPanel: React.FC = observer(() => {
       diagramOverlaysStore.reset();
     };
   }, [processInstanceId]);
-
-  const elementStateOverlays = useMemo(() => {
-    const elementIdsWithIncidents = statistics
-      ?.filter(({elementState}) => elementState === 'incidents')
-      ?.map((element) => element.id);
-
-    const selectableElementsWithIncidents = elementIdsWithIncidents?.map(
-      (elementId) => businessObjects?.[elementId],
-    );
-
-    const subprocessOverlays = getSubprocessOverlayFromIncidentElements(
-      selectableElementsWithIncidents,
-    );
-
-    const allElementStateOverlays = [
-      ...(statistics?.map(({elementState, count, id: elementId}) => ({
-        payload: {elementState: elementState, count},
-        type: OVERLAY_TYPE_STATE,
-        elementId,
-        position: overlayPositions[elementState],
-      })) || []),
-      ...subprocessOverlays,
-    ];
-
-    // A waiting MI body with no active inner instance (BEFORE_ALL listener) is
-    // absent from element-instances stats; synthesize an active overlay for it.
-    const elementIdsInStats = new Set(statistics?.map(({id}) => id) ?? []);
-    for (const {elementId, waitingCount} of waitStateStatistics ?? []) {
-      if (
-        waitingCount > 0 &&
-        !elementIdsInStats.has(elementId) &&
-        isMultiInstance(businessObjects?.[elementId])
-      ) {
-        allElementStateOverlays.push({
-          payload: {elementState: 'active' as const},
-          type: OVERLAY_TYPE_STATE,
-          elementId,
-          position: overlayPositions.active,
-        });
-      }
-    }
-
-    const notCompletedElementStateOverlays = allElementStateOverlays?.filter(
-      (stateOverlay) => stateOverlay.payload.elementState !== 'completed',
-    );
-
-    return isExecutionCountVisible
-      ? allElementStateOverlays
-      : notCompletedElementStateOverlays;
-  }, [
-    statistics,
-    businessObjects,
-    isExecutionCountVisible,
-    waitStateStatistics,
-  ]);
-
-  const allWaitingStateOverlays = useMemo(() => {
-    if (!waitStateStatistics?.length) {
-      return [];
-    }
-
-    const overlays: Array<{
-      elementId: string;
-      type: string;
-      position: typeof WAITING_BADGE;
-      payload: {label: string; centered: boolean};
-    }> = [];
-
-    for (const {elementId, waitingCount} of waitStateStatistics) {
-      const label = getWaitStateLabel(waitingCount);
-      if (label) {
-        const isNarrowElement = NARROW_WAIT_STATE_BPMN_TYPES.has(
-          businessObjects?.[elementId]?.$type ?? '',
-        );
-        overlays.push({
-          elementId,
-          type: OVERLAY_TYPE_WAITING_STATE,
-          position: isNarrowElement ? WAITING_BADGE_NARROW : WAITING_BADGE,
-          payload: {label, centered: isNarrowElement},
-        });
-      }
-    }
-
-    return overlays;
-  }, [waitStateStatistics, businessObjects]);
-
-  const {agentOverlays, elementsWithAgent} = useMemo(() => {
-    if (!agentInstancesData?.items?.length) {
-      return {agentOverlays: [], elementsWithAgent: new Set<string>()};
-    }
-
-    const elementsWithAgent = new Set<string>();
-
-    const agentOverlays = agentInstancesData.items.flatMap<OverlayData>(
-      (agentInstance) => {
-        // We expect only one active agent instance per element. But there *can* be multiple.
-        // For now, only add an overlay to an element for first matching agent instance.
-        if (elementsWithAgent.has(agentInstance.elementId)) {
-          return [];
-        }
-
-        elementsWithAgent.add(agentInstance.elementId);
-        return [
-          {
-            type: OVERLAY_TYPE_AGENT_STATUS,
-            elementId: agentInstance.elementId,
-            position: AGENT_STATUS_TAG,
-            payload: {
-              status: agentInstance.status,
-              agentInstanceKey: agentInstance.agentInstanceKey,
-            } satisfies AgentStatusPayload,
-          },
-          {
-            type: OVERLAY_TYPE_AGENT_SHINE,
-            elementId: agentInstance.elementId,
-            position: AGENT_SHINE,
-            payload: {
-              agentInstanceKey: agentInstance.agentInstanceKey,
-            } satisfies AgentShinePayload,
-          },
-        ];
-      },
-    );
-    return {agentOverlays, elementsWithAgent};
-  }, [agentInstancesData]);
-
-  const waitingStateOverlays = useMemo(() => {
-    return allWaitingStateOverlays.filter(
-      (overlay) => !elementsWithAgent.has(overlay.elementId),
-    );
-  }, [allWaitingStateOverlays, elementsWithAgent]);
 
   const selectedElementIds = useMemo(() => {
     return selectedAnchorElementId
@@ -337,49 +128,11 @@ const TopPanel: React.FC = observer(() => {
     return executedElements?.map(({elementId}) => elementId);
   }, [executedElements]);
 
-  const modificationBadgesPerElement = computed(() =>
-    Object.entries(modificationsByElement).reduce<
-      {
-        elementId: string;
-        type: string;
-        payload: ModificationBadgePayload;
-        position: OverlayPosition;
-      }[]
-    >((badges, [elementId, tokens]) => {
-      return [
-        ...badges,
-        {
-          elementId,
-          type: OVERLAY_TYPE_MODIFICATIONS_BADGE,
-          position: MODIFICATIONS,
-          payload: {
-            newTokenCount: tokens.newTokens,
-            cancelledTokenCount: tokens.visibleCancelledTokens,
-          },
-        },
-      ];
-    }, []),
-  );
-
-  const stateOverlays = diagramOverlaysStore.state.overlays.filter(
-    ({type}) => type === OVERLAY_TYPE_STATE,
-  );
-  const modificationBadgeOverlays = diagramOverlaysStore.state.overlays.filter(
-    ({type}) => type === OVERLAY_TYPE_MODIFICATIONS_BADGE,
-  );
-  const waitingOverlays = diagramOverlaysStore.state.overlays.filter(
-    ({type}) => type === OVERLAY_TYPE_WAITING_STATE,
-  );
-  const agentStatusOverlays = diagramOverlaysStore.state.overlays.filter(
-    ({type}) => type === OVERLAY_TYPE_AGENT_STATUS,
-  );
-  const agentShineOverlays = diagramOverlaysStore.state.overlays.filter(
-    ({type}) => type === OVERLAY_TYPE_AGENT_SHINE,
-  );
-
   const modifiableElements = useModifiableElements();
 
   const {isModificationModeEnabled} = modificationsStore;
+
+  const overlaysData = useDiagramOverlaysData(isModificationModeEnabled);
 
   const {handleDrillDown, pendingDrillDownElementId} =
     useDrillDownNavigation(processInstanceId);
@@ -517,18 +270,7 @@ const TopPanel: React.FC = observer(() => {
                     }
                   }
                 }}
-                overlaysData={
-                  isModificationModeEnabled
-                    ? [
-                        ...(elementStateOverlays ?? []),
-                        ...modificationBadgesPerElement.get(),
-                      ]
-                    : [
-                        ...(elementStateOverlays ?? []),
-                        ...agentOverlays,
-                        ...waitingStateOverlays,
-                      ]
-                }
+                overlaysData={overlaysData}
                 selectedElementOverlay={
                   isModificationModeEnabled && <ModificationDropdown />
                 }
@@ -551,78 +293,7 @@ const TopPanel: React.FC = observer(() => {
                   }
                 }}
               >
-                {stateOverlays.map((overlay) => {
-                  const payload = overlay.payload as {
-                    elementState: ElementState | 'completedEndEvents';
-                    count: number;
-                  };
-
-                  return (
-                    <StateOverlay
-                      key={`${overlay.elementId}-${payload.elementState}`}
-                      state={payload.elementState}
-                      count={payload.count}
-                      container={overlay.container}
-                      isFaded={hasPendingCancelOrMoveModification({
-                        elementId: overlay.elementId,
-                        elementInstanceKey: undefined,
-                        modificationsByElement: modificationsByElement,
-                      })}
-                      title={
-                        payload.elementState === 'completed'
-                          ? 'Execution Count'
-                          : undefined
-                      }
-                    />
-                  );
-                })}
-                {modificationBadgeOverlays?.map((overlay) => {
-                  const payload = overlay.payload as ModificationBadgePayload;
-
-                  return (
-                    <ModificationBadgeOverlay
-                      key={overlay.elementId}
-                      container={overlay.container}
-                      newTokenCount={payload.newTokenCount}
-                      cancelledTokenCount={payload.cancelledTokenCount}
-                    />
-                  );
-                })}
-                {waitingOverlays?.map((overlay) => {
-                  const payload = overlay.payload as {
-                    label: string;
-                    centered: boolean;
-                  };
-
-                  return (
-                    <WaitingStateOverlay
-                      key={`waiting-${overlay.elementId}`}
-                      container={overlay.container}
-                      label={payload.label}
-                      centered={payload.centered}
-                    />
-                  );
-                })}
-                {agentStatusOverlays.map((overlay) => {
-                  const payload = overlay.payload as AgentStatusPayload;
-                  return (
-                    <AgentStatusOverlay
-                      key={`${payload.agentInstanceKey}-status`}
-                      container={overlay.container}
-                      status={payload.status}
-                    />
-                  );
-                })}
-                {agentShineOverlays.map((overlay) => {
-                  const payload = overlay.payload as AgentShinePayload;
-                  return (
-                    <AgentShineOverlay
-                      key={`${payload.agentInstanceKey}-shine`}
-                      container={overlay.container}
-                      elementId={overlay.elementId}
-                    />
-                  );
-                })}
+                <DiagramOverlays />
               </Diagram>
             )}
         </DiagramShell>

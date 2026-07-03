@@ -6,31 +6,33 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {AgentShineOverlay} from './index';
+import {AgentShineOverlay} from './agentShineOverlay';
 import {render, screen} from 'modules/testing-library';
+import type {DiagramOverlay} from './types';
 
-describe('AgentShineOverlay', () => {
+const createOverlay = (elementId: string): DiagramOverlay => ({
+  container: document.body,
+  elementId,
+  type: 'agentShine',
+  payload: {agentInstanceKey: 'agent-1'},
+});
+
+describe('agentShineOverlay', () => {
   it('should render the shine box at the element size plus an offset border', () => {
-    render(
-      <AgentShineOverlay
-        container={document.body}
-        elementId="Activity_agent"
-      />,
-      {
-        wrapper: ({children}) => (
-          <div>
-            <svg>
-              <g data-element-id="Activity_agent">
-                <g className="djs-visual">
-                  <rect width="120" height="80" rx="10"></rect>
-                </g>
+    render(<AgentShineOverlay overlay={createOverlay('Activity_agent')} />, {
+      wrapper: ({children}) => (
+        <div>
+          <svg>
+            <g data-element-id="Activity_agent">
+              <g className="djs-visual">
+                <rect width="120" height="80" rx="10"></rect>
               </g>
-            </svg>
-            {children}
-          </div>
-        ),
-      },
-    );
+            </g>
+          </svg>
+          {children}
+        </div>
+      ),
+    });
 
     const shine = screen.getByTestId('agent-shine-overlay-Activity_agent');
     expect(shine).toHaveStyle({
@@ -41,12 +43,7 @@ describe('AgentShineOverlay', () => {
   });
 
   it('should render nothing when the BPMN visual node is missing', () => {
-    render(
-      <AgentShineOverlay
-        container={document.body}
-        elementId="Activity_missing"
-      />,
-    );
+    render(<AgentShineOverlay overlay={createOverlay('Activity_missing')} />);
 
     expect(
       screen.queryByTestId('agent-shine-overlay-Activity_missing'),
