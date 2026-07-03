@@ -6,10 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute} from '@tanstack/react-router';
+import {format, parseISO} from 'date-fns';
+import {getCurrentDateLocale} from '#/shared/i18n';
 
-export const Route = createFileRoute('/_auth/tasklist/_tasks/$userTaskKey/history')({
-	component: function HistoryTabPlaceholder() {
-		return <div data-testid="history-tab-content" />;
-	},
-});
+function formatHistoryDate(timestamp: string) {
+	return format(parseISO(timestamp), 'dd MMM yyyy - p', {locale: getCurrentDateLocale()});
+}
+
+export {formatHistoryDate};

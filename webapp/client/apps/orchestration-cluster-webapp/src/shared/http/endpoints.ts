@@ -17,6 +17,7 @@ import {
 	type QueryBatchOperationsRequestBody,
 	type AssignTaskRequestBody,
 	type CompleteTaskRequestBody,
+	type QueryUserTaskAuditLogsRequestBody,
 	type UserTask,
 	type ProcessDefinition,
 } from '@camunda/camunda-api-zod-schemas/8.10';
@@ -182,6 +183,14 @@ const endpoints = {
 		new Request(getFullURL(unifiedAPIEndpoints.completeTask.getUrl({userTaskKey})), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.completeTask.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryUserTaskAuditLogs: ({userTaskKey, ...body}: {userTaskKey: string} & QueryUserTaskAuditLogsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryUserTaskAuditLogs.getUrl({userTaskKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryUserTaskAuditLogs.method,
 			body: JSON.stringify(body),
 			headers: {'Content-Type': 'application/json'},
 		}),
