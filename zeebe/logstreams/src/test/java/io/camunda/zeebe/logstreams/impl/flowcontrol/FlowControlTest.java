@@ -124,6 +124,141 @@ public class FlowControlTest {
   }
 
   @Test
+  void shouldNotThrottleBeforeFirstExport() {
+    // given — a fresh FlowControl (as created on every leader transition) with throttling enabled
+    // and a partition that has already written far past the acceptable backlog
+    final var meterRegistry = new SimpleMeterRegistry();
+    final var metrics = new LogStreamMetricsImpl(meterRegistry);
+    final var minRate = 700L;
+    final var writeRateLimit =
+        new RateLimit(
+            true,
+            7000,
+            Duration.ZERO,
+            new Throttling(true, 300_000L, minRate, Duration.ofSeconds(15)));
+    final var fc =
+        new FlowControl(metrics, StabilizingAIMDLimit.newBuilder().build(), writeRateLimit);
+    final var intent = ProcessInstanceCreationIntent.CREATE;
+    final var context = new UserCommand(intent);
+    final var result =
+        fc.tryAcquire(
+            context,
+            List.of(
+                LogAppendEntry.of(
+                    new RecordMetadata()
+                        .recordType(RecordType.COMMAND)
+                        .valueType(ValueType.PROCESS_INSTANCE_CREATION)
+                        .intent(intent),
+                    new UnifiedRecordValue(0))));
+    final var writtenPosition = 4_700_000_000L;
+    final var listener = fc.registerEntry(writtenPosition, result.get());
+
+    // when — the first record is written, but nothing has been exported yet
+    listener.onWrite(1, writtenPosition);
+
+    // then — the throttle must not engage: with lastExportedPosition still uninitialized, the
+    // backlog is unknown, so the write rate must stay at the configured limit rather than being
+    // clamped down to minRate. Before the fix, lastExportedPosition defaulted to 0, producing a
+    // backlog equal to the entire written position and clamping the rate to minRate.
+    assertThat(meterRegistry.get("zeebe.flow.control.write.rate.limit").gauge().value())
+        .as("write rate must not be throttled before the first export observation")
+        .isNotEqualTo((double) minRate)
+        .isEqualTo(7000);
+  }
+
+  @Test
+  void shouldPublishWriteRateLimitsImmediately() {
+    // given — throttling disabled, so RateLimitThrottle never publishes anything
+    final var meterRegistry = new SimpleMeterRegistry();
+    final var metrics = new LogStreamMetricsImpl(meterRegistry);
+    final var writeRateLimit =
+        new RateLimit(true, 7000, Duration.ZERO, RateLimit.Throttling.disabled());
+
+    // when — the write rate limit is configured (as happens on construction / via the actuator)
+    new FlowControl(metrics, StabilizingAIMDLimit.newBuilder().build(), writeRateLimit);
+
+    // then — the configured limits are published immediately, without waiting for a write or export
+    assertThat(meterRegistry.get("zeebe.flow.control.write.rate.maximum").gauge().value())
+        .as("max write rate limit is published immediately")
+        .isEqualTo(7000);
+    assertThat(meterRegistry.get("zeebe.flow.control.write.rate.limit").gauge().value())
+        .as("write rate limit is published immediately at the configured limit")
+        .isEqualTo(7000);
+  }
+
+  @Test
+  void shouldRemoveWriteRateMetersWhenWriteRateLimitDisabled() {
+    // given — a FlowControl with an enabled write rate limit
+    final var meterRegistry = new SimpleMeterRegistry();
+    final var metrics = new LogStreamMetricsImpl(meterRegistry);
+    final var enabled = new RateLimit(true, 7000, Duration.ZERO, RateLimit.Throttling.disabled());
+    final var fc = new FlowControl(metrics, StabilizingAIMDLimit.newBuilder().build(), enabled);
+    assertThat(meterRegistry.find("zeebe.flow.control.write.rate.limit").gauge()).isNotNull();
+    assertThat(meterRegistry.find("zeebe.flow.control.write.rate.maximum").gauge()).isNotNull();
+
+    // when — the write rate limit is disabled (reconfigured via the actuator)
+    fc.setWriteRateLimit(RateLimit.disabled());
+
+    // then — the outdated write rate meters are removed rather than left reporting stale values
+    assertThat(meterRegistry.find("zeebe.flow.control.write.rate.limit").gauge()).isNull();
+    assertThat(meterRegistry.find("zeebe.flow.control.write.rate.maximum").gauge()).isNull();
+  }
+
+  @Test
+  void shouldRemoveRequestLimitMeterWhenRequestLimitRemoved() {
+    // given — a FlowControl with a request limit
+    final var meterRegistry = new SimpleMeterRegistry();
+    final var metrics = new LogStreamMetricsImpl(meterRegistry);
+    final var fc =
+        new FlowControl(metrics, StabilizingAIMDLimit.newBuilder().build(), RateLimit.disabled());
+    assertThat(meterRegistry.find("zeebe.backpressure.requests.limit").gauge()).isNotNull();
+
+    // when — the request limit is removed (reconfigured via the actuator)
+    fc.setRequestLimit(null);
+
+    // then — the outdated request limit meter is removed rather than left reporting a stale value
+    assertThat(meterRegistry.find("zeebe.backpressure.requests.limit").gauge()).isNull();
+  }
+
+  @Test
+  void shouldNotResetInflightRequestsWhenReconfiguringRequestLimit() {
+    // given — a FlowControl with a request limit and one in-flight user command
+    final var meterRegistry = new SimpleMeterRegistry();
+    final var metrics = new LogStreamMetricsImpl(meterRegistry);
+    final var fc =
+        new FlowControl(
+            metrics,
+            StabilizingAIMDLimit.newBuilder().initialLimit(100).build(),
+            RateLimit.disabled());
+    final var intent = ProcessInstanceCreationIntent.CREATE;
+    final var context = new UserCommand(intent);
+    final var entry =
+        fc.tryAcquire(
+                context,
+                List.of(
+                    LogAppendEntry.of(
+                        new RecordMetadata()
+                            .recordType(RecordType.COMMAND)
+                            .valueType(ValueType.PROCESS_INSTANCE_CREATION)
+                            .intent(intent),
+                        new UnifiedRecordValue(0))))
+            .get();
+    fc.registerEntry(1, entry);
+    fc.onAppended(entry);
+    assertThat(meterRegistry.get("zeebe.backpressure.inflight.requests.count").gauge().value())
+        .as("the acquired command is counted as in-flight")
+        .isEqualTo(1);
+
+    // when — the request limit is reconfigured (as happens via the actuator)
+    fc.setRequestLimit(StabilizingAIMDLimit.newBuilder().initialLimit(200).build());
+
+    // then — the in-flight request count is preserved, not reset by building a new limiter
+    assertThat(meterRegistry.get("zeebe.backpressure.inflight.requests.count").gauge().value())
+        .as("reconfiguring the request limit must not reset the in-flight request count")
+        .isEqualTo(1);
+  }
+
+  @Test
   void shouldReduceRequestLimitWhenRingBufferWrapsAround() {
     // given — small ring buffer so wraparound happens quickly
     final var meterRegistry = new SimpleMeterRegistry();
