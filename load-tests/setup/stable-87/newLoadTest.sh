@@ -33,7 +33,7 @@ manifests under resources/ (namespace + credentials). The cluster itself is
 unchanged by this script — namespace and secret are created on first
 `make install` via `kubectl apply -f resources/...`. Reruns of `make install`
 after a TTL deletion recreate both from the same baked manifests, so
-credentials stay in sync with `load-test-values.yaml`.
+credentials stay in sync with `load-tester-values-defaults.yaml`.
 EOF
 }
 
@@ -146,14 +146,14 @@ mkdir -p "$TARGET_DIRECTORY"
 # (defaults + override + load-test + stable), and the matching
 # camunda-platform-values-${secondaryStorage}.yaml. Flat layout so the
 # per-namespace Makefile's -f <file>.yaml references resolve unchanged.
-cp -v  "Makefile"                                                "$TARGET_DIRECTORY/"
-cp -rv ../charts/                                                "$TARGET_DIRECTORY/"
-cp -v  "values/camunda-platform-override-values.yaml"            "$TARGET_DIRECTORY/"
-cp -v  "values/load-test-values.yaml"                            "$TARGET_DIRECTORY/"
-cp -v  "../scenarios/load-test-values-realistic-benchmark.yaml"            "$TARGET_DIRECTORY/"
-cp -v  "values/values-stable.yaml"                               "$TARGET_DIRECTORY/"
-cp -v  "values/camunda-platform-values-defaults.yaml"            "$TARGET_DIRECTORY/"
-cp -v  "values/camunda-platform-values-${secondaryStorage}.yaml" "$TARGET_DIRECTORY/"
+cp -v  "Makefile"                                                 "$TARGET_DIRECTORY/"
+cp -rv ../charts/                                                 "$TARGET_DIRECTORY/"
+cp -v  "values/camunda-platform-override-values.yaml"             "$TARGET_DIRECTORY/"
+cp -v  "../scenarios/load-tester-values-defaults.yaml"            "$TARGET_DIRECTORY/"
+cp -v  "../scenarios/load-tester-values-realistic-benchmark.yaml" "$TARGET_DIRECTORY/"
+cp -v  "values/values-stable.yaml"                                "$TARGET_DIRECTORY/"
+cp -v  "values/camunda-platform-values-defaults.yaml"             "$TARGET_DIRECTORY/"
+cp -v  "values/camunda-platform-values-${secondaryStorage}.yaml"  "$TARGET_DIRECTORY/"
 
 # Storage-specific copies.
 case "$secondaryStorage" in
@@ -178,7 +178,7 @@ sed_inplace "s/__ENABLE_OPTIMIZE__/$enable_optimize/" Makefile
 sed_inplace "s/__ENABLE_WEBAPPS__/$enable_webapps/"   Makefile
 
 # Bake values into the resource manifests and the platform/load-test values.
-sed_inplace "s/__NAMESPACE__/$namespace/" load-test-values.yaml
+sed_inplace "s/__NAMESPACE__/$namespace/" load-tester-values-defaults.yaml
 sed_targets=(*.yaml)
 sed_inplace "s/__AVAILABILITY_ZONE__/$availability_zone/" "${sed_targets[@]}"
 sed_inplace "s/__AUTHOR__/$git_author/"                   "${sed_targets[@]}"
@@ -220,6 +220,9 @@ echo "Pulling Camunda Platform Helm Chart: $camunda_platform_helm_chart_version"
 helm pull camunda/camunda-platform \
     --untar --untardir "$CHARTS_DIR" \
     --version "$camunda_platform_helm_chart_version" \
+
+echo "Resolving load-test-setup subchart dependencies..."
+helm dependency update "$CHARTS_DIR/load-test-setup"
 
 echo
 echo "Scaffolding complete. Next steps:"

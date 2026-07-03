@@ -55,8 +55,11 @@ kubectl label namespace "$namespace" camunda.io/purpose=load-test --overwrite
 kubectl label namespace "$namespace" camunda.io/created-by="$git_author" --overwrite
 
 cp -rv saas-default/ $namespace
-# Vendored realistic-benchmark values, shared with the self-managed setups.
-cp -v scenarios/load-test-values-realistic-benchmark.yaml $namespace/
+# Derive the SaaS realistic-benchmark values from the single shared source.
+# The SaaS setup installs the camunda-load-tests chart standalone, so it needs
+# the values at the top level; strip the `load-tester` wrapper that the
+# self-managed umbrella (load-test-setup) chart requires around the subchart.
+yq '.load-tester' scenarios/load-tester-values-realistic-benchmark.yaml > "$namespace/load-test-values-realistic-benchmark.yaml"
 cd $namespace
 
 

@@ -1,0 +1,42 @@
+---
+# Source: load-test-setup/charts/load-tester/templates/clients-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: clients
+  labels:
+    app.kubernetes.io/component: zeebe-client
+
+    app.kubernetes.io/name: load-tester
+    app.kubernetes.io/instance: load-test-setup
+
+    app.kubernetes.io/managed-by: Helm
+spec:
+  selector:
+    app.kubernetes.io/component: zeebe-client
+  ports:
+  - name: http
+    port: 9600
+---
+# Source: load-test-setup/charts/load-tester/templates/clients-service.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: clients
+  labels:
+    release: monitoring
+
+    app.kubernetes.io/name: load-tester
+    app.kubernetes.io/instance: load-test-setup
+
+    app.kubernetes.io/managed-by: Helm
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: zeebe-client
+  endpoints:
+  - honorLabels: true
+    # since - is not supported directly, we have to use the index function and quote "camunda-platform"
+    interval: 30s
+    path: /metrics
+    port: http

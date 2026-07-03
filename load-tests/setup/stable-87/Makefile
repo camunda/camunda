@@ -18,7 +18,6 @@ additional_platform_configuration ?=
 additional_load_test_configuration ?=
 
 helm_chart_platform := charts/camunda-platform
-helm_chart_load_tests := camunda-load-tests/camunda-load-tests
 
 # Scenario: controls the workload profile for the load test.
 # Options: latency, realistic, typical, max, archiver
@@ -26,19 +25,19 @@ helm_chart_load_tests := camunda-load-tests/camunda-load-tests
 scenario ?=
 
 ifeq ($(scenario),latency)
-_scenario_load_test_flags := --set starter.rate=1 --set workers.worker.replicas=1
+_scenario_load_test_flags := --set load-tester.starter.rate=1 --set load-tester.workers.worker.replicas=1
 _scenario_platform_flags  :=
 else ifeq ($(scenario),realistic)
-_scenario_load_test_flags := -f load-test-values-realistic-benchmark.yaml
+_scenario_load_test_flags := -f load-tester-values-realistic-benchmark.yaml
 _scenario_platform_flags  :=
 else ifeq ($(scenario),typical)
-_scenario_load_test_flags := --set starter.rate=50 --set workers.worker.replicas=6 --set starter.bpmnXmlPath=bpmn/typical_process.bpmn
+_scenario_load_test_flags := --set load-tester.starter.rate=50 --set load-tester.workers.worker.replicas=6 --set load-tester.starter.bpmnXmlPath=bpmn/typical_process.bpmn
 _scenario_platform_flags  :=
 else ifeq ($(scenario),max)
-_scenario_load_test_flags := --set starter.rate=300
+_scenario_load_test_flags := --set load-tester.starter.rate=300
 _scenario_platform_flags  := --set-file 'zeebe.extraConfiguration.application-override\.yml=./camunda-platform-override-values.yaml'
 else ifeq ($(scenario),archiver)
-_scenario_load_test_flags := --set starter.rate=1 --set starter.rateDuration=10m --set starter.processId=multiInstanceElements --set starter.bpmnXmlPath=bpmn/multiInstanceElements.bpmn --set starter.payloadPath=bpmn/multiInstanceElementsPayload.json --set workers.worker.replicas=0
+_scenario_load_test_flags := --set load-tester.starter.rate=1 --set load-tester.starter.rateDuration=10m --set load-tester.starter.processId=multiInstanceElements --set load-tester.starter.bpmnXmlPath=bpmn/multiInstanceElements.bpmn --set load-tester.starter.payloadPath=bpmn/multiInstanceElementsPayload.json --set load-tester.workers.worker.replicas=0
 _scenario_platform_flags  :=
 else
 _scenario_load_test_flags :=
@@ -98,10 +97,10 @@ endif
 all: install
 
 .PHONY: install
-install: check-deadline install-load-test-setup install-platform install-load-test install-elasticsearch-exporter
+install: check-deadline install-load-test-setup install-platform install-elasticsearch-exporter
 
 .PHONY: install-stable
-install-stable: check-deadline install-load-test-setup install-platform-stable install-load-test install-elasticsearch-exporter
+install-stable: check-deadline install-load-test-setup install-platform-stable install-elasticsearch-exporter
 
 # Fail fast if the namespace TTL deadline (read from load-test-setup-values.yaml,
 # the single source of truth) is today or in the past — the TTL cleanup
@@ -136,7 +135,7 @@ create-namespace:
 
 # Apply the camunda-credentials secret. Idempotent: rerunning after a TTL
 # deletion reapplies the SAME credentials, so the orchestration secret in
-# load-test-values.yaml stays in sync with the live secret.
+# load-tester-values-defaults.yaml stays in sync with the live secret.
 .PHONY: create-credentials
 create-credentials:
 	@echo "Applying camunda-credentials secret for namespace $(namespace)..."
@@ -181,7 +180,8 @@ install-platform-stable:
 		$(_scenario_platform_flags) \
 		$(additional_platform_configuration)
 
-# Install the load-test-setup Helm Chart
+# Install the load-test-setup Helm Chart (includes the camunda-load-tests subchart).
+# Load-test scenario flags and values are passed here; no separate install-load-test target needed.
 .PHONY: install-load-test-setup
 install-load-test-setup: create-namespace
 	helm upgrade load-test-setup $(helm_chart_load_test_setup) \
@@ -190,19 +190,11 @@ install-load-test-setup: create-namespace
 		--reset-then-reuse-values \
 		--render-subchart-notes \
 		--take-ownership --create-namespace \
-		$(load_test_setup_values) $(additional_load_test_setup_configuration)
-
-# Install/upgrade load test helm chart
-.PHONY: install-load-test
-install-load-test:
-	helm upgrade $(namespace)-test $(helm_chart_load_tests) \
-		--install \
-		--namespace $(namespace) \
-		--reset-then-reuse-values \
-		--render-subchart-notes \
-		-f load-test-values.yaml \
+		$(load_test_setup_values) \
+		-f load-tester-values-defaults.yaml \
 		$(_scenario_load_test_flags) \
 		$(_secondary_storage_load_test_flags) \
+		$(additional_load_test_setup_configuration) \
 		$(additional_load_test_configuration)
 
 # Generates templates from the Camunda Platform helm chart
@@ -229,24 +221,17 @@ template-load-test-setup:
 	helm template load-test-setup $(helm_chart_load_test_setup) \
 		--namespace $(namespace) \
 		$(load_test_setup_values) \
+		-f load-tester-values-defaults.yaml \
+		$(_scenario_load_test_flags) \
+		$(_secondary_storage_load_test_flags) \
 		$(additional_load_test_setup_configuration) \
+		$(additional_load_test_configuration) \
 		--output-dir $(template_output_dir)
 
 # Renders the load-test-setup chart with the chaos-killer enabled.
 .PHONY: template-load-test-setup-chaos
 template-load-test-setup-chaos:
 	$(MAKE) template-load-test-setup chaos=true
-
-# Generates templates from the load test helm chart
-.PHONY: template-load-test
-template-load-test:
-	helm template $(namespace)-test $(helm_chart_load_tests) \
-		--namespace $(namespace) \
-		-f load-test-values.yaml \
-		$(_scenario_load_test_flags) \
-		$(_secondary_storage_load_test_flags) \
-		$(additional_load_test_configuration) \
-		--output-dir $(template_output_dir)
 
 # Print the resolved scenario flags without running any Helm commands
 .PHONY: print-scenario

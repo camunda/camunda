@@ -20,8 +20,8 @@ var update = flag.Bool("update-golden", false,
 // secondary_storage, enable_optimize, and the install vs install-stable target.
 //
 // Workload, when set, selects a Makefile workload profile (scenario=<workload>).
-// Workload scenarios render only the load-tester chart — that is where the
-// workload flags apply — so they don't duplicate the storage-matrix renders.
+// Workload scenarios render the combined load-test-setup chart — workload flags
+// pass through the parent chart to the load-tester subchart.
 //
 // SetupTarget, when set, names an alternative Makefile target for rendering the
 // load-test-setup chart only — used to test opt-in chart features that have a
@@ -48,10 +48,10 @@ type versionedScenario struct {
 //
 // The workload scenarios (max, realistic) are the profiles we run most often.
 // They only change load-tester flags, so they use elasticsearch as a fixed
-// backend and render just the load-tester chart. "realistic" pulls a values file
-// from the camunda-load-tests-helm repo at render time — the same live-latest
-// policy as the load-tester chart itself, so its golden is regenerated when that
-// file changes.
+// backend and render the combined load-test-setup chart. "realistic" pulls a
+// values file from the camunda-load-tests-helm repo at render time — the same
+// live-latest policy as the load-tester chart itself, so its golden is
+// regenerated when that file changes.
 var defaultScenarios = []scenario{
 	{Name: "elasticsearch", Storage: "elasticsearch", Optimize: true, Stable: false},
 	{Name: "opensearch", Storage: "opensearch", Optimize: true, Stable: false},
@@ -137,10 +137,8 @@ func TestGoldenFiles(t *testing.T) {
 			ns := Scaffold(t, s.Version, namespace, s.Storage, strconv.FormatBool(s.Optimize))
 			defer ns.Cleanup()
 
-			// Workload scenarios only affect the load-tester chart, so we
-			// render just that one with the workload profile applied.
 			if s.Workload != "" {
-				renderAndAssert(t, s.Version, s.Name, "load-tester", ns, "template-load-test", s.Workload)
+				renderAndAssert(t, s.Version, s.Name, "load-test-setup", ns, "template-load-test-setup", s.Workload)
 				return
 			}
 
@@ -160,7 +158,6 @@ func TestGoldenFiles(t *testing.T) {
 			}
 
 			renderAndAssert(t, s.Version, s.Name, "platform", ns, platformTarget, "")
-			renderAndAssert(t, s.Version, s.Name, "load-tester", ns, "template-load-test", "")
 			renderAndAssert(t, s.Version, s.Name, "load-test-setup", ns, "template-load-test-setup", "")
 		})
 	}

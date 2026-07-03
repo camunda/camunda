@@ -1,3 +1,17 @@
+# -- Global values propagated to the camunda-load-tests (load-tester) subchart.
+global:
+  # -- Extra configuration merged into the load test applications' config file.
+  # Seeded as an empty map so callers can add keys via
+  # `--set global.extraConfig.<key>=<value>` (e.g. the Makefile sets
+  # `global.extraConfig.load-tester.monitor-data-availability=false` for the
+  # `none` storage scenario). The subchart ships this key as `null`, and
+  # `load-tester-values-defaults.yaml` supplies a `global:` block without `extraConfig`.
+  # Without a map default here, Helm's global coalescing silently drops the
+  # `--set` value, so the load-test-config ConfigMap (and its starter/workers
+  # wiring) never renders for the `none` scenario. An empty map is falsy, so the
+  # ConfigMap still only renders when a key is actually set.
+  extraConfig: {}
+
 # -- Name of the load test.
 name: ""
 
@@ -40,6 +54,11 @@ chaosKiller:
   schedule: "0 * * * *"
   # -- Space-separated shell glob patterns. One pod matching any pattern is deleted per run.
   targetPatterns: "camunda-* elastic-* postgresql-*"
+
+# -- load-tester subchart toggle. Set to false to skip deploying the load
+# generators (e.g. for a bare cluster setup).
+load-tester:
+  enabled: true
 
 # -- Configuration for the load test applications.
 loadTest:
