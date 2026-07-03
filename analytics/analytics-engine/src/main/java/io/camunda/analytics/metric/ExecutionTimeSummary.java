@@ -7,7 +7,9 @@
  */
 package io.camunda.analytics.metric;
 
+import java.util.Arrays;
 import org.apache.datasketches.kll.KllDoublesSketch;
+import org.apache.datasketches.quantilescommon.QuantileSearchCriteria;
 
 /**
  * The composite execution-time accumulator: exact {@code count}/{@code total}/{@code min}/{@code
@@ -60,6 +62,37 @@ public final class ExecutionTimeSummary {
     minMs = Math.min(minMs, durationMs);
     maxMs = Math.max(maxMs, durationMs);
     sketch.update(durationMs);
+  }
+
+  /**
+   * Combines two summaries into a fresh one (additive stats + KLL union), commutative/associative.
+   */
+  public static ExecutionTimeSummary merge(
+      final ExecutionTimeSummary a, final ExecutionTimeSummary b) {
+    final KllDoublesSketch merged = KllDoublesSketch.newHeapInstance();
+    merged.merge(a.sketch);
+    merged.merge(b.sketch);
+    return new ExecutionTimeSummary(
+        a.count + b.count,
+        a.totalMs + b.totalMs,
+        Math.min(a.minMs, b.minMs),
+        Math.max(a.maxMs, b.maxMs),
+        merged);
+  }
+
+  /** The read-facing result at the given ranks; count/min/max exact, percentiles approximate. */
+  public ExecutionTimeSummaryResult result(final double[] ranks) {
+    if (count == 0) {
+      final double[] empty = new double[ranks.length];
+      Arrays.fill(empty, Double.NaN);
+      return new ExecutionTimeSummaryResult(0L, 0.0, 0L, 0L, ranks.clone(), empty);
+    }
+    final double[] quantiles = new double[ranks.length];
+    for (int i = 0; i < ranks.length; i++) {
+      quantiles[i] = sketch.getQuantile(ranks[i], QuantileSearchCriteria.INCLUSIVE);
+    }
+    return new ExecutionTimeSummaryResult(
+        count, (double) totalMs / count, minMs, maxMs, ranks.clone(), quantiles);
   }
 
   public long count() {

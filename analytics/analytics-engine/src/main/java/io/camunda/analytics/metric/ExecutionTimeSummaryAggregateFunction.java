@@ -9,8 +9,6 @@ package io.camunda.analytics.metric;
 
 import io.camunda.eventbridge.streaming.aggregate.AggregateFunction;
 import java.util.function.ToLongFunction;
-import org.apache.datasketches.kll.KllDoublesSketch;
-import org.apache.datasketches.quantilescommon.QuantileSearchCriteria;
 
 /**
  * The composite execution-time meter as a mergeable {@link AggregateFunction}: folds a fact's
@@ -46,34 +44,11 @@ public final class ExecutionTimeSummaryAggregateFunction<F>
 
   @Override
   public ExecutionTimeSummary merge(final ExecutionTimeSummary a, final ExecutionTimeSummary b) {
-    final KllDoublesSketch merged = KllDoublesSketch.newHeapInstance();
-    merged.merge(a.sketch());
-    merged.merge(b.sketch());
-    return new ExecutionTimeSummary(
-        a.count() + b.count(),
-        a.totalMs() + b.totalMs(),
-        Math.min(a.minMs(), b.minMs()),
-        Math.max(a.maxMs(), b.maxMs()),
-        merged);
+    return ExecutionTimeSummary.merge(a, b);
   }
 
   @Override
   public ExecutionTimeSummaryResult getResult(final ExecutionTimeSummary acc) {
-    if (acc.count() == 0) {
-      final double[] empty = new double[ranks.length];
-      java.util.Arrays.fill(empty, Double.NaN);
-      return new ExecutionTimeSummaryResult(0L, 0.0, 0L, 0L, ranks.clone(), empty);
-    }
-    final double[] quantiles = new double[ranks.length];
-    for (int i = 0; i < ranks.length; i++) {
-      quantiles[i] = acc.sketch().getQuantile(ranks[i], QuantileSearchCriteria.INCLUSIVE);
-    }
-    return new ExecutionTimeSummaryResult(
-        acc.count(),
-        (double) acc.totalMs() / acc.count(),
-        acc.minMs(),
-        acc.maxMs(),
-        ranks.clone(),
-        quantiles);
+    return acc.result(ranks);
   }
 }
