@@ -9,10 +9,16 @@
 /* eslint-disable react-refresh/only-export-components -- overlay modules intentionally co-locate their data hook, config, and renderer in a single file */
 
 import {useMemo} from 'react';
-import {WAITING_BADGE} from 'modules/bpmn-js/badgePositions';
+import {
+  WAITING_BADGE,
+  WAITING_BADGE_NARROW,
+} from 'modules/bpmn-js/badgePositions';
 import {WaitingStateOverlay as WaitingState} from 'modules/components/WaitingStateOverlay';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
-import {useElementInstanceInspection} from 'modules/queries/elementInstanceInspection/useElementInstanceInspection';
+import {
+  MAX_WAIT_STATES,
+  useElementInstanceInspection,
+} from 'modules/queries/elementInstanceInspection/useElementInstanceInspection';
 import {getWaitStateLabel} from 'modules/utils/waitStates';
 import {getClientConfig} from 'modules/utils/getClientConfig';
 import {useProcessInstancePageParams} from '../../useProcessInstancePageParams';
@@ -21,8 +27,22 @@ import type {DiagramOverlay} from './types';
 
 const WAITING_STATE_OVERLAY_TYPE = 'waitingState';
 
+// Gateways and events are narrow (~36px) symbols.
+const NARROW_WAIT_STATE_ELEMENT_TYPES = new Set<string>([
+  'EXCLUSIVE_GATEWAY',
+  'PARALLEL_GATEWAY',
+  'INCLUSIVE_GATEWAY',
+  'EVENT_BASED_GATEWAY',
+  'START_EVENT',
+  'END_EVENT',
+  'INTERMEDIATE_CATCH_EVENT',
+  'INTERMEDIATE_THROW_EVENT',
+  'BOUNDARY_EVENT',
+]);
+
 type WaitingStatePayload = {
   label: string;
+  centered: boolean;
 };
 
 /**
@@ -57,18 +77,26 @@ const useWaitingStateOverlaysData = (
     }
 
     const overlays: OverlayData[] = [];
+    const hasMore = (inspectionData.page?.totalItems ?? 0) > MAX_WAIT_STATES;
+
     for (const [elementId, waitStates] of waitStatesByElement) {
       // Hide the waiting state when an agent instance exists for the element.
       if (elementsWithAgent.has(elementId)) {
         continue;
       }
-      const label = getWaitStateLabel(waitStates);
+      const label = getWaitStateLabel(waitStates, hasMore);
       if (label) {
+        const isNarrowElement = waitStates.some((waitState) =>
+          NARROW_WAIT_STATE_ELEMENT_TYPES.has(waitState.elementType),
+        );
         overlays.push({
           elementId,
           type: WAITING_STATE_OVERLAY_TYPE,
-          position: WAITING_BADGE,
-          payload: {label} satisfies WaitingStatePayload,
+          position: isNarrowElement ? WAITING_BADGE_NARROW : WAITING_BADGE,
+          payload: {
+            label,
+            centered: isNarrowElement,
+          } satisfies WaitingStatePayload,
         });
       }
     }
@@ -82,7 +110,13 @@ const WaitingStateOverlay: React.FC<{overlay: DiagramOverlay}> = ({
 }) => {
   const payload = overlay.payload as WaitingStatePayload;
 
-  return <WaitingState container={overlay.container} label={payload.label} />;
+  return (
+    <WaitingState
+      container={overlay.container}
+      label={payload.label}
+      centered={payload.centered}
+    />
+  );
 };
 
 const getWaitingStateOverlayKey = (overlay: DiagramOverlay): string =>
