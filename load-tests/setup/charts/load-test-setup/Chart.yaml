@@ -5,4 +5,12 @@ type: application
 # TODO: bump to 1.0.0 once we have finished the "load-test-setup" Helm Chart migration
 version: "0.1.0"
 
-dependencies: []
+dependencies:
+  - name: camunda-load-tests
+    alias: load-tester
+    version: "0.1.12"
+    repository: "https://camunda.github.io/camunda-load-tests-helm/"
+    # Set load-tester.enabled: false in the parent values to skip deploying
+    # the load generators (e.g. for a bare cluster setup or when using the
+    # standalone load-tester Helm release on stable versions).
+    condition: load-tester.enabled
