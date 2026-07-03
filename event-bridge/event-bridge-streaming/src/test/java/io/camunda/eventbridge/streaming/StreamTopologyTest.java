@@ -8,16 +8,30 @@
 package io.camunda.eventbridge.streaming;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import io.camunda.eventbridge.client.Consumer;
+import io.camunda.eventbridge.client.Event;
+import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.streaming.aggregate.AggregateFunction;
 import io.camunda.eventbridge.streaming.aggregate.RecordingAggregation;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
 /** The topology instantiates an isolated, partition-local processor per partition. */
 final class StreamTopologyTest {
+
+  private static final String TOPIC = "facts";
 
   private record Sale(String region, long amount) {}
 
@@ -94,5 +108,59 @@ final class StreamTopologyTest {
     // then — independent partial accumulators (a later cross-partition merge sums to 140)
     assertThat(stores.get(0).get("EU")).contains(100L);
     assertThat(stores.get(1).get("EU")).contains(40L);
+  }
+
+  @Test
+  void shouldWireIntoTheRuntimeAsTheTaskFactory() throws Exception {
+    // given — a counting topology used directly as the runtime's task factory
+    final Map<Integer, long[]> counters = new HashMap<>();
+    final CountDownLatch processed = new CountDownLatch(3);
+    final StreamTopology<String> topology =
+        new StreamTopology<String>()
+            .add(
+                partitionId -> {
+                  final long[] count = counters.computeIfAbsent(partitionId, p -> new long[1]);
+                  return record -> {
+                    count[0]++;
+                    processed.countDown();
+                  };
+                });
+
+    final Consumer consumer = mock(Consumer.class);
+    final EventBridgeClient client = mock(EventBridgeClient.class);
+    when(client.subscribe(any(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(consumer));
+    when(consumer.sendHeartbeat()).thenReturn(CompletableFuture.completedFuture(null));
+    when(consumer.poll(anyInt(), any()))
+        .thenReturn(
+            List.of(
+                new Event(1L, TOPIC, 1, "a".getBytes(StandardCharsets.UTF_8)),
+                new Event(2L, TOPIC, 1, "b".getBytes(StandardCharsets.UTF_8)),
+                new Event(1L, TOPIC, 2, "c".getBytes(StandardCharsets.UTF_8))))
+        .thenReturn(List.of());
+    when(consumer.commitOffset(any(), anyInt(), anyLong()))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    final StreamRuntime<String> runtime =
+        StreamRuntime.<String>builder()
+            .client(client)
+            .group("g")
+            .instanceId("i")
+            .sourceTopic(TOPIC)
+            .deserializer(
+                (payload, partition, offset) -> new String(payload, StandardCharsets.UTF_8))
+            .taskFactory(topology::processorFor) // the wiring under test
+            .build();
+
+    // when
+    final Thread loop = new Thread(runtime::run, "runtime-under-test");
+    loop.start();
+    assertThat(processed.await(5, TimeUnit.SECONDS)).isTrue();
+    runtime.stop();
+    loop.join(TimeUnit.SECONDS.toMillis(5));
+
+    // then — each partition ran its own processor with partition-local state
+    assertThat(counters.get(1)[0]).isEqualTo(2L);
+    assertThat(counters.get(2)[0]).isEqualTo(1L);
   }
 }

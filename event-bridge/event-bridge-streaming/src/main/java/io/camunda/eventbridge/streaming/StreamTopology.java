@@ -17,9 +17,19 @@ import java.util.function.IntFunction;
  * instances, so each partition gets its own stage objects and its own state — the single-writer
  * guarantee per partition, with no shared mutable state across partitions.
  *
- * <p>This is the analogue of a topology that the runtime materializes once per task: build the
- * topology once, then call {@link #processorFor(int)} for each assigned partition. Concrete stage
- * factories (e.g. a fold-then-aggregate {@code ProjectionStage}) are supplied by the application.
+ * <p>Wire it straight into the runtime as its task factory — {@code
+ * StreamRuntime.builder().taskFactory(topology::processorFor)} — since {@link #processorFor(int)}
+ * returns a {@link StreamProcessor}, which is a {@link Task}. This is the
+ * runtime-managed-durability path: the runtime owns offsets and the commit transaction, and each
+ * partition gets a fresh partition-local {@link StreamProcessor}. (When a task must own its own
+ * durability — its own state backend, offset store and output sink — build an owning {@link Task}
+ * instead; see {@link Task#ownsDurability()}.)
+ *
+ * <p>A stage factory may build any {@link Stage}, including a {@code ProcessorTopology} graph
+ * (branch/merge/fan-out) per partition — so this composes with the processor DAG rather than
+ * competing with it: this decides <em>per-partition instantiation</em>, the DAG decides
+ * <em>wiring</em>. Concrete stage factories (e.g. a fold-then-aggregate {@code ProjectionStage})
+ * are supplied by the application.
  *
  * @param <R> the source record type
  */
