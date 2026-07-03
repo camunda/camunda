@@ -107,6 +107,7 @@ public class PermissionsBehavior {
         command.getIntent());
     final var auth = claimsConverter.convert(authorizations);
     final var cslPermType = AuthzModelMapper.fromProtocol(permissionType);
+    final var result =
         authCheckPort.check(
             auth,
             RequiredAuthorization.of(
