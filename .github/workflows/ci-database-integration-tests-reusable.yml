@@ -107,6 +107,8 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          # Authenticate gcloud when consuming the shared distball (see restore step below)
+          gcs-build-cache-auth: ${{ inputs.use-shared-distball }}
       # start the required database service
       - name: Start Database service
         if: ${{ inputs.database-type != 'h2' }}
@@ -121,33 +123,9 @@ jobs:
       # pull from GCS (same-region, non-billable); the GHA artifact API is throughput-capped
       # on self-hosted runners. github.run_id is stable across nested workflow_call, so it
       # addresses the same run-scoped prefix build-distball wrote. See #52693.
-      - name: Fetch GCS build-cache credentials
-        if: ${{ inputs.use-shared-distball }}
-        id: gcs-secrets
-        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false
-          secrets: |
-            secret/data/products/camunda/ci/build-cache/monorepo-build-cache-sa SERVICE_ACCOUNT | GCS_SA;
-            secret/data/products/camunda/ci/build-cache/monorepo-build-cache-sa WORKLOAD_IDENTITY_PROVIDER | GCS_WIF;
+      # (gcloud is authenticated by setup-build's gcs-build-cache-auth above.)
       - if: ${{ inputs.use-shared-distball }}
-        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
-        with:
-          workload_identity_provider: ${{ steps.gcs-secrets.outputs.GCS_WIF }}
-          service_account: ${{ steps.gcs-secrets.outputs.GCS_SA }}
-      - if: ${{ inputs.use-shared-distball }}
-        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
-      - name: Restore io.camunda SNAPSHOTs from GCS
-        if: ${{ inputs.use-shared-distball }}
-        run: |
-          set -euo pipefail
-          mkdir -p "${HOME}/.m2/repository/installed"
-          gcloud storage cp "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/m2-installed.tar" "${RUNNER_TEMP}/m2-installed.tar"
-          tar -xf "${RUNNER_TEMP}/m2-installed.tar" -C "${HOME}/.m2/repository/installed"
+        uses: ./.github/actions/restore-shared-m2
       # Fallback for standalone callers (zeebe-rdbms / zeebe-search) whose run has no
       # build-distball: build the platform locally, skipping frontend.
       - uses: ./.github/actions/build-zeebe
