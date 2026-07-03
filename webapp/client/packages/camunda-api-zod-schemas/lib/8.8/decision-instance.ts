@@ -103,7 +103,8 @@ const queryDecisionInstances = {
 
 const getDecisionInstance = {
 	method: 'GET',
-	getUrl: ({decisionEvaluationInstanceKey}) => `/${API_VERSION}/decision-instances/${decisionEvaluationInstanceKey}` as const,
+	getUrl: ({decisionEvaluationInstanceKey}) =>
+		`/${API_VERSION}/decision-instances/${decisionEvaluationInstanceKey}` as const,
 } as const satisfies Endpoint<Pick<DecisionInstance, 'decisionEvaluationInstanceKey'>>;
 
 export {

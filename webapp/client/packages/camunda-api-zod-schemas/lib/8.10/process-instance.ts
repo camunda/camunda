@@ -230,7 +230,8 @@ type GetProcessInstanceStatisticsParams = Pick<ProcessInstance, 'processInstance
 
 const getProcessInstanceWaitStateStatistics = {
 	method: 'GET',
-	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/statistics/wait-states` as const,
+	getUrl: ({processInstanceKey}) =>
+		`/${API_VERSION}/process-instances/${processInstanceKey}/statistics/wait-states` as const,
 } as const satisfies Endpoint<Pick<ProcessInstance, 'processInstanceKey'>>;
 
 const waitStateStatisticSchema = z.object({
@@ -412,7 +413,8 @@ type ResolveProcessInstanceIncidentsResponseBody = z.infer<typeof resolveProcess
 
 const resolveProcessInstanceIncidents = {
 	method: 'POST',
-	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/incident-resolution` as const,
+	getUrl: ({processInstanceKey}) =>
+		`/${API_VERSION}/process-instances/${processInstanceKey}/incident-resolution` as const,
 } as const satisfies Endpoint<Pick<ProcessInstance, 'processInstanceKey'>>;
 
 export {

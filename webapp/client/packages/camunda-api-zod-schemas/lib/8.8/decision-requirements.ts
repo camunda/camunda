@@ -49,7 +49,8 @@ const getDecisionRequirements = {
 
 const getDecisionRequirementsXml = {
 	method: 'GET',
-	getUrl: ({decisionRequirementsKey}) => `/${API_VERSION}/decision-requirements/${decisionRequirementsKey}/xml` as const,
+	getUrl: ({decisionRequirementsKey}) =>
+		`/${API_VERSION}/decision-requirements/${decisionRequirementsKey}/xml` as const,
 } as const satisfies Endpoint<Pick<DecisionRequirements, 'decisionRequirementsKey'>>;
 
 export {

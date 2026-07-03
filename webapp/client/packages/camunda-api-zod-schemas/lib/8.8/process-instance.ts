@@ -354,7 +354,8 @@ type ResolveProcessInstanceIncidentsResponseBody = z.infer<typeof resolveProcess
 
 const resolveProcessInstanceIncidents = {
 	method: 'POST',
-	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/incident-resolution` as const,
+	getUrl: ({processInstanceKey}) =>
+		`/${API_VERSION}/process-instances/${processInstanceKey}/incident-resolution` as const,
 } as const satisfies Endpoint<Pick<ProcessInstance, 'processInstanceKey'>>;
 
 export {
