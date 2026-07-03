@@ -30,6 +30,14 @@ public interface Task<R> {
   /** Emit buffered/produced output so latency stays bounded (called before {@link #checkpoint}). */
   default void flush() {}
 
+  /**
+   * Make this partition's produced output durable at its destination — the produce-before-commit
+   * step, run for one partition just before its offset advances. A task that owns its own output
+   * sink (e.g. a per-partition publisher) flushes it here so the shard is self-contained; default
+   * no-op for tasks whose output is made durable elsewhere.
+   */
+  default void preCommitFlush() {}
+
   /** Make working state durable; invoked inside the runtime's checkpoint transaction. */
   default void checkpoint() {}
 

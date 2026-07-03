@@ -29,6 +29,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
 final class StreamRuntimeTest {
@@ -379,6 +380,81 @@ final class StreamRuntimeTest {
     assertThat(wallClockTicks.await(5, TimeUnit.SECONDS)).isTrue();
     runtime.stop();
     loop.join(TimeUnit.SECONDS.toMillis(5));
+  }
+
+  @Test
+  void shouldCommitEachPartitionInItsOwnTransaction() throws Exception {
+    // given — a poll batch spanning two partitions
+    final Map<Integer, Long> committedOffsets = new HashMap<>();
+    final AtomicInteger transactions = new AtomicInteger();
+    final AtomicInteger preCommitFlushes = new AtomicInteger();
+    final CountDownLatch bothCommitted = new CountDownLatch(2);
+
+    final Consumer consumer = mock(Consumer.class);
+    final EventBridgeClient client = mock(EventBridgeClient.class);
+    when(client.subscribe(any(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(consumer));
+    when(consumer.sendHeartbeat()).thenReturn(CompletableFuture.completedFuture(null));
+    final Event onP1 = new Event(5L, TOPIC, 1, "a".getBytes(StandardCharsets.UTF_8));
+    final Event onP2 = new Event(7L, TOPIC, 2, "b".getBytes(StandardCharsets.UTF_8));
+    when(consumer.poll(anyInt(), any())).thenReturn(List.of(onP1, onP2)).thenReturn(List.of());
+    when(consumer.commitOffset(any(), anyInt(), anyLong()))
+        .thenAnswer(
+            invocation -> {
+              committedOffsets.put(invocation.getArgument(1), invocation.getArgument(2));
+              bothCommitted.countDown();
+              return CompletableFuture.completedFuture(null);
+            });
+
+    final Task<String> task =
+        new Task<>() {
+          @Override
+          public void process(final String record) {}
+
+          @Override
+          public void preCommitFlush() {
+            preCommitFlushes.incrementAndGet();
+          }
+        };
+
+    final StreamRuntime<String> runtime =
+        StreamRuntime.<String>builder()
+            .client(client)
+            .group("g")
+            .instanceId("i")
+            .sourceTopic(TOPIC)
+            .deserializer(
+                (payload, partition, offset) -> new String(payload, StandardCharsets.UTF_8))
+            .taskFactory(partition -> task)
+            .transactionRunner(
+                operations -> {
+                  transactions.incrementAndGet();
+                  operations.run();
+                })
+            .offsetStore(
+                new OffsetStore() {
+                  @Override
+                  public Map<Integer, Long> restore() {
+                    return Map.of();
+                  }
+
+                  @Override
+                  public void store(final int partition, final long offset) {}
+                })
+            .commitInterval(Duration.ZERO)
+            .build();
+
+    // when
+    final Thread loop = new Thread(runtime::run, "runtime-under-test");
+    loop.start();
+    assertThat(bothCommitted.await(5, TimeUnit.SECONDS)).isTrue();
+    runtime.stop();
+    loop.join(TimeUnit.SECONDS.toMillis(5));
+
+    // then — each partition advanced independently, in its own transaction and pre-commit flush
+    assertThat(committedOffsets).containsEntry(1, 5L).containsEntry(2, 7L);
+    assertThat(transactions.get()).isEqualTo(2);
+    assertThat(preCommitFlushes.get()).isEqualTo(2);
   }
 
   @SuppressWarnings("unchecked")

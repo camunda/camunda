@@ -33,12 +33,13 @@ import org.slf4j.LoggerFactory;
  * nothing but the EventBridge client and the four SPIs in this package, so it is reusable by any
  * consumer and knows nothing about what a task does.
  *
- * <p><b>Commit barrier — produce-before-commit.</b> On each commit tick the runtime (1) flushes
- * each task, which emits its produced output; (2) runs the {@code preCommitFlushes} so that output
- * is durable at the destination <em>before</em> any offset advances; (3) persists task state and
- * the consumed offsets in one {@link TransactionRunner atomic transaction}; and only then (4)
- * commits the source offset. A crash therefore replays rather than loses, and any re-emitted output
- * is deduplicated downstream by idempotent overwrite.
+ * <p><b>Commit barrier — produce-before-commit, sharded by partition.</b> On each commit tick the
+ * runtime (1) flushes every pending task, emitting its produced output, and makes that output
+ * durable at the destination <em>before</em> any offset advances; then, <em>per partition</em>, (2)
+ * persists that partition's state and offset in its own {@link TransactionRunner atomic
+ * transaction} and (3) advances only that partition's source offset. Each partition is thus an
+ * independent atomic cut: a crash mid-loop replays the not-yet-committed partitions rather than
+ * losing them, and any re-emitted output is deduplicated downstream by idempotent overwrite.
  *
  * <p><b>Threading.</b> A runtime is single-threaded by design: {@link #run()} owns one consumer and
  * drives poll, processing, punctuation, and commit on its own thread, processing one record at a
@@ -264,28 +265,40 @@ public final class StreamRuntime<R> implements AutoCloseable {
         });
   }
 
-  /** The produce-before-commit barrier (see class javadoc). No-op when nothing was processed. */
+  /**
+   * The produce-before-commit barrier, sharded by partition (see class javadoc). No-op when nothing
+   * was processed. Each partition is an independent atomic cut: its produced output is made
+   * durable, then its state and offset are persisted in that partition's own transaction, then only
+   * that partition's source offset advances — so one partition's commit neither blocks nor
+   * entangles another's, and a crash mid-loop simply replays the partitions not yet committed.
+   */
   private void commit() {
     if (pending.isEmpty()) {
       return;
     }
+    // Emit every pending partition's output, then make it durable before any offset advances.
+    // Global sinks run once (for tasks whose output is published elsewhere); a self-contained
+    // sharded task instead flushes its own partition's output via Task#preCommitFlush below.
     for (final int partition : pending.keySet()) {
       tasks.get(partition).flush();
     }
     preCommitFlushes.forEach(Runnable::run);
-    transactionRunner.runInTransaction(
-        () ->
-            pending.forEach(
-                (partition, offset) -> {
-                  // Store the offset first, then checkpoint: if the offset store is write-back
-                  // cached
-                  // and shares the task's backing store, the checkpoint flushes it in this same
-                  // transaction, so state and offset land as one atomic cut.
-                  offsets.store(partition, offset);
-                  tasks.get(partition).checkpoint();
-                }));
-    pending.forEach(
-        (partition, offset) -> consumer.commitOffset(sourceTopic, partition, offset).join());
+    for (final Map.Entry<Integer, Long> entry : pending.entrySet()) {
+      final int partition = entry.getKey();
+      final long offset = entry.getValue();
+      final Task<R> task = tasks.get(partition);
+      task.preCommitFlush();
+      // Store the offset first, then checkpoint: if the offset store is write-back cached and
+      // shares
+      // the task's backing store, the checkpoint flushes it in this same transaction, so this
+      // partition's state and offset land as one atomic cut.
+      transactionRunner.runInTransaction(
+          () -> {
+            offsets.store(partition, offset);
+            task.checkpoint();
+          });
+      consumer.commitOffset(sourceTopic, partition, offset).join();
+    }
     pending.clear();
   }
 
