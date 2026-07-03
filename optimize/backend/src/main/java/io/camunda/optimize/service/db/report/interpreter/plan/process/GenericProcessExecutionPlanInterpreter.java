@@ -32,6 +32,7 @@ import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutio
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_START_DATE_BY_PROCESS;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.FLOW_NODE_FREQUENCY_GROUP_BY_VARIABLE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.FLOW_NODE_FREQUENCY_GROUP_BY_VARIABLE_BY_PROCESS;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.FLOW_NODE_TOOL_CALLS_GROUP_BY_AGENT_FLOW_NODE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.INCIDENT_DURATION_GROUP_BY_FLOW_NODE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.INCIDENT_DURATION_GROUP_BY_NONE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan.INCIDENT_FREQUENCY_GROUP_BY_FLOW_NODE;
@@ -164,6 +165,7 @@ public interface GenericProcessExecutionPlanInterpreter extends ProcessExecution
         FLOW_NODE_FREQUENCY_BY_VARIABLE_BY_FLOW_NODE,
         FLOW_NODE_FREQUENCY_GROUP_BY_VARIABLE_BY_PROCESS,
         FLOW_NODE_FREQUENCY_GROUP_BY_VARIABLE,
+        FLOW_NODE_TOOL_CALLS_GROUP_BY_AGENT_FLOW_NODE,
         INCIDENT_DURATION_GROUP_BY_FLOW_NODE,
         INCIDENT_DURATION_GROUP_BY_NONE,
         INCIDENT_FREQUENCY_GROUP_BY_FLOW_NODE,
