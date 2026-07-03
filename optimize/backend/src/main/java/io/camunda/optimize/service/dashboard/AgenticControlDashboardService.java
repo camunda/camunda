@@ -116,6 +116,9 @@ public class AgenticControlDashboardService {
   public static final String DURATION_STABILITY_NAME = "agenticDurationStabilityName";
   public static final String DURATION_STABILITY_DESCRIPTION = "agenticDurationStabilityDescription";
 
+  public static final String DURATION_HEATMAP_NAME = "agenticDurationHeatmapName";
+  public static final String DURATION_HEATMAP_DESCRIPTION = "agenticDurationHeatmapDescription";
+
   // Deterministic report IDs — derived from fixed seed strings so IDs are stable across restarts
   // and DB reimports. Same seed always produces the same UUID (UUID v3 / name-based).
   public static final String KPI_COMPLETED_REPORT_ID =
@@ -154,6 +157,9 @@ public class AgenticControlDashboardService {
           .toString();
   public static final String TOOL_CALLS_HEATMAP_REPORT_ID =
       UUID.nameUUIDFromBytes("agentic-tool-calls-heatmap".getBytes(StandardCharsets.UTF_8))
+          .toString();
+  public static final String DURATION_HEATMAP_REPORT_ID =
+      UUID.nameUUIDFromBytes("agentic-duration-heatmap".getBytes(StandardCharsets.UTF_8))
           .toString();
 
   private static final long INSTANCE_END_DATE_ROLLING_DAYS = 30L;
@@ -218,6 +224,7 @@ public class AgenticControlDashboardService {
     tiles.add(buildFailureRateByVersionReport());
     tiles.add(buildTotalToolCallsReport());
     tiles.add(buildToolCallsHeatmapReport());
+    tiles.add(buildDurationHeatmapReport());
 
     // Always upsert the dashboard too — tile list can grow across versions and the cold-start
     // guard would leave an existing deployment stuck on the old layout.
@@ -761,6 +768,48 @@ public class AgenticControlDashboardService {
             true,
             TILE_CONFIG_SECTION,
             TILE_SECTION_RELIABILITY_AND_TOOL_CALLS));
+  }
+
+  // Average duration per flow node rendered as a process diagram heat map, so operators can see
+  // which step of an agentic process is slowest. Like the tool-calls heat map it is only visible
+  // once a single process definition is selected (L1): heatmaps need BPMN XML from a concrete
+  // definition, which the dashboard's process-scope filter supplies at render time. Duration is
+  // aggregated across all flow nodes of completed, agent-bearing instances.
+  private DashboardReportTileDto buildDurationHeatmapReport() {
+    final ProcessReportDataDto reportData =
+        ProcessReportDataDto.builder()
+            .definitions(Collections.emptyList())
+            .view(new ProcessViewDto(ProcessViewEntity.FLOW_NODE, ViewProperty.DURATION))
+            .groupBy(new FlowNodesGroupByDto())
+            .distributedBy(new NoneDistributedByDto())
+            .visualization(ProcessVisualization.HEAT)
+            .configuration(
+                SingleReportConfigurationDto.builder()
+                    .aggregationTypes(
+                        new LinkedHashSet<>(
+                            Collections.singletonList(new AggregationDto(AggregationType.AVERAGE))))
+                    .build())
+            .filter(
+                ProcessFilterBuilder.filter()
+                    .completedInstancesOnly()
+                    .add()
+                    .hasAgentInstances()
+                    .add()
+                    .buildList())
+            .agenticControlReport(true)
+            .build();
+    reportWriter.createOrUpdateSingleProcessReport(
+        DURATION_HEATMAP_REPORT_ID,
+        null,
+        reportData,
+        DURATION_HEATMAP_NAME,
+        DURATION_HEATMAP_DESCRIPTION,
+        null);
+    return buildTile(
+        DURATION_HEATMAP_REPORT_ID,
+        new PositionDto(0, 14),
+        new DimensionDto(18, 4),
+        Map.of(TILE_CONFIG_VISIBLE_IN_L1_ONLY, true, TILE_CONFIG_SECTION, TILE_SECTION_DURATION));
   }
 
   private DashboardDefinitionRestDto buildAgentDashboard(final List<DashboardReportTileDto> tiles) {
