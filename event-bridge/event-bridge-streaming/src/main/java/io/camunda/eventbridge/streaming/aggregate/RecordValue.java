@@ -15,9 +15,9 @@ import org.agrona.concurrent.UnsafeBuffer;
  * self-serializing record-value machinery the engines use for persisted state (e.g. a persisted
  * broker exposing {@code wrap(BrokerMetadata)} / {@code toMetadata()}). Implementations are {@code
  * UnpackedObject} flyweights whose msgpack properties define the wire layout once, replacing the
- * hand-rolled byte codecs the rollups used to carry arbitrary grouping keys and accumulators.
+ * hand-rolled byte codecs the aggregations used to carry arbitrary grouping keys and accumulators.
  *
- * <p>The framework stays agnostic to the concrete type: the durable rollups hold their shared,
+ * <p>The framework stays agnostic to the concrete type: the durable aggregations hold their shared,
  * heterogeneous cells in byte-keyed stores and the shuffle carries opaque payloads, so both need a
  * {@code byte[]} view of the value. The {@link #toBytes}/{@link #fromBytes} defaults derive that
  * from the flyweight's own {@link DbValue} serialization, so a domain only implements the two

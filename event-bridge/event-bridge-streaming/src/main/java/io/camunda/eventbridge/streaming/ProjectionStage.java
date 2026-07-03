@@ -14,7 +14,7 @@ import java.util.List;
 
 /**
  * The common stage: a {@link Projector} folds each record and its derived values fan out to one or
- * more {@link Aggregation}s. Registering several rollups is how one value feeds several
+ * more {@link Aggregation}s. Registering several aggregations is how one value feeds several
  * aggregations; using several projection stages (or other stages) is how a record yields different
  * values.
  *
@@ -24,20 +24,20 @@ import java.util.List;
 public final class ProjectionStage<R, F> implements Stage<R> {
 
   private final Projector<R, F> projector;
-  private final List<Aggregation<F>> rollups;
+  private final List<Aggregation<F>> aggregations;
   private final Collector<F> collector;
 
-  public ProjectionStage(final Projector<R, F> projector, final List<Aggregation<F>> rollups) {
+  public ProjectionStage(final Projector<R, F> projector, final List<Aggregation<F>> aggregations) {
     this.projector = projector;
-    this.rollups = List.copyOf(rollups);
-    this.collector = value -> this.rollups.forEach(rollup -> rollup.accept(value));
+    this.aggregations = List.copyOf(aggregations);
+    this.collector = value -> this.aggregations.forEach(aggregation -> aggregation.accept(value));
   }
 
-  /** A stage from a projector and its rollups. */
+  /** A stage from a projector and its aggregations. */
   @SafeVarargs
   public static <R, F> ProjectionStage<R, F> of(
-      final Projector<R, F> projector, final Aggregation<F>... rollups) {
-    return new ProjectionStage<>(projector, List.of(rollups));
+      final Projector<R, F> projector, final Aggregation<F>... aggregations) {
+    return new ProjectionStage<>(projector, List.of(aggregations));
   }
 
   @Override
@@ -52,25 +52,25 @@ public final class ProjectionStage<R, F> implements Stage<R> {
 
   @Override
   public void flush() {
-    rollups.forEach(Aggregation::flush);
+    aggregations.forEach(Aggregation::flush);
   }
 
   @Override
   public void checkpoint() {
-    // Persist the projector's fold state first, then the rollups — all in the runtime's one
+    // Persist the projector's fold state first, then the aggregations — all in the runtime's one
     // checkpoint transaction, so this stage's entire durable state advances as a single cut.
     projector.checkpoint();
-    rollups.forEach(Aggregation::checkpoint);
+    aggregations.forEach(Aggregation::checkpoint);
   }
 
   @Override
   public void advanceStreamTime(final long streamTimeMs) {
-    rollups.forEach(rollup -> rollup.advanceStreamTime(streamTimeMs));
+    aggregations.forEach(aggregation -> aggregation.advanceStreamTime(streamTimeMs));
   }
 
   @Override
   public void punctuateWallClock(final long wallClockMs) {
-    rollups.forEach(rollup -> rollup.punctuateWallClock(wallClockMs));
+    aggregations.forEach(aggregation -> aggregation.punctuateWallClock(wallClockMs));
   }
 
   @Override
@@ -78,8 +78,8 @@ public final class ProjectionStage<R, F> implements Stage<R> {
     if (projector.needsCheckpoint()) {
       return true;
     }
-    for (final Aggregation<F> rollup : rollups) {
-      if (rollup.needsCheckpoint()) {
+    for (final Aggregation<F> aggregation : aggregations) {
+      if (aggregation.needsCheckpoint()) {
         return true;
       }
     }
@@ -89,6 +89,6 @@ public final class ProjectionStage<R, F> implements Stage<R> {
   @Override
   public void close() {
     projector.close();
-    rollups.forEach(Aggregation::close);
+    aggregations.forEach(Aggregation::close);
   }
 }

@@ -21,7 +21,7 @@ import java.util.Set;
  * A graph of {@link Processor}s driven as one {@link Stage}: records enter at the source and flow
  * along the wired edges, each processor {@link ProcessorContext#forward forwarding} to its
  * children. This is the general topology model — branch, merge, fan-out — in contrast to the fixed
- * fold-then-rollup of {@code ProjectionStage}.
+ * fold-then-aggregation of {@code ProjectionStage}.
  *
  * <p>The topology also owns punctuation: processors register {@link Punctuator}s via {@link
  * ProcessorContext#schedule}, and the runtime's two punctuation ticks drive them — {@link

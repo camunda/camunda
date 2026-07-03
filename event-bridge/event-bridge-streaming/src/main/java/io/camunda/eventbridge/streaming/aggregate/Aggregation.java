@@ -9,8 +9,8 @@ package io.camunda.eventbridge.streaming.aggregate;
 
 /**
  * Consumes derived values and maintains a pre-aggregated, grouped result. One projector's values
- * can fan out to several rollups, each grouping differently (e.g. by region and by definition) —
- * that is how multiple aggregations are built over the same value.
+ * can fan out to several aggregations, each grouping differently (e.g. by region and by definition)
+ * — that is how multiple aggregations are built over the same value.
  *
  * <p>Driven by two clocks (see {@code StreamProcessor}): {@link #flush()} on a wall-clock tick
  * keeps latency bounded and drains idle partials; {@link #advanceStreamTime(long)} on event-time
@@ -34,7 +34,7 @@ public interface Aggregation<F> extends AutoCloseable {
    * Commit-interval tick: make the in-memory working state durable — write the cells changed (and
    * evict the ones finalized) since the last checkpoint, together with the consumed offsets, in one
    * transaction. Decoupled from {@link #flush()} so many batches coalesce into one durable write (a
-   * write-back record-cache model). Default: no-op for rollups that keep no durable state.
+   * write-back record-cache model). Default: no-op for aggregations that keep no durable state.
    */
   default void checkpoint() {}
 
@@ -49,7 +49,7 @@ public interface Aggregation<F> extends AutoCloseable {
   default void punctuateWallClock(final long wallClockMs) {}
 
   /**
-   * Whether this rollup holds buffered state that should be checkpointed before the regular
+   * Whether this aggregation holds buffered state that should be checkpointed before the regular
    * interval — e.g. a bounded cache is full. Default: no-op ({@code false}).
    */
   default boolean needsCheckpoint() {

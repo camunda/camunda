@@ -11,7 +11,7 @@ package io.camunda.eventbridge.streaming.window;
  * A windowing strategy: assigns an event time to the window it falls into, and carries the window
  * size and the grace period (allowed lateness). Grace is part of the window definition — not a
  * separate parameter threaded through the aggregation — mirroring Kafka Streams' {@code
- * TimeWindows.ofSizeAndGrace}. The window a rollup finalizes and evicts once the event-time
+ * TimeWindows.ofSizeAndGrace}. The window a aggregation finalizes and evicts once the event-time
  * watermark passes {@code windowEnd + grace}.
  */
 public interface Windows {

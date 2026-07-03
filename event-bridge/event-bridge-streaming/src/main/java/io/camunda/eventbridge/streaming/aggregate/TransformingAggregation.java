@@ -11,18 +11,18 @@ import io.camunda.eventbridge.streaming.fold.Collector;
 import io.camunda.eventbridge.streaming.fold.Projector;
 
 /**
- * A {@link Aggregation} that expands each value before it reaches a downstream rollup: it runs the
- * value through a {@link Projector} (the enricher) and forwards the result on. This is how one
+ * A {@link Aggregation} that expands each value before it reaches a downstream aggregation: it runs
+ * the value through a {@link Projector} (the enricher) and forwards the result on. This is how one
  * already derived value feeds another dataset with additional data — the enricher typically adds
  * fields from a state-store lookup (a stream-table join), so the downstream dataset is built
  * without re-deriving or re-fetching the base value.
  *
- * <p>Place it alongside the base rollup in a {@link ProjectionStage}: the projector emits the base
- * value once, and it fans out to both the base rollup and this one, which enriches and forwards to
- * {@code downstream}.
+ * <p>Place it alongside the base aggregation in a {@link ProjectionStage}: the projector emits the
+ * base value once, and it fans out to both the base aggregation and this one, which enriches and
+ * forwards to {@code downstream}.
  *
  * @param <A> the incoming value type
- * @param <B> the enriched value type the downstream rollup consumes
+ * @param <B> the enriched value type the downstream aggregation consumes
  */
 public final class TransformingAggregation<A, B> implements Aggregation<A> {
 

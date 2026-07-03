@@ -28,7 +28,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  * authoritative working copy, loaded from the delegate on construction) and reads/writes never
  * touch the delegate. {@link #checkpoint()} flushes the keys changed and deleted since the last
  * checkpoint to the delegate in one pass — so, wrapped in the driver's checkpoint transaction, the
- * base projection's writes coalesce into the same atomic cut as the rollups instead of writing
+ * base projection's writes coalesce into the same atomic cut as the aggregations instead of writing
  * through per record (a write-back record-cache model, applied to a plain key-value store).
  *
  * <p>Keys and values are stored as their serialized bytes in unsigned-byte order, matching the

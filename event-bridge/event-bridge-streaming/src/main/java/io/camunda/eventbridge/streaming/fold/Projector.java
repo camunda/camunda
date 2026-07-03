@@ -32,9 +32,9 @@ public interface Projector<R, F> {
 
   /**
    * Make the projector's durable fold state persistent. Called at the commit interval, inside the
-   * runtime's checkpoint transaction, so the fold state commits atomically with the rollups and the
-   * consumed offset. A projector backed only by in-memory or write-through state may leave this a
-   * no-op; a write-back-cached store flushes here.
+   * runtime's checkpoint transaction, so the fold state commits atomically with the aggregations
+   * and the consumed offset. A projector backed only by in-memory or write-through state may leave
+   * this a no-op; a write-back-cached store flushes here.
    */
   default void checkpoint() {}
 

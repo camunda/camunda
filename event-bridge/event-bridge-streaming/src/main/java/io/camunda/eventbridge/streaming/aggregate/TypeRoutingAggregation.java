@@ -8,14 +8,14 @@
 package io.camunda.eventbridge.streaming.aggregate;
 
 /**
- * Routes a fan-out of mixed values to a typed downstream rollup: accepts the common supertype,
+ * Routes a fan-out of mixed values to a typed downstream aggregation: accepts the common supertype,
  * passes only values of the given subtype on, and ignores the rest. This is how one fold that emits
- * several value types feeds several aggregations — each rollup is wrapped to take its own type, and
- * the projector's values fan out to all of them. Lifecycle calls (flush, stream-time, close) pass
- * through.
+ * several value types feeds several aggregations — each aggregation is wrapped to take its own
+ * type, and the projector's values fan out to all of them. Lifecycle calls (flush, stream-time,
+ * close) pass through.
  *
  * @param <F> the fan-out (supertype) the projector emits
- * @param <S> the subtype this rollup consumes
+ * @param <S> the subtype this aggregation consumes
  */
 public final class TypeRoutingAggregation<F, S extends F> implements Aggregation<F> {
 

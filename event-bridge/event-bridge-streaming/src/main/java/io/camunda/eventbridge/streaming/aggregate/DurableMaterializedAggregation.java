@@ -23,8 +23,8 @@ import java.util.function.Predicate;
 import java.util.function.ToLongFunction;
 
 /**
- * A windowed rollup whose open-window accumulators live on the heap (the authoritative working set,
- * a write-back cache) and are periodically checkpointed to a RocksDB-backed state store — a
+ * A windowed aggregation whose open-window accumulators live on the heap (the authoritative working
+ * set, a write-back cache) and are periodically checkpointed to a RocksDB-backed state store — a
  * write-back record-cache model. It replaces a write-through design (get+merge+put every cell every
  * batch, plus a full column-family scan to finalize) whose per-batch cost was the throughput
  * ceiling.
@@ -54,10 +54,10 @@ import java.util.function.ToLongFunction;
  * same footprint the reference engines keep in their state cache; finalized windows are evicted, so
  * on-disk and in-heap state track the open windows (retention).
  *
- * <p>Many rollups share the <em>same</em> cell and offset stores (one RocksDB per stage): every
- * durable key is prefixed with a stable {@code rollupId}, so a rollup reads/evicts only its own
- * cells (via {@code prefixScan(rollupId)}) and a new metric or user-created dataset is a new {@code
- * rollupId}, not a new column family.
+ * <p>Many aggregations share the <em>same</em> cell and offset stores (one RocksDB per stage):
+ * every durable key is prefixed with a stable {@code aggregationId}, so a aggregation reads/evicts
+ * only its own cells (via {@code prefixScan(aggregationId)}) and a new metric or user-created
+ * dataset is a new {@code aggregationId}, not a new column family.
  *
  * @param <F> the value type
  * @param <K> the (pre-window) grouping key type
@@ -68,7 +68,7 @@ public final class DurableMaterializedAggregation<F, K, ACC> implements Aggregat
   /** Reserved offset-store partition slot (no real partition uses it) holding the watermark. */
   private static final int WATERMARK_SLOT = -1;
 
-  private final int rollupId;
+  private final int aggregationId;
   private final AggregateFunction<F, ACC, ?> aggregate;
   private final KeySelector<F, K> keySelector;
   private final ToLongFunction<F> eventTime;
@@ -90,11 +90,11 @@ public final class DurableMaterializedAggregation<F, K, ACC> implements Aggregat
   // time-based lateness remains as a backstop for cohorts that never drain (e.g. stuck instances).
   private final Predicate<ACC> drained;
 
-  // Flyweights this rollup writes through (reads return the store's own flyweights).
+  // Flyweights this aggregation writes through (reads return the store's own flyweights).
   private final DbBytes cellKey = new DbBytes();
   private final DbBytes cellValue = new DbBytes();
   private final DbBytes offsetKey = new DbBytes();
-  private final DbBytes rollupPrefix = new DbBytes();
+  private final DbBytes aggregationPrefix = new DbBytes();
   private final DbLong longValue = new DbLong();
 
   // Heap: the authoritative open-window accumulators (the record cache), plus the change/eviction
@@ -107,7 +107,7 @@ public final class DurableMaterializedAggregation<F, K, ACC> implements Aggregat
   private long maxEventTime = Long.MIN_VALUE;
 
   public DurableMaterializedAggregation(
-      final int rollupId,
+      final int aggregationId,
       final AggregateFunction<F, ACC, ?> aggregate,
       final KeySelector<F, K> keySelector,
       final ToLongFunction<F> eventTime,
@@ -120,7 +120,7 @@ public final class DurableMaterializedAggregation<F, K, ACC> implements Aggregat
       final RecordValue<ACC> accValue,
       final TransactionRunner tx) {
     this(
-        rollupId,
+        aggregationId,
         aggregate,
         keySelector,
         eventTime,
@@ -136,7 +136,7 @@ public final class DurableMaterializedAggregation<F, K, ACC> implements Aggregat
   }
 
   public DurableMaterializedAggregation(
-      final int rollupId,
+      final int aggregationId,
       final AggregateFunction<F, ACC, ?> aggregate,
       final KeySelector<F, K> keySelector,
       final ToLongFunction<F> eventTime,
@@ -149,7 +149,7 @@ public final class DurableMaterializedAggregation<F, K, ACC> implements Aggregat
       final RecordValue<ACC> accValue,
       final TransactionRunner tx,
       final Predicate<ACC> drained) {
-    this.rollupId = rollupId;
+    this.aggregationId = aggregationId;
     this.aggregate = aggregate;
     this.keySelector = keySelector;
     this.eventTime = eventTime;
@@ -246,13 +246,13 @@ public final class DurableMaterializedAggregation<F, K, ACC> implements Aggregat
   }
 
   /**
-   * Loads this rollup's applied positions, watermark, and durable cells into the heap, scanning
-   * only its own {@code rollupId} prefix within the shared cell/offset stores.
+   * Loads this aggregation's applied positions, watermark, and durable cells into the heap,
+   * scanning only its own {@code aggregationId} prefix within the shared cell/offset stores.
    */
   private void recover() {
-    rollupPrefix.wrapBytes(rollupIdPrefix());
+    aggregationPrefix.wrapBytes(aggregationIdPrefix());
     offsetStore.prefixScan(
-        rollupPrefix,
+        aggregationPrefix,
         (key, position) -> {
           final int partition = partitionOf(key.getBytes());
           if (partition == WATERMARK_SLOT) {
@@ -262,7 +262,7 @@ public final class DurableMaterializedAggregation<F, K, ACC> implements Aggregat
           }
         });
     cellStore.prefixScan(
-        rollupPrefix,
+        aggregationPrefix,
         (key, value) -> cells.put(decodeKey(key.getBytes()), accValue.fromBytes(value.getBytes())));
   }
 
@@ -318,16 +318,19 @@ public final class DurableMaterializedAggregation<F, K, ACC> implements Aggregat
     }
   }
 
-  /** The 4-byte big-endian {@code rollupId} prefix every durable key of this rollup carries. */
-  private byte[] rollupIdPrefix() {
-    return ByteBuffer.allocate(Integer.BYTES).putInt(rollupId).array();
+  /**
+   * The 4-byte big-endian {@code aggregationId} prefix every durable key of this aggregation
+   * carries.
+   */
+  private byte[] aggregationIdPrefix() {
+    return ByteBuffer.allocate(Integer.BYTES).putInt(aggregationId).array();
   }
 
-  /** Cell key: {@code rollupId ++ windowStart ++ codec(groupingKey)}. */
+  /** Cell key: {@code aggregationId ++ windowStart ++ codec(groupingKey)}. */
   private byte[] encodeKey(final Windowed<K> windowed) {
     final byte[] keyBytes = keyValue.toBytes(windowed.key());
     return ByteBuffer.allocate(Integer.BYTES + Long.BYTES + keyBytes.length)
-        .putInt(rollupId)
+        .putInt(aggregationId)
         .putLong(windowed.windowStart())
         .put(keyBytes)
         .array();
@@ -335,22 +338,24 @@ public final class DurableMaterializedAggregation<F, K, ACC> implements Aggregat
 
   private Windowed<K> decodeKey(final byte[] bytes) {
     final ByteBuffer buffer = ByteBuffer.wrap(bytes);
-    buffer.getInt(); // rollupId prefix — already scoped by the prefix scan
+    buffer.getInt(); // aggregationId prefix — already scoped by the prefix scan
     final long windowStart = buffer.getLong();
     final byte[] keyBytes = new byte[buffer.remaining()];
     buffer.get(keyBytes);
     return new Windowed<>(keyValue.fromBytes(keyBytes), windowStart);
   }
 
-  /** Offset key: {@code rollupId ++ partitionId} (the watermark uses {@link #WATERMARK_SLOT}). */
+  /**
+   * Offset key: {@code aggregationId ++ partitionId} (the watermark uses {@link #WATERMARK_SLOT}).
+   */
   private byte[] encodeOffsetKey(final int partition) {
     return ByteBuffer.allocate(Integer.BYTES + Integer.BYTES)
-        .putInt(rollupId)
+        .putInt(aggregationId)
         .putInt(partition)
         .array();
   }
 
   private int partitionOf(final byte[] offsetKey) {
-    return ByteBuffer.wrap(offsetKey).getInt(Integer.BYTES); // second int, after the rollupId
+    return ByteBuffer.wrap(offsetKey).getInt(Integer.BYTES); // second int, after the aggregationId
   }
 }

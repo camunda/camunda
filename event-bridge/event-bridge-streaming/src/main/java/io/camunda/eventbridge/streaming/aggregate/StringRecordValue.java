@@ -13,8 +13,8 @@ import org.agrona.MutableDirectBuffer;
 
 /**
  * Record flyweight for a {@code String} grouping key. Delegates to the ZeebeDb {@link DbString}
- * primitive, so it is reusable for any rollup keyed by a single string dimension, such as a tenant
- * id.
+ * primitive, so it is reusable for any aggregation keyed by a single string dimension, such as a
+ * tenant id.
  */
 public final class StringRecordValue implements RecordValue<String> {
 

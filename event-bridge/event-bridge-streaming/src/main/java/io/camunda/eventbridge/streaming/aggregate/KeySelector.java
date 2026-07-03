@@ -9,8 +9,8 @@ package io.camunda.eventbridge.streaming.aggregate;
 
 /**
  * Extracts the grouping key a value aggregates under. Must be deterministic — the same value always
- * yields the same key. The key type must be value-equal (a {@code record}), since a rollup buffers
- * its per-key cells in a map.
+ * yields the same key. The key type must be value-equal (a {@code record}), since a aggregation
+ * buffers its per-key cells in a map.
  *
  * @param <IN> the value type
  * @param <KEY> the grouping key type
