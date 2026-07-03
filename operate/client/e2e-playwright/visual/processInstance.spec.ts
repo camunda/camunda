@@ -120,6 +120,7 @@ test.describe('process instance page', () => {
         xml: waitStateRunningInstance.xml,
         incidents: waitStateRunningInstance.incidents,
         waitStates: waitStateRunningInstance.waitStates,
+        waitStateStatistics: waitStateRunningInstance.waitStateStatistics,
       }),
     );
 

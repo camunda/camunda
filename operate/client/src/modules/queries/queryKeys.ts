@@ -257,6 +257,12 @@ const queryKeys = {
       processInstanceKey,
     ],
   },
+  waitStateStatistics: {
+    get: (processInstanceKey: string) => [
+      'waitStateStatistics',
+      processInstanceKey,
+    ],
+  },
   callHierarchy: {
     get: (processInstanceKey: string) => ['callHierarchy', processInstanceKey],
   },

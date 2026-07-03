@@ -315,6 +315,12 @@ const waitStateProcessInstance: InstanceMock = {
       hasMoreTotalItems: false,
     },
   },
+  waitStateStatistics: {
+    items: [
+      {elementId: 'approveOrder', waitingCount: 1},
+      {elementId: 'chargePayment', waitingCount: 1},
+    ],
+  },
 };
 
 export {waitStateProcessInstance};
