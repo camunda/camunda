@@ -16,7 +16,7 @@ import java.util.function.ToLongFunction;
  * A group scoped into event-time windows, awaiting an aggregate. Carries the window strategy and
  * the event-time extractor through to {@link #aggregate}, which picks the metric.
  *
- * @param <F> the fact type
+ * @param <F> the value type
  * @param <K> the grouping key type
  */
 public final class WindowedGrouped<F, K> {

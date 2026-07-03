@@ -23,7 +23,7 @@ import java.util.function.ToLongFunction;
  * authoritative windowed state, source-coordinate deduplication of replays, idempotent full-value
  * upserts, and event-time finalization/eviction once a window closes past its grace.
  *
- * @param <F> the fact type
+ * @param <F> the value type
  * @param <K> the grouping key type
  * @param <ACC> the accumulator type
  */
@@ -46,7 +46,7 @@ public final class WindowedAggregated<F, K, ACC> {
   }
 
   /**
-   * Materializes into {@code sink}, deduplicating replays by {@code coordinate} (the fact's source
+   * Materializes into {@code sink}, deduplicating replays by {@code coordinate} (the value's source
    * partition and position).
    */
   public Aggregation<F> into(

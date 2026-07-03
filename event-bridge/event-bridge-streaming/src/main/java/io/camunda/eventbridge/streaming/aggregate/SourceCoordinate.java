@@ -8,15 +8,15 @@
 package io.camunda.eventbridge.streaming.aggregate;
 
 /**
- * Extracts a fact's source coordinate — the partition and monotonic position of the source record
- * it was derived from. Used as the idempotency key: a per-partition high-watermark drops any fact
- * at or below the last applied position, so replay/redelivery cannot fold the same fact twice.
+ * Extracts a value's source coordinate — the partition and monotonic position of the source record
+ * it was derived from. Used as the idempotency key: a per-partition high-watermark drops any value
+ * at or below the last applied position, so replay/redelivery cannot fold the same value twice.
  *
- * @param <F> the fact type
+ * @param <F> the value type
  */
 public interface SourceCoordinate<F> {
 
-  int partition(F fact);
+  int partition(F value);
 
-  long position(F fact);
+  long position(F value);
 }

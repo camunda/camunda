@@ -8,20 +8,20 @@
 package io.camunda.eventbridge.streaming.aggregate;
 
 /**
- * Consumes derived facts and maintains a pre-aggregated, grouped result. One projector's facts can
- * fan out to several rollups, each grouping differently (e.g. by region and by definition) — that
- * is how multiple aggregations are built over the same fact.
+ * Consumes derived values and maintains a pre-aggregated, grouped result. One projector's values
+ * can fan out to several rollups, each grouping differently (e.g. by region and by definition) —
+ * that is how multiple aggregations are built over the same value.
  *
  * <p>Driven by two clocks (see {@code StreamProcessor}): {@link #flush()} on a wall-clock tick
  * keeps latency bounded and drains idle partials; {@link #advanceStreamTime(long)} on event-time
  * progress drives window finalization/retention.
  *
- * @param <F> the fact type consumed
+ * @param <F> the value type consumed
  */
 public interface Aggregation<F> extends AutoCloseable {
 
-  /** Folds one fact into its group cell (typically into an in-memory pre-aggregation buffer). */
-  void accept(F fact);
+  /** Folds one value into its group cell (typically into an in-memory pre-aggregation buffer). */
+  void accept(F value);
 
   /**
    * Wall-clock tick: converge the serving view for the cells changed since the last flush. This is
@@ -42,7 +42,7 @@ public interface Aggregation<F> extends AutoCloseable {
   default void advanceStreamTime(final long streamTimeMs) {}
 
   /**
-   * Wall-clock punctuation tick: finalize/emit on real time even when no facts are arriving (an
+   * Wall-clock punctuation tick: finalize/emit on real time even when no values are arriving (an
    * idle grouping), for callers that want idle windows to close by wall clock rather than event
    * time. Default: no-op — the standard model finalizes on {@link #advanceStreamTime}.
    */

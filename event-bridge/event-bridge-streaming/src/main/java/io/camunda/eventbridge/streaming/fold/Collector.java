@@ -8,15 +8,15 @@
 package io.camunda.eventbridge.streaming.fold;
 
 /**
- * The emit channel a {@link Projector} writes derived facts into. The runtime owns the collector
- * and decides what happens to collected facts (route them to a sink, pre-aggregate them, …); the
- * fold just emits. A single fold step may collect zero, one, or many facts.
+ * The emit channel a {@link Projector} writes derived values into. The runtime owns the collector
+ * and decides what happens to collected values (route them to a sink, pre-aggregate them, …); the
+ * fold just emits. A single fold step may collect zero, one, or many values.
  *
- * @param <T> the emitted fact type
+ * @param <T> the emitted value type
  */
 @FunctionalInterface
 public interface Collector<T> {
 
-  /** Emits one fact downstream. */
-  void collect(T fact);
+  /** Emits one value downstream. */
+  void collect(T value);
 }

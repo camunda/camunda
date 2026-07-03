@@ -10,12 +10,12 @@ package io.camunda.eventbridge.streaming.aggregate;
 import java.util.function.ToLongFunction;
 
 /**
- * A mergeable running sum of a signed long extracted from each fact. With a {@code +1 / -1}
+ * A mergeable running sum of a signed long extracted from each value. With a {@code +1 / -1}
  * extractor and a single (all-time) window it is a gauge — e.g. in-flight instances = sum of {@code
  * +1} on start and {@code -1} on completion. {@code merge} is addition, so it pre-aggregates and
  * combines across partitions exactly like {@link CountAggregateFunction}.
  *
- * @param <F> the fact type
+ * @param <F> the value type
  */
 public final class SumAggregateFunction<F> implements AggregateFunction<F, Long, Long> {
 
@@ -31,8 +31,8 @@ public final class SumAggregateFunction<F> implements AggregateFunction<F, Long,
   }
 
   @Override
-  public Long add(final F fact, final Long acc) {
-    return acc + value.applyAsLong(fact);
+  public Long add(final F item, final Long acc) {
+    return acc + value.applyAsLong(item);
   }
 
   @Override

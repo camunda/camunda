@@ -32,7 +32,7 @@ import java.util.function.ToLongFunction;
  * <p>Three clocks drive it, decoupled on purpose:
  *
  * <ul>
- *   <li>{@link #accept} folds each fact into the heap cell and advances the event-time watermark —
+ *   <li>{@link #accept} folds each value into the heap cell and advances the event-time watermark —
  *       no I/O.
  *   <li>{@link #flush()} (per batch) converges the serving {@link ResultSink} for the cells changed
  *       since the last flush — dashboard freshness, but nothing is made durable.
@@ -43,7 +43,7 @@ import java.util.function.ToLongFunction;
  * </ul>
  *
  * <p>Correctness under at-least-once delivery is unchanged from the write-through design: a
- * per-partition applied-position high-watermark drops replayed facts ({@link #consumedPositions()}
+ * per-partition applied-position high-watermark drops replayed values ({@link #consumedPositions()}
  * is persisted alongside the cells, so state and offset share one atomic cut), each changed cell is
  * upserted as its full value by a deterministic key (idempotent re-emit), and finalization emits a
  * final value and evicts the cell once its window closes. A crash between checkpoints rolls the
@@ -59,7 +59,7 @@ import java.util.function.ToLongFunction;
  * cells (via {@code prefixScan(rollupId)}) and a new metric or user-created dataset is a new {@code
  * rollupId}, not a new column family.
  *
- * @param <F> the fact type
+ * @param <F> the value type
  * @param <K> the (pre-window) grouping key type
  * @param <ACC> the accumulator type
  */
@@ -173,18 +173,18 @@ public final class DurableMaterializedAggregation<F, K, ACC> implements Aggregat
   }
 
   @Override
-  public void accept(final F fact) {
-    final int partition = coordinate.partition(fact);
-    final long position = coordinate.position(fact);
+  public void accept(final F value) {
+    final int partition = coordinate.partition(value);
+    final long position = coordinate.position(value);
     final Long applied = appliedPosition.get(partition);
     if (applied != null && position <= applied) {
       return; // already folded (durable watermark) — replay/redelivery
     }
     appliedPosition.put(partition, position);
 
-    final long timestamp = eventTime.applyAsLong(fact);
+    final long timestamp = eventTime.applyAsLong(value);
     final long windowStart = windows.windowStart(timestamp);
-    // Drop facts whose window has already closed (its cell has been, or is about to be, finalized
+    // Drop values whose window has already closed (its cell has been, or is about to be, finalized
     // and evicted). Folding them would resurrect an evicted cell from an empty accumulator, and the
     // idempotent full-value sink would then overwrite the finalized row with that partial —
     // silently
@@ -194,8 +194,8 @@ public final class DurableMaterializedAggregation<F, K, ACC> implements Aggregat
         && windowStart + windows.sizeMs() + windows.graceMs() <= maxEventTime) {
       return;
     }
-    final Windowed<K> key = new Windowed<>(keySelector.getKey(fact), windowStart);
-    cells.merge(key, aggregate.add(fact, aggregate.createAccumulator()), aggregate::merge);
+    final Windowed<K> key = new Windowed<>(keySelector.getKey(value), windowStart);
+    cells.merge(key, aggregate.add(value, aggregate.createAccumulator()), aggregate::merge);
     changedSinceFlush.add(key);
     changedSinceCheckpoint.add(key);
     evictedSinceCheckpoint.remove(key); // a re-touched cell is live again, not to be deleted

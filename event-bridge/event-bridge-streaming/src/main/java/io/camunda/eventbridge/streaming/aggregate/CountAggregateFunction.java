@@ -8,10 +8,10 @@
 package io.camunda.eventbridge.streaming.aggregate;
 
 /**
- * A standard reusable aggregate that counts facts. The accumulator and result are both the running
+ * A standard reusable aggregate that counts values. The accumulator and result are both the running
  * count; {@code merge} adds, so it pre-aggregates and combines across partitions freely.
  *
- * @param <F> the fact type (its value is irrelevant — only occurrences are counted)
+ * @param <F> the value type (its value is irrelevant — only occurrences are counted)
  */
 public final class CountAggregateFunction<F> implements AggregateFunction<F, Long, Long> {
 
@@ -21,7 +21,7 @@ public final class CountAggregateFunction<F> implements AggregateFunction<F, Lon
   }
 
   @Override
-  public Long add(final F value, final Long count) {
+  public Long add(final F item, final Long count) {
     return count + 1;
   }
 

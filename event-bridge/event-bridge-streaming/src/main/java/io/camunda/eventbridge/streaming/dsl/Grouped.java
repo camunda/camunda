@@ -12,10 +12,10 @@ import io.camunda.eventbridge.streaming.window.Windows;
 import java.util.function.ToLongFunction;
 
 /**
- * Facts grouped by a key, awaiting a windowing. The single materialization model is windowed, so a
+ * Values grouped by a key, awaiting a windowing. The single materialization model is windowed, so a
  * group is scoped into event-time windows with {@link #windowedBy} before it can be aggregated.
  *
- * @param <F> the fact type
+ * @param <F> the value type
  * @param <K> the grouping key type
  */
 public final class Grouped<F, K> {
@@ -26,7 +26,7 @@ public final class Grouped<F, K> {
     this.keySelector = keySelector;
   }
 
-  /** Scopes the group into event-time windows by the fact's event time. */
+  /** Scopes the group into event-time windows by the value's event time. */
   public WindowedGrouped<F, K> windowedBy(
       final Windows windows, final ToLongFunction<F> eventTime) {
     return new WindowedGrouped<>(keySelector, windows, eventTime);

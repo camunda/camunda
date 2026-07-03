@@ -25,7 +25,7 @@ import java.util.function.ToLongFunction;
  *
  * <ul>
  *   <li><b>Source-coordinate dedup</b> — a per-partition applied-position high-watermark drops any
- *       fact at or below it, so replay never folds a fact twice into the local aggregate.
+ *       value at or below it, so replay never folds a value twice into the local aggregate.
  *   <li><b>Idempotent emit</b> — each changed cell is upserted as its whole value by a
  *       deterministic key, so a re-emit overwrites rather than double-counts.
  *   <li><b>Finalization</b> — once the event-time watermark passes {@code windowEnd + lateness} a
@@ -35,7 +35,7 @@ import java.util.function.ToLongFunction;
  * <p>This increment keeps the aggregate on the heap; swapping it for a RocksDB-backed store (with
  * the watermark persisted alongside) makes it durable across restarts.
  *
- * @param <F> the fact type
+ * @param <F> the value type
  * @param <K> the (pre-window) grouping key type
  * @param <ACC> the accumulator type
  */
@@ -69,20 +69,20 @@ public final class MaterializedAggregation<F, K, ACC> implements Aggregation<F> 
   }
 
   @Override
-  public void accept(final F fact) {
+  public void accept(final F value) {
     // dedup by source coordinate — drop anything already folded (replay / redelivery)
-    final int partition = coordinate.partition(fact);
-    final long position = coordinate.position(fact);
+    final int partition = coordinate.partition(value);
+    final long position = coordinate.position(value);
     final Long applied = appliedPosition.get(partition);
     if (applied != null && position <= applied) {
       return;
     }
     appliedPosition.put(partition, position);
 
-    final long timestamp = eventTime.applyAsLong(fact);
+    final long timestamp = eventTime.applyAsLong(value);
     final Windowed<K> key =
-        new Windowed<>(keySelector.getKey(fact), windows.windowStart(timestamp));
-    cells.merge(key, aggregate.add(fact, aggregate.createAccumulator()), aggregate::merge);
+        new Windowed<>(keySelector.getKey(value), windows.windowStart(timestamp));
+    cells.merge(key, aggregate.add(value, aggregate.createAccumulator()), aggregate::merge);
     dirty.add(key);
     maxEventTime = Math.max(maxEventTime, timestamp);
   }
@@ -97,7 +97,7 @@ public final class MaterializedAggregation<F, K, ACC> implements Aggregation<F> 
     finalizeClosedWindows();
   }
 
-  /** Event-time progress can close windows even when no new facts touched them. */
+  /** Event-time progress can close windows even when no new values touched them. */
   @Override
   public void advanceStreamTime(final long streamTimeMs) {
     maxEventTime = Math.max(maxEventTime, streamTimeMs);

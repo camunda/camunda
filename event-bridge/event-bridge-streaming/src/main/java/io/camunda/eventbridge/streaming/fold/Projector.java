@@ -8,20 +8,20 @@
 package io.camunda.eventbridge.streaming.fold;
 
 /**
- * The fold step (stage 1): folds one source record into keyed state and emits any derived facts
+ * The fold step (stage 1): folds one source record into keyed state and emits any derived values
  * into the {@link Collector}. A projector owns its state and its logic; it does <em>not</em> track
  * source offsets — that is the runtime's concern, advanced once per record around this call.
  *
  * <p>The fold must be a deterministic function of the in-order, per-partition source stream: every
- * replica that applies the same records reaches the same state and emits the same facts.
+ * replica that applies the same records reaches the same state and emits the same values.
  *
  * @param <R> the source record type
- * @param <F> the derived fact type
+ * @param <F> the derived value type
  */
 @FunctionalInterface
 public interface Projector<R, F> {
 
-  /** Folds {@code record} into state, emitting zero or more facts into {@code out}. */
+  /** Folds {@code record} into state, emitting zero or more values into {@code out}. */
   void apply(R record, Collector<F> out);
 
   /**

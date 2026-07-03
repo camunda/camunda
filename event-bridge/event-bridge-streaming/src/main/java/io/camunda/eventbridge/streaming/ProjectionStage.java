@@ -13,13 +13,13 @@ import io.camunda.eventbridge.streaming.fold.Projector;
 import java.util.List;
 
 /**
- * The common stage: a {@link Projector} folds each record and its derived facts fan out to one or
- * more {@link Aggregation}s. Registering several rollups is how one fact feeds several
+ * The common stage: a {@link Projector} folds each record and its derived values fan out to one or
+ * more {@link Aggregation}s. Registering several rollups is how one value feeds several
  * aggregations; using several projection stages (or other stages) is how a record yields different
- * facts.
+ * values.
  *
  * @param <R> the source record type
- * @param <F> the derived fact type
+ * @param <F> the derived value type
  */
 public final class ProjectionStage<R, F> implements Stage<R> {
 
@@ -30,7 +30,7 @@ public final class ProjectionStage<R, F> implements Stage<R> {
   public ProjectionStage(final Projector<R, F> projector, final List<Aggregation<F>> rollups) {
     this.projector = projector;
     this.rollups = List.copyOf(rollups);
-    this.collector = fact -> this.rollups.forEach(rollup -> rollup.accept(fact));
+    this.collector = value -> this.rollups.forEach(rollup -> rollup.accept(value));
   }
 
   /** A stage from a projector and its rollups. */
