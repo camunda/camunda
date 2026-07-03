@@ -12,6 +12,7 @@ import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForAgentInstanceToBeIndexed;
 import static io.camunda.it.util.TestHelper.waitForElementInstances;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.AgentInstanceHistoryContent;
@@ -144,22 +145,13 @@ public class AgentHistoryCommitLifecycleIT {
                       .execute()
                       .items();
               assertThat(items)
-                  .hasSize(2)
-                  .allSatisfy(
-                      item ->
-                          assertThat(item.getCommitStatus())
-                              .isEqualTo(AgentInstanceHistoryCommitStatus.PENDING));
+                  .extracting(
+                      AgentInstanceHistory::getHistoryItemKey,
+                      AgentInstanceHistory::getCommitStatus)
+                  .containsExactlyInAnyOrder(
+                      tuple(historyItemKey1, AgentInstanceHistoryCommitStatus.PENDING),
+                      tuple(historyItemKey2, AgentInstanceHistoryCommitStatus.PENDING));
             });
-
-    final var pendingItems =
-        camundaClient
-            .newAgentInstanceHistorySearchRequest(agentInstanceKey)
-            .filter(f -> f.commitStatus(AgentInstanceHistoryCommitStatus.PENDING))
-            .execute()
-            .items();
-    assertThat(pendingItems)
-        .extracting(AgentInstanceHistory::getHistoryItemKey)
-        .containsExactlyInAnyOrder(historyItemKey1, historyItemKey2);
 
     // --- complete the job → engine emits COMMIT → items become COMMITTED ---
     camundaClient.newCompleteCommand(jobKey).execute();
@@ -185,21 +177,12 @@ public class AgentHistoryCommitLifecycleIT {
                       .execute()
                       .items();
               assertThat(items)
-                  .hasSize(2)
-                  .allSatisfy(
-                      item ->
-                          assertThat(item.getCommitStatus())
-                              .isEqualTo(AgentInstanceHistoryCommitStatus.COMMITTED));
+                  .extracting(
+                      AgentInstanceHistory::getHistoryItemKey,
+                      AgentInstanceHistory::getCommitStatus)
+                  .containsExactlyInAnyOrder(
+                      tuple(historyItemKey1, AgentInstanceHistoryCommitStatus.COMMITTED),
+                      tuple(historyItemKey2, AgentInstanceHistoryCommitStatus.COMMITTED));
             });
-
-    final var committedItems =
-        camundaClient
-            .newAgentInstanceHistorySearchRequest(agentInstanceKey)
-            .filter(f -> f.commitStatus(AgentInstanceHistoryCommitStatus.COMMITTED))
-            .execute()
-            .items();
-    assertThat(committedItems)
-        .extracting(AgentInstanceHistory::getHistoryItemKey)
-        .containsExactlyInAnyOrder(historyItemKey1, historyItemKey2);
   }
 }
