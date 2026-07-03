@@ -10,6 +10,7 @@ package io.camunda.search.es.clients;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.WriteResponseBase;
+import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import co.elastic.clients.elasticsearch.core.DeleteRequest;
 import co.elastic.clients.elasticsearch.core.GetRequest;
 import co.elastic.clients.elasticsearch.core.GetResponse;
@@ -19,6 +20,8 @@ import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
+import co.elastic.clients.json.JsonpMapper;
+import io.camunda.search.clients.DocumentBasedSchemaClient;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.DocumentBasedWriteClient;
 import io.camunda.search.clients.aggregator.SearchAggregator;
@@ -42,7 +45,9 @@ import io.camunda.search.es.transformers.search.SearchWriteResponseTransformer;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.ErrorMessages;
 import io.camunda.zeebe.util.collection.Tuple;
+import jakarta.json.stream.JsonParser;
 import java.io.IOException;
+import java.io.StringReader;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
@@ -51,7 +56,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ElasticsearchSearchClient
-    implements DocumentBasedSearchClient, DocumentBasedWriteClient {
+    implements DocumentBasedSearchClient, DocumentBasedWriteClient, DocumentBasedSchemaClient {
 
   private static final int ELASTICSEARCH_QUERY_MAX_PAGE_SIZE = 10_000;
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchSearchClient.class);
@@ -68,6 +73,23 @@ public class ElasticsearchSearchClient
       final ElasticsearchClient client, final ElasticsearchTransformers transformers) {
     this.client = client;
     this.transformers = transformers;
+  }
+
+  @Override
+  public void createIndex(final String index, final String mappingJson) {
+    try {
+      if (client.indices().exists(e -> e.index(index)).value()) {
+        return;
+      }
+      final JsonpMapper mapper = client._transport().jsonpMapper();
+      final TypeMapping mapping;
+      try (JsonParser parser = mapper.jsonProvider().createParser(new StringReader(mappingJson))) {
+        mapping = TypeMapping._DESERIALIZER.deserialize(parser, mapper);
+      }
+      client.indices().create(c -> c.index(index).mappings(mapping));
+    } catch (final IOException e) {
+      throw new CamundaSearchException("Failed to create index " + index, e);
+    }
   }
 
   @Override

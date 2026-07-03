@@ -7,6 +7,7 @@
  */
 package io.camunda.search.os.clients;
 
+import io.camunda.search.clients.DocumentBasedSchemaClient;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.DocumentBasedWriteClient;
 import io.camunda.search.clients.core.SearchDeleteRequest;
@@ -29,14 +30,18 @@ import io.camunda.search.os.transformers.search.SearchRequestTransformer;
 import io.camunda.search.os.transformers.search.SearchResponseTransformer;
 import io.camunda.search.os.transformers.search.SearchWriteResponseTransformer;
 import io.camunda.zeebe.util.collection.Tuple;
+import jakarta.json.stream.JsonParser;
 import java.io.IOException;
+import java.io.StringReader;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
+import org.opensearch.client.json.JsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.WriteResponseBase;
+import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch.core.DeleteRequest;
 import org.opensearch.client.opensearch.core.GetRequest;
 import org.opensearch.client.opensearch.core.GetResponse;
@@ -49,7 +54,8 @@ import org.opensearch.client.opensearch.core.search.HitsMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class OpensearchSearchClient implements DocumentBasedSearchClient, DocumentBasedWriteClient {
+public class OpensearchSearchClient
+    implements DocumentBasedSearchClient, DocumentBasedWriteClient, DocumentBasedSchemaClient {
 
   private static final int OPENSEARCH_QUERY_MAX_PAGE_SIZE = 10_000;
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchSearchClient.class);
@@ -66,6 +72,23 @@ public class OpensearchSearchClient implements DocumentBasedSearchClient, Docume
       final OpenSearchClient client, final OpensearchTransformers transformers) {
     this.client = client;
     this.transformers = transformers;
+  }
+
+  @Override
+  public void createIndex(final String index, final String mappingJson) {
+    try {
+      if (client.indices().exists(e -> e.index(index)).value()) {
+        return;
+      }
+      final JsonpMapper mapper = client._transport().jsonpMapper();
+      final TypeMapping mapping;
+      try (JsonParser parser = mapper.jsonProvider().createParser(new StringReader(mappingJson))) {
+        mapping = TypeMapping._DESERIALIZER.deserialize(parser, mapper);
+      }
+      client.indices().create(c -> c.index(index).mappings(mapping));
+    } catch (final IOException e) {
+      throw new CamundaSearchException("Failed to create index " + index, e);
+    }
   }
 
   @Override

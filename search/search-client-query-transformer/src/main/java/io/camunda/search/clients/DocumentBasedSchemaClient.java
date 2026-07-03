@@ -5,16 +5,16 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.analytics.store.document;
+package io.camunda.search.clients;
 
 /**
- * The neutral <b>schema</b> seam for document backends — the third peer to OC's {@code
- * DocumentBasedSearchClient} (read) and {@code DocumentBasedWriteClient} (write), covering the one
- * operation those don't: index + mapping creation. A backend (Elasticsearch/OpenSearch) provides a
- * thin implementation; the stores above depend on this interface, so index provisioning is
- * backend-neutral just like read and write.
+ * The <b>schema</b> seam of a document backend — the third peer to {@link
+ * DocumentBasedSearchClient} (read) and {@link DocumentBasedWriteClient} (write), covering index
+ * and mapping provisioning. A backend (Elasticsearch/OpenSearch) provides a thin implementation;
+ * callers depend on this interface so index provisioning is backend-neutral, just like read and
+ * write.
  */
-public interface DocumentSchemaClient {
+public interface DocumentBasedSchemaClient {
 
   /**
    * Creates {@code index} with the given JSON mapping if it does not already exist (idempotent).
