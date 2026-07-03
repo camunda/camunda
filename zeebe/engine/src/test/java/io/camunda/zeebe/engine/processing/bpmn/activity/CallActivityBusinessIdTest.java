@@ -169,6 +169,24 @@ public final class CallActivityBusinessIdTest {
   }
 
   @Test
+  public void shouldEvaluateFeelBusinessIdReferencingInputMappedVariable() {
+    // given - a call activity whose input mapping produces a local variable that the businessId
+    // expression references; input mappings are applied before the businessId is resolved
+    deploy(
+        parentProcess(
+            c ->
+                c.zeebeBusinessId("=mappedId")
+                    .zeebeInputExpression("\"from-input-mapping\"", "mappedId")));
+
+    // when
+    final long parentKey = ENGINE.processInstance().ofBpmnProcessId(PARENT_PROCESS_ID).create();
+
+    // then - the businessId resolves from the input-mapped variable
+    Assertions.assertThat(childProcessInstance(parentKey).getValue())
+        .hasBusinessId("from-input-mapping");
+  }
+
+  @Test
   public void shouldKeepChildBusinessIdImmutableAcrossLifecycle() {
     // given
     deploy(parentProcess(c -> c.zeebeBusinessId("child-123")));
