@@ -66,7 +66,6 @@ test.describe('Task completion', () => {
 		);
 
 		await taskDetailPage.goto('2251799813685281');
-		await expect(taskDetailPage.completeTaskButton).toBeVisible();
 		await taskDetailPage.completeTaskButton.click();
 
 		network.use(
@@ -87,7 +86,6 @@ test.describe('Task completion', () => {
 		);
 
 		await taskDetailPage.goto('2251799813685281', '?filter=assigned-to-me&sortBy=priority');
-		await expect(taskDetailPage.completeTaskButton).toBeVisible();
 		await taskDetailPage.completeTaskButton.click();
 
 		network.use(
@@ -138,7 +136,6 @@ test.describe('Task completion', () => {
 		);
 
 		await taskDetailPage.goto('2251799813685281');
-		await expect(taskDetailPage.completeTaskButton).toBeVisible();
 		await taskDetailPage.completeTaskButton.click();
 
 		network.use(
