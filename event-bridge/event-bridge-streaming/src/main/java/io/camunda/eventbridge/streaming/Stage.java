@@ -11,8 +11,9 @@ package io.camunda.eventbridge.streaming;
  * A unit of work the {@link StreamProcessor} drives over the source: it processes each record and
  * shares the runtime lifecycle (init, the two punctuation clocks, close). The runtime knows nothing
  * about what a stage <em>does</em> — fold-and-aggregate, enrich, route, sample — so the application
- * composes whatever stages it needs and registers them. {@link ProjectionStage} is the common
- * fold-then-aggregate stage, but it is just one implementation.
+ * composes whatever stages it needs and registers them. {@link
+ * io.camunda.eventbridge.streaming.processor.ProcessorTopology} — a graph of operators — is the
+ * general implementation.
  *
  * @param <R> the source record type
  */

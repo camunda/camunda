@@ -11,8 +11,8 @@ package io.camunda.eventbridge.streaming.processor;
  * A node in a {@link ProcessorTopology}: it consumes {@code In} records, and — via the {@link
  * ProcessorContext} it is handed at {@link #init} — may keep state, {@link ProcessorContext#forward
  * forward} {@code Out} values to its children, and schedule punctuation. A processor is the
- * general, low-level unit of the framework; simple linear folds can still use the higher-level
- * {@code ProjectionStage}, but a processor graph is what expresses branch/merge/fan-out.
+ * general, low-level unit of the framework; a processor graph is what expresses
+ * branch/merge/fan-out over the source.
  *
  * <p>Single-writer: one instance per source partition, driven on the runtime thread; no
  * synchronization needed.

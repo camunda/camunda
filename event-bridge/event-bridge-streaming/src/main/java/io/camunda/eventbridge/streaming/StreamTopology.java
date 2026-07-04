@@ -28,8 +28,8 @@ import java.util.function.IntFunction;
  * <p>A stage factory may build any {@link Stage}, including a {@code ProcessorTopology} graph
  * (branch/merge/fan-out) per partition — so this composes with the processor DAG rather than
  * competing with it: this decides <em>per-partition instantiation</em>, the DAG decides
- * <em>wiring</em>. Concrete stage factories (e.g. a fold-then-aggregate {@code ProjectionStage})
- * are supplied by the application.
+ * <em>wiring</em>. Concrete stage factories (e.g. one building a {@code ProcessorTopology}) are
+ * supplied by the application.
  *
  * @param <R> the source record type
  */
