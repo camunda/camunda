@@ -8,5 +8,6 @@ Module-scoped ADRs for the Optimize analytics pipeline (`analytics/analytics-eng
 ## Index
 
 - [0001 — Declarative datasets as the source of truth](0001-declarative-datasets.md)
+- [0002 — Analytics engine code structure](0002-engine-structure.md)
 </content>
 </invoke>
