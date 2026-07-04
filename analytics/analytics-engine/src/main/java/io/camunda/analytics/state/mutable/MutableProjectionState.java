@@ -9,7 +9,6 @@ package io.camunda.analytics.state.mutable;
 
 import io.camunda.analytics.state.ElementStatus;
 import io.camunda.analytics.state.immutable.ProjectionState;
-import java.util.function.LongConsumer;
 
 /**
  * The write view of the Model-A base projection and its <em>sole</em> mutator: appliers fold each
@@ -49,21 +48,6 @@ public interface MutableProjectionState extends ProjectionState {
 
   /** Drops an incident row (evict-after-emit). */
   void evictIncident(long elementInstanceKey);
-
-  /**
-   * Indexes {@code elementInstanceKey} under an event-time {@code deadlineMs} for straggler sweep.
-   */
-  void putDeadline(long deadlineMs, long elementInstanceKey);
-
-  /** Removes a deadline index entry (on completion, so only in-flight rows are indexed). */
-  void removeDeadline(long deadlineMs, long elementInstanceKey);
-
-  /**
-   * Evicts every element (and its variables) whose event-time deadline is at or before {@code
-   * streamTimeMs}, bounding the materialized projection for instances that never complete. The
-   * evicted element instance keys are reported to {@code onExpired}.
-   */
-  void sweepExpiredDeadlines(long streamTimeMs, LongConsumer onExpired);
 
   /** Makes all working state durable inside the runtime's checkpoint transaction. */
   void checkpoint();

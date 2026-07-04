@@ -13,30 +13,25 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 
 /**
- * Upserts an element row {@code {start, ACTIVE, isProcess}} on activation and indexes it under an
- * event-time straggler deadline, recording its parent (flow) scope for later variable resolution.
+ * Upserts an element row {@code {start, ACTIVE, isProcess}} on activation, recording its parent
+ * (flow) scope for later variable resolution.
  */
 public final class ElementActivatedApplier implements EventApplier {
 
   private final MutableProjectionState state;
-  private final long slaMillis;
 
-  public ElementActivatedApplier(final MutableProjectionState state, final long slaMillis) {
+  public ElementActivatedApplier(final MutableProjectionState state) {
     this.state = state;
-    this.slaMillis = slaMillis;
   }
 
   @Override
   public void apply(final SourceRecord source) {
     final ProcessInstanceRecordValue value =
         (ProcessInstanceRecordValue) source.record().getValue();
-    final long elementInstanceKey = source.record().getKey();
-    final long eventTimeMs = source.record().getTimestamp();
     state.activateElement(
-        elementInstanceKey,
-        eventTimeMs,
+        source.record().getKey(),
+        source.record().getTimestamp(),
         value.getBpmnElementType() == BpmnElementType.PROCESS,
         value.getFlowScopeKey());
-    state.putDeadline(eventTimeMs + slaMillis, elementInstanceKey);
   }
 }

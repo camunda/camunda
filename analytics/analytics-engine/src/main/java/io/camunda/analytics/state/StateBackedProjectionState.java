@@ -26,13 +26,12 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.LongConsumer;
 
 /**
  * The Model-A base projection on top of the {@code event-bridge-streaming} state library: the
  * materialized {@link ElementEntity} rows, the per-{@code (processInstanceKey, name)} variable
- * instances, the {@link IncidentEntity} rows, and the event-time deadline index — all opened from a
- * single {@link StateStoreProvider} shared with the rollups (one RocksDB per stage).
+ * instances, and the {@link IncidentEntity} rows — all opened from a single {@link
+ * StateStoreProvider} shared with the rollups (one RocksDB per stage).
  *
  * <p>Every store is a bounded {@link CachingKeyValueStore}: hot rows are held on the heap and reads
  * fall through to RocksDB, so the projection does not pin the whole dataset. {@link #checkpoint()}
@@ -55,7 +54,6 @@ public final class StateBackedProjectionState implements MutableProjectionState,
   private final CachingKeyValueStore<DbLong, ElementEntity> elements;
   private final CachingKeyValueStore<DbBytes, DbString> variables;
   private final CachingKeyValueStore<DbLong, IncidentEntity> incidents;
-  private final CachingKeyValueStore<DbBytes, DbBytes> deadlines;
   private final List<CachingKeyValueStore<?, ?>> caches;
 
   private final DbLong elementKey = new DbLong();
@@ -65,8 +63,6 @@ public final class StateBackedProjectionState implements MutableProjectionState,
   private final DbBytes variableKey = new DbBytes();
   private final DbString variableValue = new DbString();
   private final DbBytes variablePrefix = new DbBytes();
-  private final DbBytes deadlineKey = new DbBytes();
-  private final DbBytes deadlineMarker = new DbBytes();
 
   private StateBackedProjectionState(
       final StateStoreProvider<AnalyticsColumnFamilies> provider,
@@ -89,13 +85,7 @@ public final class StateBackedProjectionState implements MutableProjectionState,
                 AnalyticsColumnFamilies.INCIDENT_ENTITY, DbLong::new, IncidentEntity::new)
             .withCaching(cacheBytesPerStore)
             .buildCache(provider);
-    deadlines =
-        StoreBuilder.keyValueStore(
-                AnalyticsColumnFamilies.ELEMENT_DEADLINE, DbBytes::new, DbBytes::new)
-            .withCaching(cacheBytesPerStore)
-            .buildCache(provider);
-    deadlineMarker.wrapBytes(new byte[0]);
-    caches = List.of(elements, variables, incidents, deadlines);
+    caches = List.of(elements, variables, incidents);
   }
 
   /** Shares an already-open provider (the caller owns its lifecycle) — the production wiring. */
@@ -252,41 +242,6 @@ public final class StateBackedProjectionState implements MutableProjectionState,
   }
 
   @Override
-  public void putDeadline(final long deadlineMs, final long elementInstanceKey) {
-    deadlineKey.wrapBytes(deadlineKey(deadlineMs, elementInstanceKey));
-    deadlines.put(deadlineKey, deadlineMarker);
-  }
-
-  @Override
-  public void removeDeadline(final long deadlineMs, final long elementInstanceKey) {
-    deadlineKey.wrapBytes(deadlineKey(deadlineMs, elementInstanceKey));
-    deadlines.delete(deadlineKey);
-  }
-
-  @Override
-  public void sweepExpiredDeadlines(final long streamTimeMs, final LongConsumer onExpired) {
-    // The index is ordered by (deadlineMs, elementInstanceKey), so a full ordered scan of the
-    // in-flight-only index visits the expired entries first; collect them (never mutate mid-scan).
-    final List<long[]> expired = new ArrayList<>();
-    deadlines.forEach(
-        (key, marker) -> {
-          final ByteBuffer buffer = ByteBuffer.wrap(key.getBytes());
-          final long deadlineMs = buffer.getLong();
-          final long elementInstanceKey = buffer.getLong();
-          if (deadlineMs <= streamTimeMs) {
-            expired.add(new long[] {deadlineMs, elementInstanceKey});
-          }
-        });
-    for (final long[] entry : expired) {
-      final long elementInstanceKey = entry[1];
-      evictElement(elementInstanceKey);
-      clearVariables(elementInstanceKey);
-      removeDeadline(entry[0], elementInstanceKey);
-      onExpired.accept(elementInstanceKey);
-    }
-  }
-
-  @Override
   public void checkpoint() {
     caches.forEach(CachingKeyValueStore::checkpoint);
   }
@@ -323,12 +278,5 @@ public final class StateBackedProjectionState implements MutableProjectionState,
 
   private static String variableName(final byte[] key) {
     return new String(key, Long.BYTES, key.length - Long.BYTES, StandardCharsets.UTF_8);
-  }
-
-  private static byte[] deadlineKey(final long deadlineMs, final long elementInstanceKey) {
-    return ByteBuffer.allocate(Long.BYTES + Long.BYTES)
-        .putLong(deadlineMs)
-        .putLong(elementInstanceKey)
-        .array();
   }
 }

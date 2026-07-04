@@ -47,8 +47,7 @@ final class AnalyticsBaseProjectionTest {
 
   private final StateBackedProjectionState state = StateBackedProjectionState.inMemory();
   private final CapturingContext context = new CapturingContext();
-  private final AnalyticsBaseProjection projection =
-      new AnalyticsBaseProjection(state, Duration.ofHours(1));
+  private final AnalyticsBaseProjection projection = new AnalyticsBaseProjection(state);
 
   AnalyticsBaseProjectionTest() {
     projection.init(context);
@@ -162,19 +161,6 @@ final class AnalyticsBaseProjectionTest {
     assertThat(state.incident(TASK_KEY)).isNull();
   }
 
-  @Test
-  void shouldEvictStragglersOnTheStreamTimeSweep() {
-    // given an instance that activated but never completes
-    projection.process(process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1000L, 10L));
-    assertThat(state.element(PI_KEY)).isNotNull();
-
-    // when stream time advances well past its 1h SLA deadline and the sweep punctuator fires
-    context.fireStreamTime(1000L + Duration.ofHours(2).toMillis());
-
-    // then the straggler row is evicted, bounding the materialized projection
-    assertThat(state.element(PI_KEY)).as("straggler swept").isNull();
-  }
-
   private static SourceRecord process(
       final ProcessInstanceIntent intent, final long timestamp, final long position) {
     return processInstance(
@@ -251,17 +237,10 @@ final class AnalyticsBaseProjectionTest {
     return new SourceRecord(1, position, record);
   }
 
-  /**
-   * A {@link ProcessorContext} that captures forwarded facts and the scheduled stream-time sweep.
-   */
+  /** A {@link ProcessorContext} that captures the forwarded (materialized) facts. */
   private static final class CapturingContext implements ProcessorContext<Fact> {
 
     private final List<Fact> facts = new ArrayList<>();
-    private Punctuator streamTimeSweep;
-
-    void fireStreamTime(final long streamTimeMs) {
-      streamTimeSweep.punctuate(streamTimeMs);
-    }
 
     @Override
     public void forward(final Fact value) {
@@ -279,9 +258,7 @@ final class AnalyticsBaseProjectionTest {
     @Override
     public void schedule(
         final Duration interval, final PunctuationType type, final Punctuator punctuator) {
-      if (type == PunctuationType.STREAM_TIME) {
-        streamTimeSweep = punctuator;
-      }
+      // no punctuation used by the base projection
     }
 
     @Override
