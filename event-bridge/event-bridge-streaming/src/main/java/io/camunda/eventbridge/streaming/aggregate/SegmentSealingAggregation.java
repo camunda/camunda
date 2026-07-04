@@ -7,11 +7,17 @@
  */
 package io.camunda.eventbridge.streaming.aggregate;
 
+import io.camunda.eventbridge.streaming.TransactionRunner;
+import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.window.Windowed;
 import io.camunda.eventbridge.streaming.window.Windows;
+import io.camunda.zeebe.db.impl.DbBytes;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.function.ToLongFunction;
 
 /**
@@ -23,13 +29,20 @@ import java.util.function.ToLongFunction;
  *
  * <p>Because a sealed delta is a pure function of its segment's positions (and the base state
  * feeding the fold), re-folding after a crash reproduces the identical delta; downstream merges
- * each once, deduped by the {@code (sourcePartition, segment)} coordinate. This keeps <b>no durable
- * aggregation state</b> here — the buffer is ephemeral and rebuilt by replay — so recovery rests on
- * the source log alone. The trade-off is latency: a delta is emitted only when its segment seals,
- * so the open segment lingers until a later record arrives (segment fill time, tuned by the
- * stride). The open segment is deliberately <em>not</em> sealed on {@link #flush()}/{@link
- * #close()} — a partial segment is not deterministic — so the owner must commit offsets only up to
- * {@link #safeOffset()}.
+ * each once, deduped by the {@code (sourcePartition, segment)} coordinate.
+ *
+ * <p><b>Durability.</b> Under the consistent-cut model (Model F) the runtime commits the <em>full
+ * processed offset</em> together with all operator state in one transaction, so the open segment's
+ * partial buffer must be checkpointed too — otherwise committing the full offset would lose it.
+ * Constructed {@linkplain #SegmentSealingAggregation(int, AggregateFunction, KeySelector,
+ * SourceCoordinate, ToLongFunction, Windows, Segments, SegmentSink, KeyValueStore, RecordValue,
+ * RecordValue, TransactionRunner) with a state store}, {@link #checkpoint()} persists the open
+ * {@code (window, key) -> accumulator} buffer plus the {@code (openSegment, sourcePartition)} meta,
+ * and the buffer is restored on construction — so replay resumes from the committed offset onto the
+ * matching open segment (no reconcile). Constructed {@linkplain #SegmentSealingAggregation(
+ * AggregateFunction, KeySelector, SourceCoordinate, ToLongFunction, Windows, Segments, SegmentSink)
+ * without a store}, it keeps no durable aggregation state — the buffer is ephemeral and rebuilt by
+ * replay, so the owner must commit offsets only up to {@link #safeOffset()} (Model R).
  *
  * @param <IN> the value type folded
  * @param <K> the base grouping key type
@@ -50,10 +63,22 @@ public final class SegmentSealingAggregation<IN, K, ACC> implements Aggregation<
   private final Segments segments;
   private final SegmentSink<K, ACC> sink;
 
+  // Durable open-segment checkpoint (Model F). Null when the aggregation keeps no durable state.
+  private final int group;
+  private final KeyValueStore<DbBytes, DbBytes> openStore;
+  private final RecordValue<K> keyCodec;
+  private final RecordValue<ACC> accCodec;
+  private final TransactionRunner tx;
+  private final Set<Windowed<K>> durablyWritten = new HashSet<>();
+  private final DbBytes storeKey = new DbBytes();
+  private final DbBytes storeValue = new DbBytes();
+  private final DbBytes groupPrefix = new DbBytes();
+
   private final Map<Windowed<K>, ACC> open = new HashMap<>();
   private long openSegment = NO_SEGMENT;
   private int sourcePartition = -1;
 
+  /** Model R: no durable state; the open segment replays from {@link #safeOffset()}. */
   public SegmentSealingAggregation(
       final AggregateFunction<? super IN, ACC, ?> aggregate,
       final KeySelector<? super IN, K> keySelector,
@@ -62,6 +87,67 @@ public final class SegmentSealingAggregation<IN, K, ACC> implements Aggregation<
       final Windows windows,
       final Segments segments,
       final SegmentSink<K, ACC> sink) {
+    this(
+        aggregate,
+        keySelector,
+        coordinate,
+        eventTime,
+        windows,
+        segments,
+        sink,
+        0,
+        null,
+        null,
+        null,
+        null);
+  }
+
+  /**
+   * Model F: checkpoints the open segment to {@code openStore} (keyed by {@code group}, so several
+   * aggregations may share one store) so committing the full offset never loses the open partial.
+   */
+  public SegmentSealingAggregation(
+      final int group,
+      final AggregateFunction<? super IN, ACC, ?> aggregate,
+      final KeySelector<? super IN, K> keySelector,
+      final SourceCoordinate<? super IN> coordinate,
+      final ToLongFunction<? super IN> eventTime,
+      final Windows windows,
+      final Segments segments,
+      final SegmentSink<K, ACC> sink,
+      final KeyValueStore<DbBytes, DbBytes> openStore,
+      final RecordValue<K> keyCodec,
+      final RecordValue<ACC> accCodec,
+      final TransactionRunner tx) {
+    this(
+        aggregate,
+        keySelector,
+        coordinate,
+        eventTime,
+        windows,
+        segments,
+        sink,
+        group,
+        openStore,
+        keyCodec,
+        accCodec,
+        tx);
+    recover();
+  }
+
+  private SegmentSealingAggregation(
+      final AggregateFunction<? super IN, ACC, ?> aggregate,
+      final KeySelector<? super IN, K> keySelector,
+      final SourceCoordinate<? super IN> coordinate,
+      final ToLongFunction<? super IN> eventTime,
+      final Windows windows,
+      final Segments segments,
+      final SegmentSink<K, ACC> sink,
+      final int group,
+      final KeyValueStore<DbBytes, DbBytes> openStore,
+      final RecordValue<K> keyCodec,
+      final RecordValue<ACC> accCodec,
+      final TransactionRunner tx) {
     this.aggregate = aggregate;
     this.keySelector = keySelector;
     this.coordinate = coordinate;
@@ -69,6 +155,11 @@ public final class SegmentSealingAggregation<IN, K, ACC> implements Aggregation<
     this.windows = windows;
     this.segments = segments;
     this.sink = sink;
+    this.group = group;
+    this.openStore = openStore;
+    this.keyCodec = keyCodec;
+    this.accCodec = accCodec;
+    this.tx = tx;
   }
 
   @Override
@@ -81,6 +172,11 @@ public final class SegmentSealingAggregation<IN, K, ACC> implements Aggregation<
       seal();
       openSegment = segment;
     }
+    if (sourcePartition < 0) {
+      // Restored mid-segment (open buffer recovered, first record not yet seen): the coordinate is
+      // authoritative for the source partition.
+      sourcePartition = coordinate.partition(value);
+    }
     final Windowed<K> cell =
         new Windowed<>(
             keySelector.getKey(value), windows.windowStart(eventTime.applyAsLong(value)));
@@ -89,9 +185,10 @@ public final class SegmentSealingAggregation<IN, K, ACC> implements Aggregation<
   }
 
   /**
-   * The highest source position it is safe to commit: the last position before the open segment, so
-   * a crash replays the open (unsealed) segment. {@link #NO_OFFSET} while the first segment is
-   * still open (nothing sealed yet).
+   * The highest source position it is safe to commit under Model R: the last position before the
+   * open segment, so a crash replays the open (unsealed) segment. {@link #NO_OFFSET} while the
+   * first segment is still open (nothing sealed yet). Unused under Model F, which commits the full
+   * offset and checkpoints the open segment.
    */
   public long safeOffset() {
     return openSegment == NO_SEGMENT ? NO_OFFSET : segments.startPosition(openSegment) - 1;
@@ -117,12 +214,82 @@ public final class SegmentSealingAggregation<IN, K, ACC> implements Aggregation<
 
   @Override
   public void checkpoint() {
-    // No durable aggregation state: the open segment's buffer is ephemeral and rebuilt by replay.
+    if (openStore == null) {
+      // Model R: no durable aggregation state; the open buffer is ephemeral and rebuilt by replay.
+      return;
+    }
+    // Model F: persist the open buffer + meta so the full committed offset lands on matching state.
+    tx.runInTransaction(
+        () -> {
+          for (final Windowed<K> cell : durablyWritten) {
+            if (!open.containsKey(cell)) {
+              openStore.delete(cellKey(cell));
+            }
+          }
+          durablyWritten.clear();
+          for (final Entry<Windowed<K>, ACC> cell : open.entrySet()) {
+            storeValue.wrapBytes(accCodec.toBytes(cell.getValue()));
+            openStore.put(cellKey(cell.getKey()), storeValue);
+            durablyWritten.add(cell.getKey());
+          }
+          writeMeta();
+        });
   }
 
   @Override
   public void close() {
-    // Do not seal the open segment; it replays from safeOffset on restart.
+    // Do not seal the open segment; under Model F it is checkpointed, under Model R it replays.
     sink.flush();
+  }
+
+  private void recover() {
+    groupPrefix.wrapBytes(ByteBuffer.allocate(Integer.BYTES).putInt(group).array());
+    openStore.prefixScan(
+        groupPrefix,
+        (key, value) -> {
+          final byte[] keyBytes = key.getBytes();
+          if (keyBytes.length == Integer.BYTES) {
+            final ByteBuffer meta = ByteBuffer.wrap(value.getBytes());
+            openSegment = meta.getLong();
+            sourcePartition = meta.getInt();
+          } else {
+            final Windowed<K> cell = decodeCellKey(keyBytes);
+            open.put(cell, accCodec.fromBytes(value.getBytes()));
+            durablyWritten.add(cell);
+          }
+        });
+  }
+
+  private void writeMeta() {
+    // Meta key is the bare group (4 bytes) — shorter than any cell key (>= group + windowStart), so
+    // it never collides with a cell in the shared, group-prefixed store.
+    storeKey.wrapBytes(ByteBuffer.allocate(Integer.BYTES).putInt(group).array());
+    storeValue.wrapBytes(
+        ByteBuffer.allocate(Long.BYTES + Integer.BYTES)
+            .putLong(openSegment)
+            .putInt(sourcePartition)
+            .array());
+    openStore.put(storeKey, storeValue);
+  }
+
+  /** Cell key: {@code group ++ windowStart ++ codec(key)}. */
+  private DbBytes cellKey(final Windowed<K> cell) {
+    final byte[] keyBytes = keyCodec.toBytes(cell.key());
+    storeKey.wrapBytes(
+        ByteBuffer.allocate(Integer.BYTES + Long.BYTES + keyBytes.length)
+            .putInt(group)
+            .putLong(cell.windowStart())
+            .put(keyBytes)
+            .array());
+    return storeKey;
+  }
+
+  private Windowed<K> decodeCellKey(final byte[] bytes) {
+    final ByteBuffer buffer = ByteBuffer.wrap(bytes);
+    buffer.getInt(); // group — already scoped by the prefix scan
+    final long windowStart = buffer.getLong();
+    final byte[] keyBytes = new byte[buffer.remaining()];
+    buffer.get(keyBytes);
+    return new Windowed<>(keyCodec.fromBytes(keyBytes), windowStart);
   }
 }

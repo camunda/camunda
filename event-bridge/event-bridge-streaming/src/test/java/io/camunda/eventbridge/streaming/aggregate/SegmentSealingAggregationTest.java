@@ -9,7 +9,10 @@ package io.camunda.eventbridge.streaming.aggregate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
+import io.camunda.eventbridge.streaming.state.memory.InMemoryKeyValueStore;
 import io.camunda.eventbridge.streaming.window.TumblingWindows;
+import io.camunda.zeebe.db.impl.DbBytes;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -22,6 +25,19 @@ final class SegmentSealingAggregationTest {
   /** One delta the aggregation sealed. */
   private record Sealed(String key, long windowStart, int partition, long segment, long delta) {}
 
+  private static final SourceCoordinate<Ev> COORDINATE =
+      new SourceCoordinate<>() {
+        @Override
+        public int partition(final Ev value) {
+          return value.partition();
+        }
+
+        @Override
+        public long position(final Ev value) {
+          return value.position();
+        }
+      };
+
   private final List<Sealed> emitted = new ArrayList<>();
 
   /** Stride 10, and one huge window so the test isolates segment (not window) behaviour. */
@@ -29,22 +45,34 @@ final class SegmentSealingAggregationTest {
     return new SegmentSealingAggregation<>(
         new SumAggregateFunction<>(Ev::value),
         Ev::key,
-        new SourceCoordinate<>() {
-          @Override
-          public int partition(final Ev value) {
-            return value.partition();
-          }
-
-          @Override
-          public long position(final Ev value) {
-            return value.position();
-          }
-        },
+        COORDINATE,
         Ev::eventTime,
         TumblingWindows.of(1_000_000L),
         Segments.ofStride(10L),
-        (cell, partition, segment, delta) ->
-            emitted.add(new Sealed(cell.key(), cell.windowStart(), partition, segment, delta)));
+        sink());
+  }
+
+  /** A durable (Model-F) aggregation checkpointing its open segment to {@code store}. */
+  private SegmentSealingAggregation<Ev, String, Long> durable(
+      final KeyValueStore<DbBytes, DbBytes> store) {
+    return new SegmentSealingAggregation<>(
+        1,
+        new SumAggregateFunction<>(Ev::value),
+        Ev::key,
+        COORDINATE,
+        Ev::eventTime,
+        TumblingWindows.of(1_000_000L),
+        Segments.ofStride(10L),
+        sink(),
+        store,
+        new StringRecordValue(),
+        new LongRecordValue(),
+        Runnable::run);
+  }
+
+  private SegmentSink<String, Long> sink() {
+    return (cell, partition, segment, delta) ->
+        emitted.add(new Sealed(cell.key(), cell.windowStart(), partition, segment, delta));
   }
 
   @Test
@@ -129,5 +157,48 @@ final class SegmentSealingAggregationTest {
     final SegmentSealingAggregation<Ev, String, Long> aggregation = aggregation();
     input.forEach(aggregation::accept);
     return List.copyOf(emitted);
+  }
+
+  @Test
+  void shouldRestoreOpenSegmentFromCheckpoint() {
+    // given a durable aggregation that folded two records into the still-open segment 0 and
+    // checkpointed (Model F: the full offset would commit, so the open partial must survive)
+    final KeyValueStore<DbBytes, DbBytes> store =
+        new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes());
+    final SegmentSealingAggregation<Ev, String, Long> before = durable(store);
+    before.accept(new Ev(0, 0L, 100L, "a", 5L));
+    before.accept(new Ev(0, 5L, 100L, "a", 3L));
+    before.checkpoint();
+    assertThat(emitted).as("segment 0 still open, nothing sealed").isEmpty();
+
+    // when a fresh aggregation recovers from the same store (a crash + replay-from-committed) and a
+    // record crosses into segment 1
+    final SegmentSealingAggregation<Ev, String, Long> after = durable(store);
+    after.accept(new Ev(0, 10L, 100L, "a", 100L));
+
+    // then the recovered open partial (5 + 3) is included in segment 0's sealed delta — not lost
+    assertThat(emitted).containsExactly(new Sealed("a", 0L, 0, 0L, 8L));
+  }
+
+  @Test
+  void shouldClearSealedCellsFromTheCheckpointOnTheNextCheckpoint() {
+    // given a durable aggregation that sealed segment 0 (its cells cleared from the open buffer)
+    // and
+    // opened segment 1 with a new partial
+    final KeyValueStore<DbBytes, DbBytes> store =
+        new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes());
+    final SegmentSealingAggregation<Ev, String, Long> before = durable(store);
+    before.accept(new Ev(0, 0L, 100L, "a", 5L)); // segment 0
+    before.accept(new Ev(0, 10L, 100L, "b", 7L)); // seals segment 0, opens segment 1
+    before.checkpoint();
+    emitted.clear();
+
+    // when recovering and crossing into segment 2
+    final SegmentSealingAggregation<Ev, String, Long> after = durable(store);
+    after.accept(new Ev(0, 20L, 100L, "b", 1L));
+
+    // then only segment 1's open partial ("b" = 7) is sealed — segment 0's cells were not
+    // resurrected
+    assertThat(emitted).containsExactly(new Sealed("b", 0L, 0, 1L, 7L));
   }
 }
