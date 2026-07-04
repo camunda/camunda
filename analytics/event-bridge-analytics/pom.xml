@@ -42,10 +42,15 @@
       <artifactId>analytics-serving</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <!-- RDBMS serving-store backend selected for DatabaseType.RDBMS -->
+    <!-- Serving-store backends the wiring selects between (rdbms | elasticsearch/opensearch) -->
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>analytics-store-rdbms</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>analytics-store-document</artifactId>
       <version>${project.version}</version>
     </dependency>
     <!-- Generic stream-processing runtime (poll loop, task-per-partition, commit barrier) -->

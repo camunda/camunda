@@ -11,14 +11,13 @@ import io.camunda.analytics.dataset.ActiveCube;
 import io.camunda.analytics.dataset.store.MetadataStore;
 import io.camunda.analytics.shuffle.ShuffleEnvelope;
 import io.camunda.analytics.shuffle.ShuffleEnvelopeCodec;
-import io.camunda.analytics.store.rdbms.RdbmsDatasetStore;
-import io.camunda.analytics.store.rdbms.metadata.RdbmsMetadataStore;
+import io.camunda.eventbridge.analytics.store.AnalyticsBackend;
+import io.camunda.eventbridge.analytics.store.AnalyticsBackends;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.streaming.StreamRuntime;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.List;
-import org.h2.jdbcx.JdbcDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,19 +49,14 @@ public final class AnalyticsAggregationStage {
     final String factsTopic = System.getProperty("factsTopic", "analytics-facts");
     final String instanceId =
         System.getProperty("instanceId", "stage2-" + ProcessHandle.current().pid());
-    final String jdbcUrl =
-        System.getProperty("jdbcUrl", "jdbc:h2:file:./data/analytics-dataset;DB_CLOSE_DELAY=-1");
-    final String jdbcUser = System.getProperty("jdbcUser", "sa");
 
     final EventBridgeClient client = EventBridgeClient.create(gateway);
     final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
-    final JdbcDataSource dataSource = new JdbcDataSource();
-    dataSource.setURL(jdbcUrl);
-    dataSource.setUser(jdbcUser);
+    final AnalyticsBackend backend = AnalyticsBackends.fromSystemProperties();
 
     // Load the same specs Stage 1 bootstrapped from the metadata plane (migrate + bootstrap are
     // idempotent, so this is safe whichever stage starts first on a fresh database).
-    final MetadataStore metadataStore = new RdbmsMetadataStore(dataSource);
+    final MetadataStore metadataStore = backend.metadataStore();
     metadataStore.migrate();
     AnalyticsCubes.bootstrap(metadataStore);
     final List<ActiveCube> cubes = AnalyticsCubes.loadCubes(metadataStore);
@@ -80,11 +74,7 @@ public final class AnalyticsAggregationStage {
             .taskFactory(
                 partition ->
                     CubeAggregationShard.open(
-                        partition,
-                        stateDir,
-                        new RdbmsDatasetStore(dataSource),
-                        cubes,
-                        meterRegistry))
+                        partition, stateDir, backend.newDatasetStore(), cubes, meterRegistry))
             .maxPoll(MAX_RECORDS)
             .pollTimeout(POLL_TIMEOUT)
             .commitInterval(CHECKPOINT_INTERVAL)
