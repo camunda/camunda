@@ -144,6 +144,49 @@ class FileBasedSecretStoreTest {
   }
 
   @Test
+  void shouldReturnStoreUnavailableWhenFileIsMalformed() throws IOException {
+    // given — a properties file with a malformed unicode escape
+    final var file = tempDir.resolve("secrets.properties");
+    Files.writeString(file, "bad=\\uZZZZ\n", StandardCharsets.UTF_8);
+    final var store = new FileBasedSecretStore(file);
+    final var ref = new SecretRef("bad");
+
+    // when
+    final var result = store.resolve(Set.of(ref));
+
+    // then
+    assertThat(result).containsKey(ref);
+    assertThat(result.get(ref)).isInstanceOf(SecretResolutionResult.Failed.class);
+    final var failed = (SecretResolutionResult.Failed) result.get(ref);
+    assertThat(failed.code()).isEqualTo(SecretErrorCode.STORE_UNAVAILABLE);
+  }
+
+  @Test
+  void shouldThrowWhenListingMalformedFile() throws IOException {
+    // given — a properties file with a malformed unicode escape
+    final var file = tempDir.resolve("secrets.properties");
+    Files.writeString(file, "bad=\\uZZZZ\n", StandardCharsets.UTF_8);
+    final var store = new FileBasedSecretStore(file);
+
+    // when / then
+    assertThatThrownBy(store::list).isInstanceOf(SecretStoreUnavailableException.class);
+  }
+
+  @Test
+  void shouldIgnoreBlankKeysInList() throws IOException {
+    // given — a properties file with an empty-key entry and a normal entry
+    final var file = tempDir.resolve("secrets.properties");
+    Files.writeString(file, "=orphaned-value\na=1\n", StandardCharsets.UTF_8);
+    final var store = new FileBasedSecretStore(file);
+
+    // when
+    final var refs = store.list();
+
+    // then
+    assertThat(refs).containsExactly(new SecretRef("a"));
+  }
+
+  @Test
   void shouldHandleUtf8Values() throws IOException {
     // given — non-Latin-1 characters that would be mangled by ISO-8859-1
     final var file = tempDir.resolve("secrets.properties");
