@@ -189,8 +189,7 @@ class FileBasedSecretStoreTest {
   @Test
   void shouldHandleUtf8Values() throws IOException {
     // given — non-Latin-1 characters that would be mangled by ISO-8859-1
-    final var file = tempDir.resolve("secrets.properties");
-    Files.writeString(file, "token=café-中文", StandardCharsets.UTF_8);
+    final var file = writeProperties("token=café-中文\n");
     final var store = new FileBasedSecretStore(file);
 
     // when
@@ -206,18 +205,28 @@ class FileBasedSecretStoreTest {
   @Test
   void shouldHandleValuesWithSpecialPropertiesChars() throws IOException {
     // given — values containing characters that are special in .properties format (escaped)
-    final var file = tempDir.resolve("secrets.properties");
-    Files.writeString(file, "key1=val\\=ue\nkey2=has\\:colon\n", StandardCharsets.UTF_8);
+    final var file =
+        writeProperties("key1=val\\=ue\nkey2=has\\:colon\nkey3= padded\nkey4=back\\\\slash\n");
     final var store = new FileBasedSecretStore(file);
 
     // when
-    final var result = store.resolve(Set.of(new SecretRef("key1"), new SecretRef("key2")));
+    final var result =
+        store.resolve(
+            Set.of(
+                new SecretRef("key1"),
+                new SecretRef("key2"),
+                new SecretRef("key3"),
+                new SecretRef("key4")));
 
     // then
     assertThat(((SecretResolutionResult.Resolved) result.get(new SecretRef("key1"))).value())
         .isEqualTo("val=ue");
     assertThat(((SecretResolutionResult.Resolved) result.get(new SecretRef("key2"))).value())
         .isEqualTo("has:colon");
+    assertThat(((SecretResolutionResult.Resolved) result.get(new SecretRef("key3"))).value())
+        .isEqualTo("padded");
+    assertThat(((SecretResolutionResult.Resolved) result.get(new SecretRef("key4"))).value())
+        .isEqualTo("back\\slash");
   }
 
   @Test

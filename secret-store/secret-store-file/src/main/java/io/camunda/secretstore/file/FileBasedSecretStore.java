@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import org.jspecify.annotations.NullMarked;
@@ -45,13 +46,16 @@ public final class FileBasedSecretStore implements SecretStore {
       props = loadProperties();
     } catch (final SecretStoreUnavailableException e) {
       LOG.warn("Secret store unavailable at '{}': {}", filePath, e.getMessage());
-      final var msg =
-          e.getMessage() != null ? e.getMessage() : "Secret store unavailable: " + filePath;
       return refs.stream()
           .collect(
               toMap(
                   ref -> ref,
-                  ref -> new SecretResolutionResult.Failed(STORE_UNAVAILABLE, msg, e.getCause())));
+                  ref ->
+                      new SecretResolutionResult.Failed(
+                          STORE_UNAVAILABLE,
+                          Objects.requireNonNullElse(
+                              e.getMessage(), "Secret store unavailable: " + filePath),
+                          e.getCause())));
     }
     // Never log resolved values — only ref names and counts are safe to log
     LOG.debug("Resolving {} secret refs from '{}'", refs.size(), filePath);

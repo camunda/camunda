@@ -120,8 +120,8 @@ public interface SecretStore extends AutoCloseable {
 **Contract guarantees (documented on the interface):**
 - `resolve()` never throws — any failure is returned as `Failed`.
 - The returned map contains an entry for *every* ref in the input set.
-- `list()` may throw `UncheckedIOException` on store-level failures (different contract from
-  `resolve()` — there is no per-item result type to carry errors).
+- `list()` may throw `SecretStoreUnavailableException` on store-level failures (different contract
+from `resolve()` — there is no per-item result type to carry errors).
 - Implementations must be thread-safe.
 
 Example call-site pattern:
@@ -163,12 +163,14 @@ public final class FileBasedSecretStore implements SecretStore {
     final Properties props;
     try {
       props = loadProperties();
-    } catch (final UncheckedIOException e) {
-      LOG.warn("Failed to load secrets file '{}': {}", filePath, e.getCause().getMessage());
-      final var msg = "Failed to load secrets file: " + e.getCause().getMessage();
+    } catch (final SecretStoreUnavailableException e) {
+      LOG.warn("Secret store unavailable at '{}': {}", filePath, e.getMessage());
       return refs.stream().collect(toMap(
           ref -> ref,
-          ref -> new SecretResolutionResult.Failed(STORE_UNAVAILABLE, msg, e.getCause())));
+          ref -> new SecretResolutionResult.Failed(
+              STORE_UNAVAILABLE,
+              Objects.requireNonNullElse(e.getMessage(), "Secret store unavailable: " + filePath),
+              e.getCause())));
     }
     // Never log resolved values — only ref names and counts are safe to log
     LOG.debug("Resolving {} secret refs from '{}'", refs.size(), filePath);
@@ -197,7 +199,8 @@ public final class FileBasedSecretStore implements SecretStore {
     try (final var reader = Files.newBufferedReader(filePath, StandardCharsets.UTF_8)) {
       props.load(reader);
     } catch (final IOException e) {
-      throw new UncheckedIOException(e);
+      throw new SecretStoreUnavailableException(
+          "Failed to load secrets file '" + filePath + "': " + e.getMessage(), e);
     }
     return props;
   }
@@ -216,17 +219,17 @@ public final class FileBasedSecretStore implements SecretStore {
 
 Uses JUnit 5 `@TempDir`.
 
-| Test | Asserts |
-|------|---------|
-| `shouldResolveKnownSecret` | Single known ref → `Resolved` with correct value |
-| `shouldReturnFailedForUnknownRef` | Ref not in file → `Failed(NOT_FOUND)` |
-| `shouldResolveMultipleRefsInOneBatch` | Mix of known/unknown in one call; all refs present in result map |
-| `shouldListAllSecrets` | `list()` returns all keys from file |
-| `shouldPickUpRotatedValue` | Overwrite file between two `resolve()` calls; second returns new value |
-| `shouldReturnStoreUnavailableWhenFileMissing` | Path does not exist → `Failed(STORE_UNAVAILABLE)` for every ref |
-| `shouldHandleUtf8Values` | Secret value containing non-Latin-1 characters round-trips correctly |
-| `shouldHandleValuesWithSpecialPropertiesChars` | Value containing `=`, `:`, `\`, leading whitespace |
-| `shouldBeThreadSafe` | 10 threads × 100 calls via `ExecutorService` + `CountDownLatch`; no exceptions, results consistent with file |
+|                      Test                      |                                                   Asserts                                                    |
+|------------------------------------------------|--------------------------------------------------------------------------------------------------------------|
+| `shouldResolveKnownSecret`                     | Single known ref → `Resolved` with correct value                                                             |
+| `shouldReturnFailedForUnknownRef`              | Ref not in file → `Failed(NOT_FOUND)`                                                                        |
+| `shouldResolveMultipleRefsInOneBatch`          | Mix of known/unknown in one call; all refs present in result map                                             |
+| `shouldListAllSecrets`                         | `list()` returns all keys from file                                                                          |
+| `shouldPickUpRotatedValue`                     | Overwrite file between two `resolve()` calls; second returns new value                                       |
+| `shouldReturnStoreUnavailableWhenFileMissing`  | Path does not exist → `Failed(STORE_UNAVAILABLE)` for every ref                                              |
+| `shouldHandleUtf8Values`                       | Secret value containing non-Latin-1 characters round-trips correctly                                         |
+| `shouldHandleValuesWithSpecialPropertiesChars` | Value containing `=`, `:`, `\`, leading whitespace                                                           |
+| `shouldBeThreadSafe`                           | 10 threads × 100 calls via `ExecutorService` + `CountDownLatch`; no exceptions, results consistent with file |
 
 **Note:** When the second store implementation (GCP/AWS) is added, extract an abstract
 `SecretStoreContractTest` from `FileBasedSecretStoreTest` into a shared test-jar in
@@ -241,3 +244,4 @@ Uses JUnit 5 `@TempDir`.
   a conscious decision at that point.
 - JSON file format — `.properties` is sufficient for Phase 1.
 - GCP / AWS store implementations — tracked in #56579 and #56575 respectively.
+
