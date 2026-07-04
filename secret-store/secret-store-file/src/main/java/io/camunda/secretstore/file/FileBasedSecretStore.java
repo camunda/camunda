@@ -8,7 +8,6 @@
 package io.camunda.secretstore.file;
 
 import static io.camunda.secretstore.SecretErrorCode.NOT_FOUND;
-import static io.camunda.secretstore.SecretErrorCode.STORE_UNAVAILABLE;
 import static java.util.stream.Collectors.toMap;
 
 import io.camunda.secretstore.SecretRef;
@@ -21,7 +20,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -39,23 +37,7 @@ public final class FileBasedSecretStore implements SecretStore {
 
   @Override
   public Map<SecretRef, SecretResolutionResult> resolve(final Set<SecretRef> refs) {
-    final Properties props;
-    try {
-      props = loadProperties();
-    } catch (final SecretStoreUnavailableException e) {
-      LOG.warn("Secret store unavailable at '{}': {}", filePath, e.getMessage());
-      return refs.stream()
-          .collect(
-              toMap(
-                  ref -> ref,
-                  ref ->
-                      new SecretResolutionResult.Failed(
-                          STORE_UNAVAILABLE,
-                          Objects.requireNonNullElse(
-                              e.getMessage(), "Secret store unavailable: " + filePath),
-                          e.getCause())));
-    }
-    // Never log resolved values — only ref names and counts are safe to log
+    final var props = loadProperties();
     LOG.debug("Resolving {} secret refs from '{}'", refs.size(), filePath);
     return refs.stream()
         .collect(

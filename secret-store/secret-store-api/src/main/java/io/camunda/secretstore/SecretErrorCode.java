@@ -17,6 +17,5 @@ package io.camunda.secretstore;
 public enum SecretErrorCode {
   NOT_FOUND,
   ACCESS_DENIED,
-  STORE_UNAVAILABLE,
   INVALID_REF
 }

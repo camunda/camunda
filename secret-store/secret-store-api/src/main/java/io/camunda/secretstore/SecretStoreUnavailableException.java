@@ -13,10 +13,6 @@ import org.jspecify.annotations.Nullable;
 /**
  * Thrown when a {@link SecretStore} operation cannot be completed because the backing store is
  * unavailable or unusable (e.g. missing file, network failure, malformed content).
- *
- * <p>Mirrors {@link SecretErrorCode#STORE_UNAVAILABLE}: {@link SecretStore#resolve} reports this
- * condition as a {@link SecretResolutionResult.Failed} result; {@link SecretStore#list} throws this
- * exception.
  */
 @NullMarked
 public final class SecretStoreUnavailableException extends RuntimeException {

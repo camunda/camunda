@@ -117,21 +117,14 @@ class FileBasedSecretStoreTest {
   }
 
   @Test
-  void shouldReturnStoreUnavailableWhenFileMissing() {
+  void shouldThrowWhenResolvingMissingFile() {
     // given
     final var store = new FileBasedSecretStore(tempDir.resolve("nonexistent.properties"));
+    final var ref = new SecretRef("any");
 
-    // when — must not throw
-    final var result = store.resolve(Set.of(new SecretRef("any"), new SecretRef("other")));
-
-    // then — every ref gets STORE_UNAVAILABLE, no exception propagated
-    assertThat(result.values())
-        .allSatisfy(
-            r -> {
-              assertThat(r).isInstanceOf(SecretResolutionResult.Failed.class);
-              assertThat(((SecretResolutionResult.Failed) r).code())
-                  .isEqualTo(SecretErrorCode.STORE_UNAVAILABLE);
-            });
+    // when / then
+    assertThatThrownBy(() -> store.resolve(Set.of(ref)))
+        .isInstanceOf(SecretStoreUnavailableException.class);
   }
 
   @Test
@@ -144,21 +137,15 @@ class FileBasedSecretStoreTest {
   }
 
   @Test
-  void shouldReturnStoreUnavailableWhenFileIsMalformed() throws IOException {
-    // given — a properties file with a malformed unicode escape
+  void shouldThrowWhenResolvingMalformedFile() throws IOException {
+    // given
     final var file = tempDir.resolve("secrets.properties");
     Files.writeString(file, "bad=\\uZZZZ\n", StandardCharsets.UTF_8);
     final var store = new FileBasedSecretStore(file);
-    final var ref = new SecretRef("bad");
 
-    // when
-    final var result = store.resolve(Set.of(ref));
-
-    // then
-    assertThat(result).containsKey(ref);
-    assertThat(result.get(ref)).isInstanceOf(SecretResolutionResult.Failed.class);
-    final var failed = (SecretResolutionResult.Failed) result.get(ref);
-    assertThat(failed.code()).isEqualTo(SecretErrorCode.STORE_UNAVAILABLE);
+    // when / then
+    assertThatThrownBy(() -> store.resolve(Set.of(new SecretRef("bad"))))
+        .isInstanceOf(SecretStoreUnavailableException.class);
   }
 
   @Test

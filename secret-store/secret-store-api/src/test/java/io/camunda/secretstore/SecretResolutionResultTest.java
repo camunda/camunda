@@ -38,16 +38,15 @@ class SecretResolutionResultTest {
   @Test
   void shouldCarryFailedCodeMessageAndCause() {
     // given
-    final var cause = new RuntimeException("connection refused");
+    final var cause = new RuntimeException("access denied");
 
     // when
     final var result =
-        new SecretResolutionResult.Failed(
-            SecretErrorCode.STORE_UNAVAILABLE, "store is down", cause);
+        new SecretResolutionResult.Failed(SecretErrorCode.ACCESS_DENIED, "access denied", cause);
 
     // then
-    assertThat(result.code()).isEqualTo(SecretErrorCode.STORE_UNAVAILABLE);
-    assertThat(result.message()).isEqualTo("store is down");
+    assertThat(result.code()).isEqualTo(SecretErrorCode.ACCESS_DENIED);
+    assertThat(result.message()).isEqualTo("access denied");
     assertThat(result.cause()).isSameAs(cause);
   }
 

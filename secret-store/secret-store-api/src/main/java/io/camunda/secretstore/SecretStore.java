@@ -18,11 +18,11 @@ public interface SecretStore extends AutoCloseable {
   /**
    * Resolves a set of secret references in a single call.
    *
-   * <p>Returns a result for every ref in the input set. Never throws — store-level failures
-   * (unreachable backend, missing file, etc.) are reported as {@link SecretResolutionResult.Failed}
-   * with code {@link SecretErrorCode#STORE_UNAVAILABLE}.
+   * <p>Returns a result for <em>every</em> ref in the input set. Per-secret failures (e.g. secret
+   * not found, access denied) are reported as {@link SecretResolutionResult.Failed}.
    *
-   * <p>Implementations must be thread-safe.
+   * @throws SecretStoreUnavailableException if the backing store cannot be accessed or its content
+   *     is malformed
    */
   Map<SecretRef, SecretResolutionResult> resolve(Set<SecretRef> refs);
 
