@@ -10,9 +10,7 @@ package io.camunda.secretstore;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
-import org.jspecify.annotations.NullMarked;
 
-@NullMarked
 public interface SecretStore extends AutoCloseable {
 
   /**

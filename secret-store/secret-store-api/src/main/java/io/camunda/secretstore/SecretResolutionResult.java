@@ -7,10 +7,8 @@
  */
 package io.camunda.secretstore;
 
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-@NullMarked
 public sealed interface SecretResolutionResult
     permits SecretResolutionResult.Resolved, SecretResolutionResult.Failed {
 

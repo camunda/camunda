@@ -7,14 +7,12 @@
  */
 package io.camunda.secretstore;
 
-import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
  * Thrown when a {@link SecretStore} operation cannot be completed because the backing store is
  * unavailable or unusable (e.g. missing file, network failure, malformed content).
  */
-@NullMarked
 public final class SecretStoreUnavailableException extends RuntimeException {
 
   public SecretStoreUnavailableException(final String message) {
