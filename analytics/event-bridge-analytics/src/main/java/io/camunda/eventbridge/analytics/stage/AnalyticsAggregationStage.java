@@ -9,12 +9,12 @@ package io.camunda.eventbridge.analytics.stage;
 
 import io.camunda.analytics.dataset.ActiveCube;
 import io.camunda.analytics.dataset.store.MetadataStore;
-import io.camunda.analytics.shuffle.ShuffleEnvelope;
-import io.camunda.analytics.shuffle.ShuffleEnvelopeCodec;
 import io.camunda.eventbridge.analytics.store.AnalyticsBackend;
 import io.camunda.eventbridge.analytics.store.AnalyticsBackends;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.streaming.StreamRuntime;
+import io.camunda.eventbridge.streaming.shuffle.ShuffleEnvelope;
+import io.camunda.eventbridge.streaming.shuffle.ShuffleEnvelopeCodec;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.List;

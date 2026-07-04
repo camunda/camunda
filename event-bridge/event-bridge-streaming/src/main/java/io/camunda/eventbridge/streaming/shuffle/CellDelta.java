@@ -5,11 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.analytics.shuffle;
+package io.camunda.eventbridge.streaming.shuffle;
 
 /**
  * One cell's contribution within a {@link ShuffleEnvelope} batch: an encoded accumulator delta (or
- * reference record) for the aggregation {@code aggId}, grouping {@code key}, and event-time {@code
- * windowStart}. The reducer merges it into the cell {@code (aggId, key, windowStart)}.
+ * reference record) for the stream {@code streamId}, grouping {@code key}, and event-time {@code
+ * windowStart}. The reducer merges it into the cell {@code (streamId, key, windowStart)}. Key and
+ * payload are opaque bytes — the substrate carries them; the application supplies the codecs.
  */
-public record CellDelta(int aggId, long windowStart, byte[] key, byte[] payload) {}
+public record CellDelta(int streamId, long windowStart, byte[] key, byte[] payload) {}

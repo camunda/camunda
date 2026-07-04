@@ -14,10 +14,10 @@ import io.camunda.analytics.dimension.DimensionKey;
 import io.camunda.analytics.dimension.DimensionKeyValue;
 import io.camunda.analytics.dimension.DimensionSchema;
 import io.camunda.analytics.dimension.DimensionType;
-import io.camunda.analytics.shuffle.CellDelta;
-import io.camunda.analytics.shuffle.ShuffleEnvelope;
-import io.camunda.analytics.shuffle.ShuffleEnvelopeCodec;
 import io.camunda.eventbridge.streaming.aggregate.LongRecordValue;
+import io.camunda.eventbridge.streaming.shuffle.CellDelta;
+import io.camunda.eventbridge.streaming.shuffle.ShuffleEnvelope;
+import io.camunda.eventbridge.streaming.shuffle.ShuffleEnvelopeCodec;
 import io.camunda.eventbridge.streaming.window.Windowed;
 import java.util.ArrayList;
 import java.util.List;
@@ -103,7 +103,7 @@ final class EnvelopePublisherTest {
                   .singleElement()
                   .satisfies(
                       c -> {
-                        assertThat(c.aggId()).isEqualTo(7);
+                        assertThat(c.streamId()).isEqualTo(7);
                         assertThat(c.windowStart()).isEqualTo(60_000L);
                       });
             });

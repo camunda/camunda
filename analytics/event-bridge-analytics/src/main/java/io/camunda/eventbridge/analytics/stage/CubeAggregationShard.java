@@ -15,14 +15,14 @@ import io.camunda.analytics.dimension.DimensionKey;
 import io.camunda.analytics.dimension.DimensionKeyValue;
 import io.camunda.analytics.meter.BoundMeter;
 import io.camunda.analytics.projection.AnalyticsColumnFamilies;
-import io.camunda.analytics.shuffle.CellDelta;
-import io.camunda.analytics.shuffle.ShuffleEnvelope;
-import io.camunda.analytics.shuffle.sbe.Operation;
-import io.camunda.analytics.shuffle.sbe.PayloadKind;
 import io.camunda.eventbridge.streaming.Task;
 import io.camunda.eventbridge.streaming.TransactionRunner;
 import io.camunda.eventbridge.streaming.aggregate.SegmentDedup;
 import io.camunda.eventbridge.streaming.aggregate.SegmentMergingAggregation;
+import io.camunda.eventbridge.streaming.shuffle.CellDelta;
+import io.camunda.eventbridge.streaming.shuffle.ShuffleEnvelope;
+import io.camunda.eventbridge.streaming.shuffle.sbe.Operation;
+import io.camunda.eventbridge.streaming.shuffle.sbe.PayloadKind;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.state.rocksdb.RocksDbStateStoreProvider;
 import io.camunda.eventbridge.streaming.window.Windowed;
@@ -191,7 +191,7 @@ public final class CubeAggregationShard implements Task<ShuffleEnvelope>, AutoCl
       return; // a duplicate or producer re-emit of an already-merged batch
     }
     for (final CellDelta cell : envelope.cells()) {
-      final CellApplier applier = byAggId.get(cell.aggId());
+      final CellApplier applier = byAggId.get(cell.streamId());
       if (applier != null) {
         applier.apply(cell.key(), cell.windowStart(), cell.payload());
       }

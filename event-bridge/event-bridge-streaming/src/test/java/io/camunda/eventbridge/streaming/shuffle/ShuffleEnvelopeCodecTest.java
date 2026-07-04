@@ -5,13 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.analytics.shuffle;
+package io.camunda.eventbridge.streaming.shuffle;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.analytics.shuffle.sbe.Operation;
-import io.camunda.analytics.shuffle.sbe.PayloadKind;
+import io.camunda.eventbridge.streaming.shuffle.sbe.Operation;
+import io.camunda.eventbridge.streaming.shuffle.sbe.PayloadKind;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -28,7 +28,7 @@ final class ShuffleEnvelopeCodecTest {
 
   @Test
   void shouldRoundTripABatchOfCellDeltas() {
-    // given a segment batch with two cell deltas (different keys / aggregations)
+    // given a segment batch with two cell deltas (different keys / streams)
     final ShuffleEnvelope original =
         envelope(
             PayloadKind.AGGREGATE_DELTA,
@@ -123,6 +123,6 @@ final class ShuffleEnvelopeCodecTest {
     // then decoding refuses rather than mis-reading another schema's message
     assertThatThrownBy(() -> ShuffleEnvelopeCodec.decode(frame))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("not an analytics shuffle envelope");
+        .hasMessageContaining("not a segment shuffle envelope");
   }
 }

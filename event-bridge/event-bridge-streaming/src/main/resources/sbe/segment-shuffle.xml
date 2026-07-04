@@ -8,26 +8,25 @@
   -->
 
 <!--
-  SBE message schema for the analytics shuffle (combiner -> reducer).
+  SBE message schema for the segment-delta shuffle (combiner -> reducer).
 
-  Schema id: 300 (chosen to avoid collision with Zeebe's schemas and the Event Bridge protocol's
-  id 200). The SBE messageHeader carries schemaId + version, so the wire format is versioned and
-  evolvable natively. Modelled on how Zeebe's RecordMetadata is SBE-encoded: the header lets the
-  reducer dispatch on payloadKind + operation without decoding the payload, just as RecordMetadata's
-  valueType + intent drive the event appliers.
+  Schema id: 300 (chosen to avoid collision with the broker's schemas and the Event Bridge
+  protocol's id 200). The SBE messageHeader carries schemaId + version, so the wire format is
+  versioned and evolvable natively. The header lets the reducer dispatch on payloadKind + operation
+  without decoding the payload.
 
-  One envelope carries all of a sealed segment's cell deltas that route to one facts partition, so
-  (producerPartition, segment, chunk) is a single atomic dedup unit — the reducer merges the whole
+  One envelope carries all of a sealed segment's cell deltas that route to one downstream partition,
+  so (producerPartition, segment, chunk) is a single atomic dedup unit — the reducer merges the whole
   batch or none, and a re-emit is skipped wholesale. An oversized segment is split into ordered
   chunks to respect the transport's max record size; the chunk index keeps the dedup coordinate
   monotonic across a split.
 -->
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
-  package="io.camunda.analytics.shuffle.sbe"
+  package="io.camunda.eventbridge.streaming.shuffle.sbe"
   id="300"
   version="1"
   semanticVersion="${project.version}"
-  description="Analytics Shuffle Schema"
+  description="Segment Shuffle Schema"
   byteOrder="littleEndian">
 
   <types>
@@ -64,12 +63,12 @@
   </types>
 
   <!--
-    One shuffled record: a batch of cell deltas for a sealed segment routed to one facts partition.
-    The fixed header carries dedup (producerPartition + segment + chunk) and dispatch (payloadKind +
-    operation); the repeating group carries the per-cell deltas (targeted by aggId + key, in a
-    window), each an encoded accumulator delta (or reference record). An oversized segment is split
-    into ordered chunks; moreChunks flags that a further chunk of the same (producerPartition,
-    segment) follows, so a chunked/truncated batch is self-describing on the wire.
+    One shuffled record: a batch of cell deltas for a sealed segment routed to one downstream
+    partition. The fixed header carries dedup (producerPartition + segment + chunk) and dispatch
+    (payloadKind + operation); the repeating group carries the per-cell deltas (targeted by streamId
+    + key, in a window), each an encoded accumulator delta (or reference record). An oversized
+    segment is split into ordered chunks; moreChunks flags that a further chunk of the same
+    (producerPartition, segment) follows, so a chunked/truncated batch is self-describing on the wire.
   -->
   <sbe:message name="ShuffleEnvelope" id="1">
     <field name="producedAt" id="1" type="int64"/>
@@ -81,7 +80,7 @@
     <field name="payloadKind" id="7" type="PayloadKind"/>
     <field name="operation" id="8" type="Operation"/>
     <group name="cells" id="9" dimensionType="groupSizeEncoding">
-      <field name="aggId" id="1" type="int32"/>
+      <field name="streamId" id="1" type="int32"/>
       <field name="windowStart" id="2" type="int64"/>
       <data name="key" id="3" type="varDataEncoding"/>
       <data name="payload" id="4" type="varDataEncoding"/>

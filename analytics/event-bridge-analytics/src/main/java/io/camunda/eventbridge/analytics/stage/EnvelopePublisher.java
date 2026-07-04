@@ -7,11 +7,11 @@
  */
 package io.camunda.eventbridge.analytics.stage;
 
-import io.camunda.analytics.shuffle.CellDelta;
-import io.camunda.analytics.shuffle.ShuffleEnvelope;
-import io.camunda.analytics.shuffle.ShuffleEnvelopeCodec;
-import io.camunda.analytics.shuffle.sbe.Operation;
-import io.camunda.analytics.shuffle.sbe.PayloadKind;
+import io.camunda.eventbridge.streaming.shuffle.CellDelta;
+import io.camunda.eventbridge.streaming.shuffle.ShuffleEnvelope;
+import io.camunda.eventbridge.streaming.shuffle.ShuffleEnvelopeCodec;
+import io.camunda.eventbridge.streaming.shuffle.sbe.Operation;
+import io.camunda.eventbridge.streaming.shuffle.sbe.PayloadKind;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;

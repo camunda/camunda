@@ -8,9 +8,9 @@
 package io.camunda.eventbridge.analytics.stage;
 
 import io.camunda.analytics.dimension.DimensionKey;
-import io.camunda.analytics.shuffle.CellDelta;
 import io.camunda.eventbridge.streaming.aggregate.RecordValue;
 import io.camunda.eventbridge.streaming.aggregate.SegmentSink;
+import io.camunda.eventbridge.streaming.shuffle.CellDelta;
 import io.camunda.eventbridge.streaming.window.Windowed;
 import java.util.Arrays;
 

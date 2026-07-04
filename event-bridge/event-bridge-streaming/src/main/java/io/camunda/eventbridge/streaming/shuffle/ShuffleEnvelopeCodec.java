@@ -5,14 +5,14 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.analytics.shuffle;
+package io.camunda.eventbridge.streaming.shuffle;
 
-import io.camunda.analytics.shuffle.sbe.MessageHeaderDecoder;
-import io.camunda.analytics.shuffle.sbe.MessageHeaderEncoder;
-import io.camunda.analytics.shuffle.sbe.ShuffleEnvelopeDecoder;
-import io.camunda.analytics.shuffle.sbe.ShuffleEnvelopeDecoder.CellsDecoder;
-import io.camunda.analytics.shuffle.sbe.ShuffleEnvelopeEncoder;
-import io.camunda.analytics.shuffle.sbe.ShuffleEnvelopeEncoder.CellsEncoder;
+import io.camunda.eventbridge.streaming.shuffle.sbe.MessageHeaderDecoder;
+import io.camunda.eventbridge.streaming.shuffle.sbe.MessageHeaderEncoder;
+import io.camunda.eventbridge.streaming.shuffle.sbe.ShuffleEnvelopeDecoder;
+import io.camunda.eventbridge.streaming.shuffle.sbe.ShuffleEnvelopeDecoder.CellsDecoder;
+import io.camunda.eventbridge.streaming.shuffle.sbe.ShuffleEnvelopeEncoder;
+import io.camunda.eventbridge.streaming.shuffle.sbe.ShuffleEnvelopeEncoder.CellsEncoder;
 import java.util.ArrayList;
 import java.util.List;
 import org.agrona.DirectBuffer;
@@ -20,7 +20,7 @@ import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /**
- * SBE codec for {@link ShuffleEnvelope}, the analytics shuffle wire format — the same
+ * SBE codec for {@link ShuffleEnvelope}, the segment-shuffle wire format — the same
  * generated-encoder/decoder approach the Event Bridge uses for its own protocol. Versioning and
  * schema evolution come from the SBE {@code messageHeader}; a frame that is not this schema/message
  * is rejected. Deterministic: encoding depends only on the envelope's fields, so a re-emitted batch
@@ -46,7 +46,7 @@ public final class ShuffleEnvelopeCodec {
             .operation(envelope.operation())
             .cellsCount(envelope.cells().size());
     for (final CellDelta cell : envelope.cells()) {
-      cells.next().aggId(cell.aggId()).windowStart(cell.windowStart());
+      cells.next().streamId(cell.streamId()).windowStart(cell.windowStart());
       cells.putKey(cell.key(), 0, cell.key().length);
       cells.putPayload(cell.payload(), 0, cell.payload().length);
     }
@@ -64,7 +64,7 @@ public final class ShuffleEnvelopeCodec {
     if (header.schemaId() != ShuffleEnvelopeDecoder.SCHEMA_ID
         || header.templateId() != ShuffleEnvelopeDecoder.TEMPLATE_ID) {
       throw new IllegalArgumentException(
-          "not an analytics shuffle envelope: schemaId="
+          "not a segment shuffle envelope: schemaId="
               + header.schemaId()
               + " templateId="
               + header.templateId());
@@ -83,13 +83,13 @@ public final class ShuffleEnvelopeCodec {
 
     final List<CellDelta> cells = new ArrayList<>();
     for (final CellsDecoder cell : decoder.cells()) {
-      final int aggId = cell.aggId();
+      final int streamId = cell.streamId();
       final long windowStart = cell.windowStart();
       final byte[] key = new byte[cell.keyLength()];
       cell.getKey(key, 0, key.length);
       final byte[] payload = new byte[cell.payloadLength()];
       cell.getPayload(payload, 0, payload.length);
-      cells.add(new CellDelta(aggId, windowStart, key, payload));
+      cells.add(new CellDelta(streamId, windowStart, key, payload));
     }
 
     return new ShuffleEnvelope(
