@@ -24,11 +24,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
-import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@NullMarked
 public final class FileBasedSecretStore implements SecretStore {
 
   private static final Logger LOG = LoggerFactory.getLogger(FileBasedSecretStore.class);
