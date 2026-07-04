@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -55,11 +56,13 @@ public final class FileBasedSecretStore implements SecretStore {
   @Override
   public Collection<SecretRef> list() {
     final var props = loadProperties();
-    LOG.debug("Listing {} secrets from '{}'", props.size(), filePath);
-    return props.stringPropertyNames().stream()
-        .filter(name -> !name.isBlank())
-        .map(SecretRef::new)
-        .toList();
+    final var refs =
+        props.stringPropertyNames().stream()
+            .filter(name -> !name.isBlank())
+            .map(SecretRef::new)
+            .toList();
+    LOG.debug("Listing {} secrets from '{}'", refs.size(), filePath);
+    return refs;
   }
 
   private Properties loadProperties() {
@@ -69,6 +72,13 @@ public final class FileBasedSecretStore implements SecretStore {
     } catch (final IOException e) {
       throw new SecretStoreUnavailableException(
           "Failed to load secrets file '" + filePath + "': " + e.getMessage(), e);
+    } catch (final SecurityException e) {
+      throw new SecretStoreUnavailableException(
+          "Access denied to secrets file '"
+              + filePath
+              + "': "
+              + Objects.requireNonNullElse(e.getMessage(), "permission denied"),
+          e);
     } catch (final IllegalArgumentException e) {
       throw new SecretStoreUnavailableException(
           "Malformed secrets file '" + filePath + "': " + e.getMessage(), e);
