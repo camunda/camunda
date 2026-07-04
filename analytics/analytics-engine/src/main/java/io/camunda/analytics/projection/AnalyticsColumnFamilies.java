@@ -96,7 +96,14 @@ public enum AnalyticsColumnFamilies implements EnumValue, ScopedColumnFamily {
    * resolveMs}. Opened on {@code INCIDENT/CREATED}, finalized on {@code RESOLVED} (so the
    * resolution duration is read from the row), then evicted.
    */
-  INCIDENT_ENTITY(12, ColumnFamilyScope.PARTITION_LOCAL);
+  INCIDENT_ENTITY(12, ColumnFamilyScope.PARTITION_LOCAL),
+
+  /**
+   * The Stage-1 windowed aggregate's checkpointed open segment (Model F): {@code group ++
+   * windowStart ++ codec(key) -> codec(accumulator)} plus a per-{@code group} meta entry. Shared by
+   * every meter's sealing aggregation on the partition, each scoped by its {@code aggId} group.
+   */
+  OPEN_SEGMENT(13, ColumnFamilyScope.PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope scope;

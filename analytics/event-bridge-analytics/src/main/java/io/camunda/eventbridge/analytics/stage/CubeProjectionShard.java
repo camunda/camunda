@@ -7,7 +7,7 @@
  */
 package io.camunda.eventbridge.analytics.stage;
 
-import io.camunda.analytics.aggregation.CubeMeterAggregation;
+import io.camunda.analytics.aggregation.CubeMeterProcessor;
 import io.camunda.analytics.dataset.ActiveCube;
 import io.camunda.analytics.dataset.ActiveProjection;
 import io.camunda.analytics.dataset.CompiledMeter;
@@ -17,46 +17,42 @@ import io.camunda.analytics.dimension.DimensionKey;
 import io.camunda.analytics.dimension.DimensionKeyValue;
 import io.camunda.analytics.fact.Fact;
 import io.camunda.analytics.meter.BoundMeter;
+import io.camunda.analytics.projection.AnalyticsBaseProjection;
 import io.camunda.analytics.projection.AnalyticsColumnFamilies;
-import io.camunda.analytics.projection.AnalyticsFactProjector;
 import io.camunda.analytics.projection.SourceRecord;
-import io.camunda.analytics.projection.StateBackedProjectionStore;
+import io.camunda.analytics.state.StateBackedProjectionState;
 import io.camunda.eventbridge.client.EventBridgeClient;
-import io.camunda.eventbridge.streaming.ProjectionStage;
-import io.camunda.eventbridge.streaming.StreamProcessor;
 import io.camunda.eventbridge.streaming.Task;
-import io.camunda.eventbridge.streaming.TransactionRunner;
-import io.camunda.eventbridge.streaming.aggregate.Aggregation;
 import io.camunda.eventbridge.streaming.aggregate.SegmentSealingAggregation;
 import io.camunda.eventbridge.streaming.aggregate.Segments;
 import io.camunda.eventbridge.streaming.aggregate.SourceCoordinate;
+import io.camunda.eventbridge.streaming.processor.ProcessorTopology;
+import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.state.rocksdb.RocksDbStateStoreProvider;
+import io.camunda.zeebe.db.impl.DbBytes;
+import io.camunda.zeebe.db.impl.DbInt;
+import io.camunda.zeebe.db.impl.DbLong;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * One source partition's generic analytics shard (the declaration-driven replacement for {@code
- * ProjectionShard}): it owns a RocksDB provider for the base projection, folds each source record
- * once via {@link AnalyticsFactProjector} into generic facts, and fans them to a {@link
- * CubeMeterAggregation} per active cube-meter — each sealing segment deltas into the shared {@link
- * EnvelopePublisher}. A {@link Task} that owns its durability: {@link #restore()} resumes from its
- * committed position and {@link #commit(long)} publishes the sealed deltas then persists the base
- * projection + offset atomically.
- *
- * <p>The committed offset is {@code min(safeOffset)} over the cube meters — only past segments that
- * every meter has sealed — so a crash replays the open segments. TODO(e2e): the base projection
- * folds ahead of that safe offset; confirm the base-projection/segment checkpoint alignment (an
- * element activated before the safe offset and completed after it must re-fold correctly) during
- * the end-to-end run.
+ * One source partition's Stage-1 owning {@link Task}: it owns a per-partition RocksDB and drives a
+ * declared {@link ProcessorTopology} — the base-projection {@link AnalyticsBaseProjection} ({@code
+ * source}) fanning facts to a {@link CubeMeterProcessor} per active cube-meter and a {@link
+ * ProjectionRowProcessor} per projected dataset. The base projection, every meter's open segment
+ * and the consumed offset all live in the one provider, so {@link #commit(long)} makes them one
+ * atomic cut (Model F): publish the sealed deltas (produce-before-commit), then persist the
+ * <em>full</em> processed offset together with the topology's checkpoint. No {@code safeOffset} — a
+ * crash resumes exactly from the committed offset onto the checkpointed open segments.
  */
 public final class CubeProjectionShard implements Task<SourceRecord>, AutoCloseable {
 
   private static final Logger LOG = LoggerFactory.getLogger(CubeProjectionShard.class);
 
+  /** Source coordinate of a fact — the origin the shuffle dedups by. */
   private static final SourceCoordinate<Fact> COORDINATE =
       new SourceCoordinate<>() {
         @Override
@@ -71,34 +67,31 @@ public final class CubeProjectionShard implements Task<SourceRecord>, AutoClosea
       };
 
   private final int partition;
-  private final StateBackedProjectionStore store;
-  private final StreamProcessor<SourceRecord> processor;
-  private final TransactionRunner transactionRunner;
+  private final ProcessorTopology<SourceRecord> topology;
   private final EnvelopePublisher publisher;
-  private final List<CubeMeterAggregation> meters;
   private final DatasetStore datasetStore;
   private final DatasetWriter servingWriter;
-  private final AutoCloseable resource;
+  private final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider;
+  private final KeyValueStore<DbInt, DbLong> offsets;
+
+  private final DbInt offsetKey = new DbInt();
+  private final DbLong offsetValue = new DbLong();
 
   CubeProjectionShard(
       final int partition,
-      final StateBackedProjectionStore store,
-      final StreamProcessor<SourceRecord> processor,
-      final TransactionRunner transactionRunner,
+      final ProcessorTopology<SourceRecord> topology,
       final EnvelopePublisher publisher,
-      final List<CubeMeterAggregation> meters,
       final DatasetStore datasetStore,
       final DatasetWriter servingWriter,
-      final AutoCloseable resource) {
+      final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider,
+      final KeyValueStore<DbInt, DbLong> offsets) {
     this.partition = partition;
-    this.store = store;
-    this.processor = processor;
-    this.transactionRunner = transactionRunner;
+    this.topology = topology;
     this.publisher = publisher;
-    this.meters = meters;
     this.datasetStore = datasetStore;
     this.servingWriter = servingWriter;
-    this.resource = resource;
+    this.provider = provider;
+    this.offsets = offsets;
   }
 
   public static CubeProjectionShard open(
@@ -115,52 +108,54 @@ public final class CubeProjectionShard implements Task<SourceRecord>, AutoClosea
       final MeterRegistry meterRegistry) {
     final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider =
         RocksDbStateStoreProvider.open(new File(baseDir + "-p" + partition), meterRegistry);
-    final StateBackedProjectionStore store = StateBackedProjectionStore.fromProvider(provider);
-    final AnalyticsFactProjector projector = new AnalyticsFactProjector(store);
+    final StateBackedProjectionState state = StateBackedProjectionState.fromProvider(provider);
     final EnvelopePublisher publisher =
         new EnvelopePublisher(
             new EventBridgeEnvelopeTransport(client, factsTopic),
             schemaVersion,
             System.currentTimeMillis());
+    final KeyValueStore<DbBytes, DbBytes> openSegments =
+        provider.keyValueStore(AnalyticsColumnFamilies.OPEN_SEGMENT, new DbBytes(), new DbBytes());
+    final KeyValueStore<DbInt, DbLong> offsets =
+        provider.keyValueStore(
+            AnalyticsColumnFamilies.CONSUMED_POSITION, new DbInt(), new DbLong());
+    final DatasetWriter writer = datasetStore.writer();
 
-    final List<CubeMeterAggregation> meters = new ArrayList<>();
+    // source → base projection; children → one aggregate node per cube-meter + one row node per
+    // projected dataset (the base projection broadcasts each fact to every child).
+    final ProcessorTopology.Builder<SourceRecord> builder =
+        ProcessorTopology.<SourceRecord>builder()
+            .source("projection", new AnalyticsBaseProjection(state));
     for (final ActiveCube cube : cubes) {
       for (final CompiledMeter meter : cube.compiled().meters()) {
-        meters.add(meterAggregation(cube, meter, publisher, factsPartitions, segmentStride));
+        builder.processor(
+            "meter-" + meter.aggId(),
+            meterProcessor(
+                cube, meter, publisher, factsPartitions, segmentStride, openSegments, provider),
+            "projection");
       }
     }
-
-    final DatasetWriter writer = datasetStore.writer();
-    final List<Aggregation<Fact>> aggregations = new ArrayList<>(meters);
-    // Projected (raw) datasets write rows straight to the serving store (idempotent by key, no
-    // shuffle); they run in the same fold but do not constrain the segment-safe commit offset.
+    int projectionIndex = 0;
     for (final ActiveProjection projection : projections) {
       datasetStore.schemaManager().ensureProjection(projection.compiled());
-      aggregations.add(
-          new ProjectionRowAggregation(projection.registered(), projection.compiled(), writer));
+      builder.processor(
+          "projection-" + projectionIndex++,
+          new ProjectionRowProcessor(projection.registered(), projection.compiled(), writer),
+          "projection");
     }
-
-    final StreamProcessor<SourceRecord> processor =
-        new StreamProcessor<SourceRecord>().add(new ProjectionStage<>(projector, aggregations));
     return new CubeProjectionShard(
-        partition,
-        store,
-        processor,
-        provider::runInTransaction,
-        publisher,
-        meters,
-        datasetStore,
-        writer,
-        provider);
+        partition, builder.build(), publisher, datasetStore, writer, provider, offsets);
   }
 
-  /** Builds one cube meter's sealing aggregation + shuffle sink, capturing the accumulator type. */
-  private static <ACC> CubeMeterAggregation meterAggregation(
+  /** Builds one cube meter's Model-F sealing aggregation + shuffle sink, capturing the acc type. */
+  private static <ACC> CubeMeterProcessor meterProcessor(
       final ActiveCube cube,
       final CompiledMeter meter,
       final EnvelopePublisher publisher,
       final int factsPartitions,
-      final int segmentStride) {
+      final int segmentStride,
+      final KeyValueStore<DbBytes, DbBytes> openSegments,
+      final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider) {
     @SuppressWarnings("unchecked")
     final BoundMeter<ACC, ?> bound = (BoundMeter<ACC, ?>) meter.bound();
     final CubeShuffleSink<ACC> sink =
@@ -171,15 +166,20 @@ public final class CubeProjectionShard implements Task<SourceRecord>, AutoClosea
             publisher,
             factsPartitions);
     final SegmentSealingAggregation<Fact, DimensionKey, ACC> sealing =
-        new SegmentSealingAggregation<Fact, DimensionKey, ACC>(
+        new SegmentSealingAggregation<>(
+            meter.aggId(),
             bound.aggregate(),
             cube.compiled().keySelector(),
             COORDINATE,
             Fact::eventTime,
             meter.windows(),
             Segments.ofStride(segmentStride),
-            sink);
-    return new CubeMeterAggregation(
+            sink,
+            openSegments,
+            new DimensionKeyValue(cube.compiled().grain()),
+            bound.accumulatorCodec(),
+            provider::runInTransaction);
+    return new CubeMeterProcessor(
         cube.compiled().factBinding().factType(),
         cube.registered(),
         cube.compiled().factBinding().filters(),
@@ -193,78 +193,66 @@ public final class CubeProjectionShard implements Task<SourceRecord>, AutoClosea
 
   @Override
   public void init() {
-    processor.init();
+    topology.init();
   }
 
   @Override
   public long restore() {
-    return store.getConsumedPosition(partition);
+    offsetKey.wrapInt(partition);
+    return offsets.get(offsetKey).map(DbLong::getValue).orElse(NO_OFFSET);
   }
 
   @Override
   public void process(final SourceRecord record) {
-    processor.process(record);
+    topology.process(record);
   }
 
   @Override
   public void flush() {
-    processor.flush();
+    topology.flush();
   }
 
   @Override
   public void advanceStreamTime(final long streamTimeMs) {
-    processor.advanceStreamTime(streamTimeMs);
+    topology.advanceStreamTime(streamTimeMs);
   }
 
   @Override
   public void punctuateWallClock(final long wallClockMs) {
-    processor.punctuateWallClock(wallClockMs);
+    topology.punctuateWallClock(wallClockMs);
   }
 
   @Override
   public boolean needsCheckpoint() {
-    return processor.needsCheckpoint();
+    return topology.needsCheckpoint();
   }
 
   @Override
   public void commit(final long offset) {
-    // Produce-before-commit: publish sealed deltas, then persist the base projection + the safe
-    // offset (only past segments every meter has sealed) atomically. The runtime's offset is
-    // ignored in favour of the segment-safe offset so a crash replays the open segments.
-    publisher.flush();
-    // Projected rows go to the external serving store; make them durable before the offset advances
-    // (idempotent by key, so a crash between the two replays and re-writes harmlessly).
+    // Produce-before-commit: publish the sealed shuffle deltas and flush the projected rows, then
+    // persist the full offset + the topology's state (base projection + every open segment) as one
+    // atomic cut on this partition's provider.
+    topology.flush();
     servingWriter.flush();
-    // With meters, commit only past segments every meter has sealed. With no meters (a
-    // projection-only shard), the rows are already written and idempotent, so the runtime's
-    // consumed offset is safe.
-    final long safe =
-        meters.isEmpty()
-            ? offset
-            : meters.stream()
-                .mapToLong(CubeMeterAggregation::safeOffset)
-                .filter(position -> position >= 0)
-                .min()
-                .orElse(-1L);
-    if (safe >= 0) {
-      transactionRunner.runInTransaction(
-          () -> {
-            store.setConsumedPosition(partition, safe);
-            processor.checkpoint();
-          });
-    }
+    provider.runInTransaction(
+        () -> {
+          offsetKey.wrapInt(partition);
+          offsetValue.wrapLong(offset);
+          offsets.put(offsetKey, offsetValue);
+          topology.checkpoint();
+        });
   }
 
   @Override
   public void close() {
-    processor.close();
+    topology.close();
     try {
       datasetStore.close();
     } catch (final Exception e) {
       LOG.warn("Failed to close serving store for partition {}", partition, e);
     }
     try {
-      resource.close();
+      provider.close();
     } catch (final Exception e) {
       LOG.warn("Failed to close state provider for partition {}", partition, e);
     }

@@ -14,23 +14,20 @@ import io.camunda.analytics.dataset.store.DatasetWriter;
 import io.camunda.analytics.dimension.DimensionColumn;
 import io.camunda.analytics.fact.Fact;
 import io.camunda.analytics.fact.FactType;
-import io.camunda.eventbridge.streaming.aggregate.Aggregation;
+import io.camunda.eventbridge.streaming.processor.Processor;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A projected (raw) dataset as a Stage-1 {@link Aggregation}: it gates the shared fact stream down
- * to the facts this dataset should keep (matching {@link FactType}, at/after activation via {@link
- * RegisteredDataset#admits}, satisfying every filter), then upserts one row per fact keyed by the
- * declared key field straight into the serving store. There is no windowed aggregation and no
- * shuffle — the upsert is idempotent by primary key, so a replay of the same facts re-writes the
- * same rows. Facts with no key value are skipped.
- *
- * <p>Because rows are written synchronously as facts arrive (before the shard's offset advances),
- * the write is naturally produce-before-commit; the aggregation keeps no durable RocksDB state, so
- * its lifecycle callbacks are no-ops and it does not constrain the shard's commit watermark.
+ * A projected (raw) dataset as a Stage-1 {@link Processor} node: it gates the shared fact stream to
+ * the facts this dataset keeps — matching {@link FactType}, at/after activation ({@link
+ * RegisteredDataset#admits}), satisfying every filter — then upserts one row per fact keyed by the
+ * declared key field straight into the serving store. No windowing and no shuffle: the upsert is
+ * idempotent by primary key, so a replay re-writes the same rows. A terminal node ({@code Out =
+ * Void}); rows are written synchronously on {@link #process}, before the offset advances, so the
+ * write is naturally produce-before-commit and the node holds no durable state.
  */
-public final class ProjectionRowAggregation implements Aggregation<Fact> {
+public final class ProjectionRowProcessor implements Processor<Fact, Void> {
 
   private final FactType factType;
   private final RegisteredDataset dataset;
@@ -38,19 +35,19 @@ public final class ProjectionRowAggregation implements Aggregation<Fact> {
   private final CompiledProjection projection;
   private final DatasetWriter writer;
 
-  public ProjectionRowAggregation(
+  public ProjectionRowProcessor(
       final RegisteredDataset dataset,
       final CompiledProjection projection,
       final DatasetWriter writer) {
-    this.factType = projection.factBinding().factType();
+    factType = projection.factBinding().factType();
     this.dataset = dataset;
-    this.filters = List.copyOf(projection.factBinding().filters());
+    filters = List.copyOf(projection.factBinding().filters());
     this.projection = projection;
     this.writer = writer;
   }
 
   @Override
-  public void accept(final Fact fact) {
+  public void process(final Fact fact) {
     if (fact.factType() != factType
         || !dataset.admits(fact.sourcePartition(), fact.sourcePosition())
         || !matchesFilters(fact)) {
@@ -79,15 +76,5 @@ public final class ProjectionRowAggregation implements Aggregation<Fact> {
       }
     }
     return true;
-  }
-
-  @Override
-  public void flush() {
-    // rows are written eagerly on accept
-  }
-
-  @Override
-  public void close() {
-    // no resources of its own; the store's DataSource is owned by the shard
   }
 }

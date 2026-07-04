@@ -11,7 +11,7 @@ package io.camunda.analytics.dataset;
  * When a variable dimension's value is snapshotted onto a fact (the deck's "Enriching Facts with
  * Variable Dimensions"). Each timing maps to a fixed source position, so the stamped value is a
  * pure function of the log up to that point — replay-deterministic. A dataset declaration chooses
- * the timing per variable dimension; the projector resolves it via {@link VariableEnricher}.
+ * the timing per variable dimension; the base projection resolves the snapshot for that timing.
  */
 public enum EnrichmentTiming {
 

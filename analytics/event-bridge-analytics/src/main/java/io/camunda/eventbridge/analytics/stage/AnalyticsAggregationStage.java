@@ -29,8 +29,9 @@ import org.slf4j.LoggerFactory;
  *
  * <p>This class only <em>wires</em> the stage: it seeds the same active cubes as Stage 1 (identical
  * cube/agg ids) and hands one {@link CubeAggregationShard} per facts partition to a {@link
- * StreamRuntime}, which owns the poll loop, restore, and the commit barrier — the merged cells +
- * the facts-topic offset commit as one atomic cut, then the coordinator offset last.
+ * StreamRuntime}, which owns the poll loop, restore, and the commit barrier. Each shard owns a
+ * per-facts-partition RocksDB and drives a one-node {@code ProcessorTopology} (the merge node); the
+ * merged cells and the facts-topic offset commit as one atomic cut.
  */
 public final class AnalyticsAggregationStage {
 

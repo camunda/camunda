@@ -23,15 +23,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Stage 1 of the staged pipeline: consume {@code zeebe-records}, fold once into the base projection
- * via the generic {@code AnalyticsFactProjector}, and seal each active cube-meter's per-source-
- * partition segment deltas into the shuffle (the facts topic).
+ * Stage 1 of the staged pipeline: consume {@code zeebe-records}, fold into the Model-A base
+ * projection, and seal each active cube-meter's per-source-partition segment deltas into the
+ * shuffle (the facts topic).
  *
  * <p>This class only <em>wires</em> the stage: it seeds the active cubes ({@link AnalyticsCubes})
  * and hands one {@link CubeProjectionShard} per source partition to a {@link StreamRuntime}, which
- * owns the poll loop, restore, and the produce-before-commit barrier. One RocksDB holds the base
- * projection and the sealed segment cells; the shard publishes the sealed deltas before its
- * segment-safe offset advances, so a crash replays the open segments rather than losing them.
+ * owns the poll loop, restore, and the produce-before-commit barrier. Each shard owns a per-source-
+ * partition RocksDB and drives a declared {@code ProcessorTopology} (base projection → per-cube
+ * aggregate nodes → shuffle); its base projection, every open segment and the consumed offset
+ * commit as one atomic cut (Model F), so a crash resumes exactly from the committed offset.
  */
 public final class AnalyticsProjectionStage {
 
