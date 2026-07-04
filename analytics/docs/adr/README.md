@@ -9,5 +9,6 @@ Module-scoped ADRs for the Optimize analytics pipeline (`analytics/analytics-eng
 
 - [0001 — Declarative datasets as the source of truth](0001-declarative-datasets.md)
 - [0002 — Analytics engine code structure](0002-engine-structure.md)
+- [0003 — Analytics engine layering and the operator model](0003-engine-layering.md)
 </content>
 </invoke>
