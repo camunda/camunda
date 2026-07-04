@@ -21,6 +21,12 @@ public sealed interface SecretResolutionResult
     }
   }
 
+  /**
+   * A failed resolution result.
+   *
+   * <p>Implementations must ensure that {@code message} and {@code cause} never contain secret
+   * values — only error metadata (codes, file paths, HTTP status codes, etc.) is safe to include.
+   */
   record Failed(SecretErrorCode code, String message, @Nullable Throwable cause)
       implements SecretResolutionResult {}
 }

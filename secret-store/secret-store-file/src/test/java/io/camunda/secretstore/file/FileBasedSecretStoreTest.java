@@ -8,10 +8,12 @@
 package io.camunda.secretstore.file;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.secretstore.SecretErrorCode;
 import io.camunda.secretstore.SecretRef;
 import io.camunda.secretstore.SecretResolutionResult;
+import io.camunda.secretstore.SecretStoreUnavailableException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -133,6 +135,15 @@ class FileBasedSecretStoreTest {
   }
 
   @Test
+  void shouldThrowWhenListingMissingFile() {
+    // given
+    final var store = new FileBasedSecretStore(tempDir.resolve("nonexistent.properties"));
+
+    // when / then
+    assertThatThrownBy(store::list).isInstanceOf(SecretStoreUnavailableException.class);
+  }
+
+  @Test
   void shouldHandleUtf8Values() throws IOException {
     // given — non-Latin-1 characters that would be mangled by ISO-8859-1
     final var file = tempDir.resolve("secrets.properties");
@@ -198,7 +209,7 @@ class FileBasedSecretStoreTest {
     }
     latch.countDown();
     executor.shutdown();
-    executor.awaitTermination(30, TimeUnit.SECONDS);
+    assertThat(executor.awaitTermination(30, TimeUnit.SECONDS)).isTrue();
 
     // then — zero errors across all concurrent calls
     assertThat(errors.get()).isZero();

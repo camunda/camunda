@@ -14,8 +14,8 @@ import static java.util.stream.Collectors.toMap;
 import io.camunda.secretstore.SecretRef;
 import io.camunda.secretstore.SecretResolutionResult;
 import io.camunda.secretstore.SecretStore;
+import io.camunda.secretstore.SecretStoreUnavailableException;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -43,16 +43,15 @@ public final class FileBasedSecretStore implements SecretStore {
     final Properties props;
     try {
       props = loadProperties();
-    } catch (final UncheckedIOException e) {
-      final var cause = e.getCause();
-      final var causeMessage = cause != null ? cause.getMessage() : e.getMessage();
-      LOG.warn("Failed to load secrets file '{}': {}", filePath, causeMessage);
-      final var msg = "Failed to load secrets file: " + causeMessage;
+    } catch (final SecretStoreUnavailableException e) {
+      LOG.warn("Secret store unavailable at '{}': {}", filePath, e.getMessage());
+      final var msg =
+          e.getMessage() != null ? e.getMessage() : "Secret store unavailable: " + filePath;
       return refs.stream()
           .collect(
               toMap(
                   ref -> ref,
-                  ref -> new SecretResolutionResult.Failed(STORE_UNAVAILABLE, msg, cause)));
+                  ref -> new SecretResolutionResult.Failed(STORE_UNAVAILABLE, msg, e.getCause())));
     }
     // Never log resolved values — only ref names and counts are safe to log
     LOG.debug("Resolving {} secret refs from '{}'", refs.size(), filePath);
@@ -73,7 +72,10 @@ public final class FileBasedSecretStore implements SecretStore {
   public Collection<SecretRef> list() {
     final var props = loadProperties();
     LOG.debug("Listing {} secrets from '{}'", props.size(), filePath);
-    return props.stringPropertyNames().stream().map(SecretRef::new).toList();
+    return props.stringPropertyNames().stream()
+        .filter(name -> !name.isBlank())
+        .map(SecretRef::new)
+        .toList();
   }
 
   private Properties loadProperties() {
@@ -81,7 +83,11 @@ public final class FileBasedSecretStore implements SecretStore {
     try (final var reader = Files.newBufferedReader(filePath, StandardCharsets.UTF_8)) {
       props.load(reader);
     } catch (final IOException e) {
-      throw new UncheckedIOException(e);
+      throw new SecretStoreUnavailableException(
+          "Failed to load secrets file '" + filePath + "': " + e.getMessage(), e);
+    } catch (final IllegalArgumentException e) {
+      throw new SecretStoreUnavailableException(
+          "Malformed secrets file '" + filePath + "': " + e.getMessage(), e);
     }
     return props;
   }

@@ -27,8 +27,10 @@ public interface SecretStore extends AutoCloseable {
   Map<SecretRef, SecretResolutionResult> resolve(Set<SecretRef> refs);
 
   /**
-   * Lists all secret references known to this store. May throw {@link java.io.UncheckedIOException}
-   * on store-level failures.
+   * Lists all secret references known to this store.
+   *
+   * @throws SecretStoreUnavailableException if the backing store cannot be accessed or its content
+   *     is malformed
    */
   Collection<SecretRef> list();
 
