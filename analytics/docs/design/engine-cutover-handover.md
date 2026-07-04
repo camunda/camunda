@@ -86,7 +86,7 @@ internals (all in `analytics-engine`):
 `event-bridge-analytics` builds the analytics `ProcessorTopology` (Stage 1: source → base‑projection
 processor → per‑cube windowed‑aggregate node → shuffle sink; Stage 2: shuffle source → merge →
 serving sink) and runs it via the **generic** runtime path (`StreamProcessor` + `Stage`,
-ownsDurability=false). **Delete**: `CubeProjectionShard`, `CubeAggregationShard`,
+ownsDurability=false). **Delete**: `ProjectionStageTask`, `AggregationStageTask`,
 `Task.ownsDurability/commit/restore`, all `safeOffset`, `fold/Projector`, `fold/Collector`,
 `aggregate/Aggregation`, `ProjectionStage`, the old `AnalyticsFactProjector` + derivers. Full‑repo
 green.

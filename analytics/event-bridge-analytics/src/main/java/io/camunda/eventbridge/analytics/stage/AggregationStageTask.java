@@ -46,9 +46,9 @@ import org.slf4j.LoggerFactory;
  * offset live in the one provider, so {@link #commit(long)} makes them one atomic cut: converge the
  * sinks and flush the serving rows (produce-before-commit), then persist the offset + merged cells.
  */
-public final class CubeAggregationShard implements Task<ShuffleEnvelope>, AutoCloseable {
+public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCloseable {
 
-  private static final Logger LOG = LoggerFactory.getLogger(CubeAggregationShard.class);
+  private static final Logger LOG = LoggerFactory.getLogger(AggregationStageTask.class);
 
   private final int partition;
   private final ProcessorTopology<ShuffleEnvelope> topology;
@@ -60,7 +60,7 @@ public final class CubeAggregationShard implements Task<ShuffleEnvelope>, AutoCl
   private final DbInt offsetKey = new DbInt();
   private final DbLong offsetValue = new DbLong();
 
-  CubeAggregationShard(
+  AggregationStageTask(
       final int partition,
       final ProcessorTopology<ShuffleEnvelope> topology,
       final DatasetStore datasetStore,
@@ -75,7 +75,7 @@ public final class CubeAggregationShard implements Task<ShuffleEnvelope>, AutoCl
     this.offsets = offsets;
   }
 
-  public static CubeAggregationShard open(
+  public static AggregationStageTask open(
       final int partition,
       final String baseDir,
       final DatasetStore datasetStore,
@@ -102,7 +102,7 @@ public final class CubeAggregationShard implements Task<ShuffleEnvelope>, AutoCl
         ProcessorTopology.<ShuffleEnvelope>builder()
             .source("merge", new CubeMergeProcessor(new SegmentDedup(), byStreamId, mergers))
             .build();
-    return new CubeAggregationShard(partition, topology, datasetStore, writer, provider, offsets);
+    return new AggregationStageTask(partition, topology, datasetStore, writer, provider, offsets);
   }
 
   /** Wires one meter's merging aggregation (capturing the acc type) + its dispatch applier. */

@@ -28,8 +28,8 @@ import org.slf4j.LoggerFactory;
  * aggregate, and converge the idempotent serving sink — so dashboard reads hit one cell (O(1)).
  *
  * <p>This class only <em>wires</em> the stage: it seeds the same active cubes as Stage 1 (identical
- * cube/agg ids) and hands one {@link CubeAggregationShard} per facts partition to a {@link
- * StreamRuntime}, which owns the poll loop, restore, and the commit barrier. Each shard owns a
+ * cube/agg ids) and hands one {@link AggregationStageTask} per facts partition to a {@link
+ * StreamRuntime}, which owns the poll loop, restore, and the commit barrier. Each task owns a
  * per-facts-partition RocksDB and drives a one-node {@code ProcessorTopology} (the merge node); the
  * merged cells and the facts-topic offset commit as one atomic cut.
  */
@@ -70,11 +70,11 @@ public final class AnalyticsAggregationStage {
             .instanceId(instanceId)
             .sourceTopic(factsTopic)
             .deserializer((payload, partition, offset) -> ShuffleEnvelopeCodec.decode(payload))
-            // One self-contained shard per facts partition: its own RocksDB cells + offset and the
+            // One self-contained task per facts partition: its own RocksDB cells + offset and the
             // per-aggId mergers, owning its durability (restore/commit).
             .taskFactory(
                 partition ->
-                    CubeAggregationShard.open(
+                    AggregationStageTask.open(
                         partition, stateDir, backend.newDatasetStore(), cubes, meterRegistry))
             .maxPoll(MAX_RECORDS)
             .pollTimeout(POLL_TIMEOUT)

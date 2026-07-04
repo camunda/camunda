@@ -85,8 +85,8 @@ source record → base projection → fact → (per dataset) subscribe + aggrega
 - **Processor / ProcessorTopology** — the operator SPI + the DAG of operators (the single `Stage`).
   The base projection, cube-meter, merge, and table-row nodes are all `Processor`s wired into a
   topology.
-- **Owning task (the "shard")** — one per source/facts partition (`CubeProjectionShard`,
-  `CubeAggregationShard`): owns a per-partition RocksDB and drives a `ProcessorTopology`, committing
+- **Owning task** — one per source/facts partition (`ProjectionStageTask`,
+  `AggregationStageTask`): owns a per-partition RocksDB and drives a `ProcessorTopology`, committing
   its state and consumed offset as one atomic cut.
 - **Model F** — the consistent-cut durability model: per partition, the topology's state (base
   projection rows, open segments, merged cells) and the *full* consumed offset commit atomically;

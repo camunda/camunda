@@ -12,8 +12,8 @@ import io.camunda.analytics.dataset.store.MetadataStore;
 
 /**
  * One selected serving backend, resolved once at start-up by {@link AnalyticsBackends}: the single
- * control-plane {@link MetadataStore} for the stage and a factory for the per-shard {@link
- * DatasetStore}s (each stage runs one shard per partition, and a shard owns its own store — its own
+ * control-plane {@link MetadataStore} for the stage and a factory for the per-task {@link
+ * DatasetStore}s (each stage runs one task per partition, and a task owns its own store — its own
  * connection/client — so it can commit independently).
  */
 public interface AnalyticsBackend {
@@ -21,6 +21,6 @@ public interface AnalyticsBackend {
   /** The shared control-plane store (specs + meter ids) for the stage. */
   MetadataStore metadataStore();
 
-  /** A fresh serving store for one shard (its own connection/client). */
+  /** A fresh serving store for one task (its own connection/client). */
   DatasetStore newDatasetStore();
 }

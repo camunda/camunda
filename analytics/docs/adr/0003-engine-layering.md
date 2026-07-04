@@ -31,7 +31,7 @@ problem is that the analytics code **bypasses it**:
 1. There are **two operator generations**. The domain uses the older `fold/Projector` +
    `aggregate/Aggregation` seams via `ProjectionStage`; the newer `Processor` + `ProcessorTopology`
    DAG sits **unused**.
-2. The app **hand-wires per-partition shards** (`CubeProjectionShard`, `CubeAggregationShard`)
+2. The app **hand-wires per-partition shards** (`ProjectionStageTask`, `AggregationStageTask`)
    instead of declaring a topology, because the shard does work the DAG can't yet: it reads
    `safeOffset()` off the sealing aggregations and drives produce-before-commit, and it fans the
    commit barrier to the projector + aggregations.

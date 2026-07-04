@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Batches a shard's sealed cell deltas into {@link ShuffleEnvelope}s and publishes them via an
+ * Batches a partition's sealed cell deltas into {@link ShuffleEnvelope}s and publishes them via an
  * {@link EnvelopeTransport}. Deltas are buffered per {@code (sourcePartition, segment,
  * factsPartition)} and, on {@link #flush()}, each group becomes one envelope; a per-{@code
  * (sourcePartition, segment)} chunk counter gives every envelope of a segment a monotonic chunk, so

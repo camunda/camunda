@@ -51,9 +51,9 @@ import org.slf4j.LoggerFactory;
  * the <em>full</em> processed offset together with the topology's checkpoint. No {@code safeOffset}
  * — a crash resumes exactly from the committed offset onto the checkpointed open segments.
  */
-public final class CubeProjectionShard implements Task<SourceRecord>, AutoCloseable {
+public final class ProjectionStageTask implements Task<SourceRecord>, AutoCloseable {
 
-  private static final Logger LOG = LoggerFactory.getLogger(CubeProjectionShard.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ProjectionStageTask.class);
 
   /** Source coordinate of a fact — the origin the shuffle dedups by. */
   private static final SourceCoordinate<Fact> COORDINATE =
@@ -79,7 +79,7 @@ public final class CubeProjectionShard implements Task<SourceRecord>, AutoClosea
   private final DbInt offsetKey = new DbInt();
   private final DbLong offsetValue = new DbLong();
 
-  CubeProjectionShard(
+  ProjectionStageTask(
       final int partition,
       final ProcessorTopology<SourceRecord> topology,
       final DatasetStore datasetStore,
@@ -94,7 +94,7 @@ public final class CubeProjectionShard implements Task<SourceRecord>, AutoClosea
     this.offsets = offsets;
   }
 
-  public static CubeProjectionShard open(
+  public static ProjectionStageTask open(
       final int partition,
       final EventBridgeClient client,
       final String baseDir,
@@ -151,7 +151,7 @@ public final class CubeProjectionShard implements Task<SourceRecord>, AutoClosea
           new TableRowProcessor(table.registered(), table.compiled(), writer),
           "projection");
     }
-    return new CubeProjectionShard(
+    return new ProjectionStageTask(
         partition, builder.build(), datasetStore, writer, provider, offsets);
   }
 

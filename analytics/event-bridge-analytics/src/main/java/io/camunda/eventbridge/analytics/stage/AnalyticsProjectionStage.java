@@ -28,8 +28,8 @@ import org.slf4j.LoggerFactory;
  * shuffle (the facts topic).
  *
  * <p>This class only <em>wires</em> the stage: it seeds the active cubes ({@link AnalyticsCubes})
- * and hands one {@link CubeProjectionShard} per source partition to a {@link StreamRuntime}, which
- * owns the poll loop, restore, and the produce-before-commit barrier. Each shard owns a per-source-
+ * and hands one {@link ProjectionStageTask} per source partition to a {@link StreamRuntime}, which
+ * owns the poll loop, restore, and the produce-before-commit barrier. Each task owns a per-source-
  * partition RocksDB and drives a declared {@code ProcessorTopology} (base projection → per-cube
  * aggregate nodes → shuffle); its base projection, every open segment and the consumed offset
  * commit as one atomic cut (Model F), so a crash resumes exactly from the committed offset.
@@ -90,12 +90,12 @@ public final class AnalyticsProjectionStage {
             // event time = the Zeebe record timestamp, so the runtime advances stream time and
             // finalizes closed windows even for keys that stop receiving records.
             .timestampExtractor(sourceRecord -> sourceRecord.record().getTimestamp())
-            // One self-contained shard per source partition: its own RocksDB, projection, per-cube
+            // One self-contained task per source partition: its own RocksDB, projection, per-cube
             // sealing aggregations and publisher, owning its durability (restore/commit) — the
             // runtime dedups its resume gap and drives its per-partition atomic commit.
             .taskFactory(
                 partition ->
-                    CubeProjectionShard.open(
+                    ProjectionStageTask.open(
                         partition,
                         client,
                         stateDir,
