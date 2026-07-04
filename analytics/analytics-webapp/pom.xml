@@ -29,6 +29,27 @@
   </properties>
 
   <dependencies>
+    <!-- Neutral serving/query engine + backends the dashboard read path runs on. -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>analytics-model</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>analytics-serving</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>analytics-store-rdbms</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>analytics-store-document</artifactId>
+      <version>${project.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
@@ -48,11 +69,6 @@
     <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
-    </dependency>
-    <!-- Merge the stored KLL sketches at read time for exact percentiles over an arbitrary range -->
-    <dependency>
-      <groupId>org.apache.datasketches</groupId>
-      <artifactId>datasketches-java</artifactId>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>

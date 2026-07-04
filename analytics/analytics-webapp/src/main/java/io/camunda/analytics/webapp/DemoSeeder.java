@@ -7,230 +7,346 @@
  */
 package io.camunda.analytics.webapp;
 
+import io.camunda.analytics.dataset.CompiledDataset;
+import io.camunda.analytics.dataset.CompiledMeter;
+import io.camunda.analytics.dataset.store.DatasetQueryExecutor;
+import io.camunda.analytics.dataset.store.DatasetStore;
+import io.camunda.analytics.dataset.store.ReportQuery;
+import io.camunda.analytics.dimension.DimensionKey;
+import io.camunda.analytics.dimension.FactRow;
+import io.camunda.analytics.fact.Fact;
+import io.camunda.analytics.fact.FactType;
+import io.camunda.analytics.fact.Transition;
+import io.camunda.analytics.meter.BoundMeter;
+import io.camunda.eventbridge.streaming.aggregate.AggregateFunction;
+import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 /**
- * Seeds the serving tables with representative demo data so the dashboard renders without a running
- * pipeline. Enabled only with {@code -Danalytics.seed=true}; it is a no-op if data already exists,
- * so it never touches a live dataset. Writes a few process definitions across several hourly
- * windows for one tenant, mirroring exactly the columns the pipeline's sinks write.
+ * Seeds the serving store with representative demo data so the dashboard renders without a running
+ * pipeline. Enabled only with {@code -Danalytics.seed=true}; a no-op if data already exists, so it
+ * never touches a live dataset. It writes exactly what the pipeline's sinks write: for each cube,
+ * per grain key and window, it folds synthetic {@link Fact}s through the cube's declared meter and
+ * upserts the encoded accumulator via the neutral {@link DatasetStore#writer()} — the same
+ * store/codecs the read path decodes.
  */
 @Component
 @ConditionalOnProperty(name = "analytics.seed", havingValue = "true")
 public class DemoSeeder implements CommandLineRunner {
 
   private static final Logger LOG = LoggerFactory.getLogger(DemoSeeder.class);
-  private static final long HOUR = 3_600_000L;
-  private static final long WINDOWS = 12; // last 12 hourly windows
-  private static final long BASE = 1_750_000_000_000L; // fixed start (deterministic demo)
-  private static final long SLA_MS = 300_000L;
+
   private static final String TENANT = "<default>";
+  private static final int WINDOWS = 10;
+  private static final long BASE_MS = 1_750_000_000_000L; // fixed start (deterministic demo)
 
-  private static final List<Def> DEFS =
-      List.of(
-          new Def("order-process", 2251799813685249L, 1, 45_000L, 6),
-          new Def("payment-process", 2251799813685252L, 2, 120_000L, 4),
-          new Def("shipping-process", 2251799813685255L, 1, 600_000L, 3));
+  private static final List<String> PROCESSES =
+      List.of("order-process", "payment-process", "shipping-process");
+  private static final List<String> ELEMENTS =
+      List.of("StartEvent_1", "Task_Validate", "Task_Approve", "Gateway_Check", "EndEvent_1");
+  // per-tenant occurrence volume per window, busiest first (matches PROCESSES order)
+  private static final long[] VOLUMES = {30L, 15L, 5L};
 
-  private final JdbcTemplate jdbc;
+  private final DatasetStore store;
+  private final DatasetCatalog catalog;
+  private final DatasetQueryExecutor executor;
 
-  public DemoSeeder(final JdbcTemplate jdbc) {
-    this.jdbc = jdbc;
+  public DemoSeeder(
+      final DatasetStore store, final DatasetCatalog catalog, final DatasetQueryExecutor executor) {
+    this.store = store;
+    this.catalog = catalog;
+    this.executor = executor;
   }
 
   @Override
   public void run(final String... args) {
-    final Long existing =
-        jdbc.queryForObject("SELECT COUNT(*) FROM proc_inst_duration_pctl_window", Long.class);
-    if (existing != null && existing > 0) {
-      LOG.info(
-          "Demo seed skipped: serving tables already have data ({} percentile rows)", existing);
+    if (alreadySeeded()) {
+      LOG.info("Demo seed skipped: the serving store already has process-instance data");
       return;
     }
-    LOG.info("Seeding demo analytics data ({} definitions x {} windows)", DEFS.size(), WINDOWS);
-    for (final Def def : DEFS) {
-      for (long w = 0; w < WINDOWS; w++) {
-        seedWindow(def, BASE + w * HOUR, w);
+    LOG.info("Seeding demo analytics data into the serving store");
+    ensureSchemas();
+    seedProcessInstances();
+    seedProcessDuration();
+    seedProcessSla();
+    seedElementCubes();
+    seedDistinct();
+    seedTopProcesses();
+    store.writer().flush();
+    LOG.info("Demo analytics data seeded");
+  }
+
+  private boolean alreadySeeded() {
+    final CompiledDataset dataset = catalog.require("process-instances");
+    final long toMs = System.currentTimeMillis() + 3_600_000L;
+    final ReportQuery query =
+        new ReportQuery(List.of("bpmnProcessId"), 0L, toMs, toMs, List.of(), List.of("lifecycle"));
+    return !executor.execute(query, dataset).rows().isEmpty();
+  }
+
+  private void ensureSchemas() {
+    for (final CompiledDataset dataset : catalog.byName().values()) {
+      store.schemaManager().ensure(dataset);
+    }
+  }
+
+  /** process-instances (lifecycle): activated/completed/terminated + completion durations. */
+  private void seedProcessInstances() {
+    final CompiledDataset dataset = catalog.require("process-instances");
+    for (final CompiledMeter meter : meters(dataset, "lifecycle")) {
+      for (final String process : PROCESSES) {
+        final DimensionKey key = DimensionKey.of(dataset.grain(), process);
+        for (int w = 0; w < WINDOWS; w++) {
+          final long ws = windowStart(meter.windowMs(), w);
+          final long count = instanceCount(process, w);
+          final long completed = Math.round(count * 0.9);
+          final List<Fact> facts = new ArrayList<>();
+          for (long i = 0; i < count; i++) {
+            facts.add(processFact(Transition.ACTIVATED, null));
+          }
+          for (final long duration : durations(baseP50(process), (int) completed)) {
+            facts.add(processFact(Transition.COMPLETED, duration));
+          }
+          for (long i = 0; i < count - completed; i++) {
+            facts.add(processFact(Transition.TERMINATED, null));
+          }
+          upsert(dataset, meter, key, ws, facts);
+        }
       }
-      seedElements(def);
-    }
-    seedTopProcesses(BASE + (WINDOWS - 1) * HOUR);
-  }
-
-  private void seedWindow(final Def def, final long windowStart, final long w) {
-    // a gentle diurnal wobble so the trend charts have shape
-    final double wobble = 1.0 + 0.25 * Math.sin(w / 2.0);
-    final long count = 40 + (def.spread() * 5) + (w % 5) * 7;
-    final long p50 = Math.round(def.baseP50() * wobble);
-    final long p75 = Math.round(p50 * 1.4);
-    final long p90 = Math.round(p50 * 1.9);
-    final long p99 = Math.round(p50 * 3.1);
-    final long min = Math.round(def.baseP50() * 0.3);
-    final long max = Math.round(p99 * 1.2);
-
-    jdbc.update(
-        "INSERT INTO proc_inst_duration_pctl_window (bpmn_process_id, process_definition_key,"
-            + " version, tenant_id, window_start, window_size_ms, observation_count, min_duration_ms,"
-            + " max_duration_ms, p50_duration_ms, p75_duration_ms, p90_duration_ms, p99_duration_ms)"
-            + " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
-        def.bpmnProcessId(),
-        def.key(),
-        def.version(),
-        TENANT,
-        windowStart,
-        HOUR,
-        count,
-        min,
-        max,
-        p50,
-        p75,
-        p90,
-        p99);
-
-    // exec-time (avg/min/max) for the same cells — total chosen so avg ≈ p50 * 1.1
-    final long total = Math.round(count * p50 * 1.1);
-    jdbc.update(
-        "INSERT INTO proc_inst_exec_time_window (dataset_id, region, process_definition_key,"
-            + " bpmn_process_id, version, tenant_id, window_start, window_size_ms, completed_count,"
-            + " total_duration_ms, min_duration_ms, max_duration_ms) VALUES (1,?,?,?,?,?,?,?,?,?,?,?)",
-        "EU",
-        def.key(),
-        def.bpmnProcessId(),
-        def.version(),
-        TENANT,
-        windowStart,
-        HOUR,
-        count,
-        total,
-        min,
-        max);
-
-    // SLA-met + no-incident percentages, matched/total (additive)
-    final long slaMatched = Math.round(count * (p50 <= SLA_MS ? 0.9 : 0.55) - (w % 3));
-    final long noIncidentMatched = count - (w % 4) - def.spread();
-    insertRatio(def, windowStart, "sla_met", Math.max(0, slaMatched), count);
-    insertRatio(def, windowStart, "no_incident", Math.max(0, noIncidentMatched), count);
-
-    // distinct processes active per tenant (same for the whole tenant per window)
-    if (def == DEFS.get(0)) {
-      final long distinct = DEFS.size();
-      jdbc.update(
-          "INSERT INTO proc_distinct_window (tenant_id, window_start, window_size_ms,"
-              + " distinct_estimate, distinct_lower, distinct_upper) VALUES (?,?,?,?,?,?)",
-          TENANT,
-          windowStart,
-          HOUR,
-          distinct,
-          distinct,
-          distinct);
     }
   }
 
-  private void insertRatio(
-      final Def def,
-      final long windowStart,
-      final String metric,
-      final long matched,
-      final long total) {
-    final double ratio = total == 0 ? 0.0 : (double) matched / total;
-    jdbc.update(
-        "INSERT INTO proc_ratio_window (bpmn_process_id, process_definition_key, version, tenant_id,"
-            + " window_start, window_size_ms, metric, matched_count, total_count, ratio)"
-            + " VALUES (?,?,?,?,?,?,?,?,?,?)",
-        def.bpmnProcessId(),
-        def.key(),
-        def.version(),
-        TENANT,
-        windowStart,
-        HOUR,
-        metric,
-        matched,
-        total,
-        ratio);
+  /** process-duration (p95): completion-duration percentile distribution. */
+  private void seedProcessDuration() {
+    final CompiledDataset dataset = catalog.require("process-duration");
+    for (final CompiledMeter meter : meters(dataset, "p95")) {
+      for (final String process : PROCESSES) {
+        final DimensionKey key = DimensionKey.of(dataset.grain(), process);
+        for (int w = 0; w < WINDOWS; w++) {
+          upsert(dataset, meter, key, windowStart(meter.windowMs(), w), completedFacts(process, w));
+        }
+      }
+    }
   }
 
-  private void seedElements(final Def def) {
-    final String[][] elements = {
-      {"StartEvent_1", "START_EVENT"},
-      {"Task_Validate", "SERVICE_TASK"},
-      {"Task_Approve", "USER_TASK"},
-      {"Gateway_Check", "EXCLUSIVE_GATEWAY"},
-      {"EndEvent_1", "END_EVENT"},
+  /** process-sla (sla_compliance): completed instances under the 300s SLA threshold. */
+  private void seedProcessSla() {
+    final CompiledDataset dataset = catalog.require("process-sla");
+    for (final CompiledMeter meter : meters(dataset, "sla_compliance")) {
+      for (final String process : PROCESSES) {
+        final DimensionKey key = DimensionKey.of(dataset.grain(), process);
+        for (int w = 0; w < WINDOWS; w++) {
+          upsert(dataset, meter, key, windowStart(meter.windowMs(), w), completedFacts(process, w));
+        }
+      }
+    }
+  }
+
+  /** element-throughput / element-duration / incidents / incident-open per (process, element). */
+  private void seedElementCubes() {
+    final CompiledDataset throughput = catalog.require("element-throughput");
+    final CompiledDataset elementDuration = catalog.require("element-duration");
+    final CompiledDataset incidents = catalog.require("incidents");
+    final CompiledDataset incidentOpen = catalog.require("incident-open");
+
+    for (final String process : PROCESSES) {
+      for (int e = 0; e < ELEMENTS.size(); e++) {
+        final String element = ELEMENTS.get(e);
+        for (int w = 0; w < WINDOWS; w++) {
+          final long executed = 40L - e * 6L + (w % 4) * 2L;
+          final long elementP50 = baseP50(process) / 5 + e * 3_000L;
+          final long raised = (e == 1 || e == 2) ? 2L + (w % 3) : 0L;
+          final long open = raised > 0 ? 1L : 0L;
+
+          for (final CompiledMeter meter : meters(throughput, "count")) {
+            upsert(
+                throughput,
+                meter,
+                DimensionKey.of(throughput.grain(), process, element),
+                windowStart(meter.windowMs(), w),
+                countFacts(FactType.ELEMENT, executed));
+          }
+          for (final CompiledMeter meter : meters(elementDuration, "duration")) {
+            final List<Fact> facts = new ArrayList<>();
+            for (final long d : durations(elementP50, (int) Math.max(1, executed))) {
+              facts.add(elementFact(Transition.COMPLETED, d));
+            }
+            upsert(
+                elementDuration,
+                meter,
+                DimensionKey.of(elementDuration.grain(), process, element),
+                windowStart(meter.windowMs(), w),
+                facts);
+          }
+          for (final CompiledMeter meter : meters(incidents, "count")) {
+            upsert(
+                incidents,
+                meter,
+                DimensionKey.of(incidents.grain(), process, element),
+                windowStart(meter.windowMs(), w),
+                countFacts(FactType.INCIDENT, raised));
+          }
+          for (final CompiledMeter meter : meters(incidentOpen, "open")) {
+            final List<Fact> facts = new ArrayList<>();
+            for (long i = 0; i < raised; i++) {
+              facts.add(deltaFact(1L));
+            }
+            for (long i = 0; i < raised - open; i++) {
+              facts.add(deltaFact(-1L));
+            }
+            upsert(
+                incidentOpen,
+                meter,
+                DimensionKey.of(incidentOpen.grain(), process, element),
+                windowStart(meter.windowMs(), w),
+                facts);
+          }
+        }
+      }
+    }
+  }
+
+  /** process-distinct (HLL): distinct active process definitions per tenant. */
+  private void seedDistinct() {
+    final CompiledDataset dataset = catalog.require("process-distinct");
+    for (final CompiledMeter meter : meters(dataset, "distinct")) {
+      final DimensionKey key = DimensionKey.of(dataset.grain(), TENANT);
+      for (int w = 0; w < WINDOWS; w++) {
+        final List<Fact> facts = new ArrayList<>();
+        for (final String process : PROCESSES) {
+          facts.add(
+              Fact.builder(FactType.PROCESS_INSTANCE).field("bpmnProcessId", process).build());
+        }
+        upsert(dataset, meter, key, windowStart(meter.windowMs(), w), facts);
+      }
+    }
+  }
+
+  /** top-processes (frequent items): heaviest process definitions per tenant. */
+  private void seedTopProcesses() {
+    final CompiledDataset dataset = catalog.require("top-processes");
+    for (final CompiledMeter meter : meters(dataset, "top")) {
+      final DimensionKey key = DimensionKey.of(dataset.grain(), TENANT);
+      for (int w = 0; w < WINDOWS; w++) {
+        final List<Fact> facts = new ArrayList<>();
+        for (int p = 0; p < PROCESSES.size(); p++) {
+          for (long i = 0; i < VOLUMES[p]; i++) {
+            facts.add(
+                Fact.builder(FactType.PROCESS_INSTANCE)
+                    .field("bpmnProcessId", PROCESSES.get(p))
+                    .build());
+          }
+        }
+        upsert(dataset, meter, key, windowStart(meter.windowMs(), w), facts);
+      }
+    }
+  }
+
+  // --- fact builders -------------------------------------------------------------------------
+
+  private List<Fact> completedFacts(final String process, final int w) {
+    final long completed = Math.round(instanceCount(process, w) * 0.9);
+    final List<Fact> facts = new ArrayList<>();
+    for (final long duration : durations(baseP50(process), (int) completed)) {
+      facts.add(processFact(Transition.COMPLETED, duration));
+    }
+    return facts;
+  }
+
+  private static List<Fact> countFacts(final FactType type, final long n) {
+    final List<Fact> facts = new ArrayList<>();
+    for (long i = 0; i < n; i++) {
+      facts.add(Fact.builder(type).build());
+    }
+    return facts;
+  }
+
+  private static Fact processFact(final Transition transition, final Long durationMs) {
+    return Fact.builder(FactType.PROCESS_INSTANCE)
+        .transition(transition)
+        .field("durationMs", durationMs)
+        .build();
+  }
+
+  private static Fact elementFact(final Transition transition, final Long durationMs) {
+    return Fact.builder(FactType.ELEMENT)
+        .transition(transition)
+        .field("durationMs", durationMs)
+        .build();
+  }
+
+  private static Fact deltaFact(final long delta) {
+    return Fact.builder(FactType.INCIDENT).field("delta", delta).build();
+  }
+
+  /** A spread of durations around {@code baseP50} so percentiles have shape. */
+  private static List<Long> durations(final long baseP50, final int count) {
+    final List<Long> out = new ArrayList<>();
+    for (int i = 0; i < count; i++) {
+      final double factor = 0.5 + (i % 10) * 0.12; // ~0.5x .. ~1.6x
+      out.add(Math.max(1L, Math.round(baseP50 * factor)));
+    }
+    return out;
+  }
+
+  private static long instanceCount(final String process, final int w) {
+    return 20L + (w % 5) * 3L + PROCESSES.indexOf(process) * 4L;
+  }
+
+  private static long baseP50(final String process) {
+    return switch (process) {
+      case "order-process" -> 45_000L;
+      case "payment-process" -> 120_000L;
+      case "shipping-process" -> 600_000L;
+      default -> 60_000L;
     };
-    final long windowStart = BASE + (WINDOWS - 1) * HOUR;
-    long i = 0;
-    for (final String[] el : elements) {
-      final long executed = 300 - i * 40 + def.spread() * 10;
-      final long p50 = def.baseP50() / 5 + i * 3_000L;
-      final long p90 = p50 * 2;
-      final long max = p90 * 2;
-      final long total = Math.round(executed * p50 * 1.2);
-      jdbc.update(
-          "INSERT INTO element_execution_window (bpmn_process_id, process_definition_key, version,"
-              + " tenant_id, element_id, element_type, window_start, window_size_ms, executed_count,"
-              + " total_duration_ms, min_duration_ms, max_duration_ms) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
-          def.bpmnProcessId(),
-          def.key(),
-          def.version(),
-          TENANT,
-          el[0],
-          el[1],
-          windowStart,
-          HOUR,
-          executed,
-          total,
-          p50 / 2,
-          max);
-      jdbc.update(
-          "INSERT INTO element_duration_pctl_window (bpmn_process_id, process_definition_key,"
-              + " version, tenant_id, element_id, element_type, window_start, window_size_ms,"
-              + " observation_count, min_duration_ms, max_duration_ms, p50_duration_ms,"
-              + " p75_duration_ms, p90_duration_ms, p99_duration_ms) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-          def.bpmnProcessId(),
-          def.key(),
-          def.version(),
-          TENANT,
-          el[0],
-          el[1],
-          windowStart,
-          HOUR,
-          executed,
-          p50 / 2,
-          max,
-          p50,
-          Math.round(p50 * 1.4),
-          p90,
-          Math.round(p90 * 1.6));
-      i++;
-    }
   }
 
-  private void seedTopProcesses(final long windowStart) {
-    int rank = 1;
-    // busiest first — order > payment > shipping
-    final long[] volumes = {1800, 950, 320};
-    for (final Def def : DEFS) {
-      final long est = volumes[rank - 1];
-      jdbc.update(
-          "INSERT INTO top_processes_window (tenant_id, window_start, window_size_ms, rank,"
-              + " bpmn_process_id, estimate, lower_bound, upper_bound) VALUES (?,?,?,?,?,?,?,?)",
-          TENANT,
-          windowStart,
-          HOUR,
-          rank,
-          def.bpmnProcessId(),
-          est,
-          est,
-          est);
-      rank++;
-    }
+  private static long windowStart(final long tier, final int w) {
+    final long alignedBase = BASE_MS - Math.floorMod(BASE_MS, tier);
+    return alignedBase + (long) w * tier;
   }
 
-  private record Def(String bpmnProcessId, long key, int version, long baseP50, long spread) {}
+  private static List<CompiledMeter> meters(final CompiledDataset dataset, final String meterName) {
+    final List<CompiledMeter> out = new ArrayList<>();
+    for (final CompiledMeter meter : dataset.meters()) {
+      if (meter.meterName().equals(meterName)) {
+        out.add(meter);
+      }
+    }
+    return out;
+  }
+
+  private void upsert(
+      final CompiledDataset dataset,
+      final CompiledMeter meter,
+      final DimensionKey key,
+      final long windowStart,
+      final List<Fact> facts) {
+    store
+        .writer()
+        .upsertCell(
+            dataset,
+            key,
+            windowStart,
+            meter.windowMs(),
+            meter.meterName(),
+            fold(meter.bound(), facts));
+  }
+
+  @SuppressWarnings("unchecked")
+  private static byte[] fold(final BoundMeter<?, ?> bound, final List<Fact> facts) {
+    final BoundMeter<Object, Object> typed = (BoundMeter<Object, Object>) bound;
+    final AggregateFunction<FactRow, Object, Object> aggregate = typed.aggregate();
+    Object accumulator = aggregate.createAccumulator();
+    for (final Fact fact : facts) {
+      accumulator = aggregate.add(fact, accumulator);
+    }
+    return typed.accumulatorCodec().toBytes(accumulator);
+  }
 }

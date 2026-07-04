@@ -7,14 +7,21 @@
  */
 package io.camunda.analytics.webapp;
 
+import io.camunda.analytics.dataset.CompiledDataset;
+import io.camunda.analytics.dataset.FilterPredicate;
+import io.camunda.analytics.dataset.store.DatasetQueryExecutor;
+import io.camunda.analytics.dataset.store.ReportQuery;
+import io.camunda.analytics.metric.ExecutionTimeSummaryResult;
+import io.camunda.analytics.metric.LifecycleSummaryResult;
 import io.camunda.analytics.webapp.model.Dataset;
 import io.camunda.analytics.webapp.model.HeatmapCell;
 import io.camunda.analytics.webapp.model.Report;
 import io.camunda.analytics.webapp.model.ReportRow;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import org.springframework.dao.DataAccessException;
+import java.util.TreeSet;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -22,12 +29,16 @@ import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
 /**
- * Stores dataset/report <em>definitions</em> in H2 and runs a report by querying the windowed
- * aggregate table the pipeline produces ({@code proc_inst_exec_time_window}), merging the
- * per-source-partition partials with a {@code GROUP BY} at read time.
+ * Stores dataset/report <em>definitions</em> in H2 (its own tables, unrelated to the serving store)
+ * and runs a report/heatmap by querying the neutral serving executor. A report reads the
+ * process-instances lifecycle cube grouped by process and window; the heatmap reads the
+ * element-duration cube grouped by element.
  */
 @Repository
 public class AnalyticsRepository {
+
+  private static final long ONE_HOUR_MS = 3_600_000L;
+  private static final long MINUTE_MS = 60_000L;
 
   private static final RowMapper<Dataset> DATASET_MAPPER =
       (rs, n) ->
@@ -50,20 +61,15 @@ public class AnalyticsRepository {
               (Long) rs.getObject("from_window"),
               (Long) rs.getObject("to_window"));
 
-  private static final RowMapper<ReportRow> REPORT_ROW_MAPPER =
-      (rs, n) ->
-          new ReportRow(
-              rs.getString("region"),
-              rs.getString("bpmn_process_id"),
-              rs.getLong("window_start"),
-              rs.getLong("completed"),
-              rs.getDouble("avg_duration"),
-              rs.getLong("max_duration"));
-
   private final JdbcTemplate jdbc;
+  private final DatasetQueryExecutor executor;
+  private final DatasetCatalog catalog;
 
-  public AnalyticsRepository(final JdbcTemplate jdbc) {
+  public AnalyticsRepository(
+      final JdbcTemplate jdbc, final DatasetQueryExecutor executor, final DatasetCatalog catalog) {
     this.jdbc = jdbc;
+    this.executor = executor;
+    this.catalog = catalog;
   }
 
   public List<Dataset> listDatasets() {
@@ -135,80 +141,87 @@ public class AnalyticsRepository {
   }
 
   /**
-   * Runs a report: execution time grouped by region (and process and window), with the report's
-   * filters. The per-source-partition partials are merged here — {@code SUM} for additive counts
-   * and total duration (so the average is exact), {@code MAX} for the slowest instance.
+   * Runs a report: process-instance lifecycle per process and 1-minute window, optionally filtered
+   * to the report's process. The region filter is not modeled by the lifecycle cube (no region
+   * dimension), so it is ignored and the region column reads empty.
    */
   public List<ReportRow> runReport(final Report report) {
-    final StringBuilder sql =
-        new StringBuilder(
-            "SELECT region, bpmn_process_id, window_start, SUM(completed_count) AS completed, "
-                + "CASE WHEN SUM(completed_count) = 0 THEN 0 "
-                + "ELSE SUM(total_duration_ms) * 1.0 / SUM(completed_count) END AS avg_duration, "
-                + "MAX(max_duration_ms) AS max_duration "
-                + "FROM proc_inst_exec_time_window");
-    final List<Object> params = new ArrayList<>();
-    final List<String> conditions = new ArrayList<>();
-    // a report reads only its dataset's rows (each dataset is aggregated with its own window)
-    conditions.add("dataset_id = ?");
-    params.add(report.datasetId());
+    final CompiledDataset dataset = catalog.require("process-instances");
+    final long fromMs = report.fromWindow() == null ? 0L : report.fromWindow();
+    final long toMs =
+        report.toWindow() == null ? System.currentTimeMillis() + ONE_HOUR_MS : report.toWindow();
+    final List<FilterPredicate> filters = new ArrayList<>();
     if (report.bpmnProcessId() != null && !report.bpmnProcessId().isBlank()) {
-      conditions.add("bpmn_process_id = ?");
-      params.add(report.bpmnProcessId());
+      filters.add(FilterPredicate.equals("bpmnProcessId", report.bpmnProcessId()));
     }
-    if (report.region() != null && !report.region().isBlank()) {
-      conditions.add("region = ?");
-      params.add(report.region());
+    final ReportQuery query =
+        new ReportQuery(
+            List.of("bpmnProcessId"), fromMs, toMs, MINUTE_MS, filters, List.of("lifecycle"));
+    final List<ReportRow> rows = new ArrayList<>();
+    for (final var row : executor.execute(query, dataset).rows()) {
+      final LifecycleSummaryResult lifecycle =
+          (LifecycleSummaryResult) row.measures().get("lifecycle");
+      final Object process = row.dimensions().get("bpmnProcessId");
+      rows.add(
+          new ReportRow(
+              "",
+              process == null ? "" : process.toString(),
+              row.windowStart(),
+              lifecycle.completed(),
+              lifecycle.duration().averageMs(),
+              lifecycle.duration().maxMs()));
     }
-    if (report.fromWindow() != null) {
-      conditions.add("window_start >= ?");
-      params.add(report.fromWindow());
-    }
-    if (report.toWindow() != null) {
-      conditions.add("window_start <= ?");
-      params.add(report.toWindow());
-    }
-    sql.append(" WHERE ").append(String.join(" AND ", conditions));
-    sql.append(
-        " GROUP BY region, bpmn_process_id, window_start"
-            + " ORDER BY region, bpmn_process_id, window_start");
-    return jdbc.query(sql.toString(), REPORT_ROW_MAPPER, params.toArray());
+    rows.sort(
+        Comparator.comparing(ReportRow::bpmnProcessId).thenComparingLong(ReportRow::windowStart));
+    return rows;
   }
 
-  /** The process definitions the heatmap has data for (for the filter dropdown). */
+  /** The process definitions the element-duration cube has data for (for the filter dropdown). */
   public List<String> heatmapProcesses() {
-    try {
-      return jdbc.queryForList(
-          "SELECT DISTINCT bpmn_process_id FROM element_execution_window ORDER BY bpmn_process_id",
-          String.class);
-    } catch (final DataAccessException tableNotReadyYet) {
-      return List.of();
+    final CompiledDataset dataset = catalog.require("element-duration");
+    final TreeSet<String> ids = new TreeSet<>();
+    for (final var row :
+        executor.execute(total(dataset, "bpmnProcessId", "duration"), dataset).rows()) {
+      final Object id = row.dimensions().get("bpmnProcessId");
+      if (id != null) {
+        ids.add(id.toString());
+      }
     }
+    return new ArrayList<>(ids);
   }
 
-  /**
-   * The heatmap for one process: per element, the execution count and execution-time stats, merged
-   * across windows (the per-source-partition partials add for count/total, max for the slowest).
-   */
+  /** The element heatmap for one process: per element, execution count + duration stats. */
   public List<HeatmapCell> elementHeatmap(final String bpmnProcessId) {
-    try {
-      return jdbc.query(
-          "SELECT element_id, MIN(element_type) AS element_type, SUM(executed_count) AS executed, "
-              + "CASE WHEN SUM(executed_count) = 0 THEN 0 "
-              + "ELSE SUM(total_duration_ms) * 1.0 / SUM(executed_count) END AS avg_duration, "
-              + "MAX(max_duration_ms) AS max_duration "
-              + "FROM element_execution_window WHERE bpmn_process_id = ? "
-              + "GROUP BY element_id ORDER BY executed DESC, element_id",
-          (rs, n) ->
-              new HeatmapCell(
-                  rs.getString("element_id"),
-                  rs.getString("element_type"),
-                  rs.getLong("executed"),
-                  rs.getDouble("avg_duration"),
-                  rs.getLong("max_duration")),
-          bpmnProcessId);
-    } catch (final DataAccessException tableNotReadyYet) {
-      return List.of();
+    final CompiledDataset dataset = catalog.require("element-duration");
+    final long toMs = System.currentTimeMillis() + ONE_HOUR_MS;
+    final ReportQuery query =
+        new ReportQuery(
+            List.of("elementId"),
+            0L,
+            toMs,
+            toMs,
+            List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
+            List.of("duration"));
+    final List<HeatmapCell> cells = new ArrayList<>();
+    for (final var row : executor.execute(query, dataset).rows()) {
+      final ExecutionTimeSummaryResult d =
+          (ExecutionTimeSummaryResult) row.measures().get("duration");
+      final Object elementId = row.dimensions().get("elementId");
+      cells.add(
+          new HeatmapCell(
+              elementId == null ? "" : elementId.toString(),
+              "",
+              d.count(),
+              d.averageMs(),
+              d.maxMs()));
     }
+    cells.sort(Comparator.comparingLong(HeatmapCell::executedCount).reversed());
+    return cells;
+  }
+
+  private static ReportQuery total(
+      final CompiledDataset dataset, final String groupBy, final String meter) {
+    final long toMs = System.currentTimeMillis() + ONE_HOUR_MS;
+    return new ReportQuery(List.of(groupBy), 0L, toMs, toMs, List.of(), List.of(meter));
   }
 }

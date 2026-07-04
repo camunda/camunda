@@ -9,11 +9,19 @@ package io.camunda.analytics.webapp;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.analytics.fact.Fact;
+import io.camunda.analytics.fact.FactType;
+import io.camunda.analytics.fact.Transition;
+import io.camunda.analytics.webapp.ServingTestSupport.Fixture;
 import io.camunda.analytics.webapp.model.Dataset;
+import io.camunda.analytics.webapp.model.HeatmapCell;
 import io.camunda.analytics.webapp.model.Report;
 import io.camunda.analytics.webapp.model.ReportRow;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import org.h2.jdbcx.JdbcDataSource;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -21,6 +29,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 final class AnalyticsRepositoryTest {
 
   private JdbcTemplate jdbc;
+  private Fixture fixture;
   private AnalyticsRepository repository;
 
   @BeforeEach
@@ -35,12 +44,14 @@ final class AnalyticsRepositoryTest {
         "CREATE TABLE analytics_report (id BIGINT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255),"
             + " dataset_id BIGINT, viz_type VARCHAR(64), bpmn_process_id VARCHAR(255),"
             + " region VARCHAR(255), from_window BIGINT, to_window BIGINT)");
-    jdbc.execute(
-        "CREATE TABLE proc_inst_exec_time_window (dataset_id BIGINT, region VARCHAR(255),"
-            + " process_definition_key BIGINT, bpmn_process_id VARCHAR(255), version INT,"
-            + " tenant_id VARCHAR(255), window_start BIGINT, window_size_ms BIGINT, completed_count"
-            + " BIGINT, total_duration_ms BIGINT, min_duration_ms BIGINT, max_duration_ms BIGINT)");
-    repository = new AnalyticsRepository(jdbc);
+    fixture = ServingTestSupport.create();
+    repository = new AnalyticsRepository(jdbc, fixture.executor(), fixture.catalog());
+  }
+
+  @AfterEach
+  void tearDown() {
+    fixture.datasetStore().close();
+    fixture.metadataStore().close();
   }
 
   @Test
@@ -59,118 +70,84 @@ final class AnalyticsRepositoryTest {
   }
 
   @Test
-  void shouldRunReportAggregatingPerProcessAndWindow() {
-    // given — a dataset with windowed rows tagged to it
-    final Dataset dataset = repository.createDataset("Completions", "definition", 3_600_000L);
-    seed(dataset.id(), "EU", 1L, "order", 0L, 3, 1500, 800);
-    seed(dataset.id(), "EU", 1L, "order", 3_600_000L, 1, 800, 800);
-    seed(dataset.id(), "EU", 2L, "invoice", 0L, 1, 3950, 3950);
+  void shouldRunReportOverProcessInstanceLifecycle() {
+    // given — three completed instances of a process folded into the lifecycle cube
+    ServingTestSupport.seed(
+        fixture,
+        "process-instances",
+        "lifecycle",
+        lifecycle(3, 1500L, 900L, 600L),
+        "order-process");
+    final Dataset dataset = repository.createDataset("Completions", "definition", 60_000L);
     final Report report =
         repository.createReport("All", dataset.id(), "table", null, null, null, null);
 
     // when
-    final var rows = repository.runReport(report);
+    final List<ReportRow> rows = repository.runReport(report);
 
-    // then — one row per (process, window), counts summed, scoped to this dataset
+    // then — one row for the process/window with the completed count and derived average
     assertThat(rows)
-        .extracting(ReportRow::bpmnProcessId, ReportRow::windowStart, ReportRow::completedCount)
-        .containsExactlyInAnyOrder(
-            org.assertj.core.groups.Tuple.tuple("order", 0L, 3L),
-            org.assertj.core.groups.Tuple.tuple("order", 3_600_000L, 1L),
-            org.assertj.core.groups.Tuple.tuple("invoice", 0L, 1L));
-    final ReportRow orderHour0 =
-        rows.stream()
-            .filter(r -> r.bpmnProcessId().equals("order") && r.windowStart() == 0L)
-            .findFirst()
-            .orElseThrow();
-    assertThat(orderHour0.averageDurationMs()).isEqualTo(500.0); // 1500 / 3
-  }
-
-  @Test
-  void shouldScopeReportToItsOwnDataset() {
-    // given — two datasets with rows; a report on the first must not see the second's rows
-    final Dataset a = repository.createDataset("A", "definition", 3_600_000L);
-    final Dataset b = repository.createDataset("B", "definition", 3_600_000L);
-    seed(a.id(), "EU", 1L, "order", 0L, 3, 1500, 800);
-    seed(b.id(), "EU", 1L, "order", 0L, 99, 9900, 800);
-    final Report report =
-        repository.createReport("A report", a.id(), "table", null, null, null, null);
-
-    // when / then — only dataset A's rows
-    final var rows = repository.runReport(report);
-    assertThat(rows).singleElement().extracting(ReportRow::completedCount).isEqualTo(3L);
-  }
-
-  @Test
-  void shouldApplyProcessFilter() {
-    // given
-    final Dataset dataset = repository.createDataset("Completions", "definition", 3_600_000L);
-    seed(dataset.id(), "EU", 1L, "order", 0L, 3, 1500, 800);
-    seed(dataset.id(), "EU", 1L, "order", 3_600_000L, 1, 800, 800);
-    seed(dataset.id(), "EU", 2L, "invoice", 0L, 1, 3950, 3950);
-    final Report report =
-        repository.createReport("Order only", dataset.id(), "table", "order", null, null, null);
-
-    // when
-    final var rows = repository.runReport(report);
-
-    // then
-    assertThat(rows).extracting(ReportRow::bpmnProcessId).containsOnly("order");
-    assertThat(rows).hasSize(2);
-  }
-
-  @Test
-  void shouldGroupByRegionAndExposeAvgAndMax() {
-    // given — same process/window, two regions; EU has two partials to merge
-    final Dataset dataset = repository.createDataset("By region", "region", 3_600_000L);
-    seed(dataset.id(), "EU", 1L, "order", 0L, 2, 1000, 700);
-    seed(dataset.id(), "EU", 1L, "order", 0L, 1, 500, 500); // a second source-partition partial
-    seed(dataset.id(), "US", 1L, "order", 0L, 1, 900, 900);
-    final Report report =
-        repository.createReport("All regions", dataset.id(), "table", null, null, null, null);
-
-    // when
-    final var rows = repository.runReport(report);
-
-    // then — one row per region; EU merges to 3 instances, avg 500, max 700
-    assertThat(rows).extracting(ReportRow::region).containsExactly("EU", "US");
-    final ReportRow eu =
-        rows.stream().filter(r -> r.region().equals("EU")).findFirst().orElseThrow();
-    assertThat(eu.completedCount()).isEqualTo(3L);
-    assertThat(eu.averageDurationMs()).isEqualTo(500.0); // (1000 + 500) / 3
-    assertThat(eu.maxDurationMs()).isEqualTo(700L);
-
-    // and — filtering by region narrows to that region only
-    final Report usOnly =
-        repository.createReport("US only", dataset.id(), "table", null, "US", null, null);
-    assertThat(repository.runReport(usOnly))
         .singleElement()
         .satisfies(
-            r -> {
-              assertThat(r.region()).isEqualTo("US");
-              assertThat(r.maxDurationMs()).isEqualTo(900L);
+            row -> {
+              assertThat(row.bpmnProcessId()).isEqualTo("order-process");
+              assertThat(row.completedCount()).isEqualTo(3L);
+              assertThat(row.averageDurationMs()).isEqualTo(1000.0); // (1500 + 900 + 600) / 3
+              assertThat(row.maxDurationMs()).isEqualTo(1500L);
             });
   }
 
-  private void seed(
-      final long datasetId,
-      final String region,
-      final long defKey,
-      final String bpmnProcessId,
-      final long windowStart,
-      final long count,
-      final long totalDuration,
-      final long maxDuration) {
-    jdbc.update(
-        "INSERT INTO proc_inst_exec_time_window VALUES (?, ?, ?, ?, 1, '<default>', ?, 3600000, ?,"
-            + " ?, 0, ?)",
-        datasetId,
-        region,
-        defKey,
-        bpmnProcessId,
-        windowStart,
-        count,
-        totalDuration,
-        maxDuration);
+  @Test
+  void shouldReadElementHeatmapThroughExecutor() {
+    // given — two executions of one element folded into the element-duration cube
+    ServingTestSupport.seed(
+        fixture,
+        "element-duration",
+        "duration",
+        elementDurations(200L, 400L),
+        "order-process",
+        "Task_Validate");
+
+    // when
+    final List<HeatmapCell> heatmap = repository.elementHeatmap("order-process");
+
+    // then
+    assertThat(heatmap)
+        .singleElement()
+        .satisfies(
+            cell -> {
+              assertThat(cell.elementId()).isEqualTo("Task_Validate");
+              assertThat(cell.executedCount()).isEqualTo(2L);
+              assertThat(cell.averageDurationMs()).isEqualTo(300.0);
+              assertThat(cell.maxDurationMs()).isEqualTo(400L);
+            });
+    assertThat(repository.heatmapProcesses()).containsExactly("order-process");
+  }
+
+  private static List<Fact> lifecycle(final int completed, final long... durationsMs) {
+    final List<Fact> facts = new ArrayList<>();
+    for (int i = 0; i < completed; i++) {
+      facts.add(Fact.builder(FactType.PROCESS_INSTANCE).transition(Transition.ACTIVATED).build());
+    }
+    for (final long duration : durationsMs) {
+      facts.add(
+          Fact.builder(FactType.PROCESS_INSTANCE)
+              .transition(Transition.COMPLETED)
+              .field("durationMs", duration)
+              .build());
+    }
+    return facts;
+  }
+
+  private static List<Fact> elementDurations(final long... durationsMs) {
+    final List<Fact> facts = new ArrayList<>();
+    for (final long duration : durationsMs) {
+      facts.add(
+          Fact.builder(FactType.ELEMENT)
+              .transition(Transition.COMPLETED)
+              .field("durationMs", duration)
+              .build());
+    }
+    return facts;
   }
 }

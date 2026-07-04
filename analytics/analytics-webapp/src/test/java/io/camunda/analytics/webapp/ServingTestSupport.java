@@ -1,0 +1,123 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.analytics.webapp;
+
+import io.camunda.analytics.dataset.ActiveCube;
+import io.camunda.analytics.dataset.CompiledDataset;
+import io.camunda.analytics.dataset.CompiledMeter;
+import io.camunda.analytics.dataset.store.DatasetQueryExecutor;
+import io.camunda.analytics.dataset.store.DatasetQueryPlanner;
+import io.camunda.analytics.dataset.store.DatasetStore;
+import io.camunda.analytics.dataset.store.MetadataStore;
+import io.camunda.analytics.dataset.store.StandardDatasets;
+import io.camunda.analytics.dimension.DimensionKey;
+import io.camunda.analytics.dimension.FactRow;
+import io.camunda.analytics.fact.Fact;
+import io.camunda.analytics.meter.BoundMeter;
+import io.camunda.analytics.store.rdbms.RdbmsDatasetStore;
+import io.camunda.analytics.store.rdbms.metadata.RdbmsMetadataStore;
+import io.camunda.eventbridge.streaming.aggregate.AggregateFunction;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import org.h2.jdbcx.JdbcDataSource;
+
+/**
+ * Builds an H2-backed serving stack for the read-path tests: an {@link RdbmsMetadataStore} + {@link
+ * RdbmsDatasetStore} on a fresh in-memory database, migrated and bootstrapped with the standard
+ * dataset specs, plus the compiled {@link DatasetCatalog} and a {@link DatasetQueryExecutor}. Seeds
+ * cells the same way {@code DemoSeeder} does — folding facts through a cube's declared meter and
+ * upserting the encoded accumulator.
+ */
+final class ServingTestSupport {
+
+  static final long BASE_MS = 1_700_000_000_000L; // fixed, in the past, aligns cleanly
+
+  private ServingTestSupport() {}
+
+  static Fixture create() {
+    final JdbcDataSource dataSource = new JdbcDataSource();
+    dataSource.setURL("jdbc:h2:mem:serving-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1");
+    dataSource.setUser("sa");
+
+    final MetadataStore metadataStore = new RdbmsMetadataStore(dataSource);
+    metadataStore.migrate();
+    StandardDatasets.bootstrap(metadataStore);
+
+    final DatasetStore datasetStore = new RdbmsDatasetStore(dataSource);
+    final Map<String, CompiledDataset> byName = new LinkedHashMap<>();
+    for (final ActiveCube cube : StandardDatasets.loadCubes(metadataStore)) {
+      final CompiledDataset compiled = cube.compiled();
+      datasetStore.schemaManager().ensure(compiled);
+      byName.put(compiled.name(), compiled);
+    }
+    final DatasetCatalog catalog = new DatasetCatalog(byName);
+    final DatasetQueryExecutor executor =
+        new DatasetQueryExecutor(new DatasetQueryPlanner(), datasetStore.queryClient());
+    return new Fixture(metadataStore, datasetStore, catalog, executor);
+  }
+
+  /** Aligns a window start to {@code tier}, in the range the default read window covers. */
+  static long window(final long tier) {
+    return BASE_MS - Math.floorMod(BASE_MS, tier);
+  }
+
+  /** The finest-tier compiled meter for {@code meterName} in {@code dataset}. */
+  static CompiledMeter finestMeter(final CompiledDataset dataset, final String meterName) {
+    CompiledMeter best = null;
+    for (final CompiledMeter meter : dataset.meters()) {
+      if (meter.meterName().equals(meterName)
+          && (best == null || meter.windowMs() < best.windowMs())) {
+        best = meter;
+      }
+    }
+    if (best == null) {
+      throw new IllegalArgumentException(
+          "no meter '" + meterName + "' in '" + dataset.name() + "'");
+    }
+    return best;
+  }
+
+  @SuppressWarnings("unchecked")
+  static byte[] fold(final BoundMeter<?, ?> bound, final List<Fact> facts) {
+    final BoundMeter<Object, Object> typed = (BoundMeter<Object, Object>) bound;
+    final AggregateFunction<FactRow, Object, Object> aggregate = typed.aggregate();
+    Object accumulator = aggregate.createAccumulator();
+    for (final Fact fact : facts) {
+      accumulator = aggregate.add(fact, accumulator);
+    }
+    return typed.accumulatorCodec().toBytes(accumulator);
+  }
+
+  /** Seeds one cube cell (finest tier, single aligned window) and returns its window start. */
+  static long seed(
+      final Fixture fixture,
+      final String cubeName,
+      final String meterName,
+      final List<Fact> facts,
+      final Object... keyValues) {
+    final CompiledDataset dataset = fixture.catalog().require(cubeName);
+    final CompiledMeter meter = finestMeter(dataset, meterName);
+    final long windowStart = window(meter.windowMs());
+    final DimensionKey key = DimensionKey.of(dataset.grain(), keyValues);
+    fixture
+        .datasetStore()
+        .writer()
+        .upsertCell(
+            dataset, key, windowStart, meter.windowMs(), meterName, fold(meter.bound(), facts));
+    fixture.datasetStore().writer().flush();
+    return windowStart;
+  }
+
+  record Fixture(
+      MetadataStore metadataStore,
+      DatasetStore datasetStore,
+      DatasetCatalog catalog,
+      DatasetQueryExecutor executor) {}
+}

@@ -1,0 +1,147 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.analytics.webapp;
+
+import io.camunda.analytics.dataset.ActiveCube;
+import io.camunda.analytics.dataset.CompiledDataset;
+import io.camunda.analytics.dataset.store.DatasetQueryExecutor;
+import io.camunda.analytics.dataset.store.DatasetQueryPlanner;
+import io.camunda.analytics.dataset.store.DatasetStore;
+import io.camunda.analytics.dataset.store.MetadataStore;
+import io.camunda.analytics.dataset.store.StandardDatasets;
+import io.camunda.analytics.store.document.DocumentStores;
+import io.camunda.analytics.store.rdbms.RdbmsDatasetStore;
+import io.camunda.analytics.store.rdbms.metadata.RdbmsMetadataStore;
+import io.camunda.search.connect.configuration.ConnectConfiguration;
+import java.util.LinkedHashMap;
+import java.util.Locale;
+import java.util.Map;
+import javax.sql.DataSource;
+import org.h2.jdbcx.JdbcDataSource;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+/**
+ * Wires the backend-neutral serving stack the dashboard read path runs on: a {@link MetadataStore}
+ * (migrated + bootstrapped with the standard dataset specs), a {@link DatasetStore}, a {@link
+ * DatasetQueryExecutor}, and the {@link DatasetCatalog} of compiled cubes. The concrete backend is
+ * chosen from {@code -Danalytics.database} exactly as the pipeline's {@code AnalyticsBackends} does
+ * (replicated here so the webapp does not depend on the pipeline module); everything above the
+ * resolved backend is backend-neutral.
+ */
+@Configuration
+public class AnalyticsServingConfig {
+
+  private final Backend backend = Backend.fromSystemProperties();
+
+  /** The metadata plane: migrate the fixed schema, then bootstrap the standard dataset specs. */
+  @Bean(destroyMethod = "close")
+  public MetadataStore metadataStore() {
+    final MetadataStore store = backend.metadataStore();
+    store.migrate();
+    StandardDatasets.bootstrap(store);
+    return store;
+  }
+
+  /** The serving store (schema/write/read seams) for the chosen backend. */
+  @Bean(destroyMethod = "close")
+  public DatasetStore datasetStore() {
+    return backend.datasetStore();
+  }
+
+  /** The read-path executor: plan, fetch cells, app-merge, finalize. */
+  @Bean
+  public DatasetQueryExecutor datasetQueryExecutor(final DatasetStore datasetStore) {
+    return new DatasetQueryExecutor(new DatasetQueryPlanner(), datasetStore.queryClient());
+  }
+
+  /**
+   * The compiled cubes by name. Also ensures every cube's serving structure exists so the read path
+   * never hits a missing table before the pipeline (or the demo seeder) has written anything.
+   */
+  @Bean
+  public DatasetCatalog datasetCatalog(
+      final MetadataStore metadataStore, final DatasetStore datasetStore) {
+    final Map<String, CompiledDataset> byName = new LinkedHashMap<>();
+    for (final ActiveCube cube : StandardDatasets.loadCubes(metadataStore)) {
+      final CompiledDataset compiled = cube.compiled();
+      datasetStore.schemaManager().ensure(compiled);
+      byName.put(compiled.name(), compiled);
+    }
+    return new DatasetCatalog(byName);
+  }
+
+  /**
+   * The backend resolved from {@code -Danalytics.database} (default {@code rdbms}) — the single
+   * place a concrete backend is named. Mirrors the pipeline's {@code AnalyticsBackends}.
+   */
+  private sealed interface Backend {
+
+    MetadataStore metadataStore();
+
+    DatasetStore datasetStore();
+
+    static Backend fromSystemProperties() {
+      final String selected =
+          System.getProperty("analytics.database", "rdbms").toLowerCase(Locale.ROOT);
+      return switch (selected) {
+        case "rdbms" -> rdbms();
+        case "elasticsearch", "opensearch" -> document(selected);
+        default ->
+            throw new IllegalArgumentException(
+                "Unknown analytics.database '"
+                    + selected
+                    + "' (expected rdbms | elasticsearch | opensearch)");
+      };
+    }
+
+    private static Backend rdbms() {
+      final JdbcDataSource dataSource = new JdbcDataSource();
+      dataSource.setURL(
+          System.getProperty("jdbcUrl", "jdbc:h2:file:./data/analytics-dataset;DB_CLOSE_DELAY=-1"));
+      dataSource.setUser(System.getProperty("jdbcUser", "sa"));
+      return new RdbmsBackend(dataSource);
+    }
+
+    private static Backend document(final String type) {
+      final ConnectConfiguration configuration = new ConnectConfiguration();
+      configuration.setType(type);
+      configuration.setUrl(System.getProperty("analytics.database.url", configuration.getUrl()));
+      final String username = System.getProperty("analytics.database.username");
+      if (username != null) {
+        configuration.setUsername(username);
+        configuration.setPassword(System.getProperty("analytics.database.password"));
+      }
+      return new DocumentBackend(configuration);
+    }
+  }
+
+  private record RdbmsBackend(DataSource dataSource) implements Backend {
+    @Override
+    public MetadataStore metadataStore() {
+      return new RdbmsMetadataStore(dataSource);
+    }
+
+    @Override
+    public DatasetStore datasetStore() {
+      return new RdbmsDatasetStore(dataSource);
+    }
+  }
+
+  private record DocumentBackend(ConnectConfiguration configuration) implements Backend {
+    @Override
+    public MetadataStore metadataStore() {
+      return DocumentStores.metadataStore(configuration);
+    }
+
+    @Override
+    public DatasetStore datasetStore() {
+      return DocumentStores.datasetStore(configuration);
+    }
+  }
+}
