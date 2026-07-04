@@ -44,13 +44,15 @@ public final class RdbmsDatasetQueryClient implements DatasetQueryClient {
     final CompiledDataset dataset = fetch.dataset();
     final List<DimensionColumn> grain = dataset.grain().columns();
 
+    // SQL text uses the quoted identifier (reserved-word safe); the read-back map lookups below use
+    // the bare, lowercased name to match the JDBC column labels.
     final List<String> dimColumns = new ArrayList<>();
     for (final DimensionColumn column : grain) {
-      dimColumns.add(RdbmsNames.column(column.name()));
+      dimColumns.add(RdbmsNames.quotedColumn(column.name()));
     }
     final List<String> meterColumns = new ArrayList<>();
     for (final String meter : fetch.meters()) {
-      meterColumns.add(RdbmsNames.column(meter));
+      meterColumns.add(RdbmsNames.quotedColumn(meter));
     }
 
     final List<String> filterColumns = new ArrayList<>();
@@ -60,7 +62,7 @@ public final class RdbmsDatasetQueryClient implements DatasetQueryClient {
       if (index < 0) {
         continue; // only grain columns are stored and thus filterable at read time
       }
-      filterColumns.add(RdbmsNames.column(filter.field()));
+      filterColumns.add(RdbmsNames.quotedColumn(filter.field()));
       filterValues.add(coerce(grain.get(index).type(), filter.value()));
     }
 

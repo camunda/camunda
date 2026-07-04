@@ -40,6 +40,17 @@ final class RdbmsNames {
     return Identifiers.safeColumn(name);
   }
 
+  /**
+   * The double-quoted (delimited) form of {@link #column(String)} for use in SQL text, so a
+   * declared name that is a SQL reserved word (e.g. the {@code distinct} meter) is accepted as a
+   * plain column on every backend. The inner name is still run through the {@link Identifiers}
+   * allowlist first, so no quote or metacharacter can reach the SQL — the quotes only delimit an
+   * already-safe identifier. Map lookups on read still use the bare {@link #column(String)} name.
+   */
+  static String quotedColumn(final String name) {
+    return "\"" + Identifiers.safeColumn(name) + "\"";
+  }
+
   /** A deterministic primary key over the dimension values and the window/tier coordinate. */
   static String cellKey(final DimensionKey key, final long windowStart, final long windowSize) {
     final StringBuilder builder = new StringBuilder();

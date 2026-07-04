@@ -38,11 +38,11 @@ public final class RdbmsDatasetSchemaManager implements DatasetSchemaManager {
   public void ensure(final CompiledDataset dataset) {
     final String dims =
         dataset.grain().columns().stream()
-            .map(c -> RdbmsNames.column(c.name()) + " " + dialect.columnType(c.type()))
+            .map(c -> RdbmsNames.quotedColumn(c.name()) + " " + dialect.columnType(c.type()))
             .collect(Collectors.joining(", "));
     final String meters =
         dataset.schema().meterNames().stream()
-            .map(name -> RdbmsNames.column(name) + " " + dialect.blobType())
+            .map(name -> RdbmsNames.quotedColumn(name) + " " + dialect.blobType())
             .collect(Collectors.joining(", "));
     final String ddl =
         "CREATE TABLE IF NOT EXISTS "
@@ -60,7 +60,7 @@ public final class RdbmsDatasetSchemaManager implements DatasetSchemaManager {
   public void ensureProjection(final CompiledProjection projection) {
     final String columns =
         projection.columns().stream()
-            .map(c -> RdbmsNames.column(c.name()) + " " + dialect.columnType(c.type()))
+            .map(c -> RdbmsNames.quotedColumn(c.name()) + " " + dialect.columnType(c.type()))
             .collect(Collectors.joining(", "));
     final String ddl =
         "CREATE TABLE IF NOT EXISTS "

@@ -56,8 +56,10 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
       final byte[] accumulator) {
     final List<DimensionColumn> grain = dataset.grain().columns();
     final String dimCols =
-        grain.stream().map(c -> RdbmsNames.column(c.name())).collect(Collectors.joining(", "));
-    final String meterCol = RdbmsNames.column(meterName);
+        grain.stream()
+            .map(c -> RdbmsNames.quotedColumn(c.name()))
+            .collect(Collectors.joining(", "));
+    final String meterCol = RdbmsNames.quotedColumn(meterName);
     final String table = RdbmsNames.datasetTable(dataset.cubeId());
     final String columns =
         "cell_key, "
@@ -87,11 +89,11 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
       final CompiledProjection projection, final String rowKey, final List<Object> values) {
     final List<DimensionColumn> cols = projection.columns();
     final String colNames =
-        cols.stream().map(c -> RdbmsNames.column(c.name())).collect(Collectors.joining(", "));
+        cols.stream().map(c -> RdbmsNames.quotedColumn(c.name())).collect(Collectors.joining(", "));
     final String columns = "row_key" + (colNames.isEmpty() ? "" : ", " + colNames);
     final int columnCount = 1 + cols.size();
     final List<String> updateColumns =
-        cols.stream().map(c -> RdbmsNames.column(c.name())).collect(Collectors.toList());
+        cols.stream().map(c -> RdbmsNames.quotedColumn(c.name())).collect(Collectors.toList());
     final String sql =
         upsertSql(
             RdbmsNames.projectionTable(projection.cubeId()),
