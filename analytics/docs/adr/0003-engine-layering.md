@@ -47,32 +47,57 @@ problem is that the analytics code **bypasses it**:
 
 ### 1. One operator model: `Processor` + `ProcessorTopology`
 
-Consolidate on a single operator abstraction. The `Processor` gains the full runtime lifecycle so a
-node can be stateful and commit-aware:
+Consolidate on a single operator abstraction. The `Processor` gains the runtime lifecycle so a node
+can be stateful and commit-aware:
 
 ```
 interface Processor<In, Out> {
   default void init(ProcessorContext<Out> ctx) {}
   void process(In record);
-  default void flush() {}                 // wall-clock freshness (converge sinks), no durability
-  default void checkpoint() {}            // make durable, inside the commit transaction
-  default boolean needsCheckpoint() { return false; }   // bounded cache full → commit early
-  default long safeOffset() { return Long.MAX_VALUE; }  // produce-before-commit watermark
+  default void flush() {}                              // wall-clock freshness (publish sealed / converge sinks)
+  default void checkpoint() {}                         // make ALL state durable, inside the commit transaction
+  default boolean needsCheckpoint() { return false; }  // bounded cache full → commit early
   default void close() {}
 }
 ```
 
 `ProcessorContext` keeps `forward`, `schedule` (punctuation), `getStateStore`. `ProcessorTopology`
 (the single `Stage`) drives the DAG: `process` at the source, punctuation fanned to `Punctuator`s,
-`checkpoint()/flush()` fanned to every node, `needsCheckpoint()` = OR over nodes, and **`safeOffset()`
-= min over nodes** — surfaced to the runtime so it commits to `min(consumed, safeOffset)`. The
-runtime commit path (`CommitBarrier`/`Task`) reads `safeOffset()` from the stage, which is exactly
-what the shard did by hand.
+`checkpoint()/flush()` fanned to every node, `needsCheckpoint()` = OR over nodes.
 
-Retire `fold/Projector`, `fold/Collector`, `aggregate/Aggregation`, and `ProjectionStage` once the
-domain is expressed as processor nodes. Keep `AggregateFunction` (it is the meter contract — Flink's
+Note there is **no `safeOffset`** on the operator — see the durability decision below. Retire
+`fold/Projector`, `fold/Collector`, `aggregate/Aggregation`, and `ProjectionStage` once the domain
+is expressed as processor nodes. Keep `AggregateFunction` (the meter contract — Flink's
 `AggregateFunction` proves it) and the segment/dedup machinery (now consumed by an aggregate
 processor node, not the retired `Aggregation` seam).
+
+### 1b. Durability: consistent-cut checkpoint (Model F, the Flink/KS way) — not `safeOffset` replay
+
+The current shard commits `min(safeOffset)` over its meters while checkpointing the base projection
+**fold-ahead** of that offset (its own `TODO(e2e)`): an element activated before `safeOffset` and
+completed after it re-folds wrong on restart, because the destructive read of its start was already
+checkpointed. That "replay the open segment from a safe offset" scheme (**Model R**) is not what
+Flink or Kafka Streams do, and it is the source of the bug.
+
+Adopt **Model F**: the runtime checkpoints **all** operator state — including each windowed
+aggregate's **open segment** — together with the **full processed offset**, in one per-partition
+atomic transaction. The committed offset therefore always *equals* the checkpointed state position
+(one consistent cut), so replay-from-committed after a crash lands on matching state — there is **no
+reconcile**. Sealed partial-aggregate deltas are **published before** the offset commits
+(produce-before-commit); the only crash window is publish→commit, and the existing downstream
+**origin-dedup** makes a re-published segment idempotent. Consequences:
+
+- `Task.ownsDurability`, `Task.commit(offset)`/`restore()`/`safeOffset`, and the hand-rolled shards
+  are **deleted**. The runtime owns the per-partition state backend (with the consumed offset stored
+  in it), drives `checkpoint()` + the offset in one transaction, and publishes sealed deltas via the
+  sink node's `flush()`/pre-commit before advancing the offset.
+- The windowed segment-sealing aggregate node **must checkpoint its open segment** (today
+  `SegmentSealingAggregation.checkpoint()` is a no-op — a Model-R assumption); otherwise committing
+  the full offset would lose the open partial. This is the one substantive change the model
+  requires.
+- On crash the runtime replays from the last committed offset onto the restored (matching) state —
+  standard at-least-once source replay with exactly-once *effect*, exactly as Flink (barrier
+  snapshots) and KS (EOS transactions) do.
 
 ### 2. Standard node kit in the substrate
 
@@ -81,8 +106,10 @@ Provide the reusable node types so the domain declares a topology instead of han
 - **stateful process node** — a `Processor` with attached `KeyValueStore`s (the base-projection
   home);
 - **windowed segment-sealing aggregate node** — wraps `AggregateFunction` + the segment/seal/dedup
-  machinery, exposes `safeOffset()` and forwards sealed partial-aggregate deltas;
-- **sink node** — `Processor<In, Void>` that publishes (to the shuffle topic, or a serving store).
+  machinery, **checkpoints its open segment** (Model F), and forwards sealed partial-aggregate
+  deltas;
+- **sink node** — `Processor<In, Void>` that publishes (to the shuffle topic, or a serving store),
+  flushing its output before the offset commits (produce-before-commit).
 
 ### 3. Three layers with hard boundaries
 
@@ -128,9 +155,12 @@ replay-determinism motive is N/A because recovery is offset-refold).
 
 ## Migration phases
 
-1. **L1 operator model** — extend `Processor` with the lifecycle + `safeOffset`; make
-   `ProcessorTopology` drive them and surface `safeOffset`; wire the runtime commit path to it. Add
-   the standard node kit (source / stateful process / windowed segment-seal aggregate / sink).
+1. **L1 operator model + Model-F durability** — extend `Processor` with the lifecycle
+   (`flush`/`checkpoint`/`needsCheckpoint`); make `ProcessorTopology` drive them. Make the runtime
+   commit a **consistent cut** (all state + full offset in one per-partition transaction, sealed
+   deltas published before commit) and **delete** `Task.ownsDurability`/`commit`/`restore` + the
+   `safeOffset` scheme. Add the standard node kit (source / stateful process / windowed segment-seal
+   aggregate that **checkpoints its open segment** / sink).
 2. **Shuffle → L1** — move the envelope/codec into the segment machinery; one mechanism.
 3. **L2 base projection** — Model A entity state (record/state{immutable,mutable}), zeebe-style
    variable store, `(ValueType,Intent)` dispatch, appliers, derive-from-projection, event-time SLA

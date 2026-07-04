@@ -64,6 +64,18 @@ final class ProcessorNode<In, Out> {
     child.deliver(value);
   }
 
+  void flush() {
+    processor.flush();
+  }
+
+  void checkpoint() {
+    processor.checkpoint();
+  }
+
+  boolean needsCheckpoint() {
+    return processor.needsCheckpoint();
+  }
+
   void close() {
     processor.close();
   }

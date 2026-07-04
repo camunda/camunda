@@ -82,6 +82,31 @@ public final class ProcessorTopology<R> implements Stage<R> {
     fire(PunctuationType.STREAM_TIME, streamTimeMs);
   }
 
+  /** Freshness tick: flush every node so buffered output is delivered. */
+  @Override
+  public void flush() {
+    nodes.forEach(ProcessorNode::flush);
+  }
+
+  /**
+   * Commit-interval tick: checkpoint every node in one cut (order among nodes is irrelevant — the
+   * runtime commits them in a single transaction).
+   */
+  @Override
+  public void checkpoint() {
+    nodes.forEach(ProcessorNode::checkpoint);
+  }
+
+  @Override
+  public boolean needsCheckpoint() {
+    for (final ProcessorNode<?, ?> node : nodes) {
+      if (node.needsCheckpoint()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   @Override
   public void close() {
     nodes.forEach(ProcessorNode::close);
