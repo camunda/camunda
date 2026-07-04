@@ -9,6 +9,7 @@ package io.camunda.eventbridge.analytics.stage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.analytics.aggregation.ForwardingSegmentSink;
 import io.camunda.analytics.dimension.DimensionColumn;
 import io.camunda.analytics.dimension.DimensionKey;
 import io.camunda.analytics.dimension.DimensionKeyValue;
@@ -78,19 +79,22 @@ final class EnvelopePublisherTest {
   }
 
   @Test
-  void shouldEncodeAMeterDeltaThroughTheCubeSink() {
-    // given a per-meter sink over a two-dimension grain, routing to a single facts partition
+  void shouldEncodeAndPublishAMeterDeltaThroughTheShuffleSink() {
+    // given the encode (per-meter forwarding sink) wired to the route/publish (shuffle sink node)
+    // over a two-dimension grain, routing to a single facts partition
     final EnvelopePublisher publisher = new EnvelopePublisher(transport, 1, 0L);
+    final ShuffleSinkProcessor shuffle = new ShuffleSinkProcessor(publisher, 1);
     final DimensionSchema grain =
         DimensionSchema.of(
             new DimensionColumn("region", DimensionType.STRING),
             new DimensionColumn("def", DimensionType.LONG));
-    final CubeShuffleSink<Long> sink =
-        new CubeShuffleSink<>(7, new DimensionKeyValue(grain), new LongRecordValue(), publisher, 1);
+    final ForwardingSegmentSink<Long> sink =
+        new ForwardingSegmentSink<>(7, new DimensionKeyValue(grain), new LongRecordValue());
+    sink.bind(shuffle::process);
 
     // when a sealed delta is emitted and flushed
     sink.emit(new Windowed<>(DimensionKey.of(grain, "EU", 100L), 60_000L), 0, 5L, 42L);
-    sink.flush();
+    shuffle.flush();
 
     // then it lands as one cell tagged with the meter's aggId and window
     assertThat(sent)

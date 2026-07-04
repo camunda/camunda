@@ -13,6 +13,8 @@ import io.camunda.analytics.fact.Fact;
 import io.camunda.analytics.fact.FactType;
 import io.camunda.eventbridge.streaming.aggregate.SegmentSealingAggregation;
 import io.camunda.eventbridge.streaming.processor.Processor;
+import io.camunda.eventbridge.streaming.processor.ProcessorContext;
+import io.camunda.eventbridge.streaming.shuffle.SegmentCell;
 import java.util.List;
 
 /**
@@ -20,29 +22,40 @@ import java.util.List;
  * stream down to the facts this cube+meter should fold — the cube's {@link FactType}, at/after the
  * cube's activation ({@link RegisteredDataset#admits}, the forward-only subscription rule),
  * matching every declared filter — then folds each into a {@link SegmentSealingAggregation} that
- * seals per-source-partition segment deltas into the shuffle. A terminal node ({@code Out = Void}):
- * the sealed deltas leave through the aggregation's sink, not the topology.
+ * seals per-source-partition segment deltas. Each sealed delta is encoded by the {@link
+ * ForwardingSegmentSink} and <em>forwarded</em> downstream as a {@link SegmentCell} to the shuffle
+ * sink node — the aggregate emits its results; a separate node owns the transport.
  *
  * <p>{@code checkpoint()} persists the aggregation's open segment (Model F), so committing the full
- * consumed offset never loses the in-flight partial; {@code flush()} publishes sealed deltas for
- * produce-before-commit.
+ * consumed offset never loses the in-flight partial; the sealed deltas reach the shuffle sink
+ * synchronously as they are emitted, and that node publishes them on {@code flush()}.
  */
-public final class CubeMeterProcessor implements Processor<Fact, Void> {
+public final class CubeMeterProcessor implements Processor<Fact, SegmentCell> {
 
   private final FactType factType;
   private final RegisteredDataset dataset;
   private final List<FilterPredicate> filters;
   private final SegmentSealingAggregation<Fact, ?, ?> aggregation;
+  private final ForwardingSegmentSink<?> sink;
 
   public CubeMeterProcessor(
       final FactType factType,
       final RegisteredDataset dataset,
       final List<FilterPredicate> filters,
-      final SegmentSealingAggregation<Fact, ?, ?> aggregation) {
+      final SegmentSealingAggregation<Fact, ?, ?> aggregation,
+      final ForwardingSegmentSink<?> sink) {
     this.factType = factType;
     this.dataset = dataset;
     this.filters = List.copyOf(filters);
     this.aggregation = aggregation;
+    this.sink = sink;
+  }
+
+  @Override
+  public void init(final ProcessorContext<SegmentCell> context) {
+    // Wire the aggregation's sink to this node's children — sealed cells forward to the shuffle
+    // sink.
+    sink.bind(context::forward);
   }
 
   @Override

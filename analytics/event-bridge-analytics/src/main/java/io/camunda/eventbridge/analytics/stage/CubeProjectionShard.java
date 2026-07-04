@@ -8,6 +8,7 @@
 package io.camunda.eventbridge.analytics.stage;
 
 import io.camunda.analytics.aggregation.CubeMeterProcessor;
+import io.camunda.analytics.aggregation.ForwardingSegmentSink;
 import io.camunda.analytics.dataset.ActiveCube;
 import io.camunda.analytics.dataset.ActiveTable;
 import io.camunda.analytics.dataset.CompiledMeter;
@@ -34,6 +35,7 @@ import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,12 +43,13 @@ import org.slf4j.LoggerFactory;
 /**
  * One source partition's Stage-1 owning {@link Task}: it owns a per-partition RocksDB and drives a
  * declared {@link ProcessorTopology} — the base-projection {@link AnalyticsBaseProjection} ({@code
- * source}) fanning facts to a {@link CubeMeterProcessor} per active cube-meter and a {@link
- * TableRowProcessor} per projected dataset. The base projection, every meter's open segment and the
- * consumed offset all live in the one provider, so {@link #commit(long)} makes them one atomic cut
- * (Model F): publish the sealed deltas (produce-before-commit), then persist the <em>full</em>
- * processed offset together with the topology's checkpoint. No {@code safeOffset} — a crash resumes
- * exactly from the committed offset onto the checkpointed open segments.
+ * source}) fans facts to a {@link CubeMeterProcessor} per active cube-meter, each of which seals
+ * and forwards {@code SegmentCell}s to a single shared {@link ShuffleSinkProcessor} node (the
+ * transport), plus a {@link TableRowProcessor} per raw table. The base projection, every meter's
+ * open segment and the consumed offset all live in the one provider, so {@link #commit(long)} makes
+ * them one atomic cut (Model F): publish the sealed deltas (produce-before-commit), then persist
+ * the <em>full</em> processed offset together with the topology's checkpoint. No {@code safeOffset}
+ * — a crash resumes exactly from the committed offset onto the checkpointed open segments.
  */
 public final class CubeProjectionShard implements Task<SourceRecord>, AutoCloseable {
 
@@ -68,7 +71,6 @@ public final class CubeProjectionShard implements Task<SourceRecord>, AutoClosea
 
   private final int partition;
   private final ProcessorTopology<SourceRecord> topology;
-  private final EnvelopePublisher publisher;
   private final DatasetStore datasetStore;
   private final DatasetWriter servingWriter;
   private final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider;
@@ -80,14 +82,12 @@ public final class CubeProjectionShard implements Task<SourceRecord>, AutoClosea
   CubeProjectionShard(
       final int partition,
       final ProcessorTopology<SourceRecord> topology,
-      final EnvelopePublisher publisher,
       final DatasetStore datasetStore,
       final DatasetWriter servingWriter,
       final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider,
       final KeyValueStore<DbInt, DbLong> offsets) {
     this.partition = partition;
     this.topology = topology;
-    this.publisher = publisher;
     this.datasetStore = datasetStore;
     this.servingWriter = servingWriter;
     this.provider = provider;
@@ -121,50 +121,57 @@ public final class CubeProjectionShard implements Task<SourceRecord>, AutoClosea
             AnalyticsColumnFamilies.CONSUMED_POSITION, new DbInt(), new DbLong());
     final DatasetWriter writer = datasetStore.writer();
 
-    // source → base projection; children → one aggregate node per cube-meter + one row node per
-    // projected dataset (the base projection broadcasts each fact to every child).
+    // source → base projection; each cube-meter aggregate node seals and forwards SegmentCells to
+    // one shared shuffle-sink node (the transport); each raw table writes rows to the serving
+    // store.
+    // The base projection broadcasts every fact to every child.
     final ProcessorTopology.Builder<SourceRecord> builder =
         ProcessorTopology.<SourceRecord>builder()
             .source("projection", new AnalyticsBaseProjection(state));
+    final List<String> meterNodes = new ArrayList<>();
     for (final ActiveCube cube : cubes) {
       for (final CompiledMeter meter : cube.compiled().meters()) {
+        final String node = "meter-" + meter.aggId();
         builder.processor(
-            "meter-" + meter.aggId(),
-            meterProcessor(
-                cube, meter, publisher, factsPartitions, segmentStride, openSegments, provider),
-            "projection");
+            node, meterProcessor(cube, meter, segmentStride, openSegments, provider), "projection");
+        meterNodes.add(node);
       }
     }
-    int rowIndex = 0;
-    for (final ActiveTable projection : projections) {
-      datasetStore.schemaManager().ensureTable(projection.compiled());
+    if (!meterNodes.isEmpty()) {
       builder.processor(
-          "projection-" + rowIndex++,
-          new TableRowProcessor(projection.registered(), projection.compiled(), writer),
+          "shuffle",
+          new ShuffleSinkProcessor(publisher, factsPartitions),
+          meterNodes.toArray(new String[0]));
+    }
+    int tableIndex = 0;
+    for (final ActiveTable table : projections) {
+      datasetStore.schemaManager().ensureTable(table.compiled());
+      builder.processor(
+          "table-" + tableIndex++,
+          new TableRowProcessor(table.registered(), table.compiled(), writer),
           "projection");
     }
     return new CubeProjectionShard(
-        partition, builder.build(), publisher, datasetStore, writer, provider, offsets);
+        partition, builder.build(), datasetStore, writer, provider, offsets);
   }
 
-  /** Builds one cube meter's Model-F sealing aggregation + shuffle sink, capturing the acc type. */
+  /**
+   * Builds one cube meter's Model-F sealing aggregation and its {@link ForwardingSegmentSink}
+   * (capturing the acc type), then the node that gates + folds facts and forwards sealed cells.
+   */
   private static <ACC> CubeMeterProcessor meterProcessor(
       final ActiveCube cube,
       final CompiledMeter meter,
-      final EnvelopePublisher publisher,
-      final int factsPartitions,
       final int segmentStride,
       final KeyValueStore<DbBytes, DbBytes> openSegments,
       final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider) {
     @SuppressWarnings("unchecked")
     final BoundMeter<ACC, ?> bound = (BoundMeter<ACC, ?>) meter.bound();
-    final CubeShuffleSink<ACC> sink =
-        new CubeShuffleSink<>(
+    final ForwardingSegmentSink<ACC> sink =
+        new ForwardingSegmentSink<>(
             meter.aggId(),
             new DimensionKeyValue(cube.compiled().grain()),
-            bound.accumulatorCodec(),
-            publisher,
-            factsPartitions);
+            bound.accumulatorCodec());
     final SegmentSealingAggregation<Fact, DimensionKey, ACC> sealing =
         new SegmentSealingAggregation<>(
             meter.aggId(),
@@ -183,7 +190,8 @@ public final class CubeProjectionShard implements Task<SourceRecord>, AutoClosea
         cube.compiled().factBinding().factType(),
         cube.registered(),
         cube.compiled().factBinding().filters(),
-        sealing);
+        sealing,
+        sink);
   }
 
   @Override

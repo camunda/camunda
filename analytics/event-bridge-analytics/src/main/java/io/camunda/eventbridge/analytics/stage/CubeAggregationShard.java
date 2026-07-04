@@ -7,6 +7,8 @@
  */
 package io.camunda.eventbridge.analytics.stage;
 
+import io.camunda.analytics.aggregation.CubeMergeProcessor;
+import io.camunda.analytics.aggregation.CubeMergeProcessor.CellApplier;
 import io.camunda.analytics.dataset.ActiveCube;
 import io.camunda.analytics.dataset.CompiledMeter;
 import io.camunda.analytics.dataset.store.DatasetStore;
@@ -15,7 +17,6 @@ import io.camunda.analytics.dimension.DimensionKey;
 import io.camunda.analytics.dimension.DimensionKeyValue;
 import io.camunda.analytics.meter.BoundMeter;
 import io.camunda.analytics.projection.AnalyticsColumnFamilies;
-import io.camunda.eventbridge.analytics.stage.CubeMergeProcessor.CellApplier;
 import io.camunda.eventbridge.streaming.Task;
 import io.camunda.eventbridge.streaming.TransactionRunner;
 import io.camunda.eventbridge.streaming.aggregate.SegmentDedup;
