@@ -41,7 +41,7 @@ public final class DatasetCompiler {
   public CompiledDataset compile(final long cubeId, final DatasetDeclaration declaration) {
     if (declaration.kind() == DatasetKind.PROJECTED) {
       throw new IllegalArgumentException(
-          "projected dataset '" + declaration.name() + "' must be compiled via compileProjection");
+          "projected dataset '" + declaration.name() + "' must be compiled via compileTable");
     }
     final List<DimensionColumn> columns = new ArrayList<>();
     final Map<String, EnrichmentTiming> enrichment = new LinkedHashMap<>();
@@ -82,13 +82,12 @@ public final class DatasetCompiler {
   }
 
   /**
-   * Compiles a {@link DatasetKind#PROJECTED} declaration into a runnable {@link
-   * CompiledProjection}: the fact binding (source fact, filters, per-variable enrichment) and the
-   * declared dimensions as the projected row columns. No meters/windows/aggIds — a projected row is
-   * written directly, not shuffled and reduced.
+   * Compiles a {@link DatasetKind#PROJECTED} declaration into a runnable {@link CompiledTable}: the
+   * fact binding (source fact, filters, per-variable enrichment) and the declared dimensions as the
+   * projected row columns. No meters/windows/aggIds — a projected row is written directly, not
+   * shuffled and reduced.
    */
-  public CompiledProjection compileProjection(
-      final long cubeId, final DatasetDeclaration declaration) {
+  public CompiledTable compileTable(final long cubeId, final DatasetDeclaration declaration) {
     if (declaration.kind() != DatasetKind.PROJECTED) {
       throw new IllegalArgumentException("dataset '" + declaration.name() + "' is not projected");
     }
@@ -102,7 +101,7 @@ public final class DatasetCompiler {
     }
     final FactBinding factBinding =
         new FactBinding(declaration.sourceFact(), declaration.filters(), enrichment);
-    return new CompiledProjection(
+    return new CompiledTable(
         cubeId, declaration.name(), factBinding, declaration.keyField(), columns);
   }
 }

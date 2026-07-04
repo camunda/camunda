@@ -83,7 +83,7 @@ public final class CubeAggregationShard implements Task<ShuffleEnvelope>, AutoCl
     final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider =
         RocksDbStateStoreProvider.open(new File(baseDir + "-p" + partition), meterRegistry);
     final KeyValueStore<DbBytes, DbBytes> cellStore =
-        provider.keyValueStore(AnalyticsColumnFamilies.ROLLUP_CELLS, new DbBytes(), new DbBytes());
+        provider.keyValueStore(AnalyticsColumnFamilies.CUBE_CELLS, new DbBytes(), new DbBytes());
     final KeyValueStore<DbInt, DbLong> offsets =
         provider.keyValueStore(
             AnalyticsColumnFamilies.CONSUMED_POSITION, new DbInt(), new DbLong());

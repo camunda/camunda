@@ -8,7 +8,7 @@
 package io.camunda.analytics.store.rdbms;
 
 import io.camunda.analytics.dataset.CompiledDataset;
-import io.camunda.analytics.dataset.CompiledProjection;
+import io.camunda.analytics.dataset.CompiledTable;
 import io.camunda.analytics.dataset.store.DatasetSchemaManager;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -57,14 +57,14 @@ public final class RdbmsDatasetSchemaManager implements DatasetSchemaManager {
   }
 
   @Override
-  public void ensureProjection(final CompiledProjection projection) {
+  public void ensureTable(final CompiledTable projection) {
     final String columns =
         projection.columns().stream()
             .map(c -> RdbmsNames.quotedColumn(c.name()) + " " + dialect.columnType(c.type()))
             .collect(Collectors.joining(", "));
     final String ddl =
         "CREATE TABLE IF NOT EXISTS "
-            + RdbmsNames.projectionTable(projection.cubeId())
+            + RdbmsNames.rowTable(projection.cubeId())
             + " (row_key VARCHAR(4000) PRIMARY KEY"
             + (columns.isEmpty() ? "" : ", " + columns)
             + ")";

@@ -9,7 +9,7 @@ package io.camunda.analytics.dataset;
 
 /**
  * A projected (raw) dataset ready to run: its {@link RegisteredDataset} (activation vector, schema
- * version) paired with its {@link CompiledProjection} (fact binding, key field, columns). The
- * projected counterpart of {@link ActiveCube}, consumed by Stage 1's row sink.
+ * version) paired with its {@link CompiledTable} (fact binding, key field, columns). The projected
+ * counterpart of {@link ActiveCube}, consumed by Stage 1's row sink.
  */
-public record ActiveProjection(RegisteredDataset registered, CompiledProjection compiled) {}
+public record ActiveTable(RegisteredDataset registered, CompiledTable compiled) {}

@@ -8,7 +8,7 @@
 package io.camunda.analytics.store.document;
 
 import io.camunda.analytics.dataset.CompiledDataset;
-import io.camunda.analytics.dataset.CompiledProjection;
+import io.camunda.analytics.dataset.CompiledTable;
 import io.camunda.analytics.dataset.store.DatasetWriter;
 import io.camunda.analytics.dimension.DimensionColumn;
 import io.camunda.analytics.dimension.DimensionKey;
@@ -58,7 +58,7 @@ public final class DocumentDatasetWriter implements DatasetWriter {
 
   @Override
   public void upsertRow(
-      final CompiledProjection projection, final String rowKey, final List<Object> values) {
+      final CompiledTable projection, final String rowKey, final List<Object> values) {
     final Map<String, Object> doc = new LinkedHashMap<>();
     final List<DimensionColumn> columns = projection.columns();
     for (int i = 0; i < columns.size(); i++) {
@@ -67,9 +67,7 @@ public final class DocumentDatasetWriter implements DatasetWriter {
     writeClient.index(
         RequestBuilders.<Map<String, Object>>indexRequest(
             r ->
-                r.index(DocumentCubeNames.projectionIndex(projection.cubeId()))
-                    .id(rowKey)
-                    .document(doc)));
+                r.index(DocumentCubeNames.rowIndex(projection.cubeId())).id(rowKey).document(doc)));
   }
 
   @Override

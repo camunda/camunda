@@ -29,7 +29,7 @@ public enum AnalyticsColumnFamilies implements EnumValue, ScopedColumnFamily {
    * codec(accumulator)}. Each meter's merger reads/evicts only its own cells via an {@code aggId}
    * prefix scan.
    */
-  ROLLUP_CELLS(2, ColumnFamilyScope.PARTITION_LOCAL),
+  CUBE_CELLS(2, ColumnFamilyScope.PARTITION_LOCAL),
 
   /**
    * The Model-A base projection's materialized element rows, keyed by {@code elementInstanceKey}

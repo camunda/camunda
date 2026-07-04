@@ -8,14 +8,13 @@
 package io.camunda.analytics.dataset.store;
 
 import io.camunda.analytics.dataset.CompiledDataset;
-import io.camunda.analytics.dataset.CompiledProjection;
+import io.camunda.analytics.dataset.CompiledTable;
 
 /**
  * The backend-neutral <b>schema</b> seam of the serving store (mirroring OC's {@code
  * schema-manager}): declaring a dataset provisions its physical serving structure — a table
  * (RDBMS), or an index + mapping (Elasticsearch/OpenSearch). Derived entirely from the {@link
- * CompiledDataset}/{@link CompiledProjection}, so a new dataset is a declaration, not hand-written
- * DDL.
+ * CompiledDataset}/{@link CompiledTable}, so a new dataset is a declaration, not hand-written DDL.
  *
  * <p>This iteration is {@code MANAGED}-only: the application creates the structure.
  * User-provisioned schema (validate-against-existing + DDL/mapping export) is a later iteration.
@@ -26,5 +25,5 @@ public interface DatasetSchemaManager {
   void ensure(CompiledDataset dataset);
 
   /** Creates the projected (raw) dataset's serving structure if absent (idempotent). */
-  void ensureProjection(CompiledProjection projection);
+  void ensureTable(CompiledTable projection);
 }

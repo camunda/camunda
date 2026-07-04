@@ -8,7 +8,7 @@
 package io.camunda.analytics.store.rdbms;
 
 import io.camunda.analytics.dataset.CompiledDataset;
-import io.camunda.analytics.dataset.CompiledProjection;
+import io.camunda.analytics.dataset.CompiledTable;
 import io.camunda.analytics.dataset.store.DatasetWriter;
 import io.camunda.analytics.dimension.DimensionColumn;
 import io.camunda.analytics.dimension.DimensionKey;
@@ -86,7 +86,7 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
 
   @Override
   public void upsertRow(
-      final CompiledProjection projection, final String rowKey, final List<Object> values) {
+      final CompiledTable projection, final String rowKey, final List<Object> values) {
     final List<DimensionColumn> cols = projection.columns();
     final String colNames =
         cols.stream().map(c -> RdbmsNames.quotedColumn(c.name())).collect(Collectors.joining(", "));
@@ -96,7 +96,7 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
         cols.stream().map(c -> RdbmsNames.quotedColumn(c.name())).collect(Collectors.toList());
     final String sql =
         upsertSql(
-            RdbmsNames.projectionTable(projection.cubeId()),
+            RdbmsNames.rowTable(projection.cubeId()),
             columns,
             columnCount,
             "row_key",

@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.analytics.dataset.CompiledDataset;
 import io.camunda.analytics.dataset.CompiledMeter;
-import io.camunda.analytics.dataset.CompiledProjection;
+import io.camunda.analytics.dataset.CompiledTable;
 import io.camunda.analytics.dataset.DatasetCompiler;
 import io.camunda.analytics.dataset.DatasetDeclaration;
 import io.camunda.analytics.dataset.store.DatasetQueryExecutor;
@@ -111,17 +111,17 @@ final class RdbmsDatasetStoreTest {
   @Test
   void shouldProvisionAndUpsertProjectedRowsIdempotently() {
     // given a projected dataset table
-    final CompiledProjection projection =
+    final CompiledTable projection =
         new DatasetCompiler(
                 MeterCatalog.withDefaults(), new MeterRegistry(new InMemoryMeterIdStore()))
-            .compileProjection(
+            .compileTable(
                 7L,
                 DatasetDeclaration.builder("raw-instances", FactType.PROCESS_INSTANCE)
                     .projectedBy("processInstanceKey")
                     .dimension("bpmnProcessId", DimensionType.STRING)
                     .dimension("durationMs", DimensionType.LONG)
                     .build());
-    store.schemaManager().ensureProjection(projection);
+    store.schemaManager().ensureTable(projection);
 
     // when two rows are written and one is replayed
     store.writer().upsertRow(projection, "1001", List.of("order", 1_500L));
@@ -130,7 +130,7 @@ final class RdbmsDatasetStoreTest {
     store.writer().flush();
 
     // then there are two distinct rows
-    assertThat(projectionRowCount()).isEqualTo(2);
+    assertThat(tableRowCount()).isEqualTo(2);
   }
 
   private DimensionKey key(final String process) {
@@ -143,7 +143,7 @@ final class RdbmsDatasetStoreTest {
     return ((BoundMeter<Object, Object>) meter.bound()).accumulatorCodec().toBytes(value);
   }
 
-  private int projectionRowCount() {
+  private int tableRowCount() {
     try (Connection connection = dataSource.getConnection();
         PreparedStatement statement =
             connection.prepareStatement("SELECT COUNT(*) FROM projection_7");

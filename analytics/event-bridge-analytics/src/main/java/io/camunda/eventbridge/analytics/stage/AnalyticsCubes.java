@@ -8,7 +8,7 @@
 package io.camunda.eventbridge.analytics.stage;
 
 import io.camunda.analytics.dataset.ActiveCube;
-import io.camunda.analytics.dataset.ActiveProjection;
+import io.camunda.analytics.dataset.ActiveTable;
 import io.camunda.analytics.dataset.store.MetadataStore;
 import io.camunda.analytics.dataset.store.StandardDatasets;
 import java.util.List;
@@ -31,7 +31,7 @@ public final class AnalyticsCubes {
     return StandardDatasets.loadCubes(metadataStore);
   }
 
-  public static List<ActiveProjection> loadProjections(final MetadataStore metadataStore) {
-    return StandardDatasets.loadProjections(metadataStore);
+  public static List<ActiveTable> loadTables(final MetadataStore metadataStore) {
+    return StandardDatasets.loadTables(metadataStore);
   }
 }

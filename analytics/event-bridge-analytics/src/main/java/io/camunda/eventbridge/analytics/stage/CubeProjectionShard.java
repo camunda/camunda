@@ -9,7 +9,7 @@ package io.camunda.eventbridge.analytics.stage;
 
 import io.camunda.analytics.aggregation.CubeMeterProcessor;
 import io.camunda.analytics.dataset.ActiveCube;
-import io.camunda.analytics.dataset.ActiveProjection;
+import io.camunda.analytics.dataset.ActiveTable;
 import io.camunda.analytics.dataset.CompiledMeter;
 import io.camunda.analytics.dataset.store.DatasetStore;
 import io.camunda.analytics.dataset.store.DatasetWriter;
@@ -42,11 +42,11 @@ import org.slf4j.LoggerFactory;
  * One source partition's Stage-1 owning {@link Task}: it owns a per-partition RocksDB and drives a
  * declared {@link ProcessorTopology} — the base-projection {@link AnalyticsBaseProjection} ({@code
  * source}) fanning facts to a {@link CubeMeterProcessor} per active cube-meter and a {@link
- * ProjectionRowProcessor} per projected dataset. The base projection, every meter's open segment
- * and the consumed offset all live in the one provider, so {@link #commit(long)} makes them one
- * atomic cut (Model F): publish the sealed deltas (produce-before-commit), then persist the
- * <em>full</em> processed offset together with the topology's checkpoint. No {@code safeOffset} — a
- * crash resumes exactly from the committed offset onto the checkpointed open segments.
+ * TableRowProcessor} per projected dataset. The base projection, every meter's open segment and the
+ * consumed offset all live in the one provider, so {@link #commit(long)} makes them one atomic cut
+ * (Model F): publish the sealed deltas (produce-before-commit), then persist the <em>full</em>
+ * processed offset together with the topology's checkpoint. No {@code safeOffset} — a crash resumes
+ * exactly from the committed offset onto the checkpointed open segments.
  */
 public final class CubeProjectionShard implements Task<SourceRecord>, AutoCloseable {
 
@@ -103,7 +103,7 @@ public final class CubeProjectionShard implements Task<SourceRecord>, AutoClosea
       final int segmentStride,
       final int schemaVersion,
       final List<ActiveCube> cubes,
-      final List<ActiveProjection> projections,
+      final List<ActiveTable> projections,
       final DatasetStore datasetStore,
       final MeterRegistry meterRegistry) {
     final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider =
@@ -135,12 +135,12 @@ public final class CubeProjectionShard implements Task<SourceRecord>, AutoClosea
             "projection");
       }
     }
-    int projectionIndex = 0;
-    for (final ActiveProjection projection : projections) {
-      datasetStore.schemaManager().ensureProjection(projection.compiled());
+    int rowIndex = 0;
+    for (final ActiveTable projection : projections) {
+      datasetStore.schemaManager().ensureTable(projection.compiled());
       builder.processor(
-          "projection-" + projectionIndex++,
-          new ProjectionRowProcessor(projection.registered(), projection.compiled(), writer),
+          "projection-" + rowIndex++,
+          new TableRowProcessor(projection.registered(), projection.compiled(), writer),
           "projection");
     }
     return new CubeProjectionShard(

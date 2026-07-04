@@ -34,7 +34,7 @@ final class DocumentCubeNames {
     return "dataset_" + cubeId;
   }
 
-  static String projectionIndex(final long cubeId) {
+  static String rowIndex(final long cubeId) {
     return "projection_" + cubeId;
   }
 

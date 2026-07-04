@@ -7,7 +7,7 @@
  */
 package io.camunda.eventbridge.analytics.stage;
 
-import io.camunda.analytics.dataset.CompiledProjection;
+import io.camunda.analytics.dataset.CompiledTable;
 import io.camunda.analytics.dataset.FilterPredicate;
 import io.camunda.analytics.dataset.RegisteredDataset;
 import io.camunda.analytics.dataset.store.DatasetWriter;
@@ -27,18 +27,16 @@ import java.util.List;
  * Void}); rows are written synchronously on {@link #process}, before the offset advances, so the
  * write is naturally produce-before-commit and the node holds no durable state.
  */
-public final class ProjectionRowProcessor implements Processor<Fact, Void> {
+public final class TableRowProcessor implements Processor<Fact, Void> {
 
   private final FactType factType;
   private final RegisteredDataset dataset;
   private final List<FilterPredicate> filters;
-  private final CompiledProjection projection;
+  private final CompiledTable projection;
   private final DatasetWriter writer;
 
-  public ProjectionRowProcessor(
-      final RegisteredDataset dataset,
-      final CompiledProjection projection,
-      final DatasetWriter writer) {
+  public TableRowProcessor(
+      final RegisteredDataset dataset, final CompiledTable projection, final DatasetWriter writer) {
     factType = projection.factBinding().factType();
     this.dataset = dataset;
     filters = List.copyOf(projection.factBinding().filters());

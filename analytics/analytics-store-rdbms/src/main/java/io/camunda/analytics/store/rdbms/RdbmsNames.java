@@ -26,7 +26,7 @@ final class RdbmsNames {
     return "dataset_" + cubeId;
   }
 
-  static String projectionTable(final long cubeId) {
+  static String rowTable(final long cubeId) {
     return "projection_" + cubeId;
   }
 

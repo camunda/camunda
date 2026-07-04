@@ -8,7 +8,7 @@
 package io.camunda.analytics.dataset.store;
 
 import io.camunda.analytics.dataset.ActiveCube;
-import io.camunda.analytics.dataset.ActiveProjection;
+import io.camunda.analytics.dataset.ActiveTable;
 import io.camunda.analytics.dataset.DatasetCompiler;
 import io.camunda.analytics.dataset.DatasetDeclaration;
 import io.camunda.analytics.dataset.DatasetKind;
@@ -30,8 +30,8 @@ import java.util.Map;
  * cubes) and the serving/read layer (which reads whatever the metadata plane holds). The database
  * is authoritative: {@link #bootstrap} writes the declarations once (allocating stable {@code
  * cubeId}s and, by compiling, persisting {@code aggId}s), and {@link #loadCubes}/{@link
- * #loadProjections} reload and compile them so every reader sees identical ids without racing to
- * mint them.
+ * #loadTables} reload and compile them so every reader sees identical ids without racing to mint
+ * them.
  *
  * <p>Declaration order is stable — it fixes the {@code cubeId}/{@code aggId} sequence — so new
  * datasets are only ever <em>appended</em>. Declarations start from the beginning of history (an
@@ -65,7 +65,7 @@ public final class StandardDatasets {
       metadataStore.datasetSpecStore().create(registered);
       compiler.compile(registered.cubeId(), declaration); // side effect: allocate + persist aggIds
     }
-    for (final DatasetDeclaration declaration : projectionDeclarations()) {
+    for (final DatasetDeclaration declaration : tableDeclarations()) {
       metadataStore.datasetSpecStore().create(registry.admit(declaration, Map.of()));
     }
   }
@@ -88,17 +88,16 @@ public final class StandardDatasets {
   }
 
   /** Loads the projected (raw) datasets from the metadata store and compiles them. */
-  public static List<ActiveProjection> loadProjections(final MetadataStore metadataStore) {
+  public static List<ActiveTable> loadTables(final MetadataStore metadataStore) {
     final DatasetCompiler compiler =
         new DatasetCompiler(
             MeterCatalog.withDefaults(), new MeterRegistry(metadataStore.meterIdStore()));
-    final List<ActiveProjection> projections = new ArrayList<>();
+    final List<ActiveTable> projections = new ArrayList<>();
     for (final RegisteredDataset registered :
         metadataStore.datasetSpecStore().search(DatasetSpecQuery.byKind(DatasetKind.PROJECTED))) {
       projections.add(
-          new ActiveProjection(
-              registered,
-              compiler.compileProjection(registered.cubeId(), registered.declaration())));
+          new ActiveTable(
+              registered, compiler.compileTable(registered.cubeId(), registered.declaration())));
     }
     return List.copyOf(projections);
   }
@@ -182,7 +181,7 @@ public final class StandardDatasets {
   }
 
   /** The projected (raw) datasets: flat, keyed rows rather than windowed aggregates. */
-  public static List<DatasetDeclaration> projectionDeclarations() {
+  public static List<DatasetDeclaration> tableDeclarations() {
     return List.of(
         // Raw completed process instances, enriched with the region variable, keyed by instance.
         DatasetDeclaration.builder("raw-completed-instances", FactType.PROCESS_INSTANCE)

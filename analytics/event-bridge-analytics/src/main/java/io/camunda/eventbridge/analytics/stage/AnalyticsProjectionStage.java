@@ -8,7 +8,7 @@
 package io.camunda.eventbridge.analytics.stage;
 
 import io.camunda.analytics.dataset.ActiveCube;
-import io.camunda.analytics.dataset.ActiveProjection;
+import io.camunda.analytics.dataset.ActiveTable;
 import io.camunda.analytics.dataset.store.MetadataStore;
 import io.camunda.analytics.projection.SourceRecord;
 import io.camunda.eventbridge.analytics.store.AnalyticsBackend;
@@ -73,7 +73,7 @@ public final class AnalyticsProjectionStage {
     metadataStore.migrate();
     AnalyticsCubes.bootstrap(metadataStore);
     final List<ActiveCube> cubes = AnalyticsCubes.loadCubes(metadataStore);
-    final List<ActiveProjection> projections = AnalyticsCubes.loadProjections(metadataStore);
+    final List<ActiveTable> projections = AnalyticsCubes.loadTables(metadataStore);
     final String stateDir = "data/analytics-stage1-" + instanceId;
     final ZeebeRecordCodec codec = new ZeebeRecordCodec();
 

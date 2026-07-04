@@ -9,7 +9,7 @@ package io.camunda.analytics.store.document;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.analytics.dataset.CompiledDataset;
-import io.camunda.analytics.dataset.CompiledProjection;
+import io.camunda.analytics.dataset.CompiledTable;
 import io.camunda.analytics.dataset.store.DatasetSchemaManager;
 import io.camunda.analytics.dimension.DimensionColumn;
 import io.camunda.analytics.dimension.DimensionType;
@@ -46,13 +46,12 @@ public final class DocumentDatasetSchemaManager implements DatasetSchemaManager 
   }
 
   @Override
-  public void ensureProjection(final CompiledProjection projection) {
+  public void ensureTable(final CompiledTable projection) {
     final Map<String, Object> properties = new LinkedHashMap<>();
     for (final DimensionColumn column : projection.columns()) {
       properties.put(DocumentCubeNames.field(column.name()), property(fieldType(column.type())));
     }
-    schemaClient.createIndex(
-        DocumentCubeNames.projectionIndex(projection.cubeId()), mapping(properties));
+    schemaClient.createIndex(DocumentCubeNames.rowIndex(projection.cubeId()), mapping(properties));
   }
 
   private String mapping(final Map<String, Object> properties) {

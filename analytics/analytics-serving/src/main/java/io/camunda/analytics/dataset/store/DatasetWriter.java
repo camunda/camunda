@@ -8,7 +8,7 @@
 package io.camunda.analytics.dataset.store;
 
 import io.camunda.analytics.dataset.CompiledDataset;
-import io.camunda.analytics.dataset.CompiledProjection;
+import io.camunda.analytics.dataset.CompiledTable;
 import io.camunda.analytics.dimension.DimensionKey;
 import java.util.List;
 
@@ -36,7 +36,7 @@ public interface DatasetWriter extends AutoCloseable {
    * Upserts one raw row of a projected dataset keyed by {@code rowKey}; {@code values} align to the
    * projection's declared columns.
    */
-  void upsertRow(CompiledProjection projection, String rowKey, List<Object> values);
+  void upsertRow(CompiledTable projection, String rowKey, List<Object> values);
 
   /** Batch boundary: make buffered writes durable. */
   void flush();
