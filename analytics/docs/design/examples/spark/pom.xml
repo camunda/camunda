@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  REFERENCE EXAMPLE — illustrative only. NOT part of the Camunda reactor build.
+  This POM is intentionally standalone: it is NOT referenced by any parent/aggregator
+  pom and MUST NOT be added to one. It exists so a reader can see the exact
+  dependencies an idiomatic Apache Spark Structured Streaming job would pull in.
+
+  Dependencies will not resolve offline in this repo; that is expected. The value of
+  this module is the *shape* of the code, not a runnable artifact.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>io.camunda.analytics.example</groupId>
+  <artifactId>analytics-example-spark</artifactId>
+  <version>0.0.1-REFERENCE</version>
+  <packaging>jar</packaging>
+
+  <name>Analytics Example — Apache Spark Structured Streaming</name>
+  <description>
+    Reference implementation of the shared process-instance analytics pipeline in
+    idiomatic Spark Structured Streaming. Illustrative, not built, not committed.
+  </description>
+
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <!--
+      Spark 3.5.x is the last line that targets Java 17 comfortably; running on Java 21
+      needs the usual `--add-opens` JVM flags (see Main.java header comment). Spark 4.x
+      (2024+) targets Java 17/21 natively. Pin whichever your platform ships.
+    -->
+    <spark.version>3.5.1</spark.version>
+    <scala.binary.version>2.12</scala.binary.version>
+  </properties>
+
+  <dependencies>
+    <!-- Core RDD/scheduler/shuffle engine. Spark SQL depends on it transitively; declared for clarity. -->
+    <dependency>
+      <groupId>org.apache.spark</groupId>
+      <artifactId>spark-core_${scala.binary.version}</artifactId>
+      <version>${spark.version}</version>
+      <!--
+        In a real deployment this is `provided` because the cluster supplies Spark on the
+        classpath (spark-submit). For a local `new SparkSession` run you would keep it on
+        the runtime classpath. Left as compile-scope here so the example reads standalone.
+      -->
+    </dependency>
+
+    <!-- DataFrame/Dataset API + Structured Streaming (micro-batch engine, state store, checkpoint). -->
+    <dependency>
+      <groupId>org.apache.spark</groupId>
+      <artifactId>spark-sql_${scala.binary.version}</artifactId>
+      <version>${spark.version}</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.13.0</version>
+        <configuration>
+          <release>21</release>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

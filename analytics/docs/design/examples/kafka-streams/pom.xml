@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  REFERENCE EXAMPLE — not part of the Camunda reactor build.
+
+  This module is intentionally standalone and is NOT referenced by any parent pom. It exists purely
+  to show an idiomatic Kafka Streams implementation of the analytics pipeline for comparison with the
+  Flink and Spark reference examples. It is not expected to resolve/compile in an offline build.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>io.camunda.analytics.example</groupId>
+  <artifactId>kafka-streams-reference</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <name>Analytics Reference Example - Kafka Streams</name>
+  <description>
+    Illustrative Kafka Streams implementation of the process-instance analytics pipeline.
+    Reference only: do not add to the reactor, do not build in CI.
+  </description>
+
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <version.kafka>3.7.0</version.kafka>
+    <version.jackson>2.17.1</version.jackson>
+    <version.slf4j>2.0.13</version.slf4j>
+  </properties>
+
+  <dependencies>
+    <!-- The framework under evaluation. kafka-streams pulls in kafka-clients transitively. -->
+    <dependency>
+      <groupId>org.apache.kafka</groupId>
+      <artifactId>kafka-streams</artifactId>
+      <version>${version.kafka}</version>
+    </dependency>
+
+    <!-- JSON serdes for the domain types (see JsonSerde). -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>${version.jackson}</version>
+    </dependency>
+
+    <!-- Logging for the sink stub and lifecycle. -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>${version.slf4j}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <version>${version.slf4j}</version>
+      <scope>runtime</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.13.0</version>
+      </plugin>
+    </plugins>
+  </build>
+</project>

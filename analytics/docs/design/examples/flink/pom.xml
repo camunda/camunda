@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  REFERENCE MODULE — illustrative only.
+
+  This POM is intentionally *standalone*: it is NOT wired into the analytics
+  reactor and is NOT meant to be built as part of the monorepo. Its only job is
+  to show a principal engineer the exact dependency surface an idiomatic Flink
+  DataStream job needs, and to make the Java in this folder resolve in an IDE if
+  someone points one at it.
+
+  Offline dependency resolution will fail in this repo — that is expected and
+  fine. Correctness here means "idiomatic and readable", not "builds".
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>io.camunda.analytics.examples</groupId>
+  <artifactId>analytics-flink-example</artifactId>
+  <version>0.0.0-REFERENCE</version>
+  <packaging>jar</packaging>
+
+  <name>Analytics Reference — Apache Flink (DataStream API)</name>
+  <description>
+    Reference implementation of the process-instance analytics pipeline in
+    idiomatic Apache Flink. Comparison twin of the Kafka Streams and Spark
+    Structured Streaming references. Not built, not committed as a real module.
+  </description>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <!--
+      Java 21. Note: Flink 1.18 officially supports Java 11/17; Java 21 works in
+      practice but is not yet a supported target. For a real module you would
+      pin Flink 1.19+ and validate the JVM matrix. This is a reference.
+    -->
+    <maven.compiler.release>21</maven.compiler.release>
+    <flink.version>1.18.1</flink.version>
+  </properties>
+
+  <dependencies>
+    <!--
+      The Flink DataStream API. This single artifact gives you:
+        - the KeyedStream / windowing / process-function programming model,
+        - keyed state (ValueState, ...) and the timer service,
+        - watermark strategies and event-time semantics,
+        - the AggregateFunction contract (local pre-aggregate + merge).
+      i.e. almost every "framework owns" cell in the README table.
+    -->
+    <dependency>
+      <groupId>org.apache.flink</groupId>
+      <artifactId>flink-streaming-java</artifactId>
+      <version>${flink.version}</version>
+    </dependency>
+
+    <!--
+      flink-clients pulls in the local MiniCluster so `env.execute()` runs this
+      job in-process from Main without a standalone cluster. In production the
+      job is submitted to a JobManager instead; you would scope this `provided`.
+    -->
+    <dependency>
+      <groupId>org.apache.flink</groupId>
+      <artifactId>flink-clients</artifactId>
+      <version>${flink.version}</version>
+    </dependency>
+
+    <!--
+      RocksDB keyed-state backend. This is what makes the base-projection store
+      (Stage A per-instance ValueState) an out-of-core, incrementally
+      checkpointed store rather than a heap map. Directly analogous to the
+      RocksDB-backed base-projection store in our own design.
+    -->
+    <dependency>
+      <groupId>org.apache.flink</groupId>
+      <artifactId>flink-statebackend-rocksdb</artifactId>
+      <version>${flink.version}</version>
+    </dependency>
+
+    <!-- jspecify nullness annotations, per the monorepo's migration convention. -->
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.13.0</version>
+      </plugin>
+    </plugins>
+  </build>
+</project>
