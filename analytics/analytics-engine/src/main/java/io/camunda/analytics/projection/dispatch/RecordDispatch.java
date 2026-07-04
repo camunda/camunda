@@ -7,24 +7,21 @@
  */
 package io.camunda.analytics.projection.dispatch;
 
-import io.camunda.analytics.fact.Fact;
 import io.camunda.analytics.projection.SourceRecord;
-import io.camunda.analytics.state.mutable.MutableProjectionState;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Consumer;
 
 /**
  * The two-level {@code (ValueType, Intent)} handler registry — the engine's {@code
  * onCommand(valueType, intent, handler)} shape. The registry <em>is</em> the base projection's
- * capability list: what the projection folds is read off the table, not off a chain of nested
- * type/intent branches. A record with no registered handler is ignored. A {@code ValueType} may
- * also register a wildcard handler that fires for any intent (e.g. {@code VARIABLE}, which folds
- * the same way whatever its intent).
+ * capability list: what the projection folds is read off the table, not off nested type/intent
+ * branches. A record with no registered handler is ignored. A {@code ValueType} may register a
+ * wildcard handler that fires for any intent (e.g. {@code VARIABLE}, which folds the same way
+ * whatever its intent).
  */
 public final class RecordDispatch {
 
@@ -45,8 +42,7 @@ public final class RecordDispatch {
   }
 
   /** Routes a record to its handler (if any), running that transition's apply/derive/evict. */
-  public void dispatch(
-      final SourceRecord source, final MutableProjectionState state, final Consumer<Fact> facts) {
+  public void dispatch(final SourceRecord source) {
     final Record<?> record = source.record();
     final Map<Intent, RecordHandler> intents = byTypeAndIntent.get(record.getValueType());
     RecordHandler handler = intents == null ? null : intents.get(record.getIntent());
@@ -54,7 +50,7 @@ public final class RecordDispatch {
       handler = byType.get(record.getValueType());
     }
     if (handler != null) {
-      handler.handle(source, state, facts);
+      handler.handle(source);
     }
   }
 }

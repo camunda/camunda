@@ -7,10 +7,13 @@
  */
 package io.camunda.analytics.fact;
 
+import io.camunda.analytics.dataset.DimensionSpec;
 import io.camunda.analytics.dimension.FactRow;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 /**
  * The generic base-projection output: one uniform fact the metric core consumes, replacing the
@@ -39,17 +42,35 @@ public final class Fact implements FactRow {
   private final int sourcePartition;
   private final long sourcePosition;
 
+  // Lazy variable enrichment: the visible variable snapshot is resolved on first var.* access and
+  // memoized, so the many cube-meters that read the same forwarded fact resolve it at most once
+  // (and a fact no dataset groups/filters by a variable never resolves any). Null for a fact with
+  // no variable scope. Not part of identity — see equals/hashCode.
+  private final Supplier<Map<String, String>> variableSource;
+  private Map<String, String> resolvedVariables;
+
   public Fact(
       final FactType factType,
       final Map<String, Object> fields,
       final long eventTime,
       final int sourcePartition,
       final long sourcePosition) {
+    this(factType, fields, eventTime, sourcePartition, sourcePosition, null);
+  }
+
+  private Fact(
+      final FactType factType,
+      final Map<String, Object> fields,
+      final long eventTime,
+      final int sourcePartition,
+      final long sourcePosition,
+      final Supplier<Map<String, String>> variableSource) {
     this.factType = Objects.requireNonNull(factType, "factType");
     this.fields = Map.copyOf(fields);
     this.eventTime = eventTime;
     this.sourcePartition = sourcePartition;
     this.sourcePosition = sourcePosition;
+    this.variableSource = variableSource;
   }
 
   public static Builder builder(final FactType factType) {
@@ -58,7 +79,37 @@ public final class Fact implements FactRow {
 
   @Override
   public Object get(final String field) {
-    return fields.get(field);
+    final Object eager = fields.get(field);
+    if (eager != null) {
+      return eager;
+    }
+    // A var.* field the deriver did not stamp eagerly resolves lazily off the projection.
+    if (variableSource != null && field.startsWith(DimensionSpec.VARIABLE_PREFIX)) {
+      return variables().get(field.substring(DimensionSpec.VARIABLE_PREFIX.length()));
+    }
+    return null;
+  }
+
+  /** The visible variable snapshot, resolved once on first access and memoized. */
+  private Map<String, String> variables() {
+    if (resolvedVariables == null) {
+      resolvedVariables = variableSource.get();
+    }
+    return resolvedVariables;
+  }
+
+  /**
+   * Resolves the lazy variables into a self-contained fact whose {@code var.*} fields are eager — a
+   * snapshot to take while the projection is still live (e.g. handing the fact off past the point
+   * the source rows are evicted). A fact with no variable source returns itself.
+   */
+  public Fact materialize() {
+    if (variableSource == null) {
+      return this;
+    }
+    final Map<String, Object> merged = new LinkedHashMap<>(fields);
+    variables().forEach((name, value) -> merged.put(DimensionSpec.VARIABLE_PREFIX + name, value));
+    return new Fact(factType, merged, eventTime, sourcePartition, sourcePosition, null);
   }
 
   public FactType factType() {
@@ -109,9 +160,20 @@ public final class Fact implements FactRow {
     private long eventTime;
     private int sourcePartition;
     private long sourcePosition;
+    private Supplier<Map<String, String>> variableSource;
 
     private Builder(final FactType factType) {
       this.factType = Objects.requireNonNull(factType, "factType");
+    }
+
+    /**
+     * Binds a lazy source of the fact's visible variable snapshot; {@code var.*} reads resolve (and
+     * memoize) through it. The supplier is invoked at most once, on first access, so pass a cheap
+     * reference to live projection state rather than a pre-collected map.
+     */
+    public Builder variables(final Supplier<Map<String, String>> variableSource) {
+      this.variableSource = variableSource;
+      return this;
     }
 
     public Builder eventTime(final long eventTime) {
@@ -138,7 +200,7 @@ public final class Fact implements FactRow {
     }
 
     public Fact build() {
-      return new Fact(factType, fields, eventTime, sourcePartition, sourcePosition);
+      return new Fact(factType, fields, eventTime, sourcePartition, sourcePosition, variableSource);
     }
   }
 }

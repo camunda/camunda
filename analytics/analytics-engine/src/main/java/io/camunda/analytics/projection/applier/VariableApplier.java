@@ -7,28 +7,28 @@
  */
 package io.camunda.analytics.projection.applier;
 
+import io.camunda.analytics.projection.SourceRecord;
 import io.camunda.analytics.state.mutable.MutableProjectionState;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 
 /**
- * Folds a {@code VARIABLE} record into the projection: records the latest value under its scope so
- * a later completion of that scope can enrich its fact with the variable snapshot. The sole mutator
- * of the variable store; it derives no fact (a variable only ever surfaces as an enrichment
- * dimension).
- *
- * <p>Overwrite-on-set per {@code (scopeKey, name)}, matching the workflow engine's {@code
- * DbVariableState.setVariableLocal} (an {@code upsert}): each {@code VARIABLE} record is already
- * one atomic {@code (scope, name, value)} — the engine splits variable documents into per-variable
- * records upstream — so there is nothing to merge. Reads resolve up the scope hierarchy like the
- * engine's variable visibility (see {@code ProjectionState#variables}).
+ * Records a variable's latest value under its scope so a later completion of that scope can enrich
+ * its fact. Overwrite-on-set per {@code (scopeKey, name)}, matching the engine's {@code
+ * DbVariableState.setVariableLocal}: each {@code VARIABLE} record is already one atomic {@code
+ * (scope, name, value)}, so there is nothing to merge. Emits no fact.
  */
-public final class VariableApplier {
+public final class VariableApplier implements EventApplier {
 
-  public void put(
-      final long scopeKey,
-      final String name,
-      final String value,
-      final MutableProjectionState state) {
-    state.putVariable(scopeKey, name, unquote(value));
+  private final MutableProjectionState state;
+
+  public VariableApplier(final MutableProjectionState state) {
+    this.state = state;
+  }
+
+  @Override
+  public void apply(final SourceRecord source) {
+    final VariableRecordValue value = (VariableRecordValue) source.record().getValue();
+    state.putVariable(value.getScopeKey(), value.getName(), unquote(value.getValue()));
   }
 
   /** Variable values arrive as JSON; strip the quotes from a JSON string so {@code "EU"} → EU. */

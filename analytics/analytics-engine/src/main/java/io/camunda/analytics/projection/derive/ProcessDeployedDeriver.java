@@ -19,19 +19,28 @@ import java.util.function.Consumer;
  * Emits a {@code PROCESS_DEFINITION}/{@code DEPLOYED} fact for each newly deployed process. Holds
  * no projection state — a process definition is a standalone fact, not part of an instance's fold.
  */
-public final class ProcessDefinitionDeriver {
+public final class ProcessDeployedDeriver implements FactDeriver {
 
-  public void deployed(final SourceRecord source, final Process process, final Consumer<Fact> out) {
-    out.accept(
-        Fact.builder(FactType.PROCESS_DEFINITION)
-            .eventTime(source.record().getTimestamp())
-            .source(source.partitionId(), source.offset())
-            .transition(Transition.DEPLOYED)
-            .field("bpmnProcessId", process.getBpmnProcessId())
-            .field("processDefinitionKey", process.getProcessDefinitionKey())
-            .field("version", process.getVersion())
-            .field("tenantId", process.getTenantId())
-            .field("bpmnXml", new String(process.getResource(), StandardCharsets.UTF_8))
-            .build());
+  private final Consumer<Fact> facts;
+
+  public ProcessDeployedDeriver(final Consumer<Fact> facts) {
+    this.facts = facts;
+  }
+
+  @Override
+  public void derive(final SourceRecord source) {
+    if (source.record().getValue() instanceof final Process process) {
+      facts.accept(
+          Fact.builder(FactType.PROCESS_DEFINITION)
+              .eventTime(source.record().getTimestamp())
+              .source(source.partitionId(), source.offset())
+              .transition(Transition.DEPLOYED)
+              .field("bpmnProcessId", process.getBpmnProcessId())
+              .field("processDefinitionKey", process.getProcessDefinitionKey())
+              .field("version", process.getVersion())
+              .field("tenantId", process.getTenantId())
+              .field("bpmnXml", new String(process.getResource(), StandardCharsets.UTF_8))
+              .build());
+    }
   }
 }

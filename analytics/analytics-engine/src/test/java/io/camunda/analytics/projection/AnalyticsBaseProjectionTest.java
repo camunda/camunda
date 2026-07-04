@@ -265,12 +265,15 @@ final class AnalyticsBaseProjectionTest {
 
     @Override
     public void forward(final Fact value) {
-      facts.add(value);
+      // Materialize now — while the projection is still live (before evict) — mirroring how a
+      // downstream aggregate resolves a fact's variables at fold time, so post-hoc assertions see
+      // the resolved snapshot.
+      facts.add(value.materialize());
     }
 
     @Override
     public void forward(final Fact value, final String childName) {
-      facts.add(value);
+      facts.add(value.materialize());
     }
 
     @Override
