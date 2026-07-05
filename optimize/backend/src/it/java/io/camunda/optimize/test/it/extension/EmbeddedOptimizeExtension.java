@@ -35,6 +35,7 @@ import io.camunda.optimize.service.db.writer.InstantDashboardMetadataWriter;
 import io.camunda.optimize.service.digest.DigestService;
 import io.camunda.optimize.service.importing.AbstractImportScheduler;
 import io.camunda.optimize.service.importing.ImportIndexHandlerRegistry;
+import io.camunda.optimize.service.importing.ImportMediator;
 import io.camunda.optimize.service.importing.ImportSchedulerManagerService;
 import io.camunda.optimize.service.importing.PositionBasedImportIndexHandler;
 import io.camunda.optimize.service.importing.ingested.IngestedDataImportScheduler;
@@ -247,11 +248,27 @@ public class EmbeddedOptimizeExtension
 
   @SneakyThrows
   public void importAllZeebeEntitiesFromLastIndex() {
+<<<<<<< HEAD
     getImportSchedulerManager()
         .getZeebeImportScheduler()
         .orElseThrow(() -> new OptimizeIntegrationTestException("No Zeebe Scheduler present"))
         .runImportRound(true)
         .get();
+=======
+    final List<CompletableFuture<Void>> importFutures =
+        getImportSchedulerManager()
+            .getZeebeImportScheduler()
+            .orElseThrow(() -> new OptimizeIntegrationTestException("No Zeebe Scheduler present"))
+            .getImportMediators()
+            .stream()
+            .map(ImportMediator::runImport)
+            .toList();
+    try {
+      CompletableFuture.allOf(importFutures.toArray(new CompletableFuture[0])).get();
+    } catch (final InterruptedException | ExecutionException e) {
+      throw new OptimizeRuntimeException(e);
+    }
+>>>>>>> 5ccb6c7d (fix: give each Optimize import mediator its own independent scheduler thread)
   }
 
   public void storeImportIndexesToElasticsearch() {
