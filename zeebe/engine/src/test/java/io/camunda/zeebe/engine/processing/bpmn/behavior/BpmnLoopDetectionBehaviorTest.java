@@ -93,13 +93,14 @@ final class BpmnLoopDetectionBehaviorTest {
   void shouldThrottleRegularReRaisingByCooldown() {
     final var behavior = behavior(3, Map.of(), 3);
 
-    // fires on the first breach (4), then only every 3rd activation beyond the threshold
+    // fires on the first breach (4), then every cooldown (3) activations after that
     assertThat(regularRaisesAt(behavior, 4)).isTrue();
     assertThat(regularRaisesAt(behavior, 5)).isFalse();
-    assertThat(regularRaisesAt(behavior, 6)).isTrue();
-    assertThat(regularRaisesAt(behavior, 7)).isFalse();
+    assertThat(regularRaisesAt(behavior, 6)).isFalse();
+    assertThat(regularRaisesAt(behavior, 7)).isTrue();
     assertThat(regularRaisesAt(behavior, 8)).isFalse();
-    assertThat(regularRaisesAt(behavior, 9)).isTrue();
+    assertThat(regularRaisesAt(behavior, 9)).isFalse();
+    assertThat(regularRaisesAt(behavior, 10)).isTrue();
   }
 
   @Test
@@ -206,10 +207,11 @@ final class BpmnLoopDetectionBehaviorTest {
   void shouldThrottleChildReRaisingByCooldown() {
     final var behavior = behavior(4, Map.of(), 3);
 
-    // fires on the first breach (5), then only every 3rd child activation beyond the threshold
+    // fires on the first breach (5), then every cooldown (3) activations after that
     assertThat(childRaisesAt(behavior, 5)).isTrue();
     assertThat(childRaisesAt(behavior, 6)).isFalse();
-    assertThat(childRaisesAt(behavior, 7)).isTrue();
+    assertThat(childRaisesAt(behavior, 7)).isFalse();
+    assertThat(childRaisesAt(behavior, 8)).isTrue();
   }
 
   @Test
