@@ -8,8 +8,6 @@ miss so the downstream comparison job skips cleanly. Falls back to the
 previous business day when today's daily isn't yet complete.
 """
 
-from __future__ import annotations
-
 import os
 import subprocess
 import sys

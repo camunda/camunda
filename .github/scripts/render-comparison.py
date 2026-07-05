@@ -5,8 +5,6 @@ Invoked by the `Build comparison markdown` step of the `render-comparison`
 job in `.github/workflows/camunda-pr-load-test.yaml`.
 """
 
-from __future__ import annotations
-
 import json
 import math
 import os
