@@ -18,8 +18,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
-import io.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
-import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
 import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableUpdateDto;
@@ -29,7 +27,6 @@ import io.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.writer.ProcessInstanceWriter;
-import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.importing.engine.service.ObjectVariableService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
@@ -101,34 +98,11 @@ public class ZeebeVariableImportService
     final ZeebeVariableDataDto firstRecordValue = recordsForInstance.get(0).getValue();
     final ProcessInstanceDto instanceToAdd =
         createSkeletonProcessInstance(
-            getBpmnProcessId(firstRecordValue),
+            firstRecordValue.getBpmnProcessId(),
             firstRecordValue.getProcessInstanceKey(),
             firstRecordValue.getProcessDefinitionKey(),
             firstRecordValue.getTenantId());
     return updateProcessVariables(instanceToAdd, recordsForInstance);
-  }
-
-  private String getBpmnProcessId(final ZeebeVariableDataDto zeebeVariableDataDto) {
-    return Optional.ofNullable(zeebeVariableDataDto.getBpmnProcessId())
-        .orElseGet(
-            () -> {
-              // Zeebe variable records older than 1.4.0 didn't contain the process ID, so we have
-              // to fetch it from the
-              // stored definition. We can remove this handling in future as part of:
-              // https://jira.camunda.com/browse/OPT-6065
-              final String processDefKey =
-                  String.valueOf(zeebeVariableDataDto.getProcessDefinitionKey());
-              final Optional<ProcessDefinitionOptimizeDto> processDefinition =
-                  processDefinitionReader.getProcessDefinition(processDefKey);
-              return processDefinition
-                  .map(DefinitionOptimizeResponseDto::getKey)
-                  .orElseThrow(
-                      () ->
-                          new OptimizeRuntimeException(
-                              "The process definition with id "
-                                  + processDefKey
-                                  + " has not yet been imported to Optimize"));
-            });
   }
 
   private ProcessInstanceDto updateProcessVariables(
