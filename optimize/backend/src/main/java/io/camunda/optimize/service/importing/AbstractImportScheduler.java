@@ -8,24 +8,21 @@
 package io.camunda.optimize.service.importing;
 
 import io.camunda.optimize.dto.optimize.SchedulerConfig;
-import io.camunda.optimize.service.AbstractScheduledService;
-import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
-import java.util.stream.Collectors;
+import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
-import org.springframework.scheduling.Trigger;
-import org.springframework.scheduling.support.PeriodicTrigger;
 
-public abstract class AbstractImportScheduler<T extends SchedulerConfig>
-    extends AbstractScheduledService {
+public abstract class AbstractImportScheduler<T extends SchedulerConfig> {
 
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(AbstractImportScheduler.class);
+
   protected final List<ImportMediator> importMediators;
   protected final T dataImportSourceDto;
-  protected volatile boolean isImporting = false;
+  private volatile ScheduledExecutorService mediatorExecutor;
 
   public AbstractImportScheduler(
       final List<ImportMediator> importMediators, final T dataImportSourceDto) {
@@ -33,124 +30,85 @@ public abstract class AbstractImportScheduler<T extends SchedulerConfig>
     this.dataImportSourceDto = dataImportSourceDto;
   }
 
-  @Override
-  public void run() {
-    if (isScheduledToRun()) {
-      LOG.debug("Next round!");
-      try {
-        runImportRound();
-      } catch (final Exception e) {
-        LOG.error("Could not schedule next import round!", e);
-      }
-    }
-  }
-
-  @Override
-  protected Trigger createScheduleTrigger() {
-    return new PeriodicTrigger(Duration.ZERO);
-  }
-
   public synchronized void startImportScheduling() {
     LOG.info("Start scheduling import from {}.", dataImportSourceDto);
-    isImporting = true;
-    startScheduling();
+    if (mediatorExecutor == null || mediatorExecutor.isShutdown()) {
+      final int poolSize = Math.max(1, importMediators.size());
+      mediatorExecutor =
+          Executors.newScheduledThreadPool(
+              poolSize,
+              r -> {
+                final Thread t = new Thread(r, getClass().getSimpleName() + "-importer");
+                t.setDaemon(true);
+                return t;
+              });
+      importMediators.forEach(this::submitMediatorRun);
+    }
   }
 
   public synchronized void stopImportScheduling() {
     LOG.info("Stop scheduling import from {}.", dataImportSourceDto);
-    isImporting = false;
-    stopScheduling();
+    if (mediatorExecutor != null) {
+      mediatorExecutor.shutdown();
+    }
   }
 
   public void shutdown() {
     LOG.debug("Scheduler for {} will shutdown.", dataImportSourceDto);
-    getImportMediators().forEach(ImportMediator::shutdown);
-  }
-
-  public Future<Void> runImportRound() {
-    return runImportRound(false);
-  }
-
-  public Future<Void> runImportRound(final boolean forceImport) {
-    final List<ImportMediator> currentImportRound =
-        importMediators.stream()
-            .filter(mediator -> forceImport || mediator.canImport())
-            .collect(Collectors.toList());
-    if (nothingToBeImported(currentImportRound)) {
-      isImporting = false;
-      if (!forceImport) {
-        doBackoff();
-      }
-      return CompletableFuture.completedFuture(null);
-    } else {
-      isImporting = true;
-      return executeImportRound(currentImportRound);
-    }
-  }
-
-  public Future<Void> executeImportRound(final List<ImportMediator> currentImportRound) {
-    if (LOG.isDebugEnabled()) {
-      LOG.debug(
-          "Scheduling import round for {}",
-          currentImportRound.stream()
-              .map(mediator1 -> mediator1.getClass().getSimpleName())
-              .collect(Collectors.joining(",")));
-    }
-
-    final CompletableFuture<?>[] importTaskFutures =
-        currentImportRound.stream()
-            .map(
-                mediator -> {
-                  try {
-                    return mediator.runImport();
-                  } catch (final IllegalStateException e) {
-                    LOG.warn("Got into illegal state, will abort import round.", e);
-                    throw e;
-                  } catch (final Exception e) {
-                    LOG.error(
-                        "Was not able to execute import of [{}]",
-                        mediator.getClass().getSimpleName(),
-                        e);
-                    return CompletableFuture.completedFuture(null);
-                  }
-                })
-            .toArray(CompletableFuture[]::new);
-
-    return CompletableFuture.allOf(importTaskFutures);
+    importMediators.forEach(ImportMediator::shutdown);
   }
 
   public boolean isImporting() {
-    return isImporting || hasActiveImportJobs();
+    return (mediatorExecutor != null && !mediatorExecutor.isShutdown())
+        || importMediators.stream().anyMatch(ImportMediator::hasPendingImportJobs);
   }
 
   public List<ImportMediator> getImportMediators() {
     return importMediators;
   }
 
-  protected boolean hasActiveImportJobs() {
-    return importMediators.stream().anyMatch(ImportMediator::hasPendingImportJobs);
+  public T getDataImportSourceDto() {
+    return dataImportSourceDto;
   }
 
-  protected boolean nothingToBeImported(final List<?> currentImportRound) {
-    return currentImportRound.isEmpty();
-  }
-
-  protected void doBackoff() {
-    final long timeToSleep =
-        importMediators.stream()
-            .map(ImportMediator::getBackoffTimeInMs)
-            .min(Long::compare)
-            .orElse(5000L);
+  private void submitMediatorRun(final ImportMediator mediator) {
+    if (mediatorExecutor == null || mediatorExecutor.isShutdown()) {
+      return;
+    }
     try {
-      LOG.debug("No imports to schedule. Scheduler is sleeping for [{}] ms.", timeToSleep);
-      Thread.sleep(timeToSleep);
-    } catch (final InterruptedException e) {
-      LOG.error("Scheduler was interrupted while sleeping.", e);
-      Thread.currentThread().interrupt();
+      mediatorExecutor.submit(() -> runMediatorAndReschedule(mediator));
+    } catch (final RejectedExecutionException e) {
+      LOG.debug(
+          "Mediator {} not submitted, executor is shutting down.",
+          mediator.getClass().getSimpleName());
     }
   }
 
-  public T getDataImportSourceDto() {
-    return dataImportSourceDto;
+  private void runMediatorAndReschedule(final ImportMediator mediator) {
+    try {
+      mediator.runImport();
+    } catch (final Exception e) {
+      LOG.error("Was not able to execute import of [{}]", mediator.getClass().getSimpleName(), e);
+    }
+    rescheduleMediator(mediator);
+  }
+
+  private void rescheduleMediator(final ImportMediator mediator) {
+    if (mediatorExecutor == null || mediatorExecutor.isShutdown()) {
+      return;
+    }
+    final long delayMs = mediator.getBackoffTimeInMs();
+    try {
+      if (delayMs <= 0) {
+        mediatorExecutor.submit(() -> runMediatorAndReschedule(mediator));
+      } else {
+        mediatorExecutor.schedule(
+            () -> runMediatorAndReschedule(mediator), delayMs, TimeUnit.MILLISECONDS);
+      }
+    } catch (final RejectedExecutionException e) {
+      LOG.debug(
+          "Mediator {} not rescheduled, executor is shutting down.",
+          mediator.getClass().getSimpleName());
+    }
   }
 }
