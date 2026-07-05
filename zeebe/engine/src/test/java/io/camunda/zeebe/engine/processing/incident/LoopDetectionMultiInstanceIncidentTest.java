@@ -147,10 +147,12 @@ public final class LoopDetectionMultiInstanceIncidentTest {
   // ---------------------------------------------------------------------------
 
   /**
-   * A <b>parallel</b> MI with a collection larger than {@code maxActivations} activates children up
-   * to the threshold and raises the loop-detection incident on the child activation that crosses it
-   * (the {@code (maxActivations + 1)}th) — not on the multi-instance body. The batch stops at that
-   * child, so the collection is not materialised all at once.
+   * A <b>parallel</b> MI whose collection is larger than {@code maxActivations} is bounded by loop
+   * detection: children activate up to the threshold and the incident is raised on the child that
+   * crosses it (the {@code (maxActivations + 1)}th) — not on the multi-instance body — and the
+   * batch stops there instead of materialising the whole collection. This is intentional and
+   * configurable (raise {@code maxElementActivationCount} or set a per-type override for genuinely
+   * large collections), not a false positive.
    */
   @Test
   public void shouldRaiseIncidentForParallelMultiInstanceWhenCollectionExceedsMaxActivations() {
