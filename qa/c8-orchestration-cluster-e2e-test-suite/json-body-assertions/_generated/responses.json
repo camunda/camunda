@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "7e28eeef5fabc1842fbf6e6854699a13b9e37517",
-    "generatedAt": "2026-06-29T13:29:14.708Z",
+    "commit": "d876894a85b5d5392a50ad2369f096d4b2453622",
+    "generatedAt": "2026-07-05T12:30:22.508Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "0eaed7462781f2ed6afc8ecb56bf7533646dee4bd22b4f93b434dc28c81b0e3d"
+    "specSha256": "692553260a9f869de7c6bf4992f0c2b9eecfd99b1803cd3b34022c6c861881b4"
   },
   "responses": [
     {
@@ -6988,6 +6988,33 @@
                 },
                 {
                   "name": "incidents",
+                  "type": "number"
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/process-instances/{processInstanceKey}/statistics/wait-states",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "items",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "elementId",
+                  "type": "string"
+                },
+                {
+                  "name": "waitingCount",
                   "type": "number"
                 }
               ],
