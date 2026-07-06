@@ -36,12 +36,14 @@ import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
+import io.camunda.zeebe.gateway.rest.controller.GroupIdPathResolver;
 import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
 import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryResponseMapper;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -257,10 +259,12 @@ public class RoleController {
 
   @CamundaPutMapping(path = "/{roleId}/groups/{groupId}")
   public CompletableFuture<ResponseEntity<Object>> assignRoleToGroup(
-      @PathVariable final String roleId, @PathVariable final String groupId) {
+      @PathVariable final String roleId,
+      @PathVariable final String groupId,
+      final HttpServletRequest request) {
     return RequestMapper.toRoleMemberRequest(
             roleId,
-            groupId,
+            GroupIdPathResolver.resolveGroupId(request, groupId),
             EntityType.GROUP,
             securityConfiguration.getCompiledIdValidationPattern(),
             securityConfiguration.getCompiledGroupIdValidationPattern())
@@ -322,10 +326,12 @@ public class RoleController {
 
   @CamundaDeleteMapping(path = "/{roleId}/groups/{groupId}")
   public CompletableFuture<ResponseEntity<Object>> unassignRoleFromGroup(
-      @PathVariable final String roleId, @PathVariable final String groupId) {
+      @PathVariable final String roleId,
+      @PathVariable final String groupId,
+      final HttpServletRequest request) {
     return RequestMapper.toRoleMemberRequest(
             roleId,
-            groupId,
+            GroupIdPathResolver.resolveGroupId(request, groupId),
             EntityType.GROUP,
             securityConfiguration.getCompiledIdValidationPattern(),
             securityConfiguration.getCompiledGroupIdValidationPattern())
