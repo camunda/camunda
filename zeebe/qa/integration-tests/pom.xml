@@ -543,6 +543,16 @@
       <artifactId>google-cloud-storage</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>com.google.cloud</groupId>
+      <artifactId>google-cloud-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.auth</groupId>
+      <artifactId>google-auth-library-credentials</artifactId>
+      <scope>test</scope>
+    </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
@@ -553,6 +563,18 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-backup-store-azure</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.azure</groupId>
+      <artifactId>azure-storage-blob</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>document-store</artifactId>
       <scope>test</scope>
     </dependency>
 
