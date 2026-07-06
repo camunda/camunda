@@ -56,11 +56,9 @@ import org.springframework.core.env.Environment;
  *   <li>the single nested default slot ({@code authentication.oidc.*}) merges field-by-field.
  * </ul>
  *
- * <p>The one place {@code Binder} does not do the right thing on its own is the {@code providers}
- * <em>map</em>: binding the overlay key-merges the map (root-only and PT-only providers both
- * survive) but <em>replaces</em> the value object of any provider id present on both sides,
- * dropping the root fields the overlay did not restate. {@link #mergeSharedProviders} repairs that
- * by re-binding the overlay onto each pristine root provider object.
+ * <p>The {@code providers} <em>map</em> is reconciled explicitly by {@link #mergeRootProviders}
+ * rather than left to the overlay bind: every cluster (root) provider is kept, with the overlay's
+ * fields for that id applied on top, alongside any provider defined only in the overlay.
  *
  * <p>{@code method} is deliberately not taken from the overlay: it is cluster-wide and re-asserted
  * from the root after binding. Overriding it per tenant is rejected at startup by the configuration
@@ -186,13 +184,13 @@ public final class PhysicalTenantAuthConfigurations {
     // Snapshot the pristine root provider objects before the overlay bind can replace them.
     final Map<String, OidcConfiguration> rootProviders = snapshotProviders(config);
 
-    // Bind the overlay into the SAME instance: scalars override, lists replace, the default slot
-    // field-merges, and the providers map key-merges (but replaces shared values — repaired next).
+    // Bind the overlay into the SAME instance: scalars override, lists replace, and the default
+    // slot field-merges. The providers map is reconciled separately by mergeRootProviders.
     binder.bind(ptPrefix, Bindable.ofInstance(config));
 
     // method is cluster-wide, not per-tenant.
     config.setMethod(rootMethod != null ? rootMethod : AuthenticationMethod.BASIC);
-    mergeSharedProviders(binder, ptPrefix, rootProviders, config);
+    mergeRootProviders(binder, ptPrefix, rootProviders, config);
     narrowToAssigned(binder, ptPrefix, config);
     return config;
   }
@@ -254,27 +252,29 @@ public final class PhysicalTenantAuthConfigurations {
   }
 
   /**
-   * Repairs provider ids present on both root and overlay. The overlay bind replaced each such
-   * value with a fresh object carrying only the overlay's keys; here we re-bind the overlay onto
-   * the <em>pristine</em> root object so the fields the overlay omitted survive (override +
-   * list-replace + inherit, all by {@link Binder}). Root-only and PT-only providers need no repair.
+   * Sets the tenant's OIDC providers to the union of the cluster (root) providers and the
+   * per-tenant overlay: every root provider is present with the overlay's fields for that id
+   * applied on top, and providers defined only in the overlay are kept. {@code rootProviders} is
+   * the snapshot of the root providers taken before the overlay was bound onto {@code config}.
    */
-  private static void mergeSharedProviders(
+  private static void mergeRootProviders(
       final Binder binder,
       final String ptPrefix,
       final Map<String, OidcConfiguration> rootProviders,
       final AuthenticationConfiguration config) {
-    final Map<String, OidcConfiguration> merged = namedProviders(config);
-    if (merged == null) {
-      return;
+    final Map<String, OidcConfiguration> postOverlayProviders = namedProviders(config);
+    final Map<String, OidcConfiguration> union = new LinkedHashMap<>();
+    // Seed with the map as the overlay bind left it (PT-only providers, plus any partially-bound
+    // shared ids), then overwrite every root id with its pristine root object + overlay delta.
+    if (postOverlayProviders != null) {
+      union.putAll(postOverlayProviders);
     }
     rootProviders.forEach(
         (id, rootProvider) -> {
-          if (merged.containsKey(id)) {
-            binder.bind(ptPrefix + ".providers.oidc." + id, Bindable.ofInstance(rootProvider));
-            merged.put(id, rootProvider);
-          }
+          binder.bind(ptPrefix + ".providers.oidc." + id, Bindable.ofInstance(rootProvider));
+          union.put(id, rootProvider);
         });
+    config.getProviders().setOidc(union);
   }
 
   private static Map<String, OidcConfiguration> snapshotProviders(

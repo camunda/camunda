@@ -22,14 +22,13 @@ import org.springframework.core.env.Environment;
  * camunda.physical-tenants.<id>.security.authentication.*} on top of the root {@code
  * camunda.security.authentication.*} config.
  *
- * <p>Uses a snapshot-then-rebind strategy to avoid Spring's {@link Binder} replacing entire map
- * entries on partial field overrides. When a tenant overrides only some fields of a named OIDC
- * provider (e.g. {@code client-id}, {@code client-secret}, {@code audiences}), {@link Binder} would
- * replace the whole map entry with a fresh {@link OidcConfiguration} built only from the
- * PT-specific keys, silently losing root fields like {@code issuer-uri}, {@code username-claim},
- * and {@code redirect-uri}. This class avoids that by snapshotting the root POJOs first, running
- * the PT overlay, then re-binding the PT overlay keys onto the pristine root POJO for any shared
- * provider id so that Binder applies the PT delta on top of a fully-populated root object.
+ * <p>The root config is bound first, its providers are snapshotted, then the PT overlay is bound on
+ * top and the {@code providers} map is reconciled by {@link #mergeRootProviders}: every root
+ * provider is kept with the overlay's fields for that id applied on top, alongside any provider
+ * defined only in the overlay. This is needed because binding the overlay onto the root instance
+ * would otherwise replace a shared provider's value object with one holding only the PT-specific
+ * keys (losing root fields like {@code issuer-uri}), and an empty overlay {@code providers} map
+ * would reset the whole map (dropping the inherited providers).
  */
 @NullMarked
 public final class PhysicalTenantAuthenticationConfigurations {
@@ -56,33 +55,35 @@ public final class PhysicalTenantAuthenticationConfigurations {
     final String ptPrefix = PT_PREFIX_TEMPLATE.formatted(tenantId);
     binder.bind(ptPrefix, Bindable.ofInstance(auth));
 
-    mergeSharedProviders(auth, rootOidc, binder, ptPrefix);
+    mergeRootProviders(auth, rootOidc, binder, ptPrefix);
 
     return auth;
   }
 
   /**
-   * Re-binds the PT overlay onto the pristine root POJOs for any provider id that existed in both
-   * root and PT configs. Without this step a tenant that overrides only some fields of a shared
-   * provider would lose all other root-level fields because Spring's {@link Binder} replaces the
-   * entire map entry on the first matching key.
+   * Sets the tenant's OIDC providers to the union of the root providers and the PT overlay: every
+   * root provider is present with the overlay's fields for that id applied on top, and providers
+   * defined only in the overlay are kept. {@code rootOidc} is the snapshot of the root providers
+   * taken before the overlay was bound onto {@code auth}.
    */
-  private static void mergeSharedProviders(
+  private static void mergeRootProviders(
       final AuthenticationConfiguration auth,
       final Map<String, OidcConfiguration> rootOidc,
       final Binder binder,
       final String ptPrefix) {
-    final Map<String, OidcConfiguration> resolvedOidc = auth.getProviders().getOidc();
+    final Map<String, OidcConfiguration> postOverlayProviders = auth.getProviders().getOidc();
+    final Map<String, OidcConfiguration> union = new LinkedHashMap<>();
+    // Seed with the map as the overlay bind left it (PT-only providers, plus any partially-bound
+    // shared ids), then overwrite every root id with its pristine root object + overlay delta.
+    if (postOverlayProviders != null) {
+      union.putAll(postOverlayProviders);
+    }
     rootOidc.forEach(
         (providerId, rootProvider) -> {
-          if (resolvedOidc.containsKey(providerId)) {
-            // Apply the PT delta onto the pristine root POJO, then swap it back in for the
-            // Binder-created entry that holds only the PT-specified fields. Both steps are
-            // required: the bind layers the override, the put restores the merged result.
-            binder.bind(
-                ptPrefix + ".providers.oidc." + providerId, Bindable.ofInstance(rootProvider));
-            resolvedOidc.put(providerId, rootProvider);
-          }
+          binder.bind(
+              ptPrefix + ".providers.oidc." + providerId, Bindable.ofInstance(rootProvider));
+          union.put(providerId, rootProvider);
         });
+    auth.getProviders().setOidc(union);
   }
 }
