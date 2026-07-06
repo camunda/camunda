@@ -55,6 +55,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.TestTemplate;
 
 public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInstanceArchiverJob>
@@ -431,6 +432,60 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
               verifyMoved(dependent.template(), client, entity, "2020-01-01");
             }
           }
+        });
+  }
+
+  @TestTemplate
+  void shouldNotDeleteDocumentsWhenReindexDoesNotFullySucceed(
+      final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
+    withArchiverJob(
+        config,
+        (job, resourceProvider) -> {
+          // given - a finished process instance together with its dependent records
+          final var listViewTemplate =
+              resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
+          final ProcessInstanceForListViewEntity processInstance =
+              processInstanceForListViewEntity("2026-01-01T00:00:00+00:00");
+          final var dependents =
+              getProcessInstanceDependentEntities(resourceProvider, processInstance);
+
+          store(listViewTemplate, client, processInstance);
+          for (final var dependent : dependents) {
+            for (final var entity : dependent.entities()) {
+              store(dependent.template(), client, entity);
+            }
+          }
+          client.refresh();
+
+          // and - every dated destination index is pre-created with a write block, so the reindex
+          // step cannot copy any document. Elasticsearch will report the rejected writes in
+          // failures[] array in an HTTP 200 reindex response (no exception), which the archiver
+          // must detect before deleting the source documents.
+          final var datedSuffix = "2026-01-01";
+          client.createIndexWithWriteBlock(listViewTemplate.getFullQualifiedName() + datedSuffix);
+          for (final var dependent : dependents) {
+            client.createIndexWithWriteBlock(
+                dependent.template().getFullQualifiedName() + datedSuffix);
+          }
+
+          // when
+          final var result = job.execute().toCompletableFuture();
+          Awaitility.await("until the archive job has finished")
+              .atMost(ARCHIVE_TIMEOUT)
+              .until(result::isDone);
+          client.refresh();
+
+          // then - nothing was copied to the write-blocked dated indices, so no source document may
+          // have been deleted: the reindex failure must never lead to silent data loss
+          verifyNotMoved(listViewTemplate, client, processInstance);
+          for (final var dependent : dependents) {
+            for (final var entity : dependent.entities()) {
+              verifyNotMoved(dependent.template(), client, entity);
+            }
+          }
+
+          // and - the failure must be surfaced to the caller instead of being silently swallowed
+          assertThat(result).isCompletedExceptionally();
         });
   }
 
