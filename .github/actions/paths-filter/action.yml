@@ -242,6 +242,15 @@ outputs:
         steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-load-test-setup.outputs.load-test-setup-change == 'true'
       }}
+  scripts-changes:
+    description: Output whether any file under .github/scripts/ changed, so its Python unit tests should be run
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.ci-github-actions.outputs.ci-relevant == 'true' ||
+        steps.filter-scripts.outputs.scripts-change == 'true'
+      }}
 
 runs:
   using: composite
@@ -473,6 +482,15 @@ runs:
         load-test-setup-change:
           - 'load-tests/setup/**'
           - '.tool-versions'
+
+  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+    id: filter-scripts
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      filters: |
+        scripts-change:
+          - '.github/scripts/**'
 
   # only works `on: push` and `on: pull_request` GitHub trigger events
   - id: filter-special-branch

@@ -68,6 +68,7 @@ jobs:
       c8-e2e-test-suite-changes: ${{ steps.filter.outputs.c8-e2e-test-suite-changes }}
       deps-changed: ${{ steps.filter.outputs.deps-changed }}
       load-test-setup-changes: ${{ steps.filter.outputs.load-test-setup-changes }}
+      scripts-changes: ${{ steps.filter.outputs.scripts-changes }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -2364,6 +2365,31 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
+  scripts-tests:
+    if: needs.detect-changes.outputs.scripts-changes == 'true'
+    name: "Scripts / Python Unit Tests"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        timeout-minutes: 1
+      - name: Install pytest
+        run: pip install --quiet pytest
+      - name: Run unit tests
+        run: pytest .github/scripts
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   check-results:
     # Used by the merge queue to check all tests, including the unit test matrix.
     # New test jobs must be added to the `needs` lists!
@@ -2409,6 +2435,7 @@ jobs:
       - protobuf-checks
       - rdbms-integration-tests
       - renovatelint
+      - scripts-tests
       - setup-tests
       - shell-script-tests
       - tasklist-ci
