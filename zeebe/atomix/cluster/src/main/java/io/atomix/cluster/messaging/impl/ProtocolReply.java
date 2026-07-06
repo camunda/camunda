@@ -45,10 +45,7 @@ public final class ProtocolReply extends ProtocolMessage {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this)
-        .add("id", id())
-        .add("status", status())
-        .toString();
+    return MoreObjects.toStringHelper(this).add("id", id()).add("status", status()).toString();
   }
 
   /** Message status. */

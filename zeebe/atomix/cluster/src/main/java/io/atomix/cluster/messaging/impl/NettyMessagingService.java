@@ -398,7 +398,8 @@ public final class NettyMessagingService implements ManagedMessagingService {
 
   @Override
   public void registerHandlerWithManagedPayload(
-      final String type, final BiFunction<Address, byte[], CompletableFuture<ManagedPayload>> handler) {
+      final String type,
+      final BiFunction<Address, byte[], CompletableFuture<ManagedPayload>> handler) {
     handlers.register(
         type,
         (message, connection) -> {
@@ -429,7 +430,8 @@ public final class NettyMessagingService implements ManagedMessagingService {
                       status = ProtocolReply.Status.ERROR_HANDLER_EXCEPTION;
                       final String exceptionMessage = error.getMessage();
                       if (exceptionMessage != null) {
-                        responsePayload = new ByteArrayPayload(StringUtil.getBytes(error.getMessage()));
+                        responsePayload =
+                            new ByteArrayPayload(StringUtil.getBytes(error.getMessage()));
                       }
                     }
                     connection.reply(id, status, responsePayload);
