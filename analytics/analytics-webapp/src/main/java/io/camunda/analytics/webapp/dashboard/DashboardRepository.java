@@ -16,9 +16,13 @@ import io.camunda.analytics.metric.RatioResult;
 import io.camunda.analytics.query.DatasetQueryExecutor;
 import io.camunda.analytics.query.ReportQuery;
 import io.camunda.analytics.query.ReportRow;
+import io.camunda.analytics.query.TableQuery;
+import io.camunda.analytics.query.TableQueryExecutor;
+import io.camunda.analytics.serving.spi.TableRow;
 import io.camunda.analytics.sketch.DistinctCountResult;
 import io.camunda.analytics.sketch.QuantileResult;
 import io.camunda.analytics.sketch.TopKResult;
+import io.camunda.analytics.table.ProcessDefinitionSink;
 import io.camunda.analytics.webapp.DatasetCatalog;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -43,10 +47,15 @@ public class DashboardRepository {
 
   private final DatasetQueryExecutor executor;
   private final DatasetCatalog catalog;
+  private final TableQueryExecutor tableExecutor;
 
-  public DashboardRepository(final DatasetQueryExecutor executor, final DatasetCatalog catalog) {
+  public DashboardRepository(
+      final DatasetQueryExecutor executor,
+      final DatasetCatalog catalog,
+      final TableQueryExecutor tableExecutor) {
     this.executor = executor;
     this.catalog = catalog;
+    this.tableExecutor = tableExecutor;
   }
 
   /** Process ids the process-instances cube has data for (for the process picker). */
@@ -355,9 +364,26 @@ public class DashboardRepository {
     return out;
   }
 
-  /** BPMN diagram XML is not modeled in a dataset, so no diagram is available. */
+  /**
+   * The deployed BPMN diagram XML for a process, read from the built-in process-definitions table
+   * that {@link ProcessDefinitionSink} writes. Feeds the flow-node and incident heatmaps, which
+   * overlay per-element metrics on the rendered diagram. Returns the highest version seen if a
+   * process was redeployed; empty if the definition has not been observed yet.
+   */
   public Optional<String> diagramXml(final String bpmnProcessId) {
-    return Optional.empty();
+    final List<TableRow> rows =
+        tableExecutor.execute(
+            new TableQuery(List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)), 100),
+            ProcessDefinitionSink.TABLE);
+    return rows.stream()
+        .max(Comparator.comparingLong(r -> asLong(r.values().get("version"))))
+        .map(r -> r.values().get("bpmnXml"))
+        .filter(String.class::isInstance)
+        .map(String.class::cast);
+  }
+
+  private static long asLong(final Object value) {
+    return value instanceof final Number n ? n.longValue() : 0L;
   }
 
   private static String elementId(final ReportRow row) {
