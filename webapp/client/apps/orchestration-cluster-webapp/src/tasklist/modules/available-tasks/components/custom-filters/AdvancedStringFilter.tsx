@@ -7,6 +7,7 @@
  */
 
 import {useState} from 'react';
+import {t} from 'i18next';
 import {Dropdown, TextInput} from '@carbon/react';
 import {Field, type FieldInputProps} from 'react-final-form';
 import {useTranslation} from 'react-i18next';
@@ -17,6 +18,24 @@ import {
 	type AdvancedStringFilterOperator,
 } from '#/tasklist/modules/available-tasks/advancedStringFilter';
 import styles from './AdvancedStringFilter.module.scss';
+
+const OPERATOR_CONFIG: Record<AdvancedStringFilterOperator, {label: string; placeholder?: string}> = {
+	$eq: {label: t('tasklist.customFiltersModalOperatorEquals')},
+	$neq: {label: t('tasklist.customFiltersModalOperatorNotEquals')},
+	$like: {label: t('tasklist.customFiltersModalOperatorContains')},
+	$in: {
+		label: t('tasklist.customFiltersModalOperatorIsOneOf'),
+		placeholder: t('tasklist.customFiltersModalOperatorListPlaceholder'),
+	},
+	$notIn: {
+		label: t('tasklist.customFiltersModalOperatorIsNotOneOf'),
+		placeholder: t('tasklist.customFiltersModalOperatorListPlaceholder'),
+	},
+	$exists: {
+		label: t('tasklist.customFiltersModalOperatorExists'),
+		placeholder: t('tasklist.customFiltersModalOperatorExistsPlaceholder'),
+	},
+};
 
 type Props = {
 	name: string;
@@ -40,23 +59,6 @@ type FieldProps = {
 
 const AdvancedStringFilterField: React.FC<FieldProps> = ({input, label, selectableOperators}) => {
 	const {t} = useTranslation();
-	const OPERATOR_CONFIG: Record<AdvancedStringFilterOperator, {label: string; placeholder?: string}> = {
-		$eq: {label: t('tasklist.customFiltersModalOperatorEquals')},
-		$neq: {label: t('tasklist.customFiltersModalOperatorNotEquals')},
-		$like: {label: t('tasklist.customFiltersModalOperatorContains')},
-		$in: {
-			label: t('tasklist.customFiltersModalOperatorIsOneOf'),
-			placeholder: t('tasklist.customFiltersModalOperatorListPlaceholder'),
-		},
-		$notIn: {
-			label: t('tasklist.customFiltersModalOperatorIsNotOneOf'),
-			placeholder: t('tasklist.customFiltersModalOperatorListPlaceholder'),
-		},
-		$exists: {
-			label: t('tasklist.customFiltersModalOperatorExists'),
-			placeholder: t('tasklist.customFiltersModalOperatorExistsPlaceholder'),
-		},
-	};
 
 	const filter = splitEncodedFilterOperation(input.value ?? '');
 
