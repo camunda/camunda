@@ -39,9 +39,12 @@ import java.net.ConnectException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.annotation.DeleteOperation;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
@@ -188,36 +191,51 @@ public final class BackupEndpoint {
   }
 
   private WebEndpointResponse<?> state() {
-    try {
-      final var checkpointStateFuture = api.getCheckpointState().toCompletableFuture();
-      final var rangesFuture = api.getBackupRanges().toCompletableFuture();
-      final var checkpointState = checkpointStateFuture.join();
-      final var ranges = rangesFuture.join();
-      return new WebEndpointResponse<>(toCheckpointState(checkpointState, ranges));
-    } catch (final Exception e) {
-      return mapErrorResponse(e);
-    }
+    final var checkpointStateFuture =
+        api.getCheckpointState().toCompletableFuture().handle((v, e) -> v);
+    final var rangesFuture = api.getBackupRanges().toCompletableFuture().handle((v, e) -> v);
+    final var checkpointState = checkpointStateFuture.join();
+    final var ranges = rangesFuture.join();
+    return new WebEndpointResponse<>(toCheckpointState(checkpointState, ranges));
   }
 
   private CheckpointState toCheckpointState(
       final CheckpointStateResponse checkpointState, final BackupRangesResponse ranges) {
     final var response = new CheckpointState();
-    response.setCheckpointStates(
-        checkpointState.getCheckpointStates().stream()
-            .map(this::toCheckpointState)
-            .sorted(Comparator.comparingInt(PartitionCheckpointState::getPartitionId))
-            .toList());
-    response.setBackupStates(
-        checkpointState.getBackupStates().stream()
-            .map(this::toBackupState)
-            .sorted(Comparator.comparingInt(PartitionBackupState::getPartitionId))
-            .toList());
-    response.setRanges(
-        ranges.getRanges().stream()
-            .map(this::toRange)
-            .sorted(Comparator.comparingInt(PartitionBackupRange::getPartitionId))
-            .toList());
+    final var checkpointStates =
+        mapResponse(
+            checkpointState,
+            CheckpointStateResponse::getCheckpointStates,
+            this::toCheckpointState,
+            Comparator.comparingInt(PartitionCheckpointState::getPartitionId));
+    final var backupStates =
+        mapResponse(
+            checkpointState,
+            CheckpointStateResponse::getBackupStates,
+            this::toBackupState,
+            Comparator.comparingInt(PartitionBackupState::getPartitionId));
+    final var rangeState =
+        mapResponse(
+            ranges,
+            BackupRangesResponse::getRanges,
+            this::toRange,
+            Comparator.comparingInt(PartitionBackupRange::getPartitionId));
+
+    response.setCheckpointStates(checkpointStates);
+    response.setBackupStates(backupStates);
+    response.setRanges(rangeState);
     return response;
+  }
+
+  private static <S, T, R> List<R> mapResponse(
+      final S source,
+      final Function<S, ? extends Collection<T>> extractor,
+      final Function<T, R> mapper,
+      final Comparator<R> comparator) {
+    if (source == null) {
+      return List.of();
+    }
+    return extractor.apply(source).stream().map(mapper).sorted(comparator).toList();
   }
 
   private PartitionCheckpointState toCheckpointState(

@@ -14,7 +14,6 @@ import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupRange;
 import io.camunda.zeebe.backup.api.BackupRangeStatus;
 import io.camunda.zeebe.backup.api.BackupStatus;
-import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.api.Checkpoint;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
@@ -30,7 +29,6 @@ import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Optional;
 import java.util.SequencedCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -126,52 +124,6 @@ public final class BackupService extends Actor implements BackupManager {
   }
 
   @Override
-  public ActorFuture<BackupStatus> getBackupStatus(final long checkpointId) {
-    final var operationMetrics = metrics.startQueryingStatus();
-
-    final var future = new CompletableActorFuture<BackupStatus>();
-    internalBackupManager
-        .getBackupStatus(partitionId.number(), checkpointId, actor)
-        .onComplete(
-            (backupStatus, throwable) -> {
-              if (throwable != null) {
-                LOG.warn("Failed to query status of backup {}", checkpointId, throwable);
-                future.completeExceptionally(throwable);
-              } else {
-                if (backupStatus.isEmpty()) {
-                  future.complete(
-                      new BackupStatusImpl(
-                          getBackupId(checkpointId),
-                          Optional.empty(),
-                          BackupStatusCode.DOES_NOT_EXIST,
-                          Optional.empty(),
-                          Optional.empty(),
-                          Optional.empty()));
-                } else {
-                  future.complete(backupStatus.get());
-                }
-              }
-            });
-    future.onComplete(operationMetrics::complete);
-    return future;
-  }
-
-  @Override
-  public ActorFuture<Collection<BackupStatus>> listBackups(final String pattern) {
-    final var operationMetrics = metrics.startListingBackups();
-    final var resultFuture =
-        internalBackupManager.listBackups(partitionId.number(), pattern, actor);
-    resultFuture.onComplete(operationMetrics::complete);
-    resultFuture.onComplete(
-        (ignore, error) -> {
-          if (error != null) {
-            LOG.warn("Failed to list backups", error);
-          }
-        });
-    return resultFuture;
-  }
-
-  @Override
   public ActorFuture<Void> requestBackupDeletion(final long checkpointId) {
     return internalBackupManager.writeBackupDeletionCommand(checkpointId, actor);
   }
@@ -211,11 +163,6 @@ public final class BackupService extends Actor implements BackupManager {
   }
 
   @Override
-  public ActorFuture<Collection<BackupRangeStatus>> getBackupRangeStatus() {
-    return internalBackupManager.getBackupRangeStatus(actor);
-  }
-
-  @Override
   public ActorFuture<Collection<BackupRangeStatus>> syncMetadata(
       final SequencedCollection<Checkpoint> checkpoints,
       final SequencedCollection<BackupRange> ranges) {
@@ -225,6 +172,50 @@ public final class BackupService extends Actor implements BackupManager {
   @Override
   public ActorFuture<Void> requestStateClear() {
     return internalBackupManager.writeClearStateCommand(actor);
+  }
+
+  @Override
+  public ActorFuture<BackupStatus> getBackupStatus(final long checkpointId) {
+    final var operationMetrics = metrics.startQueryingStatus();
+
+    final var future = new CompletableActorFuture<BackupStatus>();
+    internalBackupManager
+        .getBackupStatus(partitionId.number(), checkpointId, actor)
+        .onComplete(
+            (backupStatus, throwable) -> {
+              if (throwable != null) {
+                LOG.warn("Failed to query status of backup {}", checkpointId, throwable);
+                future.completeExceptionally(throwable);
+              } else {
+                if (backupStatus.isEmpty()) {
+                  future.complete(BackupStatusImpl.doesNotExist(getBackupId(checkpointId)));
+                } else {
+                  future.complete(backupStatus.get());
+                }
+              }
+            });
+    future.onComplete(operationMetrics::complete);
+    return future;
+  }
+
+  @Override
+  public ActorFuture<Collection<BackupStatus>> listBackups(final String pattern) {
+    final var operationMetrics = metrics.startListingBackups();
+    final var resultFuture =
+        internalBackupManager.listBackups(partitionId.number(), pattern, actor);
+    resultFuture.onComplete(operationMetrics::complete);
+    resultFuture.onComplete(
+        (ignore, error) -> {
+          if (error != null) {
+            LOG.warn("Failed to list backups", error);
+          }
+        });
+    return resultFuture;
+  }
+
+  @Override
+  public ActorFuture<Collection<BackupRangeStatus>> getBackupRangeStatus() {
+    return internalBackupManager.getBackupRangeStatus(actor);
   }
 
   private BackupIdentifierImpl getBackupId(final long checkpointId) {

@@ -70,6 +70,14 @@ public abstract class BrokerRequest<T> implements ClientRequest {
 
   public abstract boolean requiresPartitionId();
 
+  /**
+   * Whether this request may be routed to a partition that has no elected leader but has a node in
+   * recovery mode.
+   */
+  public boolean shouldRouteToRecovery() {
+    return false;
+  }
+
   // public so we can do assertions in tests
   public abstract BufferWriter getRequestWriter();
 
