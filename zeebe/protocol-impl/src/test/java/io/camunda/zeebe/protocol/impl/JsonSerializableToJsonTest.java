@@ -791,7 +791,8 @@ final class JsonSerializableToJsonTest {
                       .setTimeout(timeout)
                       .setType(type)
                       .setWorker(worker)
-                      .setTruncated(true);
+                      .setTruncated(true)
+                      .setWithLease(true);
 
               record.jobKeys().add().setValue(3L);
               final JobRecord jobRecord = record.jobs().add();
@@ -867,6 +868,7 @@ final class JsonSerializableToJsonTest {
                   "type": "type",
                   "worker": "worker",
                   "truncated": true,
+                  "withLease": true,
                   "jobKeys": [
                     3
                   ],
@@ -965,6 +967,7 @@ final class JsonSerializableToJsonTest {
                   "type": "type",
                   "maxJobsToActivate": -1,
                   "truncated": false,
+                  "withLease": false,
                   "jobKeys": [],
                   "jobs": [],
                   "timeout": -1,

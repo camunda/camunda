@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
+import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.util.SemanticVersion;
@@ -44,6 +45,7 @@ final class BulkIndexRequest {
           .addMixIn(CommandDistributionRecordValue.class, CommandDistributionMixin.class)
           .addMixIn(EvaluatedDecisionValue.class, EvaluatedDecisionMixin.class)
           .addMixIn(JobRecordValue.class, JobMixin.class)
+          .addMixIn(JobBatchRecordValue.class, JobBatchMixin.class)
           .addMixIn(UserTaskRecordValue.class, BusinessIdMixin.class)
           .addMixIn(DecisionEvaluationRecordValue.class, BusinessIdMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
@@ -61,6 +63,7 @@ final class BulkIndexRequest {
   private static final String ELEMENT_TYPE_PROPERTY = "elementType";
   private static final String BUSINESS_ID_PROPERTY = "businessId";
   private static final String LEASE_TOKEN_PROPERTY = "leaseToken";
+  private static final String WITH_LEASE_PROPERTY = "withLease";
   private final List<IndexOperation> operations = new ArrayList<>();
   private BulkIndexAction lastIndexedMetadata;
   private int memoryUsageBytes = 0;
@@ -187,6 +190,9 @@ final class BulkIndexRequest {
     LEASE_TOKEN_PROPERTY
   })
   private static final class JobMixin {}
+
+  @JsonIgnoreProperties({WITH_LEASE_PROPERTY})
+  private static final class JobBatchMixin {}
 
   /** Shared by record values that only need to strip {@code businessId} for previous versions. */
   @JsonIgnoreProperties({BUSINESS_ID_PROPERTY})

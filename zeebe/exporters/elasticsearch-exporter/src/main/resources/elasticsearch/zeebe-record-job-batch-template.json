@@ -181,6 +181,9 @@
             "truncated": {
               "type": "boolean"
             },
+            "withLease": {
+              "type": "boolean"
+            },
             "tenantIds": {
               "type": "keyword"
             },
