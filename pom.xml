@@ -85,7 +85,7 @@
               <exclude>.claude/skills/**/*.md</exclude>
               <exclude>.github/agents/**/*.md</exclude>
             </excludes>
-            <flexmark></flexmark>
+            <flexmark/>
           </markdown>
         </configuration>
       </plugin>

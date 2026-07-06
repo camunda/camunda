@@ -280,7 +280,8 @@ public class EmbeddedFormHandlerTest {
   }
 
   private String formJson() {
-    return """
+    return
+"""
 {
   "components": [
     {
