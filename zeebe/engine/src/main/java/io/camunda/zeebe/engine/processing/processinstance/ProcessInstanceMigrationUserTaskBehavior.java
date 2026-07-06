@@ -31,7 +31,6 @@ import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -170,7 +169,7 @@ public class ProcessInstanceMigrationUserTaskBehavior {
       commandWriter.appendFollowUpCommand(
           jobKey,
           AgentHistoryIntent.DISCARD,
-          new AgentHistoryRecord().setJobKey(jobKey).setJobLease(JobRecord.EMPTY_LEASE));
+          new AgentHistoryRecord().setJobKey(jobKey).ignoreLease());
     }
   }
 

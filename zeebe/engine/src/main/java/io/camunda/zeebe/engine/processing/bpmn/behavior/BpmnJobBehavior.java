@@ -735,7 +735,7 @@ public final class BpmnJobBehavior {
         commandWriter.appendFollowUpCommand(
             jobKey,
             AgentHistoryIntent.DISCARD,
-            new AgentHistoryRecord().setJobKey(jobKey).setJobLease(JobRecord.EMPTY_LEASE));
+            new AgentHistoryRecord().setJobKey(jobKey).ignoreLease());
       }
     }
   }

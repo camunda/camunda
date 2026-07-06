@@ -63,7 +63,7 @@ public final class JobCancelProcessor implements TypedRecordProcessor<JobRecord>
         commandWriter.appendFollowUpCommand(
             jobKey,
             AgentHistoryIntent.DISCARD,
-            new AgentHistoryRecord().setJobKey(jobKey).setJobLease(JobRecord.EMPTY_LEASE));
+            new AgentHistoryRecord().setJobKey(jobKey).ignoreLease());
       }
     } else {
       rejectionWriter.appendRejection(
