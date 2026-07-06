@@ -8,7 +8,6 @@
 
 import type {ErrorComponentProps} from '@tanstack/react-router';
 import {requestErrorSchema} from '#/shared/http/request';
-import {EmptyProcessXmlError} from '#/shared/errors';
 import {TaskDetailsProcessError} from './TaskDetailsProcessError';
 
 const TaskDetailsProcessRouteError: React.FC<ErrorComponentProps> = ({error, reset}) => {
@@ -16,10 +15,6 @@ const TaskDetailsProcessRouteError: React.FC<ErrorComponentProps> = ({error, res
 
 	if (result.success && result.data.response?.status === 403) {
 		return <TaskDetailsProcessError variant="forbidden" />;
-	}
-
-	if (error instanceof EmptyProcessXmlError) {
-		return <TaskDetailsProcessError variant="generic" onRetry={reset} />;
 	}
 
 	return <TaskDetailsProcessError variant="generic" onRetry={reset} />;
