@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration.physicaltenants;
 
+import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Document;
 import io.camunda.configuration.Document.AwsStore;
 import io.camunda.configuration.Document.AzureStore;
@@ -14,93 +15,51 @@ import io.camunda.configuration.Document.GcpStore;
 import io.camunda.configuration.Document.InMemoryStore;
 import io.camunda.configuration.Document.LocalStore;
 import io.camunda.configuration.UnifiedConfigurationException;
-import java.util.LinkedHashMap;
+import io.camunda.configuration.physicaltenants.MapOverlaySpec.MapDescriptor;
+import io.camunda.configuration.physicaltenants.MapOverlaySpec.OverlayContext;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.boot.context.properties.bind.Bindable;
-import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.core.env.Environment;
 
 /**
- * Resolves a per-tenant {@link Document} by overlaying {@code
- * camunda.physical-tenants.<id>.document.*} on top of the root {@code camunda.document.*} catalog.
- * Uses a snapshot-then-rebind strategy so a tenant that overrides only some fields of a shared
- * store doesn't silently lose the root fields it didn't override.
+ * Per-tenant {@link Document} resolution: the map merge itself is the generic {@link
+ * PhysicalTenantMapOverlay} (registered via {@link #SPEC}); this class contributes only the
+ * document-specific policy that rides on the spec's {@code postProcess} hook — store-id uniqueness
+ * across provider types and narrowing the catalog to the tenant's {@code assigned} list.
  */
 @NullMarked
 public final class PhysicalTenantDocumentConfigurations {
 
-  private static final String ROOT_PREFIX = "camunda.document";
-  private static final String PT_PREFIX_TEMPLATE = "camunda.physical-tenants.%s.document";
+  static final MapOverlaySpec<Document> SPEC =
+      new MapOverlaySpec<>(
+          "document",
+          Document.class,
+          Document::new,
+          List.of(
+              new MapDescriptor<Document, AwsStore>("aws", AwsStore.class, Document::getAws),
+              new MapDescriptor<Document, GcpStore>("gcp", GcpStore.class, Document::getGcp),
+              new MapDescriptor<Document, AzureStore>(
+                  "azure", AzureStore.class, Document::getAzure),
+              new MapDescriptor<Document, LocalStore>(
+                  "local", LocalStore.class, Document::getLocal),
+              new MapDescriptor<Document, InMemoryStore>(
+                  "in-memory", InMemoryStore.class, Document::getInMemory)),
+          MapOverlaySpec.noHook(),
+          PhysicalTenantDocumentConfigurations::postProcess,
+          Camunda::setDocument);
 
   private PhysicalTenantDocumentConfigurations() {}
 
   public static Document forPhysicalTenant(final String tenantId, final Environment environment) {
-    final Binder binder = Binder.get(environment);
-
-    final Document doc =
-        binder.bind(ROOT_PREFIX, Bindable.of(Document.class)).orElseGet(Document::new);
-
-    final Map<String, AwsStore> rootAws = new LinkedHashMap<>(doc.getAws());
-    final Map<String, GcpStore> rootGcp = new LinkedHashMap<>(doc.getGcp());
-    final Map<String, AzureStore> rootAzure = new LinkedHashMap<>(doc.getAzure());
-    final Map<String, LocalStore> rootLocal = new LinkedHashMap<>(doc.getLocal());
-    final Map<String, InMemoryStore> rootInMemory = new LinkedHashMap<>(doc.getInMemory());
-
-    final String ptPrefix = PT_PREFIX_TEMPLATE.formatted(tenantId);
-    binder.bind(ptPrefix, Bindable.ofInstance(doc));
-
-    mergeSharedStores(doc, rootAws, rootGcp, rootAzure, rootLocal, rootInMemory, binder, ptPrefix);
-
-    validateStoreIdUniqueness(tenantId, doc);
-
-    narrowToAssigned(tenantId, doc, binder, ptPrefix);
-
-    return doc;
+    return PhysicalTenantMapOverlay.overlay(SPEC, tenantId, environment);
   }
 
-  private static void mergeSharedStores(
-      final Document doc,
-      final Map<String, AwsStore> rootAws,
-      final Map<String, GcpStore> rootGcp,
-      final Map<String, AzureStore> rootAzure,
-      final Map<String, LocalStore> rootLocal,
-      final Map<String, InMemoryStore> rootInMemory,
-      final Binder binder,
-      final String ptPrefix) {
-
-    rootAws.forEach(
-        (storeId, rootStore) -> {
-          binder.bind(ptPrefix + ".aws." + storeId, Bindable.ofInstance(rootStore));
-          doc.getAws().put(storeId, rootStore);
-        });
-
-    rootGcp.forEach(
-        (storeId, rootStore) -> {
-          binder.bind(ptPrefix + ".gcp." + storeId, Bindable.ofInstance(rootStore));
-          doc.getGcp().put(storeId, rootStore);
-        });
-
-    rootAzure.forEach(
-        (storeId, rootStore) -> {
-          binder.bind(ptPrefix + ".azure." + storeId, Bindable.ofInstance(rootStore));
-          doc.getAzure().put(storeId, rootStore);
-        });
-
-    rootLocal.forEach(
-        (storeId, rootStore) -> {
-          binder.bind(ptPrefix + ".local." + storeId, Bindable.ofInstance(rootStore));
-          doc.getLocal().put(storeId, rootStore);
-        });
-
-    rootInMemory.forEach(
-        (storeId, rootStore) -> {
-          binder.bind(ptPrefix + ".in-memory." + storeId, Bindable.ofInstance(rootStore));
-          doc.getInMemory().put(storeId, rootStore);
-        });
+  private static void postProcess(final OverlayContext context, final Document doc) {
+    validateStoreIdUniqueness(context.tenantId(), doc);
+    narrowToAssigned(context, doc);
   }
 
   private static void validateStoreIdUniqueness(final String tenantId, final Document doc) {
@@ -131,10 +90,12 @@ public final class PhysicalTenantDocumentConfigurations {
     }
   }
 
-  private static void narrowToAssigned(
-      final String tenantId, final Document doc, final Binder binder, final String ptPrefix) {
+  private static void narrowToAssigned(final OverlayContext context, final Document doc) {
     final List<String> assigned =
-        binder.bind(ptPrefix + ".assigned", Bindable.listOf(String.class)).orElse(null);
+        context
+            .binder()
+            .bind(context.ptPrefix() + ".assigned", Bindable.listOf(String.class))
+            .orElse(null);
     if (assigned == null || assigned.isEmpty()) {
       return;
     }
@@ -157,7 +118,7 @@ public final class PhysicalTenantDocumentConfigurations {
     if (defaultStoreId != null && !assignedIds.contains(defaultStoreId)) {
       throw new UnifiedConfigurationException(
           "Physical tenant '"
-              + tenantId
+              + context.tenantId()
               + "' sets 'default-store-id' to '"
               + defaultStoreId
               + "' but that store is not in its 'assigned' list "

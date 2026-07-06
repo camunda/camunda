@@ -54,7 +54,7 @@ import org.springframework.core.env.Environment;
 public final class PhysicalTenantResolver implements PhysicalTenantIds {
 
   static final int MAX_TENANT_ID_LENGTH = 64;
-  private static final String PHYSICAL_TENANTS_PREFIX = Camunda.PREFIX + ".physical-tenants";
+  static final String PHYSICAL_TENANTS_PREFIX = Camunda.PREFIX + ".physical-tenants";
   static final ConfigurationPropertyName PREFIX_NAME =
       ConfigurationPropertyName.of(PHYSICAL_TENANTS_PREFIX);
   // Mirrored in PhysicalTenantScopeProvider (authentication module) — see the note there for why
@@ -97,16 +97,10 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
       binder.bind(Camunda.PREFIX, Bindable.ofInstance(physicalTenant));
       binder.bind(
           PHYSICAL_TENANTS_PREFIX + "." + physicalTenantId, Bindable.ofInstance(physicalTenant));
-      // The two binds above leave security.authentication with the MapBinder defect for named OIDC
-      // providers (a partial PT override drops the entry's root fields). Recompute it with the
-      // merge-aware resolver, which binds an isolated per-tenant copy and overlays the PT delta.
-      physicalTenant
-          .getSecurity()
-          .setAuthentication(
-              PhysicalTenantAuthenticationConfigurations.forPhysicalTenant(
-                  physicalTenantId, environment));
-      physicalTenant.setDocument(
-          PhysicalTenantDocumentConfigurations.forPhysicalTenant(physicalTenantId, environment));
+      // The two binds above leave typed-POJO maps (named OIDC providers, document stores) with the
+      // MapBinder defect: a partial PT override drops the entry's root fields. Recompute every
+      // registered map config with the merge-aware overlay engine.
+      PhysicalTenantMapOverlays.apply(physicalTenant, physicalTenantId, environment);
       resolvedPhysicalTenants.put(physicalTenantId, physicalTenant);
     }
     if (!resolvedPhysicalTenants.containsKey(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)) {

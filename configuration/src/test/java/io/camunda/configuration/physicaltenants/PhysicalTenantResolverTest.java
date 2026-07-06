@@ -165,6 +165,35 @@ class PhysicalTenantResolverTest {
   }
 
   @Test
+  void shouldKeepFlatOidcSlotWhenProviderOverlayReplacesProvidersSubtree() {
+    // given root sets the flat oidc slot AND a named provider the tenant partially overrides —
+    // the provider overlay installer must replace only the providers subtree, leaving the
+    // two-bind-resolved sibling authentication fields (like the flat slot) untouched
+    setProperties(
+        Map.of(
+            "camunda.security.authentication.oidc.issuer-uri",
+                "http://localhost:8081/realms/default",
+            "camunda.security.authentication.providers.oidc.shared.issuer-uri",
+                "http://localhost:8082/realms/shared",
+            "camunda.physical-tenants.tenanta.security.authentication.providers.oidc.shared.client-id",
+                "tenanta-client",
+            "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+                "tenanta"),
+        "tenanta");
+
+    // when
+    final Camunda tenantA = newResolver().forPhysicalTenant("tenanta");
+
+    // then the flat slot survives and the named provider is deep-merged next to it
+    final var authentication = tenantA.getSecurity().getAuthentication();
+    assertThat(authentication.getOidc().getIssuerUri())
+        .isEqualTo("http://localhost:8081/realms/default");
+    final var shared = authentication.getProviders().getOidc().get("shared");
+    assertThat(shared.getIssuerUri()).isEqualTo("http://localhost:8082/realms/shared");
+    assertThat(shared.getClientId()).isEqualTo("tenanta-client");
+  }
+
+  @Test
   void shouldSynthesizeDefaultTenantFromRootWhenNoTenantsAreDeclared() {
     // given only root configuration is set
     setProperties(Map.of("camunda.cluster.size", 5));
