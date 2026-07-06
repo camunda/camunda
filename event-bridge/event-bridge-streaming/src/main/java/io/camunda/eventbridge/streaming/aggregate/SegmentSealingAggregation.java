@@ -194,6 +194,28 @@ public final class SegmentSealingAggregation<IN, K, ACC> implements Aggregation<
     return openSegment == NO_SEGMENT ? NO_OFFSET : segments.startPosition(openSegment) - 1;
   }
 
+  /**
+   * Seals the open segment if the source has advanced fully past it — the {@code watermark} (the
+   * highest processed source position) lies in a later segment, so no more records can land in the
+   * open one. Without this, a stream that folds a record and then goes quiet (e.g. a rare incident
+   * cell) would never cross a segment boundary, so that segment's cells would never seal into the
+   * shuffle and never reach the serving store. Called by the owner as it commits, it makes those
+   * sparse cells visible with bounded lag.
+   *
+   * <p>TODO(analytics): the caller feeds this the event-bridge offset, which is <em>not</em> a
+   * sound watermark under at-least-once delivery — the same Zeebe event can be delivered at two
+   * offsets, and offsets are sparse. The proper fix stamps facts with the stable Zeebe {@code
+   * (partitionId, position)} and dedups source deliveries by it, then drives this off that
+   * position. Until then a redelivery could re-open and re-seal a segment; acceptable only for
+   * demonstrating liveness.
+   */
+  public void sealCompletedUpTo(final long watermark) {
+    if (openSegment != NO_SEGMENT && segments.index(watermark) > openSegment) {
+      seal();
+      openSegment = NO_SEGMENT; // reopened by the next accepted record
+    }
+  }
+
   private void seal() {
     if (open.isEmpty()) {
       return;

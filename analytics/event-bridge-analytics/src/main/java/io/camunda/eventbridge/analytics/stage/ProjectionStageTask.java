@@ -71,6 +71,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
 
   private final int partition;
   private final ProcessorTopology<SourceRecord> topology;
+  private final List<SegmentSealingAggregation<Fact, ?, ?>> sealingAggregations;
   private final DatasetStore datasetStore;
   private final DatasetWriter servingWriter;
   private final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider;
@@ -82,12 +83,14 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
   ProjectionStageTask(
       final int partition,
       final ProcessorTopology<SourceRecord> topology,
+      final List<SegmentSealingAggregation<Fact, ?, ?>> sealingAggregations,
       final DatasetStore datasetStore,
       final DatasetWriter servingWriter,
       final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider,
       final KeyValueStore<DbInt, DbLong> offsets) {
     this.partition = partition;
     this.topology = topology;
+    this.sealingAggregations = List.copyOf(sealingAggregations);
     this.datasetStore = datasetStore;
     this.servingWriter = servingWriter;
     this.provider = provider;
@@ -129,11 +132,14 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
         ProcessorTopology.<SourceRecord>builder()
             .source("projection", new AnalyticsBaseProjection(state));
     final List<String> meterNodes = new ArrayList<>();
+    final List<SegmentSealingAggregation<Fact, ?, ?>> sealingAggregations = new ArrayList<>();
     for (final ActiveCube cube : cubes) {
       for (final CompiledMeter meter : cube.compiled().meters()) {
         final String node = "meter-" + meter.aggId();
         builder.processor(
-            node, meterProcessor(cube, meter, segmentStride, openSegments, provider), "projection");
+            node,
+            meterProcessor(cube, meter, segmentStride, openSegments, provider, sealingAggregations),
+            "projection");
         meterNodes.add(node);
       }
     }
@@ -152,19 +158,21 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
           "projection");
     }
     return new ProjectionStageTask(
-        partition, builder.build(), datasetStore, writer, provider, offsets);
+        partition, builder.build(), sealingAggregations, datasetStore, writer, provider, offsets);
   }
 
   /**
    * Builds one cube meter's Model-F sealing aggregation and its {@link ForwardingSegmentSink}
-   * (capturing the acc type), then the node that gates + folds facts and forwards sealed cells.
+   * (capturing the acc type), then the node that gates + folds facts and forwards sealed cells. The
+   * aggregation is also collected so the task can watermark-seal completed segments as it commits.
    */
   private static <ACC> CubeMeterProcessor meterProcessor(
       final ActiveCube cube,
       final CompiledMeter meter,
       final int segmentStride,
       final KeyValueStore<DbBytes, DbBytes> openSegments,
-      final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider) {
+      final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider,
+      final List<SegmentSealingAggregation<Fact, ?, ?>> sealingAggregations) {
     @SuppressWarnings("unchecked")
     final BoundMeter<ACC, ?> bound = (BoundMeter<ACC, ?>) meter.bound();
     final ForwardingSegmentSink<ACC> sink =
@@ -186,6 +194,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
             new DimensionKeyValue(cube.compiled().grain()),
             bound.accumulatorCodec(),
             provider::runInTransaction);
+    sealingAggregations.add(sealing);
     return new CubeMeterProcessor(
         cube.compiled().factBinding().factType(),
         cube.registered(),
@@ -237,6 +246,14 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
 
   @Override
   public void commit(final long offset) {
+    // Liveness: seal every segment the source has fully advanced past (the committed offset is the
+    // watermark), so sparse cells — e.g. an incident meter that then goes quiet — reach the shuffle
+    // even without a natural boundary crossing. The seal forwards SegmentCells into the shuffle
+    // sink, so it must run before the flush below. See SegmentSealingAggregation#sealCompletedUpTo
+    // for the at-least-once TODO on using the offset as the watermark.
+    for (final SegmentSealingAggregation<Fact, ?, ?> aggregation : sealingAggregations) {
+      aggregation.sealCompletedUpTo(offset);
+    }
     // Produce-before-commit: publish the sealed shuffle deltas and flush the projected rows, then
     // persist the full offset + the topology's state (base projection + every open segment) as one
     // atomic cut on this partition's provider.

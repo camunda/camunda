@@ -134,6 +134,27 @@ final class SegmentSealingAggregationTest {
   }
 
   @Test
+  void shouldSealOpenSegmentWhenTheWatermarkAdvancesPastIt() {
+    // given a record folded into segment 0, then the stream goes quiet (no boundary crossing)
+    final SegmentSealingAggregation<Ev, String, Long> aggregation = aggregation();
+    aggregation.accept(new Ev(0, 3L, 100L, "a", 4L));
+
+    // when the watermark is still inside segment 0, nothing seals
+    aggregation.sealCompletedUpTo(9L);
+    assertThat(emitted).as("segment 0 not yet fully behind the watermark").isEmpty();
+
+    // when the watermark advances into a later segment, the completed segment 0 seals on its own
+    aggregation.sealCompletedUpTo(10L);
+    assertThat(emitted).containsExactly(new Sealed("a", 0L, 0, 0L, 4L));
+
+    // and a later record opens a fresh segment — the sealed one was closed, not re-emitted
+    emitted.clear();
+    aggregation.accept(new Ev(0, 12L, 100L, "a", 6L));
+    aggregation.sealCompletedUpTo(25L);
+    assertThat(emitted).containsExactly(new Sealed("a", 0L, 0, 1L, 6L));
+  }
+
+  @Test
   void shouldBeDeterministicAcrossReplay() {
     // given the same input fed to two independent aggregations (a replay)
     final List<Ev> input =
