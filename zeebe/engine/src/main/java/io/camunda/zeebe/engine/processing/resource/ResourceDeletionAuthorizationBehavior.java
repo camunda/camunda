@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.resource;
 
-import io.camunda.zeebe.engine.processing.identity.AuthenticatedAuthorizedTenants;
-import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.exception.ForbiddenException;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
@@ -31,14 +29,6 @@ final class ResourceDeletionAuthorizationBehavior {
       final AuthorizationCheckBehavior authCheckBehavior, final StateWriter stateWriter) {
     this.authCheckBehavior = authCheckBehavior;
     this.stateWriter = stateWriter;
-  }
-
-  AuthorizedTenants getAuthorizedTenants(final TypedRecord<ResourceDeletionRecord> command) {
-    final String tenantId = command.getValue().getTenantId();
-    if (tenantId.isEmpty()) {
-      return authCheckBehavior.getAuthorizedTenantIds(command);
-    }
-    return new AuthenticatedAuthorizedTenants(tenantId);
   }
 
   boolean authorizeAndDelete(

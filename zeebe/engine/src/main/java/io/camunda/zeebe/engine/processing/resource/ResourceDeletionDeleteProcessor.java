@@ -13,7 +13,6 @@ import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.deployment.StartEventSubscriptionManager;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.exception.ForbiddenException;
 import io.camunda.zeebe.engine.processing.resource.ResourceDeletionExceptions.ActiveProcessInstancesException;
@@ -29,19 +28,14 @@ import io.camunda.zeebe.engine.state.immutable.FormState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ResourceState;
-import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.ResourceType;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
 
 public class ResourceDeletionDeleteProcessor
     implements DistributedTypedRecordProcessor<ResourceDeletionRecord> {
@@ -58,12 +52,12 @@ public class ResourceDeletionDeleteProcessor
   private final ProcessState processState;
   private final FormState formState;
   private final ResourceState resourceState;
-  private final TenantState tenantState;
   private final ProcessDeletionBehavior processDeletionBehavior;
   private final FormDeletionBehavior formDeletionBehavior;
   private final DecisionRequirementsDeletionBehavior decisionRequirementsDeletionBehavior;
   private final ResourceDeletionBehavior resourceDeletionBehavior;
   private final ResourceDeletionAuthorizationBehavior authorizationBehavior;
+  private final TenantAwareDeletionBehavior tenantAwareDeletionBehavior;
 
   public ResourceDeletionDeleteProcessor(
       final Writers writers,
@@ -82,7 +76,6 @@ public class ResourceDeletionDeleteProcessor
     processState = processingState.getProcessState();
     formState = processingState.getFormState();
     resourceState = processingState.getResourceState();
-    tenantState = processingState.getTenantState();
 
     final var startEventSubscriptionManager =
         new StartEventSubscriptionManager(processingState, keyGenerator, stateWriter);
@@ -113,6 +106,9 @@ public class ResourceDeletionDeleteProcessor
 
     authorizationBehavior =
         new ResourceDeletionAuthorizationBehavior(authCheckBehavior, stateWriter);
+
+    tenantAwareDeletionBehavior =
+        new TenantAwareDeletionBehavior(authCheckBehavior, processingState.getTenantState());
   }
 
   @Override
@@ -176,7 +172,8 @@ public class ResourceDeletionDeleteProcessor
     final var value = command.getValue();
 
     final var resourceDeleted =
-        untilResourceDeleted(command, tenantId -> tryDeleteResource(command, tenantId, eventKey));
+        tenantAwareDeletionBehavior.untilResourceDeleted(
+            command, tenantId -> tryDeleteResource(command, tenantId, eventKey));
 
     if (!resourceDeleted) {
       if (value.isDeleteHistory()
@@ -290,40 +287,5 @@ public class ResourceDeletionDeleteProcessor
         // This should not be reached as SUPPORTED_HISTORY_DELETION_TYPES filters these out
       }
     }
-  }
-
-  private boolean untilResourceDeleted(
-      final TypedRecord<ResourceDeletionRecord> command,
-      final Function<String, Boolean> resourceDeletionCallback) {
-    final var authorizedTenants = authorizationBehavior.getAuthorizedTenants(command);
-
-    if (AuthorizedTenants.ANONYMOUS.equals(authorizedTenants)) {
-      return Optional.of(tryToDeleteResourceAssignedToDefaultTenant(resourceDeletionCallback))
-          .filter(Boolean::booleanValue)
-          .orElseGet(() -> forEachTenantUntilResourceDeleted(resourceDeletionCallback));
-    } else {
-      for (final var tenant : authorizedTenants.getAuthorizedTenantIds()) {
-        if (resourceDeletionCallback.apply(tenant)) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  private boolean tryToDeleteResourceAssignedToDefaultTenant(
-      final Function<String, Boolean> resourceDeletionCallback) {
-    return resourceDeletionCallback.apply(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  }
-
-  private boolean forEachTenantUntilResourceDeleted(
-      final Function<String, Boolean> resourceDeletionCallback) {
-    final var resourceDeleted = new AtomicBoolean(false);
-    tenantState.forEachTenant(
-        tenant -> {
-          resourceDeleted.set(resourceDeletionCallback.apply(tenant));
-          return !resourceDeleted.get();
-        });
-    return resourceDeleted.get();
   }
 }
