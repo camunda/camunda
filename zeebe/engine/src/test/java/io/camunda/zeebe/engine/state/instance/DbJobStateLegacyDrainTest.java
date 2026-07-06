@@ -77,7 +77,7 @@ final class DbJobStateLegacyDrainTest {
   }
 
   @Test
-  void shouldNotSetFlagWhenAnotherTypeStillHasLegacyJobs() {
+  void shouldStillFindLegacyJobWhenAnotherTypeKeepsCfNonEmpty() {
     // given
     final DirectBuffer typeA = wrapString("type-a");
     final DirectBuffer typeB = wrapString("type-b");
@@ -93,7 +93,7 @@ final class DbJobStateLegacyDrainTest {
   }
 
   @Test
-  void shouldSetFlagOnceLegacyCfGloballyEmptyAndSkipPhase2Afterwards() {
+  void shouldSkipPhase2OnceLegacyCfIsGloballyEmpty() {
     // given: legacy CF is empty from the start
     final DirectBuffer type = wrapString("type-a");
     assertThat(activatableKeys(type)).isEmpty(); // flips the flag
