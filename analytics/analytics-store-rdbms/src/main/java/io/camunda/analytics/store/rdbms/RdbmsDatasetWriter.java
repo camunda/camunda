@@ -22,9 +22,12 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ibatis.session.SqlSession;
@@ -46,11 +49,24 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
 
   private final SqlSessionFactory sessionFactory;
   private final RdbmsDialect dialect;
+  private final RdbmsDatasetSchemaManager schemaManager;
+
+  /**
+   * The {@code (cubeId, month)}s whose time partition this writer has already ensured, so only the
+   * first cell of a new month issues partition DDL. Empty and unused on H2 (partition-ensure is a
+   * no-op there); bounded by the number of distinct months a writer touches.
+   */
+  private final Set<String> ensuredPartitions = new HashSet<>();
+
   private SqlSession session;
 
-  public RdbmsDatasetWriter(final SqlSessionFactory sessionFactory, final RdbmsDialect dialect) {
+  public RdbmsDatasetWriter(
+      final SqlSessionFactory sessionFactory,
+      final RdbmsDialect dialect,
+      final RdbmsDatasetSchemaManager schemaManager) {
     this.sessionFactory = sessionFactory;
     this.dialect = dialect;
+    this.schemaManager = schemaManager;
   }
 
   @Override
@@ -61,6 +77,7 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
       final long windowSize,
       final String meterName,
       final byte[] accumulator) {
+    ensurePartition(dataset, windowStart);
     final List<DimensionColumn> grain = dataset.grain().columns();
     final String dimCols =
         grain.stream()
@@ -70,7 +87,8 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
 
     // A pushable (additive) meter decomposes into its native numeric columns (Layer B pushdown); a
     // sketch/summary writes its app-mergeable blob (Layer A) plus a finalized scalar (the DIRECT
-    // fast path). Only the meter's own columns are in the upsert, so meters of the same cell coexist
+    // fast path). Only the meter's own columns are in the upsert, so meters of the same cell
+    // coexist
     // under the shared cell_key.
     final CompiledMeter compiled = compiledMeter(dataset, meterName, windowSize);
     final Optional<PushdownSpec<?, ?>> spec = compiled.pushdown();
@@ -100,7 +118,15 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
             + "window_start, window_size, "
             + String.join(", ", meterCols);
     final int columnCount = 1 + grain.size() + 2 + meterCols.size();
-    final String sql = upsertSql(table, columns, columnCount, "cell_key", meterCols);
+    // On a Postgres partitioned parent the primary key is the composite (cell_key, window_start) —
+    // the partition key must be in the PK — so the upsert conflict target is composite too;
+    // window_start is functionally implied by cell_key, so this stays effectively keyed by
+    // cell_key.
+    // H2 keeps the single-column MERGE … KEY (cell_key).
+    final String conflictTarget =
+        dialect.supportsPartitioning() ? "cell_key, window_start" : "cell_key";
+    final String sql =
+        upsertSql(dialect, table, columns, columnCount, "cell_key", conflictTarget, meterCols);
     final List<PushdownColumn> pushdownColumns = spec.map(PushdownSpec::columns).orElse(List.of());
 
     execute(
@@ -173,9 +199,11 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
         cols.stream().map(c -> RdbmsNames.quotedColumn(c.name())).collect(Collectors.toList());
     final String sql =
         upsertSql(
+            dialect,
             RdbmsNames.rowTable(table.cubeId()),
             columns,
             columnCount,
+            "row_key",
             "row_key",
             updateColumns.isEmpty() ? List.of("row_key") : updateColumns);
 
@@ -210,13 +238,34 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
   }
 
   /**
-   * Builds the upsert idiom for the dialect: H2 {@code MERGE … KEY}, Postgres {@code ON CONFLICT}.
+   * Ensures the target month's time partition exists before the upsert (Layer C, Postgres only).
+   * The in-writer cache means only the first cell of a new {@code (cubeId, month)} issues DDL; on
+   * H2 the schema manager's ensure is a no-op so nothing changes and the cache short-circuits
+   * cheaply.
    */
-  private String upsertSql(
+  private void ensurePartition(final CompiledDataset dataset, final long windowStart) {
+    if (!dialect.supportsPartitioning()) {
+      return;
+    }
+    final YearMonth month = RdbmsDatasetSchemaManager.monthOf(windowStart);
+    if (ensuredPartitions.add(dataset.cubeId() + "|" + month)) {
+      schemaManager.ensurePartition(dataset, windowStart);
+    }
+  }
+
+  /**
+   * Builds the upsert idiom for the dialect: H2 {@code MERGE … KEY (keyColumn)}, Postgres {@code ON
+   * CONFLICT (conflictTarget)}. The two can differ: a Postgres partitioned table's unique
+   * constraint (hence the conflict target) is the composite PK, while H2's single-column {@code
+   * MERGE … KEY} stays keyed on {@code keyColumn}.
+   */
+  static String upsertSql(
+      final RdbmsDialect dialect,
       final String table,
       final String columns,
       final int columnCount,
       final String keyColumn,
+      final String conflictTarget,
       final List<String> updateColumns) {
     final String placeholders =
         IntStream.range(0, columnCount).mapToObj(i -> "?").collect(Collectors.joining(", "));
@@ -230,7 +279,7 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
           + ") VALUES ("
           + placeholders
           + ") ON CONFLICT ("
-          + keyColumn
+          + conflictTarget
           + ") DO UPDATE SET "
           + setClause;
     }

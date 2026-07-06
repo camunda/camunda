@@ -9,6 +9,7 @@ package io.camunda.analytics.store.rdbms;
 
 import io.camunda.analytics.dataset.store.Identifiers;
 import io.camunda.analytics.dimension.DimensionKey;
+import java.time.YearMonth;
 
 /**
  * The physical naming convention shared by the RDBMS schema manager, writer, and query client: one
@@ -37,6 +38,16 @@ final class RdbmsNames {
    */
   static String scanIndex(final long cubeId) {
     return "idx_dataset_" + cubeId + "_scan";
+  }
+
+  /**
+   * A monthly range partition of a cube's {@code dataset_<id>} table (Layer C, Postgres only):
+   * {@code dataset_<id>_<yyyy>_<mm>}, e.g. {@code dataset_1_2026_07}. The month is derived from the
+   * cell's {@code window_start} at UTC; the zero-padded {@code yyyy_mm} suffix is a safe constant
+   * token (no user input), so it never needs the {@link Identifiers} allowlist.
+   */
+  static String childPartition(final long cubeId, final YearMonth month) {
+    return String.format("dataset_%d_%04d_%02d", cubeId, month.getYear(), month.getMonthValue());
   }
 
   /**

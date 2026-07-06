@@ -24,6 +24,15 @@ public enum RdbmsDialect {
     return name.contains("postgres") ? POSTGRESQL : H2;
   }
 
+  /**
+   * Whether the dialect supports declarative range partitioning of the cube table by {@code
+   * window_start} (Layer C). Postgres does; H2 (dev/test) has no declarative partitioning and keeps
+   * the plain table + the Layer-A scan index.
+   */
+  public boolean supportsPartitioning() {
+    return this == POSTGRESQL;
+  }
+
   /** The column type for a stored accumulator blob. */
   public String blobType() {
     return this == POSTGRESQL ? "BYTEA" : "VARBINARY";

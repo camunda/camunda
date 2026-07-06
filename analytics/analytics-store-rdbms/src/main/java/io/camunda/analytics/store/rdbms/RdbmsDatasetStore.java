@@ -30,6 +30,7 @@ public final class RdbmsDatasetStore implements DatasetStore {
 
   private final SqlSessionFactory sessionFactory;
   private final RdbmsDialect dialect;
+  private final RdbmsDatasetSchemaManager schemaManager;
   private final RdbmsDatasetWriter writer;
 
   public RdbmsDatasetStore(final DataSource dataSource) {
@@ -39,12 +40,15 @@ public final class RdbmsDatasetStore implements DatasetStore {
     final Configuration configuration = new Configuration(environment);
     configuration.addMapper(DatasetQueryMapper.class);
     this.sessionFactory = new SqlSessionFactoryBuilder().build(configuration);
-    this.writer = new RdbmsDatasetWriter(sessionFactory, dialect);
+    // Shared so the writer can ensure a cell's time partition (Layer C) on the same seam that
+    // provisions the parent table.
+    this.schemaManager = new RdbmsDatasetSchemaManager(sessionFactory, dialect);
+    this.writer = new RdbmsDatasetWriter(sessionFactory, dialect, schemaManager);
   }
 
   @Override
   public DatasetSchemaManager schemaManager() {
-    return new RdbmsDatasetSchemaManager(sessionFactory, dialect);
+    return schemaManager;
   }
 
   @Override
