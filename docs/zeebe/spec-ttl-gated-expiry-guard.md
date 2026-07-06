@@ -187,8 +187,11 @@ Only if the record carries neither TTL nor publish timestamp:
   *semantic* fact, not an attempt ordinal. Prefer this over `isRetry`/`attemptCount` for the guard;
   `attemptCount` may still be added independently later for observability, but it is not
   load-bearing here.
-- Default value `-1` (= "unknown / sent by an old node"). See Section 7 for how the guard treats
-  `-1`.
+- Default value `0`, matching `MessageRecord.timeToLive` (whose absent value is likewise `0` — a
+  message without a positive TTL is fire-and-forget). Because the guard rejects only on
+  `messageTtl > 0`, an unset field falls through exactly as a genuine TTL=0 message does. **No
+  `-1`/"unknown" sentinel is needed**: this feature is unreleased, so no broker ever emits this
+  record without the field (see the pre-GA note in Section 7.1).
 - Set at both dispatch sites from the buffered message's stored TTL:
   - `MessageCorrelateBehavior#dispatchCrossPartitionStartProcessInstanceAsk` (first dispatch)
   - `PendingMessageStartAskCheckScheduler#sendAsk` (re-dispatch; note retries re-emit the original
@@ -265,15 +268,22 @@ feature is pre-GA.
 
 ### 7.1 Mixed-version cluster matrix
 
-| `P_K` version | `P_B` version | Behavior                                                                                                                                                                                                                                                                                                                                                                                                      |
-|---------------|---------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| new           | new           | Full guard active.                                                                                                                                                                                                                                                                                                                                                                                            |
-| new           | old           | Old `P_B` ignores the extra field; behaves as today (grace window, if still configured, keeps mitigating). **No regression.**                                                                                                                                                                                                                                                                                 |
-| old           | new           | Request lacks TTL (`-1` sentinel). Guard must **fail open**: treat `messageTtl == -1` as "do not expiry-reject" and fall through to today's flow. Rationale: fail-closed would break TTL=0 first-arrivals from old nodes — an *observable documented behavior* — to close a window that the (still-present-during-upgrade) grace already mitigates. The window is fully closed once all brokers are upgraded. |
-| old           | old           | Status quo.                                                                                                                                                                                                                                                                                                                                                                                                   |
+**Pre-GA note.** The entire cross-partition message-start-by-businessId feature (this request
+record, its intents, and appliers) is **unreleased**. No released broker emits
+`MESSAGE_START_PROCESS_INSTANCE_REQUEST` at all, let alone one without `messageTtl`, so the
+`-1`/"unknown" sentinel and dedicated fail-open branch originally sketched here are unnecessary.
+The field defaults to `0` (Section 6.1); because the guard rejects only on `messageTtl > 0`, an
+absent field falls through identically to a genuine TTL=0 message — the safe-for-liveness
+behavior. The matrix below therefore reduces to "does `P_B` run the guard?".
 
-If Task 0 finds TTL/publish-timestamp already on the wire, the `old P_K` row collapses into "full
-guard active" and this section reduces to a note.
+| `P_K` version | `P_B` version | Behavior                                                                                                                                               |
+|---------------|---------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
+| any           | new           | Guard active. A request with `messageTtl > 0` past its deadline is `EXPIRED_REJECTED`; `messageTtl == 0` (explicit or defaulted-absent) falls through. |
+| any           | old           | `P_B` predates the guard → today's behavior (dedup + grace, if configured). No regression.                                                             |
+
+Because the field defaults to `0` and the guard is `messageTtl > 0`, there is no separate
+"missing field" case to reason about — an absent TTL is indistinguishable from, and handled exactly
+like, a genuine TTL=0 message.
 
 ### 7.2 Replay / reprocessing
 
@@ -295,11 +305,13 @@ tuned window").
 ## 8. Test plan
 
 ### 8.1 Unit (
+
 `MessageStartProcessInstanceRequestRequestProcessorTest`, applier tests, scheduler tests)
 
-- Guard truth table: (deadline past / not past) × (TTL 0 / >0 / `-1` sentinel) × (dedup hit /
-  miss) — 12 cases; assert reject vs dedup-reply vs live-evaluation, and that **no dedup lookup
-  occurs** on the reject path.
+- Guard truth table: (deadline past / not past) × (TTL `0` / `> 0`) × (dedup hit / miss) — 8
+  cases; assert reject vs dedup-reply vs live-evaluation, and that **no dedup lookup occurs** on the
+  reject path. (No `-1` sentinel case: the field defaults to `0`, which the `TTL == 0` rows already
+  cover — see the pre-GA note in §7.1.)
 - Boundary: `messageDeadline == now` (define and pin `<=` vs `<`).
 - `EXPIRED_REJECTED` applier: removes pending ask; no-op when ask absent; golden file.
 - Re-dispatch carries original TTL and original deadline (
@@ -321,9 +333,7 @@ tuned window").
    *only* "expired unstarted" (liveness), never a duplicate (safety), on both skew signs.
 5. **Late reply tolerance:** `EXPIRED_REJECTED` arriving on `P_K` after message expiry is a clean
    no-op.
-6. **Upgrade matrix** (if 6.1 executed): old-`P_K`/new-`P_B` TTL=0 first-arrival activates (
-   fail-open pin).
-7. Re-run/adjust `MessageStartProcessInstanceNearDeadlineRetryTest` and
+6. Re-run/adjust `MessageStartProcessInstanceNearDeadlineRetryTest` and
    `MessageStartProcessInstanceDedupBehaviorTest` for the post-grace world.
 
 ### 8.3 Chaos/e2e (nice-to-have)
@@ -358,7 +368,8 @@ tuned window").
 - [ ] Skew tests show liveness-only degradation, never duplication.
 - [ ] `messageStartAskRetryGrace` removed (or deprecated per policy); sweep/lookup thresholds
   reverted to `now`.
-- [ ] Rolling-upgrade behavior per §7.1 verified (fail-open on `-1` if applicable).
+- [ ] Rolling-upgrade behavior per §7.1 verified (absent field defaults to `0` → falls through;
+  feature is pre-GA so no `-1`/old-node case exists).
 - [ ] ADR 0002 amended; metric added; release notes drafted.
 
 ---
@@ -386,7 +397,7 @@ record carries neither TTL nor publish timestamp.
 `MessageStartProcessInstanceRequestRecord` (and its `MessageStartProcessInstanceRequestRecordValue`
 interface) carries `messageDeadline` (`= publishTime + ttl`) **only** — no `messageTtl`,
 no `publishTimestamp`. The deadline alone cannot distinguish a `TTL == 0` message from
-a `TTL > 0` one (that requires the publish time, which is not on the wire). Therefore
+a `TTL > 0` one (that requires the publish time, which is not on the wire). Therefore,
 **Section 6.1 is executed, not skipped**: add a `messageTtl` field.
 
 TTL is readily available at every dispatch site, so populating the field is cheap:
@@ -395,12 +406,15 @@ TTL is readily available at every dispatch site, so populating the field is chea
   reads from the `MessageCorrelateBehavior.MessageData` record, which today carries
   `messageDeadline` but **not** TTL. `MessageData` must gain a `messageTtl` component,
   populated at its three construction sites:
-  - `MessagePublishProcessor#createMessageData` → `messageRecord.getTimeToLive()` (directly available).
-  - `BpmnBufferedMessageStartEventBehavior#triggerCorrelation` → `storedMessage.getMessage().getTimeToLive()`
+  - `MessagePublishProcessor#createMessageData` → `messageRecord.getTimeToLive()` (directly
+    available).
+  - `BpmnBufferedMessageStartEventBehavior#triggerCorrelation` →
+    `storedMessage.getMessage().getTimeToLive()`
     (buffered messages only exist for `TTL > 0`, since `TTL == 0` never gets buffered).
   - `MessageCorrelationCorrelateProcessor#createMessageData` → correlate commands carry
     no TTL and already pass `messageDeadline = -1` (immediate expiry). Set `messageTtl = 0`
-    here so the guard falls through to live evaluation (preserves today's create-then-expire behavior).
+    here so the guard falls through to live evaluation (preserves today's create-then-expire
+    behavior).
 - **Re-dispatch** — `PendingMessageStartAskCheckScheduler#sendAsk` rebuilds the request
   from the **persisted** `MessageStartProcessInstanceAsk`. That state entry stores
   `messageDeadline` but not TTL, so **`MessageStartProcessInstanceAsk` (and its DB
