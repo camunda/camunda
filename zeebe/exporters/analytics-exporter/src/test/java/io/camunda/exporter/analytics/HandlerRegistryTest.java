@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
@@ -143,6 +144,28 @@ class HandlerRegistryTest {
 
     // when / then — no exception
     registry.handle(record);
+  }
+
+  @Test
+  void shouldExposeRegisteredHandlers() {
+    // given
+    final var registry =
+        new HandlerRegistry()
+            .register(
+                ValueType.PROCESS_INSTANCE_CREATION,
+                ProcessInstanceCreationIntent.CREATED,
+                record -> {})
+            .register(ValueType.USER_TASK, UserTaskIntent.CREATED, record -> {});
+
+    // when
+    final var registered = registry.registeredHandlers();
+
+    // then
+    assertThat(registered).containsKey(ValueType.PROCESS_INSTANCE_CREATION);
+    assertThat(registered).containsKey(ValueType.USER_TASK);
+    assertThat(registered.get(ValueType.PROCESS_INSTANCE_CREATION))
+        .containsKey(ProcessInstanceCreationIntent.CREATED);
+    assertThat(registered.get(ValueType.USER_TASK)).containsKey(UserTaskIntent.CREATED);
   }
 
   private static ExporterTestContext testContext() {

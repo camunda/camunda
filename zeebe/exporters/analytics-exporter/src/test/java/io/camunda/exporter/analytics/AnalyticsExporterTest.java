@@ -92,6 +92,9 @@ class AnalyticsExporterTest {
                   .containsEntry(AnalyticsAttributes.Tenant.ID, value.getTenantId())
                   .containsEntry(AnalyticsAttributes.Log.POSITION, record.getPosition())
                   .containsEntry(AnalyticsAttributes.Event.SEQUENCE_NUMBER, 1L);
+              assertThat(logRecord.getResource().getAttribute(AnalyticsAttributes.Exporter.DIGEST))
+                  .isNotNull()
+                  .isNotEmpty();
             });
   }
 

@@ -50,18 +50,22 @@ public class AnalyticsExporter implements Exporter {
   public void configure(final Context context) {
     config = context.getConfiguration().instantiate(AnalyticsExporterConfig.class).validate();
 
-    analyticsContext =
-        AnalyticsExporterContext.create(
-            resolveLicenseKey(context), resolveClusterId(context), context.getPartitionId());
-
     handlers = AnalyticsHandlerCatalog.build(otelSdkManager).apply(context);
     meterRegistry = context.getMeterRegistry();
 
+    analyticsContext =
+        AnalyticsExporterContext.create(
+            resolveLicenseKey(context),
+            resolveClusterId(context),
+            context.getPartitionId(),
+            resolveDigest(handlers, config));
+
     LOG.info(
-        "Analytics exporter configured: endpoint={}, clusterId={}, partitionId={}",
+        "Analytics exporter configured: endpoint={}, clusterId={}, partitionId={}, exporterDigest={}",
         config.getEndpoint(),
         analyticsContext.clusterId(),
-        analyticsContext.partitionId());
+        analyticsContext.partitionId(),
+        analyticsContext.exporterDigest());
   }
 
   @Override
@@ -176,6 +180,16 @@ public class AnalyticsExporter implements Exporter {
     } catch (final NoSuchMethodError e) {
       final var fromEnv = System.getenv(CLUSTER_ID_ENV_VAR);
       return fromEnv != null ? fromEnv : "";
+    }
+  }
+
+  private String resolveDigest(
+      final HandlerRegistry handlers, final AnalyticsExporterConfig config) {
+    try {
+      return AnalyticsExporterDigest.compute(handlers, config);
+    } catch (final Exception e) {
+      LOG.warn("Failed to compute exporter digest; resource attribute will be empty", e);
+      return "";
     }
   }
 }

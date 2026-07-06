@@ -12,6 +12,7 @@ import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.HEARTBEAT;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.NAME;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.SAMPLE_RATE;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.Event.SEQUENCE_NUMBER;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Exporter.DIGEST;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.Heartbeat.BROKER_VERSION;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.Heartbeat.EXPORTER_VERSION;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.Log.POSITION;
@@ -59,6 +60,7 @@ public class OtelSdkManager implements AutoCloseable {
   private static final String SERVICE_NAME_VALUE = "camunda-zeebe";
 
   private double defaultSamplingRate = HashSampler.MAX_SAMPLE_RATE;
+
   private OpenTelemetrySdk sdk;
   private Logger otelLogger;
   private Meter otelMeter;
@@ -275,6 +277,7 @@ public class OtelSdkManager implements AutoCloseable {
                 .put(SERVICE_NAME, SERVICE_NAME_VALUE)
                 .put(CLUSTER_ID, context.clusterId())
                 .put(PARTITION_ID, context.partitionId())
+                .put(DIGEST, context.exporterDigest())
                 .build());
   }
 }
