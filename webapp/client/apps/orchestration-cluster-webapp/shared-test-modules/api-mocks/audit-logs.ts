@@ -7,6 +7,7 @@
  */
 
 import type {AuditLog, QueryUserTaskAuditLogsResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import {createPaginatedResponse} from './shared';
 
 function createAuditLog(overrides?: Partial<AuditLog>): AuditLog {
 	return {
@@ -51,9 +52,9 @@ function createQueryUserTaskAuditLogsResponse(overrides?: {
 	items?: AuditLog[];
 	page?: Partial<QueryUserTaskAuditLogsResponseBody['page']>;
 }): QueryUserTaskAuditLogsResponseBody {
-	const items = overrides?.items ?? [createAuditLog()];
+	const items = overrides?.items ?? [];
 
-	return {
+	return createPaginatedResponse<AuditLog>({
 		items,
 		page: {
 			totalItems: items.length,
@@ -62,7 +63,7 @@ function createQueryUserTaskAuditLogsResponse(overrides?: {
 			hasMoreTotalItems: false,
 			...overrides?.page,
 		},
-	};
+	});
 }
 
 export {createAuditLog, createQueryUserTaskAuditLogsResponse};
