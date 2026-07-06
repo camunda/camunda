@@ -54,6 +54,23 @@ public final class RdbmsDatasetSchemaManager implements DatasetSchemaManager {
             + meters
             + ")";
     execute(ddl, "cube " + dataset.name());
+
+    // Time-leading scan index: reads always filter by tier + window range, so leading with
+    // (window_size, window_start) turns a range read into an index seek instead of a full scan.
+    // The grain dims follow, for filter locality on grain-column predicates.
+    final String indexDims =
+        dataset.grain().columns().stream()
+            .map(c -> RdbmsNames.quotedColumn(c.name()))
+            .collect(Collectors.joining(", "));
+    final String indexDdl =
+        "CREATE INDEX IF NOT EXISTS "
+            + RdbmsNames.scanIndex(dataset.cubeId())
+            + " ON "
+            + RdbmsNames.datasetTable(dataset.cubeId())
+            + " (window_size, window_start"
+            + (indexDims.isEmpty() ? "" : ", " + indexDims)
+            + ")";
+    execute(indexDdl, "cube scan index " + dataset.name());
   }
 
   @Override

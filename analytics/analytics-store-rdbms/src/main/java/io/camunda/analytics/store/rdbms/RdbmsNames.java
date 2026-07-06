@@ -31,6 +31,15 @@ final class RdbmsNames {
   }
 
   /**
+   * The time-leading secondary index on a cube's {@code dataset_<id>} table: {@code (window_size,
+   * window_start, …dims)}. It leads with the always-present, selective read predicates (tier + time
+   * range) so a range read is an index seek, not a full scan.
+   */
+  static String scanIndex(final long cubeId) {
+    return "idx_dataset_" + cubeId + "_scan";
+  }
+
+  /**
    * Maps a declared dimension/meter name to a SQL column identifier via the shared {@link
    * Identifiers} allowlist — the injection boundary, since column identifiers cannot be
    * parameter-bound — then appends a trailing underscore. The suffix guarantees the identifier can

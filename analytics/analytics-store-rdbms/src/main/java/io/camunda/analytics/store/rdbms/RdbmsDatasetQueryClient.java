@@ -18,12 +18,15 @@ import io.camunda.analytics.dataset.store.TableRow;
 import io.camunda.analytics.dimension.DimensionColumn;
 import io.camunda.analytics.dimension.DimensionKey;
 import io.camunda.analytics.dimension.DimensionType;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Consumer;
+import org.apache.ibatis.cursor.Cursor;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 
@@ -46,9 +49,41 @@ public final class RdbmsDatasetQueryClient implements DatasetQueryClient {
   public List<Cell> fetch(final DatasetFetch fetch) {
     final CompiledDataset dataset = fetch.dataset();
     final List<DimensionColumn> grain = dataset.grain().columns();
+    try (SqlSession session = sessionFactory.openSession()) {
+      final List<Map<String, Object>> rows =
+          session.getMapper(DatasetQueryMapper.class).fetch(params(fetch));
+      final List<Cell> cells = new ArrayList<>(rows.size());
+      for (final Map<String, Object> row : rows) {
+        cells.add(toCell(dataset, grain, fetch.meters(), lowerKeys(row)));
+      }
+      return cells;
+    }
+  }
 
-    // SQL text uses the quoted identifier (reserved-word safe); the read-back map lookups below use
-    // the bare, lowercased name to match the JDBC column labels.
+  @Override
+  public void streamCells(final DatasetFetch fetch, final Consumer<Cell> sink) {
+    final CompiledDataset dataset = fetch.dataset();
+    final List<DimensionColumn> grain = dataset.grain().columns();
+    // One query, forward-only cursor: MyBatis streams rows in fetchSize batches, so the whole
+    // result is never materialized and the executor folds each cell as it arrives.
+    try (SqlSession session = sessionFactory.openSession();
+        Cursor<Map<String, Object>> cursor =
+            session.getMapper(DatasetQueryMapper.class).fetchCursor(params(fetch))) {
+      for (final Map<String, Object> row : cursor) {
+        sink.accept(toCell(dataset, grain, fetch.meters(), lowerKeys(row)));
+      }
+    } catch (final IOException e) {
+      throw new IllegalStateException("failed to stream cells for " + dataset.name(), e);
+    }
+  }
+
+  /** The bound query parameters for one fetch — shared by the list and cursor paths. */
+  private static Map<String, Object> params(final DatasetFetch fetch) {
+    final CompiledDataset dataset = fetch.dataset();
+    final List<DimensionColumn> grain = dataset.grain().columns();
+
+    // SQL text uses the quoted identifier (reserved-word safe); the read-back map lookups use the
+    // bare, lowercased name to match the JDBC column labels.
     final List<String> dimColumns = new ArrayList<>();
     for (final DimensionColumn column : grain) {
       dimColumns.add(RdbmsNames.quotedColumn(column.name()));
@@ -78,16 +113,7 @@ public final class RdbmsDatasetQueryClient implements DatasetQueryClient {
     params.put("windowSize", fetch.windowSize());
     params.put("fromMs", fetch.fromMs());
     params.put("toMs", fetch.toMs());
-
-    try (SqlSession session = sessionFactory.openSession()) {
-      final List<Map<String, Object>> rows =
-          session.getMapper(DatasetQueryMapper.class).fetch(params);
-      final List<Cell> cells = new ArrayList<>(rows.size());
-      for (final Map<String, Object> row : rows) {
-        cells.add(toCell(dataset, grain, fetch.meters(), lowerKeys(row)));
-      }
-      return cells;
-    }
+    return params;
   }
 
   @Override

@@ -15,6 +15,8 @@ import io.camunda.analytics.dataset.CompiledTable;
 import io.camunda.analytics.dataset.DatasetCompiler;
 import io.camunda.analytics.dataset.DatasetDeclaration;
 import io.camunda.analytics.dataset.FilterPredicate;
+import io.camunda.analytics.dataset.store.Cell;
+import io.camunda.analytics.dataset.store.DatasetFetch;
 import io.camunda.analytics.dataset.store.DatasetQueryExecutor;
 import io.camunda.analytics.dataset.store.DatasetQueryPlanner;
 import io.camunda.analytics.dataset.store.ReportQuery;
@@ -33,6 +35,7 @@ import io.camunda.analytics.meter.MeterRegistry;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.assertj.core.groups.Tuple;
@@ -111,6 +114,28 @@ final class RdbmsDatasetStoreTest {
     assertThat(result.rows())
         .extracting(r -> r.dimensions().get("bpmnProcessId"), r -> r.measures().get("count"))
         .containsExactlyInAnyOrder(Tuple.tuple("orders", 5L), Tuple.tuple("ship", 4L));
+  }
+
+  @Test
+  void shouldStreamRawCellsThroughACursor() {
+    // given cells across two windows
+    store.schemaManager().ensure(dataset);
+    store.writer().upsertCell(dataset, key("orders"), 0L, MINUTE, "count", count(3L));
+    store.writer().upsertCell(dataset, key("orders"), MINUTE, MINUTE, "count", count(2L));
+    store.writer().flush();
+
+    // when streamed through the forward cursor (never materialized as a List)
+    final List<Cell> cells = new ArrayList<>();
+    store
+        .queryClient()
+        .streamCells(
+            new DatasetFetch(dataset, MINUTE, 0L, 2 * MINUTE, List.of(), List.of("count")),
+            cells::add);
+
+    // then both cells arrive with their grain key and window (accumulators still encoded)
+    assertThat(cells)
+        .extracting(c -> c.key().get("bpmnProcessId"), Cell::windowStart)
+        .containsExactlyInAnyOrder(Tuple.tuple("orders", 0L), Tuple.tuple("orders", MINUTE));
   }
 
   @Test
