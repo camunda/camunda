@@ -61,14 +61,18 @@ public final class JobTimeOutTest {
     jobRecords(TIMED_OUT).withType(jobType).getFirst();
     ENGINE.jobs().withType(jobType).activate();
 
-    // then activated again
+    // then the job's event lifecycle is CREATED -> TIMED_OUT
     final List<Record<JobRecordValue>> jobEvents =
-        jobRecords().withType(jobType).limit(3).collect(Collectors.toList());
+        jobRecords()
+            .withType(jobType)
+            .withRecordType(RecordType.EVENT)
+            .limit(2)
+            .collect(Collectors.toList());
 
     assertThat(jobEvents).extracting(Record::getKey).contains(jobKey);
     assertThat(jobEvents)
         .extracting(Record::getIntent)
-        .containsExactly(JobIntent.CREATED, JobIntent.TIME_OUT, JobIntent.TIMED_OUT);
+        .containsExactly(JobIntent.CREATED, JobIntent.TIMED_OUT);
   }
 
   @Test
