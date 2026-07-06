@@ -5,9 +5,13 @@ set -euo pipefail
 
 WORKTREE_ROOT="$(git rev-parse --show-toplevel)"
 # codeowners-cli requires a real .git directory; git worktrees have a .git file.
-# Fall back to the common git dir's parent (the main checkout) when in a worktree.
+# Fall back to the common git dir's parent (the main checkout) when in a worktree,
+# but copy the current branch's .codeowners there so we validate the right file.
 if [[ -f "${WORKTREE_ROOT}/.git" ]]; then
   REPO_ROOT="$(dirname "$(git rev-parse --git-common-dir)")"
+  _ORIG_CODEOWNERS="$(cat "${REPO_ROOT}/.codeowners")"
+  cp "${WORKTREE_ROOT}/.codeowners" "${REPO_ROOT}/.codeowners"
+  trap 'printf "%s" "${_ORIG_CODEOWNERS}" > "${REPO_ROOT}/.codeowners"' EXIT
 else
   REPO_ROOT="${WORKTREE_ROOT}"
 fi
@@ -30,21 +34,26 @@ assert_owner() {
   shift 2
   local expected=("$@")
 
-  local json stderr_out exit_code=0
-  json=$("${CODEOWNERS_CLI}" owner --root "${REPO_ROOT}" --format json "${file}" 2>/tmp/_co_stderr) || exit_code=$?
-  stderr_out=$(cat /tmp/_co_stderr 2>/dev/null || true)
-  if [[ $exit_code -ne 0 ]] || echo "${stderr_out}" | grep -q "^Error:"; then
+  local _stderr _json _exit_code=0
+  _stderr="$(mktemp)"
+  _json=$("${CODEOWNERS_CLI}" owner --root "${REPO_ROOT}" --format json "${file}" 2>"${_stderr}") || _exit_code=$?
+  local stderr_out
+  stderr_out=$(cat "${_stderr}"); rm -f "${_stderr}"
+  if [[ $_exit_code -ne 0 ]] || echo "${stderr_out}" | grep -q "^Error:"; then
     echo -e "  ${RED}ERROR${NC}: ${description} (${file}): CLI error: ${stderr_out}"
     (( FAIL++ )) || true
     return
   fi
 
-  local actual_required
-  actual_required=$(echo "${json}" | jq -r --arg f "${file}" '.[$f].required[]?' | sort | tr '\n' ' ' | sed 's/ $//')
+  # OR-groups are returned as "ownerA or ownerB" in a single array entry.
+  # Split on " or " so each name becomes its own line for exact matching.
+  local actual_required_lines actual_required
+  actual_required_lines=$(echo "${_json}" | jq -r --arg f "${file}" '.[$f].required[]?' | sed 's/ or /\n/g' | sort)
+  actual_required=$(echo "${actual_required_lines}" | tr '\n' ' ' | sed 's/ $//')
 
   local missing=()
   for owner in "${expected[@]}"; do
-    if ! echo "${actual_required}" | grep -qF "${owner}"; then
+    if ! echo "${actual_required_lines}" | grep -qxF "${owner}"; then
       missing+=("${owner}")
     fi
   done
@@ -70,21 +79,26 @@ assert_owner_bug() {
   shift 2
   local expected=("$@")
 
-  local json stderr_out exit_code=0
-  json=$("${CODEOWNERS_CLI}" owner --root "${REPO_ROOT}" --format json "${file}" 2>/tmp/_co_stderr) || exit_code=$?
-  stderr_out=$(cat /tmp/_co_stderr 2>/dev/null || true)
-  if [[ $exit_code -ne 0 ]] || echo "${stderr_out}" | grep -q "^Error:"; then
+  local _stderr _json _exit_code=0
+  _stderr="$(mktemp)"
+  _json=$("${CODEOWNERS_CLI}" owner --root "${REPO_ROOT}" --format json "${file}" 2>"${_stderr}") || _exit_code=$?
+  local stderr_out
+  stderr_out=$(cat "${_stderr}"); rm -f "${_stderr}"
+  if [[ $_exit_code -ne 0 ]] || echo "${stderr_out}" | grep -q "^Error:"; then
     echo -e "  ${RED}ERROR${NC} [BUG]: ${description}: CLI error"
     (( BUGS++ )) || true
     return
   fi
 
-  local actual_required
-  actual_required=$(echo "${json}" | jq -r --arg f "${file}" '.[$f].required[]?' | sort | tr '\n' ' ' | sed 's/ $//')
+  # OR-groups are returned as "ownerA or ownerB" in a single array entry.
+  # Split on " or " so each name becomes its own line for exact matching.
+  local actual_required_lines actual_required
+  actual_required_lines=$(echo "${_json}" | jq -r --arg f "${file}" '.[$f].required[]?' | sed 's/ or /\n/g' | sort)
+  actual_required=$(echo "${actual_required_lines}" | tr '\n' ' ' | sed 's/ $//')
 
   local missing=()
   for owner in "${expected[@]}"; do
-    if ! echo "${actual_required}" | grep -qF "${owner}"; then
+    if ! echo "${actual_required_lines}" | grep -qxF "${owner}"; then
       missing+=("${owner}")
     fi
   done
