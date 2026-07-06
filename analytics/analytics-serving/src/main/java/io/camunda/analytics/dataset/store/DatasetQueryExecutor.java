@@ -42,21 +42,26 @@ public final class DatasetQueryExecutor {
     final Map<GroupKey, Map<String, Object>> accumulators = new LinkedHashMap<>();
 
     for (final DatasetFetch fetch : plan.fetches()) {
-      for (final Cell cell : client.fetch(fetch)) {
-        final long bucket = alignDown(cell.windowStart(), plan.granularityMs());
-        final GroupKey group = groupKeyOf(plan.groupBy(), cell, bucket);
-        final Map<String, Object> byMeter =
-            accumulators.computeIfAbsent(group, g -> new LinkedHashMap<>());
-        for (final String meter : fetch.meters()) {
-          final byte[] bytes = cell.accumulators().get(meter);
-          if (bytes == null) {
-            continue;
-          }
-          final BoundMeter<?, ?> bound = boundOf(dataset, meter, fetch.windowSize());
-          byMeter.merge(
-              meter, decode(bound, bytes), (current, decoded) -> merge(bound, current, decoded));
-        }
-      }
+      // Stream the cells and fold each as it arrives — no full-result materialization, no cap.
+      client.streamCells(
+          fetch,
+          cell -> {
+            final long bucket = alignDown(cell.windowStart(), plan.granularityMs());
+            final GroupKey group = groupKeyOf(plan.groupBy(), cell, bucket);
+            final Map<String, Object> byMeter =
+                accumulators.computeIfAbsent(group, g -> new LinkedHashMap<>());
+            for (final String meter : fetch.meters()) {
+              final byte[] bytes = cell.accumulators().get(meter);
+              if (bytes == null) {
+                continue;
+              }
+              final BoundMeter<?, ?> bound = boundOf(dataset, meter, fetch.windowSize());
+              byMeter.merge(
+                  meter,
+                  decode(bound, bytes),
+                  (current, decoded) -> merge(bound, current, decoded));
+            }
+          });
     }
 
     final List<ReportRow> rows = new ArrayList<>(accumulators.size());

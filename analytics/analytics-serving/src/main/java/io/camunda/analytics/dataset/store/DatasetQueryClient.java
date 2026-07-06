@@ -8,6 +8,7 @@
 package io.camunda.analytics.dataset.store;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * The backend-neutral <b>read</b> seam of the serving store (mirroring OC's {@code
@@ -21,6 +22,17 @@ public interface DatasetQueryClient extends AutoCloseable {
 
   /** Fetches the raw cells of a cube at one tier (see {@link DatasetFetch}). */
   List<Cell> fetch(DatasetFetch fetch);
+
+  /**
+   * Streams the raw cells of a cube at one tier to {@code sink}, one page at a time — the executor
+   * folds each into its accumulator as it arrives, so neither side materializes the full result (no
+   * fixed cap, memory bounded to a page). A backend that can stream (RDBMS forward cursor, ES/OS
+   * {@code search_after}) overrides this; the default just replays a {@link #fetch}, so a backend
+   * is correct before it is optimized.
+   */
+  default void streamCells(final DatasetFetch fetch, final Consumer<Cell> sink) {
+    fetch(fetch).forEach(sink);
+  }
 
   /** Fetches the raw rows of a table (see {@link TableFetch}). */
   List<TableRow> fetchRows(TableFetch fetch);
