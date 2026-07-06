@@ -24,7 +24,7 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class RdbmsTableRowCountMetricsTest {
+class PhysicalTenantsRdbmsTableRowCountMetricsTest {
 
   private static final Duration DEFAULT_CACHE_DURATION = Duration.ofMinutes(15);
   private static final String TENANT_A = "tenant-a";
@@ -33,7 +33,7 @@ class RdbmsTableRowCountMetricsTest {
   private TableMetricsMapper mapperA;
   private TableMetricsMapper mapperB;
   private MeterRegistry meterRegistry;
-  private RdbmsTableRowCountMetrics metrics;
+  private PhysicalTenantsRdbmsTableRowCountMetrics metrics;
 
   @BeforeEach
   void setUp() {
@@ -42,14 +42,21 @@ class RdbmsTableRowCountMetricsTest {
     meterRegistry = new SimpleMeterRegistry();
   }
 
+  private static RdbmsTableRowCountProvider provider(
+      final TableMetricsMapper mapper, final Duration cacheDuration) {
+    return new RdbmsTableRowCountProvider(mapper, cacheDuration);
+  }
+
   @Test
   void shouldRegisterGaugesForAllTablesOfEachPhysicalTenant() {
     // given
     when(mapperA.countTableRows(anyString())).thenReturn(100L);
     when(mapperB.countTableRows(anyString())).thenReturn(100L);
     metrics =
-        new RdbmsTableRowCountMetrics(
-            Map.of(TENANT_A, mapperA, TENANT_B, mapperB), DEFAULT_CACHE_DURATION);
+        new PhysicalTenantsRdbmsTableRowCountMetrics(
+            Map.of(
+                TENANT_A, provider(mapperA, DEFAULT_CACHE_DURATION),
+                TENANT_B, provider(mapperB, DEFAULT_CACHE_DURATION)));
 
     // when
     metrics.bindTo(meterRegistry);
@@ -71,10 +78,12 @@ class RdbmsTableRowCountMetricsTest {
   }
 
   @Test
-  void shouldReturnRowCountFromMapper() {
+  void shouldReportRowCountFromMapper() {
     // given
     when(mapperA.countTableRows("PROCESS_INSTANCE")).thenReturn(42L);
-    metrics = new RdbmsTableRowCountMetrics(Map.of(TENANT_A, mapperA), DEFAULT_CACHE_DURATION);
+    metrics =
+        new PhysicalTenantsRdbmsTableRowCountMetrics(
+            Map.of(TENANT_A, provider(mapperA, DEFAULT_CACHE_DURATION)));
     metrics.bindTo(meterRegistry);
 
     // when
@@ -96,63 +105,39 @@ class RdbmsTableRowCountMetricsTest {
     when(mapperA.countTableRows("PROCESS_INSTANCE")).thenReturn(42L);
     when(mapperB.countTableRows("PROCESS_INSTANCE")).thenReturn(7L);
     metrics =
-        new RdbmsTableRowCountMetrics(
-            Map.of(TENANT_A, mapperA, TENANT_B, mapperB), DEFAULT_CACHE_DURATION);
+        new PhysicalTenantsRdbmsTableRowCountMetrics(
+            Map.of(
+                TENANT_A, provider(mapperA, DEFAULT_CACHE_DURATION),
+                TENANT_B, provider(mapperB, DEFAULT_CACHE_DURATION)));
     metrics.bindTo(meterRegistry);
 
     // when
-    final long countA = metrics.getRowCount(mapperA, TENANT_A, "PROCESS_INSTANCE");
-    final long countB = metrics.getRowCount(mapperB, TENANT_B, "PROCESS_INSTANCE");
-
-    // then
-    assertThat(countA).isEqualTo(42L);
-    assertThat(countB).isEqualTo(7L);
-  }
-
-  @Test
-  void shouldCacheRowCountWithinCacheDuration() {
-    // given
-    when(mapperA.countTableRows("PROCESS_INSTANCE")).thenReturn(42L);
-    // Use a very long cache duration to ensure caching
-    metrics = new RdbmsTableRowCountMetrics(Map.of(TENANT_A, mapperA), Duration.ofHours(1));
-    metrics.bindTo(meterRegistry);
-
-    final Gauge gauge =
+    final Gauge gaugeA =
         meterRegistry
             .find("zeebe.rdbms.table.row.count")
             .tag("physicalTenant", TENANT_A)
             .tag("table", "PROCESS_INSTANCE")
             .gauge();
-
-    // when - access gauge value multiple times
-    gauge.value();
-    gauge.value();
-    gauge.value();
-
-    // then - mapper should only be called once due to caching
-    verify(mapperA, times(1)).countTableRows("PROCESS_INSTANCE");
-  }
-
-  @Test
-  void shouldReturnCachedValueWithGetRowCount() {
-    // given
-    when(mapperA.countTableRows("PROCESS_INSTANCE")).thenReturn(42L);
-    metrics = new RdbmsTableRowCountMetrics(Map.of(TENANT_A, mapperA), Duration.ofHours(1));
-    metrics.bindTo(meterRegistry);
-
-    // when
-    final long rowCount = metrics.getRowCount(mapperA, TENANT_A, "PROCESS_INSTANCE");
+    final Gauge gaugeB =
+        meterRegistry
+            .find("zeebe.rdbms.table.row.count")
+            .tag("physicalTenant", TENANT_B)
+            .tag("table", "PROCESS_INSTANCE")
+            .gauge();
 
     // then
-    assertThat(rowCount).isEqualTo(42L);
+    assertThat(gaugeA.value()).isEqualTo(42.0);
+    assertThat(gaugeB.value()).isEqualTo(7.0);
   }
 
   @Test
-  void shouldHandleMapperException() {
+  void shouldReportNegativeOneOnMapperException() {
     // given
     when(mapperA.countTableRows("PROCESS_INSTANCE"))
         .thenThrow(new RuntimeException("Database error"));
-    metrics = new RdbmsTableRowCountMetrics(Map.of(TENANT_A, mapperA), DEFAULT_CACHE_DURATION);
+    metrics =
+        new PhysicalTenantsRdbmsTableRowCountMetrics(
+            Map.of(TENANT_A, provider(mapperA, DEFAULT_CACHE_DURATION)));
     metrics.bindTo(meterRegistry);
 
     // when
@@ -169,16 +154,28 @@ class RdbmsTableRowCountMetricsTest {
   }
 
   @Test
-  void shouldReturnNegativeOneForUnknownTable() {
+  void shouldCacheRowCountWithinCacheDuration() {
     // given
-    metrics = new RdbmsTableRowCountMetrics(Map.of(TENANT_A, mapperA), DEFAULT_CACHE_DURATION);
+    when(mapperA.countTableRows("PROCESS_INSTANCE")).thenReturn(42L);
+    // Use a very long cache duration to ensure caching
+    metrics =
+        new PhysicalTenantsRdbmsTableRowCountMetrics(
+            Map.of(TENANT_A, provider(mapperA, Duration.ofHours(1))));
     metrics.bindTo(meterRegistry);
 
-    // when
-    final long rowCount = metrics.getRowCount(mapperA, TENANT_A, "UNKNOWN_TABLE");
+    final Gauge gauge =
+        meterRegistry
+            .find("zeebe.rdbms.table.row.count")
+            .tag("physicalTenant", TENANT_A)
+            .tag("table", "PROCESS_INSTANCE")
+            .gauge();
 
-    // then - should return -1 and NOT call the mapper (validation prevents SQL injection)
-    assertThat(rowCount).isEqualTo(-1L);
-    verify(mapperA, times(0)).countTableRows("UNKNOWN_TABLE");
+    // when - access gauge value multiple times
+    gauge.value();
+    gauge.value();
+    gauge.value();
+
+    // then - mapper should only be called once due to caching
+    verify(mapperA, times(1)).countTableRows("PROCESS_INSTANCE");
   }
 }

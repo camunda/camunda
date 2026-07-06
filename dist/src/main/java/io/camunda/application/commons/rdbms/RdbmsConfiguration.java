@@ -10,13 +10,13 @@ package io.camunda.application.commons.rdbms;
 import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
 import io.camunda.application.commons.search.PhysicalTenantResourceAccessControllers;
-import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.db.rdbms.RdbmsServiceFactory;
 import io.camunda.db.rdbms.read.RdbmsTenantReaders;
-import io.camunda.db.rdbms.read.service.RdbmsTableRowCountMetrics;
+import io.camunda.db.rdbms.read.service.PhysicalTenantsRdbmsTableRowCountMetrics;
+import io.camunda.db.rdbms.read.service.RdbmsTableRowCountProvider;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.search.clients.CamundaSearchClients;
 import io.camunda.search.clients.auth.ResourceAccessDelegatingController;
@@ -49,14 +49,27 @@ public class RdbmsConfiguration {
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsConfiguration.class);
 
   @Bean
-  public RdbmsTableRowCountMetrics rdbmsTableRowCountMetrics(
-      final Map<String, RdbmsMapperBundle> rdbmsMapperBundles, final Camunda configuration) {
-    final var metricsConfig = configuration.getData().getSecondaryStorage().getRdbms().getMetrics();
-    final var tableMetricsMappers =
+  public PhysicalTenantsRdbmsTableRowCountMetrics rdbmsTableRowCountMetrics(
+      final Map<String, RdbmsMapperBundle> rdbmsMapperBundles,
+      final PhysicalTenantResolver physicalTenantResolver) {
+    final var rowCountProviders =
         rdbmsMapperBundles.entrySet().stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().tableMetricsMapper()));
-    return new RdbmsTableRowCountMetrics(
-        tableMetricsMappers, metricsConfig.getTableRowCountCacheDuration());
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey,
+                    e -> {
+                      final var cacheDuration =
+                          physicalTenantResolver
+                              .forPhysicalTenant(e.getKey())
+                              .getData()
+                              .getSecondaryStorage()
+                              .getRdbms()
+                              .getMetrics()
+                              .getTableRowCountCacheDuration();
+                      return new RdbmsTableRowCountProvider(
+                          e.getValue().tableMetricsMapper(), cacheDuration);
+                    }));
+    return new PhysicalTenantsRdbmsTableRowCountMetrics(rowCountProviders);
   }
 
   @Bean
