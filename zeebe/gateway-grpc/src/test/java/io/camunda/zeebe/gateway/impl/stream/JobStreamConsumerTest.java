@@ -32,7 +32,7 @@ final class JobStreamConsumerTest {
     // given
     final var failure = new RuntimeException("failed");
     final var clientObserver = new TestStreamObserver();
-    final var consumer = new JobStreamConsumer(clientObserver, executor);
+    final var consumer = new JobStreamConsumer(clientObserver, executor, "default");
     clientObserver.failure = failure;
 
     // when
@@ -51,7 +51,7 @@ final class JobStreamConsumerTest {
   void shouldFailPushOnSerialization() {
     // given
     final var clientObserver = new TestStreamObserver();
-    final var consumer = new JobStreamConsumer(clientObserver, executor);
+    final var consumer = new JobStreamConsumer(clientObserver, executor, "default");
 
     // when
     final var result = consumer.push(BufferUtil.wrapString("i am not a job"));
@@ -69,7 +69,7 @@ final class JobStreamConsumerTest {
   void shouldFailPushOnClientStreamNotReady() {
     // given
     final var clientObserver = new TestStreamObserver();
-    final var consumer = new JobStreamConsumer(clientObserver, executor);
+    final var consumer = new JobStreamConsumer(clientObserver, executor, "default");
     clientObserver.isReady = false;
 
     // when
@@ -88,7 +88,7 @@ final class JobStreamConsumerTest {
   void shouldPushPayload() {
     // given
     final var clientObserver = new TestStreamObserver();
-    final var consumer = new JobStreamConsumer(clientObserver, executor);
+    final var consumer = new JobStreamConsumer(clientObserver, executor, "riskproduction");
     final var job = new ActivatedJobImpl().setJobKey(1);
 
     // when
@@ -98,6 +98,9 @@ final class JobStreamConsumerTest {
     assertThat(result).succeedsWithin(Duration.ofSeconds(5));
     assertThat(clientObserver.error).isNull();
     assertThat(clientObserver.pushed).extracting(ActivatedJob::getKey).containsExactly(1L);
+    assertThat(clientObserver.pushed)
+        .extracting(ActivatedJob::getPhysicalTenantId)
+        .containsExactly("riskproduction");
   }
 
   private static final class TestStreamObserver extends ServerCallStreamObserver<ActivatedJob>

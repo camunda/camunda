@@ -207,8 +207,12 @@ public final class EndpointManager {
     try {
       final JobActivationProperties brokerRequest =
           RequestMapper.toJobActivationProperties(request, getClaims());
+      final String physicalTenantId =
+          Objects.requireNonNullElse(
+              getPhysicalTenantId(), PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
 
-      streamJobsHandler.handle(request.getType(), brokerRequest, responseObserver);
+      streamJobsHandler.handle(
+          request.getType(), brokerRequest, responseObserver, physicalTenantId);
     } catch (final Exception e) {
       responseObserver.onError(e);
     }

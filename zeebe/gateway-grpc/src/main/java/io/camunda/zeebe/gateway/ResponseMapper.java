@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.util.EnumUtil;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResponse;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResult;
@@ -347,7 +348,8 @@ public final class ResponseMapper {
     while (jobKeys.hasNext() && jobs.hasNext()) {
       final LongValue jobKey = jobKeys.next();
       final JobRecord job = jobs.next();
-      final ActivatedJob activatedJob = toActivatedJob(jobKey.getValue(), job);
+      final ActivatedJob activatedJob =
+          toActivatedJob(jobKey.getValue(), job, activationResponse.physicalTenantId());
 
       final int activatedJobSize = activatedJob.getSerializedSize();
       if (currentResponseSize + activatedJobSize <= activationResponse.maxResponseSize()) {
@@ -376,13 +378,20 @@ public final class ResponseMapper {
 
   public static ActivatedJob toActivatedJob(
       final io.camunda.zeebe.protocol.impl.stream.job.ActivatedJob brokerResponse) {
+    return toActivatedJob(brokerResponse, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  public static ActivatedJob toActivatedJob(
+      final io.camunda.zeebe.protocol.impl.stream.job.ActivatedJob brokerResponse,
+      final String physicalTenantId) {
     final long jobKey = brokerResponse.jobKey();
     final JobRecord job = brokerResponse.jobRecord();
 
-    return toActivatedJob(jobKey, job);
+    return toActivatedJob(jobKey, job, physicalTenantId);
   }
 
-  private static ActivatedJob toActivatedJob(final long jobKey, final JobRecord job) {
+  private static ActivatedJob toActivatedJob(
+      final long jobKey, final JobRecord job, final String physicalTenantId) {
     final var builder =
         ActivatedJob.newBuilder()
             .setKey(jobKey)
@@ -400,6 +409,7 @@ public final class ResponseMapper {
             .setDeadline(job.getDeadline())
             .setVariables(bufferAsJson(job.getVariablesBuffer()))
             .setTenantId(job.getTenantId())
+            .setPhysicalTenantId(physicalTenantId)
             .setKind(EnumUtil.convert(job.getJobKind(), ActivatedJob.JobKind.class))
             .setListenerEventType(
                 EnumUtil.convert(

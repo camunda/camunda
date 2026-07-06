@@ -46,7 +46,8 @@ public class StreamJobsHandler extends Actor {
   public void handle(
       final String jobType,
       final JobActivationProperties jobActivationProperties,
-      final ServerCallStreamObserver<ActivatedJob> responseObserver) {
+      final ServerCallStreamObserver<ActivatedJob> responseObserver,
+      final String physicalTenantId) {
     // TODO(#14452): move validations to RequestMapper and convert
     //  to exceptions that can be used in the GrpcErrorMapper
     if (jobType.isBlank()) {
@@ -75,7 +76,7 @@ public class StreamJobsHandler extends Actor {
       final ServerCallStreamObserver<ActivatedJob> responseObserver,
       final String physicalTenantId) {
     final var streamType = wrapString(jobType);
-    final var consumer = new JobStreamConsumer(responseObserver, actor);
+    final var consumer = new JobStreamConsumer(responseObserver, actor, physicalTenantId);
     final var cleaner = new AsyncJobStreamRemover(jobStreamer, actor);
 
     // setting the handlers has to be done before the call is started, so we cannot do it in the
@@ -126,13 +127,16 @@ public class StreamJobsHandler extends Actor {
   static final class JobStreamConsumer implements ClientStreamConsumer {
     private final ServerCallStreamObserver<ActivatedJob> responseObserver;
     private final ConcurrencyControl executor;
+    private final String physicalTenantId;
 
     @VisibleForTesting("Allow unit testing behavior")
     JobStreamConsumer(
         final ServerCallStreamObserver<ActivatedJob> responseObserver,
-        final ConcurrencyControl executor) {
+        final ConcurrencyControl executor,
+        final String physicalTenantId) {
       this.responseObserver = responseObserver;
       this.executor = executor;
+      this.physicalTenantId = physicalTenantId;
     }
 
     @Override
@@ -166,7 +170,7 @@ public class StreamJobsHandler extends Actor {
       // fail push on serialization errors, but no need to close the client stream
       try {
         deserializedJob.wrap(payload);
-        activatedJob = ResponseMapper.toActivatedJob(deserializedJob);
+        activatedJob = ResponseMapper.toActivatedJob(deserializedJob, physicalTenantId);
       } catch (final Exception e) {
         result.completeExceptionally(e);
         return;
