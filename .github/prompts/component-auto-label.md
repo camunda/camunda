@@ -79,7 +79,7 @@ I couldn't confidently determine a component for this issue from its title and d
 - Only ever add one `component/*` label and (optionally) remove `needs component label`. Never add, remove, or change any other label.
 - Exactly one component label.
 
-## The 44 component/* labels (choose one, verbatim)
+## The 45 component/* labels (choose one, verbatim)
 
 <!-- Keep this list in sync with the component/* labels in camunda/camunda. Update manually when labels are added or removed. -->
 - component/camunda — affects the complete monorepo / cross-cutting (only for genuinely repo-wide work)
