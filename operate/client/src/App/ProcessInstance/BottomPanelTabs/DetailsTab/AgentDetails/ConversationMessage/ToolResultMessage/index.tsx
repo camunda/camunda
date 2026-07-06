@@ -6,8 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useMemo, useState} from 'react';
 import type {
-  AgentInstanceHistoryItem,
   AgentInstanceToolCall,
   AgentTool,
 } from '@camunda/camunda-api-zod-schemas/8.10';
@@ -20,22 +20,8 @@ import {
   ToolLabel,
 } from './styled';
 import {Button} from '@carbon/react';
-
-type ContentItem = AgentInstanceHistoryItem['content'][number];
-
-const getResultPreview = (result: ContentItem[]): string => {
-  const entry = result.find(
-    (item) => item.contentType === 'TEXT' || item.contentType === 'OBJECT',
-  );
-  switch (entry?.contentType) {
-    case 'TEXT':
-      return entry.text;
-    case 'OBJECT':
-      return JSON.stringify(entry.object);
-    default:
-      return 'The tool call did not return content.';
-  }
-};
+import {getResultPreview, type ContentItem} from './getRenderableResult';
+import {ToolResultModal} from './ToolResultModal';
 
 type ToolResultMessageProps = {
   availableTools: AgentTool[];
@@ -44,16 +30,26 @@ type ToolResultMessageProps = {
 };
 
 const ToolResultMessage: React.FC<ToolResultMessageProps> = ({
+  availableTools,
   toolCalls,
   content,
 }) => {
   // According to the API, the tool call is a single entry in the tool calls list on a TOOL_RESULT message.
   const toolCall = toolCalls[0];
+
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const resultPreview = useMemo(() => getResultPreview(content), [content]);
+  const description = useMemo(() => {
+    const tool = availableTools.find(
+      (tool) => tool.name === toolCall?.toolName,
+    );
+    return tool?.description ?? null;
+  }, [availableTools, toolCall]);
+
   if (!toolCall) {
     return null;
   }
-
-  const resultPreview = getResultPreview(content);
 
   return (
     <Container
@@ -68,15 +64,24 @@ const ToolResultMessage: React.FC<ToolResultMessageProps> = ({
       <ResultPreview>{resultPreview}</ResultPreview>
       <ToolActions>
         <Button
-          disabled // disabled until implemented.
           kind="ghost"
           size="sm"
           renderIcon={Maximize}
           iconDescription="Expand"
           tooltipAlignment="end"
           hasIconOnly
+          onClick={() => setIsExpanded(true)}
         />
       </ToolActions>
+      {isExpanded && (
+        <ToolResultModal
+          toolName={toolCall.toolName}
+          description={description}
+          input={toolCall.arguments}
+          content={content}
+          onClose={() => setIsExpanded(false)}
+        />
+      )}
     </Container>
   );
 };
