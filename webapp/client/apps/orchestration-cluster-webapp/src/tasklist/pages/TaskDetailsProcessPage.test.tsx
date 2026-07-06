@@ -18,13 +18,18 @@ const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => {
 };
 
 describe('<TaskDetailsProcessPage />', () => {
-	it('should show the process name when the task has one', async () => {
+	it('should show the task process metadata and diagram', async () => {
 		const screen = await render(
-			<TaskDetailsProcessPage task={createUserTask({processName: 'Invoice process'})} processXml={BPMN_XML} />,
+			<TaskDetailsProcessPage
+				task={createUserTask({processName: 'Invoice process', processDefinitionVersion: 7})}
+				processXml={BPMN_XML}
+			/>,
 			{wrapper: Wrapper},
 		);
 
 		await expect.element(screen.getByText('Invoice process')).toBeVisible();
+		await expect.element(screen.getByText('Version: 7')).toBeVisible();
+		await expect.element(screen.getByText('Review invoice')).toBeVisible();
 	});
 
 	it('should show the process definition ID when the task has no process name', async () => {
@@ -37,22 +42,5 @@ describe('<TaskDetailsProcessPage />', () => {
 		);
 
 		await expect.element(screen.getByText('invoice-process')).toBeVisible();
-	});
-
-	it('should show the process version', async () => {
-		const screen = await render(
-			<TaskDetailsProcessPage task={createUserTask({processDefinitionVersion: 7})} processXml={BPMN_XML} />,
-			{wrapper: Wrapper},
-		);
-
-		await expect.element(screen.getByText('Version: 7')).toBeVisible();
-	});
-
-	it("should show the task's associated BPMN process diagram", async () => {
-		const screen = await render(<TaskDetailsProcessPage task={createUserTask()} processXml={BPMN_XML} />, {
-			wrapper: Wrapper,
-		});
-
-		await expect.element(screen.getByText('Review invoice')).toBeVisible();
 	});
 });

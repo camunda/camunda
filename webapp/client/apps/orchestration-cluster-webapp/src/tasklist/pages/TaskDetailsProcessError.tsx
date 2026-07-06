@@ -7,7 +7,9 @@
  */
 
 import {Button, InlineNotification} from '@carbon/react';
+import type {ErrorComponentProps} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
+import {requestErrorSchema} from '#/shared/http/request';
 import styles from './TaskDetailsProcessError.module.scss';
 
 type Props = {
@@ -39,4 +41,14 @@ const TaskDetailsProcessError: React.FC<Props> = ({variant, onRetry}) => {
 	);
 };
 
-export {TaskDetailsProcessError};
+const TaskDetailsProcessRouteError: React.FC<ErrorComponentProps> = ({error, reset}) => {
+	const result = requestErrorSchema.safeParse(error);
+
+	if (result.success && result.data.response?.status === 403) {
+		return <TaskDetailsProcessError variant="forbidden" />;
+	}
+
+	return <TaskDetailsProcessError variant="generic" onRetry={reset} />;
+};
+
+export {TaskDetailsProcessRouteError};

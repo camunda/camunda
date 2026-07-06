@@ -10,7 +10,7 @@ import {createFileRoute} from '@tanstack/react-router';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {queries} from '#/shared/http/queries';
 import {TaskDetailsProcessPage} from '#/tasklist/pages/TaskDetailsProcessPage';
-import {TaskDetailsProcessRouteError} from '#/tasklist/pages/TaskDetailsProcessRouteError';
+import {TaskDetailsProcessRouteError} from '#/tasklist/pages/TaskDetailsProcessError';
 import {TaskDetailsProcessSkeleton} from '#/tasklist/pages/TaskDetailsProcessSkeleton';
 import {EmptyProcessXmlError} from '#/shared/errors';
 
