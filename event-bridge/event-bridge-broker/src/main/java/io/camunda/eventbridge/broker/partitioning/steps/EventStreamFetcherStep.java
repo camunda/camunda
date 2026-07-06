@@ -38,7 +38,7 @@ public class EventStreamFetcherStep implements PartitionStartupStep {
             context.getPartitionId(),
             readerFactory,
             executor,
-            null,
+            context.getFetchPurgatory(),
             highWatermark,
             new SemaphoreFlowControl(new Semaphore(32)),
             InstantSource.system(),
