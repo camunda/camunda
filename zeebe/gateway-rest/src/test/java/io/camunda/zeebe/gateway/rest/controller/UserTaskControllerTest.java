@@ -413,7 +413,7 @@ public class UserTaskControllerTest extends RestControllerTest {
   void shouldYieldBadRequestWhenUpdateTaskWithoutActionAndChanges(final String baseUrl) {
     // given
     final var expectedBody =
-        """
+"""
         {
           "type": "about:blank",
           "status": 400,
@@ -537,7 +537,7 @@ for a supported attribute in the \\"changeset\\".",
             }""";
 
     final var expectedBody =
-        """
+"""
             {
               "type": "about:blank",
               "status": 400,
