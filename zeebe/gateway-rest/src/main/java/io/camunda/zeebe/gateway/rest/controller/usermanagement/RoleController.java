@@ -264,8 +264,7 @@ public class RoleController {
       final HttpServletRequest request) {
     return RequestMapper.toRoleMemberRequest(
             roleId,
-            GroupIdPathResolver.resolveGroupId(
-                request, "/v2/roles/" + roleId + "/groups/", groupId),
+            GroupIdPathResolver.resolveGroupId(request, groupId),
             EntityType.GROUP,
             securityConfiguration.getCompiledIdValidationPattern(),
             securityConfiguration.getCompiledGroupIdValidationPattern())
@@ -332,8 +331,7 @@ public class RoleController {
       final HttpServletRequest request) {
     return RequestMapper.toRoleMemberRequest(
             roleId,
-            GroupIdPathResolver.resolveGroupId(
-                request, "/v2/roles/" + roleId + "/groups/", groupId),
+            GroupIdPathResolver.resolveGroupId(request, groupId),
             EntityType.GROUP,
             securityConfiguration.getCompiledIdValidationPattern(),
             securityConfiguration.getCompiledGroupIdValidationPattern())

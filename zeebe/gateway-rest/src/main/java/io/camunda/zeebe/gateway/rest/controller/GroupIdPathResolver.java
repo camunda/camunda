@@ -15,20 +15,22 @@ public final class GroupIdPathResolver {
   private GroupIdPathResolver() {}
 
   // AntPathMatcher (active via spring.mvc.pathmatch.matching-strategy=ant_path_matcher) normalizes
-  // double slashes, stripping the leading "/" from group IDs like "%2FmyGroup". Build an exact
-  // prefix from the known, correctly-bound path segments before the group ID so the search cannot
-  // match inside the group ID itself (fixes lastIndexOf ambiguity). UriUtils.decode is used instead
-  // of URLDecoder so that '+' is not mistranslated as space.
-  public static String resolveGroupId(
-      final HttpServletRequest request, final String groupsPathPrefix, final String fallback) {
+  // double slashes, stripping the leading "/" from group IDs like "%2FmyGroup". Read the raw
+  // encoded URI instead and decode it to recover the full group ID.
+  //
+  // lastIndexOf("/groups/") is safe here because in the raw (percent-encoded) URI, slashes within
+  // path variable values are encoded as %2F — only structural path separators are literal "/".
+  // A group ID like "/foo/groups/bar" appears as "%2Ffoo%2Fgroups%2Fbar", so the literal
+  // "/groups/" always identifies the structural boundary, not a value embedded in another segment.
+  // UriUtils.decode is used instead of URLDecoder so that '+' is not mistranslated as space.
+  public static String resolveGroupId(final HttpServletRequest request, final String fallback) {
     try {
       final String uri = request.getRequestURI();
-      final String prefix = request.getContextPath() + groupsPathPrefix;
-      final int idx = uri.indexOf(prefix);
+      final int idx = uri.lastIndexOf("/groups/");
       if (idx < 0) {
         return fallback;
       }
-      return UriUtils.decode(uri.substring(idx + prefix.length()), StandardCharsets.UTF_8);
+      return UriUtils.decode(uri.substring(idx + "/groups/".length()), StandardCharsets.UTF_8);
     } catch (final Exception e) {
       return fallback;
     }
