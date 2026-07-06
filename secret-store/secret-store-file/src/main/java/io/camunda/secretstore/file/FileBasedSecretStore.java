@@ -10,7 +10,6 @@ package io.camunda.secretstore.file;
 import static io.camunda.secretstore.SecretErrorCode.NOT_FOUND;
 import static java.util.stream.Collectors.toMap;
 
-import io.camunda.secretstore.SecretRef;
 import io.camunda.secretstore.SecretResolutionResult;
 import io.camunda.secretstore.SecretStore;
 import io.camunda.secretstore.SecretStoreUnavailableException;
@@ -26,7 +25,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class FileBasedSecretStore implements SecretStore {
+public final class FileBasedSecretStore implements SecretStore<FileBasedSecretReference> {
 
   private static final Logger LOG = LoggerFactory.getLogger(FileBasedSecretStore.class);
 
@@ -37,7 +36,8 @@ public final class FileBasedSecretStore implements SecretStore {
   }
 
   @Override
-  public Map<SecretRef, SecretResolutionResult> resolve(final Set<SecretRef> refs) {
+  public Map<FileBasedSecretReference, SecretResolutionResult> resolve(
+      final Set<FileBasedSecretReference> refs) {
     final var props = loadProperties();
     LOG.debug("Resolving {} secret refs from '{}'", refs.size(), filePath);
     return refs.stream()
@@ -54,12 +54,12 @@ public final class FileBasedSecretStore implements SecretStore {
   }
 
   @Override
-  public Collection<SecretRef> list() {
+  public Collection<FileBasedSecretReference> list() {
     final var props = loadProperties();
     final var refs =
         props.stringPropertyNames().stream()
             .filter(name -> !name.isBlank())
-            .map(SecretRef::new)
+            .map(FileBasedSecretReference::new)
             .toList();
     LOG.debug("Listing {} secrets from '{}'", refs.size(), filePath);
     return refs;

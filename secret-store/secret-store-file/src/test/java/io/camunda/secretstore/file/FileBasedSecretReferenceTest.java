@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.secretstore;
+package io.camunda.secretstore.file;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -13,12 +13,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.util.HashMap;
 import org.junit.jupiter.api.Test;
 
-class SecretRefTest {
-
+public class FileBasedSecretReferenceTest {
   @Test
   void shouldCreateWithName() {
     // given / when
-    final var ref = new SecretRef("my-secret");
+    final var ref = new FileBasedSecretReference("my-secret");
 
     // then
     assertThat(ref.name()).isEqualTo("my-secret");
@@ -26,21 +25,21 @@ class SecretRefTest {
 
   @Test
   void shouldRejectNullName() {
-    assertThatThrownBy(() -> new SecretRef(null))
+    assertThatThrownBy(() -> new FileBasedSecretReference(null))
         .isInstanceOf(NullPointerException.class)
         .hasMessageContaining("name must not be null");
   }
 
   @Test
   void shouldRejectBlankName() {
-    assertThatThrownBy(() -> new SecretRef("   "))
+    assertThatThrownBy(() -> new FileBasedSecretReference("   "))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("name must not be blank");
   }
 
   @Test
   void shouldRejectEmptyName() {
-    assertThatThrownBy(() -> new SecretRef(""))
+    assertThatThrownBy(() -> new FileBasedSecretReference(""))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("name must not be blank");
   }
@@ -48,8 +47,8 @@ class SecretRefTest {
   @Test
   void shouldSupportEqualityAndHashCode() {
     // given
-    final var ref1 = new SecretRef("my-secret");
-    final var ref2 = new SecretRef("my-secret");
+    final var ref1 = new FileBasedSecretReference("my-secret");
+    final var ref2 = new FileBasedSecretReference("my-secret");
 
     // then
     assertThat(ref1).isEqualTo(ref2);
@@ -59,11 +58,11 @@ class SecretRefTest {
   @Test
   void shouldBeUsableAsMapKey() {
     // given
-    final var map = new HashMap<SecretRef, String>();
-    final var ref = new SecretRef("my-secret");
+    final var map = new HashMap<FileBasedSecretReference, String>();
+    final var ref = new FileBasedSecretReference("my-secret");
     map.put(ref, "value");
 
     // when / then
-    assertThat(map.get(new SecretRef("my-secret"))).isEqualTo("value");
+    assertThat(map.get(new FileBasedSecretReference("my-secret"))).isEqualTo("value");
   }
 }

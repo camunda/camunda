@@ -7,13 +7,4 @@
  */
 package io.camunda.secretstore;
 
-import java.util.Objects;
-
-public record SecretRef(String name) {
-  public SecretRef {
-    Objects.requireNonNull(name, "name must not be null");
-    if (name.isBlank()) {
-      throw new IllegalArgumentException("name must not be blank");
-    }
-  }
-}
+public interface SecretReference {}

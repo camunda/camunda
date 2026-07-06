@@ -11,7 +11,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-public interface SecretStore extends AutoCloseable {
+public interface SecretStore<T extends SecretReference> extends AutoCloseable {
 
   /**
    * Resolves a set of secret references in a single call.
@@ -22,7 +22,7 @@ public interface SecretStore extends AutoCloseable {
    * @throws SecretStoreUnavailableException if the backing store cannot be accessed or its content
    *     is malformed
    */
-  Map<SecretRef, SecretResolutionResult> resolve(Set<SecretRef> refs);
+  Map<T, SecretResolutionResult> resolve(Set<T> refs);
 
   /**
    * Lists all secret references known to this store.
@@ -30,7 +30,7 @@ public interface SecretStore extends AutoCloseable {
    * @throws SecretStoreUnavailableException if the backing store cannot be accessed or its content
    *     is malformed
    */
-  Collection<SecretRef> list();
+  Collection<T> list();
 
   @Override
   default void close() {}
