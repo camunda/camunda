@@ -14,7 +14,14 @@ import {
   getToolCallResult,
   type ContentItem,
 } from '../getRenderableResult';
-import {Description, Columns, Column, ColumnLabel, EmptyHint} from './styled';
+import {
+  Description,
+  Columns,
+  Column,
+  ColumnLabel,
+  EditorContainer,
+  EmptyHint,
+} from './styled';
 
 const RichTextEditor = lazy(async () => {
   const [{loadMonaco}, {RichTextEditor}] = await Promise.all([
@@ -63,14 +70,16 @@ const ToolResultModal: React.FC<ToolResultModalProps> = ({
             <CopyButton value={inputValue} hasIconOnly tooltipAlignment="end" />
           )}
           {inputValue !== null ? (
-            <Suspense>
-              <RichTextEditor
-                value={inputValue}
-                readOnly
-                language="json"
-                height="40vh"
-              />
-            </Suspense>
+            <EditorContainer>
+              <Suspense>
+                <RichTextEditor
+                  value={inputValue}
+                  readOnly
+                  language="json"
+                  height="100%"
+                />
+              </Suspense>
+            </EditorContainer>
           ) : (
             <EmptyHint>Tool called without input arguments.</EmptyHint>
           )}
@@ -85,14 +94,16 @@ const ToolResultModal: React.FC<ToolResultModalProps> = ({
             />
           )}
           {result !== null ? (
-            <Suspense>
-              <RichTextEditor
-                value={result.value}
-                readOnly
-                language={result.language}
-                height="40vh"
-              />
-            </Suspense>
+            <EditorContainer>
+              <Suspense>
+                <RichTextEditor
+                  value={result.value}
+                  readOnly
+                  language={result.language}
+                  height="100%"
+                />
+              </Suspense>
+            </EditorContainer>
           ) : (
             <EmptyHint>{EMPTY_RESULT_MESSAGE}</EmptyHint>
           )}

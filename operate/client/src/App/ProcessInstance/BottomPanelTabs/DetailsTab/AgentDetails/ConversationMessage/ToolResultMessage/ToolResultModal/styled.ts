@@ -8,6 +8,10 @@
 
 import styled from 'styled-components';
 
+// The styles use container queries, which do not support CSS variables in their selectors.
+const EDITOR_BASIS = '400px';
+const COLUMN_GAP = '1rem'; // --cds-spacing-05
+
 const Description = styled.p`
   // Modal's set a default top margin for paragraph content.
   margin-block-start: 0 !important;
@@ -17,11 +21,12 @@ const Description = styled.p`
 const Columns = styled.div`
   display: flex;
   flex-wrap: wrap;
-  gap: var(--cds-spacing-05);
+  gap: ${COLUMN_GAP};
+  container-type: inline-size;
 `;
 
 const Column = styled.section`
-  flex: 1 1 400px;
+  flex: 1 1 ${EDITOR_BASIS};
   display: grid;
   grid-template-rows: auto 1fr;
   grid-template-columns: 1fr auto;
@@ -31,6 +36,14 @@ const Column = styled.section`
   & > :last-child {
     align-self: start;
     grid-column: 1 / -1;
+  }
+`;
+
+const EditorContainer = styled.div`
+  block-size: 40vh;
+
+  @container (max-inline-size: calc(2 * ${EDITOR_BASIS} + ${COLUMN_GAP})) {
+    block-size: 25vh;
   }
 `;
 
@@ -50,4 +63,4 @@ const EmptyHint = styled.span`
   color: var(--cds-text-secondary);
 `;
 
-export {Description, Columns, Column, ColumnLabel, EmptyHint};
+export {Description, Columns, Column, ColumnLabel, EditorContainer, EmptyHint};
