@@ -8,6 +8,7 @@
 package io.camunda.analytics.pipeline.stage;
 
 import io.camunda.analytics.projection.SourceRecord;
+import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.streaming.StreamRuntime;
 import io.camunda.eventbridge.streaming.shuffle.ShuffleEnvelope;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -34,16 +35,19 @@ public final class AnalyticsPipeline {
   private AnalyticsPipeline() {}
 
   public static void main(final String[] args) {
+    final EventBridgeClient client = PipelineRuntimes.newClient();
     final ActorScheduler scheduler = PipelineRuntimes.startScheduler();
     final ExecutorService sinkExecutor = PipelineRuntimes.newSinkExecutor();
 
     final StreamRuntime<SourceRecord> stage1 =
-        AnalyticsProjectionStage.buildRuntime(scheduler, sinkExecutor);
+        AnalyticsProjectionStage.buildRuntime(client, scheduler, sinkExecutor);
     final StreamRuntime<ShuffleEnvelope> stage2 =
-        AnalyticsAggregationStage.buildRuntime(scheduler, sinkExecutor);
+        AnalyticsAggregationStage.buildRuntime(client, scheduler, sinkExecutor);
 
-    LOG.info("Analytics pipeline: running Stage 1 + Stage 2 on a shared actor scheduler");
+    LOG.info(
+        "Analytics pipeline: running Stage 1 + Stage 2 on a shared client and actor scheduler");
     PipelineRuntimes.run(
+        client,
         scheduler,
         sinkExecutor,
         List.of(

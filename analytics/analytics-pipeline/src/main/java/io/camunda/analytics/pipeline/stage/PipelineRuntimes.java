@@ -7,6 +7,7 @@
  */
 package io.camunda.analytics.pipeline.stage;
 
+import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.streaming.StreamRuntime;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import java.util.ArrayList;
@@ -33,6 +34,14 @@ public final class PipelineRuntimes {
 
   /** A named runtime to run to shutdown. */
   public record Member(String name, StreamRuntime<?> runtime) {}
+
+  /**
+   * One EventBridge client for the whole process — the shared gateway connection that hosts every
+   * stage's consumer (and Stage 1's producer). Override the gateway with {@code -Dgateway}.
+   */
+  public static EventBridgeClient newClient() {
+    return EventBridgeClient.create(System.getProperty("gateway", "http://localhost:8080"));
+  }
 
   /**
    * A right-sized, started actor scheduler for the partition actors. Defaults to a small cpu-bound
@@ -66,9 +75,12 @@ public final class PipelineRuntimes {
 
   /**
    * Runs every member on its own thread until the JVM is asked to stop, then stops the runtimes,
-   * waits for them to finish their final commit, and closes the shared scheduler and sink executor.
+   * waits for them to finish their final commit, and closes the shared client, scheduler, and sink
+   * executor. Close order matters: the runtimes' final commit uses the client and scheduler, so
+   * those are torn down only after every runtime thread has finished.
    */
   public static void run(
+      final EventBridgeClient client,
       final ActorScheduler scheduler,
       final ExecutorService sinkExecutor,
       final List<Member> members) {
@@ -84,6 +96,7 @@ public final class PipelineRuntimes {
                   threads.forEach(PipelineRuntimes::join); // runtimes finalize while resources live
                   closeScheduler(scheduler);
                   sinkExecutor.shutdownNow();
+                  client.close();
                 },
                 "analytics-shutdown"));
     threads.forEach(Thread::start);

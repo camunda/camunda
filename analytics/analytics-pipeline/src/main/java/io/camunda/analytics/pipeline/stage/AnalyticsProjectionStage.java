@@ -9,10 +9,10 @@ package io.camunda.analytics.pipeline.stage;
 
 import io.camunda.analytics.dataset.ActiveCube;
 import io.camunda.analytics.dataset.ActiveTable;
-import io.camunda.analytics.serving.spi.MetadataStore;
 import io.camunda.analytics.pipeline.store.AnalyticsBackend;
 import io.camunda.analytics.pipeline.store.AnalyticsBackends;
 import io.camunda.analytics.projection.SourceRecord;
+import io.camunda.analytics.serving.spi.MetadataStore;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.streaming.StreamRuntime;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecordCodec;
@@ -48,22 +48,24 @@ public final class AnalyticsProjectionStage {
   private AnalyticsProjectionStage() {}
 
   public static void main(final String[] args) {
+    final EventBridgeClient client = PipelineRuntimes.newClient();
     final ActorScheduler scheduler = PipelineRuntimes.startScheduler();
     final ExecutorService sinkExecutor = PipelineRuntimes.newSinkExecutor();
-    final StreamRuntime<SourceRecord> runtime = buildRuntime(scheduler, sinkExecutor);
+    final StreamRuntime<SourceRecord> runtime = buildRuntime(client, scheduler, sinkExecutor);
     PipelineRuntimes.run(
-        scheduler, sinkExecutor, List.of(new PipelineRuntimes.Member("stage1", runtime)));
+        client, scheduler, sinkExecutor, List.of(new PipelineRuntimes.Member("stage1", runtime)));
   }
 
   /**
-   * Builds (but does not run) the Stage 1 runtime on the given shared actor scheduler and sink
-   * executor, so a single stage process or the consolidated launcher can run it. Reads its
+   * Builds (but does not run) the Stage 1 runtime on the given shared client, actor scheduler, and
+   * sink executor, so a single stage process or the consolidated launcher can run it. Reads its
    * configuration from system properties and provisions the facts topic and metadata plane.
    */
   public static StreamRuntime<SourceRecord> buildRuntime(
-      final ActorScheduler scheduler, final ExecutorService sinkExecutor) {
+      final EventBridgeClient client,
+      final ActorScheduler scheduler,
+      final ExecutorService sinkExecutor) {
     final String group = System.getProperty("group", "analytics-stage1");
-    final String gateway = System.getProperty("gateway", "http://localhost:8080");
     final String sourceTopic = System.getProperty("sourceTopic", "zeebe-records");
     final String factsTopic = System.getProperty("factsTopic", "analytics-facts");
     final int factsPartitions = Integer.getInteger("factsPartitions", 1);
@@ -72,7 +74,6 @@ public final class AnalyticsProjectionStage {
     final String instanceId =
         System.getProperty("instanceId", "stage1-" + ProcessHandle.current().pid());
 
-    final EventBridgeClient client = EventBridgeClient.create(gateway);
     final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
     try {
       client.createTopic(factsTopic, factsPartitions, 1).join();
