@@ -83,7 +83,7 @@ public class RoleUpdateAuthorizationTest {
   }
 
   @Test
-  public void shouldBeUnAuthorizedToUpdateRoleWithScopedPermissionOnDifferentRole() {
+  public void shouldBeUnauthorizedToUpdateRoleWithScopedPermissionOnDifferentRole() {
     // given
     final var allowedRoleId = Strings.newRandomValidIdentityId();
     final var deniedRoleId = Strings.newRandomValidIdentityId();

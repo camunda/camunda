@@ -86,7 +86,7 @@ public class GroupUpdateAuthorizationTest {
   }
 
   @Test
-  public void shouldBeUnAuthorizedToUpdateGroupWithScopedPermissionOnDifferentGroup() {
+  public void shouldBeUnauthorizedToUpdateGroupWithScopedPermissionOnDifferentGroup() {
     // given
     final var allowedGroupId = Strings.newRandomValidIdentityId();
     final var deniedGroupId = Strings.newRandomValidIdentityId();
