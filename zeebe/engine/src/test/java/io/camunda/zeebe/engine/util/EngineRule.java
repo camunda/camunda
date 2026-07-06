@@ -427,7 +427,7 @@ public final class EngineRule extends ExternalResource {
     environmentRule.getClock().addTime(duration);
   }
 
-  public void reprocess() {
+  public void replay() {
     forEachPartition(
         partitionId -> {
           try {
@@ -444,7 +444,7 @@ public final class EngineRule extends ExternalResource {
     startProcessors(StreamProcessorMode.PROCESSING, true);
     TestUtil.waitUntil(
         () -> RecordingExporter.getRecords().size() >= lastSize,
-        "Failed to reprocess all events, only re-exported %d but expected %d",
+        "Failed to replay all events, only re-exported %d but expected %d",
         RecordingExporter.getRecords().size(),
         lastSize);
   }
