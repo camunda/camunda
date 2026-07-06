@@ -82,6 +82,16 @@ config:
     # Disable deprecation logging to avoid filling up the logs with warnings about deprecated features that we might be using in our tests
     logger.org.opensearch.deprecation: "OFF"
 
+  # Log as JSON
+  log4j2.properties: |
+    appender.console.type = Console
+    appender.console.name = console
+    appender.console.layout.type = OpenSearchJsonLayout
+    appender.console.layout.type_name = json_logger
+
+    rootLogger.level = info
+    rootLogger.appenderRef.console.ref = console
+
 extraEnvs:
   - name: OPENSEARCH_INITIAL_ADMIN_PASSWORD
     value: "yourStrongPassword123!"
