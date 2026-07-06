@@ -10,6 +10,7 @@ package io.camunda.zeebe.dynamic.config.state;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
 
@@ -30,12 +31,11 @@ public record PhasedChangePlan(
     long id, int currentPhaseIndex, List<Phase> phases, Instant startedAt) {
 
   public PhasedChangePlan {
-    phases = List.copyOf(phases);
-    if (currentPhaseIndex < 0 || currentPhaseIndex >= phases.size()) {
-      throw new IllegalArgumentException(
-          "currentPhaseIndex %d is out of bounds for phases of size %d"
-              .formatted(currentPhaseIndex, phases.size()));
+    if (id <= 0) {
+      throw new IllegalArgumentException("id must be positive");
     }
+    Objects.checkIndex(currentPhaseIndex, phases.size());
+    phases = List.copyOf(phases);
   }
 
   public static PhasedChangePlan init(
@@ -73,6 +73,11 @@ public record PhasedChangePlan(
    */
   public PhasedChangePlan merge(final PhasedChangePlan other) {
     if (id == other.id) {
+      if (!phases.equals(other.phases())) {
+        throw new IllegalStateException(
+            "Cannot merge plans with the same ID but different phases: %s vs %s"
+                .formatted(phases, other.phases()));
+      }
       return currentPhaseIndex >= other.currentPhaseIndex ? this : other;
     }
     return id > other.id ? this : other;

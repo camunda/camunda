@@ -72,7 +72,7 @@ public record PhasedChangeState(
    *
    * @throws IllegalStateException if no plan is currently pending
    */
-  public PhasedChangeState completePlan(final TerminalChangeStatus status) {
+  public PhasedChangeState completePlan(final PhasedChangePlanStatus status) {
     if (pending.isEmpty()) {
       throw new IllegalStateException("Cannot complete a plan when none is pending");
     }

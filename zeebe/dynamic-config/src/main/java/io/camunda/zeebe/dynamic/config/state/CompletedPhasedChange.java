@@ -21,4 +21,4 @@ import org.jspecify.annotations.NullMarked;
  */
 @NullMarked
 public record CompletedPhasedChange(
-    long id, TerminalChangeStatus status, Instant startedAt, Instant completedAt) {}
+    long id, PhasedChangePlanStatus status, Instant startedAt, Instant completedAt) {}

@@ -11,7 +11,7 @@ import org.jspecify.annotations.NullMarked;
 
 /** Terminal outcome of a {@link PhasedChangePlan}. */
 @NullMarked
-public enum TerminalChangeStatus {
+public enum PhasedChangePlanStatus {
   COMPLETED,
   CANCELLED,
   FAILED,
