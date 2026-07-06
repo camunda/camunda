@@ -8,15 +8,21 @@
 package io.camunda.analytics.store.document;
 
 import io.camunda.analytics.dataset.CompiledDataset;
+import io.camunda.analytics.dataset.CompiledMeter;
 import io.camunda.analytics.dataset.CompiledTable;
 import io.camunda.analytics.dataset.store.DatasetWriter;
+import io.camunda.analytics.dataset.store.SketchScalar;
 import io.camunda.analytics.dimension.DimensionColumn;
 import io.camunda.analytics.dimension.DimensionKey;
+import io.camunda.analytics.meter.BoundMeter;
+import io.camunda.analytics.meter.PushdownColumn;
+import io.camunda.analytics.meter.PushdownSpec;
 import io.camunda.search.clients.DocumentBasedWriteClient;
 import io.camunda.search.clients.core.RequestBuilders;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * The document serving {@link DatasetWriter}: each write is a full {@code index()} of the current
@@ -50,11 +56,57 @@ public final class DocumentDatasetWriter implements DatasetWriter {
     doc.put(DocumentCubeNames.WINDOW_SIZE, windowSize);
     doc.put(DocumentCubeNames.METER_NAME, meterName);
     doc.put(DocumentCubeNames.ACCUMULATOR, DocumentCubeNames.encode(accumulator));
+
+    // Alongside the blob (Layer A), write the meter's native numeric fields (additive pushdown) or
+    // its finalized scalar (sketch/summary DIRECT), so the composite aggregation can reduce them.
+    final CompiledMeter compiled = compiledMeter(dataset, meterName, windowSize);
+    final Optional<PushdownSpec<?, ?>> spec = compiled.pushdown();
+    if (spec.isPresent()) {
+      final List<Object> values = decompose(compiled.bound(), accumulator);
+      final List<PushdownColumn> columns = spec.get().columns();
+      for (int i = 0; i < columns.size(); i++) {
+        doc.put(DocumentCubeNames.pushdownField(columns.get(i).suffix()), values.get(i));
+      }
+    } else {
+      doc.put(DocumentCubeNames.VALUE, SketchScalar.of(finalized(compiled.bound(), accumulator)));
+    }
+
     final String id = DocumentCubeNames.cellDocId(key, windowStart, windowSize, meterName);
     doc.put(DocumentCubeNames.DOC_KEY, id); // sortable copy of the id, for search_after streaming
     writeClient.index(
         RequestBuilders.<Map<String, Object>>indexRequest(
             r -> r.index(DocumentCubeNames.datasetIndex(dataset.cubeId())).id(id).document(doc)));
+  }
+
+  private static CompiledMeter compiledMeter(
+      final CompiledDataset dataset, final String meterName, final long windowSize) {
+    CompiledMeter fallback = null;
+    for (final CompiledMeter meter : dataset.meters()) {
+      if (meter.meterName().equals(meterName)) {
+        if (meter.windowMs() == windowSize) {
+          return meter;
+        }
+        fallback = meter;
+      }
+    }
+    if (fallback == null) {
+      throw new IllegalStateException(
+          "no compiled meter '" + meterName + "' in cube '" + dataset.name() + "'");
+    }
+    return fallback;
+  }
+
+  @SuppressWarnings("unchecked")
+  private static List<Object> decompose(final BoundMeter<?, ?> boundRaw, final byte[] bytes) {
+    final BoundMeter<Object, Object> bound = (BoundMeter<Object, Object>) boundRaw;
+    final Object accumulator = bound.accumulatorCodec().fromBytes(bytes);
+    return bound.pushdown().orElseThrow().decompose().apply(accumulator);
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Object finalized(final BoundMeter<?, ?> boundRaw, final byte[] bytes) {
+    final BoundMeter<Object, Object> bound = (BoundMeter<Object, Object>) boundRaw;
+    return bound.aggregate().getResult(bound.accumulatorCodec().fromBytes(bytes));
   }
 
   @Override

@@ -38,6 +38,14 @@ public final class SearchAggregatorBuilders {
     return max().name(name).field(field).build();
   }
 
+  public static SearchMinAggregator.Builder min() {
+    return new SearchMinAggregator.Builder();
+  }
+
+  public static SearchMinAggregator min(final String name, final String field) {
+    return min().name(name).field(field).build();
+  }
+
   public static SearchParentAggregator.Builder parent() {
     return new SearchParentAggregator.Builder();
   }

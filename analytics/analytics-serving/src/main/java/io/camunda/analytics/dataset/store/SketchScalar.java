@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.analytics.store.rdbms;
+package io.camunda.analytics.dataset.store;
 
 import io.camunda.analytics.metric.ExecutionTimeSummaryResult;
 import io.camunda.analytics.metric.LifecycleSummaryResult;
@@ -14,18 +14,18 @@ import io.camunda.analytics.sketch.QuantileResult;
 import io.camunda.analytics.sketch.TopKResult;
 
 /**
- * Derives the denormalized {@code <meter>value} scalar from a non-pushable meter's finalized result
- * — the cheap headline number a {@link ReadStrategy#DIRECT DIRECT} read can serve without touching
- * the blob. The mapping picks each result's natural headline: a distinct estimate, the top hitter's
- * frequency, or the observation count for the summaries/histogram. It is a denormalization only;
- * the exact roll-up of a sketch across cells always streams the blobs and app-merges
- * (STREAM_MERGE).
+ * Derives the denormalized {@code <meter>_value} scalar from a non-pushable meter's finalized
+ * result — the cheap headline number a {@link ReadStrategy#DIRECT DIRECT} read can serve without
+ * touching the blob. Shared by both serving backends so the denormalization is identical. The
+ * mapping picks each result's natural headline: a distinct estimate, the top hitter's frequency, or
+ * the observation count for the summaries/histogram. It is a denormalization only; the exact
+ * roll-up of a sketch across cells always streams the blobs and app-merges (STREAM_MERGE).
  */
-final class SketchScalar {
+public final class SketchScalar {
 
   private SketchScalar() {}
 
-  static double of(final Object result) {
+  public static double of(final Object result) {
     if (result instanceof final Number number) {
       return number.doubleValue();
     }

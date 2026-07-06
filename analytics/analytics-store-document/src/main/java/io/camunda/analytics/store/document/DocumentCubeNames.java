@@ -27,6 +27,14 @@ final class DocumentCubeNames {
   static final String ACCUMULATOR = "accumulator";
 
   /**
+   * The finalized scalar field of a non-pushable (sketch/summary) meter document — the {@code
+   * _value} counterpart of the RDBMS value column, and the field a single-column additive meter
+   * (count/sum/level) writes. The {@code mv_} prefix keeps meter fields out of the grain-dimension
+   * namespace.
+   */
+  static final String VALUE = "mv_value";
+
+  /**
    * A unique, sortable {@code keyword} copy of the document id (the {@link #cellDocId}). Sorting on
    * {@code _id} needs fielddata and is discouraged, so a stored keyword field is what {@code
    * search_after} paginates on when streaming cells.
@@ -47,6 +55,14 @@ final class DocumentCubeNames {
 
   static String field(final String declaredName) {
     return Identifiers.safeColumn(declaredName);
+  }
+
+  /**
+   * The numeric field of one {@link io.camunda.analytics.meter.PushdownColumn} within an additive
+   * meter document: {@code mv_<suffix>}, or {@link #VALUE} for the empty (single-column) suffix.
+   */
+  static String pushdownField(final String suffix) {
+    return suffix.isEmpty() ? VALUE : "mv_" + suffix;
   }
 
   /** Deterministic id for one meter of one cell: dimensions + window/tier + meter. */

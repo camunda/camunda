@@ -16,6 +16,7 @@ import io.camunda.search.clients.aggregator.SearchDateHistogramAggregator;
 import io.camunda.search.clients.aggregator.SearchFilterAggregator;
 import io.camunda.search.clients.aggregator.SearchFiltersAggregator;
 import io.camunda.search.clients.aggregator.SearchMaxAggregator;
+import io.camunda.search.clients.aggregator.SearchMinAggregator;
 import io.camunda.search.clients.aggregator.SearchParentAggregator;
 import io.camunda.search.clients.aggregator.SearchSumAggregator;
 import io.camunda.search.clients.aggregator.SearchTermsAggregator;
@@ -56,6 +57,7 @@ import io.camunda.search.es.transformers.aggregator.SearchDateHistogramAggregato
 import io.camunda.search.es.transformers.aggregator.SearchFilterAggregatorTransformer;
 import io.camunda.search.es.transformers.aggregator.SearchFiltersAggregatorTransformer;
 import io.camunda.search.es.transformers.aggregator.SearchMaxAggregatorTransformer;
+import io.camunda.search.es.transformers.aggregator.SearchMinAggregatorTransformer;
 import io.camunda.search.es.transformers.aggregator.SearchParentAggregatorTransformer;
 import io.camunda.search.es.transformers.aggregator.SearchSumAggregatorTransformer;
 import io.camunda.search.es.transformers.aggregator.SearchTermsAggregatorTransformer;
@@ -161,6 +163,7 @@ public final class ElasticsearchTransformers {
     mappers.put(SearchParentAggregator.class, new SearchParentAggregatorTransformer(mappers));
     mappers.put(SearchSumAggregator.class, new SearchSumAggregatorTransformer(mappers));
     mappers.put(SearchMaxAggregator.class, new SearchMaxAggregatorTransformer(mappers));
+    mappers.put(SearchMinAggregator.class, new SearchMinAggregatorTransformer(mappers));
     mappers.put(
         SearchBucketSortAggregator.class, new SearchBucketSortAggregationTransformer(mappers));
     mappers.put(

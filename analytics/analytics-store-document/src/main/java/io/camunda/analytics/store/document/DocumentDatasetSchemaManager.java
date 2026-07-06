@@ -9,13 +9,17 @@ package io.camunda.analytics.store.document;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.analytics.dataset.CompiledDataset;
+import io.camunda.analytics.dataset.CompiledMeter;
 import io.camunda.analytics.dataset.CompiledTable;
 import io.camunda.analytics.dataset.store.DatasetSchemaManager;
 import io.camunda.analytics.dimension.DimensionColumn;
 import io.camunda.analytics.dimension.DimensionType;
+import io.camunda.analytics.meter.PushdownColumn;
+import io.camunda.analytics.meter.PushdownSpec;
 import io.camunda.search.clients.DocumentBasedSchemaClient;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * The document serving {@link DatasetSchemaManager}: derives an index mapping from the compiled
@@ -43,6 +47,25 @@ public final class DocumentDatasetSchemaManager implements DatasetSchemaManager 
     properties.put(DocumentCubeNames.METER_NAME, property("keyword"));
     properties.put(DocumentCubeNames.ACCUMULATOR, property("binary"));
     properties.put(DocumentCubeNames.DOC_KEY, property("keyword"));
+
+    // Additive meters map onto native numeric fields the composite aggregation reduces; a
+    // sketch/summary keeps its blob plus a finalized VALUE field for the DIRECT fast path. Fields
+    // are shared across a cube's meter documents (one document per meter), so a name maps once. The
+    // shared VALUE field (single-column additive and the sketch scalar) is a double, so it never
+    // conflicts; multi-column additive fields (matched/total/count/min/max) are longs.
+    properties.put(DocumentCubeNames.VALUE, property("double"));
+    for (final CompiledMeter meter : dataset.meters()) {
+      final Optional<PushdownSpec<?, ?>> spec = meter.pushdown();
+      if (spec.isEmpty()) {
+        continue;
+      }
+      for (final PushdownColumn column : spec.get().columns()) {
+        if (!column.suffix().isEmpty()) {
+          properties.putIfAbsent(
+              DocumentCubeNames.pushdownField(column.suffix()), property("long"));
+        }
+      }
+    }
     schemaClient.createIndex(DocumentCubeNames.datasetIndex(dataset.cubeId()), mapping(properties));
   }
 
