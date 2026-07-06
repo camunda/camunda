@@ -9,7 +9,7 @@
 import {useCallback, useMemo} from 'react';
 import {Button, DataTable, Table, TableBody, TableCell, TableContainer, TableHead, TableRow} from '@carbon/react';
 import {Information} from '@carbon/react/icons';
-import {useNavigate, useParams} from '@tanstack/react-router';
+import {useNavigate} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.10';
 import {formatHistoryDate} from '../formatHistoryDate';
@@ -65,14 +65,14 @@ function isHeaderKey(key: string): key is keyof typeof HEADERS_MAP {
 }
 
 type Props = {
+	userTaskKey: string;
 	auditLogs: AuditLog[];
 	search: TaskDetailsHistorySearch;
 };
 
-const HistoryTable: React.FC<Props> = ({auditLogs, search}) => {
+const HistoryTable: React.FC<Props> = ({userTaskKey, auditLogs, search}) => {
 	const {t} = useTranslation();
 	const navigate = useNavigate();
-	const {userTaskKey} = useParams({from: '/_auth/tasklist/_tasks/$userTaskKey/history'});
 
 	const headers = useMemo(
 		() =>

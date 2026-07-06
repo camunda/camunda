@@ -47,7 +47,12 @@ export const Route = createFileRoute('/_auth/tasklist/_tasks/$userTaskKey/histor
 
 		return (
 			<>
-				<TaskDetailsHistoryPage auditLogs={auditLogs} search={search} onScrollDown={onScrollDown} />
+				<TaskDetailsHistoryPage
+					userTaskKey={userTaskKey}
+					auditLogs={auditLogs}
+					search={search}
+					onScrollDown={onScrollDown}
+				/>
 				<Outlet />
 			</>
 		);
