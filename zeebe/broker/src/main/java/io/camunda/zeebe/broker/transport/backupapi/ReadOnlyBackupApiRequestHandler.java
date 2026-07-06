@@ -76,14 +76,9 @@ public sealed class ReadOnlyBackupApiRequestHandler
 
   @Override
   public ActorFuture<Void> closeAsync() {
-    return transport
-        .unsubscribe(partitionId, RequestType.BACKUP)
-        .thenAccept(
-            ignored ->
-                transport.subscribe(
-                    partitionId, RequestType.BACKUP, new NotPartitionLeaderHandler()),
-            actor)
-        .andThen(ignored -> super.closeAsync(), actor);
+    transport.unsubscribe(partitionId, RequestType.BACKUP);
+    transport.subscribe(partitionId, RequestType.BACKUP, new NotPartitionLeaderHandler());
+    return super.closeAsync();
   }
 
   @Override
