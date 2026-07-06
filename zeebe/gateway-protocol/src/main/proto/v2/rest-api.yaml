@@ -69,6 +69,7 @@ tags:
   - name: Message subscription
   - name: Process definition
   - name: Process instance
+  - name: Recovery
   - name: Resource
   - name: Role
   - name: Setup
@@ -445,6 +446,8 @@ paths:
   # Cluster endpoints
   /topology:
     $ref: 'cluster.yaml#/paths/~1topology'
+  /mode:
+    $ref: 'cluster.yaml#/paths/~1mode'
 
   # User endpoints
   /users:
