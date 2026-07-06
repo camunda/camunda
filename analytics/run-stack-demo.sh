@@ -71,11 +71,11 @@ build() {
 
 stop() {
   echo "==> Tearing down the demo stack"
-  for p in "${DRIVER_DIR}/pid" "${WEBAPP_DIR}/pid" "${PIPE_DIR}/stage2.pid" "${PIPE_DIR}/stage1.pid" "${OC_DIR}/pid"; do
+  for p in "${DRIVER_DIR}/pid" "${WEBAPP_DIR}/pid" "${PIPE_DIR}/pipeline.pid" "${OC_DIR}/pid"; do
     [[ -f "${p}" ]] && kill "$(cat "${p}")" 2>/dev/null || true
   done
   sleep 2
-  for p in "${DRIVER_DIR}/pid" "${WEBAPP_DIR}/pid" "${PIPE_DIR}/stage2.pid" "${PIPE_DIR}/stage1.pid" "${OC_DIR}/pid"; do
+  for p in "${DRIVER_DIR}/pid" "${WEBAPP_DIR}/pid" "${PIPE_DIR}/pipeline.pid" "${OC_DIR}/pid"; do
     [[ -f "${p}" ]] && kill -9 "$(cat "${p}")" 2>/dev/null || true
     rm -f "${p}"
   done
@@ -88,8 +88,7 @@ stop() {
   for cls in \
     io.camunda.application.StandaloneCamunda \
     io.camunda.application.StandaloneEventBridge \
-    io.camunda.eventbridge.analytics.stage.AnalyticsProjectionStage \
-    io.camunda.eventbridge.analytics.stage.AnalyticsAggregationStage \
+    io.camunda.analytics.pipeline.stage.AnalyticsPipeline \
     io.camunda.analytics.webapp.AnalyticsWebappApplication \
     io.camunda.eventbridge.examples.MultiProcessDemoDriver; do
     pkill -9 -f "${cls}" 2>/dev/null || true
@@ -144,22 +143,15 @@ start() {
 
   # slaMs is the SLA-met duration target (like Optimize's duration goal): 90s, matching the demo's
   # minute-scale instance durations, so ~15% of instances (the slow tier) breach it.
-  echo "==> Starting analytics Stage 1 (base projection -> facts topic 'analytics-facts')…"
+  echo "==> Starting the analytics pipeline (Stage 1 + Stage 2, shared actor scheduler)…"
   ( cd "${PIPE_DIR}" && nohup java "${JVM_FLAGS[@]}" -cp "$(analytics_cp)" \
       -Dgateway=${GW} -DinstanceId=demo -DfactsTopic=analytics-facts -DfactsPartitions=1 -DslaMs=90000 \
       -DjdbcUrl="${H2_URL}" -DjdbcUser=sa \
-      io.camunda.eventbridge.analytics.stage.AnalyticsProjectionStage \
-      >"${PIPE_DIR}/stage1.log" 2>&1 & echo "$!" >"${PIPE_DIR}/stage1.pid" )
+      io.camunda.analytics.pipeline.stage.AnalyticsPipeline \
+      >"${PIPE_DIR}/pipeline.log" 2>&1 & echo "$!" >"${PIPE_DIR}/pipeline.pid" )
 
   echo "==> Waiting for 'analytics-facts' topic…"
   for _ in $(seq 1 60); do curl -fsS "${GW}/v1/topics" 2>/dev/null | grep -q analytics-facts && break || sleep 1; done
-
-  echo "==> Starting analytics Stage 2 (facts topic -> serving H2 AUTO_SERVER)…"
-  ( cd "${PIPE_DIR}" && nohup java "${JVM_FLAGS[@]}" -cp "$(analytics_cp)" \
-      -Dgateway=${GW} -DinstanceId=demo -DfactsTopic=analytics-facts \
-      -DjdbcUrl="${H2_URL}" -DjdbcUser=sa -DslaMs=90000 \
-      io.camunda.eventbridge.analytics.stage.AnalyticsAggregationStage \
-      >"${PIPE_DIR}/stage2.log" 2>&1 & echo "$!" >"${PIPE_DIR}/stage2.pid" )
 
   echo "==> Starting the analytics webapp on :8090 (same H2)…"
   ( cd "${WEBAPP_DIR}" && nohup java "${JVM_FLAGS[@]}" -cp "$(webapp_cp)" \

@@ -59,6 +59,11 @@
       <artifactId>event-bridge-streaming</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <!-- Actor scheduler: the consolidated launcher shares one scheduler across both stages. -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-scheduler</artifactId>
+    </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol</artifactId>

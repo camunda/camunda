@@ -15,9 +15,11 @@ import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.streaming.StreamRuntime;
 import io.camunda.eventbridge.streaming.shuffle.ShuffleEnvelope;
 import io.camunda.eventbridge.streaming.shuffle.ShuffleEnvelopeCodec;
+import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +47,20 @@ public final class AnalyticsAggregationStage {
   private AnalyticsAggregationStage() {}
 
   public static void main(final String[] args) {
+    final ActorScheduler scheduler = PipelineRuntimes.startScheduler();
+    final ExecutorService sinkExecutor = PipelineRuntimes.newSinkExecutor();
+    final StreamRuntime<ShuffleEnvelope> runtime = buildRuntime(scheduler, sinkExecutor);
+    PipelineRuntimes.run(
+        scheduler, sinkExecutor, List.of(new PipelineRuntimes.Member("stage2", runtime)));
+  }
+
+  /**
+   * Builds (but does not run) the Stage 2 runtime on the given shared actor scheduler and sink
+   * executor, so a single stage process or the consolidated launcher can run it. Reads its
+   * configuration from system properties and provisions the metadata plane.
+   */
+  public static StreamRuntime<ShuffleEnvelope> buildRuntime(
+      final ActorScheduler scheduler, final ExecutorService sinkExecutor) {
     final String group = System.getProperty("group", "analytics-stage2");
     final String gateway = System.getProperty("gateway", "http://localhost:8080");
     final String factsTopic = System.getProperty("factsTopic", "analytics-facts");
@@ -80,10 +96,11 @@ public final class AnalyticsAggregationStage {
             .pollTimeout(POLL_TIMEOUT)
             .commitInterval(CHECKPOINT_INTERVAL)
             .errorBackoff(ERROR_BACKOFF)
+            .actorScheduler(scheduler)
+            .sinkExecutor(sinkExecutor)
             .build();
 
     LOG.info("Analytics Stage 2 '{}': {} -> mergers -> serving sink", instanceId, factsTopic);
-    Runtime.getRuntime().addShutdownHook(new Thread(runtime::stop, "stage2-shutdown"));
-    runtime.run();
+    return runtime;
   }
 }
