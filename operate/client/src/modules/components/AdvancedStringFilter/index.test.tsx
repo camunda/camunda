@@ -12,31 +12,36 @@ import {AdvancedStringFilter} from '.';
 
 type SubmittedValues = {businessId?: string};
 
-const renderField = (initialValue?: string) => {
-  const onSubmit = vi.fn();
-  const utils = render(
-    <Form<SubmittedValues>
-      onSubmit={onSubmit}
-      initialValues={{businessId: initialValue}}
-    >
+const getWrapper = ({
+  onSubmit = vi.fn(),
+  initialValues,
+}: {
+  onSubmit?: (values: SubmittedValues) => void;
+  initialValues?: SubmittedValues;
+} = {}) => {
+  const Wrapper = ({children}: {children: React.ReactNode}) => (
+    <Form<SubmittedValues> onSubmit={onSubmit} initialValues={initialValues}>
       {({handleSubmit}) => (
         <form onSubmit={handleSubmit}>
-          <AdvancedStringFilter
-            name="businessId"
-            label="Business ID"
-            selectableOperators={['$eq', '$like', '$in']}
-          />
+          {children}
           <button type="submit">submit</button>
         </form>
       )}
-    </Form>,
+    </Form>
   );
-  return {...utils, onSubmit};
+  return Wrapper;
 };
 
 describe('<AdvancedStringFilter />', () => {
   it('renders dropdown and input with the first operator selected by default', () => {
-    renderField();
+    render(
+      <AdvancedStringFilter
+        name="businessId"
+        label="Business ID"
+        selectableOperators={['$eq', '$like', '$in']}
+      />,
+      {wrapper: getWrapper()},
+    );
 
     expect(
       screen.getByRole('combobox', {name: 'Business ID filter type'}),
@@ -45,14 +50,29 @@ describe('<AdvancedStringFilter />', () => {
   });
 
   it('decodes the initial form value into operator + value', () => {
-    renderField('like_order-123');
+    render(
+      <AdvancedStringFilter
+        name="businessId"
+        label="Business ID"
+        selectableOperators={['$eq', '$like', '$in']}
+      />,
+      {wrapper: getWrapper({initialValues: {businessId: 'like_order-123'}})},
+    );
 
     expect(screen.getByRole('combobox')).toHaveTextContent('contains');
     expect(screen.getByLabelText('Business ID')).toHaveValue('order-123');
   });
 
   it('encodes the form value with the current operator when the user types', async () => {
-    const {onSubmit, user} = renderField();
+    const onSubmit = vi.fn();
+    const {user} = render(
+      <AdvancedStringFilter
+        name="businessId"
+        label="Business ID"
+        selectableOperators={['$eq', '$like', '$in']}
+      />,
+      {wrapper: getWrapper({onSubmit})},
+    );
 
     await user.type(screen.getByLabelText('Business ID'), 'abc');
     await user.click(screen.getByRole('button', {name: 'submit'}));
@@ -65,7 +85,20 @@ describe('<AdvancedStringFilter />', () => {
   });
 
   it('re-encodes the form value when the operator changes', async () => {
-    const {onSubmit, user} = renderField('eq_abc');
+    const onSubmit = vi.fn();
+    const {user} = render(
+      <AdvancedStringFilter
+        name="businessId"
+        label="Business ID"
+        selectableOperators={['$eq', '$like', '$in']}
+      />,
+      {
+        wrapper: getWrapper({
+          onSubmit,
+          initialValues: {businessId: 'eq_abc'},
+        }),
+      },
+    );
 
     await user.click(screen.getByRole('combobox'));
     await user.click(screen.getByRole('option', {name: 'contains'}));
@@ -79,17 +112,40 @@ describe('<AdvancedStringFilter />', () => {
   });
 
   it('clears the form value to undefined when the input is emptied', async () => {
-    const {onSubmit, user} = renderField('eq_abc');
+    const onSubmit = vi.fn();
+    const {user} = render(
+      <AdvancedStringFilter
+        name="businessId"
+        label="Business ID"
+        selectableOperators={['$eq', '$like', '$in']}
+      />,
+      {
+        wrapper: getWrapper({
+          onSubmit,
+          initialValues: {businessId: 'eq_abc'},
+        }),
+      },
+    );
 
     await user.clear(screen.getByLabelText('Business ID'));
     await user.click(screen.getByRole('button', {name: 'submit'}));
 
-    const submittedValues = onSubmit.mock.lastCall?.[0];
-    expect(submittedValues).toEqual({});
+    expect(onSubmit).toHaveBeenLastCalledWith(
+      {},
+      expect.anything(),
+      expect.anything(),
+    );
   });
 
   it('preserves the dropdown selection when the input is emptied', async () => {
-    const {user} = renderField('like_order-123');
+    const {user} = render(
+      <AdvancedStringFilter
+        name="businessId"
+        label="Business ID"
+        selectableOperators={['$eq', '$like', '$in']}
+      />,
+      {wrapper: getWrapper({initialValues: {businessId: 'like_order-123'}})},
+    );
 
     await user.clear(screen.getByLabelText('Business ID'));
 
@@ -97,7 +153,14 @@ describe('<AdvancedStringFilter />', () => {
   });
 
   it('preserves the dropdown selection across operator-only changes with an empty value', async () => {
-    const {user} = renderField();
+    const {user} = render(
+      <AdvancedStringFilter
+        name="businessId"
+        label="Business ID"
+        selectableOperators={['$eq', '$like', '$in']}
+      />,
+      {wrapper: getWrapper()},
+    );
 
     await user.click(screen.getByRole('combobox'));
     await user.click(screen.getByRole('option', {name: 'is one of'}));
@@ -106,7 +169,18 @@ describe('<AdvancedStringFilter />', () => {
   });
 
   it('treats a malformed value as an empty input', () => {
-    renderField('plain-legacy-value');
+    render(
+      <AdvancedStringFilter
+        name="businessId"
+        label="Business ID"
+        selectableOperators={['$eq', '$like', '$in']}
+      />,
+      {
+        wrapper: getWrapper({
+          initialValues: {businessId: 'plain-legacy-value'},
+        }),
+      },
+    );
 
     expect(screen.getByLabelText('Business ID')).toHaveValue('');
     expect(screen.getByRole('combobox')).toHaveTextContent('equals');
