@@ -72,8 +72,10 @@ examples_cp() { echo "${REPO_ROOT}/event-bridge/event-bridge-examples/target/cla
 app_cp() { echo "${REPO_ROOT}/analytics/analytics-webapp/target/classes:$(cat "${APP_CP}")"; }
 
 build() {
-  echo "==> Building dist + examples + the analytics app (quickly)…"
-  (cd "${REPO_ROOT}" && ./mvnw -q -pl dist,event-bridge/event-bridge-examples,analytics/analytics-webapp -am install -Dquickly -T1C)
+  echo "==> Building dist + examples + the analytics app (quickly; UI included)…"
+  # -Dskip.fe.build=false overrides the quickly default so the React/Vite dashboard is built into
+  # the app jar (target/classes/static) — otherwise -Dquickly ships the API without the UI.
+  (cd "${REPO_ROOT}" && ./mvnw -q -pl dist,event-bridge/event-bridge-examples,analytics/analytics-webapp -am install -Dquickly -Dskip.fe.build=false -T1C)
   mkdir -p "${BASE}"
   (cd "${REPO_ROOT}" && ./mvnw -q -pl dist dependency:build-classpath -Dmdep.outputFile="${DIST_CP}")
   (cd "${REPO_ROOT}" && ./mvnw -q -pl event-bridge/event-bridge-examples dependency:build-classpath -Dmdep.outputFile="${EX_CP}")
