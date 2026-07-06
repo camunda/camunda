@@ -219,17 +219,12 @@
 /zeebe/gateway-protocol/src/main/proto/v2/ @camunda/c8-api-team
 /docs/rest-api-endpoint-guidelines.md @camunda/c8-api-team
 
-#######################
-## QA Engineering    ##
-#######################
-
-/.github/workflows/c8-orchestration-cluster-e2e-nightly-triage.yml    @camunda/qa-engineering
-
 ############################
 ## Test Automation Team   ##
 ############################
 
-/.github/workflows/c8-orchestration-cluster-e2e-nightly-close-stale-fix-prs.yml    @camunda/test-automation-team
+/.github/workflows/c8-orchestration-cluster-e2e-nightly-triage.yml                @camunda/test-automation-team
+/.github/workflows/c8-orchestration-cluster-e2e-nightly-close-stale-fix-prs.yml   @camunda/test-automation-team
 /.github/workflows/c8-orchestration-cluster-nightly-8.7-api-es.yml                @camunda/test-automation-team
 /.github/workflows/c8-orchestration-cluster-nightly-8.7-e2e.yml                   @camunda/test-automation-team
 /.github/workflows/c8-orchestration-cluster-nightly-8.8-api-es.yml                @camunda/test-automation-team
