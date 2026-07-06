@@ -109,10 +109,34 @@ runs:
         GITHUB_TOKEN: ${{ github.token }}
       run: python3 ${{ github.action_path }}/detect_new_flaky_tests.py
 
+    # Detect whether the detector actually wrote a state file. hashFiles() cannot
+    # be used to guard the upload: it only hashes paths under GITHUB_WORKSPACE, but
+    # the state file lives in RUNNER_TEMP (outside the workspace), so hashFiles always
+    # returned '' and the upload was silently skipped on every run — sticky state never
+    # persisted across runs (the clean-run counter was frozen and cross-run stickiness
+    # was dead). A plain existence check reads the absolute path fine.
+    - name: Check sticky-state file written
+      id: state-written
+      if: always()
+      shell: bash
+      env:
+        STATE_FILE_OUT: ${{ runner.temp }}/flaky-gate-state-out/state.json
+      run: |
+        state_dir="$(dirname "$STATE_FILE_OUT")"
+        echo "sticky-state dir contents:"
+        ls -la "$state_dir" 2>/dev/null || echo "  (directory absent)"
+        if [[ -f "$STATE_FILE_OUT" ]]; then
+          echo "written=true" >> "$GITHUB_OUTPUT"
+          echo "state file present -> will upload for the next run"
+        else
+          echo "written=false" >> "$GITHUB_OUTPUT"
+          echo "state file absent -> skipping upload (no flakes and no prior state)"
+        fi
+
     # Persist updated state for the next run. Skipped when the detector wrote
     # nothing (no flakes + no prior state => no-op, no file to upload).
     - name: Upload sticky-state artifact
-      if: always() && hashFiles(format('{0}/flaky-gate-state-out/state.json', runner.temp)) != ''
+      if: always() && steps.state-written.outputs.written == 'true'
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: flaky-gate-state-pr-${{ inputs.pr-number }}
