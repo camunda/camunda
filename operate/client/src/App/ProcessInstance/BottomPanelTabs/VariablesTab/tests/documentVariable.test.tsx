@@ -7,7 +7,7 @@
  */
 
 import {VariablesTab} from '../index';
-import {render, screen, within} from 'modules/testing-library';
+import {render, screen, waitFor, within} from 'modules/testing-library';
 import {createVariable, searchResult} from 'modules/testUtils';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
@@ -39,6 +39,21 @@ const makeDocumentRef = (
       ...overrides.metadata,
     },
   } as DocumentReference;
+};
+
+const expectExpiredTooltip = async (
+  user: ReturnType<typeof render>['user'],
+  button: HTMLElement,
+): Promise<void> => {
+  const wrapper = button.parentElement!;
+  await user.hover(wrapper);
+  expect(await screen.findByRole('tooltip')).toHaveTextContent(
+    'Document has expired',
+  );
+  await user.unhover(wrapper);
+  await waitFor(() =>
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument(),
+  );
 };
 
 describe('VariablesTab document variables', () => {
@@ -225,17 +240,23 @@ describe('VariablesTab document variables', () => {
       ]),
     );
 
-    render(<VariablesTab />, {wrapper: getWrapper()});
+    const {user} = render(<VariablesTab />, {wrapper: getWrapper()});
     await screen.findByTestId('variables-list');
 
     const variableRow = within(screen.getByTestId('variable-myDocument'));
     expect(variableRow.getByText('Expired')).toBeInTheDocument();
-    expect(
-      variableRow.getByLabelText('Download document for variable myDocument'),
-    ).toBeDisabled();
-    expect(
-      variableRow.getByLabelText('Preview document for variable myDocument'),
-    ).toBeDisabled();
+
+    const downloadButton = variableRow.getByLabelText(
+      'Download document for variable myDocument',
+    );
+    const previewButton = variableRow.getByLabelText(
+      'Preview document for variable myDocument',
+    );
+    expect(downloadButton).toBeDisabled();
+    expect(previewButton).toBeDisabled();
+
+    await expectExpiredTooltip(user, previewButton);
+    await expectExpiredTooltip(user, downloadButton);
   });
 
   it('should not show Expired badge for non-expired documents', async () => {

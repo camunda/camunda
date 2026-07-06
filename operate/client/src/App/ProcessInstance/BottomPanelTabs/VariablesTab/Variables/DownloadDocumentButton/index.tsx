@@ -6,9 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Button} from '@carbon/react';
+import {Button, Tooltip} from '@carbon/react';
 import {Download} from '@carbon/react/icons';
 import type {DocumentInfo} from '../DocumentValueCell/parseDocumentVariable';
+import {TooltipTrigger} from './styled';
 import {tracking} from 'modules/tracking';
 
 function getTooltipText(document: DocumentInfo): string {
@@ -31,7 +32,7 @@ const DownloadDocumentButton: React.FC<Props> = ({document, variableName}) => {
   const isDisabled = document.link === null || document.isExpired;
   const tooltipText = getTooltipText(document);
 
-  return (
+  const button = (
     <Button
       as={isDisabled ? undefined : 'a'}
       href={document.link ?? undefined}
@@ -57,6 +58,16 @@ const DownloadDocumentButton: React.FC<Props> = ({document, variableName}) => {
         });
       }}
     />
+  );
+
+  if (!isDisabled) {
+    return button;
+  }
+
+  return (
+    <Tooltip label={tooltipText} align="top">
+      <TooltipTrigger tabIndex={0}>{button}</TooltipTrigger>
+    </Tooltip>
   );
 };
 

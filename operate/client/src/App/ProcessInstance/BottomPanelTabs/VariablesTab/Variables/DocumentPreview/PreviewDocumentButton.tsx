@@ -6,11 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Button} from '@carbon/react';
+import {Button, Tooltip} from '@carbon/react';
 import {View} from '@carbon/react/icons';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
 import type {DocumentInfo} from '../DocumentValueCell/parseDocumentVariable';
 import {DocumentPreviewModal} from './DocumentPreviewModal';
+import {TooltipTrigger} from './styled';
 import {tracking} from 'modules/tracking';
 
 function getTooltipText(document: DocumentInfo): string {
@@ -38,29 +39,41 @@ const PreviewDocumentButton: React.FC<Props> = ({document, variableName}) => {
 
   return (
     <ModalStateManager
-      renderLauncher={({setOpen}) => (
-        <Button
-          kind="ghost"
-          size="sm"
-          hasIconOnly
-          renderIcon={View}
-          iconDescription={tooltipText}
-          tooltipPosition="top"
-          // @ts-expect-error - Solves rendering issues in `DocumentListModal`. Not exposed through TS but used at runtime.
-          autoAlign={true}
-          aria-label={`Preview document for variable ${variableName}`}
-          disabled={isDisabled}
-          onClick={() => {
-            tracking.track({
-              eventName: 'document-previewed',
-              documentType: document.type,
-              contentType: document.contentType,
-              size: document.size,
-            });
-            setOpen(true);
-          }}
-        />
-      )}
+      renderLauncher={({setOpen}) => {
+        const button = (
+          <Button
+            kind="ghost"
+            size="sm"
+            hasIconOnly
+            renderIcon={View}
+            iconDescription={tooltipText}
+            tooltipPosition="top"
+            // @ts-expect-error - Solves rendering issues in `DocumentListModal`. Not exposed through TS but used at runtime.
+            autoAlign={true}
+            aria-label={`Preview document for variable ${variableName}`}
+            disabled={isDisabled}
+            onClick={() => {
+              tracking.track({
+                eventName: 'document-previewed',
+                documentType: document.type,
+                contentType: document.contentType,
+                size: document.size,
+              });
+              setOpen(true);
+            }}
+          />
+        );
+
+        if (!isDisabled) {
+          return button;
+        }
+
+        return (
+          <Tooltip label={tooltipText} align="top">
+            <TooltipTrigger tabIndex={0}>{button}</TooltipTrigger>
+          </Tooltip>
+        );
+      }}
     >
       {({open, setOpen}) => (
         <DocumentPreviewModal
