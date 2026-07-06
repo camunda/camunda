@@ -261,6 +261,55 @@ final class ReconfigurationTest {
       restartedM2.join(id1).join();
     }
 
+    /**
+     * Reproduces <a href="https://github.com/camunda/camunda/issues/56808">#56808</a>: joining a
+     * single-member cluster deadlocks permanently when the configuration appended by the leader
+     * cannot be replicated to the joiner before the join attempt fails.
+     *
+     * <p>The leader appends the joint configuration and operates under it immediately
+     * (configurations take effect on append), but can never commit it without the joiner's ack.
+     * When the joiner gives up and shuts down, as {@code PartitionManagerImpl} does after a failed
+     * join, the leader steps down and no leader can be elected again: winning an election in the
+     * joint configuration requires the joiner's vote, but the joiner has no functioning raft
+     * server, and while it is briefly PASSIVE during a join attempt it rejects poll requests. Every
+     * subsequent join attempt then fails with NO_LEADER, so the deadlock is permanent even after
+     * connectivity is restored.
+     */
+    @Test
+    void joinShouldSucceedWhenRetriedAfterFailedFirstAttempt(@TempDir final Path tmp) {
+      // given - a single-member cluster, as after the bootstrap of a scaled-up partition
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+
+      final var m1 = createServer(tmp, createMembershipService(id1, id2));
+      m1.bootstrap(id1).join();
+      awaitLeader(m1);
+
+      // when - m2 tries to join while replication from m1 to m2 transiently fails. The join
+      // request still reaches the leader m1, which appends the joint configuration, but m2 never
+      // receives it and the join attempt fails, either by timing out or, if m1 steps down first,
+      // with "Leader stepping down". Like RaftPartitionServer, we pass all members of the
+      // partition, including the joining member itself.
+      protocolFactory.blockMessagesTo(id2);
+      final var m2 = createServer(tmp, createMembershipService(id2, id1));
+      assertThat(m2.join(id1, id2)).failsWithin(Duration.ofSeconds(30));
+
+      // m2 gives up, like PartitionManagerImpl removes the partition after a failed join
+      m2.shutdown().join();
+
+      // m1 operates under the appended joint configuration but cannot commit it and steps down
+      awaitNoLeader(m1);
+
+      // then - once connectivity is restored, retrying the join (as the cluster topology
+      // coordinator does indefinitely) should eventually succeed
+      protocolFactory.heal(id2);
+      final var retriedM2 = createServer(tmp, createMembershipService(id2, id1));
+      assertThat(retriedM2.join(id1, id2))
+          .as("m2 can join when retrying after a failed first attempt")
+          .succeedsWithin(Duration.ofSeconds(30));
+      awaitLeader(m1, retriedM2);
+    }
+
     @Test
     void canJoinAgainAfterDataloss(@TempDir final Path tmp) throws IOException {
       // given - a cluster with 3 members
