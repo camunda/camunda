@@ -62,9 +62,10 @@ final class ClientStreamManager<M extends BufferWriter> {
       final DirectBuffer streamType,
       final M metadata,
       final ClientStreamConsumer clientStreamConsumer,
-      final String group) {
+      final String physicalTenantId) {
     // add first in memory to handle case of new broker while we're adding
-    final var clientStream = registry.addClient(streamType, metadata, clientStreamConsumer, group);
+    final var clientStream =
+        registry.addClient(streamType, metadata, clientStreamConsumer, physicalTenantId);
     LOG.debug("Added new client stream [{}]", clientStream.streamId());
     clientStream.serverStream().open(requestManager, servers);
 

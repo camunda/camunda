@@ -150,7 +150,7 @@ public class StreamActivatedJobsTest extends GatewayTest {
   }
 
   @Test
-  public void shouldRegisterStreamWithDefaultGroupWhenNoPhysicalTenantHeaderPresent() {
+  public void shouldRegisterStreamWithDefaultPhysicalTenantIdWhenNoPhysicalTenantHeaderPresent() {
     // given - no Camunda-Physical-Tenant header set (interceptor not in test chain)
     final String jobType = "testJobGroup";
     final Duration timeout = Duration.ofMinutes(1);
@@ -160,11 +160,12 @@ public class StreamActivatedJobsTest extends GatewayTest {
     getStreamActivatedJobsRequest(jobType, WORKER, timeout, fetchVariables);
 
     // then
-    assertThat(jobStreamer.getStreamGroup(jobType)).isEqualTo(DEFAULT_PHYSICAL_TENANT_ID);
+    assertThat(jobStreamer.getStreamPhysicalTenantId(jobType))
+        .isEqualTo(DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   @Test
-  public void shouldRegisterStreamWithGroupFromPhysicalTenantHeader() {
+  public void shouldRegisterStreamWithPhysicalTenantIdFromPhysicalTenantHeader() {
     // given
     final String jobType = "testJobPhysicalTenantHeader";
     final var headers = new Metadata();
@@ -184,7 +185,7 @@ public class StreamActivatedJobsTest extends GatewayTest {
     jobStreamer.waitStreamToBeAvailable(BufferUtil.wrapString(jobType));
 
     // then
-    assertThat(jobStreamer.getStreamGroup(jobType)).isEqualTo(KNOWN_TENANT);
+    assertThat(jobStreamer.getStreamPhysicalTenantId(jobType)).isEqualTo(KNOWN_TENANT);
   }
 
   @Test

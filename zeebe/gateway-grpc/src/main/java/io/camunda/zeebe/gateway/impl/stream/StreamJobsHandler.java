@@ -62,18 +62,18 @@ public class StreamJobsHandler extends Actor {
       return;
     }
 
-    final var group =
+    final var physicalTenantId =
         Objects.requireNonNullElse(
             InterceptorUtil.getPhysicalTenantIdKey().get(),
             PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
-    handleInternal(jobType, jobActivationProperties, responseObserver, group);
+    handleInternal(jobType, jobActivationProperties, responseObserver, physicalTenantId);
   }
 
   private void handleInternal(
       final String jobType,
       final JobActivationProperties jobActivationProperties,
       final ServerCallStreamObserver<ActivatedJob> responseObserver,
-      final String group) {
+      final String physicalTenantId) {
     final var streamType = wrapString(jobType);
     final var consumer = new JobStreamConsumer(responseObserver, actor);
     final var cleaner = new AsyncJobStreamRemover(jobStreamer, actor);
@@ -86,7 +86,7 @@ public class StreamJobsHandler extends Actor {
     actor.run(
         () ->
             actor.runOnCompletion(
-                jobStreamer.add(streamType, jobActivationProperties, consumer, group),
+                jobStreamer.add(streamType, jobActivationProperties, consumer, physicalTenantId),
                 (streamId, error) -> onStreamAdded(responseObserver, cleaner, streamId, error)));
   }
 

@@ -213,7 +213,7 @@ public final class StubbedGateway {
         final DirectBuffer streamType,
         final JobActivationProperties metadata,
         final ClientStreamConsumer clientStreamConsumer,
-        final String group) {
+        final String physicalTenantId) {
       final var failure = failOnAdd.get();
       if (failure != null) {
         return CompletableActorFuture.completedExceptionally(failure);
@@ -221,7 +221,7 @@ public final class StubbedGateway {
 
       final StubbedClientStreamId streamId = new StubbedClientStreamId(UUID.randomUUID());
       final StreamTypeConsumer consumer =
-          new StreamTypeConsumer(streamType, metadata, clientStreamConsumer, group);
+          new StreamTypeConsumer(streamType, metadata, clientStreamConsumer, physicalTenantId);
       registeredStreams.put(streamType, consumer);
       streamIdToConsumer.put(streamId, consumer);
 
@@ -269,9 +269,9 @@ public final class StubbedGateway {
       return consumer != null ? consumer.metadata() : null;
     }
 
-    public String getStreamGroup(final String streamType) {
+    public String getStreamPhysicalTenantId(final String streamType) {
       final var consumer = registeredStreams.get(BufferUtil.wrapString(streamType));
-      return consumer != null ? consumer.group() : null;
+      return consumer != null ? consumer.physicalTenantId() : null;
     }
 
     public void setFailOnAdd(final Throwable failure) {
@@ -283,7 +283,7 @@ public final class StubbedGateway {
       DirectBuffer streamType,
       JobActivationProperties metadata,
       ClientStreamConsumer clientStreamConsumer,
-      String group) {}
+      String physicalTenantId) {}
 
   private record StubbedClientStreamId(UUID serverStreamId) implements ClientStreamId {}
 

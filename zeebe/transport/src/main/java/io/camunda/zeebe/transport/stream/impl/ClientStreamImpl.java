@@ -29,7 +29,7 @@ record ClientStreamImpl<M extends BufferWriter>(
   }
 
   @Override
-  public String group() {
-    return serverStream().group();
+  public String physicalTenantId() {
+    return serverStream().physicalTenantId();
   }
 }

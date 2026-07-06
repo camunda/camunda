@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.transport.stream.api;
 
-import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.buffer.BufferWriter;
@@ -32,27 +31,14 @@ public interface ClientStreamer<M extends BufferWriter> extends CloseableSilentl
    * @param streamType type of the stream
    * @param metadata metadata associated with the stream
    * @param clientStreamConsumer consumer which process data received from the server
-   * @param group the physical tenant / partition group this stream belongs to
+   * @param physicalTenantId the physical tenant / partition physicalTenantId this stream belongs to
    * @return a unique id of the stream
    */
   ActorFuture<ClientStreamId> add(
       final DirectBuffer streamType,
       final M metadata,
       final ClientStreamConsumer clientStreamConsumer,
-      final String group);
-
-  /**
-   * Registers a client stream using the default physical tenant group. Delegates to {@link
-   * #add(DirectBuffer, BufferWriter, ClientStreamConsumer, String)} with {@link
-   * PhysicalTenantIds#DEFAULT_PHYSICAL_TENANT_ID}.
-   */
-  default ActorFuture<ClientStreamId> add(
-      final DirectBuffer streamType,
-      final M metadata,
-      final ClientStreamConsumer clientStreamConsumer) {
-    return add(
-        streamType, metadata, clientStreamConsumer, PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
-  }
+      final String physicalTenantId);
 
   /**
    * Removes a stream that is added via {@link ClientStreamer#add(DirectBuffer, BufferWriter,

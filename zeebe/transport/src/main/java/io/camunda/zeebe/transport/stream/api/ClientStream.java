@@ -20,5 +20,5 @@ public interface ClientStream<M> {
 
   Set<MemberId> liveConnections();
 
-  String group();
+  String physicalTenantId();
 }

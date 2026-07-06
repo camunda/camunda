@@ -48,7 +48,7 @@ final class ClientStreamRegistry<M extends BufferWriter> {
       final DirectBuffer streamType,
       final M metadata,
       final ClientStreamConsumer clientStreamConsumer,
-      final String group) {
+      final String physicalTenantId) {
     final var streamTypeBuffer = new UnsafeBuffer(streamType);
     final LogicalId<M> logicalId = new LogicalId<>(streamTypeBuffer, metadata);
     // Find serverStreamId given streamType and metadata. Once a server stream is removed, a new
@@ -56,7 +56,8 @@ final class ClientStreamRegistry<M extends BufferWriter> {
     final var serverStreamId = serverStreamIds.computeIfAbsent(logicalId, k -> UUID.randomUUID());
     final var serverStream =
         serverStreams.computeIfAbsent(
-            serverStreamId, k -> new AggregatedClientStream<>(serverStreamId, logicalId, group));
+            serverStreamId,
+            k -> new AggregatedClientStream<>(serverStreamId, logicalId, physicalTenantId));
     final var streamId = new ClientStreamIdImpl(serverStreamId, serverStream.nextLocalId());
     final var clientStream =
         new ClientStreamImpl<>(

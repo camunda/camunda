@@ -78,7 +78,7 @@ final class AsyncJobStreamRemoverTest {
         final DirectBuffer streamType,
         final JobActivationProperties metadata,
         final ClientStreamConsumer clientStreamConsumer,
-        final String group) {
+        final String physicalTenantId) {
       final var id = new StreamId(streamType);
       consumers.put(id, clientStreamConsumer);
       return CompletableActorFuture.completed(id);
