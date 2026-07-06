@@ -356,7 +356,7 @@ describe('<CustomFiltersModal />', () => {
         followUpDateFrom: mockDate,
         followUpDateTo: mockDate,
         taskId: 'task-0',
-        businessId: 'business-0',
+        businessId: 'eq_business-0',
         variables: [
           {
             name: 'variable-0',
@@ -440,7 +440,7 @@ describe('<CustomFiltersModal />', () => {
       followUpDateFrom: new Date('2022-01-01'),
       followUpDateTo: new Date('2022-01-01'),
       taskId: 'task-0',
-      businessId: 'business-0',
+      businessId: 'eq_business-0',
       variables: [
         {
           name: 'variable-0',

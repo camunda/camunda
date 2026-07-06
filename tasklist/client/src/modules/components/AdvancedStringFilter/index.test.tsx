@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen} from 'modules/testing-library';
+import {render, screen} from 'modules/testing/testing-library';
 import {Form} from 'react-final-form';
 import {AdvancedStringFilter} from '.';
 

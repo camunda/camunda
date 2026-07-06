@@ -9,6 +9,7 @@
 import {type QueryUserTasksRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
 import {getStateLocally} from 'modules/local-storage';
 import {type TaskFilters} from 'modules/features/tasks/filters/useTaskFilters';
+import {advancedStringFilterCodec} from 'modules/tasks/filters/advancedStringFilter';
 
 const SORT_BY_FIELD: Record<
   TaskFilters['sortBy'],
@@ -120,6 +121,7 @@ function convertFiltersToQueryVariables(
     followUpDateFrom,
     followUpDateTo,
     assigned,
+    businessId,
     ...restFilters
   } = filters;
   const updatedFilters: QueryUserTasksRequestBody['filter'] = {
@@ -162,6 +164,13 @@ function convertFiltersToQueryVariables(
     updatedFilters.assignee = {
       $exists: false,
     };
+  }
+
+  if (businessId !== undefined) {
+    const decoded = advancedStringFilterCodec.safeDecode(businessId);
+    if (decoded.success) {
+      updatedFilters.businessId = decoded.data;
+    }
   }
 
   return updatedFilters;
