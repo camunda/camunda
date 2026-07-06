@@ -93,8 +93,124 @@ export interface TimeRange {
   to: number;
 }
 
+// ---------------------------------------------------------------------------
+// Dataset / report builder shapes. These mirror the analytics builder REST
+// contract (DatasetDeclaration / Report records serialized by name).
+// ---------------------------------------------------------------------------
+
+export type SourceFact = "PROCESS_INSTANCE" | "ELEMENT" | "INCIDENT" | "PROCESS_DEFINITION";
+export type DatasetKind = "AGGREGATED" | "TABLE";
+export type DimensionType = "STRING" | "LONG" | "INT" | "BOOLEAN";
+export type Enrichment = "EVENT_TIME" | "PI_CREATE" | "PI_COMPLETE";
+export type FilterOperator = "EQUALS";
+export type Combination = "UNION";
+
+/** The fixed catalog of meter types offered by the builder. */
+export const METER_TYPES = [
+  "count",
+  "sum",
+  "level",
+  "execution_time",
+  "execution_time_summary",
+  "lifecycle_summary",
+  "histogram",
+  "percentile",
+  "distinct",
+  "top_k",
+  "ratio",
+] as const;
+export type MeterType = (typeof METER_TYPES)[number];
+
+export interface Dimension {
+  name: string;
+  type: DimensionType;
+  enrichment?: Enrichment;
+}
+
+export interface Meter {
+  name: string;
+  type: string;
+  measureField?: string;
+  params?: Record<string, string>;
+}
+
+export interface Filter {
+  field: string;
+  operator: FilterOperator;
+  value: string;
+}
+
+/** A materialized dataset as returned by GET /api/datasets. */
+export interface Dataset {
+  cubeId: number;
+  name: string;
+  sourceFact: SourceFact;
+  kind: DatasetKind;
+  dimensions: Dimension[];
+  meters: Meter[];
+  windowSizesMs: number[];
+  keyField?: string | null;
+  activationTimestampMs: number;
+}
+
+/** The POST /api/datasets request body. */
+export interface DatasetDeclaration {
+  name: string;
+  sourceFact: SourceFact;
+  kind: DatasetKind;
+  filters: Filter[];
+  dimensions: Dimension[];
+  meters: Meter[];
+  windowSizesMs: number[];
+  keyField?: string | null;
+  latenessMs?: number;
+}
+
+export interface ReportSource {
+  datasetName: string;
+  meters: string[];
+  filters: Filter[];
+}
+
+/** A report as returned by GET /api/reports. */
+export interface Report {
+  reportId: number;
+  name: string;
+  sources: ReportSource[];
+  groupBy: string[];
+  granularityMs: number;
+  combination: Combination;
+  viz?: string | null;
+}
+
+/** The POST /api/reports request body (a report without its server-assigned id). */
+export type ReportInput = Omit<Report, "reportId">;
+
+/** One row of report result data. Measure keys are namespaced "<datasetName>.<meter>". */
+export interface ReportRow {
+  dimensions: Record<string, string | null>;
+  windowStart: number;
+  measures: Record<string, unknown>;
+}
+
+export interface ReportData {
+  rows: ReportRow[];
+}
+
 async function getJson<T>(url: string): Promise<T> {
   const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`${url} → HTTP ${response.status}`);
+  }
+  return response.json() as Promise<T>;
+}
+
+async function postJson<T>(url: string, body: unknown): Promise<T> {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
   if (!response.ok) {
     throw new Error(`${url} → HTTP ${response.status}`);
   }
@@ -139,4 +255,13 @@ export const api = {
     getJson<ElementDuration[]>(
       `/api/dashboard/element-durations?process=${q(process)}${rangeQs(range)}`,
     ),
+
+  // Dataset / report builder endpoints.
+  listDatasets: () => getJson<Dataset[]>("/api/datasets"),
+  createDataset: (declaration: DatasetDeclaration) =>
+    postJson<Dataset>("/api/datasets", declaration),
+  listReports: () => getJson<Report[]>("/api/reports"),
+  createReport: (report: ReportInput) => postJson<Report>("/api/reports", report),
+  runReport: (id: number, fromMs: number, toMs: number) =>
+    getJson<ReportData>(`/api/reports/${id}/data?fromMs=${fromMs}&toMs=${toMs}`),
 };

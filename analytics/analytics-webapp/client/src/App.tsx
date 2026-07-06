@@ -15,9 +15,11 @@ import {
 } from "@camunda/design-system";
 import { Dashboard } from "./components/Dashboard";
 import { RangePicker } from "./components/RangePicker";
+import { DatasetsPage } from "./pages/DatasetsPage";
 import { KpiPage } from "./pages/KpiPage";
 import { OverviewPage } from "./pages/OverviewPage";
 import { PerformancePage } from "./pages/PerformancePage";
+import { ReportsPage } from "./pages/ReportsPage";
 import { api, type TimeRange } from "./lib/api";
 
 /** Each Optimize instant-preview dashboard is its own hash-routed page. */
@@ -26,7 +28,12 @@ const PAGES = [
   { hash: "kpis", label: "KPIs" },
   { hash: "performance", label: "Performance" },
   { hash: "all", label: "All metrics" },
+  { hash: "datasets", label: "Datasets" },
+  { hash: "reports", label: "Reports" },
 ] as const;
+
+/** Builder pages are process-agnostic and render regardless of whether metrics exist. */
+const GLOBAL_ROUTES = new Set<string>(["datasets", "reports"]);
 
 function currentHash(): string {
   const h = window.location.hash.replace(/^#\/?/, "");
@@ -134,7 +141,13 @@ export default function App() {
       </header>
 
       <main className="mx-auto max-w-6xl px-6 py-6">
-        {error ? (
+        {GLOBAL_ROUTES.has(route) ? (
+          route === "datasets" ? (
+            <DatasetsPage />
+          ) : (
+            <ReportsPage range={range} />
+          )
+        ) : error ? (
           <p className="text-destructive-foreground">Failed to load: {error}</p>
         ) : !process ? (
           <p className="text-neutral-foreground-muted">
