@@ -46,19 +46,17 @@ public record DatasetDeclaration(
     windowSizesMs = List.copyOf(windowSizesMs == null ? List.of() : windowSizesMs);
     requireUnique(dimensions.stream().map(DimensionSpec::name).toList(), "dimension");
     requireUnique(meters.stream().map(Meter::name).toList(), "meter");
-    if (kind == DatasetKind.PROJECTED) {
-      // A projected (raw) dataset is a flat, keyed row list — no windowed aggregation.
+    if (kind == DatasetKind.TABLE) {
+      // A table is a flat, keyed row list — no windowed aggregation.
       if (keyField == null || keyField.isBlank()) {
-        throw new IllegalArgumentException(
-            "projected dataset '" + name + "' declares no key field");
+        throw new IllegalArgumentException("table '" + name + "' declares no key field");
       }
       if (dimensions.isEmpty()) {
-        throw new IllegalArgumentException(
-            "projected dataset '" + name + "' declares no projected columns");
+        throw new IllegalArgumentException("table '" + name + "' declares no columns");
       }
       if (!meters.isEmpty() || !windowSizesMs.isEmpty()) {
         throw new IllegalArgumentException(
-            "projected dataset '" + name + "' must not declare meters or windows");
+            "table '" + name + "' must not declare meters or windows");
       }
     } else {
       if (keyField != null) {
@@ -112,11 +110,11 @@ public record DatasetDeclaration(
     }
 
     /**
-     * Marks this as a projected (raw) dataset keyed by {@code keyField}: the declared dimensions
-     * are the projected row columns, and no meters/windows may be declared.
+     * Marks this as a {@link DatasetKind#TABLE raw table} keyed by {@code keyField}: the declared
+     * dimensions are the row columns, and no meters/windows may be declared.
      */
-    public Builder projectedBy(final String keyField) {
-      kind = DatasetKind.PROJECTED;
+    public Builder asTable(final String keyField) {
+      kind = DatasetKind.TABLE;
       this.keyField = keyField;
       return this;
     }

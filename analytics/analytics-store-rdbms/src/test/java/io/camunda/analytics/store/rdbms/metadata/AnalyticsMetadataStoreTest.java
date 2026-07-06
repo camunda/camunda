@@ -69,7 +69,7 @@ final class AnalyticsMetadataStoreTest {
     final RegisteredDataset raw =
         registry.admit(
             DatasetDeclaration.builder("raw-instances", FactType.PROCESS_INSTANCE)
-                .projectedBy("processInstanceKey")
+                .asTable("processInstanceKey")
                 .dimension("bpmnProcessId", DimensionType.STRING)
                 .dimension("durationMs", DimensionType.LONG)
                 .build(),
@@ -89,7 +89,7 @@ final class AnalyticsMetadataStoreTest {
     assertThat(store.datasetSpecStore().read(999L)).isEmpty();
     assertThat(store.datasetSpecStore().search(DatasetSpecQuery.byName("raw-instances")))
         .containsExactly(raw);
-    assertThat(store.datasetSpecStore().search(DatasetSpecQuery.byKind(DatasetKind.PROJECTED)))
+    assertThat(store.datasetSpecStore().search(DatasetSpecQuery.byKind(DatasetKind.TABLE)))
         .containsExactly(raw);
   }
 

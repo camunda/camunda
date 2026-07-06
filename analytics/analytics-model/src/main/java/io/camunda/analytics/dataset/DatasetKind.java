@@ -13,7 +13,7 @@ package io.camunda.analytics.dataset;
  * <ul>
  *   <li>{@link #AGGREGATED} — a cube: windowed, grouped, mergeable meters shuffled and reduced into
  *       one cell per grain value per window (the default).
- *   <li>{@link #PROJECTED} — a raw dataset: a flat list of individual facts (e.g. process instances
+ *   <li>{@link #TABLE} — a raw dataset: a flat list of individual facts (e.g. process instances
  *       enriched with variables) over a time period, each written as one row keyed by a primary-key
  *       field. No windowing or aggregation — the row upsert is idempotent under replay, so it is
  *       written straight from Stage 1 without a shuffle.
@@ -21,5 +21,5 @@ package io.camunda.analytics.dataset;
  */
 public enum DatasetKind {
   AGGREGATED,
-  PROJECTED
+  TABLE
 }

@@ -117,7 +117,7 @@ final class RdbmsDatasetStoreTest {
             .compileTable(
                 7L,
                 DatasetDeclaration.builder("raw-instances", FactType.PROCESS_INSTANCE)
-                    .projectedBy("processInstanceKey")
+                    .asTable("processInstanceKey")
                     .dimension("bpmnProcessId", DimensionType.STRING)
                     .dimension("durationMs", DimensionType.LONG)
                     .build());

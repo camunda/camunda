@@ -94,7 +94,7 @@ public final class StandardDatasets {
             MeterCatalog.withDefaults(), new MeterRegistry(metadataStore.meterIdStore()));
     final List<ActiveTable> tables = new ArrayList<>();
     for (final RegisteredDataset registered :
-        metadataStore.datasetSpecStore().search(DatasetSpecQuery.byKind(DatasetKind.PROJECTED))) {
+        metadataStore.datasetSpecStore().search(DatasetSpecQuery.byKind(DatasetKind.TABLE))) {
       tables.add(
           new ActiveTable(
               registered, compiler.compileTable(registered.cubeId(), registered.declaration())));
@@ -186,7 +186,7 @@ public final class StandardDatasets {
         // Raw completed process instances, enriched with the region variable, keyed by instance.
         DatasetDeclaration.builder("raw-completed-instances", FactType.PROCESS_INSTANCE)
             .filterEquals("transition", Transition.COMPLETED.name())
-            .projectedBy("processInstanceKey")
+            .asTable("processInstanceKey")
             .dimension("bpmnProcessId", DimensionType.STRING)
             .dimension("durationMs", DimensionType.LONG)
             .dimension("hadIncident", DimensionType.BOOLEAN)

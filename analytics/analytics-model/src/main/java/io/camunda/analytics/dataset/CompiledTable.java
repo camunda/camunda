@@ -11,11 +11,11 @@ import io.camunda.analytics.dimension.DimensionColumn;
 import java.util.List;
 
 /**
- * A {@link DatasetKind#PROJECTED} declaration resolved into everything the pipeline needs to run a
- * raw dataset: the {@link FactBinding} (source fact, filters, enrichment), the {@code keyField}
- * (the fact field used as the row primary key), and the projected {@code columns}. Produced by
- * {@link DatasetCompiler#compileTable}; consumed by Stage 1, which upserts one row per matching
- * fact keyed by {@code keyField} — idempotent under replay, so no shuffle or reduce is needed.
+ * A {@link DatasetKind#TABLE} declaration resolved into everything the pipeline needs to run a raw
+ * dataset: the {@link FactBinding} (source fact, filters, enrichment), the {@code keyField} (the
+ * fact field used as the row primary key), and the projected {@code columns}. Produced by {@link
+ * DatasetCompiler#compileTable}; consumed by Stage 1, which upserts one row per matching fact keyed
+ * by {@code keyField} — idempotent under replay, so no shuffle or reduce is needed.
  */
 public record CompiledTable(
     long cubeId,

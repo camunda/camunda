@@ -39,7 +39,7 @@ public final class DatasetCompiler {
   }
 
   public CompiledDataset compile(final long cubeId, final DatasetDeclaration declaration) {
-    if (declaration.kind() == DatasetKind.PROJECTED) {
+    if (declaration.kind() == DatasetKind.TABLE) {
       throw new IllegalArgumentException(
           "projected dataset '" + declaration.name() + "' must be compiled via compileTable");
     }
@@ -82,13 +82,13 @@ public final class DatasetCompiler {
   }
 
   /**
-   * Compiles a {@link DatasetKind#PROJECTED} declaration into a runnable {@link CompiledTable}: the
+   * Compiles a {@link DatasetKind#TABLE} declaration into a runnable {@link CompiledTable}: the
    * fact binding (source fact, filters, per-variable enrichment) and the declared dimensions as the
    * projected row columns. No meters/windows/aggIds — a projected row is written directly, not
    * shuffled and reduced.
    */
   public CompiledTable compileTable(final long cubeId, final DatasetDeclaration declaration) {
-    if (declaration.kind() != DatasetKind.PROJECTED) {
+    if (declaration.kind() != DatasetKind.TABLE) {
       throw new IllegalArgumentException("dataset '" + declaration.name() + "' is not projected");
     }
     final List<DimensionColumn> columns = new ArrayList<>();
