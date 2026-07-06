@@ -322,7 +322,7 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
       return;
     }
     switch (type) {
-      case STRING -> statement.setString(index, (String) value);
+      case STRING, TEXT -> statement.setString(index, (String) value);
       case LONG -> statement.setLong(index, ((Number) value).longValue());
       case INT -> statement.setInt(index, ((Number) value).intValue());
       case BOOLEAN -> statement.setBoolean(index, (Boolean) value);

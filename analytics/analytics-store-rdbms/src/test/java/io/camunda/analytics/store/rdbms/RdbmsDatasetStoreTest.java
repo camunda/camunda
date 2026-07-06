@@ -183,6 +183,34 @@ final class RdbmsDatasetStoreTest {
             });
   }
 
+  @Test
+  void shouldStoreAndReadALargeTextColumnBeyondVarcharBound() {
+    // given a table with a TEXT column (CLOB/TEXT), like process definitions holding BPMN XML
+    final CompiledTable table =
+        new DatasetCompiler(
+                MeterCatalog.withDefaults(), new MeterRegistry(new InMemoryMeterIdStore()))
+            .compileTable(
+                8L,
+                DatasetDeclaration.builder("defs", FactType.PROCESS_INSTANCE)
+                    .asTable("id")
+                    .dimension("id", DimensionType.STRING)
+                    .dimension("xml", DimensionType.TEXT)
+                    .build());
+    store.schemaManager().ensureTable(table);
+    final String bigXml = "<x>" + "a".repeat(6000) + "</x>"; // > the STRING VARCHAR(4000) bound
+
+    // when a row far larger than the VARCHAR bound is written and read back
+    store.writer().upsertRow(table, "1", List.of("1", bigXml));
+    store.writer().flush();
+    final List<TableRow> rows =
+        new TableQueryExecutor(store.queryClient()).execute(new TableQuery(List.of(), 10), table);
+
+    // then the full text survives the round trip (CLOB stored + read as a String)
+    assertThat(rows)
+        .singleElement()
+        .satisfies(r -> assertThat(r.values().get("xml")).isEqualTo(bigXml));
+  }
+
   private static CompiledTable rawInstancesTable() {
     return new DatasetCompiler(
             MeterCatalog.withDefaults(), new MeterRegistry(new InMemoryMeterIdStore()))

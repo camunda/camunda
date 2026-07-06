@@ -7,9 +7,15 @@
  */
 package io.camunda.analytics.dimension;
 
-/** The value type of a {@link DimensionColumn}. Kept to the types dimensions actually take. */
+/**
+ * The value type of a {@link DimensionColumn}. {@link #STRING} is a bounded, indexable identifier;
+ * {@link #TEXT} is a large character payload (e.g. a process's BPMN XML) that maps to a large-text
+ * column (CLOB/TEXT), read and written as a {@code String} — never a grouping key. The rest are the
+ * scalar types dimensions take.
+ */
 public enum DimensionType {
   STRING,
+  TEXT,
   LONG,
   INT,
   BOOLEAN

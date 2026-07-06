@@ -463,7 +463,7 @@ public final class DocumentDatasetQueryClient implements DatasetQueryClient {
   private static SearchQuery term(
       final String field, final DimensionType type, final String value) {
     return switch (type) {
-      case STRING -> SearchQueryBuilders.term(field, value);
+      case STRING, TEXT -> SearchQueryBuilders.term(field, value);
       case LONG, INT -> SearchQueryBuilders.term(field, Long.parseLong(value));
       case BOOLEAN -> SearchQueryBuilders.term(field, Boolean.parseBoolean(value));
     };
@@ -474,7 +474,7 @@ public final class DocumentDatasetQueryClient implements DatasetQueryClient {
       return null;
     }
     return switch (type) {
-      case STRING -> value.toString();
+      case STRING, TEXT -> value.toString();
       case LONG -> ((Number) value).longValue();
       case INT -> ((Number) value).intValue();
       case BOOLEAN -> value instanceof Boolean b ? b : Boolean.parseBoolean(value.toString());

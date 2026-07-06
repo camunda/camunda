@@ -47,6 +47,9 @@ public enum RdbmsDialect {
   public String columnType(final DimensionType type) {
     return switch (type) {
       case STRING -> "VARCHAR(4000)";
+      // Large character payload (e.g. BPMN XML), like OC's PROCESS_DEFINITION.BPMN_XML: CLOB on H2,
+      // TEXT on Postgres — written/read as a String, never indexed.
+      case TEXT -> this == POSTGRESQL ? "TEXT" : "CLOB";
       case LONG -> "BIGINT";
       case INT -> "INTEGER";
       case BOOLEAN -> "BOOLEAN";

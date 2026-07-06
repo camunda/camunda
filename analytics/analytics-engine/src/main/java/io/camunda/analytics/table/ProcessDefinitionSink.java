@@ -48,7 +48,7 @@ public final class ProcessDefinitionSink implements Processor<Fact, Void> {
               new DimensionColumn("processDefinitionKey", DimensionType.LONG),
               new DimensionColumn("version", DimensionType.INT),
               new DimensionColumn("tenantId", DimensionType.STRING),
-              new DimensionColumn("bpmnXml", DimensionType.STRING)));
+              new DimensionColumn("bpmnXml", DimensionType.TEXT)));
 
   private final DatasetWriter writer;
 

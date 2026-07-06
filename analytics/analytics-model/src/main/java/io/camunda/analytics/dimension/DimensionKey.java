@@ -56,7 +56,7 @@ public final class DimensionKey {
     }
     final boolean ok =
         switch (column.type()) {
-          case STRING -> value instanceof String;
+          case STRING, TEXT -> value instanceof String;
           case LONG -> value instanceof Long;
           case INT -> value instanceof Integer;
           case BOOLEAN -> value instanceof Boolean;

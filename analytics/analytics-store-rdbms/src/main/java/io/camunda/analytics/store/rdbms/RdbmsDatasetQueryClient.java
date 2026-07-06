@@ -25,6 +25,8 @@ import io.camunda.analytics.serving.spi.DatasetQueryClient;
 import io.camunda.analytics.serving.spi.TableFetch;
 import io.camunda.analytics.serving.spi.TableRow;
 import java.io.IOException;
+import java.sql.Clob;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -421,11 +423,19 @@ public final class RdbmsDatasetQueryClient implements DatasetQueryClient {
   /** Coerces a filter's string value to the grain column's type for binding. */
   private static Object coerce(final DimensionType type, final String value) {
     return switch (type) {
-      case STRING -> value;
+      case STRING, TEXT -> value;
       case LONG -> Long.parseLong(value);
       case INT -> Integer.parseInt(value);
       case BOOLEAN -> Boolean.parseBoolean(value);
     };
+  }
+
+  private static String clobToString(final Clob clob) {
+    try {
+      return clob.getSubString(1, (int) clob.length());
+    } catch (final SQLException e) {
+      throw new IllegalStateException("failed to read CLOB value", e);
+    }
   }
 
   /** Normalises a JDBC-read value to the type {@link DimensionKey} expects for the column. */
@@ -434,7 +444,9 @@ public final class RdbmsDatasetQueryClient implements DatasetQueryClient {
       return null;
     }
     return switch (type) {
-      case STRING -> value.toString();
+      // A TEXT column comes back as a CLOB on some drivers (e.g. H2) — read it fully to a String;
+      // a VARCHAR/text column is already a String.
+      case STRING, TEXT -> value instanceof final Clob clob ? clobToString(clob) : value.toString();
       case LONG -> ((Number) value).longValue();
       case INT -> ((Number) value).intValue();
       case BOOLEAN -> value instanceof Boolean b ? b : Boolean.parseBoolean(value.toString());

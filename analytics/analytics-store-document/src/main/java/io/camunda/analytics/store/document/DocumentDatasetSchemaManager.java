@@ -93,6 +93,7 @@ public final class DocumentDatasetSchemaManager implements DatasetSchemaManager 
   private static String fieldType(final DimensionType type) {
     return switch (type) {
       case STRING -> "keyword";
+      case TEXT -> "text"; // large payload (e.g. BPMN XML): analyzed text, not a keyword
       case LONG -> "long";
       case INT -> "integer";
       case BOOLEAN -> "boolean";
