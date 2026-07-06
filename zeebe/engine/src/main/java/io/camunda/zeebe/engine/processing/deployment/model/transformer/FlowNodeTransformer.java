@@ -86,6 +86,14 @@ public final class FlowNodeTransformer implements ModelElementTransformer<FlowNo
             mappings ->
                 variableMappingTransformer.transformOutputMappings(mappings, expressionLanguage))
         .ifPresent(flowNode::setOutputMappings);
+
+    // secret references are only honored in input mappings; anywhere else they stay literal
+    ioMapping
+        .map(ZeebeIoMapping::getInputs)
+        .filter(mappings -> !mappings.isEmpty())
+        .map(variableMappingTransformer::detectSecretReferences)
+        .filter(references -> !references.isEmpty())
+        .ifPresent(flowNode::setSecretReferences);
   }
 
   private void transformExecutionListeners(

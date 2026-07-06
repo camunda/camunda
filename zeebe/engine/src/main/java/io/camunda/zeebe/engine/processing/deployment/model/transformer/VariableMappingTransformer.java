@@ -11,6 +11,7 @@ import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.impl.NullExpression;
 import io.camunda.zeebe.el.impl.StaticExpression;
+import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeMapping;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,6 +19,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
@@ -93,6 +95,41 @@ public final class VariableMappingTransformer {
     final var context = asContext(mappings);
     final var contextExpression = asFeelContextExpression(context, this::mergeContextExpression);
     return parseExpression(contextExpression, expressionLanguage);
+  }
+
+  /**
+   * Detects the secret references used in the given input mappings, keyed by the JSON pointer (RFC
+   * 6901) of the mapping's target path, e.g. {@code /tokens/token}. The pointer is stored so the
+   * job-activation path can replace the reference in the job variables (a Jackson document)
+   * natively via a Jackson {@code JsonPointer}, without converting the path on the hot path. Only
+   * references used as expressions are detected; references inside string literals or in static
+   * (non-expression) values are ignored (see {@link SecretReference}). Mappings without any
+   * reference are omitted from the result.
+   */
+  public Map<String, Set<SecretReference>> detectSecretReferences(
+      final Collection<? extends ZeebeMapping> inputMappings) {
+    final var secretReferences = new LinkedHashMap<String, Set<SecretReference>>();
+    for (final ZeebeMapping mapping : inputMappings) {
+      final var references = SecretReference.parse(mapping.getSource());
+      if (!references.isEmpty()) {
+        secretReferences.put(toJsonPointer(mapping.getTarget()), references);
+      }
+    }
+    return secretReferences;
+  }
+
+  /**
+   * Converts a dotted variable-mapping target path (e.g. {@code tokens.token}) into a JSON pointer
+   * (e.g. {@code /tokens/token}). Dots are the nesting separators used by input mappings, so each
+   * becomes a pointer segment; {@code ~} and {@code /} inside a segment are escaped per RFC 6901
+   * ({@code ~} -> {@code ~0}, {@code /} -> {@code ~1}).
+   */
+  private static String toJsonPointer(final String targetPath) {
+    final var pointer = new StringBuilder();
+    for (final String segment : targetPath.split("\\.")) {
+      pointer.append('/').append(segment.replace("~", "~0").replace("/", "~1"));
+    }
+    return pointer.toString();
   }
 
   private List<Mapping> toMappings(
