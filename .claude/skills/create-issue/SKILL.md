@@ -75,9 +75,7 @@ Map path prefixes to component labels:
 
 | Path prefix              | Component label                  |
 |--------------------------|----------------------------------|
-| `zeebe/engine/` or `zeebe/broker/` | `component/zeebe-engine`         |
-| `zeebe/gateway/` or `zeebe/docker/` | `component/zeebe-platform`       |
-| `zeebe/` (mixed/unsure)             | `component/zeebe` (fallback)     |
+| `zeebe/` — see below     | `component/zeebe-engine` or `component/zeebe-platform` (fallback: `component/zeebe`) |
 | `operate/`               | `component/operate`              |
 | `tasklist/`              | `component/tasklist`             |
 | `identity/`              | `component/identity`             |
@@ -91,6 +89,15 @@ Map path prefixes to component labels:
 | `testing/`               | `component/camunda-process-test` |
 | `qa/`                    | `component/qa`                   |
 | `.github/` or `.claude/` | `component/build-pipeline`       |
+
+**Zeebe label split — use the conceptual layer, not the path:**
+
+- `component/zeebe-engine` — application/engine layer: BPMN/DMN execution, process state, variable
+  handling, FEEL evaluation, gRPC/REST API surface, `zeebe/gateway`, `zeebe/engine`
+- `component/zeebe-platform` — platform/infrastructure layer: broker internals, clustering, Raft,
+  replication, storage (RocksDB), job streaming, `zeebe/broker` (infra aspects)
+- Grey areas (e.g. `zeebe/broker` engine logic, job streaming in `zeebe/gateway`): prefer the
+  layer that is more affected; use `component/zeebe` as fallback when genuinely unclear
 
 When multiple modules are touched, pick the label for the most-affected one. If uncertain, ask the
 user. If no files are modified, ask the user which component applies.
