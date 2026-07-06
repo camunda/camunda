@@ -14,15 +14,15 @@ const pinClockRequestBodySchema = z.object({
 });
 type PinClockRequestBody = z.infer<typeof pinClockRequestBodySchema>;
 
-const pinClock: Endpoint = {
+const pinClock = {
 	method: 'PUT',
-	getUrl: () => `/${API_VERSION}/clock`,
-};
+	getUrl: () => `/${API_VERSION}/clock` as const,
+} as const satisfies Endpoint;
 
-const resetClock: Endpoint = {
+const resetClock = {
 	method: 'POST',
-	getUrl: () => `/${API_VERSION}/clock/reset`,
-};
+	getUrl: () => `/${API_VERSION}/clock/reset` as const,
+} as const satisfies Endpoint;
 
 export {pinClockRequestBodySchema, pinClock, resetClock};
 

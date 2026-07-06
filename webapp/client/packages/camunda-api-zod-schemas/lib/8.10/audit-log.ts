@@ -177,15 +177,15 @@ type QueryAuditLogsRequestBody = z.infer<typeof queryAuditLogsRequestBodySchema>
 const queryAuditLogsResponseBodySchema = getQueryResponseBodySchema(auditLogSchema);
 type QueryAuditLogsResponseBody = z.infer<typeof queryAuditLogsResponseBodySchema>;
 
-const queryAuditLogs: Endpoint = {
+const queryAuditLogs = {
 	method: 'POST',
-	getUrl: () => `/${API_VERSION}/audit-logs/search`,
-};
+	getUrl: () => `/${API_VERSION}/audit-logs/search` as const,
+} as const satisfies Endpoint;
 
-const getAuditLog: Endpoint<{auditLogKey: string}> = {
+const getAuditLog = {
 	method: 'GET',
-	getUrl: ({auditLogKey}) => `/${API_VERSION}/audit-logs/${auditLogKey}`,
-};
+	getUrl: ({auditLogKey}) => `/${API_VERSION}/audit-logs/${auditLogKey}` as const,
+} as const satisfies Endpoint<{auditLogKey: string}>;
 
 const getAuditLogResponseBodySchema = auditLogSchema;
 type GetAuditLogResponseBody = z.infer<typeof getAuditLogResponseBodySchema>;

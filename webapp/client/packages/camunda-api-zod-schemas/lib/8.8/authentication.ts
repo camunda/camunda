@@ -37,10 +37,10 @@ const currentUserSchema = z.object({
 
 type CurrentUser = z.infer<typeof currentUserSchema>;
 
-const getCurrentUser: Endpoint = {
+const getCurrentUser = {
 	method: 'GET',
-	getUrl: () => `/${API_VERSION}/authentication/me`,
-};
+	getUrl: () => `/${API_VERSION}/authentication/me` as const,
+} as const satisfies Endpoint;
 
 export {currentUserSchema, getCurrentUser};
 export type {CurrentUser};

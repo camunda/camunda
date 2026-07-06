@@ -226,25 +226,25 @@ type QueryAgentInstanceHistoryRequestBody = z.infer<typeof queryAgentInstanceHis
 const queryAgentInstanceHistoryResponseBodySchema = getQueryResponseBodySchema(agentInstanceHistoryItemSchema);
 type QueryAgentInstanceHistoryResponseBody = z.infer<typeof queryAgentInstanceHistoryResponseBodySchema>;
 
-const getAgentInstance: Endpoint<{agentInstanceKey: string}> = {
+const getAgentInstance = {
 	method: 'GET',
-	getUrl: ({agentInstanceKey}) => `/${API_VERSION}/agent-instances/${agentInstanceKey}`,
-};
+	getUrl: ({agentInstanceKey}) => `/${API_VERSION}/agent-instances/${agentInstanceKey}` as const,
+} as const satisfies Endpoint<{agentInstanceKey: string}>;
 
-const queryAgentInstances: Endpoint = {
+const queryAgentInstances = {
 	method: 'POST',
-	getUrl: () => `/${API_VERSION}/agent-instances/search`,
-};
+	getUrl: () => `/${API_VERSION}/agent-instances/search` as const,
+} as const satisfies Endpoint;
 
-const createAgentInstanceHistoryItem: Endpoint<{agentInstanceKey: string}> = {
+const createAgentInstanceHistoryItem = {
 	method: 'POST',
-	getUrl: ({agentInstanceKey}) => `/${API_VERSION}/agent-instances/${agentInstanceKey}/history`,
-};
+	getUrl: ({agentInstanceKey}) => `/${API_VERSION}/agent-instances/${agentInstanceKey}/history` as const,
+} as const satisfies Endpoint<{agentInstanceKey: string}>;
 
-const queryAgentInstanceHistory: Endpoint<{agentInstanceKey: string}> = {
+const queryAgentInstanceHistory = {
 	method: 'POST',
-	getUrl: ({agentInstanceKey}) => `/${API_VERSION}/agent-instances/${agentInstanceKey}/history/search`,
-};
+	getUrl: ({agentInstanceKey}) => `/${API_VERSION}/agent-instances/${agentInstanceKey}/history/search` as const,
+} as const satisfies Endpoint<{agentInstanceKey: string}>;
 
 export {
 	agentInstanceStatusSchema,

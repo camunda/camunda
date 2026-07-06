@@ -22,12 +22,12 @@ const broadcastSignalResponseBodySchema = z.object({
 });
 type BroadcastSignalResponseBody = z.infer<typeof broadcastSignalResponseBodySchema>;
 
-const broadcastSignal: Endpoint = {
+const broadcastSignal = {
 	method: 'POST',
 	getUrl() {
-		return `/${API_VERSION}/signals/broadcast`;
+		return `/${API_VERSION}/signals/broadcast` as const;
 	},
-};
+} as const satisfies Endpoint;
 
 export {broadcastSignal, broadcastSignalRequestBodySchema, broadcastSignalResponseBodySchema};
 export type {BroadcastSignalRequestBody, BroadcastSignalResponseBody};

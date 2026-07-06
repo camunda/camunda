@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.80
+
+### 🚀 Enhancements
+
+- enhance endpoint mapping types ([#56683](https://github.com/camunda/camunda/issues/56683))
+
+### ❤️ Contributors
+
+- Vinicius Goulart ([@vsgoulart](https://github.com/vsgoulart))
+
 ## v0.0.79
 
 ### 🚀 Enhancements

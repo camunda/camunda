@@ -18,10 +18,10 @@ const licenseSchema = z.object({
 
 type License = z.infer<typeof licenseSchema>;
 
-const getLicense: Endpoint = {
+const getLicense = {
 	method: 'GET',
-	getUrl: () => `/${API_VERSION}/license`,
-};
+	getUrl: () => `/${API_VERSION}/license` as const,
+} as const satisfies Endpoint;
 
 export {licenseSchema, getLicense};
 export type {License};

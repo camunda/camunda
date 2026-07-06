@@ -106,15 +106,16 @@ const getDecisionInstanceResponseBodySchema = z.object({
 });
 type GetDecisionInstanceResponseBody = z.infer<typeof getDecisionInstanceResponseBodySchema>;
 
-const queryDecisionInstances: Endpoint = {
+const queryDecisionInstances = {
 	method: 'POST',
-	getUrl: () => `/${API_VERSION}/decision-instances/search`,
-};
+	getUrl: () => `/${API_VERSION}/decision-instances/search` as const,
+} as const satisfies Endpoint;
 
-const getDecisionInstance: Endpoint<Pick<DecisionInstance, 'decisionEvaluationInstanceKey'>> = {
+const getDecisionInstance = {
 	method: 'GET',
-	getUrl: ({decisionEvaluationInstanceKey}) => `/${API_VERSION}/decision-instances/${decisionEvaluationInstanceKey}`,
-};
+	getUrl: ({decisionEvaluationInstanceKey}) =>
+		`/${API_VERSION}/decision-instances/${decisionEvaluationInstanceKey}` as const,
+} as const satisfies Endpoint<Pick<DecisionInstance, 'decisionEvaluationInstanceKey'>>;
 
 const createDecisionInstancesDeletionBatchOperationRequestBodySchema = z.object({
 	filter: queryDecisionInstancesFilterSchema,
@@ -131,10 +132,10 @@ type CreateDecisionInstancesDeletionBatchOperationResponseBody = z.infer<
 	typeof createDecisionInstancesDeletionBatchOperationResponseBodySchema
 >;
 
-const createDecisionInstancesDeletionBatchOperation: Endpoint = {
+const createDecisionInstancesDeletionBatchOperation = {
 	method: 'POST',
-	getUrl: () => `/${API_VERSION}/decision-instances/deletion`,
-};
+	getUrl: () => `/${API_VERSION}/decision-instances/deletion` as const,
+} as const satisfies Endpoint;
 
 export {
 	decisionDefinitionTypeSchema,
