@@ -40,12 +40,12 @@ const getResultPreview = (result: ContentItem[]): string => {
 type ToolResultMessageProps = {
   availableTools: AgentTool[];
   toolCalls: AgentInstanceToolCall[];
-  result: ContentItem[];
+  content: ContentItem[];
 };
 
 const ToolResultMessage: React.FC<ToolResultMessageProps> = ({
   toolCalls,
-  result,
+  content,
 }) => {
   // According to the API, the tool call is a single entry in the tool calls list on a TOOL_RESULT message.
   const toolCall = toolCalls[0];
@@ -53,7 +53,7 @@ const ToolResultMessage: React.FC<ToolResultMessageProps> = ({
     return null;
   }
 
-  const resultPreview = getResultPreview(result);
+  const resultPreview = getResultPreview(content);
 
   return (
     <Container

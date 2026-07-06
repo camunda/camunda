@@ -15,7 +15,7 @@ describe('<ToolResultMessage />', () => {
       <ToolResultMessage
         availableTools={[]}
         toolCalls={[]}
-        result={[{contentType: 'TEXT', text: 'Tool output here'}]}
+        content={[{contentType: 'TEXT', text: 'Tool output here'}]}
       />,
     );
 
@@ -29,7 +29,7 @@ describe('<ToolResultMessage />', () => {
         toolCalls={[
           {toolCallId: '1', toolName: 'search', elementId: null, arguments: {}},
         ]}
-        result={[{contentType: 'TEXT', text: 'Tool output here'}]}
+        content={[{contentType: 'TEXT', text: 'Tool output here'}]}
       />,
     );
 
@@ -48,7 +48,7 @@ describe('<ToolResultMessage />', () => {
         toolCalls={[
           {toolCallId: '1', toolName: 'search', elementId: null, arguments: {}},
         ]}
-        result={[
+        content={[
           {
             contentType: 'OBJECT',
             object: {message: 'Tool output here', hello: 'world'},
@@ -69,7 +69,7 @@ describe('<ToolResultMessage />', () => {
         toolCalls={[
           {toolCallId: '1', toolName: 'search', elementId: null, arguments: {}},
         ]}
-        result={[
+        content={[
           {
             contentType: 'DOCUMENT',
             documentReference: {

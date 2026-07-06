@@ -100,7 +100,7 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
                 key={item.historyItemKey}
                 availableTools={availableTools}
                 toolCalls={item.toolCalls}
-                result={item.content}
+                content={item.content}
               />
             ) : (
               <ConversationMessage
