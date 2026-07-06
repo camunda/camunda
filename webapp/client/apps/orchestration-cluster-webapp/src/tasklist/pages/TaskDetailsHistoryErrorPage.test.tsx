@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render} from 'vitest-browser-react';
 import {describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
@@ -46,8 +45,11 @@ describe('<TaskDetailsHistoryErrorPage />', () => {
 	});
 
 	it('should tell the user when they do not have permission to view task history', async () => {
-		const screen = await render(
-			<TaskDetailsHistoryErrorPage error={failedResponseError(403)} info={{componentStack: ''}} reset={vi.fn()} />,
+		const screen = await renderWithRouter(
+			() => (
+				<TaskDetailsHistoryErrorPage error={failedResponseError(403)} info={{componentStack: ''}} reset={vi.fn()} />
+			),
+			{path: '/tasklist/$userTaskKey/history', initialEntry: '/tasklist/2251799813685281/history'},
 		);
 
 		await expect.element(screen.getByText("You don't have permission to view task history")).toBeVisible();
@@ -56,8 +58,11 @@ describe('<TaskDetailsHistoryErrorPage />', () => {
 	});
 
 	it('should help the user learn about required permissions', async () => {
-		const screen = await render(
-			<TaskDetailsHistoryErrorPage error={failedResponseError(403)} info={{componentStack: ''}} reset={vi.fn()} />,
+		const screen = await renderWithRouter(
+			() => (
+				<TaskDetailsHistoryErrorPage error={failedResponseError(403)} info={{componentStack: ''}} reset={vi.fn()} />
+			),
+			{path: '/tasklist/$userTaskKey/history', initialEntry: '/tasklist/2251799813685281/history'},
 		);
 
 		await expect.element(screen.getByRole('link', {name: /learn more about roles and permissions/i})).toBeVisible();
