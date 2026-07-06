@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
+import org.assertj.core.groups.Tuple;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
@@ -40,7 +41,88 @@ public class AgentHistoryCommitLifecycleIT {
 
   @Test
   void shouldTransitionHistoryItemsFromPendingToCommittedOnJobCompletion() {
-    // --- setup: deploy, start, get element instance ---
+    // --- setup: two PENDING history items on an activated agentic job ---
+    final long processInstanceKey = deployAndStartProcessInstance();
+    final long elementInstanceKey = getServiceTaskElementInstanceKey(processInstanceKey);
+    final long agentInstanceKey = createAgentInstance(elementInstanceKey);
+    final long jobKey = activateAgenticJob(processInstanceKey);
+    final long historyItemKey1 =
+        createHistoryItem(
+            agentInstanceKey,
+            elementInstanceKey,
+            jobKey,
+            AgentInstanceHistoryRole.USER,
+            "Hello, what can you do?",
+            OffsetDateTime.parse("2025-06-01T10:00:00Z"));
+    final long historyItemKey2 =
+        createHistoryItem(
+            agentInstanceKey,
+            elementInstanceKey,
+            jobKey,
+            AgentInstanceHistoryRole.ASSISTANT,
+            "I can help with many tasks.",
+            OffsetDateTime.parse("2025-06-01T10:01:00Z"));
+    awaitHistoryStatuses(
+        agentInstanceKey,
+        "history items indexed as PENDING",
+        tuple(historyItemKey1, AgentInstanceHistoryCommitStatus.PENDING),
+        tuple(historyItemKey2, AgentInstanceHistoryCommitStatus.PENDING));
+
+    // --- complete the job → engine emits COMMIT → items become COMMITTED ---
+    camundaClient.newCompleteCommand(jobKey).execute();
+
+    // --- verify items are COMMITTED after job completion ---
+    awaitHistoryStatuses(
+        agentInstanceKey,
+        "history items transitioned to COMMITTED",
+        tuple(historyItemKey1, AgentInstanceHistoryCommitStatus.COMMITTED),
+        tuple(historyItemKey2, AgentInstanceHistoryCommitStatus.COMMITTED));
+  }
+
+  @Test
+  void shouldTransitionHistoryItemsFromPendingToDiscardedOnJobCancellation() {
+    // --- setup: two PENDING history items on an activated agentic job ---
+    final long processInstanceKey = deployAndStartProcessInstance();
+    final long elementInstanceKey = getServiceTaskElementInstanceKey(processInstanceKey);
+    final long agentInstanceKey = createAgentInstance(elementInstanceKey);
+    final long jobKey = activateAgenticJob(processInstanceKey);
+    final long historyItemKey1 =
+        createHistoryItem(
+            agentInstanceKey,
+            elementInstanceKey,
+            jobKey,
+            AgentInstanceHistoryRole.USER,
+            "Hello, what can you do?",
+            OffsetDateTime.parse("2025-06-01T10:00:00Z"));
+    final long historyItemKey2 =
+        createHistoryItem(
+            agentInstanceKey,
+            elementInstanceKey,
+            jobKey,
+            AgentInstanceHistoryRole.ASSISTANT,
+            "I can help with many tasks.",
+            OffsetDateTime.parse("2025-06-01T10:01:00Z"));
+    awaitHistoryStatuses(
+        agentInstanceKey,
+        "history items indexed as PENDING",
+        tuple(historyItemKey1, AgentInstanceHistoryCommitStatus.PENDING),
+        tuple(historyItemKey2, AgentInstanceHistoryCommitStatus.PENDING));
+
+    // --- cancel the process instance → the agentic job is destroyed without completing → engine
+    // emits DISCARD → items become DISCARDED instead of leaking as PENDING ---
+    camundaClient.newCancelInstanceCommand(processInstanceKey).send().join();
+
+    // --- verify items are DISCARDED after cancellation ---
+    awaitHistoryStatuses(
+        agentInstanceKey,
+        "history items transitioned to DISCARDED",
+        tuple(historyItemKey1, AgentInstanceHistoryCommitStatus.DISCARDED),
+        tuple(historyItemKey2, AgentInstanceHistoryCommitStatus.DISCARDED));
+  }
+
+  // --- helpers: each step below is called directly from the test bodies above ---
+
+  private long deployAndStartProcessInstance() {
     final var processModel =
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
@@ -60,16 +142,20 @@ public class AgentHistoryCommitLifecycleIT {
     waitForElementInstances(
         camundaClient, f -> f.elementId(SERVICE_TASK_ID).processInstanceKey(processInstanceKey), 1);
 
-    final long elementInstanceKey =
-        camundaClient
-            .newElementInstanceSearchRequest()
-            .filter(f -> f.elementId(SERVICE_TASK_ID).processInstanceKey(processInstanceKey))
-            .execute()
-            .items()
-            .getFirst()
-            .getElementInstanceKey();
+    return processInstanceKey;
+  }
 
-    // --- create agent instance ---
+  private long getServiceTaskElementInstanceKey(final long processInstanceKey) {
+    return camundaClient
+        .newElementInstanceSearchRequest()
+        .filter(f -> f.elementId(SERVICE_TASK_ID).processInstanceKey(processInstanceKey))
+        .execute()
+        .items()
+        .getFirst()
+        .getElementInstanceKey();
+  }
+
+  private long createAgentInstance(final long elementInstanceKey) {
     final long agentInstanceKey =
         camundaClient
             .newCreateAgentInstanceCommand()
@@ -82,8 +168,10 @@ public class AgentHistoryCommitLifecycleIT {
             .getAgentInstanceKey();
 
     waitForAgentInstanceToBeIndexed(camundaClient, agentInstanceKey);
+    return agentInstanceKey;
+  }
 
-    // --- activate the agentic job ---
+  private long activateAgenticJob(final long processInstanceKey) {
     final var activatedJobs =
         camundaClient
             .newActivateJobsCommand()
@@ -96,37 +184,37 @@ public class AgentHistoryCommitLifecycleIT {
     assertThat(activatedJobs)
         .as("expected to activate one agent job for process instance %d", processInstanceKey)
         .isNotEmpty();
-    final long jobKey = activatedJobs.get(0).getKey();
+    return activatedJobs.get(0).getKey();
+  }
 
-    // --- create two history items ---
-    final long historyItemKey1 =
-        camundaClient
-            .newCreateAgentHistoryItemCommand(agentInstanceKey)
-            .elementInstanceKey(elementInstanceKey)
-            .jobKey(jobKey)
-            .role(AgentInstanceHistoryRole.USER)
-            .content(List.of(AgentInstanceHistoryContent.text("Hello, what can you do?")))
-            .producedAt(OffsetDateTime.parse("2025-06-01T10:00:00Z"))
-            .send()
-            .join()
-            .getHistoryItemKey();
+  private long createHistoryItem(
+      final long agentInstanceKey,
+      final long elementInstanceKey,
+      final long jobKey,
+      final AgentInstanceHistoryRole role,
+      final String text,
+      final OffsetDateTime producedAt) {
+    return camundaClient
+        .newCreateAgentHistoryItemCommand(agentInstanceKey)
+        .elementInstanceKey(elementInstanceKey)
+        .jobKey(jobKey)
+        .role(role)
+        .content(List.of(AgentInstanceHistoryContent.text(text)))
+        .producedAt(producedAt)
+        .send()
+        .join()
+        .getHistoryItemKey();
+  }
 
-    final long historyItemKey2 =
-        camundaClient
-            .newCreateAgentHistoryItemCommand(agentInstanceKey)
-            .elementInstanceKey(elementInstanceKey)
-            .jobKey(jobKey)
-            .role(AgentInstanceHistoryRole.ASSISTANT)
-            .content(List.of(AgentInstanceHistoryContent.text("I can help with many tasks.")))
-            .producedAt(OffsetDateTime.parse("2025-06-01T10:01:00Z"))
-            .send()
-            .join()
-            .getHistoryItemKey();
-
-    // --- verify items are PENDING before job completion ---
-    // Filter by all statuses so that any spurious item of any commit status is visible;
-    // an all-status filter is needed because the search API returns COMMITTED items by default.
-    Awaitility.await("history items indexed as PENDING")
+  /**
+   * Awaits until the agent instance's history items match exactly the expected (key, commit-status)
+   * tuples. Filters by all commit statuses so that any spurious item of any status is visible (the
+   * search API returns COMMITTED items by default) and so that leftover PENDING items would fail
+   * the assertion rather than be silently hidden.
+   */
+  private void awaitHistoryStatuses(
+      final long agentInstanceKey, final String description, final Tuple... expected) {
+    Awaitility.await(description)
         .atMost(Duration.ofSeconds(30))
         .ignoreExceptions()
         .untilAsserted(
@@ -148,41 +236,7 @@ public class AgentHistoryCommitLifecycleIT {
                   .extracting(
                       AgentInstanceHistory::getHistoryItemKey,
                       AgentInstanceHistory::getCommitStatus)
-                  .containsExactlyInAnyOrder(
-                      tuple(historyItemKey1, AgentInstanceHistoryCommitStatus.PENDING),
-                      tuple(historyItemKey2, AgentInstanceHistoryCommitStatus.PENDING));
-            });
-
-    // --- complete the job → engine emits COMMIT → items become COMMITTED ---
-    camundaClient.newCompleteCommand(jobKey).execute();
-
-    // --- verify items are COMMITTED after job completion ---
-    // Filter by all statuses to confirm no items remain in PENDING or DISCARDED state.
-    Awaitility.await("history items transitioned to COMMITTED")
-        .atMost(Duration.ofSeconds(30))
-        .ignoreExceptions()
-        .untilAsserted(
-            () -> {
-              final var items =
-                  camundaClient
-                      .newAgentInstanceHistorySearchRequest(agentInstanceKey)
-                      .filter(
-                          f ->
-                              f.commitStatus(
-                                  s ->
-                                      s.in(
-                                          AgentInstanceHistoryCommitStatus.PENDING,
-                                          AgentInstanceHistoryCommitStatus.COMMITTED,
-                                          AgentInstanceHistoryCommitStatus.DISCARDED)))
-                      .execute()
-                      .items();
-              assertThat(items)
-                  .extracting(
-                      AgentInstanceHistory::getHistoryItemKey,
-                      AgentInstanceHistory::getCommitStatus)
-                  .containsExactlyInAnyOrder(
-                      tuple(historyItemKey1, AgentInstanceHistoryCommitStatus.COMMITTED),
-                      tuple(historyItemKey2, AgentInstanceHistoryCommitStatus.COMMITTED));
+                  .containsExactlyInAnyOrder(expected);
             });
   }
 }
