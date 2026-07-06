@@ -29,8 +29,14 @@ import org.slf4j.LoggerFactory;
  * the value, so it is safe against the exporter's reused record buffer) and accumulated into a
  * batch. The batch is flushed when it reaches {@code batchSize} or after {@code flushIntervalMs};
  * only once a flush is acknowledged is {@link Controller#updateLastExportedRecordPosition(long)}
- * advanced, so delivery is at-least-once. One exporter instance runs per source partition, so all
- * its records go to the Event Bridge partition matching the source partition id.
+ * advanced, so delivery is at-least-once. One exporter instance runs per source partition, so by
+ * default all its records go to the Event Bridge partition matching the source partition id.
+ *
+ * <p>The target partition can be pinned with {@code targetPartition}: when set to a positive value,
+ * every record is routed to that Event Bridge partition regardless of its source partition. This
+ * lets a multi-partition source cluster funnel all records into a single-partition topic — for
+ * example when the topic has fewer partitions than the source cluster. When {@code targetPartition}
+ * is {@code 0} (the default) the source-partition pass-through above applies.
  *
  * <p>Configure it like any exporter:
  *
@@ -43,6 +49,7 @@ import org.slf4j.LoggerFactory;
  *       topic: zeebe-records
  *       batchSize: 5000
  *       flushIntervalMs: 1000
+ *       targetPartition: 0 # 0 = route to the matching source partition; >0 = pin to that partition
  * }</pre>
  */
 public final class ZeebeRecordExporter implements Exporter {
@@ -102,7 +109,7 @@ public final class ZeebeRecordExporter implements Exporter {
   @Override
   public void export(final Record<?> record) {
     batch.add(Long.toString(record.getKey()), codec.serialize(record));
-    batchPartition = record.getPartitionId();
+    batchPartition = config.targetPartition > 0 ? config.targetPartition : record.getPartitionId();
     batchLastPosition = record.getPosition();
     batchCount++;
     if (batchCount >= config.batchSize) {
@@ -162,5 +169,9 @@ public final class ZeebeRecordExporter implements Exporter {
     // 1000/500ms.
     public int batchSize = 5000;
     public long flushIntervalMs = 1000;
+    // 0 = route each record to the Event Bridge partition matching its source partition id (the
+    // one-exporter-per-partition pass-through). A positive value pins every record to that single
+    // partition, letting a multi-partition source funnel into a topic with fewer partitions.
+    public int targetPartition = 0;
   }
 }
