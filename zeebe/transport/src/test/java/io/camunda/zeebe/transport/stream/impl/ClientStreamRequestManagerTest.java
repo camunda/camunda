@@ -25,6 +25,7 @@ import io.atomix.cluster.messaging.MessagingException;
 import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
 import io.atomix.cluster.messaging.MessagingException.ProtocolException;
 import io.atomix.cluster.messaging.MessagingException.RemoteHandlerFailure;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.transport.stream.impl.ClientStreamRegistration.State;
 import io.camunda.zeebe.transport.stream.impl.messages.AddStreamResponse;
@@ -57,7 +58,8 @@ final class ClientStreamRequestManagerTest {
   private final AggregatedClientStream<TestMetadata> clientStream =
       new AggregatedClientStream<>(
           UUID.randomUUID(),
-          new LogicalId<>(new UnsafeBuffer(BufferUtil.wrapString("foo")), new TestMetadata()));
+          new LogicalId<>(new UnsafeBuffer(BufferUtil.wrapString("foo")), new TestMetadata()),
+          PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   private final byte[] addStreamSuccess = BufferUtil.bufferAsArray(new AddStreamResponse());
   private final byte[] removeStreamSuccess = BufferUtil.bufferAsArray(new RemoveStreamResponse());
 

@@ -27,4 +27,9 @@ record ClientStreamImpl<M extends BufferWriter>(
   public Set<MemberId> liveConnections() {
     return serverStream().liveConnections();
   }
+
+  @Override
+  public String group() {
+    return serverStream().group();
+  }
 }
