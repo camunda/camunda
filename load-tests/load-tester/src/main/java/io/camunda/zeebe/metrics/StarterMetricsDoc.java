@@ -94,6 +94,52 @@ public enum StarterMetricsDoc implements ExtendedMeterDocumentation {
     public Type getType() {
       return Type.GAUGE;
     }
+  },
+
+  /**
+   * Total number of process instance start requests skipped because the configured in-flight cap
+   * was reached. When completions cannot keep up with the fire rate, new requests are dropped
+   * instead of piling onto the client connection pool (which would otherwise grow unbounded and
+   * exhaust heap). A steadily climbing value indicates the target cannot sustain the configured
+   * rate.
+   */
+  PROCESS_INSTANCES_DROPPED {
+    @Override
+    public String getDescription() {
+      return "Total start requests skipped because the in-flight cap was reached.";
+    }
+
+    @Override
+    public String getName() {
+      return "starter.process.instances.dropped";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.COUNTER;
+    }
+  },
+
+  /**
+   * Current number of outstanding start requests: incremented before a request is submitted and
+   * decremented when it completes (success or error). Bounded by the configured in-flight cap when
+   * the cap is enabled.
+   */
+  REQUESTS_IN_FLIGHT {
+    @Override
+    public String getDescription() {
+      return "Current number of outstanding (submitted, not yet completed) start requests.";
+    }
+
+    @Override
+    public String getName() {
+      return "starter.requests.in.flight";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
   };
 
   public enum StarterMetricKeyNames implements KeyName {

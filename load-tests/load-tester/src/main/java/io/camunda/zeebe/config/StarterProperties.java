@@ -26,6 +26,7 @@ public class StarterProperties {
   private int durationLimit = 0;
   private boolean startViaMessage = false;
   private String msgName = "msg";
+  private double maxInFlightRateMultiplier = 10; // 0 = cap off (unbounded)
 
   public String getProcessId() {
     return processId;
@@ -150,5 +151,23 @@ public class StarterProperties {
 
   public void setMsgName(final String msgName) {
     this.msgName = msgName;
+  }
+
+  public double getMaxInFlightRateMultiplier() {
+    return maxInFlightRateMultiplier;
+  }
+
+  public void setMaxInFlightRateMultiplier(final double maxInFlightRateMultiplier) {
+    this.maxInFlightRateMultiplier = maxInFlightRateMultiplier;
+  }
+
+  /**
+   * The maximum number of concurrent in-flight start requests, derived from the per-second rate and
+   * the configured multiplier. A value of 0 means the cap is disabled (unbounded).
+   */
+  public long getMaxInFlightRequests() {
+    return maxInFlightRateMultiplier <= 0
+        ? 0 // 0 => unbounded
+        : (long) Math.ceil(getRatePerSecond() * maxInFlightRateMultiplier);
   }
 }

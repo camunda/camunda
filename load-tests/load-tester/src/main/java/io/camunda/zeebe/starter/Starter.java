@@ -88,11 +88,13 @@ public class Starter implements CommandLineRunner {
   private final AtomicLong businessKey = new AtomicLong(0);
   private final AtomicLong lastProcessInstanceKey = new AtomicLong(0);
   private final AtomicInteger runFinished = new AtomicInteger(0);
+  private final AtomicInteger inFlightRequests = new AtomicInteger(0);
   private final AtomicReference<Instant> lastProcessInstanceKeyTimestamp =
       new AtomicReference<>(Instant.now());
 
   private Timer responseLatencyTimer;
   private Counter processInstancesStartedCounter;
+  private Counter processInstancesDroppedCounter;
   private ScheduledExecutorService executorService;
   private ProcessInstanceStartMeter processInstanceStartMeter;
   private DataReadMeter dataReadMeter;
@@ -141,6 +143,18 @@ public class Starter implements CommandLineRunner {
 
     Gauge.builder(StarterMetricsDoc.RUN_FINISHED.getName(), runFinished, AtomicInteger::doubleValue)
         .description(StarterMetricsDoc.RUN_FINISHED.getDescription())
+        .register(registry);
+
+    processInstancesDroppedCounter =
+        Counter.builder(StarterMetricsDoc.PROCESS_INSTANCES_DROPPED.getName())
+            .description(StarterMetricsDoc.PROCESS_INSTANCES_DROPPED.getDescription())
+            .register(registry);
+
+    Gauge.builder(
+            StarterMetricsDoc.REQUESTS_IN_FLIGHT.getName(),
+            inFlightRequests,
+            AtomicInteger::doubleValue)
+        .description(StarterMetricsDoc.REQUESTS_IN_FLIGHT.getDescription())
         .register(registry);
 
     if (properties.isMonitorDataAvailability()) {
@@ -258,11 +272,13 @@ public class Starter implements CommandLineRunner {
       final ScheduledExecutorService executorService, final CountDownLatch countDownLatch) {
 
     final long intervalNanos = (long) (NANOS_PER_SECOND / starterCfg.getRatePerSecond());
+    final long maxInFlight = starterCfg.getMaxInFlightRequests();
     LOG.info(
-        "Creating an instance every {}ns (rate: {} per {})",
+        "Creating an instance every {}ns (rate: {} per {}); max in-flight requests: {}",
         intervalNanos,
         starterCfg.getRate(),
-        starterCfg.getRateDuration());
+        starterCfg.getRateDuration(),
+        maxInFlight == 0 ? "unbounded" : maxInFlight);
 
     final String variablesString = payloadReader.readPayload(starterCfg.getPayloadPath());
     final Map<String, Object> baseVariables =
@@ -277,6 +293,17 @@ public class Starter implements CommandLineRunner {
             return;
           }
 
+          if (maxInFlight > 0 && inFlightRequests.get() >= maxInFlight) {
+            processInstancesDroppedCounter.increment();
+            THROTTLED_LOGGER.warn(
+                "Skipping start: {} in-flight requests >= cap {}",
+                inFlightRequests.get(),
+                maxInFlight);
+            return;
+          }
+
+          boolean submitted = false;
+          inFlightRequests.incrementAndGet();
           try {
             final var vars = new HashMap<>(baseVariables);
             vars.put(starterCfg.getBusinessKey(), businessKey.incrementAndGet());
@@ -293,6 +320,7 @@ public class Starter implements CommandLineRunner {
             }
             requestFuture.whenComplete(
                 (noop, error) -> {
+                  inFlightRequests.decrementAndGet();
                   final long durationNanos = System.nanoTime() - startTime;
                   responseLatencyTimer.record(durationNanos, TimeUnit.NANOSECONDS);
                   if (error instanceof final StatusRuntimeException statusRuntimeException) {
@@ -304,8 +332,15 @@ public class Starter implements CommandLineRunner {
                     }
                   }
                 });
+            submitted = true;
           } catch (final Exception e) {
             THROTTLED_LOGGER.error("Error on creating new process instance", e);
+          } finally {
+            if (!submitted) {
+              // The request was never handed off to a future, so whenComplete will not fire —
+              // decrement here to keep the in-flight count accurate.
+              inFlightRequests.decrementAndGet();
+            }
           }
         },
         0,
