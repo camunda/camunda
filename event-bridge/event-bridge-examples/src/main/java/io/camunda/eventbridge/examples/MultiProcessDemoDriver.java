@@ -64,9 +64,9 @@ public final class MultiProcessDemoDriver {
   private static final String[] REGIONS = {"EU", "US", "APAC"};
   private static final String REGION_DEMO = "region-exec-time-demo";
 
-  // Instances run tens of seconds up to a couple of minutes (never longer), so recent SLA start
-  // cohorts still have in-flight instances — that is what makes the maturing band visible on the
-  // dashboard. ~15% do deliberately slow work that blows the ~90s SLA (and lifts p90/p99); ~8%
+  // Instances run a few seconds (never longer), so completions keep pace with arrival and every
+  // process's cube windows stay dense. ~15% do deliberately slow work that blows the ~9s SLA (and
+  // lifts p90/p99); ~8%
   // raise a real Zeebe incident (job failed with no retries left). A faulted instance is cancelled
   // shortly after so it terminates and registers as "did not finish cleanly" in the no-incident
   // ratio — otherwise a real incident just hangs the instance and never completes.
@@ -74,11 +74,14 @@ public final class MultiProcessDemoDriver {
   private static final int FAULT_PCT = 8;
   private static final int INCIDENT_LEFT_OPEN_PCT = 30; // of faults: left open instead of cancelled
   private static final long FAULT_CANCEL_DELAY_MS = 2_000L;
-  // Enough execution threads that minute-long jobs run concurrently instead of serialising into a
-  // queue (the client defaults to ONE) — otherwise every instance waits and its duration is queue
-  // time, not work time.
-  private static final int WORKER_THREADS = 64;
-  private static final Duration JOB_TIMEOUT = Duration.ofMinutes(5); // must exceed the longest work
+  // Ample execution threads so jobs run concurrently instead of serialising into a queue (the
+  // client
+  // defaults to ONE). Sized well above the expected in-flight job count (arrival rate × work time)
+  // so the worker pool never saturates — a saturated pool stalls completions, which starves the
+  // service-task processes' cube windows and gaps their timelines while the timer-based process
+  // (no workers) stays dense.
+  private static final int WORKER_THREADS = 256;
+  private static final Duration JOB_TIMEOUT = Duration.ofMinutes(1); // must exceed the longest work
 
   private MultiProcessDemoDriver() {}
 
@@ -199,20 +202,21 @@ public final class MultiProcessDemoDriver {
   }
 
   /**
-   * Randomized work time on a tens-of-seconds-to-a-couple-of-minutes scale (never longer), so that
-   * recent SLA start cohorts still have in-flight instances. {@link #SLA_BREACH_PCT}% are
-   * deliberately slow (100-160s) so they blow the ~90s SLA and lift p90/p99; the rest complete
-   * comfortably under it.
+   * Randomized work time on a few-seconds scale so instances complete fast enough that completions
+   * keep pace with arrival (the worker pool never saturates) — this keeps every process's cube
+   * windows dense and their timelines gap-free. The spread still gives the charts shape: {@link
+   * #SLA_BREACH_PCT}% are deliberately slow (10-16s) so they blow the ~9s SLA and lift p90/p99; the
+   * rest complete comfortably under it.
    */
   private static void sleepWork() throws InterruptedException {
     final var rnd = ThreadLocalRandom.current();
     final int r = rnd.nextInt(100);
     if (r < SLA_BREACH_PCT) {
-      Thread.sleep(rnd.nextLong(100_000, 160_000)); // deliberately slow — blows the ~90s SLA
+      Thread.sleep(rnd.nextLong(10_000, 16_000)); // deliberately slow — blows the ~9s SLA
     } else if (r < SLA_BREACH_PCT + 20) {
-      Thread.sleep(rnd.nextLong(45_000, 85_000)); // near the target, still meets it
+      Thread.sleep(rnd.nextLong(4_500, 8_500)); // near the target, still meets it
     } else {
-      Thread.sleep(rnd.nextLong(5_000, 45_000)); // typical, comfortably under
+      Thread.sleep(rnd.nextLong(500, 4_500)); // typical, comfortably under
     }
   }
 

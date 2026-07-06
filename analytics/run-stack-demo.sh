@@ -152,7 +152,8 @@ start() {
   echo "==> Starting the analytics application (serving + Stage 1 + Stage 2, backend=${BACKEND}) on :8090…"
   ( cd "${APP_DIR}" && nohup java "${JVM_FLAGS[@]}" -cp "$(app_cp)" \
       "${ANALYTICS_DB_ARGS[@]}" \
-      -Dgateway=${GW} -DinstanceId=demo -DfactsTopic=analytics-facts -DfactsPartitions=1 -DslaMs=90000 \
+      -Dgateway=${GW} -DinstanceId=demo -DfactsTopic=analytics-facts -DfactsPartitions=1 -DslaMs=${SLA_MS:-9000} \
+      -DsegmentStride=${SEGMENT_STRIDE:-100} \
       io.camunda.analytics.webapp.AnalyticsWebappApplication >"${APP_DIR}/app.log" 2>&1 & echo "$!" >"${APP_DIR}/pid" )
 
   echo "==> Waiting for 'analytics-facts' topic (the app's Stage 1 provisions it)…"
@@ -171,7 +172,7 @@ start() {
     echo "==> Starting the continuous multi-process driver (order / payment+gateway / shipping)…"
     ( cd "${DRIVER_DIR}" && nohup java "${JVM_FLAGS[@]}" -cp "$(examples_cp)" \
         -Dcamunda.rest=${OC_REST} \
-        io.camunda.eventbridge.examples.MultiProcessDemoDriver 1200 >"${DRIVER_DIR}/driver.log" 2>&1 & echo "$!" >"${DRIVER_DIR}/pid" )
+        io.camunda.eventbridge.examples.MultiProcessDemoDriver "${DRIVER_MEAN_INTERVAL_MS:-250}" >"${DRIVER_DIR}/driver.log" 2>&1 & echo "$!" >"${DRIVER_DIR}/pid" )
   fi
 
   cat <<EOF
