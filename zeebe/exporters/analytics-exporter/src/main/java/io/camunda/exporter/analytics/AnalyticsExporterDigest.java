@@ -47,53 +47,70 @@ final class AnalyticsExporterDigest {
   static String compute(final HandlerRegistry registry, final AnalyticsExporterConfig config) {
     try {
       final var digest = MessageDigest.getInstance("SHA-256");
-
-      registry.registeredHandlers().entrySet().stream()
-          .flatMap(
-              valueTypeEntry ->
-                  valueTypeEntry.getValue().entrySet().stream()
-                      .map(
-                          intentEntry ->
-                              Map.entry(
-                                  valueTypeEntry.getKey().name()
-                                      + ":"
-                                      + intentEntry.getKey().name(),
-                                  intentEntry.getValue())))
-          .sorted(Map.Entry.comparingByKey())
-          .forEach(
-              handlerEntry -> {
-                digest.update((handlerEntry.getKey() + ":").getBytes(StandardCharsets.UTF_8));
-                digest.update(
-                    handlerEntry.getValue().getClass().getName().getBytes(StandardCharsets.UTF_8));
-                digest.update(SEPARATOR);
-                digest.update(handlerEntry.getValue().digestInput());
-                digest.update(SEPARATOR);
-              });
-
-      digest.update(config.toExporterDigestString().getBytes(StandardCharsets.UTF_8));
-      digest.update(SEPARATOR);
-
-      // Hash AnalyticsAttributes (outer class + all nested classes, sorted for stability).
-      // This detects renames of attribute key strings, which don't show up in handler bytecodes.
-      Stream.concat(
-              Stream.of(AnalyticsAttributes.class),
-              Arrays.stream(AnalyticsAttributes.class.getDeclaredClasses()))
-          .sorted(Comparator.comparing(Class::getName))
-          .forEach(
-              c -> {
-                digest.update(c.getName().getBytes(StandardCharsets.UTF_8));
-                digest.update(SEPARATOR);
-                digest.update(loadBytes(c));
-                digest.update(SEPARATOR);
-              });
-
+      hashHandlers(digest, registry);
+      hashConfig(digest, config);
+      hashAttributes(digest);
       return HexFormat.of().formatHex(digest.digest());
     } catch (final NoSuchAlgorithmException e) {
       throw new IllegalStateException("JVM does not support SHA-256", e);
     }
   }
 
-  private static byte[] loadBytes(final Class<?> clazz) {
+  /**
+   * Hashes every registered handler, sorted by "valueType:intent" so registration order does not
+   * affect the result.
+   */
+  private static void hashHandlers(final MessageDigest digest, final HandlerRegistry registry) {
+    registry.registeredHandlers().entrySet().stream()
+        .flatMap(
+            valueTypeEntry ->
+                valueTypeEntry.getValue().entrySet().stream()
+                    .map(
+                        intentEntry ->
+                            Map.entry(
+                                valueTypeEntry.getKey().name() + ":" + intentEntry.getKey().name(),
+                                intentEntry.getValue())))
+        .sorted(Map.Entry.comparingByKey())
+        .forEach(
+            handlerEntry -> {
+              digest.update((handlerEntry.getKey() + ":").getBytes(StandardCharsets.UTF_8));
+              digest.update(
+                  handlerEntry.getValue().getClass().getName().getBytes(StandardCharsets.UTF_8));
+              digest.update(SEPARATOR);
+              digest.update(handlerEntry.getValue().digestInput());
+              digest.update(SEPARATOR);
+            });
+  }
+
+  private static void hashConfig(final MessageDigest digest, final AnalyticsExporterConfig config) {
+    digest.update(config.toExporterDigestString().getBytes(StandardCharsets.UTF_8));
+    digest.update(SEPARATOR);
+  }
+
+  /**
+   * Hashes {@link AnalyticsAttributes} (outer class + all nested classes, sorted for stability).
+   * This detects renames of attribute key strings, which don't show up in handler bytecodes.
+   */
+  private static void hashAttributes(final MessageDigest digest) {
+    Stream.concat(
+            Stream.of(AnalyticsAttributes.class),
+            Arrays.stream(AnalyticsAttributes.class.getDeclaredClasses()))
+        .sorted(Comparator.comparing(Class::getName))
+        .forEach(
+            c -> {
+              digest.update(c.getName().getBytes(StandardCharsets.UTF_8));
+              digest.update(SEPARATOR);
+              digest.update(loadClassBytes(c));
+              digest.update(SEPARATOR);
+            });
+  }
+
+  /**
+   * Returns the compiled {@code .class} bytecode of {@code clazz} from the classpath. Throws {@link
+   * IllegalStateException} if the class bytes cannot be located, or {@link UncheckedIOException} if
+   * they cannot be read.
+   */
+  static byte[] loadClassBytes(final Class<?> clazz) {
     final var resourcePath = "/" + clazz.getName().replace('.', '/') + ".class";
     try (final var stream = clazz.getResourceAsStream(resourcePath)) {
       if (stream == null) {

@@ -9,8 +9,6 @@ package io.camunda.exporter.analytics;
 
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 
 /**
  * Handler for a single analytics event type. Implementations must be named classes (not lambdas or
@@ -37,14 +35,6 @@ public interface AnalyticsHandler<T extends RecordValue> {
               + " are not supported because their bytecode is not stable across JVM restarts: "
               + clazz.getName());
     }
-    final var resourcePath = "/" + clazz.getName().replace('.', '/') + ".class";
-    try (final var stream = clazz.getResourceAsStream(resourcePath)) {
-      if (stream == null) {
-        throw new IllegalStateException("Cannot load class bytes for: " + clazz.getName());
-      }
-      return stream.readAllBytes();
-    } catch (final IOException e) {
-      throw new UncheckedIOException("Failed to read class bytes for: " + clazz.getName(), e);
-    }
+    return AnalyticsExporterDigest.loadClassBytes(clazz);
   }
 }
