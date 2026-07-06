@@ -152,6 +152,19 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
   }
 
   @Override
+  public void prefixScanKeys(final DbKey prefix, final Consumer<K> visitor) {
+    final byte[] prefixBytes = toBytes(prefix);
+    final NavigableMap<byte[], byte[]> dirtyPuts = new TreeMap<>(Arrays::compareUnsigned);
+    final NavigableSet<byte[]> tombstones = new TreeSet<>(Arrays::compareUnsigned);
+    collectDirty(dirtyPuts, tombstones, prefixBytes);
+    mergeKeys(
+        dirtyPuts.navigableKeySet(),
+        tombstones,
+        sink -> delegate.prefixScanKeys(prefix, sink),
+        visitor);
+  }
+
+  @Override
   public void forEach(final BiConsumer<K, V> visitor) {
     final NavigableMap<byte[], byte[]> dirtyPuts = new TreeMap<>(Arrays::compareUnsigned);
     final NavigableSet<byte[]> tombstones = new TreeSet<>(Arrays::compareUnsigned);
@@ -279,6 +292,42 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
     wrap(keyFlyweight, keyBytes);
     wrap(valueFlyweight, valueBytes);
     visitor.accept(keyFlyweight, valueFlyweight);
+  }
+
+  /**
+   * The key-only counterpart of {@link #merge}: interleaves dirty put keys with the delegate's keys
+   * in key order, dropping tombstoned keys, without touching any value.
+   */
+  private void mergeKeys(
+      final NavigableSet<byte[]> dirtyPutKeys,
+      final NavigableSet<byte[]> tombstones,
+      final Consumer<Consumer<K>> delegateScan,
+      final Consumer<K> visitor) {
+    final Iterator<byte[]> dirty = dirtyPutKeys.iterator();
+    final byte[][] pending = {dirty.hasNext() ? dirty.next() : null};
+    delegateScan.accept(
+        delegateKey -> {
+          final byte[] keyBytes = toBytes(delegateKey);
+          while (pending[0] != null && Arrays.compareUnsigned(pending[0], keyBytes) < 0) {
+            emitKey(pending[0], visitor);
+            pending[0] = dirty.hasNext() ? dirty.next() : null;
+          }
+          if (pending[0] != null && Arrays.compareUnsigned(pending[0], keyBytes) == 0) {
+            emitKey(pending[0], visitor); // a dirty put shadows the delegate's key
+            pending[0] = dirty.hasNext() ? dirty.next() : null;
+          } else if (!tombstones.contains(keyBytes)) {
+            visitor.accept(delegateKey); // unchanged delegate key
+          }
+        });
+    while (pending[0] != null) { // dirty keys after the last delegate key
+      emitKey(pending[0], visitor);
+      pending[0] = dirty.hasNext() ? dirty.next() : null;
+    }
+  }
+
+  private void emitKey(final byte[] keyBytes, final Consumer<K> visitor) {
+    wrap(keyFlyweight, keyBytes);
+    visitor.accept(keyFlyweight);
   }
 
   private static long footprintValue(final CacheEntry entry) {

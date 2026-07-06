@@ -18,6 +18,7 @@ import java.util.NavigableMap;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /**
@@ -75,6 +76,18 @@ public final class InMemoryKeyValueStore<K extends DbKey, V extends DbValue>
         break;
       }
       visit(entry, visitor);
+    }
+  }
+
+  @Override
+  public void prefixScanKeys(final DbKey prefix, final Consumer<K> visitor) {
+    final byte[] prefixBytes = toBytes(prefix);
+    for (final byte[] key : entries.tailMap(prefixBytes).keySet()) {
+      if (!startsWith(key, prefixBytes)) {
+        break;
+      }
+      wrap(keyFlyweight, key);
+      visitor.accept(keyFlyweight);
     }
   }
 

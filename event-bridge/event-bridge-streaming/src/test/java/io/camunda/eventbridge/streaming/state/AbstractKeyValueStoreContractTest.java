@@ -117,6 +117,39 @@ abstract class AbstractKeyValueStoreContractTest {
     assertThat(values).containsExactlyInAnyOrder("region=EU", "tier=gold");
   }
 
+  @Test
+  void shouldPrefixScanKeysByFirstComponent() {
+    // given — two instances, each with several variables
+    final KeyValueStore<DbCompositeKey<DbLong, DbString>, DbString> store = compositeStore();
+    store.put(compositeKey(1L, "region"), string("EU"));
+    store.put(compositeKey(1L, "tier"), string("gold"));
+    store.put(compositeKey(2L, "region"), string("US"));
+
+    // when — scan only the keys under instance 1 (no value read)
+    final List<String> names = new ArrayList<>();
+    store.prefixScanKeys(longKey(1L), k -> names.add(k.second().toString()));
+
+    // then — exactly instance 1's variable names, instance 2 excluded
+    assertThat(names).containsExactlyInAnyOrder("region", "tier");
+  }
+
+  @Test
+  void shouldPrefixScanKeysAcrossTheDirtyOverlayAndTombstones() {
+    // given — one committed key, one freshly-put (dirty) key, and one deleted key under the prefix
+    final KeyValueStore<DbCompositeKey<DbLong, DbString>, DbString> store = compositeStore();
+    store.put(compositeKey(1L, "committed"), string("c"));
+    store.put(compositeKey(1L, "dropped"), string("d"));
+    store.put(compositeKey(1L, "dirty"), string("x"));
+    store.delete(compositeKey(1L, "dropped"));
+
+    // when
+    final List<String> names = new ArrayList<>();
+    store.prefixScanKeys(longKey(1L), k -> names.add(k.second().toString()));
+
+    // then — the tombstoned key is hidden, the dirty put is visible
+    assertThat(names).containsExactlyInAnyOrder("committed", "dirty");
+  }
+
   private static DbLong longKey(final long value) {
     final DbLong key = new DbLong();
     key.wrapLong(value);

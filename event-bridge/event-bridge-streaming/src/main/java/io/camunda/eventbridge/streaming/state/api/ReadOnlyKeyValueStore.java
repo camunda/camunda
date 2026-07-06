@@ -11,6 +11,7 @@ import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  * The read view of a {@link KeyValueStore} — all the enrichment path needs. Keeping reads behind
@@ -41,6 +42,13 @@ public interface ReadOnlyKeyValueStore<K extends DbKey, V extends DbValue> {
    * passing just the {@code instanceKey} component.
    */
   void prefixScan(DbKey prefix, BiConsumer<K, V> visitor);
+
+  /**
+   * Visits every <em>key</em> whose key starts with {@code prefix}, in key order, without reading
+   * the values. Use this when only the keys are needed (e.g. to delete a scope's entries) so the
+   * store can skip deserializing — and, for the RocksDB backing, reading — each value.
+   */
+  void prefixScanKeys(DbKey prefix, Consumer<K> visitor);
 
   /** Visits every entry in the store, in key order. */
   void forEach(BiConsumer<K, V> visitor);

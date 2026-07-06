@@ -14,6 +14,7 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.TransactionContext;
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  * A {@link KeyValueStore} over a single ZeebeDb {@link ColumnFamily}. Writes run in a transaction
@@ -52,6 +53,12 @@ final class RocksDbKeyValueStore<K extends DbKey, V extends DbValue>
 
   @Override
   public void prefixScan(final DbKey prefix, final BiConsumer<K, V> visitor) {
+    columnFamily.whileEqualPrefix(prefix, visitor);
+  }
+
+  @Override
+  public void prefixScanKeys(final DbKey prefix, final Consumer<K> visitor) {
+    // The key-only overload skips reading each value from RocksDB entirely.
     columnFamily.whileEqualPrefix(prefix, visitor);
   }
 
