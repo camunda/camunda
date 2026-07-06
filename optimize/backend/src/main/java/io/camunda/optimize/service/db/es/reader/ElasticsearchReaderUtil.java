@@ -12,6 +12,7 @@ import co.elastic.clients.elasticsearch.core.ClearScrollResponse;
 import co.elastic.clients.elasticsearch.core.MgetResponse;
 import co.elastic.clients.elasticsearch.core.ScrollRequest;
 import co.elastic.clients.elasticsearch.core.ScrollResponse;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
@@ -23,6 +24,7 @@ import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 import org.slf4j.Logger;
@@ -44,21 +46,6 @@ public final class ElasticsearchReaderUtil {
         initialScrollResponse,
         itemClass,
         objectMapper,
-        esClient,
-        scrollingTimeoutInSeconds,
-        Integer.MAX_VALUE);
-  }
-
-  public static <T> List<T> retrieveAllScrollResults(
-      final SearchResponse<?> initialScrollResponse,
-      final Class<T> itemClass,
-      final Function<Hit<?>, T> mappingFunction,
-      final OptimizeElasticsearchClient esClient,
-      final Integer scrollingTimeoutInSeconds) {
-    return retrieveScrollResultsTillLimit(
-        initialScrollResponse,
-        itemClass,
-        mappingFunction,
         esClient,
         scrollingTimeoutInSeconds,
         Integer.MAX_VALUE);
@@ -223,6 +210,18 @@ public final class ElasticsearchReaderUtil {
     }
   }
 
+  /*
+   Returns an iterator to extract all results from a given search (using search_after instead of scrolls).
+
+   This is done in a lazy fashion so we do not read everything into memory at once.
+  */
+  public static <T> Iterator<List<T>> searchIterator(
+      final OptimizeElasticsearchClient esClient,
+      final SearchRequest searchRequest,
+      final Class<T> itemClass) {
+    return new SearchAfterIterator<>(esClient, searchRequest, itemClass);
+  }
+
   public static <T> List<T> mapHits(
       final HitsMetadata<?> searchHits, final Class<T> itemClass, final ObjectMapper objectMapper) {
     return mapHits(searchHits, itemClass, objectMapper, false);
@@ -283,5 +282,67 @@ public final class ElasticsearchReaderUtil {
       final MgetResponse<T> multiGetResponse) {
     return multiGetResponse.docs().stream()
         .anyMatch(multiGetItemResponse -> multiGetItemResponse.result().found());
+  }
+
+  // essentially backported rebuild method from SearchRequest in later versions of ES client
+  public static SearchRequest.Builder rebuild(final SearchRequest instance) {
+    return new SearchRequest.Builder()
+        .source(instance.source())
+        .aggregations(instance.aggregations())
+        .allowNoIndices(instance.allowNoIndices())
+        .allowPartialSearchResults(instance.allowPartialSearchResults())
+        .analyzeWildcard(instance.analyzeWildcard())
+        .analyzer(instance.analyzer())
+        .batchedReduceSize(instance.batchedReduceSize())
+        .ccsMinimizeRoundtrips(instance.ccsMinimizeRoundtrips())
+        .collapse(instance.collapse())
+        .defaultOperator(instance.defaultOperator())
+        .df(instance.df())
+        .docvalueFields(instance.docvalueFields())
+        .expandWildcards(instance.expandWildcards())
+        .explain(instance.explain())
+        .ext(instance.ext())
+        .fields(instance.fields())
+        .forceSyntheticSource(instance.forceSyntheticSource())
+        .from(instance.from())
+        .highlight(instance.highlight())
+        .ignoreThrottled(instance.ignoreThrottled())
+        .ignoreUnavailable(instance.ignoreUnavailable())
+        .index(instance.index())
+        .indicesBoost(instance.indicesBoost())
+        .knn(instance.knn())
+        .lenient(instance.lenient())
+        .maxConcurrentShardRequests(instance.maxConcurrentShardRequests())
+        .minCompatibleShardNode(instance.minCompatibleShardNode())
+        .minScore(instance.minScore())
+        .pit(instance.pit())
+        .postFilter(instance.postFilter())
+        .preFilterShardSize(instance.preFilterShardSize())
+        .preference(instance.preference())
+        .profile(instance.profile())
+        .q(instance.q())
+        .query(instance.query())
+        .rank(instance.rank())
+        .requestCache(instance.requestCache())
+        .rescore(instance.rescore())
+        .retriever(instance.retriever())
+        .routing(instance.routing())
+        .runtimeMappings(instance.runtimeMappings())
+        .scriptFields(instance.scriptFields())
+        .scroll(instance.scroll())
+        .searchAfter(instance.searchAfter())
+        .searchType(instance.searchType())
+        .seqNoPrimaryTerm(instance.seqNoPrimaryTerm())
+        .size(instance.size())
+        .slice(instance.slice())
+        .sort(instance.sort())
+        .stats(instance.stats())
+        .storedFields(instance.storedFields())
+        .suggest(instance.suggest())
+        .terminateAfter(instance.terminateAfter())
+        .timeout(instance.timeout())
+        .trackScores(instance.trackScores())
+        .trackTotalHits(instance.trackTotalHits())
+        .version(instance.version());
   }
 }

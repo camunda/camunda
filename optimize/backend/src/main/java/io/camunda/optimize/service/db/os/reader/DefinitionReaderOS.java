@@ -7,9 +7,7 @@
  */
 package io.camunda.optimize.service.db.os.reader;
 
-import static io.camunda.optimize.service.db.DatabaseConstants.DECISION_DEFINITION_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
-import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static io.camunda.optimize.service.db.os.writer.OpenSearchWriterUtil.createDefaultScript;
 import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
 import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
@@ -37,8 +35,6 @@ import io.camunda.optimize.service.db.os.OpenSearchCompositeAggregationScroller;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.os.client.dsl.AggregationDSL;
 import io.camunda.optimize.service.db.os.client.dsl.QueryDSL;
-import io.camunda.optimize.service.db.os.client.dsl.RequestDSL;
-import io.camunda.optimize.service.db.os.client.sync.OpenSearchDocumentOperations;
 import io.camunda.optimize.service.db.os.schema.index.DecisionDefinitionIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.ProcessDefinitionIndexOS;
 import io.camunda.optimize.service.db.reader.DefinitionReader;
@@ -47,11 +43,11 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.DefinitionVersionHandlingUtil;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -198,42 +194,6 @@ public class DefinitionReaderOS implements DefinitionReader {
       return Collections.emptyList();
     }
     return getLatestFullyImportedDefinitionPerTenant(type, definitionKey);
-  }
-
-  @Override
-  public Set<String> getDefinitionEngines(final DefinitionType type, final String definitionKey) {
-    final TermsAggregation enginesAggregation =
-        AggregationDSL.termAggregation(
-            DATA_SOURCE + "." + DataSourceDto.Fields.name, LIST_FETCH_LIMIT);
-
-    final SearchRequest.Builder searchRequest =
-        new SearchRequest.Builder()
-            .index(
-                DefinitionType.PROCESS.equals(type)
-                    ? PROCESS_DEFINITION_INDEX_NAME
-                    : DECISION_DEFINITION_INDEX_NAME)
-            .query(
-                new BoolQuery.Builder()
-                    .must(QueryDSL.term(resolveDefinitionKeyFieldFromType(type), definitionKey))
-                    .must(QueryDSL.term(DEFINITION_DELETED, false))
-                    .build()
-                    .toQuery())
-            .size(0)
-            .aggregations(
-                Collections.singletonMap(ENGINE_AGGREGATION, enginesAggregation._toAggregation()));
-
-    final String errorMessage =
-        String.format(
-            "Was not able to fetch engines for definition key [%s] and type [%s]",
-            definitionKey, type);
-    final SearchResponse<String> searchResponse =
-        osClient.search(searchRequest, String.class, errorMessage);
-
-    return Stream.of(searchResponse.aggregations().get(ENGINE_AGGREGATION).sterms())
-        .map(MultiBucketAggregateBase::buckets)
-        .flatMap(bucket -> bucket.array().stream())
-        .map(StringTermsBucket::key)
-        .collect(Collectors.toSet());
   }
 
   @Override
@@ -464,6 +424,16 @@ public class DefinitionReaderOS implements DefinitionReader {
   }
 
   @Override
+  public <T extends DefinitionOptimizeResponseDto> Iterator<List<T>> getDefinitionsIterator(
+      final DefinitionType type,
+      final boolean fullyImported,
+      final boolean withXml,
+      final boolean includeDeleted) {
+    return getDefinitionsIterator(
+        type, Collections.emptySet(), fullyImported, withXml, includeDeleted);
+  }
+
+  @Override
   public <T extends DefinitionOptimizeResponseDto> List<T> getDefinitions(
       final DefinitionType type,
       final boolean fullyImported,
@@ -479,22 +449,23 @@ public class DefinitionReaderOS implements DefinitionReader {
       final boolean fullyImported,
       final boolean withXml,
       final boolean includeDeleted) {
-    final String xmlField = resolveXmlFieldFromType(type);
-    final BoolQuery.Builder rootQuery =
-        new BoolQuery.Builder()
-            .must(fullyImported ? QueryDSL.exists(xmlField) : QueryDSL.matchAll());
-    final BoolQuery.Builder filteredQuery = rootQuery.must(QueryDSL.matchAll());
-    if (!includeDeleted) {
-      filteredQuery.must(QueryDSL.term(DEFINITION_DELETED, false));
-    }
-    if (!definitionKeys.isEmpty()) {
-      filteredQuery.must(
-          QueryDSL.terms(resolveDefinitionKeyFieldFromType(type), definitionKeys, FieldValue::of));
-    }
+    final BoolQuery.Builder filteredQuery =
+        createDefinitionsRootQuery(type, definitionKeys, fullyImported, includeDeleted);
     return getDefinitions(type, filteredQuery.build(), withXml);
   }
 
-  public <T extends DefinitionOptimizeResponseDto> List<T> getDefinitions(
+  public <T extends DefinitionOptimizeResponseDto> Iterator<List<T>> getDefinitionsIterator(
+      final DefinitionType type,
+      final Set<String> definitionKeys,
+      final boolean fullyImported,
+      final boolean withXml,
+      final boolean includeDeleted) {
+    final BoolQuery.Builder filteredQuery =
+        createDefinitionsRootQuery(type, definitionKeys, fullyImported, includeDeleted);
+    return getDefinitionsIterator(type, filteredQuery.build(), withXml);
+  }
+
+  public <T extends DefinitionOptimizeResponseDto> Iterator<List<T>> getDefinitionsIterator(
       final DefinitionType type, final BoolQuery filterQuery, final boolean withXml) {
     final String xmlField = resolveXmlFieldFromType(type);
     final List<String> fieldsToExclude = withXml ? Collections.emptyList() : List.of(xmlField);
@@ -509,25 +480,48 @@ public class DefinitionReaderOS implements DefinitionReader {
             .query(filterQuery.toQuery())
             .source(searchSourceBuilder)
             .size(LIST_FETCH_LIMIT)
-            .scroll(
-                RequestDSL.time(
-                    String.valueOf(
-                        configurationService
-                            .getOpenSearchConfiguration()
-                            .getScrollTimeoutInSeconds())));
+            .sort(
+                SortOptions.of(
+                    sort -> sort.field(f -> f.field(DEFINITION_KEY).order(SortOrder.Asc))),
+                SortOptions.of(sort -> sort.field(f -> f.field("_doc").order(SortOrder.Asc))));
 
     final Class<T> typeClass = resolveDefinitionClassFromType(type);
-    final OpenSearchDocumentOperations.AggregatedResult<Hit<T>> scrollResp;
-    try {
-      scrollResp = osClient.retrieveAllScrollResults(searchBuilder, typeClass);
-    } catch (final IOException e) {
-      final String errorMsg =
-          String.format("Was not able to retrieve definitions of type %s", type);
-      LOG.error(errorMsg, e);
-      throw new OptimizeRuntimeException(errorMsg, e);
+
+    final String errorMsg = String.format("Was not able to retrieve definitions of type %s", type);
+
+    return OpensearchReaderUtil.searchIterator(
+        osClient, searchBuilder.build(), typeClass, errorMsg);
+  }
+
+  private BoolQuery.Builder createDefinitionsRootQuery(
+      final DefinitionType type,
+      final Set<String> definitionKeys,
+      final boolean fullyImported,
+      final boolean includeDeleted) {
+    final String xmlField = resolveXmlFieldFromType(type);
+    final BoolQuery.Builder rootQuery =
+        new BoolQuery.Builder()
+            .must(fullyImported ? QueryDSL.exists(xmlField) : QueryDSL.matchAll());
+    final BoolQuery.Builder filteredQuery = rootQuery.must(QueryDSL.matchAll());
+    if (!includeDeleted) {
+      filteredQuery.must(QueryDSL.term(DEFINITION_DELETED, false));
     }
-    return OpensearchReaderUtil.extractAggregatedResponseValues(
-        scrollResp, createMappingFunctionForDefinitionType(typeClass));
+    if (!definitionKeys.isEmpty()) {
+      filteredQuery.must(
+          QueryDSL.terms(resolveDefinitionKeyFieldFromType(type), definitionKeys, FieldValue::of));
+    }
+    return filteredQuery;
+  }
+
+  public <T extends DefinitionOptimizeResponseDto> List<T> getDefinitions(
+      final DefinitionType type, final BoolQuery filterQuery, final boolean withXml) {
+    final Iterator<List<T>> definitionsIterator =
+        getDefinitionsIterator(type, filterQuery, withXml);
+    final List<T> definitions = new ArrayList<>();
+    while (definitionsIterator.hasNext()) {
+      definitions.addAll(definitionsIterator.next());
+    }
+    return definitions;
   }
 
   private void addVersionFilterToQuery(
