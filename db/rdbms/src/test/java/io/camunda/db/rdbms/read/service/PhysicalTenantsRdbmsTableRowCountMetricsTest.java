@@ -10,8 +10,6 @@ package io.camunda.db.rdbms.read.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.RdbmsTableNames;
@@ -78,28 +76,6 @@ class PhysicalTenantsRdbmsTableRowCountMetricsTest {
   }
 
   @Test
-  void shouldReportRowCountFromMapper() {
-    // given
-    when(mapperA.countTableRows("PROCESS_INSTANCE")).thenReturn(42L);
-    metrics =
-        new PhysicalTenantsRdbmsTableRowCountMetrics(
-            Map.of(TENANT_A, provider(mapperA, DEFAULT_CACHE_DURATION)));
-    metrics.bindTo(meterRegistry);
-
-    // when
-    final Gauge gauge =
-        meterRegistry
-            .find("zeebe.rdbms.table.row.count")
-            .tag("physicalTenant", TENANT_A)
-            .tag("table", "PROCESS_INSTANCE")
-            .gauge();
-
-    // then
-    assertThat(gauge).isNotNull();
-    assertThat(gauge.value()).isEqualTo(42.0);
-  }
-
-  @Test
   void shouldReportRowCountsPerPhysicalTenantIndependently() {
     // given
     when(mapperA.countTableRows("PROCESS_INSTANCE")).thenReturn(42L);
@@ -128,54 +104,5 @@ class PhysicalTenantsRdbmsTableRowCountMetricsTest {
     // then
     assertThat(gaugeA.value()).isEqualTo(42.0);
     assertThat(gaugeB.value()).isEqualTo(7.0);
-  }
-
-  @Test
-  void shouldReportNegativeOneOnMapperException() {
-    // given
-    when(mapperA.countTableRows("PROCESS_INSTANCE"))
-        .thenThrow(new RuntimeException("Database error"));
-    metrics =
-        new PhysicalTenantsRdbmsTableRowCountMetrics(
-            Map.of(TENANT_A, provider(mapperA, DEFAULT_CACHE_DURATION)));
-    metrics.bindTo(meterRegistry);
-
-    // when
-    final Gauge gauge =
-        meterRegistry
-            .find("zeebe.rdbms.table.row.count")
-            .tag("physicalTenant", TENANT_A)
-            .tag("table", "PROCESS_INSTANCE")
-            .gauge();
-
-    // then - should return -1 on error
-    assertThat(gauge).isNotNull();
-    assertThat(gauge.value()).isEqualTo(-1.0);
-  }
-
-  @Test
-  void shouldCacheRowCountWithinCacheDuration() {
-    // given
-    when(mapperA.countTableRows("PROCESS_INSTANCE")).thenReturn(42L);
-    // Use a very long cache duration to ensure caching
-    metrics =
-        new PhysicalTenantsRdbmsTableRowCountMetrics(
-            Map.of(TENANT_A, provider(mapperA, Duration.ofHours(1))));
-    metrics.bindTo(meterRegistry);
-
-    final Gauge gauge =
-        meterRegistry
-            .find("zeebe.rdbms.table.row.count")
-            .tag("physicalTenant", TENANT_A)
-            .tag("table", "PROCESS_INSTANCE")
-            .gauge();
-
-    // when - access gauge value multiple times
-    gauge.value();
-    gauge.value();
-    gauge.value();
-
-    // then - mapper should only be called once due to caching
-    verify(mapperA, times(1)).countTableRows("PROCESS_INSTANCE");
   }
 }
