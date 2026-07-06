@@ -11,10 +11,8 @@ import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCh
 import io.camunda.zeebe.engine.processing.identity.authorization.exception.ForbiddenException;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.resource.ResourceDeletionExceptions.NoSuchResourceException;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.ResourceType;
@@ -23,27 +21,27 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 final class ResourceDeletionAuthorizationBehavior {
 
   private final AuthorizationCheckBehavior authCheckBehavior;
-  private final StateWriter stateWriter;
 
-  ResourceDeletionAuthorizationBehavior(
-      final AuthorizationCheckBehavior authCheckBehavior, final StateWriter stateWriter) {
+  ResourceDeletionAuthorizationBehavior(final AuthorizationCheckBehavior authCheckBehavior) {
     this.authCheckBehavior = authCheckBehavior;
-    this.stateWriter = stateWriter;
   }
 
-  boolean authorizeAndDelete(
+  void authorize(
       final TypedRecord<ResourceDeletionRecord> command,
-      final long eventKey,
       final PermissionType permissionType,
       final String resourceId,
-      final String tenantId,
-      final Runnable deletionAction) {
-    checkAuthorization(
-        command, AuthorizationResourceType.RESOURCE, permissionType, resourceId, tenantId);
-    stateWriter.appendFollowUpEvent(eventKey, ResourceDeletionIntent.DELETING, command.getValue());
-    command.getValue().setTenantId(tenantId);
-    deletionAction.run();
-    return true;
+      final String tenantId) {
+    final var authRequest =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.RESOURCE)
+            .permissionType(permissionType)
+            .tenantId(tenantId)
+            .addResourceId(resourceId)
+            .build();
+    if (authCheckBehavior.isAuthorizedOrInternalCommand(authRequest).isLeft()) {
+      throw new ForbiddenException(authRequest);
+    }
   }
 
   /**
@@ -71,25 +69,6 @@ final class ResourceDeletionAuthorizationBehavior {
       } else {
         throw new ForbiddenException(authRequest);
       }
-    }
-  }
-
-  private void checkAuthorization(
-      final TypedRecord<ResourceDeletionRecord> command,
-      final AuthorizationResourceType resourceType,
-      final PermissionType permissionType,
-      final String resourceId,
-      final String tenantId) {
-    final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(resourceType)
-            .permissionType(permissionType)
-            .tenantId(tenantId)
-            .addResourceId(resourceId)
-            .build();
-    if (authCheckBehavior.isAuthorizedOrInternalCommand(authRequest).isLeft()) {
-      throw new ForbiddenException(authRequest);
     }
   }
 }

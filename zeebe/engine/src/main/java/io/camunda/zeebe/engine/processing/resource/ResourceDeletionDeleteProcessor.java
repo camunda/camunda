@@ -83,8 +83,7 @@ public class ResourceDeletionDeleteProcessor
             bpmnBehaviors.catchEventBehavior(),
             startEventSubscriptionManager);
 
-    authorizationBehavior =
-        new ResourceDeletionAuthorizationBehavior(authCheckBehavior, stateWriter);
+    authorizationBehavior = new ResourceDeletionAuthorizationBehavior(authCheckBehavior);
 
     tenantAwareDeletionBehavior =
         new TenantAwareDeletionBehavior(authCheckBehavior, processingState.getTenantState());
@@ -196,26 +195,34 @@ public class ResourceDeletionDeleteProcessor
       final long eventKey) {
     final var resourceKey = command.getValue().getResourceKey();
     return Optional.ofNullable(processState.getProcessByKeyAndTenant(resourceKey, tenantId))
-        .map(process -> processDeletionBehavior.tryDelete(command, eventKey, process))
+        .map(
+            process ->
+                processDeletionBehavior.tryDelete(
+                    command, eventKey, ResourceDeletionIntent.DELETING, process))
         .or(
             () ->
                 decisionState
                     .findDecisionRequirementsByTenantAndKey(tenantId, resourceKey)
                     .map(
                         drg ->
-                            decisionRequirementsDeletionBehavior.tryDelete(command, eventKey, drg)))
+                            decisionRequirementsDeletionBehavior.tryDelete(
+                                command, eventKey, ResourceDeletionIntent.DELETING, drg)))
         .or(
             () ->
                 formState
                     .findFormByKey(resourceKey, tenantId)
-                    .map(form -> formDeletionBehavior.tryDelete(command, eventKey, form)))
+                    .map(
+                        form ->
+                            formDeletionBehavior.tryDelete(
+                                command, eventKey, ResourceDeletionIntent.DELETING, form)))
         .or(
             () ->
                 resourceState
                     .findResourceByKey(resourceKey, tenantId)
                     .map(
                         resource ->
-                            resourceDeletionBehavior.tryDelete(command, eventKey, resource)))
+                            resourceDeletionBehavior.tryDelete(
+                                command, eventKey, ResourceDeletionIntent.DELETING, resource)))
         .orElse(false);
   }
 

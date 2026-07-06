@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.deployment.PersistedResource;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.ResourceType;
@@ -37,19 +38,21 @@ final class ResourceDeletionBehavior {
   boolean tryDelete(
       final TypedRecord<ResourceDeletionRecord> command,
       final long eventKey,
+      final Intent intent,
       final PersistedResource resource) {
     command
         .getValue()
         .setResourceType(ResourceType.UNKNOWN)
         .setResourceId(resource.getResourceId())
         .setTenantId(resource.getTenantId());
-    return authorizationBehavior.authorizeAndDelete(
+    authorizationBehavior.authorize(
         command,
-        eventKey,
         PermissionType.DELETE_RESOURCE,
         bufferAsString(resource.getResourceId()),
-        resource.getTenantId(),
-        () -> deleteResource(resource));
+        resource.getTenantId());
+    stateWriter.appendFollowUpEvent(eventKey, intent, command.getValue());
+    deleteResource(resource);
+    return true;
   }
 
   private void deleteResource(final PersistedResource persistedResource) {

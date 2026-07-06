@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -59,19 +60,21 @@ final class DecisionRequirementsDeletionBehavior {
   boolean tryDelete(
       final TypedRecord<ResourceDeletionRecord> command,
       final long eventKey,
+      final Intent intent,
       final DeployedDrg drg) {
     command
         .getValue()
         .setResourceType(ResourceType.DECISION_REQUIREMENTS)
         .setResourceId(drg.getDecisionRequirementsId())
         .setTenantId(drg.getTenantId());
-    return authorizationBehavior.authorizeAndDelete(
+    authorizationBehavior.authorize(
         command,
-        eventKey,
         PermissionType.DELETE_DRD,
         bufferAsString(drg.getDecisionRequirementsId()),
-        drg.getTenantId(),
-        () -> deleteDecisionRequirements(drg, command, eventKey));
+        drg.getTenantId());
+    stateWriter.appendFollowUpEvent(eventKey, intent, command.getValue());
+    deleteDecisionRequirements(drg, command, eventKey);
+    return true;
   }
 
   void deleteDecisionRequirements(

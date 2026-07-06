@@ -33,6 +33,7 @@ import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionReco
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
@@ -89,19 +90,21 @@ final class ProcessDeletionBehavior {
   boolean tryDelete(
       final TypedRecord<ResourceDeletionRecord> command,
       final long eventKey,
+      final Intent intent,
       final DeployedProcess process) {
     command
         .getValue()
         .setResourceType(ResourceType.PROCESS_DEFINITION)
         .setResourceId(process.getBpmnProcessId())
         .setTenantId(process.getTenantId());
-    return authorizationBehavior.authorizeAndDelete(
+    authorizationBehavior.authorize(
         command,
-        eventKey,
         PermissionType.DELETE_PROCESS,
         bufferAsString(process.getBpmnProcessId()),
-        process.getTenantId(),
-        () -> deleteProcess(process, command, eventKey));
+        process.getTenantId());
+    stateWriter.appendFollowUpEvent(eventKey, intent, command.getValue());
+    deleteProcess(process, command, eventKey);
+    return true;
   }
 
   void deleteProcess(

@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.state.deployment.PersistedForm;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.ResourceType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -37,19 +38,18 @@ final class FormDeletionBehavior {
   boolean tryDelete(
       final TypedRecord<ResourceDeletionRecord> command,
       final long eventKey,
+      final Intent intent,
       final PersistedForm form) {
     command
         .getValue()
         .setResourceType(ResourceType.FORM)
         .setResourceId(form.getFormId())
         .setTenantId(form.getTenantId());
-    return authorizationBehavior.authorizeAndDelete(
-        command,
-        eventKey,
-        PermissionType.DELETE_FORM,
-        bufferAsString(form.getFormId()),
-        form.getTenantId(),
-        () -> deleteForm(form));
+    authorizationBehavior.authorize(
+        command, PermissionType.DELETE_FORM, bufferAsString(form.getFormId()), form.getTenantId());
+    stateWriter.appendFollowUpEvent(eventKey, intent, command.getValue());
+    deleteForm(form);
+    return true;
   }
 
   private void deleteForm(final PersistedForm persistedForm) {
