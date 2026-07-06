@@ -323,7 +323,16 @@ Only re-examine for a test-side cause if Gate A or Gate C is genuinely in doubt.
 
 **Gate C — Confirm the test is still correct.** The assertion must still match intended behavior,
 the selector must target a real element, and the test must not be stale. If the test itself is wrong
-→ that is a test fix (Step 4), not a product bug.
+→ that is a test fix (Step 4), not a product bug. **For any API test that failed with a non-happy
+response (unexpected status, error body, or wrong payload), "still correct" also requires the request
+the test SENT to conform to the API agreement** — diff the request (endpoint, method, body shape,
+field types, enum casing, params) against `zeebe/gateway-protocol/src/main/proto/v2/*.yaml`. If the
+request conforms and the response is still wrong, it is a genuine product bug (escalate; do not change
+the test); if the request is malformed or the test is badly planned, fix the test. **If the test uses
+the conventional shape that sibling filters use but the contract itself is the outlier and no request
+shape works, the contract/spec is the bug — escalate; do NOT rewrite the test to match a broken
+agreement (#56636 is exactly this case).** A backend-agnostic failure is, by itself, evidence of
+neither a product bug nor a test bug.
 
 ### Owning-component routing
 
@@ -530,6 +539,36 @@ a specific assertion or action. Typical patterns:
 - **API response shape change** — only a test-side fix is in scope if the
   test was asserting on a field that legitimately moved/renamed. If the
   endpoint regressed, this is a product bug — see Step 4.
+- **Any unexpected / non-happy API response** (an unexpected status — 4xx *or*
+  5xx — an error body, or a wrong/empty payload) — before deciding, check the
+  request the test SENT against both the API agreement AND the established
+  convention. Diff the request (endpoint, method, body shape, field types, enum
+  values/casing, params) against the OpenAPI/proto contract in
+  `zeebe/gateway-protocol/src/main/proto/v2/*.yaml`, compare with how sibling
+  filters are queried (they share conventions — e.g. every enum filter is a single
+  `field: {$in: [...]}` property), and re-read what the test verifies. Then decide:
+  - **Request conforms and matches the test's intent, but the response is still
+    wrong** → the product is misbehaving → **product bug** (Step 4); do NOT change
+    the test to pass.
+  - **Request is malformed / the test is badly planned** (wrong body shape, field
+    type, enum casing, or endpoint) → **fix the test**, even when it looks
+    well-formed.
+  - **The contract/spec ITSELF is the bug** — the test uses the conventional shape
+    that every sibling filter uses, yet the contract is the outlier and NO request
+    shape works → escalate as a **product/spec bug** (Step 4). Do NOT rewrite the
+    test to match a broken agreement — that masks the bug. "Contradicts the
+    contract" is a test fix ONLY when the contract agrees with the convention; if
+    the contract is the outlier, the contract is wrong.
+
+  A backend-agnostic failure (same on ES and RDBMS) is by itself evidence of
+  neither a product nor a test bug — a malformed request AND a broken contract both
+  fail on every backend; decide by conformance to the *convention*, not the literal
+  contract alone. Worked example (#56636): `eventTypes` is declared as an *array*
+  while every other enum filter is a single `{$in: [...]}` property, so both
+  `eventTypes: {$in: [...]}` (convention → "cannot be parsed") and
+  `eventTypes: [{$in: [...]}]` (matches the array spec → "Type definition error")
+  fail → the *spec* is the outlier → **product/spec bug: skip & escalate**, NOT a
+  test fix.
 
 **Step 4 — Decide: fix or stop.**
 
