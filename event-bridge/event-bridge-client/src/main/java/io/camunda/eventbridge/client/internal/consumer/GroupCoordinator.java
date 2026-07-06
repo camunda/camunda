@@ -33,6 +33,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,6 +76,11 @@ public final class GroupCoordinator {
   private volatile long memberEpoch = 0;
 
   private volatile ScheduledFuture<?> scheduledHeartbeat;
+
+  // Single-flight guard for rejoin(): with a static instanceId the coordinator holds the instance
+  // slot for the live incumbent and fences any *concurrent* second join, so overlapping rejoins
+  // must be coalesced onto one request (see rejoin()).
+  private final AtomicReference<CompletableFuture<Void>> inFlightRejoin = new AtomicReference<>();
 
   public GroupCoordinator(
       final HttpTransport transport,
@@ -289,7 +295,13 @@ public final class GroupCoordinator {
           "[Heartbeat][Consumer={}] membership fenced/unknown (409); rejoining group {}",
           instanceId,
           groupId);
-      return rejoin().whenComplete((ignored, rejoinError) -> scheduleSendHeartbeat());
+      // Rejoin (coalesced), then schedule exactly one next beat. Swallow the rejoin error here — it
+      // is already logged, and returning a normally-completed future keeps the outer heartbeat
+      // error
+      // handler from scheduling a *second* beat, which would double the heartbeat rate every fence.
+      return rejoin()
+          .handle((ignored, rejoinError) -> (Void) null)
+          .whenComplete((ignored, ignoredError) -> scheduleSendHeartbeat());
     }
     if (httpResponse.statusCode() != 200) {
       throw new EventBridgeException("Heartbeat failed: HTTP " + httpResponse.statusCode());
@@ -346,15 +358,48 @@ public final class GroupCoordinator {
 
   /**
    * Re-registers this consumer with the coordinator after it has been fenced or the coordinator
-   * lost its membership (e.g. a coordinator failover wiped the in-memory registry). Non-blocking:
-   * the request is issued asynchronously and its result applied on the executor thread.
+   * lost its membership (e.g. a coordinator failover wiped the in-memory registry), coalescing
+   * concurrent rejoins onto a single in-flight request.
    *
-   * <p>Acquires a fresh {@code memberId}/{@code memberEpoch} and drops owned partitions; the
-   * coordinator reassigns them on the next heartbeat and re-seeds committed offsets. Fetch
-   * positions for retained partitions are preserved (and only ever advanced via {@code max}), so
-   * resumption is at-least-once.
+   * <p>A static {@code instanceId} means the coordinator holds the instance slot for the live
+   * incumbent and rejects a <em>second</em> concurrent join with {@code UNRELEASED_INSTANCE_ID}
+   * (409); since many in-flight operations (every fenced commit, plus the heartbeat) each want to
+   * rejoin when a member is lost, letting them each fire a join makes all but one 409 and retry — a
+   * self-sustaining storm that exhausts sockets. Single-flight means one join per fence: every
+   * caller awaits the same fresh membership.
    */
   public CompletableFuture<Void> rejoin() {
+    while (true) {
+      final var existing = inFlightRejoin.get();
+      if (existing != null) {
+        return existing;
+      }
+      final var promise = new CompletableFuture<Void>();
+      if (inFlightRejoin.compareAndSet(null, promise)) {
+        doRejoin()
+            .whenComplete(
+                (value, error) -> {
+                  inFlightRejoin.compareAndSet(promise, null);
+                  if (error != null) {
+                    promise.completeExceptionally(error);
+                  } else {
+                    promise.complete(value);
+                  }
+                });
+        return promise;
+      }
+      // Lost the CAS race; loop to return the winner's future.
+    }
+  }
+
+  /**
+   * Issues the actual rejoin request (non-blocking): acquires a fresh {@code memberId}/{@code
+   * memberEpoch} and drops owned partitions; the coordinator reassigns them on the next heartbeat
+   * and re-seeds committed offsets. Fetch positions for retained partitions are preserved (and only
+   * ever advanced via {@code max}), so resumption is at-least-once. Callers go through {@link
+   * #rejoin()} so concurrent attempts are coalesced.
+   */
+  private CompletableFuture<Void> doRejoin() {
     return transport
         .postProtobufRaw(joinPath(), joinRequest(), "rejoin")
         .handleAsync(
