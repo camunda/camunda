@@ -27,7 +27,6 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessIn
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import java.time.Duration;
 import java.time.InstantSource;
 
 /**
@@ -38,18 +37,15 @@ import java.time.InstantSource;
  * dedup state. A hit short-circuits the live-state evaluation and re-replies {@link
  * MessageStartProcessInstanceRequestIntent#STARTED} with the cached process-instance key, so a
  * retry from {@code P_K}'s pending-ask state never produces a second PI. A hit is treated as valid
- * when its {@code deletionDeadline} has not yet passed <em>plus a grace window</em> ({@code
- * messageStartAskRetryGrace}) <em>and</em> the cached PI is not banned; otherwise (no entry,
- * expired entry, or banned holder) the request falls through to live-state evaluation. The dedup
- * entry's {@code deletionDeadline} is taken directly from the request's {@code messageDeadline} (=
- * {@code publishTime + ttl} on {@code P_K}), so the dedup row on {@code P_B} and the buffered
- * message on {@code P_K} share the same base lifetime without any engine-internal time coupling;
- * the grace extends the re-reply window past it to absorb a retry that {@code P_K} sent just before
- * the deadline but that only reaches {@code P_B} after it (inter-partition latency + clock skew),
- * closing the near-deadline duplicate window. The entry exists to bound {@code P_K}'s retry window
- * — the sole correctness contract that prevents duplicate creates is {@code retryDeadline <=
- * messageDeadline}, enforced on {@code P_K} by the {@link
- * io.camunda.zeebe.engine.state.appliers.MessageExpiredApplier}-driven pending-ask cleanup.
+ * when its {@code deletionDeadline} has not yet passed <em>and</em> the cached PI is not banned;
+ * otherwise (no entry, expired entry, or banned holder) the request falls through to live-state
+ * evaluation. The dedup entry's {@code deletionDeadline} is taken directly from the request's
+ * {@code messageDeadline} (= {@code publishTime + ttl} on {@code P_K}), so the dedup row on {@code
+ * P_B} and the buffered message on {@code P_K} share the same base lifetime without any
+ * engine-internal time coupling. The entry exists to bound {@code P_K}'s retry window — the sole
+ * correctness contract that prevents duplicate creates is the deterministic expiry guard below
+ * (backed on {@code P_K} by the {@link
+ * io.camunda.zeebe.engine.state.appliers.MessageExpiredV2Applier}-driven pending-ask cleanup).
  *
  * <p>Before the dedup lookup, a deterministic TTL-gated expiry guard runs: a request whose {@code
  * messageDeadline} has passed on this partition's clock <em>and</em> whose {@code messageTtl} is
@@ -103,7 +99,6 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
   private final KeyGenerator keyGenerator;
   private final InstantSource clock;
   private final boolean businessIdUniquenessEnabled;
-  private final Duration retryGrace;
   private final MessageStartProcessInstanceRequestRecord startedEventBuffer =
       new MessageStartProcessInstanceRequestRecord();
 
@@ -120,7 +115,6 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
       final KeyGenerator keyGenerator,
       final InstantSource clock,
       final boolean businessIdUniquenessEnabled,
-      final Duration retryGrace,
       final Writers writers) {
     this.startEventSubscriptionState = startEventSubscriptionState;
     this.elementInstanceState = elementInstanceState;
@@ -131,7 +125,6 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
     this.keyGenerator = keyGenerator;
     this.clock = clock;
     this.businessIdUniquenessEnabled = businessIdUniquenessEnabled;
-    this.retryGrace = retryGrace;
     eventHandle =
         new EventHandle(
             keyGenerator,
@@ -227,18 +220,15 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
   /**
    * Returns the cached process-instance key when a valid dedup entry exists for the request, or
    * {@code null} when the request must fall through to live-state evaluation. A hit is valid when
-   * its {@code deletionDeadline} (the message deadline) has not yet passed <em>plus a grace
-   * window</em>, and the cached PI is not currently banned; banned holders are filtered out so a
-   * retry can produce a fresh PI, mirroring the lookup-time banned filter on the live-state
-   * uniqueness check.
+   * its {@code deletionDeadline} (the message deadline) has not yet passed, and the cached PI is
+   * not currently banned; banned holders are filtered out so a retry can produce a fresh PI,
+   * mirroring the lookup-time banned filter on the live-state uniqueness check.
    *
-   * <p>The grace extends validity past the message deadline to absorb a near-deadline in-flight
-   * retry: a retry {@code P_K} sends just before the deadline {@code T} may only reach this
-   * processor at {@code T + latency}; without grace it would dedup-miss, re-evaluate live state,
-   * and — if the holder it would re-reply has since auto-completed — create a duplicate. The grace
-   * keeps the row a re-reply source for that window. The dedup key {@code (processDefinitionKey,
-   * messageKey)} is unique per publish, so a grace-retained row can never shadow a different
-   * publish.
+   * <p>The threshold is {@code deletionDeadline <= now} on {@code P_B}'s clock — the same
+   * single-clock comparison the expiry guard and the dedup sweep use, so the three never disagree:
+   * a request that outlives its dedup row is refused by the expiry guard ({@code REJECT_EXPIRED}),
+   * not re-evaluated. The dedup key {@code (processDefinitionKey, messageKey)} is unique per
+   * publish, so a not-yet-swept row can never shadow a different publish.
    */
   private Long lookupValidDedupHit(final MessageStartProcessInstanceRequestRecord request) {
     final MessageStartProcessInstanceDedupEntry entry =
@@ -246,7 +236,7 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
     if (entry == null) {
       return null;
     }
-    if (entry.getDeletionDeadline() <= clock.millis() - retryGrace.toMillis()) {
+    if (entry.getDeletionDeadline() <= clock.millis()) {
       return null;
     }
     final long cachedPiKey = entry.getProcessInstanceKey();

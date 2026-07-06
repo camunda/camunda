@@ -137,12 +137,7 @@ public final class MessageStartProcessInstanceCrossPartitionHandshakeTest {
                   config
                       .setBusinessIdUniquenessEnabled(true)
                       .setMessageStartDedupExpirationSweepInterval(SWEEP_INTERVAL)
-                      .setMessageStartAskRetryInterval(ASK_RETRY_INTERVAL)
-                      // These tests pin the dedup hit/miss boundary at the *message deadline*
-                      // itself, so the near-deadline grace is disabled here; the grace's own
-                      // behaviour is pinned separately (config default + the dedicated
-                      // near-deadline duplicate-window regression).
-                      .setMessageStartAskRetryGrace(Duration.ZERO));
+                      .setMessageStartAskRetryInterval(ASK_RETRY_INTERVAL));
 
   @Before
   public void assertCrossPartitionRouting() {
@@ -465,12 +460,12 @@ public final class MessageStartProcessInstanceCrossPartitionHandshakeTest {
   }
 
   @Test
-  public void shouldStartFreshPiWhenRetryArrivesAfterMessageDeadlineHasPassed() {
-    // Pins the multi-partition expired-dedup-entry-past-deadline outcome: once the
-    // messageDeadline has elapsed and the scheduled sweep has removed the dedup entry, a retry
-    // from P_K is treated as a fresh ask — live uniqueness check passes (the original PI is
-    // gone) and a brand-new PI is created. Symmetric counterpart to the within-deadline test
-    // above; pins that the success-only dedup eventually releases.
+  public void shouldRejectExpiredWhenRetryArrivesAfterMessageDeadlineHasPassed() {
+    // Pins the multi-partition TTL-gated expiry guard: once the messageDeadline has elapsed, a
+    // retry from P_K is deterministically refused with REJECT_EXPIRED. P_B does NOT re-evaluate
+    // live state and does NOT start a fresh (duplicate) PI, even though the original holder has
+    // auto-completed and freed the businessId — this is exactly the near-deadline duplicate window
+    // the guard closes. Symmetric counterpart to the within-deadline re-reply test above.
     deployAndAwaitStartEventSubscriptionsOnAllPartitions(
         AUTO_COMPLETE_MESSAGE_START_PROCESS, AUTO_MESSAGE_NAME);
 
@@ -489,25 +484,31 @@ public final class MessageStartProcessInstanceCrossPartitionHandshakeTest {
         .withTimeToLive(MESSAGE_TTL.toMillis())
         .publish();
 
-    final long firstPiKey =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
-            .withBpmnProcessId(AUTO_PROCESS_ID)
-            .withElementType(BpmnElementType.PROCESS)
-            .getFirst()
-            .getValue()
-            .getProcessInstanceKey();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withBpmnProcessId(AUTO_PROCESS_ID)
+        .withElementType(BpmnElementType.PROCESS)
+        .getFirst();
 
-    // and time advances past messageDeadline + sweep interval so the sweep deletes the dedup
-    // entry before the next retry arrives
+    // and time advances past messageDeadline + sweep interval so the dedup entry is swept before
+    // the next retry arrives
     engine.increaseTime(MESSAGE_TTL.plus(SWEEP_INTERVAL).plusSeconds(1));
 
-    // then the re-dispatched REQUEST is a cache miss on P_B; live uniqueness passes (the
-    // original PI is completed); a brand-new PI is created and STARTED carries its key
-    final long secondStartedPiKey = retryStartedReplyPiKey();
-    assertThat(secondStartedPiKey)
-        .as("after the messageDeadline has passed, P_B starts a fresh PI on retry")
-        .isPositive()
-        .isNotEqualTo(firstPiKey);
+    // then the re-dispatched REQUEST is refused on P_B with REJECT_EXPIRED, P_K records
+    // EXPIRED_REJECTED, and no second PI is ever activated — exactly one PI existed on P_B
+    RecordingExporter.messageStartProcessInstanceRequestRecords(
+            MessageStartProcessInstanceRequestIntent.EXPIRED_REJECTED)
+        .getFirst();
+    final long activations =
+        RecordingExporter.records()
+            .limit(r -> r.getIntent() == MessageStartProcessInstanceRequestIntent.EXPIRED_REJECTED)
+            .processInstanceRecords()
+            .withBpmnProcessId(AUTO_PROCESS_ID)
+            .withElementType(BpmnElementType.PROCESS)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .count();
+    assertThat(activations)
+        .as("after the messageDeadline has passed, P_B refuses the retry instead of duplicating")
+        .isEqualTo(1L);
   }
 
   @Test

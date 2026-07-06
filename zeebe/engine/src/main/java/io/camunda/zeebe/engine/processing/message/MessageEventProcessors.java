@@ -175,7 +175,6 @@ public final class MessageEventProcessors {
                 keyGenerator,
                 clock,
                 businessIdUniquenessEnabled,
-                config.getMessageStartAskRetryGrace(),
                 writers))
         .onCommand(
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
@@ -185,7 +184,6 @@ public final class MessageEventProcessors {
                 writers.command(),
                 processingState.getMessageStartProcessInstanceDedupState(),
                 config.getMessageStartDedupExpirationSweepBatchLimit(),
-                config.getMessageStartAskRetryGrace(),
                 clock))
         // Reply command processors on P_K - these handle the cross-partition replies from P_B
         .onCommand(
@@ -231,8 +229,7 @@ public final class MessageEventProcessors {
         .withListener(
             new MessageStartDedupExpirationSweepScheduler(
                 config.getMessageStartDedupExpirationSweepInterval(),
-                scheduledTaskStateFactory.get().getMessageStartProcessInstanceDedupState(),
-                config.getMessageStartAskRetryGrace()))
+                scheduledTaskStateFactory.get().getMessageStartProcessInstanceDedupState()))
         .withListener(
             new PendingMessageStartAskCheckScheduler(
                 subscriptionCommandSender,
