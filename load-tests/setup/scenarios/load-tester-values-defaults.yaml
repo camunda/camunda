@@ -1,6 +1,5 @@
 global:
   commonLabels:
-    camunda.io/created-by: __AUTHOR__
     camunda.io/purpose: load-test
   image:
     repository: registry.camunda.cloud/team-zeebe
@@ -12,7 +11,6 @@ global:
 
   nodeSelector:
     component: benchmark-n2-standard-4
-    topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
 
   tolerations:
     - key: nodepool

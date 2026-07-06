@@ -65,4 +65,12 @@ cd $namespace
 
 # Update Makefile to use the namespace
 sed_inplace "s/__NAMESPACE__/$namespace/" Makefile
-sed_inplace "s/__AUTHOR__/$git_author/" *.yaml
+
+# Inject the author as a real Helm value. The Makefile passes this via -f alongside
+# load-test-values.yaml, so it deep-merges into global.commonLabels rather than
+# being baked into a committed file.
+cat <<EOF > load-test-values-generated.yaml
+global:
+  commonLabels:
+    camunda.io/created-by: "$git_author"
+EOF

@@ -180,6 +180,13 @@ author: "$git_author"
 deadlineDate: "$deadline_date"
 # Can be unset using "topologyZone: ~"
 topologyZone: $availability_zone
+# Propagated to the camunda-load-tests (load-tester) subchart via Helm global
+# coalescing.
+global:
+  commonLabels:
+    camunda.io/created-by: "$git_author"
+  nodeSelector:
+    topology.kubernetes.io/zone: $availability_zone
 EOF
 
 # Add/update helm repositories
