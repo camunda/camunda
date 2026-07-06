@@ -112,6 +112,8 @@ test.describe.parallel('Unassign User Task Tests', () => {
         headers: jsonHeaders(),
       },
     );
+    // Once #56635 is fixed this should assert a permanent status — 404 (no such
+    // entity) or 400 (malformed key) — not the current retryable 503.
     await assertStatusCode(res, 404);
   });
 

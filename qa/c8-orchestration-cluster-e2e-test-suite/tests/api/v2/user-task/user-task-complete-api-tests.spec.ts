@@ -113,6 +113,8 @@ test.describe.parallel('Complete User Task Tests', () => {
     // of a permanent 404.
     const outOfRangeUserTaskKey = '9999999999999999';
     const res = await completeUserTask(request, outOfRangeUserTaskKey, {});
+    // Once #56635 is fixed this should assert a permanent status — 404 (no such
+    // entity) or 400 (malformed key) — not the current retryable 503.
     await assertStatusCode(res, 404);
   });
 
