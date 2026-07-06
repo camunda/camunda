@@ -678,7 +678,7 @@ public final class EngineConfiguration {
 
   /**
    * Once the activation threshold is first exceeded, the loop-detection incident is re-raised every
-   * {@code elementActivationRetryCooldown} further activations. A value of {@code 0} (or less)
+   * {@code elementActivationRetryCooldown} further activations. A value of {@code 1} (or less)
    * disables throttling, so the incident is re-raised on every activation beyond the threshold.
    */
   public EngineConfiguration setElementActivationRetryCooldown(

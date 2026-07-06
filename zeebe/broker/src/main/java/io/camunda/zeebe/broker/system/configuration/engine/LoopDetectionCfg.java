@@ -28,6 +28,11 @@ import java.util.Map;
  * the parallel child-spawn batch bound; setting the inner type to {@code 0} disables both for those
  * children. {@code MULTI_INSTANCE_BODY} acts as an on/off gate — setting it to {@code 0} disables
  * detection for all multi-instance children regardless of their inner type.
+ *
+ * <p><b>Nesting note:</b> counters are keyed by process instance and element id, so elements nested
+ * inside an embedded subprocess used as a multi-instance inner activity accumulate on one shared
+ * counter across all of its children. Size per-type overrides for such nested elements above the
+ * largest expected collection to avoid raising incidents on legitimately large collections.
  */
 public class LoopDetectionCfg implements ConfigurationEntry {
 

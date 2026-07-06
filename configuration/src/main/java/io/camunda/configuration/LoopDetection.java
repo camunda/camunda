@@ -40,7 +40,7 @@ public class LoopDetection {
   /**
    * Once the threshold is first exceeded, the loop-detection incident is re-raised every {@code
    * elementActivationRetryCooldown} further activations. This gives operators a window to resolve
-   * the incident before a new one is raised. A value of {@code 0} (or less) disables throttling, so
+   * the incident before a new one is raised. A value of {@code 1} (or less) disables throttling, so
    * the incident is re-raised on every activation beyond the threshold.
    */
   private int elementActivationRetryCooldown = DEFAULT_ELEMENT_ACTIVATION_RETRY_COOLDOWN;
@@ -55,6 +55,12 @@ public class LoopDetection {
    * parallel child-spawn batch bound; setting the inner type to {@code 0} disables both for those
    * children. {@code MULTI_INSTANCE_BODY} acts as an on/off gate — setting it to {@code 0} disables
    * detection for all multi-instance children regardless of their inner type.
+   *
+   * <p><b>Nesting note:</b> counters are keyed by process instance and element id, so elements
+   * nested inside an embedded subprocess used as a multi-instance inner activity accumulate on one
+   * shared counter across all of its children. Size per-type overrides for such nested elements
+   * above the largest expected collection to avoid raising incidents on legitimately large
+   * collections.
    */
   private Map<BpmnElementType, Integer> maxElementActivationCountByType = new HashMap<>();
 

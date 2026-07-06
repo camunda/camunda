@@ -15,9 +15,15 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
  * Single source of truth deciding whether an element activation participates in loop detection.
  *
  * <p>The activation check (performed by {@code BpmnStreamProcessor}) and the activation counter
- * increment (performed by {@code ProcessInstanceElementActivatingV4Applier}) MUST agree on which
- * activations are counted. If they drift, an element could be checked but never counted or counted
- * but never checked. Both callers therefore delegate to {@link #shouldCount}.
+ * increment (performed by {@code ProcessInstanceElementActivatingV4Applier}) both delegate to
+ * {@link #shouldCount} for the base decision. This guarantees the dangerous direction never
+ * happens: an element that is checked is always counted, so the threshold is never evaluated
+ * against a counter that was never incremented.
+ *
+ * <p>The check layers additional, config-based gates on top of {@link #shouldCount} (a per-type
+ * limit of {@code 0}, or a disabled {@code MULTI_INSTANCE_BODY} for multi-instance children), so a
+ * disabled element type may be counted but never checked. That direction is harmless: the counter
+ * accumulates unused and is removed when the process instance ends.
  *
  * <p>Multi-instance bodies are the only elements excluded from counting: the body itself is a
  * container, and its children accumulate the count instead. This holds for both flavours:
