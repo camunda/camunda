@@ -9,6 +9,7 @@ package io.camunda.analytics.pipeline.stage;
 
 import io.camunda.analytics.aggregation.CubeMergeProcessor;
 import io.camunda.analytics.aggregation.CubeMergeProcessor.CellApplier;
+import io.camunda.analytics.aggregation.CubeServingSink;
 import io.camunda.analytics.dataset.ActiveCube;
 import io.camunda.analytics.dataset.CompiledMeter;
 import io.camunda.analytics.dimension.DimensionKey;

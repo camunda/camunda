@@ -5,11 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.analytics.pipeline.stage;
+package io.camunda.analytics.aggregation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.analytics.aggregation.ForwardingSegmentSink;
 import io.camunda.analytics.dimension.DimensionColumn;
 import io.camunda.analytics.dimension.DimensionKey;
 import io.camunda.analytics.dimension.DimensionKeyValue;

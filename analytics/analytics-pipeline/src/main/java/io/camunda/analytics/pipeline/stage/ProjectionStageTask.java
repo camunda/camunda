@@ -8,7 +8,9 @@
 package io.camunda.analytics.pipeline.stage;
 
 import io.camunda.analytics.aggregation.CubeMeterProcessor;
+import io.camunda.analytics.aggregation.EnvelopePublisher;
 import io.camunda.analytics.aggregation.ForwardingSegmentSink;
+import io.camunda.analytics.aggregation.ShuffleSinkProcessor;
 import io.camunda.analytics.dataset.ActiveCube;
 import io.camunda.analytics.dataset.ActiveTable;
 import io.camunda.analytics.dataset.CompiledMeter;
@@ -22,6 +24,8 @@ import io.camunda.analytics.projection.SourceRecord;
 import io.camunda.analytics.serving.spi.DatasetStore;
 import io.camunda.analytics.serving.spi.DatasetWriter;
 import io.camunda.analytics.state.StateBackedProjectionState;
+import io.camunda.analytics.table.ProcessDefinitionSink;
+import io.camunda.analytics.table.TableRowProcessor;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.streaming.Task;
 import io.camunda.eventbridge.streaming.aggregate.SegmentSealingAggregation;

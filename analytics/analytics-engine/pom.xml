@@ -31,6 +31,12 @@
       <artifactId>analytics-model</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <!-- The serving write SPI (DatasetWriter) the terminal sink/table nodes upsert results through -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>analytics-serving</artifactId>
+      <version>${project.version}</version>
+    </dependency>
     <!-- The streaming framework: state stores (KeyValueStore, RocksDb/InMemory/WriteBack) live here,
          bundled with the runtime like Kafka Streams bundles its state stores. -->
     <dependency>

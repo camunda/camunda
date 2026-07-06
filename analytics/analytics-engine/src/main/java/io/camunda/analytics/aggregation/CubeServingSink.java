@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.analytics.pipeline.stage;
+package io.camunda.analytics.aggregation;
 
 import io.camunda.analytics.dataset.CompiledDataset;
 import io.camunda.analytics.dimension.DimensionKey;

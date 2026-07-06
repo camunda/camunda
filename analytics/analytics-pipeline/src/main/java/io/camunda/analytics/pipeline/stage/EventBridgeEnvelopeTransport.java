@@ -7,6 +7,7 @@
  */
 package io.camunda.analytics.pipeline.stage;
 
+import io.camunda.analytics.aggregation.EnvelopeTransport;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.client.EventBridgeClient.BatchPublisher;
 import java.util.ArrayList;
