@@ -38,7 +38,7 @@ public class AgentHistoryEntityTransformer
         source.getTenantId(),
         source.getJobKey(),
         source.getJobLease(),
-        source.getIteration(),
+        source.getLoopIteration(),
         toRole(source.getRole()),
         toContent(source.getContent()),
         toToolCalls(source.getToolCalls()),

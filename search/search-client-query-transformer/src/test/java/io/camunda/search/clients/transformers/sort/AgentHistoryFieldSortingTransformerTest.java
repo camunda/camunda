@@ -28,7 +28,8 @@ class AgentHistoryFieldSortingTransformerTest extends AbstractSortTransformerTes
   private static Stream<Arguments> provideSortParameters() {
     return Stream.of(
         new TestArguments(AgentHistoryTemplate.KEY, SortOrder.DESC, s -> s.historyItemKey().desc()),
-        new TestArguments(AgentHistoryTemplate.ITERATION, SortOrder.ASC, s -> s.iteration().asc()),
+        new TestArguments(
+            AgentHistoryTemplate.LOOP_ITERATION, SortOrder.ASC, s -> s.loopIteration().asc()),
         new TestArguments(
             AgentHistoryTemplate.PRODUCED_AT, SortOrder.DESC, s -> s.producedAt().desc()));
   }

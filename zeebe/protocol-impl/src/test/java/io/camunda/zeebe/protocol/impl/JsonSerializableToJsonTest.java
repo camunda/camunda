@@ -5010,7 +5010,7 @@ final class JsonSerializableToJsonTest {
                       .setElementInstanceKey(2251799813685249L)
                       .setJobKey(2251799813685252L)
                       .setJobLease("job-lease-abc123")
-                      .setIteration(3)
+                      .setLoopIteration(3)
                       .setRole(AgentHistoryRole.ASSISTANT)
                       .setProducedAt(1748860800000L)
                       .setBpmnProcessId("process");
@@ -5066,7 +5066,7 @@ final class JsonSerializableToJsonTest {
           "elementInstanceKey": 2251799813685249,
           "jobKey": 2251799813685252,
           "jobLease": "job-lease-abc123",
-          "iteration": 3,
+          "loopIteration": 3,
           "role": "ASSISTANT",
           "producedAt": 1748860800000,
           "content": [
@@ -5150,7 +5150,7 @@ final class JsonSerializableToJsonTest {
           "elementInstanceKey": -1,
           "jobKey": -1,
           "jobLease": "",
-          "iteration": 0,
+          "loopIteration": 0,
           "role": "UNSPECIFIED",
           "producedAt": -1,
           "content": [
@@ -5205,7 +5205,7 @@ final class JsonSerializableToJsonTest {
           "elementInstanceKey": -1,
           "jobKey": -1,
           "jobLease": "",
-          "iteration": 0,
+          "loopIteration": 0,
           "role": "UNSPECIFIED",
           "producedAt": -1,
           "content": [],

@@ -37,7 +37,7 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty jobKeyProp = new LongProperty("jobKey", -1L);
   private final StringProperty jobLeaseProp = new StringProperty("jobLease", "");
-  private final IntegerProperty iterationProp = new IntegerProperty("iteration", 0);
+  private final IntegerProperty loopIterationProp = new IntegerProperty("loopIteration", 0);
   private final EnumProperty<AgentHistoryRole> roleProp =
       new EnumProperty<>("role", AgentHistoryRole.class, AgentHistoryRole.UNSPECIFIED);
   private final LongProperty producedAtProp = new LongProperty("producedAt", -1L);
@@ -60,7 +60,7 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
         .declareProperty(tenantIdProp)
         .declareProperty(jobKeyProp)
         .declareProperty(jobLeaseProp)
-        .declareProperty(iterationProp)
+        .declareProperty(loopIterationProp)
         .declareProperty(roleProp)
         .declareProperty(producedAtProp)
         .declareProperty(contentProp)
@@ -169,12 +169,12 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
   }
 
   @Override
-  public int getIteration() {
-    return iterationProp.getValue();
+  public int getLoopIteration() {
+    return loopIterationProp.getValue();
   }
 
-  public AgentHistoryRecord setIteration(final int iteration) {
-    iterationProp.setValue(iteration);
+  public AgentHistoryRecord setLoopIteration(final int loopIteration) {
+    loopIterationProp.setValue(loopIteration);
     return this;
   }
 

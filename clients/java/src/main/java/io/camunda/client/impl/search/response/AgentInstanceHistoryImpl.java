@@ -48,7 +48,7 @@ public class AgentInstanceHistoryImpl implements AgentInstanceHistory {
   private final long elementInstanceKey;
   private final long jobKey;
   private final String jobLease;
-  private final Integer iteration;
+  private final Integer loopIteration;
   private final AgentInstanceHistoryRole role;
   private final List<AgentInstanceHistoryContent> content;
   private final List<AgentInstanceHistoryToolCall> toolCalls;
@@ -62,7 +62,7 @@ public class AgentInstanceHistoryImpl implements AgentInstanceHistory {
     elementInstanceKey = Long.parseLong(result.getElementInstanceKey());
     jobKey = Long.parseLong(result.getJobKey());
     jobLease = result.getJobLease();
-    iteration = result.getIteration();
+    loopIteration = result.getLoopIteration();
     role = EnumUtil.convert(result.getRole(), AgentInstanceHistoryRole.class);
     content =
         result.getContent() != null
@@ -108,8 +108,8 @@ public class AgentInstanceHistoryImpl implements AgentInstanceHistory {
   }
 
   @Override
-  public Integer getIteration() {
-    return iteration;
+  public Integer getLoopIteration() {
+    return loopIteration;
   }
 
   @Override

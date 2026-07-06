@@ -105,12 +105,12 @@ public interface CreateAgentHistoryItemCommandStep1 {
     CreateAgentHistoryItemFinalCommandStep jobLease(String jobLease);
 
     /**
-     * Sets the sequential iteration number this item belongs to.
+     * Sets the sequential loopIteration number this item belongs to.
      *
-     * @param iteration the iteration number.
+     * @param loopIteration the loopIteration number.
      * @return this builder for method chaining
      */
-    CreateAgentHistoryItemFinalCommandStep iteration(int iteration);
+    CreateAgentHistoryItemFinalCommandStep loopIteration(int loopIteration);
 
     /**
      * Sets the tool calls associated with this history item.

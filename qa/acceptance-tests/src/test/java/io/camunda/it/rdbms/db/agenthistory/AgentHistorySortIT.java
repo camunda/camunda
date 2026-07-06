@@ -50,19 +50,19 @@ public class AgentHistorySortIT {
   }
 
   @TestTemplate
-  public void shouldSortByIterationAsc(final CamundaRdbmsTestApplication testApplication) {
-    testSortingWithDistinctIterations(
+  public void shouldSortByLoopIterationAsc(final CamundaRdbmsTestApplication testApplication) {
+    testSortingWithDistinctLoopIterations(
         testApplication,
-        b -> b.iteration().asc(),
-        Comparator.comparingInt(AgentInstanceHistoryEntity::iteration));
+        b -> b.loopIteration().asc(),
+        Comparator.comparingInt(AgentInstanceHistoryEntity::loopIteration));
   }
 
   @TestTemplate
-  public void shouldSortByIterationDesc(final CamundaRdbmsTestApplication testApplication) {
-    testSortingWithDistinctIterations(
+  public void shouldSortByLoopIterationDesc(final CamundaRdbmsTestApplication testApplication) {
+    testSortingWithDistinctLoopIterations(
         testApplication,
-        b -> b.iteration().desc(),
-        Comparator.comparingInt(AgentInstanceHistoryEntity::iteration).reversed());
+        b -> b.loopIteration().desc(),
+        Comparator.comparingInt(AgentInstanceHistoryEntity::loopIteration).reversed());
   }
 
   @TestTemplate
@@ -96,7 +96,7 @@ public class AgentHistorySortIT {
     assertThat(items).isSortedAccordingTo(comparator);
   }
 
-  private void testSortingWithDistinctIterations(
+  private void testSortingWithDistinctLoopIterations(
       final CamundaRdbmsTestApplication testApplication,
       final Function<Builder, ObjectBuilder<AgentInstanceHistorySort>> sortBuilder,
       final Comparator<AgentInstanceHistoryEntity> comparator) {
@@ -104,14 +104,14 @@ public class AgentHistorySortIT {
     final String procDefId = "proc-iter-sort-" + nextStringId();
 
     for (int i = 1; i <= 5; i++) {
-      final int iteration = i;
+      final int loopIteration = i;
       createAndSaveRandomAgentHistoryItems(
           testApplication,
           1,
           b ->
               b.agentInstanceKey(agentInstanceKey)
                   .processDefinitionId(procDefId)
-                  .iteration(iteration));
+                  .loopIteration(loopIteration));
     }
 
     final var items = search(testApplication, agentInstanceKey, sortBuilder);

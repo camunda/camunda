@@ -30,7 +30,7 @@ public class AgentHistoryEntityMapper {
         dbModel.tenantId(),
         dbModel.jobKey(),
         nullToEmpty(dbModel.jobLease()),
-        dbModel.iteration(),
+        dbModel.loopIteration(),
         dbModel.role(),
         dbModel.contentItems() != null ? dbModel.contentItems() : List.of(),
         dbModel.toolCallValues() != null ? dbModel.toolCallValues() : List.of(),

@@ -31,7 +31,7 @@ public record AgentInstanceHistoryEntity(
     String tenantId,
     Long jobKey,
     String jobLease,
-    @Nullable Integer iteration,
+    @Nullable Integer loopIteration,
     AgentInstanceHistoryRole role,
     List<ContentItem> content,
     List<ToolCall> toolCalls,

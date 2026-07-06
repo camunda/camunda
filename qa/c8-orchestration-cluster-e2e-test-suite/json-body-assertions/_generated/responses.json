@@ -442,7 +442,7 @@
                   "type": "string"
                 },
                 {
-                  "name": "iteration",
+                  "name": "loopIteration",
                   "type": "number",
                   "nullable": true
                 },

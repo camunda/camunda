@@ -563,7 +563,7 @@ public class CompactRecordLogger {
     result
         .append(shortenKey(value.getAgentInstanceKey()))
         .append("#")
-        .append(value.getIteration())
+        .append(value.getLoopIteration())
         .append(" ")
         .append(value.getRole())
         .append(" @")

@@ -96,7 +96,7 @@ public class AgentHistoryHandler
         .setTenantId(value.getTenantId())
         .setJobKey(value.getJobKey())
         .setJobLease(value.getJobLease())
-        .setIteration(ExporterUtil.positiveOrNull(value.getIteration()))
+        .setLoopIteration(ExporterUtil.positiveOrNull(value.getLoopIteration()))
         .setRole(mapRole(value.getRole()))
         .setCommitStatus(mapCommitStatusFromIntent(intent))
         .setProducedAt(

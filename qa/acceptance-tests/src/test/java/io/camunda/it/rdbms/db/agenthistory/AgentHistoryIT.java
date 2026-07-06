@@ -166,7 +166,7 @@ public class AgentHistoryIT {
     assertThat(entity.processDefinitionId()).isEqualTo(dbModel.processDefinitionId());
     assertThat(entity.tenantId()).isEqualTo(dbModel.tenantId());
     assertThat(entity.jobKey()).isEqualTo(dbModel.jobKey());
-    assertThat(entity.iteration()).isEqualTo(dbModel.iteration());
+    assertThat(entity.loopIteration()).isEqualTo(dbModel.loopIteration());
     assertThat(entity.role()).isEqualTo(dbModel.role());
     assertThat(entity.commitStatus()).isEqualTo(dbModel.commitStatus());
     assertThat(entity.metrics().inputTokens()).isEqualTo(dbModel.inputTokens());

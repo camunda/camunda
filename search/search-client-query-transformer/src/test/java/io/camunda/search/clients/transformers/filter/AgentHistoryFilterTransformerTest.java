@@ -112,9 +112,9 @@ class AgentHistoryFilterTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
-  void shouldQueryByIteration() {
+  void shouldQueryByLoopIteration() {
     // given
-    final var filter = FilterBuilders.agentInstanceHistory(f -> f.iterations(3));
+    final var filter = FilterBuilders.agentInstanceHistory(f -> f.loopIterations(3));
 
     // when
     final var searchRequest = transformQuery(filter);
@@ -124,7 +124,7 @@ class AgentHistoryFilterTransformerTest extends AbstractTransformerTest {
         .isInstanceOfSatisfying(
             SearchTermQuery.class,
             t -> {
-              assertThat(t.field()).isEqualTo("iteration");
+              assertThat(t.field()).isEqualTo("loopIteration");
               assertThat(t.value().intValue()).isEqualTo(3);
             });
   }
@@ -180,7 +180,7 @@ class AgentHistoryFilterTransformerTest extends AbstractTransformerTest {
                     .roles(AgentInstanceHistoryRole.USER)
                     .elementInstanceKeys(200L)
                     .jobKeys(300L)
-                    .iterations(2)
+                    .loopIterations(2)
                     .commitStatuses(AgentInstanceHistoryCommitStatus.PENDING)
                     .producedAtOperations(
                         Operation.eq(OffsetDateTime.parse("2024-06-01T00:00:00Z"))));

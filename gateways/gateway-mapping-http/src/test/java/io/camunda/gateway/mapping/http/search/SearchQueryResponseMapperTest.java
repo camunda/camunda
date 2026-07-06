@@ -1249,7 +1249,7 @@ class SearchQueryResponseMapperTest {
       assertThat(result.getElementInstanceKey()).isEqualTo("300");
       assertThat(result.getJobKey()).isEqualTo("600");
       assertThat(result.getJobLease()).isEqualTo("lease-1");
-      assertThat(result.getIteration()).isEqualTo(3);
+      assertThat(result.getLoopIteration()).isEqualTo(3);
       assertThat(result.getRole().getValue()).isEqualTo("USER");
       assertThat(result.getCommitStatus().getValue()).isEqualTo("COMMITTED");
       assertThat(result.getMetrics().getInputTokens()).isEqualTo(10);
