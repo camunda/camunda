@@ -10,6 +10,7 @@ package io.camunda.analytics.store.document;
 import io.camunda.analytics.meter.MeterIdStore;
 import io.camunda.analytics.serving.spi.DatasetSpecStore;
 import io.camunda.analytics.serving.spi.MetadataStore;
+import io.camunda.analytics.serving.spi.ReportSpecStore;
 import io.camunda.search.clients.DocumentBasedSchemaClient;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.DocumentBasedWriteClient;
@@ -24,11 +25,13 @@ import io.camunda.search.clients.DocumentBasedWriteClient;
 public final class DocumentMetadataStore implements MetadataStore {
 
   static final String SPEC_INDEX = "analytics-dataset-spec";
+  static final String REPORT_SPEC_INDEX = "analytics-report-spec";
   static final String METER_ID_INDEX = "analytics-meter-id";
 
   private final DocumentBasedSearchClient searchClient;
   private final DocumentBasedSchemaClient schemaClient;
   private final DatasetSpecStore datasetSpecStore;
+  private final ReportSpecStore reportSpecStore;
   private final MeterIdStore meterIdStore;
 
   public DocumentMetadataStore(
@@ -38,12 +41,16 @@ public final class DocumentMetadataStore implements MetadataStore {
     this.searchClient = searchClient;
     this.schemaClient = schemaClient;
     this.datasetSpecStore = new DocumentDatasetSpecStore(searchClient, writeClient, SPEC_INDEX);
+    this.reportSpecStore =
+        new DocumentReportSpecStore(searchClient, writeClient, REPORT_SPEC_INDEX);
     this.meterIdStore = new DocumentMeterIdStore(searchClient, writeClient, METER_ID_INDEX);
   }
 
   @Override
   public void migrate() {
     schemaClient.createIndex(SPEC_INDEX, DocumentMappings.load(DocumentMappings.DATASET_SPEC));
+    schemaClient.createIndex(
+        REPORT_SPEC_INDEX, DocumentMappings.load(DocumentMappings.REPORT_SPEC));
     schemaClient.createIndex(METER_ID_INDEX, DocumentMappings.load(DocumentMappings.METER_ID));
   }
 
@@ -55,6 +62,11 @@ public final class DocumentMetadataStore implements MetadataStore {
   @Override
   public DatasetSpecStore datasetSpecStore() {
     return datasetSpecStore;
+  }
+
+  @Override
+  public ReportSpecStore reportSpecStore() {
+    return reportSpecStore;
   }
 
   @Override

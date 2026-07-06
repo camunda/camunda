@@ -13,13 +13,18 @@ import static org.assertj.core.api.Assertions.entry;
 import io.camunda.analytics.dataset.DatasetDeclaration;
 import io.camunda.analytics.dataset.DatasetKind;
 import io.camunda.analytics.dataset.DatasetRegistry;
+import io.camunda.analytics.dataset.FilterPredicate;
 import io.camunda.analytics.dataset.RegisteredDataset;
 import io.camunda.analytics.dimension.DimensionType;
 import io.camunda.analytics.fact.FactType;
 import io.camunda.analytics.meter.Meter;
 import io.camunda.analytics.meter.MeterKey;
+import io.camunda.analytics.report.Combination;
+import io.camunda.analytics.report.ReportDefinition;
+import io.camunda.analytics.report.ReportSource;
 import io.camunda.analytics.serving.spi.DatasetSpecQuery;
 import io.camunda.analytics.serving.spi.MetadataStore;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.h2.jdbcx.JdbcDataSource;
@@ -93,6 +98,47 @@ final class AnalyticsMetadataStoreTest {
         .containsExactly(raw);
     assertThat(store.datasetSpecStore().search(DatasetSpecQuery.byKind(DatasetKind.TABLE)))
         .containsExactly(raw);
+  }
+
+  @Test
+  void shouldRoundTripReportSpecs() {
+    // given a multi-dataset report over two sources (each with meters + a local filter)
+    final ReportDefinition report =
+        new ReportDefinition(
+            0L, // ignored: the store allocates the reportId
+            "throughput-vs-incidents",
+            List.of(
+                new ReportSource(
+                    "process-instances",
+                    List.of("count"),
+                    List.of(FilterPredicate.equals("transition", "COMPLETED"))),
+                new ReportSource("incident-open", List.of("open"), List.of())),
+            List.of("bpmnProcessId"),
+            60_000L,
+            Combination.UNION,
+            "bar");
+
+    // when persisted
+    store.reportSpecStore().create(report);
+
+    // then it is stored under an allocated reportId and round-trips via read/search
+    final List<ReportDefinition> all = store.reportSpecStore().search();
+    assertThat(all).hasSize(1);
+    final ReportDefinition stored = all.get(0);
+    assertThat(stored.reportId()).isEqualTo(1L);
+    assertThat(stored).usingRecursiveComparison().ignoringFields("reportId").isEqualTo(report);
+    assertThat(store.reportSpecStore().read(1L)).contains(stored);
+    assertThat(store.reportSpecStore().read(999L)).isEmpty();
+
+    // and a second report gets the next id
+    store.reportSpecStore().create(report);
+    assertThat(store.reportSpecStore().search()).hasSize(2);
+    assertThat(store.reportSpecStore().read(2L)).isPresent();
+
+    // and delete removes only the addressed report
+    store.reportSpecStore().delete(1L);
+    assertThat(store.reportSpecStore().read(1L)).isEmpty();
+    assertThat(store.reportSpecStore().search()).hasSize(1);
   }
 
   @Test

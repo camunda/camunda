@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.camunda.analytics.store.rdbms.metadata.ReportSpecMapper">
+
+  <select id="maxReportId" resultType="long">
+    SELECT COALESCE(MAX(REPORT_ID), 0) FROM ANALYTICS_REPORT_SPEC
+  </select>
+
+  <select id="selectAll" resultType="io.camunda.analytics.store.rdbms.metadata.row.ReportSpecRow">
+    SELECT REPORT_ID, NAME, SPEC FROM ANALYTICS_REPORT_SPEC ORDER BY REPORT_ID
+  </select>
+
+  <select id="selectReportById" resultType="io.camunda.analytics.store.rdbms.metadata.row.ReportSpecRow">
+    SELECT REPORT_ID, NAME, SPEC FROM ANALYTICS_REPORT_SPEC WHERE REPORT_ID = #{reportId}
+  </select>
+
+  <insert id="insertReport" parameterType="io.camunda.analytics.store.rdbms.metadata.row.ReportSpecRow">
+    INSERT INTO ANALYTICS_REPORT_SPEC (REPORT_ID, NAME, SPEC)
+    VALUES (#{reportId}, #{name}, #{spec})
+  </insert>
+
+  <delete id="deleteReport">
+    DELETE FROM ANALYTICS_REPORT_SPEC WHERE REPORT_ID = #{reportId}
+  </delete>
+</mapper>

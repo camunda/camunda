@@ -1,0 +1,7 @@
+{
+  "dynamic": false,
+  "properties": {
+    "reportId": { "type": "long" },
+    "name": { "type": "keyword" }
+  }
+}

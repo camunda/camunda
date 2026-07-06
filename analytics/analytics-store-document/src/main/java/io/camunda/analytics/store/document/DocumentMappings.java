@@ -19,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 final class DocumentMappings {
 
   static final String DATASET_SPEC = "mappings/analytics-dataset-spec.json";
+  static final String REPORT_SPEC = "mappings/analytics-report-spec.json";
   static final String METER_ID = "mappings/analytics-meter-id.json";
 
   private DocumentMappings() {}

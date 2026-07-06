@@ -10,6 +10,7 @@ package io.camunda.analytics.store.rdbms.metadata;
 import io.camunda.analytics.meter.MeterIdStore;
 import io.camunda.analytics.serving.spi.DatasetSpecStore;
 import io.camunda.analytics.serving.spi.MetadataStore;
+import io.camunda.analytics.serving.spi.ReportSpecStore;
 import javax.sql.DataSource;
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.session.Configuration;
@@ -29,6 +30,7 @@ public final class RdbmsMetadataStore implements MetadataStore {
   private final AnalyticsMetadataSchema schema;
   private final MeterIdStore meterIdStore;
   private final DatasetSpecStore datasetSpecStore;
+  private final ReportSpecStore reportSpecStore;
 
   public RdbmsMetadataStore(final DataSource dataSource) {
     this.schema = new AnalyticsMetadataSchema(dataSource);
@@ -40,9 +42,11 @@ public final class RdbmsMetadataStore implements MetadataStore {
     configuration.setMapUnderscoreToCamelCase(true);
     configuration.addMapper(MeterIdMapper.class);
     configuration.addMapper(DatasetSpecMapper.class);
+    configuration.addMapper(ReportSpecMapper.class);
     final SqlSessionFactory sessionFactory = new SqlSessionFactoryBuilder().build(configuration);
     this.meterIdStore = new RdbmsMeterIdStore(sessionFactory);
     this.datasetSpecStore = new RdbmsDatasetSpecStore(sessionFactory);
+    this.reportSpecStore = new RdbmsReportSpecStore(sessionFactory);
   }
 
   @Override
@@ -58,6 +62,11 @@ public final class RdbmsMetadataStore implements MetadataStore {
   @Override
   public DatasetSpecStore datasetSpecStore() {
     return datasetSpecStore;
+  }
+
+  @Override
+  public ReportSpecStore reportSpecStore() {
+    return reportSpecStore;
   }
 
   @Override

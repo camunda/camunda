@@ -24,6 +24,16 @@
     </createTable>
   </changeSet>
 
+  <changeSet id="8.10.0-analytics-report-spec" author="camunda">
+    <createTable tableName="ANALYTICS_REPORT_SPEC">
+      <column name="REPORT_ID" type="BIGINT"><constraints primaryKey="true" nullable="false"/></column>
+      <column name="NAME" type="VARCHAR(255)"><constraints nullable="false"/></column>
+      <!-- The full ReportDefinition as JSON: the report is small, config-like and read wholesale, so
+           it is stored as an opaque document; only the columns above are searched. -->
+      <column name="SPEC" type="CLOB"><constraints nullable="false"/></column>
+    </createTable>
+  </changeSet>
+
   <changeSet id="8.10.0-analytics-meter-id" author="camunda">
     <createTable tableName="ANALYTICS_METER_ID">
       <column name="CUBE_ID" type="BIGINT"><constraints primaryKey="true" nullable="false"/></column>

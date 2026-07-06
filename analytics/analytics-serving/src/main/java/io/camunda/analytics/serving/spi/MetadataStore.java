@@ -12,10 +12,10 @@ import io.camunda.analytics.meter.MeterIdStore;
 /**
  * One backend's <b>metadata plane</b>: the durable home of the control-plane state, bundling its
  * seams the way {@link DatasetStore} bundles the serving seams. {@link #migrate()} provisions the
- * fixed metadata schema; {@link #meterIdStore()} and {@link #datasetSpecStore()} expose the stable
- * {@code aggId} allocations and the dataset specs. A backend module provides one implementation;
- * selection lives in the wiring layer, keeping this engine module backend-neutral (no {@code
- * DataSource} or SQL leaks through the SPI).
+ * fixed metadata schema; {@link #meterIdStore()}, {@link #datasetSpecStore()}, and {@link
+ * #reportSpecStore()} expose the stable {@code aggId} allocations, the dataset specs, and the saved
+ * report specs. A backend module provides one implementation; selection lives in the wiring layer,
+ * keeping this engine module backend-neutral (no {@code DataSource} or SQL leaks through the SPI).
  */
 public interface MetadataStore extends AutoCloseable {
 
@@ -25,6 +25,8 @@ public interface MetadataStore extends AutoCloseable {
   MeterIdStore meterIdStore();
 
   DatasetSpecStore datasetSpecStore();
+
+  ReportSpecStore reportSpecStore();
 
   @Override
   void close();
