@@ -13,9 +13,6 @@ on:
 permissions:
   contents: read
 
-env:
-  TEST_OWNER: '@camunda/test-automation-team'
-
 jobs:
   nightly-api-tests-es:
     uses: ./.github/workflows/c8-orchestration-cluster-reusable-api-tests.yml
