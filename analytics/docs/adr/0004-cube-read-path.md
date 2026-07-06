@@ -251,9 +251,19 @@ layer, backends can land independently.
 - **`DIRECT` fast path + `<meter>_value`:** matching-granularity reads fetch a stored value and skip
   the merge for *all* meter classes (see Layer B, Three read strategies).
 
+## Notes for Layer B (from the meter model)
+
+- The pushdown capability attaches to **`MeterType`** (which already knows its merge semantics —
+  additive / mergeable-sketch / ratio). A type is pushable only if its *entire* accumulator
+  decomposes into numeric columns, so the contract is a pair: **decompose** `ACC → column values`
+  (for the writer) and **recompose** `SQL-aggregated columns → OUT` (for the read).
+- Accumulators are not all single-column: `count`/`sum`/`level` → one column; `ratio` → two
+  (`matched_`, `total_`), both `SUM`; `execution_time` → `count_`/`total_`/`max_` (SUM/SUM/MAX).
+- **Summary meters** (`execution_time_summary`, `lifecycle_summary`) bundle sub-measures; if one is
+  a sketch (percentiles) the whole meter is **not** pushable and stays `STREAM_MERGE`. Only wholly
+  additive types get a `PushdownSpec`; everything else keeps the blob + `_value` path.
+
 ## Open questions
 
-- **avg encoding today:** confirm the current `avg` accumulator already carries sum+count so Layer B
-  can split it into two columns without a fact re-fold; otherwise the writer computes them.
 - **H2 in tests vs Postgres partitioning:** Layer C is exercised only against Postgres; H2 tests
   cover the index path. Decide whether to add a Postgres Testcontainers suite for C.
