@@ -16,9 +16,10 @@ import java.util.Objects;
  * duration lambda) — the measured field is data, not code.
  *
  * <p>Null policy: a missing/{@code null} numeric field reads as {@code 0} and a missing string
- * field reads as {@code null} (which the distinct/top-k sketches already ignore). Robust
- * absent-value filtering is a later concern; a meter's measure is expected present on the facts it
- * consumes.
+ * field reads as {@code null} (which the distinct/top-k sketches already ignore). A boolean field
+ * reads as {@code 1}/{@code 0} so a ratio can measure it (e.g. the no-incident share is {@code
+ * hadIncident == 0}). Robust absent-value filtering is a later concern; a meter's measure is
+ * expected present on the facts it consumes.
  */
 public record MeasureRef(String field) {
 
@@ -27,11 +28,19 @@ public record MeasureRef(String field) {
   }
 
   public long asLong(final FactRow fact) {
-    return fact.get(field) instanceof final Number number ? number.longValue() : 0L;
+    final Object value = fact.get(field);
+    if (value instanceof final Number number) {
+      return number.longValue();
+    }
+    return value instanceof final Boolean flag && flag ? 1L : 0L;
   }
 
   public double asDouble(final FactRow fact) {
-    return fact.get(field) instanceof final Number number ? number.doubleValue() : 0.0;
+    final Object value = fact.get(field);
+    if (value instanceof final Number number) {
+      return number.doubleValue();
+    }
+    return value instanceof final Boolean flag && flag ? 1.0 : 0.0;
   }
 
   public String asString(final FactRow fact) {

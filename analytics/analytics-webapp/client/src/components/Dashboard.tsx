@@ -77,7 +77,7 @@ export function Dashboard({ process, tenant, range }: DashboardProps) {
     Promise.all([
       api.durationPercentiles(process, range),
       api.durationSummary(process, range),
-      api.ratios(process, "sla_met", range),
+      api.ratios(process, "sla_compliance", range),
       api.slaCohorts(process, range),
       api.ratios(process, "no_incident", range),
       api.distinct(tenant, range),

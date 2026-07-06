@@ -119,6 +119,11 @@ public record DatasetDeclaration(
       return this;
     }
 
+    public Builder filterNotEquals(final String field, final String value) {
+      filters.add(FilterPredicate.notEquals(field, value));
+      return this;
+    }
+
     public Builder filterEquals(final String field, final String value) {
       filters.add(FilterPredicate.equals(field, value));
       return this;

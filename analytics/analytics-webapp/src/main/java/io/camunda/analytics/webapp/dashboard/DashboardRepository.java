@@ -143,29 +143,45 @@ public class DashboardRepository {
         Math.round(q.valueAt(0.99)));
   }
 
-  /** The per-window ratio series for a process and metric. */
+  /**
+   * The per-window ratio series for a process, keyed by the declared ratio meter name (e.g. {@code
+   * sla_compliance}, {@code no_incident}). The owning dataset is resolved from the catalog rather
+   * than hard-coded, so any ratio meter a declaration adds is served without touching this class.
+   */
   public List<RatioPoint> ratios(
-      final String bpmnProcessId, final String metric, final Long fromWindow, final Long toWindow) {
-    // Only the SLA-compliance cohort is a declared dataset; other ratios (e.g. no_incident) have no
-    // cube yet, so they read as empty until one is declared.
-    if (!"sla_met".equals(metric)) {
+      final String bpmnProcessId, final String meter, final Long fromWindow, final Long toWindow) {
+    final CompiledDataset dataset = datasetWithMeter(meter);
+    if (dataset == null) {
       return List.of();
     }
     final List<RatioPoint> out = new ArrayList<>();
     for (final ReportRow row :
         series(
-            "process-sla",
+            dataset.name(),
             List.of(),
             fromWindow,
             toWindow,
             List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
-            List.of("sla_compliance"))) {
-      final RatioResult r = (RatioResult) row.measures().get("sla_compliance");
-      out.add(
-          new RatioPoint(row.windowStart(), r.matched(), r.total(), r.ratio(), r.ratio(), false));
+            List.of(meter))) {
+      if (row.measures().get(meter) instanceof final RatioResult r) {
+        out.add(
+            new RatioPoint(row.windowStart(), r.matched(), r.total(), r.ratio(), r.ratio(), false));
+      }
     }
     out.sort(Comparator.comparingLong(RatioPoint::windowStart));
     return out;
+  }
+
+  /** The declared dataset that owns a meter of the given name, or {@code null} if none does. */
+  private CompiledDataset datasetWithMeter(final String meter) {
+    for (final CompiledDataset dataset : catalog.byName().values()) {
+      for (final CompiledMeter compiled : dataset.meters()) {
+        if (compiled.meterName().equals(meter)) {
+          return dataset;
+        }
+      }
+    }
+    return null;
   }
 
   /** The per-window distinct-process estimate for a tenant. */
@@ -327,7 +343,7 @@ public class DashboardRepository {
     // A forward-looking start cohort (with a still-open, maturing split) is not modeled; this
     // derives the settled met/breached split from the completion-based SLA ratio.
     final List<SlaCohortPoint> out = new ArrayList<>();
-    for (final RatioPoint p : ratios(bpmnProcessId, "sla_met", fromWindow, toWindow)) {
+    for (final RatioPoint p : ratios(bpmnProcessId, "sla_compliance", fromWindow, toWindow)) {
       out.add(
           new SlaCohortPoint(
               p.windowStart(), p.total(), p.matched(), p.total() - p.matched(), 0L, false));

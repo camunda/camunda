@@ -85,10 +85,12 @@ public final class CubeMeterProcessor implements Processor<Fact, SegmentCell> {
   private boolean matchesFilters(final Fact fact) {
     for (final FilterPredicate filter : filters) {
       final Object value = fact.get(filter.field());
+      final boolean equal = value != null && String.valueOf(value).equals(filter.value());
       final boolean matches =
-          filter.operator() == FilterPredicate.Operator.EQUALS
-              && value != null
-              && String.valueOf(value).equals(filter.value());
+          switch (filter.operator()) {
+            case EQUALS -> equal;
+            case NOT_EQUALS -> !equal;
+          };
       if (!matches) {
         return false;
       }

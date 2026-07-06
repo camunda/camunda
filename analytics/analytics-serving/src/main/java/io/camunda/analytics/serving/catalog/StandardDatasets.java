@@ -44,7 +44,11 @@ public final class StandardDatasets {
 
   private static final long ONE_MINUTE_MS = 60_000L;
   private static final long ONE_HOUR_MS = 3_600_000L;
-  private static final long SLA_THRESHOLD_MS = 300_000L;
+  // The completion-time SLA the process-sla cohort measures against (durationMs <= threshold).
+  // Read from the {@code slaMs} property so the deployment picks it; the 9s default matches the
+  // demo driver, whose deliberately-slow instances run 10-16s to breach it (a 5-minute default
+  // would never be exceeded, showing a misleading 100%-met cohort).
+  private static final long SLA_THRESHOLD_MS = Long.getLong("slaMs", 9_000L);
 
   /**
    * Allowed lateness (grace) for every windowed dataset. The merging aggregation drops a segment
@@ -199,6 +203,23 @@ public final class StandardDatasets {
             .dimension("bpmnProcessId", DimensionType.STRING)
             .dimension("elementId", DimensionType.STRING)
             .meter(Meter.of("open", MeterCatalog.LEVEL, "delta"))
+            .window(ONE_MINUTE_MS)
+            .lateness(GRACE_MS)
+            .build(),
+        // No-incident share of ENDED instances per process definition (a ratio cohort): the matched
+        // numerator is ended instances that raised no incident (hadIncident == 0). Ended means
+        // completed OR terminated (transition != ACTIVATED) — a faulted instance is cancelled and
+        // terminates, so restricting to COMPLETED would drop exactly the ones that had an incident
+        // and make the ratio a trivial 100%.
+        DatasetDeclaration.builder("process-no-incident", FactType.PROCESS_INSTANCE)
+            .filterNotEquals("transition", Transition.ACTIVATED.name())
+            .dimension("bpmnProcessId", DimensionType.STRING)
+            .meter(
+                new Meter(
+                    "no_incident",
+                    MeterCatalog.RATIO,
+                    "hadIncident",
+                    Map.of("op", "eq", "threshold", "0")))
             .window(ONE_MINUTE_MS)
             .lateness(GRACE_MS)
             .build());

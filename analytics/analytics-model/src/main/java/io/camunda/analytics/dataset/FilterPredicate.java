@@ -18,7 +18,8 @@ import java.util.Objects;
 public record FilterPredicate(String field, Operator operator, String value) {
 
   public enum Operator {
-    EQUALS
+    EQUALS,
+    NOT_EQUALS
   }
 
   public FilterPredicate {
@@ -32,5 +33,9 @@ public record FilterPredicate(String field, Operator operator, String value) {
 
   public static FilterPredicate equals(final String field, final String value) {
     return new FilterPredicate(field, Operator.EQUALS, value);
+  }
+
+  public static FilterPredicate notEquals(final String field, final String value) {
+    return new FilterPredicate(field, Operator.NOT_EQUALS, value);
   }
 }

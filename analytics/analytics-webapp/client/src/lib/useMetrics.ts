@@ -55,7 +55,7 @@ export function useMetrics(
     Promise.all([
       api.durationPercentiles(process, range),
       api.durationSummary(process, range),
-      api.ratios(process, "sla_met", range),
+      api.ratios(process, "sla_compliance", range),
       api.slaCohorts(process, range),
       api.durationBuckets(process, range),
       api.ratios(process, "no_incident", range),
