@@ -76,7 +76,7 @@ public final class JobTimeOutTest {
   }
 
   @Test
-  public void shouldTimeOutAfterReprocessing() {
+  public void shouldTimeOutAfterReplay() {
     // given
     final long jobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
     final Duration timeout = Duration.ofSeconds(10);
