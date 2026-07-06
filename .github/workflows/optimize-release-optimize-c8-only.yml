@@ -3,8 +3,6 @@
 name: Optimize Release Camunda Optimize C8
 
 on:
-  schedule:
-    - cron: "0 0 * * 1-5"
   workflow_dispatch:
     inputs:
       RELEASE_VERSION:
