@@ -10,7 +10,7 @@ package io.camunda.configuration.physicaltenants;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.UnifiedConfigurationHelper;
-import io.camunda.security.api.model.config.AuthenticationConfiguration;
+import io.camunda.security.api.model.config.oidc.OidcProvidersConfiguration;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,11 +50,12 @@ class PhysicalTenantOidcProviderOverlayTest {
                     "root-client")));
 
     // when
-    final AuthenticationConfiguration auth =
-        PhysicalTenantAuthenticationConfigurations.forPhysicalTenant("tenanta", environment);
+    final OidcProvidersConfiguration providers =
+        PhysicalTenantAuthenticationProviderConfigurations.forPhysicalTenant(
+            "tenanta", environment);
 
     // then all root fields survive unchanged
-    final var provider = auth.getProviders().getOidc().get("tenanta");
+    final var provider = providers.getOidc().get("tenanta");
     assertThat(provider.getIssuerUri()).isEqualTo("http://localhost:8082/realms/tenanta");
     assertThat(provider.getUsernameClaim()).isEqualTo("preferred_username");
     assertThat(provider.getClientId()).isEqualTo("root-client");
@@ -89,11 +90,12 @@ class PhysicalTenantOidcProviderOverlayTest {
                     "pt-tenanta-aud")));
 
     // when
-    final AuthenticationConfiguration auth =
-        PhysicalTenantAuthenticationConfigurations.forPhysicalTenant("tenanta", environment);
+    final OidcProvidersConfiguration providers =
+        PhysicalTenantAuthenticationProviderConfigurations.forPhysicalTenant(
+            "tenanta", environment);
 
     // then root fields are preserved despite the PT overlay
-    final var provider = auth.getProviders().getOidc().get("tenanta");
+    final var provider = providers.getOidc().get("tenanta");
     assertThat(provider.getIssuerUri()).isEqualTo("http://localhost:8082/realms/tenanta");
     assertThat(provider.getUsernameClaim()).isEqualTo("preferred_username");
     assertThat(provider.getClientIdClaim()).isEqualTo("client_id");
@@ -122,36 +124,14 @@ class PhysicalTenantOidcProviderOverlayTest {
                     "private-client")));
 
     // when
-    final AuthenticationConfiguration auth =
-        PhysicalTenantAuthenticationConfigurations.forPhysicalTenant("tenanta", environment);
+    final OidcProvidersConfiguration providers =
+        PhysicalTenantAuthenticationProviderConfigurations.forPhysicalTenant(
+            "tenanta", environment);
 
     // then both root and PT-private providers are present
-    assertThat(auth.getProviders().getOidc()).containsKey("sharedprovider");
-    assertThat(auth.getProviders().getOidc()).containsKey("privateprovider");
-    assertThat(auth.getProviders().getOidc().get("privateprovider").getClientId())
+    assertThat(providers.getOidc()).containsKey("sharedprovider");
+    assertThat(providers.getOidc()).containsKey("privateprovider");
+    assertThat(providers.getOidc().get("privateprovider").getClientId())
         .isEqualTo("private-client");
-  }
-
-  @Test
-  void shouldPreserveRootFlatOidcSlotUnchanged() {
-    // given root sets the flat oidc slot (not a named provider)
-    environment
-        .getPropertySources()
-        .addFirst(
-            new MapPropertySource(
-                "test",
-                Map.of(
-                    "camunda.security.authentication.oidc.issuer-uri",
-                    "http://localhost:8081/realms/default",
-                    "camunda.security.authentication.oidc.username-claim",
-                    "preferred_username")));
-
-    // when
-    final AuthenticationConfiguration auth =
-        PhysicalTenantAuthenticationConfigurations.forPhysicalTenant("tenanta", environment);
-
-    // then the flat slot survives
-    assertThat(auth.getOidc().getIssuerUri()).isEqualTo("http://localhost:8081/realms/default");
-    assertThat(auth.getOidc().getUsernameClaim()).isEqualTo("preferred_username");
   }
 }
