@@ -8,6 +8,7 @@
 package io.camunda.analytics.store.document;
 
 import io.camunda.analytics.dataset.CompiledDataset;
+import io.camunda.analytics.dataset.CompiledTable;
 import io.camunda.analytics.dataset.FilterPredicate;
 import io.camunda.analytics.dataset.store.Cell;
 import io.camunda.analytics.dataset.store.DatasetFetch;
@@ -107,12 +108,63 @@ public final class DocumentDatasetQueryClient implements DatasetQueryClient {
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public List<TableRow> fetchRows(final TableFetch fetch) {
-    // TODO(analytics): implement table reads on the document backend (search the projection_<id>
-    // index and map each hit's source to a TableRow). Deferred with the rest of ES/OS end-to-end
-    // parity; the RDBMS backend is the supported one for now.
-    throw new UnsupportedOperationException(
-        "table reads are not implemented on the document backend yet");
+    final CompiledTable table = fetch.table();
+    final List<DimensionColumn> columns = table.columns();
+
+    final List<SearchQuery> filters = new ArrayList<>();
+    for (final FilterPredicate filter : fetch.filters()) {
+      final DimensionColumn column = column(columns, filter.field());
+      if (column != null) {
+        filters.add(term(DocumentCubeNames.field(filter.field()), column.type(), filter.value()));
+      }
+    }
+    final SearchQuery query =
+        filters.isEmpty() ? SearchQueryBuilders.matchAll() : SearchQueryBuilders.and(filters);
+    final String index = DocumentCubeNames.rowIndex(table.cubeId());
+    final int limit = fetch.limit();
+
+    // A single search page caps at MAX_HITS; past that the client scrolls (paginates internally and
+    // returns every match), which we then bound to the requested limit.
+    // TODO(analytics): scroll materializes all matching rows before the truncation — fine for the
+    // bounded reads today, but a very large limit over a large table should page with search_after
+    // (SearchQueryRequest supports sort + searchAfter) to keep memory bounded to the limit.
+    final SearchQueryResponse<Map> response =
+        limit <= MAX_HITS
+            ? searchClient.search(
+                RequestBuilders.searchRequest(r -> r.index(index).query(query).size(limit)),
+                Map.class)
+            : searchClient.scroll(
+                RequestBuilders.searchRequest(r -> r.index(index).query(query)), Map.class);
+
+    final List<TableRow> rows = new ArrayList<>();
+    for (final var hit : response.hits()) {
+      if (rows.size() >= limit) {
+        break;
+      }
+      final Map<String, Object> source = (Map<String, Object>) hit.source();
+      if (source == null) {
+        continue;
+      }
+      final Map<String, Object> values = new LinkedHashMap<>();
+      for (final DimensionColumn column : columns) {
+        values.put(
+            column.name(),
+            coerce(column.type(), source.get(DocumentCubeNames.field(column.name()))));
+      }
+      rows.add(new TableRow(values));
+    }
+    return rows;
+  }
+
+  private static DimensionColumn column(final List<DimensionColumn> columns, final String name) {
+    for (final DimensionColumn column : columns) {
+      if (column.name().equals(name)) {
+        return column;
+      }
+    }
+    return null;
   }
 
   @Override
