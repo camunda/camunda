@@ -8,7 +8,7 @@
 
 import {completeTaskRequestBodySchema} from '@camunda/camunda-api-zod-schemas/8.10';
 import {HttpResponse} from 'msw';
-import {afterEach, describe, expect} from 'vitest';
+import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {z} from 'zod';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
@@ -27,6 +27,10 @@ const emptyVariablesCompletionSchema = completeTaskRequestBodySchema.extend({
 });
 
 describe('<TaskDetailsTaskPage />', () => {
+	beforeEach(() => {
+		localStorage.clear();
+	});
+
 	afterEach(() => {
 		localStorage.clear();
 	});

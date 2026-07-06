@@ -24,13 +24,13 @@ import {createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
 
 const currentUser = createCurrentUser({username: 'demo'});
 const assignedTask = createUserTask({
-	name: 'Review invoice',
+	name: 'Review invoice before auto-select',
 	processName: 'Invoice process',
 	assignee: currentUser.username,
 	state: 'CREATED',
 });
 const completedTask = createUserTask({
-	name: 'Review invoice',
+	name: 'Review invoice before auto-select',
 	processName: 'Invoice process',
 	assignee: currentUser.username,
 	state: 'COMPLETED',
@@ -94,9 +94,68 @@ test.describe('Task completion', () => {
 			}),
 		);
 
+		await expect(taskDetailPage.header.notifications.getByNotificationTitle('Task completed')).toBeVisible();
 		await expect(page).toHaveURL(/\/tasklist\?/);
 		expect(new URL(page.url()).searchParams.get('filter')).toBe('assigned-to-me');
 		expect(new URL(page.url()).searchParams.get('sortBy')).toBe('priority');
+	});
+
+	test('should navigate to the next open task when auto-select is enabled', async ({network, taskDetailPage, page}) => {
+		const assigningTask = createUserTask({
+			userTaskKey: '2251799813685283',
+			name: 'Assigning purchase request after auto-select',
+			processName: 'Purchase process',
+			assignee: currentUser.username,
+			state: 'ASSIGNING',
+		});
+		const nextTask = createUserTask({
+			userTaskKey: '2251799813685282',
+			name: 'Review purchase request after auto-select',
+			processName: 'Purchase process',
+			assignee: currentUser.username,
+			state: 'CREATED',
+		});
+
+		network.use(
+			mockCompleteTaskEndpoint({
+				successResponse: new HttpResponse(null, {status: 200}),
+			}),
+		);
+
+		await taskDetailPage.goto('2251799813685281', '?filter=assigned-to-me&sortBy=priority');
+		await expect(taskDetailPage.detailsInfo.getByText('Review invoice before auto-select')).toBeVisible();
+		await taskDetailPage.autoSelectNextTaskSwitch.click({force: true});
+
+		network.use(
+			mockQueryUserTasksEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryUserTasksResponse({
+						items: [completedTask, assigningTask, nextTask],
+					}),
+				),
+			}),
+		);
+
+		await taskDetailPage.completeTaskButton.click();
+
+		network.use(
+			mockGetUserTaskEndpoint({
+				successResponse: HttpResponse.json(completedTask),
+			}),
+		);
+
+		await expect(taskDetailPage.header.notifications.getByNotificationTitle('Task completed')).toBeVisible();
+
+		network.use(
+			mockGetUserTaskEndpoint({
+				successResponse: HttpResponse.json(nextTask),
+			}),
+		);
+
+		await expect(page).toHaveURL(/\/tasklist\/2251799813685282\?/);
+		expect(new URL(page.url()).searchParams.get('filter')).toBe('assigned-to-me');
+		expect(new URL(page.url()).searchParams.get('sortBy')).toBe('priority');
+		await expect(taskDetailPage.detailsInfo.getByText('Review purchase request after auto-select')).toBeVisible();
 	});
 
 	test('should show a failed state when completion is forbidden', async ({network, taskDetailPage, page}) => {

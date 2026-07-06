@@ -94,6 +94,10 @@ class TaskDetailPage extends BasePage {
 		return this.page.getByRole('button', {name: /^Complete Task$/i});
 	}
 
+	get autoSelectNextTaskSwitch() {
+		return this.page.getByRole('switch', {name: 'Auto-select first available task'});
+	}
+
 	get completingTaskStatus() {
 		return this.page.getByText('Completing task...');
 	}

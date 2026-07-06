@@ -8,6 +8,12 @@
 
 import {Mixpanel} from 'mixpanel-browser';
 
+declare module '@tanstack/history' {
+	interface HistoryState {
+		tasklistAutoSelectSource?: 'task-completion';
+	}
+}
+
 export declare global {
 	interface Window {
 		Osano?: {

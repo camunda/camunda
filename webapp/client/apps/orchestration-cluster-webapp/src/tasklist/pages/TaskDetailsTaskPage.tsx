@@ -34,7 +34,15 @@ const TaskDetailsTaskPage: React.FC<Props> = ({task, currentUser, search}) => {
 			customFilters: Object.keys(customFilter ?? {}),
 			customFilterVariableCount: customFilter?.variables?.length ?? 0,
 		});
-		navigate({to: '/tasklist', search});
+
+		navigate({
+			to: '/tasklist',
+			search,
+			state: (state) => ({
+				...state,
+				tasklistAutoSelectSource: 'task-completion',
+			}),
+		});
 	}, [navigate, search, customFilter]);
 	const {status, isCompletionAllowed, isHidden, complete} = useTaskCompletion({
 		userTaskKey: task.userTaskKey,
