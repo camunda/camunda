@@ -14,10 +14,14 @@ import io.camunda.analytics.dataset.CompiledMeter;
 import io.camunda.analytics.dataset.CompiledTable;
 import io.camunda.analytics.dataset.DatasetCompiler;
 import io.camunda.analytics.dataset.DatasetDeclaration;
+import io.camunda.analytics.dataset.FilterPredicate;
 import io.camunda.analytics.dataset.store.DatasetQueryExecutor;
 import io.camunda.analytics.dataset.store.DatasetQueryPlanner;
 import io.camunda.analytics.dataset.store.ReportQuery;
 import io.camunda.analytics.dataset.store.ReportResult;
+import io.camunda.analytics.dataset.store.TableQuery;
+import io.camunda.analytics.dataset.store.TableQueryExecutor;
+import io.camunda.analytics.dataset.store.TableRow;
 import io.camunda.analytics.dimension.DimensionKey;
 import io.camunda.analytics.dimension.DimensionType;
 import io.camunda.analytics.fact.FactType;
@@ -109,18 +113,9 @@ final class RdbmsDatasetStoreTest {
   }
 
   @Test
-  void shouldProvisionAndUpsertProjectedRowsIdempotently() {
-    // given a projected dataset table
-    final CompiledTable table =
-        new DatasetCompiler(
-                MeterCatalog.withDefaults(), new MeterRegistry(new InMemoryMeterIdStore()))
-            .compileTable(
-                7L,
-                DatasetDeclaration.builder("raw-instances", FactType.PROCESS_INSTANCE)
-                    .asTable("processInstanceKey")
-                    .dimension("bpmnProcessId", DimensionType.STRING)
-                    .dimension("durationMs", DimensionType.LONG)
-                    .build());
+  void shouldProvisionAndUpsertTableRowsIdempotently() {
+    // given a raw table
+    final CompiledTable table = rawInstancesTable();
     store.schemaManager().ensureTable(table);
 
     // when two rows are written and one is replayed
@@ -131,6 +126,47 @@ final class RdbmsDatasetStoreTest {
 
     // then there are two distinct rows
     assertThat(tableRowCount()).isEqualTo(2);
+  }
+
+  @Test
+  void shouldFetchTableRowsBackThroughTheQueryClient() {
+    // given a table with two written rows
+    final CompiledTable table = rawInstancesTable();
+    store.schemaManager().ensureTable(table);
+    store.writer().upsertRow(table, "1001", List.of("order", 1_500L));
+    store.writer().upsertRow(table, "1002", List.of("ship", 42_000L));
+    store.writer().flush();
+    final TableQueryExecutor executor = new TableQueryExecutor(store.queryClient());
+
+    // when all rows are fetched, both come back with their typed column values
+    assertThat(executor.execute(new TableQuery(List.of(), 100), table))
+        .extracting(r -> r.values().get("bpmnProcessId"), r -> r.values().get("durationMs"))
+        .containsExactlyInAnyOrder(Tuple.tuple("order", 1_500L), Tuple.tuple("ship", 42_000L));
+
+    // when filtered by a declared column, only the matching row comes back
+    assertThat(
+            executor.execute(
+                new TableQuery(List.of(FilterPredicate.equals("bpmnProcessId", "ship")), 100),
+                table))
+        .singleElement()
+        .extracting(TableRow::values)
+        .satisfies(
+            values -> {
+              assertThat(values.get("bpmnProcessId")).isEqualTo("ship");
+              assertThat(values.get("durationMs")).isEqualTo(42_000L);
+            });
+  }
+
+  private static CompiledTable rawInstancesTable() {
+    return new DatasetCompiler(
+            MeterCatalog.withDefaults(), new MeterRegistry(new InMemoryMeterIdStore()))
+        .compileTable(
+            7L,
+            DatasetDeclaration.builder("raw-instances", FactType.PROCESS_INSTANCE)
+                .asTable("processInstanceKey")
+                .dimension("bpmnProcessId", DimensionType.STRING)
+                .dimension("durationMs", DimensionType.LONG)
+                .build());
   }
 
   private DimensionKey key(final String process) {

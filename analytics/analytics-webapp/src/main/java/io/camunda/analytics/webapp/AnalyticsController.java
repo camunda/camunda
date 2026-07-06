@@ -12,6 +12,7 @@ import io.camunda.analytics.webapp.model.HeatmapCell;
 import io.camunda.analytics.webapp.model.Report;
 import io.camunda.analytics.webapp.model.ReportRow;
 import java.util.List;
+import java.util.Map;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,9 +28,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class AnalyticsController {
 
   private final AnalyticsRepository repository;
+  private final TableRepository tableRepository;
 
-  public AnalyticsController(final AnalyticsRepository repository) {
+  public AnalyticsController(
+      final AnalyticsRepository repository, final TableRepository tableRepository) {
     this.repository = repository;
+    this.tableRepository = tableRepository;
   }
 
   @GetMapping("/datasets")
@@ -83,6 +87,23 @@ public class AnalyticsController {
   @GetMapping("/heatmap")
   public List<HeatmapCell> heatmap(@RequestParam("process") final String bpmnProcessId) {
     return repository.elementHeatmap(bpmnProcessId);
+  }
+
+  /** The raw tables the serving store can answer (unaggregated, keyed rows). */
+  @GetMapping("/tables")
+  public List<String> tables() {
+    return tableRepository.listTables();
+  }
+
+  /** Up to {@code limit} rows of one table, each as its declared column values. */
+  @GetMapping("/tables/{name}")
+  public ResponseEntity<List<Map<String, Object>>> tableRows(
+      @PathVariable final String name,
+      @RequestParam(value = "limit", required = false, defaultValue = "1000") final int limit) {
+    if (!tableRepository.hasTable(name)) {
+      return ResponseEntity.notFound().build();
+    }
+    return ResponseEntity.ok(tableRepository.rows(name, limit));
   }
 
   /** Request body to declare a dataset. */

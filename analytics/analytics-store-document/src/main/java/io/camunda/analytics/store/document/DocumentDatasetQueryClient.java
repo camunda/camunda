@@ -12,6 +12,8 @@ import io.camunda.analytics.dataset.FilterPredicate;
 import io.camunda.analytics.dataset.store.Cell;
 import io.camunda.analytics.dataset.store.DatasetFetch;
 import io.camunda.analytics.dataset.store.DatasetQueryClient;
+import io.camunda.analytics.dataset.store.TableFetch;
+import io.camunda.analytics.dataset.store.TableRow;
 import io.camunda.analytics.dimension.DimensionColumn;
 import io.camunda.analytics.dimension.DimensionKey;
 import io.camunda.analytics.dimension.DimensionType;
@@ -102,6 +104,15 @@ public final class DocumentDatasetQueryClient implements DatasetQueryClient {
                     cellKey.windowStart(),
                     accumulators)));
     return result;
+  }
+
+  @Override
+  public List<TableRow> fetchRows(final TableFetch fetch) {
+    // TODO(analytics): implement table reads on the document backend (search the projection_<id>
+    // index and map each hit's source to a TableRow). Deferred with the rest of ES/OS end-to-end
+    // parity; the RDBMS backend is the supported one for now.
+    throw new UnsupportedOperationException(
+        "table reads are not implemented on the document backend yet");
   }
 
   @Override

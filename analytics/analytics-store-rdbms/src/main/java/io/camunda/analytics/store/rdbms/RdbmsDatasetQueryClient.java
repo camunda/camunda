@@ -8,10 +8,13 @@
 package io.camunda.analytics.store.rdbms;
 
 import io.camunda.analytics.dataset.CompiledDataset;
+import io.camunda.analytics.dataset.CompiledTable;
 import io.camunda.analytics.dataset.FilterPredicate;
 import io.camunda.analytics.dataset.store.Cell;
 import io.camunda.analytics.dataset.store.DatasetFetch;
 import io.camunda.analytics.dataset.store.DatasetQueryClient;
+import io.camunda.analytics.dataset.store.TableFetch;
+import io.camunda.analytics.dataset.store.TableRow;
 import io.camunda.analytics.dimension.DimensionColumn;
 import io.camunda.analytics.dimension.DimensionKey;
 import io.camunda.analytics.dimension.DimensionType;
@@ -88,8 +91,67 @@ public final class RdbmsDatasetQueryClient implements DatasetQueryClient {
   }
 
   @Override
+  public List<TableRow> fetchRows(final TableFetch fetch) {
+    final CompiledTable table = fetch.table();
+    final List<DimensionColumn> columns = table.columns();
+
+    final List<String> selectColumns = new ArrayList<>();
+    for (final DimensionColumn column : columns) {
+      selectColumns.add(RdbmsNames.quotedColumn(column.name()));
+    }
+    final List<String> filterColumns = new ArrayList<>();
+    final List<Object> filterValues = new ArrayList<>();
+    for (final FilterPredicate filter : fetch.filters()) {
+      final int index = columnIndex(columns, filter.field());
+      if (index < 0) {
+        continue; // only declared columns are stored and thus filterable at read time
+      }
+      filterColumns.add(RdbmsNames.quotedColumn(filter.field()));
+      filterValues.add(coerce(columns.get(index).type(), filter.value()));
+    }
+
+    final Map<String, Object> params = new HashMap<>();
+    params.put("table", RdbmsNames.rowTable(table.cubeId()));
+    params.put("columns", selectColumns);
+    params.put("filterColumns", filterColumns);
+    params.put("filterValues", filterValues);
+    params.put("limit", fetch.limit());
+
+    try (SqlSession session = sessionFactory.openSession()) {
+      final List<Map<String, Object>> rows =
+          session.getMapper(DatasetQueryMapper.class).fetchRows(params);
+      final List<TableRow> result = new ArrayList<>(rows.size());
+      for (final Map<String, Object> row : rows) {
+        result.add(toRow(columns, lowerKeys(row)));
+      }
+      return result;
+    }
+  }
+
+  @Override
   public void close() {
     // the session factory (and its DataSource) is owned by the store
+  }
+
+  private static TableRow toRow(
+      final List<DimensionColumn> columns, final Map<String, Object> row) {
+    final Map<String, Object> values = new LinkedHashMap<>();
+    for (final DimensionColumn column : columns) {
+      values.put(
+          column.name(),
+          coerceRead(
+              column.type(), row.get(RdbmsNames.column(column.name()).toLowerCase(Locale.ROOT))));
+    }
+    return new TableRow(values);
+  }
+
+  private static int columnIndex(final List<DimensionColumn> columns, final String name) {
+    for (int i = 0; i < columns.size(); i++) {
+      if (columns.get(i).name().equals(name)) {
+        return i;
+      }
+    }
+    return -1;
   }
 
   private static Cell toCell(

@@ -8,13 +8,16 @@
 package io.camunda.analytics.webapp;
 
 import io.camunda.analytics.dataset.ActiveCube;
+import io.camunda.analytics.dataset.ActiveTable;
 import io.camunda.analytics.dataset.CompiledDataset;
 import io.camunda.analytics.dataset.CompiledMeter;
+import io.camunda.analytics.dataset.CompiledTable;
 import io.camunda.analytics.dataset.store.DatasetQueryExecutor;
 import io.camunda.analytics.dataset.store.DatasetQueryPlanner;
 import io.camunda.analytics.dataset.store.DatasetStore;
 import io.camunda.analytics.dataset.store.MetadataStore;
 import io.camunda.analytics.dataset.store.StandardDatasets;
+import io.camunda.analytics.dataset.store.TableQueryExecutor;
 import io.camunda.analytics.dimension.DimensionKey;
 import io.camunda.analytics.dimension.FactRow;
 import io.camunda.analytics.fact.Fact;
@@ -60,7 +63,29 @@ final class ServingTestSupport {
     final DatasetCatalog catalog = new DatasetCatalog(byName);
     final DatasetQueryExecutor executor =
         new DatasetQueryExecutor(new DatasetQueryPlanner(), datasetStore.queryClient());
-    return new Fixture(metadataStore, datasetStore, catalog, executor);
+
+    final Map<String, CompiledTable> tablesByName = new LinkedHashMap<>();
+    for (final ActiveTable table : StandardDatasets.loadTables(metadataStore)) {
+      final CompiledTable compiled = table.compiled();
+      datasetStore.schemaManager().ensureTable(compiled);
+      tablesByName.put(compiled.name(), compiled);
+    }
+    final TableCatalog tableCatalog = new TableCatalog(tablesByName);
+    final TableRepository tableRepository =
+        new TableRepository(new TableQueryExecutor(datasetStore.queryClient()), tableCatalog);
+    return new Fixture(
+        metadataStore, datasetStore, catalog, executor, tableCatalog, tableRepository);
+  }
+
+  /** Seeds one raw table row (upsert by key), mirroring how Stage 1 writes a table. */
+  static void seedRow(
+      final Fixture fixture,
+      final String tableName,
+      final String rowKey,
+      final List<Object> values) {
+    final CompiledTable table = fixture.tableCatalog().require(tableName);
+    fixture.datasetStore().writer().upsertRow(table, rowKey, values);
+    fixture.datasetStore().writer().flush();
   }
 
   /** Aligns a window start to {@code tier}, in the range the default read window covers. */
@@ -119,5 +144,7 @@ final class ServingTestSupport {
       MetadataStore metadataStore,
       DatasetStore datasetStore,
       DatasetCatalog catalog,
-      DatasetQueryExecutor executor) {}
+      DatasetQueryExecutor executor,
+      TableCatalog tableCatalog,
+      TableRepository tableRepository) {}
 }

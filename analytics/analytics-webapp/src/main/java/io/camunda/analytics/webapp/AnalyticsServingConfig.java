@@ -8,12 +8,15 @@
 package io.camunda.analytics.webapp;
 
 import io.camunda.analytics.dataset.ActiveCube;
+import io.camunda.analytics.dataset.ActiveTable;
 import io.camunda.analytics.dataset.CompiledDataset;
+import io.camunda.analytics.dataset.CompiledTable;
 import io.camunda.analytics.dataset.store.DatasetQueryExecutor;
 import io.camunda.analytics.dataset.store.DatasetQueryPlanner;
 import io.camunda.analytics.dataset.store.DatasetStore;
 import io.camunda.analytics.dataset.store.MetadataStore;
 import io.camunda.analytics.dataset.store.StandardDatasets;
+import io.camunda.analytics.dataset.store.TableQueryExecutor;
 import io.camunda.analytics.store.document.DocumentStores;
 import io.camunda.analytics.store.rdbms.RdbmsDatasetStore;
 import io.camunda.analytics.store.rdbms.metadata.RdbmsMetadataStore;
@@ -58,6 +61,28 @@ public class AnalyticsServingConfig {
   @Bean
   public DatasetQueryExecutor datasetQueryExecutor(final DatasetStore datasetStore) {
     return new DatasetQueryExecutor(new DatasetQueryPlanner(), datasetStore.queryClient());
+  }
+
+  /** The table read-path executor: validate filters, fetch rows (no reduction). */
+  @Bean
+  public TableQueryExecutor tableQueryExecutor(final DatasetStore datasetStore) {
+    return new TableQueryExecutor(datasetStore.queryClient());
+  }
+
+  /**
+   * The compiled tables by name. Also ensures each table's serving structure exists so a read never
+   * hits a missing table before the pipeline has written anything.
+   */
+  @Bean
+  public TableCatalog tableCatalog(
+      final MetadataStore metadataStore, final DatasetStore datasetStore) {
+    final Map<String, CompiledTable> byName = new LinkedHashMap<>();
+    for (final ActiveTable table : StandardDatasets.loadTables(metadataStore)) {
+      final CompiledTable compiled = table.compiled();
+      datasetStore.schemaManager().ensureTable(compiled);
+      byName.put(compiled.name(), compiled);
+    }
+    return new TableCatalog(byName);
   }
 
   /**

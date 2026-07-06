@@ -20,4 +20,7 @@ public interface DatasetQueryMapper {
 
   @SelectProvider(type = DatasetQuerySqlProvider.class, method = "fetch")
   List<Map<String, Object>> fetch(Map<String, Object> params);
+
+  @SelectProvider(type = TableRowSqlProvider.class, method = "fetch")
+  List<Map<String, Object>> fetchRows(Map<String, Object> params);
 }
