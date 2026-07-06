@@ -75,7 +75,9 @@ Map path prefixes to component labels:
 
 | Path prefix              | Component label                  |
 |--------------------------|----------------------------------|
-| `zeebe/`                 | `component/zeebe`                |
+| `zeebe/` (engine)        | `component/zeebe-engine`         |
+| `zeebe/` (platform/infra)| `component/zeebe-platform`       |
+| `zeebe/` (unsure)        | `component/zeebe` (fallback)     |
 | `operate/`               | `component/operate`              |
 | `tasklist/`              | `component/tasklist`             |
 | `identity/`              | `component/identity`             |
