@@ -1,0 +1,74 @@
+# TEMPORARY act harness — reproduces the flaky-gate sticky-state upload-skip bug.
+# NOT for merge. Delete after local act validation.
+#
+# Bug under test: .github/actions/detect-new-flaky-tests/action.yml "Upload sticky-state
+# artifact" step is guarded by
+#   if: always() && hashFiles(format('{0}/flaky-gate-state-out/state.json', runner.temp)) != ''
+# hashFiles() only hashes files under GITHUB_WORKSPACE. state.json lives in RUNNER_TEMP
+# (outside the workspace), so hashFiles returns '' regardless of whether the file exists,
+# and the upload step is ALWAYS skipped -> sticky state never persists across runs.
+#
+# This harness writes state.json into RUNNER_TEMP (exactly as the Python save_state does),
+# then evaluates BOTH guards in one run:
+#   - CURRENT (hashFiles)  -> expected SKIPPED (no MARKER printed)
+#   - PROPOSED ([ -f ] via step output) -> expected RUNS (MARKER printed)
+name: test-flaky-gate-state
+on:
+  workflow_dispatch:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  state-guard-repro:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write state.json into RUNNER_TEMP (mimics detect_new_flaky_tests.py save_state)
+        shell: bash
+        run: |
+          mkdir -p "${RUNNER_TEMP}/flaky-gate-state-out"
+          echo '{"pr_number": 56467, "tests": [], "last_known_head_sha": "deadbeef"}' \
+            > "${RUNNER_TEMP}/flaky-gate-state-out/state.json"
+          echo "GITHUB_WORKSPACE = ${GITHUB_WORKSPACE}"
+          echo "RUNNER_TEMP      = ${RUNNER_TEMP}"
+          echo "state file on disk:"
+          ls -la "${RUNNER_TEMP}/flaky-gate-state-out/"
+
+      - name: Diagnostic — raw hashFiles value for the RUNNER_TEMP path
+        if: always()
+        shell: bash
+        run: |
+          echo "MARKER hashFiles-value='${{ hashFiles(format('{0}/flaky-gate-state-out/state.json', runner.temp)) }}'"
+          echo "(empty string => guard is broken: hashFiles cannot see outside GITHUB_WORKSPACE)"
+
+      # ---- CURRENT PRODUCTION GUARD (copied verbatim from action.yml) ----
+      - name: Upload state (CURRENT hashFiles guard)
+        if: always() && hashFiles(format('{0}/flaky-gate-state-out/state.json', runner.temp)) != ''
+        shell: bash
+        run: echo "MARKER UPLOAD-RAN-WITH-HASHFILES-GUARD"
+
+      # ---- PROPOSED FIX GUARD (existence check via step output) ----
+      - name: Check state written (proposed fix)
+        id: state-check
+        if: always()
+        shell: bash
+        run: |
+          if [ -f "${RUNNER_TEMP}/flaky-gate-state-out/state.json" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "state-check: file exists -> exists=true"
+          else
+            echo "state-check: file MISSING"
+          fi
+
+      - name: Upload state (FIXED existence-check guard)
+        if: always() && steps.state-check.outputs.exists == 'true'
+        shell: bash
+        run: echo "MARKER UPLOAD-RAN-WITH-EXISTENCE-GUARD"
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          echo "Expected under real GitHub:"
+          echo "  hashFiles-value empty, HASHFILES-guard step SKIPPED, EXISTENCE-guard step RAN."
