@@ -73,7 +73,7 @@ public final class TestOtelSdkManager {
         };
     manager.initialize(
         config,
-        AnalyticsExporterContext.create("test-license", "test-cluster", 1),
+        AnalyticsExporterContext.create("test-license", "test-cluster", 1, ""),
         new AnalyticsExporterMetadata(),
         meterRegistry);
     return manager;
@@ -133,7 +133,7 @@ public final class TestOtelSdkManager {
         };
     manager.initialize(
         new AnalyticsExporterConfig(),
-        AnalyticsExporterContext.create("test-license", "test-cluster", 1),
+        AnalyticsExporterContext.create("test-license", "test-cluster", 1, ""),
         new AnalyticsExporterMetadata(),
         meterRegistry);
     return manager;
