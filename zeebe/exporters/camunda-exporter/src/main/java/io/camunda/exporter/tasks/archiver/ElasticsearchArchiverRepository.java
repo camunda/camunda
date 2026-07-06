@@ -333,7 +333,12 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             (response, error) ->
                 metrics.measureArchiverReindex(response != null ? response.total() : null, timer),
             executor)
-        .thenApplyAsync(ignored -> null, executor);
+        .thenApplyAsync(
+            response -> {
+              validateReindexResponse(sourceIndexName, response);
+              return null;
+            },
+            executor);
   }
 
   @Override
