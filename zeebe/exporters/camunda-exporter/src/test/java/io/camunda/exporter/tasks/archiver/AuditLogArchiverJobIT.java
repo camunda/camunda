@@ -24,6 +24,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.TestTemplate;
@@ -79,6 +80,24 @@ public class AuditLogArchiverJobIT extends ArchiverJobIT<AuditLogArchiverJob> {
           store(auditLogTemplate, client, auditLog);
           store(auditLogTemplate, client, unrelatedAuditLog);
           client.refresh();
+
+          // explicit wait after store() calls and client.refresh(). This is needed to keep nudging
+          // OpenSearch until the documents are provably visible before the job runs.
+          Awaitility.await()
+              .atMost(Duration.ofSeconds(30))
+              .pollInterval(Duration.ofMillis(200))
+              .untilAsserted(
+                  () -> {
+                    client.refresh();
+                    assertThat(
+                            client.searchAll(
+                                cleanupIndex.getFullQualifiedName(), AuditLogCleanupEntity.class))
+                        .hasSize(1);
+                    assertThat(
+                            client.searchAll(
+                                auditLogTemplate.getFullQualifiedName(), AuditLogEntity.class))
+                        .hasSize(2);
+                  });
 
           // when
           final var archived = job.execute();
