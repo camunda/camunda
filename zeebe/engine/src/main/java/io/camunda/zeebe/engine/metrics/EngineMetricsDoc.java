@@ -141,6 +141,36 @@ public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
     }
   },
 
+  /** Number of distinct active tenants seen since last broker start */
+  ACTIVE_TENANTS {
+    private static final KeyName[] KEY_NAMES = new KeyName[] {EngineKeyNames.ORGANIZATION_ID};
+
+    @Override
+    public String getDescription() {
+      return "Number of distinct active tenants seen since last broker start";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.active.tenants.count";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return KEY_NAMES;
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
+  },
+
   /** Number of banned instances */
   BANNED_INSTANCES {
     @Override
