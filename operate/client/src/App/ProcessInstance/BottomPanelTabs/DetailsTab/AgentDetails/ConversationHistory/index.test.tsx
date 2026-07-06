@@ -53,6 +53,7 @@ describe('<ConversationHistory />', () => {
     render(
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
+        availableTools={[]}
         enablePeriodicRefetch={false}
         isVisible
         selectedElementInstanceKey={null}
@@ -72,6 +73,7 @@ describe('<ConversationHistory />', () => {
     render(
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
+        availableTools={[]}
         enablePeriodicRefetch={false}
         isVisible
         selectedElementInstanceKey={null}
@@ -95,6 +97,7 @@ describe('<ConversationHistory />', () => {
     render(
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
+        availableTools={[]}
         enablePeriodicRefetch={false}
         isVisible
         selectedElementInstanceKey={null}
@@ -125,17 +128,13 @@ describe('<ConversationHistory />', () => {
           role: 'ASSISTANT',
           content: [{contentType: 'TEXT', text: 'Hello, user!'}],
         }),
-        mockAgentInstanceHistoryItem({
-          historyItemKey: '3',
-          role: 'TOOL_RESULT',
-          content: [{contentType: 'TEXT', text: 'Tool output here'}],
-        }),
       ]),
     );
 
     render(
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
+        availableTools={[]}
         enablePeriodicRefetch={false}
         isVisible
         selectedElementInstanceKey={null}
@@ -159,14 +158,6 @@ describe('<ConversationHistory />', () => {
       agentMessage.getByRole('heading', {name: 'Assistant'}),
     ).toBeInTheDocument();
     expect(agentMessage.getByText('Hello, user!')).toBeInTheDocument();
-
-    const toolResultMessage = within(
-      screen.getByTestId('conversation-message-3'),
-    );
-    expect(
-      toolResultMessage.getByRole('heading', {name: 'Tool Result'}),
-    ).toBeInTheDocument();
-    expect(screen.getByText('Tool output here')).toBeInTheDocument();
   });
 
   it('should render conversation items with formatted object content', async () => {
@@ -174,11 +165,11 @@ describe('<ConversationHistory />', () => {
       searchResult([
         mockAgentInstanceHistoryItem({
           historyItemKey: '1',
-          role: 'TOOL_RESULT',
+          role: 'ASSISTANT',
           content: [
             {
               contentType: 'OBJECT',
-              object: {message: 'Tool output here', hello: 'world'},
+              object: {message: 'Some structured content', hello: 'world'},
             },
           ],
         }),
@@ -188,6 +179,54 @@ describe('<ConversationHistory />', () => {
     render(
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
+        availableTools={[]}
+        enablePeriodicRefetch={false}
+        isVisible
+        selectedElementInstanceKey={null}
+        agentsElementInstanceKeys={[]}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('conversation-history-skeleton'),
+    );
+
+    const message = within(screen.getByTestId('conversation-message-1'));
+    expect(
+      message.getByRole('heading', {name: 'Assistant'}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        '{\n  "message": "Some structured content",\n  "hello": "world"\n}',
+        {normalizer: (text) => text},
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('should render tool results in the history', async () => {
+    mockSearchAgentInstanceHistory().withSuccess(
+      searchResult([
+        mockAgentInstanceHistoryItem({
+          historyItemKey: '1',
+          role: 'TOOL_RESULT',
+          content: [{contentType: 'TEXT', text: 'Tool output here'}],
+          toolCalls: [
+            {
+              toolCallId: 'tc-1',
+              toolName: 'search',
+              elementId: null,
+              arguments: {},
+            },
+          ],
+        }),
+      ]),
+    );
+
+    render(
+      <ConversationHistory
+        agentInstanceKey={AGENT_INSTANCE_KEY}
+        availableTools={[]}
         enablePeriodicRefetch={false}
         isVisible
         selectedElementInstanceKey={null}
@@ -201,19 +240,12 @@ describe('<ConversationHistory />', () => {
     );
 
     const toolResultMessage = within(
-      screen.getByTestId('conversation-message-1'),
+      screen.getByRole('article', {name: 'Result for "search" tool call'}),
     );
     expect(
-      toolResultMessage.getByRole('heading', {name: 'Tool Result'}),
+      toolResultMessage.getByRole('heading', {name: 'search'}),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        '{\n  "message": "Tool output here",\n  "hello": "world"\n}',
-        {
-          normalizer: (text) => text,
-        },
-      ),
-    ).toBeInTheDocument();
+    expect(toolResultMessage.getByText('Tool output here')).toBeInTheDocument();
   });
 
   it('should toggle the history sort order when the sort button is clicked', async () => {
@@ -234,6 +266,7 @@ describe('<ConversationHistory />', () => {
     const {user} = render(
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
+        availableTools={[]}
         enablePeriodicRefetch={false}
         isVisible
         selectedElementInstanceKey={null}
@@ -295,6 +328,7 @@ describe('<ConversationHistory />', () => {
     const {user} = render(
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
+        availableTools={[]}
         enablePeriodicRefetch={false}
         isVisible
         selectedElementInstanceKey={null}
@@ -374,6 +408,7 @@ describe('<ConversationHistory />', () => {
     render(
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
+        availableTools={[]}
         enablePeriodicRefetch={false}
         isVisible
         selectedElementInstanceKey={null}
@@ -396,7 +431,7 @@ describe('<ConversationHistory />', () => {
     ).toBeInTheDocument();
   });
 
-  it('should render tool calls and enable them when a tool links to an element', async () => {
+  it('should render tool calls', async () => {
     mockSearchAgentInstanceHistory().withSuccess(
       searchResult([
         mockAgentInstanceHistoryItem({
@@ -424,6 +459,7 @@ describe('<ConversationHistory />', () => {
     render(
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
+        availableTools={[]}
         enablePeriodicRefetch={false}
         isVisible
         selectedElementInstanceKey={null}
@@ -440,10 +476,8 @@ describe('<ConversationHistory />', () => {
       screen.getByTestId('conversation-message-1'),
     );
     expect(
-      assistantMessage.getByRole('button', {
-        name: '"greet" tool call. Click to open details.',
-      }),
-    ).toBeEnabled();
+      assistantMessage.getByRole('button', {name: '"greet" tool call.'}),
+    ).toBeDisabled();
     expect(
       assistantMessage.getByRole('button', {name: '"search" tool call.'}),
     ).toBeDisabled();
@@ -470,6 +504,7 @@ describe('<ConversationHistory />', () => {
     render(
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
+        availableTools={[]}
         enablePeriodicRefetch={false}
         isVisible
         selectedElementInstanceKey={null}
@@ -513,6 +548,7 @@ describe('<ConversationHistory />', () => {
     const {rerender} = render(
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
+        availableTools={[]}
         enablePeriodicRefetch={false}
         isVisible
         selectedElementInstanceKey="111"
@@ -532,6 +568,7 @@ describe('<ConversationHistory />', () => {
     rerender(
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
+        availableTools={[]}
         enablePeriodicRefetch={false}
         isVisible
         selectedElementInstanceKey="111"
@@ -550,6 +587,7 @@ describe('<ConversationHistory />', () => {
     render(
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
+        availableTools={[]}
         enablePeriodicRefetch={false}
         isVisible
         selectedElementInstanceKey="111"
@@ -587,6 +625,7 @@ describe('<ConversationHistory />', () => {
     const {user} = render(
       <ConversationHistory
         agentInstanceKey={AGENT_INSTANCE_KEY}
+        availableTools={[]}
         enablePeriodicRefetch={false}
         isVisible
         selectedElementInstanceKey="111"

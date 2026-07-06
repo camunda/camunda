@@ -8,9 +8,11 @@
 
 import {useState} from 'react';
 import {SkeletonText} from '@carbon/react';
-import type {QuerySortOrder} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {
+  AgentTool,
+  QuerySortOrder,
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {useAgentInstanceHistory} from 'modules/queries/agentInstances/useAgentInstanceHistory';
-import {useProcessInstanceElementSelectActions} from 'modules/hooks/useProcessInstanceElementSelection';
 import {ConversationMessage} from '../ConversationMessage';
 import {ConversationToggles} from './ConversationToggles';
 import {
@@ -20,9 +22,11 @@ import {
   ShowMoreButton,
 } from './styled';
 import {flattenPaginatedPages} from 'modules/queries/flattenPaginatedPages';
+import {ToolResultMessage} from '../ConversationMessage/ToolResultMessage';
 
 type ConversationHistoryProps = {
   agentInstanceKey: string;
+  availableTools: AgentTool[];
   isVisible: boolean;
   enablePeriodicRefetch: boolean;
   selectedElementInstanceKey: string | null;
@@ -31,6 +35,7 @@ type ConversationHistoryProps = {
 
 const ConversationHistory: React.FC<ConversationHistoryProps> = ({
   agentInstanceKey,
+  availableTools,
   isVisible,
   enablePeriodicRefetch,
   selectedElementInstanceKey,
@@ -42,7 +47,6 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
   const [sortOrder, setSortOrder] = useState<QuerySortOrder>('desc');
   const [isScoped, setIsScoped] = useState(true);
 
-  const {selectElement} = useProcessInstanceElementSelectActions();
   const {
     data,
     status,
@@ -90,21 +94,25 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
               : 'No conversation with this agent instance found.'}
           </StatusHint>
         ) : (
-          data.items.map((item) => (
-            <ConversationMessage
-              key={item.historyItemKey}
-              historyItemKey={item.historyItemKey}
-              actor={item.role}
-              content={item.content}
-              toolCalls={item.toolCalls}
-              metrics={item.metrics}
-              onToolCallClick={(toolCall) => {
-                if (toolCall.elementId !== null) {
-                  selectElement({elementId: toolCall.elementId});
-                }
-              }}
-            />
-          ))
+          data.items.map((item) =>
+            item.role === 'TOOL_RESULT' ? (
+              <ToolResultMessage
+                key={item.historyItemKey}
+                availableTools={availableTools}
+                toolCalls={item.toolCalls}
+                content={item.content}
+              />
+            ) : (
+              <ConversationMessage
+                key={item.historyItemKey}
+                historyItemKey={item.historyItemKey}
+                actor={item.role}
+                content={item.content}
+                toolCalls={item.toolCalls}
+                metrics={item.metrics}
+              />
+            ),
+          )
         )}
       </Messages>
       {isFetchingNextPage && <SkeletonText paragraph lineCount={2} />}

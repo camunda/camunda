@@ -183,6 +183,7 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
         >
           <ConversationHistory
             agentInstanceKey={agentInstance.agentInstanceKey}
+            availableTools={agentInstance.tools}
             isVisible={isConversationHistoryOpen}
             enablePeriodicRefetch={isAgentInstanceActive(agentInstance)}
             selectedElementInstanceKey={selectedElementInstanceKey}
