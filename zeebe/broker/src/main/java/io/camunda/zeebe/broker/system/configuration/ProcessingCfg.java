@@ -15,6 +15,7 @@ public final class ProcessingCfg implements ConfigurationEntry {
   private static final int DEFAULT_PROCESSING_BATCH_LIMIT = 100;
   private static final int DEFAULT_MAX_RECOVERABLE_RETRIES = 1000;
   private Integer maxCommandsInBatch = DEFAULT_PROCESSING_BATCH_LIMIT;
+  private Duration maxBatchProcessingTime;
   private int maxRecoverableRetries = DEFAULT_MAX_RECOVERABLE_RETRIES;
   private boolean enableAsyncScheduledTasks = true;
   private Duration scheduledTaskCheckInterval = Duration.ofSeconds(1);
@@ -25,6 +26,10 @@ public final class ProcessingCfg implements ConfigurationEntry {
     if (maxCommandsInBatch < 1) {
       throw new IllegalArgumentException(
           "maxCommandsInBatch must be >= 1 but was %s".formatted(maxCommandsInBatch));
+    }
+    if (maxBatchProcessingTime != null && !maxBatchProcessingTime.isPositive()) {
+      throw new IllegalArgumentException(
+          "maxBatchProcessingTime must be positive but was %s".formatted(maxBatchProcessingTime));
     }
     if (maxRecoverableRetries < 1) {
       throw new IllegalArgumentException(
@@ -43,6 +48,20 @@ public final class ProcessingCfg implements ConfigurationEntry {
 
   public void setMaxCommandsInBatch(final int maxCommandsInBatch) {
     this.maxCommandsInBatch = maxCommandsInBatch;
+  }
+
+  /**
+   * Maximum time a processing batch is allowed to grow, or {@code null} if batching is only limited
+   * by {@link #getMaxCommandsInBatch()}. This is a soft limit: once exceeded, no further follow-up
+   * commands are processed in the same batch, but the commands already part of the batch are still
+   * processed.
+   */
+  public Duration getMaxBatchProcessingTime() {
+    return maxBatchProcessingTime;
+  }
+
+  public void setMaxBatchProcessingTime(final Duration maxBatchProcessingTime) {
+    this.maxBatchProcessingTime = maxBatchProcessingTime;
   }
 
   public int getMaxRecoverableRetries() {
@@ -74,6 +93,8 @@ public final class ProcessingCfg implements ConfigurationEntry {
     return "ProcessingCfg{"
         + "maxCommandsInBatch="
         + maxCommandsInBatch
+        + ", maxBatchProcessingTime="
+        + maxBatchProcessingTime
         + ", maxRecoverableRetries="
         + maxRecoverableRetries
         + ", enableAsyncScheduledTasks="

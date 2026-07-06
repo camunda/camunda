@@ -41,6 +41,7 @@ public class ProcessingMetrics {
   private final Timer batchProcessingPostCommitTasks;
   private final DistributionSummary batchProcessingCommands;
   private final Counter batchProcessingRetries;
+  private final Counter batchProcessingDeferredCommands;
   private final EnumMeter<ErrorHandlingPhase> errorHandlingPhase;
   private final Timer processingLatency;
 
@@ -53,6 +54,7 @@ public class ProcessingMetrics {
         registerTimer(StreamMetricsDoc.BATCH_PROCESSING_POST_COMMIT_TASKS);
     batchProcessingCommands = registerBatchProcessingCommands();
     batchProcessingRetries = registerBatchProcessingRetries();
+    batchProcessingDeferredCommands = registerBatchProcessingDeferredCommands();
     errorHandlingPhase =
         EnumMeter.register(
             ErrorHandlingPhase.class,
@@ -75,6 +77,10 @@ public class ProcessingMetrics {
 
   public void countRetry() {
     batchProcessingRetries.increment();
+  }
+
+  public void commandDeferredAfterTimeExhausted() {
+    batchProcessingDeferredCommands.increment();
   }
 
   public CloseableSilently startBatchProcessingPostCommitTasksTimer() {
@@ -143,6 +149,13 @@ public class ProcessingMetrics {
             .description(retriesDoc.getDescription())
             .register(registry);
     return batchProcessingRetries;
+  }
+
+  private Counter registerBatchProcessingDeferredCommands() {
+    final var deferredDoc = StreamMetricsDoc.BATCH_PROCESSING_DEFERRED_COMMANDS;
+    return Counter.builder(deferredDoc.getName())
+        .description(deferredDoc.getDescription())
+        .register(registry);
   }
 
   private Timer registerTimer(final StreamMetricsDoc meterDoc) {
