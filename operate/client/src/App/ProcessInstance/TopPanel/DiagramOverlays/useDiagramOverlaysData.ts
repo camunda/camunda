@@ -15,19 +15,6 @@ import {useWaitingStateOverlaysData} from './waitingStateOverlay';
 import {useAgentStatusOverlaysData} from './agentStatusOverlay';
 import {useAgentShineOverlaysData} from './agentShineOverlay';
 
-/**
- * Builds the combined overlay data for the diagram by wiring each overlay's data
- * hook together. The result is passed to `<Diagram overlaysData={...} />`.
- *
- * Each overlay hook is called unconditionally to respect the rules of hooks; this
- * hook then decides which overlays to expose based on the diagram mode. Sharing
- * `useFirstAgentInstancePerElement` here lets the agent overlays and the waiting
- * state overlay coordinate through a single agent-instance subscription.
- *
- * To add a new overlay type: create a `useXOverlaysData` hook and an `XOverlay`
- * renderer (see the existing overlay files), call the hook here, and render the
- * overlay in `./index.tsx`.
- */
 const useDiagramOverlaysData = (
   isModificationModeEnabled: boolean,
 ): OverlayData[] => {

@@ -10,13 +10,6 @@ import {useMemo} from 'react';
 import {useProcessInstanceAgentInstances} from 'modules/queries/agentInstances/useProcessInstanceAgentInstances';
 import type {AgentInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 
-/**
- * Shared by the agent overlay modules and the waiting-state module.
- *
- * We expect only one active agent instance per element, but there *can* be
- * multiple. For now we only keep the first agent instance per element, so each
- * element gets at most one set of agent overlays.
- */
 const useFirstAgentInstancePerElement = (): {
   agentInstances: AgentInstance[];
   elementsWithAgent: Set<string>;
