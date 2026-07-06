@@ -8,8 +8,11 @@ flagged until either:
       runs observe the test passing (zero Maven retries) in the originally
       affected job.
 
-State is persisted between gate runs via a per-PR workflow artifact (JSON).
-The PR comment is a human-readable render of that state.
+State is persisted between gate runs inside the gate's PR comment: a hidden
+base64 `<!-- flaky-gate-state: … -->` marker holds the full JSON, and the
+visible comment body is a human-readable render of it. The comment is durable
+across the "Re-run jobs" button and force-pushes, unlike a run-scoped artifact
+(see GAP-11 / README "Why the PR comment holds state").
 
 Inputs (environment variables):
   PR_FLAKY_TESTS_DATA    – JSON array of {job, flaky_tests}
@@ -18,8 +21,9 @@ Inputs (environment variables):
   GITHUB_TOKEN           – GitHub API token
   GITHUB_REPOSITORY      – owner/repo
   GITHUB_OUTPUT          – Path to the GHA step output file
-  STATE_FILE_IN          – Path to existing state.json (may not exist on first run)
-  STATE_FILE_OUT         – Path to write updated state.json
+  STATE_FILE_IN          – Fallback prior-state path for local/offline runs when
+                           the PR comment cannot be fetched (CI reads the comment)
+  STATE_FILE_OUT         – Optional debug dump of the updated state (not uploaded)
   RAN_JOBS_JSON          – JSON array of parent job names whose result is not 'skipped'
   BYPASS_LABEL_PRESENT   – 'true' / 'false'
   HEAD_SHA               – Current PR head SHA
@@ -28,6 +32,7 @@ Inputs (environment variables):
   REPO_ROOT              – Absolute path to the checked-out repo (for git/find)
 """
 
+import base64
 import datetime as _dt
 import json
 import os
@@ -39,7 +44,10 @@ import urllib.request
 
 PREFIX = "[new-flaky]"
 COMMENT_MARKER = "<!-- new-flaky-tests-alert -->"
-STATE_ARTIFACT_MARKER_PREFIX = "<!-- flaky-gate-state-artifact: "
+# The full sticky-state JSON is base64-encoded into this hidden marker in the
+# gate's PR comment. The comment — unlike a run-scoped artifact — survives the
+# "Re-run jobs" button and force-pushes, so it is the durable state store.
+STATE_MARKER_PREFIX = "<!-- flaky-gate-state: "
 SCHEMA_VERSION = 1
 MIN_CLEAN_RUNS = 3
 
@@ -133,6 +141,43 @@ def save_state(path: str, state: dict) -> None:
 
 def _now_iso() -> str:
     return _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def encode_state_marker(state: dict) -> str:
+    """Serialize state into the hidden comment marker line.
+
+    The full state JSON is base64-encoded inside an HTML comment: invisible in
+    the rendered comment, but round-trips exactly on the next run. This makes
+    the comment the durable state store — it survives the "Re-run jobs" button
+    and force-pushes, both of which delete run-scoped artifacts (see GAP-11).
+    """
+    payload = base64.b64encode(
+        json.dumps(state, separators=(",", ":"), sort_keys=True).encode("utf-8")
+    ).decode("ascii")
+    return f"{STATE_MARKER_PREFIX}{payload} -->"
+
+
+def extract_state_from_comment(body: str | None) -> dict | None:
+    """Recover prior state from the hidden marker in an existing PR comment.
+
+    Returns None when there is no comment, no marker, or the payload is
+    unreadable / schema-mismatched — the caller then starts fresh.
+    """
+    if not body:
+        return None
+    m = re.search(re.escape(STATE_MARKER_PREFIX) + r"([A-Za-z0-9+/=]+) -->", body)
+    if not m:
+        return None
+    try:
+        raw = base64.b64decode(m.group(1)).decode("utf-8")
+        state = json.loads(raw)
+    except (ValueError, json.JSONDecodeError) as exc:
+        print(f"{PREFIX} WARN: could not decode comment state ({exc}) — starting fresh.")
+        return None
+    if not isinstance(state, dict) or state.get("schema_version") != SCHEMA_VERSION:
+        print(f"{PREFIX} WARN: comment state schema mismatch — starting fresh.")
+        return None
+    return state
 
 
 # ---------------------------------------------------------------------------
@@ -446,14 +491,14 @@ def _render_cleared_test(entry: dict) -> list[str]:
     ]
 
 
-def render_comment(state: dict, artifact_name: str) -> str:
+def render_comment(state: dict) -> str:
     active = [e for e in state["tests"] if e.get("status") == "active"]
     cleared = [e for e in state["tests"] if e.get("status") in
                ("cleared_via_fix", "cleared_via_bypass", "dropped_force_push")]
 
     lines = [
         COMMENT_MARKER,
-        f"{STATE_ARTIFACT_MARKER_PREFIX}{artifact_name} -->",
+        encode_state_marker(state),
     ]
 
     if active:
@@ -537,25 +582,32 @@ def _github_api(url: str, token: str, method: str = "GET",
         raise GitHubAPIError(f"{exc.status} {exc.reason} — {body}") from exc
 
 
-def _find_existing_comment(owner: str, repo: str, pr: int, token: str) -> int | None:
+def _find_existing_comment(owner: str, repo: str, pr: int,
+                           token: str) -> tuple[int | None, str | None]:
+    """Return (comment_id, body) of the gate's comment, or (None, None)."""
     page = 1
     while True:
         url = f"https://api.github.com/repos/{owner}/{repo}/issues/{pr}/comments?per_page=100&page={page}"
         raw = _github_api(url, token)
         comments = json.loads(raw)
         if not comments:
-            return None
+            return None, None
         for c in comments:
-            if COMMENT_MARKER in (c.get("body") or ""):
-                return c["id"]
+            body = c.get("body") or ""
+            if COMMENT_MARKER in body:
+                return c["id"], body
         page += 1
 
 
-def post_or_update_comment(owner: str, repo: str, pr: int, body: str, token: str) -> None:
-    existing = _find_existing_comment(owner, repo, pr, token)
+def post_or_update_comment(owner: str, repo: str, pr: int, body: str,
+                           token: str, existing_id: int | None = None) -> None:
+    # existing_id is passed in when the caller already located the comment
+    # (to read prior state), so we avoid a second full comment scan.
+    if existing_id is None:
+        existing_id, _ = _find_existing_comment(owner, repo, pr, token)
     payload = json.dumps({"body": body}).encode()
-    if existing:
-        url = f"https://api.github.com/repos/{owner}/{repo}/issues/comments/{existing}"
+    if existing_id:
+        url = f"https://api.github.com/repos/{owner}/{repo}/issues/comments/{existing_id}"
         _github_api(url, token, method="PATCH", data=payload)
     else:
         url = f"https://api.github.com/repos/{owner}/{repo}/issues/{pr}/comments"
@@ -752,9 +804,29 @@ def main() -> None:
     base_sha_input = os.environ.get("BASE_SHA", "")
     blocking = os.environ.get("BLOCKING", "true").lower() == "true"
     repo_root = os.environ.get("REPO_ROOT", os.getcwd())
-    artifact_name = f"flaky-gate-state-pr-{pr_number}"
+    owner, name = repository.split("/", 1) if "/" in repository else (None, None)
 
-    state = load_state(state_in, pr_number, head_sha)
+    # Load prior state. The gate's PR comment carries the full state in a hidden
+    # base64 marker and is the durable source of truth: it survives the "Re-run
+    # jobs" button and force-pushes, which delete the run-scoped artifact the
+    # gate used to rely on (GAP-11). STATE_FILE_IN remains a fallback for local
+    # / offline runs where the comment cannot be fetched.
+    existing_comment_id: int | None = None
+    prior_state: dict | None = None
+    if owner and token:
+        try:
+            existing_comment_id, existing_body = _find_existing_comment(
+                owner, name, pr_number, token)
+            prior_state = extract_state_from_comment(existing_body)
+        except GitHubAPIError as exc:
+            print(f"{PREFIX} WARN: could not fetch existing comment ({exc}) "
+                  "— falling back to state file / fresh.")
+
+    if prior_state is not None:
+        print(f"{PREFIX} Loaded prior state from PR comment marker.")
+        state = prior_state
+    else:
+        state = load_state(state_in, pr_number, head_sha)
     state["pr_number"] = pr_number
 
     # Snapshot prior method_last_modified for Q4c counter-reset detection.
@@ -812,11 +884,13 @@ def main() -> None:
         for entry in state["tests"]:
             entry.pop("_prev_last_mod", None)
         state["last_known_head_sha"] = head_sha
-        save_state(state_out, state)
-        comment = render_comment(state, artifact_name)
+        if state_out:
+            save_state(state_out, state)
+        comment = render_comment(state)
         # Bypass is an escape hatch: entries are already cleared, so a failed
         # comment post must never fail the job (would defeat the unblock).
-        _post_comment_with_handling(repository, pr_number, comment, token, blocking=False)
+        _post_comment_with_handling(repository, pr_number, comment, token,
+                                    blocking=False, existing_id=existing_comment_id)
         set_output("has-new-flaky-tests", "false")
         return
 
@@ -838,13 +912,15 @@ def main() -> None:
         entry.pop("_prev_last_mod", None)
 
     state["last_known_head_sha"] = head_sha
-    save_state(state_out, state)
+    if state_out:
+        save_state(state_out, state)
 
     active_count = sum(1 for e in state["tests"] if e.get("status") == "active")
     print(f"{PREFIX} active={active_count} total_tracked={len(state['tests'])}")
 
-    comment = render_comment(state, artifact_name)
-    _post_comment_with_handling(repository, pr_number, comment, token, blocking)
+    comment = render_comment(state)
+    _post_comment_with_handling(repository, pr_number, comment, token, blocking,
+                                existing_id=existing_comment_id)
 
     set_output("has-new-flaky-tests", "true" if active_count > 0 else "false")
     if active_count > 0 and blocking:
@@ -853,13 +929,14 @@ def main() -> None:
 
 
 def _post_comment_with_handling(repo: str, pr: int, body: str,
-                                 token: str, blocking: bool) -> None:
+                                 token: str, blocking: bool,
+                                 existing_id: int | None = None) -> None:
     if not repo or "/" not in repo:
         print(f"{PREFIX} WARN: GITHUB_REPOSITORY not set — skipping comment.")
         return
     owner, name = repo.split("/", 1)
     try:
-        post_or_update_comment(owner, name, pr, body, token)
+        post_or_update_comment(owner, name, pr, body, token, existing_id=existing_id)
     except GitHubAPIError as exc:
         msg = f"comment post/update failed: {exc}"
         if blocking:
