@@ -16,6 +16,9 @@ import org.junit.jupiter.api.AutoClose;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
+import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.transport.OpenSearchTransport;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
 import org.opensearch.testcontainers.OpenSearchContainer;
@@ -61,16 +64,23 @@ final class OpensearchIncidentUpdateRepositoryIT extends IncidentUpdateRepositor
       final String index, final String field, final List<String> terms, final Class<T> documentType)
       throws IOException {
     final var client = new OpenSearchClient(transport);
-    final var values =
-        terms.stream().map(org.opensearch.client.opensearch._types.FieldValue::of).toList();
+    final var values = terms.stream().map(FieldValue::of).toList();
     final var query =
-        org.opensearch.client.opensearch._types.query_dsl.QueryBuilders.terms()
-            .field(field)
-            .terms(v -> v.value(values))
-            .build()
-            .toQuery();
+        QueryBuilders.terms().field(field).terms(v -> v.value(values)).build().toQuery();
     return client.search(s -> s.index(index).query(query), documentType).hits().hits().stream()
-        .map(org.opensearch.client.opensearch.core.search.Hit::source)
+        .map(Hit::source)
+        .toList();
+  }
+
+  @Override
+  protected Collection<RoutedDocument> searchWithRouting(
+      final String index, final String field, final List<String> terms) throws IOException {
+    final var client = new OpenSearchClient(transport);
+    final var values = terms.stream().map(FieldValue::of).toList();
+    final var query =
+        QueryBuilders.terms().field(field).terms(v -> v.value(values)).build().toQuery();
+    return client.search(s -> s.index(index).query(query), Object.class).hits().hits().stream()
+        .map(hit -> new RoutedDocument(hit.id(), hit.routing()))
         .toList();
   }
 

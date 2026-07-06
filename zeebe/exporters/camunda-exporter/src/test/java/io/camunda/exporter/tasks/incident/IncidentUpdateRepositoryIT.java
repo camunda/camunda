@@ -18,6 +18,7 @@ import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.notifier.IncidentNotifier;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.ActiveIncident;
@@ -140,6 +141,29 @@ abstract class IncidentUpdateRepositoryIT {
       final String index, final String field, final List<String> terms, final Class<T> documentType)
       throws IOException;
 
+  /**
+   * Runs an <em>unrouted</em> search (as the incident consumer does) and returns, for each matching
+   * hit, its id together with the {@code _routing} value it was stored with (null when the document
+   * was indexed without routing). Used to assert that entries are persisted with routing by
+   * partition id.
+   */
+  protected abstract Collection<RoutedDocument> searchWithRouting(
+      final String index, final String field, final List<String> terms) throws IOException;
+
+  /**
+   * Asserts, for backends that support it, that the entries for {@code routing} physically
+   * co-locate on a single shard: a routed search for that value is served by exactly one shard and
+   * still returns all {@code expectedHits} matching documents. Only Elasticsearch implements this;
+   * the OpenSearch client does not expose the shard statistics needed, so there it is a no-op and
+   * co-location is instead relied upon as the guaranteed "same routing value maps to the same
+   * shard" invariant.
+   */
+  protected void assertRoutedEntriesAreColocatedOnSingleShard(
+      final String index, final String routing, final String field, final int expectedHits)
+      throws IOException {
+    // no-op by default (see javadoc)
+  }
+
   private IncidentEntity newIncident(final long key) {
     final var incident = new IncidentEntity();
     final var id = String.valueOf(key);
@@ -161,6 +185,8 @@ abstract class IncidentUpdateRepositoryIT {
     batchRequest.add(incidentTemplate.getFullQualifiedName(), incident);
     batchRequest.executeWithRefresh();
   }
+
+  protected record RoutedDocument(String id, String routing) {}
 
   @DisabledIfSystemProperty(
       named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
@@ -582,6 +608,98 @@ abstract class IncidentUpdateRepositoryIT {
       } else {
         batchRequest.execute();
       }
+    }
+  }
+
+  @DisabledIfSystemProperty(
+      named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "Excluding from AWS OS IT CI")
+  @Nested
+  final class PostImporterQueueRoutingIT {
+    // The queue index is created with multiple shards, as in production. The handler routes each
+    // entry by its partition id, so all entries of a single partition share the same routing value
+    // and therefore co-locate on a single shard. That co-location is what removes the cross-shard
+    // refresh skew of https://github.com/camunda/camunda/issues/56117 by construction: within one
+    // shard a search can never observe a higher position without also seeing all lower positions.
+    // This test verifies the write side end to end via the real handler: entries are persisted with
+    // routing == partition id, and the incident consumer's unrouted read still sees them.
+    private static final int QUEUE_SHARDS = 3;
+    private static final int OTHER_PARTITION_ID = 2;
+
+    @RegressionTest("https://github.com/camunda/camunda/issues/56117")
+    void shouldRouteEntriesByPartitionIdAndKeepThemReadableByUnroutedConsumer() throws Exception {
+      // given - a multi-shard queue index and the real handler writing into it
+      createQueueIndexWithShards();
+      final var handler =
+          new PostImporterQueueFromIncidentHandler(
+              postImporterQueueTemplate.getFullQualifiedName());
+      final var batchRequest = clientAdapter.createBatchRequest();
+
+      // when - the handler flushes several entries for two partitions across many positions
+      // partition 1 (the consumer's partition): positions 1..5, keys 1..5
+      for (long position = 1; position <= 5; position++) {
+        handler.flush(newQueueEntry(position, position, PARTITION_ID), batchRequest);
+      }
+      // partition 2: positions 1..3, keys offset so they do not collide with partition 1
+      for (long position = 1; position <= 3; position++) {
+        handler.flush(newQueueEntry(100 + position, position, OTHER_PARTITION_ID), batchRequest);
+      }
+      batchRequest.executeWithRefresh();
+
+      // then - every entry is stored with routing equal to its partition id, so a partition's
+      // entries share a routing value and co-locate on a single shard
+      assertThat(
+              searchWithRouting(
+                  postImporterQueueTemplate.getFullQualifiedName(),
+                  PostImporterQueueTemplate.PARTITION_ID,
+                  List.of(String.valueOf(PARTITION_ID))))
+          .hasSize(5)
+          .allSatisfy(doc -> assertThat(doc.routing()).isEqualTo(String.valueOf(PARTITION_ID)));
+      assertThat(
+              searchWithRouting(
+                  postImporterQueueTemplate.getFullQualifiedName(),
+                  PostImporterQueueTemplate.PARTITION_ID,
+                  List.of(String.valueOf(OTHER_PARTITION_ID))))
+          .hasSize(3)
+          .allSatisfy(
+              doc -> assertThat(doc.routing()).isEqualTo(String.valueOf(OTHER_PARTITION_ID)));
+
+      // and (Elasticsearch only) - the partition's entries physically co-locate: a routed search is
+      // served by a single shard and still returns all of the partition's entries
+      assertRoutedEntriesAreColocatedOnSingleShard(
+          postImporterQueueTemplate.getFullQualifiedName(),
+          String.valueOf(PARTITION_ID),
+          PostImporterQueueTemplate.PARTITION_ID,
+          5);
+
+      // and - the consumer's unrouted read still sees the routed entries of its partition and
+      // advances the watermark to the highest position without skipping any
+      final var repository = createRepository();
+      final var batch = repository.getPendingIncidentsBatch(-1L, 10).toCompletableFuture().join();
+      assertThat(batch.highestPosition()).isEqualTo(5L);
+      assertThat(batch.newIncidentStates())
+          .containsOnlyKeys(1L, 2L, 3L, 4L, 5L)
+          .allSatisfy((key, state) -> assertThat(state).isEqualTo(IncidentState.ACTIVE));
+    }
+
+    private PostImporterQueueEntity newQueueEntry(
+        final long key, final long position, final int partitionId) {
+      return new PostImporterQueueEntity()
+          .setId(key + "-" + IncidentIntent.CREATED)
+          .setActionType(PostImporterActionType.INCIDENT)
+          .setIntent(IncidentIntent.CREATED.name())
+          .setKey(key)
+          .setPartitionId(partitionId)
+          .setProcessInstanceKey(key)
+          .setPosition(position);
+    }
+
+    private void createQueueIndexWithShards() {
+      final var config = new IndexConfiguration();
+      config.setNumberOfShards(QUEUE_SHARDS);
+      config.setNumberOfReplicas(0);
+      engineClient.createIndex(postImporterQueueTemplate, config);
     }
   }
 
