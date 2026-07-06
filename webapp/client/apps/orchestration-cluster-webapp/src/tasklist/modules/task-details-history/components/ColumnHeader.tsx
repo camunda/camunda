@@ -8,12 +8,17 @@
 
 import {TableHeader} from '@carbon/react';
 import {useNavigate} from '@tanstack/react-router';
-import {getSortParams, getSortSearchValue, type TaskDetailsHistorySearch} from '../sortUtils';
+import {
+	getNextSortSearchValue,
+	getSortParams,
+	type TaskDetailsHistorySearch,
+	type TaskDetailsHistorySortField,
+} from '../sortUtils';
 
 type Props = {
 	label: string;
 	search: TaskDetailsHistorySearch;
-	sortKey?: string;
+	sortKey?: TaskDetailsHistorySortField;
 	isDisabled: boolean;
 	children: React.ReactNode;
 };
@@ -34,7 +39,7 @@ const ColumnHeader: React.FC<Props> = ({sortKey, label, search, isDisabled, chil
 			onClick={() => {
 				void navigate({
 					to: '.',
-					search: (previous) => ({...previous, sort: getSortSearchValue(sortKey, currentSortOrder)}),
+					search: (previous) => ({...previous, sort: getNextSortSearchValue(sortKey, currentSortOrder)}),
 				});
 			}}
 			isSortHeader

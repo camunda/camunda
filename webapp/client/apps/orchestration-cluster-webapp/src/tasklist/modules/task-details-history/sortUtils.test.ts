@@ -10,7 +10,7 @@ import {describe, expect} from 'vitest';
 import {it} from '#/vitest-modules/test-extend';
 import {
 	getAuditLogSort,
-	getSortSearchValue,
+	getNextSortSearchValue,
 	taskDetailsHistorySearchDefaults,
 	taskDetailsHistorySearchSchema,
 } from './sortUtils';
@@ -36,8 +36,9 @@ describe('task details history sorting', () => {
 		expect(getAuditLogSort(search)).toEqual({field: 'timestamp', order: 'desc'});
 	});
 
-	it('should reverse the current history sort when the user selects the same column again', () => {
-		expect(getSortSearchValue('timestamp', 'asc')).toBe('timestamp+desc');
-		expect(getSortSearchValue('timestamp', 'desc')).toBe('timestamp+asc');
+	it('should build the next sort search value when the user selects a column', () => {
+		expect(getNextSortSearchValue('timestamp', 'asc')).toBe('timestamp+desc');
+		expect(getNextSortSearchValue('timestamp', 'desc')).toBe('timestamp+asc');
+		expect(getNextSortSearchValue('actorId')).toBe('actorId+asc');
 	});
 });

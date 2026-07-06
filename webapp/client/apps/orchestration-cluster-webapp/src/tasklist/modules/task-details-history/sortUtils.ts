@@ -25,25 +25,35 @@ const sortSchema = z.object({
 });
 
 type TaskDetailsHistorySortParams = z.infer<typeof sortSchema>;
+type TaskDetailsHistorySortField = TaskDetailsHistorySortParams['sortBy'];
 
-function parseSortSearchValue(sort: string): TaskDetailsHistorySortParams | null {
-	const [sortBy, sortOrder, ...rest] = sort.split('+');
+const sortSearchValueCodec = z.codec(z.string(), sortSchema, {
+	decode: (sort, ctx) => {
+		const [sortBy, sortOrder, ...rest] = sort.split('+');
 
-	if (rest.length > 0) {
-		return null;
-	}
+		if (rest.length > 0) {
+			ctx.issues.push({code: 'custom', message: 'Invalid sort search value', input: sort});
+			return z.NEVER;
+		}
 
-	const result = sortSchema.safeParse({sortBy, sortOrder});
-	return result.success ? result.data : null;
-}
+		const result = sortSchema.safeParse({sortBy, sortOrder});
+		if (!result.success) {
+			ctx.issues.push({code: 'custom', message: 'Invalid sort search value', input: sort});
+			return z.NEVER;
+		}
+
+		return result.data;
+	},
+	encode: ({sortBy, sortOrder}) => `${sortBy}+${sortOrder}`,
+});
 
 function normalizeSortSearchValue(sort?: string) {
 	if (sort === undefined) {
 		return DEFAULT_SORT_SEARCH_VALUE;
 	}
 
-	const sortParams = parseSortSearchValue(sort);
-	return sortParams === null ? DEFAULT_SORT_SEARCH_VALUE : `${sortParams.sortBy}+${sortParams.sortOrder}`;
+	const sortParams = sortSearchValueCodec.safeDecode(sort);
+	return sortParams.success ? sortSearchValueCodec.encode(sortParams.data) : DEFAULT_SORT_SEARCH_VALUE;
 }
 
 const taskDetailsHistorySearchSchema = z.object({
@@ -57,7 +67,8 @@ type TaskDetailsHistorySort = {
 type TaskDetailsHistorySearch = z.infer<typeof taskDetailsHistorySearchSchema>;
 
 function getSortParams(search: TaskDetailsHistorySearch): TaskDetailsHistorySortParams {
-	return parseSortSearchValue(search.sort) ?? DEFAULT_SORT_PARAMS;
+	const sortParams = sortSearchValueCodec.safeDecode(search.sort);
+	return sortParams.success ? sortParams.data : DEFAULT_SORT_PARAMS;
 }
 
 function getAuditLogSort(search: TaskDetailsHistorySearch): TaskDetailsHistorySort {
@@ -69,16 +80,17 @@ function getAuditLogSort(search: TaskDetailsHistorySearch): TaskDetailsHistorySo
 	};
 }
 
-function getSortSearchValue(sortKey: string, currentSortOrder?: 'asc' | 'desc') {
-	return `${sortKey}+${currentSortOrder === 'asc' ? 'desc' : 'asc'}`;
+function getNextSortSearchValue(sortBy: TaskDetailsHistorySortField, currentSortOrder?: 'asc' | 'desc') {
+	return sortSearchValueCodec.encode({sortBy, sortOrder: currentSortOrder === 'asc' ? 'desc' : 'asc'});
 }
 
 export {
 	getAuditLogSort,
+	getNextSortSearchValue,
 	getSortParams,
-	getSortSearchValue,
 	taskDetailsHistorySearchDefaults,
 	taskDetailsHistorySearchSchema,
 	type TaskDetailsHistorySearch,
 	type TaskDetailsHistorySort,
+	type TaskDetailsHistorySortField,
 };
