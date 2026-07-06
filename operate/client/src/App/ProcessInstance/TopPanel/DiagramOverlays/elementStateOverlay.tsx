@@ -24,11 +24,9 @@ import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusiness
 import {useModificationsByElement} from 'modules/hooks/modifications';
 import {hasPendingCancelOrMoveModification} from 'modules/utils/modifications';
 import {getSubprocessOverlayFromIncidentElements} from 'modules/utils/elements';
-import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
-import {useElementInstanceInspection} from 'modules/queries/elementInstanceInspection/useElementInstanceInspection';
-import {isBeforeAllExecutionListenerWaitState} from 'modules/utils/waitStates';
+import {useWaitStateStatistics} from 'modules/queries/waitStateStatistics/useWaitStateStatistics';
+import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {getClientConfig} from 'modules/utils/getClientConfig';
-import {useProcessInstancePageParams} from '../../useProcessInstancePageParams';
 import type {ElementState, OverlayData} from 'modules/bpmn-js/overlayTypes';
 import type {DiagramOverlay} from './types';
 
@@ -53,12 +51,8 @@ const useElementStateOverlaysData = (): OverlayData[] => {
   const {data: businessObjects} = useBusinessObjects();
   const {isExecutionCountVisible} = executionCountToggleStore.state;
   const clientConfig = getClientConfig();
-  const {processInstanceId = ''} = useProcessInstancePageParams();
-  const {data: processInstance} = useProcessInstance();
-  const {data: inspectionData} = useElementInstanceInspection({
-    processInstanceKey: processInstanceId,
-    enabled:
-      clientConfig.waitStatesEnabled && processInstance?.state === 'ACTIVE',
+  const {data: waitStateStatistics} = useWaitStateStatistics({
+    enabled: clientConfig.waitStatesEnabled,
   });
 
   return useMemo(() => {
@@ -84,20 +78,21 @@ const useElementStateOverlaysData = (): OverlayData[] => {
       ...subprocessOverlays,
     ];
 
-    if (inspectionData?.items?.length) {
-      const elementIdsInStats = new Set(statistics?.map(({id}) => id) ?? []);
-      for (const item of inspectionData.items) {
-        if (
-          isBeforeAllExecutionListenerWaitState(item) &&
-          !elementIdsInStats.has(item.elementId)
-        ) {
-          allElementStateOverlays.push({
-            payload: {elementState: 'active' as const},
-            type: ELEMENT_STATE_OVERLAY_TYPE,
-            elementId: item.elementId,
-            position: overlayPositions.active,
-          });
-        }
+    // A waiting MI body with no active inner instance (BEFORE_ALL listener) is
+    // absent from element-instances stats; synthesize an active overlay for it.
+    const elementIdsInStats = new Set(statistics?.map(({id}) => id) ?? []);
+    for (const {elementId, waitingCount} of waitStateStatistics ?? []) {
+      if (
+        waitingCount > 0 &&
+        !elementIdsInStats.has(elementId) &&
+        isMultiInstance(businessObjects?.[elementId])
+      ) {
+        allElementStateOverlays.push({
+          payload: {elementState: 'active' as const},
+          type: ELEMENT_STATE_OVERLAY_TYPE,
+          elementId,
+          position: overlayPositions.active,
+        });
       }
     }
 
@@ -108,7 +103,12 @@ const useElementStateOverlaysData = (): OverlayData[] => {
     return isExecutionCountVisible
       ? allElementStateOverlays
       : notCompletedElementStateOverlays;
-  }, [statistics, businessObjects, isExecutionCountVisible, inspectionData]);
+  }, [
+    statistics,
+    businessObjects,
+    isExecutionCountVisible,
+    waitStateStatistics,
+  ]);
 };
 
 const ElementStateOverlay: React.FC<{overlay: DiagramOverlay}> = ({

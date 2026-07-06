@@ -14,30 +14,27 @@ import {
   WAITING_BADGE_NARROW,
 } from 'modules/bpmn-js/badgePositions';
 import {WaitingStateOverlay as WaitingState} from 'modules/components/WaitingStateOverlay';
-import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
-import {
-  MAX_WAIT_STATES,
-  useElementInstanceInspection,
-} from 'modules/queries/elementInstanceInspection/useElementInstanceInspection';
+import {useWaitStateStatistics} from 'modules/queries/waitStateStatistics/useWaitStateStatistics';
+import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {getWaitStateLabel} from 'modules/utils/waitStates';
 import {getClientConfig} from 'modules/utils/getClientConfig';
-import {useProcessInstancePageParams} from '../../useProcessInstancePageParams';
 import type {OverlayData} from 'modules/bpmn-js/overlayTypes';
 import type {DiagramOverlay} from './types';
 
 const WAITING_STATE_OVERLAY_TYPE = 'waitingState';
 
 // Gateways and events are narrow (~36px) symbols.
-const NARROW_WAIT_STATE_ELEMENT_TYPES = new Set<string>([
-  'EXCLUSIVE_GATEWAY',
-  'PARALLEL_GATEWAY',
-  'INCLUSIVE_GATEWAY',
-  'EVENT_BASED_GATEWAY',
-  'START_EVENT',
-  'END_EVENT',
-  'INTERMEDIATE_CATCH_EVENT',
-  'INTERMEDIATE_THROW_EVENT',
-  'BOUNDARY_EVENT',
+const NARROW_WAIT_STATE_BPMN_TYPES = new Set<string>([
+  'bpmn:ExclusiveGateway',
+  'bpmn:ParallelGateway',
+  'bpmn:InclusiveGateway',
+  'bpmn:EventBasedGateway',
+  'bpmn:ComplexGateway',
+  'bpmn:StartEvent',
+  'bpmn:EndEvent',
+  'bpmn:IntermediateCatchEvent',
+  'bpmn:IntermediateThrowEvent',
+  'bpmn:BoundaryEvent',
 ]);
 
 type WaitingStatePayload = {
@@ -55,39 +52,27 @@ const useWaitingStateOverlaysData = (
   elementsWithAgent: Set<string>,
 ): OverlayData[] => {
   const clientConfig = getClientConfig();
-  const {processInstanceId = ''} = useProcessInstancePageParams();
-  const {data: processInstance} = useProcessInstance();
-  const {data: inspectionData} = useElementInstanceInspection({
-    processInstanceKey: processInstanceId,
-    enabled:
-      clientConfig.waitStatesEnabled && processInstance?.state === 'ACTIVE',
+  const {data: waitStateStatistics} = useWaitStateStatistics({
+    enabled: clientConfig.waitStatesEnabled,
   });
+  const {data: businessObjects} = useBusinessObjects();
 
   return useMemo(() => {
-    if (!inspectionData?.items?.length) {
+    if (!waitStateStatistics?.length) {
       return [];
     }
 
-    // Group wait states by elementId (show only 1 label per element)
-    const waitStatesByElement = new Map<string, typeof inspectionData.items>();
-    for (const item of inspectionData.items) {
-      const existing = waitStatesByElement.get(item.elementId) ?? [];
-      existing.push(item);
-      waitStatesByElement.set(item.elementId, existing);
-    }
-
     const overlays: OverlayData[] = [];
-    const hasMore = (inspectionData.page?.totalItems ?? 0) > MAX_WAIT_STATES;
 
-    for (const [elementId, waitStates] of waitStatesByElement) {
+    for (const {elementId, waitingCount} of waitStateStatistics) {
       // Hide the waiting state when an agent instance exists for the element.
       if (elementsWithAgent.has(elementId)) {
         continue;
       }
-      const label = getWaitStateLabel(waitStates, hasMore);
+      const label = getWaitStateLabel(waitingCount);
       if (label) {
-        const isNarrowElement = waitStates.some((waitState) =>
-          NARROW_WAIT_STATE_ELEMENT_TYPES.has(waitState.elementType),
+        const isNarrowElement = NARROW_WAIT_STATE_BPMN_TYPES.has(
+          businessObjects?.[elementId]?.$type ?? '',
         );
         overlays.push({
           elementId,
@@ -102,7 +87,7 @@ const useWaitingStateOverlaysData = (
     }
 
     return overlays;
-  }, [inspectionData, elementsWithAgent]);
+  }, [waitStateStatistics, businessObjects, elementsWithAgent]);
 };
 
 const WaitingStateOverlay: React.FC<{overlay: DiagramOverlay}> = ({
