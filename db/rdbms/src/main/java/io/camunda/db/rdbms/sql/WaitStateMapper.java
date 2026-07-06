@@ -13,7 +13,7 @@ import io.camunda.db.rdbms.write.domain.WaitStateDbModel;
 import io.camunda.search.entities.WaitStateStatisticsEntity;
 import java.util.List;
 
-public interface WaitStateMapper {
+public interface WaitStateMapper extends ProcessInstanceDependantMapper {
 
   void insert(WaitStateDbModel waitState);
 

@@ -193,7 +193,7 @@ public class RdbmsWriters {
     writers.put(
         AgentInstanceWriter.class,
         new AgentInstanceWriter(executionQueue, agentInstanceMapper, vendorDatabaseProperties));
-    writers.put(WaitStateWriter.class, new WaitStateWriter(executionQueue));
+    writers.put(WaitStateWriter.class, new WaitStateWriter(executionQueue, waitStateMapper));
   }
 
   public AuthorizationWriter getAuthorizationWriter() {
