@@ -7,18 +7,25 @@
  */
 
 import {t} from 'i18next';
-import {createFileRoute, redirect, useNavigate} from '@tanstack/react-router';
+import {createFileRoute, redirect, stripSearchParams, useNavigate} from '@tanstack/react-router';
 import {useSuspenseQuery, type InfiniteData} from '@tanstack/react-query';
 import type {QueryUserTaskAuditLogsResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
 import {queries} from '#/shared/http/queries';
 import {notificationsStore} from '#/shared/notifications/notifications.store';
 import {getAuditLogsRequestBody} from '#/tasklist/modules/task-details-history/getAuditLogsRequestBody';
-import {getAuditLogSort, taskDetailsHistorySearchSchema} from '#/tasklist/modules/task-details-history/sortUtils';
+import {
+	getAuditLogSort,
+	taskDetailsHistorySearchDefaults,
+	taskDetailsHistorySearchSchema,
+} from '#/tasklist/modules/task-details-history/sortUtils';
 import {HistoryItemDetailsModal} from '#/tasklist/modules/task-details-history/components/HistoryItemDetailsModal';
-import {Route as HistoryRoute} from './route';
 import {useCallback} from 'react';
 
 export const Route = createFileRoute('/_auth/tasklist/_tasks/$userTaskKey/history/$auditLogKey')({
+	validateSearch: taskDetailsHistorySearchSchema,
+	search: {
+		middlewares: [stripSearchParams(taskDetailsHistorySearchDefaults)],
+	},
 	loader: async ({context: {queryClient}, params: {userTaskKey, auditLogKey}, location}) => {
 		const search = taskDetailsHistorySearchSchema.parse(location.search);
 		const auditLogsQuery = queries.queryUserTaskAuditLogs(
@@ -55,7 +62,7 @@ export const Route = createFileRoute('/_auth/tasklist/_tasks/$userTaskKey/histor
 	},
 	component: function HistoryItemDetailsModalRoute() {
 		const {userTaskKey, auditLogKey} = Route.useParams();
-		const search = HistoryRoute.useSearch();
+		const search = Route.useSearch();
 		const navigate = useNavigate();
 		const {data: auditLog} = useSuspenseQuery(queries.getAuditLog(auditLogKey));
 

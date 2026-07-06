@@ -10,6 +10,7 @@ import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
 import {
 	mockCurrentUserEndpoint,
+	mockGetAuditLogEndpoint,
 	mockGetUserTaskEndpoint,
 	mockLicenseEndpoint,
 	mockQueryUserTaskAuditLogsEndpoint,
@@ -84,6 +85,8 @@ test.describe('Task details history', () => {
 		await taskDetailPage.goto(USER_TASK_KEY);
 		await taskDetailPage.historyTab.click();
 
+		await expect(taskDetailPage.historyDetailsModal).not.toBeVisible();
+
 		await expect(page).toHaveURL(/\/tasklist\/2251799813685281\/history/);
 		await expect(taskDetailPage.detailsInfo).toBeVisible();
 		await expect(taskDetailPage.aside).toBeVisible();
@@ -96,8 +99,21 @@ test.describe('Task details history', () => {
 
 		await taskDetailPage.gotoHistory(USER_TASK_KEY);
 
+		await expect(taskDetailPage.historyDetailsModal).not.toBeVisible();
+
 		await expect(taskDetailPage.historyTabContent.getByText('Create task')).toBeVisible();
 		await expect(taskDetailPage.detailsInfo).toBeVisible();
+
+		await taskDetailPage.historyDetailsButton.first().click();
+
+		await expect(taskDetailPage.historyTab).toHaveAttribute('aria-current', 'page');
+		await expect(taskDetailPage.historyDetailsModal.getByRole('heading', {name: 'Create task'})).toBeVisible();
+		await expect(taskDetailPage.historyDetailsModal.getByText('demo')).toBeVisible();
+
+		await taskDetailPage.historyDetailsCloseButton.click();
+
+		await expect(page).toHaveURL(/\/tasklist\/2251799813685281\/history/);
+		await expect(taskDetailPage.historyDetailsModal).not.toBeVisible();
 	});
 
 	test('should let the user change the history order', async ({network, taskDetailPage, page}) => {
@@ -121,6 +137,36 @@ test.describe('Task details history', () => {
 
 		await taskDetailPage.historyColumnHeader(/sort by date/i).click();
 		await expect.poll(() => new URL(page.url()).searchParams.get('sort')).toBe(null);
+	});
+
+	test('should open a history entry from a direct link', async ({network, taskDetailPage, page}) => {
+		const auditLog = createAuditLog({
+			auditLogKey: 'direct-link-log',
+			operationType: 'ASSIGN',
+			actorId: 'jane',
+			relatedEntityKey: 'demo',
+		});
+
+		network.use(
+			mockQueryUserTaskAuditLogsEndpoint({
+				successResponse: HttpResponse.json(createQueryUserTaskAuditLogsResponse({items: historyEntries})),
+			}),
+			mockGetAuditLogEndpoint({
+				successResponse: HttpResponse.json(auditLog),
+			}),
+		);
+
+		await taskDetailPage.gotoHistoryDetails(USER_TASK_KEY, 'direct-link-log', '?sort=timestamp%2Basc');
+
+		await expect(page).toHaveURL(/\/tasklist\/2251799813685281\/history\/direct-link-log\?sort=timestamp%2Basc/);
+		await expect(taskDetailPage.historyTab).toHaveAttribute('aria-current', 'page');
+		await expect(taskDetailPage.historyDetailsModal.getByRole('heading', {name: 'Assign task'})).toBeVisible();
+		await expect(taskDetailPage.historyDetailsModal.getByText('Assignee')).toBeVisible();
+		await expect(taskDetailPage.historyDetailsModal.getByText('demo')).toBeVisible();
+
+		await taskDetailPage.historyDetailsCloseButton.click();
+
+		await expect(page).toHaveURL(/\/tasklist\/2251799813685281\/history\?sort=timestamp%2Basc/);
 	});
 
 	test('should help the user recover when task history cannot be loaded', async ({network, taskDetailPage, page}) => {

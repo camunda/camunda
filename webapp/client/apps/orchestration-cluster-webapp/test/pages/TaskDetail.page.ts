@@ -30,6 +30,10 @@ class TaskDetailPage extends BasePage {
 		return this.page.goto(`/tasklist/${userTaskKey}/history${search ?? ''}`);
 	}
 
+	async gotoHistoryDetails(userTaskKey: string, auditLogKey: string, search?: string) {
+		return this.page.goto(`/tasklist/${userTaskKey}/history/${auditLogKey}${search ?? ''}`);
+	}
+
 	get skeleton() {
 		return this.page.getByTestId('details-skeleton');
 	}
@@ -80,6 +84,18 @@ class TaskDetailPage extends BasePage {
 
 	historyColumnHeader(name: RegExp | string) {
 		return this.historyTabContent.getByRole('columnheader', {name});
+	}
+
+	get historyDetailsModal() {
+		return this.page.getByRole('dialog');
+	}
+
+	get historyDetailsCloseButton() {
+		return this.historyDetailsModal.getByRole('button', {name: 'Close'});
+	}
+
+	get historyDetailsButton() {
+		return this.historyTabContent.getByRole('button', {name: 'Open details'});
 	}
 
 	get completionLabel() {

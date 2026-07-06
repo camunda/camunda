@@ -39,7 +39,6 @@ const HistoryItemDetailsModal: React.FC<Props> = ({onClose, auditLog}) => {
 		>
 			<ModalHeader
 				title={t(getOperationTypeTranslationKey(auditLog.operationType))}
-				buttonOnClick={onClose}
 				iconDescription={t('tasklist.taskDetailsHistoryModalClose')}
 			/>
 			<ModalBody>
