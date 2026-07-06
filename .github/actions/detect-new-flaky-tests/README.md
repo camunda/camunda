@@ -36,6 +36,14 @@ commits, so authors aren't forced to push throwaway commits to bank
 evidence — but the gate is only reachable after a real modification, so
 re-run-spam-without-fix can't game it.
 
+This "re-runs count" guarantee depends on where state is stored. State lives
+in the gate's **PR comment** (a hidden base64 marker), not a workflow
+artifact. GitHub's "Re-run jobs" button and force-pushes both **delete
+run-scoped artifacts**, so an artifact-based counter silently reset on every
+re-run and could only advance via new distinct runs (throwaway commits) —
+this was GAP-11. The comment is durable across re-runs, attempts, and
+force-pushes, so a fixed test genuinely clears by re-running CI.
+
 ## How it works
 
 ```
@@ -50,8 +58,8 @@ re-run-spam-without-fix can't game it.
 │     ├─ Read bypass label                                             │
 │     ├─ Query BigQuery for baseline (only if new flakes this run)     │
 │     └─ detect-new-flaky-tests action (composite)                     │
-│        ├─ Discover + download prior state artifact (or fresh)        │
 │        ├─ Run detect_new_flaky_tests.py                              │
+│        │  ├─ Read prior state from the PR comment (or fresh)         │
 │        │  ├─ No prior state + no flakes + no bypass? → no-op         │
 │        │  ├─ Bypass label?  → mark all active → cleared_via_bypass   │
 │        │  ├─ Else:                                                   │
@@ -61,16 +69,17 @@ re-run-spam-without-fix can't game it.
 │        │  │    4. Merge surviving new flakes / reset re-flaked       │
 │        │  │    5. Increment counters where job ran AND test clean    │
 │        │  │    6. Promote counter>=3 entries to cleared_via_fix      │
-│        │  └─ Render comment, write state.json                        │
-│        ├─ Upload state artifact (flaky-gate-state-pr-<N>, 30d)       │
+│        │  └─ Render comment (state embedded) + upsert PR comment     │
 │        └─ Exit non-zero if any entries remain active (blocking)      │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
 ## State schema
 
-Per-PR JSON written to / read from the workflow artifact
-`flaky-gate-state-pr-<PR_NUMBER>` (retention 30 days).
+Per-PR JSON embedded (base64) in the hidden `<!-- flaky-gate-state: … -->`
+marker of the gate's PR comment — the durable store (see "Why the PR comment
+holds state" below). The detector reads it back on the next run via the GitHub
+comments API.
 
 ```json
 {
@@ -100,6 +109,36 @@ Per-PR JSON written to / read from the workflow artifact
 
 Statuses: `active`, `cleared_via_fix`, `cleared_via_bypass`,
 `dropped_force_push`.
+
+## Why the PR comment holds state
+
+State was previously a per-PR workflow artifact (`flaky-gate-state-pr-<N>`,
+selected newest-by-`created_at`). That was **GAP-11**: GitHub's "Re-run jobs"
+button starts a new run attempt and **deletes the run's own prior-attempt
+artifacts**, and `upload-artifact overwrite` is run-scoped. So a re-run could
+not see the counter its earlier attempt banked — it fell back to an older
+distinct run's artifact and re-landed on the same value. Documented "re-runs
+count" clearance was therefore impossible; only new distinct runs (throwaway
+commits) advanced the counter. No artifact-selection strategy fixes this,
+because the advanced state only ever lived in the deleted artifact.
+
+The PR comment is **not** run-scoped: it survives re-runs, attempts, and
+force-pushes. Storing state in it makes the counter durable and monotonic
+across every kind of subsequent run, so a genuinely fixed test clears by
+re-running CI — no empty commits. It also removed the artifact entirely
+(no retention window, no `actions:` permission).
+
+Trade-offs (accepted for a pilot advisory gate):
+
+- **Visibility / tamper** — the base64 state is present in the comment source;
+  a maintainer could edit it. The gate is advisory and already has a
+  `ci:flaky-test-bypass` label escape hatch, so this is not a new trust
+  boundary.
+- **Concurrency** — two runs finishing at once do last-writer-wins on the
+  comment (same race the artifact had). `MIN_CLEAN_RUNS = 3` absorbs a rare
+  lost increment.
+- **Size** — base64 state is well under GitHub's 65 536-char comment cap for
+  realistic per-PR test counts.
 
 ## BigQuery baseline query
 
@@ -258,12 +297,13 @@ detection. For each entry:
 
 ## Comment rendering
 
-Single PR comment, identified by `<!-- new-flaky-tests-alert -->`. Carries
-a hidden pointer to the state artifact:
+Single PR comment, identified by `<!-- new-flaky-tests-alert -->`. The second
+line carries the full sticky state as a base64-encoded hidden marker (invisible
+in the rendered comment); the detector reads it back on the next run:
 
 ```
 <!-- new-flaky-tests-alert -->
-<!-- flaky-gate-state-artifact: flaky-gate-state-pr-54375 -->
+<!-- flaky-gate-state: eyJzY2hlbWFfdmVyc2lvbiI6MSwicHJfbnVtYmVy… -->
 ```
 
 ### Active alert
@@ -308,16 +348,17 @@ See `.github/workflows/ci.yml` `detect-new-flaky-tests` job. Key steps:
 
 1. **`actions/checkout`** with `fetch-depth: 0` (full history required for
    `git log -L`).
-2. **Discover and download** the latest non-expired
-   `flaky-gate-state-pr-<N>` artifact via `gh api`.
-3. **Build `ran-jobs-json`** from `needs.<job>.result` values (any value
+2. **Build `ran-jobs-json`** from `needs.<job>.result` values (any value
    other than `skipped`).
-4. **Read bypass label** from `pull_request.labels`.
-5. **Query BigQuery** only when this run produced new flakes.
-6. **Invoke the composite action** with all of the above plus
+3. **Read bypass label** from `pull_request.labels`.
+4. **Query BigQuery** only when this run produced new flakes.
+5. **Invoke the composite action** with all of the above plus
    `head-sha`, `base-ref`, `blocking: 'true'`.
-7. **Upload** the new `state.json` as
-   `flaky-gate-state-pr-<N>` (retention 30 days, overwrite previous).
+
+The action needs only `pull-requests: write` + `contents: read`. Prior state
+is read from the gate's PR comment at the start of the detector and the updated
+state is written back into that comment at the end — there is no artifact
+download/upload step and no `actions:` permission.
 
 ## When the gate runs
 
@@ -365,13 +406,13 @@ If the gate flags a flaky test that is **not caused by your changes**:
 
 ## Secrets
 
-|      Secret       |                        Source                        |        Purpose         |
-|-------------------|------------------------------------------------------|------------------------|
-| `VAULT_ADDR`      | Repository secret                                    | Vault server URL       |
-| `VAULT_ROLE_ID`   | Repository secret                                    | Vault AppRole auth     |
-| `VAULT_SECRET_ID` | Repository secret                                    | Vault AppRole auth     |
-| GCP SA key        | Vault (`secret/data/products/zeebe/ci/ci-analytics`) | BigQuery access        |
-| `GITHUB_TOKEN`    | Auto                                                 | Comment + artifact API |
+|      Secret       |                        Source                        |             Purpose              |
+|-------------------|------------------------------------------------------|----------------------------------|
+| `VAULT_ADDR`      | Repository secret                                    | Vault server URL                 |
+| `VAULT_ROLE_ID`   | Repository secret                                    | Vault AppRole auth               |
+| `VAULT_SECRET_ID` | Repository secret                                    | Vault AppRole auth               |
+| GCP SA key        | Vault (`secret/data/products/zeebe/ci/ci-analytics`) | BigQuery access                  |
+| `GITHUB_TOKEN`    | Auto                                                 | Comment read/write (state store) |
 
 ## Running locally
 
@@ -394,7 +435,9 @@ bq query --project_id=ci-30-162810 --use_legacy_sql=false --format=json \
      AND ts.test_status IN ("flaky","failure","error")
      AND bs.ci_url IS NOT NULL' > /tmp/known-flaky-tests.json
 
-# 2. Optional: provide a prior state file.
+# 2. Optional: provide a prior state file. In CI, prior state is read from the
+#    PR comment marker; STATE_FILE_IN is only the local/offline fallback used
+#    when the comment cannot be fetched (e.g. a fake token, as below).
 echo '{"schema_version":1,"pr_number":12345,"last_known_head_sha":"prev","last_updated_at":"t","tests":[]}' > /tmp/state-in.json
 
 # 3. Simulate PR flaky data and run the detector.

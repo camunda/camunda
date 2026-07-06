@@ -1644,9 +1644,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      pull-requests: write
+      pull-requests: write  # read prior state from + write updated state to the gate's PR comment
       contents: read
-      actions: read  # read the prior per-PR sticky-state run artifact via the Artifacts API
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         timeout-minutes: 5
