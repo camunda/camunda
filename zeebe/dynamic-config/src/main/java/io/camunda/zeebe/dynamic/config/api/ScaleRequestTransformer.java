@@ -67,11 +67,12 @@ public class ScaleRequestTransformer implements ConfigurationChangeRequest {
     // that
     // zone to run the callbacks, and its brokers create their node-id leases on startup, so the
     // callbacks are skipped entirely.
-    final Optional<MemberId> scalingExecutorMemberId = selectMember(clusterConfiguration);
-    final boolean isBrokerScaling =
+    final Optional<MemberId> scalingExecutorMemberId =
+        selectPrePostScalingExecutor(clusterConfiguration);
+    final boolean isPrePostScalingRequired =
         scalingExecutorMemberId.isPresent()
             && !clusterConfiguration.members().keySet().equals(members);
-    if (isBrokerScaling) {
+    if (isPrePostScalingRequired) {
       scalingExecutorMemberId.ifPresent(
           id -> generatedOperations.add(new PreScalingOperation(id, members)));
     }
@@ -99,7 +100,7 @@ public class ScaleRequestTransformer implements ConfigurationChangeRequest {
         .map(this::addToOperations)
         .map(
             list -> {
-              if (isBrokerScaling) {
+              if (isPrePostScalingRequired) {
                 scalingExecutorMemberId.ifPresent(
                     id -> list.add(new PostScalingOperation(id, members)));
               }
@@ -107,7 +108,8 @@ public class ScaleRequestTransformer implements ConfigurationChangeRequest {
             });
   }
 
-  private Optional<MemberId> selectMember(final ClusterConfiguration clusterConfiguration) {
+  private Optional<MemberId> selectPrePostScalingExecutor(
+      final ClusterConfiguration clusterConfiguration) {
     final var coordinatorSupplier =
         ClusterConfigurationCoordinatorSupplier.of(() -> clusterConfiguration);
     if (zone.isEmpty()) {

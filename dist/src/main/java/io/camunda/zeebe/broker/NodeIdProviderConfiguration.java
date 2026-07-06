@@ -101,7 +101,7 @@ public class NodeIdProviderConfiguration {
             previousNodeGracefullyShutdown =
                 nodeIdProvider.previousNodeGracefullyShutdown().get(10, TimeUnit.SECONDS);
             LOG.info(
-                "Node instance is {}, previousNodeGracefullyShutdown is {}",
+                "Node instance from nodeIdProvider is {}, did previous node instance shutdown gracefully:{}",
                 nodeInstance,
                 previousNodeGracefullyShutdown);
             yield disableVersionedDirectory

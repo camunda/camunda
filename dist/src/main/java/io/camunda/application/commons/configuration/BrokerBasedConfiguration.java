@@ -55,7 +55,6 @@ public class BrokerBasedConfiguration {
 
     final var cluster = properties.getCluster();
     final var currentInstance = nodeIdProvider.currentNodeInstance();
-    LOG.info("Current node instance is {}", currentInstance);
     cluster.setNodeId(currentInstance.id());
     cluster.setNodeVersion(currentInstance.version().version());
     properties.init(workingDirectory.path().toAbsolutePath().toString());
