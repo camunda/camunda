@@ -1978,7 +1978,7 @@ jobs:
     # This name is hard-coded in the branch rules; remember to update that if this name changes
     if: always()
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 3
     permissions:
       actions: read
       checks: read
@@ -2020,6 +2020,8 @@ jobs:
       - validate-pom-metadata
       - zeebe-ci
       - zeebe-unit-tests
+    env:
+      SHOULD_CLEANUP_GCS: ${{ needs.build-distball.result == 'success' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Check for aborted jobs
@@ -2043,10 +2045,7 @@ jobs:
       # Orphaned objects on abandoned runs are reaped by the bucket TTL (Infra-owned).
       # continue-on-error keeps a Vault/GCS infra flake from failing the merge-queue gate.
       - name: Authenticate to GCS build-cache
-        if: >-
-          needs.build-distball.result == 'success'
-          && !contains(needs.*.result, 'failure')
-          && !contains(needs.*.result, 'cancelled')
+        if: env.SHOULD_CLEANUP_GCS == 'true'
         continue-on-error: true
         uses: ./.github/actions/gcs-build-cache-auth
         with:
@@ -2054,10 +2053,7 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - name: Delete run-scoped GCS objects
-        if: >-
-          needs.build-distball.result == 'success'
-          && !contains(needs.*.result, 'failure')
-          && !contains(needs.*.result, 'cancelled')
+        if: env.SHOULD_CLEANUP_GCS == 'true'
         continue-on-error: true
         shell: bash
         run: |
