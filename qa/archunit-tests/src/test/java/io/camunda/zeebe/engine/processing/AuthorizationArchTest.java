@@ -28,6 +28,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCommandProcessor;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
@@ -112,6 +113,21 @@ public class AuthorizationArchTest {
                     "isAuthorized",
                     TypedRecord.class,
                     PermissionType.class))
+            .or(
+                ArchConditions.callMethod(
+                    PermissionsBehavior.class,
+                    "isAuthorized",
+                    TypedRecord.class,
+                    AuthorizationResourceType.class,
+                    PermissionType.class))
+            .or(
+                ArchConditions.callMethod(
+                    PermissionsBehavior.class,
+                    "isAuthorized",
+                    TypedRecord.class,
+                    AuthorizationResourceType.class,
+                    PermissionType.class,
+                    String.class))
             .or(
                 ArchConditions.callMethod(
                     ProcessInstanceCreationHelper.class,
