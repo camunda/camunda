@@ -8,58 +8,67 @@
 package io.camunda.eventbridge.streaming;
 
 import io.camunda.eventbridge.client.Consumer;
-import io.camunda.eventbridge.client.Event;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.client.TopicPartition;
-import io.camunda.eventbridge.streaming.internals.CommitBarrier;
-import io.camunda.eventbridge.streaming.internals.PartitionTasks;
-import io.camunda.eventbridge.streaming.internals.PunctuationDriver;
-import io.camunda.eventbridge.streaming.internals.RebalanceCoordinator;
+import io.camunda.eventbridge.streaming.internals.Partition;
+import io.camunda.eventbridge.streaming.internals.PartitionActor;
+import io.camunda.eventbridge.streaming.internals.PartitionCommitter;
+import io.camunda.eventbridge.streaming.internals.SourceLoop;
+import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.SchedulingHints;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.ToLongFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A generic stream-processing runtime over an EventBridge consumer group. It owns the poll loop,
- * the two-clock cadence, restore, and shutdown, and wires four cohesive collaborators: {@link
- * PartitionTasks} (the per-partition task registry + dedup baseline), {@link CommitBarrier} (the
- * per-partition produce-before-commit), {@link PunctuationDriver} (the freshness/event-time ticks),
- * and {@link RebalanceCoordinator} (assignment deltas → acquire/release). The application supplies
- * only its {@link Task} logic and the source/state bindings.
+ * A generic stream-processing runtime over an EventBridge consumer group. It runs a source stage
+ * that polls, decodes, and routes records into a bounded per-partition queue, and processes each
+ * partition on its own actor — several partitions folding across cores at once, each single-writer.
+ * The application supplies only its {@link Task} logic and the source/state bindings.
  *
  * <p>Inversion of control: the framework drives user code, not the other way round. It depends on
- * nothing but the EventBridge client and the SPIs in this package, so it is reusable by any
- * consumer and knows nothing about what a task does.
+ * the EventBridge client, the SPIs in this package, and the actor scheduler.
  *
- * <p><b>Commit barrier — produce-before-commit, sharded by partition.</b> On each commit tick the
- * runtime flushes every pending task, makes that output durable <em>before</em> any offset
- * advances, then per partition persists that partition's state and offset in its own {@link
- * TransactionRunner atomic transaction} and advances only that partition's source offset (see
- * {@link CommitBarrier}). Each partition is an independent atomic cut: a crash mid-loop replays the
- * not-yet-committed partitions rather than losing them, and any re-emitted output is deduplicated
- * downstream.
+ * <p><b>Parallelism with single-writer safety.</b> Each source partition is an independent shard
+ * (own task, state, and offset) processed by one {@link PartitionActor}. An actor never runs two of
+ * its jobs at once, so a partition's task is single-writer without any lock; the actor scheduler
+ * multiplexes all partition actors onto a bounded thread pool, so partition count does not imply
+ * thread count. Decoding runs on the source stage ahead of folding, so even a single partition
+ * overlaps its decode with its processing. Horizontal scale beyond one consumer comes from running
+ * several runtimes via {@link StreamRuntimeGroup}, optionally sharing one actor scheduler.
  *
- * <p><b>Threading.</b> Single-threaded by design: {@link #run()} owns one consumer and drives poll,
- * processing, punctuation, and commit on its own thread; one task per partition means tasks never
- * need locks. Horizontal parallelism comes from running several runtimes, each with its own
- * consumer, via {@link StreamRuntimeGroup}. Rebalance callbacks fire on the client's heartbeat
- * thread but only record the assignment delta; the run loop applies it (see {@link
- * RebalanceCoordinator}) so all task state stays single-threaded. Not thread-safe; call {@link
- * #run()} from a single thread and {@link #stop()} from any thread.
+ * <p><b>Commit barrier — produce-before-commit, async.</b> A partition is committed as an
+ * independent atomic cut: its output is flushed and made durable, then its state and offset are
+ * persisted, then only that partition's source offset advances (see {@link PartitionCommitter}).
+ * The blocking commit runs on a bounded IO executor while the partition's actor is suspended, so a
+ * DB sink round-trip never blocks folding on other partitions; the offset advances only after the
+ * sink write is durable.
+ *
+ * <p><b>Threading.</b> {@link #run()} drives the source stage on the calling thread (so the
+ * caller's thread is the one blocked in poll and interruptible on shutdown). Partition actors run
+ * on the actor scheduler; the blocking commits run on the sink IO executor. Rebalance callbacks
+ * fire on the client's heartbeat thread but only record the assignment delta; the source stage
+ * applies it. Call {@link #run()} from a single thread and {@link #stop()} from any thread.
  *
  * @param <R> the decoded record type
  */
 public final class StreamRuntime<R> implements AutoCloseable {
 
   private static final Logger LOG = LoggerFactory.getLogger(StreamRuntime.class);
+  private static final long SHUTDOWN_TIMEOUT_MS = 30_000;
 
   private final EventBridgeClient client;
   private final String group;
@@ -74,15 +83,16 @@ public final class StreamRuntime<R> implements AutoCloseable {
   private final ToLongFunction<R> timestampExtractor;
   private final int maxPoll;
   private final Duration pollTimeout;
+  private final Duration punctuationInterval;
   private final long commitIntervalNanos;
-  private final long punctuationIntervalNanos;
   private final long errorBackoffMs;
-
-  // Collaborators, constructed in run() once the consumer exists.
-  private PartitionTasks<R> tasks;
-  private CommitBarrier<R> commitBarrier;
-  private PunctuationDriver<R> punctuator;
-  private RebalanceCoordinator<R> rebalance;
+  private final int processorThreads;
+  private final int partitionQueueCapacity;
+  private final int maxProcessBatch;
+  private final int sinkIoThreads;
+  private final ActorScheduler injectedScheduler;
+  private final ExecutorService injectedSinkExecutor;
+  private final ThreadFactory sinkThreadFactory;
 
   private volatile boolean running;
   private volatile Consumer consumer;
@@ -101,9 +111,19 @@ public final class StreamRuntime<R> implements AutoCloseable {
     timestampExtractor = builder.timestampExtractor;
     maxPoll = builder.maxPoll;
     pollTimeout = builder.pollTimeout;
+    punctuationInterval = builder.punctuationInterval;
     commitIntervalNanos = builder.commitInterval.toNanos();
-    punctuationIntervalNanos = builder.punctuationInterval.toNanos();
     errorBackoffMs = builder.errorBackoff.toMillis();
+    processorThreads = builder.processorThreads;
+    partitionQueueCapacity = builder.partitionQueueCapacity;
+    maxProcessBatch = builder.maxProcessBatch;
+    sinkIoThreads = builder.sinkIoThreads;
+    injectedScheduler = builder.actorScheduler;
+    injectedSinkExecutor = builder.sinkExecutor;
+    sinkThreadFactory =
+        builder.sinkThreadFactory != null
+            ? builder.sinkThreadFactory
+            : defaultSinkThreadFactory(instanceId);
   }
 
   public static <R> Builder<R> builder() {
@@ -111,145 +131,132 @@ public final class StreamRuntime<R> implements AutoCloseable {
   }
 
   /**
-   * Subscribes, restores committed offsets, and runs the poll/process/commit loop on the calling
-   * thread until {@link #stop()}. Runs a final commit and closes the tasks and consumer on exit.
+   * Subscribes, restores committed offsets, and runs the source stage on the calling thread until
+   * {@link #stop()}. On exit it asks every partition actor to make a final commit and close, then
+   * tears down any owned actor scheduler / sink executor and the consumer.
    */
   public void run() {
     running = true;
     consumer = client.subscribe(group, instanceId, List.of(sourceTopic)).join();
-    tasks = new PartitionTasks<>(taskFactory);
-    punctuator = new PunctuationDriver<>(tasks, timestampExtractor);
-    commitBarrier =
-        new CommitBarrier<>(
-            tasks, consumer, sourceTopic, transactionRunner, offsets, preCommitFlushes);
-    rebalance =
-        new RebalanceCoordinator<>(
-            tasks, commitBarrier, punctuator, consumer, sourceTopic, instanceId);
+
+    final boolean ownsScheduler = injectedScheduler == null;
+    final ActorScheduler scheduler = ownsScheduler ? buildScheduler() : injectedScheduler;
+    if (ownsScheduler) {
+      scheduler.start();
+    }
+    final boolean ownsSinkExecutor = injectedSinkExecutor == null;
+    final ExecutorService sinkExecutor =
+        ownsSinkExecutor
+            ? Executors.newFixedThreadPool(sinkIoThreads, sinkThreadFactory)
+            : injectedSinkExecutor;
+
+    final PartitionCommitter<R> committer =
+        new PartitionCommitter<>(
+            consumer, sourceTopic, transactionRunner, offsets, preCommitFlushes);
+    final Map<Integer, Long> restoredBaselines = new HashMap<>();
+    final Function<Partition<R>, PartitionActor<R>> partitionActorFactory =
+        partition -> {
+          final PartitionActor<R> partitionActor =
+              new PartitionActor<>(
+                  partition,
+                  committer,
+                  sinkExecutor,
+                  recordExceptionHandler,
+                  timestampExtractor,
+                  punctuationInterval,
+                  commitIntervalNanos,
+                  maxProcessBatch,
+                  () -> running,
+                  this::stop);
+          scheduler.submitActor(partitionActor.actor(), SchedulingHints.cpuBound()).join();
+          try {
+            // Submitting does not guarantee the start handler has registered the actor's
+            // conditions;
+            // wait for it so the first signalWork/requestStop cannot race ahead of them.
+            partitionActor.awaitStarted();
+          } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+          }
+          return partitionActor;
+        };
+    final SourceLoop<R> source =
+        new SourceLoop<>(
+            consumer,
+            sourceTopic,
+            instanceId,
+            deserializer,
+            taskFactory,
+            partitionActorFactory,
+            restoredBaselines,
+            partitionQueueCapacity,
+            maxPoll,
+            pollTimeout,
+            errorBackoffMs,
+            () -> running);
+
     // Register before the first heartbeat so the initial assignment is observed. The callback runs
-    // on the heartbeat thread and only records the delta; the run loop applies it
-    // (single-threaded).
-    rebalance.register();
+    // on the heartbeat thread and only records the delta; the source stage applies it.
+    source.registerRebalanceListener();
     // Trigger the initial assignment now rather than waiting for the first scheduled heartbeat.
     consumer.sendHeartbeat().join();
-    restore();
+    restore(restoredBaselines);
     LOG.info("Stream runtime '{}' started on topic '{}'", instanceId, sourceTopic);
 
-    long lastCommit = System.nanoTime();
-    long lastPunctuation = System.nanoTime();
-    while (running) {
-      try {
-        rebalance.apply();
-        final List<Event> events = consumer.poll(maxPoll, pollTimeout);
-        // Group the poll batch by partition and process each partition's records contiguously, so a
-        // partition's task and its state cache stay hot rather than ping-ponging between partitions
-        // per record. Within a partition, records keep their offset order; across partitions the
-        // order is irrelevant (each is an independent shard).
-        final Map<Integer, List<Event>> byPartition = new LinkedHashMap<>();
-        for (final Event event : events) {
-          byPartition.computeIfAbsent(event.partitionId(), p -> new ArrayList<>()).add(event);
-        }
-        for (final Map.Entry<Integer, List<Event>> partitionBatch : byPartition.entrySet()) {
-          if (!running) {
-            break; // stopped (shutdown, or a fail-fast record error) — skip the rest of the batch
-          }
-          for (final Event event : partitionBatch.getValue()) {
-            if (!running) {
-              break;
-            }
-            handleRecord(event);
-          }
-          // Memory-pressure commit: when this partition's bounded state is full of buffered writes,
-          // run the barrier now so they flush durably (an atomic cut with the offset) and the
-          // memory
-          // frees — the change-log-free equivalent of a cache-full flush, independent of the clock.
-          final Task<R> task = tasks.get(partitionBatch.getKey());
-          if (task != null && task.needsCheckpoint()) {
-            commitBarrier.commit();
-            lastCommit = System.nanoTime();
-          }
-        }
-        // Freshness clock: flush emitted output and advance event-time on the punctuation tick, so
-        // latency stays bounded and closed windows finalize even for keys with no new records —
-        // independent of (and more frequent than) the durable commit clock.
-        if (System.nanoTime() - lastPunctuation >= punctuationIntervalNanos) {
-          punctuator.punctuate();
-          lastPunctuation = System.nanoTime();
-        }
-        // Durability clock: the produce-before-commit barrier makes state + offsets one atomic cut.
-        if (System.nanoTime() - lastCommit >= commitIntervalNanos) {
-          commitBarrier.commit();
-          lastCommit = System.nanoTime();
-        }
-      } catch (final RuntimeException e) {
-        // Transient infrastructure failure (poll/commit): back off and retry. Record-level errors
-        // are handled per record by the RecordExceptionHandler, not here.
-        LOG.warn(
-            "Stream runtime '{}' loop failed; backing off {}ms", instanceId, errorBackoffMs, e);
-        sleep(errorBackoffMs);
-      }
-    }
+    source.run();
 
-    commitBarrier.commit(); // flush the final batch on graceful shutdown
-    tasks.closeAll();
-    consumer.close();
+    shutdown(
+        source.partitionActors(),
+        ownsScheduler ? scheduler : null,
+        ownsSinkExecutor ? sinkExecutor : null);
     LOG.info("Stream runtime '{}' stopped", instanceId);
   }
 
-  /**
-   * Deserializes and processes one record, applying the {@link RecordExceptionHandler} policy on
-   * failure: {@code SKIP} advances past the record; {@code FAIL} stops the runtime (a restart then
-   * reprocesses from the last commit — no silent record loss). Records at or below the partition's
-   * restored baseline are skipped (resume-gap dedup for a self-owning shard).
-   */
-  private void handleRecord(final Event event) {
-    final int partition = event.partitionId();
-    final long offset = event.position();
-    final Task<R> task = tasks.taskFor(partition);
-    if (offset <= tasks.baseline(partition)) {
-      return;
+  private void shutdown(
+      final Collection<PartitionActor<R>> partitionActors,
+      final ActorScheduler ownedScheduler,
+      final ExecutorService ownedSinkExecutor) {
+    // Ask each actor to make its final commit and close, then wait — the actors need the scheduler
+    // and sink executor alive to do it, so tear those down only afterwards.
+    partitionActors.forEach(PartitionActor::requestStop);
+    for (final PartitionActor<R> partitionActor : partitionActors) {
+      try {
+        if (!partitionActor.awaitStopped(SHUTDOWN_TIMEOUT_MS)) {
+          LOG.warn(
+              "Partition {} did not stop within {}ms", partitionActor.id(), SHUTDOWN_TIMEOUT_MS);
+        }
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
+        break;
+      }
     }
-    final R record;
-    try {
-      record = deserializer.deserialize(event.payload(), partition, offset);
-    } catch (final RuntimeException e) {
-      onRecordError(partition, offset, e);
-      return;
+    if (ownedScheduler != null) {
+      try {
+        ownedScheduler.close();
+      } catch (final Exception e) {
+        LOG.warn("Failed to close actor scheduler for '{}'", instanceId, e);
+      }
     }
-    try {
-      task.process(record);
-    } catch (final RuntimeException e) {
-      onRecordError(partition, offset, e);
-      return;
+    if (ownedSinkExecutor != null) {
+      ownedSinkExecutor.shutdownNow();
     }
-    commitBarrier.recordProcessed(partition, offset);
-    punctuator.observe(partition, record);
+    consumer.close();
   }
 
-  private void onRecordError(final int partition, final long offset, final RuntimeException e) {
-    if (recordExceptionHandler.onError(partition, offset, e)
-        == RecordExceptionHandler.Decision.SKIP) {
-      LOG.warn("Skipping record {}-{} after error", partition, offset, e);
-      commitBarrier.recordProcessed(
-          partition, offset); // advance past it so it commits, not retries
-      return;
-    }
-    LOG.error(
-        "Fatal error on record {}-{}; stopping runtime (restart resumes from last commit)",
-        partition,
-        offset,
-        e);
-    running = false;
+  private ActorScheduler buildScheduler() {
+    return ActorScheduler.newActorScheduler()
+        .setSchedulerName("eb-stream-" + instanceId)
+        .setCpuBoundActorThreadCount(processorThreads)
+        .setIoBoundActorThreadCount(1)
+        .build();
   }
 
   /**
    * Seeds the restored baselines and seeks each managed partition to just after its committed
-   * offset.
+   * offset. A task that owns its durability restores its own baseline when it is materialized.
    */
-  private void restore() {
+  private void restore(final Map<Integer, Long> restoredBaselines) {
     final Map<Integer, Long> committed = offsets.restore();
-    // Remember the baseline so per-record dedup never re-folds an already-committed record. A task
-    // that owns its durability restores its own baseline lazily in PartitionTasks#taskFor instead.
-    tasks.seedRestored(committed);
+    restoredBaselines.putAll(committed);
     if (committed.isEmpty()) {
       return;
     }
@@ -260,7 +267,7 @@ public final class StreamRuntime<R> implements AutoCloseable {
     LOG.info("Stream runtime '{}' resuming from {}", instanceId, committed);
   }
 
-  /** Requests a graceful stop; the loop observes it within one poll timeout. */
+  /** Requests a graceful stop; the source loop observes it within one poll timeout. */
   public void stop() {
     running = false;
   }
@@ -270,12 +277,14 @@ public final class StreamRuntime<R> implements AutoCloseable {
     stop();
   }
 
-  private static void sleep(final long millis) {
-    try {
-      Thread.sleep(millis);
-    } catch (final InterruptedException ie) {
-      Thread.currentThread().interrupt();
-    }
+  private static ThreadFactory defaultSinkThreadFactory(final String instanceId) {
+    final String prefix = "eb-sink-" + instanceId + "-";
+    final AtomicInteger sequence = new AtomicInteger();
+    return runnable -> {
+      final Thread thread = new Thread(runnable, prefix + sequence.getAndIncrement());
+      thread.setDaemon(true);
+      return thread;
+    };
   }
 
   /** Fluent builder; all collaborators are required except the tunables, which have defaults. */
@@ -308,6 +317,13 @@ public final class StreamRuntime<R> implements AutoCloseable {
     private Duration commitInterval = Duration.ofSeconds(1);
     private Duration punctuationInterval = Duration.ofMillis(500);
     private Duration errorBackoff = Duration.ofSeconds(1);
+    private int processorThreads = Math.max(1, Runtime.getRuntime().availableProcessors());
+    private int partitionQueueCapacity = 10_000;
+    private int maxProcessBatch = 2_000;
+    private int sinkIoThreads = 4;
+    private ActorScheduler actorScheduler;
+    private ExecutorService sinkExecutor;
+    private ThreadFactory sinkThreadFactory;
 
     private Builder() {}
 
@@ -353,8 +369,10 @@ public final class StreamRuntime<R> implements AutoCloseable {
     }
 
     /**
-     * A producer flush to run before offsets advance (produce-before-commit). May be added zero+
-     * times.
+     * A producer flush to run before offsets advance (produce-before-commit), for the
+     * runtime-managed durability path where partitions share an output sink. May be added zero+
+     * times. A task that owns its durability flushes its own sink via {@link Task#preCommitFlush}
+     * instead.
      */
     public Builder<R> preCommitFlush(final Runnable flush) {
       preCommitFlushes.add(flush);
@@ -404,6 +422,86 @@ public final class StreamRuntime<R> implements AutoCloseable {
 
     public Builder<R> errorBackoff(final Duration errorBackoff) {
       this.errorBackoff = errorBackoff;
+      return this;
+    }
+
+    /**
+     * The cpu-bound actor thread count of the actor scheduler this runtime creates and owns when no
+     * {@link #actorScheduler} is supplied — the cap on how many partitions fold in parallel.
+     * Ignored when an actor scheduler is injected. Defaults to the available processor count.
+     */
+    public Builder<R> processorThreads(final int processorThreads) {
+      if (processorThreads < 1) {
+        throw new IllegalArgumentException(
+            "processorThreads must be >= 1, was " + processorThreads);
+      }
+      this.processorThreads = processorThreads;
+      return this;
+    }
+
+    /**
+     * The actor scheduler that runs the partition actors. Optional: supply a shared scheduler so
+     * several runtimes (or the whole node) use one cpu-bound pool. When omitted, the runtime
+     * creates and owns a scheduler sized by {@link #processorThreads} and closes it on stop.
+     */
+    public Builder<R> actorScheduler(final ActorScheduler actorScheduler) {
+      this.actorScheduler = actorScheduler;
+      return this;
+    }
+
+    /**
+     * The executor that runs the blocking per-partition commits (the DB sink write + offset
+     * commit), kept off the actor threads. Optional: when omitted, the runtime creates and owns a
+     * bounded pool of {@link #sinkIoThreads} threads (named via {@link #sinkThreadFactory}) and
+     * shuts it down on stop.
+     */
+    public Builder<R> sinkExecutor(final ExecutorService sinkExecutor) {
+      this.sinkExecutor = sinkExecutor;
+      return this;
+    }
+
+    /** Size of the owned sink IO executor — the cap on concurrent blocking commits. Default 4. */
+    public Builder<R> sinkIoThreads(final int sinkIoThreads) {
+      if (sinkIoThreads < 1) {
+        throw new IllegalArgumentException("sinkIoThreads must be >= 1, was " + sinkIoThreads);
+      }
+      this.sinkIoThreads = sinkIoThreads;
+      return this;
+    }
+
+    /**
+     * The thread factory for the owned sink IO executor, letting the caller own that thread policy
+     * (name, daemon status, priority, or a virtual-thread factory). Ignored when a {@link
+     * #sinkExecutor} is injected. Defaults to named daemon platform threads.
+     */
+    public Builder<R> sinkThreadFactory(final ThreadFactory sinkThreadFactory) {
+      this.sinkThreadFactory = sinkThreadFactory;
+      return this;
+    }
+
+    /**
+     * The per-partition decoded-record queue capacity — the buffer the source fills ahead of the
+     * actor, and the point at which back-pressure kicks in. Defaults to {@code 10000}.
+     */
+    public Builder<R> partitionQueueCapacity(final int partitionQueueCapacity) {
+      if (partitionQueueCapacity < 1) {
+        throw new IllegalArgumentException(
+            "partitionQueueCapacity must be >= 1, was " + partitionQueueCapacity);
+      }
+      this.partitionQueueCapacity = partitionQueueCapacity;
+      return this;
+    }
+
+    /**
+     * The maximum number of records an actor drains and folds per job before yielding, so one busy
+     * partition cannot starve timers or other partitions on the same thread. Defaults to {@code
+     * 2000}.
+     */
+    public Builder<R> maxProcessBatch(final int maxProcessBatch) {
+      if (maxProcessBatch < 1) {
+        throw new IllegalArgumentException("maxProcessBatch must be >= 1, was " + maxProcessBatch);
+      }
+      this.maxProcessBatch = maxProcessBatch;
       return this;
     }
 

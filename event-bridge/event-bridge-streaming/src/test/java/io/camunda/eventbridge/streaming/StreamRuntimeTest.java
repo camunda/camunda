@@ -22,19 +22,87 @@ import io.camunda.eventbridge.client.TopicPartition;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
 final class StreamRuntimeTest {
 
   private static final String TOPIC = "facts";
+
+  @Test
+  void shouldRunBlockingCommitsOnTheConfiguredSinkExecutor() throws Exception {
+    // given — a runtime with a custom sink thread factory and one record to commit
+    final Consumer consumer = mock(Consumer.class);
+    final EventBridgeClient client = mock(EventBridgeClient.class);
+    when(client.subscribe(any(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(consumer));
+    when(consumer.sendHeartbeat()).thenReturn(CompletableFuture.completedFuture(null));
+    when(consumer.poll(anyInt(), any()))
+        .thenReturn(List.of(new Event(5L, TOPIC, 1, "a".getBytes(StandardCharsets.UTF_8))))
+        .thenReturn(List.of());
+    when(consumer.commitOffset(any(), anyInt(), anyLong()))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    final AtomicReference<String> commitThreadName = new AtomicReference<>();
+    final CountDownLatch committed = new CountDownLatch(1);
+    final ThreadFactory sinkFactory =
+        runnable -> {
+          final Thread thread = new Thread(runnable, "custom-sink");
+          thread.setDaemon(true);
+          return thread;
+        };
+
+    final StreamRuntime<String> runtime =
+        StreamRuntime.<String>builder()
+            .client(client)
+            .group("g")
+            .instanceId("i")
+            .sourceTopic(TOPIC)
+            .deserializer(
+                (payload, partition, offset) -> new String(payload, StandardCharsets.UTF_8))
+            .taskFactory(partition -> record -> {})
+            .transactionRunner(Runnable::run)
+            .offsetStore(
+                new OffsetStore() {
+                  @Override
+                  public Map<Integer, Long> restore() {
+                    return Map.of();
+                  }
+
+                  @Override
+                  public void store(final int partition, final long offset) {
+                    // The commit runs on the sink IO executor — capture the thread it ran on.
+                    commitThreadName.set(Thread.currentThread().getName());
+                    committed.countDown();
+                  }
+                })
+            .sinkIoThreads(1)
+            .sinkThreadFactory(sinkFactory)
+            .commitInterval(Duration.ZERO)
+            .build();
+
+    // when
+    final Thread loop = new Thread(runtime::run, "runtime-under-test");
+    loop.start();
+
+    // then — the blocking commit ran on the configured sink executor, not the actor/source thread
+    assertThat(committed.await(5, TimeUnit.SECONDS)).isTrue();
+    assertThat(commitThreadName.get()).isEqualTo("custom-sink");
+
+    runtime.stop();
+    loop.join(TimeUnit.SECONDS.toMillis(5));
+  }
 
   @Test
   void shouldProduceBeforeCommitAndPersistStateWithOffsetAtomically() throws Exception {
@@ -201,7 +269,11 @@ final class StreamRuntimeTest {
         .thenAnswer(
             invocation -> {
               committedOffsets.put(invocation.getArgument(1), invocation.getArgument(2));
-              offsetCommitted.countDown();
+              // The source and processor are decoupled, so the skipped record (offset 5) may commit
+              // in its own cut before offset 6; wait for the terminal commit past the good record.
+              if ((long) invocation.getArgument(2) == 6L) {
+                offsetCommitted.countDown();
+              }
               return CompletableFuture.completedFuture(null);
             });
 
@@ -384,8 +456,8 @@ final class StreamRuntimeTest {
 
   @Test
   void shouldCommitEachPartitionInItsOwnTransaction() throws Exception {
-    // given — a poll batch spanning two partitions
-    final Map<Integer, Long> committedOffsets = new HashMap<>();
+    // given — a poll batch spanning two partitions (committed concurrently by two processors)
+    final Map<Integer, Long> committedOffsets = new ConcurrentHashMap<>();
     final AtomicInteger transactions = new AtomicInteger();
     final AtomicInteger preCommitFlushes = new AtomicInteger();
     final CountDownLatch bothCommitted = new CountDownLatch(2);
@@ -528,9 +600,9 @@ final class StreamRuntimeTest {
   }
 
   @Test
-  void shouldProcessRecordsGroupedByPartitionNotInterleaved() throws Exception {
+  void shouldPreservePerPartitionOrderAcrossParallelProcessing() throws Exception {
     // given — one poll batch interleaving two partitions: p1@1, p2@1, p1@2, p2@2
-    final List<String> processed = new ArrayList<>();
+    final List<String> processed = Collections.synchronizedList(new ArrayList<>());
     final CountDownLatch allProcessed = new CountDownLatch(4);
 
     final Consumer consumer = mock(Consumer.class);
@@ -587,8 +659,11 @@ final class StreamRuntimeTest {
     runtime.stop();
     loop.join(TimeUnit.SECONDS.toMillis(5));
 
-    // then — partition 1's records ran contiguously, then partition 2's (not a,x,b,y interleaved)
-    assertThat(processed).containsExactly("a", "b", "x", "y");
+    // then — all four ran, and each partition kept its own offset order (cross-partition order is
+    // irrelevant: partitions are independent shards processed in parallel).
+    assertThat(processed).containsExactlyInAnyOrder("a", "b", "x", "y");
+    assertThat(processed).containsSubsequence("a", "b");
+    assertThat(processed).containsSubsequence("x", "y");
   }
 
   @SuppressWarnings("unchecked")

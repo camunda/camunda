@@ -20,16 +20,14 @@ import org.slf4j.LoggerFactory;
  * Runs several supervised {@link StreamRuntime} members in parallel, one per thread — the runtime's
  * unit of horizontal scaling.
  *
- * <p>A single {@link StreamRuntime} is deliberately single-threaded: it owns one consumer and
- * processes one record at a time across the partitions that consumer is assigned. Parallelism does
- * not come from fanning those partitions out to worker threads (which would force every poll cycle
- * to wait for its slowest partition); it comes from running several members, each with its own
- * consumer and its own poll/process/commit loop. All members join the same consumer group under
- * distinct instance ids, so the group coordinator splits the source partitions across them. Each
- * member is then a single-writer over its own partitions — no locks, no shared state — and the
- * loops are fully independent: a slow partition delays only the member that owns it, never the
- * others. The effective parallelism is bounded by the source partition count (extra members get no
- * assignment).
+ * <p>A single {@link StreamRuntime} already processes its assigned partitions in parallel across a
+ * processor pool (one partition leased to one processor at a time). This group is the next axis of
+ * scale: several members, each with its <em>own</em> consumer, so scale-out spans consumers and
+ * nodes rather than only cores. All members join the same consumer group under distinct instance
+ * ids, so the coordinator splits the source partitions across them; each member then owns a
+ * disjoint slice of partitions and the members are fully independent — a slow member delays only
+ * its own slice, never the others. The effective parallelism is bounded by the source partition
+ * count (extra members get no assignment).
  *
  * <p><b>Supervision.</b> Each member runs under a supervisor that distinguishes an intentional stop
  * from a crash: a member that returns cleanly (a graceful {@link StreamRuntime#stop() stop}, or its

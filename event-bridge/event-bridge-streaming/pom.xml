@@ -47,6 +47,11 @@
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-db</artifactId>
     </dependency>
+    <!-- Actor scheduler: partition processing runs one actor per partition (single-writer). -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-scheduler</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.agrona</groupId>
       <artifactId>agrona</artifactId>
