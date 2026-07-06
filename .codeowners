@@ -1,6 +1,15 @@
 # Each line is a file pattern followed by one or more owners.
 # If you'd like to be added as an owner, open a Pull Request and contact an existing owner.
 # Ownership information is used for attributing e.g. failing or flaky tests, broken CI workflows, etc.
+#
+# File is organized by team. To view all rules for your team:
+#   grep "@camunda/TEAM" .codeowners
+# To view effective ownership per file (resolves cascading rules):
+#   codeowners-cli map --by owner --root ./ | jq '."@camunda/TEAM"'
+#
+# Ordering: codeowners-plus uses last-match-wins within each pattern priority tier.
+# When a specific path must override a broader rule from another section, put it
+# in the "Late overrides" section at the bottom of this file.
 
 ################################
 ## @camunda/orchestration-cluster
@@ -13,9 +22,7 @@ CODEOWNERS                  @camunda/orchestration-cluster
 
 AGENTS.md                   @camunda/orchestration-cluster
 CLAUDE.md                   @camunda/orchestration-cluster
-/.claude/skills/README.md   @camunda/orchestration-cluster
-/.claude/skills/create-issue/ @camunda/orchestration-cluster
-/.claude/skills/grill-me/   @camunda/orchestration-cluster
+/.claude/                   @camunda/orchestration-cluster
 CHANGELOG.md                @camunda/orchestration-cluster
 CODE_OF_CONDUCT.md          @camunda/orchestration-cluster
 CONTRIBUTING.md             @camunda/orchestration-cluster
@@ -181,12 +188,8 @@ mwnw*                       @camunda/monorepo-devops-team
 /zeebe/test-util/ @camunda/core-features @camunda/zeebe-distributed-platform
 /zeebe/util/ @camunda/core-features @camunda/zeebe-distributed-platform
 
-# Zeebe integration tests
-/zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/cluster/ @camunda/zeebe-distributed-platform
-/zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/shared/ @camunda/core-features @camunda/zeebe-distributed-platform
-/zeebe/qa/integration-tests/src/main/java/io/camunda/zeebe/it/shared/ @camunda/core-features @camunda/zeebe-distributed-platform
-/zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/util/ @camunda/core-features @camunda/zeebe-distributed-platform
-/zeebe/qa/integration-tests/src/main/java/io/camunda/zeebe/it/util/ @camunda/core-features @camunda/zeebe-distributed-platform
+# Zeebe integration tests: specific overrides are in the Late overrides section
+# (must come after /zeebe/qa/integration-tests/ @core-features defined in the core-features section)
 
 # Acceptance tests
 /qa/acceptance-tests/src/test/java/io/camunda/it/cluster/    @camunda/zeebe-distributed-platform
@@ -377,10 +380,15 @@ optimize.Dockerfile         @camunda/core-features
 /tasklist/importer-common/  @camunda/data-layer
 
 # Acceptance tests
-/qa/acceptance-tests/src/test/java/io/camunda/it/rdbms/      @camunda/data-layer
-/qa/acceptance-tests/src/test/java/io/camunda/it/schema/     @camunda/data-layer
-/qa/acceptance-tests/src/test/java/io/camunda/it/nodb/       @camunda/data-layer
-/qa/acceptance-tests/src/test/java/io/camunda/it/historycleanup/ @camunda/data-layer
+# Note: trailing /* (wildcard) not trailing / (globstar) — ensures these override the broad
+# /qa/ rule regardless of codeowners-plus sort order. Add new subdirs explicitly as they appear.
+/qa/acceptance-tests/src/test/java/io/camunda/it/rdbms/db/*              @camunda/data-layer
+/qa/acceptance-tests/src/test/java/io/camunda/it/rdbms/db/*/*            @camunda/data-layer
+/qa/acceptance-tests/src/test/java/io/camunda/it/rdbms/exporter/*        @camunda/data-layer
+/qa/acceptance-tests/src/test/java/io/camunda/it/schema/*                @camunda/data-layer
+/qa/acceptance-tests/src/test/java/io/camunda/it/schema/strategy/*       @camunda/data-layer
+/qa/acceptance-tests/src/test/java/io/camunda/it/nodb/*                  @camunda/data-layer
+/qa/acceptance-tests/src/test/java/io/camunda/it/historycleanup/*        @camunda/data-layer
 
 # CI/CD Workflows
 /.github/actions/rdbms/* @camunda/data-layer
@@ -415,3 +423,13 @@ optimize.Dockerfile         @camunda/core-features
 /.github/workflows/c8-orchestration-cluster-forward-compatibility-tests.yml @camunda/camundaex
 /.github/workflows/c8-orchestration-cluster-request-validation-nightly.yml @camunda/qa-engineering
 /.github/workflows/zeebe-release-stable-dry-run.yml @camunda/monorepo-devops-team
+
+# Zeebe integration tests: zeebe-distributed-platform owns cluster/shared/util;
+# core-features owns everything else via /zeebe/qa/integration-tests/ above.
+# These must be last to override that broad rule (last-match-wins).
+# Tracking: https://github.com/multimediallc/codeowners-plus/issues/154
+/zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/cluster/ @camunda/zeebe-distributed-platform
+/zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/shared/ @camunda/core-features @camunda/zeebe-distributed-platform
+/zeebe/qa/integration-tests/src/main/java/io/camunda/zeebe/it/shared/ @camunda/core-features @camunda/zeebe-distributed-platform
+/zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/util/ @camunda/core-features @camunda/zeebe-distributed-platform
+/zeebe/qa/integration-tests/src/main/java/io/camunda/zeebe/it/util/ @camunda/core-features @camunda/zeebe-distributed-platform
