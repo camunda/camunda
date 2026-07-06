@@ -70,7 +70,7 @@ final class ProcessingCfgTest {
   }
 
   @Test
-  void shouldNotLimitBatchProcessingTimeByDefault() {
+  void shouldUseDefaultMaxBatchProcessingTime() {
     // given
     final var cfg = new ProcessingCfg();
 
@@ -78,7 +78,7 @@ final class ProcessingCfgTest {
     final var limit = cfg.getMaxBatchProcessingTime();
 
     // then
-    assertThat(limit).isNull();
+    assertThat(limit).isEqualTo(Duration.ofMillis(75));
   }
 
   @Test

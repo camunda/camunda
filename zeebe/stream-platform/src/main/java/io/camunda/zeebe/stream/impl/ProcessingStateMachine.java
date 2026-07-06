@@ -401,6 +401,7 @@ public final class ProcessingStateMachine {
               .orElseThrow(() -> NoSuchProcessorException.forRecord(command));
 
       currentProcessingResult = currentProcessor.process(command, processingResultBuilder);
+      currentProcessingResult.getProcessingResponse().ifPresent(pendingResponses::add);
 
       final BatchProcessingStepResult batchProcessingStepResult =
           collectBatchProcessingStepResult(
@@ -409,11 +410,10 @@ public final class ProcessingStateMachine {
               // +1 since we already need include the current command in the calculation
               pendingCommands.size() + processedCommandsCount + 1,
               currentProcessingBatchLimit,
-              isBatchProcessingTimeExhausted(batchStartTimeNanos));
+              shouldTruncateBatch(batchStartTimeNanos));
 
       pendingCommands.addAll(batchProcessingStepResult.toProcess());
       pendingWrites.addAll(batchProcessingStepResult.toWrite());
-      currentProcessingResult.getProcessingResponse().ifPresent(pendingResponses::add);
 
       lastProcessingResultSize = currentProcessingResult.getRecordBatch().entries().size();
       processedCommandsCount++;
@@ -433,9 +433,9 @@ public final class ProcessingStateMachine {
    *     command
    * @param currentBatchSize the current batch size (only commands counted), includes already
    *     processed and pending commands
-   * @param batchProcessingTimeExhausted true if the batch already took longer than the configured
-   *     maximum batch processing time, in which case follow-up commands are written unmarked and
-   *     processed later in their own batch instead of growing this one
+   * @param truncateBatch true if the batch should not grow any further, in which case follow-up
+   *     commands are written unmarked and processed later in their own batch instead of growing
+   *     this one
    * @return the result of the current batch processing step, which contains the next to processed
    *     commands and the records which should be written to the log
    */
@@ -444,7 +444,7 @@ public final class ProcessingStateMachine {
       final int lastProcessingResultSize,
       final int currentBatchSize,
       final int currentProcessingBatchLimit,
-      final boolean batchProcessingTimeExhausted) {
+      final boolean truncateBatch) {
 
     final var commandsToProcess = new ArrayList<TypedRecord<?>>();
     final var toWriteEntries = new ArrayList<LogAppendEntry>();
@@ -458,7 +458,7 @@ public final class ProcessingStateMachine {
               if (entry.recordMetadata().getRecordType() == RecordType.COMMAND
                   && potentialBatchSize < currentProcessingBatchLimit
                   && !processingResult.shouldProcessInASeparateBatch()) {
-                if (batchProcessingTimeExhausted) {
+                if (truncateBatch) {
                   processingMetrics.commandDeferredAfterTimeExhausted();
                 } else {
                   commandsToProcess.add(
@@ -474,6 +474,18 @@ public final class ProcessingStateMachine {
             });
 
     return new BatchProcessingStepResult(commandsToProcess, toWriteEntries);
+  }
+
+  /**
+   * Once the maximum batch processing time is exhausted, the batch is truncated only if someone
+   * actually benefits from it: either a client waiting on a response from this batch, or further
+   * records waiting on the log, which may be commands that require a response themselves. Otherwise
+   * we might as well continue batching, since deferring follow-up commands costs an additional
+   * write-commit-read cycle.
+   */
+  private boolean shouldTruncateBatch(final long batchStartTimeNanos) {
+    return isBatchProcessingTimeExhausted(batchStartTimeNanos)
+        && (!pendingResponses.isEmpty() || logStreamReader.hasNext());
   }
 
   private boolean isBatchProcessingTimeExhausted(final long batchStartTimeNanos) {
