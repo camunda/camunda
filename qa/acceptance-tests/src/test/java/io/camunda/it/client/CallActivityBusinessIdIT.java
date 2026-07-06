@@ -36,6 +36,10 @@ import org.junit.jupiter.api.Test;
  *
  * <p>Each test uses its own parent/child process ids and locates the child by {@code
  * parentProcessInstanceKey}, so tests never observe each other's instances.
+ *
+ * <p>Intentionally a plain {@code @MultiDbTest} (not {@code @CompatibilityTest}): the call activity
+ * {@code businessId} is new in 8.10, so it cannot be asserted against an older broker that does not
+ * resolve or emit it.
  */
 @MultiDbTest
 public class CallActivityBusinessIdIT {
@@ -51,8 +55,9 @@ public class CallActivityBusinessIdIT {
     // when - the parent starts without a Business ID of its own
     final var parent = startParent(parentProcessId, null, Map.of());
 
-    // then - the child instance carries the literal, not the (absent) parent value
+    // then
     assertThat(awaitChild(parent.getProcessInstanceKey()).getBusinessId())
+        .describedAs("the child instance carries the literal, not the (absent) parent value")
         .isEqualTo("child-literal");
   }
 
@@ -64,8 +69,9 @@ public class CallActivityBusinessIdIT {
     // when - the parent carries a Business ID
     final var parent = startParent(parentProcessId, "order-inherit", Map.of());
 
-    // then - the child inherits the parent's Business ID
+    // then
     assertThat(awaitChild(parent.getProcessInstanceKey()).getBusinessId())
+        .describedAs("the child inherits the parent's Business ID")
         .isEqualTo("order-inherit");
   }
 
@@ -77,8 +83,10 @@ public class CallActivityBusinessIdIT {
     // when - the parent carries a Business ID
     final var parent = startParent(parentProcessId, "order-empty", Map.of());
 
-    // then - the child does not inherit; its Business ID is null
-    assertThat(awaitChild(parent.getProcessInstanceKey()).getBusinessId()).isNull();
+    // then
+    assertThat(awaitChild(parent.getProcessInstanceKey()).getBusinessId())
+        .describedAs("the child does not inherit; its Business ID is null")
+        .isNull();
   }
 
   @Test
@@ -91,8 +99,9 @@ public class CallActivityBusinessIdIT {
     final Map<String, Object> variables = Map.of("orderCode", "feel-child-42");
     final var parent = startParent(parentProcessId, "order-feel", variables);
 
-    // then - the child Business ID is the resolved expression value
+    // then
     assertThat(awaitChild(parent.getProcessInstanceKey()).getBusinessId())
+        .describedAs("the child Business ID is the resolved expression value")
         .isEqualTo("feel-child-42");
   }
 
@@ -108,8 +117,9 @@ public class CallActivityBusinessIdIT {
     // when - the parent carries a Business ID
     final var parent = startParent(parentProcessId, "order-parent", Map.of());
 
-    // then - the child Business ID is the parent's with the suffix appended
+    // then
     assertThat(awaitChild(parent.getProcessInstanceKey()).getBusinessId())
+        .describedAs("the child Business ID is the parent's with the suffix appended")
         .isEqualTo("order-parent-child");
   }
 
@@ -179,6 +189,8 @@ public class CallActivityBusinessIdIT {
 
     // then - the child is created with the Business ID re-evaluated from the migrated definition
     assertThat(awaitChild(parent.getProcessInstanceKey()).getBusinessId())
+        .describedAs(
+            "the child is created with the Business ID re-evaluated from the migrated definition")
         .isEqualTo("migrated-business-id");
   }
 
