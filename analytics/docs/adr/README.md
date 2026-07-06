@@ -11,5 +11,5 @@ Module-scoped ADRs for the Optimize analytics pipeline (`analytics/analytics-eng
 - [0002 — Analytics engine code structure](0002-engine-structure.md)
 - [0003 — Analytics engine layering and the operator model](0003-engine-layering.md)
 - [0004 — Cube read path: prune, stream, and push down aggregation](0004-cube-read-path.md)
-</content>
-</invoke>
+- [0005 — Runtime dataset provisioning and live activation](0005-runtime-dataset-provisioning.md)
+- [0006 — Reports over multiple datasets](0006-multi-dataset-reports.md)
