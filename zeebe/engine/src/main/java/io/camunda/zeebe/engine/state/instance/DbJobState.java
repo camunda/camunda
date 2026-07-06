@@ -683,7 +683,7 @@ public final class DbJobState implements JobState, MutableJobState {
         });
     // Global confirmation runs AFTER the prefix scan returns. Only worth checking when this type
     // yielded nothing; isEmpty() is the authoritative global gate.
-    if (batchNotFull[0] && !visitedAny[0]) {
+    if (!visitedAny[0]) {
       // isEmpty() scans the whole CF regardless of type, and its visitor wraps the shared
       // jobTypeKey field with the first entry it finds (of any type) before reporting non-empty.
       // Phase 3 (visitNonPositivePriorityJobs) relies on jobTypeKey still holding the type
