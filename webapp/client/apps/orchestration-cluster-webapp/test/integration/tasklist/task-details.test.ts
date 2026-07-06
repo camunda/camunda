@@ -13,6 +13,7 @@ import {
 	mockGetProcessDefinitionXmlEndpoint,
 	mockGetUserTaskEndpoint,
 	mockLicenseEndpoint,
+	mockQueryUserTaskAuditLogsEndpoint,
 	mockQueryUserTasksEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
@@ -21,6 +22,7 @@ import {createLicense} from '#/shared-test-modules/api-mocks/license';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createQueryUserTasksResponse, createUserTask} from '#/shared-test-modules/api-mocks/user-tasks';
 import {BPMN_XML} from '#/shared-test-modules/api-mocks/process-definition-xmls';
+import {createQueryUserTaskAuditLogsResponse} from '#/shared-test-modules/api-mocks/audit-logs';
 
 const currentUser = createCurrentUser();
 
@@ -49,6 +51,9 @@ test.beforeEach(({network}) => {
 					priority: 50,
 				}),
 			),
+		}),
+		mockQueryUserTaskAuditLogsEndpoint({
+			successResponse: HttpResponse.json(createQueryUserTaskAuditLogsResponse({items: []})),
 		}),
 	);
 });
