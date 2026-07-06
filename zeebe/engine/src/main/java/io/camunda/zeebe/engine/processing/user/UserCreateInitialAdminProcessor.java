@@ -7,9 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.user;
 
-import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -49,7 +47,7 @@ public class UserCreateInitialAdminProcessor implements TypedRecordProcessor<Use
   private final TypedCommandWriter commandWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final PermissionsBehavior permissionsBehavior;
   private final MembershipState membershipState;
   private final StateWriter stateWriter;
 
@@ -57,7 +55,7 @@ public class UserCreateInitialAdminProcessor implements TypedRecordProcessor<Use
       final KeyGenerator keyGenerator,
       final ProcessingState processingState,
       final Writers writers,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final PermissionsBehavior permissionsBehavior) {
     this.keyGenerator = keyGenerator;
     userState = processingState.getUserState();
     roleState = processingState.getRoleState();
@@ -66,7 +64,7 @@ public class UserCreateInitialAdminProcessor implements TypedRecordProcessor<Use
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     stateWriter = writers.state();
-    this.authCheckBehavior = authCheckBehavior;
+    this.permissionsBehavior = permissionsBehavior;
   }
 
   @Override
@@ -102,23 +100,19 @@ public class UserCreateInitialAdminProcessor implements TypedRecordProcessor<Use
   }
 
   private Either<String, Void> checkUserCreateAuthorization(final TypedRecord<UserRecord> command) {
-    final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.USER)
-            .permissionType(PermissionType.CREATE)
-            .build();
-    return authCheckBehavior.isAuthorizedOrInternalCommand(authRequest).mapLeft(Rejection::reason);
+    final var authResult =
+        permissionsBehavior.isAuthorized(
+            command, PermissionType.CREATE, AuthorizationResourceType.USER);
+    return authResult.fold(
+        rejection -> Either.left(rejection.reason()), unused -> Either.right(null));
   }
 
   private Either<String, Void> checkRoleUpdateAuthorization(final TypedRecord<UserRecord> command) {
-    final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.ROLE)
-            .permissionType(PermissionType.UPDATE)
-            .build();
-    return authCheckBehavior.isAuthorizedOrInternalCommand(authRequest).mapLeft(Rejection::reason);
+    final var authResult =
+        permissionsBehavior.isAuthorized(
+            command, PermissionType.UPDATE, AuthorizationResourceType.ROLE);
+    return authResult.fold(
+        rejection -> Either.left(rejection.reason()), unused -> Either.right(null));
   }
 
   private Either<String, Void> checkUserDoesNotExist(final String username) {
