@@ -353,7 +353,8 @@ test.describe.parallel('Update User Task Tests', () => {
     await assertUnauthorizedRequest(res);
   });
 
-  test('Update user task - not found', async ({request}) => {
+  // Skipped due to bug #56635: https://github.com/camunda/camunda/issues/56635
+  test.skip('Update user task - not found', async ({request}) => {
     const unknownUserTaskKey = '9999999999999999';
     const res = await request.patch(
       buildUrl(`/user-tasks/${unknownUserTaskKey}`),
