@@ -249,6 +249,18 @@ jobs:
           path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
           retention-days: 60
 
+      # test-results/ holds the per-test Playwright trace.zip (retain-on-failure).
+      # The trace captures the request/response body, which json-report omits;
+      # nightly triage needs it to tell a request-shape/test bug from a product bug.
+      - name: Upload Playwright traces to GitHub Actions Artifacts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-results-nightly-api-${{ steps.sanitize.outputs.safe_branch }}-${{ inputs.camunda_mode }}
+          path: qa/c8-orchestration-cluster-e2e-test-suite/test-results/**
+          if-no-files-found: ignore
+          retention-days: 5
+
       - name: Observe build status
         if: always()
         continue-on-error: true

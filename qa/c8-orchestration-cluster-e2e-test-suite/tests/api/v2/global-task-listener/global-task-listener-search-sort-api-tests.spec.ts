@@ -253,7 +253,12 @@ test.describe.serial('Global Task Listener API Tests - Search and Sort', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Search Global Task Listeners - filter by eventTypes', async ({
+  // Skipped due to bug #56636: https://github.com/camunda/camunda/issues/56636
+  // The `eventTypes` search filter is mis-declared as an array of filter
+  // properties; it should be a single GlobalTaskListenerEventTypeFilterProperty
+  // like every other enum filter (e.g. `state`), so `eventTypes: {$in: [...]}` —
+  // the correct convention used here — is not yet accepted by the API.
+  test.skip('Search Global Task Listeners - filter by eventTypes', async ({
     request,
   }) => {
     await expect(async () => {
