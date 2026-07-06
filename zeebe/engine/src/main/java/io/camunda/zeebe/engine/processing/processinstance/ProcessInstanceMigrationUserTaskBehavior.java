@@ -23,15 +23,19 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUse
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationMigrateProcessor.SafetyCheckFailedException;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationPreconditions.ProcessInstanceMigrationPreconditionFailedException;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -71,16 +75,19 @@ public class ProcessInstanceMigrationUserTaskBehavior {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private final StateWriter stateWriter;
+  private final TypedCommandWriter commandWriter;
   private final BpmnUserTaskBehavior userTaskBehavior;
   private final JobState jobState;
   private final UserTaskState userTaskState;
 
   public ProcessInstanceMigrationUserTaskBehavior(
       final StateWriter stateWriter,
+      final TypedCommandWriter commandWriter,
       final JobState jobState,
       final UserTaskState userTaskState,
       final BpmnBehaviors bpmnBehaviors) {
     this.stateWriter = stateWriter;
+    this.commandWriter = commandWriter;
     this.jobState = jobState;
     this.userTaskState = userTaskState;
     userTaskBehavior = bpmnBehaviors.userTaskBehavior();
@@ -154,6 +161,17 @@ public class ProcessInstanceMigrationUserTaskBehavior {
     job.setIsJobToUserTaskMigration(true);
     // Cancel previous job worker job
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.CANCELED, job);
+    if (job.isAgentic()) {
+      // The job is destroyed without completing — discard all its pending history items. The lease
+      // is left empty on purpose: the whole job is gone, so every activation's items must be
+      // discarded regardless of the lease they were created with. Today the cancelled job is a
+      // user-task job (never agentic), so this is a no-op; kept to future-proof job-worker user
+      // tasks that carry an associated agent instance.
+      commandWriter.appendFollowUpCommand(
+          jobKey,
+          AgentHistoryIntent.DISCARD,
+          new AgentHistoryRecord().setJobKey(jobKey).setJobLease(JobRecord.EMPTY_LEASE));
+    }
   }
 
   /**

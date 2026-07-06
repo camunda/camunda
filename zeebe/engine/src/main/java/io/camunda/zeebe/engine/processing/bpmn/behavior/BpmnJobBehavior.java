@@ -26,6 +26,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.LinkedResourc
 import io.camunda.zeebe.engine.processing.deployment.model.element.TaskListener;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ExpressionTransformer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.PersistedForm;
 import io.camunda.zeebe.engine.state.deployment.PersistedResource;
@@ -39,8 +40,10 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventTyp
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
@@ -110,6 +113,7 @@ public final class BpmnJobBehavior {
   private final HeaderEncoder headerEncoder = new HeaderEncoder(LOGGER);
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
+  private final TypedCommandWriter commandWriter;
   private final JobState jobState;
   private final ExpressionProcessor expressionBehavior;
   private final BpmnStateBehavior stateBehavior;
@@ -136,6 +140,7 @@ public final class BpmnJobBehavior {
     this.jobState = jobState;
     this.expressionBehavior = expressionBehavior;
     stateWriter = writers.state();
+    commandWriter = writers.command();
     this.stateBehavior = stateBehavior;
     this.resourceState = resourceState;
     this.formState = formState;
@@ -723,6 +728,15 @@ public final class BpmnJobBehavior {
       // it there as well.
       stateWriter.appendFollowUpEvent(jobKey, JobIntent.CANCELED, job);
       jobMetrics.countJobEvent(JobAction.CANCELED, job.getJobKind(), job.getType());
+      if (job.isAgentic()) {
+        // The job is destroyed without completing — discard all its pending history items. The
+        // lease is left empty on purpose: the whole job is gone, so every activation's items must
+        // be discarded regardless of the lease they were created with.
+        commandWriter.appendFollowUpCommand(
+            jobKey,
+            AgentHistoryIntent.DISCARD,
+            new AgentHistoryRecord().setJobKey(jobKey).setJobLease(JobRecord.EMPTY_LEASE));
+      }
     }
   }
 

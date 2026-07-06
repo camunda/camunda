@@ -12,13 +12,16 @@ import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
@@ -30,6 +33,7 @@ public final class JobCancelProcessor implements TypedRecordProcessor<JobRecord>
   private final JobState jobState;
   private final JobProcessingMetrics jobMetrics;
   private final StateWriter stateWriter;
+  private final TypedCommandWriter commandWriter;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
 
@@ -38,6 +42,7 @@ public final class JobCancelProcessor implements TypedRecordProcessor<JobRecord>
     jobState = state.getJobState();
     this.jobMetrics = jobMetrics;
     stateWriter = writers.state();
+    commandWriter = writers.command();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
   }
@@ -51,6 +56,15 @@ public final class JobCancelProcessor implements TypedRecordProcessor<JobRecord>
       // it there as well.
       stateWriter.appendFollowUpEvent(jobKey, JobIntent.CANCELED, job);
       jobMetrics.countJobEvent(JobAction.CANCELED, job.getJobKind(), job.getType());
+      if (job.isAgentic()) {
+        // The job is destroyed without completing — discard all its pending history items. The
+        // lease is left empty on purpose: the whole job is gone, so every activation's items must
+        // be discarded regardless of the lease they were created with.
+        commandWriter.appendFollowUpCommand(
+            jobKey,
+            AgentHistoryIntent.DISCARD,
+            new AgentHistoryRecord().setJobKey(jobKey).setJobLease(JobRecord.EMPTY_LEASE));
+      }
     } else {
       rejectionWriter.appendRejection(
           record, RejectionType.NOT_FOUND, NO_JOB_FOUND_MESSAGE.formatted(jobKey));
