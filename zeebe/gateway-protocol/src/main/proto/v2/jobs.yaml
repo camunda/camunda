@@ -487,6 +487,11 @@ components:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
           description: The ID of the tenant that owns the job.
+        physicalTenantId:
+          type: string
+          description: |
+            The ID of the physical tenant that the job-activation request was routed to;
+            the default physical tenant when the request did not specify one.
         jobKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/JobKey'
