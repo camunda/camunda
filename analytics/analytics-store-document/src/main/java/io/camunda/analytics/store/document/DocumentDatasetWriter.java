@@ -57,17 +57,15 @@ public final class DocumentDatasetWriter implements DatasetWriter {
   }
 
   @Override
-  public void upsertRow(
-      final CompiledTable projection, final String rowKey, final List<Object> values) {
+  public void upsertRow(final CompiledTable table, final String rowKey, final List<Object> values) {
     final Map<String, Object> doc = new LinkedHashMap<>();
-    final List<DimensionColumn> columns = projection.columns();
+    final List<DimensionColumn> columns = table.columns();
     for (int i = 0; i < columns.size(); i++) {
       doc.put(DocumentCubeNames.field(columns.get(i).name()), values.get(i));
     }
     writeClient.index(
         RequestBuilders.<Map<String, Object>>indexRequest(
-            r ->
-                r.index(DocumentCubeNames.rowIndex(projection.cubeId())).id(rowKey).document(doc)));
+            r -> r.index(DocumentCubeNames.rowIndex(table.cubeId())).id(rowKey).document(doc)));
   }
 
   @Override

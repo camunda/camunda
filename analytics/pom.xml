@@ -29,7 +29,7 @@
     <module>analytics-engine</module>
     <module>analytics-store-rdbms</module>
     <module>analytics-store-document</module>
-    <module>event-bridge-analytics</module>
+    <module>analytics-pipeline</module>
     <module>analytics-webapp</module>
   </modules>
 

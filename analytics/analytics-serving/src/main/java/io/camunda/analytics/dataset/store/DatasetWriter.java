@@ -34,9 +34,9 @@ public interface DatasetWriter extends AutoCloseable {
 
   /**
    * Upserts one raw row of a projected dataset keyed by {@code rowKey}; {@code values} align to the
-   * projection's declared columns.
+   * table's declared columns.
    */
-  void upsertRow(CompiledTable projection, String rowKey, List<Object> values);
+  void upsertRow(CompiledTable table, String rowKey, List<Object> values);
 
   /** Batch boundary: make buffered writes durable. */
   void flush();

@@ -53,7 +53,7 @@ final class AnalyticsMetadataStoreTest {
 
   @Test
   void shouldRoundTripNormalizedDatasetSpecs() {
-    // given an aggregated cube (filter + meter with params + window + activation) and a projection
+    // given an aggregated cube (filter + meter with params + window + activation) and a table
     final DatasetRegistry registry = new DatasetRegistry();
     final RegisteredDataset sla =
         registry.admit(

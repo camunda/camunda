@@ -92,14 +92,14 @@ public final class StandardDatasets {
     final DatasetCompiler compiler =
         new DatasetCompiler(
             MeterCatalog.withDefaults(), new MeterRegistry(metadataStore.meterIdStore()));
-    final List<ActiveTable> projections = new ArrayList<>();
+    final List<ActiveTable> tables = new ArrayList<>();
     for (final RegisteredDataset registered :
         metadataStore.datasetSpecStore().search(DatasetSpecQuery.byKind(DatasetKind.PROJECTED))) {
-      projections.add(
+      tables.add(
           new ActiveTable(
               registered, compiler.compileTable(registered.cubeId(), registered.declaration())));
     }
-    return List.copyOf(projections);
+    return List.copyOf(tables);
   }
 
   /** The standard dashboards as declarations (order is stable — it fixes cube/agg ids). */

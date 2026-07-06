@@ -25,5 +25,5 @@ public interface DatasetSchemaManager {
   void ensure(CompiledDataset dataset);
 
   /** Creates the projected (raw) dataset's serving structure if absent (idempotent). */
-  void ensureTable(CompiledTable projection);
+  void ensureTable(CompiledTable table);
 }

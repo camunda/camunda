@@ -18,8 +18,8 @@ import io.camunda.search.clients.DocumentBasedWriteClient;
 /**
  * The document-backed serving {@link DatasetStore}: one implementation composed from the three
  * neutral seams (OC's search + write clients and the {@link DocumentBasedSchemaClient}), so it
- * serves both Elasticsearch and OpenSearch. The schema manager provisions the cube/projection
- * indices, the writer indexes one document per meter-cell (or projected row), and the query client
+ * serves both Elasticsearch and OpenSearch. The schema manager provisions the cube/table indices,
+ * the writer indexes one document per meter-cell (or projected row), and the query client
  * reassembles cells for the neutral executor.
  */
 public final class DocumentDatasetStore implements DatasetStore {

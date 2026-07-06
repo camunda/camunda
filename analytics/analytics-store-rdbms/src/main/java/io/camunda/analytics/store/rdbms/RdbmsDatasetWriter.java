@@ -85,9 +85,8 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
   }
 
   @Override
-  public void upsertRow(
-      final CompiledTable projection, final String rowKey, final List<Object> values) {
-    final List<DimensionColumn> cols = projection.columns();
+  public void upsertRow(final CompiledTable table, final String rowKey, final List<Object> values) {
+    final List<DimensionColumn> cols = table.columns();
     final String colNames =
         cols.stream().map(c -> RdbmsNames.quotedColumn(c.name())).collect(Collectors.joining(", "));
     final String columns = "row_key" + (colNames.isEmpty() ? "" : ", " + colNames);
@@ -96,7 +95,7 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
         cols.stream().map(c -> RdbmsNames.quotedColumn(c.name())).collect(Collectors.toList());
     final String sql =
         upsertSql(
-            RdbmsNames.rowTable(projection.cubeId()),
+            RdbmsNames.rowTable(table.cubeId()),
             columns,
             columnCount,
             "row_key",
@@ -111,7 +110,7 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
             bind(statement, index++, cols.get(i).type(), values.get(i));
           }
         },
-        "projection " + projection.name());
+        "table " + table.name());
   }
 
   @Override

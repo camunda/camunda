@@ -57,18 +57,18 @@ public final class RdbmsDatasetSchemaManager implements DatasetSchemaManager {
   }
 
   @Override
-  public void ensureTable(final CompiledTable projection) {
+  public void ensureTable(final CompiledTable table) {
     final String columns =
-        projection.columns().stream()
+        table.columns().stream()
             .map(c -> RdbmsNames.quotedColumn(c.name()) + " " + dialect.columnType(c.type()))
             .collect(Collectors.joining(", "));
     final String ddl =
         "CREATE TABLE IF NOT EXISTS "
-            + RdbmsNames.rowTable(projection.cubeId())
+            + RdbmsNames.rowTable(table.cubeId())
             + " (row_key VARCHAR(4000) PRIMARY KEY"
             + (columns.isEmpty() ? "" : ", " + columns)
             + ")";
-    execute(ddl, "projection " + projection.name());
+    execute(ddl, "table " + table.name());
   }
 
   private void execute(final String ddl, final String what) {

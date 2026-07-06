@@ -21,7 +21,7 @@ import java.util.Map;
  * The document serving {@link DatasetSchemaManager}: derives an index mapping from the compiled
  * dataset and provisions it through the neutral {@link DocumentBasedSchemaClient}. A cube index
  * holds one document per meter-cell (the grain dimensions + window/tier + {@code meter_name} + the
- * {@code accumulator} Base64 blob); a projection index holds one document per row (its columns).
+ * {@code accumulator} Base64 blob); a table index holds one document per row (its columns).
  */
 public final class DocumentDatasetSchemaManager implements DatasetSchemaManager {
 
@@ -46,12 +46,12 @@ public final class DocumentDatasetSchemaManager implements DatasetSchemaManager 
   }
 
   @Override
-  public void ensureTable(final CompiledTable projection) {
+  public void ensureTable(final CompiledTable table) {
     final Map<String, Object> properties = new LinkedHashMap<>();
-    for (final DimensionColumn column : projection.columns()) {
+    for (final DimensionColumn column : table.columns()) {
       properties.put(DocumentCubeNames.field(column.name()), property(fieldType(column.type())));
     }
-    schemaClient.createIndex(DocumentCubeNames.rowIndex(projection.cubeId()), mapping(properties));
+    schemaClient.createIndex(DocumentCubeNames.rowIndex(table.cubeId()), mapping(properties));
   }
 
   private String mapping(final Map<String, Object> properties) {

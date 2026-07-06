@@ -111,7 +111,7 @@ final class RdbmsDatasetStoreTest {
   @Test
   void shouldProvisionAndUpsertProjectedRowsIdempotently() {
     // given a projected dataset table
-    final CompiledTable projection =
+    final CompiledTable table =
         new DatasetCompiler(
                 MeterCatalog.withDefaults(), new MeterRegistry(new InMemoryMeterIdStore()))
             .compileTable(
@@ -121,12 +121,12 @@ final class RdbmsDatasetStoreTest {
                     .dimension("bpmnProcessId", DimensionType.STRING)
                     .dimension("durationMs", DimensionType.LONG)
                     .build());
-    store.schemaManager().ensureTable(projection);
+    store.schemaManager().ensureTable(table);
 
     // when two rows are written and one is replayed
-    store.writer().upsertRow(projection, "1001", List.of("order", 1_500L));
-    store.writer().upsertRow(projection, "1002", List.of("ship", 42_000L));
-    store.writer().upsertRow(projection, "1001", List.of("order", 1_500L));
+    store.writer().upsertRow(table, "1001", List.of("order", 1_500L));
+    store.writer().upsertRow(table, "1002", List.of("ship", 42_000L));
+    store.writer().upsertRow(table, "1001", List.of("order", 1_500L));
     store.writer().flush();
 
     // then there are two distinct rows
