@@ -59,7 +59,15 @@ public enum AnalyticsColumnFamilies implements EnumValue, ScopedColumnFamily {
    * windowStart ++ codec(key) -> codec(accumulator)} plus a per-{@code group} meta entry. Shared by
    * every meter's sealing aggregation on the partition, each scoped by its {@code aggId} group.
    */
-  OPEN_SEGMENT(6, ColumnFamilyScope.PARTITION_LOCAL);
+  OPEN_SEGMENT(6, ColumnFamilyScope.PARTITION_LOCAL),
+
+  /**
+   * Marks which scopes currently hold at least one variable: {@code scopeKey -> nil}. Written when
+   * a variable is put and removed when a scope is cleared, so eviction can skip the {@code
+   * VARIABLE_ENTRIES} prefix scan entirely for the common case of an element with no local
+   * variables — avoiding a RocksDB iterator seek (and the transaction it opens) per eviction.
+   */
+  VARIABLE_SCOPES(7, ColumnFamilyScope.PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope scope;

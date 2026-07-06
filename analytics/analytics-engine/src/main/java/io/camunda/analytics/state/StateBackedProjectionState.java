@@ -16,6 +16,7 @@ import io.camunda.eventbridge.streaming.state.memory.InMemoryStateStoreProvider;
 import io.camunda.eventbridge.streaming.state.rocksdb.RocksDbStateStoreProvider;
 import io.camunda.zeebe.db.impl.DbBytes;
 import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -53,6 +54,7 @@ public final class StateBackedProjectionState implements MutableProjectionState,
 
   private final CachingKeyValueStore<DbLong, ElementEntity> elements;
   private final CachingKeyValueStore<DbBytes, DbString> variables;
+  private final CachingKeyValueStore<DbLong, DbNil> variableScopes;
   private final CachingKeyValueStore<DbLong, IncidentEntity> incidents;
   private final List<CachingKeyValueStore<?, ?>> caches;
 
@@ -63,6 +65,7 @@ public final class StateBackedProjectionState implements MutableProjectionState,
   private final DbBytes variableKey = new DbBytes();
   private final DbString variableValue = new DbString();
   private final DbBytes variablePrefix = new DbBytes();
+  private final DbLong variableScopeKey = new DbLong();
 
   private StateBackedProjectionState(
       final StateStoreProvider<AnalyticsColumnFamilies> provider,
@@ -85,7 +88,12 @@ public final class StateBackedProjectionState implements MutableProjectionState,
                 AnalyticsColumnFamilies.INCIDENT_ENTITY, DbLong::new, IncidentEntity::new)
             .withCaching(cacheBytesPerStore)
             .buildCache(provider);
-    caches = List.of(elements, variables, incidents);
+    variableScopes =
+        StoreBuilder.keyValueStore(
+                AnalyticsColumnFamilies.VARIABLE_SCOPES, DbLong::new, () -> DbNil.INSTANCE)
+            .withCaching(cacheBytesPerStore)
+            .buildCache(provider);
+    caches = List.of(elements, variables, variableScopes, incidents);
   }
 
   /** Shares an already-open provider (the caller owns its lifecycle) — the production wiring. */
@@ -202,17 +210,33 @@ public final class StateBackedProjectionState implements MutableProjectionState,
     variableKey.wrapBytes(variableKey(scopeKey, name));
     variableValue.wrapString(value);
     variables.put(variableKey, variableValue);
+    // Mark the scope as holding variables so eviction knows it must clear (see clearVariables).
+    variableScopeKey.wrapLong(scopeKey);
+    variableScopes.put(variableScopeKey, DbNil.INSTANCE);
   }
 
   @Override
   public void clearVariables(final long scopeKey) {
+    // Most elements (gateways, sequence flows, plain tasks) never set a local variable. Skip the
+    // VARIABLE_ENTRIES prefix scan — and the RocksDB iterator seek plus the transaction it opens —
+    // for those scopes: a cheap marker lookup (cache hit or a bloom-filtered point read) tells us
+    // whether there is anything to clear at all.
+    variableScopeKey.wrapLong(scopeKey);
+    if (!variableScopes.exists(variableScopeKey)) {
+      return;
+    }
     variablePrefix.wrapBytes(instancePrefix(scopeKey));
+    // Key-only scan: we only need the keys to delete, so skip reading each variable value.
     final List<byte[]> keys = new ArrayList<>();
-    variables.prefixScan(variablePrefix, (key, value) -> keys.add(key.getBytes().clone()));
+    variables.prefixScanKeys(variablePrefix, key -> keys.add(key.getBytes().clone()));
     for (final byte[] key : keys) {
       variableKey.wrapBytes(key);
       variables.delete(variableKey);
     }
+    // The deletes above are buffered as heap tombstones and flushed together in the runtime's next
+    // checkpoint cut (a single transaction) — no per-key transaction here.
+    variableScopeKey.wrapLong(scopeKey);
+    variableScopes.delete(variableScopeKey);
   }
 
   @Override
