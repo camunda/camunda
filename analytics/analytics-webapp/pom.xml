@@ -47,6 +47,11 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>analytics-pipeline</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>analytics-store-rdbms</artifactId>
       <version>${project.version}</version>
     </dependency>

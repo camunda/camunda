@@ -74,33 +74,78 @@ public final class PipelineRuntimes {
   }
 
   /**
-   * Runs every member on its own thread until the JVM is asked to stop, then stops the runtimes,
-   * waits for them to finish their final commit, and closes the shared client, scheduler, and sink
-   * executor. Close order matters: the runtimes' final commit uses the client and scheduler, so
-   * those are torn down only after every runtime thread has finished.
+   * Starts every member on its own thread and returns a {@link RunningPipeline} handle — the
+   * non-blocking form for an embedding host (e.g. the analytics application's Spring lifecycle),
+   * which stops the pipeline by {@link RunningPipeline#close() closing} the handle.
+   */
+  public static RunningPipeline start(
+      final EventBridgeClient client,
+      final ActorScheduler scheduler,
+      final ExecutorService sinkExecutor,
+      final List<Member> members) {
+    final List<Member> started = List.copyOf(members);
+    final List<Thread> threads = new ArrayList<>(started.size());
+    for (final Member member : started) {
+      threads.add(new Thread(member.runtime()::run, "analytics-" + member.name()));
+    }
+    threads.forEach(Thread::start);
+    return new RunningPipeline(started, threads, client, scheduler, sinkExecutor);
+  }
+
+  /**
+   * Runs every member until the JVM is asked to stop (the standalone-launcher form): start the
+   * threads, register a shutdown hook that closes the pipeline, and block until they finish.
    */
   public static void run(
       final EventBridgeClient client,
       final ActorScheduler scheduler,
       final ExecutorService sinkExecutor,
       final List<Member> members) {
-    final List<Thread> threads = new ArrayList<>(members.size());
-    for (final Member member : members) {
-      threads.add(new Thread(member.runtime()::run, "analytics-" + member.name()));
+    final RunningPipeline running = start(client, scheduler, sinkExecutor, members);
+    Runtime.getRuntime().addShutdownHook(new Thread(running::close, "analytics-shutdown"));
+    running.await();
+  }
+
+  /**
+   * A started pipeline: the running runtime threads plus the shared resources to release on stop.
+   * Close order matters — the runtimes' final commit uses the client and scheduler, so those are
+   * torn down only after every runtime thread has finished.
+   */
+  public static final class RunningPipeline implements AutoCloseable {
+
+    private final List<Member> members;
+    private final List<Thread> threads;
+    private final EventBridgeClient client;
+    private final ActorScheduler scheduler;
+    private final ExecutorService sinkExecutor;
+
+    private RunningPipeline(
+        final List<Member> members,
+        final List<Thread> threads,
+        final EventBridgeClient client,
+        final ActorScheduler scheduler,
+        final ExecutorService sinkExecutor) {
+      this.members = members;
+      this.threads = threads;
+      this.client = client;
+      this.scheduler = scheduler;
+      this.sinkExecutor = sinkExecutor;
     }
-    Runtime.getRuntime()
-        .addShutdownHook(
-            new Thread(
-                () -> {
-                  members.forEach(member -> member.runtime().stop());
-                  threads.forEach(PipelineRuntimes::join); // runtimes finalize while resources live
-                  closeScheduler(scheduler);
-                  sinkExecutor.shutdownNow();
-                  client.close();
-                },
-                "analytics-shutdown"));
-    threads.forEach(Thread::start);
-    threads.forEach(PipelineRuntimes::join);
+
+    /** Blocks until every runtime thread has finished (used by the standalone launchers). */
+    public void await() {
+      threads.forEach(PipelineRuntimes::join);
+    }
+
+    /** Stops the runtimes, waits for their final commit, then releases the shared resources. */
+    @Override
+    public void close() {
+      members.forEach(member -> member.runtime().stop());
+      threads.forEach(PipelineRuntimes::join);
+      closeScheduler(scheduler);
+      sinkExecutor.shutdownNow();
+      client.close();
+    }
   }
 
   private static void join(final Thread thread) {
