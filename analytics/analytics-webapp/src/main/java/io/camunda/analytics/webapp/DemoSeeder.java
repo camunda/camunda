@@ -9,15 +9,15 @@ package io.camunda.analytics.webapp;
 
 import io.camunda.analytics.dataset.CompiledDataset;
 import io.camunda.analytics.dataset.CompiledMeter;
-import io.camunda.analytics.dataset.store.DatasetQueryExecutor;
 import io.camunda.analytics.dataset.store.DatasetStore;
-import io.camunda.analytics.dataset.store.ReportQuery;
 import io.camunda.analytics.dimension.DimensionKey;
 import io.camunda.analytics.dimension.FactRow;
 import io.camunda.analytics.fact.Fact;
 import io.camunda.analytics.fact.FactType;
 import io.camunda.analytics.fact.Transition;
 import io.camunda.analytics.meter.BoundMeter;
+import io.camunda.analytics.query.DatasetQueryExecutor;
+import io.camunda.analytics.query.ReportQuery;
 import io.camunda.eventbridge.streaming.aggregate.AggregateFunction;
 import java.util.ArrayList;
 import java.util.List;

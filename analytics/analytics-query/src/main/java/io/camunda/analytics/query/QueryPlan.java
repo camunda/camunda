@@ -5,9 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.analytics.dataset.store;
+package io.camunda.analytics.query;
 
 import io.camunda.analytics.dataset.CompiledDataset;
+import io.camunda.analytics.dataset.store.AggregatedFetch;
+import io.camunda.analytics.dataset.store.DatasetFetch;
 import java.util.List;
 
 /**

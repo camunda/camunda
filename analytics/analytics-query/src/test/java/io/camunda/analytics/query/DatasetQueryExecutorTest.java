@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.analytics.dataset.store;
+package io.camunda.analytics.query;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -13,6 +13,14 @@ import io.camunda.analytics.dataset.CompiledDataset;
 import io.camunda.analytics.dataset.CompiledMeter;
 import io.camunda.analytics.dataset.DatasetCompiler;
 import io.camunda.analytics.dataset.DatasetDeclaration;
+import io.camunda.analytics.dataset.store.AggregatedFetch;
+import io.camunda.analytics.dataset.store.AggregatedRow;
+import io.camunda.analytics.dataset.store.Cell;
+import io.camunda.analytics.dataset.store.DatasetFetch;
+import io.camunda.analytics.dataset.store.DatasetQueryClient;
+import io.camunda.analytics.dataset.store.ReadStrategy;
+import io.camunda.analytics.dataset.store.TableFetch;
+import io.camunda.analytics.dataset.store.TableRow;
 import io.camunda.analytics.dimension.DimensionKey;
 import io.camunda.analytics.dimension.DimensionType;
 import io.camunda.analytics.dimension.FactRow;

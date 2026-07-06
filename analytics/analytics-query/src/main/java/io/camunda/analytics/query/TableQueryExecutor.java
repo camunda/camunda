@@ -5,10 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.analytics.dataset.store;
+package io.camunda.analytics.query;
 
 import io.camunda.analytics.dataset.CompiledTable;
 import io.camunda.analytics.dataset.FilterPredicate;
+import io.camunda.analytics.dataset.store.DatasetQueryClient;
+import io.camunda.analytics.dataset.store.TableFetch;
+import io.camunda.analytics.dataset.store.TableRow;
 import io.camunda.analytics.dimension.DimensionColumn;
 import java.util.List;
 

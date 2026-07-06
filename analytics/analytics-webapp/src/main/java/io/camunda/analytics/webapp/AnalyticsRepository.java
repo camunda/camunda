@@ -9,10 +9,10 @@ package io.camunda.analytics.webapp;
 
 import io.camunda.analytics.dataset.CompiledDataset;
 import io.camunda.analytics.dataset.FilterPredicate;
-import io.camunda.analytics.dataset.store.DatasetQueryExecutor;
-import io.camunda.analytics.dataset.store.ReportQuery;
 import io.camunda.analytics.metric.ExecutionTimeSummaryResult;
 import io.camunda.analytics.metric.LifecycleSummaryResult;
+import io.camunda.analytics.query.DatasetQueryExecutor;
+import io.camunda.analytics.query.ReportQuery;
 import io.camunda.analytics.webapp.model.Dataset;
 import io.camunda.analytics.webapp.model.HeatmapCell;
 import io.camunda.analytics.webapp.model.Report;

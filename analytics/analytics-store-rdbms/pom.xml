@@ -56,6 +56,13 @@
       <artifactId>slf4j-api</artifactId>
     </dependency>
 
+    <!-- The query engine (planner/executor + report/table model) exercised by the store tests -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>analytics-query</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
