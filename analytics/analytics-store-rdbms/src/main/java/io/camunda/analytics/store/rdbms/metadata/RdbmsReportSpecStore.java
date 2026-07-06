@@ -35,7 +35,7 @@ final class RdbmsReportSpecStore implements ReportSpecStore {
   }
 
   @Override
-  public void create(final ReportDefinition report) {
+  public ReportDefinition create(final ReportDefinition report) {
     try (SqlSession session = sessionFactory.openSession()) {
       final ReportSpecMapper mapper = session.getMapper(ReportSpecMapper.class);
       final long reportId = mapper.maxReportId() + 1;
@@ -51,6 +51,7 @@ final class RdbmsReportSpecStore implements ReportSpecStore {
       mapper.insertReport(
           new ReportSpecRow(reportId, stored.name(), reportSpecJson.toJson(stored)));
       session.commit();
+      return stored;
     }
   }
 

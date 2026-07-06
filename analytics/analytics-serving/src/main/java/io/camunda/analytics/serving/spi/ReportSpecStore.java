@@ -27,9 +27,10 @@ public interface ReportSpecStore {
 
   /**
    * Persists one report, allocating and assigning its {@code reportId} (the next id after the
-   * highest stored one; any id on the passed {@code report} is ignored).
+   * highest stored one; any id on the passed {@code report} is ignored). Returns the stored report
+   * with its assigned id.
    */
-  void create(ReportDefinition report);
+  ReportDefinition create(ReportDefinition report);
 
   /** Reads a single report by its {@code reportId}, or empty if absent. */
   Optional<ReportDefinition> read(long reportId);

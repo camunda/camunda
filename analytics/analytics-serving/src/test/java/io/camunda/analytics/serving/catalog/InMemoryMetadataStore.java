@@ -95,10 +95,9 @@ final class InMemoryMetadataStore implements MetadataStore {
     private final Map<Long, ReportDefinition> byId = new LinkedHashMap<>();
 
     @Override
-    public void create(final ReportDefinition report) {
+    public ReportDefinition create(final ReportDefinition report) {
       final long reportId = byId.keySet().stream().mapToLong(Long::longValue).max().orElse(0L) + 1;
-      byId.put(
-          reportId,
+      final ReportDefinition stored =
           new ReportDefinition(
               reportId,
               report.name(),
@@ -106,7 +105,9 @@ final class InMemoryMetadataStore implements MetadataStore {
               report.groupBy(),
               report.granularityMs(),
               report.combination(),
-              report.viz()));
+              report.viz());
+      byId.put(reportId, stored);
+      return stored;
     }
 
     @Override

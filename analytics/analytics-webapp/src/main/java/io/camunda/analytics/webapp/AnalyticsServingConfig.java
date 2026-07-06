@@ -11,9 +11,11 @@ import io.camunda.analytics.dataset.ActiveCube;
 import io.camunda.analytics.dataset.ActiveTable;
 import io.camunda.analytics.dataset.CompiledDataset;
 import io.camunda.analytics.dataset.CompiledTable;
+import io.camunda.analytics.meter.MeterCatalog;
 import io.camunda.analytics.query.DatasetQueryExecutor;
 import io.camunda.analytics.query.DatasetQueryPlanner;
 import io.camunda.analytics.query.TableQueryExecutor;
+import io.camunda.analytics.serving.catalog.DatasetProvisioningService;
 import io.camunda.analytics.serving.catalog.StandardDatasets;
 import io.camunda.analytics.serving.spi.DatasetStore;
 import io.camunda.analytics.serving.spi.MetadataStore;
@@ -61,6 +63,23 @@ public class AnalyticsServingConfig {
   @Bean
   public DatasetQueryExecutor datasetQueryExecutor(final DatasetStore datasetStore) {
     return new DatasetQueryExecutor(new DatasetQueryPlanner(), datasetStore.queryClient());
+  }
+
+  /**
+   * The single admission path for a user-defined dataset: compile + allocate ids, freeze the
+   * forward-only event-time activation ({@code now + 30s}, above the 10s reload-check so the stages
+   * pick the cube up before its first fact is due — ADR 0005), persist the spec, and provision its
+   * serving structure.
+   */
+  @Bean
+  public DatasetProvisioningService datasetProvisioningService(
+      final MetadataStore metadataStore, final DatasetStore datasetStore) {
+    return new DatasetProvisioningService(
+        metadataStore,
+        datasetStore.schemaManager(),
+        MeterCatalog.withDefaults(),
+        System::currentTimeMillis,
+        30_000L);
   }
 
   /** The table read-path executor: validate filters, fetch rows (no reduction). */

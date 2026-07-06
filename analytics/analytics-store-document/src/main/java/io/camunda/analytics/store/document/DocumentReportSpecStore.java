@@ -46,7 +46,7 @@ public final class DocumentReportSpecStore implements ReportSpecStore {
   }
 
   @Override
-  public void create(final ReportDefinition report) {
+  public ReportDefinition create(final ReportDefinition report) {
     final long reportId = nextReportId();
     final ReportDefinition stored =
         new ReportDefinition(
@@ -60,6 +60,7 @@ public final class DocumentReportSpecStore implements ReportSpecStore {
     writeClient.index(
         RequestBuilders.<ReportDefinition>indexRequest(
             r -> r.index(index).id(Long.toString(reportId)).document(stored)));
+    return stored;
   }
 
   @Override

@@ -7,75 +7,122 @@
  */
 package io.camunda.analytics.webapp;
 
-import io.camunda.analytics.webapp.model.Dataset;
+import io.camunda.analytics.dataset.ActiveCube;
+import io.camunda.analytics.dataset.CompiledDataset;
+import io.camunda.analytics.dataset.DatasetDeclaration;
+import io.camunda.analytics.dataset.DatasetKind;
+import io.camunda.analytics.dataset.EnrichmentTiming;
+import io.camunda.analytics.dataset.RegisteredDataset;
+import io.camunda.analytics.dimension.DimensionType;
+import io.camunda.analytics.fact.FactType;
+import io.camunda.analytics.meter.Meter;
+import io.camunda.analytics.query.DatasetQueryExecutor;
+import io.camunda.analytics.query.ReportExecutor;
+import io.camunda.analytics.query.ReportResult;
+import io.camunda.analytics.report.ReportDefinition;
+import io.camunda.analytics.serving.catalog.DatasetProvisioningService;
+import io.camunda.analytics.serving.catalog.StandardDatasets;
+import io.camunda.analytics.serving.spi.DatasetSpecQuery;
+import io.camunda.analytics.serving.spi.MetadataStore;
 import io.camunda.analytics.webapp.model.HeatmapCell;
-import io.camunda.analytics.webapp.model.Report;
-import io.camunda.analytics.webapp.model.ReportRow;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Declare-and-read API behind the UI: define datasets, define reports, and run a report. */
+/**
+ * The declare-and-read API behind the UI: define a dataset (compiled + provisioned + admitted to
+ * the metadata plane via {@link DatasetProvisioningService}), define a report over one or more
+ * datasets (persisted in the metadata plane via {@link MetadataStore#reportSpecStore()}), and run a
+ * report (executed as a union over the pre-aggregated cubes via {@link ReportExecutor}). Datasets
+ * and reports are backend-neutral specs in the metadata plane, not webapp-local storage.
+ */
 @RestController
 @RequestMapping("/api")
 public class AnalyticsController {
 
+  private final DatasetProvisioningService provisioningService;
+  private final MetadataStore metadataStore;
+  private final DatasetQueryExecutor datasetQueryExecutor;
   private final AnalyticsRepository repository;
   private final TableRepository tableRepository;
 
   public AnalyticsController(
-      final AnalyticsRepository repository, final TableRepository tableRepository) {
+      final DatasetProvisioningService provisioningService,
+      final MetadataStore metadataStore,
+      final DatasetQueryExecutor datasetQueryExecutor,
+      final AnalyticsRepository repository,
+      final TableRepository tableRepository) {
+    this.provisioningService = provisioningService;
+    this.metadataStore = metadataStore;
+    this.datasetQueryExecutor = datasetQueryExecutor;
     this.repository = repository;
     this.tableRepository = tableRepository;
   }
 
+  // --- datasets --------------------------------------------------------------------------------
+
   @GetMapping("/datasets")
-  public List<Dataset> datasets() {
-    return repository.listDatasets();
+  public List<DatasetView> datasets() {
+    return metadataStore.datasetSpecStore().search(DatasetSpecQuery.all()).stream()
+        .map(AnalyticsController::toView)
+        .toList();
   }
 
   @PostMapping("/datasets")
-  public Dataset createDataset(@RequestBody final CreateDataset request) {
-    final String dimensions =
-        request.dimensions() == null || request.dimensions().isBlank()
-            ? "definition"
-            : request.dimensions();
-    final long window = request.windowSizeMs() == null ? 3_600_000L : request.windowSizeMs();
-    return repository.createDataset(request.name(), dimensions, window);
+  @ResponseStatus(HttpStatus.CREATED)
+  public DatasetView createDataset(@RequestBody final CreateDatasetRequest request) {
+    return toView(provisioningService.provision(request.toDeclaration()));
   }
 
+  // --- reports ---------------------------------------------------------------------------------
+
   @GetMapping("/reports")
-  public List<Report> reports() {
-    return repository.listReports();
+  public List<ReportDefinition> reports() {
+    return metadataStore.reportSpecStore().search();
   }
 
   @PostMapping("/reports")
-  public Report createReport(@RequestBody final CreateReport request) {
-    final String viz = request.vizType() == null ? "table" : request.vizType();
-    return repository.createReport(
-        request.name(),
-        request.datasetId(),
-        viz,
-        request.bpmnProcessId(),
-        request.region(),
-        request.fromWindow(),
-        request.toWindow());
+  @ResponseStatus(HttpStatus.CREATED)
+  public ReportDefinition createReport(@RequestBody final ReportDefinition report) {
+    return metadataStore.reportSpecStore().create(report);
   }
 
   @GetMapping("/reports/{id}/data")
-  public ResponseEntity<List<ReportRow>> reportData(@PathVariable final long id) {
-    return repository
-        .getReport(id)
-        .map(report -> ResponseEntity.ok(repository.runReport(report)))
+  public ResponseEntity<ReportResult> reportData(
+      @PathVariable final long id,
+      @RequestParam("fromMs") final long fromMs,
+      @RequestParam("toMs") final long toMs) {
+    return metadataStore
+        .reportSpecStore()
+        .read(id)
+        .map(report -> ResponseEntity.ok(runReport(report, fromMs, toMs)))
         .orElseGet(() -> ResponseEntity.notFound().build());
   }
+
+  private ReportResult runReport(
+      final ReportDefinition report, final long fromMs, final long toMs) {
+    // Resolve dataset names against the current metadata plane (so a just-defined dataset
+    // resolves);
+    // a UI read, so recompiling the cubes per run is fine.
+    final Map<String, CompiledDataset> byName = new LinkedHashMap<>();
+    for (final ActiveCube cube : StandardDatasets.loadCubes(metadataStore)) {
+      byName.put(cube.compiled().name(), cube.compiled());
+    }
+    return new ReportExecutor(datasetQueryExecutor, byName::get).execute(report, fromMs, toMs);
+  }
+
+  // --- heatmap + raw tables (unchanged) --------------------------------------------------------
 
   /** Process definitions the element heatmap has data for. */
   @GetMapping("/heatmap/processes")
@@ -106,16 +153,95 @@ public class AnalyticsController {
     return ResponseEntity.ok(tableRepository.rows(name, limit));
   }
 
-  /** Request body to declare a dataset. */
-  public record CreateDataset(String name, String dimensions, Long windowSizeMs) {}
+  /** A rejected declaration (validation) is a client error, not a server fault. */
+  @ExceptionHandler(IllegalArgumentException.class)
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  public Map<String, String> onInvalid(final IllegalArgumentException e) {
+    return Map.of("error", e.getMessage());
+  }
 
-  /** Request body to declare a report on a dataset. */
-  public record CreateReport(
+  private static DatasetView toView(final RegisteredDataset registered) {
+    final DatasetDeclaration d = registered.declaration();
+    return new DatasetView(
+        registered.cubeId(),
+        d.name(),
+        d.sourceFact().name(),
+        d.kind().name(),
+        d.dimensions().stream()
+            .map(dim -> new DimensionView(dim.name(), dim.type().name(), dim.enrichment().name()))
+            .toList(),
+        d.meters().stream()
+            .map(m -> new MeterView(m.name(), m.type(), m.measureField(), m.params()))
+            .toList(),
+        d.windowSizesMs(),
+        d.keyField(),
+        registered.activationTimestampMs());
+  }
+
+  /** Request body to declare a dataset — mapped to a {@link DatasetDeclaration} via its builder. */
+  public record CreateDatasetRequest(
       String name,
-      long datasetId,
-      String vizType,
-      String bpmnProcessId,
-      String region,
-      Long fromWindow,
-      Long toWindow) {}
+      FactType sourceFact,
+      DatasetKind kind,
+      List<FilterRequest> filters,
+      List<DimensionRequest> dimensions,
+      List<MeterRequest> meters,
+      List<Long> windowSizesMs,
+      String keyField,
+      Long latenessMs) {
+
+    DatasetDeclaration toDeclaration() {
+      final DatasetDeclaration.Builder builder = DatasetDeclaration.builder(name, sourceFact);
+      if (kind == DatasetKind.TABLE) {
+        builder.asTable(keyField);
+      }
+      if (filters != null) {
+        filters.forEach(f -> builder.filterEquals(f.field(), f.value()));
+      }
+      if (dimensions != null) {
+        for (final DimensionRequest dim : dimensions) {
+          if (dim.enrichment() == null) {
+            builder.dimension(dim.name(), dim.type());
+          } else {
+            builder.dimension(dim.name(), dim.type(), dim.enrichment());
+          }
+        }
+      }
+      if (meters != null) {
+        meters.forEach(
+            m -> builder.meter(new Meter(m.name(), m.type(), m.measureField(), m.params())));
+      }
+      if (windowSizesMs != null) {
+        windowSizesMs.forEach(builder::window);
+      }
+      if (latenessMs != null) {
+        builder.lateness(latenessMs);
+      }
+      return builder.build();
+    }
+  }
+
+  public record DimensionRequest(String name, DimensionType type, EnrichmentTiming enrichment) {}
+
+  public record MeterRequest(
+      String name, String type, String measureField, Map<String, String> params) {}
+
+  public record FilterRequest(String field, String value) {}
+
+  /** Read view of a dataset spec for the UI. */
+  public record DatasetView(
+      long cubeId,
+      String name,
+      String sourceFact,
+      String kind,
+      List<DimensionView> dimensions,
+      List<MeterView> meters,
+      List<Long> windowSizesMs,
+      String keyField,
+      long activationTimestampMs) {}
+
+  public record DimensionView(String name, String type, String enrichment) {}
+
+  public record MeterView(
+      String name, String type, String measureField, Map<String, String> params) {}
 }
