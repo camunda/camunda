@@ -200,6 +200,10 @@ public final class MessageEventProcessors {
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
             MessageStartProcessInstanceRequestIntent.REJECT_NO_SUBSCRIPTION,
             new MessageStartProcessInstanceRequestRejectNoSubscriptionProcessor(writers.state()))
+        .onCommand(
+            ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
+            MessageStartProcessInstanceRequestIntent.REJECT_EXPIRED,
+            new MessageStartProcessInstanceRequestRejectExpiredProcessor(writers.state()))
         // Holder-liveness release query handler on P_B - answers whether a cross-partition
         // message-start holder instance is still active, so P_K can release its correlation-key
         // lock. The queries are dispatched by CrossPartitionMessageStartLockReleaseScheduler below.

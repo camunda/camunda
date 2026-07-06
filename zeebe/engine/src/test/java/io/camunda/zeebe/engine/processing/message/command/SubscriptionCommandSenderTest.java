@@ -572,6 +572,19 @@ public class SubscriptionCommandSenderTest {
     verify(mockProcessingResultBuilder, never()).appendRecord(anyLong(), any(), any());
   }
 
+  @Test
+  public void shouldSentFollowUpCommandForStartProcessInstanceExpiredRejectedReply() {
+    // given
+    final var request = requestFromSourcePartition(DIFFERENT_PARTITION);
+
+    // when
+    subscriptionCommandSender.sendStartProcessInstanceExpiredRejected(request);
+
+    // then
+    verify(mockProcessingResultBuilder).appendPostCommitTask(any());
+    verify(mockProcessingResultBuilder, never()).appendRecord(anyLong(), any(), any());
+  }
+
   private static MessageStartProcessInstanceRequestRecord requestFromSourcePartition(
       final int sourcePartition) {
     return new MessageStartProcessInstanceRequestRecord()

@@ -182,4 +182,23 @@ public final class MessageStartProcessInstanceReplyApplierTest {
       verify(mockAskState, never()).remove(anyLong(), anyLong());
     }
   }
+
+  @Nested
+  class ExpiredRejectedApplier {
+
+    @Test
+    void shouldBackOffPendingAskOnExpiredRejected() {
+      // given
+      final var applier = new MessageStartProcessInstanceExpiredRejectedV1Applier(mockAskState);
+      final var record = createRecord();
+
+      // when
+      applier.applyState(1L, record);
+
+      // then the ask is kept and backed off (not removed): removal stays owned by P_K's
+      // message-expiry path, and the incremented rejection count damps post-deadline retries
+      verify(mockAskState).backOff(MESSAGE_KEY, PROCESS_DEFINITION_KEY);
+      verify(mockAskState, never()).remove(anyLong(), anyLong());
+    }
+  }
 }

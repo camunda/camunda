@@ -532,6 +532,9 @@ public final class EventAppliers implements EventApplier {
    *       processed; removes the pending-ask entry.
    *   <li>{@code NO_SUBSCRIPTION_REJECTED}: applied on {@code P_K} when the rejection reply is
    *       processed; removes the pending-ask entry.
+   *   <li>{@code EXPIRED_REJECTED}: applied on {@code P_K} when the TTL-gated expiry guard's
+   *       rejection reply is processed; backs the pending-ask entry off (does not remove it —
+   *       removal stays owned by {@code P_K}'s message-expiry path).
    *   <li>{@code EXPIRED_DEDUP_DELETED}: removes a dedup entry after its post-completion expired
    *       dedup entry window has passed; emitted by the scheduled sweep.
    * </ul>
@@ -559,6 +562,10 @@ public final class EventAppliers implements EventApplier {
     register(
         MessageStartProcessInstanceRequestIntent.NO_SUBSCRIPTION_REJECTED,
         new MessageStartProcessInstanceNoSubscriptionRejectedV1Applier(
+            state.getMessageStartProcessInstanceAskState()));
+    register(
+        MessageStartProcessInstanceRequestIntent.EXPIRED_REJECTED,
+        new MessageStartProcessInstanceExpiredRejectedV1Applier(
             state.getMessageStartProcessInstanceAskState()));
   }
 

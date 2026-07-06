@@ -21,10 +21,12 @@ package io.camunda.zeebe.protocol.record.intent;
  * {@code P_B = hash(businessId)}, the partition that owns the businessId uniqueness invariant.
  *
  * <p>The handshake is split into a request half ({@link #REQUEST} / {@link #REQUESTED}) carried
- * from {@code P_K} to {@code P_B}, and one of three reply halves carried back from {@code P_B} to
+ * from {@code P_K} to {@code P_B}, and one of four reply halves carried back from {@code P_B} to
  * {@code P_K}: success ({@link #START} / {@link #STARTED}), uniqueness conflict ({@link
- * #REJECT_UNIQUENESS} / {@link #UNIQUENESS_REJECTED}), or missing start-event subscription on
- * {@code P_B} ({@link #REJECT_NO_SUBSCRIPTION} / {@link #NO_SUBSCRIPTION_REJECTED}).
+ * #REJECT_UNIQUENESS} / {@link #UNIQUENESS_REJECTED}), missing start-event subscription on {@code
+ * P_B} ({@link #REJECT_NO_SUBSCRIPTION} / {@link #NO_SUBSCRIPTION_REJECTED}), or a
+ * deterministically expired request refused by the TTL-gated expiry guard ({@link #REJECT_EXPIRED}
+ * / {@link #EXPIRED_REJECTED}).
  *
  * <p>The {@code *_REJECTED} reply intents do not carry the engine's banning semantics: a remote
  * rejection from {@code P_B} reflects live state on the destination partition (uniqueness lock held
@@ -62,7 +64,14 @@ public enum MessageStartProcessInstanceRequestIntent implements Intent {
   // EXPIRED_DEDUP_DELETED is the per-entry deletion event whose applier removes the dedup entry
   // from both column families.
   SWEEP_EXPIRED_DEDUPS((short) 8, false),
-  EXPIRED_DEDUP_DELETED((short) 9, true);
+  EXPIRED_DEDUP_DELETED((short) 9, true),
+
+  // expired-rejected reply half, applied on P_K only: P_B replies REJECT_EXPIRED when the
+  // deterministic TTL-gated expiry guard refuses a past-deadline request (messageTtl > 0), and
+  // P_K's processor writes EXPIRED_REJECTED whose applier backs the pending ask off (identical
+  // semantics to the other two rejections). Removal stays owned by P_K's message-expiry path.
+  REJECT_EXPIRED((short) 10, false),
+  EXPIRED_REJECTED((short) 11, true);
 
   private final short value;
   private final boolean isEvent;
@@ -104,6 +113,10 @@ public enum MessageStartProcessInstanceRequestIntent implements Intent {
         return SWEEP_EXPIRED_DEDUPS;
       case 9:
         return EXPIRED_DEDUP_DELETED;
+      case 10:
+        return REJECT_EXPIRED;
+      case 11:
+        return EXPIRED_REJECTED;
       default:
         return Intent.UNKNOWN;
     }
