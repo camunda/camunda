@@ -186,6 +186,7 @@ test.describe('Filter request bodies', () => {
 		network,
 		page,
 		tasklistIndexPage,
+		taskDetailPage,
 	}) => {
 		await page.addInitScript(`localStorage.setItem('tasklist.autoSelectNextTask', JSON.stringify(true))`);
 		network.use(
@@ -214,6 +215,7 @@ test.describe('Filter request bodies', () => {
 
 		await expect(page).toHaveURL(/\/tasklist\?filter=completed&sortBy=completion$/);
 		await expect(tasklistIndexPage.taskItem('Completed task')).toBeVisible();
+		await expect(taskDetailPage.taskName('Completed task')).toBeVisible();
 	});
 });
 
