@@ -113,15 +113,16 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
   const hasVersionTag = !isNil(processDefinitionVersionTag);
   const hasBusinessId = !isNil(businessId);
   const processInstanceState = hasIncident ? 'INCIDENT' : state;
-  const isProcessLevelWaiting = waitStateStatistics?.some(
-    ({elementId}) => elementId === processDefinitionId,
-  );
+  const processLevelWaitingCount =
+    waitStateStatistics?.find(
+      ({elementId}) => elementId === processDefinitionId,
+    )?.waitingCount ?? 0;
   return (
     <InstanceHeader
       state={processInstanceState}
       instanceName={getProcessDefinitionName(processInstance)}
       incidentsCount={hasIncident ? incidentsCount : 0}
-      nameSubtitle={isProcessLevelWaiting ? getWaitStateLabel(1) : undefined}
+      nameSubtitle={getWaitStateLabel(processLevelWaitingCount) ?? undefined}
       headerColumns={headerColumns.filter((name) => {
         if (name === 'Tenant') {
           return isMultiTenancyEnabled;
