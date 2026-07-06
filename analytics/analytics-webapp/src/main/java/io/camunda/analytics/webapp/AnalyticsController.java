@@ -19,7 +19,9 @@ import io.camunda.analytics.meter.Meter;
 import io.camunda.analytics.query.DatasetQueryExecutor;
 import io.camunda.analytics.query.ReportExecutor;
 import io.camunda.analytics.query.ReportResult;
+import io.camunda.analytics.report.Combination;
 import io.camunda.analytics.report.ReportDefinition;
+import io.camunda.analytics.report.ReportSource;
 import io.camunda.analytics.serving.catalog.DatasetProvisioningService;
 import io.camunda.analytics.serving.catalog.StandardDatasets;
 import io.camunda.analytics.serving.spi.DatasetSpecQuery;
@@ -54,6 +56,7 @@ public class AnalyticsController {
   private final DatasetProvisioningService provisioningService;
   private final MetadataStore metadataStore;
   private final DatasetQueryExecutor datasetQueryExecutor;
+  private final MeasureCatalog measureCatalog;
   private final AnalyticsRepository repository;
   private final TableRepository tableRepository;
 
@@ -61,13 +64,63 @@ public class AnalyticsController {
       final DatasetProvisioningService provisioningService,
       final MetadataStore metadataStore,
       final DatasetQueryExecutor datasetQueryExecutor,
+      final MeasureCatalog measureCatalog,
       final AnalyticsRepository repository,
       final TableRepository tableRepository) {
     this.provisioningService = provisioningService;
     this.metadataStore = metadataStore;
     this.datasetQueryExecutor = datasetQueryExecutor;
+    this.measureCatalog = measureCatalog;
     this.repository = repository;
     this.tableRepository = tableRepository;
+  }
+
+  // --- semantic layer: measures + question-shaped reports (the primary, friendly surface) -------
+
+  /** The business-language catalog (entities, measures, group-bys) the report builder renders. */
+  @GetMapping("/measures")
+  public MeasureCatalog.CatalogView measures() {
+    return measureCatalog.view();
+  }
+
+  /**
+   * Creates a report from a question in business language: compile it to a dataset declaration,
+   * find-or-provision the backing cube, then persist a report reading the measure over the shared
+   * group-by. The dataset is managed behind the report (report-first).
+   */
+  @PostMapping("/reports/from-question")
+  @ResponseStatus(HttpStatus.CREATED)
+  public ReportDefinition createReportFromQuestion(@RequestBody final QuestionRequest request) {
+    final MeasureCatalog.CompiledQuestion compiled =
+        measureCatalog.compile(
+            request.entity(),
+            request.measure(),
+            request.params(),
+            request.groupBy(),
+            request.filters(),
+            request.granularityMs());
+    // Reuse an existing dataset with the same derived declaration, else provision a new one.
+    if (metadataStore
+        .datasetSpecStore()
+        .search(DatasetSpecQuery.byName(compiled.datasetName()))
+        .isEmpty()) {
+      provisioningService.provision(compiled.declaration());
+    }
+    final List<String> groupByFields =
+        request.groupBy() == null
+            ? List.of()
+            : request.groupBy().stream().map(MeasureCatalog.QuestionGroupBy::field).toList();
+    final ReportDefinition report =
+        new ReportDefinition(
+            0L,
+            request.name(),
+            List.of(
+                new ReportSource(compiled.datasetName(), List.of(compiled.meterName()), List.of())),
+            groupByFields,
+            request.granularityMs(),
+            Combination.UNION,
+            request.viz());
+    return metadataStore.reportSpecStore().create(report);
   }
 
   // --- datasets --------------------------------------------------------------------------------
@@ -177,6 +230,17 @@ public class AnalyticsController {
         d.keyField(),
         registered.activationTimestampMs());
   }
+
+  /** Request body for a question-shaped report (the friendly, report-first surface). */
+  public record QuestionRequest(
+      String name,
+      String entity,
+      String measure,
+      Map<String, Double> params,
+      List<MeasureCatalog.QuestionGroupBy> groupBy,
+      List<MeasureCatalog.QuestionFilter> filters,
+      long granularityMs,
+      String viz) {}
 
   /** Request body to declare a dataset — mapped to a {@link DatasetDeclaration} via its builder. */
   public record CreateDatasetRequest(
