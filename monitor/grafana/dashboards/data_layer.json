@@ -3675,9 +3675,6 @@
           "text": "All",
           "value": "$__all"
         },
-<<<<<<< HEAD
-        "definition": "label_values(atomix_role{cluster=\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"},partition)",
-=======
         "definition": "label_values(zeebe_health{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"},physicalTenant)",
         "includeAll": true,
         "multi": true,
