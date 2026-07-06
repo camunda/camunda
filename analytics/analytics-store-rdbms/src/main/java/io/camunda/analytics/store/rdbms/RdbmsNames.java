@@ -52,6 +52,48 @@ final class RdbmsNames {
   }
 
   /**
+   * The blob column holding a meter's still-encoded, app-mergeable accumulator — the portable Layer
+   * A representation, kept for <em>every</em> meter (additive and sketch alike) so the streaming
+   * app-merge stays correct. Named {@code <meter>blob} so it never collides with an additive
+   * meter's single native column (whose empty suffix names it {@code <meter>}).
+   */
+  static String blobColumn(final String name) {
+    return column(name) + "blob";
+  }
+
+  static String quotedBlobColumn(final String name) {
+    return "\"" + blobColumn(name) + "\"";
+  }
+
+  /**
+   * A meter's finalized scalar column ({@code <meter>value}) — the cheap denormalized {@code
+   * getResult} of a non-pushable meter's own cell, so a matching-granularity {@code DIRECT} read
+   * can skip the blob. Distinct from {@link #blobColumn} and {@link #pushdownColumn} to avoid
+   * collisions.
+   */
+  static String valueColumn(final String name) {
+    return column(name) + "value";
+  }
+
+  static String quotedValueColumn(final String name) {
+    return "\"" + valueColumn(name) + "\"";
+  }
+
+  /**
+   * The native numeric column of one {@link io.camunda.analytics.meter.PushdownColumn} of a
+   * pushable meter: the meter's base column plus the column's {@code suffix} (an empty suffix — the
+   * single-column meters count/sum/level — names it just {@code <meter>}). The suffix is a safe
+   * constant token from the meter model, so it never needs the {@link Identifiers} allowlist.
+   */
+  static String pushdownColumn(final String name, final String suffix) {
+    return column(name) + suffix;
+  }
+
+  static String quotedPushdownColumn(final String name, final String suffix) {
+    return "\"" + pushdownColumn(name, suffix) + "\"";
+  }
+
+  /**
    * The double-quoted (delimited) form of {@link #column(String)} for use in SQL text. The name is
    * run through the {@link Identifiers} allowlist and given the reserved-word-avoiding suffix
    * first, so no quote or metacharacter can reach the SQL — the quotes only delimit an already-safe

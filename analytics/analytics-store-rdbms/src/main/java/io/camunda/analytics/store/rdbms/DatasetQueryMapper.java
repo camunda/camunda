@@ -31,6 +31,10 @@ public interface DatasetQueryMapper {
   @Options(fetchSize = 1000)
   Cursor<Map<String, Object>> fetchCursor(Map<String, Object> params);
 
+  /** The pushed-down {@code GROUP BY} read; rows come back as alias-keyed maps. */
+  @SelectProvider(type = DatasetQuerySqlProvider.class, method = "pushDown")
+  List<Map<String, Object>> pushDown(Map<String, Object> params);
+
   @SelectProvider(type = TableRowSqlProvider.class, method = "fetch")
   List<Map<String, Object>> fetchRows(Map<String, Object> params);
 }

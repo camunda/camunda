@@ -8,16 +8,22 @@
 package io.camunda.analytics.store.rdbms;
 
 import io.camunda.analytics.dataset.CompiledDataset;
+import io.camunda.analytics.dataset.CompiledMeter;
 import io.camunda.analytics.dataset.CompiledTable;
 import io.camunda.analytics.dataset.store.DatasetWriter;
 import io.camunda.analytics.dimension.DimensionColumn;
 import io.camunda.analytics.dimension.DimensionKey;
 import io.camunda.analytics.dimension.DimensionType;
+import io.camunda.analytics.meter.BoundMeter;
+import io.camunda.analytics.meter.PushdownColumn;
+import io.camunda.analytics.meter.PushdownSpec;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ibatis.session.SqlSession;
@@ -59,15 +65,39 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
         grain.stream()
             .map(c -> RdbmsNames.quotedColumn(c.name()))
             .collect(Collectors.joining(", "));
-    final String meterCol = RdbmsNames.quotedColumn(meterName);
     final String table = RdbmsNames.datasetTable(dataset.cubeId());
+
+    // Every meter writes its app-mergeable blob (Layer A). A pushable meter additionally decomposes
+    // into its native numeric columns (Layer B pushdown); a sketch/summary additionally writes its
+    // finalized scalar (the DIRECT fast path). Only the meter's own columns are in the upsert, so
+    // meters of the same cell coexist under the shared cell_key.
+    final CompiledMeter compiled = compiledMeter(dataset, meterName, windowSize);
+    final Optional<PushdownSpec<?, ?>> spec = compiled.pushdown();
+
+    final List<String> meterCols = new ArrayList<>();
+    meterCols.add(RdbmsNames.quotedBlobColumn(meterName));
+    final List<Object> pushdownValues;
+    final double scalarValue;
+    if (spec.isPresent()) {
+      pushdownValues = decompose(compiled.bound(), accumulator);
+      for (final PushdownColumn column : spec.get().columns()) {
+        meterCols.add(RdbmsNames.quotedPushdownColumn(meterName, column.suffix()));
+      }
+      scalarValue = Double.NaN;
+    } else {
+      pushdownValues = List.of();
+      meterCols.add(RdbmsNames.quotedValueColumn(meterName));
+      scalarValue = finalizedValue(compiled.bound(), accumulator);
+    }
+
     final String columns =
         "cell_key, "
             + (dimCols.isEmpty() ? "" : dimCols + ", ")
             + "window_start, window_size, "
-            + meterCol;
-    final int columnCount = 1 + grain.size() + 2 + 1;
-    final String sql = upsertSql(table, columns, columnCount, "cell_key", List.of(meterCol));
+            + String.join(", ", meterCols);
+    final int columnCount = 1 + grain.size() + 2 + meterCols.size();
+    final String sql = upsertSql(table, columns, columnCount, "cell_key", meterCols);
+    final List<PushdownColumn> pushdownColumns = spec.map(PushdownSpec::columns).orElse(List.of());
 
     execute(
         sql,
@@ -79,9 +109,53 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
           }
           statement.setLong(index++, windowStart);
           statement.setLong(index++, windowSize);
-          statement.setBytes(index, accumulator);
+          statement.setBytes(index++, accumulator);
+          if (spec.isPresent()) {
+            for (int i = 0; i < pushdownColumns.size(); i++) {
+              bind(statement, index++, pushdownColumns.get(i).type(), pushdownValues.get(i));
+            }
+          } else {
+            statement.setDouble(index, scalarValue);
+          }
         },
         "cube " + dataset.name());
+  }
+
+  /**
+   * The compiled meter for {@code (name, windowSize)}, or any tier of the name (specs are shared).
+   */
+  private static CompiledMeter compiledMeter(
+      final CompiledDataset dataset, final String meterName, final long windowSize) {
+    CompiledMeter fallback = null;
+    for (final CompiledMeter meter : dataset.meters()) {
+      if (meter.meterName().equals(meterName)) {
+        if (meter.windowMs() == windowSize) {
+          return meter;
+        }
+        fallback = meter;
+      }
+    }
+    if (fallback == null) {
+      throw new IllegalStateException(
+          "no compiled meter '" + meterName + "' in cube '" + dataset.name() + "'");
+    }
+    return fallback;
+  }
+
+  /** Decodes the accumulator and decomposes it into the pushdown columns' per-cell values. */
+  @SuppressWarnings("unchecked")
+  private static List<Object> decompose(final BoundMeter<?, ?> boundRaw, final byte[] bytes) {
+    final BoundMeter<Object, Object> bound = (BoundMeter<Object, Object>) boundRaw;
+    final Object accumulator = bound.accumulatorCodec().fromBytes(bytes);
+    return bound.pushdown().orElseThrow().decompose().apply(accumulator);
+  }
+
+  /** The cell's finalized scalar for a non-pushable meter (the denormalized {@code _value}). */
+  @SuppressWarnings("unchecked")
+  private static double finalizedValue(final BoundMeter<?, ?> boundRaw, final byte[] bytes) {
+    final BoundMeter<Object, Object> bound = (BoundMeter<Object, Object>) boundRaw;
+    final Object accumulator = bound.accumulatorCodec().fromBytes(bytes);
+    return SketchScalar.of(bound.aggregate().getResult(accumulator));
   }
 
   @Override

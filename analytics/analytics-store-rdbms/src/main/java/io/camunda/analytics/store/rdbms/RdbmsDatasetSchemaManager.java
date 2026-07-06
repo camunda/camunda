@@ -8,10 +8,18 @@
 package io.camunda.analytics.store.rdbms;
 
 import io.camunda.analytics.dataset.CompiledDataset;
+import io.camunda.analytics.dataset.CompiledMeter;
 import io.camunda.analytics.dataset.CompiledTable;
 import io.camunda.analytics.dataset.store.DatasetSchemaManager;
+import io.camunda.analytics.meter.PushdownColumn;
+import io.camunda.analytics.meter.PushdownSpec;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -40,10 +48,26 @@ public final class RdbmsDatasetSchemaManager implements DatasetSchemaManager {
         dataset.grain().columns().stream()
             .map(c -> RdbmsNames.quotedColumn(c.name()) + " " + dialect.columnType(c.type()))
             .collect(Collectors.joining(", "));
-    final String meters =
-        dataset.schema().meterNames().stream()
-            .map(name -> RdbmsNames.quotedColumn(name) + " " + dialect.blobType())
-            .collect(Collectors.joining(", "));
+    final Map<String, Optional<PushdownSpec<?, ?>>> specs = specsByMeter(dataset);
+    final List<String> meterDefs = new ArrayList<>();
+    for (final String name : dataset.schema().meterNames()) {
+      // Every meter keeps its app-mergeable blob (the portable Layer A representation).
+      meterDefs.add(RdbmsNames.quotedBlobColumn(name) + " " + dialect.blobType());
+      final Optional<PushdownSpec<?, ?>> spec = specs.getOrDefault(name, Optional.empty());
+      if (spec.isPresent()) {
+        // Additive: one native numeric column per PushdownColumn, aggregated in the engine.
+        for (final PushdownColumn column : spec.get().columns()) {
+          meterDefs.add(
+              RdbmsNames.quotedPushdownColumn(name, column.suffix())
+                  + " "
+                  + dialect.columnType(column.type()));
+        }
+      } else {
+        // Sketch / summary: a finalized scalar alongside the blob for the DIRECT fast path.
+        meterDefs.add(RdbmsNames.quotedValueColumn(name) + " " + dialect.doubleType());
+      }
+    }
+    final String meters = String.join(", ", meterDefs);
     final String ddl =
         "CREATE TABLE IF NOT EXISTS "
             + RdbmsNames.datasetTable(dataset.cubeId())
@@ -86,6 +110,18 @@ public final class RdbmsDatasetSchemaManager implements DatasetSchemaManager {
             + (columns.isEmpty() ? "" : ", " + columns)
             + ")";
     execute(ddl, "table " + table.name());
+  }
+
+  /**
+   * The pushdown spec per meter name (tier-independent, so the first compiled tier suffices). Empty
+   * for a meter with no compiled tier or a non-pushable (blob) meter.
+   */
+  static Map<String, Optional<PushdownSpec<?, ?>>> specsByMeter(final CompiledDataset dataset) {
+    final Map<String, Optional<PushdownSpec<?, ?>>> specs = new LinkedHashMap<>();
+    for (final CompiledMeter meter : dataset.meters()) {
+      specs.putIfAbsent(meter.meterName(), meter.pushdown());
+    }
+    return specs;
   }
 
   private void execute(final String ddl, final String what) {

@@ -29,6 +29,11 @@ public enum RdbmsDialect {
     return this == POSTGRESQL ? "BYTEA" : "VARBINARY";
   }
 
+  /** The column type for a finalized scalar ({@code <meter>value}). Both dialects accept this. */
+  public String doubleType() {
+    return "DOUBLE PRECISION";
+  }
+
   /** The DDL column type for a dimension. */
   public String columnType(final DimensionType type) {
     return switch (type) {

@@ -8,8 +8,11 @@
 package io.camunda.analytics.store.rdbms;
 
 import io.camunda.analytics.dataset.CompiledDataset;
+import io.camunda.analytics.dataset.CompiledMeter;
 import io.camunda.analytics.dataset.CompiledTable;
 import io.camunda.analytics.dataset.FilterPredicate;
+import io.camunda.analytics.dataset.store.AggregatedFetch;
+import io.camunda.analytics.dataset.store.AggregatedRow;
 import io.camunda.analytics.dataset.store.Cell;
 import io.camunda.analytics.dataset.store.DatasetFetch;
 import io.camunda.analytics.dataset.store.DatasetQueryClient;
@@ -18,6 +21,9 @@ import io.camunda.analytics.dataset.store.TableRow;
 import io.camunda.analytics.dimension.DimensionColumn;
 import io.camunda.analytics.dimension.DimensionKey;
 import io.camunda.analytics.dimension.DimensionType;
+import io.camunda.analytics.meter.Agg;
+import io.camunda.analytics.meter.PushdownColumn;
+import io.camunda.analytics.meter.PushdownSpec;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,6 +31,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 import org.apache.ibatis.cursor.Cursor;
 import org.apache.ibatis.session.SqlSession;
@@ -77,6 +84,202 @@ public final class RdbmsDatasetQueryClient implements DatasetQueryClient {
     }
   }
 
+  private static final String BUCKET_ALIAS = "wbucket";
+
+  /**
+   * The pushed-down / direct read: the store does the reduction (or, for {@code DIRECT}, none) and
+   * returns finalized {@link AggregatedRow}s. {@code PUSH_DOWN} runs one {@code GROUP BY dims,
+   * derived-bucket} with {@code SUM}/{@code MIN}/{@code MAX} per additive column; {@code DIRECT}
+   * selects the stored columns (additive numeric columns or a sketch's {@code _value}) with no
+   * aggregation — one row per cell. Each meter's columns are recomposed into its read-facing
+   * result.
+   */
+  public List<AggregatedRow> fetchAggregated(final AggregatedFetch fetch) {
+    return switch (fetch.strategy()) {
+      case PUSH_DOWN -> pushDown(fetch);
+      case DIRECT -> direct(fetch);
+      case STREAM_MERGE ->
+          throw new IllegalArgumentException("STREAM_MERGE streams cells, not an AggregatedFetch");
+    };
+  }
+
+  private List<AggregatedRow> pushDown(final AggregatedFetch fetch) {
+    final CompiledDataset dataset = fetch.dataset();
+    final List<String> selectColumns = new ArrayList<>();
+    final List<String> groupByColumns = new ArrayList<>();
+    for (final String dim : fetch.groupBy()) {
+      final String column = RdbmsNames.quotedColumn(dim);
+      selectColumns.add(column);
+      groupByColumns.add(column);
+    }
+    // Group by the bucket's SELECT alias (both dialects accept it) rather than repeating the
+    // bind-parameter expression, which H2 will not match against the projected expression.
+    selectColumns.add("(window_start - MOD(window_start, #{granularity})) AS " + BUCKET_ALIAS);
+    groupByColumns.add(BUCKET_ALIAS);
+    for (final String meter : fetch.meters()) {
+      final PushdownSpec<?, ?> spec = requireSpec(dataset, meter, fetch.windowSize());
+      for (final PushdownColumn column : spec.columns()) {
+        final String physical = RdbmsNames.quotedPushdownColumn(meter, column.suffix());
+        selectColumns.add(sqlAgg(column.agg()) + "(" + physical + ") AS " + physical);
+      }
+    }
+
+    final Map<String, Object> params = aggregatedParams(fetch);
+    params.put("selectColumns", selectColumns);
+    params.put("groupByColumns", groupByColumns);
+
+    try (SqlSession session = sessionFactory.openSession()) {
+      final List<Map<String, Object>> rows =
+          session.getMapper(DatasetQueryMapper.class).pushDown(params);
+      final List<AggregatedRow> out = new ArrayList<>(rows.size());
+      for (final Map<String, Object> raw : rows) {
+        final Map<String, Object> row = lowerKeys(raw);
+        final long bucket = ((Number) row.get(BUCKET_ALIAS)).longValue();
+        out.add(
+            new AggregatedRow(
+                groupValues(dataset, fetch.groupBy(), row), bucket, measures(dataset, fetch, row)));
+      }
+      return out;
+    }
+  }
+
+  private List<AggregatedRow> direct(final AggregatedFetch fetch) {
+    final CompiledDataset dataset = fetch.dataset();
+    final List<DimensionColumn> grain = dataset.grain().columns();
+
+    final List<String> dimColumns = new ArrayList<>();
+    for (final DimensionColumn column : grain) {
+      dimColumns.add(RdbmsNames.quotedColumn(column.name()));
+    }
+    final List<String> meterColumns = new ArrayList<>();
+    for (final String meter : fetch.meters()) {
+      final Optional<PushdownSpec<?, ?>> spec = specFor(dataset, meter, fetch.windowSize());
+      if (spec.isPresent()) {
+        for (final PushdownColumn column : spec.get().columns()) {
+          meterColumns.add(RdbmsNames.quotedPushdownColumn(meter, column.suffix()));
+        }
+      } else {
+        meterColumns.add(RdbmsNames.quotedValueColumn(meter));
+      }
+    }
+
+    final Map<String, Object> params = aggregatedParams(fetch);
+    params.put("dimColumns", dimColumns);
+    params.put("meterColumns", meterColumns);
+
+    try (SqlSession session = sessionFactory.openSession()) {
+      final List<Map<String, Object>> rows =
+          session.getMapper(DatasetQueryMapper.class).fetch(params);
+      final List<AggregatedRow> out = new ArrayList<>(rows.size());
+      for (final Map<String, Object> raw : rows) {
+        final Map<String, Object> row = lowerKeys(raw);
+        final long windowStart = ((Number) row.get("window_start")).longValue();
+        final long bucket = windowStart - Math.floorMod(windowStart, fetch.granularityMs());
+        out.add(
+            new AggregatedRow(
+                groupValues(dataset, fetch.groupBy(), row), bucket, measures(dataset, fetch, row)));
+      }
+      return out;
+    }
+  }
+
+  /** The tier/range/filter binds shared by both aggregated reads. */
+  private static Map<String, Object> aggregatedParams(final AggregatedFetch fetch) {
+    final CompiledDataset dataset = fetch.dataset();
+    final List<DimensionColumn> grain = dataset.grain().columns();
+    final List<String> filterColumns = new ArrayList<>();
+    final List<Object> filterValues = new ArrayList<>();
+    for (final FilterPredicate filter : fetch.filters()) {
+      final int index = dataset.grain().indexOf(filter.field());
+      if (index < 0) {
+        continue;
+      }
+      filterColumns.add(RdbmsNames.quotedColumn(filter.field()));
+      filterValues.add(coerce(grain.get(index).type(), filter.value()));
+    }
+    final Map<String, Object> params = new HashMap<>();
+    params.put("table", RdbmsNames.datasetTable(dataset.cubeId()));
+    params.put("filterColumns", filterColumns);
+    params.put("filterValues", filterValues);
+    params.put("windowSize", fetch.windowSize());
+    params.put("fromMs", fetch.fromMs());
+    params.put("toMs", fetch.toMs());
+    params.put("granularity", fetch.granularityMs());
+    return params;
+  }
+
+  private static List<Object> groupValues(
+      final CompiledDataset dataset, final List<String> groupBy, final Map<String, Object> row) {
+    final List<Object> values = new ArrayList<>(groupBy.size());
+    for (final String dim : groupBy) {
+      final int index = dataset.grain().indexOf(dim);
+      final DimensionType type = dataset.grain().columns().get(index).type();
+      values.add(coerceRead(type, row.get(RdbmsNames.column(dim).toLowerCase(Locale.ROOT))));
+    }
+    return values;
+  }
+
+  /** Recomposes each requested meter's stored columns / value into its read-facing result. */
+  private static Map<String, Object> measures(
+      final CompiledDataset dataset, final AggregatedFetch fetch, final Map<String, Object> row) {
+    final Map<String, Object> measures = new LinkedHashMap<>();
+    for (final String meter : fetch.meters()) {
+      final Optional<PushdownSpec<?, ?>> spec = specFor(dataset, meter, fetch.windowSize());
+      if (spec.isPresent()) {
+        final List<Object> columns = new ArrayList<>();
+        for (final PushdownColumn column : spec.get().columns()) {
+          columns.add(
+              row.get(RdbmsNames.pushdownColumn(meter, column.suffix()).toLowerCase(Locale.ROOT)));
+        }
+        measures.put(meter, spec.get().recompose().apply(columns));
+      } else {
+        // DIRECT on a non-pushable meter: serve the denormalized scalar (never PUSH_DOWN).
+        final Object value = row.get(RdbmsNames.valueColumn(meter).toLowerCase(Locale.ROOT));
+        measures.put(meter, value == null ? 0.0 : ((Number) value).doubleValue());
+      }
+    }
+    return measures;
+  }
+
+  private static Optional<PushdownSpec<?, ?>> specFor(
+      final CompiledDataset dataset, final String meter, final long windowSize) {
+    return compiledMeter(dataset, meter, windowSize).pushdown();
+  }
+
+  private static PushdownSpec<?, ?> requireSpec(
+      final CompiledDataset dataset, final String meter, final long windowSize) {
+    return specFor(dataset, meter, windowSize)
+        .orElseThrow(
+            () ->
+                new IllegalArgumentException("meter '" + meter + "' is not pushable (PUSH_DOWN)"));
+  }
+
+  private static CompiledMeter compiledMeter(
+      final CompiledDataset dataset, final String meter, final long windowSize) {
+    CompiledMeter fallback = null;
+    for (final CompiledMeter compiled : dataset.meters()) {
+      if (compiled.meterName().equals(meter)) {
+        if (compiled.windowMs() == windowSize) {
+          return compiled;
+        }
+        fallback = compiled;
+      }
+    }
+    if (fallback == null) {
+      throw new IllegalStateException(
+          "no compiled meter '" + meter + "' in '" + dataset.name() + "'");
+    }
+    return fallback;
+  }
+
+  private static String sqlAgg(final Agg agg) {
+    return switch (agg) {
+      case SUM -> "SUM";
+      case MIN -> "MIN";
+      case MAX -> "MAX";
+    };
+  }
+
   /** The bound query parameters for one fetch — shared by the list and cursor paths. */
   private static Map<String, Object> params(final DatasetFetch fetch) {
     final CompiledDataset dataset = fetch.dataset();
@@ -90,7 +293,7 @@ public final class RdbmsDatasetQueryClient implements DatasetQueryClient {
     }
     final List<String> meterColumns = new ArrayList<>();
     for (final String meter : fetch.meters()) {
-      meterColumns.add(RdbmsNames.quotedColumn(meter));
+      meterColumns.add(RdbmsNames.quotedBlobColumn(meter));
     }
 
     final List<String> filterColumns = new ArrayList<>();
@@ -196,7 +399,7 @@ public final class RdbmsDatasetQueryClient implements DatasetQueryClient {
 
     final Map<String, byte[]> accumulators = new LinkedHashMap<>();
     for (final String meter : meters) {
-      final Object value = row.get(RdbmsNames.column(meter).toLowerCase(Locale.ROOT));
+      final Object value = row.get(RdbmsNames.blobColumn(meter).toLowerCase(Locale.ROOT));
       if (value instanceof final byte[] bytes) {
         accumulators.put(meter, bytes);
       }
