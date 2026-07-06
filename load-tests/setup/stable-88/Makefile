@@ -140,7 +140,8 @@ check-deadline:
 .PHONY: create-namespace
 create-namespace:
 	@echo "Making sure the namespace $(namespace) exists..."
-	kubectl get namespace "$(namespace)" > /dev/null 2>&1 || kubectl create namespace "$(namespace)"
+	@# Sleep a bit to let Kubernetes finish the creation of the namespace and make it fully consistent for read and write operations.
+	kubectl get namespace "$(namespace)" > /dev/null 2>&1 || (kubectl create namespace "$(namespace)" && sleep 1)
 
 # Apply the camunda-credentials secret. Idempotent: rerunning after a TTL
 # deletion reapplies the SAME credentials, so the orchestration secret in
