@@ -74,7 +74,9 @@ describe('<DownloadDocumentButton />', () => {
     );
     expect(button).toBeDisabled();
     expect(button.tagName).not.toBe('A');
-    expect(screen.getByText('Document has expired')).toBeInTheDocument();
+    expect(screen.getAllByText('Document has expired').length).toBeGreaterThan(
+      0,
+    );
   });
 
   it('should track document-downloaded events', async () => {

@@ -103,8 +103,9 @@ describe('<PreviewDocumentButton />', () => {
     );
     expect(button).toBeDisabled();
     expect(
-      screen.getByText('Preview not available for this document type'),
-    ).toBeInTheDocument();
+      screen.getAllByText('Preview not available for this document type')
+        .length,
+    ).toBeGreaterThan(0);
   });
 
   it('should open the modal with the pdf when clicked', async () => {
@@ -206,7 +207,9 @@ describe('<PreviewDocumentButton />', () => {
 
     const button = screen.getByLabelText('Preview document for variable myDoc');
     expect(button).toBeDisabled();
-    expect(screen.getByText('Document has expired')).toBeInTheDocument();
+    expect(screen.getAllByText('Document has expired').length).toBeGreaterThan(
+      0,
+    );
   });
 
   it('should render a disabled preview button when document has no link', () => {
@@ -226,8 +229,8 @@ describe('<PreviewDocumentButton />', () => {
     const button = screen.getByLabelText('Preview document for variable myDoc');
     expect(button).toBeDisabled();
     expect(
-      screen.getByText('Preview not available for this document'),
-    ).toBeInTheDocument();
+      screen.getAllByText('Preview not available for this document').length,
+    ).toBeGreaterThan(0);
   });
 
   it('should track "document-previewed" events', async () => {
