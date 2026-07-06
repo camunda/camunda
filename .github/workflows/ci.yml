@@ -289,7 +289,7 @@ jobs:
       id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@2fee788847f2b0eedcdd8b324e48ae1fad52fe4f # main
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         timeout-minutes: 1
       - uses: ./.github/actions/setup-build
         with:
@@ -402,7 +402,7 @@ jobs:
       id-token: write
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@2fee788847f2b0eedcdd8b324e48ae1fad52fe4f # main
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         timeout-minutes: 1
       - name: Fetch GCS build-cache credentials
         id: gcs-secrets
