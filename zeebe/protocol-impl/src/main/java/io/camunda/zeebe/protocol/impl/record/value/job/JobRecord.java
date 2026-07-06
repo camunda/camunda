@@ -51,6 +51,14 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   public static final String IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX =
       "io.camunda.agenticai:aiagent";
 
+  /**
+   * Sentinel lease token that does not scope to a specific job activation, meaning "apply to every
+   * activation of this job". Used to signal "the whole job is gone" — e.g. when discarding agent
+   * history for a destroyed job, an empty lease discards all items for the job regardless of which
+   * activation produced them.
+   */
+  public static final String EMPTY_LEASE = "";
+
   public static final DirectBuffer NO_HEADERS = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
   public static final String RETRIES = "retries";
   public static final String TIMEOUT = "timeout";

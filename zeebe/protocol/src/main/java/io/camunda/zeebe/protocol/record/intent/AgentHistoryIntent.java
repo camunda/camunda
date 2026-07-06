@@ -20,7 +20,8 @@ public enum AgentHistoryIntent implements Intent {
   CREATED((short) 1, true),
   COMMIT((short) 2, false),
   COMMITTED((short) 3, true),
-  DISCARDED((short) 4, true);
+  DISCARD((short) 4, false),
+  DISCARDED((short) 5, true);
 
   private final short value;
   private final boolean isEvent;
@@ -51,6 +52,8 @@ public enum AgentHistoryIntent implements Intent {
       case 3:
         return COMMITTED;
       case 4:
+        return DISCARD;
+      case 5:
         return DISCARDED;
       default:
         return Intent.UNKNOWN;

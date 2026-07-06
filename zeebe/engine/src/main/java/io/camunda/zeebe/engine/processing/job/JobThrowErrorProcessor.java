@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCh
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -33,9 +34,11 @@ import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -81,6 +84,7 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final StateWriter stateWriter;
+  private final TypedCommandWriter commandWriter;
   private final IncidentMetrics incidentMetrics;
 
   public JobThrowErrorProcessor(
@@ -108,6 +112,7 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
 
     stateAnalyzer = new CatchEventAnalyzer(state.getProcessState(), elementInstanceState);
     stateWriter = writers.state();
+    commandWriter = writers.command();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
 
@@ -183,6 +188,15 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
     } else {
       writeThrowErrorEvent(jobKey, job, command);
       eventPublicationBehavior.throwErrorEvent(foundCatchEvent.get(), job.getVariablesBuffer());
+      if (job.isAgentic()) {
+        // The error was caught, so the job is deleted without completing — discard all its pending
+        // history items. The lease is left empty on purpose: the whole job is gone, so every
+        // activation's items must be discarded regardless of the lease they were created with.
+        commandWriter.appendFollowUpCommand(
+            jobKey,
+            AgentHistoryIntent.DISCARD,
+            new AgentHistoryRecord().setJobKey(jobKey).ignoreLease());
+      }
     }
   }
 

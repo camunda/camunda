@@ -10,7 +10,9 @@ package io.camunda.zeebe.engine.processing.agenthistory;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -27,7 +29,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class AgentHistoryCommitTest {
+public class AgentHistoryDiscardTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
@@ -38,100 +40,106 @@ public class AgentHistoryCommitTest {
   @Rule public final RecordingExporterTestWatcher watcher = new RecordingExporterTestWatcher();
 
   @Test
-  public void shouldEmitCommittedEventOnCommitCommand() {
-    final var serviceTaskInstance = deployAndCreateProcessInstance();
-    final var elementInstanceKey = serviceTaskInstance.getKey();
-    final var processInstanceKey = serviceTaskInstance.getValue().getProcessInstanceKey();
-
-    final var agentInstanceKey = createAgentInstance(elementInstanceKey).getKey();
-    final var jobKey = activateJobForProcessInstance(processInstanceKey);
-    final var itemKey = createHistoryItem(agentInstanceKey, jobKey, elementInstanceKey, "");
-
-    final var committed = ENGINE.agentHistories().withJobKey(jobKey).commit();
-
-    // AgentHistoryCommitProcessor emits COMMITTED carrying the full stored record
-    assertThat(committed.getRecordType()).isEqualTo(RecordType.EVENT);
-    assertThat(committed.getKey()).isEqualTo(itemKey);
-    assertThat(committed.getValue().getJobKey()).isEqualTo(jobKey);
-    assertThat(committed.getValue().getAgentInstanceKey()).isEqualTo(agentInstanceKey);
-    assertThat(committed.getValue().getElementInstanceKey()).isEqualTo(elementInstanceKey);
-  }
-
-  @Test
-  public void shouldEmitCommittedForAllItemsWithSameJobKey() {
+  public void shouldDiscardAllItemsForJobKeyOnEmptyLease() {
     final var serviceTaskInstance = deployAndCreateProcessInstance();
     final var elementInstanceKey = serviceTaskInstance.getKey();
     final var processInstanceKey = serviceTaskInstance.getValue().getProcessInstanceKey();
     final var agentInstanceKey = createAgentInstance(elementInstanceKey).getKey();
     final var jobKey = activateJobForProcessInstance(processInstanceKey);
 
-    // Two items share jobKey but have different leases — COMMIT with no lease must commit both
+    // Two items share jobKey but have different leases — DISCARD with no lease must discard both
     // regardless of lease.
     final long firstItemKey =
         createHistoryItem(agentInstanceKey, jobKey, elementInstanceKey, "lease-a");
     final long secondItemKey =
         createHistoryItem(agentInstanceKey, jobKey, elementInstanceKey, "lease-b");
 
-    // An item on an unrelated job must not be committed.
-    createUnrelatedJobHistoryItem("lease-a");
+    // An item on an unrelated job must not be discarded.
+    createUnrelatedJobHistoryItem("");
 
-    final var firstCommitted = ENGINE.agentHistories().withJobKey(jobKey).commit();
-    final long commitPosition = firstCommitted.getSourceRecordPosition();
+    final var firstDiscarded = ENGINE.agentHistories().withJobKey(jobKey).discard();
+    final long discardPosition = firstDiscarded.getSourceRecordPosition();
     final long clockResetKey = ENGINE.clock().reset().getKey();
 
-    // COMMIT with no lease → visitByJobKey commits all items for jobKey regardless of lease.
-    // withSourceRecordPosition scopes to events from this COMMIT command only; the unrelated job's
-    // item is not visited by visitByJobKey(jobKey) so no event for it can appear.
     assertThat(
             RecordingExporter.records()
                 .limit(r -> r.getKey() == clockResetKey)
                 .withValueType(ValueType.AGENT_HISTORY)
-                .withIntent(AgentHistoryIntent.COMMITTED)
-                .filter(r -> r.getSourceRecordPosition() == commitPosition)
+                .withIntent(AgentHistoryIntent.DISCARDED)
+                .filter(r -> r.getSourceRecordPosition() == discardPosition)
                 .map(Record::getKey))
         .containsExactlyInAnyOrder(firstItemKey, secondItemKey);
   }
 
   @Test
-  public void shouldCommitMatchingLeaseAndDiscardSupersededOnLeaseBasedCommit() {
+  public void shouldDiscardOnlyMatchingLeaseOnLeaseBasedDiscard() {
     final var serviceTaskInstance = deployAndCreateProcessInstance();
     final var elementInstanceKey = serviceTaskInstance.getKey();
     final var processInstanceKey = serviceTaskInstance.getValue().getProcessInstanceKey();
     final var agentInstanceKey = createAgentInstance(elementInstanceKey).getKey();
     final var jobKey = activateJobForProcessInstance(processInstanceKey);
 
-    // lease-1 and lease-2 items share jobKey; the unrelated job's item also carries lease-1 — it
-    // must not be affected by the COMMIT, proving the filter is scoped to jobKey.
     final long lease1ItemKey =
         createHistoryItem(agentInstanceKey, jobKey, elementInstanceKey, "lease-1");
-    final long lease2ItemKey =
-        createHistoryItem(agentInstanceKey, jobKey, elementInstanceKey, "lease-2");
+    createHistoryItem(agentInstanceKey, jobKey, elementInstanceKey, "lease-2");
     createUnrelatedJobHistoryItem("lease-1");
 
-    final var firstCommitted =
-        ENGINE.agentHistories().withJobKey(jobKey).withJobLease("lease-1").commit();
-    final long commitPosition = firstCommitted.getSourceRecordPosition();
+    final var firstDiscarded =
+        ENGINE.agentHistories().withJobKey(jobKey).withJobLease("lease-1").discard();
+    final long discardPosition = firstDiscarded.getSourceRecordPosition();
     final long clockResetKey = ENGINE.clock().reset().getKey();
 
-    // visitByJobLease(lease-1) → lease-1 item COMMITTED
-    assertThat(
-            RecordingExporter.records()
-                .limit(r -> r.getKey() == clockResetKey)
-                .withValueType(ValueType.AGENT_HISTORY)
-                .withIntent(AgentHistoryIntent.COMMITTED)
-                .filter(r -> r.getSourceRecordPosition() == commitPosition)
-                .map(Record::getKey))
-        .containsExactly(lease1ItemKey);
-
-    // discard pass (visitByJobKey) → lease-2 item DISCARDED as superseded activation
+    // Only the matching-lease item is discarded; the superseding lease-2 item and the unrelated
+    // job's item are left untouched.
     assertThat(
             RecordingExporter.records()
                 .limit(r -> r.getKey() == clockResetKey)
                 .withValueType(ValueType.AGENT_HISTORY)
                 .withIntent(AgentHistoryIntent.DISCARDED)
-                .filter(r -> r.getSourceRecordPosition() == commitPosition)
+                .filter(r -> r.getSourceRecordPosition() == discardPosition)
                 .map(Record::getKey))
-        .containsExactly(lease2ItemKey);
+        .containsExactly(lease1ItemKey);
+  }
+
+  @Test
+  public void shouldEmitDiscardedEventCarryingStoredRecord() {
+    final var serviceTaskInstance = deployAndCreateProcessInstance();
+    final var elementInstanceKey = serviceTaskInstance.getKey();
+    final var processInstanceKey = serviceTaskInstance.getValue().getProcessInstanceKey();
+    final var agentInstanceKey = createAgentInstance(elementInstanceKey).getKey();
+    final var jobKey = activateJobForProcessInstance(processInstanceKey);
+    final long itemKey = createHistoryItem(agentInstanceKey, jobKey, elementInstanceKey, "");
+
+    final var discarded = ENGINE.agentHistories().withJobKey(jobKey).discard();
+
+    assertThat(discarded.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(discarded.getKey()).isEqualTo(itemKey);
+    assertThat(discarded.getValue().getJobKey()).isEqualTo(jobKey);
+    assertThat(discarded.getValue().getAgentInstanceKey()).isEqualTo(agentInstanceKey);
+    assertThat(discarded.getValue().getElementInstanceKey()).isEqualTo(elementInstanceKey);
+  }
+
+  @Test
+  public void shouldNotEmitAnyEventWhenNoItemsExistForJobKey() {
+    final var serviceTaskInstance = deployAndCreateProcessInstance();
+    final var processInstanceKey = serviceTaskInstance.getValue().getProcessInstanceKey();
+    final var jobKey = activateJobForProcessInstance(processInstanceKey);
+
+    // No CREATED items for the job — DISCARD must be a no-op. The client helper would block
+    // waiting for a follow-up event, which a no-op never produces, so write the command directly.
+    ENGINE.writeRecords(
+        RecordToWrite.command()
+            .key(jobKey)
+            .agentHistory(AgentHistoryIntent.DISCARD, new AgentHistoryRecord().setJobKey(jobKey)));
+    final long clockResetKey = ENGINE.clock().reset().getKey();
+
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getKey() == clockResetKey)
+                .withValueType(ValueType.AGENT_HISTORY)
+                .withIntent(AgentHistoryIntent.DISCARDED)
+                .exists())
+        .isFalse();
   }
 
   // --- helpers ---

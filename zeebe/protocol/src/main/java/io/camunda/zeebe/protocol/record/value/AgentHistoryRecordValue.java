@@ -61,7 +61,13 @@ public interface AgentHistoryRecordValue extends RecordValue, TenantOwned, Proce
   /** Returns the key of the job that triggered the agent for this entry. */
   long getJobKey();
 
-  /** Returns the job lease token identifying which job activation produced this history entry. */
+  /**
+   * Returns the job lease token identifying which job activation produced this history entry.
+   *
+   * <p>An empty string means the entry is not scoped to a specific activation and applies to
+   * <b>all</b> pending items of the job, whereas a non-empty lease scopes it to the single
+   * activation holding that lease.
+   */
   String getJobLease();
 
   /** Returns the iteration counter (conversation round with the LLM). */

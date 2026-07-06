@@ -87,7 +87,7 @@ final class AgentHistoryHandlerTest {
   @ParameterizedTest(name = "[{index}] Should populate all entity fields for ''{0}'' intent")
   @EnumSource(
       value = AgentHistoryIntent.class,
-      names = {"CREATE", "COMMIT"},
+      names = {"CREATE", "COMMIT", "DISCARD"},
       mode = Mode.EXCLUDE)
   void shouldUpdateEntityForAllHandledIntents(final AgentHistoryIntent intent) {
     // given — updateEntity() must populate ALL fields for every handled intent; the partial update
@@ -280,7 +280,7 @@ final class AgentHistoryHandlerTest {
   @ParameterizedTest(name = "[{index}] Intent ''{0}'' should map to the expected commitStatus")
   @EnumSource(
       value = AgentHistoryIntent.class,
-      names = {"CREATE", "COMMIT"},
+      names = {"CREATE", "COMMIT", "DISCARD"},
       mode = Mode.EXCLUDE)
   void shouldMapIntentToExpectedCommitStatus(final AgentHistoryIntent intent) {
     // given

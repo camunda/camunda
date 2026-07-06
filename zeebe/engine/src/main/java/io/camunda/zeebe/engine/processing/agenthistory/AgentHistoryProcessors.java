@@ -33,5 +33,9 @@ public final class AgentHistoryProcessors {
         ValueType.AGENT_HISTORY,
         AgentHistoryIntent.COMMIT,
         new AgentHistoryCommitProcessor(writers, processingState));
+    typedRecordProcessors.onCommand(
+        ValueType.AGENT_HISTORY,
+        AgentHistoryIntent.DISCARD,
+        new AgentHistoryDiscardProcessor(writers, processingState));
   }
 }
