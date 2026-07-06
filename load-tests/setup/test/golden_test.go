@@ -163,30 +163,45 @@ func TestGoldenFiles(t *testing.T) {
 	}
 }
 
+// TestInstallLoadTestSetupKeepsMakefileFlagsWhenAdditionalConfigurationIsProvided
+// simulates the real CI invocation (camunda-load-test.yml), which always sets
+// additional_load_test_setup_configuration on the make command line. In GNU
+// Make, a command-line-origin variable silently suppresses any later `+=` to
+// it inside the Makefile, so a makefile-computed default routed through that
+// variable would be dropped in real CI while a plain `make` invocation still
+// looks fine. Runs across every versioned setup dir so a version-specific
+// regression of this pattern (as happened in stable-88/stable-89) fails here
+// instead of only surfacing in a manual review pass.
 func TestInstallLoadTestSetupKeepsMakefileFlagsWhenAdditionalConfigurationIsProvided(t *testing.T) {
-	ns := Scaffold(t, "main", "c8-golden-setup-flags", "postgresql", "true")
-	defer ns.Cleanup()
+	for _, version := range versions {
+		t.Run(version, func(t *testing.T) {
+			t.Parallel()
 
-	cmd := exec.Command(
-		"make",
-		"-n",
-		"install-load-test-setup",
-		"chaos=true",
-		"additional_load_test_setup_configuration=--set metricsExporter.image.tag=test-tag",
-	)
-	cmd.Dir = ns.Dir
-	out, err := cmd.CombinedOutput()
-	require.NoError(t, err, "make dry-run failed:\n%s", string(out))
+			ns := Scaffold(t, version, "c8-golden-setup-flags-"+version, "elasticsearch", "true")
+			defer ns.Cleanup()
 
-	helmCommand := string(out)
-	require.Contains(t, helmCommand, "--set metricsExporter.database.url=http://elastic:9200")
-	require.Contains(t, helmCommand, "--set chaosKiller.enabled=true")
-	require.Contains(t, helmCommand, "--set metricsExporter.image.tag=test-tag")
-	require.Less(
-		t,
-		strings.Index(helmCommand, "--set chaosKiller.enabled=true"),
-		strings.Index(helmCommand, "--set metricsExporter.image.tag=test-tag"),
-	)
+			cmd := exec.Command(
+				"make",
+				"-n",
+				"install-load-test-setup",
+				"chaos=true",
+				"additional_load_test_setup_configuration=--set metricsExporter.image.tag=test-tag",
+			)
+			cmd.Dir = ns.Dir
+			out, err := cmd.CombinedOutput()
+			require.NoError(t, err, "make dry-run failed:\n%s", string(out))
+
+			helmCommand := string(out)
+			require.Contains(t, helmCommand, "--set metricsExporter.database.url=http://elastic:9200")
+			require.Contains(t, helmCommand, "--set chaosKiller.enabled=true")
+			require.Contains(t, helmCommand, "--set metricsExporter.image.tag=test-tag")
+			require.Less(
+				t,
+				strings.Index(helmCommand, "--set chaosKiller.enabled=true"),
+				strings.Index(helmCommand, "--set metricsExporter.image.tag=test-tag"),
+			)
+		})
+	}
 }
 
 // renderAndAssert renders a chart via the scaffolded Makefile's make target and

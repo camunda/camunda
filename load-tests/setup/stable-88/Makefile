@@ -52,17 +52,16 @@ platform_values := -f camunda-platform-values-defaults.yaml
 helm_chart_load_test_setup := charts/load-test-setup
 load_test_setup_values := -f load-test-setup-values.yaml
 additional_load_test_setup_configuration ?=
+# Makefile-side load-test-setup flags. Separate from `additional_load_test_setup_configuration`,
+# which CI sets on the make command line and would suppress `+=` here.
+_load_test_setup_flags :=
 
 # The Docker image tag for the load test metrics exporter
 metrics_exporter_image_tag := latest
 
-# Makefile-side load-test flags. Separate from `additional_load_test_configuration`,
-# which CI sets on the make command line and would suppress `+=` here.
-_secondary_storage_load_test_flags :=
-
 # Add secondary storage values
 ifeq ($(secondary_storage),none)
-	_secondary_storage_load_test_flags += --set global.extraConfig.load-tester.monitor-data-availability=false
+	_load_test_setup_flags += --set global.extraConfig.load-tester.monitor-data-availability=false
 endif
 platform_values += -f camunda-platform-values-$(secondary_storage).yaml
 
@@ -83,24 +82,32 @@ platform_values_stable := $(platform_values) -f values-stable.yaml
 ifeq ($(secondary_storage),elasticsearch)
 	install_es_prom_exporter := true
 	es_prom_exporter_es_uri := http://elastic:9200
-	additional_load_test_setup_configuration += --set metricsExporter.database.url=http://elastic:9200
+	_load_test_setup_flags += --set metricsExporter.database.url=http://elastic:9200
 else ifeq ($(secondary_storage),opensearch)
 	install_es_prom_exporter := true
 	es_prom_exporter_es_uri := http://opensearch:9200
-	additional_load_test_setup_configuration += --set metricsExporter.database.url=http://opensearch:9200
+	_load_test_setup_flags += --set metricsExporter.database.url=http://opensearch:9200
 else ifeq ($(enable_optimize),true)
 	# Here, the secondary storage is none.
 	# Elasticsearch is always used in this case as the backend for Optimize.
 	install_es_prom_exporter := true
 	es_prom_exporter_es_uri := http://elastic:9200
-	additional_load_test_setup_configuration += --set metricsExporter.database.url=http://elastic:9200
+	_load_test_setup_flags += --set metricsExporter.database.url=http://elastic:9200
 else
 	install_es_prom_exporter := false
 endif
 
 ifeq ($(chaos),true)
-	additional_load_test_setup_configuration += --set chaosKiller.enabled=true
+	_load_test_setup_flags += --set chaosKiller.enabled=true
 endif
+
+# Shared helm flags for the load-test-setup chart, used by both install and template targets.
+load_test_setup_flags = $(load_test_setup_values) \
+    -f load-tester-values-defaults.yaml \
+    $(_load_test_setup_flags) \
+    $(_scenario_load_test_flags) \
+    $(additional_load_test_setup_configuration) \
+    $(additional_load_test_configuration)
 
 .PHONY: all
 all: install
@@ -213,12 +220,7 @@ install-load-test-setup: create-namespace
 		--reset-then-reuse-values \
 		--render-subchart-notes \
 		--take-ownership --create-namespace \
-		$(load_test_setup_values) \
-		-f load-tester-values-defaults.yaml \
-		$(_scenario_load_test_flags) \
-		$(_secondary_storage_load_test_flags) \
-		$(additional_load_test_setup_configuration) \
-		$(additional_load_test_configuration)
+		$(load_test_setup_flags)
 
 # Generates templates from the Camunda Platform helm chart
 .PHONY: template
@@ -243,12 +245,7 @@ template-stable:
 template-load-test-setup:
 	helm template load-test-setup $(helm_chart_load_test_setup) \
 		--namespace $(namespace) \
-		$(load_test_setup_values) \
-		-f load-tester-values-defaults.yaml \
-		$(_scenario_load_test_flags) \
-		$(_secondary_storage_load_test_flags) \
-		$(additional_load_test_setup_configuration) \
-		$(additional_load_test_configuration) \
+		$(load_test_setup_flags) \
 		--output-dir $(template_output_dir)
 
 # Renders the load-test-setup chart with the chaos-killer enabled.
