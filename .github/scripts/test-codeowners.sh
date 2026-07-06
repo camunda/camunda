@@ -9,9 +9,10 @@ WORKTREE_ROOT="$(git rev-parse --show-toplevel)"
 # but copy the current branch's .codeowners there so we validate the right file.
 if [[ -f "${WORKTREE_ROOT}/.git" ]]; then
   REPO_ROOT="$(dirname "$(git rev-parse --git-common-dir)")"
-  _ORIG_CODEOWNERS="$(cat "${REPO_ROOT}/.codeowners")"
+  _ORIG_CODEOWNERS_BACKUP="$(mktemp)"
+  cp "${REPO_ROOT}/.codeowners" "${_ORIG_CODEOWNERS_BACKUP}"
   cp "${WORKTREE_ROOT}/.codeowners" "${REPO_ROOT}/.codeowners"
-  trap 'printf "%s" "${_ORIG_CODEOWNERS}" > "${REPO_ROOT}/.codeowners"' EXIT
+  trap 'cp "${_ORIG_CODEOWNERS_BACKUP}" "${REPO_ROOT}/.codeowners"; rm -f "${_ORIG_CODEOWNERS_BACKUP}"' EXIT
 else
   REPO_ROOT="${WORKTREE_ROOT}"
 fi
