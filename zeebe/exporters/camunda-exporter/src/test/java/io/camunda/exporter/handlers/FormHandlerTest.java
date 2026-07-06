@@ -205,7 +205,8 @@ public class FormHandlerTest {
   }
 
   private String formJsonResource() {
-    return """
+    return
+"""
 {
   "components": [
     {

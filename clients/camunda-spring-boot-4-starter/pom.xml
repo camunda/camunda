@@ -177,9 +177,9 @@
               </filters>
               <transformers>
                 <!-- Merge service files -->
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"></transformer>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                 <!-- Keep manifest entries -->
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer"></transformer>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer"/>
               </transformers>
             </configuration>
           </execution>
