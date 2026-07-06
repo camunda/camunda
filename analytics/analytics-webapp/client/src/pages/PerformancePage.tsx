@@ -80,7 +80,7 @@ export function PerformancePage({
           seriesName="Started"
         />
         <SlaCohortChart cohorts={data.slaCohorts} />
-        <NoIncidentCohortChart points={data.noIncident} />
+        <NoIncidentCohortChart cohorts={data.noIncidentCohorts} />
         <DurationDistribution points={data.durationBuckets} />
         <NoIncidentDonut matched={noIncident.matched} total={noIncident.total} />
       </div>

@@ -8,6 +8,7 @@
 import {
   Bar,
   CartesianGrid,
+  Cell,
   ComposedChart,
   Legend,
   Line,
@@ -16,7 +17,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { RatioPoint } from "../lib/api";
+import type { NoIncidentCohortPoint } from "../lib/api";
 import { formatWindow } from "../lib/format";
 import { ChartCard } from "./ChartCard";
 
@@ -29,28 +30,30 @@ interface Row {
   started: number;
   clean: number;
   withIncident: number;
+  maturing: boolean;
 }
 
 /**
- * No-incident share per START cohort — the same shape as the SLA-met chart, but for incidents: the
- * blue bar is the share of each start window's instances that have raised no incident; the remainder
- * (had an incident) shows on hover. A green line traces how many instances started.
+ * No-incident share per START cohort — the same shape as the SLA-met chart, but for incidents. The
+ * blue bar is the share of each start window's instances that completed with no incident; the
+ * remainder (had an incident, terminated, or still running) shows on hover. A green line (right
+ * axis) traces how many instances started in each window. A maturing cohort's bar is faded because
+ * its clean share is a lower bound — it can only rise as its still-open instances finish cleanly.
  */
-export function NoIncidentCohortChart({ points }: { points: RatioPoint[] }) {
-  const data: Row[] = [...points]
-    .sort((a, b) => a.windowStart - b.windowStart)
-    .map((p) => ({
-      label: formatWindow(p.windowStart),
-      noIncidentPct: p.total ? (p.matched / p.total) * 100 : 0,
-      started: p.total,
-      clean: p.matched,
-      withIncident: p.total - p.matched,
-    }));
+export function NoIncidentCohortChart({ cohorts }: { cohorts: NoIncidentCohortPoint[] }) {
+  const data: Row[] = cohorts.map((c) => ({
+    label: formatWindow(c.windowStart),
+    noIncidentPct: c.started ? (c.clean / c.started) * 100 : 0,
+    started: c.started,
+    clean: c.clean,
+    withIncident: c.withIncident,
+    maturing: c.maturing,
+  }));
 
   return (
     <ChartCard
       title="No incident by start cohort"
-      description="Blue = share of each start window's instances with no incident; green line = started. Hover for counts."
+      description="Blue = share of each start window's instances that completed with no incident; green line = instances started. Hover for clean / with-incident counts."
     >
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart data={data} margin={{ top: 8, right: 16, bottom: 4, left: 8 }}>
@@ -81,6 +84,10 @@ export function NoIncidentCohortChart({ points }: { points: RatioPoint[] }) {
                 "No incident",
               ];
             }}
+            labelFormatter={(label: string, payload) => {
+              const row = payload?.[0]?.payload as Row | undefined;
+              return `${label}${row?.maturing ? " — maturing" : ""}`;
+            }}
           />
           <Legend />
           <Bar
@@ -89,7 +96,11 @@ export function NoIncidentCohortChart({ points }: { points: RatioPoint[] }) {
             name="No incident"
             fill={NO_INCIDENT_BAR}
             radius={[3, 3, 0, 0]}
-          />
+          >
+            {data.map((r, i) => (
+              <Cell key={i} fillOpacity={r.maturing ? 0.5 : 1} />
+            ))}
+          </Bar>
           <Line
             yAxisId="count"
             type="monotone"

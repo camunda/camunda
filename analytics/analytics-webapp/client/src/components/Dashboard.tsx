@@ -18,9 +18,11 @@ import {
 import {
   api,
   type DistinctPoint,
+  type DurationBucketPoint,
   type DurationPoint,
   type ElementDuration,
   type IncidentFlowNode,
+  type NoIncidentCohortPoint,
   type RatioPoint,
   type SlaCohortPoint,
   type TimeRange,
@@ -55,6 +57,8 @@ interface DashboardData {
   sla: RatioPoint[];
   slaCohorts: SlaCohortPoint[];
   noIncident: RatioPoint[];
+  noIncidentCohorts: NoIncidentCohortPoint[];
+  durationBuckets: DurationBucketPoint[];
   distinct: DistinctPoint[];
   top: TopProcess[];
   elements: ElementDuration[];
@@ -87,6 +91,8 @@ export function Dashboard({ process, tenant, range }: DashboardProps) {
       api.openIncidents(process),
       api.activeInstances(process, tenant),
       api.activatedInstances(process, range),
+      api.noIncidentCohorts(process, range),
+      api.durationBuckets(process, range),
     ])
       .then(
         ([
@@ -102,6 +108,8 @@ export function Dashboard({ process, tenant, range }: DashboardProps) {
           openIncidents,
           activeNow,
           activated,
+          noIncidentCohorts,
+          durationBuckets,
         ]) => {
           if (!cancelled) {
             setData({
@@ -110,6 +118,8 @@ export function Dashboard({ process, tenant, range }: DashboardProps) {
               sla,
               slaCohorts,
               noIncident,
+              noIncidentCohorts,
+              durationBuckets,
               distinct,
               top,
               elements,
@@ -208,7 +218,7 @@ export function Dashboard({ process, tenant, range }: DashboardProps) {
         <PercentileTrend points={data.duration} />
         <FrequencyDurationTrend points={data.duration} />
         <SlaCohortChart cohorts={data.slaCohorts} />
-        <NoIncidentCohortChart points={data.noIncident} />
+        <NoIncidentCohortChart cohorts={data.noIncidentCohorts} />
         <DurationDistribution points={data.durationBuckets} />
         <NoIncidentDonut matched={noIncident.matched} total={noIncident.total} />
         <TopProcesses items={data.top} />

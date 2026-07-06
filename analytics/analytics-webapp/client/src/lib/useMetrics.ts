@@ -13,6 +13,7 @@ import {
   type DurationPoint,
   type ElementDuration,
   type IncidentFlowNode,
+  type NoIncidentCohortPoint,
   type RatioPoint,
   type SlaCohortPoint,
   type TimeRange,
@@ -27,6 +28,7 @@ export interface MetricsData {
   slaCohorts: SlaCohortPoint[];
   durationBuckets: DurationBucketPoint[];
   noIncident: RatioPoint[];
+  noIncidentCohorts: NoIncidentCohortPoint[];
   distinct: DistinctPoint[];
   top: TopProcess[];
   elements: ElementDuration[];
@@ -66,6 +68,7 @@ export function useMetrics(
       api.openIncidents(process),
       api.activeInstances(process, tenant),
       api.activatedInstances(process, range),
+      api.noIncidentCohorts(process, range),
     ])
       .then(
         ([
@@ -82,6 +85,7 @@ export function useMetrics(
           openIncidents,
           activeNow,
           activated,
+          noIncidentCohorts,
         ]) => {
           if (!cancelled) {
             setData({
@@ -91,6 +95,7 @@ export function useMetrics(
               slaCohorts,
               durationBuckets,
               noIncident,
+              noIncidentCohorts,
               distinct,
               top,
               elements,

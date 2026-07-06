@@ -340,15 +340,80 @@ public class DashboardRepository {
   /** Per-start-cohort SLA breakdown, derived from the SLA-compliance ratio series. */
   public List<SlaCohortPoint> slaCohorts(
       final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
-    // A forward-looking start cohort (with a still-open, maturing split) is not modeled; this
-    // derives the settled met/breached split from the completion-based SLA ratio.
-    final List<SlaCohortPoint> out = new ArrayList<>();
+    // The cohort size ("started") and the still-open/maturing split come from the lifecycle summary
+    // (every instance that started in the window); the met/breached split comes from the
+    // completion-based SLA ratio. Joining the two keeps "started" the true cohort size rather than
+    // just its settled part — a completion-based total badly undercounts starts while a large
+    // backlog of instances is still running.
+    final Map<Long, RatioPoint> settled = new LinkedHashMap<>();
     for (final RatioPoint p : ratios(bpmnProcessId, "sla_compliance", fromWindow, toWindow)) {
-      out.add(
-          new SlaCohortPoint(
-              p.windowStart(), p.total(), p.matched(), p.total() - p.matched(), 0L, false));
+      settled.put(p.windowStart(), p);
     }
+    final List<SlaCohortPoint> out = new ArrayList<>();
+    lifecycleByWindow(bpmnProcessId, fromWindow, toWindow)
+        .forEach(
+            (windowStart, lc) -> {
+              final long started = lc.activated();
+              final long open = Math.max(0L, started - lc.completed() - lc.terminated());
+              final RatioPoint p = settled.get(windowStart);
+              final long met = p == null ? 0L : p.matched();
+              // The remainder of the settled instances: completed-but-missed plus terminated.
+              final long breached = Math.max(0L, started - met - open);
+              out.add(new SlaCohortPoint(windowStart, started, met, breached, open, open > 0L));
+            });
+    out.sort(Comparator.comparingLong(SlaCohortPoint::windowStart));
     return out;
+  }
+
+  /**
+   * No-incident outcomes per start cohort — the same lifecycle-joined shape as {@link #slaCohorts}:
+   * {@code started} (all instances that started in the window) split into {@code clean} (completed
+   * without an incident), {@code withIncident} (completed having raised one, or terminated) and
+   * {@code open} (still running, undecided).
+   */
+  public List<NoIncidentCohortPoint> noIncidentCohorts(
+      final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
+    final Map<Long, RatioPoint> settled = new LinkedHashMap<>();
+    for (final RatioPoint p : ratios(bpmnProcessId, "no_incident", fromWindow, toWindow)) {
+      settled.put(p.windowStart(), p);
+    }
+    final List<NoIncidentCohortPoint> out = new ArrayList<>();
+    lifecycleByWindow(bpmnProcessId, fromWindow, toWindow)
+        .forEach(
+            (windowStart, lc) -> {
+              final long started = lc.activated();
+              final long open = Math.max(0L, started - lc.completed() - lc.terminated());
+              final RatioPoint p = settled.get(windowStart);
+              final long clean = p == null ? 0L : p.matched();
+              final long withIncident = Math.max(0L, started - clean - open);
+              out.add(
+                  new NoIncidentCohortPoint(
+                      windowStart, started, clean, withIncident, open, open > 0L));
+            });
+    out.sort(Comparator.comparingLong(NoIncidentCohortPoint::windowStart));
+    return out;
+  }
+
+  /**
+   * Per-window lifecycle summaries for a process keyed by window start — the authoritative
+   * "started" cohort set (one entry per window in which any instance was activated).
+   */
+  private Map<Long, LifecycleSummaryResult> lifecycleByWindow(
+      final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
+    final Map<Long, LifecycleSummaryResult> byWindow = new LinkedHashMap<>();
+    for (final ReportRow row :
+        series(
+            "process-instances",
+            List.of(),
+            fromWindow,
+            toWindow,
+            List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
+            List.of("lifecycle"))) {
+      if (row.measures().get("lifecycle") instanceof final LifecycleSummaryResult lc) {
+        byWindow.put(row.windowStart(), lc);
+      }
+    }
+    return byWindow;
   }
 
   /**

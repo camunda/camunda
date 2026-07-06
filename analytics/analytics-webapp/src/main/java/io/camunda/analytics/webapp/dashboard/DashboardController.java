@@ -100,6 +100,15 @@ public class DashboardController {
     return repository.slaCohorts(bpmnProcessId, from, to);
   }
 
+  /** Per-start-cohort no-incident breakdown (started split into clean/withIncident/open). */
+  @GetMapping("/no-incident-cohorts")
+  public List<NoIncidentCohortPoint> noIncidentCohorts(
+      @RequestParam("process") final String bpmnProcessId,
+      @RequestParam(value = "from", required = false) final Long from,
+      @RequestParam(value = "to", required = false) final Long to) {
+    return repository.noIncidentCohorts(bpmnProcessId, from, to);
+  }
+
   @GetMapping("/element-durations")
   public List<ElementDuration> elementDurations(
       @RequestParam("process") final String bpmnProcessId,

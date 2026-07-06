@@ -68,6 +68,18 @@ export interface SlaCohortPoint {
   maturing: boolean;
 }
 
+/** One no-incident start cohort: instances that started in the window, split by outcome (started =
+ * clean + withIncident + open). The maturing window's split can still change as its open instances
+ * finish. */
+export interface NoIncidentCohortPoint {
+  windowStart: number;
+  started: number;
+  clean: number;
+  withIncident: number;
+  open: number;
+  maturing: boolean;
+}
+
 /** Incident counts for one flow node: raised (incidents created in range) and currently open. */
 export interface IncidentFlowNode {
   elementId: string;
@@ -310,6 +322,10 @@ export const api = {
     getJson<number>(`/api/dashboard/activated-instances?process=${q(process)}${rangeQs(range)}`),
   slaCohorts: (process: string, range: TimeRange | null) =>
     getJson<SlaCohortPoint[]>(`/api/dashboard/sla-cohorts?process=${q(process)}${rangeQs(range)}`),
+  noIncidentCohorts: (process: string, range: TimeRange | null) =>
+    getJson<NoIncidentCohortPoint[]>(
+      `/api/dashboard/no-incident-cohorts?process=${q(process)}${rangeQs(range)}`,
+    ),
   durationBuckets: (process: string, range: TimeRange | null) =>
     getJson<DurationBucketPoint[]>(
       `/api/dashboard/duration-buckets?process=${q(process)}${rangeQs(range)}`,
