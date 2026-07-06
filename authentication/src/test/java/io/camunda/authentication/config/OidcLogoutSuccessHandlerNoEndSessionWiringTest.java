@@ -14,6 +14,7 @@ import io.camunda.authentication.config.controllers.WebSecurityOidcTestContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
@@ -54,6 +55,7 @@ public class OidcLogoutSuccessHandlerNoEndSessionWiringTest extends AbstractWebS
             .post()
             .uri("https://localhost/logout")
             .header("Sec-Fetch-Dest", "empty")
+            .accept(MediaType.APPLICATION_JSON)
             .with(oidcLogin())
             .exchange();
 

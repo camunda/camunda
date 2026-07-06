@@ -77,6 +77,7 @@ public class OidcLogoutSuccessHandlerWiringTest extends AbstractWebSecurityConfi
             .post()
             .uri("https://localhost/logout")
             .header("Sec-Fetch-Dest", "empty")
+            .accept(MediaType.APPLICATION_JSON)
             .with(oidcLoginWithLoginHint())
             .exchange();
 
