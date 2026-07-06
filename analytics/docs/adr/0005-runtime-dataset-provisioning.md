@@ -56,27 +56,40 @@ provision(DatasetDeclaration decl):
 retained data). Idempotency stays where it is: bootstrap is a no-op when the spec store is
 non-empty, and a duplicate dataset name is rejected by the store.
 
-### 2. Live per-partition topology hot-reload
+### 2. Live topology hot-reload via a versioned catalog — no streaming-library change
 
-The pipeline picks up a new dataset **without an ingestion pause**. A control signal — a monotonic
-*dataset-set version* bumped by `provision` and observed by each running stage — makes every
-partition actor, **at its next commit boundary** (after produce-before-commit; state + offset
-already persisted), rebuild its `Task`'s `ProcessorTopology` from the freshly reloaded cube list,
-**reusing the same per-partition RocksDB**. Existing cubes' `aggId`-prefixed column-family state is
-untouched; the new cube's families start empty and begin filling. The rebuild is a local,
-single-writer operation on the partition actor thread — no lock, no cross-partition coordination.
+The pipeline picks up a new dataset **without an ingestion pause**, and it does so entirely inside
+the analytics stages — the shared `event-bridge-streaming` runtime is not touched. The analytics
+stage `Task`s already own both their `ProcessorTopology` and their per-partition RocksDB and are
+self-contained shards (`ownsDurability`), so a `Task` can rebuild *itself*.
 
-This is expressed as a capability on the streaming runtime (`event-bridge-streaming`): a `Task` may
-be asked to rebuild its topology, and `StreamRuntime` drives the rebuild on the actor between
-commits. The analytics stages supply a `taskFactory` that reads the current metadata plane, so a
-rebuild reflects the newly-admitted dataset.
+A shared, in-JVM **`DatasetCatalog`** holds the current active cubes/tables plus a monotonic
+**version**. `provision` refreshes it (re-reads the metadata plane and bumps the version). Each
+stage `Task` is built from the catalog rather than a frozen list and remembers the version it last
+applied. At its **commit boundary** — inside `commit()`, which the runtime already calls at the
+commit interval, so the check rides an existing tick and never the per-record path — the task, at
+most once per **reload-check interval**, compares the catalog version to its applied version. If it
+moved, the task rebuilds its `ProcessorTopology` from the catalog's current cubes **over the same
+open RocksDB**: existing cubes' nodes recover their state from the store (it was just checkpointed
+by the produce-before-commit that precedes the rebuild — no loss), and the new cube's
+`aggId`-prefixed families start empty and begin filling. The rebuild is local and single-writer (the
+task thread), no lock, no cross-partition coordination, no RocksDB reopen.
+
+This is deliberately a **periodic check at a commit boundary, not a per-event lookup** and not a
+push signal into the runtime: the per-record cost stays zero, and the only per-interval cost is one
+integer version comparison. Re-reading the metadata plane happens once per `provision` (in the
+catalog refresh), not per task and not per tick.
+
+**Trade-off:** a rebuild reconstructs *all* of the stage's cube nodes (the topology is rebuilt
+wholesale), so each recovers its state from RocksDB once. Reloads are rare (a dataset creation), so
+this is acceptable; a future optimization can add a single node instead of rebuilding the topology.
 
 ### 3. Activation cutover: event-timestamp, debounced (v1)
 
 **v1 ships an event-timestamp activation gate, not the source-coordinate vector.** A
-runtime-provisioned dataset freezes a single `activationTimestampMs = now + DEBOUNCE` (e.g. 10s) at
-admission, stored durably on the spec. A fact contributes to the cube iff its **event time**
-(the immutable Zeebe record timestamp) is at or after that stamp:
+runtime-provisioned dataset freezes a single `activationTimestampMs = now + DEBOUNCE` at admission,
+stored durably on the spec. A fact contributes to the cube iff its **event time** (the immutable
+Zeebe record timestamp) is at or after that stamp:
 
 ```
 admits(fact) := fact.eventTime() >= activationTimestampMs   (&& the existing position gate)
@@ -87,11 +100,16 @@ Why this is correct enough for v1:
 - **Replay-deterministic.** Event time is a property of the event and never changes; `activationTs`
   is frozen once at admission and read back verbatim on replay. So membership is a pure function of
   the log — the same guarantee the position vector gives, by a different key.
-- **The debounce window removes the cross-stage race for free.** Because no fact is due until
-  `now + 10s`, both stages have ample time to observe the version bump and rebuild before any data
-  must flow into the new cube — so we do **not** need to sequence "Stage 2 before Stage 1." If the
-  reload lands late, the only effect is a few dropped early facts near the boundary, bounded by how
-  late the reload is, never silent corruption of committed cells.
+- **The debounce window removes the cross-stage race for free.** Because no fact is due until the
+  cutover, both stages have time to observe the version bump and rebuild (§2) before any data must
+  flow into the new cube — so we do **not** need to sequence "Stage 2 before Stage 1." If the reload
+  lands late, the only effect is a few dropped early facts near the boundary, never silent corruption
+  of committed cells.
+
+**Invariant: `DEBOUNCE` must exceed the reload-check interval (§2) plus a rebuild margin**, so every
+stage is guaranteed to have picked up the new cube before its first fact is due. Defaults:
+reload-check interval **10s**, `DEBOUNCE` **30s** — comfortably clear of one check plus rebuild and
+exporter clock skew. Setting `DEBOUNCE` at or below the check interval reopens the boundary-drop gap.
 
 Why it is not yet the "proper" design:
 
@@ -130,10 +148,11 @@ separate reprocessing path, deferred (see ADR 0001 Phase 6).
   `DatasetRegistry.admit` and `DatasetSpecStore` serialization carry it (greenfield: a bootstrapped
   store is rebuilt, so no migration of existing spec rows).
 - `StandardDatasets.bootstrap` no longer admits directly; it calls the provisioning service.
-- `event-bridge-streaming` grows a topology-rebuild capability on `Task`/`StreamRuntime` — a
-  shared-library change, kept minimal and generic (rebuild-at-commit, not analytics-specific).
-- `AnalyticsPipelineLifecycle` (webapp host) wires the reload signal from the metadata plane to both
-  in-JVM stages.
+- A new in-JVM `DatasetCatalog` (versioned view of the metadata plane) is added; the stage `Task`s
+  build from it and self-rebuild at a commit boundary when its version moves. **No change to the
+  shared `event-bridge-streaming` library** — the reload lives entirely in the analytics stages.
+- `AnalyticsPipelineLifecycle` (webapp host) owns the shared catalog and refreshes it after each
+  `provision`, so both in-JVM stages observe the new version on their next reload-check tick.
 - Edge fuzziness at the activation boundary (out-of-order / clock skew) is an accepted v1 limit,
   removed when the position-vector path lands.
 
