@@ -26,7 +26,17 @@ import {validateResponse} from 'json-body-assertions';
 
 /* eslint-disable playwright/expect-expect */
 
-test.describe.parallel('Cancel Batch Operation Tests', () => {
+// Run serially (not .parallel) to match the reliably-passing suspend suite.
+// Cancelling an ACTIVE batch is a race: the cancel command must arrive while
+// the batch is still non-terminal (CREATED/INITIALIZED/SUSPENDED), before the
+// engine finishes cancelling every instance and the batch turns COMPLETED
+// (after which cancel is permanently rejected with NOT_FOUND). On a fast
+// single-partition all-in-one RDBMS the ACTIVE window is only a few seconds.
+// Under test.describe.parallel, sibling tests each fire 30 concurrent
+// instance-creation requests at once, delaying this test's own cancel call
+// until after its batch has already completed — losing the race. Serializing
+// removes that self-inflicted contention so each cancel is issued promptly.
+test.describe('Cancel Batch Operation Tests', () => {
   const state: {
     cancelableBatchOperationKey?: string;
     finishedBatchOperationKey?: string;
