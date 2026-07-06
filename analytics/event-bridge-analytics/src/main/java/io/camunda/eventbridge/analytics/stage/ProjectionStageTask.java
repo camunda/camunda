@@ -157,6 +157,10 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
           new TableRowProcessor(table.registered(), table.compiled(), writer),
           "projection");
     }
+    // Process definitions take the direct path: a built-in raw table written straight to serving,
+    // not a declared dataset. See ProcessDefinitionSink.
+    datasetStore.schemaManager().ensureTable(ProcessDefinitionSink.TABLE);
+    builder.processor("process-definitions", new ProcessDefinitionSink(writer), "projection");
     return new ProjectionStageTask(
         partition, builder.build(), sealingAggregations, datasetStore, writer, provider, offsets);
   }
