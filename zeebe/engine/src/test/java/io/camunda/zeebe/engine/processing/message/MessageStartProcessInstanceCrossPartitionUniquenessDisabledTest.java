@@ -15,10 +15,13 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -48,6 +51,10 @@ public final class MessageStartProcessInstanceCrossPartitionUniquenessDisabledTe
   private static final String PROCESS_ID = "wf-cross-disabled";
   private static final String MESSAGE_NAME = "start-msg-disabled";
 
+  private static final Duration MESSAGE_TTL = Duration.ofSeconds(5);
+  private static final Duration SWEEP_INTERVAL = Duration.ofSeconds(1);
+  private static final Duration ASK_RETRY_INTERVAL = Duration.ofSeconds(1);
+
   private static final BpmnModelInstance MESSAGE_START_PROCESS =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent("start")
@@ -59,7 +66,12 @@ public final class MessageStartProcessInstanceCrossPartitionUniquenessDisabledTe
   @Rule
   public final EngineRule engine =
       EngineRule.multiplePartition(PARTITION_COUNT)
-          .withEngineConfig(config -> config.setBusinessIdUniquenessEnabled(false));
+          .withEngineConfig(
+              config ->
+                  config
+                      .setBusinessIdUniquenessEnabled(false)
+                      .setMessageStartDedupExpirationSweepInterval(SWEEP_INTERVAL)
+                      .setMessageStartAskRetryInterval(ASK_RETRY_INTERVAL));
 
   @Before
   public void assertCrossPartitionRouting() {
@@ -133,6 +145,59 @@ public final class MessageStartProcessInstanceCrossPartitionUniquenessDisabledTe
             });
     assertThat(activatings.get(0).getValue().getProcessInstanceKey())
         .isNotEqualTo(activatings.get(1).getValue().getProcessInstanceKey());
+  }
+
+  @Test
+  public void shouldRejectExpiredRequestOnPBEvenWhenUniquenessDisabled() {
+    // Pins spec §8.1: the deterministic expiry guard runs before the uniqueness gate, so it fires
+    // regardless of businessIdUniquenessEnabled. Structurally the guard short-circuits ahead of the
+    // flag check; this proves it end-to-end on a flag-off cluster. Without the guard the late
+    // first-arrival would find a free businessId and start a PI, so REJECT_EXPIRED + zero
+    // activations is a real behavioural assertion, not a tautology.
+    deployAndAwaitStartEventSubscriptionsOnAllPartitions();
+
+    // drop every forward REQUEST to P_B until we cross the deadline, so the only delivery P_B ever
+    // sees is post-deadline; the pending ask on P_K survives and the scheduler keeps re-dispatching
+    final AtomicBoolean blockRequest = new AtomicBoolean(true);
+    engine.interceptInterPartitionCommands(
+        (receiverPartitionId, valueType, intent, recordKey, command) ->
+            !(intent == MessageStartProcessInstanceRequestIntent.REQUEST && blockRequest.get()));
+
+    // when a message-start publish lands on P_K for a businessId no holder owns, with uniqueness
+    // off
+    engine
+        .message()
+        .withName(MESSAGE_NAME)
+        .withCorrelationKey(CORRELATION_KEY)
+        .withBusinessId(BUSINESS_ID)
+        .withTimeToLive(MESSAGE_TTL.toMillis())
+        .publish();
+
+    // and time advances past the messageDeadline + sweep interval while every REQUEST is still
+    // dropped, so no PI is ever created on P_B (still inside the message-TTL checker window, so the
+    // ask keeps being retried)
+    engine.increaseTime(MESSAGE_TTL.plus(SWEEP_INTERVAL).plusSeconds(1));
+
+    // when the transport is unblocked so the next retry finally reaches P_B, now past the deadline
+    blockRequest.set(false);
+    engine.increaseTime(ASK_RETRY_INTERVAL.multipliedBy(2).plusSeconds(1));
+
+    // then the guard refuses it (P_K records EXPIRED_REJECTED) even though uniqueness is disabled,
+    // and no PI is ever activated — the expiry gate is independent of the uniqueness flag
+    RecordingExporter.messageStartProcessInstanceRequestRecords(
+            MessageStartProcessInstanceRequestIntent.EXPIRED_REJECTED)
+        .getFirst();
+    final long activations =
+        RecordingExporter.records()
+            .limit(r -> r.getIntent() == MessageStartProcessInstanceRequestIntent.EXPIRED_REJECTED)
+            .processInstanceRecords()
+            .withBpmnProcessId(PROCESS_ID)
+            .withElementType(BpmnElementType.PROCESS)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .count();
+    assertThat(activations)
+        .as("the expiry guard fires with businessIdUniquenessEnabled=false, starting no PI")
+        .isZero();
   }
 
   private void deployAndAwaitStartEventSubscriptionsOnAllPartitions() {

@@ -256,6 +256,47 @@ public final class MessageStartProcessInstanceRequestRequestProcessorTest {
     assertThat(startReply.getProcessInstanceKey()).isPositive();
   }
 
+  @Test
+  public void shouldTreatExactDeadlineBoundaryAsExpired() {
+    // Pins the guard's boundary semantics as inclusive (messageDeadline <= now, not <): a request
+    // whose deadline is exactly the current clock value counts as expired. Pinning the clock makes
+    // the processor's clock.millis() stable so an exact-equality deadline can be asserted
+    // deterministically — with a live clock the comparison would race the wall clock.
+    engine.deployment().withXmlResource(MESSAGE_START_PROCESS).deploy();
+    final long subscriptionKey = waitForStartEventSubscriptionKey();
+    engine.getClock().pinCurrentTime();
+    final long now = engine.getClock().getCurrentTimeInMillis();
+
+    // when a REQUEST arrives whose messageDeadline is EXACTLY now (positive TTL)
+    engine.writeRecords(
+        RecordToWrite.command()
+            .key(subscriptionKey)
+            .messageStartProcessInstanceRequest(
+                MessageStartProcessInstanceRequestIntent.REQUEST,
+                request(BUSINESS_ID, subscriptionKey)
+                    .setMessageDeadline(now)
+                    .setMessageTtl(1_000L)));
+
+    // then the inclusive boundary refuses it: REJECT_EXPIRED reply, no PI activated. A strict `<`
+    // guard would instead start a PI here, so this asserts the `<=` choice directly.
+    final var reply = firstReplyCommand(MessageStartProcessInstanceRequestIntent.REJECT_EXPIRED);
+    assertThat(reply.getProcessInstanceKey()).isEqualTo(-1L);
+
+    final long startedPis =
+        RecordingExporter.records()
+            .limit(
+                r ->
+                    r.getRecordType() == RecordType.COMMAND
+                        && r.getIntent() == MessageStartProcessInstanceRequestIntent.REJECT_EXPIRED)
+            .processInstanceRecords()
+            .withElementType(BpmnElementType.PROCESS)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .count();
+    assertThat(startedPis)
+        .as("messageDeadline == now must be treated as expired (inclusive <=)")
+        .isZero();
+  }
+
   private MessageStartProcessInstanceRequestRecord request(
       final String businessId, final long subscriptionKey) {
     final long processDefinitionKey =
