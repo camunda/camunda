@@ -111,6 +111,15 @@ ifeq ($(chaos),true)
 	_load_test_setup_flags += --set chaosKiller.enabled=true
 endif
 
+# Shared helm flags for the load-test-setup chart, used by both install and template targets.
+load_test_setup_flags = $(load_test_setup_values) \
+    -f load-tester-values-defaults.yaml \
+    $(_load_test_setup_flags) \
+    $(_scenario_load_test_flags) \
+    $(_secondary_storage_load_test_flags) \
+    $(additional_load_test_setup_configuration) \
+    $(additional_load_test_configuration)
+
 .PHONY: all
 all: install
 
@@ -247,13 +256,7 @@ install-load-test-setup: create-namespace
 		--reset-then-reuse-values \
 		--render-subchart-notes \
 		--take-ownership --create-namespace \
-		$(load_test_setup_values) \
-		-f load-tester-values-defaults.yaml \
-		$(_load_test_setup_flags) \
-		$(_scenario_load_test_flags) \
-		$(_secondary_storage_load_test_flags) \
-		$(additional_load_test_setup_configuration) \
-		$(additional_load_test_configuration)
+		$(load_test_setup_flags)
 
 # Generates templates from the Camunda Platform helm chart
 .PHONY: template
@@ -278,13 +281,7 @@ template-stable:
 template-load-test-setup:
 	helm template load-test-setup $(helm_chart_load_test_setup) \
 		--namespace $(namespace) \
-		$(load_test_setup_values) \
-		-f load-tester-values-defaults.yaml \
-		$(_load_test_setup_flags) \
-		$(_scenario_load_test_flags) \
-		$(_secondary_storage_load_test_flags) \
-		$(additional_load_test_setup_configuration) \
-		$(additional_load_test_configuration) \
+		$(load_test_setup_flags) \
 		--output-dir $(template_output_dir)
 
 # Renders the load-test-setup chart with the chaos-killer enabled.
