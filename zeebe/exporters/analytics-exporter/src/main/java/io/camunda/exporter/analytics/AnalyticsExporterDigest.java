@@ -50,19 +50,23 @@ final class AnalyticsExporterDigest {
 
       registry.registeredHandlers().entrySet().stream()
           .flatMap(
-              e ->
-                  e.getValue().entrySet().stream()
+              valueTypeEntry ->
+                  valueTypeEntry.getValue().entrySet().stream()
                       .map(
-                          ie ->
+                          intentEntry ->
                               Map.entry(
-                                  e.getKey().name() + ":" + ie.getKey().name(), ie.getValue())))
+                                  valueTypeEntry.getKey().name()
+                                      + ":"
+                                      + intentEntry.getKey().name(),
+                                  intentEntry.getValue())))
           .sorted(Map.Entry.comparingByKey())
           .forEach(
-              e -> {
-                digest.update((e.getKey() + ":").getBytes(StandardCharsets.UTF_8));
-                digest.update(e.getValue().getClass().getName().getBytes(StandardCharsets.UTF_8));
+              handlerEntry -> {
+                digest.update((handlerEntry.getKey() + ":").getBytes(StandardCharsets.UTF_8));
+                digest.update(
+                    handlerEntry.getValue().getClass().getName().getBytes(StandardCharsets.UTF_8));
                 digest.update(SEPARATOR);
-                digest.update(e.getValue().digestInput());
+                digest.update(handlerEntry.getValue().digestInput());
                 digest.update(SEPARATOR);
               });
 

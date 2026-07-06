@@ -53,20 +53,12 @@ public class AnalyticsExporter implements Exporter {
     handlers = AnalyticsHandlerCatalog.build(otelSdkManager).apply(context);
     meterRegistry = context.getMeterRegistry();
 
-    String exporterDigest;
-    try {
-      exporterDigest = AnalyticsExporterDigest.compute(handlers, config);
-    } catch (final Exception e) {
-      LOG.warn("Failed to compute exporter digest; resource attribute will be empty", e);
-      exporterDigest = "";
-    }
-
     analyticsContext =
         AnalyticsExporterContext.create(
             resolveLicenseKey(context),
             resolveClusterId(context),
             context.getPartitionId(),
-            exporterDigest);
+            resolveDigest());
 
     LOG.info(
         "Analytics exporter configured: endpoint={}, clusterId={}, partitionId={}, exporterDigest={}",
@@ -188,6 +180,15 @@ public class AnalyticsExporter implements Exporter {
     } catch (final NoSuchMethodError e) {
       final var fromEnv = System.getenv(CLUSTER_ID_ENV_VAR);
       return fromEnv != null ? fromEnv : "";
+    }
+  }
+
+  private String resolveDigest() {
+    try {
+      return AnalyticsExporterDigest.compute(handlers, config);
+    } catch (final Exception e) {
+      LOG.warn("Failed to compute exporter digest; resource attribute will be empty", e);
+      return "";
     }
   }
 }
