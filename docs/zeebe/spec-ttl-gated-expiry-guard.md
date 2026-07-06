@@ -372,3 +372,80 @@ tuned window").
 | 3 | Is there any consumer of the documented behavior "first-arrival of a *short-but-nonzero* TTL message activates past deadline"? If ADR 0002 promises this, the TTL gate changes it | Open question  | Check ADR 0002 wording in Task 0; if promised, the promise itself is unsound (it is the duplicate window) and the ADR should be amended, not the design         |
 | 4 | `EXPIRED_REJECTED` removing the ask while `P_K`'s message is still alive (P_B clock fast) — subsequent buffer scans could theoretically re-ask                                    | Design check   | Verify single-retry-owner guard (`hasLivePendingAsk`) interaction; a re-ask would just be expiry-rejected again — safe, but confirm no ask/reply ping-pong loop |
 | 5 | Boundary semantics `<=` vs `<` at exact deadline                                                                                                                                  | Nit            | Pick `<=` (matches reviewer suggestion), pin with a test                                                                                                        |
+
+---
+
+## 12. Task 0 findings (verified against working tree)
+
+Investigated the precondition questions from Section 4 against the current engine
+code. **Conclusion: the schema path (Section 6.1) must be executed** — the request
+record carries neither TTL nor publish timestamp.
+
+### 12.1 — 0(a): does the wire already carry TTL or publish timestamp? → **No; schema change required**
+
+`MessageStartProcessInstanceRequestRecord` (and its `MessageStartProcessInstanceRequestRecordValue`
+interface) carries `messageDeadline` (`= publishTime + ttl`) **only** — no `messageTtl`,
+no `publishTimestamp`. The deadline alone cannot distinguish a `TTL == 0` message from
+a `TTL > 0` one (that requires the publish time, which is not on the wire). Therefore
+**Section 6.1 is executed, not skipped**: add a `messageTtl` field.
+
+TTL is readily available at every dispatch site, so populating the field is cheap:
+
+- **First dispatch** — `MessageCorrelateBehavior#dispatchCrossPartitionStartProcessInstanceAsk`
+  reads from the `MessageCorrelateBehavior.MessageData` record, which today carries
+  `messageDeadline` but **not** TTL. `MessageData` must gain a `messageTtl` component,
+  populated at its three construction sites:
+  - `MessagePublishProcessor#createMessageData` → `messageRecord.getTimeToLive()` (directly available).
+  - `BpmnBufferedMessageStartEventBehavior#triggerCorrelation` → `storedMessage.getMessage().getTimeToLive()`
+    (buffered messages only exist for `TTL > 0`, since `TTL == 0` never gets buffered).
+  - `MessageCorrelationCorrelateProcessor#createMessageData` → correlate commands carry
+    no TTL and already pass `messageDeadline = -1` (immediate expiry). Set `messageTtl = 0`
+    here so the guard falls through to live evaluation (preserves today's create-then-expire behavior).
+- **Re-dispatch** — `PendingMessageStartAskCheckScheduler#sendAsk` rebuilds the request
+  from the **persisted** `MessageStartProcessInstanceAsk`. That state entry stores
+  `messageDeadline` but not TTL, so **`MessageStartProcessInstanceAsk` (and its DB
+  schema) must also gain `messageTtl`**, set by the `REQUESTED` applier and re-emitted
+  verbatim on every retry (like `messageDeadline` is today).
+
+### 12.2 — 0(b): is a `TTL == 0` retry reachable? → **No (unreachable)**
+
+In `MessagePublishProcessor#handleNewMessage` the cross-partition ask is dispatched by
+`correlateToMessageStartEvents` (writing `REQUESTED`, whose applier persists the pending
+ask) **before** the `TTL <= 0` branch appends `MessageIntent.EXPIRED`. The
+`MessageExpiredV2Applier` then calls `askState.removeAllByMessageKey(key)`, removing the
+just-written pending ask in the same processing cycle. The retry scheduler therefore
+never re-dispatches a `TTL == 0` ask. The **"TTL == 0 / retry" row in the Section 3.1
+decision table is theoretical**; the design is safe either way, but the ADR should state
+the fact.
+
+### 12.3 — 0(c): is a late `EXPIRED_REJECTED` reply tolerated on `P_K`? → **Yes (clean no-op)**
+
+The proposed applier (Section 6.3) removes the pending ask via
+`askState.remove(messageKey, processDefinitionKey)`, which is
+`columnFamily.deleteIfExists(...)` + transient-state remove — a no-op when the entry is
+absent. The existing rejection appliers already tolerate the same race in `backOff`
+(explicit `ask == null → return`). So an `EXPIRED_REJECTED` reply arriving after the ask
+and buffered message are gone is a harmless no-op, exactly like a late `STARTED`.
+
+### 12.4 — Extra findings (adjust plan)
+
+- **No separate reply-intent enum.** Section 6.3 names
+  `MessageStartProcessInstanceReplyIntent.EXPIRED_REJECTED`, but no such enum exists —
+  all intents live in `MessageStartProcessInstanceRequestIntent`, which follows a
+  paired command/event convention (`REJECT_UNIQUENESS`/`UNIQUENESS_REJECTED`, etc.). Add
+  the pair **`REJECT_EXPIRED((short) 10, false)`** and
+  **`EXPIRED_REJECTED((short) 11, true)`** to that enum (next free ordinals after
+  `EXPIRED_DEDUP_DELETED = 9`) and extend `from(short)`.
+- **Risk #3 resolved.** ADR 0002 (`zeebe/docs/adr/0002-810-message-start-rejection-retry.md`)
+  frames the contract as "a rejected message-start is retried until it starts **or its
+  TTL expires**" (D1). It does **not** promise that a past-deadline first-arrival of a
+  short-but-nonzero-TTL message must activate. The TTL gate therefore changes nothing
+  ADR 0002 promises — no amendment forced by this, only the additive documentation in
+  Section 9.
+- **Grace config surface (for Section 6.5)** confirmed in three places:
+  `EngineConfiguration`, `zeebe/broker/.../engine/ProcessInstanceCreationCfg`, and
+  `configuration/.../ProcessInstanceCreation` (all keyed on
+  `DEFAULT_MESSAGE_START_ASK_RETRY_GRACE`), plus the `retryGrace` field and
+  `lookupValidDedupHit` threshold in
+  `MessageStartProcessInstanceRequestRequestProcessor`.
+
