@@ -114,6 +114,37 @@ public class CallActivityBusinessIdIT {
   }
 
   @Test
+  void shouldQueryChildInstanceByResolvedBusinessId() {
+    // given - a call activity that assigns a literal child Business ID
+    final String parentProcessId =
+        deployParentWithChild("query-by-bid", c -> c.zeebeBusinessId("queryable-child-id"));
+
+    // when - the parent starts without a Business ID of its own
+    final var parent =
+        client.newCreateInstanceCommand().bpmnProcessId(parentProcessId).latestVersion().execute();
+
+    // then - the child is retrievable by filtering the search API on its resolved Business ID
+    // (scoped by parentProcessInstanceKey so an inherited id could never match the parent instead)
+    Awaitility.await("child instance is queryable by its business id")
+        .atMost(Duration.ofSeconds(30))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var items =
+                  client
+                      .newProcessInstanceSearchRequest()
+                      .filter(
+                          f ->
+                              f.parentProcessInstanceKey(parent.getProcessInstanceKey())
+                                  .businessId("queryable-child-id"))
+                      .send()
+                      .join()
+                      .items();
+              assertThat(items).hasSize(1);
+            });
+  }
+
+  @Test
   void shouldResolveBusinessIdIncidentAfterMigratingToFixedVersion() {
     // given - a source version whose call activity Business ID references a variable that is
     // never provided (raising an incident), and a target version that resolves it from an
