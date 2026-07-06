@@ -31,9 +31,10 @@ import org.junit.Test;
 /**
  * Verifies the {@code P_B}-side processor of the cross-partition message-start handshake in
  * isolation: a directly-written {@link MessageStartProcessInstanceRequestIntent#REQUEST} command is
- * consumed and translated into one of the three reply commands. The routing flip that drives this
- * handshake from a published message lands in a later commit; until then, this is the only
- * end-to-end exercise of the processor.
+ * consumed and translated into one of the four reply commands (START, REJECT_UNIQUENESS,
+ * REJECT_NO_SUBSCRIPTION, REJECT_EXPIRED). The routing flip that drives this handshake from a
+ * published message lands in a later commit; until then, this is the only end-to-end exercise of
+ * the processor.
  *
  * <p>Tests run on a single-partition engine and encode the source partition in {@code messageKey}
  * as partition {@code 1}, so the reply command is written locally and observable via {@link
@@ -195,6 +196,64 @@ public final class MessageStartProcessInstanceRequestRequestProcessorTest {
     assertThat(reply.getBusinessId()).isEqualTo(BUSINESS_ID);
     assertThat(reply.getProcessDefinitionKey()).isEqualTo(424242L);
     assertThat(reply.getProcessInstanceKey()).isEqualTo(-1L);
+  }
+
+  @Test
+  public void shouldReplyExpiredRejectedWhenDeadlinePassedAndTtlPositive() {
+    // given a deployed process whose businessId is free, so without the guard the request WOULD
+    // start a PI — proving the guard short-circuits before dedup lookup and live evaluation
+    engine.deployment().withXmlResource(MESSAGE_START_PROCESS).deploy();
+    final long subscriptionKey = waitForStartEventSubscriptionKey();
+
+    // when a REQUEST arrives whose deadline has already passed and that carried a positive TTL
+    engine.writeRecords(
+        RecordToWrite.command()
+            .key(subscriptionKey)
+            .messageStartProcessInstanceRequest(
+                MessageStartProcessInstanceRequestIntent.REQUEST,
+                request(BUSINESS_ID, subscriptionKey)
+                    .setMessageDeadline(1L)
+                    .setMessageTtl(1_000L)));
+
+    // then the TTL-gated expiry guard refuses it: REJECT_EXPIRED reply, no PI, no dedup-based START
+    final var reply = firstReplyCommand(MessageStartProcessInstanceRequestIntent.REJECT_EXPIRED);
+    assertOriginalRequestPreserved(reply, BUSINESS_ID, subscriptionKey);
+    assertThat(reply.getProcessInstanceKey())
+        .as("expiry rejections do not carry a PI key")
+        .isEqualTo(-1L);
+
+    final long startedPis =
+        RecordingExporter.records()
+            .limit(
+                r ->
+                    r.getRecordType() == RecordType.COMMAND
+                        && r.getIntent() == MessageStartProcessInstanceRequestIntent.REJECT_EXPIRED)
+            .processInstanceRecords()
+            .withElementType(BpmnElementType.PROCESS)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .count();
+    assertThat(startedPis).as("no PI is activated for an expired request").isZero();
+  }
+
+  @Test
+  public void shouldStartWhenDeadlinePassedButTtlIsZero() {
+    // given a deployed process with a free businessId
+    engine.deployment().withXmlResource(MESSAGE_START_PROCESS).deploy();
+    final long subscriptionKey = waitForStartEventSubscriptionKey();
+
+    // when a past-deadline REQUEST arrives but its TTL is 0 (fire-and-forget): a TTL=0 message
+    // always arrives past its deadline, so the guard must NOT reject it (documented TTL=0
+    // first-arrival activation)
+    engine.writeRecords(
+        RecordToWrite.command()
+            .key(subscriptionKey)
+            .messageStartProcessInstanceRequest(
+                MessageStartProcessInstanceRequestIntent.REQUEST,
+                request(BUSINESS_ID, subscriptionKey).setMessageDeadline(1L).setMessageTtl(0L)));
+
+    // then it falls through to live evaluation and starts a PI, replying START (not REJECT_EXPIRED)
+    final var startReply = firstReplyCommand(MessageStartProcessInstanceRequestIntent.START);
+    assertThat(startReply.getProcessInstanceKey()).isPositive();
   }
 
   private MessageStartProcessInstanceRequestRecord request(

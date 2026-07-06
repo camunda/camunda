@@ -51,6 +51,17 @@ import java.time.InstantSource;
  * messageDeadline}, enforced on {@code P_K} by the {@link
  * io.camunda.zeebe.engine.state.appliers.MessageExpiredApplier}-driven pending-ask cleanup.
  *
+ * <p>Before the dedup lookup, a deterministic TTL-gated expiry guard runs: a request whose {@code
+ * messageDeadline} has passed on this partition's clock <em>and</em> whose {@code messageTtl} is
+ * positive is refused with a {@link MessageStartProcessInstanceRequestIntent#REJECT_EXPIRED} reply
+ * — no dedup lookup, no live evaluation, no activation. This closes the near-deadline duplicate
+ * window deterministically and regardless of inter-partition delay: it is a single-clock comparison
+ * (same {@code messageDeadline} value the sweep uses, against the same clock), so skew can only
+ * shift the accept/reject boundary (liveness), never reopen a duplicate (safety). The {@code
+ * messageTtl > 0} carve-out preserves the documented TTL=0 first-arrival activation (a TTL=0
+ * message always arrives past its deadline and must still be able to start). See {@link
+ * #isDeterministicallyExpired}.
+ *
  * <p>On a cache miss the three live-state outcomes are the same as before:
  *
  * <ul>
@@ -138,6 +149,15 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
     stateWriter.appendFollowUpEvent(
         record.getKey(), MessageStartProcessInstanceRequestIntent.REQUESTED, request);
 
+    if (isDeterministicallyExpired(request)) {
+      // The message's TTL has provably elapsed on this partition's clock, so no PI may be created
+      // and no live state must be consulted: doing so could re-evaluate a since-freed businessId
+      // and start a duplicate. Reply like every other outcome; the EXPIRED_REJECTED applier on P_K
+      // backs the pending ask off (removal stays owned by P_K's message-expiry path).
+      commandSender.sendStartProcessInstanceExpiredRejected(request);
+      return;
+    }
+
     final var cachedPiKey = lookupValidDedupHit(request);
     if (cachedPiKey != null) {
       commandSender.sendStartProcessInstanceStarted(request, cachedPiKey);
@@ -178,6 +198,30 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
         record.getKey(), MessageStartProcessInstanceRequestIntent.STARTED, startedEventBuffer);
 
     commandSender.sendStartProcessInstanceStarted(request, processInstanceKey);
+  }
+
+  /**
+   * Returns {@code true} when the request has deterministically expired on {@code P_B}'s clock and
+   * must never activate: its {@code messageDeadline} has passed <em>and</em> it was published with
+   * a positive TTL. This is the TTL-gated expiry guard.
+   *
+   * <p>The comparison is <em>single-clock</em>: both this guard and the dedup sweep compare the
+   * same {@code messageDeadline} value against {@code P_B}'s clock, so they can never disagree — if
+   * the sweep would remove the dedup row, this guard would reject the request, for every
+   * interleaving. {@code P_K}/{@code P_B} skew can therefore only shift the accept/reject boundary
+   * (a bounded liveness effect: a near-deadline request may expire unstarted), never reopen a
+   * duplicate-creation (safety) window.
+   *
+   * <p>The {@code messageTtl > 0} carve-out preserves the documented TTL=0 first-arrival
+   * activation: a TTL=0 (fire-and-forget) message always arrives with {@code messageDeadline <=
+   * now}, so gating on the deadline alone would wrongly reject it. Since only a positive-TTL
+   * message can be rejected here, and every such message that reaches the deadline is genuinely
+   * expired, the guard is exact. The boundary uses {@code <=} to match {@code lookupValidDedupHit}
+   * and the sweep, which compare the same value.
+   */
+  private boolean isDeterministicallyExpired(
+      final MessageStartProcessInstanceRequestRecord request) {
+    return request.getMessageDeadline() <= clock.millis() && request.getMessageTtl() > 0;
   }
 
   /**
