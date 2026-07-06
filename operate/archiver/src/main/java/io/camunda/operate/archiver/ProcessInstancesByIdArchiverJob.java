@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +39,7 @@ public class ProcessInstancesByIdArchiverJob extends AbstractArchiverJob {
   private final Metrics metrics;
   private final ArchiverRepository archiverRepository;
   private final ThreadPoolTaskScheduler executor;
+  private final Map<Integer, Long> totalPendingByPartition = new ConcurrentHashMap<>();
 
   @Autowired
   public ProcessInstancesByIdArchiverJob(
@@ -55,16 +57,38 @@ public class ProcessInstancesByIdArchiverJob extends AbstractArchiverJob {
     this.metrics = metrics;
     this.archiverRepository = archiverRepository;
     this.executor = executor;
+
+    partitionIds.forEach(
+        partitionId -> {
+          totalPendingByPartition.put(partitionId, 0L);
+          metrics.registerGauge(
+              Metrics.GAUGE_NAME_TOTAL_PENDING_ARCHIVE_INSTANCES,
+              totalPendingByPartition,
+              (pendingTotals) -> totalPendingByPartition.getOrDefault(partitionId, 0L),
+              Metrics.TAG_KEY_PARTITION,
+              Integer.toString(partitionId));
+        });
   }
 
   @Override
   public CompletableFuture<Integer> archiveBatch(final ArchiveBatch archiveBatch) {
     if (archiveBatch == null) {
       LOGGER.debug("Nothing to archive");
+      partitionIds.forEach(
+          (partitionId) -> {
+            totalPendingByPartition.put(partitionId, 0L);
+          });
       return CompletableFuture.completedFuture(0);
     }
 
     LOGGER.debug("Following process instances are found for archiving: {}", archiveBatch);
+
+    // if a partition has no entry, archiving has caught up; set pending to 0L.
+    final Map<Integer, Long> pendingByPartition = archiveBatch.getTotalPendingByPartition();
+    partitionIds.forEach(
+        partitionId ->
+            totalPendingByPartition.put(
+                partitionId, pendingByPartition.getOrDefault(partitionId, 0L)));
 
     final String finishDate = archiveBatch.getFinishDate();
     final List<Object> keys = archiveBatch.getIds();

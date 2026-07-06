@@ -13,6 +13,7 @@ import static io.camunda.operate.schema.SchemaManager.OPERATE_DELETE_ARCHIVED_IN
 import static io.camunda.operate.schema.templates.BatchOperationTemplate.END_DATE;
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.bucketSortAggregation;
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.dateHistogramAggregation;
+import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.termAggregation;
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.topHitsAggregation;
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.withSubaggregations;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.and;
@@ -55,9 +56,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch._types.Conflicts;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
+import org.opensearch.client.opensearch._types.aggregations.LongTermsBucket;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
@@ -80,6 +83,7 @@ import org.springframework.stereotype.Component;
 public class OpensearchArchiverRepository implements ArchiverRepository {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchArchiverRepository.class);
+  private static final String TOTALS_AGG_NAME = "total_pending_archive_count";
 
   private final RichOpenSearchClient richOpenSearchClient;
   private final OpenSearchAsyncClient osAsyncClient;
@@ -222,7 +226,10 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
 
     final var searchRequestBuilder =
         finishedInstancesSearchRequestBuilder(
-            processInstanceTemplate.getFullQualifiedName(), ListViewTemplate.END_DATE, query);
+            processInstanceTemplate.getFullQualifiedName(),
+            ListViewTemplate.END_DATE,
+            query,
+            partitionIds);
 
     final var interval = operateProperties.getArchiver().getRolloverInterval();
     final var dateFormat = operateProperties.getArchiver().getElsRolloverDateFormat();
@@ -574,8 +581,26 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
     return operateProperties.getOpensearch().getNumberOfShards();
   }
 
+  private Aggregation getTotalPendingCountAggregation(final List<Integer> partitionIds) {
+    return Aggregation.of(
+        a -> a.terms(termAggregation(ListViewTemplate.PARTITION_ID, partitionIds.size())));
+  }
+
+  private Map<Integer, Long> getTotalPendingCount(final SearchResponse<?> searchResponse) {
+    final var aggs = searchResponse.aggregations();
+    if (aggs != null && aggs.containsKey(TOTALS_AGG_NAME)) {
+      return aggs.get(TOTALS_AGG_NAME).lterms().buckets().array().stream()
+          .collect(
+              Collectors.toMap(bucket -> Integer.valueOf(bucket.key()), LongTermsBucket::docCount));
+    }
+    return Map.of();
+  }
+
   private SearchRequest.Builder finishedInstancesSearchRequestBuilder(
-      final String index, final String endDateField, final Query query) {
+      final String index,
+      final String endDateField,
+      final Query query,
+      final List<Integer> partitionIds) {
     final var format = operateProperties.getArchiver().getElsRolloverDateFormat();
     final var batchSize = operateProperties.getArchiver().getRolloverBatchSize();
     return searchRequestBuilder(index)
@@ -584,6 +609,7 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
         .fields(f -> f.field(endDateField).format(format))
         .size(batchSize)
         .sort(sortOptions(endDateField, Asc))
+        .aggregations(TOTALS_AGG_NAME, getTotalPendingCountAggregation(partitionIds))
         .requestCache(false); // we don't need to cache this, as each time we need new data
   }
 
@@ -608,7 +634,7 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
             .takeWhile(hit -> endDateOf(hit, dateField).compareTo(nextBucketStart) < 0)
             .map(hit -> (Object) hit.id())
             .toList();
-    return new ArchiveBatch(bucketStart, ids);
+    return new ArchiveBatch(bucketStart, ids, getTotalPendingCount(searchResponse));
   }
 
   private static String endDateOf(final Hit<?> hit, final String dateField) {

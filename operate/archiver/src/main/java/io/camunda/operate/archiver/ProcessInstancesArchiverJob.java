@@ -14,7 +14,9 @@ import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.ProcessInstanceDependant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +35,8 @@ public class ProcessInstancesArchiverJob extends AbstractArchiverJob {
   private final Metrics metrics;
   private final ArchiverRepository archiverRepository;
 
+  private final Map<Integer, Long> totalPendingByPartition = new ConcurrentHashMap<>();
+
   @Autowired
   public ProcessInstancesArchiverJob(
       final Archiver archiver,
@@ -47,6 +51,17 @@ public class ProcessInstancesArchiverJob extends AbstractArchiverJob {
     this.processInstanceDependantTemplates = processInstanceDependantTemplates;
     this.metrics = metrics;
     this.archiverRepository = archiverRepository;
+
+    partitionIds.forEach(
+        partitionId -> {
+          totalPendingByPartition.put(partitionId, 0L);
+          metrics.registerGauge(
+              Metrics.GAUGE_NAME_TOTAL_PENDING_ARCHIVE_INSTANCES,
+              totalPendingByPartition,
+              (pendingTotals) -> totalPendingByPartition.getOrDefault(partitionId, 0L),
+              Metrics.TAG_KEY_PARTITION,
+              Integer.toString(partitionId));
+        });
   }
 
   @Override
@@ -55,6 +70,12 @@ public class ProcessInstancesArchiverJob extends AbstractArchiverJob {
 
     if (archiveBatch != null) {
       LOGGER.debug("Following process instances are found for archiving: {}", archiveBatch);
+      // if a partition has no entry, archiving has caught up; set pending to 0L.
+      final var pendingByPartition = archiveBatch.getTotalPendingByPartition();
+      partitionIds.forEach(
+          partitionId ->
+              totalPendingByPartition.put(
+                  partitionId, pendingByPartition.getOrDefault(partitionId, 0L)));
 
       archiveBatchFuture = new CompletableFuture<Integer>();
       final var finishDate = archiveBatch.getFinishDate();
@@ -79,6 +100,10 @@ public class ProcessInstancesArchiverJob extends AbstractArchiverJob {
     } else {
       LOGGER.debug("Nothing to archive");
       archiveBatchFuture = CompletableFuture.completedFuture(0);
+      partitionIds.forEach(
+          (partitionId) -> {
+            totalPendingByPartition.put(partitionId, 0L);
+          });
     }
 
     return archiveBatchFuture;

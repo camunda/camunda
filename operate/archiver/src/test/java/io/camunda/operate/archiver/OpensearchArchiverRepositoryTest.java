@@ -63,6 +63,8 @@ import org.opensearch.client.opensearch._types.aggregations.BucketSortAggregatio
 import org.opensearch.client.opensearch._types.aggregations.Buckets;
 import org.opensearch.client.opensearch._types.aggregations.DateHistogramAggregate;
 import org.opensearch.client.opensearch._types.aggregations.DateHistogramAggregation;
+import org.opensearch.client.opensearch._types.aggregations.LongTermsAggregate;
+import org.opensearch.client.opensearch._types.aggregations.LongTermsBucket;
 import org.opensearch.client.opensearch._types.aggregations.TopHitsAggregation;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.BulkRequest;
@@ -513,6 +515,8 @@ public class OpensearchArchiverRepositoryTest {
     when(searchRequestBuilder.size(anyInt())).thenReturn(searchRequestBuilder);
     when(searchRequestBuilder.sort((SortOptions) any())).thenReturn(searchRequestBuilder);
     when(searchRequestBuilder.requestCache(false)).thenReturn(searchRequestBuilder);
+    when(searchRequestBuilder.aggregations(anyString(), (Aggregation) any()))
+        .thenReturn(searchRequestBuilder);
   }
 
   @SuppressWarnings("unchecked")
@@ -556,5 +560,58 @@ public class OpensearchArchiverRepositoryTest {
     when(archiverProperties.getArchivingTimepoint()).thenReturn("now-1s");
     when(archiverProperties.getElsRolloverDateFormat()).thenReturn("format");
     when(decisionInstanceTemplate.getFullQualifiedName()).thenReturn("decisionsQualifiedName");
+  }
+
+  @Test
+  public void testGetProcessInstancesNextBatchIncludesTotalPendingByPartition() {
+    setProcessInstancesMocks();
+    try (final MockedStatic<RequestDSL> requestDSLMockedStatic = mockStatic(RequestDSL.class);
+        final MockedStatic<QueryDSL> queryDSLMockedStatic = mockStatic(QueryDSL.class);
+        final MockedStatic<Timer> timerMockedStatic = mockStatic(Timer.class);
+        final MockedStatic<OpensearchUtil> opensearchUtil = mockStatic(OpensearchUtil.class)) {
+      setupPISearchRequestBuilderMock(requestDSLMockedStatic, queryDSLMockedStatic);
+
+      final Timer.Sample timerSample = mock(Timer.Sample.class);
+      timerMockedStatic.when(Timer::start).thenReturn(timerSample);
+      when(metrics.getTimer(any())).thenReturn(mock(Timer.class));
+
+      // one hit so the batch is non-null and we reach getTotalPendingCount
+      final Hit<Object> hitA = hitWithEndDate("a", "2024-01-01");
+      final HitsMetadata<Object> hitsMeta = mock(HitsMetadata.class);
+      final SearchResponse<Object> resp = mock(SearchResponse.class);
+      when(resp.hits()).thenReturn(hitsMeta);
+      when(hitsMeta.hits()).thenReturn(List.of(hitA));
+
+      // set up aggregations with partition counts
+      final LongTermsAggregate ltermsAggregate = mock(LongTermsAggregate.class);
+      final Aggregate totalsAggregate = mock(Aggregate.class);
+      when(totalsAggregate.lterms()).thenReturn(ltermsAggregate);
+
+      final LongTermsBucket bucket1 = mock(LongTermsBucket.class);
+      when(bucket1.key()).thenReturn("1");
+      when(bucket1.docCount()).thenReturn(42L);
+      final LongTermsBucket bucket2 = mock(LongTermsBucket.class);
+      when(bucket2.key()).thenReturn("2");
+      when(bucket2.docCount()).thenReturn(17L);
+
+      final Buckets<LongTermsBucket> buckets = mock(Buckets.class);
+      when(buckets.array()).thenReturn(List.of(bucket1, bucket2));
+      when(ltermsAggregate.buckets()).thenReturn(buckets);
+
+      final Map<String, Aggregate> aggregations = new HashMap<>();
+      aggregations.put("total_pending_archive_count", totalsAggregate);
+      when(resp.aggregations()).thenReturn(aggregations);
+
+      opensearchUtil
+          .when(() -> OpensearchUtil.searchAsync(any(), any(), any()))
+          .thenReturn(CompletableFuture.completedFuture(resp));
+
+      final CompletableFuture<ArchiveBatch> result =
+          underTest.getProcessInstancesNextBatch(PARTITION_IDS);
+      final ArchiveBatch batch = result.join();
+      assertThat(batch).isNotNull();
+      assertThat(batch.getTotalPendingByPartition()).containsEntry(1, 42L);
+      assertThat(batch.getTotalPendingByPartition()).containsEntry(2, 17L);
+    }
   }
 }

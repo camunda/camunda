@@ -48,6 +48,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
@@ -73,8 +74,12 @@ import org.elasticsearch.index.reindex.ReindexRequest;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation.Bucket;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
+import org.elasticsearch.search.aggregations.bucket.terms.ParsedLongTerms;
 import org.elasticsearch.search.aggregations.metrics.TopHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
@@ -93,6 +98,7 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
 
   public static final int INTERNAL_SCROLL_KEEP_ALIVE_MS =
       30000; // this scroll timeout value is used for reindex and delete queries
+  public static final String TOTALS_AGG_NAME = "total_pending_archive_count";
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchArchiverRepository.class);
   private static final int UPDATE_RETRY_COUNT = 3;
@@ -171,7 +177,24 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
                 hit -> ((String) hit.field(dateField).getValue()).compareTo(nextBucketStart) < 0)
             .map(hit -> (Object) hit.getId())
             .toList();
-    return new ArchiveBatch(bucketStart, ids);
+    return new ArchiveBatch(bucketStart, ids, getTotalPendingCount(searchResponse));
+  }
+
+  private AggregationBuilder getTotalPendingCountAggregation(final List<Integer> partitionIds) {
+    return AggregationBuilders.terms(TOTALS_AGG_NAME)
+        .field(ListViewTemplate.PARTITION_ID)
+        .size(partitionIds.size());
+  }
+
+  private Map<Integer, Long> getTotalPendingCount(final SearchResponse searchResponse) {
+    final Aggregations aggs = searchResponse.getAggregations();
+    if (aggs != null
+        && aggs.get(TOTALS_AGG_NAME) instanceof final ParsedLongTerms totalsByPartition) {
+      return totalsByPartition.getBuckets().stream()
+          .collect(
+              Collectors.toMap(bucket -> bucket.getKeyAsNumber().intValue(), Bucket::getDocCount));
+    }
+    return Map.of();
   }
 
   private CompletableFuture<SearchResponse> sendSearchRequest(final SearchRequest searchRequest) {
@@ -641,7 +664,8 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
                         ListViewTemplate.END_DATE,
                         operateProperties.getArchiver().getElsRolloverDateFormat())
                     .size(operateProperties.getArchiver().getRolloverBatchSize())
-                    .sort(ListViewTemplate.END_DATE, SortOrder.ASC))
+                    .sort(ListViewTemplate.END_DATE, SortOrder.ASC)
+                    .aggregation(getTotalPendingCountAggregation(partitionIds)))
             .requestCache(false); // we don't need to cache this, as each time we need new data
 
     LOGGER.debug("Finished process instances for archiving request: \n{}", q.toString());
