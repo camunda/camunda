@@ -42,6 +42,7 @@ public final class DocumentDatasetSchemaManager implements DatasetSchemaManager 
     properties.put(DocumentCubeNames.WINDOW_SIZE, property("long"));
     properties.put(DocumentCubeNames.METER_NAME, property("keyword"));
     properties.put(DocumentCubeNames.ACCUMULATOR, property("binary"));
+    properties.put(DocumentCubeNames.DOC_KEY, property("keyword"));
     schemaClient.createIndex(DocumentCubeNames.datasetIndex(dataset.cubeId()), mapping(properties));
   }
 

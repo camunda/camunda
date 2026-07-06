@@ -51,6 +51,7 @@ public final class DocumentDatasetWriter implements DatasetWriter {
     doc.put(DocumentCubeNames.METER_NAME, meterName);
     doc.put(DocumentCubeNames.ACCUMULATOR, DocumentCubeNames.encode(accumulator));
     final String id = DocumentCubeNames.cellDocId(key, windowStart, windowSize, meterName);
+    doc.put(DocumentCubeNames.DOC_KEY, id); // sortable copy of the id, for search_after streaming
     writeClient.index(
         RequestBuilders.<Map<String, Object>>indexRequest(
             r -> r.index(DocumentCubeNames.datasetIndex(dataset.cubeId())).id(id).document(doc)));

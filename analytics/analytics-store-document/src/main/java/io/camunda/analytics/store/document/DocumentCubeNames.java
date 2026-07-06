@@ -26,6 +26,13 @@ final class DocumentCubeNames {
   static final String METER_NAME = "meter_name";
   static final String ACCUMULATOR = "accumulator";
 
+  /**
+   * A unique, sortable {@code keyword} copy of the document id (the {@link #cellDocId}). Sorting on
+   * {@code _id} needs fielddata and is discouraged, so a stored keyword field is what {@code
+   * search_after} paginates on when streaming cells.
+   */
+  static final String DOC_KEY = "doc_key";
+
   private static final String KEY_SEPARATOR = "\u0001";
 
   private DocumentCubeNames() {}
