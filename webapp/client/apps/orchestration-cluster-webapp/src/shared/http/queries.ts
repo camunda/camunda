@@ -152,6 +152,7 @@ const queries = {
 				}
 				return response.text();
 			},
+			staleTime: 'static',
 		}),
 
 	getProcessDefinitionInstanceStatistics: (body: GetProcessDefinitionInstanceStatisticsRequestBody) =>
