@@ -82,7 +82,7 @@ class StaticConfigurationGeneratorTest {
     final var expectedDistribution =
         Map.of(1, Set.of(0, 1, 2), 2, Set.of(1, 2, 0), 3, Set.of(0, 1, 2));
     final String config =
-        """
+"""
 fixed:
    - partitionId: 1
      nodes:

@@ -286,7 +286,7 @@ final class BulkIndexRequestTest {
           .describedAs("Expect that the records are serialized with resourceMetadata")
           .map(source -> MAPPER.writeValueAsString(source))
           .containsExactly(
-              """
+"""
 [{"checksum":"Y2hlY2tzdW0=","deploymentKey":12345,"duplicate":false,"resourceId":"resourceId","resourceKey":1,"resourceName":"resourceName","tenantId":"<default>","version":1,"versionTag":""}]""");
     }
 

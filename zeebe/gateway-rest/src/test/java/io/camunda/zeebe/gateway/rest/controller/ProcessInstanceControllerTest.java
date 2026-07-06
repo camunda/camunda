@@ -205,7 +205,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
         .json(
-            """
+"""
 {
    "processDefinitionKey":"123",
    "processDefinitionId":"bpmnProcessId",
