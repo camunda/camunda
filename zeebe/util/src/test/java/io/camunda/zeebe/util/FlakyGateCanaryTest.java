@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.util;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -36,10 +39,16 @@ import org.junit.jupiter.api.Test;
 final class FlakyGateCanaryTest {
 
   @Test
-  void shouldBeStable() {
-    // PHASE 2 (clear): method body modified to a deterministic pass. The gate sees the flagged
-    // method changed ("fix detected") and, with three subsequent clean runs, advances the
-    // clearance counter 1/3 -> 2/3 -> 3/3 -> cleared_via_fix.
-    // cleared
+  void shouldBeStable() throws IOException {
+    // PHASE 1 (flag): fail on the first attempt, pass on Maven's retry -> recorded flaky.
+    // PHASE 2 (clear): replace this whole body with a no-op (e.g. `// cleared`).
+    final Path marker =
+        Path.of(System.getProperty("java.io.tmpdir"), "flaky-gate-canary-attempt.marker");
+    if (Files.exists(marker)) {
+      return; // retry attempt on the same runner: pass
+    }
+    Files.createFile(marker);
+    throw new AssertionError(
+        "flaky-gate canary: intentional first-attempt failure to exercise the flaky gate");
   }
 }
