@@ -359,9 +359,9 @@ public final class EngineProcessors {
         commandDistributionBehavior,
         authCheckBehavior,
         securityConfig,
-        config,
         authzService,
-        claimsConverter);
+        claimsConverter,
+        authorizationScopeStateAdapter);
 
     ScalingProcessors.addScalingProcessors(
         commandDistributionBehavior,
@@ -470,12 +470,9 @@ public final class EngineProcessors {
       final CommandDistributionBehavior commandDistributionBehavior,
       final AuthorizationCheckBehavior authCheckBehavior,
       final EngineSecurityConfig securityConfig,
-      final EngineConfiguration config,
       final AuthorizationService authzService,
-      final LazyTokenClaimsConverter claimsConverter) {
-    final var authorizationScopeStateAdapter =
-        new AuthorizationScopeStateAdapter(processingState.getAuthorizationState(), config);
-
+      final LazyTokenClaimsConverter claimsConverter,
+      final AuthorizationScopeStateAdapter authorizationScopeStateAdapter) {
     AuthorizationProcessors.addAuthorizationProcessors(
         keyGenerator,
         typedRecordProcessors,
