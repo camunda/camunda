@@ -59,6 +59,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch._types.Conflicts;
+import org.opensearch.client.opensearch._types.aggregations.Aggregate.Kind;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.LongTermsBucket;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
@@ -588,7 +589,9 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
 
   private Map<Integer, Long> getTotalPendingCount(final SearchResponse<?> searchResponse) {
     final var aggs = searchResponse.aggregations();
-    if (aggs != null && aggs.containsKey(TOTALS_AGG_NAME)) {
+    if (aggs != null
+        && aggs.containsKey(TOTALS_AGG_NAME)
+        && aggs.get(TOTALS_AGG_NAME)._kind().equals(Kind.Lterms)) {
       return aggs.get(TOTALS_AGG_NAME).lterms().buckets().array().stream()
           .collect(
               Collectors.toMap(bucket -> Integer.valueOf(bucket.key()), LongTermsBucket::docCount));

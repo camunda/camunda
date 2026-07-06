@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,19 +26,12 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Scope(SCOPE_PROTOTYPE)
-public class ProcessInstancesByIdArchiverJob extends AbstractArchiverJob {
+public class ProcessInstancesByIdArchiverJob extends AbstractProcessInstancesArchiverJob {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ProcessInstancesByIdArchiverJob.class);
 
-  private final List<Integer> partitionIds;
-  private final Archiver archiver;
-  private final ListViewTemplate processInstanceTemplate;
-  private final List<ProcessInstanceDependant> processInstanceDependantTemplates;
-  private final Metrics metrics;
-  private final ArchiverRepository archiverRepository;
   private final ThreadPoolTaskScheduler executor;
-  private final Map<Integer, Long> totalPendingByPartition = new ConcurrentHashMap<>();
 
   @Autowired
   public ProcessInstancesByIdArchiverJob(
@@ -50,52 +42,27 @@ public class ProcessInstancesByIdArchiverJob extends AbstractArchiverJob {
       final Metrics metrics,
       final ArchiverRepository archiverRepository,
       @Qualifier("archiverThreadPoolExecutor") final ThreadPoolTaskScheduler executor) {
-    this.archiver = archiver;
-    this.partitionIds = partitionIds;
-    this.processInstanceTemplate = processInstanceTemplate;
-    this.processInstanceDependantTemplates = processInstanceDependantTemplates;
-    this.metrics = metrics;
-    this.archiverRepository = archiverRepository;
+    super(
+        archiver,
+        partitionIds,
+        processInstanceTemplate,
+        processInstanceDependantTemplates,
+        metrics,
+        archiverRepository,
+        LOGGER);
     this.executor = executor;
-
-    partitionIds.forEach(
-        partitionId -> {
-          totalPendingByPartition.put(partitionId, 0L);
-          metrics.registerGauge(
-              Metrics.GAUGE_NAME_TOTAL_PENDING_ARCHIVE_INSTANCES,
-              totalPendingByPartition,
-              (pendingTotals) -> totalPendingByPartition.getOrDefault(partitionId, 0L),
-              Metrics.TAG_KEY_PARTITION,
-              Integer.toString(partitionId));
-        });
   }
 
   @Override
-  public CompletableFuture<Integer> archiveBatch(final ArchiveBatch archiveBatch) {
-    if (archiveBatch == null) {
-      LOGGER.debug("Nothing to archive");
-      partitionIds.forEach(
-          (partitionId) -> {
-            totalPendingByPartition.put(partitionId, 0L);
-          });
-      return CompletableFuture.completedFuture(0);
-    }
-
-    LOGGER.debug("Following process instances are found for archiving: {}", archiveBatch);
-
-    // if a partition has no entry, archiving has caught up; set pending to 0L.
-    final Map<Integer, Long> pendingByPartition = archiveBatch.getTotalPendingByPartition();
-    partitionIds.forEach(
-        partitionId ->
-            totalPendingByPartition.put(
-                partitionId, pendingByPartition.getOrDefault(partitionId, 0L)));
-
+  protected CompletableFuture<Integer> archiveProcessInstances(final ArchiveBatch archiveBatch) {
     final String finishDate = archiveBatch.getFinishDate();
     final List<Object> keys = archiveBatch.getIds();
 
     final String listViewDest =
-        archiver.getDestinationIndexName(
-            processInstanceTemplate.getFullQualifiedName(), finishDate);
+        getArchiver()
+            .getDestinationIndexName(
+                getProcessInstanceTemplate().getFullQualifiedName(), finishDate);
+
     final Map<String, List<Object>> piKeyFilter =
         Map.of(ListViewTemplate.PROCESS_INSTANCE_KEY, keys);
 
@@ -108,7 +75,7 @@ public class ProcessInstancesByIdArchiverJob extends AbstractArchiverJob {
         .thenComposeAsync(
             v ->
                 archive(
-                    processInstanceTemplate.getFullQualifiedName(),
+                    getProcessInstanceTemplate().getFullQualifiedName(),
                     listViewDest,
                     piKeyFilter,
                     Map.of(),
@@ -120,7 +87,7 @@ public class ProcessInstancesByIdArchiverJob extends AbstractArchiverJob {
         .thenComposeAsync(
             v ->
                 archive(
-                    processInstanceTemplate.getFullQualifiedName(),
+                    getProcessInstanceTemplate().getFullQualifiedName(),
                     listViewDest,
                     piKeyFilter,
                     Map.of(
@@ -128,17 +95,7 @@ public class ProcessInstancesByIdArchiverJob extends AbstractArchiverJob {
                         ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION),
                     Map.of()),
             executor)
-        .thenApplyAsync(
-            v -> {
-              metrics.recordCounts(Metrics.COUNTER_NAME_PROCESS_INSTANCES_ARCHIVED, keys.size());
-              return keys.size();
-            },
-            executor);
-  }
-
-  @Override
-  public CompletableFuture<ArchiveBatch> getNextBatch() {
-    return archiverRepository.getProcessInstancesNextBatch(partitionIds);
+        .thenApplyAsync(v -> keys.size(), executor);
   }
 
   private CompletableFuture<Void> archiveProcessDependants(
@@ -150,25 +107,25 @@ public class ProcessInstancesByIdArchiverJob extends AbstractArchiverJob {
 
     // archive dependent indices and list-view variables + activities in parallel
     final var futures = new ArrayList<CompletableFuture<Void>>();
-    for (final ProcessInstanceDependant template : processInstanceDependantTemplates) {
+    for (final ProcessInstanceDependant template : getProcessInstanceDependantTemplates()) {
       futures.add(
           archive(
               template.getFullQualifiedName(),
-              archiver.getDestinationIndexName(template.getFullQualifiedName(), finishDate),
+              getArchiver().getDestinationIndexName(template.getFullQualifiedName(), finishDate),
               Map.of(ProcessInstanceDependant.PROCESS_INSTANCE_KEY, keys),
               Map.of(),
               Map.of()));
     }
     futures.add(
         archive(
-            processInstanceTemplate.getFullQualifiedName(),
+            getProcessInstanceTemplate().getFullQualifiedName(),
             listViewDest,
             piKeyFilter,
             Map.of(ListViewTemplate.JOIN_RELATION, ListViewTemplate.VARIABLES_JOIN_RELATION),
             Map.of()));
     futures.add(
         archive(
-            processInstanceTemplate.getFullQualifiedName(),
+            getProcessInstanceTemplate().getFullQualifiedName(),
             listViewDest,
             piKeyFilter,
             Map.of(ListViewTemplate.JOIN_RELATION, ListViewTemplate.ACTIVITIES_JOIN_RELATION),
@@ -182,12 +139,13 @@ public class ProcessInstancesByIdArchiverJob extends AbstractArchiverJob {
       final Map<String, List<Object>> keysByField,
       final Map<String, String> inclusionFilters,
       final Map<String, String> exclusionFilters) {
-    return archiverRepository.moveDocumentsById(
-        sourceIndexName,
-        destinationIndexName,
-        keysByField,
-        inclusionFilters,
-        exclusionFilters,
-        executor);
+    return getArchiverRepository()
+        .moveDocumentsById(
+            sourceIndexName,
+            destinationIndexName,
+            keysByField,
+            inclusionFilters,
+            exclusionFilters,
+            executor);
   }
 }

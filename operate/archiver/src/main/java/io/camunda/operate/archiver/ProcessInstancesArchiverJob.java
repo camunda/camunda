@@ -14,9 +14,7 @@ import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.ProcessInstanceDependant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,17 +23,9 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Scope(SCOPE_PROTOTYPE)
-public class ProcessInstancesArchiverJob extends AbstractArchiverJob {
+public class ProcessInstancesArchiverJob extends AbstractProcessInstancesArchiverJob {
+
   private static final Logger LOGGER = LoggerFactory.getLogger(ProcessInstancesArchiverJob.class);
-
-  private final List<Integer> partitionIds;
-  private final Archiver archiver;
-  private final ListViewTemplate processInstanceTemplate;
-  private final List<ProcessInstanceDependant> processInstanceDependantTemplates;
-  private final Metrics metrics;
-  private final ArchiverRepository archiverRepository;
-
-  private final Map<Integer, Long> totalPendingByPartition = new ConcurrentHashMap<>();
 
   @Autowired
   public ProcessInstancesArchiverJob(
@@ -45,86 +35,37 @@ public class ProcessInstancesArchiverJob extends AbstractArchiverJob {
       final List<ProcessInstanceDependant> processInstanceDependantTemplates,
       final Metrics metrics,
       final ArchiverRepository archiverRepository) {
-    this.archiver = archiver;
-    this.partitionIds = partitionIds;
-    this.processInstanceTemplate = processInstanceTemplate;
-    this.processInstanceDependantTemplates = processInstanceDependantTemplates;
-    this.metrics = metrics;
-    this.archiverRepository = archiverRepository;
-
-    partitionIds.forEach(
-        partitionId -> {
-          totalPendingByPartition.put(partitionId, 0L);
-          metrics.registerGauge(
-              Metrics.GAUGE_NAME_TOTAL_PENDING_ARCHIVE_INSTANCES,
-              totalPendingByPartition,
-              (pendingTotals) -> totalPendingByPartition.getOrDefault(partitionId, 0L),
-              Metrics.TAG_KEY_PARTITION,
-              Integer.toString(partitionId));
-        });
+    super(
+        archiver,
+        partitionIds,
+        processInstanceTemplate,
+        processInstanceDependantTemplates,
+        metrics,
+        archiverRepository,
+        LOGGER);
   }
 
   @Override
-  public CompletableFuture<Integer> archiveBatch(final ArchiveBatch archiveBatch) {
-    final CompletableFuture<Integer> archiveBatchFuture;
+  protected CompletableFuture<Integer> archiveProcessInstances(final ArchiveBatch archiveBatch) {
+    final var finishDate = archiveBatch.getFinishDate();
+    final var processInstanceKeys = archiveBatch.getIds();
 
-    if (archiveBatch != null) {
-      LOGGER.debug("Following process instances are found for archiving: {}", archiveBatch);
-      // if a partition has no entry, archiving has caught up; set pending to 0L.
-      final var pendingByPartition = archiveBatch.getTotalPendingByPartition();
-      partitionIds.forEach(
-          partitionId ->
-              totalPendingByPartition.put(
-                  partitionId, pendingByPartition.getOrDefault(partitionId, 0L)));
-
-      archiveBatchFuture = new CompletableFuture<Integer>();
-      final var finishDate = archiveBatch.getFinishDate();
-      final var processInstanceKeys = archiveBatch.getIds();
-
-      moveDependableDocuments(finishDate, processInstanceKeys)
-          .thenCompose(
-              (v) -> {
-                return moveProcessInstanceDocuments(finishDate, processInstanceKeys);
-              })
-          .thenAccept(
-              (i) -> {
-                metrics.recordCounts(Metrics.COUNTER_NAME_PROCESS_INSTANCES_ARCHIVED, i);
-                archiveBatchFuture.complete(i);
-              })
-          .exceptionally(
-              (t) -> {
-                archiveBatchFuture.completeExceptionally(t);
-                return null;
-              });
-
-    } else {
-      LOGGER.debug("Nothing to archive");
-      archiveBatchFuture = CompletableFuture.completedFuture(0);
-      partitionIds.forEach(
-          (partitionId) -> {
-            totalPendingByPartition.put(partitionId, 0L);
-          });
-    }
-
-    return archiveBatchFuture;
-  }
-
-  @Override
-  public CompletableFuture<ArchiveBatch> getNextBatch() {
-    return archiverRepository.getProcessInstancesNextBatch(partitionIds);
+    return moveDependableDocuments(finishDate, processInstanceKeys)
+        .thenCompose((v) -> moveProcessInstanceDocuments(finishDate, processInstanceKeys));
   }
 
   private CompletableFuture<Void> moveDependableDocuments(
       final String finishDate, final List<Object> processInstanceKeys) {
     final var dependableFutures = new ArrayList<CompletableFuture<Void>>();
 
-    for (final ProcessInstanceDependant template : processInstanceDependantTemplates) {
+    for (final ProcessInstanceDependant template : getProcessInstanceDependantTemplates()) {
       final var moveDocumentsFuture =
-          archiver.moveDocuments(
-              template.getFullQualifiedName(),
-              ProcessInstanceDependant.PROCESS_INSTANCE_KEY,
-              finishDate,
-              processInstanceKeys);
+          getArchiver()
+              .moveDocuments(
+                  template.getFullQualifiedName(),
+                  ProcessInstanceDependant.PROCESS_INSTANCE_KEY,
+                  finishDate,
+                  processInstanceKeys);
       dependableFutures.add(moveDocumentsFuture);
     }
 
@@ -136,9 +77,9 @@ public class ProcessInstancesArchiverJob extends AbstractArchiverJob {
       final String finishDate, final List<Object> processInstanceKeys) {
     final var future = new CompletableFuture<Integer>();
 
-    archiver
+    getArchiver()
         .moveDocuments(
-            processInstanceTemplate.getFullQualifiedName(),
+            getProcessInstanceTemplate().getFullQualifiedName(),
             ListViewTemplate.PROCESS_INSTANCE_KEY,
             finishDate,
             processInstanceKeys)

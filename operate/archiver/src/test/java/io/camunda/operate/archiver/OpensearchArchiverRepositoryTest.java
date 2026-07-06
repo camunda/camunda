@@ -585,6 +585,7 @@ public class OpensearchArchiverRepositoryTest {
       // set up aggregations with partition counts
       final LongTermsAggregate ltermsAggregate = mock(LongTermsAggregate.class);
       final Aggregate totalsAggregate = mock(Aggregate.class);
+      when(totalsAggregate._kind()).thenReturn(Aggregate.Kind.Lterms);
       when(totalsAggregate.lterms()).thenReturn(ltermsAggregate);
 
       final LongTermsBucket bucket1 = mock(LongTermsBucket.class);

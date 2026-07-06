@@ -96,9 +96,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class ElasticsearchArchiverRepository implements ArchiverRepository {
 
-  public static final int INTERNAL_SCROLL_KEEP_ALIVE_MS =
+  private static final int INTERNAL_SCROLL_KEEP_ALIVE_MS =
       30000; // this scroll timeout value is used for reindex and delete queries
-  public static final String TOTALS_AGG_NAME = "total_pending_archive_count";
+  private static final String TOTALS_AGG_NAME = "total_pending_archive_count";
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchArchiverRepository.class);
   private static final int UPDATE_RETRY_COUNT = 3;
