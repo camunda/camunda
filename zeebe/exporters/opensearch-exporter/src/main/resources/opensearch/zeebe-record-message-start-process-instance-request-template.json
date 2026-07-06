@@ -55,6 +55,9 @@
             "messageDeadline": {
               "type": "long"
             },
+            "messageTtl": {
+              "type": "long"
+            },
             "variables": {
               "enabled": false
             },
