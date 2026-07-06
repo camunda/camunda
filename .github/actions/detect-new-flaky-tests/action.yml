@@ -3,10 +3,11 @@ name: Detect New Flaky Tests
 
 description: >
   Compares flaky tests from the current PR run against known flaky tests from BigQuery
-  and a sticky per-PR state artifact. Once a test is flagged it stays flagged until
-  the method body is modified and 3 subsequent gate runs observe it clean, or until
-  the ci:flaky-test-bypass label is applied. Posts/updates a single PR comment that
-  renders the current state and writes the updated state JSON for upload.
+  and sticky per-PR state stored in the gate's PR comment. Once a test is flagged it
+  stays flagged until the method body is modified and 3 subsequent gate runs observe it
+  clean, or until the ci:flaky-test-bypass label is applied. Posts/updates a single PR
+  comment that renders the current state and embeds it as a hidden base64 marker for the
+  next run to read (durable across re-runs / force-push, unlike a run-scoped artifact).
 
 inputs:
   pr-flaky-tests-data:
@@ -53,42 +54,11 @@ outputs:
 runs:
   using: composite
   steps:
-    # Discover the most recent non-expired state artifact for this PR across any
-    # prior CI run on this repo. The artifact name is per-PR-number, so this works
-    # across force-pushes and re-runs. Missing/failed download => fresh-state path.
-    - name: Download prior sticky-state artifact
-      id: download-state
-      shell: bash
-      env:
-        GH_TOKEN: ${{ github.token }}
-        REPO: ${{ github.repository }}
-        ARTIFACT_NAME: flaky-gate-state-pr-${{ inputs.pr-number }}
-      run: |
-        set -euo pipefail
-        state_dir="${RUNNER_TEMP}/flaky-gate-state-in"
-        mkdir -p "$state_dir"
-        state_file="${state_dir}/state.json"
-        echo "state_file=${state_file}" >> "$GITHUB_OUTPUT"
-
-        if ! artifact_id=$(gh api -X GET "/repos/${REPO}/actions/artifacts" \
-            -f "name=${ARTIFACT_NAME}" -F per_page=100 \
-            --jq '.artifacts | map(select(.expired == false)) | sort_by(.created_at) | reverse | .[0].id // ""'); then
-          echo "Artifact list API call failed; continuing with no prior state."
-          exit 0
-        fi
-
-        if [[ -z "$artifact_id" ]]; then
-          echo "No prior sticky-state artifact found; first-run for this PR."
-          exit 0
-        fi
-        echo "Found prior artifact id: $artifact_id"
-
-        if ! gh api "/repos/${REPO}/actions/artifacts/${artifact_id}/zip" \
-                > "${RUNNER_TEMP}/prior-state.zip"; then
-          echo "Artifact download failed; continuing with no prior state."
-          exit 0
-        fi
-        unzip -q -o "${RUNNER_TEMP}/prior-state.zip" -d "$state_dir" || true
+    # Prior sticky state is recovered from the gate's own PR comment (a hidden
+    # base64 marker), not a workflow artifact. The comment is durable across the
+    # "Re-run jobs" button and force-pushes, both of which delete run-scoped
+    # artifacts and previously froze the clean-run counter (GAP-11). The detector
+    # reads the comment directly via the GitHub API — no download step needed.
 
     # Method-fix detection uses `git log -L:<method>:<file>`, which needs git's
     # language-aware funcname driver to locate Java methods. The repo has no
@@ -117,7 +87,8 @@ runs:
         KNOWN_FLAKY_TESTS_FILE: ${{ inputs.known-flaky-tests-file }}
         PR_NUMBER: ${{ inputs.pr-number }}
         BLOCKING: ${{ inputs.blocking }}
-        STATE_FILE_IN: ${{ steps.download-state.outputs.state_file }}
+        # Prior state now comes from the PR comment; STATE_FILE_OUT is retained
+        # only as a debug artifact of the run (not uploaded, not read back).
         STATE_FILE_OUT: ${{ runner.temp }}/flaky-gate-state-out/state.json
         RAN_JOBS_JSON: ${{ inputs.ran-jobs-json }}
         BYPASS_LABEL_PRESENT: ${{ inputs.bypass-label-present }}
@@ -127,38 +98,6 @@ runs:
         REPO_ROOT: ${{ inputs.repo-root != '' && inputs.repo-root || github.workspace }}
         GITHUB_TOKEN: ${{ github.token }}
       run: python3 ${{ github.action_path }}/detect_new_flaky_tests.py
-
-    # Detect whether the detector actually wrote a state file. hashFiles() cannot
-    # be used to guard the upload: it only hashes paths under GITHUB_WORKSPACE, but
-    # the state file lives in RUNNER_TEMP (outside the workspace), so hashFiles always
-    # returned '' and the upload was silently skipped on every run — sticky state never
-    # persisted across runs (the clean-run counter was frozen and cross-run stickiness
-    # was dead). A plain existence check reads the absolute path fine.
-    - name: Check sticky-state file written
-      id: state-written
-      if: always()
-      shell: bash
-      env:
-        STATE_FILE_OUT: ${{ runner.temp }}/flaky-gate-state-out/state.json
-      run: |
-        state_dir="$(dirname "$STATE_FILE_OUT")"
-        echo "sticky-state dir contents:"
-        ls -la "$state_dir" 2>/dev/null || echo "  (directory absent)"
-        if [[ -f "$STATE_FILE_OUT" ]]; then
-          echo "written=true" >> "$GITHUB_OUTPUT"
-          echo "state file present -> will upload for the next run"
-        else
-          echo "written=false" >> "$GITHUB_OUTPUT"
-          echo "state file absent -> skipping upload (no flakes and no prior state)"
-        fi
-
-    # Persist updated state for the next run. Skipped when the detector wrote
-    # nothing (no flakes + no prior state => no-op, no file to upload).
-    - name: Upload sticky-state artifact
-      if: always() && steps.state-written.outputs.written == 'true'
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-      with:
-        name: flaky-gate-state-pr-${{ inputs.pr-number }}
-        path: ${{ runner.temp }}/flaky-gate-state-out/state.json
-        retention-days: 30
-        overwrite: true
+    # Updated state is persisted by the detector into the PR comment's hidden
+    # marker (durable across re-runs / force-push). No artifact upload step —
+    # the run-scoped artifact was the root cause of GAP-11.
