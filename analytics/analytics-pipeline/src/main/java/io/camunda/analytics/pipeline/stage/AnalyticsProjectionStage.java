@@ -7,11 +7,10 @@
  */
 package io.camunda.analytics.pipeline.stage;
 
-import io.camunda.analytics.dataset.ActiveCube;
-import io.camunda.analytics.dataset.ActiveTable;
 import io.camunda.analytics.pipeline.store.AnalyticsBackend;
 import io.camunda.analytics.pipeline.store.AnalyticsBackends;
 import io.camunda.analytics.projection.SourceRecord;
+import io.camunda.analytics.serving.catalog.DatasetCatalog;
 import io.camunda.analytics.serving.spi.MetadataStore;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.streaming.StreamRuntime;
@@ -44,6 +43,11 @@ public final class AnalyticsProjectionStage {
   private static final Duration CHECKPOINT_INTERVAL =
       Duration.ofMillis(Long.getLong("analytics.checkpointIntervalMs", 1000L));
   private static final Duration ERROR_BACKOFF = Duration.ofSeconds(1);
+  // How often, at a commit boundary, a task checks the dataset catalog for a live reload (ADR 0005:
+  // must stay below the provisioning activation debounce so a new cube is picked up before it
+  // fills).
+  private static final long RELOAD_CHECK_INTERVAL_MS =
+      Long.getLong("analytics.reloadCheckIntervalMs", 10_000L);
 
   private AnalyticsProjectionStage() {}
 
@@ -89,8 +93,9 @@ public final class AnalyticsProjectionStage {
     final MetadataStore metadataStore = backend.metadataStore();
     metadataStore.migrate();
     AnalyticsCubes.bootstrap(metadataStore);
-    final List<ActiveCube> cubes = AnalyticsCubes.loadCubes(metadataStore);
-    final List<ActiveTable> tables = AnalyticsCubes.loadTables(metadataStore);
+    // The versioned catalog is shared by this stage's partition tasks; each rebuilds its topology
+    // from it at a commit boundary when its version moves (live reload — ADR 0005).
+    final DatasetCatalog catalog = new DatasetCatalog(metadataStore);
     final String stateDir = "data/analytics-stage1-" + instanceId;
     final ZeebeRecordCodec codec = new ZeebeRecordCodec();
 
@@ -120,8 +125,8 @@ public final class AnalyticsProjectionStage {
                         factsPartitions,
                         segmentStride,
                         schemaVersion,
-                        cubes,
-                        tables,
+                        catalog,
+                        RELOAD_CHECK_INTERVAL_MS,
                         backend.newDatasetStore(),
                         meterRegistry))
             .maxPoll(MAX_RECORDS)
@@ -136,8 +141,8 @@ public final class AnalyticsProjectionStage {
         "Analytics Stage 1 '{}': {} -> {} cube(s) + {} table(s) -> {}",
         instanceId,
         sourceTopic,
-        cubes.size(),
-        tables.size(),
+        catalog.cubes().size(),
+        catalog.tables().size(),
         factsTopic);
     return runtime;
   }

@@ -7,9 +7,9 @@
  */
 package io.camunda.analytics.pipeline.stage;
 
-import io.camunda.analytics.dataset.ActiveCube;
 import io.camunda.analytics.pipeline.store.AnalyticsBackend;
 import io.camunda.analytics.pipeline.store.AnalyticsBackends;
+import io.camunda.analytics.serving.catalog.DatasetCatalog;
 import io.camunda.analytics.serving.spi.MetadataStore;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.streaming.StreamRuntime;
@@ -43,6 +43,10 @@ public final class AnalyticsAggregationStage {
   private static final Duration CHECKPOINT_INTERVAL =
       Duration.ofMillis(Long.getLong("analytics.checkpointIntervalMs", 1000L));
   private static final Duration ERROR_BACKOFF = Duration.ofSeconds(1);
+  // How often, at a commit boundary, a task checks the dataset catalog for a live reload (ADR
+  // 0005).
+  private static final long RELOAD_CHECK_INTERVAL_MS =
+      Long.getLong("analytics.reloadCheckIntervalMs", 10_000L);
 
   private AnalyticsAggregationStage() {}
 
@@ -77,7 +81,9 @@ public final class AnalyticsAggregationStage {
     final MetadataStore metadataStore = backend.metadataStore();
     metadataStore.migrate();
     AnalyticsCubes.bootstrap(metadataStore);
-    final List<ActiveCube> cubes = AnalyticsCubes.loadCubes(metadataStore);
+    // The versioned catalog is shared by this stage's partition tasks; each rebuilds its merge
+    // topology from it at a commit boundary when its version moves (live reload — ADR 0005).
+    final DatasetCatalog catalog = new DatasetCatalog(metadataStore);
     final String stateDir = "data/analytics-stage2-" + instanceId;
 
     final StreamRuntime<ShuffleEnvelope> runtime =
@@ -92,7 +98,12 @@ public final class AnalyticsAggregationStage {
             .taskFactory(
                 partition ->
                     AggregationStageTask.open(
-                        partition, stateDir, backend.newDatasetStore(), cubes, meterRegistry))
+                        partition,
+                        stateDir,
+                        backend.newDatasetStore(),
+                        catalog,
+                        RELOAD_CHECK_INTERVAL_MS,
+                        meterRegistry))
             .maxPoll(MAX_RECORDS)
             .pollTimeout(POLL_TIMEOUT)
             .commitInterval(CHECKPOINT_INTERVAL)

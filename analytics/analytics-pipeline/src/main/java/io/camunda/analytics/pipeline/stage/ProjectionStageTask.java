@@ -21,6 +21,7 @@ import io.camunda.analytics.meter.BoundMeter;
 import io.camunda.analytics.projection.AnalyticsBaseProjection;
 import io.camunda.analytics.projection.AnalyticsColumnFamilies;
 import io.camunda.analytics.projection.SourceRecord;
+import io.camunda.analytics.serving.catalog.DatasetCatalog;
 import io.camunda.analytics.serving.spi.DatasetStore;
 import io.camunda.analytics.serving.spi.DatasetWriter;
 import io.camunda.analytics.state.StateBackedProjectionState;
@@ -54,6 +55,13 @@ import org.slf4j.LoggerFactory;
  * them one atomic cut (Model F): publish the sealed deltas (produce-before-commit), then persist
  * the <em>full</em> processed offset together with the topology's checkpoint. No {@code safeOffset}
  * — a crash resumes exactly from the committed offset onto the checkpointed open segments.
+ *
+ * <p><b>Live reload (ADR 0005).</b> The topology is built from the shared versioned {@link
+ * DatasetCatalog}, not a frozen list. At each {@link #commit(long)} — after the durable cut, at
+ * most once per reload-check interval — the task checks the catalog version; when it moved it
+ * rebuilds its topology from the catalog's current cubes/tables <em>over the same open RocksDB</em>
+ * (existing cubes' nodes recover their just-checkpointed state; a new cube's {@code aggId}-prefixed
+ * families start empty). No ingestion pause, no re-seek, no RocksDB reopen.
  */
 public final class ProjectionStageTask implements Task<SourceRecord>, AutoCloseable {
 
@@ -74,31 +82,61 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
       };
 
   private final int partition;
-  private final ProcessorTopology<SourceRecord> topology;
-  private final List<SegmentSealingAggregation<Fact, ?, ?>> sealingAggregations;
+  private final EventBridgeClient client;
+  private final String factsTopic;
+  private final int factsPartitions;
+  private final int segmentStride;
+  private final int schemaVersion;
   private final DatasetStore datasetStore;
   private final DatasetWriter servingWriter;
   private final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider;
+  private final KeyValueStore<DbBytes, DbBytes> openSegments;
   private final KeyValueStore<DbInt, DbLong> offsets;
+  private final DatasetCatalog catalog;
+  private final long reloadCheckIntervalMs;
 
   private final DbInt offsetKey = new DbInt();
   private final DbLong offsetValue = new DbLong();
 
+  // Rebuilt on reload; the sealing aggregations are collected from the current topology so commit
+  // can watermark-seal them. appliedVersion/lastReloadCheckMs drive the throttled reload check.
+  private ProcessorTopology<SourceRecord> topology;
+  private List<SegmentSealingAggregation<Fact, ?, ?>> sealingAggregations;
+  private long appliedVersion;
+  private long lastReloadCheckMs;
+
   ProjectionStageTask(
       final int partition,
-      final ProcessorTopology<SourceRecord> topology,
-      final List<SegmentSealingAggregation<Fact, ?, ?>> sealingAggregations,
+      final EventBridgeClient client,
+      final String factsTopic,
+      final int factsPartitions,
+      final int segmentStride,
+      final int schemaVersion,
       final DatasetStore datasetStore,
       final DatasetWriter servingWriter,
       final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider,
-      final KeyValueStore<DbInt, DbLong> offsets) {
+      final KeyValueStore<DbBytes, DbBytes> openSegments,
+      final KeyValueStore<DbInt, DbLong> offsets,
+      final DatasetCatalog catalog,
+      final long reloadCheckIntervalMs,
+      final long nowMs) {
     this.partition = partition;
-    this.topology = topology;
-    this.sealingAggregations = List.copyOf(sealingAggregations);
+    this.client = client;
+    this.factsTopic = factsTopic;
+    this.factsPartitions = factsPartitions;
+    this.segmentStride = segmentStride;
+    this.schemaVersion = schemaVersion;
     this.datasetStore = datasetStore;
     this.servingWriter = servingWriter;
     this.provider = provider;
+    this.openSegments = openSegments;
     this.offsets = offsets;
+    this.catalog = catalog;
+    this.reloadCheckIntervalMs = reloadCheckIntervalMs;
+    this.lastReloadCheckMs = nowMs;
+    final DatasetCatalog.Snapshot snapshot = catalog.snapshot();
+    installTopology(snapshot.cubes(), snapshot.tables());
+    appliedVersion = snapshot.version();
   }
 
   public static ProjectionStageTask open(
@@ -109,24 +147,46 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
       final int factsPartitions,
       final int segmentStride,
       final int schemaVersion,
-      final List<ActiveCube> cubes,
-      final List<ActiveTable> tables,
+      final DatasetCatalog catalog,
+      final long reloadCheckIntervalMs,
       final DatasetStore datasetStore,
       final MeterRegistry meterRegistry) {
     final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider =
         RocksDbStateStoreProvider.open(new File(baseDir + "-p" + partition), meterRegistry);
+    final KeyValueStore<DbBytes, DbBytes> openSegments =
+        provider.keyValueStore(AnalyticsColumnFamilies.OPEN_SEGMENT, new DbBytes(), new DbBytes());
+    final KeyValueStore<DbInt, DbLong> offsets =
+        provider.keyValueStore(
+            AnalyticsColumnFamilies.CONSUMED_POSITION, new DbInt(), new DbLong());
+    return new ProjectionStageTask(
+        partition,
+        client,
+        factsTopic,
+        factsPartitions,
+        segmentStride,
+        schemaVersion,
+        datasetStore,
+        datasetStore.writer(),
+        provider,
+        openSegments,
+        offsets,
+        catalog,
+        reloadCheckIntervalMs,
+        System.currentTimeMillis());
+  }
+
+  /**
+   * Builds the per-partition topology from the given cubes/tables over this task's reused provider,
+   * open-segment store and serving writer, and collects the sealing aggregations. Called once at
+   * construction and again on each live reload; the caller inits the returned topology.
+   */
+  private void installTopology(final List<ActiveCube> cubes, final List<ActiveTable> tables) {
     final StateBackedProjectionState state = StateBackedProjectionState.fromProvider(provider);
     final EnvelopePublisher publisher =
         new EnvelopePublisher(
             new EventBridgeEnvelopeTransport(client, factsTopic),
             schemaVersion,
             System.currentTimeMillis());
-    final KeyValueStore<DbBytes, DbBytes> openSegments =
-        provider.keyValueStore(AnalyticsColumnFamilies.OPEN_SEGMENT, new DbBytes(), new DbBytes());
-    final KeyValueStore<DbInt, DbLong> offsets =
-        provider.keyValueStore(
-            AnalyticsColumnFamilies.CONSUMED_POSITION, new DbInt(), new DbLong());
-    final DatasetWriter writer = datasetStore.writer();
 
     // source → base projection; each cube-meter aggregate node seals and forwards SegmentCells to
     // one shared shuffle-sink node (the transport); each raw table writes rows to the serving
@@ -136,13 +196,14 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
         ProcessorTopology.<SourceRecord>builder()
             .source("projection", new AnalyticsBaseProjection(state));
     final List<String> meterNodes = new ArrayList<>();
-    final List<SegmentSealingAggregation<Fact, ?, ?>> sealingAggregations = new ArrayList<>();
+    final List<SegmentSealingAggregation<Fact, ?, ?>> aggregations = new ArrayList<>();
     for (final ActiveCube cube : cubes) {
+      datasetStore.schemaManager().ensure(cube.compiled());
       for (final CompiledMeter meter : cube.compiled().meters()) {
         final String node = "meter-" + meter.aggId();
         builder.processor(
             node,
-            meterProcessor(cube, meter, segmentStride, openSegments, provider, sealingAggregations),
+            meterProcessor(cube, meter, segmentStride, openSegments, provider, aggregations),
             "projection");
         meterNodes.add(node);
       }
@@ -158,15 +219,17 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
       datasetStore.schemaManager().ensureTable(table.compiled());
       builder.processor(
           "table-" + tableIndex++,
-          new TableRowProcessor(table.registered(), table.compiled(), writer),
+          new TableRowProcessor(table.registered(), table.compiled(), servingWriter),
           "projection");
     }
     // Process definitions take the direct path: a built-in raw table written straight to serving,
     // not a declared dataset. See ProcessDefinitionSink.
     datasetStore.schemaManager().ensureTable(ProcessDefinitionSink.TABLE);
-    builder.processor("process-definitions", new ProcessDefinitionSink(writer), "projection");
-    return new ProjectionStageTask(
-        partition, builder.build(), sealingAggregations, datasetStore, writer, provider, offsets);
+    builder.processor(
+        "process-definitions", new ProcessDefinitionSink(servingWriter), "projection");
+
+    topology = builder.build();
+    sealingAggregations = List.copyOf(aggregations);
   }
 
   /**
@@ -274,6 +337,34 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
           offsets.put(offsetKey, offsetValue);
           topology.checkpoint();
         });
+    maybeReload();
+  }
+
+  /**
+   * At most once per reload-check interval, and only at this commit boundary (state + offset just
+   * persisted), pick up a dataset-set change: refresh the shared catalog and, if its version moved,
+   * rebuild the topology from its current cubes/tables over the same open RocksDB. The rebuilt
+   * nodes recover their just-checkpointed state; a newly-declared cube starts empty and fills
+   * forward.
+   */
+  private void maybeReload() {
+    final long now = System.currentTimeMillis();
+    if (now - lastReloadCheckMs < reloadCheckIntervalMs) {
+      return;
+    }
+    lastReloadCheckMs = now;
+    catalog.refresh();
+    final DatasetCatalog.Snapshot snapshot = catalog.snapshot();
+    if (snapshot.version() == appliedVersion) {
+      return;
+    }
+    installTopology(snapshot.cubes(), snapshot.tables());
+    topology.init();
+    appliedVersion = snapshot.version();
+    LOG.info(
+        "Stage 1 partition {} reloaded topology at dataset-catalog version {}",
+        partition,
+        appliedVersion);
   }
 
   @Override
