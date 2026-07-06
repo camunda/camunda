@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.81
+
+### 🚀 Enhancements
+
+- Rename `iteration` to `loopIteration` in agent instance history schemas (`AgentInstanceHistoryItem`, filter, and sort) ([#56504](https://github.com/camunda/camunda/issues/56504))
+
+### ❤️ Contributors
+
+- [@fabiopaini-camunda](https://github.com/fabiopaini-camunda)
+
 ## v0.0.80
 
 ### 🚀 Enhancements
@@ -122,7 +132,7 @@
 
 - Add typed variable filter schemas for `8.10/process-instance`
   - `processInstanceVariableValueFilterSchema` a discriminated union of single-key operator objects (`$eq` / `$neq` / `$like` / `$in` / `$notIn` / `$exists`) plus the shorthand bare-string form; mirrors
-     backend schema
+    backend schema
   - `processInstanceVariableFilterSchema` now uses the tighter value schema and is exported top-level
   - `ProcessInstanceVariableFilter` and `ProcessInstanceVariableValueFilter` types exported
   - Tightens variable filter validation: rejects multi-operator combinations (e.g. `{$eq: "x", $neq: "y"}`), unknown keys, and operator-shape mismatches
@@ -130,7 +140,6 @@
 ### ❤️ Contributors
 
 - Yuliia Saienko ([@juliasaienko](https://github.com/juliasaienko))
-
 
 ## v0.0.69
 
@@ -1074,3 +1083,4 @@ Accidental empty release
 ### ❤️ Contributors
 
 - Vinicius Goulart
+
