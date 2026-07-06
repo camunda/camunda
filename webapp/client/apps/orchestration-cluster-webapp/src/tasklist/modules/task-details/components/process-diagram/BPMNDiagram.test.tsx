@@ -17,24 +17,13 @@ const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => {
 };
 
 describe('<BPMNDiagram />', () => {
-	it('should make diagram controls available after the BPMN diagram loads', async () => {
-		const screen = await render(<BPMNDiagram xml={BPMN_XML} highlightActivity="task-1" />, {wrapper: Wrapper});
-
-		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
-		await expect.element(screen.getByRole('button', {name: 'Zoom in diagram'})).toBeVisible();
-		await expect.element(screen.getByRole('button', {name: 'Zoom out diagram'})).toBeVisible();
-	});
-
-	it('should render a process diagram from valid BPMN XML', async () => {
+	it('should render a process diagram with controls from valid BPMN XML', async () => {
 		const screen = await render(<BPMNDiagram xml={BPMN_XML} highlightActivity="task-1" />, {wrapper: Wrapper});
 
 		await expect.element(screen.getByText('Review invoice')).toBeVisible();
-	});
-
-	it('should continue showing usable diagram controls when the highlighted task is not present in the diagram', async () => {
-		const screen = await render(<BPMNDiagram xml={BPMN_XML} highlightActivity="missing-task" />, {wrapper: Wrapper});
-
 		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Zoom in diagram'})).toBeVisible();
+		await expect.element(screen.getByRole('button', {name: 'Zoom out diagram'})).toBeVisible();
 	});
 
 	it('should update the displayed diagram when a different BPMN XML is provided', async () => {

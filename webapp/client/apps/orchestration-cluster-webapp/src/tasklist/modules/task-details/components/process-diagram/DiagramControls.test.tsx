@@ -13,38 +13,24 @@ import {it} from '#/vitest-modules/test-extend';
 import {DiagramControls} from './DiagramControls';
 
 describe('<DiagramControls />', () => {
-	it('should expose accessible labels for all diagram actions', async () => {
-		const screen = await render(<DiagramControls onZoomReset={vi.fn()} onZoomIn={vi.fn()} onZoomOut={vi.fn()} />);
+	it('should expose accessible controls for all diagram actions', async () => {
+		const onZoomReset = vi.fn();
+		const onZoomIn = vi.fn();
+		const onZoomOut = vi.fn();
+		const screen = await render(
+			<DiagramControls onZoomReset={onZoomReset} onZoomIn={onZoomIn} onZoomOut={onZoomOut} />,
+		);
 
 		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Zoom in diagram'})).toBeVisible();
 		await expect.element(screen.getByRole('button', {name: 'Zoom out diagram'})).toBeVisible();
-	});
-
-	it('should allow users to reset the diagram zoom', async () => {
-		const onZoomReset = vi.fn();
-		const screen = await render(<DiagramControls onZoomReset={onZoomReset} onZoomIn={vi.fn()} onZoomOut={vi.fn()} />);
 
 		await userEvent.click(screen.getByRole('button', {name: 'Reset diagram zoom'}));
-
-		expect(onZoomReset).toHaveBeenCalledOnce();
-	});
-
-	it('should allow users to zoom into the diagram', async () => {
-		const onZoomIn = vi.fn();
-		const screen = await render(<DiagramControls onZoomReset={vi.fn()} onZoomIn={onZoomIn} onZoomOut={vi.fn()} />);
-
 		await userEvent.click(screen.getByRole('button', {name: 'Zoom in diagram'}));
-
-		expect(onZoomIn).toHaveBeenCalledOnce();
-	});
-
-	it('should allow users to zoom out of the diagram', async () => {
-		const onZoomOut = vi.fn();
-		const screen = await render(<DiagramControls onZoomReset={vi.fn()} onZoomIn={vi.fn()} onZoomOut={onZoomOut} />);
-
 		await userEvent.click(screen.getByRole('button', {name: 'Zoom out diagram'}));
 
+		expect(onZoomReset).toHaveBeenCalledOnce();
+		expect(onZoomIn).toHaveBeenCalledOnce();
 		expect(onZoomOut).toHaveBeenCalledOnce();
 	});
 });

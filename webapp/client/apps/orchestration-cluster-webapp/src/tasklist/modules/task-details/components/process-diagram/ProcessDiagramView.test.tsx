@@ -17,7 +17,7 @@ const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => {
 };
 
 describe('<ProcessDiagramView />', () => {
-	it('should show the process name and version', async () => {
+	it('should show the process metadata and diagram', async () => {
 		const screen = await render(
 			<ProcessDiagramView xml={BPMN_XML} elementId="task-1" processName="Invoice process" processVersion={3} />,
 			{wrapper: Wrapper},
@@ -25,25 +25,6 @@ describe('<ProcessDiagramView />', () => {
 
 		await expect.element(screen.getByText('Invoice process')).toBeVisible();
 		await expect.element(screen.getByText('Version: 3')).toBeVisible();
-	});
-
-	it('should allow users to interact with the rendered process diagram', async () => {
-		const screen = await render(
-			<ProcessDiagramView xml={BPMN_XML} elementId="task-1" processName="Invoice process" processVersion={3} />,
-			{wrapper: Wrapper},
-		);
-
-		await expect.element(screen.getByRole('button', {name: 'Reset diagram zoom'})).toBeVisible();
-		await expect.element(screen.getByRole('button', {name: 'Zoom in diagram'})).toBeVisible();
-		await expect.element(screen.getByRole('button', {name: 'Zoom out diagram'})).toBeVisible();
-	});
-
-	it('should show the provided BPMN process diagram', async () => {
-		const screen = await render(
-			<ProcessDiagramView xml={BPMN_XML} elementId="task-1" processName="Invoice process" processVersion={3} />,
-			{wrapper: Wrapper},
-		);
-
 		await expect.element(screen.getByText('Review invoice')).toBeVisible();
 	});
 });
