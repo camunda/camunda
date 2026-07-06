@@ -59,15 +59,11 @@ _load_test_setup_flags :=
 # The Docker image tag for the load test metrics exporter
 metrics_exporter_image_tag := latest
 
-# Makefile-side load-test flags. Separate from `additional_load_test_configuration`,
-# which CI sets on the make command line and would suppress `+=` here.
-_secondary_storage_load_test_flags :=
-
 # Add secondary storage values
 ifneq ($(filter $(secondary_storage),postgresql mysql mariadb mssql oracle),)
 	platform_values += -f camunda-platform-values-rdbms.yaml
 else ifeq ($(secondary_storage),none)
-	_secondary_storage_load_test_flags += --set global.extraConfig.load-tester.monitor-data-availability=false
+	_load_test_setup_flags += --set global.extraConfig.load-tester.monitor-data-availability=false
 endif
 platform_values += -f camunda-platform-values-$(secondary_storage).yaml
 
@@ -116,7 +112,6 @@ load_test_setup_flags = $(load_test_setup_values) \
     -f load-tester-values-defaults.yaml \
     $(_load_test_setup_flags) \
     $(_scenario_load_test_flags) \
-    $(_secondary_storage_load_test_flags) \
     $(additional_load_test_setup_configuration) \
     $(additional_load_test_configuration)
 
