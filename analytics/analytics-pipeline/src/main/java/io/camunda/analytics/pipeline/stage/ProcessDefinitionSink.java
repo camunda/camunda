@@ -9,11 +9,11 @@ package io.camunda.analytics.pipeline.stage;
 
 import io.camunda.analytics.dataset.CompiledTable;
 import io.camunda.analytics.dataset.FactBinding;
-import io.camunda.analytics.dataset.store.DatasetWriter;
 import io.camunda.analytics.dimension.DimensionColumn;
 import io.camunda.analytics.dimension.DimensionType;
 import io.camunda.analytics.fact.Fact;
 import io.camunda.analytics.fact.FactType;
+import io.camunda.analytics.serving.spi.DatasetWriter;
 import io.camunda.eventbridge.streaming.processor.Processor;
 import java.util.ArrayList;
 import java.util.List;

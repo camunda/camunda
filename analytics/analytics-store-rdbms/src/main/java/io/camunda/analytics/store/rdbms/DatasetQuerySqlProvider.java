@@ -12,7 +12,7 @@ import java.util.Map;
 import org.apache.ibatis.jdbc.SQL;
 
 /**
- * Builds the dynamic {@code SELECT} for a {@link io.camunda.analytics.dataset.store.DatasetFetch}
+ * Builds the dynamic {@code SELECT} for a {@link io.camunda.analytics.serving.spi.DatasetFetch}
  * using MyBatis's {@link SQL} builder: the grain dimension columns + the requested meter blob
  * columns of one {@code dataset_<id>} table, filtered to the tier and window range, with equality
  * predicates on grain columns. Identifiers come from the compiled schema (sanitised); values bind
@@ -44,7 +44,7 @@ public final class DatasetQuerySqlProvider {
 
   /**
    * Builds the pushed-down {@code GROUP BY} for an {@link
-   * io.camunda.analytics.dataset.store.AggregatedFetch}: the group-by dimension columns plus the
+   * io.camunda.analytics.serving.spi.AggregatedFetch}: the group-by dimension columns plus the
    * derived time bucket ({@code window_start − MOD(window_start, :granularity)}), with a {@code
    * SUM}/{@code MIN}/{@code MAX} per additive column — the store does the reduction and returns one
    * finalized row per {@code (group, bucket)}. {@code selectColumns} carry the pre-built

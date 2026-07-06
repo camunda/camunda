@@ -8,8 +8,8 @@
 package io.camunda.analytics.query;
 
 import io.camunda.analytics.dataset.CompiledDataset;
-import io.camunda.analytics.dataset.store.AggregatedFetch;
-import io.camunda.analytics.dataset.store.DatasetFetch;
+import io.camunda.analytics.serving.spi.AggregatedFetch;
+import io.camunda.analytics.serving.spi.DatasetFetch;
 import java.util.List;
 
 /**

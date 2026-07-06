@@ -8,7 +8,7 @@
 package io.camunda.analytics.pipeline.stage;
 
 import io.camunda.analytics.dataset.ActiveCube;
-import io.camunda.analytics.dataset.store.MetadataStore;
+import io.camunda.analytics.serving.spi.MetadataStore;
 import io.camunda.analytics.pipeline.store.AnalyticsBackend;
 import io.camunda.analytics.pipeline.store.AnalyticsBackends;
 import io.camunda.eventbridge.client.EventBridgeClient;

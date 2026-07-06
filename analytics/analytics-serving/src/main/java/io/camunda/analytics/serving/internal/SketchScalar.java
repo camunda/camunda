@@ -5,10 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.analytics.dataset.store;
+package io.camunda.analytics.serving.internal;
 
 import io.camunda.analytics.metric.ExecutionTimeSummaryResult;
 import io.camunda.analytics.metric.LifecycleSummaryResult;
+import io.camunda.analytics.serving.spi.ReadStrategy;
 import io.camunda.analytics.sketch.DistinctCountResult;
 import io.camunda.analytics.sketch.QuantileResult;
 import io.camunda.analytics.sketch.TopKResult;

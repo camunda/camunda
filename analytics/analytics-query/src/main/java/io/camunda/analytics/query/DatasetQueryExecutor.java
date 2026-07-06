@@ -9,12 +9,12 @@ package io.camunda.analytics.query;
 
 import io.camunda.analytics.dataset.CompiledDataset;
 import io.camunda.analytics.dataset.CompiledMeter;
-import io.camunda.analytics.dataset.store.AggregatedFetch;
-import io.camunda.analytics.dataset.store.AggregatedRow;
-import io.camunda.analytics.dataset.store.Cell;
-import io.camunda.analytics.dataset.store.DatasetFetch;
-import io.camunda.analytics.dataset.store.DatasetQueryClient;
 import io.camunda.analytics.meter.BoundMeter;
+import io.camunda.analytics.serving.spi.AggregatedFetch;
+import io.camunda.analytics.serving.spi.AggregatedRow;
+import io.camunda.analytics.serving.spi.Cell;
+import io.camunda.analytics.serving.spi.DatasetFetch;
+import io.camunda.analytics.serving.spi.DatasetQueryClient;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;

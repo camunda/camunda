@@ -7,9 +7,9 @@
  */
 package io.camunda.analytics.store.rdbms.metadata;
 
-import io.camunda.analytics.dataset.store.DatasetSpecStore;
-import io.camunda.analytics.dataset.store.MetadataStore;
 import io.camunda.analytics.meter.MeterIdStore;
+import io.camunda.analytics.serving.spi.DatasetSpecStore;
+import io.camunda.analytics.serving.spi.MetadataStore;
 import javax.sql.DataSource;
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.session.Configuration;
@@ -21,7 +21,7 @@ import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
  * The RDBMS metadata plane: a Liquibase-migrated schema of normalized spec tables plus the meter-id
  * table, read and written through MyBatis mappers, exposed via the neutral {@link MetadataStore}
  * SPI. The {@link DataSource} is an internal detail here — callers depend on the interface, not on
- * JDBC, exactly as they depend on {@link io.camunda.analytics.dataset.store.DatasetStore} for
+ * JDBC, exactly as they depend on {@link io.camunda.analytics.serving.spi.DatasetStore} for
  * serving.
  */
 public final class RdbmsMetadataStore implements MetadataStore {

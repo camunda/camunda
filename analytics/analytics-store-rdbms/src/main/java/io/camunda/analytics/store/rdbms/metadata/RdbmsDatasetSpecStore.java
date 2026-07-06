@@ -8,8 +8,8 @@
 package io.camunda.analytics.store.rdbms.metadata;
 
 import io.camunda.analytics.dataset.RegisteredDataset;
-import io.camunda.analytics.dataset.store.DatasetSpecQuery;
-import io.camunda.analytics.dataset.store.DatasetSpecStore;
+import io.camunda.analytics.serving.spi.DatasetSpecQuery;
+import io.camunda.analytics.serving.spi.DatasetSpecStore;
 import io.camunda.analytics.store.rdbms.metadata.row.SpecRow;
 import java.util.ArrayList;
 import java.util.List;

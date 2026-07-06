@@ -8,8 +8,8 @@
 package io.camunda.analytics.pipeline.stage;
 
 import io.camunda.analytics.dataset.CompiledDataset;
-import io.camunda.analytics.dataset.store.DatasetWriter;
 import io.camunda.analytics.dimension.DimensionKey;
+import io.camunda.analytics.serving.spi.DatasetWriter;
 import io.camunda.eventbridge.streaming.aggregate.RecordValue;
 import io.camunda.eventbridge.streaming.aggregate.ResultSink;
 import io.camunda.eventbridge.streaming.window.Windowed;

@@ -7,9 +7,9 @@
  */
 package io.camunda.analytics.store.document;
 
-import io.camunda.analytics.dataset.store.DatasetSpecStore;
-import io.camunda.analytics.dataset.store.MetadataStore;
 import io.camunda.analytics.meter.MeterIdStore;
+import io.camunda.analytics.serving.spi.DatasetSpecStore;
+import io.camunda.analytics.serving.spi.MetadataStore;
 import io.camunda.search.clients.DocumentBasedSchemaClient;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.DocumentBasedWriteClient;

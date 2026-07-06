@@ -12,12 +12,12 @@ import java.util.Map;
 import org.apache.ibatis.jdbc.SQL;
 
 /**
- * Builds the dynamic {@code SELECT} for a {@link io.camunda.analytics.dataset.store.TableFetch}
- * using MyBatis's {@link SQL} builder: the declared columns of one {@code projection_<id>} row
- * table, with equality predicates on declared columns and a row {@code LIMIT}. Identifiers come
- * from the compiled schema (sanitised); filter values bind through {@code #{}} placeholders, so
- * this is dynamic structure with safe value binding. The {@code limit} is a validated {@code int}
- * (never user text), so it is inlined — MyBatis's {@link SQL} builder has no {@code LIMIT} clause.
+ * Builds the dynamic {@code SELECT} for a {@link io.camunda.analytics.serving.spi.TableFetch} using
+ * MyBatis's {@link SQL} builder: the declared columns of one {@code projection_<id>} row table,
+ * with equality predicates on declared columns and a row {@code LIMIT}. Identifiers come from the
+ * compiled schema (sanitised); filter values bind through {@code #{}} placeholders, so this is
+ * dynamic structure with safe value binding. The {@code limit} is a validated {@code int} (never
+ * user text), so it is inlined — MyBatis's {@link SQL} builder has no {@code LIMIT} clause.
  */
 public final class TableRowSqlProvider {
 

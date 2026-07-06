@@ -9,8 +9,8 @@ package io.camunda.analytics.pipeline.stage;
 
 import io.camunda.analytics.dataset.ActiveCube;
 import io.camunda.analytics.dataset.ActiveTable;
-import io.camunda.analytics.dataset.store.MetadataStore;
-import io.camunda.analytics.dataset.store.StandardDatasets;
+import io.camunda.analytics.serving.catalog.StandardDatasets;
+import io.camunda.analytics.serving.spi.MetadataStore;
 import java.util.List;
 
 /**

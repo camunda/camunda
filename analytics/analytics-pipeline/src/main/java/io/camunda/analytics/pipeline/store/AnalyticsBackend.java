@@ -7,8 +7,8 @@
  */
 package io.camunda.analytics.pipeline.store;
 
-import io.camunda.analytics.dataset.store.DatasetStore;
-import io.camunda.analytics.dataset.store.MetadataStore;
+import io.camunda.analytics.serving.spi.DatasetStore;
+import io.camunda.analytics.serving.spi.MetadataStore;
 
 /**
  * One selected serving backend, resolved once at start-up by {@link AnalyticsBackends}: the single

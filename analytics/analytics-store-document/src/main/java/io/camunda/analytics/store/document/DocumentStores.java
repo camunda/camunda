@@ -7,8 +7,8 @@
  */
 package io.camunda.analytics.store.document;
 
-import io.camunda.analytics.dataset.store.DatasetStore;
-import io.camunda.analytics.dataset.store.MetadataStore;
+import io.camunda.analytics.serving.spi.DatasetStore;
+import io.camunda.analytics.serving.spi.MetadataStore;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.DatabaseConfig;
 import io.camunda.search.connect.es.ElasticsearchConnector;

@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.analytics.dataset.store;
+package io.camunda.analytics.serving.spi;
 
 /**
  * How the {@link DatasetQueryExecutor} answers one meter (chosen per meter by the {@link

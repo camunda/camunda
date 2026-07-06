@@ -9,10 +9,10 @@ package io.camunda.analytics.query;
 
 import io.camunda.analytics.dataset.CompiledTable;
 import io.camunda.analytics.dataset.FilterPredicate;
-import io.camunda.analytics.dataset.store.DatasetQueryClient;
-import io.camunda.analytics.dataset.store.TableFetch;
-import io.camunda.analytics.dataset.store.TableRow;
 import io.camunda.analytics.dimension.DimensionColumn;
+import io.camunda.analytics.serving.spi.DatasetQueryClient;
+import io.camunda.analytics.serving.spi.TableFetch;
+import io.camunda.analytics.serving.spi.TableRow;
 import java.util.List;
 
 /**

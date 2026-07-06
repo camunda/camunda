@@ -7,8 +7,8 @@
  */
 package io.camunda.analytics.pipeline.store;
 
-import io.camunda.analytics.dataset.store.DatasetStore;
-import io.camunda.analytics.dataset.store.MetadataStore;
+import io.camunda.analytics.serving.spi.DatasetStore;
+import io.camunda.analytics.serving.spi.MetadataStore;
 import io.camunda.analytics.store.document.DocumentStores;
 import io.camunda.analytics.store.rdbms.RdbmsDatasetStore;
 import io.camunda.analytics.store.rdbms.metadata.RdbmsMetadataStore;

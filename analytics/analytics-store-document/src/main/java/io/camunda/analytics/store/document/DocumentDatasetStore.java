@@ -7,10 +7,10 @@
  */
 package io.camunda.analytics.store.document;
 
-import io.camunda.analytics.dataset.store.DatasetQueryClient;
-import io.camunda.analytics.dataset.store.DatasetSchemaManager;
-import io.camunda.analytics.dataset.store.DatasetStore;
-import io.camunda.analytics.dataset.store.DatasetWriter;
+import io.camunda.analytics.serving.spi.DatasetQueryClient;
+import io.camunda.analytics.serving.spi.DatasetSchemaManager;
+import io.camunda.analytics.serving.spi.DatasetStore;
+import io.camunda.analytics.serving.spi.DatasetWriter;
 import io.camunda.search.clients.DocumentBasedSchemaClient;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.DocumentBasedWriteClient;

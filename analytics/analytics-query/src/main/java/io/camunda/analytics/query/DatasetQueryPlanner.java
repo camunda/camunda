@@ -9,10 +9,10 @@ package io.camunda.analytics.query;
 
 import io.camunda.analytics.dataset.CompiledDataset;
 import io.camunda.analytics.dataset.CompiledMeter;
-import io.camunda.analytics.dataset.store.AggregatedFetch;
-import io.camunda.analytics.dataset.store.DatasetFetch;
-import io.camunda.analytics.dataset.store.ReadStrategy;
 import io.camunda.analytics.meter.PushdownSpec;
+import io.camunda.analytics.serving.spi.AggregatedFetch;
+import io.camunda.analytics.serving.spi.DatasetFetch;
+import io.camunda.analytics.serving.spi.ReadStrategy;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;

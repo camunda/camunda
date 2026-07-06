@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.analytics.dataset.store;
+package io.camunda.analytics.serving.catalog;
 
 import io.camunda.analytics.dataset.ActiveCube;
 import io.camunda.analytics.dataset.ActiveTable;
@@ -20,6 +20,8 @@ import io.camunda.analytics.fact.Transition;
 import io.camunda.analytics.meter.Meter;
 import io.camunda.analytics.meter.MeterCatalog;
 import io.camunda.analytics.meter.MeterRegistry;
+import io.camunda.analytics.serving.spi.DatasetSpecQuery;
+import io.camunda.analytics.serving.spi.MetadataStore;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

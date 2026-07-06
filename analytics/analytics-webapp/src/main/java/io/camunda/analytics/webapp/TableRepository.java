@@ -7,9 +7,9 @@
  */
 package io.camunda.analytics.webapp;
 
-import io.camunda.analytics.dataset.store.TableRow;
 import io.camunda.analytics.query.TableQuery;
 import io.camunda.analytics.query.TableQueryExecutor;
+import io.camunda.analytics.serving.spi.TableRow;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

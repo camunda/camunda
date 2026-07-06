@@ -8,8 +8,8 @@
 package io.camunda.analytics.store.document;
 
 import io.camunda.analytics.dataset.RegisteredDataset;
-import io.camunda.analytics.dataset.store.DatasetSpecQuery;
-import io.camunda.analytics.dataset.store.DatasetSpecStore;
+import io.camunda.analytics.serving.spi.DatasetSpecQuery;
+import io.camunda.analytics.serving.spi.DatasetSpecStore;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.DocumentBasedWriteClient;
 import io.camunda.search.clients.core.RequestBuilders;
