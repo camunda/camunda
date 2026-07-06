@@ -10,6 +10,7 @@ package io.camunda.analytics.meter;
 import io.camunda.analytics.dimension.FactRow;
 import io.camunda.eventbridge.streaming.aggregate.AggregateFunction;
 import io.camunda.eventbridge.streaming.aggregate.RecordValue;
+import java.util.Optional;
 
 /**
  * A {@link Meter} resolved against its {@link MeterType}: the mergeable {@link AggregateFunction}
@@ -17,10 +18,21 @@ import io.camunda.eventbridge.streaming.aggregate.RecordValue;
  * {@link RecordValue} codec that serializes that accumulator for the durable rollup and the
  * shuffle. This is what the pipeline stages consume — one bound meter per declared metric.
  *
+ * <p>{@code pushdown} carries the meter type's {@link PushdownSpec} (null for a blob/app-merged
+ * sketch), so the store can decide between native numeric columns and a blob without re-resolving
+ * the type.
+ *
  * @param <ACC> the accumulator type
  * @param <OUT> the read-facing result type
  */
 public record BoundMeter<ACC, OUT>(
     Meter meter,
     AggregateFunction<FactRow, ACC, OUT> aggregate,
-    RecordValue<ACC> accumulatorCodec) {}
+    RecordValue<ACC> accumulatorCodec,
+    PushdownSpec<ACC, OUT> pushdownSpec) {
+
+  /** This meter's pushdown capability, or empty when it is a blob (sketch / summary). */
+  public Optional<PushdownSpec<ACC, OUT>> pushdown() {
+    return Optional.ofNullable(pushdownSpec);
+  }
+}

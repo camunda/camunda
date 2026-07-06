@@ -7,16 +7,21 @@
  */
 package io.camunda.analytics.meter;
 
+import io.camunda.analytics.dimension.DimensionType;
+import io.camunda.analytics.metric.ExecutionTimeAccumulator;
 import io.camunda.analytics.metric.ExecutionTimeAccumulatorValue;
 import io.camunda.analytics.metric.ExecutionTimeAggregateFunction;
+import io.camunda.analytics.metric.ExecutionTimeResult;
 import io.camunda.analytics.metric.ExecutionTimeSummaryAggregateFunction;
 import io.camunda.analytics.metric.ExecutionTimeSummaryValue;
 import io.camunda.analytics.metric.HistogramAggregateFunction;
 import io.camunda.analytics.metric.HistogramValue;
 import io.camunda.analytics.metric.LifecycleSummaryAggregateFunction;
 import io.camunda.analytics.metric.LifecycleSummaryValue;
+import io.camunda.analytics.metric.RatioAccumulator;
 import io.camunda.analytics.metric.RatioAccumulatorValue;
 import io.camunda.analytics.metric.RatioAggregateFunction;
+import io.camunda.analytics.metric.RatioResult;
 import io.camunda.analytics.sketch.DistinctCountAggregateFunction;
 import io.camunda.analytics.sketch.HllSketchValue;
 import io.camunda.analytics.sketch.ItemsSketchValue;
@@ -26,6 +31,7 @@ import io.camunda.analytics.sketch.TopKAggregateFunction;
 import io.camunda.eventbridge.streaming.aggregate.LongRecordValue;
 import io.camunda.eventbridge.streaming.aggregate.SumAggregateFunction;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -99,22 +105,28 @@ public final class MeterCatalog {
     return new MeterCatalog()
         .register(
             new MeterType<>(
-                COUNT, m -> new SumAggregateFunction<>(fact -> 1L), m -> new LongRecordValue()))
+                COUNT,
+                m -> new SumAggregateFunction<>(fact -> 1L),
+                m -> new LongRecordValue(),
+                sumSpec()))
         .register(
             new MeterType<>(
                 SUM,
                 m -> new SumAggregateFunction<>(m.requireMeasure()::asLong),
-                m -> new LongRecordValue()))
+                m -> new LongRecordValue(),
+                sumSpec()))
         .register(
             new MeterType<>(
                 LEVEL,
                 m -> new SumAggregateFunction<>(m.requireMeasure()::asLong),
-                m -> new LongRecordValue()))
+                m -> new LongRecordValue(),
+                sumSpec()))
         .register(
             new MeterType<>(
                 EXECUTION_TIME,
                 m -> new ExecutionTimeAggregateFunction<>(m.requireMeasure()::asLong),
-                m -> new ExecutionTimeAccumulatorValue()))
+                m -> new ExecutionTimeAccumulatorValue(),
+                executionTimeSpec()))
         .register(
             new MeterType<>(
                 EXECUTION_TIME_SUMMARY,
@@ -169,6 +181,65 @@ public final class MeterCatalog {
                         RatioAggregateFunction.Comparison.valueOf(
                             m.requireParam("op").toUpperCase(Locale.ROOT)),
                         m.doubleParam("threshold", 0.0)),
-                m -> new RatioAccumulatorValue()));
+                m -> new RatioAccumulatorValue(),
+                ratioSpec()));
+  }
+
+  /**
+   * The pushdown for the single-{@code long} additive meters ({@code count}/{@code sum}/{@code
+   * level}): one {@code SUM} column (empty suffix, so the physical column is just the meter's own),
+   * decomposing the accumulator to itself and recomposing the summed column back to a {@code long}.
+   */
+  private static PushdownSpec<Long, Long> sumSpec() {
+    return new PushdownSpec<>(
+        List.of(new PushdownColumn("", DimensionType.LONG, Agg.SUM)),
+        acc -> List.of(acc),
+        cols -> asLong(cols, 0));
+  }
+
+  /**
+   * The pushdown for {@code ratio}: two additive {@code SUM} columns ({@code matched}, {@code
+   * total}); the ratio itself is derived on read, so recompose rebuilds the accumulator and
+   * finalizes it — exactly what the app-merge path does.
+   */
+  private static PushdownSpec<RatioAccumulator, RatioResult> ratioSpec() {
+    return new PushdownSpec<>(
+        List.of(
+            new PushdownColumn("matched", DimensionType.LONG, Agg.SUM),
+            new PushdownColumn("total", DimensionType.LONG, Agg.SUM)),
+        acc -> List.of(acc.matched(), acc.total()),
+        cols -> RatioResult.of(new RatioAccumulator(asLong(cols, 0), asLong(cols, 1))));
+  }
+
+  /**
+   * The pushdown for {@code execution_time}: {@code count}/{@code total} sum, {@code min}/{@code
+   * max} carried as their own {@code MIN}/{@code MAX} columns (beyond the ADR's count/total/max
+   * sketch — {@link ExecutionTimeResult} carries {@code minMs}, so a faithful round-trip needs the
+   * min column too). Recompose mirrors {@link ExecutionTimeAggregateFunction#getResult}: the
+   * average is derived, and an empty roll-up (count 0) yields all-zero.
+   */
+  private static PushdownSpec<ExecutionTimeAccumulator, ExecutionTimeResult> executionTimeSpec() {
+    return new PushdownSpec<>(
+        List.of(
+            new PushdownColumn("count", DimensionType.LONG, Agg.SUM),
+            new PushdownColumn("total", DimensionType.LONG, Agg.SUM),
+            new PushdownColumn("min", DimensionType.LONG, Agg.MIN),
+            new PushdownColumn("max", DimensionType.LONG, Agg.MAX)),
+        acc -> List.of(acc.count(), acc.totalMs(), acc.minMs(), acc.maxMs()),
+        cols -> {
+          final long count = asLong(cols, 0);
+          if (count == 0L) {
+            return new ExecutionTimeResult(0L, 0.0, 0L, 0L);
+          }
+          final long total = asLong(cols, 1);
+          return new ExecutionTimeResult(
+              count, (double) total / count, asLong(cols, 2), asLong(cols, 3));
+        });
+  }
+
+  /** Coerces a store-aggregated column value (a {@link Number}, or null when no row matched). */
+  private static long asLong(final List<Object> columns, final int index) {
+    final Object value = columns.get(index);
+    return value == null ? 0L : ((Number) value).longValue();
   }
 }
