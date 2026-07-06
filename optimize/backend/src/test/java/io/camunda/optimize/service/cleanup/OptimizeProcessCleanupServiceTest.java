@@ -59,7 +59,8 @@ public class OptimizeProcessCleanupServiceTest {
       new PageResultDto<>("1", 1, INSTANCE_IDS.subList(1, 2));
 
   @RegisterExtension
-  LogCapturer logCapturer = LogCapturer.create().captureForType(CleanupService.class);
+  LogCapturer logCapturer =
+      LogCapturer.create().captureForType(EngineDataProcessCleanupService.class);
 
   @Mock private ProcessDefinitionReader processDefinitionReader;
   @Mock private ProcessInstanceReader processInstanceReader;
@@ -370,7 +371,7 @@ public class OptimizeProcessCleanupServiceTest {
             .map(this::createProcessDefinitionDto)
             .collect(Collectors.toList());
     when(processDefinitionReader.getAllProcessDefinitions())
-        .thenReturn(processDefinitionOptimizeDtos);
+        .thenReturn(processDefinitionOptimizeDtos.iterator());
   }
 
   private List<String> generateRandomDefinitionsKeys(final Integer amount) {
