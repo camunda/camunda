@@ -80,19 +80,42 @@ public final class ExecutionTimeSummary {
         merged);
   }
 
+  /**
+   * Upper edges (ms) of the fixed completion-time bands the histogram reports: {@code [≤10s, ≤30s,
+   * ≤60s, ≤120s, &gt;120s]} — four edges yield five bands.
+   */
+  public static final double[] DURATION_BAND_EDGES_MS = {10_000, 30_000, 60_000, 120_000};
+
   /** The read-facing result at the given ranks; count/min/max exact, percentiles approximate. */
   public ExecutionTimeSummaryResult result(final double[] ranks) {
     if (count == 0) {
       final double[] empty = new double[ranks.length];
       Arrays.fill(empty, Double.NaN);
-      return new ExecutionTimeSummaryResult(0L, 0.0, 0L, 0L, ranks.clone(), empty);
+      return new ExecutionTimeSummaryResult(
+          0L, 0.0, 0L, 0L, ranks.clone(), empty, new long[DURATION_BAND_EDGES_MS.length + 1]);
     }
     final double[] quantiles = new double[ranks.length];
     for (int i = 0; i < ranks.length; i++) {
       quantiles[i] = sketch.getQuantile(ranks[i], QuantileSearchCriteria.INCLUSIVE);
     }
     return new ExecutionTimeSummaryResult(
-        count, (double) totalMs / count, minMs, maxMs, ranks.clone(), quantiles);
+        count, (double) totalMs / count, minMs, maxMs, ranks.clone(), quantiles, bandCounts());
+  }
+
+  /**
+   * Splits {@code count} across the fixed duration bands using the sketch CDF at {@link
+   * #DURATION_BAND_EDGES_MS}: band {@code i} is the estimated number of observations that fell
+   * between edge {@code i-1} and edge {@code i} (the last band is everything above the top edge).
+   */
+  private long[] bandCounts() {
+    final double[] cdf = sketch.getCDF(DURATION_BAND_EDGES_MS, QuantileSearchCriteria.INCLUSIVE);
+    final long[] bands = new long[cdf.length]; // edges.length + 1
+    double prev = 0.0;
+    for (int i = 0; i < cdf.length; i++) {
+      bands[i] = Math.round(count * (cdf[i] - prev));
+      prev = cdf[i];
+    }
+    return bands;
   }
 
   public long count() {

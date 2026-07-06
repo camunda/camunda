@@ -326,10 +326,33 @@ public class DashboardRepository {
     return out;
   }
 
-  /** Completion-time histogram per cohort — no histogram dataset is declared, so empty for now. */
+  /**
+   * Completion-time histogram per window: for each window of the process-instances cube, split the
+   * completed instances across the fixed duration bands (from the lifecycle summary's duration
+   * sketch) and report how many were still open ({@code activated − completed − terminated}).
+   */
   public List<DurationBucketPoint> durationBuckets(
       final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
-    return List.of();
+    final List<DurationBucketPoint> out = new ArrayList<>();
+    for (final ReportRow row :
+        series(
+            "process-instances",
+            List.of(),
+            fromWindow,
+            toWindow,
+            List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
+            List.of("lifecycle"))) {
+      final LifecycleSummaryResult lc = (LifecycleSummaryResult) row.measures().get("lifecycle");
+      if (lc == null) {
+        continue;
+      }
+      final long open = Math.max(0L, lc.activated() - lc.completed() - lc.terminated());
+      out.add(
+          new DurationBucketPoint(
+              row.windowStart(), lc.activated(), lc.duration().durationBands(), open));
+    }
+    out.sort(Comparator.comparingLong(DurationBucketPoint::windowStart));
+    return out;
   }
 
   /** BPMN diagram XML is not modeled in a dataset, so no diagram is available. */
