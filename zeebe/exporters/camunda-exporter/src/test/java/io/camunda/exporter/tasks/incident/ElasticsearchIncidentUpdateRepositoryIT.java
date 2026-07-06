@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.tasks.incident;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
@@ -74,6 +76,31 @@ final class ElasticsearchIncidentUpdateRepositoryIT extends IncidentUpdateReposi
     return client.search(s -> s.index(index).query(query), documentType).hits().hits().stream()
         .map(Hit::source)
         .toList();
+  }
+
+  @Override
+  protected Collection<RoutedDocument> searchWithRouting(
+      final String index, final String field, final List<String> terms) throws IOException {
+    final var client = new ElasticsearchClient(transport);
+    final var values = terms.stream().map(FieldValue::of).toList();
+    final var query = QueryBuilders.terms(t -> t.field(field).terms(v -> v.value(values)));
+    return client.search(s -> s.index(index).query(query), Object.class).hits().hits().stream()
+        .map(hit -> new RoutedDocument(hit.id(), hit.routing()))
+        .toList();
+  }
+
+  @Override
+  protected void assertRoutedEntriesAreColocatedOnSingleShard(
+      final String index, final String routing, final String field, final int expectedHits)
+      throws IOException {
+    final var client = new ElasticsearchClient(transport);
+    final var query = QueryBuilders.term(t -> t.field(field).value(routing));
+    final var response =
+        client.search(s -> s.index(index).routing(routing).query(query), Object.class);
+    // a routed search is directed to exactly one shard...
+    assertThat(response.shards().total().intValue()).isEqualTo(1);
+    // ...and that single shard holds all of the partition's entries, proving co-location
+    assertThat(response.hits().hits()).hasSize(expectedHits);
   }
 
   private RestClientTransport createTransport() {
