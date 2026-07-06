@@ -3,7 +3,8 @@
 # Live demo of the WHOLE analytics stack, left running so you can open the webapp:
 #
 #   1. a fresh Event Bridge cluster that AUTO-CREATES topic 'zeebe-records'
-#   2. an OC cluster (StandaloneCamunda) with the ZeebeRecordExporter wired in (REST :8088)
+#   2. a 2-broker OC cluster (StandaloneCamunda, partitions=2 RF=1) with the ZeebeRecordExporter
+#      wired into BOTH brokers, pinned to funnel every record into EB partition 1 (REST :8088/:8089)
 #   3. the ONE analytics application (Spring Boot, :8090): serving API + BOTH ingest stages
 #      (Stage 1 projection + Stage 2 aggregation) in a single process -> serving store
 #   4. a continuous driver deploying + running THREE processes (order / payment-with-gateway /
@@ -85,11 +86,11 @@ build() {
 
 stop() {
   echo "==> Tearing down the demo stack"
-  for p in "${DRIVER_DIR}/pid" "${APP_DIR}/pid" "${OC_DIR}/pid"; do
+  for p in "${DRIVER_DIR}/pid" "${APP_DIR}/pid" "${OC_DIR}"/pid-*; do
     [[ -f "${p}" ]] && kill "$(cat "${p}")" 2>/dev/null || true
   done
   sleep 2
-  for p in "${DRIVER_DIR}/pid" "${APP_DIR}/pid" "${OC_DIR}/pid"; do
+  for p in "${DRIVER_DIR}/pid" "${APP_DIR}/pid" "${OC_DIR}"/pid-*; do
     [[ -f "${p}" ]] && kill -9 "$(cat "${p}")" 2>/dev/null || true
     rm -f "${p}"
   done
@@ -112,7 +113,7 @@ start() {
   mkdir -p "${OC_DIR}" "${APP_DIR}" "${DRIVER_DIR}" "${DB_DIR}"
   rm -rf "${DB_DIR}"/analytics-dataset.* 2>/dev/null || true
   rm -rf "${DB_DIR}"/oc-rdbms.* 2>/dev/null || true
-  rm -rf "${OC_DIR}/data" 2>/dev/null || true
+  rm -rf "${OC_DIR}"/data-* 2>/dev/null || true
   # wipe the app's durable stage checkpoint/rollup state (RocksDB under the app's CWD/data), else it
   # resumes from stale offsets past the end of the fresh topic and consumes nothing.
   rm -rf "${APP_DIR}/data" 2>/dev/null || true
@@ -124,29 +125,54 @@ start() {
   echo "==> Waiting for '${TOPIC}' to be ACTIVE…"
   for _ in $(seq 1 60); do curl -fsS "${GW}/v1/topics" 2>/dev/null | grep -q ACTIVE && break || sleep 1; done
 
-  echo "==> Starting OC with the exporter (REST :8088)"
-  ( cd "${OC_DIR}"
-    java "${JVM_FLAGS[@]}" -cp "$(dist_cp)" \
-      -Dspring.profiles.active=broker,insecure,rdbmsH2 \
-      -Dcamunda.data.secondary-storage.rdbms.url="jdbc:h2:file:${DB_DIR}/oc-rdbms;AUTO_SERVER=TRUE;DB_CLOSE_DELAY=-1" \
-      -Dlogging.level.io.camunda.db.rdbms=WARN \
-      -Dserver.port=8088 -Dmanagement.server.port=9700 \
-      -Dzeebe.broker.network.commandApi.port=26701 \
-      -Dzeebe.broker.network.internalApi.port=26702 \
-      -Dzeebe.broker.exporters.eventbridge.className=io.camunda.eventbridge.zeebe.exporter.ZeebeRecordExporter \
-      -Dzeebe.broker.exporters.eventbridge.args.url=${GW} \
-      -Dzeebe.broker.exporters.eventbridge.args.topic=${TOPIC} \
-      -Dzeebe.broker.exporters.eventbridge.args.batchSize=5000 \
-      -Dzeebe.broker.exporters.eventbridge.args.flushIntervalMs=1000 \
-      -Dzeebe.broker.data.directory="${OC_DIR}/data" \
-      io.camunda.application.StandaloneCamunda >"${OC_DIR}/oc.log" 2>&1 &
-    echo "$!" >"${OC_DIR}/pid" )
+  echo "==> Starting a 2-broker OC cluster (partitions=2, RF=1), exporter pinned to EB partition 1"
+  # Two brokers on one host: node 0 keeps the well-known client ports (gRPC :26500 / REST :8088) the
+  # load driver + workers use; node 1 gets a parallel, non-colliding set. Both brokers export via the
+  # ZeebeRecordExporter with targetPartition=1, so partition 2's records (led by node 1) funnel into
+  # the single EB partition alongside partition 1's. Brokers start SEQUENTIALLY (node 0 fully up
+  # before node 1 launches): both share one H2 RDBMS, and Liquibase's changelog lock does NOT guard
+  # the very first schema-table creation on a fresh DB — starting them together races two concurrent
+  # CREATE TABLE DATABASECHANGELOG. Letting node 0 migrate the schema first, then node 1 attach to
+  # the already-migrated DB, avoids the race; the Raft cluster still forms once both are up.
+  OC_REST_PORTS=(8088 8089)
+  OC_MGMT_PORTS=(9700 9701)
+  OC_CMD_PORTS=(26701 26703)
+  OC_INT_PORTS=(26702 26704)
+  OC_GRPC_PORTS=(26500 26510)
+  for node in 0 1; do
+    echo "==> Starting OC broker ${node} (REST :${OC_REST_PORTS[$node]}, gRPC :${OC_GRPC_PORTS[$node]})"
+    ( cd "${OC_DIR}"
+      java "${JVM_FLAGS[@]}" -cp "$(dist_cp)" \
+        -Dspring.profiles.active=broker,insecure,rdbmsH2 \
+        -Dcamunda.data.secondary-storage.rdbms.url="jdbc:h2:file:${DB_DIR}/oc-rdbms;AUTO_SERVER=TRUE;DB_CLOSE_DELAY=-1" \
+        -Dlogging.level.io.camunda.db.rdbms=WARN \
+        -Dserver.port=${OC_REST_PORTS[$node]} -Dmanagement.server.port=${OC_MGMT_PORTS[$node]} \
+        -Dzeebe.broker.cluster.nodeId=${node} \
+        -Dzeebe.broker.cluster.clusterSize=2 \
+        -Dzeebe.broker.cluster.partitionsCount=2 \
+        -Dzeebe.broker.cluster.replicationFactor=1 \
+        -Dzeebe.broker.cluster.initialContactPoints[0]=localhost:26702 \
+        -Dzeebe.broker.cluster.initialContactPoints[1]=localhost:26704 \
+        -Dzeebe.broker.network.commandApi.port=${OC_CMD_PORTS[$node]} \
+        -Dzeebe.broker.network.internalApi.port=${OC_INT_PORTS[$node]} \
+        -Dzeebe.broker.gateway.network.port=${OC_GRPC_PORTS[$node]} \
+        -Dzeebe.broker.exporters.eventbridge.className=io.camunda.eventbridge.zeebe.exporter.ZeebeRecordExporter \
+        -Dzeebe.broker.exporters.eventbridge.args.url=${GW} \
+        -Dzeebe.broker.exporters.eventbridge.args.topic=${TOPIC} \
+        -Dzeebe.broker.exporters.eventbridge.args.batchSize=5000 \
+        -Dzeebe.broker.exporters.eventbridge.args.flushIntervalMs=1000 \
+        -Dzeebe.broker.exporters.eventbridge.args.targetPartition=1 \
+        -Dzeebe.broker.data.directory="${OC_DIR}/data-${node}" \
+        io.camunda.application.StandaloneCamunda >"${OC_DIR}/oc-${node}.log" 2>&1 &
+      echo "$!" >"${OC_DIR}/pid-${node}" )
 
-  echo "==> Waiting for the OC REST API…"
-  for _ in $(seq 1 180); do
-    kill -0 "$(cat "${OC_DIR}/pid")" 2>/dev/null || { echo "!! OC died:"; tail -30 "${OC_DIR}/oc.log"; exit 1; }
-    [[ "$(curl -s -o /dev/null -w '%{http_code}' ${OC_REST}/v2/topology)" == "200" ]] && break
-    sleep 1
+    echo "==> Waiting for OC broker ${node} REST API (:${OC_REST_PORTS[$node]})…"
+    for _ in $(seq 1 180); do
+      kill -0 "$(cat "${OC_DIR}/pid-${node}")" 2>/dev/null \
+        || { echo "!! OC broker ${node} died:"; tail -30 "${OC_DIR}/oc-${node}.log"; exit 1; }
+      [[ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:${OC_REST_PORTS[$node]}/v2/topology)" == "200" ]] && break
+      sleep 1
+    done
   done
 
   echo "==> Starting the analytics application (serving + Stage 1 + Stage 2, backend=${BACKEND}) on :8090…"
