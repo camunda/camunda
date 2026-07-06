@@ -90,6 +90,25 @@ runs:
         fi
         unzip -q -o "${RUNNER_TEMP}/prior-state.zip" -d "$state_dir" || true
 
+    # Method-fix detection uses `git log -L:<method>:<file>`, which needs git's
+    # language-aware funcname driver to locate Java methods. The repo has no
+    # `*.java diff=java` gitattributes, so without this the -L call fails with
+    # "no match" for every method, method_last_modified is never resolved, and the
+    # clean-run clearance counter can never advance (cleared_via_fix unreachable).
+    # Enable the built-in Java driver for this checkout only (.git/info/attributes
+    # is local and not committed), scoping the change to the gate.
+    - name: Enable Java funcname driver for method-fix detection
+      if: always()
+      shell: bash
+      env:
+        REPO_ROOT: ${{ inputs.repo-root != '' && inputs.repo-root || github.workspace }}
+      run: |
+        git_info="${REPO_ROOT}/.git/info"
+        if [[ -d "$git_info" ]] && ! grep -qxF '*.java diff=java' "${git_info}/attributes" 2>/dev/null; then
+          printf '*.java diff=java\n' >> "${git_info}/attributes"
+          echo "enabled Java funcname driver in ${git_info}/attributes"
+        fi
+
     - name: Detect new flaky tests
       id: detect
       shell: bash
