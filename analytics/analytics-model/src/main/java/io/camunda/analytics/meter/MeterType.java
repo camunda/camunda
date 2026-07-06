@@ -74,7 +74,10 @@ public final class MeterType<ACC, OUT> {
 
   /** Resolves a {@link Meter} of this type into the aggregate + codec the pipeline consumes. */
   public BoundMeter<ACC, OUT> bind(final Meter meter) {
+    // Pass the codec as a factory, not a single instance: the bound meter is shared across the
+    // writing pipeline and reading queries, and the RecordValue flyweight is mutable — each caller
+    // must get its own (see BoundMeter#accumulatorCodec).
     return new BoundMeter<>(
-        meter, aggregateFactory.apply(meter), codecFactory.apply(meter), pushdown);
+        meter, aggregateFactory.apply(meter), () -> codecFactory.apply(meter), pushdown);
   }
 }
