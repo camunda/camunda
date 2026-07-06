@@ -12,9 +12,12 @@ import io.camunda.configuration.physicaltenants.MapOverlaySpec.MapDescriptor;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+import org.springframework.boot.context.properties.source.ConfigurationPropertyName;
 
 /**
  * Shared reflection and policy support for the two guards over the per-physical-tenant map-overlay
@@ -57,6 +60,11 @@ final class MapOverlaySurface {
    *       java.util.Properties} bag of opaque RocksDB tuning options, again with no bindable
    *       sub-fields per entry.
    * </ul>
+   *
+   * <p>This list holds only <em>overridable</em> maps: a map that is non-overridable per {@link
+   * PhysicalTenantOverridePolicyValidation} can never be overlaid, so declaring a merge strategy
+   * for it here would be dead and contradictory. {@link
+   * MapOverlayCoverageTest#neitherAllowlistNorRegistryClaimsANonOverridableMap} enforces that.
    */
   static final Set<String> DEFAULT_MERGE_ALLOWLIST =
       Set.of(
@@ -128,5 +136,30 @@ final class MapOverlaySurface {
    */
   static String camelToKebab(final String camel) {
     return camel.replaceAll("([a-z0-9])([A-Z])", "$1-$2").toLowerCase();
+  }
+
+  /**
+   * Whether the canonical dashed property path (below the {@code camunda} root) is non-overridable
+   * per physical tenant, delegating to the real {@link PhysicalTenantOverridePolicyValidation}
+   * deny-list. A non-overridable map can never be overlaid, so it needs no per-tenant merge
+   * decision — it is neither deep-merged nor default-merged, and must not appear in {@link
+   * #DEFAULT_MERGE_ALLOWLIST} nor {@link PhysicalTenantMapOverlays#REGISTRY}.
+   *
+   * <p>A {@code *} segment (an arbitrary map-entry key on a path reached through another map) is
+   * replaced with a benign placeholder so the name parses — {@link ConfigurationPropertyName}
+   * rejects {@code *} — which does not affect ancestor matching, since no deny-list entry descends
+   * into a specific map key.
+   */
+  static boolean isNonOverridable(final String canonicalPath) {
+    final String prefix = Camunda.PREFIX + ".";
+    if (!canonicalPath.startsWith(prefix)) {
+      return false;
+    }
+    final String relative =
+        Arrays.stream(canonicalPath.substring(prefix.length()).split("\\."))
+            .map(segment -> segment.equals("*") ? "x" : segment)
+            .collect(Collectors.joining("."));
+    return PhysicalTenantOverridePolicyValidation.isNonOverridable(
+        ConfigurationPropertyName.of(relative));
   }
 }

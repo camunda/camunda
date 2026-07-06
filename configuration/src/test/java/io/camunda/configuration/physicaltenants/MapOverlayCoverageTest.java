@@ -18,14 +18,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 /**
  * Coverage guard over the per-physical-tenant map-merge policy: <strong>every typed {@code
  * Map<String, Pojo>} reachable in the {@link Camunda} config tree must have a deliberate
- * decision</strong> — either deep-merged by a {@link MapOverlaySpec} registered in {@link
- * PhysicalTenantMapOverlays#REGISTRY}, or explicitly listed in {@link
- * MapOverlaySurface#DEFAULT_MERGE_ALLOWLIST} as keeping Spring's default entry-level merge.
+ * decision</strong> — one of three:
+ *
+ * <ul>
+ *   <li>deep-merged by a {@link MapOverlaySpec} registered in {@link
+ *       PhysicalTenantMapOverlays#REGISTRY};
+ *   <li>explicitly listed in {@link MapOverlaySurface#DEFAULT_MERGE_ALLOWLIST} as keeping Spring's
+ *       default entry-level merge;
+ *   <li>non-overridable per {@link PhysicalTenantOverridePolicyValidation} — a map a tenant can
+ *       never override needs no merge decision at all, since it is never overlaid.
+ * </ul>
  *
  * <p>The tree is walked reflectively from {@link Camunda} down through every nested config POJO, so
  * <strong>any new {@code Map<String, Pojo>} property automatically surfaces here</strong> and fails
@@ -57,18 +65,45 @@ class MapOverlayCoverageTest {
     pojoMaps.forEach(
         (path, valueType) -> {
           if (!deepMerged.contains(path)
-              && !MapOverlaySurface.DEFAULT_MERGE_ALLOWLIST.contains(path)) {
+              && !MapOverlaySurface.DEFAULT_MERGE_ALLOWLIST.contains(path)
+              // a non-overridable map can never be overlaid, so it needs no merge decision — the
+              // override deny-list (PhysicalTenantOverridePolicyValidation) already covers it
+              && !MapOverlaySurface.isNonOverridable(path)) {
             unclassified.add(path + " (Map value type " + valueType.getName() + ")");
           }
         });
 
     assertThat(unclassified)
         .as(
-            "every Map<String, Pojo> in the Camunda config tree must have a per-physical-tenant "
-                + "merge decision. For each map below, either register it for deep-merge in a "
-                + "MapOverlaySpec (PhysicalTenantMapOverlays.REGISTRY) so a partial tenant override "
-                + "keeps the entry's unrestated fields, or add it to "
-                + "MapOverlaySurface.DEFAULT_MERGE_ALLOWLIST to accept Spring's entry-level merge.")
+            "every overridable Map<String, Pojo> in the Camunda config tree must have a "
+                + "per-physical-tenant merge decision. For each map below, either register it for "
+                + "deep-merge in a MapOverlaySpec (PhysicalTenantMapOverlays.REGISTRY) so a partial "
+                + "tenant override keeps the entry's unrestated fields, add it to "
+                + "MapOverlaySurface.DEFAULT_MERGE_ALLOWLIST to accept Spring's entry-level merge, "
+                + "or make it non-overridable in PhysicalTenantOverridePolicyValidation.")
+        .isEmpty();
+  }
+
+  @Test
+  void neitherAllowlistNorRegistryClaimsANonOverridableMap() {
+    // A non-overridable map can never be overlaid per tenant, so declaring a per-tenant merge
+    // strategy for it — deep-merge in the registry or default-merge in the allowlist — is dead and
+    // contradictory. Keep the merge policy and the override deny-list disjoint.
+    final List<String> contradictory =
+        Stream.concat(
+                MapOverlaySurface.DEFAULT_MERGE_ALLOWLIST.stream(),
+                MapOverlaySurface.deepMergedMapPaths().stream())
+            .filter(MapOverlaySurface::isNonOverridable)
+            .sorted()
+            .toList();
+
+    assertThat(contradictory)
+        .as(
+            "these maps are non-overridable per PhysicalTenantOverridePolicyValidation yet also "
+                + "declare a per-physical-tenant merge strategy (DEFAULT_MERGE_ALLOWLIST or "
+                + "PhysicalTenantMapOverlays.REGISTRY). A non-overridable map is never overlaid, so "
+                + "its merge strategy is dead — remove it from the merge policy and rely on the "
+                + "override deny-list.")
         .isEmpty();
   }
 
