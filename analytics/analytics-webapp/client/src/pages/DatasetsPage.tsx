@@ -14,6 +14,9 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
   Input,
   Label,
   Select,
@@ -110,6 +113,7 @@ export function DatasetsPage() {
 
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   function refresh() {
     api
@@ -228,9 +232,10 @@ export function DatasetsPage() {
     <div className="flex flex-col gap-4">
       <Card>
         <CardHeader>
-          <CardTitle>New dataset</CardTitle>
+          <CardTitle>New dataset (advanced)</CardTitle>
           <CardDescription>
-            Declare a cube: pick a source fact, add dimensions and meters, and choose window tiers.
+            Power-user path for curating a reusable named dataset directly. Most people should build a
+            report from a question on the Reports page — this exposes the raw engine model.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-6">
@@ -244,7 +249,7 @@ export function DatasetsPage() {
               />
             </label>
             <label className="flex flex-col gap-1">
-              <Label>Source fact</Label>
+              <Label>Entity</Label>
               <Select value={sourceFact} onValueChange={(v) => setSourceFact(v as SourceFact)}>
                 <SelectTrigger>
                   <SelectValue />
@@ -275,10 +280,10 @@ export function DatasetsPage() {
             </div>
           </div>
 
-          {/* Dimensions */}
+          {/* Group by / attributes */}
           <section className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <Label>Dimensions</Label>
+              <Label>Group by / attributes</Label>
               <Button
                 size="sm"
                 variant="secondary"
@@ -289,11 +294,11 @@ export function DatasetsPage() {
                   ])
                 }
               >
-                Add dimension
+                Add attribute
               </Button>
             </div>
             {dimensions.length === 0 ? (
-              <p className="text-sm text-neutral-foreground-muted">No dimensions.</p>
+              <p className="text-sm text-neutral-foreground-muted">No attributes.</p>
             ) : null}
             {dimensions.map((d, i) => (
               <div key={i} className="flex flex-wrap items-center gap-2">
@@ -326,30 +331,32 @@ export function DatasetsPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Select
-                  value={d.enrichment || "NONE"}
-                  onValueChange={(v) =>
-                    setDimensions((prev) =>
-                      prev.map((row, j) =>
-                        j === i
-                          ? { ...row, enrichment: v === "NONE" ? "" : (v as Enrichment) }
-                          : row,
-                      ),
-                    )
-                  }
-                >
-                  <SelectTrigger className="w-44">
-                    <SelectValue placeholder="enrichment" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="NONE">no enrichment</SelectItem>
-                    {ENRICHMENTS.map((en) => (
-                      <SelectItem key={en} value={en}>
-                        {en}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {showAdvanced ? (
+                  <Select
+                    value={d.enrichment || "NONE"}
+                    onValueChange={(v) =>
+                      setDimensions((prev) =>
+                        prev.map((row, j) =>
+                          j === i
+                            ? { ...row, enrichment: v === "NONE" ? "" : (v as Enrichment) }
+                            : row,
+                        ),
+                      )
+                    }
+                  >
+                    <SelectTrigger className="w-56" title="When to read the variable">
+                      <SelectValue placeholder="When to read the variable" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="NONE">default timing</SelectItem>
+                      {ENRICHMENTS.map((en) => (
+                        <SelectItem key={en} value={en}>
+                          {en}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : null}
                 <Button
                   size="sm"
                   variant={d.variable ? "default" : "secondary"}
@@ -421,10 +428,10 @@ export function DatasetsPage() {
             ))}
           </section>
 
-          {/* Meters */}
+          {/* Measures */}
           <section className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <Label>Meters</Label>
+              <Label>Measures</Label>
               <Button
                 size="sm"
                 variant="secondary"
@@ -435,11 +442,11 @@ export function DatasetsPage() {
                   ])
                 }
               >
-                Add meter
+                Add measure
               </Button>
             </div>
             {meters.length === 0 ? (
-              <p className="text-sm text-neutral-foreground-muted">No meters.</p>
+              <p className="text-sm text-neutral-foreground-muted">No measures.</p>
             ) : null}
             {meters.map((m, i) => (
               <div key={i} className="flex flex-col gap-2 rounded border border-border p-3">
@@ -447,7 +454,7 @@ export function DatasetsPage() {
                   <Input
                     className="w-48"
                     value={m.name}
-                    placeholder="meter name"
+                    placeholder="measure name"
                     onChange={(e) =>
                       setMeters((prev) =>
                         prev.map((row, j) => (j === i ? { ...row, name: e.target.value } : row)),
@@ -576,75 +583,92 @@ export function DatasetsPage() {
             ))}
           </section>
 
-          {/* Window tiers */}
-          <section className="flex flex-col gap-2">
-            <Label>Window tiers</Label>
-            <div className="flex flex-wrap items-center gap-2">
-              {windowSizesMs.map((ms) => (
-                <Badge key={ms} variant="secondary" className="flex items-center gap-1">
-                  {formatMs(ms)}
-                  <button
-                    type="button"
-                    className="text-neutral-foreground-muted hover:text-neutral-foreground"
-                    onClick={() => setWindowSizesMs((prev) => prev.filter((x) => x !== ms))}
-                  >
-                    ×
-                  </button>
-                </Badge>
-              ))}
-              {windowSizesMs.length === 0 ? (
-                <span className="text-sm text-neutral-foreground-muted">No tiers.</span>
-              ) : null}
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {WINDOW_PRESETS.map((p) => (
-                <Button key={p.label} size="sm" variant="secondary" onClick={() => addWindow(p.ms)}>
-                  + {p.label}
-                </Button>
-              ))}
+          {/* Table-only key field stays visible — it defines row identity. */}
+          {kind === "TABLE" ? (
+            <label className="flex max-w-md flex-col gap-1">
+              <Label>Key field</Label>
               <Input
-                className="w-40"
-                value={customWindow}
-                placeholder="custom ms"
-                onChange={(e) => setCustomWindow(e.target.value)}
-              />
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => {
-                  const ms = Number(customWindow);
-                  if (Number.isFinite(ms) && ms > 0) {
-                    addWindow(ms);
-                    setCustomWindow("");
-                  }
-                }}
-              >
-                Add
-              </Button>
-            </div>
-          </section>
-
-          {/* Table-only + advanced */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {kind === "TABLE" ? (
-              <label className="flex flex-col gap-1">
-                <Label>Key field</Label>
-                <Input
-                  value={keyField}
-                  onChange={(e) => setKeyField(e.target.value)}
-                  placeholder="unique row key field"
-                />
-              </label>
-            ) : null}
-            <label className="flex flex-col gap-1">
-              <Label>Lateness (ms, optional)</Label>
-              <Input
-                value={latenessMs}
-                onChange={(e) => setLatenessMs(e.target.value)}
-                placeholder="e.g. 60000"
+                value={keyField}
+                onChange={(e) => setKeyField(e.target.value)}
+                placeholder="unique row key field"
               />
             </label>
-          </div>
+          ) : null}
+
+          {/* Advanced options: rollup windows, lateness, variable read timing. */}
+          <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
+            <CollapsibleTrigger className="text-sm font-medium text-neutral-foreground-muted hover:text-neutral-foreground">
+              {showAdvanced ? "▾" : "▸"} Advanced options
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-3 flex flex-col gap-6">
+              <p className="text-xs text-neutral-foreground-muted">
+                Rollup windows are normally derived from the chosen granularity, and the variable read
+                timing above defaults to a sensible value. Only change these if you know you need to.
+              </p>
+
+              {/* Rollup windows */}
+              <section className="flex flex-col gap-2">
+                <Label>Rollup windows</Label>
+                <div className="flex flex-wrap items-center gap-2">
+                  {windowSizesMs.map((ms) => (
+                    <Badge key={ms} variant="secondary" className="flex items-center gap-1">
+                      {formatMs(ms)}
+                      <button
+                        type="button"
+                        className="text-neutral-foreground-muted hover:text-neutral-foreground"
+                        onClick={() => setWindowSizesMs((prev) => prev.filter((x) => x !== ms))}
+                      >
+                        ×
+                      </button>
+                    </Badge>
+                  ))}
+                  {windowSizesMs.length === 0 ? (
+                    <span className="text-sm text-neutral-foreground-muted">None.</span>
+                  ) : null}
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {WINDOW_PRESETS.map((p) => (
+                    <Button
+                      key={p.label}
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => addWindow(p.ms)}
+                    >
+                      + {p.label}
+                    </Button>
+                  ))}
+                  <Input
+                    className="w-40"
+                    value={customWindow}
+                    placeholder="custom ms"
+                    onChange={(e) => setCustomWindow(e.target.value)}
+                  />
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                      const ms = Number(customWindow);
+                      if (Number.isFinite(ms) && ms > 0) {
+                        addWindow(ms);
+                        setCustomWindow("");
+                      }
+                    }}
+                  >
+                    Add
+                  </Button>
+                </div>
+              </section>
+
+              <label className="flex max-w-md flex-col gap-1">
+                <Label>Lateness allowance (ms)</Label>
+                <Input
+                  value={latenessMs}
+                  onChange={(e) => setLatenessMs(e.target.value)}
+                  placeholder="e.g. 60000"
+                />
+              </label>
+            </CollapsibleContent>
+          </Collapsible>
 
           {formError ? <p className="text-sm text-destructive-foreground">{formError}</p> : null}
           <div>
@@ -669,11 +693,11 @@ export function DatasetsPage() {
                 <thead>
                   <tr className="border-b border-border text-left text-neutral-foreground-muted">
                     <th className="py-2 pr-4 font-medium">Name</th>
-                    <th className="py-2 pr-4 font-medium">Source</th>
+                    <th className="py-2 pr-4 font-medium">Entity</th>
                     <th className="py-2 pr-4 font-medium">Kind</th>
-                    <th className="py-2 pr-4 font-medium">Dimensions</th>
-                    <th className="py-2 pr-4 font-medium">Meters</th>
-                    <th className="py-2 pr-4 font-medium">Windows</th>
+                    <th className="py-2 pr-4 font-medium">Group by</th>
+                    <th className="py-2 pr-4 font-medium">Measures</th>
+                    <th className="py-2 pr-4 font-medium">Rollup</th>
                   </tr>
                 </thead>
                 <tbody>

@@ -197,6 +197,73 @@ export interface ReportData {
   rows: ReportRow[];
 }
 
+// ---------------------------------------------------------------------------
+// Semantic layer — the measure catalog. This is the business-language surface
+// the report builder speaks (Entity / Measure / Group by), mirroring
+// GET /api/measures. The engine mapping (fact types, meter templates,
+// dimension names) lives on the backend and is never shown to the user.
+// ---------------------------------------------------------------------------
+
+/** A friendly, named parameter surfaced by a measure (e.g. Percentile, SLA target). */
+export interface MeasureParam {
+  key: string;
+  label: string;
+  /** "duration" renders a duration picker (value carried in ms); "number" a plain input. */
+  type: "number" | "duration";
+  default: number;
+}
+
+/** A curated measure offered by an entity (friendly name for a meter template). */
+export interface Measure {
+  id: string;
+  label: string;
+  description: string;
+  unit?: "duration" | "count" | "percent" | null;
+  param?: MeasureParam | null;
+}
+
+/** A curated group-by offered by an entity (friendly name for a dimension). */
+export interface GroupBy {
+  id: string;
+  label: string;
+  /** When true the user types a variable name; the field becomes `var.<name>`. */
+  variable?: boolean;
+}
+
+/** A queryable business entity (friendly name for a fact type). */
+export interface Entity {
+  id: string;
+  label: string;
+  description: string;
+  measures: Measure[];
+  groupBys: GroupBy[];
+}
+
+/** A selectable time granularity from the catalog. */
+export interface Granularity {
+  ms: number;
+  label: string;
+}
+
+/** The whole catalog returned by GET /api/measures. */
+export interface MeasuresCatalog {
+  entities: Entity[];
+  granularities: Granularity[];
+  visualizations: string[];
+}
+
+/** The POST /api/reports/from-question request body — one compiled question. */
+export interface QuestionInput {
+  name: string;
+  entity: string;
+  measure: string;
+  params: Record<string, number>;
+  groupBy: { field: string; variable?: boolean }[];
+  filters: { field: string; value: string }[];
+  granularityMs: number;
+  viz: string;
+}
+
 async function getJson<T>(url: string): Promise<T> {
   const response = await fetch(url);
   if (!response.ok) {
@@ -262,6 +329,11 @@ export const api = {
     postJson<Dataset>("/api/datasets", declaration),
   listReports: () => getJson<Report[]>("/api/reports"),
   createReport: (report: ReportInput) => postJson<Report>("/api/reports", report),
+
+  // Semantic-layer (question) endpoints powering the Metabase-style builder.
+  getMeasures: () => getJson<MeasuresCatalog>("/api/measures"),
+  createReportFromQuestion: (question: QuestionInput) =>
+    postJson<{ report: Report }>("/api/reports/from-question", question),
   runReport: (id: number, fromMs: number, toMs: number) =>
     getJson<ReportData>(`/api/reports/${id}/data?fromMs=${fromMs}&toMs=${toMs}`),
 };

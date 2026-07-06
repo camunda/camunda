@@ -22,22 +22,26 @@ import { PerformancePage } from "./pages/PerformancePage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { api, type TimeRange } from "./lib/api";
 
-/** Each Optimize instant-preview dashboard is its own hash-routed page. */
-const PAGES = [
+/** Primary surface: the report builder plus the instant-preview dashboards. */
+const PRIMARY_PAGES = [
+  { hash: "reports", label: "Reports" },
   { hash: "overview", label: "Overview" },
   { hash: "kpis", label: "KPIs" },
   { hash: "performance", label: "Performance" },
   { hash: "all", label: "All metrics" },
-  { hash: "datasets", label: "Datasets" },
-  { hash: "reports", label: "Reports" },
 ] as const;
+
+/** Advanced surface: the raw dataset builder for power users. */
+const ADVANCED_PAGES = [{ hash: "datasets", label: "Datasets" }] as const;
+
+const ALL_PAGES = [...PRIMARY_PAGES, ...ADVANCED_PAGES];
 
 /** Builder pages are process-agnostic and render regardless of whether metrics exist. */
 const GLOBAL_ROUTES = new Set<string>(["datasets", "reports"]);
 
 function currentHash(): string {
   const h = window.location.hash.replace(/^#\/?/, "");
-  return PAGES.some((p) => p.hash === h) ? h : "overview";
+  return ALL_PAGES.some((p) => p.hash === h) ? h : "reports";
 }
 
 export default function App() {
@@ -123,8 +127,25 @@ export default function App() {
             />
           </label>
         </div>
-        <nav className="mx-auto flex max-w-6xl gap-1 px-6">
-          {PAGES.map((p) => (
+        <nav className="mx-auto flex max-w-6xl items-center gap-1 px-6">
+          {PRIMARY_PAGES.map((p) => (
+            <a
+              key={p.hash}
+              href={`#/${p.hash}`}
+              className={`border-b-2 px-3 py-2 text-sm ${
+                route === p.hash
+                  ? "border-brand-500 font-medium text-neutral-foreground"
+                  : "border-transparent text-neutral-foreground-muted hover:text-neutral-foreground"
+              }`}
+            >
+              {p.label}
+            </a>
+          ))}
+          <span className="mx-3 h-4 w-px bg-border" aria-hidden />
+          <span className="text-xs uppercase tracking-wide text-neutral-foreground-muted">
+            Advanced
+          </span>
+          {ADVANCED_PAGES.map((p) => (
             <a
               key={p.hash}
               href={`#/${p.hash}`}
