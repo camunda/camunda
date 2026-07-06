@@ -35,7 +35,7 @@ public class BackupConfig {
     final DocumentBasedSecondaryStorageBackup backupConfig = backupConfig(secondaryStorage);
     final String repositoryName = backupConfig.getRepositoryName();
     if (repositoryName == null || repositoryName.isBlank()) {
-      LOG.info(
+      LOG.warn(
           "No backup repository configured for {} secondary storage. Backup endpoints are active"
               + " but will reject all requests until a repository is configured via"
               + " 'camunda.data.secondary-storage.{}.backup.repository-name'.",
