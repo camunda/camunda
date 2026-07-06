@@ -22,6 +22,7 @@ import co.elastic.clients.elasticsearch._types.query_dsl.ExistsQuery;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.ReindexRequest;
+import co.elastic.clients.elasticsearch.core.ReindexResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.UpdateRequest;
@@ -513,11 +514,23 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
 
     try {
       final var reindexResponse = client.reindex(createMissingRequest);
-      return reindexResponse != null
-          && reindexResponse.total() != null
-          && reindexResponse.total() > 0;
+      validateReindexResponse(source, reindexResponse);
+      return reindexResponse.total() != null && reindexResponse.total() > 0;
     } catch (final IOException e) {
       throw new MigrationException(e);
+    }
+  }
+
+  private static void validateReindexResponse(
+      final String sourceIndex, final ReindexResponse response) {
+    if (Boolean.TRUE.equals(response.timedOut())) {
+      throw new MigrationException("Reindex request from %s timed out".formatted(sourceIndex));
+    }
+    final var failures = response.failures();
+    if (failures != null && !failures.isEmpty()) {
+      throw new MigrationException(
+          "Reindex request from %s index completed with %d failures"
+              .formatted(sourceIndex, failures.size()));
     }
   }
 
