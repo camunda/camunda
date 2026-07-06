@@ -89,6 +89,8 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
     progressProcessInstances();
 
+    markDemoDataCreated();
+
     return true;
   }
 

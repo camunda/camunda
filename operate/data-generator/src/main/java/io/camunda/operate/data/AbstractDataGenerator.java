@@ -14,6 +14,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.operate.data.usertest.UserTestDataGenerator;
+import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.security.core.auth.SecurityContext;
@@ -36,6 +37,11 @@ public abstract class AbstractDataGenerator implements DataGenerator {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(AbstractDataGenerator.class);
 
+  // Marker deployed as the last seeding step; the existence check keys off it (not a global process
+  // count) so seeding stays idempotent regardless of other generators or startup order.
+  private static final String DEMO_DATA_MARKER_RESOURCE = "usertest/data-generator-marker.bpmn";
+  private static final String DEMO_DATA_MARKER_PROCESS_ID = "operate-data-generator-marker";
+
   @Autowired
   @Qualifier("camundaClient")
   protected CamundaClient client;
@@ -47,6 +53,11 @@ public abstract class AbstractDataGenerator implements DataGenerator {
 
   @Autowired(required = false)
   private SearchClientsProxy searchClientsProxy;
+
+  /** Deploys the marker signalling seeding is complete. Call as the last step of data creation. */
+  protected void markDemoDataCreated() {
+    ZeebeTestUtil.deployProcess(true, client, DEFAULT_TENANT_ID, DEMO_DATA_MARKER_RESOURCE);
+  }
 
   @PostConstruct
   private void startDataGenerator() {
@@ -121,7 +132,9 @@ public abstract class AbstractDataGenerator implements DataGenerator {
                   .withPhysicalTenant(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
                   .withSecurityContext(
                       SecurityContext.of(b -> b.withAuthentication(a -> a.anonymous(true))))
-                  .searchProcessDefinitions(ProcessDefinitionQuery.of(q -> q))
+                  .searchProcessDefinitions(
+                      ProcessDefinitionQuery.of(
+                          q -> q.filter(f -> f.processDefinitionIds(DEMO_DATA_MARKER_PROCESS_ID))))
                   .total()
               > 0;
       if (exists) {
