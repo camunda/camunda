@@ -41,7 +41,9 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -199,7 +201,10 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
     final List<SegmentSealingAggregation<Fact, ?, ?>> aggregations = new ArrayList<>();
     for (final ActiveCube cube : cubes) {
       datasetStore.schemaManager().ensure(cube.compiled());
-      for (final CompiledMeter meter : cube.compiled().meters()) {
+      // Aggregate + shuffle only the finest tier of each meter; Stage 2 rolls it up into the
+      // coarser tiers (a coarser cell is the exact merge of its finer cells, for mergeable
+      // aggregates). This keeps Stage 1's work and the shuffle to one stream per meter.
+      for (final CompiledMeter meter : finestTierPerMeter(cube.compiled().meters())) {
         final String node = "meter-" + meter.aggId();
         builder.processor(
             node,
@@ -230,6 +235,18 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
 
     topology = builder.build();
     sealingAggregations = List.copyOf(aggregations);
+  }
+
+  /**
+   * The finest-tier {@link CompiledMeter} per meter name: only this tier is aggregated and shuffled
+   * here; Stage 2 derives the coarser tiers by rolling it up.
+   */
+  private static List<CompiledMeter> finestTierPerMeter(final List<CompiledMeter> meters) {
+    final Map<String, CompiledMeter> finest = new LinkedHashMap<>();
+    for (final CompiledMeter meter : meters) {
+      finest.merge(meter.meterName(), meter, (a, b) -> a.windowMs() <= b.windowMs() ? a : b);
+    }
+    return new ArrayList<>(finest.values());
   }
 
   /**

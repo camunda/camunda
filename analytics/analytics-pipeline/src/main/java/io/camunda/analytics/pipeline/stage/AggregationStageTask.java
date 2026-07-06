@@ -35,6 +35,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -137,9 +138,15 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
     final List<SegmentMergingAggregation<?, ?>> mergers = new ArrayList<>();
     for (final ActiveCube cube : cubes) {
       datasetStore.schemaManager().ensure(cube.compiled());
+      // A meter's tiers share one shuffled (finest) stream; group them so the finest aggId's
+      // applier can roll a delta up into every tier.
+      final Map<String, List<CompiledMeter>> tiersByMeter = new LinkedHashMap<>();
       for (final CompiledMeter meter : cube.compiled().meters()) {
-        mergers.add(
-            wire(cube, meter, servingWriter, cellStore, provider::runInTransaction, byStreamId));
+        tiersByMeter.computeIfAbsent(meter.meterName(), k -> new ArrayList<>()).add(meter);
+      }
+      for (final List<CompiledMeter> tiers : tiersByMeter.values()) {
+        wireMeterGroup(
+            cube, tiers, servingWriter, cellStore, provider::runInTransaction, byStreamId, mergers);
       }
     }
     topology =
@@ -148,39 +155,69 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
             .build();
   }
 
-  /** Wires one meter's merging aggregation (capturing the acc type) + its dispatch applier. */
-  private static <ACC> SegmentMergingAggregation<DimensionKey, ACC> wire(
+  /** A tier's merger paired with the window size a rolled-up delta aligns down to. */
+  private record TierMerger<ACC>(
+      long windowMs,
+      SegmentMergingAggregation<DimensionKey, ACC> merger,
+      BoundMeter<ACC, ?> bound) {}
+
+  /**
+   * Wires all tiers of one meter (capturing the acc type): a merger per tier writing its own
+   * window-size cells, and a single dispatch applier on the finest tier's aggId — the only stream
+   * Stage 1 shuffles — that folds each deduped delta into every tier, aligning its window start
+   * down to the tier's window. A coarser cell is thus the exact merge of the finer deltas within
+   * it.
+   */
+  private static <ACC> void wireMeterGroup(
       final ActiveCube cube,
-      final CompiledMeter meter,
+      final List<CompiledMeter> tiers,
       final DatasetWriter writer,
       final KeyValueStore<DbBytes, DbBytes> cellStore,
       final TransactionRunner tx,
-      final Map<Integer, CellApplier> byStreamId) {
-    @SuppressWarnings("unchecked")
-    final BoundMeter<ACC, ?> bound = (BoundMeter<ACC, ?>) meter.bound();
+      final Map<Integer, CellApplier> byStreamId,
+      final List<SegmentMergingAggregation<?, ?>> mergers) {
     final DimensionKeyValue keyCodec = new DimensionKeyValue(cube.compiled().grain());
-    final SegmentMergingAggregation<DimensionKey, ACC> merger =
-        new SegmentMergingAggregation<>(
-            meter.aggId(),
-            bound.aggregate(),
-            meter.windows(),
-            new CubeServingSink<>(
-                writer,
-                cube.compiled(),
-                meter.meterName(),
-                meter.windowMs(),
-                bound.accumulatorCodec()),
-            cellStore,
-            new DimensionKeyValue(cube.compiled().grain()),
-            bound.accumulatorCodec(),
-            tx);
+    final List<TierMerger<ACC>> tierMergers = new ArrayList<>();
+    CompiledMeter finest = null;
+    for (final CompiledMeter meter : tiers) {
+      @SuppressWarnings("unchecked")
+      final BoundMeter<ACC, ?> bound = (BoundMeter<ACC, ?>) meter.bound();
+      final SegmentMergingAggregation<DimensionKey, ACC> merger =
+          new SegmentMergingAggregation<>(
+              meter.aggId(),
+              bound.aggregate(),
+              meter.windows(),
+              new CubeServingSink<>(
+                  writer,
+                  cube.compiled(),
+                  meter.meterName(),
+                  meter.windowMs(),
+                  bound.accumulatorCodec()),
+              cellStore,
+              new DimensionKeyValue(cube.compiled().grain()),
+              bound.accumulatorCodec(),
+              tx);
+      mergers.add(merger);
+      tierMergers.add(new TierMerger<>(meter.windowMs(), merger, bound));
+      if (finest == null || meter.windowMs() < finest.windowMs()) {
+        finest = meter;
+      }
+    }
     byStreamId.put(
-        meter.aggId(),
-        (keyBytes, windowStart, accBytes) ->
-            merger.merge(
-                new Windowed<>(keyCodec.fromBytes(keyBytes), windowStart),
-                bound.accumulatorCodec().fromBytes(accBytes)));
-    return merger;
+        finest.aggId(),
+        (keyBytes, windowStart, accBytes) -> {
+          final DimensionKey key = keyCodec.fromBytes(keyBytes);
+          for (final TierMerger<ACC> tier : tierMergers) {
+            final long tierWindowStart = windowStart - Math.floorMod(windowStart, tier.windowMs());
+            // Decode a fresh accumulator per tier: the first delta becomes the cell's running
+            // total,
+            // so tiers must not share one mutable instance.
+            tier.merger()
+                .merge(
+                    new Windowed<>(key, tierWindowStart),
+                    tier.bound().accumulatorCodec().fromBytes(accBytes));
+          }
+        });
   }
 
   @Override
