@@ -147,7 +147,9 @@ public final class EventBridgeClientImpl implements EventBridgeClient, Fetcher {
       final String groupId, final String consumerId, final List<String> topics) {
     final var consumer =
         new ConsumerImpl(this, transport, executor, config, groupId, topics, consumerId);
-    return consumer.joinGroup().handle((ignore, error) -> consumer);
+    // Propagate a failed join instead of handing back an un-joined consumer (null memberId), which
+    // would only surface later as a cryptic NPE on the first heartbeat.
+    return consumer.joinGroup().thenApply(ignore -> consumer);
   }
 
   @Override

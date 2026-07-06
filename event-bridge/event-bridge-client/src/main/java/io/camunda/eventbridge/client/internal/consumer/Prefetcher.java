@@ -141,11 +141,15 @@ public final class Prefetcher {
               buffer.signal();
             }
           } else if (result != null && result.isOutOfRange()) {
-            // Cursor below the earliest retained record. Mark unresolved so the next fetch
-            // re-applies the reset policy (resolved off-lock in issueFetch).
+            // Cursor below the earliest retained record, or an earliest-fetch on a still-empty
+            // partition. Mark unresolved so the next fetch re-applies the reset policy (resolved
+            // off-lock in issueFetch), and back off rather than retrying immediately: when the
+            // reset
+            // resolves to the same out-of-range position (e.g. a freshly created topic with no
+            // records yet), an immediate retry would hot-spin until the first record appears.
             LOG.warn("Fetch out of range for {} at {}; resetting", tp, fromPosition);
             subscription.setNextPosition(tp, SubscriptionState.UNSET_POSITION);
-            retry[0] = true;
+            retry[1] = true;
           } else {
             LOG.debug(
                 "Fetch failed for {}: {}; will retry",

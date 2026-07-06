@@ -23,6 +23,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -135,9 +137,50 @@ public final class StreamRuntime<R> implements AutoCloseable {
    * {@link #stop()}. On exit it asks every partition actor to make a final commit and close, then
    * tears down any owned actor scheduler / sink executor and the consumer.
    */
+  /**
+   * Subscribes at startup, retrying on failure with the configured error backoff. A freshly created
+   * source topic — or one whose partition is mid-election — can reject the initial JoinGroup until
+   * its coordinator is ready (e.g. a downstream stage joining a topic an upstream stage just
+   * created). Rather than crash the stage on that transient race, retry until the join succeeds,
+   * {@link #stop()} is called, or the attempt budget is exhausted.
+   */
+  private Consumer subscribeWithRetry() {
+    final int maxAttempts = 30;
+    RuntimeException last = null;
+    for (int attempt = 1; running && attempt <= maxAttempts; attempt++) {
+      try {
+        return client.subscribe(group, instanceId, List.of(sourceTopic)).join();
+      } catch (final CompletionException | CancellationException e) {
+        last = e;
+        final Throwable cause = e.getCause() != null ? e.getCause() : e;
+        LOG.warn(
+            "Stream runtime '{}' could not join group '{}' on topic '{}' (attempt {}/{}); retrying in {}ms: {}",
+            instanceId,
+            group,
+            sourceTopic,
+            attempt,
+            maxAttempts,
+            errorBackoffMs,
+            cause.getMessage());
+        try {
+          Thread.sleep(errorBackoffMs);
+        } catch (final InterruptedException interrupted) {
+          Thread.currentThread().interrupt();
+          throw new IllegalStateException(
+              "Interrupted while subscribing '%s' to '%s'".formatted(instanceId, sourceTopic),
+              interrupted);
+        }
+      }
+    }
+    throw new IllegalStateException(
+        "Stream runtime '%s' failed to subscribe to topic '%s' after %d attempts"
+            .formatted(instanceId, sourceTopic, maxAttempts),
+        last);
+  }
+
   public void run() {
     running = true;
-    consumer = client.subscribe(group, instanceId, List.of(sourceTopic)).join();
+    consumer = subscribeWithRetry();
 
     final boolean ownsScheduler = injectedScheduler == null;
     final ActorScheduler scheduler = ownsScheduler ? buildScheduler() : injectedScheduler;
