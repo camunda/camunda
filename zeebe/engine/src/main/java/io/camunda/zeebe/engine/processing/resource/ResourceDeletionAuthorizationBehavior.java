@@ -18,7 +18,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.ResourceType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
-final class ResourceDeletionAuthorizationBehavior {
+public final class ResourceDeletionAuthorizationBehavior {
 
   private final AuthorizationCheckBehavior authCheckBehavior;
 

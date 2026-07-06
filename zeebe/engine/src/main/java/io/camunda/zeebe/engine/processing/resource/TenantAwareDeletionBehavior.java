@@ -18,7 +18,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
-final class TenantAwareDeletionBehavior {
+public final class TenantAwareDeletionBehavior {
 
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final TenantState tenantState;
@@ -29,7 +29,7 @@ final class TenantAwareDeletionBehavior {
     this.tenantState = tenantState;
   }
 
-  boolean untilResourceDeleted(
+  boolean forEachAuthorizedTenantUntilDeleted(
       final TypedRecord<ResourceDeletionRecord> command, final Function<String, Boolean> callback) {
     final var authorizedTenants = getAuthorizedTenants(command);
 

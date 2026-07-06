@@ -176,7 +176,7 @@ public class ResourceDeletionDeleteProcessor
     final var value = command.getValue();
 
     final var resourceDeleted =
-        tenantAwareDeletionBehavior.untilResourceDeleted(
+        tenantAwareDeletionBehavior.forEachAuthorizedTenantUntilDeleted(
             command, tenantId -> tryDeleteResource(command, tenantId, eventKey));
 
     if (!resourceDeleted) {
