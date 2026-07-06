@@ -6,8 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMemo} from 'react';
-import {DataTable, Table, TableBody, TableCell, TableContainer, TableHead, TableRow} from '@carbon/react';
+import {useCallback, useMemo} from 'react';
+import {Button, DataTable, Table, TableBody, TableCell, TableContainer, TableHead, TableRow} from '@carbon/react';
+import {Information} from '@carbon/react/icons';
+import {useNavigate, useParams} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.10';
 import {formatHistoryDate} from '../formatHistoryDate';
@@ -48,9 +50,15 @@ const HEADERS_MAP = {
 		sortKey: 'timestamp',
 		isDisabled: false,
 	},
+	actions: {
+		key: 'actions',
+		header: '',
+		sortKey: undefined,
+		isDisabled: true,
+	},
 } as const satisfies Record<string, HeaderConfig>;
 
-const HEADERS = [HEADERS_MAP.operation, HEADERS_MAP.details, HEADERS_MAP.actor, HEADERS_MAP.date];
+const HEADERS = [HEADERS_MAP.operation, HEADERS_MAP.details, HEADERS_MAP.actor, HEADERS_MAP.date, HEADERS_MAP.actions];
 
 function isHeaderKey(key: string): key is keyof typeof HEADERS_MAP {
 	return key in HEADERS_MAP;
@@ -63,14 +71,27 @@ type Props = {
 
 const HistoryTable: React.FC<Props> = ({auditLogs, search}) => {
 	const {t} = useTranslation();
+	const navigate = useNavigate();
+	const {userTaskKey} = useParams({from: '/_auth/tasklist/_tasks/$userTaskKey/history'});
 
 	const headers = useMemo(
 		() =>
 			HEADERS.map((header) => ({
 				...header,
-				header: t(header.header),
+				header: header.header === '' ? '' : t(header.header),
 			})),
 		[t],
+	);
+
+	const handleOpenDetails = useCallback(
+		(auditLogKey: string) => {
+			void navigate({
+				to: '/tasklist/$userTaskKey/history/$auditLogKey',
+				params: {userTaskKey, auditLogKey},
+				search,
+			});
+		},
+		[navigate, userTaskKey, search],
 	);
 
 	const rows = useMemo(
@@ -89,6 +110,7 @@ const HistoryTable: React.FC<Props> = ({auditLogs, search}) => {
 					),
 				actor: log.actorId,
 				date: formatHistoryDate(log.timestamp),
+				actions: log.auditLogKey,
 			})),
 		[auditLogs, t],
 	);
@@ -96,7 +118,7 @@ const HistoryTable: React.FC<Props> = ({auditLogs, search}) => {
 	return (
 		<DataTable rows={rows} headers={headers} isSortable>
 			{({rows, headers, getTableProps, getRowProps}) => (
-				<TableContainer>
+				<TableContainer className={styles.tableContainer}>
 					<Table {...getTableProps()} size="sm" isSortable>
 						<TableHead>
 							<TableRow>
@@ -108,7 +130,7 @@ const HistoryTable: React.FC<Props> = ({auditLogs, search}) => {
 									return (
 										<ColumnHeader
 											key={key}
-											label={t(HEADERS_MAP[key].header)}
+											label={HEADERS_MAP[key].header === '' ? '' : t(HEADERS_MAP[key].header)}
 											search={search}
 											sortKey={HEADERS_MAP[key].sortKey}
 											isDisabled={HEADERS_MAP[key].isDisabled}
@@ -125,7 +147,24 @@ const HistoryTable: React.FC<Props> = ({auditLogs, search}) => {
 								return (
 									<TableRow key={key} {...rowProps}>
 										{row.cells.map((cell) => (
-											<TableCell key={cell.id}>{cell.value}</TableCell>
+											<TableCell key={cell.id}>
+												{cell.info.header === 'actions' ? (
+													<Button
+														kind="ghost"
+														size="sm"
+														tooltipPosition="left"
+														iconDescription={t('tasklist.taskDetailsHistoryDetailsLabel')}
+														aria-label={t('tasklist.taskDetailsHistoryDetailsLabel')}
+														onClick={() => {
+															handleOpenDetails(cell.value as string);
+														}}
+														hasIconOnly
+														renderIcon={Information}
+													/>
+												) : (
+													cell.value
+												)}
+											</TableCell>
 										))}
 									</TableRow>
 								);

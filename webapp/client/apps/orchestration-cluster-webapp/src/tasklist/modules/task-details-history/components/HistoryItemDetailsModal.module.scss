@@ -6,12 +6,22 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-@use '@carbon/type';
-
-.detailsLabel {
-	@include type.type-style('caption-01');
+.iconText {
+	display: flex;
+	align-items: center;
+	gap: var(--cds-spacing-02);
 }
 
-.tableContainer {
-	padding-block-start: 0;
+.firstColumn {
+	width: 40%;
+}
+
+.verticallyAlignedRow {
+	:global(.cds--structured-list-td) {
+		vertical-align: middle;
+	}
+}
+
+.titleListCell {
+	padding: var(--cds-spacing-05) 0;
 }

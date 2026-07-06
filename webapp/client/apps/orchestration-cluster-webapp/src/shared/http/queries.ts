@@ -22,6 +22,7 @@ import type {
 	GetIncidentProcessInstanceStatisticsByErrorResponseBody,
 	QueryUserTaskAuditLogsRequestBody,
 	QueryUserTaskAuditLogsResponseBody,
+	GetAuditLogResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {request} from './request';
 import {endpoints} from './endpoints';
@@ -37,6 +38,7 @@ const queryKeys = {
 	processDefinitionXml: (processDefinitionKey: string) => ['processDefinitionXml', processDefinitionKey] as const,
 	userTaskAuditLogs: (userTaskKey: string, body: QueryUserTaskAuditLogsRequestBody) =>
 		['userTaskAuditLogs', userTaskKey, body] as const,
+	auditLog: (auditLogKey: string) => ['auditLog', auditLogKey] as const,
 	queryProcessDefinitions: (body: QueryProcessDefinitionsRequestBody) => ['queryProcessDefinitions', body] as const,
 	getProcessDefinitionInstanceStatistics: (body: GetProcessDefinitionInstanceStatisticsRequestBody) =>
 		['getProcessDefinitionInstanceStatistics', body] as const,
@@ -195,6 +197,18 @@ const queries = {
 			},
 		});
 	},
+
+	getAuditLog: (auditLogKey: string) =>
+		queryOptions({
+			queryKey: queryKeys.auditLog(auditLogKey),
+			queryFn: async (): Promise<GetAuditLogResponseBody> => {
+				const {response, error} = await request(endpoints.getAuditLog({auditLogKey}));
+				if (error !== null) {
+					throw error;
+				}
+				return response.json();
+			},
+		}),
 
 	getProcessDefinitionXml: (processDefinitionKey: string) =>
 		queryOptions({

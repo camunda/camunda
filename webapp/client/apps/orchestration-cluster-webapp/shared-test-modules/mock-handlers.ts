@@ -104,6 +104,11 @@ const mockQueryUserTaskAuditLogsEndpoint = createEndpointMock({
 	method: endpoints.queryUserTaskAuditLogs.method,
 });
 
+const mockGetAuditLogEndpoint = createEndpointMock({
+	endpoint: endpoints.getAuditLog.getUrl({auditLogKey: ':auditLogKey'}),
+	method: endpoints.getAuditLog.method,
+});
+
 export {
 	mockCurrentUserEndpoint,
 	mockLoginEndpoint,
@@ -117,6 +122,7 @@ export {
 	mockUnassignTaskEndpoint,
 	mockCompleteTaskEndpoint,
 	mockQueryUserTaskAuditLogsEndpoint,
+	mockGetAuditLogEndpoint,
 	mockQueryUserTasksEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
