@@ -512,6 +512,101 @@ public final class MessageStartProcessInstanceCrossPartitionHandshakeTest {
   }
 
   @Test
+  public void shouldActivatePiForZeroTtlCrossPartitionFirstArrival() {
+    // Pins the TTL=0 carve-out at the multi-partition level (spec §8.2 #3): a TTL=0 message-start
+    // publish still activates a PI cross-partition. On P_K the buffered message expires
+    // synchronously in the same processing cycle, but the cross-partition REQUEST is dispatched
+    // before that expiry, so P_B receives it with messageDeadline <= now AND messageTtl == 0. The
+    // guard rejects only on messageTtl > 0, so a TTL=0 request falls through to live evaluation and
+    // starts the PI exactly as today — the deterministic expiry guard must not swallow it. This is
+    // the regression pin for the documented behaviour the whole TTL gate is carefully carved
+    // around.
+    deployAndAwaitStartEventSubscriptionsOnAllPartitions(MESSAGE_START_PROCESS);
+
+    // when a TTL=0 message-start publish lands on P_K but its businessId hashes to P_B
+    engine
+        .message()
+        .withName(MESSAGE_NAME)
+        .withCorrelationKey(CORRELATION_KEY)
+        .withBusinessId(BUSINESS_ID)
+        .withTimeToLive(0L)
+        .publish();
+
+    // then a PI is still activated on P_B (its key encodes hash(businessId)) carrying the
+    // businessId
+    final var activating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementType(BpmnElementType.PROCESS)
+            .withBpmnProcessId(PROCESS_ID)
+            .getFirst();
+    assertThat(Protocol.decodePartitionId(activating.getValue().getProcessInstanceKey()))
+        .as(
+            "a TTL=0 cross-partition first-arrival must still start its PI on P_B = hash(businessId)")
+        .isEqualTo(partitionFor(BUSINESS_ID));
+    assertThat(activating.getValue().getBusinessId()).isEqualTo(BUSINESS_ID);
+  }
+
+  @Test
+  public void shouldRejectExpiredFirstArrivalThatOnlyReachesPbAfterDeadline() {
+    // Pins the reordered / late first-arrival window (spec §8.2 #2, §3.2) at the multi-partition
+    // level: the guard gates on messageTtl, not on an isRetry marker, so a request that P_B has
+    // never seen before — a genuine first-arrival, not a re-reply of an already-started PI — is
+    // still refused with REJECT_EXPIRED once it lands past the messageDeadline. This is the exact
+    // window the rejected isRetry design left open (a delayed first-arrival racing its own retry
+    // would carry isRetry=false and activate); here no delivery ever reaches P_B before the
+    // deadline, so no PI and no dedup row ever exist, and the only surviving delivery is the
+    // post-deadline one — which must be rejected, never allowed to start a fresh (duplicate) PI.
+    deployAndAwaitStartEventSubscriptionsOnAllPartitions(MESSAGE_START_PROCESS);
+
+    // drop every forward REQUEST to P_B until we cross the deadline, so P_B never sees the request
+    // while it is still live; the pending ask on P_K survives and the scheduler keeps
+    // re-dispatching
+    final AtomicBoolean blockRequest = new AtomicBoolean(true);
+    engine.interceptInterPartitionCommands(
+        (receiverPartitionId, valueType, intent, recordKey, command) ->
+            !(intent == MessageStartProcessInstanceRequestIntent.REQUEST && blockRequest.get()));
+
+    // when a message-start publish lands on P_K and asks P_B for a businessId no holder owns
+    engine
+        .message()
+        .withName(MESSAGE_NAME)
+        .withCorrelationKey(CORRELATION_KEY)
+        .withBusinessId(BUSINESS_ID)
+        .withTimeToLive(MESSAGE_TTL.toMillis())
+        .publish();
+
+    // and time advances past the messageDeadline + sweep interval (still well inside the 1-minute
+    // message-TTL checker, so the buffered message on P_K is not yet expired and the ask keeps
+    // being
+    // retried) — every REQUEST dispatched so far was dropped, so no PI was ever created
+    engine.increaseTime(MESSAGE_TTL.plus(SWEEP_INTERVAL).plusSeconds(1));
+
+    // when the transport is unblocked so the next retry actually reaches P_B, now past the deadline
+    blockRequest.set(false);
+    engine.increaseTime(ASK_RETRY_INTERVAL.multipliedBy(2).plusSeconds(1));
+
+    // then P_B refuses the first-ever-seen request with REJECT_EXPIRED (P_K records
+    // EXPIRED_REJECTED) and no PI is ever activated — the guard closes the late-first-arrival
+    // window
+    // without any isRetry escape hatch
+    RecordingExporter.messageStartProcessInstanceRequestRecords(
+            MessageStartProcessInstanceRequestIntent.EXPIRED_REJECTED)
+        .getFirst();
+    final long activations =
+        RecordingExporter.records()
+            .limit(r -> r.getIntent() == MessageStartProcessInstanceRequestIntent.EXPIRED_REJECTED)
+            .processInstanceRecords()
+            .withBpmnProcessId(PROCESS_ID)
+            .withElementType(BpmnElementType.PROCESS)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .count();
+    assertThat(activations)
+        .as(
+            "a first-arrival that only reaches P_B past the deadline is expiry-rejected, never started")
+        .isZero();
+  }
+
+  @Test
   public void shouldStartFreshPiWhenRetryArrivesWithBannedHolderOnPB() {
     // Pins the multi-partition banned-PI re-evaluation outcome: the lookup-time filter on P_B
     // treats a cached dedup entry whose holder PI has been banned as a miss and re-evaluates
