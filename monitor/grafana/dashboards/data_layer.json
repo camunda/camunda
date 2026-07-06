@@ -3112,7 +3112,7 @@
               },
               "editorMode": "builder",
               "exemplar": true,
-              "expr": "rate(zeebe_rdbms_exporter_failed_flush_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]) / rate(zeebe_camunda_exporter_flush_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])",
+              "expr": "rate(zeebe_rdbms_exporter_failed_flush_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]) / rate(zeebe_rdbms_exporter_flush_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])",
               "interval": "",
               "legendFormat": "{{pod}} Exporter {{partition}}",
               "range": true,
