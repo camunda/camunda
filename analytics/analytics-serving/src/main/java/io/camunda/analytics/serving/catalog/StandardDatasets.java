@@ -62,13 +62,14 @@ public final class StandardDatasets {
     final DatasetCompiler compiler =
         new DatasetCompiler(
             MeterCatalog.withDefaults(), new MeterRegistry(metadataStore.meterIdStore()));
+    // The standard dashboards cover all retained history, so they activate from time 0.
     for (final DatasetDeclaration declaration : declarations()) {
-      final RegisteredDataset registered = registry.admit(declaration, Map.of());
+      final RegisteredDataset registered = registry.admit(declaration, Map.of(), 0L);
       metadataStore.datasetSpecStore().create(registered);
       compiler.compile(registered.cubeId(), declaration); // side effect: allocate + persist aggIds
     }
     for (final DatasetDeclaration declaration : tableDeclarations()) {
-      metadataStore.datasetSpecStore().create(registry.admit(declaration, Map.of()));
+      metadataStore.datasetSpecStore().create(registry.admit(declaration, Map.of(), 0L));
     }
   }
 

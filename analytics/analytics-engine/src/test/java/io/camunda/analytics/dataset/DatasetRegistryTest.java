@@ -33,8 +33,8 @@ final class DatasetRegistryTest {
     final Map<Integer, Long> activation = new HashMap<>(Map.of(0, 500L, 1, 900L));
 
     // when
-    final RegisteredDataset first = registry.admit(declaration("a"), activation);
-    final RegisteredDataset second = registry.admit(declaration("b"), Map.of(0, 10L));
+    final RegisteredDataset first = registry.admit(declaration("a"), activation, 0L);
+    final RegisteredDataset second = registry.admit(declaration("b"), Map.of(0, 10L), 0L);
 
     // then cube ids are stable and monotonic
     assertThat(first.cubeId()).isEqualTo(1L);
@@ -48,22 +48,34 @@ final class DatasetRegistryTest {
   void shouldApplyForwardOnlyActivation() {
     // given a cube activated at position 500 on partition 0 (and nothing declared for partition 2)
     final DatasetRegistry registry = new DatasetRegistry();
-    final RegisteredDataset cube = registry.admit(declaration("a"), Map.of(0, 500L));
+    final RegisteredDataset cube = registry.admit(declaration("a"), Map.of(0, 500L), 0L);
 
-    // then facts before activation are excluded, at/after are included
-    assertThat(cube.admits(0, 499L)).isFalse();
-    assertThat(cube.admits(0, 500L)).isTrue();
-    assertThat(cube.admits(0, 600L)).isTrue();
+    // then facts before activation are excluded, at/after are included (event time passes at 0)
+    assertThat(cube.admits(0, 499L, 0L)).isFalse();
+    assertThat(cube.admits(0, 500L, 0L)).isTrue();
+    assertThat(cube.admits(0, 600L, 0L)).isTrue();
     // a partition with no declared activation is active from its start
-    assertThat(cube.admits(2, 0L)).isTrue();
+    assertThat(cube.admits(2, 0L, 0L)).isTrue();
+  }
+
+  @Test
+  void shouldApplyEventTimeActivationCutover() {
+    // given a cube declared at runtime with an event-time cutover of 1000 (position vector empty)
+    final DatasetRegistry registry = new DatasetRegistry();
+    final RegisteredDataset cube = registry.admit(declaration("a"), Map.of(), 1000L);
+
+    // then facts with event time before the cutover are excluded, at/after are included
+    assertThat(cube.admits(0, 0L, 999L)).isFalse();
+    assertThat(cube.admits(0, 0L, 1000L)).isTrue();
+    assertThat(cube.admits(0, 5L, 2000L)).isTrue();
   }
 
   @Test
   void shouldRecoverIdenticallyViaSnapshotRestore() {
     // given a registry with two admitted cubes
     final DatasetRegistry before = new DatasetRegistry();
-    before.admit(declaration("a"), Map.of(0, 500L));
-    before.admit(declaration("b"), Map.of(0, 10L));
+    before.admit(declaration("a"), Map.of(0, 500L), 0L);
+    before.admit(declaration("b"), Map.of(0, 10L), 0L);
 
     // when restored from its snapshot (a cold recovery)
     final DatasetRegistry after = DatasetRegistry.restore(before.snapshot());
@@ -73,6 +85,6 @@ final class DatasetRegistryTest {
         .extracting(RegisteredDataset::cubeId, RegisteredDataset::activation)
         .containsExactly(tuple(1L, Map.of(0, 500L)), tuple(2L, Map.of(0, 10L)));
     // and a new admission continues past the restored ids (no reuse)
-    assertThat(after.admit(declaration("c"), Map.of()).cubeId()).isEqualTo(3L);
+    assertThat(after.admit(declaration("c"), Map.of(), 0L).cubeId()).isEqualTo(3L);
   }
 }

@@ -65,7 +65,8 @@ final class AnalyticsMetadataStoreTest {
                         "sla", "ratio", "durationMs", Map.of("op", "le", "threshold", "300000")))
                 .window(60_000L)
                 .build(),
-            Map.of(0, 100L, 1, 250L));
+            Map.of(0, 100L, 1, 250L),
+            1_700_000_000_000L);
     final RegisteredDataset raw =
         registry.admit(
             DatasetDeclaration.builder("raw-instances", FactType.PROCESS_INSTANCE)
@@ -73,7 +74,8 @@ final class AnalyticsMetadataStoreTest {
                 .dimension("bpmnProcessId", DimensionType.STRING)
                 .dimension("durationMs", DimensionType.LONG)
                 .build(),
-            Map.of());
+            Map.of(),
+            0L);
 
     // when persisted
     assertThat(store.datasetSpecStore().isEmpty()).isTrue();

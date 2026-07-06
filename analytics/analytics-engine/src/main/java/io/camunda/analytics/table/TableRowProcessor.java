@@ -47,7 +47,7 @@ public final class TableRowProcessor implements Processor<Fact, Void> {
   @Override
   public void process(final Fact fact) {
     if (fact.factType() != factType
-        || !dataset.admits(fact.sourcePartition(), fact.sourcePosition())
+        || !dataset.admits(fact.sourcePartition(), fact.sourcePosition(), fact.eventTime())
         || !matchesFilters(fact)) {
       return;
     }

@@ -61,7 +61,7 @@ public final class CubeMeterProcessor implements Processor<Fact, SegmentCell> {
   @Override
   public void process(final Fact fact) {
     if (fact.factType() == factType
-        && dataset.admits(fact.sourcePartition(), fact.sourcePosition())
+        && dataset.admits(fact.sourcePartition(), fact.sourcePosition(), fact.eventTime())
         && matchesFilters(fact)) {
       aggregation.accept(fact);
     }

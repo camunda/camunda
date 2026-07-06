@@ -49,13 +49,17 @@ public final class DatasetRegistry {
   }
 
   /**
-   * Admits a dataset with the activation vector captured at admission (frozen), assigning a stable
-   * {@code cubeId}; returns the registered cube.
+   * Admits a dataset with the activation cutovers captured at admission (frozen), assigning a
+   * stable {@code cubeId}; returns the registered cube. {@code activationTimestampMs} is the
+   * event-time cutover ({@code 0} = from the beginning of history); {@code activation} is the
+   * (currently empty) per-source-partition position vector. See {@link RegisteredDataset}.
    */
   public RegisteredDataset admit(
-      final DatasetDeclaration declaration, final Map<Integer, Long> activation) {
+      final DatasetDeclaration declaration,
+      final Map<Integer, Long> activation,
+      final long activationTimestampMs) {
     final RegisteredDataset dataset =
-        new RegisteredDataset(nextCubeId++, declaration, activation, 1);
+        new RegisteredDataset(nextCubeId++, declaration, activation, activationTimestampMs, 1);
     byId.put(dataset.cubeId(), dataset);
     return dataset;
   }
