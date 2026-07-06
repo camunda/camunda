@@ -1,6 +1,6 @@
 # ADR 0004 — Cube read path: prune, stream, and push down aggregation
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-07-06
 - Scope: `analytics/analytics-serving` (query planner/executor + read SPI),
   `analytics/analytics-model` (meter pushdown contract), `analytics/analytics-store-rdbms`,
@@ -85,9 +85,21 @@ interface DatasetQueryClient {
   is only the document `_id`, which sorts poorly); add it to `DocumentDatasetWriter.upsertCell` and
   the index mapping.
 
-The `DatasetQueryExecutor` consumes the stream, merging each cell into its accumulator map as it
-arrives. Memory = one page + the merge map (sized by *output* cardinality — group-by keys × buckets
-— not by input cells). Correct for any range size.
+**Streaming is an application-level concern behind the seam.** The `streamCells` contract takes a
+`Consumer<Cell>` (not a returned `List`), so both adapters must emit and release one batch/page at a
+time — never buffer the whole result. The *transport* differs: RDBMS is one query with a forward
+JDBC cursor (`fetchSize`, MyBatis `Cursor<Cell>`); ES/OS is a client-driven `search_after` loop (N
+stateless requests). The `DatasetQueryExecutor` consumes the stream identically in both cases,
+merging each cell into its accumulator map as it arrives. Memory = one page + the merge map (sized
+by *output* cardinality — group-by keys × buckets — not by input cells). Correct for any range size.
+
+**ES/OS goes through the `search-client` abstraction.** All document-backend query needs —
+`search_after`/`sort`, and the Layer-B `composite` aggregation with `date_histogram` sources and
+`sum`/`min`/`max` sub-aggregations — are expressed via `io.camunda.search.clients` (`SearchQueryRequest`,
+`SearchQueryBuilders`, the aggregator API). Where a capability is missing, it is **added to the
+`search-client` modules** (`search-client-query-transformer` + the ES/OS transformers), never worked
+around inside `analytics-store-document`. The document store composes the abstraction; it does not
+bypass it with raw client calls.
 
 ### Layer B — Additive pushdown (per-meter strategy)
 
@@ -110,21 +122,45 @@ record PushdownColumn(String suffix, DimensionType type, Agg agg) {}   // Agg = 
 | avg | two columns `sum_`,`count_`, both `SUM`; result = `SUM(sum_)/SUM(count_)` |
 | percentile, distinct (HLL), top-k | **none** — sketch state, stays blob + app-merge |
 
-**Storage.** A pushable meter is stored as its `PushdownColumn`s (native numeric columns); a sketch
-meter stays a binary blob. The schema manager and writer branch on the spec.
+**Storage.** A pushable meter is stored as its `PushdownColumn`s (native numeric columns). A sketch
+meter is stored as its binary **blob** *plus* a finalized **`<meter>_value`** column (a cheap
+denormalized `getResult` of that cell's own sketch — ~8 bytes). The schema manager and writer branch
+on the spec. Blob placement: **same table + strict column projection** by default — Postgres TOASTs
+values > ~2 KB out-of-line, and reads that don't need the sketch never select it; split to a
+`dataset_<id>_sketch(cell_key FK, meter, blob)` side table only when sketch-state **retention
+diverges** from the finalized values (keep `_value` long, expire blobs sooner). Total size is
+governed by Layer C (partition drop) + tier downsampling, not by the blob's location.
 
-**Planner.** `DatasetQueryPlanner` already chooses a *tier* per meter; it now also chooses a
-*strategy* per meter — `PUSH_DOWN` (has a spec) vs `STREAM_MERGE` (sketch). Meters of the same
-(tier, strategy) share one fetch.
+**Three read strategies.** The planner already chooses a *tier* per meter; it now also chooses a
+*strategy* per meter, from the query's granularity and group-by:
+
+- **`DIRECT`** — when the read is **1:1 with cells** (granularity == the tier's window *and*
+  group-by == the full grain): each cell is exactly one output row, so no aggregation is needed.
+  Fetch the stored column — the additive column *or* the sketch's `<meter>_value`. One query, no
+  merge, no blob on the wire.
+- **`PUSH_DOWN`** — additive meter that rolls up (coarser granularity or dropped dimensions): the DB
+  aggregates. The output bucket is a *derived* group key `bucket = window_start − (window_start mod
+  granularity)`, so an arbitrary granularity (e.g. 5m over a 1m tier) is just another `GROUP BY`.
+- **`STREAM_MERGE`** — sketch meter that rolls up: the only path that streams (Layer A). Cannot use
+  `<meter>_value` (finalized percentiles are not combinable) — it streams the blobs and merges.
+
+Meters sharing a (tier, strategy) share one fetch.
 
 **Backends.**
-- **RDBMS:** `SELECT dims, SUM(count_), MAX(max_) … WHERE tier=? AND window ∈ [..] AND filters
-  GROUP BY dims` → returns **O(result) rows**, the DB does the reduction.
-- **ES/OS:** a **`composite`** aggregation (terms on the group-by dims, paged via `after`) with
-  `sum`/`min`/`max` sub-aggregations → in-engine reduction, paged.
+- **RDBMS:** `SELECT dims, window_start − MOD(window_start, :g) AS bucket, SUM(count_), MAX(max_) …
+  WHERE window_size=? AND window_start ∈ [..] AND filters GROUP BY dims, bucket` → **O(result)**;
+  `DIRECT` is the same `SELECT` without the aggregation. Rollup granularity is the derived `bucket`.
+- **ES/OS:** a **`composite`** aggregation (terms on the group-by dims + a `date_histogram` source
+  at the granularity, paged via `after`) with `sum`/`min`/`max` sub-aggregations → in-engine
+  reduction, paged.
 
-**Executor.** Unions the pushed-down group rows with the streamed-and-merged sketch rows on
-`(group-by, bucket)`, then finalizes. Sketches still ride Layer A.
+**Executor.** Runs each strategy's fetch, then unions on `(group-by, bucket)`: `DIRECT`/`PUSH_DOWN`
+rows come finalized from the store; `STREAM_MERGE` rows are the streamed-and-merged sketches (Layer
+A). A cube mixing additive and sketch meters is one union of the two.
+
+**Making a granularity `DIRECT`** is a storage choice: materialize that granularity as its own tier
+at write time (an extra rollup tier). Otherwise a granularity that does not equal a stored tier
+always rolls up (additive → `PUSH_DOWN`, sketch → `STREAM_MERGE`).
 
 ### Layer C — Time partitioning (scale + retention)
 
@@ -177,7 +213,8 @@ layer, backends can land independently.
    truncation and correct totals.
 3. `analytics-store-document`: store the cell sort key as a `keyword` field
    (`DocumentDatasetWriter.upsertCell` + `ensure` mapping); `streamCells` via `sort` +
-   `search_after`. Compile-verified (no ES fixture yet).
+   `search_after` **through the `search-client` abstraction** — extend `search-client` if it lacks a
+   needed capability, do not bypass it. Compile-verified (no ES fixture yet).
 
 **Layer B — additive pushdown**
 
@@ -186,8 +223,11 @@ layer, backends can land independently.
    tests on the catalog.
 5. `analytics-store-rdbms`: schema + writer branch on the spec (numeric columns vs blob); a
    pushdown `GROUP BY` provider. Round-trip test: write additive cells, read via `GROUP BY`.
-6. `analytics-store-document`: `composite` terms + `sum`/`min`/`max` sub-aggs, `after`-paged;
-   numeric fields for additive meters. Compile-verified.
+6. `analytics-store-document`: `composite` terms + `date_histogram` source + `sum`/`min`/`max`
+   sub-aggs, `after`-paged; numeric fields for additive meters. Expressed **through the
+   `search-client` aggregator abstraction** — if a source/sub-agg type is missing, add it to
+   `search-client-query-transformer` + the ES/OS transformers, never work around it in the store.
+   Compile-verified.
 7. `analytics-serving`: planner picks strategy per meter; executor unions pushed-down rows with
    streamed sketch rows. Tests: mixed cube (additive + sketch) returns identical results to the
    pure app-merge baseline.
@@ -203,11 +243,17 @@ layer, backends can land independently.
 10. `analytics-webapp`: no API change for cubes (the executor contract is stable); the table
     streaming/export endpoint (row cursor) reuses the Layer-A cursor keyed by `row_key`.
 
+## Resolved
+
+- **Cursor API:** push `Consumer<Cell>` (owns lifecycle, forces page-at-a-time, simplest correct).
+- **Blob placement:** same table + strict column projection by default; a `_sketch` side table only
+  when sketch-state retention diverges from the finalized `_value`s (see Layer B, Storage).
+- **`DIRECT` fast path + `<meter>_value`:** matching-granularity reads fetch a stored value and skip
+  the merge for *all* meter classes (see Layer B, Three read strategies).
+
 ## Open questions
 
-- **Cursor API:** push `Consumer<Cell>` (owns lifecycle, simplest correct) vs a pull `Stream<Cell>`
-  (composes, must be closed). Proposed: push.
 - **avg encoding today:** confirm the current `avg` accumulator already carries sum+count so Layer B
-  can split it into two columns without a fact re-fold.
+  can split it into two columns without a fact re-fold; otherwise the writer computes them.
 - **H2 in tests vs Postgres partitioning:** Layer C is exercised only against Postgres; H2 tests
   cover the index path. Decide whether to add a Postgres Testcontainers suite for C.
