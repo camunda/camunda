@@ -14,6 +14,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
 import io.camunda.authentication.config.controllers.WebSecurityOidcTestContext;
 import java.io.IOException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
@@ -24,6 +27,9 @@ import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.util.UriComponents;
+import org.springframework.web.util.UriComponentsBuilder;
 
 /**
  * Regression test for camunda/camunda-security-library#484: {@code CamundaOidcLogoutSuccessHandler}
@@ -82,10 +88,13 @@ public class OidcLogoutSuccessHandlerWiringTest extends AbstractWebSecurityConfi
     assertThat(result.getResponse().getContentType()).startsWith(MediaType.APPLICATION_JSON_VALUE);
 
     final JsonNode body = new ObjectMapper().readTree(result.getResponse().getContentAsString());
-    final String url = body.get("url").asText();
-    assertThat(url).contains("https://idp.example.com/protocol/openid-connect/logout");
-    assertThat(url).contains("id_token_hint");
-    assertThat(url).contains("logout_hint=" + LOGIN_HINT);
+    final MultiValueMap<String, String> query =
+        queryParams(body.get("url").asText(), "idp.example.com", "/protocol/openid-connect/logout");
+    assertThat(query.getFirst("id_token_hint")).isNotBlank();
+    assertThat(
+            URLDecoder.decode(
+                Objects.requireNonNull(query.getFirst("logout_hint")), StandardCharsets.UTF_8))
+        .isEqualTo(LOGIN_HINT);
   }
 
   @Test
@@ -105,7 +114,18 @@ public class OidcLogoutSuccessHandlerWiringTest extends AbstractWebSecurityConfi
     // then backward compatibility is preserved: a 302 redirect to the IdP end-session endpoint
     assertThat(result).hasStatus(HttpStatus.FOUND).containsHeader(HttpHeaders.LOCATION);
     final String location = result.getResponse().getHeader(HttpHeaders.LOCATION);
-    assertThat(location).contains("https://idp.example.com/protocol/openid-connect/logout");
+    final MultiValueMap<String, String> query =
+        queryParams(location, "idp.example.com", "/protocol/openid-connect/logout");
+    assertThat(query.getFirst("id_token_hint")).isNotBlank();
+  }
+
+  private static MultiValueMap<String, String> queryParams(
+      final String url, final String expectedHost, final String expectedPath) {
+    final UriComponents parsed = UriComponentsBuilder.fromUriString(url).build();
+    assertThat(parsed.getScheme()).isEqualTo("https");
+    assertThat(parsed.getHost()).isEqualTo(expectedHost);
+    assertThat(parsed.getPath()).isEqualTo(expectedPath);
+    return parsed.getQueryParams();
   }
 
   /**
