@@ -13,11 +13,9 @@ import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.deployment.StartEventSubscriptionManager;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.AuthenticatedAuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.exception.ForbiddenException;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.resource.ResourceDeletionExceptions.ActiveProcessInstancesException;
 import io.camunda.zeebe.engine.processing.resource.ResourceDeletionExceptions.NoSuchResourceException;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
@@ -35,7 +33,6 @@ import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.ResourceType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -59,7 +56,6 @@ public class ResourceDeletionDeleteProcessor
   private final DecisionState decisionState;
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final ProcessState processState;
-  private final AuthorizationCheckBehavior authCheckBehavior;
   private final FormState formState;
   private final ResourceState resourceState;
   private final TenantState tenantState;
@@ -67,6 +63,7 @@ public class ResourceDeletionDeleteProcessor
   private final FormDeletionBehavior formDeletionBehavior;
   private final DecisionRequirementsDeletionBehavior decisionRequirementsDeletionBehavior;
   private final ResourceDeletionBehavior resourceDeletionBehavior;
+  private final ResourceDeletionAuthorizationBehavior authorizationBehavior;
 
   public ResourceDeletionDeleteProcessor(
       final Writers writers,
@@ -83,7 +80,6 @@ public class ResourceDeletionDeleteProcessor
     decisionState = processingState.getDecisionState();
     this.commandDistributionBehavior = commandDistributionBehavior;
     processState = processingState.getProcessState();
-    this.authCheckBehavior = authCheckBehavior;
     formState = processingState.getFormState();
     resourceState = processingState.getResourceState();
     tenantState = processingState.getTenantState();
@@ -114,6 +110,9 @@ public class ResourceDeletionDeleteProcessor
             stateWriter, writers.command(), keyGenerator, processingState.getDecisionState());
 
     resourceDeletionBehavior = new ResourceDeletionBehavior(stateWriter, keyGenerator);
+
+    authorizationBehavior =
+        new ResourceDeletionAuthorizationBehavior(authCheckBehavior, stateWriter);
   }
 
   @Override
@@ -202,7 +201,7 @@ public class ResourceDeletionDeleteProcessor
           .setResourceType(ResourceType.PROCESS_DEFINITION)
           .setResourceId(process.getBpmnProcessId())
           .setTenantId(process.getTenantId());
-      return authorizeAndDelete(
+      return authorizationBehavior.authorizeAndDelete(
           command,
           eventKey,
           PermissionType.DELETE_PROCESS,
@@ -220,7 +219,7 @@ public class ResourceDeletionDeleteProcessor
           .setResourceType(ResourceType.DECISION_REQUIREMENTS)
           .setResourceId(drg.getDecisionRequirementsId())
           .setTenantId(drg.getTenantId());
-      return authorizeAndDelete(
+      return authorizationBehavior.authorizeAndDelete(
           command,
           eventKey,
           PermissionType.DELETE_DRD,
@@ -239,7 +238,7 @@ public class ResourceDeletionDeleteProcessor
           .setResourceType(ResourceType.FORM)
           .setResourceId(form.getFormId())
           .setTenantId(form.getTenantId());
-      return authorizeAndDelete(
+      return authorizationBehavior.authorizeAndDelete(
           command,
           eventKey,
           PermissionType.DELETE_FORM,
@@ -256,7 +255,7 @@ public class ResourceDeletionDeleteProcessor
           .setResourceType(ResourceType.UNKNOWN)
           .setResourceId(resource.getResourceId())
           .setTenantId(resource.getTenantId());
-      return authorizeAndDelete(
+      return authorizationBehavior.authorizeAndDelete(
           command,
           eventKey,
           PermissionType.DELETE_RESOURCE,
@@ -268,21 +267,6 @@ public class ResourceDeletionDeleteProcessor
     return false;
   }
 
-  private boolean authorizeAndDelete(
-      final TypedRecord<ResourceDeletionRecord> command,
-      final long eventKey,
-      final PermissionType permissionType,
-      final String resourceId,
-      final String tenantId,
-      final Runnable deletionAction) {
-    checkAuthorization(
-        command, AuthorizationResourceType.RESOURCE, permissionType, resourceId, tenantId);
-    stateWriter.appendFollowUpEvent(eventKey, ResourceDeletionIntent.DELETING, command.getValue());
-    setTenantId(command, tenantId);
-    deletionAction.run();
-    return true;
-  }
-
   private void deleteHistory(
       final long eventKey, final TypedRecord<ResourceDeletionRecord> command) {
     if (command.isCommandDistributed()) {
@@ -290,32 +274,11 @@ public class ResourceDeletionDeleteProcessor
       // batch operation creator itself.
       return;
     }
+
+    authorizationBehavior.checkAuthorizationForHistoryDeletion(command);
+
     final var commandValue = command.getValue();
-    final var resourceType = commandValue.getResourceType();
-
-    // We cannot rely on the existing checkAuthorization method as it would swallow the not found in
-    // case the caller has no access to the tenant.
-    final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.RESOURCE)
-            .permissionType(
-                resourceType == ResourceType.PROCESS_DEFINITION
-                    ? PermissionType.DELETE_PROCESS
-                    : PermissionType.DELETE_DRD)
-            .addResourceId(commandValue.getResourceId())
-            .tenantId(commandValue.getTenantId())
-            .build();
-    final var authResponse = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
-    if (authResponse.isLeft()) {
-      if (authResponse.getLeft().type() == RejectionType.NOT_FOUND) {
-        throw new NoSuchResourceException(commandValue.getResourceKey());
-      } else {
-        throw new ForbiddenException(authRequest);
-      }
-    }
-
-    switch (resourceType) {
+    switch (commandValue.getResourceType()) {
       case PROCESS_DEFINITION ->
           processDeletionBehavior.deleteProcessInstanceHistory(
               commandValue.getResourceKey(), eventKey, commandValue);
@@ -329,19 +292,10 @@ public class ResourceDeletionDeleteProcessor
     }
   }
 
-  private AuthorizedTenants getAuthorizedTenants(
-      final TypedRecord<ResourceDeletionRecord> command) {
-    final String tenantId = command.getValue().getTenantId();
-    if (tenantId.isEmpty()) {
-      return authCheckBehavior.getAuthorizedTenantIds(command);
-    }
-    return new AuthenticatedAuthorizedTenants(tenantId);
-  }
-
   private boolean untilResourceDeleted(
       final TypedRecord<ResourceDeletionRecord> command,
       final Function<String, Boolean> resourceDeletionCallback) {
-    final var authorizedTenants = getAuthorizedTenants(command);
+    final var authorizedTenants = authorizationBehavior.getAuthorizedTenants(command);
 
     if (AuthorizedTenants.ANONYMOUS.equals(authorizedTenants)) {
       return Optional.of(tryToDeleteResourceAssignedToDefaultTenant(resourceDeletionCallback))
@@ -371,29 +325,5 @@ public class ResourceDeletionDeleteProcessor
           return !resourceDeleted.get();
         });
     return resourceDeleted.get();
-  }
-
-  private void setTenantId(
-      final TypedRecord<ResourceDeletionRecord> command, final String tenantId) {
-    command.getValue().setTenantId(tenantId);
-  }
-
-  private void checkAuthorization(
-      final TypedRecord<ResourceDeletionRecord> command,
-      final AuthorizationResourceType resourceType,
-      final PermissionType permissionType,
-      final String resourceId,
-      final String tenantId) {
-    final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(resourceType)
-            .permissionType(permissionType)
-            .tenantId(tenantId)
-            .addResourceId(resourceId)
-            .build();
-    if (authCheckBehavior.isAuthorizedOrInternalCommand(authRequest).isLeft()) {
-      throw new ForbiddenException(authRequest);
-    }
   }
 }
