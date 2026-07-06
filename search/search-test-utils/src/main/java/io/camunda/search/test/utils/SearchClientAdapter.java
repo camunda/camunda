@@ -274,6 +274,41 @@ public class SearchClientAdapter {
     }
   }
 
+  /**
+   * Creates a single-shard index whose documents cannot be written ({@code index.blocks.write}).
+   *
+   * <p>Writing to such an index does not throw at the request level: a bulk/reindex request against
+   * it returns HTTP 200 with a populated {@code failures[]} array (a per-item {@code
+   * cluster_block_exception}).
+   */
+  public void createIndexWithWriteBlock(final String indexName) throws IOException {
+    if (elsClient != null) {
+      elsClient
+          .indices()
+          .create(
+              c ->
+                  c.index(indexName)
+                      .settings(
+                          settings ->
+                              settings
+                                  .numberOfShards("1")
+                                  .numberOfReplicas("0")
+                                  .blocks(b -> b.write(true))));
+    } else if (osClient != null) {
+      osClient
+          .indices()
+          .create(
+              c ->
+                  c.index(indexName)
+                      .settings(
+                          settings ->
+                              settings
+                                  .numberOfShards(1)
+                                  .numberOfReplicas(0)
+                                  .blocks(b -> b.write(true))));
+    }
+  }
+
   public void deleteIndex(final String indexName) throws IOException {
     if (elsClient != null) {
       elsClient.indices().delete(d -> d.index(indexName));
