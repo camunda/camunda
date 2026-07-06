@@ -9,7 +9,7 @@ package io.camunda.zeebe.stream.api;
 
 public interface StreamProcessorLifecycleAware {
 
-  /** Callback after reprocessing was successful and before regular processing begins */
+  /** Callback after replay was successful and before regular processing begins */
   default void onRecovered(final ReadonlyStreamProcessorContext context) {}
 
   /** Callback which is called when StreamProcessor is on closing phase. */
