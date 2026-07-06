@@ -141,6 +141,12 @@ public interface ActivatedJob {
   String getTenantId();
 
   /**
+   * @return the identifier of the physical tenant that the job-activation request was routed to;
+   *     the default physical tenant when the request did not specify one
+   */
+  String getPhysicalTenantId();
+
+  /**
    * @return de-serialized document references if the provided variable name is present among the
    *     available variables and can be parsed as document reference
    * @throws ClientException if the variable is missing or if the variable cannot be parsed * as

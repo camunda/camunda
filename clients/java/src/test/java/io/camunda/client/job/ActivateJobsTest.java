@@ -63,6 +63,7 @@ public final class ActivateJobsTest extends ClientTest {
             .setDeadline(1231)
             .setVariables("{\"key\": \"val\"}")
             .setTenantId("test-tenant-1")
+            .setPhysicalTenantId("riskproduction")
             .setKind(JobKind.BPMN_ELEMENT)
             .setListenerEventType(ListenerEventType.START)
             .setBusinessId("order-123")
@@ -125,6 +126,7 @@ public final class ActivateJobsTest extends ClientTest {
     assertThat(job.getVariables()).isEqualTo(activatedJob1.getVariables());
     assertThat(job.getUserTask()).isNull();
     assertThat(job.getTenantId()).isEqualTo(activatedJob1.getTenantId());
+    assertThat(job.getPhysicalTenantId()).isEqualTo(activatedJob1.getPhysicalTenantId());
     assertThat(job.getKind())
         .isEqualTo(
             EnumUtil.convert(
