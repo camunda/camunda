@@ -8,35 +8,49 @@
 package io.camunda.operate.archiver;
 
 import java.util.List;
+import java.util.Map;
 
 public class ArchiveBatch {
 
-  private String finishDate;
-  private List<Object> ids;
+  private final List<Object> ids;
+  private final String finishDate;
+  private final Map<Integer, Long> totalPendingByPartition;
 
-  public ArchiveBatch(String finishDate, List<Object> ids) {
-    this.finishDate = finishDate;
+  public ArchiveBatch(final String finishDate, final List<Object> ids) {
+    this(finishDate, ids, Map.of());
+  }
+
+  public ArchiveBatch(
+      final String finishDate,
+      final List<Object> ids,
+      final Map<Integer, Long> totalPendingByPartition) {
     this.ids = ids;
+    this.totalPendingByPartition = totalPendingByPartition;
+    this.finishDate = finishDate;
+  }
+
+  public Map<Integer, Long> getTotalPendingByPartition() {
+    return totalPendingByPartition;
   }
 
   public String getFinishDate() {
     return finishDate;
   }
 
-  public void setFinishDate(String finishDate) {
-    this.finishDate = finishDate;
-  }
-
   public List<Object> getIds() {
     return ids;
   }
 
-  public void setIds(List<Object> ids) {
-    this.ids = ids;
-  }
-
   @Override
   public String toString() {
-    return "ArchiveBatch{" + "finishDate='" + finishDate + '\'' + ", ids=" + ids + '}';
+    return "ArchiveBatch{"
+        + "totalPendingByPartition="
+        + totalPendingByPartition
+        + ", finishDate='"
+        + finishDate
+        + '\''
+        + ", ids="
+        + ids
+        + '}';
   }
 }

@@ -74,6 +74,9 @@ public class Metrics {
   public static final String GAUGE_NAME_IMPORT_FNI_TREE_PATH_CACHE_SIZE =
       OPERATE_NAMESPACE + "import.fni.tree.path.cache.size";
 
+  public static final String GAUGE_NAME_TOTAL_PENDING_ARCHIVE_INSTANCES =
+      OPERATE_NAMESPACE + "archive.pending.process.instances";
+
   // Tags
   // -----
   //  Keys:
