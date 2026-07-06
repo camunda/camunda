@@ -29,6 +29,8 @@ import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.ResourceType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -39,16 +41,37 @@ final class DecisionRequirementsDeletionBehavior {
   private final TypedCommandWriter commandWriter;
   private final KeyGenerator keyGenerator;
   private final DecisionState decisionState;
+  private final ResourceDeletionAuthorizationBehavior authorizationBehavior;
 
   DecisionRequirementsDeletionBehavior(
       final StateWriter stateWriter,
       final TypedCommandWriter commandWriter,
       final KeyGenerator keyGenerator,
-      final DecisionState decisionState) {
+      final DecisionState decisionState,
+      final ResourceDeletionAuthorizationBehavior authorizationBehavior) {
     this.stateWriter = stateWriter;
     this.commandWriter = commandWriter;
     this.keyGenerator = keyGenerator;
     this.decisionState = decisionState;
+    this.authorizationBehavior = authorizationBehavior;
+  }
+
+  boolean tryDelete(
+      final TypedRecord<ResourceDeletionRecord> command,
+      final long eventKey,
+      final DeployedDrg drg) {
+    command
+        .getValue()
+        .setResourceType(ResourceType.DECISION_REQUIREMENTS)
+        .setResourceId(drg.getDecisionRequirementsId())
+        .setTenantId(drg.getTenantId());
+    return authorizationBehavior.authorizeAndDelete(
+        command,
+        eventKey,
+        PermissionType.DELETE_DRD,
+        bufferAsString(drg.getDecisionRequirementsId()),
+        drg.getTenantId(),
+        () -> deleteDecisionRequirements(drg, command, eventKey));
   }
 
   void deleteDecisionRequirements(

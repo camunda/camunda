@@ -36,6 +36,8 @@ import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.ResourceType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import org.agrona.DirectBuffer;
@@ -58,6 +60,7 @@ final class ProcessDeletionBehavior {
   private final StartEventSubscriptionManager startEventSubscriptionManager;
   private final StartEventSubscriptions startEventSubscriptions;
   private final ProcessDefinitionMetrics processDefinitionMetrics;
+  private final ResourceDeletionAuthorizationBehavior authorizationBehavior;
 
   ProcessDeletionBehavior(
       final StateWriter stateWriter,
@@ -67,7 +70,8 @@ final class ProcessDeletionBehavior {
       final CatchEventBehavior catchEventBehavior,
       final StartEventSubscriptionManager startEventSubscriptionManager,
       final StartEventSubscriptions startEventSubscriptions,
-      final ProcessDefinitionMetrics processDefinitionMetrics) {
+      final ProcessDefinitionMetrics processDefinitionMetrics,
+      final ResourceDeletionAuthorizationBehavior authorizationBehavior) {
     this.stateWriter = stateWriter;
     this.commandWriter = commandWriter;
     this.keyGenerator = keyGenerator;
@@ -79,6 +83,25 @@ final class ProcessDeletionBehavior {
     this.startEventSubscriptionManager = startEventSubscriptionManager;
     this.startEventSubscriptions = startEventSubscriptions;
     this.processDefinitionMetrics = processDefinitionMetrics;
+    this.authorizationBehavior = authorizationBehavior;
+  }
+
+  boolean tryDelete(
+      final TypedRecord<ResourceDeletionRecord> command,
+      final long eventKey,
+      final DeployedProcess process) {
+    command
+        .getValue()
+        .setResourceType(ResourceType.PROCESS_DEFINITION)
+        .setResourceId(process.getBpmnProcessId())
+        .setTenantId(process.getTenantId());
+    return authorizationBehavior.authorizeAndDelete(
+        command,
+        eventKey,
+        PermissionType.DELETE_PROCESS,
+        bufferAsString(process.getBpmnProcessId()),
+        process.getTenantId(),
+        () -> deleteProcess(process, command, eventKey));
   }
 
   void deleteProcess(

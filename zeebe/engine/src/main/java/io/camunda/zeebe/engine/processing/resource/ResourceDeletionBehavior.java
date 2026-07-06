@@ -7,23 +7,52 @@
  */
 package io.camunda.zeebe.engine.processing.resource;
 
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
+
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.deployment.PersistedResource;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.ResourceType;
+import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 final class ResourceDeletionBehavior {
 
   private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
+  private final ResourceDeletionAuthorizationBehavior authorizationBehavior;
 
-  ResourceDeletionBehavior(final StateWriter stateWriter, final KeyGenerator keyGenerator) {
+  ResourceDeletionBehavior(
+      final StateWriter stateWriter,
+      final KeyGenerator keyGenerator,
+      final ResourceDeletionAuthorizationBehavior authorizationBehavior) {
     this.stateWriter = stateWriter;
     this.keyGenerator = keyGenerator;
+    this.authorizationBehavior = authorizationBehavior;
   }
 
-  void deleteResource(final PersistedResource persistedResource) {
+  boolean tryDelete(
+      final TypedRecord<ResourceDeletionRecord> command,
+      final long eventKey,
+      final PersistedResource resource) {
+    command
+        .getValue()
+        .setResourceType(ResourceType.UNKNOWN)
+        .setResourceId(resource.getResourceId())
+        .setTenantId(resource.getTenantId());
+    return authorizationBehavior.authorizeAndDelete(
+        command,
+        eventKey,
+        PermissionType.DELETE_RESOURCE,
+        bufferAsString(resource.getResourceId()),
+        resource.getTenantId(),
+        () -> deleteResource(resource));
+  }
+
+  private void deleteResource(final PersistedResource persistedResource) {
     final var resource =
         new ResourceRecord()
             .setResourceId(persistedResource.getResourceId())

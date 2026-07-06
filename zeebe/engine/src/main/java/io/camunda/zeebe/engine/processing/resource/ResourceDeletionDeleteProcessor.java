@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.resource;
 
-import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
-
 import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.deployment.StartEventSubscriptionManager;
@@ -31,11 +29,11 @@ import io.camunda.zeebe.engine.state.immutable.ResourceState;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.ResourceType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.List;
+import java.util.Optional;
 
 public class ResourceDeletionDeleteProcessor
     implements DistributedTypedRecordProcessor<ResourceDeletionRecord> {
@@ -48,10 +46,10 @@ public class ResourceDeletionDeleteProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final KeyGenerator keyGenerator;
   private final DecisionState decisionState;
-  private final CommandDistributionBehavior commandDistributionBehavior;
   private final ProcessState processState;
   private final FormState formState;
   private final ResourceState resourceState;
+  private final CommandDistributionBehavior commandDistributionBehavior;
   private final ProcessDeletionBehavior processDeletionBehavior;
   private final FormDeletionBehavior formDeletionBehavior;
   private final DecisionRequirementsDeletionBehavior decisionRequirementsDeletionBehavior;
@@ -85,6 +83,12 @@ public class ResourceDeletionDeleteProcessor
             bpmnBehaviors.catchEventBehavior(),
             startEventSubscriptionManager);
 
+    authorizationBehavior =
+        new ResourceDeletionAuthorizationBehavior(authCheckBehavior, stateWriter);
+
+    tenantAwareDeletionBehavior =
+        new TenantAwareDeletionBehavior(authCheckBehavior, processingState.getTenantState());
+
     processDeletionBehavior =
         new ProcessDeletionBehavior(
             stateWriter,
@@ -94,21 +98,22 @@ public class ResourceDeletionDeleteProcessor
             bpmnBehaviors.catchEventBehavior(),
             startEventSubscriptionManager,
             startEventSubscriptions,
-            processDefinitionMetrics);
+            processDefinitionMetrics,
+            authorizationBehavior);
 
-    formDeletionBehavior = new FormDeletionBehavior(stateWriter, keyGenerator);
+    formDeletionBehavior =
+        new FormDeletionBehavior(stateWriter, keyGenerator, authorizationBehavior);
 
     decisionRequirementsDeletionBehavior =
         new DecisionRequirementsDeletionBehavior(
-            stateWriter, writers.command(), keyGenerator, processingState.getDecisionState());
+            stateWriter,
+            writers.command(),
+            keyGenerator,
+            processingState.getDecisionState(),
+            authorizationBehavior);
 
-    resourceDeletionBehavior = new ResourceDeletionBehavior(stateWriter, keyGenerator);
-
-    authorizationBehavior =
-        new ResourceDeletionAuthorizationBehavior(authCheckBehavior, stateWriter);
-
-    tenantAwareDeletionBehavior =
-        new TenantAwareDeletionBehavior(authCheckBehavior, processingState.getTenantState());
+    resourceDeletionBehavior =
+        new ResourceDeletionBehavior(stateWriter, keyGenerator, authorizationBehavior);
   }
 
   @Override
@@ -189,79 +194,29 @@ public class ResourceDeletionDeleteProcessor
       final TypedRecord<ResourceDeletionRecord> command,
       final String tenantId,
       final long eventKey) {
-    final var value = command.getValue();
-
-    final var process = processState.getProcessByKeyAndTenant(value.getResourceKey(), tenantId);
-    if (process != null) {
-      command
-          .getValue()
-          .setResourceType(ResourceType.PROCESS_DEFINITION)
-          .setResourceId(process.getBpmnProcessId())
-          .setTenantId(process.getTenantId());
-      return authorizationBehavior.authorizeAndDelete(
-          command,
-          eventKey,
-          PermissionType.DELETE_PROCESS,
-          bufferAsString(process.getBpmnProcessId()),
-          process.getTenantId(),
-          () -> processDeletionBehavior.deleteProcess(process, command, eventKey));
-    }
-
-    final var drgOptional =
-        decisionState.findDecisionRequirementsByTenantAndKey(tenantId, value.getResourceKey());
-    if (drgOptional.isPresent()) {
-      final var drg = drgOptional.get();
-      command
-          .getValue()
-          .setResourceType(ResourceType.DECISION_REQUIREMENTS)
-          .setResourceId(drg.getDecisionRequirementsId())
-          .setTenantId(drg.getTenantId());
-      return authorizationBehavior.authorizeAndDelete(
-          command,
-          eventKey,
-          PermissionType.DELETE_DRD,
-          bufferAsString(drg.getDecisionRequirementsId()),
-          drg.getTenantId(),
-          () ->
-              decisionRequirementsDeletionBehavior.deleteDecisionRequirements(
-                  drg, command, eventKey));
-    }
-
-    final var formOptional = formState.findFormByKey(value.getResourceKey(), tenantId);
-    if (formOptional.isPresent()) {
-      final var form = formOptional.get();
-      command
-          .getValue()
-          .setResourceType(ResourceType.FORM)
-          .setResourceId(form.getFormId())
-          .setTenantId(form.getTenantId());
-      return authorizationBehavior.authorizeAndDelete(
-          command,
-          eventKey,
-          PermissionType.DELETE_FORM,
-          bufferAsString(form.getFormId()),
-          form.getTenantId(),
-          () -> formDeletionBehavior.deleteForm(form));
-    }
-
-    final var resourceOptional = resourceState.findResourceByKey(value.getResourceKey(), tenantId);
-    if (resourceOptional.isPresent()) {
-      final var resource = resourceOptional.get();
-      command
-          .getValue()
-          .setResourceType(ResourceType.UNKNOWN)
-          .setResourceId(resource.getResourceId())
-          .setTenantId(resource.getTenantId());
-      return authorizationBehavior.authorizeAndDelete(
-          command,
-          eventKey,
-          PermissionType.DELETE_RESOURCE,
-          bufferAsString(resource.getResourceId()),
-          resource.getTenantId(),
-          () -> resourceDeletionBehavior.deleteResource(resource));
-    }
-
-    return false;
+    final var resourceKey = command.getValue().getResourceKey();
+    return Optional.ofNullable(processState.getProcessByKeyAndTenant(resourceKey, tenantId))
+        .map(process -> processDeletionBehavior.tryDelete(command, eventKey, process))
+        .or(
+            () ->
+                decisionState
+                    .findDecisionRequirementsByTenantAndKey(tenantId, resourceKey)
+                    .map(
+                        drg ->
+                            decisionRequirementsDeletionBehavior.tryDelete(command, eventKey, drg)))
+        .or(
+            () ->
+                formState
+                    .findFormByKey(resourceKey, tenantId)
+                    .map(form -> formDeletionBehavior.tryDelete(command, eventKey, form)))
+        .or(
+            () ->
+                resourceState
+                    .findResourceByKey(resourceKey, tenantId)
+                    .map(
+                        resource ->
+                            resourceDeletionBehavior.tryDelete(command, eventKey, resource)))
+        .orElse(false);
   }
 
   private void deleteHistory(
