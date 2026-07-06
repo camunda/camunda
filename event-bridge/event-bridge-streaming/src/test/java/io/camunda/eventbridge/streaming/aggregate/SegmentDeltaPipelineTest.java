@@ -128,7 +128,9 @@ final class SegmentDeltaPipelineTest {
       final SegmentDedup dedup,
       final SegmentMergingAggregation<String, Long> merge) {
     for (final Batch batch : batches) {
-      if (dedup.admit(batch.partition(), batch.segment(), 0)) {
+      // A single-stream pipeline: streamId is fixed (the multiplexing/per-stream dedup is covered
+      // by SegmentDedupTest).
+      if (dedup.admit(batch.partition(), 0, batch.segment(), 0)) {
         for (final Cell cell : batch.cells()) {
           merge.merge(cell.cell(), cell.delta());
         }
