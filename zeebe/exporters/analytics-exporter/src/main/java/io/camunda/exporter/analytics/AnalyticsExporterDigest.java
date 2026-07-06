@@ -25,8 +25,6 @@ import java.util.stream.Stream;
  *   <li>The (ValueType, Intent, handler class name, handler bytecode) of every registered handler,
  *       sorted by "valueType:intent" to eliminate registration-order variance. The bytecode is
  *       obtained via {@link AnalyticsHandler#digestInput()}, which each handler supplies.
- *   <li>The exporter version string — a release backstop that catches changes to helpers or
- *       constants called from a handler whose own bytecode did not change.
  *   <li>The behavior-affecting configuration fields (see {@link
  *       AnalyticsExporterConfig#toExporterDigestString()}).
  *   <li>The bytecode of {@link AnalyticsAttributes} and all its nested classes — detects renames of
@@ -67,10 +65,6 @@ final class AnalyticsExporterDigest {
                 digest.update(e.getValue().digestInput());
                 digest.update(SEPARATOR);
               });
-
-      // Version backstop: catches changes to helpers/constants not reflected in handler bytecodes.
-      digest.update(AnalyticsExporterVersion.get().getBytes(StandardCharsets.UTF_8));
-      digest.update(SEPARATOR);
 
       digest.update(config.toExporterDigestString().getBytes(StandardCharsets.UTF_8));
       digest.update(SEPARATOR);
