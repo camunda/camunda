@@ -7,6 +7,7 @@
  */
 
 import {useState} from 'react';
+import {t} from 'i18next';
 import {Dropdown, TextInput} from '@carbon/react';
 import {Field, type FieldInputProps} from 'react-final-form';
 import {useTranslation} from 'react-i18next';
@@ -17,6 +18,27 @@ import {
   type AdvancedStringFilterOperator,
 } from 'modules/tasks/filters/advancedStringFilter';
 import styles from './styles.module.scss';
+
+const OPERATOR_CONFIG: Record<
+  AdvancedStringFilterOperator,
+  {label: string; placeholder?: string}
+> = {
+  $eq: {label: t('customFiltersModalOperatorEquals')},
+  $neq: {label: t('customFiltersModalOperatorNotEquals')},
+  $like: {label: t('customFiltersModalOperatorContains')},
+  $in: {
+    label: t('customFiltersModalOperatorIsOneOf'),
+    placeholder: t('customFiltersModalOperatorListPlaceholder'),
+  },
+  $notIn: {
+    label: t('customFiltersModalOperatorIsNotOneOf'),
+    placeholder: t('customFiltersModalOperatorListPlaceholder'),
+  },
+  $exists: {
+    label: t('customFiltersModalOperatorExists'),
+    placeholder: t('customFiltersModalOperatorExistsPlaceholder'),
+  },
+};
 
 type Props = {
   name: string;
@@ -54,26 +76,6 @@ const AdvancedStringFilterField: React.FC<FieldProps> = ({
   selectableOperators,
 }) => {
   const {t} = useTranslation();
-  const OPERATOR_CONFIG: Record<
-    AdvancedStringFilterOperator,
-    {label: string; placeholder?: string}
-  > = {
-    $eq: {label: t('customFiltersModalOperatorEquals')},
-    $neq: {label: t('customFiltersModalOperatorNotEquals')},
-    $like: {label: t('customFiltersModalOperatorContains')},
-    $in: {
-      label: t('customFiltersModalOperatorIsOneOf'),
-      placeholder: t('customFiltersModalOperatorListPlaceholder'),
-    },
-    $notIn: {
-      label: t('customFiltersModalOperatorIsNotOneOf'),
-      placeholder: t('customFiltersModalOperatorListPlaceholder'),
-    },
-    $exists: {
-      label: t('customFiltersModalOperatorExists'),
-      placeholder: t('customFiltersModalOperatorExistsPlaceholder'),
-    },
-  };
 
   const filter = splitEncodedFilterOperation(input.value ?? '');
 
