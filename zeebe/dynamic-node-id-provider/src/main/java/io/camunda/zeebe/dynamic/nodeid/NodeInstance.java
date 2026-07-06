@@ -9,7 +9,11 @@ package io.camunda.zeebe.dynamic.nodeid;
 
 import java.util.Objects;
 
-// id ~ integer from 0 to clusterSize
+/**
+ * @param id index of the broker in a zone. Ranges from 0 to number of brokers in that zone
+ * @param version sequential integer indicating the version of a node instance (increases at every
+ *     restart)
+ */
 public record NodeInstance(int id, Version version) {
   public NodeInstance {
     if (id < 0) {

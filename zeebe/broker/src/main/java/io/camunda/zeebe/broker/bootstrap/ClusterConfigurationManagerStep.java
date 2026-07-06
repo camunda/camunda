@@ -15,6 +15,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.time.Duration;
+import java.util.Optional;
 
 public class ClusterConfigurationManagerStep
     implements io.camunda.zeebe.scheduler.startup.StartupStep<BrokerStartupContext> {
@@ -35,7 +36,9 @@ public class ClusterConfigurationManagerStep
             brokerStartupContext.getConcurrencyControl(),
             brokerStartupContext.getExporterRepository(),
             brokerStartupContext.getNodeIdProvider(),
-            brokerStartupContext.getMeterRegistry());
+            brokerStartupContext.getMeterRegistry(),
+            Optional.ofNullable(
+                brokerStartupContext.getBrokerConfiguration().getCluster().getZone()));
     final ClusterConfigurationService clusterConfigurationService =
         new DynamicClusterConfigurationService(clusterChangeExecutor);
     return clusterConfigurationService

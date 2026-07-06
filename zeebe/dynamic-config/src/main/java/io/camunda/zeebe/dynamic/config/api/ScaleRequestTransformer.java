@@ -25,6 +25,7 @@ public class ScaleRequestTransformer implements ConfigurationChangeRequest {
   private final Set<MemberId> members;
   private final Optional<Integer> newReplicationFactor;
   private final Optional<Integer> newPartitionCount;
+  private final Optional<String> zone;
   private final ArrayList<ClusterConfigurationChangeOperation> generatedOperations =
       new ArrayList<>();
 
@@ -41,9 +42,18 @@ public class ScaleRequestTransformer implements ConfigurationChangeRequest {
       final Set<MemberId> members,
       final Optional<Integer> newReplicationFactor,
       final Optional<Integer> newPartitionCount) {
+    this(members, newReplicationFactor, newPartitionCount, Optional.empty());
+  }
+
+  public ScaleRequestTransformer(
+      final Set<MemberId> members,
+      final Optional<Integer> newReplicationFactor,
+      final Optional<Integer> newPartitionCount,
+      final Optional<String> zone) {
     this.members = members;
     this.newReplicationFactor = newReplicationFactor;
     this.newPartitionCount = newPartitionCount;
+    this.zone = zone;
   }
 
   @Override
@@ -51,14 +61,20 @@ public class ScaleRequestTransformer implements ConfigurationChangeRequest {
       final ClusterConfiguration clusterConfiguration) {
     generatedOperations.clear();
 
-    // Could be any broker, we simply use the default coordinator which is normally member 0.
-    final MemberId coordinatorId =
-        ClusterConfigurationCoordinatorSupplier.of(() -> clusterConfiguration)
-            .getDefaultCoordinator();
-    final boolean isBrokerScaling = !clusterConfiguration.members().keySet().equals(members);
-    if (isBrokerScaling) {
-      final var preScaleOperation = new PreScalingOperation(coordinatorId, members);
-      generatedOperations.add(preScaleOperation);
+    // Pre/post scaling callbacks operate on the node-id state of the zone being scaled, so the
+    // coordinator must be a broker in that zone. Pick the lowest member of the scaling zone (which
+    // survives both scale-up and scale-down). When a brand-new zone is added there is no broker in
+    // that
+    // zone to run the callbacks, and its brokers create their node-id leases on startup, so the
+    // callbacks are skipped entirely.
+    final Optional<MemberId> scalingExecutorMemberId =
+        selectPrePostScalingExecutor(clusterConfiguration);
+    final boolean isPrePostScalingRequired =
+        scalingExecutorMemberId.isPresent()
+            && !clusterConfiguration.members().keySet().equals(members);
+    if (isPrePostScalingRequired) {
+      scalingExecutorMemberId.ifPresent(
+          id -> generatedOperations.add(new PreScalingOperation(id, members)));
     }
 
     // First add new members
@@ -84,12 +100,33 @@ public class ScaleRequestTransformer implements ConfigurationChangeRequest {
         .map(this::addToOperations)
         .map(
             list -> {
-              if (isBrokerScaling) {
-                final var postScaleOperation = new PostScalingOperation(coordinatorId, members);
-                list.add(postScaleOperation);
+              if (isPrePostScalingRequired) {
+                scalingExecutorMemberId.ifPresent(
+                    id -> list.add(new PostScalingOperation(id, members)));
               }
               return list;
             });
+  }
+
+  private Optional<MemberId> selectPrePostScalingExecutor(
+      final ClusterConfiguration clusterConfiguration) {
+    final var coordinatorSupplier =
+        ClusterConfigurationCoordinatorSupplier.of(() -> clusterConfiguration);
+    if (zone.isEmpty()) {
+      return Optional.of(coordinatorSupplier.getDefaultCoordinator());
+    }
+    final var zoneName = zone.get();
+    final var membersInZone =
+        // pick a member from the current set of members
+        clusterConfiguration.members().keySet().stream()
+            .filter(m -> m.isInZone(zoneName))
+            .collect(Collectors.toSet());
+    if (membersInZone.isEmpty()) {
+      // New zone with no existing brokers: the callbacks cannot run in the correct zone and the
+      // new zone's brokers create their node-id leases on startup, so skip pre/post scaling.
+      return Optional.empty();
+    }
+    return Optional.of(coordinatorSupplier.getNextCoordinator(membersInZone));
   }
 
   private ArrayList<ClusterConfigurationChangeOperation> addToOperations(

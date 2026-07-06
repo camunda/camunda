@@ -257,14 +257,16 @@ final class ZeebeIntegrationExtension
     final Path workingDirectory;
     if (broker.unifiedConfig().getCluster().getNodeIdProvider().getType() == Type.FIXED) {
       workingDirectory = directory.resolve(workingDirectoryName(id));
-      try {
-        Files.createDirectory(workingDirectory);
-      } catch (final IOException e) {
-        throw new UncheckedIOException(e);
-      }
     } else {
       // Use the shared directory directly for dynamic node IDs
-      workingDirectory = directory;
+      workingDirectory = id.zone() != null ? directory.resolve(id.zone()) : directory;
+    }
+    try {
+      if (!workingDirectory.toFile().exists()) {
+        Files.createDirectory(workingDirectory);
+      }
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
     }
 
     broker.withWorkingDirectory(workingDirectory);
@@ -282,7 +284,7 @@ final class ZeebeIntegrationExtension
   }
 
   private String workingDirectoryName(final MemberId id) {
-    return "broker-" + id.id().replace("/", "-");
+    return "broker-" + id.id();
   }
 
   private ClusterResource asClusterResource(final Object testInstance, final Field field) {

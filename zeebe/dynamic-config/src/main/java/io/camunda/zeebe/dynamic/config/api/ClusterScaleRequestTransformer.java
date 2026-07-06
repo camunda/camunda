@@ -94,7 +94,8 @@ public final class ClusterScaleRequestTransformer implements ConfigurationChange
     } else {
       newSetOfMembers = membersInZone(clusterConfiguration.members().size());
     }
-    return new ScaleRequestTransformer(newSetOfMembers, newReplicationFactor, newPartitionCount)
+    return new ScaleRequestTransformer(
+            newSetOfMembers, newReplicationFactor, newPartitionCount, zone)
         .operations(clusterConfiguration);
   }
 
