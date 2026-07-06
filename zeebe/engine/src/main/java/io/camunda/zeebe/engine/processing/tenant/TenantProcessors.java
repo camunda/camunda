@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.tenant;
 
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -22,7 +22,7 @@ public class TenantProcessors {
   public static void addTenantProcessors(
       final TypedRecordProcessors typedRecordProcessors,
       final ProcessingState processingState,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final PermissionsBehavior permissionsBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
@@ -33,7 +33,7 @@ public class TenantProcessors {
             TenantIntent.CREATE,
             new TenantCreateProcessor(
                 processingState.getTenantState(),
-                authCheckBehavior,
+                permissionsBehavior,
                 keyGenerator,
                 writers,
                 commandDistributionBehavior))
@@ -42,7 +42,7 @@ public class TenantProcessors {
             TenantIntent.UPDATE,
             new TenantUpdateProcessor(
                 processingState.getTenantState(),
-                authCheckBehavior,
+                permissionsBehavior,
                 keyGenerator,
                 writers,
                 commandDistributionBehavior))
@@ -51,7 +51,7 @@ public class TenantProcessors {
             TenantIntent.ADD_ENTITY,
             new TenantAddEntityProcessor(
                 processingState,
-                authCheckBehavior,
+                permissionsBehavior,
                 keyGenerator,
                 writers,
                 commandDistributionBehavior,
@@ -61,7 +61,7 @@ public class TenantProcessors {
             TenantIntent.REMOVE_ENTITY,
             new TenantRemoveEntityProcessor(
                 processingState,
-                authCheckBehavior,
+                permissionsBehavior,
                 keyGenerator,
                 writers,
                 commandDistributionBehavior))
@@ -70,7 +70,7 @@ public class TenantProcessors {
             TenantIntent.DELETE,
             new TenantDeleteProcessor(
                 processingState,
-                authCheckBehavior,
+                permissionsBehavior,
                 keyGenerator,
                 writers,
                 commandDistributionBehavior));

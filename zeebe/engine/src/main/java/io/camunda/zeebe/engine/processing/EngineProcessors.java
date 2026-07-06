@@ -374,7 +374,7 @@ public final class EngineProcessors {
     TenantProcessors.addTenantProcessors(
         typedRecordProcessors,
         processingState,
-        authCheckBehavior,
+        permissionsBehavior,
         keyGenerator,
         writers,
         commandDistributionBehavior,

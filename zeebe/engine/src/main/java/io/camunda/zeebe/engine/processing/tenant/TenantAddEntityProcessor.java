@@ -10,10 +10,8 @@ package io.camunda.zeebe.engine.processing.tenant;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -47,19 +45,18 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
   private final GroupState groupState;
   private final UserState userState;
   private final RoleState roleState;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final PermissionsBehavior permissionsBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
-  private final SideEffectWriter sideEffectWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final EngineSecurityConfig securityConfig;
   private final MembershipState membershipState;
 
   public TenantAddEntityProcessor(
       final ProcessingState state,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final PermissionsBehavior permissionsBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
@@ -70,12 +67,11 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
     roleState = state.getRoleState();
     userState = state.getUserState();
     membershipState = state.getMembershipState();
-    this.authCheckBehavior = authCheckBehavior;
+    this.permissionsBehavior = permissionsBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
-    sideEffectWriter = writers.sideEffect();
     this.commandDistributionBehavior = commandDistributionBehavior;
     this.securityConfig = securityConfig;
   }
@@ -84,16 +80,11 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
   public void processNewCommand(final TypedRecord<TenantRecord> command) {
     final var record = command.getValue();
     final var tenantId = record.getTenantId();
-    final var authorizationRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.TENANT)
-            .permissionType(PermissionType.UPDATE)
-            .addResourceId(tenantId)
-            .build();
-    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
-    if (isAuthorized.isLeft()) {
-      rejectCommandWithUnauthorizedError(command, isAuthorized.getLeft());
+    final var authResult =
+        permissionsBehavior.isAuthorized(
+            command, PermissionType.UPDATE, AuthorizationResourceType.TENANT);
+    if (authResult.isLeft()) {
+      rejectCommandWithUnauthorizedError(command, authResult.getLeft());
       return;
     }
 
@@ -121,11 +112,6 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
 
     stateWriter.appendFollowUpEvent(tenantKey, TenantIntent.ENTITY_ADDED, record);
     responseWriter.writeEventOnCommand(tenantKey, TenantIntent.ENTITY_ADDED, record, command);
-    sideEffectWriter.appendSideEffect(
-        () -> {
-          authCheckBehavior.clearAuthorizationsCache();
-          return true;
-        });
 
     distributeCommand(command);
   }
@@ -138,11 +124,6 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
           command, record.getEntityId(), record.getEntityType(), record.getTenantId());
     } else {
       stateWriter.appendFollowUpEvent(command.getKey(), TenantIntent.ENTITY_ADDED, record);
-      sideEffectWriter.appendSideEffect(
-          () -> {
-            authCheckBehavior.clearAuthorizationsCache();
-            return true;
-          });
     }
 
     commandDistributionBehavior.acknowledgeCommand(command);

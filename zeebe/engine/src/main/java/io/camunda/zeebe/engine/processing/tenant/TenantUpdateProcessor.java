@@ -9,8 +9,7 @@ package io.camunda.zeebe.engine.processing.tenant;
 
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -31,7 +30,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<TenantRecord> {
 
   private final TenantState tenantState;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final PermissionsBehavior permissionsBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
@@ -40,12 +39,12 @@ public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<Te
 
   public TenantUpdateProcessor(
       final TenantState tenantState,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final PermissionsBehavior permissionsBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
     this.tenantState = tenantState;
-    this.authCheckBehavior = authCheckBehavior;
+    this.permissionsBehavior = permissionsBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
@@ -86,16 +85,11 @@ public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<Te
 
   private boolean isAuthorizedToUpdate(
       final TypedRecord<TenantRecord> command, final PersistedTenant persistedTenant) {
-    final var authorizationRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.TENANT)
-            .permissionType(PermissionType.UPDATE)
-            .addResourceId(persistedTenant.getTenantId())
-            .build();
-    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
-    if (isAuthorized.isLeft()) {
-      rejectCommandWithUnauthorizedError(command, isAuthorized.getLeft());
+    final var authResult =
+        permissionsBehavior.isAuthorized(
+            command, PermissionType.UPDATE, AuthorizationResourceType.TENANT);
+    if (authResult.isLeft()) {
+      rejectCommandWithUnauthorizedError(command, authResult.getLeft());
       return false;
     }
     return true;
