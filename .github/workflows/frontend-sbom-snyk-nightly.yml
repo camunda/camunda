@@ -28,6 +28,7 @@ jobs:
     permissions: {}
     env:
       TEST_TYPE: Tool
+      TEST_PRODUCT: Identity
     defaults:
       run:
         working-directory: identity/client
@@ -71,6 +72,7 @@ jobs:
     permissions: {}
     env:
       TEST_TYPE: Tool
+      TEST_PRODUCT: Operate
     defaults:
       run:
         working-directory: operate/client
@@ -115,6 +117,7 @@ jobs:
     permissions: {}
     env:
       TEST_TYPE: Tool
+      TEST_PRODUCT: Tasklist
     defaults:
       run:
         working-directory: tasklist/client
@@ -162,6 +165,7 @@ jobs:
         working-directory: optimize/client
     env:
       TEST_TYPE: Tool
+      TEST_PRODUCT: Optimize
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@2fee788847f2b0eedcdd8b324e48ae1fad52fe4f # main
       - name: Checkout repository
@@ -212,6 +216,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {}
+    env:
+      TEST_TYPE: Tool
+      TEST_PRODUCT: Camunda
     needs:
       - identity-fe-sbom-snyk
       - operate-fe-sbom-snyk
