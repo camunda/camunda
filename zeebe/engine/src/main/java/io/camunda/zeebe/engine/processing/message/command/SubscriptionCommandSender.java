@@ -382,6 +382,7 @@ public class SubscriptionCommandSender {
       final long messageStartEventSubscriptionKey,
       final DirectBuffer variables,
       final long messageDeadline,
+      final long messageTtl,
       final String tenantId) {
     return handleFollowUpCommandBasedOnPartition(
         targetPartitionId,
@@ -398,6 +399,7 @@ public class SubscriptionCommandSender {
             messageStartEventSubscriptionKey,
             variables,
             messageDeadline,
+            messageTtl,
             tenantId));
   }
 
@@ -419,6 +421,7 @@ public class SubscriptionCommandSender {
       final long messageStartEventSubscriptionKey,
       final DirectBuffer variables,
       final long messageDeadline,
+      final long messageTtl,
       final String tenantId) {
     interPartitionCommandSender.sendCommand(
         targetPartitionId,
@@ -435,6 +438,7 @@ public class SubscriptionCommandSender {
             messageStartEventSubscriptionKey,
             variables,
             messageDeadline,
+            messageTtl,
             tenantId));
   }
 
@@ -560,6 +564,7 @@ public class SubscriptionCommandSender {
       final long messageStartEventSubscriptionKey,
       final DirectBuffer variables,
       final long messageDeadline,
+      final long messageTtl,
       final String tenantId) {
     return new MessageStartProcessInstanceRequestRecord()
         .setMessageKey(messageKey)
@@ -572,6 +577,7 @@ public class SubscriptionCommandSender {
         .setMessageStartEventSubscriptionKey(messageStartEventSubscriptionKey)
         .setVariables(variables)
         .setMessageDeadline(messageDeadline)
+        .setMessageTtl(messageTtl)
         .setTenantId(tenantId);
   }
 

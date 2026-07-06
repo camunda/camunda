@@ -219,7 +219,11 @@ public final class MessageCorrelationCorrelateProcessor
         // Correlate commands carry no TTL and are not buffered; the cross-partition dedup row's
         // deadline therefore defaults to -1 (already expired). This is safe because the pending-ask
         // on P_K is cleared immediately by the message-expire hook, so no retry ever fires.
-        -1L);
+        -1L,
+        // TTL is 0 (fire-and-forget): with messageDeadline = -1 the expiry guard on P_B rejects
+        // only when messageTtl > 0, so a TTL=0 correlate request falls through to live evaluation
+        // exactly as before the guard existed.
+        0L);
   }
 
   private Optional<Rejection> isAuthorizedForAllSubscriptions(
