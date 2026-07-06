@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.IntStream;
@@ -54,10 +55,14 @@ class FlowNodeEmitter {
     {"gpt-4o-mini", "openai"},
   };
 
-  // Elements bound to a real agent node in the BPMN templates (see AGENT_ELEMENT_IDS). The tool
-  // task IDs below are the inner activities of the ad-hoc sub-process agent
-  // (bpmn/generator/customer-onboarding.bpmn, element "ai-document-review-agent").
-  private static final List<AgentTool> ADHOC_TOOLS =
+  // Elements bound to a real agent node in the BPMN templates (see AGENT_ELEMENT_IDS). Tool pools
+  // are scoped per agent element so every AgentInstanceToolValue#getElementId() resolves to a real
+  // BPMN element *within the same process* — required for the Optimize tool-calls heatmap to
+  // correlate agent-instance tool usage back to flow-node activity.
+  //
+  // AHSP agent (customer-onboarding.bpmn, "ai-document-review-agent"): each tool is one of the
+  // ad-hoc sub-process's own inner activities.
+  private static final List<AgentTool> CUSTOMER_ONBOARDING_TOOLS =
       List.of(
           new AgentTool(
               "extract_data", "Extract structured data from a document", "extract-data-task"),
@@ -66,6 +71,33 @@ class FlowNodeEmitter {
           new AgentTool("lookup_record", "Look up a record by key", "lookup-record-task"),
           new AgentTool(
               "submit_decision", "Submit decision to downstream system", "submit-decision-task"));
+
+  // Inline "AI Agent Task"/"External Agent" agents (loan-approval.bpmn,
+  // fraud-dispute-handling.bpmn)
+  // are single BPMN service tasks with no inner activities to bind individual tools to — so every
+  // tool the agent uses is anchored to the agent task's own elementId, the only real BPMN element
+  // available in that process for correlating tool-call heat.
+  private static final List<AgentTool> LOAN_APPROVAL_TOOLS =
+      List.of(
+          new AgentTool(
+              "credit_bureau_lookup",
+              "Query external credit bureau for score history",
+              "risk-assessment-agent-task"),
+          new AgentTool(
+              "fraud_score_check",
+              "Run fraud heuristics against the applicant profile",
+              "risk-assessment-agent-task"));
+
+  private static final List<AgentTool> FRAUD_DISPUTE_TOOLS =
+      List.of(
+          new AgentTool(
+              "transaction_history_lookup",
+              "Retrieve full transaction history for the disputed charge",
+              "external-fraud-review-agent-task"),
+          new AgentTool(
+              "merchant_risk_check",
+              "Check merchant risk score against partner database",
+              "external-fraud-review-agent-task"));
 
   // MCP/A2A tools have no BPMN element; they are discovered during the TOOL_DISCOVERY phase and
   // therefore only appear in events after a TOOL_DISCOVERY UPDATED event.
@@ -87,6 +119,14 @@ class FlowNodeEmitter {
           "risk-assessment-agent-task", // loan-approval.bpmn — AI Agent Task
           "external-fraud-review-agent-task" // fraud-dispute-handling.bpmn — External Agent
           );
+
+  // Maps each real agent elementId to its process-scoped AD_HOC tool pool (see field comments
+  // above for why each pool is anchored the way it is).
+  private static final Map<String, List<AgentTool>> ADHOC_TOOL_POOLS =
+      Map.of(
+          "ai-document-review-agent", CUSTOMER_ONBOARDING_TOOLS,
+          "risk-assessment-agent-task", LOAN_APPROVAL_TOOLS,
+          "external-fraud-review-agent-task", FRAUD_DISPUTE_TOOLS);
 
   private final ZeebeRecordFactory factory;
   private final NodeTimingSimulator timingSimulator;
@@ -231,7 +271,8 @@ class FlowNodeEmitter {
 
     // AD_HOC tools (from BPMN schema) are always available from the first THINKING update.
     // MCP/A2A tools require a TOOL_DISCOVERY phase (~40 % of instances).
-    final List<AgentTool> adhocTools = selectFromPool(ADHOC_TOOLS, 1 + rng.nextInt(3));
+    final List<AgentTool> pool = ADHOC_TOOL_POOLS.getOrDefault(elementId, List.of());
+    final List<AgentTool> adhocTools = selectFromPool(pool, 1 + rng.nextInt(3));
     final boolean doToolDiscovery = rng.nextDouble() < 0.4;
     final List<AgentTool> mcpTools =
         doToolDiscovery ? selectFromPool(MCP_TOOLS, 1 + rng.nextInt(3)) : List.of();

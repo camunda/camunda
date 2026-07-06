@@ -33,6 +33,22 @@
           <zeebe:taskDefinition type="validate-fields"/>
         </extensionElements>
         <incoming>f_ahsp_1</incoming>
+        <outgoing>f_ahsp_2</outgoing>
+      </serviceTask>
+      <sequenceFlow id="f_ahsp_2" sourceRef="validate-fields-task" targetRef="lookup-record-task"/>
+      <serviceTask id="lookup-record-task" name="Look up a record by key">
+        <extensionElements>
+          <zeebe:taskDefinition type="lookup-record"/>
+        </extensionElements>
+        <incoming>f_ahsp_2</incoming>
+        <outgoing>f_ahsp_3</outgoing>
+      </serviceTask>
+      <sequenceFlow id="f_ahsp_3" sourceRef="lookup-record-task" targetRef="submit-decision-task"/>
+      <serviceTask id="submit-decision-task" name="Submit decision to downstream system">
+        <extensionElements>
+          <zeebe:taskDefinition type="submit-decision"/>
+        </extensionElements>
+        <incoming>f_ahsp_3</incoming>
       </serviceTask>
     </adHocSubProcess>
     <eventBasedGateway id="eventBasedGateway_1" name="Await customer response">
@@ -77,7 +93,7 @@
         <dc:Bounds x="240" y="140" width="100" height="80"/>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="ai-document-review-agent_di" bpmnElement="ai-document-review-agent" isExpanded="true">
-        <dc:Bounds x="390" y="120" width="250" height="140"/>
+        <dc:Bounds x="390" y="120" width="510" height="140"/>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="extract-data-task_di" bpmnElement="extract-data-task">
         <dc:Bounds x="410" y="150" width="90" height="60"/>
@@ -85,23 +101,29 @@
       <bpmndi:BPMNShape id="validate-fields-task_di" bpmnElement="validate-fields-task">
         <dc:Bounds x="540" y="150" width="90" height="60"/>
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="lookup-record-task_di" bpmnElement="lookup-record-task">
+        <dc:Bounds x="670" y="150" width="90" height="60"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="submit-decision-task_di" bpmnElement="submit-decision-task">
+        <dc:Bounds x="800" y="150" width="90" height="60"/>
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="eventBasedGateway_1_di" bpmnElement="eventBasedGateway_1" isMarkerVisible="true">
-        <dc:Bounds x="690" y="155" width="50" height="50"/>
+        <dc:Bounds x="950" y="155" width="50" height="50"/>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="receiveTask_1_di" bpmnElement="receiveTask_1">
-        <dc:Bounds x="800" y="40" width="100" height="80"/>
+        <dc:Bounds x="1060" y="40" width="100" height="80"/>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="endEvent_evA_di" bpmnElement="endEvent_evA">
-        <dc:Bounds x="962" y="62" width="36" height="36"/>
+        <dc:Bounds x="1222" y="62" width="36" height="36"/>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="receiveTask_2_di" bpmnElement="receiveTask_2">
-        <dc:Bounds x="800" y="220" width="100" height="80"/>
+        <dc:Bounds x="1060" y="220" width="100" height="80"/>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="serviceTask_4_di" bpmnElement="serviceTask_4">
-        <dc:Bounds x="960" y="220" width="100" height="80"/>
+        <dc:Bounds x="1220" y="220" width="100" height="80"/>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="endEvent_evB_di" bpmnElement="endEvent_evB">
-        <dc:Bounds x="1122" y="242" width="36" height="36"/>
+        <dc:Bounds x="1382" y="242" width="36" height="36"/>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="f0_di" bpmnElement="f0">
         <di:waypoint x="188" y="180"/><di:waypoint x="240" y="180"/>
@@ -110,22 +132,22 @@
         <di:waypoint x="340" y="180"/><di:waypoint x="390" y="190"/>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="f2_di" bpmnElement="f2">
-        <di:waypoint x="640" y="190"/><di:waypoint x="690" y="180"/>
+        <di:waypoint x="900" y="190"/><di:waypoint x="950" y="180"/>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="f_ev1_di" bpmnElement="f_ev1">
-        <di:waypoint x="715" y="155"/><di:waypoint x="715" y="80"/><di:waypoint x="800" y="80"/>
+        <di:waypoint x="975" y="155"/><di:waypoint x="975" y="80"/><di:waypoint x="1060" y="80"/>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="f_ev2_di" bpmnElement="f_ev2">
-        <di:waypoint x="715" y="205"/><di:waypoint x="715" y="260"/><di:waypoint x="800" y="260"/>
+        <di:waypoint x="975" y="205"/><di:waypoint x="975" y="260"/><di:waypoint x="1060" y="260"/>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="f_ev3_di" bpmnElement="f_ev3">
-        <di:waypoint x="900" y="80"/><di:waypoint x="962" y="80"/>
+        <di:waypoint x="1160" y="80"/><di:waypoint x="1222" y="80"/>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="f_ev4_di" bpmnElement="f_ev4">
-        <di:waypoint x="900" y="260"/><di:waypoint x="960" y="260"/>
+        <di:waypoint x="1160" y="260"/><di:waypoint x="1220" y="260"/>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="f_ev5_di" bpmnElement="f_ev5">
-        <di:waypoint x="1060" y="260"/><di:waypoint x="1122" y="260"/>
+        <di:waypoint x="1320" y="260"/><di:waypoint x="1382" y="260"/>
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
