@@ -53,7 +53,8 @@ public class CallActivityBusinessIdIT {
         deployParentWithChild("literal", c -> c.zeebeBusinessId("child-literal"));
 
     // when - the parent starts without a Business ID of its own
-    final var parent = startParent(parentProcessId, null, Map.of());
+    final var parent =
+        client.newCreateInstanceCommand().bpmnProcessId(parentProcessId).latestVersion().execute();
 
     // then
     assertThat(awaitChild(parent.getProcessInstanceKey()).getBusinessId())
@@ -67,7 +68,13 @@ public class CallActivityBusinessIdIT {
     final String parentProcessId = deployParentWithChild("inherit", c -> {});
 
     // when - the parent carries a Business ID
-    final var parent = startParent(parentProcessId, "order-inherit", Map.of());
+    final var parent =
+        client
+            .newCreateInstanceCommand()
+            .bpmnProcessId(parentProcessId)
+            .latestVersion()
+            .businessId("order-inherit")
+            .execute();
 
     // then
     assertThat(awaitChild(parent.getProcessInstanceKey()).getBusinessId())
@@ -81,7 +88,13 @@ public class CallActivityBusinessIdIT {
     final String parentProcessId = deployParentWithChild("empty", c -> c.zeebeBusinessId(""));
 
     // when - the parent carries a Business ID
-    final var parent = startParent(parentProcessId, "order-empty", Map.of());
+    final var parent =
+        client
+            .newCreateInstanceCommand()
+            .bpmnProcessId(parentProcessId)
+            .latestVersion()
+            .businessId("order-empty")
+            .execute();
 
     // then
     assertThat(awaitChild(parent.getProcessInstanceKey()).getBusinessId())
@@ -96,8 +109,14 @@ public class CallActivityBusinessIdIT {
         deployParentWithChild("feel-var", c -> c.zeebeBusinessId("=orderCode"));
 
     // when - the variable is provided at parent creation
-    final Map<String, Object> variables = Map.of("orderCode", "feel-child-42");
-    final var parent = startParent(parentProcessId, "order-feel", variables);
+    final var parent =
+        client
+            .newCreateInstanceCommand()
+            .bpmnProcessId(parentProcessId)
+            .latestVersion()
+            .businessId("order-feel")
+            .variables(Map.of("orderCode", "feel-child-42"))
+            .execute();
 
     // then
     assertThat(awaitChild(parent.getProcessInstanceKey()).getBusinessId())
@@ -115,7 +134,13 @@ public class CallActivityBusinessIdIT {
             c -> c.zeebeBusinessId("=camunda.processInstance.businessId + \"-child\""));
 
     // when - the parent carries a Business ID
-    final var parent = startParent(parentProcessId, "order-parent", Map.of());
+    final var parent =
+        client
+            .newCreateInstanceCommand()
+            .bpmnProcessId(parentProcessId)
+            .latestVersion()
+            .businessId("order-parent")
+            .execute();
 
     // then
     assertThat(awaitChild(parent.getProcessInstanceKey()).getBusinessId())
@@ -226,18 +251,6 @@ public class CallActivityBusinessIdIT {
             .done();
     return deployProcessAndWaitForIt(client, parent, parentProcessId + ".bpmn")
         .getProcessDefinitionKey();
-  }
-
-  private static ProcessInstanceEvent startParent(
-      final String parentProcessId, final String businessId, final Map<String, Object> variables) {
-    var command = client.newCreateInstanceCommand().bpmnProcessId(parentProcessId).latestVersion();
-    if (businessId != null) {
-      command = command.businessId(businessId);
-    }
-    if (!variables.isEmpty()) {
-      command = command.variables(variables);
-    }
-    return command.execute();
   }
 
   private static ProcessInstance awaitChild(final long parentProcessInstanceKey) {
