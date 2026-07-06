@@ -51,4 +51,28 @@ public interface LogStreamMetrics {
   void setPartitionLoad(double load);
 
   void setWriteRateLimit(double value);
+
+  /**
+   * Registers the request rate meters. Should only be called when the request rate is actually
+   * limited.
+   */
+  void registerRequestRateMetrics();
+
+  /**
+   * Deregisters the request rate meters if any were registered before. Should be called when the
+   * request rate is not limited.
+   */
+  void deregisterRequestRateMetrics();
+
+  /**
+   * Registers the write-rate metrics. Should only be called when the write rate is actually
+   * limited.
+   */
+  void registerWriteRateMetrics();
+
+  /**
+   * Deregisters the write rate metrics if any were registered before. Should be called when the
+   * write rate is not limited.
+   */
+  void deregisterWriteRateMetrics();
 }
