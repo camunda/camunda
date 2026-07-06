@@ -197,6 +197,10 @@ final class StreamRuntimeGroupTest {
   private static StreamRuntime<String> baseRuntime(
       final EventBridgeClient client, final String instanceId) {
     return StreamRuntime.<String>builder()
+        // Short subscribe-retry backoff so a persistently-failing subscribe exhausts its attempt
+        // budget and crashes the member quickly (the restart path under test) rather than retrying
+        // for ~30s and overrunning the test's latch.
+        .errorBackoff(Duration.ofMillis(1))
         .client(client)
         .group("g")
         .instanceId(instanceId)
