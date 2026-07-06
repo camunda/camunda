@@ -21,9 +21,12 @@ import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
+import io.camunda.zeebe.qa.util.actuator.ActorClockActuator;
+import io.camunda.zeebe.qa.util.actuator.ActorClockActuator.AddTimeRequest;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -53,8 +56,13 @@ public class UsageMetricsIT {
           .withMultiTenancyEnabled()
           .withAuthenticatedAccess()
           // set exportInterval via properties because it is not yet supported in unified config
+          // (https://github.com/camunda/camunda/issues/56077). Legacy zeebe.broker.* properties
+          // are not applied to per-physical-tenant configuration, so under physical-tenant mode
+          // the export is triggered by advancing the broker clock instead — see
+          // advanceClockPastExportInterval().
           .withProperty(
-              "zeebe.broker.experimental.engine.usageMetrics.exportInterval", EXPORT_INTERVAL);
+              "zeebe.broker.experimental.engine.usageMetrics.exportInterval", EXPORT_INTERVAL)
+          .withProperty("zeebe.clock.controlled", "true");
 
   private static final String ADMIN = "admin";
   private static final String ASSIGNEE = "bar2";
@@ -69,6 +77,45 @@ public class UsageMetricsIT {
   private static final TestUser ADMIN_USER = new TestUser(ADMIN, "password", List.of());
 
   private static OffsetDateTime exportedTime;
+
+  /**
+   * Advances the broker clock past the default usage-metrics export interval (5 minutes) so the
+   * engine's {@code UsageMetricsCheckScheduler} fires on every partition group.
+   *
+   * <p>Needed because the export interval is only configurable via legacy {@code zeebe.broker.*}
+   * properties, which are not applied to per-physical-tenant configuration — under physical-tenant
+   * mode the tenant's partition group runs with the 5-minute default. Once <a
+   * href="https://github.com/camunda/camunda/issues/56077">#56077</a> adds the property to the
+   * unified configuration, the interval can be set there (inherited by all physical tenants) and
+   * this clock manipulation can be removed.
+   *
+   * <p>No-op when the broker actuator is not reachable (e.g. compatibility-mode runs against a
+   * containerized broker), where the short export interval is configured via environment variable
+   * instead.
+   */
+  private static void advanceClockPastExportInterval() {
+    try {
+      ActorClockActuator.of(BROKER.actuatorUri("clock").toString())
+          .addTime(new AddTimeRequest(Duration.ofMinutes(5).plusSeconds(1).toMillis()));
+    } catch (final Exception e) {
+      // broker actuator not available (compatibility mode); rely on the configured interval
+    }
+  }
+
+  /**
+   * Returns the broker's current (possibly clock-advanced) time, falling back to wall-clock time
+   * when the actuator is not reachable. Metric record timestamps follow the broker clock, so
+   * interval assertions must use it as well.
+   */
+  private static OffsetDateTime currentBrokerTime() {
+    try {
+      return OffsetDateTime.ofInstant(
+          ActorClockActuator.of(BROKER.actuatorUri("clock").toString()).getCurrentClock().instant(),
+          ZoneOffset.UTC);
+    } catch (final Exception e) {
+      return OffsetDateTime.now();
+    }
+  }
 
   private static void waitForUsageMetrics(
       final CamundaClient camundaClient,
@@ -99,6 +146,7 @@ public class UsageMetricsIT {
     deployResource(adminClient, "process/process_with_assigned_user_task.bpmn", TENANT_A);
     startProcessInstance(adminClient, PROCESS_ID, TENANT_A);
     startProcessInstance(adminClient, PROCESS_ID_2, TENANT_A);
+    advanceClockPastExportInterval();
     waitForUsageMetrics(
         adminClient,
         NOW.minusDays(1),
@@ -110,7 +158,7 @@ public class UsageMetricsIT {
         });
 
     // Store first export time & wait 2 export intervals
-    exportedTime = OffsetDateTime.now();
+    exportedTime = currentBrokerTime();
     Thread.sleep(2 * EXPORT_INTERVAL.toMillis());
 
     // Create second batch of metrics
@@ -144,6 +192,7 @@ public class UsageMetricsIT {
     assertDecisionsInstantiated(adminClient);
 
     // Wait for all metrics to be exported
+    advanceClockPastExportInterval();
     waitForUsageMetrics(
         adminClient,
         NOW.minusDays(1),
