@@ -71,7 +71,7 @@ public final class ZeebeDataGeneratorCli {
     String username = null;
     String password = null;
     String prefix = "zeebe-record";
-    int instances = 300000;
+    int instances = 1000;
     int defs = 6;
     int months = 6;
     long seed = 42L;

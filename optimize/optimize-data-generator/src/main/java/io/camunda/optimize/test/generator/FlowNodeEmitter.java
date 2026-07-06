@@ -216,32 +216,23 @@ class FlowNodeEmitter {
    * Returns the full agent instance lifecycle records (CREATED → UPDATED… → COMPLETED) for one
    * process instance, simulating a realistic agentic execution.
    *
-   * <p>Lifecycle variants:
-   *
-   * <ul>
-   *   <li><b>Active instance</b>: CREATED + 1 UPDATED (agent still running)
-   *   <li><b>Terminated instance</b>: CREATED + 1 UPDATED + COMPLETED (cut short)
-   *   <li><b>Completed instance</b>: CREATED + 2–4 UPDATED + COMPLETED (full run)
-   * </ul>
-   *
-   * <p>Metrics in UPDATED/COMPLETED records carry engine-aggregated running totals, matching the
-   * spec's dual-semantics contract.
-   */
-  /**
-   * Returns the full agent instance lifecycle records (CREATED → UPDATED… → COMPLETED) for one
-   * process instance, simulating a realistic agentic execution.
-   *
    * <p>{@code agentNode} must be one of the real BPMN agent elements (see {@link
    * #AGENT_ELEMENT_IDS}) present in this instance's execution path — the emitted records are
    * anchored to its actual {@code elementId} and element-instance key so they correlate with the
    * matching flow-node record.
    *
-   * <p>Lifecycle variants:
+   * <p>Lifecycle variants, each covering both the "had tool calls" and "no tool calls" cases so
+   * downstream tool-call reports/heatmaps see the full value range (including zero and
+   * limit-saturated):
    *
    * <ul>
-   *   <li><b>Active instance</b>: CREATED + 1 UPDATED (agent still running)
-   *   <li><b>Terminated instance</b>: CREATED + 1 UPDATED + COMPLETED (cut short)
-   *   <li><b>Completed instance</b>: CREATED + 2–4 UPDATED + COMPLETED (full run)
+   *   <li><b>Active instance</b>: CREATED + 1 UPDATED, caught either THINKING (no tool calls yet)
+   *       or mid TOOL_CALLING (~35 %)
+   *   <li><b>Terminated instance</b>: CREATED + 1 UPDATED (THINKING), optionally +1 UPDATED
+   *       (TOOL_CALLING, ~40 %) + COMPLETED (cut short)
+   *   <li><b>Completed instance</b>: CREATED + 1 UPDATED (THINKING) + 0–3 TOOL_CALLING rounds (each
+   *       optionally followed by another THINKING) + COMPLETED (full run); tool-call totals are
+   *       capped at {@code maxToolCalls}
    * </ul>
    *
    * <p>Metrics in UPDATED/COMPLETED records carry engine-aggregated running totals, matching the
@@ -335,10 +326,14 @@ class FlowNodeEmitter {
                     fullTools,
                     startMs + duration / 4)));
       }
-      // Agent is still running — emit a partial THINKING update
-      final long thinkingMs = startMs + duration / 2;
+      // Agent is still running — emit a partial update. ~35 % of active instances are caught
+      // mid TOOL_CALLING (tool already dispatched, e.g. a long-running AHSP task) rather than
+      // THINKING, so live dashboards/heatmaps also see in-flight tool-call activity.
+      final long inFlightMs = startMs + duration / 2;
       final long inputTokens = 200L + rng.nextInt(600);
       final long outputTokens = 50L + rng.nextInt(250);
+      final boolean isMidToolCalling = rng.nextDouble() < 0.35;
+      final int inFlightToolCalls = isMidToolCalling ? 1 + rng.nextInt(3) : 0;
       ops.add(
           factory.agentInstanceOp(
               ctx,
@@ -347,7 +342,9 @@ class FlowNodeEmitter {
                   elemInstKey,
                   elementId,
                   "UPDATED",
-                  AgentInstanceStatus.THINKING,
+                  isMidToolCalling
+                      ? AgentInstanceStatus.TOOL_CALLING
+                      : AgentInstanceStatus.THINKING,
                   model,
                   provider,
                   systemPrompt,
@@ -357,9 +354,9 @@ class FlowNodeEmitter {
                   inputTokens,
                   outputTokens,
                   1,
-                  0,
+                  inFlightToolCalls,
                   fullTools,
-                  thinkingMs)));
+                  inFlightMs)));
       return List.copyOf(ops);
     }
 
@@ -419,6 +416,35 @@ class FlowNodeEmitter {
                   totalToolCalls,
                   fullTools,
                   thinkingMs)));
+
+      // ~40 % of terminated instances are cut off mid TOOL_CALLING rather than during THINKING,
+      // so terminated agent instances also cover the "had tool calls in flight" case.
+      if (rng.nextDouble() < 0.4) {
+        final long toolCallingMs = startMs + duration * 2 / 3;
+        final int toolCallDelta = 1 + rng.nextInt(3);
+        totalToolCalls = Math.min(totalToolCalls + toolCallDelta, maxToolCalls);
+        ops.add(
+            factory.agentInstanceOp(
+                ctx,
+                new AgentInstanceEvent(
+                    agentInstanceKey,
+                    elemInstKey,
+                    elementId,
+                    "UPDATED",
+                    AgentInstanceStatus.TOOL_CALLING,
+                    model,
+                    provider,
+                    systemPrompt,
+                    maxTokens,
+                    maxModelCalls,
+                    maxToolCalls,
+                    totalInputTokens,
+                    totalOutputTokens,
+                    totalModelCalls,
+                    totalToolCalls,
+                    fullTools,
+                    toolCallingMs)));
+      }
     } else {
       // Full lifecycle: optional TOOL_DISCOVERY → THINKING → TOOL_CALLING → (THINKING) → IDLE
       final long phase = duration / 6;
@@ -475,38 +501,16 @@ class FlowNodeEmitter {
                   fullTools,
                   thinking1Ms)));
 
-      // Phase 2: TOOL_CALLING
-      final long toolCallingMs = startMs + phase * 2;
-      final int toolCallDelta = 1 + rng.nextInt(3);
-      totalToolCalls += toolCallDelta;
-      ops.add(
-          factory.agentInstanceOp(
-              ctx,
-              new AgentInstanceEvent(
-                  agentInstanceKey,
-                  elemInstKey,
-                  elementId,
-                  "UPDATED",
-                  AgentInstanceStatus.TOOL_CALLING,
-                  model,
-                  provider,
-                  systemPrompt,
-                  maxTokens,
-                  maxModelCalls,
-                  maxToolCalls,
-                  totalInputTokens,
-                  totalOutputTokens,
-                  totalModelCalls,
-                  totalToolCalls,
-                  fullTools,
-                  toolCallingMs)));
-
-      // Phase 3: second THINKING (60 % of instances do a second model call)
-      if (rng.nextDouble() < 0.6) {
-        final long thinking2Ms = startMs + phase * 3;
-        totalInputTokens += 100L + rng.nextInt(500);
-        totalOutputTokens += 30L + rng.nextInt(200);
-        totalModelCalls++;
+      // Phases 2+: 0–3 rounds of TOOL_CALLING, each optionally followed by another THINKING
+      // model call. ~25 % of completed instances resolve without ever calling a tool
+      // (toolCallingRounds == 0) — the LLM answered directly — exercising the "no tool calls"
+      // case; the rest perform 1–3 rounds, with totals capped at maxToolCalls so some instances
+      // saturate the configured limit (useful for "limit reached" reporting/visuals).
+      final int toolCallingRounds = rng.nextInt(4);
+      for (int round = 0; round < toolCallingRounds; round++) {
+        final long toolCallingMs = startMs + phase * (2 + round);
+        final int toolCallDelta = 1 + rng.nextInt(3);
+        totalToolCalls = Math.min(totalToolCalls + toolCallDelta, maxToolCalls);
         ops.add(
             factory.agentInstanceOp(
                 ctx,
@@ -515,7 +519,7 @@ class FlowNodeEmitter {
                     elemInstKey,
                     elementId,
                     "UPDATED",
-                    AgentInstanceStatus.THINKING,
+                    AgentInstanceStatus.TOOL_CALLING,
                     model,
                     provider,
                     systemPrompt,
@@ -527,7 +531,36 @@ class FlowNodeEmitter {
                     totalModelCalls,
                     totalToolCalls,
                     fullTools,
-                    thinking2Ms)));
+                    toolCallingMs)));
+
+        // 60 % of rounds are followed by another model call to interpret the tool result
+        if (rng.nextDouble() < 0.6) {
+          final long thinkingMs = toolCallingMs + Math.max(1, phase / 2);
+          totalInputTokens += 100L + rng.nextInt(500);
+          totalOutputTokens += 30L + rng.nextInt(200);
+          totalModelCalls++;
+          ops.add(
+              factory.agentInstanceOp(
+                  ctx,
+                  new AgentInstanceEvent(
+                      agentInstanceKey,
+                      elemInstKey,
+                      elementId,
+                      "UPDATED",
+                      AgentInstanceStatus.THINKING,
+                      model,
+                      provider,
+                      systemPrompt,
+                      maxTokens,
+                      maxModelCalls,
+                      maxToolCalls,
+                      totalInputTokens,
+                      totalOutputTokens,
+                      totalModelCalls,
+                      totalToolCalls,
+                      fullTools,
+                      thinkingMs)));
+        }
       }
 
       // Phase 4: IDLE (agent finished its work, awaiting next activation)

@@ -11,6 +11,7 @@ import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DE
 
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.bulk.IndexOperation;
+import io.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import io.camunda.optimize.dto.zeebe.ZeebeRecordDto;
@@ -24,6 +25,7 @@ import io.camunda.optimize.dto.zeebe.usertask.ZeebeUserTaskDataDto;
 import io.camunda.optimize.dto.zeebe.usertask.ZeebeUserTaskRecordDto;
 import io.camunda.optimize.dto.zeebe.variable.ZeebeVariableDataDto;
 import io.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
+import io.camunda.optimize.service.util.BpmnModelUtil;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -116,6 +118,11 @@ class ZeebeRecordFactory {
     final String bpmn20Xml = new String(bpmnProvider.bpmnFor(processId), StandardCharsets.UTF_8);
     final String docId = processId + ":" + version + ":" + ZEEBE_DEFAULT_TENANT_ID;
     final String versionStr = String.valueOf(version);
+    // Mirrors what the real ZeebeProcessDefinitionImportService derives from the BPMN XML.
+    // Without this, flowNodeData stays empty and DefinitionService#extractFlowNodeIdAndNames()
+    // returns no flow nodes for this definition, silently dropping every flow-node/heatmap bucket
+    // for reports grouped by flow node (e.g. the agentic dashboard's tool-calls heat map).
+    final List<FlowNodeDataDto> flowNodeData = BpmnModelUtil.extractFlowNodeData(bpmn20Xml);
     final ProcessDefinitionOptimizeDto dto =
         ProcessDefinitionOptimizeDto.builder()
             .id(docId)
@@ -125,6 +132,7 @@ class ZeebeRecordFactory {
             .dataSource(new ZeebeDataSourceDto(dataSourceName, partitionId))
             .tenantId(ZEEBE_DEFAULT_TENANT_ID)
             .bpmn20Xml(bpmn20Xml)
+            .flowNodeData(flowNodeData)
             .deleted(false)
             .build();
     return BulkOperation.of(b -> b.index(idx -> idx.id(docId).document(dto)));
