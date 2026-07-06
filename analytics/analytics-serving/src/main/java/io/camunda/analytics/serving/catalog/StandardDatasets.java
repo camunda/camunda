@@ -46,6 +46,18 @@ public final class StandardDatasets {
   private static final long ONE_HOUR_MS = 3_600_000L;
   private static final long SLA_THRESHOLD_MS = 300_000L;
 
+  /**
+   * Allowed lateness (grace) for every windowed dataset. The merging aggregation drops a segment
+   * delta once its window is {@code windowEnd + grace} behind the running event-time high-water,
+   * and that high-water is global across all grouping keys — so with zero grace a fast key (or
+   * simply the second delta for the same window) advances the water and every legitimately
+   * in-flight delta for a slower key or the same window is dropped, collapsing the cube to almost
+   * nothing. A few minutes of grace absorbs the cross-key spread and the shuffle/commit lag; open
+   * windows are still served continuously via flush, they just finalize (and evict) this long after
+   * their end.
+   */
+  private static final long GRACE_MS = 5 * ONE_MINUTE_MS;
+
   private StandardDatasets() {}
 
   /**
@@ -113,6 +125,7 @@ public final class StandardDatasets {
             .dimension("bpmnProcessId", DimensionType.STRING)
             .meter(Meter.of("lifecycle", MeterCatalog.LIFECYCLE_SUMMARY, "durationMs"))
             .window(ONE_MINUTE_MS)
+            .lateness(GRACE_MS)
             .build(),
         // Completed-instance duration percentiles per process definition (mergeable sketch:
         // tiered).
@@ -122,6 +135,7 @@ public final class StandardDatasets {
             .meter(Meter.of("p95", MeterCatalog.PERCENTILE, "durationMs"))
             .window(ONE_MINUTE_MS)
             .window(ONE_HOUR_MS)
+            .lateness(GRACE_MS)
             .build(),
         // SLA-compliant share of completed instances per process definition (a ratio cohort).
         DatasetDeclaration.builder("process-sla", FactType.PROCESS_INSTANCE)
@@ -134,6 +148,7 @@ public final class StandardDatasets {
                     "durationMs",
                     Map.of("op", "le", "threshold", Long.toString(SLA_THRESHOLD_MS))))
             .window(ONE_MINUTE_MS)
+            .lateness(GRACE_MS)
             .build(),
         // Flow-node execution counts per (process, element).
         DatasetDeclaration.builder("element-throughput", FactType.ELEMENT)
@@ -142,6 +157,7 @@ public final class StandardDatasets {
             .dimension("elementId", DimensionType.STRING)
             .meter(Meter.of("count", MeterCatalog.COUNT))
             .window(ONE_MINUTE_MS)
+            .lateness(GRACE_MS)
             .build(),
         // Incident counts per (process, element).
         DatasetDeclaration.builder("incidents", FactType.INCIDENT)
@@ -149,6 +165,7 @@ public final class StandardDatasets {
             .dimension("elementId", DimensionType.STRING)
             .meter(Meter.of("count", MeterCatalog.COUNT))
             .window(ONE_MINUTE_MS)
+            .lateness(GRACE_MS)
             .build(),
         // --- appended for the dashboard read layer (stable ids: never reorder above) ---
         // Distinct active process definitions per tenant (HLL, tiered hourly).
@@ -156,6 +173,7 @@ public final class StandardDatasets {
             .dimension("tenantId", DimensionType.STRING)
             .meter(Meter.of("distinct", MeterCatalog.DISTINCT, "bpmnProcessId"))
             .window(ONE_HOUR_MS)
+            .lateness(GRACE_MS)
             .build(),
         // Heaviest process definitions per tenant (frequent-items, tiered).
         DatasetDeclaration.builder("top-processes", FactType.PROCESS_INSTANCE)
@@ -163,6 +181,7 @@ public final class StandardDatasets {
             .meter(Meter.of("top", MeterCatalog.TOP_K, "bpmnProcessId"))
             .window(ONE_MINUTE_MS)
             .window(ONE_HOUR_MS)
+            .lateness(GRACE_MS)
             .build(),
         // Completed flow-node duration summary per (process, element): count/avg/max + percentiles.
         DatasetDeclaration.builder("element-duration", FactType.ELEMENT)
@@ -172,6 +191,7 @@ public final class StandardDatasets {
             .meter(Meter.of("duration", MeterCatalog.EXECUTION_TIME_SUMMARY, "durationMs"))
             .window(ONE_MINUTE_MS)
             .window(ONE_HOUR_MS)
+            .lateness(GRACE_MS)
             .build(),
         // Open-incident gauge per (process, element): running sum of the ±1 incident delta
         // (CREATED +1 / RESOLVED −1), so a sum over windows is the current open count.
@@ -180,6 +200,7 @@ public final class StandardDatasets {
             .dimension("elementId", DimensionType.STRING)
             .meter(Meter.of("open", MeterCatalog.LEVEL, "delta"))
             .window(ONE_MINUTE_MS)
+            .lateness(GRACE_MS)
             .build());
   }
 
