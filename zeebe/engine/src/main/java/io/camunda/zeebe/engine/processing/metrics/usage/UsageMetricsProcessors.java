@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.metrics.usage;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.TenantMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -24,13 +25,14 @@ public class UsageMetricsProcessors {
       final InstantSource clock,
       final MutableProcessingState processingState,
       final Writers writers,
-      final KeyGenerator keyGenerator) {
+      final KeyGenerator keyGenerator,
+      final TenantMetrics tenantMetrics) {
     typedRecordProcessors
         .onCommand(
             ValueType.USAGE_METRIC,
             UsageMetricIntent.EXPORT,
             new UsageMetricExportProcessor(
-                processingState.getUsageMetricState(), writers, keyGenerator, clock))
+                processingState.getUsageMetricState(), writers, keyGenerator, clock, tenantMetrics))
         .withListener(
             new UsageMetricsCheckScheduler(config.getUsageMetricsExportInterval(), clock));
   }
