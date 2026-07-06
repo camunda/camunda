@@ -170,6 +170,7 @@
             <dep>io.camunda:camunda-security-protocol</dep>
             <dep>io.camunda:zeebe-stream-platform</dep>
             <dep>io.camunda:zeebe-workflow-engine</dep>
+            <dep>io.camunda:webapps-schema</dep>
             <dep>org.springframework:spring-beans</dep>
             <dep>org.springframework:spring-context</dep>
             <dep>org.springframework:spring-web</dep>
