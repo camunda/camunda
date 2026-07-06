@@ -53,6 +53,9 @@ platform_values := -f camunda-platform-values-defaults.yaml
 helm_chart_load_test_setup := charts/load-test-setup
 load_test_setup_values := -f load-test-setup-values.yaml
 additional_load_test_setup_configuration ?=
+# Makefile-side load-test-setup flags. Separate from `additional_load_test_setup_configuration`,
+# which CI sets on the make command line and would suppress `+=` here.
+_load_test_setup_flags :=
 
 # The Docker image tag for the load test metrics exporter
 metrics_exporter_image_tag := latest
@@ -82,16 +85,17 @@ platform_values_stable := $(platform_values) -f values-stable.yaml
 ifeq ($(secondary_storage),elasticsearch)
 	install_es_prom_exporter := true
 	es_prom_exporter_es_uri := http://elastic:9200
-	additional_load_test_setup_configuration += --set metricsExporter.database.url=http://elastic:9200
+	_load_test_setup_flags += --set metricsExporter.database.url=http://elastic:9200
 endif
 
 ifeq ($(chaos),true)
-	additional_load_test_setup_configuration += --set chaosKiller.enabled=true
+	_load_test_setup_flags += --set chaosKiller.enabled=true
 endif
 
 # Shared helm flags for the load-test-setup chart, used by both install and template targets.
 load_test_setup_flags = $(load_test_setup_values) \
     -f load-tester-values-defaults.yaml \
+    $(_load_test_setup_flags) \
     $(_scenario_load_test_flags) \
     $(additional_load_test_setup_configuration) \
     $(additional_load_test_configuration)
