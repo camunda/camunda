@@ -32,7 +32,7 @@ import org.apache.ibatis.session.SqlSessionFactory;
 
 /**
  * The RDBMS {@link DatasetWriter}: idempotent, dialect-aware upserts. Cube cells use a keyed upsert
- * on the deterministic {@code cell_key}, setting only the one meter's blob column so meters of the
+ * on the deterministic {@code cell_key}, setting only the one meter's own columns so meters of the
  * same cell coexist; projected rows upsert on {@code row_key}. Writes go through a single MyBatis
  * session held open for the batch, committed on {@link #flush()} — many upserts coalesce into one
  * transaction, and a re-emit or replay overwrites rather than duplicates.
@@ -68,25 +68,28 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
             .collect(Collectors.joining(", "));
     final String table = RdbmsNames.datasetTable(dataset.cubeId());
 
-    // Every meter writes its app-mergeable blob (Layer A). A pushable meter additionally decomposes
-    // into its native numeric columns (Layer B pushdown); a sketch/summary additionally writes its
-    // finalized scalar (the DIRECT fast path). Only the meter's own columns are in the upsert, so
-    // meters of the same cell coexist under the shared cell_key.
+    // A pushable (additive) meter decomposes into its native numeric columns (Layer B pushdown); a
+    // sketch/summary writes its app-mergeable blob (Layer A) plus a finalized scalar (the DIRECT
+    // fast path). Only the meter's own columns are in the upsert, so meters of the same cell coexist
+    // under the shared cell_key.
     final CompiledMeter compiled = compiledMeter(dataset, meterName, windowSize);
     final Optional<PushdownSpec<?, ?>> spec = compiled.pushdown();
 
     final List<String> meterCols = new ArrayList<>();
-    meterCols.add(RdbmsNames.quotedBlobColumn(meterName));
     final List<Object> pushdownValues;
     final double scalarValue;
     if (spec.isPresent()) {
+      // Additive: native numeric columns only — no blob (read via PUSH_DOWN/DIRECT, never
+      // streamed).
       pushdownValues = decompose(compiled.bound(), accumulator);
       for (final PushdownColumn column : spec.get().columns()) {
         meterCols.add(RdbmsNames.quotedPushdownColumn(meterName, column.suffix()));
       }
       scalarValue = Double.NaN;
     } else {
+      // Sketch / summary: the app-mergeable blob + a finalized scalar for the DIRECT fast path.
       pushdownValues = List.of();
+      meterCols.add(RdbmsNames.quotedBlobColumn(meterName));
       meterCols.add(RdbmsNames.quotedValueColumn(meterName));
       scalarValue = finalizedValue(compiled.bound(), accumulator);
     }
@@ -110,12 +113,12 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
           }
           statement.setLong(index++, windowStart);
           statement.setLong(index++, windowSize);
-          statement.setBytes(index++, accumulator);
           if (spec.isPresent()) {
             for (int i = 0; i < pushdownColumns.size(); i++) {
               bind(statement, index++, pushdownColumns.get(i).type(), pushdownValues.get(i));
             }
           } else {
+            statement.setBytes(index++, accumulator);
             statement.setDouble(index, scalarValue);
           }
         },

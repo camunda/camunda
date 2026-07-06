@@ -51,11 +51,10 @@ public final class RdbmsDatasetSchemaManager implements DatasetSchemaManager {
     final Map<String, Optional<PushdownSpec<?, ?>>> specs = specsByMeter(dataset);
     final List<String> meterDefs = new ArrayList<>();
     for (final String name : dataset.schema().meterNames()) {
-      // Every meter keeps its app-mergeable blob (the portable Layer A representation).
-      meterDefs.add(RdbmsNames.quotedBlobColumn(name) + " " + dialect.blobType());
       final Optional<PushdownSpec<?, ?>> spec = specs.getOrDefault(name, Optional.empty());
       if (spec.isPresent()) {
-        // Additive: one native numeric column per PushdownColumn, aggregated in the engine.
+        // Additive: native numeric columns only, aggregated in the engine — no blob (an additive
+        // meter is always read via PUSH_DOWN/DIRECT, never streamed and app-merged).
         for (final PushdownColumn column : spec.get().columns()) {
           meterDefs.add(
               RdbmsNames.quotedPushdownColumn(name, column.suffix())
@@ -63,7 +62,9 @@ public final class RdbmsDatasetSchemaManager implements DatasetSchemaManager {
                   + dialect.columnType(column.type()));
         }
       } else {
-        // Sketch / summary: a finalized scalar alongside the blob for the DIRECT fast path.
+        // Sketch / summary: the app-mergeable blob (streamed + merged) + a finalized scalar for the
+        // DIRECT fast path.
+        meterDefs.add(RdbmsNames.quotedBlobColumn(name) + " " + dialect.blobType());
         meterDefs.add(RdbmsNames.quotedValueColumn(name) + " " + dialect.doubleType());
       }
     }

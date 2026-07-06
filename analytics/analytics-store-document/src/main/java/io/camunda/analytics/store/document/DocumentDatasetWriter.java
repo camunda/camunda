@@ -55,10 +55,10 @@ public final class DocumentDatasetWriter implements DatasetWriter {
     doc.put(DocumentCubeNames.WINDOW_START, windowStart);
     doc.put(DocumentCubeNames.WINDOW_SIZE, windowSize);
     doc.put(DocumentCubeNames.METER_NAME, meterName);
-    doc.put(DocumentCubeNames.ACCUMULATOR, DocumentCubeNames.encode(accumulator));
 
-    // Alongside the blob (Layer A), write the meter's native numeric fields (additive pushdown) or
-    // its finalized scalar (sketch/summary DIRECT), so the composite aggregation can reduce them.
+    // An additive meter writes its native numeric fields only (the composite aggregation reduces
+    // them). A sketch/summary writes its app-mergeable blob (streamed + merged) plus a finalized
+    // scalar for the DIRECT fast path — no blob for additive, which is never streamed.
     final CompiledMeter compiled = compiledMeter(dataset, meterName, windowSize);
     final Optional<PushdownSpec<?, ?>> spec = compiled.pushdown();
     if (spec.isPresent()) {
@@ -68,6 +68,7 @@ public final class DocumentDatasetWriter implements DatasetWriter {
         doc.put(DocumentCubeNames.pushdownField(columns.get(i).suffix()), values.get(i));
       }
     } else {
+      doc.put(DocumentCubeNames.ACCUMULATOR, DocumentCubeNames.encode(accumulator));
       doc.put(DocumentCubeNames.VALUE, SketchScalar.of(finalized(compiled.bound(), accumulator)));
     }
 

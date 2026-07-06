@@ -294,7 +294,11 @@ public final class RdbmsDatasetQueryClient implements DatasetQueryClient {
     }
     final List<String> meterColumns = new ArrayList<>();
     for (final String meter : fetch.meters()) {
-      meterColumns.add(RdbmsNames.quotedBlobColumn(meter));
+      // Only sketch/summary meters store a blob (the STREAM_MERGE representation). An additive
+      // meter is pushdown-only and has no blob column, so there is nothing to select for it here.
+      if (specFor(dataset, meter, fetch.windowSize()).isEmpty()) {
+        meterColumns.add(RdbmsNames.quotedBlobColumn(meter));
+      }
     }
 
     final List<String> filterColumns = new ArrayList<>();
