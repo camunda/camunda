@@ -16,13 +16,15 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Runs a {@link ReportQuery} end to end: {@link DatasetQueryPlanner} decides the plan, the {@link
- * DatasetQueryClient} fetches raw {@link Cell}s per tier, and this executor performs the
- * application reduction — projecting each cell to the requested group-by dimensions, bucketing its
- * window at the requested granularity, and merging each meter's accumulators via the meter's own
- * {@code AggregateFunction.merge} before finalizing with {@code getResult}. This uniform app-merge
- * is exact for every meter class (additive counters and mergeable sketches alike), which is why the
- * backend need only filter and fetch.
+ * Runs a {@link ReportQuery} end to end: {@link DatasetQueryPlanner} decides the per-meter
+ * strategy, and this executor unions the results on {@code (group-by values, time bucket)}.
+ * Additive meters come back finalized from the store ({@link DatasetQueryClient#fetchAggregated} —
+ * {@code DIRECT} or {@code PUSH_DOWN}); sketch/summary meters are streamed ({@link
+ * DatasetQueryClient#streamCells}) and app-merged here — projecting each cell to the requested
+ * group-by, bucketing its window at the requested granularity, merging accumulators via {@code
+ * AggregateFunction.merge}, then finalizing with {@code getResult}. The app-merge is exact for
+ * every mergeable sketch, and the pushdown is exact for every additive meter, so a mixed cube is
+ * one union of the two.
  */
 public final class DatasetQueryExecutor {
 
@@ -37,12 +39,22 @@ public final class DatasetQueryExecutor {
   public ReportResult execute(final ReportQuery query, final CompiledDataset dataset) {
     final QueryPlan plan = planner.plan(query, dataset);
 
-    // (group-by values + time bucket) -> meter name -> running accumulator (Object; typed per
-    // meter)
-    final Map<GroupKey, Map<String, Object>> accumulators = new LinkedHashMap<>();
+    // (group-by values + time bucket) -> meter name -> finalized measure.
+    final Map<GroupKey, Map<String, Object>> measuresByGroup = new LinkedHashMap<>();
 
-    for (final DatasetFetch fetch : plan.fetches()) {
-      // Stream the cells and fold each as it arrives — no full-result materialization, no cap.
+    // Pushed-down / direct additive meters: the store already reduced and finalized them.
+    for (final AggregatedFetch fetch : plan.aggregatedFetches()) {
+      for (final AggregatedRow row : client.fetchAggregated(fetch)) {
+        measuresByGroup
+            .computeIfAbsent(
+                new GroupKey(row.groupValues(), row.bucket()), g -> new LinkedHashMap<>())
+            .putAll(row.measures());
+      }
+    }
+
+    // Sketch/blob meters: stream cells and app-merge each meter's accumulator per (group, bucket).
+    final Map<GroupKey, Map<String, Object>> accumulators = new LinkedHashMap<>();
+    for (final DatasetFetch fetch : plan.streamFetches()) {
       client.streamCells(
           fetch,
           cell -> {
@@ -63,16 +75,21 @@ public final class DatasetQueryExecutor {
             }
           });
     }
-
-    final List<ReportRow> rows = new ArrayList<>(accumulators.size());
+    // Finalize the streamed accumulators and fold them into the same group map.
     accumulators.forEach(
         (group, byMeter) -> {
-          final Map<String, Object> measures = new LinkedHashMap<>();
+          final Map<String, Object> measures =
+              measuresByGroup.computeIfAbsent(group, g -> new LinkedHashMap<>());
           byMeter.forEach(
               (meter, acc) ->
-                  measures.put(meter, result(boundOf(dataset, meter, tierOf(plan, meter)), acc)));
-          rows.add(new ReportRow(group.dimensionMap(plan.groupBy()), group.bucket(), measures));
+                  measures.put(
+                      meter, result(boundOf(dataset, meter, streamTierOf(plan, meter)), acc)));
         });
+
+    final List<ReportRow> rows = new ArrayList<>(measuresByGroup.size());
+    measuresByGroup.forEach(
+        (group, measures) ->
+            rows.add(new ReportRow(group.dimensionMap(plan.groupBy()), group.bucket(), measures)));
     return new ReportResult(rows);
   }
 
@@ -96,13 +113,13 @@ public final class DatasetQueryExecutor {
         "no compiled meter '" + meter + "' at tier " + windowSize + " in '" + dataset.name() + "'");
   }
 
-  private static long tierOf(final QueryPlan plan, final String meter) {
-    for (final DatasetFetch fetch : plan.fetches()) {
+  private static long streamTierOf(final QueryPlan plan, final String meter) {
+    for (final DatasetFetch fetch : plan.streamFetches()) {
       if (fetch.meters().contains(meter)) {
         return fetch.windowSize();
       }
     }
-    throw new IllegalStateException("meter '" + meter + "' absent from the plan");
+    throw new IllegalStateException("streamed meter '" + meter + "' absent from the plan");
   }
 
   private static long alignDown(final long value, final long bucket) {

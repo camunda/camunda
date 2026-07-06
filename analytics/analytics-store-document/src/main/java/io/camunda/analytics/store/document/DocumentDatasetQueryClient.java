@@ -267,6 +267,7 @@ public final class DocumentDatasetQueryClient implements DatasetQueryClient {
    * sum} over its {@code _value} (a sketch's DIRECT scalar). Rows are unioned across meters on
    * {@code (group, bucket)} and each meter's columns recomposed into its result.
    */
+  @Override
   @SuppressWarnings("unchecked")
   public List<AggregatedRow> fetchAggregated(final AggregatedFetch fetch) {
     final CompiledDataset dataset = fetch.dataset();

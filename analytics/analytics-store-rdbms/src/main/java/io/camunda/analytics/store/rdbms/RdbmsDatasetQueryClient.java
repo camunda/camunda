@@ -94,6 +94,7 @@ public final class RdbmsDatasetQueryClient implements DatasetQueryClient {
    * aggregation — one row per cell. Each meter's columns are recomposed into its read-facing
    * result.
    */
+  @Override
   public List<AggregatedRow> fetchAggregated(final AggregatedFetch fetch) {
     return switch (fetch.strategy()) {
       case PUSH_DOWN -> pushDown(fetch);

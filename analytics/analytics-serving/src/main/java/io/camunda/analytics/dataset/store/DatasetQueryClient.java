@@ -34,6 +34,15 @@ public interface DatasetQueryClient extends AutoCloseable {
     fetch(fetch).forEach(sink);
   }
 
+  /**
+   * Executes a pushed-down / direct read (see {@link AggregatedFetch}): the store does the
+   * reduction ({@code GROUP BY} + {@code SUM}/{@code MIN}/{@code MAX}, or none for {@link
+   * ReadStrategy#DIRECT}) and returns finalized {@link AggregatedRow}s — the executor unions these
+   * with the streamed sketch rows. Used only for meters with a {@code PushdownSpec}; sketches
+   * always stream.
+   */
+  List<AggregatedRow> fetchAggregated(AggregatedFetch fetch);
+
   /** Fetches the raw rows of a table (see {@link TableFetch}). */
   List<TableRow> fetchRows(TableFetch fetch);
 
