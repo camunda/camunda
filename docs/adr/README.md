@@ -22,4 +22,16 @@ ADR for that domain is written.
   endpoint → required-permission mapping via the `x-required-permissions`
   OpenAPI vendor extension, with Spectral gap guard and engine drift guard
   (camunda/camunda#54727).
+- `management/001-physical-tenant-health-status-topology.md` — health,
+  readiness, and status semantics for multi-physical-tenant clusters;
+  new `/cluster/v2/status` and `/cluster/v2/topology` endpoints
+  (camunda/camunda#54299).
+- `management/002-management-endpoint-authorization.md` — three-tier
+  authorization model for management endpoints: unauthenticated actuators,
+  per-tenant REST via the tenant's security chain, cluster-wide REST via
+  the pre-configured cluster-admin (camunda/camunda#54898).
+- `management/003-physical-tenant-management-endpoint-inventory.md` —
+  authoritative inventory of management endpoints in 8.10: per-tenant and
+  cluster-wide surfaces, actuator query-parameter selection, cluster-wide
+  backup contract, backwards compatibility.
 
