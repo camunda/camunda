@@ -99,14 +99,15 @@ public class OidcLogoutSuccessHandlerWiringTest extends AbstractWebSecurityConfi
 
   @Test
   public void shouldReturnFoundRedirectForNonFetchLogoutWhenEndSessionEndpointConfigured() {
-    // given the same OIDC-authenticated user, but performing a full-page navigation (no
-    // Sec-Fetch-Dest, HTML accept) rather than a fetch() call
+    // given the same OIDC-authenticated user, but performing a full-page navigation
+    // (Sec-Fetch-Dest: document, HTML accept) rather than a fetch() call
 
     // when it POSTs /logout
     final MvcTestResult result =
         mockMvcTester
             .post()
             .uri("https://localhost/logout")
+            .header("Sec-Fetch-Dest", "document")
             .accept(MediaType.TEXT_HTML)
             .with(oidcLoginWithLoginHint())
             .exchange();
