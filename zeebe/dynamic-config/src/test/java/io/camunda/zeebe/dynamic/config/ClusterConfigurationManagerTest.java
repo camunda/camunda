@@ -20,8 +20,8 @@ import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationSerializer
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
@@ -60,7 +60,7 @@ final class ClusterConfigurationManagerTest {
   private final MemberId localMemberId = MemberId.from("1");
 
   private PersistedClusterConfiguration persistedClusterConfiguration;
-  @AutoClose private MeterRegistry meterRegistry = new SimpleMeterRegistry();
+  @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final TopologyManagerMetrics topologyMetrics = new TopologyManagerMetrics(meterRegistry);
 
   @BeforeEach

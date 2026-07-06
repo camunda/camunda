@@ -7,11 +7,12 @@
  */
 package io.camunda.zeebe.dynamic.config.state;
 
-import io.atomix.cluster.MemberId;
+import org.jspecify.annotations.NullMarked;
 
-/** An operation that changes the configuration. */
-public sealed interface ClusterConfigurationChangeOperation
-    permits PartitionGroupOperation, GlobalChangeOperation {
-
-  MemberId memberId();
+/** Terminal outcome of a {@link PhasedChangePlan}. */
+@NullMarked
+public enum PhasedChangePlanStatus {
+  COMPLETED,
+  CANCELLED,
+  FAILED,
 }

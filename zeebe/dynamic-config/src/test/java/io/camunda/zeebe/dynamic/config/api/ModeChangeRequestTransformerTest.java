@@ -11,10 +11,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.AwaitModeChangeOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.util.Map;
 import org.junit.jupiter.api.Test;

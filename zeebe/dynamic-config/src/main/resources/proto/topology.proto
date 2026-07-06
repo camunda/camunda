@@ -15,7 +15,7 @@ message CurrentClusterConfiguration {
   int64 version = 1;
   GlobalConfiguration globalConfiguration = 2;
   map<string, PartitionGroupConfiguration> partitionGroups = 3;
-  PhasedChangePlan pendingPlan = 4;
+  PhasedChangeState phasedChangeState = 4;
 }
 
 // Cluster wide configuration that are not specific to partition groups.
@@ -59,6 +59,21 @@ message PhasedChangePlan {
   int64 id = 1;
   int32 currentPhaseIndex = 2;
   repeated PhasedChangePlanPhase phases = 3;
+  google.protobuf.Timestamp startedAt = 4;
+}
+
+// Minimal record of a completed phased change, kept for observability and ID monotonicity.
+message CompletedPhasedChange {
+  int64 id = 1;
+  PhasedChangePlanStatus status = 2;
+  google.protobuf.Timestamp startedAt = 3;
+  google.protobuf.Timestamp completedAt = 4;
+}
+
+// Wrapper that holds at most one pending plan and the last completed change.
+message PhasedChangeState {
+  PhasedChangePlan pendingPlan = 1;
+  CompletedPhasedChange lastChange = 2;
 }
 
 // A single phase in a PhasedChangePlan; either global or per-group.
@@ -359,6 +374,15 @@ enum ChangeStatus {
   COMPLETED = 2;
   FAILED = 3;
   CANCELLED = 4;
+}
+
+// Terminal outcome of a CompletedPhasedChange. Unlike ChangeStatus, this enum
+// excludes IN_PROGRESS since it is only used once a change has finished.
+enum PhasedChangePlanStatus {
+  PHASED_CHANGE_STATUS_UNKNOWN = 0;
+  PHASED_CHANGE_COMPLETED = 1;
+  PHASED_CHANGE_FAILED = 2;
+  PHASED_CHANGE_CANCELLED = 3;
 }
 
 enum ExporterStateEnum {

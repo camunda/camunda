@@ -13,39 +13,39 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.AwaitModeChangeOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.DeleteHistoryOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ModeChangeOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionBootstrapOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PostScalingOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PreScalingOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRedistributionCompletion;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRelocationCompletion;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.StartPartitionScaleUp;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateIncarnationNumberOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdatePartitionDistributorConfigOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
 import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberRemoveOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PostScalingOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PreScalingOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartitionDistributorConfigOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.FixedConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRobinConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.DeleteHistoryOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRedistributionCompletion;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRelocationCompletion;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.StartPartitionScaleUp;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.management.cluster.BrokerState;
@@ -277,39 +277,31 @@ final class ClusterApiUtilsTest {
   }
 
   /**
-   * Discovers all concrete implementations of ClusterConfigurationChangeOperation using reflection.
-   * This method automatically finds all nested classes that implement the interface.
+   * Discovers all concrete record implementations of ClusterConfigurationChangeOperation by
+   * recursively walking the sealed {@code permits} hierarchy.
+   *
+   * <p>This works regardless of whether subtypes are nested inside the top-level interface or
+   * defined in separate top-level files, because Java's {@code getPermittedSubclasses()} follows
+   * the compiler-enforced {@code permits} clause rather than physical class nesting.
    */
   private Set<Class<?>> discoverAllImplementations() {
-    final Set<Class<?>> implementations = new HashSet<>();
-
-    // Get all nested classes from the ClusterConfigurationChangeOperation interface
-    final Class<?>[] nestedClasses = ClusterConfigurationChangeOperation.class.getDeclaredClasses();
     if (!ClusterConfigurationChangeOperation.class.isSealed()) {
       throw new AssertionError("ClusterConfigurationChangeOperation must be sealed");
     }
+    final Set<Class<?>> implementations = new HashSet<>();
+    collectConcretePermittedSubtypes(ClusterConfigurationChangeOperation.class, implementations);
+    return implementations;
+  }
 
-    for (final Class<?> nestedClass : nestedClasses) {
-      // Check if it's a record that implements ClusterConfigurationChangeOperation
-      if (nestedClass.isRecord()
-          && ClusterConfigurationChangeOperation.class.isAssignableFrom(nestedClass)) {
-        implementations.add(nestedClass);
-      }
-
-      // Also check nested classes within nested interfaces (like ScaleUpOperation,
-      // PartitionChangeOperation)
-      if (nestedClass.isInterface()) {
-        final Class<?>[] subNestedClasses = nestedClass.getDeclaredClasses();
-        for (final Class<?> subNestedClass : subNestedClasses) {
-          if (subNestedClass.isRecord()
-              && ClusterConfigurationChangeOperation.class.isAssignableFrom(subNestedClass)) {
-            implementations.add(subNestedClass);
-          }
-        }
+  private static void collectConcretePermittedSubtypes(
+      final Class<?> sealedType, final Set<Class<?>> result) {
+    for (final Class<?> permitted : sealedType.getPermittedSubclasses()) {
+      if (permitted.isRecord()) {
+        result.add(permitted);
+      } else if (permitted.isSealed()) {
+        collectConcretePermittedSubtypes(permitted, result);
       }
     }
-
-    return implementations;
   }
 
   public static Stream<Arguments> provideClusterConfigurationWithExporters() {

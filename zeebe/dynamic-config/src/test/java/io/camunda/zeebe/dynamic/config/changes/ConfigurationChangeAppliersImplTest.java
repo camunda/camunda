@@ -7,23 +7,24 @@
  */
 package io.camunda.zeebe.dynamic.config.changes;
 
-import static io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.DeleteHistoryOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PostScalingOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PreScalingOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PostScalingOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PreScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.DeleteHistoryOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;

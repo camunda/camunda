@@ -9,7 +9,7 @@ package io.camunda.zeebe.dynamic.config.changes;
 
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers.ClusterOperationApplier;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRedistributionCompletion;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRedistributionCompletion;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.ActivePartitions;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
