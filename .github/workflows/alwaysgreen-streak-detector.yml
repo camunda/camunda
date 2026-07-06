@@ -183,6 +183,20 @@ jobs:
               echo "  conversations.history failed: $(jq -r '.error // "unknown"' <<<"$SLACK_HISTORY") — will post fresh if needed"
             fi
 
+            # Guard: when conversations.history is unavailable and the streak
+            # has already exceeded the threshold, the crossing-point alert was
+            # sent in a prior run. Skip this tick to prevent a new chat.postMessage
+            # on every scheduled poll (the root cause of repeated Slack alerts).
+            # Only the exact threshold-crossing run (streak == threshold) is
+            # allowed through so the initial notification still fires.
+            # Fix: grant channels:history scope to the Slack bot to remove this
+            # guard and enable proper silent find-and-update behaviour.
+            if [[ -z "${EXISTING_TS}" && "${IS_STREAK}" == "true" && ${STREAK} -gt ${STREAK_THRESHOLD} ]]; then
+              echo "  ⚠️  conversations.history unavailable, streak=${STREAK} > ${STREAK_THRESHOLD} — skipping to avoid repeated alerts"
+              SUMMARY_LINES+=("- \`${BASE_REF}\`: ⚠️ skipped repeat alert (conversations.history unavailable, streak=${STREAK}/${STREAK_THRESHOLD}) — grant channels:history scope to the Slack bot to re-enable silent updates")
+              continue
+            fi
+
             # ----------------------------------------------------------------
             # Build medic pings from failure-context artifacts on the latest run.
             # ----------------------------------------------------------------
