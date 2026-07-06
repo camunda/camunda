@@ -13,6 +13,8 @@ jobs:
       github.event.label.name == 'severity/critical' &&
       (
         contains(github.event.issue.labels.*.name, 'component/zeebe') ||
+        contains(github.event.issue.labels.*.name, 'component/zeebe-engine') ||
+        contains(github.event.issue.labels.*.name, 'component/zeebe-platform') ||
         !contains(join(github.event.issue.labels.*.name, ', '), 'component/')
       )
     steps:
