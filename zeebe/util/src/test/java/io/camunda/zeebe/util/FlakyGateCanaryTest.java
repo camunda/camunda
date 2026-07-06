@@ -7,42 +7,48 @@
  */
 package io.camunda.zeebe.util;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.util.concurrent.ThreadLocalRandom;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
 /**
  * CANARY — DO NOT MERGE.
  *
  * <p>Temporary flaky test that validates the flaky-gate sticky-state persistence fix (commit "fix:
- * persist flaky-gate sticky state across CI runs"). It exists only on the throwaway branch {@code
- * test/flaky-gate-state-canary} and must be removed before that branch — if ever — is merged.
+ * persist flaky-gate sticky state across CI runs"). Exists only on the throwaway branch {@code
+ * ci/flaky-gate-state-canary-DONOTMERGE}; remove before that branch is ever merged.
  *
- * <p>It lives in the {@code zeebe-util} module so it runs in the {@code zeebe-unit-tests} job, which
- * the flaky gate collects. Because the test file itself is in the PR diff, the gate's touch-check
- * keeps the alert (test-file-in-diff override).
+ * <p>It lives in {@code zeebe-util} so it runs in the gate-collected {@code zeebe-unit-tests} job.
+ * The test file is in the PR diff, so the gate's touch-check keeps the alert (test-file-in-diff
+ * override).
  *
- * <p>Validation walkthrough:
+ * <p><b>Deterministic flake:</b> the first execution creates a marker file and fails; Maven's
+ * retry (same runner filesystem) sees the marker and passes. Net result on every CI run: failed
+ * once, passed on retry → recorded in FLAKY.xml → the gate flags it. This removes the ~50% luck of
+ * a random flake so the sticky-state / counter path is exercised reliably.
  *
- * <ul>
- *   <li><b>Phase 1 (flag):</b> {@link #shouldBeStable()} fails ~50% of the time, so Maven's retry
- *       records it in FLAKY.xml and the gate raises a sticky alert, uploading the {@code
- *       flaky-gate-state-pr-<N>} artifact. Assert: the artifact now exists and the "Upload
- *       sticky-state artifact" step runs (before the fix it was skipped).
- *   <li><b>Phase 2 (clear):</b> replace the body of {@link #shouldBeStable()} with {@code
- *       assertThat(true).isTrue();}. That stops the flake AND counts as a method fix, so the next
- *       three clean re-runs advance the counter 1/3 → 2/3 → 3/3 → {@code cleared_via_fix}. Assert:
- *       run #2's log reports "Found prior artifact id: …" (not "No prior sticky-state artifact
- *       found"), proving state now persists across runs.
- * </ul>
+ * <p><b>Phase 1 (flag):</b> as above → gate raises a sticky alert and (with the fix) uploads the
+ * {@code flaky-gate-state-pr-<N>} artifact.
+ *
+ * <p><b>Phase 2 (clear):</b> replace the body of {@link #shouldBeStable()} with a no-op (delete the
+ * fail-then-pass logic). That stops the flake AND counts as a method fix, so the next three clean
+ * re-runs advance the counter 1/3 → 2/3 → 3/3 → {@code cleared_via_fix}. Assert run #2's log shows
+ * "Found prior artifact id: …" (not "No prior sticky-state artifact found").
  */
 final class FlakyGateCanaryTest {
 
   @Test
-  void shouldBeStable() {
-    // PHASE 1 (flag): ~50% failure so the test is recorded as flaky.
-    // PHASE 2 (clear): replace the assertion below with `assertThat(true).isTrue();`.
-    assertThat(ThreadLocalRandom.current().nextInt(2)).isZero();
+  void shouldBeStable() throws IOException {
+    // PHASE 1 (flag): fail on the first attempt, pass on Maven's retry -> recorded flaky.
+    // PHASE 2 (clear): replace this whole body with a no-op (e.g. `// cleared`).
+    final Path marker =
+        Path.of(System.getProperty("java.io.tmpdir"), "flaky-gate-canary-attempt.marker");
+    if (Files.exists(marker)) {
+      return; // retry attempt on the same runner: pass
+    }
+    Files.createFile(marker);
+    throw new AssertionError(
+        "flaky-gate canary: intentional first-attempt failure to exercise the flaky gate");
   }
 }
