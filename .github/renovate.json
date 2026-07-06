@@ -490,6 +490,29 @@
       "enabled": false
     },
     {
+      "description": "Disable Maven lookup for internal monorepo parent POMs (operate-qa, tasklist-qa, camunda-qa) that are never published to any external registry. depType 'parent' (non-root) is not covered by the parent-root exclusion above.",
+      "matchManagers": [
+        "maven"
+      ],
+      "matchPackageNames": [
+        "io.camunda:operate-qa",
+        "io.camunda:camunda-qa",
+        "io.camunda:tasklist-qa"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Disable Docker updates for private registries used in load tests that Renovate cannot authenticate to: registry.camunda.cloud (internal Harbor) and europe-west1-docker.pkg.dev/camunda-benchmark (GCP AR pull-through cache for quay.io/prometheuscommunity/elasticsearch-exporter — track upstream manually).",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "registry.camunda.cloud/team-zeebe",
+        "europe-west1-docker.pkg.dev/camunda-benchmark/quayio/prometheuscommunity/elasticsearch-exporter"
+      ],
+      "enabled": false
+    },
+    {
       "description": "Disable internal io.camunda Maven updates on stable branches; versions are controlled by the release process.",
       "matchManagers": [
         "maven"
