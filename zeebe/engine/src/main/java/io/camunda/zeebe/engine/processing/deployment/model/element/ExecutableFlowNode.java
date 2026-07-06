@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 public class ExecutableFlowNode extends AbstractFlowElement {
 
@@ -21,6 +22,14 @@ public class ExecutableFlowNode extends AbstractFlowElement {
 
   private Optional<Expression> inputMappings = Optional.empty();
   private Optional<Expression> outputMappings = Optional.empty();
+
+  /**
+   * Secret references detected in the input mappings of this flow node, keyed by the JSON pointer
+   * (RFC 6901) of the input mapping's target path (e.g. {@code /tokens/token}). Only references
+   * used as expressions are stored (see {@link SecretReference}). Empty when no input mapping
+   * references a secret.
+   */
+  private Map<String, Set<SecretReference>> secretReferences = Map.of();
 
   private final List<ExecutionListener> executionListeners = new ArrayList<>();
 
@@ -58,6 +67,14 @@ public class ExecutableFlowNode extends AbstractFlowElement {
 
   public void setOutputMappings(final Expression outputMappings) {
     this.outputMappings = Optional.of(outputMappings);
+  }
+
+  public Map<String, Set<SecretReference>> getSecretReferences() {
+    return secretReferences;
+  }
+
+  public void setSecretReferences(final Map<String, Set<SecretReference>> secretReferences) {
+    this.secretReferences = secretReferences;
   }
 
   public List<ExecutionListener> getBeforeAllExecutionListeners() {
