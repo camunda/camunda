@@ -80,8 +80,9 @@ Map path prefixes to component labels:
 | `tasklist/`              | `component/tasklist`             |
 | `identity/`              | `component/identity`             |
 | `optimize/`              | `component/optimize`             |
-| `clients/`               | `component/clients`              |
-| `webapp/`                | `component/c8-api`               |
+| `clients/`               | `component/clients` (also Core Features) |
+| `clients/spring-zeebe/` or `clients/spring-boot-starter/` | `component/spring-boot-starter` (also Core Features) |
+| `webapp/`                | `component/c8-api` (also Core Features) |
 | `gateways/gateway-mcp/`  | `component/mcp`                  |
 | `gateways/`              | `component/gateway`              |
 | `db/` or `search/`       | `component/data-layer`           |

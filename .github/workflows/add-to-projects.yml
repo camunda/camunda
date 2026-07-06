@@ -102,6 +102,15 @@ jobs:
           github-token: ${{ steps.github-token.outputs.token }}
           labeled: component/data-layer
 
+      - id: add-c8-api-to-core-features
+        if: github.event.action != 'labeled' || github.event.label.name == 'component/c8-api'
+        name: Add C8 API issues to Core Features project
+        uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
+        with:
+          project-url: https://github.com/orgs/camunda/projects/173
+          github-token: ${{ steps.github-token.outputs.token }}
+          labeled: component/c8-api
+
       - id: add-to-api
         if: >
           github.event.action != 'labeled' ||
