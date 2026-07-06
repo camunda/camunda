@@ -11,7 +11,7 @@ import {assignTaskRequestBodySchema} from '@camunda/camunda-api-zod-schemas/8.10
 import {HttpResponse} from 'msw';
 import {z} from 'zod';
 import {render} from 'vitest-browser-react';
-import {afterEach, describe, expect} from 'vitest';
+import {afterEach, describe, expect, vi} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
 import {
@@ -53,6 +53,7 @@ function getWrapper() {
 
 describe('<AssignButton />', () => {
 	afterEach(() => {
+		vi.useRealTimers();
 		notificationsStore.reset();
 	});
 
@@ -82,11 +83,14 @@ describe('<AssignButton />', () => {
 	});
 
 	it('should assign the task to the current user', async ({worker}) => {
+		vi.useFakeTimers();
+
 		worker.use(
 			mockAssignTaskEndpoint({
 				schema: assignmentRequestSchema,
 				failureResponse: HttpResponse.json({error: 'bad request'}, {status: 400}),
 				successResponse: new HttpResponse(null, {status: 200}),
+				delay: 500,
 			}),
 			mockGetUserTaskEndpoint({
 				successResponse: HttpResponse.json(createUserTask({assignee: CURRENT_USER, state: 'CREATED'})),
@@ -100,14 +104,19 @@ describe('<AssignButton />', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: 'Assign to me'}));
 
+		await vi.advanceTimersByTimeAsync(500);
 		await expect.element(screen.getByText('Assigning...')).toBeVisible();
+		await vi.advanceTimersByTimeAsync(500);
 		await expect.element(screen.getByText('Assignment successful')).toBeVisible();
 	});
 
 	it('should unassign the task', async ({worker}) => {
+		vi.useFakeTimers();
+
 		worker.use(
 			mockUnassignTaskEndpoint({
 				successResponse: new HttpResponse(null, {status: 200}),
+				delay: 500,
 			}),
 			mockGetUserTaskEndpoint({
 				successResponse: HttpResponse.json(createUserTask({assignee: null, state: 'CREATED'})),
@@ -126,7 +135,9 @@ describe('<AssignButton />', () => {
 
 		await userEvent.click(screen.getByRole('button', {name: 'Unassign'}));
 
+		await vi.advanceTimersByTimeAsync(500);
 		await expect.element(screen.getByText('Unassigning...')).toBeVisible();
+		await vi.advanceTimersByTimeAsync(500);
 		await expect.element(screen.getByText('Unassignment successful')).toBeVisible();
 	});
 

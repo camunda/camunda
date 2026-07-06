@@ -139,8 +139,7 @@ test.describe('Task assignment', () => {
 		await expect(taskDetailPage.assignButton).toBeVisible();
 	});
 
-	// Temporarily skipped due to incident INC-6420: https://app.incident.io/camunda/incidents/6420
-	test.skip('should handle tasks with task listeners', async ({network, taskDetailPage}) => {
+	test('should handle tasks with task listeners', async ({network, taskDetailPage}) => {
 		network.use(
 			mockQueryUserTasksEndpoint({
 				successResponse: HttpResponse.json(createQueryUserTasksResponse()),
