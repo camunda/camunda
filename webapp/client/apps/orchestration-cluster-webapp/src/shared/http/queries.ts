@@ -20,6 +20,8 @@ import type {
 	GetIncidentProcessInstanceStatisticsByErrorRequestBody,
 	GetProcessDefinitionInstanceStatisticsResponseBody,
 	GetIncidentProcessInstanceStatisticsByErrorResponseBody,
+	QueryUserTaskAuditLogsRequestBody,
+	QueryUserTaskAuditLogsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {request} from './request';
 import {endpoints} from './endpoints';
@@ -33,6 +35,8 @@ const queryKeys = {
 	userTasks: (body: QueryUserTasksRequestBody) => ['userTasks', body] as const,
 	userTask: (userTaskKey: string) => ['userTask', userTaskKey] as const,
 	processDefinitionXml: (processDefinitionKey: string) => ['processDefinitionXml', processDefinitionKey] as const,
+	userTaskAuditLogs: (userTaskKey: string, body: QueryUserTaskAuditLogsRequestBody) =>
+		['userTaskAuditLogs', userTaskKey, body] as const,
 	queryProcessDefinitions: (body: QueryProcessDefinitionsRequestBody) => ['queryProcessDefinitions', body] as const,
 	getProcessDefinitionInstanceStatistics: (body: GetProcessDefinitionInstanceStatisticsRequestBody) =>
 		['getProcessDefinitionInstanceStatistics', body] as const,
@@ -141,6 +145,56 @@ const queries = {
 				return response.json();
 			},
 		}),
+
+	queryUserTaskAuditLogs: (userTaskKey: string, body: QueryUserTaskAuditLogsRequestBody) => {
+		const MAX_AUDIT_LOGS_PER_REQUEST = body.page?.limit ?? DEFAULT_MAX_ITEM_PER_PAGE;
+		const enhancedBody = {
+			...body,
+			page: {
+				...body.page,
+				limit: MAX_AUDIT_LOGS_PER_REQUEST,
+			},
+		};
+
+		return infiniteQueryOptions({
+			queryKey: queryKeys.userTaskAuditLogs(userTaskKey, enhancedBody),
+			queryFn: async ({pageParam}): Promise<QueryUserTaskAuditLogsResponseBody> => {
+				const {response, error} = await request(
+					endpoints.queryUserTaskAuditLogs({
+						userTaskKey,
+						...enhancedBody,
+						page: {
+							...enhancedBody.page,
+							from: pageParam,
+						},
+					}),
+				);
+				if (error !== null) {
+					throw error;
+				}
+				return response.json();
+			},
+			initialPageParam: body.page?.from ?? 0,
+			getNextPageParam: (lastPage, _, lastPageParam) => {
+				const nextPage = lastPageParam + MAX_AUDIT_LOGS_PER_REQUEST;
+
+				if (nextPage >= lastPage.page.totalItems) {
+					return undefined;
+				}
+
+				return nextPage;
+			},
+			getPreviousPageParam: (_, __, firstPageParam) => {
+				const previousPage = firstPageParam - MAX_AUDIT_LOGS_PER_REQUEST;
+
+				if (previousPage < 0) {
+					return undefined;
+				}
+
+				return previousPage;
+			},
+		});
+	},
 
 	getProcessDefinitionXml: (processDefinitionKey: string) =>
 		queryOptions({

@@ -26,6 +26,10 @@ class TaskDetailPage extends BasePage {
 		return this.page.goto(`/tasklist/${userTaskKey}/process`);
 	}
 
+	async gotoHistory(userTaskKey: string, search?: string) {
+		return this.page.goto(`/tasklist/${userTaskKey}/history${search ?? ''}`);
+	}
+
 	get skeleton() {
 		return this.page.getByTestId('details-skeleton');
 	}
@@ -60,6 +64,22 @@ class TaskDetailPage extends BasePage {
 
 	get historyTabContent() {
 		return this.page.getByTestId('history-tab-content');
+	}
+
+	get historyLoadError() {
+		return this.page.getByText('Something went wrong');
+	}
+
+	get historyForbiddenError() {
+		return this.page.getByText("You don't have permission to view task history");
+	}
+
+	get historyRetryButton() {
+		return this.page.getByRole('button', {name: 'Try again'});
+	}
+
+	historyColumnHeader(name: RegExp | string) {
+		return this.historyTabContent.getByRole('columnheader', {name});
 	}
 
 	get completionLabel() {
