@@ -58,7 +58,7 @@ public class AnalyticsExporter implements Exporter {
             resolveLicenseKey(context),
             resolveClusterId(context),
             context.getPartitionId(),
-            resolveDigest());
+            resolveDigest(handlers, config));
 
     LOG.info(
         "Analytics exporter configured: endpoint={}, clusterId={}, partitionId={}, exporterDigest={}",
@@ -183,7 +183,8 @@ public class AnalyticsExporter implements Exporter {
     }
   }
 
-  private String resolveDigest() {
+  private String resolveDigest(
+      final HandlerRegistry handlers, final AnalyticsExporterConfig config) {
     try {
       return AnalyticsExporterDigest.compute(handlers, config);
     } catch (final Exception e) {
