@@ -33,22 +33,24 @@ final class RdbmsNames {
   /**
    * Maps a declared dimension/meter name to a SQL column identifier via the shared {@link
    * Identifiers} allowlist — the injection boundary, since column identifiers cannot be
-   * parameter-bound. Rejects anything that is not a plain identifier rather than silently rewriting
-   * it.
+   * parameter-bound — then appends a trailing underscore. The suffix guarantees the identifier can
+   * never be a SQL reserved word (none end in {@code _}), so a declared name like {@code order} or
+   * {@code distinct} maps to a plain, always-safe {@code order_} / {@code distinct_} column.
+   * Rejects anything that is not a plain identifier rather than silently rewriting it.
    */
   static String column(final String name) {
-    return Identifiers.safeColumn(name);
+    return Identifiers.safeColumn(name) + "_";
   }
 
   /**
-   * The double-quoted (delimited) form of {@link #column(String)} for use in SQL text, so a
-   * declared name that is a SQL reserved word (e.g. the {@code distinct} meter) is accepted as a
-   * plain column on every backend. The inner name is still run through the {@link Identifiers}
-   * allowlist first, so no quote or metacharacter can reach the SQL — the quotes only delimit an
-   * already-safe identifier. Map lookups on read still use the bare {@link #column(String)} name.
+   * The double-quoted (delimited) form of {@link #column(String)} for use in SQL text. The name is
+   * run through the {@link Identifiers} allowlist and given the reserved-word-avoiding suffix
+   * first, so no quote or metacharacter can reach the SQL — the quotes only delimit an already-safe
+   * identifier. Schema, writes, and reads all go through here (or {@link #column(String)} for the
+   * read-back map key), so the suffix is applied uniformly.
    */
   static String quotedColumn(final String name) {
-    return "\"" + Identifiers.safeColumn(name) + "\"";
+    return "\"" + column(name) + "\"";
   }
 
   /** A deterministic primary key over the dimension values and the window/tier coordinate. */

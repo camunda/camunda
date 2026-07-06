@@ -75,9 +75,10 @@ final class RdbmsDatasetStoreTest {
 
   @Test
   void shouldAcceptSafeIdentifiersAndRejectInjectionAttempts() {
-    // given — legitimate declared names, including a namespaced variable dimension
-    assertThat(RdbmsNames.column("bpmnProcessId")).isEqualTo("bpmnProcessId");
-    assertThat(RdbmsNames.column("var.region")).isEqualTo("var_region");
+    // given — legitimate declared names get a trailing underscore (never a reserved word), and a
+    // namespaced variable dimension folds its dot to an underscore before the suffix
+    assertThat(RdbmsNames.column("bpmnProcessId")).isEqualTo("bpmnProcessId_");
+    assertThat(RdbmsNames.column("var.region")).isEqualTo("var_region_");
 
     // then — anything carrying SQL metacharacters is rejected, not coerced into valid SQL
     org.assertj.core.api.Assertions.assertThatThrownBy(
