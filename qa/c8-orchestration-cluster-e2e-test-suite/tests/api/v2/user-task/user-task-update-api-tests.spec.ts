@@ -354,7 +354,9 @@ test.describe.parallel('Update User Task Tests', () => {
   });
 
   test('Update user task - not found', async ({request}) => {
-    const unknownUserTaskKey = '9999999999999999';
+    // Valid partition-1 key (routable) with a counter no real task will reach,
+    // so the command reaches the engine and is rejected with NOT_FOUND (404).
+    const unknownUserTaskKey = '4503599627370495';
     const res = await request.patch(
       buildUrl(`/user-tasks/${unknownUserTaskKey}`),
       {
@@ -370,6 +372,30 @@ test.describe.parallel('Update User Task Tests', () => {
       res,
       `Command 'UPDATE' rejected with code 'NOT_FOUND': Expected to update user task with key '${unknownUserTaskKey}', but no such user task was found`,
     );
+  });
+
+  // Skipped due to bug #56635: https://github.com/camunda/camunda/issues/56635
+  test.skip('Update user task - out-of-range partition key', async ({
+    request,
+  }) => {
+    // Key decodes to a partition that does not exist in the cluster, so the
+    // command cannot be routed and currently returns a retryable 503 instead
+    // of a permanent 404.
+    const outOfRangeUserTaskKey = '9999999999999999';
+    const res = await request.patch(
+      buildUrl(`/user-tasks/${outOfRangeUserTaskKey}`),
+      {
+        headers: jsonHeaders(),
+        data: {
+          changeset: {
+            priority: 50,
+          },
+        },
+      },
+    );
+    // Once #56635 is fixed this should assert a permanent status — 404 (no such
+    // entity) or 400 (malformed key) — not the current retryable 503.
+    await assertStatusCode(res, 404);
   });
 
   test('Update user task - conflict - task already completed', async ({
