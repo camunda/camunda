@@ -246,10 +246,10 @@ public final class ClusterConfigurationManagementRequestSender {
   }
 
   public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>> modeChange(
-      final ModeChangeRequest recoveryModeRequest) {
+      final ModeChangeRequest request) {
     return communicationService.send(
         ClusterConfigurationRequestTopics.MODE_CHANGE.topic(),
-        recoveryModeRequest,
+        request,
         serializer::encodeModeChangeRequest,
         serializer::decodeTopologyChangeResponse,
         coordinatorSupplier.getDefaultCoordinator(),

@@ -1389,10 +1389,10 @@ public class ProtoBufSerializer
   }
 
   @Override
-  public byte[] encodeModeChangeRequest(final ModeChangeRequest recoveryModeRequest) {
+  public byte[] encodeModeChangeRequest(final ModeChangeRequest modeChangeRequest) {
     return Requests.ModeChangeRequest.newBuilder()
-        .setMode(toProtoRequestMode(recoveryModeRequest.mode()))
-        .setDryRun(recoveryModeRequest.dryRun())
+        .setMode(toProtoRequestMode(modeChangeRequest.mode()))
+        .setDryRun(modeChangeRequest.dryRun())
         .build()
         .toByteArray();
   }

@@ -30,7 +30,7 @@ public interface ClusterConfigurationService extends AsyncClosable {
 
   void removePartitionChangeExecutor();
 
-  void registerModeChangeExecutor(ModeChangeExecutor recoveryModeChangeExecutor);
+  void registerModeChangeExecutor(ModeChangeExecutor modeChangeExecutor);
 
   void removeModeChangeExecutor();
 
