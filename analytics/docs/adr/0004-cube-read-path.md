@@ -267,3 +267,23 @@ layer, backends can land independently.
 
 - **H2 in tests vs Postgres partitioning:** Layer C is exercised only against Postgres; H2 tests
   cover the index path. Decide whether to add a Postgres Testcontainers suite for C.
+
+## Follow-on (out of scope): parallel cell read
+
+A *latency* optimization to layer on **after** A–C — orthogonal to them (streaming bounds memory,
+fan-out bounds latency; it works for free because accumulators are already mergeable). Gate on
+evidence: with the Layer-A index + Layer-B pushdown doing most of the reduction, and ES/OS already
+parallel across shards, single-threaded reads may be fast enough.
+
+- A `ParallelCellReader` fans one read into `P = min(poolSize, ceil(range / minSliceWidth))` bounded
+  sub-reads (target pool 8–16), each folding into its own accumulator map, then merges with the
+  existing `merge`. **Decoupled from the 128 ingest partitions** (those are the write/shuffle axis;
+  cells are keyed by time+grain). Cap `P` at the grain-bucket count in range so small ranges don't
+  over-shard.
+- v1: **time-band slicing only** — disjoint `window_start ∈ band_i` sub-queries aligned to the
+  coarsest grain; rides the Layer-A index, no double-read. Merge is a union for time-series output,
+  a real `merge` for full-range rollups (bounded by result cardinality).
+- ES/OS: no client fan-out (shard parallelism is intrinsic); only relevant across Layer-C
+  time-partitioned indices.
+- Deferred: grain-hash slicing (skew escape hatch), built only when a real skewed query shows the
+  densest band ≫ average.
