@@ -13,6 +13,9 @@ on:
 permissions:
   contents: read
 
+env:
+  TEST_OWNER: '@camunda/test-automation-team'
+
 jobs:
   nightly-e2e-tests-v1:
     uses: ./.github/workflows/c8-orchestration-cluster-reusable-e2e-tests.yml
