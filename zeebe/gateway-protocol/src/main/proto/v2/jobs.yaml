@@ -566,6 +566,8 @@ components:
           addedInVersion: "8.10"
         - propertyName: leaseToken
           addedInVersion: "8.10"
+        - propertyName: physicalTenantId
+          addedInVersion: "8.10"
 
     UserTaskProperties:
       required:
