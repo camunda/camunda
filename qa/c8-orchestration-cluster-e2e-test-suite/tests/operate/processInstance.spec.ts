@@ -13,7 +13,10 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {DATE_REGEX} from 'utils/constants';
 import {sleep} from 'utils/sleep';
-import {waitForProcessInstances} from 'utils/incidentsHelper';
+import {
+  waitForProcessInstances,
+  waitForFlowNodeIncidents,
+} from 'utils/incidentsHelper';
 import {waitForAssertion} from 'utils/waitForAssertion';
 
 type ProcessInstance = {
@@ -62,6 +65,23 @@ test.beforeAll(async ({request}) => {
       instanceWithIncidentToResolve.processInstanceKey,
     ],
     2,
+  );
+
+  // Wait for both incidents on the multi-incident instance to be created and
+  // indexed before the UI assertions run. waitForProcessInstances only confirms
+  // the instances exist, not that their incidents have been raised — without
+  // this the "view 2 incidents" banner assertion races incident creation.
+  await waitForFlowNodeIncidents(
+    request,
+    instanceWithIncidentToResolve.processInstanceKey,
+    'exclusiveGateway1',
+    1,
+  );
+  await waitForFlowNodeIncidents(
+    request,
+    instanceWithIncidentToResolve.processInstanceKey,
+    'exclusiveGateway2',
+    1,
   );
 });
 
