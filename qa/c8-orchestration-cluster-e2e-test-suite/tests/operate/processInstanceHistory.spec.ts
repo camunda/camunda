@@ -251,10 +251,9 @@ test.describe('Process Instance History', () => {
     });
 
     const mainProcessName = 'EmbeddedSubprocess';
-    let expandingElementsInMainProcess;
 
     await test.step('Verify Main process has no nested element', async () => {
-      expandingElementsInMainProcess =
+      const expandingElementsInMainProcess =
         await operateProcessInstancePage.checkIfPresentExpandeingElementsInMainProcess(
           mainProcessName,
         );
@@ -273,11 +272,17 @@ test.describe('Process Instance History', () => {
     });
 
     await test.step('Verify Instance History Tab has 1 nested element', async () => {
-      expandingElementsInMainProcess =
-        await operateProcessInstancePage.checkIfPresentExpandeingElementsInMainProcess(
-          mainProcessName,
-        );
-      expect(expandingElementsInMainProcess).toBe(1);
+      // The history tree updates asynchronously after the modification is
+      // applied, so poll until the new subprocess node is reflected.
+      await expect
+        .poll(
+          async () =>
+            operateProcessInstancePage.checkIfPresentExpandeingElementsInMainProcess(
+              mainProcessName,
+            ),
+          {timeout: 30000},
+        )
+        .toBe(1);
     });
 
     await test.step('Enter modification mode and assert results', async () => {
@@ -299,11 +304,17 @@ test.describe('Process Instance History', () => {
     });
 
     await test.step('Verify Instance History Tab has nested subprocess element and verify results', async () => {
-      expandingElementsInMainProcess =
-        await operateProcessInstancePage.checkIfPresentExpandeingElementsInMainProcess(
-          mainProcessName,
-        );
-      expect(expandingElementsInMainProcess).toBe(2);
+      // The history tree updates asynchronously after the modification is
+      // applied, so poll until the second subprocess node is reflected.
+      await expect
+        .poll(
+          async () =>
+            operateProcessInstancePage.checkIfPresentExpandeingElementsInMainProcess(
+              mainProcessName,
+            ),
+          {timeout: 30000},
+        )
+        .toBe(2);
     });
   });
 
