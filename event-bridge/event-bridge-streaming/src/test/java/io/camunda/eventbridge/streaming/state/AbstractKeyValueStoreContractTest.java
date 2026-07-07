@@ -134,6 +134,30 @@ abstract class AbstractKeyValueStoreContractTest {
   }
 
   @Test
+  void shouldPrefixScanExactlyTheMatchingEntriesAmongManyUnrelated() {
+    // given — many entries under other prefixes (for a caching store these are all buffered, so
+    // this also pins scans to the matching dirty entries, not a walk of everything cached)
+    final KeyValueStore<DbCompositeKey<DbLong, DbString>, DbString> store = compositeStore();
+    for (long instance = 0; instance < 100; instance++) {
+      store.put(compositeKey(instance, "region"), string("EU"));
+      store.put(compositeKey(instance, "tier"), string("gold"));
+      store.delete(compositeKey(instance, "tier"));
+    }
+    store.put(compositeKey(42L, "region"), string("US")); // override within the target prefix
+    store.put(compositeKey(42L, "amount"), string("9"));
+
+    // when
+    final List<String> values = new ArrayList<>();
+    store.prefixScan(longKey(42L), (k, v) -> values.add(k.second() + "=" + v));
+    final List<String> keys = new ArrayList<>();
+    store.prefixScanKeys(longKey(42L), k -> keys.add(k.second().toString()));
+
+    // then — exactly instance 42's live entries; tombstoned and unrelated entries excluded
+    assertThat(values).containsExactlyInAnyOrder("region=US", "amount=9");
+    assertThat(keys).containsExactlyInAnyOrder("region", "amount");
+  }
+
+  @Test
   void shouldPrefixScanKeysAcrossTheDirtyOverlayAndTombstones() {
     // given — one committed key, one freshly-put (dirty) key, and one deleted key under the prefix
     final KeyValueStore<DbCompositeKey<DbLong, DbString>, DbString> store = compositeStore();

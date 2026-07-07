@@ -19,10 +19,8 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.NavigableMap;
-import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -60,6 +58,12 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
   // Access-ordered so the eldest entry is the LRU eviction candidate. Keys are content-equal
   // ByteBuffers (each wraps a full, offset-0 byte[]), so lookups match by key bytes.
   private final LinkedHashMap<ByteBuffer, CacheEntry> cache = new LinkedHashMap<>(16, 0.75f, true);
+
+  // The dirty entries again, in unsigned key order, sharing the cache's CacheEntry objects: scans
+  // read their overlay from a subMap of this index (O(matches), not O(cache)) and checkpoint
+  // flushes it (O(dirty)). Maintained on put/delete, emptied by checkpoint; clean entries — the
+  // only evictable ones — are never in it, so eviction leaves it untouched.
+  private final TreeMap<byte[], CacheEntry> dirtyIndex = new TreeMap<>(Arrays::compareUnsigned);
   private long approxBytes;
 
   public CachingKeyValueStore(
@@ -82,13 +86,16 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
     final byte[] valueBytes = toBytes(value);
     final CacheEntry entry = cache.get(ByteBuffer.wrap(keyBytes));
     if (entry == null) {
-      cache.put(ByteBuffer.wrap(keyBytes), CacheEntry.dirtyValue(valueBytes));
+      final CacheEntry created = CacheEntry.dirtyValue(valueBytes);
+      cache.put(ByteBuffer.wrap(keyBytes), created);
+      dirtyIndex.put(keyBytes, created);
       approxBytes += keyBytes.length + valueBytes.length;
     } else {
       approxBytes += valueBytes.length - footprintValue(entry);
       entry.value = valueBytes;
       entry.dirty = true;
       entry.tombstone = false;
+      dirtyIndex.put(keyBytes, entry); // no-op if already dirty (same shared entry)
     }
     evictIfNeeded();
   }
@@ -98,13 +105,16 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
     final byte[] keyBytes = toBytes(key);
     final CacheEntry entry = cache.get(ByteBuffer.wrap(keyBytes));
     if (entry == null) {
-      cache.put(ByteBuffer.wrap(keyBytes), CacheEntry.tombstone());
+      final CacheEntry created = CacheEntry.tombstone();
+      cache.put(ByteBuffer.wrap(keyBytes), created);
+      dirtyIndex.put(keyBytes, created);
       approxBytes += keyBytes.length;
     } else {
       approxBytes -= footprintValue(entry);
       entry.value = null;
       entry.dirty = true;
       entry.tombstone = true;
+      dirtyIndex.put(keyBytes, entry); // no-op if already dirty (same shared entry)
     }
     // A tombstone is dirty, hence pinned; it must outlive eviction so a read-through does not
     // resurrect the delegate's value before the delete is checkpointed.
@@ -144,42 +154,27 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
 
   @Override
   public void prefixScan(final DbKey prefix, final BiConsumer<K, V> visitor) {
-    final byte[] prefixBytes = toBytes(prefix);
-    final NavigableMap<byte[], byte[]> dirtyPuts = new TreeMap<>(Arrays::compareUnsigned);
-    final NavigableSet<byte[]> tombstones = new TreeSet<>(Arrays::compareUnsigned);
-    collectDirty(dirtyPuts, tombstones, prefixBytes);
-    merge(dirtyPuts, tombstones, sink -> delegate.prefixScan(prefix, sink), visitor);
+    merge(dirtyInPrefix(toBytes(prefix)), sink -> delegate.prefixScan(prefix, sink), visitor);
   }
 
   @Override
   public void prefixScanKeys(final DbKey prefix, final Consumer<K> visitor) {
-    final byte[] prefixBytes = toBytes(prefix);
-    final NavigableMap<byte[], byte[]> dirtyPuts = new TreeMap<>(Arrays::compareUnsigned);
-    final NavigableSet<byte[]> tombstones = new TreeSet<>(Arrays::compareUnsigned);
-    collectDirty(dirtyPuts, tombstones, prefixBytes);
     mergeKeys(
-        dirtyPuts.navigableKeySet(),
-        tombstones,
-        sink -> delegate.prefixScanKeys(prefix, sink),
-        visitor);
+        dirtyInPrefix(toBytes(prefix)), sink -> delegate.prefixScanKeys(prefix, sink), visitor);
   }
 
   @Override
   public void forEach(final BiConsumer<K, V> visitor) {
-    final NavigableMap<byte[], byte[]> dirtyPuts = new TreeMap<>(Arrays::compareUnsigned);
-    final NavigableSet<byte[]> tombstones = new TreeSet<>(Arrays::compareUnsigned);
-    collectDirty(dirtyPuts, tombstones, null);
-    merge(dirtyPuts, tombstones, delegate::forEach, visitor);
+    merge(dirtyIndex, delegate::forEach, visitor);
   }
 
   @Override
   public void checkpoint() {
-    for (final Map.Entry<ByteBuffer, CacheEntry> cached : cache.entrySet()) {
-      final CacheEntry entry = cached.getValue();
-      if (!entry.dirty) {
-        continue;
-      }
-      wrap(keyFlyweight, keyBytes(cached.getKey()));
+    // Flush everything first, then transition entry states — so a delegate failure mid-flush
+    // leaves every entry still marked dirty for the retried checkpoint.
+    for (final Map.Entry<byte[], CacheEntry> dirty : dirtyIndex.entrySet()) {
+      final CacheEntry entry = dirty.getValue();
+      wrap(keyFlyweight, dirty.getKey());
       if (entry.tombstone) {
         delegate.delete(keyFlyweight);
       } else {
@@ -189,20 +184,16 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
     }
     // Flushed puts are now clean (delegate-backed, so evictable); flushed tombstones are absent in
     // the delegate, so drop them — a later read-through will correctly miss.
-    final Iterator<Map.Entry<ByteBuffer, CacheEntry>> it = cache.entrySet().iterator();
-    while (it.hasNext()) {
-      final Map.Entry<ByteBuffer, CacheEntry> cached = it.next();
-      final CacheEntry entry = cached.getValue();
-      if (!entry.dirty) {
-        continue;
-      }
+    for (final Map.Entry<byte[], CacheEntry> dirty : dirtyIndex.entrySet()) {
+      final CacheEntry entry = dirty.getValue();
       if (entry.tombstone) {
-        approxBytes -= cached.getKey().remaining();
-        it.remove();
+        cache.remove(ByteBuffer.wrap(dirty.getKey()));
+        approxBytes -= dirty.getKey().length;
       } else {
         entry.dirty = false;
       }
     }
+    dirtyIndex.clear();
     // Everything is clean now, so the pinned working set can finally be trimmed back to budget.
     evictIfNeeded();
   }
@@ -233,64 +224,80 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
     }
   }
 
-  private void collectDirty(
-      final NavigableMap<byte[], byte[]> dirtyPuts,
-      final NavigableSet<byte[]> tombstones,
-      final byte[] prefixBytes) {
-    for (final Map.Entry<ByteBuffer, CacheEntry> cached : cache.entrySet()) {
-      final CacheEntry entry = cached.getValue();
-      if (!entry.dirty) {
-        continue;
-      }
-      final byte[] keyBytes = keyBytes(cached.getKey());
-      if (prefixBytes != null && !startsWith(keyBytes, prefixBytes)) {
-        continue;
-      }
-      if (entry.tombstone) {
-        tombstones.add(keyBytes);
-      } else {
-        dirtyPuts.put(keyBytes, entry.value);
-      }
+  /**
+   * The dirty-index view holding exactly the dirty entries whose key starts with {@code
+   * prefixBytes}: every such key is {@code >= prefixBytes} and {@code < successor(prefixBytes)} in
+   * unsigned byte order — a range selection on the index, never a walk of the cache.
+   */
+  private NavigableMap<byte[], CacheEntry> dirtyInPrefix(final byte[] prefixBytes) {
+    if (prefixBytes.length == 0) {
+      return dirtyIndex;
     }
+    final byte[] upper = successor(prefixBytes);
+    return upper == null
+        ? dirtyIndex.tailMap(prefixBytes, true)
+        : dirtyIndex.subMap(prefixBytes, true, upper, false);
   }
 
   /**
-   * Merges the delegate's entries with the dirty overlay in key order (puts win, tombstones hide).
+   * The smallest byte string greater than every string prefixed by {@code prefix}: the prefix with
+   * its last non-0xFF byte incremented (and the tail dropped). {@code null} for an all-0xFF prefix,
+   * which has no upper bound.
+   */
+  private static byte[] successor(final byte[] prefix) {
+    for (int i = prefix.length - 1; i >= 0; i--) {
+      if (prefix[i] != (byte) 0xFF) {
+        final byte[] upper = Arrays.copyOf(prefix, i + 1);
+        upper[i]++;
+        return upper;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Merges the delegate's entries with the dirty overlay in key order: a dirty put is emitted in
+   * place (overriding the delegate's entry for the same key), a tombstone hides the delegate's
+   * entry, and unchanged delegate entries pass through.
    */
   private void merge(
-      final NavigableMap<byte[], byte[]> dirtyPuts,
-      final NavigableSet<byte[]> tombstones,
+      final NavigableMap<byte[], CacheEntry> dirtyEntries,
       final Consumer<BiConsumer<K, V>> delegateScan,
       final BiConsumer<K, V> visitor) {
-    final Iterator<Map.Entry<byte[], byte[]>> dirty = dirtyPuts.entrySet().iterator();
+    final Iterator<Map.Entry<byte[], CacheEntry>> dirty = dirtyEntries.entrySet().iterator();
     // A one-slot cursor so the delegate callback can advance the dirty stream as it goes.
     @SuppressWarnings("unchecked")
-    final Map.Entry<byte[], byte[]>[] pending =
+    final Map.Entry<byte[], CacheEntry>[] pending =
         new Map.Entry[] {dirty.hasNext() ? dirty.next() : null};
     delegateScan.accept(
         (delegateKey, delegateValue) -> {
           final byte[] keyBytes = toBytes(delegateKey);
+          // Dirty keys strictly before the delegate's: emit the puts; a tombstone here shadows a
+          // key the delegate has already passed (or never had), so it just drops out.
           while (pending[0] != null && Arrays.compareUnsigned(pending[0].getKey(), keyBytes) < 0) {
-            emit(pending[0].getKey(), pending[0].getValue(), visitor);
+            emit(pending[0], visitor);
             pending[0] = dirty.hasNext() ? dirty.next() : null;
           }
           if (pending[0] != null && Arrays.compareUnsigned(pending[0].getKey(), keyBytes) == 0) {
-            emit(pending[0].getKey(), pending[0].getValue(), visitor); // dirty put overrides
+            emit(pending[0], visitor); // a dirty put overrides, a tombstone hides
             pending[0] = dirty.hasNext() ? dirty.next() : null;
-          } else if (!tombstones.contains(keyBytes)) {
+          } else {
             visitor.accept(delegateKey, delegateValue); // unchanged delegate entry
           }
         });
     while (pending[0] != null) { // dirty keys after the last delegate key
-      emit(pending[0].getKey(), pending[0].getValue(), visitor);
+      emit(pending[0], visitor);
       pending[0] = dirty.hasNext() ? dirty.next() : null;
     }
   }
 
-  private void emit(
-      final byte[] keyBytes, final byte[] valueBytes, final BiConsumer<K, V> visitor) {
-    wrap(keyFlyweight, keyBytes);
-    wrap(valueFlyweight, valueBytes);
+  private void emit(final Map.Entry<byte[], CacheEntry> dirty, final BiConsumer<K, V> visitor) {
+    final CacheEntry entry = dirty.getValue();
+    if (entry.tombstone) {
+      return;
+    }
+    wrap(keyFlyweight, dirty.getKey());
+    wrap(valueFlyweight, entry.value);
     visitor.accept(keyFlyweight, valueFlyweight);
   }
 
@@ -299,23 +306,24 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
    * in key order, dropping tombstoned keys, without touching any value.
    */
   private void mergeKeys(
-      final NavigableSet<byte[]> dirtyPutKeys,
-      final NavigableSet<byte[]> tombstones,
+      final NavigableMap<byte[], CacheEntry> dirtyEntries,
       final Consumer<Consumer<K>> delegateScan,
       final Consumer<K> visitor) {
-    final Iterator<byte[]> dirty = dirtyPutKeys.iterator();
-    final byte[][] pending = {dirty.hasNext() ? dirty.next() : null};
+    final Iterator<Map.Entry<byte[], CacheEntry>> dirty = dirtyEntries.entrySet().iterator();
+    @SuppressWarnings("unchecked")
+    final Map.Entry<byte[], CacheEntry>[] pending =
+        new Map.Entry[] {dirty.hasNext() ? dirty.next() : null};
     delegateScan.accept(
         delegateKey -> {
           final byte[] keyBytes = toBytes(delegateKey);
-          while (pending[0] != null && Arrays.compareUnsigned(pending[0], keyBytes) < 0) {
+          while (pending[0] != null && Arrays.compareUnsigned(pending[0].getKey(), keyBytes) < 0) {
             emitKey(pending[0], visitor);
             pending[0] = dirty.hasNext() ? dirty.next() : null;
           }
-          if (pending[0] != null && Arrays.compareUnsigned(pending[0], keyBytes) == 0) {
-            emitKey(pending[0], visitor); // a dirty put shadows the delegate's key
+          if (pending[0] != null && Arrays.compareUnsigned(pending[0].getKey(), keyBytes) == 0) {
+            emitKey(pending[0], visitor); // a dirty put shadows, a tombstone hides
             pending[0] = dirty.hasNext() ? dirty.next() : null;
-          } else if (!tombstones.contains(keyBytes)) {
+          } else {
             visitor.accept(delegateKey); // unchanged delegate key
           }
         });
@@ -325,18 +333,16 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
     }
   }
 
-  private void emitKey(final byte[] keyBytes, final Consumer<K> visitor) {
-    wrap(keyFlyweight, keyBytes);
+  private void emitKey(final Map.Entry<byte[], CacheEntry> dirty, final Consumer<K> visitor) {
+    if (dirty.getValue().tombstone) {
+      return;
+    }
+    wrap(keyFlyweight, dirty.getKey());
     visitor.accept(keyFlyweight);
   }
 
   private static long footprintValue(final CacheEntry entry) {
     return entry.value == null ? 0 : entry.value.length;
-  }
-
-  /** The backing array of a key buffer — always the full, offset-0 array it was created from. */
-  private static byte[] keyBytes(final ByteBuffer key) {
-    return key.array();
   }
 
   private static byte[] toBytes(final BufferWriter writer) {
@@ -347,13 +353,6 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
 
   private static void wrap(final BufferReader reader, final byte[] bytes) {
     reader.wrap(new UnsafeBuffer(bytes), 0, bytes.length);
-  }
-
-  private static boolean startsWith(final byte[] candidate, final byte[] prefix) {
-    if (candidate.length < prefix.length) {
-      return false;
-    }
-    return Arrays.equals(candidate, 0, prefix.length, prefix, 0, prefix.length);
   }
 
   /** A cached entry: a present value or a tombstone, either clean (delegate-backed) or dirty. */
