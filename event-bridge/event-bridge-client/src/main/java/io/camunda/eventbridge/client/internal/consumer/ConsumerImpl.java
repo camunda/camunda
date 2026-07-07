@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -181,6 +182,28 @@ public final class ConsumerImpl implements Consumer {
           }
         });
     prefetcher.kick();
+  }
+
+  @Override
+  public void pause(final Collection<TopicPartition> partitions) {
+    buffer.runLocked(() -> partitions.forEach(buffer::pause));
+  }
+
+  @Override
+  public void resume(final Collection<TopicPartition> partitions) {
+    buffer.runLocked(
+        () -> {
+          partitions.forEach(buffer::resume);
+          // Events retained on the resumed partitions may now satisfy a parked poll — wake it.
+          buffer.signal();
+        });
+    // Resumed partitions are claimable again — restart their background fetches.
+    prefetcher.kick();
+  }
+
+  @Override
+  public Set<TopicPartition> paused() {
+    return buffer.supplyLocked(buffer::pausedPartitions);
   }
 
   @Override

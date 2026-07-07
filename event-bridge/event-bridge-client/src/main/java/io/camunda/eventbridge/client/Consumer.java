@@ -11,6 +11,7 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -55,6 +56,26 @@ public interface Consumer extends AutoCloseable {
    * partition is (re)assigned to a member that has no local state for it.
    */
   void seekToBeginning(Collection<TopicPartition> partitions);
+
+  /**
+   * Pauses fetching and delivery for the given (topic, partition)s. Idempotent. A paused partition
+   * is excluded from new background fetches and from {@link #poll(int, Duration)}'s drain;
+   * already-buffered events (including a fetch in flight when the pause was marked) are
+   * <em>retained</em> and delivered after {@link #resume(Collection)}. The fetch position is
+   * untouched. A pause mark is dropped when the partition is revoked on a rebalance, but survives
+   * {@link #seek(Map)} and {@link #seekToBeginning(Collection)}.
+   */
+  void pause(Collection<TopicPartition> partitions);
+
+  /**
+   * Resumes fetching and delivery for the given (topic, partition)s, waking a poll parked while
+   * only paused data was buffered. Idempotent; partitions that are not paused (or not owned) are
+   * ignored.
+   */
+  void resume(Collection<TopicPartition> partitions);
+
+  /** Returns a snapshot of the (topic, partition)s currently paused via {@link #pause}. */
+  Set<TopicPartition> paused();
 
   /**
    * Registers a listener notified when this consumer's partition assignment changes on a rebalance.
