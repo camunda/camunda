@@ -80,7 +80,7 @@ jobs:
     timeout-minutes: 5
     permissions: {}
     outputs:
-      sanitized-name: c8-${{ steps.sanitize.outputs.branch_name }}
+      sanitized-name: ${{ steps.sanitize.outputs.branch_name }}
     steps:
       - id: sanitize
         uses: camunda/infra-global-github-actions/sanitize-branch-name@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # sanitize-branch-name: v1.0.0
