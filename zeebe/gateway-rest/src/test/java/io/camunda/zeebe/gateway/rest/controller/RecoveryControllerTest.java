@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
@@ -20,10 +21,14 @@ import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
@@ -90,5 +95,167 @@ public class RecoveryControllerTest extends RestControllerTest {
         .exchange()
         .expectStatus()
         .is4xxClientError();
+  }
+
+  private void stubValidationSuccess() {
+    Mockito.when(clusterConfigurationRequestSender.restore(Mockito.any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                Either.right(
+                    new ClusterConfigurationChangeResponse(0L, Map.of(), Map.of(), List.of()))));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"/v2/restore", "/physical-tenants/default/v2/restore"})
+  void shouldForwardBackupIdsRestoreAndReturnAccepted(final String baseUrl) {
+    // given
+    stubValidationSuccess();
+
+    // when / then
+    webClient
+        .post()
+        .uri(baseUrl)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{\"backupIds\": [100, 101]}")
+        .exchange()
+        .expectStatus()
+        .isAccepted()
+        .expectBody()
+        .json("{\"changeId\": \"0\", \"plannedChanges\": []}", JsonCompareMode.STRICT);
+
+    // then
+    Mockito.verify(clusterConfigurationRequestSender)
+        .restore(new RestoreRequest(List.of(100L, 101L), null, null, false, false));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"/v2/restore", "/physical-tenants/default/v2/restore"})
+  void shouldForwardTimeRangeRestoreAndReturnAccepted(final String baseUrl) {
+    // given
+    stubValidationSuccess();
+
+    // when / then
+    webClient
+        .post()
+        .uri(baseUrl)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{\"from\": \"2024-01-01T10:00:00Z\", \"to\": \"2024-01-01T12:00:00Z\"}")
+        .exchange()
+        .expectStatus()
+        .isAccepted()
+        .expectBody()
+        .json("{\"changeId\": \"0\", \"plannedChanges\": []}", JsonCompareMode.STRICT);
+
+    // then
+    Mockito.verify(clusterConfigurationRequestSender)
+        .restore(
+            new RestoreRequest(
+                List.of(), "2024-01-01T10:00:00Z", "2024-01-01T12:00:00Z", false, false));
+  }
+
+  @Test
+  void shouldMapInvalidRequestErrorFromCoordinator() {
+    // given
+    Mockito.when(clusterConfigurationRequestSender.restore(Mockito.any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                Either.left(new ErrorResponse(ErrorCode.INVALID_REQUEST, "bad params"))));
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/restore")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{\"backupIds\": [100], \"from\": \"2024-01-01T10:00:00Z\"}")
+        .exchange()
+        .expectStatus()
+        .isBadRequest();
+  }
+
+  @Test
+  void shouldMapOperationNotAllowedErrorWhenClusterNotRecovering() {
+    // given
+    Mockito.when(clusterConfigurationRequestSender.restore(Mockito.any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                Either.left(new ErrorResponse(ErrorCode.OPERATION_NOT_ALLOWED, "not recovering"))));
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/restore")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{\"backupIds\": [100]}")
+        .exchange()
+        .expectStatus()
+        .isForbidden();
+  }
+
+  @Test
+  void shouldMapInternalErrorFromCoordinator() {
+    // given
+    Mockito.when(clusterConfigurationRequestSender.restore(Mockito.any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                Either.left(new ErrorResponse(ErrorCode.INTERNAL_ERROR, "boom"))));
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/restore")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{\"backupIds\": [100]}")
+        .exchange()
+        .expectStatus()
+        .is5xxServerError();
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.data.primary-storage.backup.continous=true"})
+  class RestoreWithContinuousBackups {
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/v2/restore", "/physical-tenants/default/v2/restore"})
+    void shouldForwardContinuousFlagWithBackupIds(final String baseUrl) {
+      // given
+      stubValidationSuccess();
+
+      // when / then
+      webClient
+          .post()
+          .uri(baseUrl)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue("{\"backupIds\": [100, 101]}")
+          .exchange()
+          .expectStatus()
+          .isAccepted();
+
+      // then
+      Mockito.verify(clusterConfigurationRequestSender)
+          .restore(new RestoreRequest(List.of(100L, 101L), null, null, true, false));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/v2/restore", "/physical-tenants/default/v2/restore"})
+    void shouldForwardContinuousFlagWithTimeRange(final String baseUrl) {
+      // given
+      stubValidationSuccess();
+
+      // when / then
+      webClient
+          .post()
+          .uri(baseUrl)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue("{\"from\": \"2024-01-01T10:00:00Z\", \"to\": \"2024-01-01T12:00:00Z\"}")
+          .exchange()
+          .expectStatus()
+          .isAccepted();
+
+      // then
+      Mockito.verify(clusterConfigurationRequestSender)
+          .restore(
+              new RestoreRequest(
+                  List.of(), "2024-01-01T10:00:00Z", "2024-01-01T12:00:00Z", true, false));
+    }
   }
 }

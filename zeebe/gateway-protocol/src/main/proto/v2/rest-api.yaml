@@ -448,6 +448,8 @@ paths:
     $ref: 'cluster.yaml#/paths/~1topology'
   /mode:
     $ref: 'cluster.yaml#/paths/~1mode'
+  /restore:
+    $ref: 'cluster.yaml#/paths/~1restore'
 
   # User endpoints
   /users:
