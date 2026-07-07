@@ -101,7 +101,7 @@ jobs:
             secret/data/products/camunda/ci/github-actions SLACK_ZEEBOT_ZEEBE_CI_WEBHOOK_URL;
 
       - name: Configure AWS CLI
-        uses: aws-actions/configure-aws-credentials@99214aa6889fcddfa57764031d71add364327e59 # v6.1.3
+        uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b # v6.2.1
         with:
           aws-access-key-id: ${{ steps.secrets.outputs.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ steps.secrets.outputs.AWS_SECRET_ACCESS_KEY }}
