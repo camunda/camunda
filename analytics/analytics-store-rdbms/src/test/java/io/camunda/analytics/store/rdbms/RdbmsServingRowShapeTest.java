@@ -20,7 +20,7 @@ import io.camunda.analytics.meter.BoundMeter;
 import io.camunda.analytics.meter.InMemoryMeterIdStore;
 import io.camunda.analytics.meter.Meter;
 import io.camunda.analytics.meter.MeterCatalog;
-import io.camunda.analytics.meter.MeterRegistry;
+import io.camunda.analytics.meter.MeterIdRegistry;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -44,7 +44,7 @@ final class RdbmsServingRowShapeTest {
   private final RdbmsDatasetStore store = new RdbmsDatasetStore(dataSource);
   private final CompiledDataset dataset =
       new DatasetCompiler(
-              MeterCatalog.withDefaults(), new MeterRegistry(new InMemoryMeterIdStore()))
+              MeterCatalog.withDefaults(), new MeterIdRegistry(new InMemoryMeterIdStore()))
           .compile(
               1L,
               DatasetDeclaration.builder("pi-count", FactType.PROCESS_INSTANCE)
