@@ -97,6 +97,7 @@ public class Starter implements CommandLineRunner {
   private ProcessInstanceStartMeter processInstanceStartMeter;
   private DataReadMeter dataReadMeter;
   private OptimizeReportEvaluator optimizeReportEvaluator;
+  private SuspendResumeChurner suspendResumeChurner;
 
   public Starter(
       final CamundaClient client,
@@ -155,6 +156,10 @@ public class Starter implements CommandLineRunner {
       setupOptimizeReportEvaluator();
     }
 
+    if (properties.getSuspendResumeChurn().isEnabled()) {
+      setupSuspendResumeChurner();
+    }
+
     deployProcess();
 
     if (properties.isPerformReadBenchmarks()) {
@@ -163,6 +168,10 @@ public class Starter implements CommandLineRunner {
 
     if (optimizeReportEvaluator != null) {
       optimizeReportEvaluator.start();
+    }
+
+    if (suspendResumeChurner != null) {
+      suspendResumeChurner.start();
     }
 
     final CountDownLatch countDownLatch = new CountDownLatch(1);
@@ -203,6 +212,20 @@ public class Starter implements CommandLineRunner {
     if (optimizeReportEvaluator != null) {
       optimizeReportEvaluator.close();
     }
+    if (suspendResumeChurner != null) {
+      suspendResumeChurner.close();
+    }
+  }
+
+  private void setupSuspendResumeChurner() {
+    LOG.info("Starting suspend/resume churn (POC #56552 benchmark, track (c))");
+    suspendResumeChurner =
+        new SuspendResumeChurner(
+            client,
+            starterCfg.getProcessId(),
+            properties.getSuspendResumeChurn(),
+            registry,
+            Executors.newScheduledThreadPool(1));
   }
 
   private void setupDataAvailabilityMeter() {

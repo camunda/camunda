@@ -27,6 +27,9 @@ public class LoadTesterProperties {
 
   @NestedConfigurationProperty private OptimizeProperties optimize = new OptimizeProperties();
 
+  @NestedConfigurationProperty
+  private SuspendResumeChurnProperties suspendResumeChurn = new SuspendResumeChurnProperties();
+
   public boolean isMonitorDataAvailability() {
     return monitorDataAvailability;
   }
@@ -91,5 +94,13 @@ public class LoadTesterProperties {
 
   public void setOptimize(final OptimizeProperties optimize) {
     this.optimize = optimize;
+  }
+
+  public SuspendResumeChurnProperties getSuspendResumeChurn() {
+    return suspendResumeChurn;
+  }
+
+  public void setSuspendResumeChurn(final SuspendResumeChurnProperties suspendResumeChurn) {
+    this.suspendResumeChurn = suspendResumeChurn;
   }
 }
