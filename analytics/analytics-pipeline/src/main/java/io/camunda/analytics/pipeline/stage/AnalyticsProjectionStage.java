@@ -41,14 +41,7 @@ public final class AnalyticsProjectionStage {
   private static final Logger LOG = LoggerFactory.getLogger(AnalyticsProjectionStage.class);
   private static final int MAX_RECORDS = 5000;
   private static final Duration POLL_TIMEOUT = Duration.ofMillis(500);
-  private static final Duration CHECKPOINT_INTERVAL =
-      Duration.ofMillis(Long.getLong("analytics.checkpointIntervalMs", 1000L));
   private static final Duration ERROR_BACKOFF = Duration.ofSeconds(1);
-  // How often, at a commit boundary, a task checks the dataset catalog for a live reload (ADR 0005:
-  // must stay below the provisioning activation debounce so a new cube is picked up before it
-  // fills).
-  private static final long RELOAD_CHECK_INTERVAL_MS =
-      Long.getLong("analytics.reloadCheckIntervalMs", 10_000L);
 
   private AnalyticsProjectionStage() {}
 
@@ -70,20 +63,13 @@ public final class AnalyticsProjectionStage {
       final EventBridgeClient client,
       final ActorScheduler scheduler,
       final ExecutorService sinkExecutor) {
-    final String group = System.getProperty("group", "analytics-stage1");
-    final String sourceTopic = System.getProperty("sourceTopic", "zeebe-records");
-    final String factsTopic = System.getProperty("factsTopic", "analytics-facts");
-    final int factsPartitions = Integer.getInteger("factsPartitions", 1);
-    final int segmentStride = Integer.getInteger("segmentStride", 1000);
-    final int schemaVersion = Integer.getInteger("shuffleSchemaVersion", 1);
-    final String instanceId =
-        System.getProperty("instanceId", "stage1-" + ProcessHandle.current().pid());
+    final AnalyticsPipelineConfig config = AnalyticsPipelineConfig.fromSystemProperties("stage1");
 
     final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
     try {
-      client.createTopic(factsTopic, factsPartitions, 1).join();
+      client.createTopic(config.factsTopic(), config.factsPartitions(), 1).join();
     } catch (final Exception existing) {
-      LOG.info("Facts topic {} already exists", factsTopic);
+      LOG.info("Facts topic {} already exists", config.factsTopic());
     }
 
     // Projected (raw) datasets are written straight to the serving store from Stage 1.
@@ -97,15 +83,14 @@ public final class AnalyticsProjectionStage {
     // The versioned catalog is shared by this stage's partition tasks; each rebuilds its topology
     // from it at a commit boundary when its version moves (live reload — ADR 0005).
     final DatasetCatalog catalog = new DatasetCatalog(metadataStore);
-    final String stateDir = "data/analytics-stage1-" + instanceId;
     final ZeebeRecordCodec codec = new ZeebeRecordCodec();
 
     final StreamRuntime<SourceRecord> runtime =
         StreamRuntime.<SourceRecord>builder()
             .client(client)
-            .group(group)
-            .instanceId(instanceId)
-            .sourceTopic(sourceTopic)
+            .group(config.group())
+            .instanceId(config.instanceId())
+            .sourceTopic(config.sourceTopic())
             .deserializer(
                 (payload, partition, offset) ->
                     new SourceRecord(
@@ -128,18 +113,18 @@ public final class AnalyticsProjectionStage {
                     ProjectionStageTask.open(
                         partition,
                         client,
-                        stateDir,
-                        factsTopic,
-                        factsPartitions,
-                        segmentStride,
-                        schemaVersion,
+                        config.stateDir(),
+                        config.factsTopic(),
+                        config.factsPartitions(),
+                        config.segmentStride(),
+                        config.shuffleSchemaVersion(),
                         catalog,
-                        RELOAD_CHECK_INTERVAL_MS,
+                        config.reloadCheckIntervalMs(),
                         backend.newDatasetStore(),
                         meterRegistry))
             .maxPoll(MAX_RECORDS)
             .pollTimeout(POLL_TIMEOUT)
-            .commitInterval(CHECKPOINT_INTERVAL)
+            .commitInterval(config.checkpointInterval())
             .errorBackoff(ERROR_BACKOFF)
             .actorScheduler(scheduler)
             .sinkExecutor(sinkExecutor)
@@ -147,11 +132,11 @@ public final class AnalyticsProjectionStage {
 
     LOG.info(
         "Analytics Stage 1 '{}': {} -> {} cube(s) + {} table(s) -> {}",
-        instanceId,
-        sourceTopic,
+        config.instanceId(),
+        config.sourceTopic(),
         catalog.cubes().size(),
         catalog.tables().size(),
-        factsTopic);
+        config.factsTopic());
     return runtime;
   }
 }

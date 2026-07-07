@@ -40,13 +40,7 @@ public final class AnalyticsAggregationStage {
   private static final Logger LOG = LoggerFactory.getLogger(AnalyticsAggregationStage.class);
   private static final int MAX_RECORDS = 5000;
   private static final Duration POLL_TIMEOUT = Duration.ofMillis(500);
-  private static final Duration CHECKPOINT_INTERVAL =
-      Duration.ofMillis(Long.getLong("analytics.checkpointIntervalMs", 1000L));
   private static final Duration ERROR_BACKOFF = Duration.ofSeconds(1);
-  // How often, at a commit boundary, a task checks the dataset catalog for a live reload (ADR
-  // 0005).
-  private static final long RELOAD_CHECK_INTERVAL_MS =
-      Long.getLong("analytics.reloadCheckIntervalMs", 10_000L);
 
   private AnalyticsAggregationStage() {}
 
@@ -68,10 +62,7 @@ public final class AnalyticsAggregationStage {
       final EventBridgeClient client,
       final ActorScheduler scheduler,
       final ExecutorService sinkExecutor) {
-    final String group = System.getProperty("group", "analytics-stage2");
-    final String factsTopic = System.getProperty("factsTopic", "analytics-facts");
-    final String instanceId =
-        System.getProperty("instanceId", "stage2-" + ProcessHandle.current().pid());
+    final AnalyticsPipelineConfig config = AnalyticsPipelineConfig.fromSystemProperties("stage2");
 
     final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
     final AnalyticsBackend backend = AnalyticsBackends.fromSystemProperties();
@@ -84,14 +75,13 @@ public final class AnalyticsAggregationStage {
     // The versioned catalog is shared by this stage's partition tasks; each rebuilds its merge
     // topology from it at a commit boundary when its version moves (live reload — ADR 0005).
     final DatasetCatalog catalog = new DatasetCatalog(metadataStore);
-    final String stateDir = "data/analytics-stage2-" + instanceId;
 
     final StreamRuntime<ShuffleEnvelope> runtime =
         StreamRuntime.<ShuffleEnvelope>builder()
             .client(client)
-            .group(group)
-            .instanceId(instanceId)
-            .sourceTopic(factsTopic)
+            .group(config.group())
+            .instanceId(config.instanceId())
+            .sourceTopic(config.factsTopic())
             .deserializer((payload, partition, offset) -> ShuffleEnvelopeCodec.decode(payload))
             // One self-contained task per facts partition: its own RocksDB cells + offset and the
             // per-aggId mergers, owning its durability (restore/commit).
@@ -99,20 +89,23 @@ public final class AnalyticsAggregationStage {
                 partition ->
                     AggregationStageTask.open(
                         partition,
-                        stateDir,
+                        config.stateDir(),
                         backend.newDatasetStore(),
                         catalog,
-                        RELOAD_CHECK_INTERVAL_MS,
+                        config.reloadCheckIntervalMs(),
                         meterRegistry))
             .maxPoll(MAX_RECORDS)
             .pollTimeout(POLL_TIMEOUT)
-            .commitInterval(CHECKPOINT_INTERVAL)
+            .commitInterval(config.checkpointInterval())
             .errorBackoff(ERROR_BACKOFF)
             .actorScheduler(scheduler)
             .sinkExecutor(sinkExecutor)
             .build();
 
-    LOG.info("Analytics Stage 2 '{}': {} -> mergers -> serving sink", instanceId, factsTopic);
+    LOG.info(
+        "Analytics Stage 2 '{}': {} -> mergers -> serving sink",
+        config.instanceId(),
+        config.factsTopic());
     return runtime;
   }
 }
