@@ -22,6 +22,7 @@ import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.dynamic.config.api.RestoreParameterValidator;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.dynamic.nodeid.fs.DataDirectoryProvider;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -220,18 +221,7 @@ public class RestoreApp implements ApplicationRunner {
   }
 
   private void validateParameters() {
-    final boolean hasBackupId = hasBackupId();
-    final boolean hasTimeRange = hasTimeRange();
-
-    if (hasBackupId && hasTimeRange) {
-      throw new IllegalArgumentException(
-          "Cannot specify both --backupId and --from/--to parameters. Choose one approach.");
-    }
-
-    if (hasTimeRange && from != null && to != null && from.isAfter(to)) {
-      throw new IllegalArgumentException(
-          "Invalid time range: --from (%s) must be before --to (%s)".formatted(from, to));
-    }
+    RestoreParameterValidator.validate(hasBackupId(), from, to, hasTimeRange());
   }
 
   private boolean hasTimeRange() {
