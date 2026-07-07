@@ -26,7 +26,17 @@ public final class AtomixAppendListenerAdapter implements AppendListener {
   }
 
   @Override
+  public void onWriteError(final Throwable error) {
+    delegate.onWriteError(error);
+  }
+
+  @Override
   public void onCommit(final long index, final long highestPosition) {
     delegate.onCommit(index, highestPosition);
+  }
+
+  @Override
+  public void onCommitError(final long index, final Throwable error) {
+    delegate.onCommitError(index, error);
   }
 }

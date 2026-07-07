@@ -10,6 +10,7 @@ package io.camunda.eventbridge.messaging.publish;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /** Reusable execution context for a single Raft append operation. */
 final class PendingAppend implements AppendListener, Runnable {
@@ -18,6 +19,10 @@ final class PendingAppend implements AppendListener, Runnable {
   private final BatchBufferWriter writer;
 
   private final List<InflightBatchEntry> entries;
+
+  // Guards against LogStorage delivering more than one terminal callback for the same append; a
+  // double completion would corrupt the publisher's in-flight accounting and the context pool.
+  private final AtomicBoolean completionScheduled = new AtomicBoolean();
 
   private int capturedEntryCount;
   private int capturedBatchLength;
@@ -37,6 +42,7 @@ final class PendingAppend implements AppendListener, Runnable {
     capturedBatchLength = 0;
     commitError = null;
     firstBatchPosition = firstPosition;
+    completionScheduled.set(false);
   }
 
   /** Encapsulates the accumulation of entries and their respective metrics. */
@@ -85,8 +91,25 @@ final class PendingAppend implements AppendListener, Runnable {
   // --- AppendListener Callbacks ---
 
   @Override
+  public void onWriteError(final Throwable error) {
+    completeWith(error);
+  }
+
+  @Override
   public void onCommit(final long index, final long highestPosition) {
-    publisher.submitAppendCompletion(this);
+    completeWith(null);
+  }
+
+  @Override
+  public void onCommitError(final long index, final Throwable error) {
+    completeWith(error);
+  }
+
+  private void completeWith(final Throwable error) {
+    if (completionScheduled.compareAndSet(false, true)) {
+      commitError = error;
+      publisher.submitAppendCompletion(this);
+    }
   }
 
   @Override

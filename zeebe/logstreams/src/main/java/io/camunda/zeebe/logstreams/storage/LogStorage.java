@@ -106,6 +106,14 @@ public interface LogStorage {
     default void onWrite(final long index, final long highestPosition) {}
 
     /**
+     * Called when an error occurred while writing the entry to the local storage. Terminal: none of
+     * the other callbacks will be invoked afterwards.
+     *
+     * @param error the error that occurred
+     */
+    default void onWriteError(final Throwable error) {}
+
+    /**
      * Called when the entry has been successfully committed.
      *
      * @param index the index of the committed entry
@@ -113,6 +121,16 @@ public interface LogStorage {
      *     entry that was committed.
      */
     default void onCommit(final long index, final long highestPosition) {}
+
+    /**
+     * Called when an error occurred while replicating or committing an entry, typically when an
+     * append operation was still pending while shutting down the server or stepping down as leader.
+     * Terminal: none of the other callbacks will be invoked afterwards.
+     *
+     * @param index the index of the entry that should have been committed
+     * @param error the error that occurred
+     */
+    default void onCommitError(final long index, final Throwable error) {}
   }
 
   /**
