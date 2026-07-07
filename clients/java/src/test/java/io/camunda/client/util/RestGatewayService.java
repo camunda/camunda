@@ -316,6 +316,10 @@ public class RestGatewayService {
     registerPost(RestGatewayPaths.getDecisionInstancesDeletionUrl(), response);
   }
 
+  public void onUpdateJobsBatchRequest(final BatchOperationCreatedResult response) {
+    registerPost(RestGatewayPaths.getJobsBatchUpdateUrl(), response);
+  }
+
   public void onCreateAuthorizationRequest(final AuthorizationCreateResult response) {
     registerPost(RestGatewayPaths.getAuthorizationsUrl(), response);
   }

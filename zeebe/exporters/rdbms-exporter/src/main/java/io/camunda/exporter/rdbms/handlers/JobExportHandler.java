@@ -40,7 +40,8 @@ public class JobExportHandler implements RdbmsExportHandler<JobRecordValue> {
           JobIntent.CANCELED,
           JobIntent.ERROR_THROWN,
           JobIntent.MIGRATED,
-          JobIntent.PRIORITY_UPDATED);
+          JobIntent.PRIORITY_UPDATED,
+          JobIntent.TIMEOUT_UPDATED);
 
   private final JobWriter jobWriter;
 

@@ -5,31 +5,34 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.rdbms.handlers.batchoperation;
+package io.camunda.exporter.handlers.batchoperation;
 
-import io.camunda.db.rdbms.write.service.BatchOperationWriter;
-import io.camunda.search.entities.BatchOperationType;
+import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
-import java.util.Optional;
 
 /**
  * Tracks the status of individual items in a batch operation of type {@link
- * BatchOperationType#UPDATE_JOB}. A job update is considered completed when the engine emits {@link
- * JobIntent#UPDATED}, the terminal event always appended after any changeset field is applied, and
- * failed when the {@link JobIntent#UPDATE} command is rejected.
+ * OperationType#UPDATE_JOB}. A job update is considered completed when the engine emits {@link
+ * JobIntent#UPDATED} or {@link JobIntent#PRIORITY_UPDATED}, and failed when the {@link
+ * JobIntent#UPDATE} command is rejected.
  */
-public class JobBatchOperationExportHandler
-    extends RdbmsBatchOperationStatusExportHandler<JobRecordValue> {
+public class UpdateJobOperationHandler extends AbstractOperationStatusHandler<JobRecordValue> {
 
-  public JobBatchOperationExportHandler(
-      final BatchOperationWriter batchOperationWriter,
+  public UpdateJobOperationHandler(
+      final String indexName,
       final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache) {
-    super(batchOperationWriter, batchOperationCache, BatchOperationType.UPDATE_JOB);
+    super(indexName, ValueType.JOB, OperationType.UPDATE_JOB, batchOperationCache);
+  }
+
+  @Override
+  long getRootProcessInstanceKey(final Record<JobRecordValue> record) {
+    return record.getValue().getRootProcessInstanceKey();
   }
 
   @Override
@@ -38,18 +41,14 @@ public class JobBatchOperationExportHandler
   }
 
   @Override
-  Optional<Long> getProcessInstanceKey(final Record<JobRecordValue> record) {
-    return Optional.of(record.getValue().getProcessInstanceKey());
-  }
-
-  @Override
-  Optional<Long> getRootProcessInstanceKey(final Record<JobRecordValue> record) {
-    return Optional.of(record.getValue().getRootProcessInstanceKey());
+  long getProcessInstanceKey(final Record<JobRecordValue> record) {
+    return record.getValue().getProcessInstanceKey();
   }
 
   @Override
   boolean isCompleted(final Record<JobRecordValue> record) {
-    return record.getIntent().equals(JobIntent.UPDATED);
+    return record.getIntent().equals(JobIntent.UPDATED)
+        || record.getIntent().equals(JobIntent.PRIORITY_UPDATED);
   }
 
   @Override

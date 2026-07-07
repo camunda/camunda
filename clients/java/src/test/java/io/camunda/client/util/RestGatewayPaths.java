@@ -97,6 +97,7 @@ public class RestGatewayPaths {
       REST_API_PATH + "/process-instances/migration";
   private static final String URL_PROCESS_INSTANCES_MODIFICATION =
       REST_API_PATH + "/process-instances/modification";
+  private static final String URL_JOBS_BATCH_UPDATE = REST_API_PATH + "/jobs/batch-update";
   private static final String URL_RESOURCE_DELETION = REST_API_PATH + "/resources/%s/deletion";
   private static final String URL_ROLE = REST_API_PATH + "/roles/%s";
   private static final String URL_ROLES = REST_API_PATH + "/roles";
@@ -344,6 +345,10 @@ public class RestGatewayPaths {
 
   public static String getProcessInstancesModifyUrl() {
     return URL_PROCESS_INSTANCES_MODIFICATION;
+  }
+
+  public static String getJobsBatchUpdateUrl() {
+    return URL_JOBS_BATCH_UPDATE;
   }
 
   public static String getAuthorizationsUrl() {

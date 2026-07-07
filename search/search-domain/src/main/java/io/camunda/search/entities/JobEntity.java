@@ -270,11 +270,19 @@ public record JobEntity(
     MIGRATED,
     PRIORITY_UPDATED,
     RETRIES_UPDATED,
+    TIMEOUT_UPDATED,
     TIMED_OUT;
 
     public static List<JobState> nonTerminalStates() {
       return List.of(
-          CREATED, FAILED, ERROR_THROWN, TIMED_OUT, RETRIES_UPDATED, PRIORITY_UPDATED, MIGRATED);
+          CREATED,
+          FAILED,
+          ERROR_THROWN,
+          TIMED_OUT,
+          RETRIES_UPDATED,
+          PRIORITY_UPDATED,
+          TIMEOUT_UPDATED,
+          MIGRATED);
     }
   }
 

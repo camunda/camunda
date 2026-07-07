@@ -140,6 +140,7 @@ class ItemProviderFactoryTest {
                 JobState.TIMED_OUT.name(),
                 JobState.RETRIES_UPDATED.name(),
                 JobState.PRIORITY_UPDATED.name(),
+                JobState.TIMEOUT_UPDATED.name(),
                 JobState.MIGRATED.name()));
   }
 

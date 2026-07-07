@@ -22,12 +22,14 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CreateBatchOperationCommandStep1;
 import io.camunda.client.api.command.CreateBatchOperationCommandStep1.CreateBatchOperationCommandStep2;
 import io.camunda.client.api.command.CreateBatchOperationCommandStep1.CreateBatchOperationCommandStep3;
+import io.camunda.client.api.command.CreateBatchOperationCommandStep1.JobUpdateStep;
 import io.camunda.client.api.command.CreateBatchOperationCommandStep1.ProcessInstanceMigrationStep;
 import io.camunda.client.api.command.CreateBatchOperationCommandStep1.ProcessInstanceModificationStep;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.MigrationPlan;
 import io.camunda.client.api.response.CreateBatchOperationResponse;
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
+import io.camunda.client.api.search.filter.JobFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.request.SearchRequestBuilders;
 import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
@@ -37,6 +39,8 @@ import io.camunda.client.impl.response.CreateBatchOperationResponseImpl;
 import io.camunda.client.protocol.rest.BatchOperationCreatedResult;
 import io.camunda.client.protocol.rest.BatchOperationTypeEnum;
 import io.camunda.client.protocol.rest.DecisionInstanceDeletionBatchOperationRequest;
+import io.camunda.client.protocol.rest.JobBatchUpdateRequest;
+import io.camunda.client.protocol.rest.JobChangeset;
 import io.camunda.client.protocol.rest.MigrateProcessInstanceMappingInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCancellationBatchOperationRequest;
 import io.camunda.client.protocol.rest.ProcessInstanceDeletionBatchOperationRequest;
@@ -58,6 +62,7 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
     implements ProcessInstanceMigrationStep<E>,
         CreateBatchOperationCommandStep2<E>,
         ProcessInstanceModificationStep<E>,
+        JobUpdateStep<E>,
         CreateBatchOperationCommandStep3<E> {
   private final HttpClient httpClient;
   private final JsonMapper jsonMapper;
@@ -70,6 +75,7 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
       new ProcessInstanceMigrationBatchOperationPlan();
   private final List<ProcessInstanceModificationMoveBatchOperationInstruction> moveInstructions =
       new ArrayList<>();
+  private JobChangeset changeset;
 
   public CreateBatchOperationCommandImpl(
       final HttpClient httpClient,
@@ -144,6 +150,8 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
         return "/process-instances/migration";
       case MODIFY_PROCESS_INSTANCE:
         return "/process-instances/modification";
+      case UPDATE_JOB:
+        return "/jobs/batch-update";
       default:
         throw new IllegalArgumentException("Unsupported batch operation type: " + type);
     }
@@ -171,6 +179,10 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
       case RESOLVE_INCIDENT:
         return new ProcessInstanceIncidentResolutionBatchOperationRequest()
             .filter(provideSearchRequestProperty(filter));
+      case UPDATE_JOB:
+        return new JobBatchUpdateRequest()
+            .filter(provideSearchRequestProperty(filter))
+            .changeset(changeset);
       default:
         throw new IllegalArgumentException("Unsupported batch operation type: " + type);
     }
@@ -205,6 +217,36 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
       final long targetProcessDefinitionKey) {
     migrationPlan.targetProcessDefinitionKey(String.valueOf(targetProcessDefinitionKey));
     return this;
+  }
+
+  @Override
+  public JobUpdateStep<E> priority(final int priority) {
+    getChangesetEnsureInitialized().priority(priority);
+    return this;
+  }
+
+  @Override
+  public JobUpdateStep<E> retries(final int retries) {
+    getChangesetEnsureInitialized().retries(retries);
+    return this;
+  }
+
+  @Override
+  public JobUpdateStep<E> timeout(final long timeout) {
+    getChangesetEnsureInitialized().timeout(timeout);
+    return this;
+  }
+
+  @Override
+  public JobUpdateStep<E> timeout(final Duration timeout) {
+    return timeout(timeout.toMillis());
+  }
+
+  private JobChangeset getChangesetEnsureInitialized() {
+    if (changeset == null) {
+      changeset = new JobChangeset();
+    }
+    return changeset;
   }
 
   public static class CreateBatchOperationCommandStep1Impl
@@ -271,6 +313,15 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
           jsonMapper,
           BatchOperationTypeEnum.DELETE_DECISION_INSTANCE,
           SearchRequestBuilders::decisionInstanceFilter);
+    }
+
+    @Override
+    public JobUpdateStep<JobFilter> updateJob() {
+      return new CreateBatchOperationCommandImpl<>(
+          httpClient,
+          jsonMapper,
+          BatchOperationTypeEnum.UPDATE_JOB,
+          SearchRequestBuilders::jobFilter);
     }
   }
 }

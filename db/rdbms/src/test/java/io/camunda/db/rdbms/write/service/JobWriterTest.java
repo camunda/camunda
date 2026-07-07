@@ -162,6 +162,40 @@ class JobWriterTest {
   }
 
   @Test
+  void shouldUpdatePriorityWhenMerging() {
+    // given
+    when(vendorDatabaseProperties.errorMessageSize()).thenReturn(5000);
+    when(vendorDatabaseProperties.charColumnMaxBytes()).thenReturn(null);
+    when(executionQueue.tryMergeWithExistingQueueItem(any())).thenReturn(true);
+
+    // update model carrying the new priority (e.g. PRIORITY_UPDATED event)
+    final var update = new JobDbModel.Builder().jobKey(123L).priority(99).build();
+
+    // when
+    writer.update(update);
+
+    // then — the merger should apply the new priority, not keep the stale one
+    final var mergerCaptor = ArgumentCaptor.forClass(QueueItemMerger.class);
+    verify(executionQueue).tryMergeWithExistingQueueItem(mergerCaptor.capture());
+
+    final var existingJob = new JobDbModel.Builder().jobKey(123L).priority(10).build();
+    final var existingQueueItem =
+        new QueueItem(
+            ContextType.JOB,
+            WriteStatementType.INSERT,
+            -1L,
+            "io.camunda.db.rdbms.sql.JobMapper.insert",
+            new BatchInsertDto<>(existingJob));
+
+    final var mergedItem = mergerCaptor.getValue().merge(existingQueueItem);
+
+    @SuppressWarnings("unchecked")
+    final var mergedJob =
+        ((BatchInsertDto<JobDbModel>) mergedItem.parameter()).dbModels().getFirst();
+    assertThat(mergedJob.priority()).isEqualTo(99);
+  }
+
+  @Test
   void shouldNotOverwriteIsDeniedWithNullWhenMerging() {
     // given
     when(vendorDatabaseProperties.errorMessageSize()).thenReturn(5000);

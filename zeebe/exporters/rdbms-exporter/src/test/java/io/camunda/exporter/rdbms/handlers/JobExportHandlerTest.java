@@ -46,6 +46,7 @@ class JobExportHandlerTest {
           JobIntent.FAILED,
           JobIntent.RETRIES_UPDATED,
           JobIntent.PRIORITY_UPDATED,
+          JobIntent.TIMEOUT_UPDATED,
           JobIntent.CANCELED,
           JobIntent.ERROR_THROWN,
           JobIntent.MIGRATED);
