@@ -53,6 +53,16 @@ on:
         required: false
         type: string
         default: "gcp-perf-core-16-default"
+      use-shared-distball:
+        required: false
+        type: boolean
+        default: false
+        description: >-
+          When true, restore the io.camunda SNAPSHOTs from the run-scoped GCS
+          artifact produced by ci.yml's build-distball job instead of running a
+          local build-zeebe reactor. Only safe when called from a run that has a
+          build-distball job (i.e. ci.yml). Standalone callers must leave this
+          false so the build-zeebe fallback runs. See #52693.
     outputs:
       flakyTests:
         description: "Flaky tests detected during database integration tests"
@@ -65,11 +75,14 @@ env:
   TEST_OWNER: '@camunda/monorepo-devops-team'
   GHA_BEST_PRACTICES_LINTER: enabled
   FLAKY_TEST_RERUN_COUNT: ${{ github.event_name == 'pull_request' && '3' || '7' }}
+  GCS_BUILD_CACHE_BUCKET: camunda-monorepo-ci-artifacts
 
 jobs:
   integration-tests:
     name: "${{ inputs.database-type }}"
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      contents: read
+      id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
     timeout-minutes: 20
     runs-on: ${{ inputs.runs-on }}
     env:
@@ -94,6 +107,8 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          # Authenticate gcloud when consuming the shared distball (see restore step below)
+          gcs-build-cache-auth: ${{ inputs.use-shared-distball }}
       # start the required database service
       - name: Start Database service
         if: ${{ inputs.database-type != 'h2' }}
@@ -102,8 +117,19 @@ jobs:
             docker compose -f db/docker-compose.yml logs
             exit 1
           }
-      # Build the platform before running the integration tests; skipping frontend
+      # When called from ci.yml (use-shared-distball=true) restore the io.camunda SNAPSHOTs
+      # that build-distball installed + archived to GCS, instead of re-running the ~2 min
+      # reactor in each of the ~15 database/history/identity matrix entries. gcp-perf runners
+      # pull from GCS (same-region, non-billable); the GHA artifact API is throughput-capped
+      # on self-hosted runners. github.run_id is stable across nested workflow_call, so it
+      # addresses the same run-scoped prefix build-distball wrote. See #52693.
+      # (gcloud is authenticated by setup-build's gcs-build-cache-auth above.)
+      - if: ${{ inputs.use-shared-distball }}
+        uses: ./.github/actions/restore-shared-m2
+      # Fallback for standalone callers (zeebe-rdbms / zeebe-search) whose run has no
+      # build-distball: build the platform locally, skipping frontend.
       - uses: ./.github/actions/build-zeebe
+        if: ${{ !inputs.use-shared-distball }}
         id: build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild

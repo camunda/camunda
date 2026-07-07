@@ -37,6 +37,14 @@ inputs:
       Minimus login is automatically disabled for fork PRs.
     required: false
     default: "false"
+  gcs-build-cache-auth:
+    description: |
+      If enabled, authenticates gcloud against the GCS build-cache bucket via Workload
+      Identity Federation, so subsequent `gcloud storage` steps can share the run-scoped
+      distball / m2 tarball (see #52693). Requires the job to grant `permissions: id-token: write`.
+      Automatically disabled for fork PRs (no Vault access).
+    required: false
+    default: "false"
   java-distribution:
     description: Java distribution to use
     required: false
@@ -272,3 +280,13 @@ runs:
       registry: reg.mini.dev
       username: minimus
       password: ${{ steps.secrets.outputs.minimus-token }}
+  - name: Authenticate to GCS build-cache
+    # GCS build-cache auth is disabled for fork PRs (no Vault access)
+    if: >-
+      steps.is-fork.outputs.is-fork != 'true' &&
+      inputs.gcs-build-cache-auth == 'true'
+    uses: ./.github/actions/gcs-build-cache-auth
+    with:
+      vault-addr: ${{ inputs.vault-address }}
+      vault-role-id: ${{ inputs.vault-role-id }}
+      vault-secret-id: ${{ inputs.vault-secret-id }}
