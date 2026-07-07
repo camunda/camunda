@@ -17,7 +17,7 @@ setup() {
 
 # Writes a complete, Maven-Central-valid .flattened-pom.xml (all required metadata
 # present) at the given path, so the metadata check passes and tests isolate the
-# Javadoc logic. Extra child XML can be appended via stdin.
+# Javadoc logic.
 write_flattened() {
   local dir="$1" packaging="${2:-jar}"
   mkdir -p "${dir}"

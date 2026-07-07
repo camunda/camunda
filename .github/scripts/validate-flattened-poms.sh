@@ -4,7 +4,7 @@
 # (name, description, url, licenses, developers, scm), and packaging when the source POM is non-jar.
 #
 # Additionally validates Javadoc deployability for jar-packaged modules: Maven Central
-# requires every non-pom artifact to ship a *-javadoc.jar. We detect, statically across
+# requires every jar artifact to ship a *-javadoc.jar. We detect, statically across
 # the local parent chain, modules that set maven.javadoc.skip=true (which disables the
 # real maven-javadoc-plugin) but do not configure the empty-javadoc-jar placeholder
 # execution on maven-jar-plugin. See https://github.com/camunda/camunda/issues/55717.
