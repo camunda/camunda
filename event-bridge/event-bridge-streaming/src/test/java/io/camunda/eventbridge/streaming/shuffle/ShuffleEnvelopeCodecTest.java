@@ -17,6 +17,9 @@ import org.junit.jupiter.api.Test;
 
 final class ShuffleEnvelopeCodecTest {
 
+  /** One instance across all encodes — also exercises the reused scratch buffer/flyweights. */
+  private final ShuffleEnvelopeCodec codec = new ShuffleEnvelopeCodec();
+
   private static ShuffleEnvelope envelope(
       final PayloadKind kind,
       final Operation operation,
@@ -39,8 +42,7 @@ final class ShuffleEnvelopeCodecTest {
                 new CellDelta(2, 60_000L, new byte[] {3}, new byte[] {8, 8, 8})));
 
     // when
-    final ShuffleEnvelope decoded =
-        ShuffleEnvelopeCodec.decode(ShuffleEnvelopeCodec.encode(original));
+    final ShuffleEnvelope decoded = ShuffleEnvelopeCodec.decode(codec.encode(original));
 
     // then (recursive comparison so the byte[] fields compare by content)
     assertThat(decoded).usingRecursiveComparison().isEqualTo(original);
@@ -62,8 +64,7 @@ final class ShuffleEnvelopeCodecTest {
             List.of(new CellDelta(1, 0L, new byte[] {1}, new byte[] {2})));
 
     // then the "more follows" flag round-trips, so the batch is self-describing on the wire
-    assertThat(ShuffleEnvelopeCodec.decode(ShuffleEnvelopeCodec.encode(original)).moreChunks())
-        .isTrue();
+    assertThat(ShuffleEnvelopeCodec.decode(codec.encode(original)).moreChunks()).isTrue();
   }
 
   @Test
@@ -77,8 +78,7 @@ final class ShuffleEnvelopeCodecTest {
             List.of(new CellDelta(0, 0L, new byte[] {7}, new byte[] {0, 0})));
 
     // then dispatch fields are readable from the header alone
-    final ShuffleEnvelope decoded =
-        ShuffleEnvelopeCodec.decode(ShuffleEnvelopeCodec.encode(original));
+    final ShuffleEnvelope decoded = ShuffleEnvelopeCodec.decode(codec.encode(original));
     assertThat(decoded.payloadKind()).isEqualTo(PayloadKind.REFERENCE);
     assertThat(decoded.operation()).isEqualTo(Operation.UPSERT);
     assertThat(decoded).usingRecursiveComparison().isEqualTo(original);
@@ -88,8 +88,7 @@ final class ShuffleEnvelopeCodecTest {
   void shouldRoundTripAnEmptyBatch() {
     final ShuffleEnvelope original =
         envelope(PayloadKind.AGGREGATE_DELTA, Operation.MERGE, false, List.of());
-    assertThat(ShuffleEnvelopeCodec.decode(ShuffleEnvelopeCodec.encode(original)).cells())
-        .isEmpty();
+    assertThat(ShuffleEnvelopeCodec.decode(codec.encode(original)).cells()).isEmpty();
   }
 
   @Test
@@ -103,16 +102,47 @@ final class ShuffleEnvelopeCodecTest {
             List.of(new CellDelta(1, 0L, new byte[] {5, 5}, new byte[] {6})));
 
     // then the same envelope encodes to identical bytes (re-emit safe), stable across re-encode
-    final byte[] first = ShuffleEnvelopeCodec.encode(original);
-    assertThat(ShuffleEnvelopeCodec.encode(original)).isEqualTo(first);
-    assertThat(ShuffleEnvelopeCodec.encode(ShuffleEnvelopeCodec.decode(first))).isEqualTo(first);
+    final byte[] first = codec.encode(original);
+    assertThat(codec.encode(original)).isEqualTo(first);
+    assertThat(codec.encode(ShuffleEnvelopeCodec.decode(first))).isEqualTo(first);
+  }
+
+  @Test
+  void shouldKeepEarlierFramesIntactWhenReusingTheCodec() {
+    // given two envelopes of different sizes encoded by the same instance (reused scratch buffer)
+    final ShuffleEnvelope larger =
+        envelope(
+            PayloadKind.AGGREGATE_DELTA,
+            Operation.MERGE,
+            false,
+            List.of(
+                new CellDelta(1, 60_000L, new byte[] {1, 2, 3, 4}, new byte[] {9, 9, 9, 9}),
+                new CellDelta(2, 60_000L, new byte[] {5, 6}, new byte[] {8})));
+    final ShuffleEnvelope smaller =
+        envelope(
+            PayloadKind.AGGREGATE_DELTA,
+            Operation.MERGE,
+            false,
+            List.of(new CellDelta(3, 0L, new byte[] {7}, new byte[] {1})));
+
+    // when: encoding back-to-back
+    final byte[] largerFrame = codec.encode(larger);
+    final byte[] smallerFrame = codec.encode(smaller);
+
+    // then: the first frame is a copy — the second encode must not have clobbered it
+    assertThat(ShuffleEnvelopeCodec.decode(largerFrame))
+        .usingRecursiveComparison()
+        .isEqualTo(larger);
+    assertThat(ShuffleEnvelopeCodec.decode(smallerFrame))
+        .usingRecursiveComparison()
+        .isEqualTo(smaller);
   }
 
   @Test
   void shouldRejectFrameOfAnotherSchema() {
     // given a frame whose SBE schemaId (uint16 at header offset 4, little-endian) is corrupted
     final byte[] frame =
-        ShuffleEnvelopeCodec.encode(
+        codec.encode(
             envelope(
                 PayloadKind.REFERENCE,
                 Operation.UPSERT,

@@ -80,6 +80,9 @@ public final class SourceLoop<R> {
   // payload's event time can be peeked, stream time — advances past filtered-only stretches.
   private final Map<PartitionActor<R>, FilteredTail> filteredTails = new HashMap<>();
 
+  /** The actors touched by the current poll (reused across polls, cleared per poll). */
+  private final Set<PartitionActor<R>> touched = new LinkedHashSet<>();
+
   public SourceLoop(
       final Consumer consumer,
       final String sourceTopic,
@@ -185,7 +188,7 @@ public final class SourceLoop<R> {
     }
     rebuiltThisPoll.clear();
     filteredTails.clear(); // drop any tail a previous poll aborted on — losing an advance is safe
-    final Set<PartitionActor<R>> touched = new LinkedHashSet<>();
+    touched.clear();
     for (final Event event : events) {
       final int partitionId = event.partitionId();
       if (revoking.contains(partitionId) || rebuiltThisPoll.contains(partitionId)) {

@@ -36,6 +36,11 @@ public final class EnvelopePublisher {
   private final Map<BufferKey, List<CellDelta>> buffer = new HashMap<>();
   private final Map<SegmentKey, Integer> nextChunk = new HashMap<>();
 
+  /**
+   * Reused per publisher; flushes alternate between the actor and commit threads, never overlap.
+   */
+  private final ShuffleEnvelopeCodec codec = new ShuffleEnvelopeCodec();
+
   private record BufferKey(int sourcePartition, long segment, int factsPartition) {}
 
   private record SegmentKey(int sourcePartition, long segment) {}
@@ -86,7 +91,7 @@ public final class EnvelopePublisher {
                       PayloadKind.AGGREGATE_DELTA,
                       Operation.MERGE,
                       entry.getValue());
-              transport.send(key.factsPartition(), ShuffleEnvelopeCodec.encode(envelope));
+              transport.send(key.factsPartition(), codec.encode(envelope));
             });
     buffer.clear();
     transport.flush();

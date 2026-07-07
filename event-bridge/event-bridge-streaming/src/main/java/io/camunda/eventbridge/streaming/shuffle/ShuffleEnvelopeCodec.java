@@ -25,17 +25,22 @@ import org.agrona.concurrent.UnsafeBuffer;
  * schema evolution come from the SBE {@code messageHeader}; a frame that is not this schema/message
  * is rejected. Deterministic: encoding depends only on the envelope's fields, so a re-emitted batch
  * serialises identically.
+ *
+ * <p>An <em>instance</em> encodes: it reuses its scratch buffer and encoder flyweights across
+ * {@link #encode} calls (the returned frame is always a fresh copy), so an instance must not be
+ * shared by concurrently encoding threads — one codec per publisher. {@link #decode(byte[])} is
+ * static and allocates per call.
  */
 public final class ShuffleEnvelopeCodec {
 
-  private ShuffleEnvelopeCodec() {}
+  private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
+  private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
+  private final ShuffleEnvelopeEncoder encoder = new ShuffleEnvelopeEncoder();
 
-  public static byte[] encode(final ShuffleEnvelope envelope) {
-    final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
-    final ShuffleEnvelopeEncoder encoder = new ShuffleEnvelopeEncoder();
+  public byte[] encode(final ShuffleEnvelope envelope) {
     final CellsEncoder cells =
         encoder
-            .wrapAndApplyHeader(buffer, 0, new MessageHeaderEncoder())
+            .wrapAndApplyHeader(buffer, 0, headerEncoder)
             .producedAt(envelope.producedAt())
             .schemaVersion(envelope.schemaVersion())
             .producerPartition(envelope.producerPartition())

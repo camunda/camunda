@@ -72,6 +72,9 @@ public final class PartitionActor<R> {
   private boolean stopRequested;
   private boolean finalized;
 
+  /** Reused drain batch, cleared per {@link #onWork()} cycle. Actor thread only. */
+  private final List<SourceEntry<R>> batch = new ArrayList<>();
+
   public PartitionActor(
       final Partition<R> partition,
       final PartitionCommitter<R> committer,
@@ -162,7 +165,7 @@ public final class PartitionActor<R> {
     if (committing || finalized || !running.getAsBoolean()) {
       return;
     }
-    final List<SourceEntry<R>> batch = new ArrayList<>();
+    batch.clear();
     partition.queue().drainTo(batch, maxProcessBatch);
     for (final SourceEntry<R> entry : batch) {
       handleEntry(entry);
