@@ -21,6 +21,7 @@ import java.util.Optional;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /**
@@ -96,6 +97,18 @@ public final class WriteBackKeyValueStore<K extends DbKey, V extends DbValue>
         break;
       }
       visit(entry, visitor);
+    }
+  }
+
+  @Override
+  public void prefixScanKeys(final DbKey prefix, final Consumer<K> visitor) {
+    final byte[] prefixBytes = toBytes(prefix);
+    for (final byte[] keyBytes : entries.tailMap(prefixBytes).keySet()) {
+      if (!startsWith(keyBytes, prefixBytes)) {
+        break;
+      }
+      wrap(keyFlyweight, keyBytes);
+      visitor.accept(keyFlyweight);
     }
   }
 
