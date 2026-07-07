@@ -300,8 +300,8 @@ public final class CatchEventBehavior {
     }
     final var expression = event.getMessage().getCorrelationKeyExpression();
     final long scopeKey =
-        !evaluateBoundaryEventCorrelationKeyInActivityScope
-                && event.getElementType() == BpmnElementType.BOUNDARY_EVENT
+        event.getElementType() == BpmnElementType.BOUNDARY_EVENT
+                && !evaluateBoundaryEventCorrelationKeyInActivityScope
             ? context.getFlowScopeKey()
             : context.getElementInstanceKey();
     final String tenantId = context.getTenantId();
