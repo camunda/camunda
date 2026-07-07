@@ -8,10 +8,12 @@
 package io.camunda.analytics.serving.catalog;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.analytics.dataset.CompiledDataset;
 import io.camunda.analytics.dataset.CompiledTable;
 import io.camunda.analytics.dataset.DatasetDeclaration;
+import io.camunda.analytics.dataset.DatasetValidationException;
 import io.camunda.analytics.dataset.RegisteredDataset;
 import io.camunda.analytics.dimension.DimensionType;
 import io.camunda.analytics.fact.FactType;
@@ -21,6 +23,7 @@ import io.camunda.analytics.serving.spi.DatasetSchemaManager;
 import io.camunda.analytics.serving.spi.DatasetSpecQuery;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 final class DatasetProvisioningServiceTest {
@@ -93,6 +96,54 @@ final class DatasetProvisioningServiceTest {
     assertThat(schemaManager.ensuredCubes).isEmpty();
     assertThat(metadataStore.meterIdStore().load()).isEmpty();
     assertThat(registered.activationTimestampMs()).isEqualTo(11_000L);
+  }
+
+  @Test
+  void shouldRejectInvalidDeclarationBeforePersistingAnything() {
+    // given a declaration whose meter params only fail at compile (bind) time
+    final DatasetDeclaration invalid =
+        DatasetDeclaration.builder("bad-ratio", FactType.PROCESS_INSTANCE)
+            .dimension("bpmnProcessId", DimensionType.STRING)
+            .meter(new Meter("sla", MeterCatalog.RATIO, "durationMs", Map.of("op", "banana")))
+            .window(60_000L)
+            .build();
+    final DatasetProvisioningService service = serviceAt(1_000L);
+
+    // when provisioned, then the dry-run compile rejects it with dataset + meter context
+    assertThatThrownBy(() -> service.provision(invalid))
+        .isInstanceOf(DatasetValidationException.class)
+        .hasMessageContaining("dataset 'bad-ratio'")
+        .hasMessageContaining("meter 'sla'")
+        .hasMessageContaining("banana");
+
+    // and nothing was persisted: no spec, no aggId leaked, no schema provisioned
+    assertThat(metadataStore.datasetSpecStore().search(DatasetSpecQuery.all())).isEmpty();
+    assertThat(metadataStore.meterIdStore().load()).isEmpty();
+    assertThat(schemaManager.ensuredCubes).isEmpty();
+    assertThat(schemaManager.ensuredTables).isEmpty();
+  }
+
+  @Test
+  void shouldNotBurnACubeIdOnARejectedDeclaration() {
+    // given a rejected declaration
+    final DatasetProvisioningService service = serviceAt(1_000L);
+    assertThatThrownBy(
+            () ->
+                service.provision(
+                    DatasetDeclaration.builder("bad", FactType.PROCESS_INSTANCE)
+                        .dimension("bpmnProcessId", DimensionType.STRING)
+                        .meter(Meter.of("x", "no-such-type"))
+                        .window(60_000L)
+                        .build()))
+        .isInstanceOf(DatasetValidationException.class);
+
+    // when a valid one follows
+    final RegisteredDataset registered = service.provision(cube("good"));
+
+    // then it gets the first cube id (the rejection left no gap) and persists normally
+    assertThat(registered.cubeId()).isEqualTo(1L);
+    assertThat(metadataStore.datasetSpecStore().read(1L)).contains(registered);
+    assertThat(metadataStore.meterIdStore().load()).isNotEmpty();
   }
 
   @Test

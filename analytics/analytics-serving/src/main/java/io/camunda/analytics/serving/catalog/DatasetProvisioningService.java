@@ -12,6 +12,7 @@ import io.camunda.analytics.dataset.DatasetDeclaration;
 import io.camunda.analytics.dataset.DatasetKind;
 import io.camunda.analytics.dataset.DatasetRegistry;
 import io.camunda.analytics.dataset.RegisteredDataset;
+import io.camunda.analytics.meter.InMemoryMeterIdStore;
 import io.camunda.analytics.meter.MeterCatalog;
 import io.camunda.analytics.meter.MeterIdRegistry;
 import io.camunda.analytics.serving.spi.DatasetSchemaManager;
@@ -60,7 +61,10 @@ public final class DatasetProvisioningService {
 
   /**
    * Admits a runtime-declared dataset: forward-only from {@code now + debounce}. Returns the
-   * registered dataset (its assigned {@code cubeId} and frozen activation).
+   * registered dataset (its assigned {@code cubeId} and frozen activation). An invalid declaration
+   * is rejected by a side-effect-free dry-run compile — a {@link
+   * io.camunda.analytics.dataset.DatasetValidationException} — before anything (spec or {@code
+   * aggId}) is persisted, so a bad declaration never reaches the pipeline.
    */
   public synchronized RegisteredDataset provision(final DatasetDeclaration declaration) {
     return admit(declaration, clock.getAsLong() + activationDebounceMs);
@@ -84,6 +88,12 @@ public final class DatasetProvisioningService {
 
   private RegisteredDataset admit(
       final DatasetDeclaration declaration, final long activationTimestampMs) {
+    // Dry-run compile first: reject an invalid declaration (bad meter type/params) before anything
+    // is persisted. Compiling against the real registry would allocate AND persist aggIds as a side
+    // effect of the first aggIdFor call, so a rejected dataset would leak ids (and, with the spec
+    // persisted first, an orphaned spec) — the throwaway in-memory id store keeps the dry run
+    // side-effect free.
+    dryRunCompile(declaration);
     // Continue cube ids past the persisted specs (empty position vector: the event-time cutover is
     // the forward-only gate today — see RegisteredDataset).
     final DatasetRegistry registry =
@@ -101,5 +111,20 @@ public final class DatasetProvisioningService {
       schemaManager.ensure(compiler.compile(registered.cubeId(), declaration));
     }
     return registered;
+  }
+
+  /**
+   * Compiles the declaration against a throwaway id registry, so validation failures (a {@link
+   * io.camunda.analytics.dataset.DatasetValidationException}) surface before anything is persisted
+   * and no {@code aggId} is ever allocated for a rejected dataset.
+   */
+  private void dryRunCompile(final DatasetDeclaration declaration) {
+    final DatasetCompiler dryRun =
+        new DatasetCompiler(meterCatalog, new MeterIdRegistry(new InMemoryMeterIdStore()));
+    if (declaration.kind() == DatasetKind.TABLE) {
+      dryRun.compileTable(0L, declaration);
+    } else {
+      dryRun.compile(0L, declaration);
+    }
   }
 }

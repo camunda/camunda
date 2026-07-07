@@ -206,7 +206,12 @@ public class AnalyticsController {
     return ResponseEntity.ok(tableRepository.rows(name, limit));
   }
 
-  /** A rejected declaration (validation) is a client error, not a server fault. */
+  /**
+   * A rejected declaration (validation) is a client error, not a server fault. This also covers
+   * {@link io.camunda.analytics.dataset.DatasetValidationException} — the provisioning dry-run's
+   * rejection of a declaration whose meters fail to compile — which subclasses {@code
+   * IllegalArgumentException} precisely so it maps to a 400 here with its message intact.
+   */
   @ExceptionHandler(IllegalArgumentException.class)
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   public Map<String, String> onInvalid(final IllegalArgumentException e) {
