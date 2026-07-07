@@ -36,9 +36,9 @@ import org.junit.Test;
  * Verifies that the loop-detection mechanism raises an incident when a multi-instance (MI) element
  * activates more child instances than {@code maxElementActivationCount}.
  *
- * <p>Parallel MI blocks a whole collection larger than the threshold up-front on the {@code
- * MULTI_INSTANCE_BODY} (the batch guard, so no children are spawned). When instead the body is
- * re-activated in a loop and the cumulative child count crosses the threshold, the incident fires
+ * <p>Parallel MI spawns children until the activation threshold is exceeded; the incident is raised
+ * on the child activation that crosses it and the remaining children are not spawned. When the body
+ * is re-activated in a loop and the cumulative child count crosses the threshold, the incident fires
  * on the child activation that crosses it — the same way sequential MI counts its children
  * one-by-one.
  */

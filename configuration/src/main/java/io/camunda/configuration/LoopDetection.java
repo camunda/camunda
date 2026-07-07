@@ -58,7 +58,7 @@ public class LoopDetection {
    *
    * <p><b>Nesting note:</b> counters are keyed by process instance and element id, so elements
    * nested inside an embedded subprocess used as a multi-instance inner activity accumulate on one
-   * shared counter across all of its children. Size per-type overrides for such nested elements
+   * shared counter across all of its children. Set per-type overrides for such nested elements
    * above the largest expected collection to avoid raising incidents on legitimately large
    * collections.
    */
