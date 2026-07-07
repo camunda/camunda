@@ -19,6 +19,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -529,6 +530,117 @@ final class ClusterConfigurationManagementApiTest {
 
     // then
     EitherAssert.assertThat(changeStatus)
+        .isLeft()
+        .left()
+        .extracting(ErrorResponse::code)
+        .isEqualTo(ErrorCode.INVALID_REQUEST);
+  }
+
+  @Test
+  void shouldValidateRestoreWhenClusterRecovering() {
+    // given
+    recordingCoordinator.setCurrentTopology(
+        ClusterConfiguration.init()
+            .addMember(id0, MemberState.initializeAsActive(Map.of()).toRecovering()));
+    final var request = new RestoreRequest(List.of(100L, 101L), null, null, false, false);
+
+    // when
+    final var result = clientApi.restore(request).join();
+
+    // then
+    EitherAssert.assertThat(result).isRight();
+  }
+
+  @Test
+  void shouldRejectRestoreWhenClusterNotRecovering() {
+    // given
+    recordingCoordinator.setCurrentTopology(initialTopology); // member is ACTIVE
+    final var request = new RestoreRequest(List.of(100L), null, null, false, false);
+
+    // when
+    final var result = clientApi.restore(request).join();
+
+    // then
+    EitherAssert.assertThat(result)
+        .isLeft()
+        .left()
+        .extracting(ErrorResponse::code)
+        .isEqualTo(ErrorCode.OPERATION_NOT_ALLOWED);
+  }
+
+  @Test
+  void shouldRejectRestoreWhenBackupIdsAndTimeRangeProvided() {
+    // given
+    recordingCoordinator.setCurrentTopology(
+        ClusterConfiguration.init()
+            .addMember(id0, MemberState.initializeAsActive(Map.of()).toRecovering()));
+    final var request =
+        new RestoreRequest(List.of(100L), "2024-01-01T10:00:00Z", null, false, false);
+
+    // when
+    final var result = clientApi.restore(request).join();
+
+    // then
+    EitherAssert.assertThat(result)
+        .isLeft()
+        .left()
+        .extracting(ErrorResponse::code)
+        .isEqualTo(ErrorCode.INVALID_REQUEST);
+  }
+
+  @Test
+  void shouldRejectRestoreWhenFromIsAfterTo() {
+    // given
+    recordingCoordinator.setCurrentTopology(
+        ClusterConfiguration.init()
+            .addMember(id0, MemberState.initializeAsActive(Map.of()).toRecovering()));
+    final var request =
+        new RestoreRequest(List.of(), "2024-01-01T12:00:00Z", "2024-01-01T10:00:00Z", true, false);
+
+    // when
+    final var result = clientApi.restore(request).join();
+
+    // then
+    EitherAssert.assertThat(result)
+        .isLeft()
+        .left()
+        .extracting(ErrorResponse::code)
+        .isEqualTo(ErrorCode.INVALID_REQUEST);
+  }
+
+  @Test
+  void shouldRejectRestoreWhenTimeRangeProvidedWithoutContinuousBackups() {
+    // given
+    recordingCoordinator.setCurrentTopology(
+        ClusterConfiguration.init()
+            .addMember(id0, MemberState.initializeAsActive(Map.of()).toRecovering()));
+    final var request =
+        new RestoreRequest(List.of(), "2024-01-01T10:00:00Z", "2024-01-01T12:00:00Z", false, false);
+
+    // when
+    final var result = clientApi.restore(request).join();
+
+    // then
+    EitherAssert.assertThat(result)
+        .isLeft()
+        .left()
+        .extracting(ErrorResponse::code)
+        .isEqualTo(ErrorCode.INVALID_REQUEST);
+  }
+
+  @Test
+  void shouldRejectRestoreWhenTimestampIsInvalid() {
+    // given
+    recordingCoordinator.setCurrentTopology(
+        ClusterConfiguration.init()
+            .addMember(id0, MemberState.initializeAsActive(Map.of()).toRecovering()));
+    final var request = new RestoreRequest(List.of(), "not-a-date", null, false, false);
+
+    // when
+    final var result = clientApi.restore(request).join();
+
+    // then
+    EitherAssert.assertThat(result)
         .isLeft()
         .left()
         .extracting(ErrorResponse::code)
