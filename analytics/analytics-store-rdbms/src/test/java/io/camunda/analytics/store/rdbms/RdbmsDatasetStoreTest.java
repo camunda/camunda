@@ -22,7 +22,7 @@ import io.camunda.analytics.meter.BoundMeter;
 import io.camunda.analytics.meter.InMemoryMeterIdStore;
 import io.camunda.analytics.meter.Meter;
 import io.camunda.analytics.meter.MeterCatalog;
-import io.camunda.analytics.meter.MeterRegistry;
+import io.camunda.analytics.meter.MeterIdRegistry;
 import io.camunda.analytics.query.DatasetQueryExecutor;
 import io.camunda.analytics.query.DatasetQueryPlanner;
 import io.camunda.analytics.query.ReportQuery;
@@ -51,7 +51,7 @@ final class RdbmsDatasetStoreTest {
   private final RdbmsDatasetStore store = new RdbmsDatasetStore(dataSource);
   private final CompiledDataset dataset =
       new DatasetCompiler(
-              MeterCatalog.withDefaults(), new MeterRegistry(new InMemoryMeterIdStore()))
+              MeterCatalog.withDefaults(), new MeterIdRegistry(new InMemoryMeterIdStore()))
           .compile(
               1L,
               DatasetDeclaration.builder("pi-count", FactType.PROCESS_INSTANCE)
@@ -188,7 +188,7 @@ final class RdbmsDatasetStoreTest {
     // given a table with a TEXT column (CLOB/TEXT), like process definitions holding BPMN XML
     final CompiledTable table =
         new DatasetCompiler(
-                MeterCatalog.withDefaults(), new MeterRegistry(new InMemoryMeterIdStore()))
+                MeterCatalog.withDefaults(), new MeterIdRegistry(new InMemoryMeterIdStore()))
             .compileTable(
                 8L,
                 DatasetDeclaration.builder("defs", FactType.PROCESS_INSTANCE)
@@ -213,7 +213,7 @@ final class RdbmsDatasetStoreTest {
 
   private static CompiledTable rawInstancesTable() {
     return new DatasetCompiler(
-            MeterCatalog.withDefaults(), new MeterRegistry(new InMemoryMeterIdStore()))
+            MeterCatalog.withDefaults(), new MeterIdRegistry(new InMemoryMeterIdStore()))
         .compileTable(
             7L,
             DatasetDeclaration.builder("raw-instances", FactType.PROCESS_INSTANCE)

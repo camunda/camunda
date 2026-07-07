@@ -13,7 +13,7 @@ import io.camunda.analytics.dataset.DatasetKind;
 import io.camunda.analytics.dataset.DatasetRegistry;
 import io.camunda.analytics.dataset.RegisteredDataset;
 import io.camunda.analytics.meter.MeterCatalog;
-import io.camunda.analytics.meter.MeterRegistry;
+import io.camunda.analytics.meter.MeterIdRegistry;
 import io.camunda.analytics.serving.spi.DatasetSchemaManager;
 import io.camunda.analytics.serving.spi.DatasetSpecQuery;
 import io.camunda.analytics.serving.spi.MetadataStore;
@@ -89,7 +89,7 @@ public final class DatasetProvisioningService {
     final DatasetRegistry registry =
         DatasetRegistry.restore(metadataStore.datasetSpecStore().search(DatasetSpecQuery.all()));
     final DatasetCompiler compiler =
-        new DatasetCompiler(meterCatalog, new MeterRegistry(metadataStore.meterIdStore()));
+        new DatasetCompiler(meterCatalog, new MeterIdRegistry(metadataStore.meterIdStore()));
     final RegisteredDataset registered =
         registry.admit(declaration, Map.of(), activationTimestampMs);
     metadataStore.datasetSpecStore().create(registered);

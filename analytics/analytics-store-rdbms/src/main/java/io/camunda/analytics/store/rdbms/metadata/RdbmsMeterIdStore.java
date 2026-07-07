@@ -16,11 +16,11 @@ import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 
 /**
- * The durable {@link MeterIdStore}, backing the {@link io.camunda.analytics.meter.MeterRegistry}'s
- * {@code aggId} allocations via the {@link MeterIdMapper} over {@code ANALYTICS_METER_ID}. Loading
- * the full map on start and persisting each new allocation makes an {@code aggId} stable across
- * restarts and identical across both stages — the property the on-disk rollup and the shuffle
- * depend on.
+ * The durable {@link MeterIdStore}, backing the {@link
+ * io.camunda.analytics.meter.MeterIdRegistry}'s {@code aggId} allocations via the {@link
+ * MeterIdMapper} over {@code ANALYTICS_METER_ID}. Loading the full map on start and persisting each
+ * new allocation makes an {@code aggId} stable across restarts and identical across both stages —
+ * the property the on-disk rollup and the shuffle depend on.
  */
 final class RdbmsMeterIdStore implements MeterIdStore {
 

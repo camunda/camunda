@@ -28,13 +28,13 @@ import java.util.OptionalInt;
  *
  * Not thread-safe; the control plane that admits datasets allocates ids single-threaded.
  */
-public final class MeterRegistry {
+public final class MeterIdRegistry {
 
   private final MeterIdStore store;
   private final Map<MeterKey, Integer> ids;
   private int nextId;
 
-  public MeterRegistry(final MeterIdStore store) {
+  public MeterIdRegistry(final MeterIdStore store) {
     this.store = Objects.requireNonNull(store, "store");
     ids = new HashMap<>(store.load());
     nextId = ids.values().stream().mapToInt(Integer::intValue).max().orElse(0) + 1;

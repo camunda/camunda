@@ -12,7 +12,7 @@ import java.util.Objects;
 /**
  * The stable identity of one meter instance: a meter {@code name} within a cube ({@code cubeId}).
  * Keyed by name rather than declaration index so reordering a cube's meters never shifts an
- * already-allocated {@code aggId} (see {@link MeterRegistry}).
+ * already-allocated {@code aggId} (see {@link MeterIdRegistry}).
  */
 public record MeterKey(long cubeId, String meterName) {
 

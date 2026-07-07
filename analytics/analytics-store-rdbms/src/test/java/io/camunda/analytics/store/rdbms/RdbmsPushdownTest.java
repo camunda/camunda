@@ -24,7 +24,7 @@ import io.camunda.analytics.meter.BoundMeter;
 import io.camunda.analytics.meter.InMemoryMeterIdStore;
 import io.camunda.analytics.meter.Meter;
 import io.camunda.analytics.meter.MeterCatalog;
-import io.camunda.analytics.meter.MeterRegistry;
+import io.camunda.analytics.meter.MeterIdRegistry;
 import io.camunda.analytics.metric.ExecutionTimeResult;
 import io.camunda.analytics.metric.RatioResult;
 import io.camunda.analytics.serving.spi.AggregatedFetch;
@@ -168,7 +168,7 @@ final class RdbmsPushdownTest {
     // given a distinct sketch of three process ids for a tenant, in one window
     final CompiledDataset cube =
         new DatasetCompiler(
-                MeterCatalog.withDefaults(), new MeterRegistry(new InMemoryMeterIdStore()))
+                MeterCatalog.withDefaults(), new MeterIdRegistry(new InMemoryMeterIdStore()))
             .compile(
                 9L,
                 DatasetDeclaration.builder("pi-distinct", FactType.PROCESS_INSTANCE)
@@ -212,7 +212,7 @@ final class RdbmsPushdownTest {
 
   private static CompiledDataset cube(final DatasetDeclaration.Builder builder) {
     return new DatasetCompiler(
-            MeterCatalog.withDefaults(), new MeterRegistry(new InMemoryMeterIdStore()))
+            MeterCatalog.withDefaults(), new MeterIdRegistry(new InMemoryMeterIdStore()))
         .compile(1L, builder.window(MINUTE).build());
   }
 

@@ -22,7 +22,7 @@ import io.camunda.analytics.meter.BoundMeter;
 import io.camunda.analytics.meter.InMemoryMeterIdStore;
 import io.camunda.analytics.meter.Meter;
 import io.camunda.analytics.meter.MeterCatalog;
-import io.camunda.analytics.meter.MeterRegistry;
+import io.camunda.analytics.meter.MeterIdRegistry;
 import io.camunda.analytics.serving.spi.AggregatedFetch;
 import io.camunda.analytics.serving.spi.AggregatedRow;
 import io.camunda.analytics.serving.spi.Cell;
@@ -46,7 +46,7 @@ final class DatasetQueryExecutorTest {
   // A mixed cube: an additive count (pushed down) and a percentile sketch (streamed + app-merged).
   private final CompiledDataset dataset =
       new DatasetCompiler(
-              MeterCatalog.withDefaults(), new MeterRegistry(new InMemoryMeterIdStore()))
+              MeterCatalog.withDefaults(), new MeterIdRegistry(new InMemoryMeterIdStore()))
           .compile(
               1L,
               DatasetDeclaration.builder("pi-mixed", FactType.PROCESS_INSTANCE)

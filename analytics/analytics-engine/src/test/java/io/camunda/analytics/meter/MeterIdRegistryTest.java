@@ -16,7 +16,7 @@ final class MeterRegistryTest {
   @Test
   void shouldAllocateDistinctIdsPerMeter() {
     // given
-    final MeterRegistry registry = new MeterRegistry(new InMemoryMeterIdStore());
+    final MeterIdRegistry registry = new MeterIdRegistry(new InMemoryMeterIdStore());
 
     // when
     final int count = registry.aggIdFor(7L, "count");
@@ -29,7 +29,7 @@ final class MeterRegistryTest {
   @Test
   void shouldReturnSameIdForSameMeter() {
     // given
-    final MeterRegistry registry = new MeterRegistry(new InMemoryMeterIdStore());
+    final MeterIdRegistry registry = new MeterIdRegistry(new InMemoryMeterIdStore());
 
     // then repeated lookups are stable within a run
     assertThat(registry.aggIdFor(7L, "count")).isEqualTo(registry.aggIdFor(7L, "count"));
@@ -39,12 +39,12 @@ final class MeterRegistryTest {
   void shouldKeepIdsStableAcrossRestart() {
     // given a first registry allocates ids and persists them to a shared store
     final InMemoryMeterIdStore store = new InMemoryMeterIdStore();
-    final MeterRegistry before = new MeterRegistry(store);
+    final MeterIdRegistry before = new MeterIdRegistry(store);
     final int count = before.aggIdFor(7L, "count");
     final int p95 = before.aggIdFor(7L, "p95");
 
     // when a new registry reloads from the same store (a restart)
-    final MeterRegistry after = new MeterRegistry(store);
+    final MeterIdRegistry after = new MeterIdRegistry(store);
 
     // then the same meters resolve to the same ids
     assertThat(after.aggIdFor(7L, "count")).isEqualTo(count);
@@ -54,7 +54,7 @@ final class MeterRegistryTest {
   @Test
   void shouldNotCollideAcrossCubes() {
     // given the same meter name in two different cubes
-    final MeterRegistry registry = new MeterRegistry(new InMemoryMeterIdStore());
+    final MeterIdRegistry registry = new MeterIdRegistry(new InMemoryMeterIdStore());
 
     // then they get distinct ids
     assertThat(registry.aggIdFor(7L, "count")).isNotEqualTo(registry.aggIdFor(9L, "count"));
@@ -64,12 +64,12 @@ final class MeterRegistryTest {
   void shouldNotReuseIdsAfterRestartForNewMeters() {
     // given ids allocated then reloaded
     final InMemoryMeterIdStore store = new InMemoryMeterIdStore();
-    final MeterRegistry before = new MeterRegistry(store);
+    final MeterIdRegistry before = new MeterIdRegistry(store);
     final int a = before.aggIdFor(1L, "a");
     final int b = before.aggIdFor(1L, "b");
 
     // when a restarted registry allocates a brand-new meter
-    final MeterRegistry after = new MeterRegistry(store);
+    final MeterIdRegistry after = new MeterIdRegistry(store);
     final int c = after.aggIdFor(1L, "c");
 
     // then the new id does not collide with the reloaded ones (monotonic, no reuse)
@@ -79,7 +79,7 @@ final class MeterRegistryTest {
   @Test
   void shouldLookUpExistingWithoutAllocating() {
     // given
-    final MeterRegistry registry = new MeterRegistry(new InMemoryMeterIdStore());
+    final MeterIdRegistry registry = new MeterIdRegistry(new InMemoryMeterIdStore());
     final MeterKey key = new MeterKey(1L, "count");
 
     // then a lookup before allocation is empty and does not allocate

@@ -10,7 +10,7 @@ package io.camunda.analytics.meter;
 import java.util.Map;
 
 /**
- * The durable backing of the {@link MeterRegistry}'s {@code aggId} allocations. Loading the full
+ * The durable backing of the {@link MeterIdRegistry}'s {@code aggId} allocations. Loading the full
  * map on start and persisting each new allocation is what makes an {@code aggId} stable across
  * restarts — the property on-disk rollup data and the shuffle depend on. Phase 1 ships an in-memory
  * implementation; the durable dataset registry (a later phase) owns the persisted one.

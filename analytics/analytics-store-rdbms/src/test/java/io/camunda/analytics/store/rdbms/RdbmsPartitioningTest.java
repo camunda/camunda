@@ -17,7 +17,7 @@ import io.camunda.analytics.fact.FactType;
 import io.camunda.analytics.meter.InMemoryMeterIdStore;
 import io.camunda.analytics.meter.Meter;
 import io.camunda.analytics.meter.MeterCatalog;
-import io.camunda.analytics.meter.MeterRegistry;
+import io.camunda.analytics.meter.MeterIdRegistry;
 import java.time.YearMonth;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -45,7 +45,7 @@ final class RdbmsPartitioningTest {
 
   private static CompiledDataset cube() {
     return new DatasetCompiler(
-            MeterCatalog.withDefaults(), new MeterRegistry(new InMemoryMeterIdStore()))
+            MeterCatalog.withDefaults(), new MeterIdRegistry(new InMemoryMeterIdStore()))
         .compile(
             1L,
             DatasetDeclaration.builder("pi-count", FactType.PROCESS_INSTANCE)

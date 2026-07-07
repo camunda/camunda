@@ -19,7 +19,7 @@ import io.camunda.analytics.fact.FactType;
 import io.camunda.analytics.fact.Transition;
 import io.camunda.analytics.meter.Meter;
 import io.camunda.analytics.meter.MeterCatalog;
-import io.camunda.analytics.meter.MeterRegistry;
+import io.camunda.analytics.meter.MeterIdRegistry;
 import io.camunda.analytics.serving.spi.DatasetSpecQuery;
 import io.camunda.analytics.serving.spi.MetadataStore;
 import java.util.ArrayList;
@@ -77,7 +77,7 @@ public final class StandardDatasets {
     final DatasetRegistry registry = new DatasetRegistry();
     final DatasetCompiler compiler =
         new DatasetCompiler(
-            MeterCatalog.withDefaults(), new MeterRegistry(metadataStore.meterIdStore()));
+            MeterCatalog.withDefaults(), new MeterIdRegistry(metadataStore.meterIdStore()));
     // The standard dashboards cover all retained history, so they activate from time 0.
     for (final DatasetDeclaration declaration : declarations()) {
       final RegisteredDataset registered = registry.admit(declaration, Map.of(), 0L);
@@ -95,7 +95,7 @@ public final class StandardDatasets {
   public static List<ActiveCube> loadCubes(final MetadataStore metadataStore) {
     final DatasetCompiler compiler =
         new DatasetCompiler(
-            MeterCatalog.withDefaults(), new MeterRegistry(metadataStore.meterIdStore()));
+            MeterCatalog.withDefaults(), new MeterIdRegistry(metadataStore.meterIdStore()));
     final List<ActiveCube> cubes = new ArrayList<>();
     for (final RegisteredDataset registered :
         metadataStore.datasetSpecStore().search(DatasetSpecQuery.byKind(DatasetKind.AGGREGATED))) {
@@ -110,7 +110,7 @@ public final class StandardDatasets {
   public static List<ActiveTable> loadTables(final MetadataStore metadataStore) {
     final DatasetCompiler compiler =
         new DatasetCompiler(
-            MeterCatalog.withDefaults(), new MeterRegistry(metadataStore.meterIdStore()));
+            MeterCatalog.withDefaults(), new MeterIdRegistry(metadataStore.meterIdStore()));
     final List<ActiveTable> tables = new ArrayList<>();
     for (final RegisteredDataset registered :
         metadataStore.datasetSpecStore().search(DatasetSpecQuery.byKind(DatasetKind.TABLE))) {

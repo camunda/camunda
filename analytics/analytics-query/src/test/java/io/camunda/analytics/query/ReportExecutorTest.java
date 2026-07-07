@@ -18,7 +18,7 @@ import io.camunda.analytics.fact.FactType;
 import io.camunda.analytics.meter.InMemoryMeterIdStore;
 import io.camunda.analytics.meter.Meter;
 import io.camunda.analytics.meter.MeterCatalog;
-import io.camunda.analytics.meter.MeterRegistry;
+import io.camunda.analytics.meter.MeterIdRegistry;
 import io.camunda.analytics.report.Combination;
 import io.camunda.analytics.report.ReportDefinition;
 import io.camunda.analytics.report.ReportSource;
@@ -30,7 +30,7 @@ final class ReportExecutorTest {
 
   private final DatasetCompiler compiler =
       new DatasetCompiler(
-          MeterCatalog.withDefaults(), new MeterRegistry(new InMemoryMeterIdStore()));
+          MeterCatalog.withDefaults(), new MeterIdRegistry(new InMemoryMeterIdStore()));
   private final CompiledDataset throughput = cube(1L, "throughput");
   private final CompiledDataset incidents = cube(2L, "incidents");
 

@@ -12,7 +12,7 @@ import io.camunda.analytics.dimension.DimensionKeySelector;
 import io.camunda.analytics.dimension.DimensionSchema;
 import io.camunda.analytics.meter.Meter;
 import io.camunda.analytics.meter.MeterCatalog;
-import io.camunda.analytics.meter.MeterRegistry;
+import io.camunda.analytics.meter.MeterIdRegistry;
 import io.camunda.eventbridge.streaming.window.TumblingWindows;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -23,7 +23,7 @@ import java.util.Map;
  * Compiles a {@link DatasetDeclaration} into a runnable {@link CompiledDataset}: builds the grain
  * schema and its key selector, derives the fact binding (filters + per-variable enrichment timing),
  * and resolves each meter against the {@link MeterCatalog} for every declared window tier — each
- * getting a stable {@code aggId} from the {@link MeterRegistry}, keyed by {@code (cube, meter,
+ * getting a stable {@code aggId} from the {@link MeterIdRegistry}, keyed by {@code (cube, meter,
  * tier)} so tiers are independent rollups. The physical {@link DatasetSchema} is the grain plus one
  * accumulator column per meter. This is the "think backwards" step: the declaration alone
  * determines the fact stream, the grain, the aggregates, and the serving schema.
@@ -31,9 +31,9 @@ import java.util.Map;
 public final class DatasetCompiler {
 
   private final MeterCatalog catalog;
-  private final MeterRegistry registry;
+  private final MeterIdRegistry registry;
 
-  public DatasetCompiler(final MeterCatalog catalog, final MeterRegistry registry) {
+  public DatasetCompiler(final MeterCatalog catalog, final MeterIdRegistry registry) {
     this.catalog = catalog;
     this.registry = registry;
   }

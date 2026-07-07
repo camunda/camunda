@@ -18,7 +18,7 @@ import io.camunda.analytics.fact.FactType;
 import io.camunda.analytics.meter.InMemoryMeterIdStore;
 import io.camunda.analytics.meter.Meter;
 import io.camunda.analytics.meter.MeterCatalog;
-import io.camunda.analytics.meter.MeterRegistry;
+import io.camunda.analytics.meter.MeterIdRegistry;
 import io.camunda.analytics.serving.spi.Cell;
 import io.camunda.analytics.serving.spi.DatasetFetch;
 import io.camunda.analytics.serving.spi.TableFetch;
@@ -66,7 +66,7 @@ final class DocumentDatasetQueryClientTest {
 
   private static DatasetCompiler compiler() {
     return new DatasetCompiler(
-        MeterCatalog.withDefaults(), new MeterRegistry(new InMemoryMeterIdStore()));
+        MeterCatalog.withDefaults(), new MeterIdRegistry(new InMemoryMeterIdStore()));
   }
 
   @Test

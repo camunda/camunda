@@ -12,8 +12,8 @@ import java.util.Map;
 
 /**
  * A non-durable {@link MeterIdStore} for tests and single-process use. Holding one instance across
- * two {@link MeterRegistry} constructions simulates a restart: the second registry reloads the same
- * allocations, so ids stay stable.
+ * two {@link MeterIdRegistry} constructions simulates a restart: the second registry reloads the
+ * same allocations, so ids stay stable.
  */
 public final class InMemoryMeterIdStore implements MeterIdStore {
 

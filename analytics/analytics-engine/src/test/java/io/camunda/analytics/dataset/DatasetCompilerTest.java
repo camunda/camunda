@@ -19,14 +19,14 @@ import io.camunda.analytics.fact.FactType;
 import io.camunda.analytics.meter.InMemoryMeterIdStore;
 import io.camunda.analytics.meter.Meter;
 import io.camunda.analytics.meter.MeterCatalog;
-import io.camunda.analytics.meter.MeterRegistry;
+import io.camunda.analytics.meter.MeterIdRegistry;
 import org.junit.jupiter.api.Test;
 
 final class DatasetCompilerTest {
 
   private final DatasetCompiler compiler =
       new DatasetCompiler(
-          MeterCatalog.withDefaults(), new MeterRegistry(new InMemoryMeterIdStore()));
+          MeterCatalog.withDefaults(), new MeterIdRegistry(new InMemoryMeterIdStore()));
 
   private static DatasetDeclaration declaration() {
     return DatasetDeclaration.builder("pi-duration", FactType.PROCESS_INSTANCE)
@@ -99,12 +99,12 @@ final class DatasetCompilerTest {
     // given a registry shared across two compiler instances (a restart)
     final InMemoryMeterIdStore store = new InMemoryMeterIdStore();
     final CompiledDataset first =
-        new DatasetCompiler(MeterCatalog.withDefaults(), new MeterRegistry(store))
+        new DatasetCompiler(MeterCatalog.withDefaults(), new MeterIdRegistry(store))
             .compile(1L, declaration());
 
     // when recompiled against the same id store
     final CompiledDataset second =
-        new DatasetCompiler(MeterCatalog.withDefaults(), new MeterRegistry(store))
+        new DatasetCompiler(MeterCatalog.withDefaults(), new MeterIdRegistry(store))
             .compile(1L, declaration());
 
     // then the aggIds are identical (stable), meter-for-meter
