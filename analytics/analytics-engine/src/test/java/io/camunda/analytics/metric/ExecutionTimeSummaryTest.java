@@ -84,6 +84,52 @@ final class ExecutionTimeSummaryTest {
   }
 
   @Test
+  void shouldMergeIntoTheTargetInPlaceMatchingThePureMerge() {
+    // given two partials, and the pure merge as the reference
+    final ExecutionTimeSummaryAggregateFunction<Long> aggregate =
+        new ExecutionTimeSummaryAggregateFunction<>(Long::longValue, RANKS);
+    final ExecutionTimeSummary target = fold(10L, 20L);
+    final ExecutionTimeSummary delta = fold(30L, 40L, 50L);
+    final ExecutionTimeSummaryResult pure = aggregate.getResult(aggregate.merge(target, delta));
+
+    // when the delta is folded in place
+    final ExecutionTimeSummary merged = aggregate.mergeInto(target, delta);
+
+    // then the target itself carries the combined family, identical to the pure merge
+    assertThat(merged).isSameAs(target);
+    final ExecutionTimeSummaryResult inPlace = aggregate.getResult(merged);
+    assertThat(inPlace.count()).isEqualTo(pure.count());
+    assertThat(inPlace.averageMs()).isEqualTo(pure.averageMs());
+    assertThat(inPlace.minMs()).isEqualTo(pure.minMs());
+    assertThat(inPlace.maxMs()).isEqualTo(pure.maxMs());
+    assertThat(inPlace.quantilesMs()).containsExactly(pure.quantilesMs());
+  }
+
+  @Test
+  void shouldMergeAWrappedDeltaLikeAHeapifiedDelta() {
+    // given a delta serialized through the codec, and two identical targets
+    final ExecutionTimeSummaryAggregateFunction<Long> aggregate =
+        new ExecutionTimeSummaryAggregateFunction<>(Long::longValue, RANKS);
+    final ExecutionTimeSummaryValue codec = new ExecutionTimeSummaryValue();
+    final byte[] deltaBytes = codec.toBytes(fold(30L, 40L, 50L));
+    final ExecutionTimeSummary heapTarget = fold(10L, 20L);
+    final ExecutionTimeSummary wrapTarget = fold(10L, 20L);
+
+    // when one target merges the heap decode and the other the zero-copy merge-only view
+    aggregate.mergeInto(heapTarget, codec.fromBytes(deltaBytes));
+    aggregate.mergeInto(wrapTarget, new ExecutionTimeSummaryValue().fromBytesForMerge(deltaBytes));
+
+    // then both targets agree on the exact stats and the sketch estimates
+    final ExecutionTimeSummaryResult viaHeap = aggregate.getResult(heapTarget);
+    final ExecutionTimeSummaryResult viaWrap = aggregate.getResult(wrapTarget);
+    assertThat(viaWrap.count()).isEqualTo(viaHeap.count());
+    assertThat(viaWrap.averageMs()).isEqualTo(viaHeap.averageMs());
+    assertThat(viaWrap.minMs()).isEqualTo(viaHeap.minMs());
+    assertThat(viaWrap.maxMs()).isEqualTo(viaHeap.maxMs());
+    assertThat(viaWrap.quantilesMs()).containsExactly(viaHeap.quantilesMs());
+  }
+
+  @Test
   void shouldReturnEmptyResultForNoObservations() {
     // given
     final ExecutionTimeSummaryAggregateFunction<Long> aggregate =

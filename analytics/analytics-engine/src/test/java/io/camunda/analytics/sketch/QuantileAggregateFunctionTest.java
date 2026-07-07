@@ -80,6 +80,55 @@ final class QuantileAggregateFunctionTest {
   }
 
   @Test
+  void shouldMergeIntoTheTargetInPlaceMatchingThePureMerge() {
+    // given the low and high halves folded separately, and the pure merge as the reference
+    final KllDoublesSketch target = fold(1, 50);
+    final KllDoublesSketch delta = fold(51, 100);
+    final QuantileResult pure = quantile.getResult(quantile.merge(target, delta));
+
+    // when the delta is folded in place
+    final KllDoublesSketch merged = quantile.mergeInto(target, delta);
+
+    // then the target itself carries the merged distribution, identical to the pure merge
+    assertThat(merged).isSameAs(target);
+    final QuantileResult inPlace = quantile.getResult(merged);
+    assertThat(inPlace.count()).isEqualTo(pure.count());
+    assertThat(inPlace.min()).isEqualTo(pure.min());
+    assertThat(inPlace.max()).isEqualTo(pure.max());
+    assertThat(inPlace.valueAt(0.5)).isEqualTo(pure.valueAt(0.5));
+    assertThat(inPlace.valueAt(0.99)).isEqualTo(pure.valueAt(0.99));
+  }
+
+  @Test
+  void shouldMergeAWrappedDeltaLikeAHeapifiedDelta() {
+    // given a delta serialized through the codec, and two identical targets
+    final byte[] deltaBytes = codec.toBytes(fold(51, 100));
+    final KllDoublesSketch heapTarget = fold(1, 50);
+    final KllDoublesSketch wrapTarget = fold(1, 50);
+
+    // when one target merges the heap decode and the other the zero-copy merge-only view
+    quantile.mergeInto(heapTarget, codec.fromBytes(deltaBytes));
+    quantile.mergeInto(wrapTarget, new KllDoublesSketchValue().fromBytesForMerge(deltaBytes));
+
+    // then both targets agree on every estimate
+    final QuantileResult viaHeap = quantile.getResult(heapTarget);
+    final QuantileResult viaWrap = quantile.getResult(wrapTarget);
+    assertThat(viaWrap.count()).isEqualTo(viaHeap.count());
+    assertThat(viaWrap.min()).isEqualTo(viaHeap.min());
+    assertThat(viaWrap.max()).isEqualTo(viaHeap.max());
+    assertThat(viaWrap.valueAt(0.5)).isEqualTo(viaHeap.valueAt(0.5));
+    assertThat(viaWrap.valueAt(0.99)).isEqualTo(viaHeap.valueAt(0.99));
+  }
+
+  private KllDoublesSketch fold(final int from, final int to) {
+    KllDoublesSketch acc = quantile.createAccumulator();
+    for (int i = from; i <= to; i++) {
+      acc = quantile.add((double) i, acc);
+    }
+    return acc;
+  }
+
+  @Test
   void shouldReportEmptyWhenNoObservations() {
     // when
     final QuantileResult result = quantile.getResult(quantile.createAccumulator());

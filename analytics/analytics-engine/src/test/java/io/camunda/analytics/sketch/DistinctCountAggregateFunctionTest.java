@@ -85,4 +85,44 @@ final class DistinctCountAggregateFunctionTest {
     assertThat(distinct.getResult(restored).estimate())
         .isEqualTo(distinct.getResult(acc).estimate());
   }
+
+  @Test
+  void shouldMergeIntoMatchingThePureMerge() {
+    // given two disjoint partials (HLL cannot fold in place, so mergeInto is the pure union)
+    final HllSketch a = distinctSet("a-", 500);
+    final HllSketch b = distinctSet("b-", 500);
+    final long pure = distinct.getResult(distinct.merge(a, b)).estimate();
+
+    // when
+    final long viaMergeInto = distinct.getResult(distinct.mergeInto(a, b)).estimate();
+
+    // then the estimates are identical (the union is deterministic)
+    assertThat(viaMergeInto).isEqualTo(pure);
+  }
+
+  @Test
+  void shouldMergeAWrappedDeltaLikeAHeapifiedDelta() {
+    // given a delta serialized through the codec and one target
+    final HllSketch target = distinctSet("a-", 500);
+    final byte[] deltaBytes = codec.toBytes(distinctSet("b-", 500));
+
+    // when the target unions the heap decode and the zero-copy merge-only view
+    final long viaHeap =
+        distinct.getResult(distinct.merge(target, codec.fromBytes(deltaBytes))).estimate();
+    final long viaWrap =
+        distinct
+            .getResult(distinct.merge(target, new HllSketchValue().fromBytesForMerge(deltaBytes)))
+            .estimate();
+
+    // then both paths yield the identical estimate
+    assertThat(viaWrap).isEqualTo(viaHeap);
+  }
+
+  private HllSketch distinctSet(final String prefix, final int size) {
+    HllSketch acc = distinct.createAccumulator();
+    for (int i = 0; i < size; i++) {
+      acc = distinct.add(prefix + i, acc);
+    }
+    return acc;
+  }
 }

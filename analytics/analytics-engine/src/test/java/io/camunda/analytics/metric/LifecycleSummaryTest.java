@@ -106,4 +106,54 @@ final class LifecycleSummaryTest {
     assertThat(decoded.duration().sketch().getQuantile(0.5))
         .isEqualTo(acc.duration().sketch().getQuantile(0.5));
   }
+
+  @Test
+  void shouldMergeIntoTheTargetInPlaceMatchingThePureMerge() {
+    // given two partials, and the pure merge as the reference
+    final LifecycleSummary target =
+        fold(List.of(event(Transition.ACTIVATED, null), event(Transition.COMPLETED, 100L)));
+    final LifecycleSummary delta =
+        fold(List.of(event(Transition.COMPLETED, 300L), event(Transition.TERMINATED, 200L)));
+    final LifecycleSummaryResult pure = aggregate.getResult(aggregate.merge(target, delta));
+
+    // when the delta is folded in place
+    final LifecycleSummary merged = aggregate.mergeInto(target, delta);
+
+    // then the target itself carries the combined summary, identical to the pure merge
+    assertThat(merged).isSameAs(target);
+    final LifecycleSummaryResult inPlace = aggregate.getResult(merged);
+    assertThat(inPlace.activated()).isEqualTo(pure.activated());
+    assertThat(inPlace.completed()).isEqualTo(pure.completed());
+    assertThat(inPlace.terminated()).isEqualTo(pure.terminated());
+    assertThat(inPlace.duration().count()).isEqualTo(pure.duration().count());
+    assertThat(inPlace.duration().averageMs()).isEqualTo(pure.duration().averageMs());
+    assertThat(inPlace.duration().quantilesMs()).containsExactly(pure.duration().quantilesMs());
+  }
+
+  @Test
+  void shouldMergeAWrappedDeltaLikeAHeapifiedDelta() {
+    // given a delta serialized through the codec, and two identical targets
+    final LifecycleSummaryValue codec = new LifecycleSummaryValue();
+    final byte[] deltaBytes =
+        codec.toBytes(
+            fold(List.of(event(Transition.COMPLETED, 300L), event(Transition.TERMINATED, 200L))));
+    final LifecycleSummary heapTarget =
+        fold(List.of(event(Transition.ACTIVATED, null), event(Transition.COMPLETED, 100L)));
+    final LifecycleSummary wrapTarget =
+        fold(List.of(event(Transition.ACTIVATED, null), event(Transition.COMPLETED, 100L)));
+
+    // when one target merges the heap decode and the other the zero-copy merge-only view
+    aggregate.mergeInto(heapTarget, codec.fromBytes(deltaBytes));
+    aggregate.mergeInto(wrapTarget, new LifecycleSummaryValue().fromBytesForMerge(deltaBytes));
+
+    // then both targets agree on the counts and the duration family
+    final LifecycleSummaryResult viaHeap = aggregate.getResult(heapTarget);
+    final LifecycleSummaryResult viaWrap = aggregate.getResult(wrapTarget);
+    assertThat(viaWrap.activated()).isEqualTo(viaHeap.activated());
+    assertThat(viaWrap.completed()).isEqualTo(viaHeap.completed());
+    assertThat(viaWrap.terminated()).isEqualTo(viaHeap.terminated());
+    assertThat(viaWrap.duration().count()).isEqualTo(viaHeap.duration().count());
+    assertThat(viaWrap.duration().averageMs()).isEqualTo(viaHeap.duration().averageMs());
+    assertThat(viaWrap.duration().quantilesMs()).containsExactly(viaHeap.duration().quantilesMs());
+  }
 }

@@ -31,6 +31,7 @@ import io.camunda.analytics.serving.spi.DatasetQueryClient;
 import io.camunda.analytics.serving.spi.ReadStrategy;
 import io.camunda.analytics.serving.spi.TableFetch;
 import io.camunda.analytics.serving.spi.TableRow;
+import io.camunda.analytics.sketch.DistinctCountResult;
 import io.camunda.analytics.sketch.QuantileResult;
 import io.camunda.eventbridge.streaming.aggregate.AggregateFunction;
 import java.util.List;
@@ -52,6 +53,7 @@ final class DatasetQueryExecutorTest {
                   .dimension("bpmnProcessId", DimensionType.STRING)
                   .meter(Meter.of("count", MeterCatalog.COUNT))
                   .meter(Meter.of("p95", MeterCatalog.PERCENTILE, "durationMs"))
+                  .meter(Meter.of("uniq", MeterCatalog.DISTINCT, "assignee"))
                   .window(MINUTE)
                   .build());
 
@@ -93,6 +95,44 @@ final class DatasetQueryExecutorTest {
   }
 
   @Test
+  void shouldMergeEachStreamedMeterWithItsOwnCodecAndFunction() {
+    // given the store streams cells carrying two sketch meters (a KLL p95 and an HLL distinct)
+    final FakeClient client = new FakeClient();
+    final DatasetQueryExecutor executor =
+        new DatasetQueryExecutor(new DatasetQueryPlanner(), client);
+
+    // when a report rolls both streamed meters into one 2-minute bucket, grouped by process
+    final ReportResult result =
+        executor.execute(
+            new ReportQuery(
+                List.of("bpmnProcessId"),
+                0L,
+                2 * MINUTE,
+                2 * MINUTE,
+                List.of(),
+                List.of("p95", "uniq")),
+            dataset);
+
+    // then each meter merged through its own per-query context, without cross-contamination
+    assertThat(result.rows())
+        .hasSize(2)
+        .anySatisfy(
+            row -> {
+              assertThat(row.dimensions().get("bpmnProcessId")).isEqualTo("orders");
+              assertThat(((QuantileResult) row.measures().get("p95")).count()).isEqualTo(3L);
+              assertThat(((DistinctCountResult) row.measures().get("uniq")).estimate())
+                  .isEqualTo(2L); // alice + bob, alice deduplicated across the two cells
+            })
+        .anySatisfy(
+            row -> {
+              assertThat(row.dimensions().get("bpmnProcessId")).isEqualTo("ship");
+              assertThat(((QuantileResult) row.measures().get("p95")).count()).isEqualTo(1L);
+              assertThat(((DistinctCountResult) row.measures().get("uniq")).estimate())
+                  .isEqualTo(1L);
+            });
+  }
+
+  @Test
   void shouldChooseDirectWhenGranularityEqualsTierAndGroupByIsFullGrain() {
     // given a per-window read grouped by the whole grain
     final QueryPlan plan =
@@ -119,6 +159,21 @@ final class DatasetQueryExecutorTest {
       accumulator =
           aggregate.add(
               Fact.builder(FactType.PROCESS_INSTANCE).field("durationMs", duration).build(),
+              accumulator);
+    }
+    return bound.accumulatorCodec().toBytes(accumulator);
+  }
+
+  private byte[] uniq(final String... assignees) {
+    final CompiledMeter meter = meter("uniq");
+    @SuppressWarnings("unchecked")
+    final BoundMeter<Object, Object> bound = (BoundMeter<Object, Object>) meter.bound();
+    final AggregateFunction<FactRow, Object, Object> aggregate = bound.aggregate();
+    Object accumulator = aggregate.createAccumulator();
+    for (final String assignee : assignees) {
+      accumulator =
+          aggregate.add(
+              Fact.builder(FactType.PROCESS_INSTANCE).field("assignee", assignee).build(),
               accumulator);
     }
     return bound.accumulatorCodec().toBytes(accumulator);
@@ -156,9 +211,11 @@ final class DatasetQueryExecutorTest {
 
     @Override
     public void streamCells(final DatasetFetch fetch, final Consumer<Cell> sink) {
-      sink.accept(new Cell(key("orders"), 0L, Map.of("p95", p95(100L, 200L))));
-      sink.accept(new Cell(key("orders"), MINUTE, Map.of("p95", p95(300L))));
-      sink.accept(new Cell(key("ship"), 0L, Map.of("p95", p95(400L))));
+      sink.accept(
+          new Cell(
+              key("orders"), 0L, Map.of("p95", p95(100L, 200L), "uniq", uniq("alice", "bob"))));
+      sink.accept(new Cell(key("orders"), MINUTE, Map.of("p95", p95(300L), "uniq", uniq("alice"))));
+      sink.accept(new Cell(key("ship"), 0L, Map.of("p95", p95(400L), "uniq", uniq("carol"))));
     }
 
     @Override

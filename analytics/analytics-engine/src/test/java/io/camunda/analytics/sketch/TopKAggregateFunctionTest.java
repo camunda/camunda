@@ -98,4 +98,24 @@ final class TopKAggregateFunctionTest {
         .extracting(TopKResult.Item::item)
         .startsWith("a", "b", "c");
   }
+
+  @Test
+  void shouldMergeIntoTheTargetInPlaceMatchingThePureMerge() {
+    // given two skewed partials, and the pure merge of equal partials as the reference
+    ItemsSketch<String> target = topK.createAccumulator();
+    target = repeat(topK, target, "a", 1000);
+    target = repeat(topK, target, "c", 100);
+    ItemsSketch<String> delta = topK.createAccumulator();
+    delta = repeat(topK, delta, "b", 500);
+    final TopKResult pure = topK.getResult(topK.merge(target, delta));
+
+    // when the delta is folded in place
+    final ItemsSketch<String> merged = topK.mergeInto(target, delta);
+
+    // then the target itself carries the merged ranking, identical to the pure merge
+    assertThat(merged).isSameAs(target);
+    assertThat(topK.getResult(merged).items())
+        .usingRecursiveFieldByFieldElementComparator()
+        .containsExactlyElementsOf(pure.items());
+  }
 }
