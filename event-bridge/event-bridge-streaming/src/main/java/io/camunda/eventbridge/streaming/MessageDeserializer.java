@@ -11,6 +11,9 @@ package io.camunda.eventbridge.streaming;
  * Decodes a raw EventBridge payload into the record type a {@link Task} consumes. The source
  * partition and offset are provided for decoders that need to embed the source coordinate.
  *
+ * <p>To skip records a consumer does not need, use a {@link RecordFilter} rather than this decoder
+ * — the runtime applies the filter first, so filtered records are never decoded here.
+ *
  * @param <R> the decoded record type
  */
 @FunctionalInterface

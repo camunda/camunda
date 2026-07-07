@@ -77,6 +77,7 @@ public final class StreamRuntime<R> implements AutoCloseable {
   private final String instanceId;
   private final String sourceTopic;
   private final MessageDeserializer<R> deserializer;
+  private final RecordFilter recordFilter;
   private final IntFunction<Task<R>> taskFactory;
   private final TransactionRunner transactionRunner;
   private final OffsetStore offsets;
@@ -105,6 +106,7 @@ public final class StreamRuntime<R> implements AutoCloseable {
     instanceId = builder.instanceId;
     sourceTopic = builder.sourceTopic;
     deserializer = builder.deserializer;
+    recordFilter = builder.recordFilter;
     taskFactory = builder.taskFactory;
     transactionRunner = builder.transactionRunner;
     offsets = builder.offsets;
@@ -228,6 +230,7 @@ public final class StreamRuntime<R> implements AutoCloseable {
             sourceTopic,
             instanceId,
             deserializer,
+            recordFilter,
             taskFactory,
             partitionActorFactory,
             restoredBaselines,
@@ -338,6 +341,7 @@ public final class StreamRuntime<R> implements AutoCloseable {
     private String instanceId;
     private String sourceTopic;
     private MessageDeserializer<R> deserializer;
+    private RecordFilter recordFilter = RecordFilter.ACCEPT_ALL;
     private IntFunction<Task<R>> taskFactory;
     // Runtime-managed durability. Optional: a task that owns its durability (ownsDurability()) uses
     // its own transaction and offset store instead, so these stay at their no-op defaults.
@@ -392,6 +396,15 @@ public final class StreamRuntime<R> implements AutoCloseable {
 
     public Builder<R> deserializer(final MessageDeserializer<R> deserializer) {
       this.deserializer = deserializer;
+      return this;
+    }
+
+    /**
+     * An optional pre-deserialize filter: records it rejects are skipped without decoding or
+     * enqueuing. Defaults to {@link RecordFilter#ACCEPT_ALL}.
+     */
+    public Builder<R> recordFilter(final RecordFilter recordFilter) {
+      this.recordFilter = recordFilter;
       return this;
     }
 

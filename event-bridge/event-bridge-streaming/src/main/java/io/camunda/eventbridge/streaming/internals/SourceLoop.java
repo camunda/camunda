@@ -12,6 +12,7 @@ import io.camunda.eventbridge.client.Event;
 import io.camunda.eventbridge.client.RebalanceListener;
 import io.camunda.eventbridge.client.TopicPartition;
 import io.camunda.eventbridge.streaming.MessageDeserializer;
+import io.camunda.eventbridge.streaming.RecordFilter;
 import io.camunda.eventbridge.streaming.Task;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -55,6 +56,7 @@ public final class SourceLoop<R> {
   private final String sourceTopic;
   private final String instanceId;
   private final MessageDeserializer<R> deserializer;
+  private final RecordFilter recordFilter;
   private final IntFunction<Task<R>> taskFactory;
   private final Function<Partition<R>, PartitionActor<R>> partitionActorFactory;
   private final Map<Integer, Long> restoredBaselines;
@@ -75,6 +77,7 @@ public final class SourceLoop<R> {
       final String sourceTopic,
       final String instanceId,
       final MessageDeserializer<R> deserializer,
+      final RecordFilter recordFilter,
       final IntFunction<Task<R>> taskFactory,
       final Function<Partition<R>, PartitionActor<R>> partitionActorFactory,
       final Map<Integer, Long> restoredBaselines,
@@ -87,6 +90,7 @@ public final class SourceLoop<R> {
     this.sourceTopic = sourceTopic;
     this.instanceId = instanceId;
     this.deserializer = deserializer;
+    this.recordFilter = recordFilter;
     this.taskFactory = taskFactory;
     this.partitionActorFactory = partitionActorFactory;
     this.restoredBaselines = restoredBaselines;
@@ -186,6 +190,9 @@ public final class SourceLoop<R> {
       final long offset = event.position();
       if (offset <= actor.baseline()) {
         continue; // already folded into durable state — skip before the decode cost
+      }
+      if (!recordFilter.accept(event.payload())) {
+        continue; // filtered: the processor does not fold this record — skip decode and enqueue
       }
       actor.offer(toEntry(event, offset)); // blocks when full — back-pressure
       touched.add(actor);

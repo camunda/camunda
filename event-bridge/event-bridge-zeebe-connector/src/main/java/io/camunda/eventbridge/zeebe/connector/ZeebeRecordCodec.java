@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.nio.ByteOrder;
+import java.util.function.BiPredicate;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -102,6 +103,22 @@ public final class ZeebeRecordCodec {
     value.wrap(buffer, offset, payload.length - offset);
 
     return new CopiedRecord<>(value, metadata, key, partitionId, position, -1L, timestamp);
+  }
+
+  /**
+   * Reads only the record's {@link ValueType} and {@link Intent} from the payload's metadata,
+   * skipping the (MsgPack) value decode — cheap enough to filter records before a full {@link
+   * #deserialize}. Returns whether {@code filter} accepts the pair; a consumer that folds only a
+   * subset of record types can skip the far costlier value decode for the rest.
+   */
+  public boolean accepts(final byte[] payload, final BiPredicate<ValueType, Intent> filter) {
+    final DirectBuffer buffer = new UnsafeBuffer(payload);
+    int offset = TIMESTAMP_FIELD + KEY_FIELD; // skip the timestamp and key
+    final int metadataLength = buffer.getInt(offset, ORDER);
+    offset += METADATA_LENGTH_FIELD;
+    final RecordMetadata metadata = new RecordMetadata();
+    metadata.wrap(buffer, offset, metadataLength);
+    return filter.test(metadata.getValueType(), metadata.getIntent());
   }
 
   private static RecordMetadata toMetadata(final Record<?> record) {
