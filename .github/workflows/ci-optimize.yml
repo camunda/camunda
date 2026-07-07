@@ -257,7 +257,7 @@ jobs:
       LIMITS_CPU: 4
       TEST_TYPE: Unit
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@2fee788847f2b0eedcdd8b324e48ae1fad52fe4f # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
       - name: Checkout repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Print metadata
@@ -312,7 +312,7 @@ jobs:
             "optimize.Dockerfile",
           ]
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@2fee788847f2b0eedcdd8b324e48ae1fad52fe4f # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Print metadata
         uses: ./.github/actions/print-metadata
@@ -340,7 +340,7 @@ jobs:
       TEST_TYPE: E2E
 
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@2fee788847f2b0eedcdd8b324e48ae1fad52fe4f # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
       - name: Checkout code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
@@ -500,7 +500,7 @@ jobs:
     env:
       TEST_TYPE: E2E
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@2fee788847f2b0eedcdd8b324e48ae1fad52fe4f # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
       - name: Checkout code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Print metadata
