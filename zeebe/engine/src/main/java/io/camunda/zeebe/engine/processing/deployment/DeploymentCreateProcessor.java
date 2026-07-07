@@ -268,7 +268,10 @@ public final class DeploymentCreateProcessor
                     deploymentTransformer.getChecksum(resource.getResource());
                 if (resourceChecksum.equals(metadata.getChecksumBuffer())) {
                   final var processRecord =
-                      new ProcessRecord().wrap(metadata, resource.getResource());
+                      new ProcessRecord()
+                          .wrap(metadata, resource.getResource())
+                          .setTransformerVersions(
+                              deploymentTransformer.getTransformerVersionsById());
                   stateWriter.appendFollowUpEvent(
                       metadata.getKey(), ProcessIntent.CREATED, processRecord);
                   processDefinitionMetrics.processDefinitionDeployed(
