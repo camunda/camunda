@@ -100,7 +100,6 @@ public final class SystemContextTestFactory {
     return new SystemContext(
         shutdownTimeout,
         brokerCfg,
-        identityConfiguration,
         scheduler,
         cluster,
         brokerClient,

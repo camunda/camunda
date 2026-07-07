@@ -111,7 +111,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.brokerClient = brokerClient;
     this.shutdownHelper = shutdownHelper;
     this.meterRegistry = meterRegistry;
-    this.physicalTenantEngineContexts =
+    physicalTenantEngineContexts =
         physicalTenantResolver.mapValues(this::buildPhysicalTenantEngineContext);
     this.serviceRegistry = serviceRegistry;
     this.passwordEncoder = passwordEncoder;
@@ -146,7 +146,6 @@ public class BrokerModuleConfiguration implements CloseableSilently {
         new SystemContext(
             configuration.shutdownTimeout(),
             configuration.config(),
-            identityConfiguration,
             actorScheduler,
             cluster,
             brokerClient,
