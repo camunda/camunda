@@ -116,8 +116,16 @@ export async function walkLatestVersionCursor(
 ): Promise<unknown[]> {
   const allItems: unknown[] = [];
   let afterCursor: string | null = null;
+  const seenCursors = new Set<string>();
+  const maxPages = 200;
+  let pageCount = 0;
 
   for (;;) {
+    if (pageCount++ >= maxPages) {
+      throw new Error(
+        `walkLatestVersionCursor exceeded maxPages=${maxPages} for ${endpoint} (limit=${limit}).`,
+      );
+    }
     const pageParams: Record<string, unknown> = {limit};
     if (afterCursor !== null) {
       pageParams.after = afterCursor;
@@ -136,10 +144,18 @@ export async function walkLatestVersionCursor(
     if (items.length < limit) {
       break;
     }
-    afterCursor = body.page?.endCursor ?? null;
-    if (afterCursor === null) {
+
+    const nextCursor = body.page?.endCursor ?? null;
+    if (nextCursor === null) {
       break;
     }
+    if (seenCursors.has(nextCursor)) {
+      throw new Error(
+        `walkLatestVersionCursor detected repeated endCursor='${nextCursor}' for ${endpoint}.`,
+      );
+    }
+    seenCursors.add(nextCursor);
+    afterCursor = nextCursor;
   }
 
   return allItems;
