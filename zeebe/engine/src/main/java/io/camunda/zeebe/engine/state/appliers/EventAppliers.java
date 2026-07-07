@@ -243,6 +243,7 @@ public final class EventAppliers implements EventApplier {
   private void registerProcessAppliers(final MutableProcessingState state) {
     register(ProcessIntent.CREATED, 1, new ProcessCreatedV1Applier(state));
     register(ProcessIntent.CREATED, 2, new ProcessCreatedV2Applier(state));
+    register(ProcessIntent.CREATED, 3, new ProcessCreatedV3Applier(state));
     register(ProcessIntent.DELETING, new ProcessDeletingApplier(state));
     register(ProcessIntent.DELETED, new ProcessDeletedApplier(state));
   }

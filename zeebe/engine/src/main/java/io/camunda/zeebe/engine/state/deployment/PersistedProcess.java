@@ -10,16 +10,21 @@ package io.camunda.zeebe.engine.state.deployment;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformerSlot;
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord.TransformerVersion;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.ProjectionOf;
 import io.camunda.zeebe.util.collection.Tuple;
+import java.util.EnumMap;
+import java.util.Map;
 import org.agrona.DirectBuffer;
 
 public final class PersistedProcess extends UnpackedObject
@@ -37,9 +42,11 @@ public final class PersistedProcess extends UnpackedObject
   private final LongProperty deploymentKeyProp =
       new LongProperty("deploymentKey", NO_DEPLOYMENT_KEY);
   private final StringProperty versionTagProp = new StringProperty("versionTag", "");
+  private final ArrayProperty<TransformerVersion> transformerVersionsProp =
+      new ArrayProperty<>("transformerVersions", TransformerVersion::new);
 
   public PersistedProcess() {
-    super(9);
+    super(10);
     declareProperty(versionProp)
         .declareProperty(keyProp)
         .declareProperty(bpmnProcessIdProp)
@@ -48,7 +55,8 @@ public final class PersistedProcess extends UnpackedObject
         .declareProperty(stateProp)
         .declareProperty(tenantIdProp)
         .declareProperty(deploymentKeyProp)
-        .declareProperty(versionTagProp);
+        .declareProperty(versionTagProp)
+        .declareProperty(transformerVersionsProp);
   }
 
   @Override
@@ -67,6 +75,29 @@ public final class PersistedProcess extends UnpackedObject
     tenantIdProp.setValue(processRecord.getTenantId());
     deploymentKeyProp.setValue(processRecord.getDeploymentKey());
     versionTagProp.setValue(processRecord.getVersionTag());
+
+    transformerVersionsProp.reset();
+    processRecord
+        .getTransformerVersions()
+        .forEach(
+            (slotId, version) -> {
+              final var entry = transformerVersionsProp.add();
+              entry.setSlotId(slotId);
+              entry.setVersion(version);
+            });
+  }
+
+  /**
+   * Returns the per-slot transformer versions frozen at deploy time. Only slots with versions
+   * greater than the default (1) are stored; absent slots resolve to version 1.
+   */
+  public Map<TransformerSlot, Integer> getTransformerVersions() {
+    final Map<TransformerSlot, Integer> result = new EnumMap<>(TransformerSlot.class);
+    for (final TransformerVersion entry : transformerVersionsProp) {
+      final TransformerSlot slot = TransformerSlot.fromId(entry.getSlotId());
+      result.put(slot, entry.getVersion());
+    }
+    return result;
   }
 
   public int getVersion() {
