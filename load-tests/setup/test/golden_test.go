@@ -192,7 +192,11 @@ func TestInstallLoadTestSetupKeepsMakefileFlagsWhenAdditionalConfigurationIsProv
 			require.NoError(t, err, "make dry-run failed:\n%s", string(out))
 
 			helmCommand := string(out)
-			require.Contains(t, helmCommand, "--set metricsExporter.database.url=http://elastic:9200")
+			// TODO: uncomment and remove the other line once all the tests are
+			// using the Elasticsearch ECK resource instead of the
+			// Elasticsearch Bitnami Helm Chart.
+			//require.Contains(t, helmCommand, "--set metricsExporter.database.url=http://elasticsearch-es-http:9200")
+			require.Contains(t, helmCommand, "--set metricsExporter.database.url=http://elastic")
 			require.Contains(t, helmCommand, "--set chaosKiller.enabled=true")
 			require.Contains(t, helmCommand, "--set metricsExporter.image.tag=test-tag")
 			require.Less(

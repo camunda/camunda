@@ -196,6 +196,12 @@ global:
     camunda.io/created-by: "$git_author"
   nodeSelector:
     topology.kubernetes.io/zone: $availability_zone
+
+metricsExporter:
+  database:
+    # TODO: remove and use the default once this setup uses the Elasticsearch
+    # ECK resource instead of the Elasticsearch Bitnami Helm Chart.
+    url: http://elastic:9200
 EOF
 
 # Add/update helm repositories

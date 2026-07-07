@@ -199,6 +199,12 @@ global:
     topology.kubernetes.io/zone: $availability_zone
 camundaManagementUrl: "http://zeebe-gateway:9600"
 
+metricsExporter:
+  database:
+    # TODO: remove and use the default once this setup uses the Elasticsearch
+    # ECK resource instead of the Elasticsearch Bitnami Helm Chart.
+    url: http://elastic:9200
+
 loadTest:
   client:
     oidc:

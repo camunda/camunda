@@ -75,7 +75,7 @@ When following the instructions above, execute all commands that deal with Docke
 By default, a load test deploys the full Camunda Platform, including:
 
 * **Orchestration cluster** (Gateway, Webapps incl. Identity, Operate, Tasklist and Zeebe brokers as Camunda application)
-* **Elasticsearch** as secondary storage
+* **Elasticsearch** as secondary storage, deployed as an ECK-managed cluster via the `load-test-setup` chart
 * **Optimize** with history cleanup (1-day TTL)
 * **Connectors** with OIDC authentication
 * **Identity + Keycloak** for OIDC-based authentication
@@ -153,6 +153,7 @@ The load-test-setup chart owns all the resources deployed for a single load test
 * the `camunda-credentials` secret
 * the leader-balancer cronjob
 * the chaos-killer cronjob (optional, disabled by default)
+* the Elasticsearch ECK custom resource (optional, disabled by default but auto-enabled when using the `elasticsearch` secondary storage, or by Optimize, when the secondary storage is not directly usable by Optimize)
 
 It is parameterized by a values file baked at scaffold time:
 
@@ -178,6 +179,33 @@ You can specify a secondary storage type as the second argument:
 ```
 
 The `none` option runs load tests without any secondary storage, which disables Camunda exporters. This is useful for testing the core orchestration engine performance in isolation.
+
+#### ECK Elasticsearch
+
+When configured with `elasticsearch.enabled=true`, the `load-test-setup` chart to deploy an ECK-managed `Elasticsearch` custom resource instead of the Bitnami Helm chart.
+
+The ECK operator creates a Kubernetes service named `elasticsearch-es-http` for HTTP access to the cluster. All components that connect to Elasticsearch (Camunda, Optimize, the metrics exporter) must use this service name.
+
+The default ECK Elasticsearch configuration (defined in `charts/load-test-setup/values.yaml`) is:
+
+|     Setting      |               Default                |
+|------------------|--------------------------------------|
+| Version          | 8.18.0                               |
+| Node count       | 3                                    |
+| CPU per node     | 7 cores                              |
+| Memory per node  | 8 Gi                                 |
+| JVM heap         | 3 Gi                                 |
+| Storage per node | 512 Gi (`benchmark-ssd-zonal-v1`)    |
+| TLS              | Disabled (HTTP API)                  |
+| Authentication   | Anonymous superuser (load-test only) |
+
+To override defaults (e.g. a different version or node count), pass them via `additional_load_test_setup_configuration`:
+
+```sh
+make install additional_load_test_setup_configuration="--set elasticsearch.version=8.17.0 --set elasticsearch.count=1"
+```
+
+You can also adjust locally the `load-test-values.yaml` file.
 
 #### Disabling Optimize
 
