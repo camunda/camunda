@@ -21,16 +21,20 @@ const Header = styled.header<HeaderProps>`
 			display: flex;
 			align-items: center;
 
-			${$size === 'md' &&
-			css`
-				min-height: var(--cds-spacing-09);
-				height: var(--cds-spacing-09);
-			`}
-			${$size === 'sm' &&
-			css`
-				min-height: var(--cds-spacing-08);
-				height: var(--cds-spacing-08);
-			`}
+			${
+				$size === 'md' &&
+				css`
+					min-height: var(--cds-spacing-09);
+					height: var(--cds-spacing-09);
+				`
+			}
+			${
+				$size === 'sm' &&
+				css`
+					min-height: var(--cds-spacing-08);
+					height: var(--cds-spacing-08);
+				`
+			}
 		`;
 	}}
 `;
