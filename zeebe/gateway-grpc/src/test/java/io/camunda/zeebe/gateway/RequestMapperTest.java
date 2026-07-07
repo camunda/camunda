@@ -203,6 +203,41 @@ public class RequestMapperTest {
     }
 
     @Test
+    public void shouldMapActivateJobsRequestWithLease() {
+      // given
+      final var grpcRequest =
+          ActivateJobsRequest.newBuilder()
+              .setType("test-job")
+              .setMaxJobsToActivate(10)
+              .addTenantIds("tenant-a")
+              .setWithLease(true)
+              .build();
+
+      // when
+      final var brokerRequest = RequestMapper.toActivateJobsRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().isWithLease()).isTrue();
+    }
+
+    @Test
+    public void shouldNotSetWithLeaseByDefault() {
+      // given
+      final var grpcRequest =
+          ActivateJobsRequest.newBuilder()
+              .setType("test-job")
+              .setMaxJobsToActivate(10)
+              .addTenantIds("tenant-a")
+              .build();
+
+      // when
+      final var brokerRequest = RequestMapper.toActivateJobsRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().isWithLease()).isFalse();
+    }
+
+    @Test
     public void shouldMapActivateJobsRequestWithAssignedTenantFilter() {
       // given
       final var grpcRequest =
