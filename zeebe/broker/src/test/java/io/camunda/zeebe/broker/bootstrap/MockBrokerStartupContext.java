@@ -73,7 +73,7 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   private ManagedMessagingService apiMessagingService = mock(ManagedMessagingService.class);
   private EmbeddedGatewayService embeddedGatewayService;
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor = mock(DiskSpaceUsageMonitor.class);
-  private ExporterRepository exporterRepository = mock(ExporterRepository.class);
+  private final ExporterRepository exporterRepository = mock(ExporterRepository.class);
   private final Map<String, PartitionManager> partitionManagers = new LinkedHashMap<>();
   private RocksDbResources sharedRocksDbResources;
   private BrokerAdminServiceImpl brokerAdminService = mock(BrokerAdminServiceImpl.class);
@@ -255,15 +255,6 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   }
 
   @Override
-  public ExporterRepository getExporterRepository() {
-    return exporterRepository;
-  }
-
-  public void setExporterRepository(final ExporterRepository exporterRepository) {
-    this.exporterRepository = exporterRepository;
-  }
-
-  @Override
   public Map<String, PartitionManager> getPartitionManagers() {
     return Collections.unmodifiableMap(partitionManagers);
   }
@@ -363,7 +354,11 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
         physicalTenantId,
         id ->
             new PhysicalTenantContext(
-                securityConfiguration, brokerRequestAuthorizationConverter, featureFlags));
+                securityConfiguration,
+                brokerRequestAuthorizationConverter,
+                featureFlags,
+                brokerConfiguration,
+                exporterRepository));
   }
 
   @Override

@@ -9,9 +9,11 @@ package io.camunda.zeebe.broker;
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
+import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.Processing;
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.api.context.OidcClaimsProvider;
@@ -24,19 +26,20 @@ import io.camunda.service.UserServices;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
+import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.PhysicalTenantContext;
 import io.camunda.zeebe.broker.system.SystemContext;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.CloseableSilently;
-import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.jar.ExternalJarLoadException;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,7 +74,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private final BrokerClient brokerClient;
   private final BrokerShutdownHelper shutdownHelper;
   private final MeterRegistry meterRegistry;
-  private final Map<String, PhysicalTenantContext> physicalTenantEngineContexts;
+  private final UnifiedConfiguration unifiedConfiguration;
+  private final PhysicalTenantResolver physicalTenantResolver;
   private final ServiceRegistry serviceRegistry;
   private final PasswordEncoder passwordEncoder;
   private final ScopedJwtDecoderFactory scopedJwtDecoderFactory;
@@ -79,6 +83,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private final SearchClientsProxy searchClientsProxy;
   private final NodeIdProvider nodeIdProvider;
   private final PhysicalTenantIds physicalTenantIds;
+  private final WorkingDirectory workingDirectory;
 
   private Broker broker;
 
@@ -91,6 +96,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       final BrokerClient brokerClient,
       final BrokerShutdownHelper shutdownHelper,
       final MeterRegistry meterRegistry,
+      final UnifiedConfiguration unifiedConfiguration,
       final PhysicalTenantResolver physicalTenantResolver,
       // The ServiceRegistry is not available if you want to start-up the Standalone Broker
       @Autowired(required = false) final ServiceRegistry serviceRegistry,
@@ -100,7 +106,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
           final ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory,
       @Autowired(required = false) final SearchClientsProxy searchClientsProxy,
       final NodeIdProvider nodeIdProvider,
-      final PhysicalTenantIds physicalTenantIds) {
+      final PhysicalTenantIds physicalTenantIds,
+      final WorkingDirectory workingDirectory) {
     this.configuration = configuration;
     this.springBrokerBridge = springBrokerBridge;
     this.actorScheduler = actorScheduler;
@@ -108,8 +115,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.brokerClient = brokerClient;
     this.shutdownHelper = shutdownHelper;
     this.meterRegistry = meterRegistry;
-    physicalTenantEngineContexts =
-        physicalTenantResolver.mapValues(this::buildPhysicalTenantEngineContext);
+    this.unifiedConfiguration = unifiedConfiguration;
+    this.physicalTenantResolver = physicalTenantResolver;
     this.serviceRegistry = serviceRegistry;
     this.passwordEncoder = passwordEncoder;
     this.scopedJwtDecoderFactory = scopedJwtDecoderFactory;
@@ -117,11 +124,11 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.searchClientsProxy = searchClientsProxy;
     this.nodeIdProvider = nodeIdProvider;
     this.physicalTenantIds = physicalTenantIds;
+    this.workingDirectory = workingDirectory;
   }
 
-  @Bean
-  public ExporterRepository exporterRepository(
-      @Autowired(required = false) final List<ExporterDescriptor> exporterDescriptors) {
+  private ExporterRepository exporterRepository(
+      final List<ExporterDescriptor> exporterDescriptors) {
     if (exporterDescriptors != null && !exporterDescriptors.isEmpty()) {
       LOGGER.info("Create ExporterRepository with predefined exporter descriptors.");
       return new ExporterRepository(exporterDescriptors);
@@ -131,13 +138,18 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   }
 
   @Bean(destroyMethod = "close")
-  public Broker broker(final ExporterRepository exporterRepository) {
+  public Broker broker(
+      @Autowired(required = false) final List<ExporterDescriptor> exporterDescriptors) {
     final Function<String, UserServices> userServicesForTenant =
-        tenantId -> serviceRegistry.userServices(tenantId);
+        physicalTenantId -> serviceRegistry.userServices(physicalTenantId);
     final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory =
-        authConfig -> scopedJwtDecoderFactory.buildIssuerAwareDecoder(authConfig);
+        authentication -> scopedJwtDecoderFactory.buildIssuerAwareDecoder(authentication);
     final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory =
-        authConfig -> scopedOidcClaimsProviderFactory.buildClaimsProvider(authConfig);
+        authentication -> scopedOidcClaimsProviderFactory.buildClaimsProvider(authentication);
+
+    final var physicalTenantEngineContexts =
+        physicalTenantResolver.mapValues(
+            camunda -> buildPhysicalTenantEngineContext(camunda, exporterDescriptors));
 
     final SystemContext systemContext =
         new SystemContext(
@@ -155,10 +167,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             searchClientsProxy,
             nodeIdProvider,
             physicalTenantIds);
-    springBrokerBridge.registerShutdownHelper(
-        (errorCode, reason) -> shutdownHelper.initiateShutdown(errorCode, reason));
-    broker =
-        new Broker(systemContext, springBrokerBridge, Collections.emptyList(), exporterRepository);
+    springBrokerBridge.registerShutdownHelper(shutdownHelper::initiateShutdown);
+    broker = new Broker(systemContext, springBrokerBridge, Collections.emptyList());
 
     // already initiate starting the broker
     // to ensure that the necessary ports
@@ -183,7 +193,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     }
   }
 
-  private PhysicalTenantContext buildPhysicalTenantEngineContext(final Camunda camunda) {
+  private PhysicalTenantContext buildPhysicalTenantEngineContext(
+      final Camunda camunda, final List<ExporterDescriptor> exporterDescriptors) {
     final var s = camunda.getSecurity();
     final var securityConfig =
         new EngineSecurityConfig(
@@ -194,19 +205,49 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             s.getCompiledIdValidationPattern(),
             s.getCompiledGroupIdValidationPattern());
     final var authorizationConverter = new BrokerRequestAuthorizationConverter(securityConfig);
-    final var featureFlags = buildFeatureFlags(camunda.getProcessing());
-    return new PhysicalTenantContext(securityConfig, authorizationConverter, featureFlags);
+
+    final BrokerCfg brokerConfig;
+    if (camunda == unifiedConfiguration.getCamunda()) {
+      // this is for default tenant, with no override
+      // This special handling is required so that legacy properties defined via `zeebe.broker.*`
+      // are still applied to the default tenant.
+      brokerConfig = configuration.config();
+    } else {
+      brokerConfig = BrokerBasedPropertiesOverride.convert(camunda);
+
+      // repeat the initialization done for the root broker config.
+      final var cluster = brokerConfig.getCluster();
+      final var currentInstance = nodeIdProvider.currentNodeInstance();
+      cluster.setNodeId(currentInstance.id());
+      cluster.setNodeVersion(currentInstance.version().version());
+      brokerConfig.init(workingDirectory.path().toAbsolutePath().toString());
+    }
+
+    final var featureFlags = brokerConfig.getExperimental().getFeatures().toFeatureFlags();
+
+    final var preDefinedExporters = exporterRepository(exporterDescriptors);
+    final var exporterRepository = buildExporterRepository(preDefinedExporters, brokerConfig);
+
+    return new PhysicalTenantContext(
+        securityConfig, authorizationConverter, featureFlags, brokerConfig, exporterRepository);
   }
 
-  private FeatureFlags buildFeatureFlags(final Processing p) {
-    final var flags = configuration.config().getExperimental().getFeatures().toFeatureFlags();
-    flags.setYieldingDueDateChecker(p.isEnableYieldingDueDateChecker());
-    flags.setEnableMessageTTLCheckerAsync(p.isEnableAsyncMessageTtlChecker());
-    flags.setEnableTimerDueDateCheckerAsync(p.isEnableAsyncTimerDuedateChecker());
-    flags.setEnableStraightThroughProcessingLoopDetector(
-        p.isEnableStraightthroughProcessingLoopDetector());
-    flags.setEnableMessageBodyOnExpired(p.isEnableMessageBodyOnExpired());
-    return flags;
+  private ExporterRepository buildExporterRepository(
+      final ExporterRepository exporterRepository, final BrokerCfg cfg) {
+    exporterRepository.setLicenseKey(cfg.getLicenseKey());
+    final var exporterEntries = cfg.getExporters().entrySet();
+    for (final var exporterEntry : exporterEntries) {
+      final var id = exporterEntry.getKey();
+      final var exporterCfg = exporterEntry.getValue();
+      try {
+        exporterRepository.load(id, exporterCfg);
+      } catch (final ExporterLoadException | ExternalJarLoadException e) {
+        throw new IllegalStateException(
+            "Failed to load exporter with configuration: " + exporterCfg, e);
+      }
+    }
+
+    return exporterRepository;
   }
 
   private void cleanupWorkingDirectory() {

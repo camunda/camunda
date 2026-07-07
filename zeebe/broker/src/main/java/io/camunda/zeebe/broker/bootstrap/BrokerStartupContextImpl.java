@@ -21,7 +21,6 @@ import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
-import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
@@ -60,7 +59,6 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final SpringBrokerBridge springBrokerBridge;
   private final ActorSchedulingService actorScheduler;
   private final BrokerHealthCheckService healthCheckService;
-  private final ExporterRepository exporterRepository;
   private final ClusterServicesImpl clusterServices;
   private final BrokerClient brokerClient;
   private final List<PartitionListener> partitionListeners = new ArrayList<>();
@@ -97,7 +95,6 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final SpringBrokerBridge springBrokerBridge,
       final ActorSchedulingService actorScheduler,
       final BrokerHealthCheckService healthCheckService,
-      final ExporterRepository exporterRepository,
       final ClusterServicesImpl clusterServices,
       final BrokerClient brokerClient,
       final List<PartitionListener> additionalPartitionListeners,
@@ -117,7 +114,6 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.springBrokerBridge = requireNonNull(springBrokerBridge);
     this.actorScheduler = requireNonNull(actorScheduler);
     this.healthCheckService = requireNonNull(healthCheckService);
-    this.exporterRepository = requireNonNull(exporterRepository);
     this.clusterServices = requireNonNull(clusterServices);
     this.brokerClient = brokerClient;
     this.shutdownTimeout = shutdownTimeout;
@@ -260,11 +256,6 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public void setDiskSpaceUsageMonitor(final DiskSpaceUsageMonitor diskSpaceUsageMonitor) {
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
-  }
-
-  @Override
-  public ExporterRepository getExporterRepository() {
-    return exporterRepository;
   }
 
   @Override
