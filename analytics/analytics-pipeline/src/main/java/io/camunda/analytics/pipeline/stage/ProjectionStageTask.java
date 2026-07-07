@@ -43,6 +43,7 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -68,8 +69,10 @@ import org.slf4j.LoggerFactory;
  * DatasetCatalog}, not a frozen list. At each {@link #commit(long)} — after the durable cut, at
  * most once per reload-check interval — the task checks the catalog version; when it moved it
  * rebuilds its topology from the catalog's current cubes/tables <em>over the same open RocksDB</em>
- * (existing cubes' nodes recover their just-checkpointed state; a new cube's {@code aggId}-prefixed
- * families start empty). No ingestion pause, no re-seek, no RocksDB reopen.
+ * — incrementally: surviving cubes keep their nodes and sealing aggregations (with their in-heap
+ * open segments — no re-recover), only a newly-declared cube's meters are constructed (starting
+ * empty) and only its serving DDL is ensured, and a removed cube's wiring is dropped. No ingestion
+ * pause, no re-seek, no RocksDB reopen.
  */
 public final class ProjectionStageTask implements Task<SourceRecord>, AutoCloseable {
 
@@ -114,6 +117,17 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
   private EnvelopePublisher publisher;
   private long appliedVersion;
   private long lastReloadCheckMs;
+
+  // Incremental-reload state (ADR 0005). A reload rebuilds only what changed: a surviving meter
+  // keeps its node + sealing aggregation (and the aggregation's in-heap open segment — no
+  // re-recover prefix scan), only an added cube's meters are constructed and only its serving DDL
+  // is ensured; a removed cube's wiring is dropped so a re-added id reconstructs and recovers from
+  // its durable open segment alone. Tables hold no state and are rebuilt, but their DDL is scoped
+  // the same way.
+  private final Map<Integer, MeterWiring> wiringByAggId = new HashMap<>();
+  private Set<Long> appliedCubeIds = Set.of();
+  private Set<Long> appliedTableIds = Set.of();
+  private boolean definitionsTableEnsured;
 
   ProjectionStageTask(
       final int partition,
@@ -243,20 +257,35 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
             .processor("dispatch", dispatcher, "projection");
     final List<String> meterNodes = new ArrayList<>();
     final List<SegmentSealingAggregation<Fact, ?, ?>> aggregations = new ArrayList<>();
+    final Set<Long> cubeIds = new HashSet<>();
+    final Set<Integer> activeAggIds = new HashSet<>();
     for (final ActiveCube cube : cubes) {
-      datasetStore.schemaManager().ensure(cube.compiled());
+      cubeIds.add(cube.registered().cubeId());
+      if (!appliedCubeIds.contains(cube.registered().cubeId())) {
+        // Serving DDL only for a newly-added dataset — not for every dataset on every reload.
+        datasetStore.schemaManager().ensure(cube.compiled());
+      }
       // Aggregate + shuffle only the finest tier of each meter; Stage 2 rolls it up into the
       // coarser tiers (a coarser cell is the exact merge of its finer cells, for mergeable
       // aggregates). This keeps Stage 1's work and the shuffle to one stream per meter.
       for (final CompiledMeter meter : finestTierPerMeter(cube.compiled().meters())) {
         final String node = "meter-" + meter.aggId();
-        final CubeMeterProcessor processor =
-            meterProcessor(cube, meter, segmentStride, openSegments, provider, aggregations);
-        builder.processor(node, processor, "dispatch");
-        dispatcher.route(node, processor.factType());
+        // Reuse a surviving meter's wiring (its aggregation keeps the just-checkpointed open
+        // segment on the heap — no re-recover prefix scan); construct only a newly-added one's.
+        final MeterWiring wiring =
+            wiringByAggId.computeIfAbsent(
+                meter.aggId(),
+                aggId -> meterWiring(cube, meter, segmentStride, openSegments, provider));
+        activeAggIds.add(meter.aggId());
+        aggregations.add(wiring.aggregation());
+        builder.processor(node, wiring.processor(), "dispatch");
+        dispatcher.route(node, wiring.processor().factType());
         meterNodes.add(node);
       }
     }
+    // Drop a removed cube's wiring: its heap state goes with it, while the durable open segment
+    // remains — a removed-then-readded id reconstructs above and recovers from durable state only.
+    wiringByAggId.keySet().retainAll(activeAggIds);
     if (!meterNodes.isEmpty()) {
       builder.processor(
           "shuffle",
@@ -264,8 +293,12 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
           meterNodes.toArray(new String[0]));
     }
     int tableIndex = 0;
+    final Set<Long> tableIds = new HashSet<>();
     for (final ActiveTable table : tables) {
-      datasetStore.schemaManager().ensureTable(table.compiled());
+      tableIds.add(table.registered().cubeId());
+      if (!appliedTableIds.contains(table.registered().cubeId())) {
+        datasetStore.schemaManager().ensureTable(table.compiled());
+      }
       final String node = "table-" + tableIndex++;
       final TableRowProcessor processor =
           new TableRowProcessor(table.registered(), table.compiled(), servingWriter);
@@ -273,12 +306,17 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
       dispatcher.route(node, processor.factType());
     }
     // Process definitions take the direct path: a built-in raw table written straight to serving,
-    // not a declared dataset. See ProcessDefinitionSink.
-    datasetStore.schemaManager().ensureTable(ProcessDefinitionSink.TABLE);
+    // not a declared dataset. See ProcessDefinitionSink. Its fixed schema is ensured once.
+    if (!definitionsTableEnsured) {
+      datasetStore.schemaManager().ensureTable(ProcessDefinitionSink.TABLE);
+      definitionsTableEnsured = true;
+    }
     final ProcessDefinitionSink definitionSink = new ProcessDefinitionSink(servingWriter);
     builder.processor("process-definitions", definitionSink, "dispatch");
     dispatcher.route("process-definitions", definitionSink.factType());
 
+    appliedCubeIds = Set.copyOf(cubeIds);
+    appliedTableIds = Set.copyOf(tableIds);
     topology = builder.build();
     sealingAggregations = List.copyOf(aggregations);
   }
@@ -295,18 +333,22 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
     return new ArrayList<>(finest.values());
   }
 
+  /** One cube meter's reusable wiring: its gate/fold node and its sealing aggregation. */
+  private record MeterWiring(
+      CubeMeterProcessor processor, SegmentSealingAggregation<Fact, ?, ?> aggregation) {}
+
   /**
    * Builds one cube meter's Model-F sealing aggregation and its {@link ForwardingSegmentSink}
    * (capturing the acc type), then the node that gates + folds facts and forwards sealed cells. The
-   * aggregation is also collected so the task can watermark-seal completed segments as it commits.
+   * aggregation is also part of the wiring so the task can watermark-seal completed segments as it
+   * commits.
    */
-  private static <ACC> CubeMeterProcessor meterProcessor(
+  private static <ACC> MeterWiring meterWiring(
       final ActiveCube cube,
       final CompiledMeter meter,
       final int segmentStride,
       final KeyValueStore<DbBytes, DbBytes> openSegments,
-      final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider,
-      final List<SegmentSealingAggregation<Fact, ?, ?>> sealingAggregations) {
+      final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider) {
     @SuppressWarnings("unchecked")
     final BoundMeter<ACC, ?> bound = (BoundMeter<ACC, ?>) meter.bound();
     final ForwardingSegmentSink<ACC> sink =
@@ -328,13 +370,14 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
             new DimensionKeyValue(cube.compiled().grain()),
             bound.accumulatorCodec(),
             provider::runInTransaction);
-    sealingAggregations.add(sealing);
-    return new CubeMeterProcessor(
-        cube.compiled().factBinding().factType(),
-        cube.registered(),
-        cube.compiled().factBinding().filters(),
-        sealing,
-        sink);
+    return new MeterWiring(
+        new CubeMeterProcessor(
+            cube.compiled().factBinding().factType(),
+            cube.registered(),
+            cube.compiled().factBinding().filters(),
+            sealing,
+            sink),
+        sealing);
   }
 
   @Override

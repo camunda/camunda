@@ -37,8 +37,13 @@ final class RdbmsDatasetSpecStore implements DatasetSpecStore {
 
   @Override
   public boolean isEmpty() {
+    return specCount() == 0;
+  }
+
+  @Override
+  public long specCount() {
     try (SqlSession session = sessionFactory.openSession()) {
-      return session.getMapper(DatasetSpecMapper.class).countSpecs() == 0;
+      return session.getMapper(DatasetSpecMapper.class).countSpecs();
     }
   }
 

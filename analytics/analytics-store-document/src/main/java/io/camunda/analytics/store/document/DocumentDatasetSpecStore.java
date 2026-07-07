@@ -48,13 +48,17 @@ public final class DocumentDatasetSpecStore implements DatasetSpecStore {
 
   @Override
   public boolean isEmpty() {
+    return specCount() == 0;
+  }
+
+  @Override
+  public long specCount() {
     return searchClient
-            .search(
-                RequestBuilders.searchRequest(
-                    r -> r.index(index).query(SearchQueryBuilders.matchAll()).size(0)),
-                RegisteredDataset.class)
-            .totalHits()
-        == 0;
+        .search(
+            RequestBuilders.searchRequest(
+                r -> r.index(index).query(SearchQueryBuilders.matchAll()).size(0)),
+            RegisteredDataset.class)
+        .totalHits();
   }
 
   @Override

@@ -24,6 +24,13 @@ public interface DatasetSpecStore {
   /** Whether any dataset spec is stored (drives the idempotent bootstrap). */
   boolean isEmpty();
 
+  /**
+   * The number of stored specs — a cheap change probe. Specs are create-only through this SPI, so
+   * the count moves if and only if the set of datasets changed; a catalog refresh checks it before
+   * paying for a full load + recompile.
+   */
+  long specCount();
+
   /** Persists one dataset spec (its declaration, activation vector, and schema version). */
   void create(RegisteredDataset spec);
 

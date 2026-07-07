@@ -35,6 +35,11 @@ public final class DatasetCatalog {
   private final MetadataStore metadataStore;
   private volatile Snapshot snapshot;
 
+  // The spec count the current snapshot was loaded at — the cheap no-change probe. Specs are
+  // create-only, so an unchanged count means an unchanged dataset set and refresh() skips the
+  // load + recompile entirely (the steady-state path, hit every reload-check interval).
+  private long appliedSpecCount = -1L;
+
   public DatasetCatalog(final MetadataStore metadataStore) {
     this.metadataStore = metadataStore;
     snapshot = new Snapshot(0L, List.of(), List.of());
@@ -43,11 +48,17 @@ public final class DatasetCatalog {
 
   /**
    * Re-reads and recompiles the datasets from the metadata plane; bumps the version only if the set
-   * of cube/table ids changed since the current snapshot. Safe to call redundantly.
+   * of cube/table ids changed since the current snapshot. Safe (and cheap) to call redundantly: a
+   * no-change refresh is a single count probe, not a load + recompile.
    */
   public synchronized void refresh() {
+    final long specCount = metadataStore.datasetSpecStore().specCount();
+    if (specCount == appliedSpecCount) {
+      return;
+    }
     final List<ActiveCube> cubes = StandardDatasets.loadCubes(metadataStore);
     final List<ActiveTable> tables = StandardDatasets.loadTables(metadataStore);
+    appliedSpecCount = specCount;
     final Snapshot current = snapshot;
     if (cubeIds(cubes).equals(cubeIds(current.cubes()))
         && tableIds(tables).equals(tableIds(current.tables()))) {

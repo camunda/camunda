@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.analytics.serving.catalog;
+package io.camunda.analytics.pipeline.stage;
 
 import io.camunda.analytics.dataset.DatasetDeclaration;
 import io.camunda.analytics.dataset.RegisteredDataset;
@@ -17,21 +17,22 @@ import io.camunda.analytics.serving.spi.DatasetSpecStore;
 import io.camunda.analytics.serving.spi.MetadataStore;
 import io.camunda.analytics.serving.spi.ReportSpecStore;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
- * A non-durable {@link MetadataStore} for serving-layer unit tests: an in-memory spec store plus
- * the shared {@link InMemoryMeterIdStore}. Backend-free, so tests of control-plane logic
- * (provisioning, catalog) don't need RDBMS/ES fixtures.
+ * A non-durable {@link MetadataStore} for stage-reload tests. Beyond the plain in-memory spec
+ * store, it can {@link #hide}/{@link #unhide} a dataset — simulating a removal (and a re-add) so
+ * the incremental-reload paths can be exercised even though the SPI itself is create-only.
  */
-final class InMemoryMetadataStore implements MetadataStore {
+final class TestMetadataStore implements MetadataStore {
 
   private final MeterIdStore meterIdStore = new InMemoryMeterIdStore();
-  private final DatasetSpecStore datasetSpecStore = new InMemoryDatasetSpecStore();
-  private final ReportSpecStore reportSpecStore = new InMemoryReportSpecStore();
+  private final TestSpecStore specStore = new TestSpecStore();
 
   @Override
   public void migrate() {}
@@ -43,29 +44,40 @@ final class InMemoryMetadataStore implements MetadataStore {
 
   @Override
   public DatasetSpecStore datasetSpecStore() {
-    return datasetSpecStore;
+    return specStore;
   }
 
   @Override
   public ReportSpecStore reportSpecStore() {
-    return reportSpecStore;
+    return new NoopReportSpecStore();
   }
 
   @Override
   public void close() {}
 
-  private static final class InMemoryDatasetSpecStore implements DatasetSpecStore {
+  /** Simulates removing a dataset: it disappears from search and the change probe. */
+  void hide(final long cubeId) {
+    specStore.hidden.add(cubeId);
+  }
+
+  /** Simulates re-adding a previously removed dataset under its original id. */
+  void unhide(final long cubeId) {
+    specStore.hidden.remove(cubeId);
+  }
+
+  private static final class TestSpecStore implements DatasetSpecStore {
 
     private final Map<Long, RegisteredDataset> byId = new LinkedHashMap<>();
+    private final Set<Long> hidden = new HashSet<>();
 
     @Override
     public boolean isEmpty() {
-      return byId.isEmpty();
+      return specCount() == 0;
     }
 
     @Override
     public long specCount() {
-      return byId.size();
+      return byId.keySet().stream().filter(id -> !hidden.contains(id)).count();
     }
 
     @Override
@@ -77,17 +89,20 @@ final class InMemoryMetadataStore implements MetadataStore {
 
     @Override
     public Optional<RegisteredDataset> read(final long cubeId) {
-      return Optional.ofNullable(byId.get(cubeId));
+      return hidden.contains(cubeId) ? Optional.empty() : Optional.ofNullable(byId.get(cubeId));
     }
 
     @Override
     public List<RegisteredDataset> search(final DatasetSpecQuery query) {
       final List<RegisteredDataset> out = new ArrayList<>();
       for (final RegisteredDataset spec : byId.values()) {
-        final DatasetDeclaration d = spec.declaration();
-        if ((query.name() == null || query.name().equals(d.name()))
-            && (query.sourceFact() == null || query.sourceFact() == d.sourceFact())
-            && (query.kind() == null || query.kind() == d.kind())) {
+        if (hidden.contains(spec.cubeId())) {
+          continue;
+        }
+        final DatasetDeclaration declaration = spec.declaration();
+        if ((query.name() == null || query.name().equals(declaration.name()))
+            && (query.sourceFact() == null || query.sourceFact() == declaration.sourceFact())
+            && (query.kind() == null || query.kind() == declaration.kind())) {
           out.add(spec);
         }
       }
@@ -95,39 +110,24 @@ final class InMemoryMetadataStore implements MetadataStore {
     }
   }
 
-  private static final class InMemoryReportSpecStore implements ReportSpecStore {
-
-    private final Map<Long, ReportDefinition> byId = new LinkedHashMap<>();
+  private static final class NoopReportSpecStore implements ReportSpecStore {
 
     @Override
     public ReportDefinition create(final ReportDefinition report) {
-      final long reportId = byId.keySet().stream().mapToLong(Long::longValue).max().orElse(0L) + 1;
-      final ReportDefinition stored =
-          new ReportDefinition(
-              reportId,
-              report.name(),
-              report.sources(),
-              report.groupBy(),
-              report.granularityMs(),
-              report.combination(),
-              report.viz());
-      byId.put(reportId, stored);
-      return stored;
+      throw new UnsupportedOperationException("reports are not part of the stage-reload tests");
     }
 
     @Override
     public Optional<ReportDefinition> read(final long reportId) {
-      return Optional.ofNullable(byId.get(reportId));
+      return Optional.empty();
     }
 
     @Override
     public List<ReportDefinition> search() {
-      return new ArrayList<>(byId.values());
+      return List.of();
     }
 
     @Override
-    public void delete(final long reportId) {
-      byId.remove(reportId);
-    }
+    public void delete(final long reportId) {}
   }
 }
