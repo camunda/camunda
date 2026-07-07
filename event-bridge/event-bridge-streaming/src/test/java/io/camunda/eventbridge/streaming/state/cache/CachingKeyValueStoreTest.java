@@ -191,6 +191,38 @@ final class CachingKeyValueStoreTest {
     assertThat(get(delegate, "k49")).isEqualTo(49L);
   }
 
+  @Test
+  void shouldServeAnAllDirtyOverBudgetCacheAndTrimOnlyAfterCheckpoint() {
+    // given — a tiny budget and an all-dirty (pinned) working set far past it
+    final CountingDelegate delegate = new CountingDelegate();
+    final CachingKeyValueStore<DbString, DbLong> cache = cacheOver(delegate, 64);
+    for (int i = 0; i < 50; i++) {
+      put(cache, "k" + i, i);
+    }
+
+    // when — repeated puts keep hitting the over-budget, all-pinned cache
+    for (int i = 0; i < 50; i++) {
+      put(cache, "k" + i, i + 1_000);
+    }
+
+    // then — nothing was evicted or leaked: every value is served from the cache without a
+    // delegate read, and the delegate holds nothing ahead of the commit
+    for (int i = 0; i < 50; i++) {
+      assertThat(get(cache, "k" + i)).isEqualTo(i + 1_000L);
+    }
+    assertThat(delegate.gets).isZero();
+    assertThat(cache.overCapacity()).isTrue();
+
+    // when — the commit barrier flushes the working set clean
+    cache.checkpoint();
+
+    // then — eviction trims back to budget, and a trimmed entry re-reads its checkpointed value
+    // from the delegate
+    assertThat(cache.overCapacity()).isFalse();
+    assertThat(get(cache, "k0")).isEqualTo(1_000L);
+    assertThat(delegate.gets).isGreaterThan(0);
+  }
+
   private static CachingKeyValueStore<DbString, DbLong> cacheOver(
       final KeyValueStore<DbString, DbLong> delegate, final long maxBytes) {
     return new CachingKeyValueStore<>(delegate, new DbString(), new DbLong(), maxBytes);

@@ -66,6 +66,13 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
   private final TreeMap<byte[], CacheEntry> dirtyIndex = new TreeMap<>(Arrays::compareUnsigned);
   private long approxBytes;
 
+  // How many cached entries are clean (evictable). With a mostly-dirty cache every over-budget
+  // put would otherwise re-scan the whole pinned LRU prefix and find nothing; eviction
+  // short-circuits when this reaches zero. Maintained at every state transition: clean insert
+  // (read-through), clean->dirty (put/delete on a clean entry), dirty->clean (checkpoint), and
+  // clean removal (eviction).
+  private int cleanCount;
+
   public CachingKeyValueStore(
       final KeyValueStore<K, V> delegate,
       final K keyFlyweight,
@@ -91,6 +98,9 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
       dirtyIndex.put(keyBytes, created);
       approxBytes += keyBytes.length + valueBytes.length;
     } else {
+      if (!entry.dirty) {
+        cleanCount--; // clean -> dirty
+      }
       approxBytes += valueBytes.length - footprintValue(entry);
       entry.value = valueBytes;
       entry.dirty = true;
@@ -110,6 +120,9 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
       dirtyIndex.put(keyBytes, created);
       approxBytes += keyBytes.length;
     } else {
+      if (!entry.dirty) {
+        cleanCount--; // clean -> dirty tombstone
+      }
       approxBytes -= footprintValue(entry);
       entry.value = null;
       entry.dirty = true;
@@ -137,6 +150,7 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
     }
     final byte[] valueBytes = toBytes(fromDelegate.get());
     cache.put(ByteBuffer.wrap(keyBytes), CacheEntry.cleanValue(valueBytes));
+    cleanCount++; // read-through populates a clean entry
     approxBytes += keyBytes.length + valueBytes.length;
     evictIfNeeded();
     wrap(valueFlyweight, valueBytes);
@@ -191,6 +205,7 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
         approxBytes -= dirty.getKey().length;
       } else {
         entry.dirty = false;
+        cleanCount++; // dirty -> clean (flushed, delegate-backed again)
       }
     }
     dirtyIndex.clear();
@@ -209,11 +224,11 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
   }
 
   private void evictIfNeeded() {
-    if (approxBytes <= maxBytes) {
-      return;
+    if (approxBytes <= maxBytes || cleanCount == 0) {
+      return; // under budget, or everything is pinned dirty — a scan would find nothing
     }
     final Iterator<Map.Entry<ByteBuffer, CacheEntry>> it = cache.entrySet().iterator();
-    while (approxBytes > maxBytes && it.hasNext()) {
+    while (approxBytes > maxBytes && cleanCount > 0 && it.hasNext()) {
       final Map.Entry<ByteBuffer, CacheEntry> cached = it.next();
       final CacheEntry entry = cached.getValue();
       if (entry.dirty) {
@@ -221,6 +236,7 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
       }
       approxBytes -= cached.getKey().remaining() + entry.value.length;
       it.remove();
+      cleanCount--;
     }
   }
 
