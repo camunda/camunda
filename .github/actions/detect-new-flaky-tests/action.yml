@@ -7,7 +7,7 @@ description: >
   stays flagged until the method body is modified and 3 subsequent gate runs observe it
   clean, or until the ci:flaky-test-bypass label is applied. Posts/updates a single PR
   comment that renders the current state and embeds it as a hidden base64 marker for the
-  next run to read (durable across re-runs / force-push, unlike a run-scoped artifact).
+  next run to read (durable across re-runs / force-push).
 
 inputs:
   pr-flaky-tests-data:
@@ -54,11 +54,8 @@ outputs:
 runs:
   using: composite
   steps:
-    # Prior sticky state is recovered from the gate's own PR comment (a hidden
-    # base64 marker), not a workflow artifact. The comment is durable across the
-    # "Re-run jobs" button and force-pushes, both of which delete run-scoped
-    # artifacts and previously froze the clean-run counter. The detector
-    # reads the comment directly via the GitHub API — no download step needed.
+    # Sticky state lives in the gate's PR comment (a hidden base64 marker),
+    # read and written by the detector via the GitHub API.
 
     # Method-fix detection uses `git log -L:<method>:<file>`, which needs git's
     # language-aware funcname driver to locate Java methods. The repo has no
@@ -103,8 +100,7 @@ runs:
         KNOWN_FLAKY_TESTS_FILE: ${{ inputs.known-flaky-tests-file }}
         PR_NUMBER: ${{ inputs.pr-number }}
         BLOCKING: ${{ inputs.blocking }}
-        # Prior state now comes from the PR comment; STATE_FILE_OUT is retained
-        # only as a debug artifact of the run (not uploaded, not read back).
+        # STATE_FILE_OUT is a debug dump of the run's state — not uploaded, not read back.
         STATE_FILE_OUT: ${{ runner.temp }}/flaky-gate-state-out/state.json
         RAN_JOBS_JSON: ${{ inputs.ran-jobs-json }}
         BYPASS_LABEL_PRESENT: ${{ inputs.bypass-label-present }}
@@ -115,5 +111,4 @@ runs:
         GITHUB_TOKEN: ${{ github.token }}
       run: python3 ${{ github.action_path }}/detect_new_flaky_tests.py
     # Updated state is persisted by the detector into the PR comment's hidden
-    # marker (durable across re-runs / force-push). No artifact upload step —
-    # the run-scoped artifact was the root cause of the stuck counter.
+    # marker (durable across re-runs / force-push).
