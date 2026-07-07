@@ -62,7 +62,7 @@ spec:
           env:
             
             - name: OPTIMIZE_ELASTICSEARCH_HOST
-              value: "elastic"
+              value: "elasticsearch-es-http"
             - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
               value: "9200"
             - name: OPTIMIZE_LOG_APPENDER
@@ -109,7 +109,7 @@ spec:
           env:
             
             - name: OPTIMIZE_ELASTICSEARCH_HOST
-              value: "elastic"
+              value: "elasticsearch-es-http"
             - name: OPTIMIZE_ELASTICSEARCH_HTTP_PORT
               value: "9200"
             - name: SPRING_PROFILES_ACTIVE

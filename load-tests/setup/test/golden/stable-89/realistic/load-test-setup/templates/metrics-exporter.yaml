@@ -22,7 +22,7 @@ spec:
       - name: metrics-exporter
         image: registry.camunda.cloud/team-reliability-testing/metrics-exporter:latest
         args:
-          - --es.addresses=http://elastic:9200
+          - --es.addresses=http://elasticsearch-es-http:9200
         ports:
         - containerPort: 9600
           name: metrics

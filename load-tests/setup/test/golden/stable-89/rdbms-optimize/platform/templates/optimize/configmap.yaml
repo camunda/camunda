@@ -24,7 +24,7 @@ data:
     es:
       connection:
         nodes:
-          - host: "elastic"
+          - host: "elasticsearch-es-http"
             httpPort: 9200
     spring:
       servlet:
