@@ -46,20 +46,19 @@ public final class RestoreParameterValidator {
       final @Nullable Instant to,
       final boolean continuousBackups) {
     final boolean hasTimeRange = from != null || to != null;
-    illegalArgument(
-        !hasBackupId && !hasTimeRange, "Must specify either --backupId or --from/--to.");
+    illegalArgument(!hasBackupId && !hasTimeRange, "Must specify either backupId or from/to.");
 
     illegalArgument(
         hasBackupId && hasTimeRange,
-        "Cannot specify both --backupId and --from/--to parameters. Choose one approach.");
+        "Cannot specify both backupId and from/to parameters. Choose one approach.");
 
     illegalArgument(
         hasTimeRange && !continuousBackups,
-        "Time range restore (--from/--to) is only supported for continuous backups.");
+        "Time range restore (from/to) is only supported for continuous backups.");
 
     illegalArgument(
         from != null && to != null && from.isAfter(to),
-        "Invalid time range: --from (%s) must be before --to (%s)".formatted(from, to));
+        "Invalid time range: from (%s) must be before to (%s)".formatted(from, to));
   }
 
   private static @Nullable Instant parseTimestamp(
