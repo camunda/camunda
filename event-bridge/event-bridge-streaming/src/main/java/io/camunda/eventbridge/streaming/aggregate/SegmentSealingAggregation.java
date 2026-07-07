@@ -13,12 +13,14 @@ import io.camunda.eventbridge.streaming.window.Windowed;
 import io.camunda.eventbridge.streaming.window.Windows;
 import io.camunda.zeebe.db.impl.DbBytes;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.ToLongFunction;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * A combiner that pre-aggregates a source partition's stream into <em>immutable segment deltas</em>
@@ -64,15 +66,12 @@ public final class SegmentSealingAggregation<IN, K, ACC> implements Aggregation<
   private final SegmentSink<K, ACC> sink;
 
   // Durable open-segment checkpoint (Model F). Null when the aggregation keeps no durable state.
-  private final int group;
-  private final KeyValueStore<DbBytes, DbBytes> openStore;
-  private final RecordValue<K> keyCodec;
-  private final RecordValue<ACC> accCodec;
+  private final GroupedCellStore<K, ACC> cells;
   private final TransactionRunner tx;
   private final Set<Windowed<K>> durablyWritten = new HashSet<>();
-  private final DbBytes storeKey = new DbBytes();
-  private final DbBytes storeValue = new DbBytes();
-  private final DbBytes groupPrefix = new DbBytes();
+  // Reused meta-value scratch: {@code openSegment(long) ++ sourcePartition(int)}, big-endian.
+  private final byte[] metaValue = new byte[Long.BYTES + Integer.BYTES];
+  private final UnsafeBuffer metaBuffer = new UnsafeBuffer(metaValue);
 
   private final Map<Windowed<K>, ACC> open = new HashMap<>();
   private long openSegment = NO_SEGMENT;
@@ -155,10 +154,7 @@ public final class SegmentSealingAggregation<IN, K, ACC> implements Aggregation<
     this.windows = windows;
     this.segments = segments;
     this.sink = sink;
-    this.group = group;
-    this.openStore = openStore;
-    this.keyCodec = keyCodec;
-    this.accCodec = accCodec;
+    cells = openStore == null ? null : new GroupedCellStore<>(group, openStore, keyCodec, accCodec);
     this.tx = tx;
   }
 
@@ -237,7 +233,7 @@ public final class SegmentSealingAggregation<IN, K, ACC> implements Aggregation<
 
   @Override
   public void checkpoint() {
-    if (openStore == null) {
+    if (cells == null) {
       // Model R: no durable aggregation state; the open buffer is ephemeral and rebuilt by replay.
       return;
     }
@@ -246,13 +242,12 @@ public final class SegmentSealingAggregation<IN, K, ACC> implements Aggregation<
         () -> {
           for (final Windowed<K> cell : durablyWritten) {
             if (!open.containsKey(cell)) {
-              openStore.delete(cellKey(cell));
+              cells.delete(cell);
             }
           }
           durablyWritten.clear();
           for (final Entry<Windowed<K>, ACC> cell : open.entrySet()) {
-            storeValue.wrapBytes(accCodec.toBytes(cell.getValue()));
-            openStore.put(cellKey(cell.getKey()), storeValue);
+            cells.put(cell.getKey(), cell.getValue());
             durablyWritten.add(cell.getKey());
           }
           writeMeta();
@@ -266,53 +261,22 @@ public final class SegmentSealingAggregation<IN, K, ACC> implements Aggregation<
   }
 
   private void recover() {
-    groupPrefix.wrapBytes(ByteBuffer.allocate(Integer.BYTES).putInt(group).array());
-    openStore.prefixScan(
-        groupPrefix,
-        (key, value) -> {
-          final byte[] keyBytes = key.getBytes();
-          if (keyBytes.length == Integer.BYTES) {
-            final ByteBuffer meta = ByteBuffer.wrap(value.getBytes());
-            openSegment = meta.getLong();
-            sourcePartition = meta.getInt();
-          } else {
-            final Windowed<K> cell = decodeCellKey(keyBytes);
-            open.put(cell, accCodec.fromBytes(value.getBytes()));
-            durablyWritten.add(cell);
-          }
+    cells.scan(
+        (cell, acc) -> {
+          open.put(cell, acc);
+          durablyWritten.add(cell);
+        },
+        meta -> {
+          final ByteBuffer buffer = ByteBuffer.wrap(meta);
+          openSegment = buffer.getLong();
+          sourcePartition = buffer.getInt();
         });
   }
 
+  /** The group's meta row: {@code openSegment ++ sourcePartition}, under the bare-group key. */
   private void writeMeta() {
-    // Meta key is the bare group (4 bytes) — shorter than any cell key (>= group + windowStart), so
-    // it never collides with a cell in the shared, group-prefixed store.
-    storeKey.wrapBytes(ByteBuffer.allocate(Integer.BYTES).putInt(group).array());
-    storeValue.wrapBytes(
-        ByteBuffer.allocate(Long.BYTES + Integer.BYTES)
-            .putLong(openSegment)
-            .putInt(sourcePartition)
-            .array());
-    openStore.put(storeKey, storeValue);
-  }
-
-  /** Cell key: {@code group ++ windowStart ++ codec(key)}. */
-  private DbBytes cellKey(final Windowed<K> cell) {
-    final byte[] keyBytes = keyCodec.toBytes(cell.key());
-    storeKey.wrapBytes(
-        ByteBuffer.allocate(Integer.BYTES + Long.BYTES + keyBytes.length)
-            .putInt(group)
-            .putLong(cell.windowStart())
-            .put(keyBytes)
-            .array());
-    return storeKey;
-  }
-
-  private Windowed<K> decodeCellKey(final byte[] bytes) {
-    final ByteBuffer buffer = ByteBuffer.wrap(bytes);
-    buffer.getInt(); // group — already scoped by the prefix scan
-    final long windowStart = buffer.getLong();
-    final byte[] keyBytes = new byte[buffer.remaining()];
-    buffer.get(keyBytes);
-    return new Windowed<>(keyCodec.fromBytes(keyBytes), windowStart);
+    metaBuffer.putLong(0, openSegment, ByteOrder.BIG_ENDIAN);
+    metaBuffer.putInt(Long.BYTES, sourcePartition, ByteOrder.BIG_ENDIAN);
+    cells.putMeta(metaValue);
   }
 }

@@ -12,7 +12,6 @@ import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.window.Windowed;
 import io.camunda.eventbridge.streaming.window.Windows;
 import io.camunda.zeebe.db.impl.DbBytes;
-import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -33,28 +32,22 @@ import java.util.function.Predicate;
  * merging each delta at most once. That dedup is the caller's responsibility, done once per batch
  * via {@link SegmentDedup} (a re-emitted batch is dropped before it reaches {@link #merge}); the
  * merge itself is a plain, non-idempotent fold. The running totals are checkpointed to a shared
- * store keyed by {@code group ++ windowStart ++ codec(key)}; a {@code group} lets several operators
- * share one store and scan only their own cells. Closed windows are finalized, emitted, and
- * evicted. Single-writer, like every operator.
+ * store through a {@link GroupedCellStore} (keyed {@code group ++ windowStart ++ codec(key)}; the
+ * {@code group} lets several operators share one store and scan only their own cells). Closed
+ * windows are finalized, emitted, and evicted. Single-writer, like every operator.
  *
  * @param <K> the grouping key type
  * @param <ACC> the accumulator type
  */
 public final class SegmentMergingAggregation<K, ACC> {
 
-  private final int group;
   private final AggregateFunction<?, ACC, ?> aggregate;
   private final Windows windows;
   private final ResultSink<Windowed<K>, ACC> sink;
-  private final KeyValueStore<DbBytes, DbBytes> cellStore;
-  private final RecordValue<K> keyValue;
+  private final GroupedCellStore<K, ACC> cells;
   private final RecordValue<ACC> accValue;
   private final TransactionRunner tx;
   private final Predicate<ACC> drained;
-
-  private final DbBytes cellKey = new DbBytes();
-  private final DbBytes cellValue = new DbBytes();
-  private final DbBytes groupPrefix = new DbBytes();
 
   // Heap working set: one running accumulator per cell.
   private final Map<Windowed<K>, ACC> cellTotal = new HashMap<>();
@@ -93,12 +86,10 @@ public final class SegmentMergingAggregation<K, ACC> {
       final RecordValue<ACC> accValue,
       final TransactionRunner tx,
       final Predicate<ACC> drained) {
-    this.group = group;
     this.aggregate = aggregate;
     this.windows = windows;
     this.sink = sink;
-    this.cellStore = cellStore;
-    this.keyValue = keyValue;
+    cells = new GroupedCellStore<>(group, cellStore, keyValue, accValue);
     this.accValue = accValue;
     this.tx = tx;
     this.drained = drained;
@@ -218,12 +209,9 @@ public final class SegmentMergingAggregation<K, ACC> {
   }
 
   private void recover() {
-    groupPrefix.wrapBytes(ByteBuffer.allocate(Integer.BYTES).putInt(group).array());
-    cellStore.prefixScan(
-        groupPrefix,
-        (key, value) -> {
-          final Windowed<K> cell = decodeCellKey(key.getBytes());
-          cellTotal.put(cell, accValue.fromBytes(value.getBytes()));
+    cells.scanCells(
+        (cell, total) -> {
+          cellTotal.put(cell, total);
           indexCell(cell);
           maxEventTime = Math.max(maxEventTime, cell.windowStart() + windows.sizeMs());
         });
@@ -237,35 +225,17 @@ public final class SegmentMergingAggregation<K, ACC> {
   }
 
   private void writeCell(final Windowed<K> cell, final ACC total) {
-    cellKey.wrapBytes(encodeCellKey(cell));
     // A commit flushes right before it checkpoints, so an unchanged-since-flush cell reuses the
     // bytes the flush already produced; the fallback covers a checkpoint without a prior flush.
     final byte[] serialized = serializedSinceFlush.get(cell);
-    cellValue.wrapBytes(serialized != null ? serialized : accValue.toBytes(total));
-    cellStore.put(cellKey, cellValue);
+    if (serialized != null) {
+      cells.putSerialized(cell, serialized);
+    } else {
+      cells.put(cell, total);
+    }
   }
 
   private void deleteCell(final Windowed<K> cell) {
-    cellKey.wrapBytes(encodeCellKey(cell));
-    cellStore.delete(cellKey);
-  }
-
-  /** Cell key: {@code group ++ windowStart ++ codec(key)}. */
-  private byte[] encodeCellKey(final Windowed<K> cell) {
-    final byte[] keyBytes = keyValue.toBytes(cell.key());
-    return ByteBuffer.allocate(Integer.BYTES + Long.BYTES + keyBytes.length)
-        .putInt(group)
-        .putLong(cell.windowStart())
-        .put(keyBytes)
-        .array();
-  }
-
-  private Windowed<K> decodeCellKey(final byte[] bytes) {
-    final ByteBuffer buffer = ByteBuffer.wrap(bytes);
-    buffer.getInt(); // group — already scoped by the prefix scan
-    final long windowStart = buffer.getLong();
-    final byte[] keyBytes = new byte[buffer.remaining()];
-    buffer.get(keyBytes);
-    return new Windowed<>(keyValue.fromBytes(keyBytes), windowStart);
+    cells.delete(cell);
   }
 }
