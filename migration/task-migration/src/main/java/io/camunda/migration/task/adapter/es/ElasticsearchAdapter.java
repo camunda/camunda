@@ -514,6 +514,10 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
 
     try {
       final var reindexResponse = client.reindex(createMissingRequest);
+      if (reindexResponse == null) {
+        throw new MigrationException(
+            "Reindex request from %s returned null response".formatted(source));
+      }
       validateReindexResponse(source, reindexResponse);
       return reindexResponse.total() != null && reindexResponse.total() > 0;
     } catch (final IOException e) {

@@ -570,6 +570,10 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
 
     try {
       final var reindexResponse = client.reindex(createMissingRequest);
+      if (reindexResponse == null) {
+        throw new MigrationException(
+            "Reindex request from %s returned null response".formatted(source));
+      }
       validateReindexResponse(source, reindexResponse);
       return reindexResponse.total() != null && reindexResponse.total() > 0;
     } catch (final IOException e) {
@@ -583,7 +587,7 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
       throw new MigrationException("Reindex request from %s timed out".formatted(sourceIndex));
     }
     final var failures = response.failures();
-    if (!failures.isEmpty()) {
+    if (failures != null && !failures.isEmpty()) {
       throw new MigrationException(
           "Reindex request from %s index completed with %d failures"
               .formatted(sourceIndex, failures.size()));
