@@ -63,11 +63,7 @@ public final class JobTimeOutTest {
 
     // then the job's event lifecycle is CREATED -> TIMED_OUT
     final List<Record<JobRecordValue>> jobEvents =
-        jobRecords()
-            .withType(jobType)
-            .withRecordType(RecordType.EVENT)
-            .limit(2)
-            .collect(Collectors.toList());
+        jobRecords().withType(jobType).onlyEvents().limit(2).collect(Collectors.toList());
 
     assertThat(jobEvents).extracting(Record::getKey).contains(jobKey);
     assertThat(jobEvents)
