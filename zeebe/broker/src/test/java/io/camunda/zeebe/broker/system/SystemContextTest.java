@@ -1083,8 +1083,9 @@ final class SystemContextTest {
   }
 
   @Test
-  void shouldThrowValidationErrorWhenInitialContactPointsIsNotSetWHenClustering() {
-    // given
+  void shouldNotThrowValidationErrorWhenInitialContactPointsIsNotSetWhenClustering() {
+    // given - no initial contact points is a valid configuration: such a node waits to be
+    // contacted by the other members instead, e.g. a seed node whose peers contact it
     final BrokerCfg brokerCfg = new BrokerCfg();
     final var clusterCfg = brokerCfg.getCluster();
     clusterCfg.setClusterSize(2);
@@ -1092,10 +1093,7 @@ final class SystemContextTest {
     clusterCfg.setInitialContactPoints(List.of());
 
     // when/then
-    assertThatThrownBy(() -> initSystemContext(brokerCfg))
-        .isInstanceOf(InvalidConfigurationException.class)
-        .hasMessageContaining(
-            "Initial contact points must be configured when cluster size is greater than 1.");
+    assertThatNoException().isThrownBy(() -> initSystemContext(brokerCfg));
   }
 
   @Test

@@ -69,6 +69,15 @@ public class ApiMessagingServiceStep extends AbstractBrokerStartupStep {
                           "Bound API to {}, using advertised address {} ",
                           messagingService.bindingAddresses(),
                           messagingService.address());
+                      if (commandApiCfg.getAdvertisedPort() == 0) {
+                        // the advertised port was configured as ephemeral (0) and only resolved
+                        // when the messaging service was bound; the broker info is gossiped to
+                        // gateways which use it to reach this broker's command API, so it must
+                        // carry the resolved port
+                        brokerStartupContext
+                            .getBrokerInfo()
+                            .setCommandApiAddress(messagingService.address().toString());
+                      }
                       brokerStartupContext.setApiMessagingService(messagingService);
                       startupFuture.complete(brokerStartupContext);
                     });

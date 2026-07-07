@@ -39,6 +39,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
+import io.netty.channel.socket.nio.NioChannelOption;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.resolver.dns.BiDnsQueryLifecycleObserverFactory;
@@ -47,6 +48,7 @@ import io.netty.resolver.dns.DnsNameResolverBuilder;
 import io.netty.resolver.dns.LoggingDnsQueryLifeCycleObserverFactory;
 import io.netty.util.concurrent.Future;
 import java.net.InetSocketAddress;
+import java.net.StandardSocketOptions;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -72,13 +74,15 @@ public class NettyUnicastService implements ManagedUnicastService {
 
   private final Logger log = LoggerFactory.getLogger(getClass());
 
-  private final Address advertisedAddress;
+  // may be re-assigned until the service is started, when the configured port is 0 and the actual
+  // port is only known after binding
+  private volatile Address advertisedAddress;
   private final MessagingConfig config;
   private final int preamble;
   private final Map<String, Map<BiConsumer<Address, byte[]>, Executor>> listeners =
       Maps.newConcurrentMap();
   private final AtomicBoolean started = new AtomicBoolean();
-  private final Address bindAddress;
+  private volatile Address bindAddress;
 
   private final MeterRegistry registry;
 
@@ -113,6 +117,20 @@ public class NettyUnicastService implements ManagedUnicastService {
     final var port = config.getPort() != null ? config.getPort() : advertisedAddress.port();
     bindAddress = new Address(new InetSocketAddress(port));
     this.actorSchedulerName = actorSchedulerName != null ? actorSchedulerName : "";
+  }
+
+  /**
+   * Returns the advertised address of this service; other members address unicast messages to it.
+   * When configured with an ephemeral port (0), the port is only resolved once the service is
+   * started.
+   */
+  public Address address() {
+    return advertisedAddress;
+  }
+
+  /** Returns the address this service is (or will be) bound to. */
+  public Address bindAddress() {
+    return bindAddress;
   }
 
   @Override
@@ -166,8 +184,8 @@ public class NettyUnicastService implements ManagedUnicastService {
     }
   }
 
-  private CompletableFuture<Void> bootstrap() {
-    final Bootstrap serverBootstrap =
+  private Bootstrap newServerBootstrap() {
+    final var bootstrap =
         new Bootstrap()
             .group(group)
             .channel(NioDatagramChannel.class)
@@ -182,8 +200,10 @@ public class NettyUnicastService implements ManagedUnicastService {
             .option(ChannelOption.RCVBUF_ALLOCATOR, new DefaultMaxBytesRecvByteBufAllocator())
             .option(ChannelOption.SO_BROADCAST, true)
             .option(ChannelOption.SO_REUSEADDR, true);
-
-    return bind(serverBootstrap);
+    if (config.isPortReuseEnabled()) {
+      bootstrap.option(NioChannelOption.of(StandardSocketOptions.SO_REUSEPORT), true);
+    }
+    return bootstrap;
   }
 
   private void handleReceivedPacket(final DatagramPacket packet) {
@@ -206,9 +226,9 @@ public class NettyUnicastService implements ManagedUnicastService {
     }
   }
 
-  private CompletableFuture<Void> bind(final Bootstrap bootstrap) {
+  private CompletableFuture<Void> bind() {
     final CompletableFuture<Void> future = new CompletableFuture<>();
-    bootstrap
+    newServerBootstrap()
         .bind(bindAddress.host(), bindAddress.port())
         .addListener(
             (ChannelFutureListener)
@@ -219,10 +239,26 @@ public class NettyUnicastService implements ManagedUnicastService {
                   }
 
                   channel = (DatagramChannel) f.channel();
+                  resolveEphemeralPort(channel.localAddress());
                   future.complete(null);
                 });
 
     return future;
+  }
+
+  /**
+   * Replaces a configured ephemeral port (0) in the bind and advertised addresses with the port the
+   * OS actually assigned, so that {@link #advertisedAddress} is routable by other members.
+   */
+  private void resolveEphemeralPort(final InetSocketAddress boundAddress) {
+    if (boundAddress == null) {
+      return;
+    }
+
+    bindAddress = new Address(boundAddress);
+    if (advertisedAddress.port() == 0) {
+      advertisedAddress = Address.from(advertisedAddress.host(), boundAddress.getPort());
+    }
   }
 
   @Override
@@ -230,7 +266,7 @@ public class NettyUnicastService implements ManagedUnicastService {
     group =
         new NioEventLoopGroup(
             0, namedThreads("netty-unicast-event-nio-client-%d", log, actorSchedulerName));
-    return bootstrap()
+    return bind()
         .thenRun(
             () -> {
               final var metrics = new NettyDnsMetrics(registry);
