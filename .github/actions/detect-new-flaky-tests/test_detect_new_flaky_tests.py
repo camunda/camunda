@@ -94,6 +94,49 @@ class TestBaseline(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
+# Method-fix detection: git log -L funcname anchoring
+# ---------------------------------------------------------------------------
+
+class TestMethodLastModified(unittest.TestCase):
+    def _captured_L_arg(self, method_name):
+        """Return the -L:... arg passed to git for a given method name."""
+        captured = {}
+
+        def fake_run_git(args, repo_root):
+            for a in args:
+                if a.startswith("-L:"):
+                    captured["L"] = a
+            return 0, "", ""
+
+        with mock.patch.object(d, "_run_git", side_effect=fake_run_git):
+            d.method_last_modified_in_range(
+                "path/To/C.java", method_name, "base", "head", "/repo")
+        return captured.get("L")
+
+    def test_L_arg_anchors_method_name_to_open_paren(self):
+        # The funcname regex must require '(' after the name so a query does
+        # not match a longer method sharing its prefix.
+        self.assertEqual(
+            self._captured_L_arg("getVersion"),
+            "-L:getVersion[(]:path/To/C.java",
+        )
+
+    def test_L_arg_escapes_regex_metacharacters(self):
+        # Defensive: any regex-special chars in the name are escaped before
+        # the '[(]' anchor is appended.
+        self.assertEqual(
+            self._captured_L_arg("get.value"),
+            "-L:get\\.value[(]:path/To/C.java",
+        )
+
+    def test_returns_none_on_missing_inputs(self):
+        self.assertIsNone(
+            d.method_last_modified_in_range("", "m", "b", "h", "/repo"))
+        self.assertIsNone(
+            d.method_last_modified_in_range("f", "", "b", "h", "/repo"))
+
+
+# ---------------------------------------------------------------------------
 # State persistence
 # ---------------------------------------------------------------------------
 
