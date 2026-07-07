@@ -542,7 +542,8 @@ final class ClusterConfigurationManagementApiTest {
     recordingCoordinator.setCurrentTopology(
         ClusterConfiguration.init()
             .addMember(id0, MemberState.initializeAsActive(Map.of()).toRecovering()));
-    final var request = new RestoreRequest(List.of(100L, 101L), null, null, false, false);
+    final var request =
+        new RestoreRequest(List.of(100L, 101L), null, null, "elasticsearch", false, false);
 
     // when
     final var result = clientApi.restore(request).join();
@@ -555,7 +556,8 @@ final class ClusterConfigurationManagementApiTest {
   void shouldRejectRestoreWhenClusterNotRecovering() {
     // given
     recordingCoordinator.setCurrentTopology(initialTopology); // member is ACTIVE
-    final var request = new RestoreRequest(List.of(100L), null, null, false, false);
+    final var request =
+        new RestoreRequest(List.of(100L), null, null, "elasticsearch", false, false);
 
     // when
     final var result = clientApi.restore(request).join();
@@ -575,7 +577,7 @@ final class ClusterConfigurationManagementApiTest {
         ClusterConfiguration.init()
             .addMember(id0, MemberState.initializeAsActive(Map.of()).toRecovering()));
     final var request =
-        new RestoreRequest(List.of(100L), "2024-01-01T10:00:00Z", null, false, false);
+        new RestoreRequest(List.of(100L), "2024-01-01T10:00:00Z", null, "rdbms", false, false);
 
     // when
     final var result = clientApi.restore(request).join();
@@ -595,7 +597,8 @@ final class ClusterConfigurationManagementApiTest {
         ClusterConfiguration.init()
             .addMember(id0, MemberState.initializeAsActive(Map.of()).toRecovering()));
     final var request =
-        new RestoreRequest(List.of(), "2024-01-01T12:00:00Z", "2024-01-01T10:00:00Z", true, false);
+        new RestoreRequest(
+            List.of(), "2024-01-01T12:00:00Z", "2024-01-01T10:00:00Z", "rdbms", true, false);
 
     // when
     final var result = clientApi.restore(request).join();
@@ -615,7 +618,8 @@ final class ClusterConfigurationManagementApiTest {
         ClusterConfiguration.init()
             .addMember(id0, MemberState.initializeAsActive(Map.of()).toRecovering()));
     final var request =
-        new RestoreRequest(List.of(), "2024-01-01T10:00:00Z", "2024-01-01T12:00:00Z", false, false);
+        new RestoreRequest(
+            List.of(), "2024-01-01T10:00:00Z", "2024-01-01T12:00:00Z", "rdbms", false, false);
 
     // when
     final var result = clientApi.restore(request).join();
@@ -634,7 +638,7 @@ final class ClusterConfigurationManagementApiTest {
     recordingCoordinator.setCurrentTopology(
         ClusterConfiguration.init()
             .addMember(id0, MemberState.initializeAsActive(Map.of()).toRecovering()));
-    final var request = new RestoreRequest(List.of(), "not-a-date", null, false, false);
+    final var request = new RestoreRequest(List.of(), "not-a-date", null, "rdbms", false, false);
 
     // when
     final var result = clientApi.restore(request).join();

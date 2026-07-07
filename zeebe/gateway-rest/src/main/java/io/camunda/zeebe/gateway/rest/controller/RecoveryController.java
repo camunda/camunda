@@ -11,6 +11,7 @@ import io.camunda.gateway.protocol.model.ClusterModeChangeOperation;
 import io.camunda.gateway.protocol.model.ClusterModeChangeResponse;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
+import io.camunda.spring.utils.DatabaseTypeUtils;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
@@ -90,13 +91,22 @@ public final class RecoveryController {
 
   private RestoreRequest toRestoreRequest(
       final io.camunda.gateway.protocol.model.RestoreRequest restoreRequest, final boolean dryRun) {
+    final String databaseType = DatabaseTypeUtils.getDatabaseTypeOrDefault(environment);
+    final boolean continuousBackups =
+        Optional.ofNullable(environment.getProperty(CONTINUOUS_BACKUPS_PROPERTY, Boolean.class))
+            .orElse(false);
     if (restoreRequest == null) {
-      return new RestoreRequest(List.of(), null, null, continuousBackups(), dryRun);
+      return new RestoreRequest(List.of(), null, null, databaseType, continuousBackups, dryRun);
     }
     final List<Long> backupIds =
         restoreRequest.getBackupIds() == null ? List.of() : restoreRequest.getBackupIds();
     return new RestoreRequest(
-        backupIds, restoreRequest.getFrom(), restoreRequest.getTo(), continuousBackups(), dryRun);
+        backupIds,
+        restoreRequest.getFrom(),
+        restoreRequest.getTo(),
+        databaseType,
+        continuousBackups,
+        dryRun);
   }
 
   private static ClusterConfigurationChangeResponse unwrapOrThrow(
@@ -141,11 +151,5 @@ public final class RecoveryController {
         .operation(operation.getClass().getSimpleName())
         .mode(mode)
         .build();
-  }
-
-  /** Returns true if continuous backups are enabled. */
-  private boolean continuousBackups() {
-    return Optional.ofNullable(environment.getProperty(CONTINUOUS_BACKUPS_PROPERTY, Boolean.class))
-        .orElse(false);
   }
 }

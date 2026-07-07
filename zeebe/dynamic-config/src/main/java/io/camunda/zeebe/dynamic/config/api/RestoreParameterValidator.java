@@ -7,9 +7,11 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
+import java.util.Locale;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -26,48 +28,37 @@ public final class RestoreParameterValidator {
 
   private RestoreParameterValidator() {}
 
-  /**
-   * @throws IllegalArgumentException if a backup ID is combined with a time range, if a time range
-   *     is given when {@code continuousBackups} is {@code false}, or if {@code from} is after
-   *     {@code to}.
-   */
-  public static void validate(
-      final boolean hasBackupId,
-      final @Nullable String from,
-      final @Nullable String to,
-      final boolean continuousBackups) {
-    validate(
-        hasBackupId, parseTimestamp(from, "from"), parseTimestamp(to, "to"), continuousBackups);
-  }
-
-  public static void validate(
-      final boolean hasBackupId, final @Nullable Instant from, final @Nullable Instant to) {
-    final var noArgs = !hasBackupId && from == null && to == null;
-    final boolean hasTimeRange = hasTimeRange(from, to);
-    validate(hasBackupId, from, to, noArgs || hasTimeRange);
-  }
-
-  static void validate(
-      final boolean hasBackupId,
-      final @Nullable Instant from,
-      final @Nullable Instant to,
-      final boolean continuousBackups) {
-    final boolean hasTimeRange = hasTimeRange(from, to);
+  public static void validate(final RestoreRequest request) {
+    final var instantFrom = parseTimestamp(request.from(), "from");
+    final var instantTo = parseTimestamp(request.to(), "to");
+    final var hasTimeRange = hasTimeRange(instantFrom, instantTo);
+    final var hasBackupIds = !request.backupIds().isEmpty();
     illegalArgument(
-        !hasBackupId && !hasTimeRange && !continuousBackups,
-        "Must specify either backupId or from/to.");
-
-    illegalArgument(
-        hasBackupId && hasTimeRange,
+        hasBackupIds && hasTimeRange,
         "Cannot specify both backupId and from/to parameters. Choose one approach.");
 
-    illegalArgument(
-        hasTimeRange && !continuousBackups,
-        "Time range restore (from/to) is only supported for continuous backups.");
+    final var databaseType =
+        request.databaseType() == null ? "" : request.databaseType().toLowerCase(Locale.ROOT);
+    switch (databaseType) {
+      case "rdbms", "none" -> {
+        illegalArgument(
+            hasTimeRange && !request.continuousBackups(),
+            "Time range restore (from/to) is only supported for continuous backups.");
 
-    illegalArgument(
-        from != null && to != null && from.isAfter(to),
-        "Invalid time range: from (%s) must be before to (%s)".formatted(from, to));
+        illegalArgument(
+            instantFrom != null && instantTo != null && instantFrom.isAfter(instantTo),
+            "Invalid time range: from (%s) must be before to (%s)"
+                .formatted(instantFrom, instantTo));
+      }
+      case "elasticsearch", "opensearch" -> {
+        illegalArgument(
+            hasTimeRange,
+            "Time range restore (from/to) is not supported for %s.".formatted(databaseType));
+        illegalArgument(!hasBackupIds, "No backupId specified");
+      }
+      default ->
+          throw new IllegalArgumentException("Invalid database type: " + request.databaseType());
+    }
   }
 
   private static boolean hasTimeRange(@Nullable final Instant from, @Nullable final Instant to) {

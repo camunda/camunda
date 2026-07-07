@@ -47,10 +47,8 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
     }
 
     // Validate input parameters
-    final boolean hasBackupId = request.backupIds() != null && !request.backupIds().isEmpty();
     try {
-      RestoreParameterValidator.validate(
-          hasBackupId, request.from(), request.to(), request.continuousBackups());
+      RestoreParameterValidator.validate(request);
     } catch (final IllegalArgumentException e) {
       return Either.left(new InvalidRequest(e.getMessage()));
     }

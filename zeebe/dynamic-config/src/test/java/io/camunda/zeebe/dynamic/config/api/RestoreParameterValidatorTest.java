@@ -10,85 +10,198 @@ package io.camunda.zeebe.dynamic.config.api;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import java.time.Instant;
+import java.util.List;
+import org.jspecify.annotations.Nullable;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 final class RestoreParameterValidatorTest {
 
-  private static final Instant EARLIER = Instant.parse("2026-01-01T10:00:00Z");
-  private static final Instant LATER = Instant.parse("2026-01-01T12:00:00Z");
-  private static final Instant NULL_INSTANT = null;
+  private static final String EARLIER = "2026-01-01T10:00:00Z";
+  private static final String LATER = "2026-01-01T12:00:00Z";
+  private static final List<Long> BACKUP_ID = List.of(1L);
+  private static final List<Long> NO_BACKUP_IDS = List.of();
+
+  private static final String BOTH_MESSAGE =
+      "Cannot specify both backupId and from/to parameters. Choose one approach.";
+  private static final String CONTINUOUS_MESSAGE =
+      "Time range restore (from/to) is only supported for continuous backups.";
+  private static final String NO_BACKUP_ID_MESSAGE = "No backupId specified";
+
+  private static RestoreRequest request(
+      final List<Long> backupIds,
+      final @Nullable String from,
+      final @Nullable String to,
+      final String databaseType,
+      final boolean continuousBackups) {
+    return new RestoreRequest(backupIds, from, to, databaseType, continuousBackups, false);
+  }
+
+  @Nested
+  final class Rdbms {
+
+    private static final String DB = "rdbms";
+
+    @Test
+    void shouldAcceptBackupIdOnly() {
+      // when / then
+      assertThatCode(
+              () -> RestoreParameterValidator.validate(request(BACKUP_ID, null, null, DB, false)))
+          .doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldAcceptTimeRangeWithContinuousBackups() {
+      // when / then
+      assertThatCode(
+              () ->
+                  RestoreParameterValidator.validate(
+                      request(NO_BACKUP_IDS, EARLIER, LATER, DB, true)))
+          .doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldAcceptNoParameters() {
+      // when / then
+      assertThatCode(
+              () ->
+                  RestoreParameterValidator.validate(request(NO_BACKUP_IDS, null, null, DB, false)))
+          .doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldRejectBackupIdAndTimeRangeTogether() {
+      // when / then
+      assertThatExceptionOfType(IllegalArgumentException.class)
+          .isThrownBy(
+              () -> RestoreParameterValidator.validate(request(BACKUP_ID, EARLIER, null, DB, true)))
+          .withMessage(BOTH_MESSAGE);
+    }
+
+    @Test
+    void shouldRejectTimeRangeWithoutContinuousBackups() {
+      // when / then
+      assertThatExceptionOfType(IllegalArgumentException.class)
+          .isThrownBy(
+              () ->
+                  RestoreParameterValidator.validate(
+                      request(NO_BACKUP_IDS, EARLIER, LATER, DB, false)))
+          .withMessage(CONTINUOUS_MESSAGE);
+    }
+
+    @Test
+    void shouldRejectSingleBoundWithoutContinuousBackups() {
+      // when / then
+      assertThatExceptionOfType(IllegalArgumentException.class)
+          .isThrownBy(
+              () ->
+                  RestoreParameterValidator.validate(
+                      request(NO_BACKUP_IDS, EARLIER, null, DB, false)))
+          .withMessage(CONTINUOUS_MESSAGE);
+    }
+
+    @Test
+    void shouldRejectFromAfterTo() {
+      // when / then
+      assertThatExceptionOfType(IllegalArgumentException.class)
+          .isThrownBy(
+              () ->
+                  RestoreParameterValidator.validate(
+                      request(NO_BACKUP_IDS, LATER, EARLIER, DB, true)))
+          .withMessage(
+              "Invalid time range: from (%s) must be before to (%s)"
+                  .formatted(Instant.parse(LATER), Instant.parse(EARLIER)));
+    }
+
+    @Test
+    void shouldRejectInvalidTimestamp() {
+      // when / then
+      assertThatExceptionOfType(IllegalArgumentException.class)
+          .isThrownBy(
+              () ->
+                  RestoreParameterValidator.validate(
+                      request(NO_BACKUP_IDS, "not-a-timestamp", null, DB, true)))
+          .withMessage("Invalid from timestamp 'not-a-timestamp': must be an ISO 8601 date-time.");
+    }
+  }
+
+  @Nested
+  final class Elasticsearch {
+
+    private static final String DB = "elasticsearch";
+
+    @Test
+    void shouldAcceptBackupIdOnly() {
+      // when / then
+      assertThatCode(
+              () -> RestoreParameterValidator.validate(request(BACKUP_ID, null, null, DB, false)))
+          .doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldRejectNoParameters() {
+      // when / then
+      assertThatExceptionOfType(IllegalArgumentException.class)
+          .isThrownBy(
+              () ->
+                  RestoreParameterValidator.validate(request(NO_BACKUP_IDS, null, null, DB, false)))
+          .withMessage(NO_BACKUP_ID_MESSAGE);
+    }
+
+    @Test
+    void shouldRejectTimeRange() {
+      // when / then
+      assertThatExceptionOfType(IllegalArgumentException.class)
+          .isThrownBy(
+              () ->
+                  RestoreParameterValidator.validate(
+                      request(NO_BACKUP_IDS, EARLIER, LATER, DB, true)))
+          .withMessage("Time range restore (from/to) is not supported for elasticsearch.");
+    }
+
+    @Test
+    void shouldRejectBackupIdAndTimeRangeTogether() {
+      // when / then
+      assertThatExceptionOfType(IllegalArgumentException.class)
+          .isThrownBy(
+              () -> RestoreParameterValidator.validate(request(BACKUP_ID, EARLIER, null, DB, true)))
+          .withMessage(BOTH_MESSAGE);
+    }
+  }
 
   @Test
-  void shouldAcceptBackupIdOnly() {
+  void shouldAcceptDatabaseTypeCaseInsensitively() {
     // when / then
     assertThatCode(
-            () -> RestoreParameterValidator.validate(true, NULL_INSTANT, NULL_INSTANT, false))
+            () ->
+                RestoreParameterValidator.validate(
+                    request(BACKUP_ID, null, null, "ElasticSearch", false)))
         .doesNotThrowAnyException();
   }
 
-  @Test
-  void shouldAcceptTimeRangeWithContinuousBackups() {
-    // when / then
-    assertThatCode(() -> RestoreParameterValidator.validate(false, EARLIER, LATER, true))
-        .doesNotThrowAnyException();
-  }
+  @Nested
+  final class InvalidDatabaseType {
 
-  @Test
-  void shouldRejectNoParametersWhenNoContinuousBackups() {
-    // when / then
-    assertThatExceptionOfType(IllegalArgumentException.class)
-        .isThrownBy(
-            () -> RestoreParameterValidator.validate(false, NULL_INSTANT, NULL_INSTANT, false))
-        .withMessage("Must specify either backupId or from/to.");
-  }
+    @Test
+    void shouldRejectNullDatabaseType() {
+      // when / then
+      assertThatExceptionOfType(IllegalArgumentException.class)
+          .isThrownBy(
+              () -> RestoreParameterValidator.validate(request(BACKUP_ID, null, null, null, false)))
+          .withMessage("Invalid database type: null");
+    }
 
-  @Test
-  void shouldAllowNoParametersWithContinuousBackups() {
-    // when / then
-    assertThatCode(
-            () -> RestoreParameterValidator.validate(false, NULL_INSTANT, NULL_INSTANT, true))
-        .doesNotThrowAnyException();
-  }
-
-  @Test
-  void shouldRejectBackupIdAndTimeRangeTogether() {
-    // when / then
-    assertThatExceptionOfType(IllegalArgumentException.class)
-        .isThrownBy(() -> RestoreParameterValidator.validate(true, EARLIER, NULL_INSTANT, true))
-        .withMessage("Cannot specify both backupId and from/to parameters. Choose one approach.");
-  }
-
-  @Test
-  void shouldRejectTimeRangeWithoutContinuousBackups() {
-    // when / then
-    assertThatExceptionOfType(IllegalArgumentException.class)
-        .isThrownBy(() -> RestoreParameterValidator.validate(false, EARLIER, LATER, false))
-        .withMessage("Time range restore (from/to) is only supported for continuous backups.");
-  }
-
-  @Test
-  void shouldRejectSingleBoundWithoutContinuousBackups() {
-    // when / then
-    assertThatExceptionOfType(IllegalArgumentException.class)
-        .isThrownBy(() -> RestoreParameterValidator.validate(false, EARLIER, NULL_INSTANT, false))
-        .withMessage("Time range restore (from/to) is only supported for continuous backups.");
-  }
-
-  @Test
-  void shouldAcceptBackupIdWithContinuousBackups() {
-    // when / then
-    assertThatCode(
-            () -> RestoreParameterValidator.validate(true, NULL_INSTANT, NULL_INSTANT, false))
-        .doesNotThrowAnyException();
-  }
-
-  @Test
-  void shouldRejectFromAfterTo() {
-    // when / then
-    assertThatExceptionOfType(IllegalArgumentException.class)
-        .isThrownBy(() -> RestoreParameterValidator.validate(false, LATER, EARLIER, true))
-        .withMessage(
-            "Invalid time range: from (%s) must be before to (%s)".formatted(LATER, EARLIER));
+    @Test
+    void shouldRejectUnknownDatabaseType() {
+      // when / then
+      assertThatExceptionOfType(IllegalArgumentException.class)
+          .isThrownBy(
+              () ->
+                  RestoreParameterValidator.validate(
+                      request(BACKUP_ID, null, null, "mongodb", false)))
+          .withMessage("Invalid database type: mongodb");
+    }
   }
 }
