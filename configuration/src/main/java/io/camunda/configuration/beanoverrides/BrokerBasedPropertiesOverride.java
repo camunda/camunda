@@ -9,6 +9,7 @@ package io.camunda.configuration.beanoverrides;
 
 import io.atomix.cluster.messaging.MessagingConfig.CompressionAlgorithm;
 import io.camunda.configuration.Azure;
+import io.camunda.configuration.Camunda;
 import io.camunda.configuration.CommandApi;
 import io.camunda.configuration.Data;
 import io.camunda.configuration.Export;
@@ -110,46 +111,77 @@ public class BrokerBasedPropertiesOverride {
     final BrokerBasedProperties override = new BrokerBasedProperties();
     BeanUtils.copyProperties(legacyBrokerBasedProperties, override);
 
-    populateFromCluster(override);
-
-    populateFromLongPolling(override);
-
-    populateFromRestFilters(override);
-
-    populateFromSystem(override);
-
-    populateFromPrimaryStorage(override);
-
-    populateFromGrpc(override);
-
-    populateFromData(override);
-
-    if (unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getType()
-        == SecondaryStorageType.rdbms) {
-      populateRdbmsExporter(override);
-    } else {
-      populateCamundaExporter(override);
-    }
-
-    populateFromExporters(override);
-
-    populateFromMonitoring(override);
-
-    populateFromProcessing(override);
-
-    populateFromFlowControl(override);
-
-    populateFromSecurity(override);
-
-    override.setLicenseKey(unifiedConfiguration.getCamunda().getLicense().getKey());
+    populateFromCamunda(override, unifiedConfiguration.getCamunda());
 
     return override;
   }
 
-  private void populateFromSecurity(final BrokerBasedProperties override) {
+  /**
+   * Builds a per-physical-tenant {@link BrokerBasedProperties} entirely from the supplied
+   * per-tenant {@link Camunda} object, using the same population logic as the root {@link
+   * #brokerBasedProperties()} bean.
+   *
+   * <p>The per-tenant {@code Camunda} is produced by {@code PhysicalTenantResolver} via a two-step
+   * bind: it inherits root values for every un-overridden key, so cluster-wide sections come out
+   * identical to the root while per-tenant overrides apply on top.
+   *
+   * <p>Unlike the root bean, no legacy {@code zeebe.broker.*} properties are applied: legacy keys
+   * cannot express per-tenant configuration. The default tenant keeps legacy support by reusing the
+   * root bean directly instead of this method.
+   *
+   * <p>The caller must stamp {@code cluster.nodeId} / {@code cluster.nodeVersion} (from {@code
+   * NodeIdProvider}) and call {@code init()}, just as {@code BrokerBasedConfiguration} does for the
+   * root bean.
+   */
+  public static BrokerBasedProperties convert(final Camunda perTenant) {
+    final BrokerBasedProperties props = new BrokerBasedProperties();
+    populateFromCamunda(props, perTenant);
+    return props;
+  }
+
+  /**
+   * Populates the given {@link BrokerBasedProperties} from a {@link Camunda} object. Single code
+   * path shared by the root bean and the per-tenant build so the two cannot drift.
+   */
+  private static void populateFromCamunda(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    populateFromCluster(override, camunda);
+
+    populateFromLongPolling(override, camunda);
+
+    populateFromRestFilters(override, camunda);
+
+    populateFromSystem(override, camunda);
+
+    populateFromPrimaryStorage(override, camunda);
+
+    populateFromGrpc(override, camunda);
+
+    populateFromData(override, camunda);
+
+    if (camunda.getData().getSecondaryStorage().getType() == SecondaryStorageType.rdbms) {
+      populateRdbmsExporter(override, camunda);
+    } else {
+      populateCamundaExporter(override, camunda);
+    }
+
+    populateFromExporters(override, camunda);
+
+    populateFromMonitoring(override, camunda);
+
+    populateFromProcessing(override, camunda);
+
+    populateFromFlowControl(override, camunda);
+
+    populateFromSecurity(override, camunda);
+
+    override.setLicenseKey(camunda.getLicense().getKey());
+  }
+
+  private static void populateFromSecurity(
+      final BrokerBasedProperties override, final Camunda camunda) {
     final var tlsCluster =
-        unifiedConfiguration
-            .getCamunda()
+        camunda
             .getSecurity()
             .getTransportLayerSecurity()
             .getCluster()
@@ -169,8 +201,9 @@ public class BrokerBasedPropertiesOverride {
             tlsCluster.getKeyStore().withBrokerTlsClusterKeyStoreProperties().getPassword());
   }
 
-  private void populateFromProcessing(final BrokerBasedProperties override) {
-    final Processing processing = unifiedConfiguration.getCamunda().getProcessing();
+  private static void populateFromProcessing(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final Processing processing = camunda.getProcessing();
 
     // processing
     override.getProcessing().setMaxCommandsInBatch(processing.getMaxCommandsInBatch());
@@ -213,29 +246,30 @@ public class BrokerBasedPropertiesOverride {
         .getFeatures()
         .setEnableMessageBodyOnExpired(processing.isEnableMessageBodyOnExpired());
 
-    populateFromEngine(override);
+    populateFromEngine(override, camunda);
   }
 
-  private void populateFromEngine(final BrokerBasedProperties override) {
-    populateFromDistribution(override);
-    populateFromBatchOperations(override);
-    populateFromExpression(override);
-    populateFromProcessInstanceCreation(override);
-    populateFromJobs(override);
+  private static void populateFromEngine(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    populateFromDistribution(override, camunda);
+    populateFromBatchOperations(override, camunda);
+    populateFromExpression(override, camunda);
+    populateFromProcessInstanceCreation(override, camunda);
+    populateFromJobs(override, camunda);
   }
 
-  private void populateFromDistribution(final BrokerBasedProperties override) {
-    final var distribution =
-        unifiedConfiguration.getCamunda().getProcessing().getEngine().getDistribution();
+  private static void populateFromDistribution(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final var distribution = camunda.getProcessing().getEngine().getDistribution();
 
     final var distributionCfg = override.getExperimental().getEngine().getDistribution();
     distributionCfg.setMaxBackoffDuration(distribution.getMaxBackoffDuration());
     distributionCfg.setRedistributionInterval(distribution.getRedistributionInterval());
   }
 
-  private void populateFromBatchOperations(final BrokerBasedProperties override) {
-    final var engineBatchOperation =
-        unifiedConfiguration.getCamunda().getProcessing().getEngine().getBatchOperations();
+  private static void populateFromBatchOperations(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final var engineBatchOperation = camunda.getProcessing().getEngine().getBatchOperations();
     final var batchOperationsCfg = override.getExperimental().getEngine().getBatchOperations();
     batchOperationsCfg.setSchedulerInterval(engineBatchOperation.getSchedulerInterval());
     batchOperationsCfg.setChunkSize(engineBatchOperation.getChunkSize());
@@ -248,19 +282,21 @@ public class BrokerBasedPropertiesOverride {
         engineBatchOperation.getQueryRetryBackoffFactor());
   }
 
-  private void populateFromExpression(final BrokerBasedProperties override) {
-    final var expression = unifiedConfiguration.getCamunda().getExpression();
+  private static void populateFromExpression(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final var expression = camunda.getExpression();
     override.getExperimental().getEngine().getExpression().setTimeout(expression.getTimeout());
   }
 
-  private void populateFromFlowControl(final BrokerBasedProperties override) {
-    populateFromBackpressureLimitRequest(override);
-    populateFromWrite(override);
+  private static void populateFromFlowControl(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    populateFromBackpressureLimitRequest(override, camunda);
+    populateFromWrite(override, camunda);
   }
 
-  private void populateFromBackpressureLimitRequest(final BrokerBasedProperties override) {
-    final Limit request =
-        unifiedConfiguration.getCamunda().getProcessing().getFlowControl().getRequest();
+  private static void populateFromBackpressureLimitRequest(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final Limit request = camunda.getProcessing().getFlowControl().getRequest();
 
     if (request == null) {
       return;
@@ -311,9 +347,9 @@ public class BrokerBasedPropertiesOverride {
     override.getFlowControl().setRequest(limitCfg);
   }
 
-  private void populateFromWrite(final BrokerBasedProperties override) {
-    final Write write =
-        unifiedConfiguration.getCamunda().getProcessing().getFlowControl().getWrite();
+  private static void populateFromWrite(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final Write write = camunda.getProcessing().getFlowControl().getWrite();
 
     if (write == null) {
       return;
@@ -326,12 +362,12 @@ public class BrokerBasedPropertiesOverride {
     rateLimitCfg.setRampUp(write.getRampUp());
     override.getFlowControl().setWrite(rateLimitCfg);
 
-    populateFromThrottle(override);
+    populateFromThrottle(override, camunda);
   }
 
-  private void populateFromThrottle(final BrokerBasedProperties override) {
-    final Throttle throttle =
-        unifiedConfiguration.getCamunda().getProcessing().getFlowControl().getWrite().getThrottle();
+  private static void populateFromThrottle(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final Throttle throttle = camunda.getProcessing().getFlowControl().getWrite().getThrottle();
 
     final ThrottleCfg throttleCfg = override.getFlowControl().getWrite().getThrottling();
     throttleCfg.setEnabled(throttle.isEnabled());
@@ -340,49 +376,44 @@ public class BrokerBasedPropertiesOverride {
     throttleCfg.setResolution(throttle.getResolution());
   }
 
-  private void populateFromGrpc(final BrokerBasedProperties override) {
-    final var grpc =
-        unifiedConfiguration.getCamunda().getApi().getGrpc().withBrokerNetworkProperties();
+  private static void populateFromGrpc(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final var grpc = camunda.getApi().getGrpc().withBrokerNetworkProperties();
 
     final NetworkCfg networkCfg = override.getGateway().getNetwork();
     networkCfg.setHost(grpc.getAddress());
     networkCfg.setPort(grpc.getPort());
     networkCfg.setMinKeepAliveInterval(grpc.getMinKeepAliveInterval());
 
-    populateFromSsl(override);
-    populateFromInterceptors(override);
+    populateFromSsl(override, camunda);
+    populateFromInterceptors(override, camunda);
 
     final io.camunda.zeebe.gateway.impl.configuration.ThreadsCfg threadsCfg =
         override.getGateway().getThreads();
     threadsCfg.setManagementThreads(grpc.getManagementThreads());
   }
 
-  private void populateFromSsl(final BrokerBasedProperties override) {
-    final Ssl ssl =
-        unifiedConfiguration.getCamunda().getApi().getGrpc().getSsl().withBrokerSslProperties();
+  private static void populateFromSsl(final BrokerBasedProperties override, final Camunda camunda) {
+    final Ssl ssl = camunda.getApi().getGrpc().getSsl().withBrokerSslProperties();
     final SecurityCfg securityCfg = override.getGateway().getSecurity();
     securityCfg.setEnabled(ssl.isEnabled());
     securityCfg.setCertificateChainPath(ssl.getCertificate());
     securityCfg.setPrivateKeyPath(ssl.getCertificatePrivateKey());
 
-    populateFromKeyStore(override);
+    populateFromKeyStore(override, camunda);
   }
 
-  private void populateFromKeyStore(final BrokerBasedProperties override) {
+  private static void populateFromKeyStore(
+      final BrokerBasedProperties override, final Camunda camunda) {
     final KeyStore keyStore =
-        unifiedConfiguration
-            .getCamunda()
-            .getApi()
-            .getGrpc()
-            .getSsl()
-            .getKeyStore()
-            .withBrokerKeyStoreProperties();
+        camunda.getApi().getGrpc().getSsl().getKeyStore().withBrokerKeyStoreProperties();
     final KeyStoreCfg keyStoreCfg = override.getGateway().getSecurity().getKeyStore();
     keyStoreCfg.setFilePath(keyStore.getFilePath());
     keyStoreCfg.setPassword(keyStore.getPassword());
   }
 
-  private void populateFromInterceptors(final BrokerBasedProperties override) {
+  private static void populateFromInterceptors(
+      final BrokerBasedProperties override, final Camunda camunda) {
     // Order between legacy and new interceptor props is not guaranteed.
     // Log common interceptors warning instead of using UnifiedConfigurationHelper logging.
     if (!override.getGateway().getInterceptors().isEmpty()) {
@@ -393,8 +424,7 @@ public class BrokerBasedPropertiesOverride {
       LOGGER.warn(warningMessage);
     }
 
-    final List<Interceptor> interceptors =
-        unifiedConfiguration.getCamunda().getApi().getGrpc().getInterceptors();
+    final List<Interceptor> interceptors = camunda.getApi().getGrpc().getInterceptors();
     if (!interceptors.isEmpty()) {
       final List<InterceptorCfg> interceptorCfgList =
           interceptors.stream().map(Interceptor::toInterceptorCfg).toList();
@@ -402,8 +432,9 @@ public class BrokerBasedPropertiesOverride {
     }
   }
 
-  private void populateFromCluster(final BrokerBasedProperties override) {
-    final var cluster = unifiedConfiguration.getCamunda().getCluster().withBrokerProperties();
+  private static void populateFromCluster(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final var cluster = camunda.getCluster().withBrokerProperties();
 
     override.getCluster().setInitialContactPoints(cluster.getInitialContactPoints());
     if (cluster.getNodeIdProvider().getType() == Type.FIXED) {
@@ -416,27 +447,27 @@ public class BrokerBasedPropertiesOverride {
     override.getCluster().setClusterId(cluster.getClusterId());
     override.getCluster().setZone(cluster.getZone());
 
-    populateFromMembership(override);
-    populateFromRaftProperties(override);
-    populateFromClusterMetadata(override);
-    populateFromClusterNetwork(override);
+    populateFromMembership(override, camunda);
+    populateFromRaftProperties(override, camunda);
+    populateFromClusterMetadata(override, camunda);
+    populateFromClusterNetwork(override, camunda);
 
     override
         .getCluster()
         .setMessageCompression(
             CompressionAlgorithm.valueOf(cluster.getCompressionAlgorithm().name()));
 
-    populateFromGlobalListeners(override);
+    populateFromGlobalListeners(override, camunda);
 
-    populateFromPartitioning(override);
+    populateFromPartitioning(override, camunda);
 
     override.getExperimental().setReceiveOnLegacySubject(cluster.isReceiveOnLegacySubject());
   }
 
   @SuppressWarnings("MissingSwitchDefault")
-  private void populateFromPartitioning(final BrokerBasedProperties override) {
-    final Partitioning partitioning =
-        unifiedConfiguration.getCamunda().getCluster().getPartitioning();
+  private static void populateFromPartitioning(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final Partitioning partitioning = camunda.getCluster().getPartitioning();
 
     // Order between legacy and new partitioning props is not guaranteed.
     // Log common partitioning warning instead of using UnifiedConfigurationHelper logging.
@@ -467,13 +498,9 @@ public class BrokerBasedPropertiesOverride {
     }
   }
 
-  private void populateFromLongPolling(final BrokerBasedProperties override) {
-    final var longPolling =
-        unifiedConfiguration
-            .getCamunda()
-            .getApi()
-            .getLongPolling()
-            .withBrokerLongPollingProperties();
+  private static void populateFromLongPolling(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final var longPolling = camunda.getApi().getLongPolling().withBrokerLongPollingProperties();
     final var longPollingCfg = override.getGateway().getLongPolling();
     longPollingCfg.setEnabled(longPolling.isEnabled());
     longPollingCfg.setTimeout(longPolling.getTimeout());
@@ -481,13 +508,10 @@ public class BrokerBasedPropertiesOverride {
     longPollingCfg.setMinEmptyResponses(longPolling.getMinEmptyResponses());
   }
 
-  private void populateFromMembership(final BrokerBasedProperties override) {
+  private static void populateFromMembership(
+      final BrokerBasedProperties override, final Camunda camunda) {
     final Membership membership =
-        unifiedConfiguration
-            .getCamunda()
-            .getCluster()
-            .getMembership()
-            .withBrokerMembershipProperties();
+        camunda.getCluster().getMembership().withBrokerMembershipProperties();
     final MembershipCfg membershipCfg = override.getCluster().getMembership();
     membershipCfg.setBroadcastUpdates(membership.isBroadcastUpdates());
     membershipCfg.setBroadcastDisputes(membership.isBroadcastDisputes());
@@ -501,8 +525,9 @@ public class BrokerBasedPropertiesOverride {
     membershipCfg.setSyncInterval(membership.getSyncInterval());
   }
 
-  private void populateFromRaftProperties(final BrokerBasedProperties override) {
-    final var raft = unifiedConfiguration.getCamunda().getCluster().getRaft();
+  private static void populateFromRaftProperties(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final var raft = camunda.getCluster().getRaft();
     override.getCluster().setHeartbeatInterval(raft.getHeartbeatInterval());
     override.getCluster().setElectionTimeout(raft.getElectionTimeout());
     override.getCluster().getRaft().setEnablePriorityElection(raft.isPriorityElectionEnabled());
@@ -545,8 +570,9 @@ public class BrokerBasedPropertiesOverride {
         .setSegmentPreallocationStrategy(raft.getSegmentPreallocationStrategy());
   }
 
-  private void populateFromClusterMetadata(final BrokerBasedProperties override) {
-    final var metadata = unifiedConfiguration.getCamunda().getCluster().getMetadata();
+  private static void populateFromClusterMetadata(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final var metadata = camunda.getCluster().getMetadata();
     final var syncDelay = metadata.getSyncDelay();
     final var syncTimeout = metadata.getSyncRequestTimeout();
     final var gossipFanout = metadata.getGossipFanout();
@@ -557,9 +583,9 @@ public class BrokerBasedPropertiesOverride {
     override.getCluster().setConfigManager(new ConfigManagerCfg(configManagerGossipConfig));
   }
 
-  private void populateFromClusterNetwork(final BrokerBasedProperties override) {
-    final var network =
-        unifiedConfiguration.getCamunda().getCluster().getNetwork().withBrokerNetworkProperties();
+  private static void populateFromClusterNetwork(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final var network = camunda.getCluster().getNetwork().withBrokerNetworkProperties();
 
     final var brokerNetwork = override.getNetwork();
     brokerNetwork.setHost(network.getHost());
@@ -571,22 +597,16 @@ public class BrokerBasedPropertiesOverride {
     brokerNetwork.setHeartbeatTimeout(network.getHeartbeatTimeout());
     brokerNetwork.setHeartbeatInterval(network.getHeartbeatInterval());
 
-    final var ucNetwork =
-        unifiedConfiguration.getCamunda().getCluster().getNetwork().withBrokerNetworkProperties();
-    override.getGateway().getNetwork().setMaxMessageSize(ucNetwork.getMaxMessageSize());
+    override.getGateway().getNetwork().setMaxMessageSize(network.getMaxMessageSize());
 
-    populateFromCommandApi(override);
-    populateFromInternalApi(override);
+    populateFromCommandApi(override, camunda);
+    populateFromInternalApi(override, camunda);
   }
 
-  private void populateFromInternalApi(final BrokerBasedProperties override) {
+  private static void populateFromInternalApi(
+      final BrokerBasedProperties override, final Camunda camunda) {
     final InternalApi internalApi =
-        unifiedConfiguration
-            .getCamunda()
-            .getCluster()
-            .getNetwork()
-            .getInternalApi()
-            .withBrokerInternalApiProperties();
+        camunda.getCluster().getNetwork().getInternalApi().withBrokerInternalApiProperties();
 
     final SocketBindingCfg socketBindingCfg = override.getNetwork().getInternalApi();
 
@@ -597,9 +617,9 @@ public class BrokerBasedPropertiesOverride {
         .ifPresent(socketBindingCfg::setAdvertisedPort);
   }
 
-  private void populateFromCommandApi(final BrokerBasedProperties override) {
-    final CommandApi commandApi =
-        unifiedConfiguration.getCamunda().getCluster().getNetwork().getCommandApi();
+  private static void populateFromCommandApi(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final CommandApi commandApi = camunda.getCluster().getNetwork().getCommandApi();
     final CommandApiCfg commandApiCfg = override.getNetwork().getCommandApi();
 
     commandApiCfg.setHost(commandApi.getHost());
@@ -608,7 +628,8 @@ public class BrokerBasedPropertiesOverride {
     Optional.ofNullable(commandApi.getAdvertisedPort()).ifPresent(commandApiCfg::setAdvertisedPort);
   }
 
-  private void populateFromRestFilters(final BrokerBasedProperties override) {
+  private static void populateFromRestFilters(
+      final BrokerBasedProperties override, final Camunda camunda) {
     // Order between legacy and new filters props is not guaranteed.
     // Log common filters warning instead of using UnifiedConfigurationHelper logging.
     if (!override.getGateway().getFilters().isEmpty()) {
@@ -619,78 +640,61 @@ public class BrokerBasedPropertiesOverride {
       LOGGER.warn(warningMessage);
     }
 
-    final List<Filter> filters = unifiedConfiguration.getCamunda().getApi().getRest().getFilters();
+    final List<Filter> filters = camunda.getApi().getRest().getFilters();
     if (!filters.isEmpty()) {
       final List<FilterCfg> filterCfgList = filters.stream().map(Filter::toFilterCfg).toList();
       override.getGateway().setFilters(filterCfgList);
     }
   }
 
-  private void populateFromSystem(final BrokerBasedProperties override) {
-    final var system = unifiedConfiguration.getCamunda().getSystem();
+  private static void populateFromSystem(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final var system = camunda.getSystem();
 
     final var threadsCfg = new ThreadsCfg();
     threadsCfg.setCpuThreadCount(system.getCpuThreadCount());
     threadsCfg.setIoThreadCount(system.getIoThreadCount());
     override.setThreads(threadsCfg);
 
-    final var enableVersionCheck =
-        unifiedConfiguration.getCamunda().getSystem().getUpgrade().getEnableVersionCheck();
+    final var enableVersionCheck = system.getUpgrade().getEnableVersionCheck();
     override.getExperimental().setVersionCheckRestrictionEnabled(enableVersionCheck);
   }
 
-  private void populateFromData(final BrokerBasedProperties override) {
-    final Data data = unifiedConfiguration.getCamunda().getData();
+  private static void populateFromData(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final Data data = camunda.getData();
     override.getData().setSnapshotPeriod(data.getSnapshotPeriod());
 
-    populateFromExport(override);
-    populateFromBackup(override);
+    populateFromExport(override, camunda);
+    populateFromBackup(override, camunda);
   }
 
-  private void populateFromExport(final BrokerBasedProperties override) {
-    final Export export = unifiedConfiguration.getCamunda().getData().getExport();
+  private static void populateFromExport(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final Export export = camunda.getData().getExport();
     final var exportingCfg =
         new ExportingCfg(export.getSkipRecords(), export.getDistributionInterval());
     override.setExporting(exportingCfg);
   }
 
-  private void populateFromBackup(final BrokerBasedProperties override) {
+  private static void populateFromBackup(
+      final BrokerBasedProperties override, final Camunda camunda) {
     final PrimaryStorageBackup primaryStorageBackup =
-        unifiedConfiguration.getCamunda().getData().getPrimaryStorage().getBackup();
+        camunda.getData().getPrimaryStorage().getBackup();
     final BackupCfg backupCfg = override.getData().getBackup();
     backupCfg.setStore(BackupStoreType.valueOf(primaryStorageBackup.getStore().name()));
 
-    populateFromS3(override);
-    populateFromGcs(override);
-    populateFromAzure(override);
-    populateFromFilesystem(override);
+    populateFromS3(override, camunda);
+    populateFromGcs(override, camunda);
+    populateFromAzure(override, camunda);
+    populateFromFilesystem(override, camunda);
 
     override.getData().setBackup(backupCfg);
   }
 
-  private void populateFromS3(final BrokerBasedProperties override) {
-    final S3 s3 =
-        unifiedConfiguration.getCamunda().getData().getPrimaryStorage().getBackup().getS3();
-    final S3BackupStoreConfig s3BackupStoreConfig = override.getData().getBackup().getS3();
-    s3BackupStoreConfig.setBucketName(s3.getBucketName());
-    s3BackupStoreConfig.setEndpoint(s3.getEndpoint());
-    s3BackupStoreConfig.setRegion(s3.getRegion());
-    s3BackupStoreConfig.setAccessKey(s3.getAccessKey());
-    s3BackupStoreConfig.setSecretKey(s3.getSecretKey());
-    s3BackupStoreConfig.setApiCallTimeout(s3.getApiCallTimeout());
-    s3BackupStoreConfig.setForcePathStyleAccess(s3.isForcePathStyleAccess());
-    s3BackupStoreConfig.setCompression(s3.getCompression());
-    s3BackupStoreConfig.setMaxConcurrentConnections(s3.getMaxConcurrentConnections());
-    s3BackupStoreConfig.setConnectionAcquisitionTimeout(s3.getConnectionAcquisitionTimeout());
-    s3BackupStoreConfig.setBasePath(s3.getBasePath());
-    s3BackupStoreConfig.setSupportLegacyMd5(s3.isSupportLegacyMd5());
-    s3BackupStoreConfig.setSsecKey(s3.getSsecKey());
-
-    override.getData().getBackup().setS3(s3BackupStoreConfig);
-  }
-
-  private void populateFromPrimaryStorage(final BrokerBasedProperties override) {
-    final var primaryStorage = unifiedConfiguration.getCamunda().getData().getPrimaryStorage();
+  private static void populateFromPrimaryStorage(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final var primaryStorage = camunda.getData().getPrimaryStorage();
     final var data = override.getData();
     data.setDirectory(primaryStorage.getDirectory());
     data.setRuntimeDirectory(primaryStorage.getRuntimeDirectory());
@@ -709,10 +713,10 @@ public class BrokerBasedPropertiesOverride {
     // Migrate RocksDB configuration from new unified config to old broker config structure
     populateFromRocksDb(override, primaryStorage);
 
-    populateBackupScheduler(override, primaryStorage.getBackup());
+    populateBackupScheduler(override, primaryStorage.getBackup(), camunda);
   }
 
-  private void populateFromRocksDb(
+  private static void populateFromRocksDb(
       final BrokerBasedProperties override, final PrimaryStorage primaryStorage) {
     final var unifiedRocksDb = primaryStorage.getRocksDb();
     final var brokerRocksDb = override.getExperimental().getRocksdb();
@@ -742,9 +746,28 @@ public class BrokerBasedPropertiesOverride {
     brokerRocksDb.setEnableSstPartitioning(unifiedRocksDb.isSstPartitioningEnabled());
   }
 
-  private void populateFromGcs(final BrokerBasedProperties override) {
-    final Gcs gcs =
-        unifiedConfiguration.getCamunda().getData().getPrimaryStorage().getBackup().getGcs();
+  private static void populateFromS3(final BrokerBasedProperties override, final Camunda camunda) {
+    final S3 s3 = camunda.getData().getPrimaryStorage().getBackup().getS3();
+    final S3BackupStoreConfig s3BackupStoreConfig = override.getData().getBackup().getS3();
+    s3BackupStoreConfig.setBucketName(s3.getBucketName());
+    s3BackupStoreConfig.setEndpoint(s3.getEndpoint());
+    s3BackupStoreConfig.setRegion(s3.getRegion());
+    s3BackupStoreConfig.setAccessKey(s3.getAccessKey());
+    s3BackupStoreConfig.setSecretKey(s3.getSecretKey());
+    s3BackupStoreConfig.setApiCallTimeout(s3.getApiCallTimeout());
+    s3BackupStoreConfig.setForcePathStyleAccess(s3.isForcePathStyleAccess());
+    s3BackupStoreConfig.setCompression(s3.getCompression());
+    s3BackupStoreConfig.setMaxConcurrentConnections(s3.getMaxConcurrentConnections());
+    s3BackupStoreConfig.setConnectionAcquisitionTimeout(s3.getConnectionAcquisitionTimeout());
+    s3BackupStoreConfig.setBasePath(s3.getBasePath());
+    s3BackupStoreConfig.setSupportLegacyMd5(s3.isSupportLegacyMd5());
+    s3BackupStoreConfig.setSsecKey(s3.getSsecKey());
+
+    override.getData().getBackup().setS3(s3BackupStoreConfig);
+  }
+
+  private static void populateFromGcs(final BrokerBasedProperties override, final Camunda camunda) {
+    final Gcs gcs = camunda.getData().getPrimaryStorage().getBackup().getGcs();
     final GcsBackupStoreConfig gcsBackupStoreConfig = override.getData().getBackup().getGcs();
     gcsBackupStoreConfig.setBucketName(gcs.getBucketName());
     gcsBackupStoreConfig.setBasePath(gcs.getBasePath());
@@ -756,9 +779,9 @@ public class BrokerBasedPropertiesOverride {
     override.getData().getBackup().setGcs(gcsBackupStoreConfig);
   }
 
-  private void populateFromAzure(final BrokerBasedProperties override) {
-    final Azure azure =
-        unifiedConfiguration.getCamunda().getData().getPrimaryStorage().getBackup().getAzure();
+  private static void populateFromAzure(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final Azure azure = camunda.getData().getPrimaryStorage().getBackup().getAzure();
     final AzureBackupStoreConfig azureBackupStoreConfig = override.getData().getBackup().getAzure();
     azureBackupStoreConfig.setEndpoint(azure.getEndpoint());
     azureBackupStoreConfig.setAccountName(azure.getAccountName());
@@ -766,20 +789,15 @@ public class BrokerBasedPropertiesOverride {
     azureBackupStoreConfig.setConnectionString(azure.getConnectionString());
     azureBackupStoreConfig.setBasePath(azure.getBasePath());
     azureBackupStoreConfig.setCreateContainer(azure.isCreateContainer());
-    populateFromSasToken(override);
+    populateFromSasToken(override, camunda);
 
     override.getData().getBackup().setAzure(azureBackupStoreConfig);
   }
 
-  private void populateFromSasToken(final BrokerBasedProperties override) {
+  private static void populateFromSasToken(
+      final BrokerBasedProperties override, final Camunda camunda) {
     final SasToken sasToken =
-        unifiedConfiguration
-            .getCamunda()
-            .getData()
-            .getPrimaryStorage()
-            .getBackup()
-            .getAzure()
-            .getSasToken();
+        camunda.getData().getPrimaryStorage().getBackup().getAzure().getSasToken();
     final SasTokenConfig sasTokenConfig = override.getData().getBackup().getAzure().getSasToken();
 
     if (sasToken != null) {
@@ -793,9 +811,9 @@ public class BrokerBasedPropertiesOverride {
     }
   }
 
-  private void populateFromFilesystem(final BrokerBasedProperties override) {
-    final Filesystem filesystem =
-        unifiedConfiguration.getCamunda().getData().getPrimaryStorage().getBackup().getFilesystem();
+  private static void populateFromFilesystem(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final Filesystem filesystem = camunda.getData().getPrimaryStorage().getBackup().getFilesystem();
     final FilesystemBackupStoreConfig filesystemBackupStoreConfig =
         override.getData().getBackup().getFilesystem();
     filesystemBackupStoreConfig.setBasePath(filesystem.getBasePath());
@@ -803,10 +821,11 @@ public class BrokerBasedPropertiesOverride {
     override.getData().getBackup().setFilesystem(filesystemBackupStoreConfig);
   }
 
-  private void populateBackupScheduler(
-      final BrokerBasedProperties override, final PrimaryStorageBackup primaryStorageBackup) {
-
-    validateSchedulerConfiguration(primaryStorageBackup);
+  private static void populateBackupScheduler(
+      final BrokerBasedProperties override,
+      final PrimaryStorageBackup primaryStorageBackup,
+      final Camunda camunda) {
+    validateSchedulerConfiguration(primaryStorageBackup, camunda);
 
     final BackupCfg backupCfg = override.getData().getBackup();
     backupCfg.setRequired(primaryStorageBackup.isRequired());
@@ -817,8 +836,9 @@ public class BrokerBasedPropertiesOverride {
     backupCfg.setRetention(primaryStorageBackup.getRetention());
   }
 
-  private void validateSchedulerConfiguration(final PrimaryStorageBackup primaryStorageBackup) {
-    final var dbType = unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getType();
+  private static void validateSchedulerConfiguration(
+      final PrimaryStorageBackup primaryStorageBackup, final Camunda camunda) {
+    final var dbType = camunda.getData().getSecondaryStorage().getType();
 
     final var continuousBackupsEnabledOnDocumentBasedStore =
         (dbType.isElasticSearch() || dbType.isOpenSearch())
@@ -831,14 +851,15 @@ public class BrokerBasedPropertiesOverride {
     }
   }
 
-  private boolean hasScheduleConfig(final PrimaryStorageBackup primaryStorageBackup) {
+  private static boolean hasScheduleConfig(final PrimaryStorageBackup primaryStorageBackup) {
     return primaryStorageBackup.getSchedule() != null
         && !primaryStorageBackup.getSchedule().isBlank()
         && !primaryStorageBackup.getSchedule().equalsIgnoreCase("none");
   }
 
-  private void populateCamundaExporter(final BrokerBasedProperties override) {
-    final Data data = unifiedConfiguration.getCamunda().getData();
+  private static void populateCamundaExporter(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final Data data = camunda.getData();
     final SecondaryStorage secondaryStorage = data.getSecondaryStorage();
 
     if (!secondaryStorage.getAutoconfigureCamundaExporter()) {
@@ -874,24 +895,22 @@ public class BrokerBasedPropertiesOverride {
         ExporterConfiguration.of(io.camunda.exporter.config.ExporterConfiguration.class, args)
             .apply(
                 config -> {
-                  CamundaExporterConfigurationApplier.applyRetention(config, unifiedConfiguration);
-                  CamundaExporterConfigurationApplier.applyConnect(config, unifiedConfiguration);
-                  CamundaExporterConfigurationApplier.applyIndex(config, unifiedConfiguration);
-                  CamundaExporterConfigurationApplier.applyHistory(config, unifiedConfiguration);
-                  CamundaExporterConfigurationApplier.applyPostExportConfiguration(
-                      config, unifiedConfiguration);
-                  CamundaExporterConfigurationApplier.applyBulk(config, unifiedConfiguration);
-                  CamundaExporterConfigurationApplier.applyIncidentNotifier(
-                      config, unifiedConfiguration);
-                  CamundaExporterConfigurationApplier.applyMisc(config, unifiedConfiguration);
-                  CamundaExporterConfigurationApplier.applyExtensionProperties(
-                      config, unifiedConfiguration);
+                  CamundaExporterConfigurationApplier.applyRetention(config, camunda);
+                  CamundaExporterConfigurationApplier.applyConnect(config, camunda);
+                  CamundaExporterConfigurationApplier.applyIndex(config, camunda);
+                  CamundaExporterConfigurationApplier.applyHistory(config, camunda);
+                  CamundaExporterConfigurationApplier.applyPostExportConfiguration(config, camunda);
+                  CamundaExporterConfigurationApplier.applyBulk(config, camunda);
+                  CamundaExporterConfigurationApplier.applyIncidentNotifier(config, camunda);
+                  CamundaExporterConfigurationApplier.applyMisc(config, camunda);
+                  CamundaExporterConfigurationApplier.applyExtensionProperties(config, camunda);
                 })
             .toArgs());
   }
 
-  private void populateRdbmsExporter(final BrokerBasedProperties override) {
-    final Data data = unifiedConfiguration.getCamunda().getData();
+  private static void populateRdbmsExporter(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final Data data = camunda.getData();
     final SecondaryStorage secondaryStorage = data.getSecondaryStorage();
 
     final Rdbms database = secondaryStorage.getRdbms();
@@ -941,20 +960,10 @@ public class BrokerBasedPropertiesOverride {
                       database.isExportBatchOperationItemsOnCreation());
                   config.setBatchOperationItemInsertBlockSize(
                       database.getBatchOperationItemInsertBlockSize());
-                  config.setAuditLog(
-                      unifiedConfiguration.getCamunda().getData().getAuditLog().toConfiguration());
-                  config.setWaitState(
-                      unifiedConfiguration
-                          .getCamunda()
-                          .getData()
-                          .getWaitStates()
-                          .toConfiguration());
+                  config.setAuditLog(camunda.getData().getAuditLog().toConfiguration());
+                  config.setWaitState(camunda.getData().getWaitStates().toConfiguration());
                   config.setHistoryDeletion(
-                      unifiedConfiguration
-                          .getCamunda()
-                          .getData()
-                          .getHistoryDeletion()
-                          .toConfiguration());
+                      camunda.getData().getHistoryDeletion().toConfiguration());
 
                   applyRdbmsHistoryExporterConfiguration(config.getHistory(), database);
 
@@ -1003,13 +1012,12 @@ public class BrokerBasedPropertiesOverride {
                   }
 
                   applyRdbmsExtensionPropertyConfiguration(
-                      config.getExtensionProperties(),
-                      unifiedConfiguration.getCamunda().getData().getExtensionProperties());
+                      config.getExtensionProperties(), camunda.getData().getExtensionProperties());
                 })
             .toArgs());
   }
 
-  private void applyRdbmsExtensionPropertyConfiguration(
+  private static void applyRdbmsExtensionPropertyConfiguration(
       final io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration
           extensionProperties,
       final io.camunda.configuration.ExtensionProperties source) {
@@ -1018,7 +1026,7 @@ public class BrokerBasedPropertiesOverride {
     extensionProperties.setToolPropertiesPrefix(source.getToolPropertiesPrefix());
   }
 
-  private void applyRdbmsHistoryExporterConfiguration(
+  private static void applyRdbmsHistoryExporterConfiguration(
       final io.camunda.exporter.rdbms.ExporterConfiguration.HistoryConfiguration history,
       final Rdbms database) {
     if (database.getHistory() == null) {
@@ -1046,12 +1054,14 @@ public class BrokerBasedPropertiesOverride {
     history.setMaxHistoryCleanupUsage(database.getHistory().getMaxHistoryCleanupUsage());
   }
 
-  private void populateFromMonitoring(final BrokerBasedProperties override) {
-    populateFromMetrics(override);
+  private static void populateFromMonitoring(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    populateFromMetrics(override, camunda);
   }
 
-  private void populateFromMetrics(final BrokerBasedProperties override) {
-    final Metrics metrics = unifiedConfiguration.getCamunda().getMonitoring().getMetrics();
+  private static void populateFromMetrics(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final Metrics metrics = camunda.getMonitoring().getMetrics();
     override.getExperimental().getFeatures().setEnableActorMetrics(metrics.isActor());
     override.setExecutionMetricsExporterEnabled(metrics.isEnableExporterExecutionMetrics());
 
@@ -1082,9 +1092,9 @@ public class BrokerBasedPropertiesOverride {
     cursor.put(keys[keys.length - 1], value);
   }
 
-  private void populateFromExporters(final BrokerBasedProperties override) {
-    final Map<String, Exporter> exporters =
-        unifiedConfiguration.getCamunda().getData().getExporters();
+  private static void populateFromExporters(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final Map<String, Exporter> exporters = camunda.getData().getExporters();
 
     // Log common legacy exporters warning instead of using UnifiedConfigurationHelper logging.
     if (!override.getExporters().isEmpty()) {
@@ -1099,16 +1109,17 @@ public class BrokerBasedPropertiesOverride {
         (name, exporter) -> override.getExporters().put(name, exporter.toExporterCfg()));
   }
 
-  private void populateFromGlobalListeners(final BrokerBasedProperties override) {
+  private static void populateFromGlobalListeners(
+      final BrokerBasedProperties override, final Camunda camunda) {
     override
         .getExperimental()
         .getEngine()
-        .setGlobalListeners(unifiedConfiguration.getCamunda().getCluster().getGlobalListeners());
+        .setGlobalListeners(camunda.getCluster().getGlobalListeners());
   }
 
-  private void populateFromProcessInstanceCreation(final BrokerBasedProperties override) {
-    final var processInstanceCreation =
-        unifiedConfiguration.getCamunda().getProcessInstanceCreation();
+  private static void populateFromProcessInstanceCreation(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final var processInstanceCreation = camunda.getProcessInstanceCreation();
     final var processInstanceCreationCfg =
         override.getExperimental().getEngine().getProcessInstanceCreation();
     processInstanceCreationCfg.setBusinessIdUniquenessEnabled(
@@ -1127,17 +1138,13 @@ public class BrokerBasedPropertiesOverride {
         processInstanceCreation.getMessageStartLockReleasePollBatchLimit());
   }
 
-  private void populateFromJobs(final BrokerBasedProperties override) {
+  private static void populateFromJobs(
+      final BrokerBasedProperties override, final Camunda camunda) {
     override
         .getExperimental()
         .getEngine()
         .getJobs()
         .setIncludeVariablesInJobCompletedEvent(
-            unifiedConfiguration
-                .getCamunda()
-                .getProcessing()
-                .getEngine()
-                .getJob()
-                .isIncludeVariablesInJobCompletedEvent());
+            camunda.getProcessing().getEngine().getJob().isIncludeVariablesInJobCompletedEvent());
   }
 }
