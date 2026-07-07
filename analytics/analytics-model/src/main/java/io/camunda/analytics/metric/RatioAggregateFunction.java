@@ -26,7 +26,16 @@ import java.util.function.ToDoubleFunction;
 public final class RatioAggregateFunction<F>
     implements AggregateFunction<F, RatioAccumulator, RatioResult> {
 
-  /** How a fact's measured value is compared against the threshold to qualify for the numerator. */
+  /**
+   * How a fact's measured value is compared against the threshold to qualify for the numerator.
+   *
+   * <p>{@link #EQ} and {@link #NE} are <em>exact</em> {@code double} comparisons ({@code ==} /
+   * {@code !=}), with no epsilon: they are meant for measures that carry exact small integers —
+   * typically a 0/1 boolean encoding (e.g. the no-incident cohort matches {@code hadIncident ==
+   * 0}), where every value is exactly representable. Do not use them against computed
+   * floating-point measures (averages, ratios), whose rounding makes exact equality meaningless;
+   * use a range predicate ({@link #LE}/{@link #GE}) instead.
+   */
   public enum Comparison {
     LE,
     LT,

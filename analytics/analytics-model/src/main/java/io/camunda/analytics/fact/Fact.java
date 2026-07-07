@@ -188,11 +188,25 @@ public final class Fact implements FactRow {
     }
 
     public Builder transition(final Transition transition) {
-      return field(TRANSITION, transition == null ? null : transition.name());
+      if (transition != null) {
+        fields.put(TRANSITION, transition.name());
+      }
+      return this;
     }
 
+    /**
+     * Sets a named field; null values are ignored so absence and null coincide. The reserved {@link
+     * #TRANSITION} name is rejected — the lifecycle transition is typed, so it must be set via
+     * {@link #transition(Transition)}, never as a free-form field that could silently disagree with
+     * the {@link Transition} enum.
+     */
     public Builder field(final String name, final Object value) {
       Objects.requireNonNull(name, "name");
+      if (TRANSITION.equals(name)) {
+        throw new IllegalArgumentException(
+            "field name 'transition' is reserved for the lifecycle transition; set it via"
+                + " transition(Transition)");
+      }
       if (value != null) {
         fields.put(name, value);
       }

@@ -8,6 +8,7 @@
 package io.camunda.analytics.fact;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.analytics.dimension.DimensionColumn;
 import io.camunda.analytics.dimension.DimensionKey;
@@ -73,6 +74,23 @@ final class FactTest {
     // then
     assertThat(key).isEqualTo(DimensionKey.of(grain, "EU", 100L));
     assertThat(duration).isEqualTo(250L);
+  }
+
+  @Test
+  void shouldRejectTheReservedTransitionFieldName() {
+    // given a builder
+    final Fact.Builder builder = Fact.builder(FactType.PROCESS_INSTANCE);
+
+    // when the reserved name is set as a free-form field, then it is rejected — the lifecycle
+    // transition is typed and must go through transition(Transition)
+    assertThatThrownBy(() -> builder.field(Fact.TRANSITION, "COMPLETED"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("reserved")
+        .hasMessageContaining("transition(Transition)");
+
+    // and setting it through the typed setter still works
+    assertThat(builder.transition(Transition.COMPLETED).build().get(Fact.TRANSITION))
+        .isEqualTo("COMPLETED");
   }
 
   @Test
