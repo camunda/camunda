@@ -27,6 +27,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerModifyProcessInstanceR
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerResolveIncidentRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerSetVariablesRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerSuspendResumeProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerThrowErrorRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateJobRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateJobRetriesRequest;
@@ -52,6 +53,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentReques
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Resource;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SuspendResumeProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobPriorityRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
@@ -354,6 +356,14 @@ public final class RequestMapper extends RequestUtil {
       brokerRequest.setOperationReference(grpcRequest.getOperationReference());
     }
 
+    return brokerRequest;
+  }
+
+  public static BrokerSuspendResumeProcessInstanceRequest toSuspendResumeProcessInstanceRequest(
+      final SuspendResumeProcessInstanceRequest grpcRequest) {
+    final var brokerRequest =
+        new BrokerSuspendResumeProcessInstanceRequest(grpcRequest.getResume());
+    brokerRequest.setProcessInstanceKey(grpcRequest.getProcessInstanceKey());
     return brokerRequest;
   }
 

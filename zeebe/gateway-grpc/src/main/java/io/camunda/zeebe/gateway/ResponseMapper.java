@@ -43,6 +43,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessMetadata;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SuspendResumeProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobPriorityResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
@@ -307,6 +308,11 @@ public final class ResponseMapper {
   public static CancelProcessInstanceResponse toCancelProcessInstanceResponse(
       final long key, final ProcessInstanceRecord brokerResponse) {
     return CancelProcessInstanceResponse.getDefaultInstance();
+  }
+
+  public static SuspendResumeProcessInstanceResponse toSuspendResumeProcessInstanceResponse(
+      final long key, final ProcessInstanceRecord brokerResponse) {
+    return SuspendResumeProcessInstanceResponse.getDefaultInstance();
   }
 
   public static SetVariablesResponse toSetVariablesResponse(

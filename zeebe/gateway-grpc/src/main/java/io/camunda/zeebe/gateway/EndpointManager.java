@@ -65,6 +65,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRespon
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SuspendResumeProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SuspendResumeProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
@@ -238,6 +240,16 @@ public final class EndpointManager {
         request,
         RequestMapper::toCancelProcessInstanceRequest,
         ResponseMapper::toCancelProcessInstanceResponse,
+        responseObserver);
+  }
+
+  public void suspendResumeProcessInstance(
+      final SuspendResumeProcessInstanceRequest request,
+      final ServerStreamObserver<SuspendResumeProcessInstanceResponse> responseObserver) {
+    sendRequest(
+        request,
+        RequestMapper::toSuspendResumeProcessInstanceRequest,
+        ResponseMapper::toSuspendResumeProcessInstanceResponse,
         responseObserver);
   }
 

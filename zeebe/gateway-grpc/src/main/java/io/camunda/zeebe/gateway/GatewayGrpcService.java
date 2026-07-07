@@ -45,6 +45,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRespon
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SuspendResumeProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SuspendResumeProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
@@ -85,6 +87,14 @@ public class GatewayGrpcService extends GatewayImplBase {
       final CancelProcessInstanceRequest request,
       final StreamObserver<CancelProcessInstanceResponse> responseObserver) {
     endpointManager.cancelProcessInstance(
+        request, ErrorMappingStreamObserver.ofStreamObserver(responseObserver));
+  }
+
+  @Override
+  public void suspendResumeProcessInstance(
+      final SuspendResumeProcessInstanceRequest request,
+      final StreamObserver<SuspendResumeProcessInstanceResponse> responseObserver) {
+    endpointManager.suspendResumeProcessInstance(
         request, ErrorMappingStreamObserver.ofStreamObserver(responseObserver));
   }
 
