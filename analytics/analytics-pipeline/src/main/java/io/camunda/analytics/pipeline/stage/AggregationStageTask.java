@@ -144,8 +144,8 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
   /**
    * Builds the merge topology from the given cubes over this task's reused cell store and serving
    * writer: one {@link SegmentMergingAggregation} + dispatch applier per meter, behind a single
-   * {@link CubeMergeProcessor}. Called once at construction and again on each live reload; the
-   * caller inits the returned topology.
+   * {@link CubeMergeProcessor}. Called once at construction and again on each live reload; the task
+   * installs it into its own topology field and inits it.
    */
   private void installTopology(final List<ActiveCube> cubes) {
     final Map<Integer, CellApplier> byStreamId = new HashMap<>();

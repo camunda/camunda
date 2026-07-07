@@ -203,7 +203,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
   /**
    * Builds the per-partition topology from the given cubes/tables over this task's reused provider,
    * open-segment store and serving writer, and collects the sealing aggregations. Called once at
-   * construction and again on each live reload; the caller inits the returned topology.
+   * construction and again on each live reload; it installs into the task's own topology field.
    */
   /**
    * The union of {@code var.*} names any active dataset groups or filters by (grain dimension
