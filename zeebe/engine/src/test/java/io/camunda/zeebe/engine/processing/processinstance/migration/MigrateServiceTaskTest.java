@@ -229,21 +229,16 @@ public class MigrateServiceTaskTest {
 
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
-    RecordingExporter.jobRecords(JobIntent.CREATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .await();
+    final long jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getKey();
 
     // lease the job so it carries a lease token
-    final var leaseToken =
-        ENGINE
-            .jobs()
-            .withType("A")
-            .withLease()
-            .activate()
-            .getValue()
-            .getJobs()
-            .get(0)
-            .getLeaseToken();
+    final var activationRecord = ENGINE.jobs().withType("A").withLease().activate().getValue();
+    final int jobIndex = activationRecord.getJobKeys().indexOf(jobKey);
+    final var leaseToken = activationRecord.getJobs().get(jobIndex).getLeaseToken();
 
     // when
     ENGINE
