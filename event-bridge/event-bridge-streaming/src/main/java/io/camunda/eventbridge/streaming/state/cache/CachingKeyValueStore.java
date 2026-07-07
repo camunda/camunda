@@ -73,11 +73,27 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
   // clean removal (eviction).
   private int cleanCount;
 
+  // Opt-in: a delete of a never-flushed dirty put annihilates the pair in the cache — neither the
+  // put nor a tombstone ever reaches the delegate. Sound ONLY under the caller's guarantee that a
+  // deleted key is never read again (deletes are garbage collection of dead rows, not semantics):
+  // if the delegate holds an older flushed value for the key, skipping the tombstone leaves it as
+  // unreachable dead space (reclaimed by compaction), never as a resurrectable read.
+  private final boolean absorbDeletes;
+
   public CachingKeyValueStore(
       final KeyValueStore<K, V> delegate,
       final K keyFlyweight,
       final V valueFlyweight,
       final long maxBytes) {
+    this(delegate, keyFlyweight, valueFlyweight, maxBytes, false);
+  }
+
+  public CachingKeyValueStore(
+      final KeyValueStore<K, V> delegate,
+      final K keyFlyweight,
+      final V valueFlyweight,
+      final long maxBytes,
+      final boolean absorbDeletes) {
     if (maxBytes <= 0) {
       throw new IllegalArgumentException("maxBytes must be > 0, was " + maxBytes);
     }
@@ -85,6 +101,7 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
     this.keyFlyweight = keyFlyweight;
     this.valueFlyweight = valueFlyweight;
     this.maxBytes = maxBytes;
+    this.absorbDeletes = absorbDeletes;
   }
 
   @Override
@@ -119,6 +136,11 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
       cache.put(ByteBuffer.wrap(keyBytes), created);
       dirtyIndex.put(keyBytes, created);
       approxBytes += keyBytes.length;
+    } else if (absorbDeletes && entry.dirty && !entry.tombstone && !entry.flushed) {
+      // The put never reached the delegate — the pair annihilates: no write, no tombstone.
+      cache.remove(ByteBuffer.wrap(keyBytes));
+      dirtyIndex.remove(keyBytes);
+      approxBytes -= keyBytes.length + footprintValue(entry);
     } else {
       if (!entry.dirty) {
         cleanCount--; // clean -> dirty tombstone
@@ -205,6 +227,7 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
         approxBytes -= dirty.getKey().length;
       } else {
         entry.dirty = false;
+        entry.flushed = true; // the delegate now holds this key — a later delete must tombstone
         cleanCount++; // dirty -> clean (flushed, delegate-backed again)
       }
     }
@@ -377,10 +400,14 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
     private byte[] value; // null iff tombstone
     private boolean dirty;
     private boolean tombstone;
+    // Whether the delegate is known to hold this key (read-through hit, or a checkpointed put).
+    // A dirty put created blind stays false until its first flush — the delete-absorption window.
+    private boolean flushed;
 
     static CacheEntry cleanValue(final byte[] value) {
       final CacheEntry entry = new CacheEntry();
       entry.value = value;
+      entry.flushed = true;
       return entry;
     }
 

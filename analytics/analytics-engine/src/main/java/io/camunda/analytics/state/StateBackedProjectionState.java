@@ -78,21 +78,25 @@ public final class StateBackedProjectionState implements MutableProjectionState,
         StoreBuilder.keyValueStore(
                 AnalyticsColumnFamilies.ELEMENT_ENTITY, DbLong::new, ElementEntity::new)
             .withCaching(cacheBytesPerStore)
+            .withDeleteAbsorption()
             .buildCache(provider);
     variables =
         StoreBuilder.keyValueStore(
                 AnalyticsColumnFamilies.VARIABLE_ENTRIES, DbBytes::new, DbString::new)
             .withCaching(cacheBytesPerStore)
+            .withDeleteAbsorption()
             .buildCache(provider);
     incidents =
         StoreBuilder.keyValueStore(
                 AnalyticsColumnFamilies.INCIDENT_ENTITY, DbLong::new, IncidentEntity::new)
             .withCaching(cacheBytesPerStore)
+            .withDeleteAbsorption()
             .buildCache(provider);
     variableScopes =
         StoreBuilder.keyValueStore(
                 AnalyticsColumnFamilies.VARIABLE_SCOPES, DbLong::new, () -> DbNil.INSTANCE)
             .withCaching(cacheBytesPerStore)
+            .withDeleteAbsorption()
             .buildCache(provider);
     caches = List.of(elements, variables, variableScopes, incidents);
   }

@@ -168,6 +168,46 @@ final class CachingKeyValueStoreTest {
   }
 
   @Test
+  void shouldAbsorbAPutThenDeletePairThatNeverReachedTheDelegate() {
+    // given — an absorbing cache (deletes are GC: a deleted key is never read again)
+    final CountingDelegate delegate = new CountingDelegate();
+    final CachingKeyValueStore<DbString, DbLong> cache =
+        new CachingKeyValueStore<>(delegate, new DbString(), new DbLong(), LARGE_BUDGET, true);
+
+    // when — a short-lived put+delete pair within one checkpoint interval
+    put(cache, "ephemeral", 7L);
+    delete(cache, "ephemeral");
+    cache.checkpoint();
+
+    // then — the pair annihilated: neither the put nor a tombstone reached the delegate
+    assertThat(delegate.deletes).isZero();
+    assertThat(get(delegate, "ephemeral")).isEqualTo(-1L);
+    assertThat(get(cache, "ephemeral")).isEqualTo(-1L);
+  }
+
+  @Test
+  void shouldStillTombstoneDelegateBackedKeysWhenAbsorbing() {
+    // given — an absorbing cache with one read-through entry and one checkpointed (flushed) put
+    final CountingDelegate delegate = new CountingDelegate();
+    put(delegate, "readThrough", 1L);
+    final CachingKeyValueStore<DbString, DbLong> cache =
+        new CachingKeyValueStore<>(delegate, new DbString(), new DbLong(), LARGE_BUDGET, true);
+    get(cache, "readThrough");
+    put(cache, "flushed", 2L);
+    cache.checkpoint();
+
+    // when — both delegate-backed keys are deleted and the deletes are checkpointed
+    delete(cache, "readThrough");
+    delete(cache, "flushed");
+    cache.checkpoint();
+
+    // then — real tombstones were flushed for both (absorption applies only to never-flushed puts)
+    assertThat(delegate.deletes).isEqualTo(2);
+    assertThat(get(delegate, "readThrough")).isEqualTo(-1L);
+    assertThat(get(delegate, "flushed")).isEqualTo(-1L);
+  }
+
+  @Test
   void shouldReportOverCapacityWhileDirtyThenClearAfterCheckpoint() {
     // given — a tiny budget
     final CountingDelegate delegate = new CountingDelegate();
@@ -255,6 +295,7 @@ final class CachingKeyValueStoreTest {
     private final KeyValueStore<DbString, DbLong> inner =
         new InMemoryKeyValueStore<>(new DbString(), new DbLong());
     private int gets;
+    private int deletes;
 
     @Override
     public Optional<DbLong> get(final DbString key) {
@@ -289,6 +330,7 @@ final class CachingKeyValueStoreTest {
 
     @Override
     public void delete(final DbString key) {
+      deletes++;
       inner.delete(key);
     }
   }

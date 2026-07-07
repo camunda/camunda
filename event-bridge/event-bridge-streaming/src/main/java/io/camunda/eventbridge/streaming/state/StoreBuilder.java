@@ -47,6 +47,7 @@ public final class StoreBuilder<
   private final Supplier<K> keyFlyweight;
   private final Supplier<V> valueFlyweight;
   private long cacheMaxBytes;
+  private boolean absorbDeletes;
 
   private StoreBuilder(
       final CF columnFamily, final Supplier<K> keyFlyweight, final Supplier<V> valueFlyweight) {
@@ -81,6 +82,18 @@ public final class StoreBuilder<
     return this;
   }
 
+  /**
+   * Lets the cache annihilate a put-then-delete pair that never reached the durable store — no
+   * write, no tombstone. Opt in ONLY when a deleted key is never read again (deletes are garbage
+   * collection of dead rows): if the durable store holds an older flushed value for the key,
+   * skipping the tombstone leaves it as unreachable dead space, reclaimed by compaction. Requires
+   * {@link #withCaching}.
+   */
+  public StoreBuilder<CF, K, V> withDeleteAbsorption() {
+    absorbDeletes = true;
+    return this;
+  }
+
   /** Materializes the store from {@code provider}, applying caching if configured. */
   public KeyValueStore<K, V> build(final StateStoreProvider<CF> provider) {
     if (cacheMaxBytes == 0) {
@@ -102,6 +115,7 @@ public final class StoreBuilder<
         provider.keyValueStore(columnFamily, keyFlyweight.get(), valueFlyweight.get()),
         keyFlyweight.get(),
         valueFlyweight.get(),
-        cacheMaxBytes);
+        cacheMaxBytes,
+        absorbDeletes);
   }
 }
