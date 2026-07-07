@@ -13,6 +13,8 @@ import io.camunda.eventbridge.protocol.FetchResponseEncoder;
 import io.camunda.eventbridge.protocol.MessageHeaderEncoder;
 import io.netty.buffer.ByteBuf;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Serialises a {@link FetchResponse} as an SBE {@code FetchResponse} message, but streams the
@@ -38,6 +40,9 @@ public class ManagedFetchResponseAdapter implements ManagedPayload {
           + Integer.BYTES; // var-data length prefix
 
   private final FetchResponse response;
+  // The segment lease must be closed exactly once: lease().close() is a refcount decrement, so a
+  // double release would unpin a segment another fetch still reads.
+  private final AtomicBoolean released = new AtomicBoolean();
 
   public ManagedFetchResponseAdapter(final FetchResponse response) {
     this.response = response;
@@ -52,6 +57,7 @@ public class ManagedFetchResponseAdapter implements ManagedPayload {
   public void encode(final ByteBuf buffer, final List<Object> out) {
     if (isEmpty()) {
       writeHeader(buffer, 0, -1, highWatermark(), 0);
+      release(); // nothing streams from the log, so the lease (if any) is done now
       return;
     }
 
@@ -62,15 +68,30 @@ public class ManagedFetchResponseAdapter implements ManagedPayload {
         response.highWatermark(),
         response.dataLength());
 
+    // The lease was handed off to the transfer: it may only be released once EVERY region has
+    // been written (or discarded by a failing channel). Netty releases each region exactly once,
+    // so the last region's callback closes the lease. Without this the lease leaked on every
+    // successful fetch, pinning each served segment forever (compacted segments stayed on disk as
+    // *-deleted files that the deferred deletion could never unlink).
     final var channel = response.channel();
-    for (final var indexEntry : response.entries()) {
-      out.add(new SharedFileRegion(channel, indexEntry.position(), indexEntry.length()));
+    final var entries = response.entries();
+    final AtomicInteger pendingRegions = new AtomicInteger(entries.size());
+    final Runnable onRegionReleased =
+        () -> {
+          if (pendingRegions.decrementAndGet() == 0) {
+            release();
+          }
+        };
+    for (final var indexEntry : entries) {
+      out.add(
+          new SharedFileRegion(
+              channel, indexEntry.position(), indexEntry.length(), onRegionReleased));
     }
   }
 
   @Override
   public void release() {
-    if (response != null) {
+    if (response != null && released.compareAndSet(false, true)) {
       response.releaseLease();
     }
   }

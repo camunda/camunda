@@ -18,12 +18,24 @@ public class SharedFileRegion extends AbstractReferenceCounted implements FileRe
   private final FileChannel fileChannel;
   private final long position;
   private final long count;
+  private final Runnable onRelease;
   private long transferred;
 
-  public SharedFileRegion(FileChannel fileChannel, long position, long count) {
+  /**
+   * @param onRelease invoked exactly once when Netty releases this region — after the transfer
+   *     completes or when a failed/closed channel discards it from the outbound buffer. This is the
+   *     only completion signal the producer of the region gets; it must carry the segment lease
+   *     release (see {@link ManagedFetchResponseAdapter}), never a channel close.
+   */
+  public SharedFileRegion(
+      final FileChannel fileChannel,
+      final long position,
+      final long count,
+      final Runnable onRelease) {
     this.fileChannel = fileChannel;
     this.position = position;
     this.count = count;
+    this.onRelease = onRelease;
   }
 
   @Override
@@ -85,9 +97,15 @@ public class SharedFileRegion extends AbstractReferenceCounted implements FileRe
 
   @Override
   protected void deallocate() {
-    // THE MAGIC FIX: DO ABSOLUTELY NOTHING.
-    // We strictly leave the FileChannel open for other fetchers to use.
-    // The channel is owned and managed by Zeebe's Segment lifecycle.
+    // Deliberately leave the FileChannel open — it is owned by the segment lifecycle and shared
+    // with other fetchers. But DO forward the release signal: Netty calls this exactly once per
+    // region (after the transfer, or when discarding it on a failed/closing channel), and it is
+    // the only notification the fetch path gets that the segment lease may be released. Swallowing
+    // it pinned every served segment forever (compacted segments were renamed *-deleted but never
+    // unlinked, because the deferred deletion waits for the lease count to reach zero).
+    if (onRelease != null) {
+      onRelease.run();
+    }
   }
 
   @Override
