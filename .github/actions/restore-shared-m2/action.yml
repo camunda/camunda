@@ -1,0 +1,18 @@
+# owner: @camunda/monorepo-devops-team
+name: Restore shared m2 SNAPSHOTs
+description: >-
+  Download the run-scoped m2-installed.tar (the io.camunda SNAPSHOTs that build-distball
+  installed and archived to the GCS build-cache) and extract it into the local Maven
+  repository, so `mvn verify` sees the SNAPSHOTs without re-running the reactor (#52693).
+  Requires gcloud to be authenticated already (e.g. setup-build's gcs-build-cache-auth: true)
+  and the GCS_BUILD_CACHE_BUCKET env var to be set at the workflow level.
+runs:
+  using: composite
+  steps:
+    - name: Restore io.camunda SNAPSHOTs from GCS
+      shell: bash
+      run: |
+        set -euo pipefail
+        mkdir -p "${HOME}/.m2/repository/installed"
+        gcloud storage cp "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/m2-installed.tar" "${RUNNER_TEMP}/m2-installed.tar"
+        tar -xf "${RUNNER_TEMP}/m2-installed.tar" -C "${HOME}/.m2/repository/installed"

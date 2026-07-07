@@ -77,6 +77,7 @@ jobs:
     permissions:
       actions: write
       contents: read
+      id-token: write  # ci-database-integration-tests-reusable declares it (WIF); required at startup even though this caller leaves use-shared-distball=false
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.generate-matrix.outputs.matrix) }}
@@ -95,6 +96,7 @@ jobs:
     permissions:
       actions: write
       contents: read
+      id-token: write  # ci-database-integration-tests-reusable declares it (WIF); required at startup even though this caller leaves use-shared-distball=false
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.generate-matrix.outputs.matrix) }}
@@ -117,6 +119,7 @@ jobs:
     permissions:
       actions: write
       contents: read
+      id-token: write  # ci-database-integration-tests-reusable declares it (WIF); required at startup even though this caller leaves use-shared-distball=false
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.generate-matrix.outputs.matrix) }}

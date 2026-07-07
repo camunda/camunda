@@ -429,12 +429,14 @@ jobs:
 
   build-distball:
     name: "Build / Distribution Tarball"
-    # Build the distball once and share it, replacing a ~15 min reactor build in each
-    # consumer. Transport differs by runner: docker-checks (GitHub-hosted) uses the GHA
-    # artifact API; the integration-tests shards (self-hosted gcp-perf) use GCS, since
-    # the artifact API is throughput-capped on self-hosted runners. Gated on the union
-    # of both consumers' conditions so the artifact exists whenever one runs. See #52693.
-    if: needs.detect-changes.outputs.camunda-docker-tests == 'true' || needs.detect-changes.outputs.java-code-changes == 'true'
+    # Build the distball once and share it, replacing a reactor build in each consumer.
+    # Transport differs by runner: docker-checks (GitHub-hosted) uses the GHA artifact API;
+    # self-hosted gcp-perf consumers (integration-tests, and the reusable database/webapp-UT
+    # workflows) use GCS, since the artifact API is throughput-capped on self-hosted runners.
+    # Gated on the union of all consumers' conditions so the artifact exists whenever one runs;
+    # frontend-changes is included because the webapp back-end UTs run on it; rdbms-integration-tests
+    # is included because its filter is a superset of java-code-changes (adds rdbms-change). See #52693.
+    if: needs.detect-changes.outputs.camunda-docker-tests == 'true' || needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true' || needs.detect-changes.outputs.rdbms-integration-tests == 'true'
     needs: [ detect-changes ]
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 30
@@ -466,8 +468,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # Only io.camunda reactor SNAPSHOTs are needed; drop the distro assemblies
-          # (shipped as the distball), sources/javadoc and bookkeeping to ~halve the payload.
+          # `installed/` is the split-local-repository partition holding only artifacts this
+          # reactor installed (see maven resolver split local repository), so archive the whole
+          # tree rather than filtering to io/camunda -- robust if the group id ever changes.
+          # Drop the distro assemblies (shipped as the distball), sources/javadoc and
+          # bookkeeping to ~halve the payload.
           tar \
             --exclude='*.tar.gz' \
             --exclude='*-sources.jar' \
@@ -475,7 +480,7 @@ jobs:
             --exclude='*.lastUpdated' \
             --exclude='_remote.repositories' \
             --exclude='*.repositories' \
-            -cf m2-installed.tar -C "${HOME}/.m2/repository/installed" io/camunda
+            -cf m2-installed.tar -C "${HOME}/.m2/repository/installed" .
           ls -lh m2-installed.tar
       # docker-checks (GitHub-hosted) consumes these via the artifact API.
       - name: Upload distball (artifact)
@@ -495,23 +500,13 @@ jobs:
           compression-level: 6
           if-no-files-found: error
       # integration-tests' gcp-perf shards consume these from GCS (ingress is free).
-      - name: Fetch GCS build-cache credentials
-        id: gcs-secrets
-        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+      # Authenticate here (not via setup-build) so the WIF/OIDC token is fresh: the
+      # build-zeebe step above can run ~15 min, close to the OIDC token lifetime.
+      - uses: ./.github/actions/gcs-build-cache-auth
         with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false
-          secrets: |
-            secret/data/products/camunda/ci/build-cache/monorepo-build-cache-sa SERVICE_ACCOUNT | GCS_SA;
-            secret/data/products/camunda/ci/build-cache/monorepo-build-cache-sa WORKLOAD_IDENTITY_PROVIDER | GCS_WIF;
-      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
-        with:
-          workload_identity_provider: ${{ steps.gcs-secrets.outputs.GCS_WIF }}
-          service_account: ${{ steps.gcs-secrets.outputs.GCS_SA }}
-      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+          vault-addr: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - name: Upload distball + SNAPSHOTs to GCS
         shell: bash
         # SA lacks storage.buckets.get, so gcloud's parallel-composite precheck fails; disable it.
@@ -523,64 +518,6 @@ jobs:
             "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/$(basename "${{ steps.build-zeebe.outputs.distball }}")"
           gcloud storage cp m2-installed.tar \
             "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/m2-installed.tar"
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-
-  utils-cleanup-distball:
-    name: "Cleanup / Distribution Tarball Artifact"
-    # Delete the run-scoped GCS objects after consumers finish. The `utils-` prefix
-    # exempts it from the check-results gate; artifacts self-expire (retention-days: 1)
-    # and the bucket TTL covers runs cancelled/failed before this fires.
-    needs: [ build-distball, docker-checks, integration-tests ]
-    # Clean up only when build-distball succeeded and no consumer failed or was cancelled
-    # (skipped consumers -- both are conditional -- don't block cleanup). If any failed or was
-    # cancelled, keep the GCS objects so "Re-run failed jobs" can re-fetch the distball --
-    # build-distball won't re-run (it already succeeded) so it won't re-upload. Orphaned objects
-    # on failed runs are reaped by the bucket TTL (Infra-owned).
-    if: >-
-      always()
-      && needs.build-distball.result == 'success'
-      && !contains(needs.*.result, 'failure')
-      && !contains(needs.*.result, 'cancelled')
-    runs-on: ubuntu-slim  # short auth-and-delete job; no need for a full runner
-    timeout-minutes: 10
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-        timeout-minutes: 1
-      - name: Fetch GCS build-cache credentials
-        id: gcs-secrets
-        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false
-          secrets: |
-            secret/data/products/camunda/ci/build-cache/monorepo-build-cache-sa SERVICE_ACCOUNT | GCS_SA;
-            secret/data/products/camunda/ci/build-cache/monorepo-build-cache-sa WORKLOAD_IDENTITY_PROVIDER | GCS_WIF;
-      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
-        with:
-          workload_identity_provider: ${{ steps.gcs-secrets.outputs.GCS_WIF }}
-          service_account: ${{ steps.gcs-secrets.outputs.GCS_SA }}
-      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
-      - name: Delete run-scoped GCS objects
-        shell: bash
-        run: |
-          set -euo pipefail
-          gcloud storage rm --recursive "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/" \
-            || echo "No objects to delete for run ${GITHUB_RUN_ID}"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -1169,7 +1106,11 @@ jobs:
   database-integration-tests:
     name: "Database Integration Tests / ${{ matrix.name }}"
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    needs: [ detect-changes, generate-db-versions ]
+    needs: [ detect-changes, generate-db-versions, build-distball ]
+    permissions:
+      contents: read
+      id-token: write  # granted through to the reusable workflow's WIF GCS auth
+      actions: write   # reusable workflow's send-slack-notification job declares it; validated at startup even though ci.yml never triggers it
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.generate-db-versions.outputs.ci-database-matrix) }}
@@ -1181,11 +1122,16 @@ jobs:
       database-image-version: "${{ matrix.database-image-version }}"
       database-name: "${{ matrix.database-name }}"
       it-database-type: "${{ matrix.it-database-type }}"
+      use-shared-distball: true
 
   history-tests:
     name: "History Integration Tests / ${{ matrix.name }}"
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    needs: [ detect-changes, generate-db-versions ]
+    needs: [ detect-changes, generate-db-versions, build-distball ]
+    permissions:
+      contents: read
+      id-token: write  # granted through to the reusable workflow's WIF GCS auth
+      actions: write   # reusable workflow's send-slack-notification job declares it; validated at startup even though ci.yml never triggers it
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.generate-db-versions.outputs.ci-database-matrix) }}
@@ -1201,11 +1147,16 @@ jobs:
       test-type: "history-tests"
       test-type-label: "History"
       runs-on: "gcp-perf-core-8-default"
+      use-shared-distball: true
 
   identity-tests:
     name: "Identity Integration Tests / ${{ matrix.name }}"
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    needs: [ detect-changes, generate-db-versions ]
+    needs: [ detect-changes, generate-db-versions, build-distball ]
+    permissions:
+      contents: read
+      id-token: write  # granted through to the reusable workflow's WIF GCS auth
+      actions: write   # reusable workflow's send-slack-notification job declares it; validated at startup even though ci.yml never triggers it
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.generate-db-versions.outputs.ci-database-matrix) }}
@@ -1220,6 +1171,7 @@ jobs:
       maven-profiles: "identity-tests"
       test-type: "identity-tests"
       test-type-label: "Identity"
+      use-shared-distball: true
 
   physical-tenant-acceptance-tests:
     name: "Physical Tenant Acceptance Tests / H2"
@@ -1242,7 +1194,7 @@ jobs:
 
   rdbms-integration-tests:
     if: needs.detect-changes.outputs.rdbms-integration-tests == 'true'
-    needs: [ detect-changes ]
+    needs: [ detect-changes, build-distball ]
     name: "General / Integration / RDBMS ITs"
     timeout-minutes: 30
     runs-on: gcp-perf-core-8-default
@@ -1254,11 +1206,18 @@ jobs:
         include: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:stress-test') && fromJson('[{"stressRun":1},{"stressRun":2},{"stressRun":3},{"stressRun":4},{"stressRun":5},{"stressRun":6},{"stressRun":7},{"stressRun":8},{"stressRun":9},{"stressRun":10}]') || fromJson('[{"stressRun":1}]') }}
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
-    permissions: { }  # no GITHUB_TOKEN is needed
+    permissions:
+      contents: read
+      id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token for the GCS distball download
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         timeout-minutes: 1
+      # Consume the shared distball's io.camunda SNAPSHOTs instead of a ~15 min reactor build.
+      # This job runs on a self-hosted gcp-perf runner where the artifact API is throughput-capped,
+      # so restore-shared-m2 pulls from GCS (same-region, non-billable). RDBMS ITs run in-process
+      # (no Docker image build), so only the m2 SNAPSHOTs are needed, not the distball tarball.
+      # gcs-build-cache-auth authenticates gcloud for that download. See build-distball.
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
@@ -1266,9 +1225,8 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      - uses: ./.github/actions/build-zeebe
-        with:
-          maven-extra-args: -T1C -PskipFrontendBuild
+          gcs-build-cache-auth: true
+      - uses: ./.github/actions/restore-shared-m2
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       # Run integration tests with RDBMS database
@@ -1360,6 +1318,10 @@ jobs:
         with:
           test_product: "${{ matrix.name }}"
           test_owner: "${{ matrix.owner }}"
+      # Consume the shared distball instead of a ~15 min reactor build. These shards run
+      # on self-hosted gcp-perf runners where the artifact API is throughput-capped, so
+      # they pull from GCS (same-region, non-billable). See build-distball.
+      # gcs-build-cache-auth authenticates gcloud for the GCS download below.
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
@@ -1368,36 +1330,17 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           minimus: true
-      # Consume the shared distball instead of a ~15 min reactor build. These shards run
-      # on self-hosted gcp-perf runners where the artifact API is throughput-capped, so
-      # they pull from GCS (same-region, non-billable). See build-distball.
-      - name: Fetch GCS build-cache credentials
-        id: gcs-secrets
-        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false
-          secrets: |
-            secret/data/products/camunda/ci/build-cache/monorepo-build-cache-sa SERVICE_ACCOUNT | GCS_SA;
-            secret/data/products/camunda/ci/build-cache/monorepo-build-cache-sa WORKLOAD_IDENTITY_PROVIDER | GCS_WIF;
-      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
-        with:
-          workload_identity_provider: ${{ steps.gcs-secrets.outputs.GCS_WIF }}
-          service_account: ${{ steps.gcs-secrets.outputs.GCS_SA }}
-      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
-      # Restore the io.camunda SNAPSHOTs archived by build-distball for `mvn verify` below
-      # (the GHA Maven cache doesn't carry locally-installed SNAPSHOTs between jobs).
-      - name: Download distball + SNAPSHOTs from GCS
+          gcs-build-cache-auth: true
+      # Download the shared distball tarball; restore-shared-m2 below handles the SNAPSHOTs.
+      - name: Download distball from GCS
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p dist/target "${HOME}/.m2/repository/installed"
+          mkdir -p dist/target
           gcloud storage cp "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/camunda-zeebe-*.tar.gz" dist/target/
-          gcloud storage cp "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/m2-installed.tar" "${RUNNER_TEMP}/m2-installed.tar"
-          tar -xf "${RUNNER_TEMP}/m2-installed.tar" -C "${HOME}/.m2/repository/installed"
+      # Restore the io.camunda SNAPSHOTs archived by build-distball for `mvn verify` below
+      # (the GHA Maven cache doesn't carry locally-installed SNAPSHOTs between jobs).
+      - uses: ./.github/actions/restore-shared-m2
       - uses: ./.github/actions/build-platform-docker
         if: ${{ matrix.docker-file != '' }}
         with:
@@ -2040,35 +1983,44 @@ jobs:
   tasklist-ci:
     if: needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true'
     name: "Tasklist"
-    needs: [ detect-changes ]
+    needs: [ detect-changes, build-distball ]
     uses: ./.github/workflows/ci-tasklist.yml
     secrets: inherit
-    permissions: { }
+    permissions:
+      contents: read
+      id-token: write  # granted through to the reusable back-end UT's WIF GCS auth
     with:
       runFeTests: ${{ needs.detect-changes.outputs.tasklist-frontend-changes  == 'true' }}
       runBeTests: ${{ needs.detect-changes.outputs.tasklist-backend-changes == 'true' || needs.detect-changes.outputs.zeebe-changes == 'true' }}
+      use-shared-distball: true
 
   operate-ci:
     if: needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true'
     name: "Operate"
-    needs: [ detect-changes ]
+    needs: [ detect-changes, build-distball ]
     uses: ./.github/workflows/ci-operate.yml
     secrets: inherit
-    permissions: { }
+    permissions:
+      contents: read
+      id-token: write  # granted through to the reusable back-end UT's WIF GCS auth
     with:
       runFeTests: ${{ needs.detect-changes.outputs.operate-frontend-changes == 'true' }}
       runBeTests: ${{ needs.detect-changes.outputs.operate-backend-changes == 'true' || needs.detect-changes.outputs.zeebe-changes == 'true'}}
+      use-shared-distball: true
 
   optimize-ci:
     if: ${{ needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true' }}
     name: "Optimize"
-    needs: [ detect-changes ]
+    needs: [ detect-changes, build-distball ]
     uses: ./.github/workflows/ci-optimize.yml
     secrets: inherit
-    permissions: { }
+    permissions:
+      contents: read
+      id-token: write  # granted through to the reusable back-end UT's WIF GCS auth
     with:
       runFeTests: ${{ needs.detect-changes.outputs.optimize-frontend-changes == 'true' }}
       runBeTests: ${{ needs.detect-changes.outputs.optimize-backend-changes == 'true' || needs.detect-changes.outputs.zeebe-changes == 'true' }}
+      use-shared-distball: true
 
   zeebe-ci:
     if: needs.detect-changes.outputs.zeebe-changes == 'true'
@@ -2366,7 +2318,7 @@ jobs:
 
   check-results:
     # Used by the merge queue to check all tests, including the unit test matrix.
-    # New test jobs must be added to the `needs` lists!
+    # New test jobs must be added to the `needs` list!
     # This name is hard-coded in the branch rules; remember to update that if this name changes
     if: always()
     runs-on: ubuntu-latest
@@ -2374,6 +2326,7 @@ jobs:
     permissions:
       actions: read
       checks: read
+      id-token: write
       pull-requests: write
     needs: # BELOW LIST IS IN ALPHABETICAL ORDER
       - actionlint
@@ -2416,6 +2369,8 @@ jobs:
       - webapp-client
       - zeebe-ci
       - zeebe-unit-tests
+    env:
+      SHOULD_CLEANUP_GCS: ${{ needs.build-distball.result == 'success' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         timeout-minutes: 1
@@ -2432,6 +2387,31 @@ jobs:
         with:
           github_token: ${{ github.token }}
           has_failures: ${{ contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') }}
+      # Clean up the run-scoped GCS objects (distball + m2 tarball) only when build-distball
+      # succeeded and no other job failed or was cancelled. If any did, keep them so
+      # "Re-run failed jobs" can re-fetch the distball (build-distball won't re-run, so it won't
+      # re-upload). needs.* here spans every check-results dependency (broader than the old
+      # consumer-only gate) — strictly safer: a failure anywhere keeps the objects for a rerun.
+      # Orphaned objects on abandoned runs are reaped by the bucket TTL (Infra-owned).
+      # continue-on-error keeps a Vault/GCS infra flake from failing the merge-queue gate.
+      - name: Authenticate to GCS build-cache
+        if: env.SHOULD_CLEANUP_GCS == 'true'
+        continue-on-error: true
+        uses: ./.github/actions/gcs-build-cache-auth
+        with:
+          vault-addr: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Delete run-scoped GCS objects
+        if: env.SHOULD_CLEANUP_GCS == 'true'
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          # rm fails if the prefix is already empty OR if auth was skipped/flaky (gcloud unset);
+          # either way this is non-fatal — the bucket TTL reaps anything left behind.
+          gcloud storage rm --recursive "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/" \
+            || echo "Cleanup skipped for run ${GITHUB_RUN_ID} (nothing to delete, or gcloud auth unavailable)"
       - run: |
           echo "The \`check-results\` job has the function to fail if any previous job was unsuccessful!"
           echo "If you're reading this and wondering what the is the problem, please check other GHA jobs of this workflow run to for errors/cancellation and see their logs."
