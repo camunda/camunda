@@ -8,12 +8,16 @@
 package io.camunda.analytics.webapp;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.analytics.dataset.DatasetCompiler;
 import io.camunda.analytics.dataset.DatasetDeclaration;
 import io.camunda.analytics.fact.FactType;
+import io.camunda.analytics.meter.InMemoryMeterIdStore;
 import io.camunda.analytics.meter.Meter;
 import io.camunda.analytics.meter.MeterCatalog;
+import io.camunda.analytics.meter.MeterIdRegistry;
 import io.camunda.analytics.webapp.MeasureCatalog.QuestionFilter;
 import io.camunda.analytics.webapp.MeasureCatalog.QuestionGroupBy;
 import java.util.List;
@@ -133,6 +137,39 @@ final class MeasureCatalogTest {
                     "process-instances", "no-such-measure", Map.of(), List.of(), List.of(), DAY))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("no-such-measure");
+  }
+
+  @Test
+  void shouldDeriveValidDeclarationsForEveryMeasure() {
+    // given the validation-gating compiler a provisioned declaration goes through
+    final DatasetCompiler compiler =
+        new DatasetCompiler(
+            MeterCatalog.withDefaults(), new MeterIdRegistry(new InMemoryMeterIdStore()));
+
+    // when every entity/measure question is compiled (grouped, with a variable group-by)
+    long cubeId = 1;
+    for (final MeasureCatalog.EntityView entity : catalog.view().entities()) {
+      for (final MeasureCatalog.MeasureView measure : entity.measures()) {
+        final DatasetDeclaration declaration =
+            catalog
+                .compile(
+                    entity.id(),
+                    measure.id(),
+                    Map.of(),
+                    List.of(
+                        new QuestionGroupBy("bpmnProcessId", false),
+                        new QuestionGroupBy("var.region", true)),
+                    List.of(new QuestionFilter("bpmnProcessId", "Invoice")),
+                    DAY)
+                .declaration();
+
+        // then the derived declaration passes the declaration-time validation gate
+        final long id = cubeId++;
+        assertThatCode(() -> compiler.compile(id, declaration))
+            .as("measure '%s' of entity '%s'", measure.id(), entity.id())
+            .doesNotThrowAnyException();
+      }
+    }
   }
 
   @Test

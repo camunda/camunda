@@ -13,6 +13,7 @@ import io.camunda.analytics.meter.Meter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 /**
  * The single source of truth for a dataset: what facts to aggregate ({@code sourceFact} + {@code
@@ -33,6 +34,26 @@ public record DatasetDeclaration(
     String keyField,
     long latenessMs) {
 
+  /**
+   * A dataset name is a metadata-plane lookup key (never a physical identifier), so its charset is
+   * wide enough for the report builder's derived names ({@code q:<entity>:<measure>:…:g:<ms>},
+   * which carry {@code : = , .}) — but it must never contain whitespace, quotes, or {@code @}.
+   */
+  private static final Pattern SAFE_DATASET_NAME = Pattern.compile("[a-zA-Z][a-zA-Z0-9_.:=,-]*");
+
+  /**
+   * A meter name feeds two derivations that make its charset strict: the {@code aggId} registry key
+   * is {@code <name>@<windowMs>} (so {@code @} must be impossible — a meter literally named {@code
+   * foo@60000} would collide with meter {@code foo} at the 60s tier), and the physical serving
+   * column is derived from it (so it must already be a plain identifier; see the serving-side
+   * {@code Identifiers} allowlist this mirrors). Structural dimension names become columns the same
+   * way.
+   */
+  private static final Pattern SAFE_IDENTIFIER = Pattern.compile("[a-zA-Z][a-zA-Z0-9_]*");
+
+  /** Postgres caps identifiers at 63 bytes; mirror the serving-side 60-char cap. */
+  private static final int MAX_IDENTIFIER_LENGTH = 60;
+
   public DatasetDeclaration {
     Objects.requireNonNull(name, "name");
     Objects.requireNonNull(sourceFact, "sourceFact");
@@ -40,12 +61,25 @@ public record DatasetDeclaration(
     if (name.isBlank()) {
       throw new IllegalArgumentException("dataset name must not be blank");
     }
+    if (!SAFE_DATASET_NAME.matcher(name).matches()) {
+      throw new IllegalArgumentException(
+          "dataset name '"
+              + name
+              + "' is not a safe name: it must start with a letter and contain only letters,"
+              + " digits, and '_ - . : = ,' (no whitespace, quotes, or '@')");
+    }
     filters = List.copyOf(filters == null ? List.of() : filters);
     dimensions = List.copyOf(dimensions == null ? List.of() : dimensions);
     meters = List.copyOf(meters == null ? List.of() : meters);
     windowSizesMs = List.copyOf(windowSizesMs == null ? List.of() : windowSizesMs);
     requireUnique(dimensions.stream().map(DimensionSpec::name).toList(), "dimension");
     requireUnique(meters.stream().map(Meter::name).toList(), "meter");
+    for (final Meter meter : meters) {
+      requireSafeIdentifier(name, "meter", meter.name());
+    }
+    for (final DimensionSpec dimension : dimensions) {
+      requireSafeDimensionName(name, dimension.name());
+    }
     if (kind == DatasetKind.TABLE) {
       // A table is a flat, keyed row list — no windowed aggregation.
       if (keyField == null || keyField.isBlank()) {
@@ -121,6 +155,52 @@ public record DatasetDeclaration(
   private static void requireUnique(final List<String> names, final String what) {
     if (names.stream().distinct().count() != names.size()) {
       throw new IllegalArgumentException(what + " names must be unique: " + names);
+    }
+  }
+
+  private static void requireSafeIdentifier(
+      final String dataset, final String what, final String identifier) {
+    if (!SAFE_IDENTIFIER.matcher(identifier).matches()
+        || identifier.length() > MAX_IDENTIFIER_LENGTH) {
+      throw new IllegalArgumentException(
+          "dataset '"
+              + dataset
+              + "' declares an unsafe "
+              + what
+              + " name '"
+              + identifier
+              + "': it must start with a letter, contain only letters, digits, and '_', and be at"
+              + " most "
+              + MAX_IDENTIFIER_LENGTH
+              + " chars");
+    }
+  }
+
+  /**
+   * A structural dimension name is a plain identifier (it becomes a physical column). A {@code
+   * var.*} dimension names user process data, so only what breaks the physical derivation is
+   * forbidden: after folding the namespace dots to underscores (exactly what the serving-side
+   * identifier mapping does), the result must still be a plain identifier — which keeps dots legal
+   * inside variable names but rejects whitespace, quotes, {@code @}, and other metacharacters.
+   */
+  private static void requireSafeDimensionName(final String dataset, final String dimension) {
+    if (dimension.startsWith(DimensionSpec.VARIABLE_PREFIX)) {
+      final String folded = dimension.replace('.', '_');
+      if (dimension.length() == DimensionSpec.VARIABLE_PREFIX.length()
+          || !SAFE_IDENTIFIER.matcher(folded).matches()
+          || folded.length() > MAX_IDENTIFIER_LENGTH) {
+        throw new IllegalArgumentException(
+            "dataset '"
+                + dataset
+                + "' declares an unsafe variable dimension '"
+                + dimension
+                + "': after 'var.', the variable name may contain only letters, digits, '_' and"
+                + " '.', and the whole name must be at most "
+                + MAX_IDENTIFIER_LENGTH
+                + " chars");
+      }
+    } else {
+      requireSafeIdentifier(dataset, "dimension", dimension);
     }
   }
 

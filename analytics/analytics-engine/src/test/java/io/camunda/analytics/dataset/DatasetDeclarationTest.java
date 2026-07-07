@@ -14,6 +14,7 @@ import io.camunda.analytics.dimension.DimensionType;
 import io.camunda.analytics.fact.FactType;
 import io.camunda.analytics.meter.Meter;
 import io.camunda.analytics.meter.MeterCatalog;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 final class DatasetDeclarationTest {
@@ -165,5 +166,97 @@ final class DatasetDeclarationTest {
                     .build())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("non-positive window");
+  }
+
+  @Test
+  void shouldRejectMeterNameThatCollidesWithTheAggIdKeyEncoding() {
+    // given a meter literally named like the registry key of meter 'foo' at the 60s tier
+    // when declared, then it is rejected — the aggId key is <name>@<windowMs>, so '@' is forbidden
+    assertThatThrownBy(
+            () ->
+                DatasetDeclaration.builder("d", FactType.PROCESS_INSTANCE)
+                    .meter(Meter.of("foo@60000", MeterCatalog.COUNT))
+                    .window(60_000L)
+                    .build())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("dataset 'd'")
+        .hasMessageContaining("foo@60000");
+  }
+
+  @Test
+  void shouldRejectDatasetNameWithWhitespaceQuoteOrAt() {
+    for (final String bad : List.of("my dataset", "name'quote", "name\"quote", "name@tier")) {
+      assertThatThrownBy(
+              () ->
+                  DatasetDeclaration.builder(bad, FactType.PROCESS_INSTANCE)
+                      .meter(Meter.of("n", MeterCatalog.COUNT))
+                      .window(60_000L)
+                      .build())
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining(bad);
+    }
+  }
+
+  @Test
+  void shouldAcceptQuestionStyleDatasetNames() {
+    // given the report builder's derived name shape (carries ':', '=', ',', '.', '-')
+    final DatasetDeclaration declaration =
+        DatasetDeclaration.builder(
+                "q:process-instances:duration-percentile:percentile=95.0:by:bpmnProcessId,:g:60000",
+                FactType.PROCESS_INSTANCE)
+            .meter(Meter.of("percentile", MeterCatalog.PERCENTILE, "durationMs"))
+            .window(60_000L)
+            .build();
+
+    // then it is accepted
+    assertThat(declaration.name()).startsWith("q:process-instances");
+  }
+
+  @Test
+  void shouldRejectUnsafeStructuralDimensionName() {
+    // when a structural dimension is not a plain identifier (it becomes a physical column)
+    assertThatThrownBy(
+            () ->
+                DatasetDeclaration.builder("d", FactType.PROCESS_INSTANCE)
+                    .dimension("bad column", DimensionType.STRING)
+                    .meter(Meter.of("n", MeterCatalog.COUNT))
+                    .window(60_000L)
+                    .build())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("dataset 'd'")
+        .hasMessageContaining("bad column");
+  }
+
+  @Test
+  void shouldAcceptVariableDimensionWithNamespacedDots() {
+    // given a variable name that itself contains dots (folded to '_' by the serving layer)
+    final DatasetDeclaration declaration =
+        DatasetDeclaration.builder("d", FactType.PROCESS_INSTANCE)
+            .dimension("var.customer.region", DimensionType.STRING)
+            .meter(Meter.of("n", MeterCatalog.COUNT))
+            .window(60_000L)
+            .build();
+
+    // then it is accepted (variable names are user process data; dots are legal)
+    assertThat(declaration.dimensions())
+        .extracting(DimensionSpec::name)
+        .containsExactly("var.customer.region");
+  }
+
+  @Test
+  void shouldRejectVariableDimensionThatBreaksTheColumnDerivation() {
+    // when the variable name carries what the physical identifier allowlist forbids
+    for (final String bad : List.of("var.", "var.a'b", "var.a b", "var.a-b", "var.a@b")) {
+      assertThatThrownBy(
+              () ->
+                  DatasetDeclaration.builder("d", FactType.PROCESS_INSTANCE)
+                      .dimension(bad, DimensionType.STRING)
+                      .meter(Meter.of("n", MeterCatalog.COUNT))
+                      .window(60_000L)
+                      .build())
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("dataset 'd'")
+          .hasMessageContaining(bad);
+    }
   }
 }
