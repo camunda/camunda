@@ -14,10 +14,7 @@ import io.camunda.eventbridge.streaming.window.Windows;
 import io.camunda.zeebe.db.impl.DbBytes;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.ToLongFunction;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -73,7 +70,7 @@ public final class SegmentSealingAggregation<IN, K, ACC> implements Aggregation<
   private final byte[] metaValue = new byte[Long.BYTES + Integer.BYTES];
   private final UnsafeBuffer metaBuffer = new UnsafeBuffer(metaValue);
 
-  private final Map<Windowed<K>, ACC> open = new HashMap<>();
+  private final WindowedCellState<K, ACC> open = new WindowedCellState<>();
   private long openSegment = NO_SEGMENT;
   private int sourcePartition = -1;
 
@@ -226,9 +223,7 @@ public final class SegmentSealingAggregation<IN, K, ACC> implements Aggregation<
     if (open.isEmpty()) {
       return;
     }
-    for (final Entry<Windowed<K>, ACC> cell : open.entrySet()) {
-      sink.emit(cell.getKey(), sourcePartition, openSegment, cell.getValue());
-    }
+    open.forEachOpen((cell, acc) -> sink.emit(cell, sourcePartition, openSegment, acc));
     sink.flush();
     open.clear();
   }
@@ -250,15 +245,16 @@ public final class SegmentSealingAggregation<IN, K, ACC> implements Aggregation<
     tx.runInTransaction(
         () -> {
           for (final Windowed<K> cell : durablyWritten) {
-            if (!open.containsKey(cell)) {
+            if (!open.contains(cell)) {
               cells.delete(cell);
             }
           }
           durablyWritten.clear();
-          for (final Entry<Windowed<K>, ACC> cell : open.entrySet()) {
-            cells.put(cell.getKey(), cell.getValue());
-            durablyWritten.add(cell.getKey());
-          }
+          open.forEachOpen(
+              (cell, acc) -> {
+                cells.put(cell, acc);
+                durablyWritten.add(cell);
+              });
           writeMeta();
         });
   }

@@ -13,12 +13,7 @@ import io.camunda.eventbridge.streaming.window.Windowed;
 import io.camunda.eventbridge.streaming.window.Windows;
 import io.camunda.zeebe.db.impl.DbBytes;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.NavigableMap;
-import java.util.Set;
-import java.util.TreeMap;
 import java.util.function.Predicate;
 
 /**
@@ -49,16 +44,9 @@ public final class SegmentMergingAggregation<K, ACC> {
   private final TransactionRunner tx;
   private final Predicate<ACC> drained;
 
-  // Heap working set: one running accumulator per cell.
-  private final Map<Windowed<K>, ACC> cellTotal = new HashMap<>();
-  // Secondary index of the open cells by window end. A cell's end (windowStart + size) is constant,
-  // so maintenance is insert-on-first-touch + remove-on-finalize — and finalizeClosedWindows pops
-  // only the due candidates (windowEnd <= maxEventTime) instead of walking every open cell on
-  // every checkpoint.
-  private final NavigableMap<Long, Set<Windowed<K>>> cellsByWindowEnd = new TreeMap<>();
-  private final Set<Windowed<K>> changedSinceFlush = new HashSet<>();
-  private final Set<Windowed<K>> changedSinceCheckpoint = new HashSet<>();
-  private final Set<Windowed<K>> evictedSinceCheckpoint = new HashSet<>();
+  // Heap working set: one running accumulator per open cell, indexed by window end for due-window
+  // finalization and tracked for flush/checkpoint deltas.
+  private final WindowedCellState<K, ACC> open = new WindowedCellState<>();
   // A changed cell's serialized total, produced once at flush and reused by the checkpoint (a
   // commit flushes right before it checkpoints); invalidated when the cell changes again.
   private final Map<Windowed<K>, byte[]> serializedSinceFlush = new HashMap<>();
@@ -100,40 +88,38 @@ public final class SegmentMergingAggregation<K, ACC> {
   public void merge(final Windowed<K> cell, final ACC delta) {
     // Drop deltas for a window that already closed and was evicted: folding one would resurrect the
     // cell and the idempotent sink would overwrite its finalized value.
-    if (maxEventTime != Long.MIN_VALUE
-        && cell.windowStart() + windows.sizeMs() + windows.graceMs() <= maxEventTime) {
+    if (maxEventTime != Long.MIN_VALUE && windowEnd(cell) + windows.graceMs() <= maxEventTime) {
       return;
     }
     // The running total is always an accumulator this operator owns: the first delta is folded
     // into a fresh accumulator rather than stored, so a delta may be a transient read-only view
     // (RecordValue#fromBytesForMerge) and the in-place mergeInto never mutates a caller's object.
-    final ACC current = cellTotal.get(cell);
-    cellTotal.put(
+    final ACC current = open.get(cell);
+    open.put(
         cell,
         current == null
             ? aggregate.mergeInto(aggregate.createAccumulator(), delta)
             : aggregate.mergeInto(current, delta));
     if (current == null) {
-      indexCell(cell); // first touch — the cell's window end never changes afterwards
+      // First touch — the cell's window end never changes afterwards.
+      open.index(cell, windowEnd(cell));
     }
-    changedSinceFlush.add(cell);
-    changedSinceCheckpoint.add(cell);
-    evictedSinceCheckpoint.remove(cell);
+    open.markChanged(cell);
     serializedSinceFlush.remove(cell); // the cached serialized form (if any) is stale now
-    maxEventTime = Math.max(maxEventTime, cell.windowStart() + windows.sizeMs());
+    maxEventTime = Math.max(maxEventTime, windowEnd(cell));
   }
 
   /** Wall-clock tick: converge the serving view for the cells changed since the last flush. */
   public void flush() {
-    for (final Windowed<K> cell : changedSinceFlush) {
-      final ACC total = cellTotal.get(cell);
-      // Serialize once and hand the bytes to the sink; the checkpoint reuses them for the durable
-      // write instead of serializing the same unchanged total a second time.
-      final byte[] serialized = accValue.toBytes(total);
-      serializedSinceFlush.put(cell, serialized);
-      sink.upsert(cell, total, serialized);
-    }
-    changedSinceFlush.clear();
+    open.forEachChangedSinceFlush(
+        (cell, total) -> {
+          // Serialize once and hand the bytes to the sink; the checkpoint reuses them for the
+          // durable write instead of serializing the same unchanged total a second time.
+          final byte[] serialized = accValue.toBytes(total);
+          serializedSinceFlush.put(cell, serialized);
+          sink.upsert(cell, total, serialized);
+        });
+    open.clearChangedSinceFlush();
   }
 
   /**
@@ -143,18 +129,15 @@ public final class SegmentMergingAggregation<K, ACC> {
     finalizeClosedWindows();
     tx.runInTransaction(
         () -> {
-          for (final Windowed<K> cell : changedSinceCheckpoint) {
-            final ACC total = cellTotal.get(cell);
-            if (total != null) {
-              writeCell(cell, total);
-            }
-          }
-          for (final Windowed<K> cell : evictedSinceCheckpoint) {
-            deleteCell(cell);
-          }
+          open.forEachChangedSinceCheckpoint(
+              (cell, total) -> {
+                if (total != null) {
+                  writeCell(cell, total);
+                }
+              });
+          open.forEachEvictedSinceCheckpoint(this::deleteCell);
         });
-    changedSinceCheckpoint.clear();
-    evictedSinceCheckpoint.clear();
+    open.clearCheckpointDelta();
     // The cache only bridges one commit's flush -> checkpoint; drop it rather than shadowing every
     // open cell's accumulator with a second serialized copy.
     serializedSinceFlush.clear();
@@ -180,56 +163,38 @@ public final class SegmentMergingAggregation<K, ACC> {
     final long watermark = maxEventTime - windows.graceMs();
     // Only cells whose window has ended are candidates — a closed window (past the watermark)
     // finalizes unconditionally, an ended-but-in-grace one only once its accumulator has drained.
-    // Cells with a later window end are untouched, so an idle checkpoint is O(1), not O(open
-    // cells).
-    final Iterator<Map.Entry<Long, Set<Windowed<K>>>> ends =
-        cellsByWindowEnd.headMap(maxEventTime, true).entrySet().iterator();
-    while (ends.hasNext()) {
-      final Map.Entry<Long, Set<Windowed<K>>> entry = ends.next();
-      final boolean closed = entry.getKey() <= watermark;
-      final Iterator<Windowed<K>> cells = entry.getValue().iterator();
-      while (cells.hasNext()) {
-        final Windowed<K> cell = cells.next();
-        final ACC value = cellTotal.get(cell);
-        if (closed || drained.test(value)) {
-          finalizeCell(cell, value);
-          cells.remove(); // evict from the window-end index
-        }
-      }
-      if (entry.getValue().isEmpty()) {
-        ends.remove();
-      }
-    }
+    open.evictDue(
+        maxEventTime,
+        (windowEnd, cell, value) -> {
+          if (windowEnd > watermark && !drained.test(value)) {
+            return false;
+          }
+          emitFinal(cell, value);
+          return true;
+        });
   }
 
-  /** Emits the cell's final value, evicts it from the heap, and marks the durable cell deleted. */
-  private void finalizeCell(final Windowed<K> cell, final ACC value) {
+  /** Emits the cell's final value to the serving view; the state then evicts the cell. */
+  private void emitFinal(final Windowed<K> cell, final ACC value) {
     final byte[] serialized = serializedSinceFlush.remove(cell);
     if (serialized != null) {
       sink.upsert(cell, value, serialized); // final value, already serialized at the flush
     } else {
       sink.upsert(cell, value); // final value
     }
-    changedSinceFlush.remove(cell);
-    changedSinceCheckpoint.remove(cell);
-    evictedSinceCheckpoint.add(cell); // delete the durable cell at the next checkpoint
-    cellTotal.remove(cell); // evict from the heap working set
   }
 
   private void recover() {
     cells.scanCells(
         (cell, total) -> {
-          cellTotal.put(cell, total);
-          indexCell(cell);
-          maxEventTime = Math.max(maxEventTime, cell.windowStart() + windows.sizeMs());
+          open.put(cell, total);
+          open.index(cell, windowEnd(cell));
+          maxEventTime = Math.max(maxEventTime, windowEnd(cell));
         });
   }
 
-  /** Registers an open cell under its (constant) window end for due-window finalization. */
-  private void indexCell(final Windowed<K> cell) {
-    cellsByWindowEnd
-        .computeIfAbsent(cell.windowStart() + windows.sizeMs(), end -> new HashSet<>())
-        .add(cell);
+  private long windowEnd(final Windowed<K> cell) {
+    return cell.windowStart() + windows.sizeMs();
   }
 
   private void writeCell(final Windowed<K> cell, final ACC total) {
