@@ -1130,7 +1130,6 @@ public class WebSecurityConfig {
               prmBuilder -> issuerUris.forEach(prmBuilder::authorizationServer));
     }
 
-
     private OAuth2AuthorizationRequestResolver authorizationRequestResolver(
         final ClientRegistrationRepository clientRegistrationRepository,
         final OidcAuthenticationConfigurationRepository oidcAuthenticationConfigurationRepository) {
