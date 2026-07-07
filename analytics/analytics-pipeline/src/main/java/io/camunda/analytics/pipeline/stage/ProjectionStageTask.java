@@ -9,6 +9,7 @@ package io.camunda.analytics.pipeline.stage;
 
 import io.camunda.analytics.aggregation.CubeMeterProcessor;
 import io.camunda.analytics.aggregation.EnvelopePublisher;
+import io.camunda.analytics.aggregation.FactTypeDispatcher;
 import io.camunda.analytics.aggregation.ForwardingSegmentSink;
 import io.camunda.analytics.aggregation.ShuffleSinkProcessor;
 import io.camunda.analytics.dataset.ActiveCube;
@@ -53,13 +54,15 @@ import org.slf4j.LoggerFactory;
 /**
  * One source partition's Stage-1 owning {@link Task}: it owns a per-partition RocksDB and drives a
  * declared {@link ProcessorTopology} — the base-projection {@link AnalyticsBaseProjection} ({@code
- * source}) fans facts to a {@link CubeMeterProcessor} per active cube-meter, each of which seals
- * and forwards {@code SegmentCell}s to a single shared {@link ShuffleSinkProcessor} node (the
- * transport), plus a {@link TableRowProcessor} per raw table. The base projection, every meter's
- * open segment and the consumed offset all live in the one provider, so {@link #commit(long)} makes
- * them one atomic cut (Model F): publish the sealed deltas (produce-before-commit), then persist
- * the <em>full</em> processed offset together with the topology's checkpoint. No {@code safeOffset}
- * — a crash resumes exactly from the committed offset onto the checkpointed open segments.
+ * source}) fans facts through a {@link FactTypeDispatcher} (routing each fact only to the nodes
+ * whose bound fact type matches) to a {@link CubeMeterProcessor} per active cube-meter, each of
+ * which seals and forwards {@code SegmentCell}s to a single shared {@link ShuffleSinkProcessor}
+ * node (the transport), plus a {@link TableRowProcessor} per raw table. The base projection, every
+ * meter's open segment and the consumed offset all live in the one provider, so {@link
+ * #commit(long)} makes them one atomic cut (Model F): publish the sealed deltas
+ * (produce-before-commit), then persist the <em>full</em> processed offset together with the
+ * topology's checkpoint. No {@code safeOffset} — a crash resumes exactly from the committed offset
+ * onto the checkpointed open segments.
  *
  * <p><b>Live reload (ADR 0005).</b> The topology is built from the shared versioned {@link
  * DatasetCatalog}, not a frozen list. At each {@link #commit(long)} — after the durable cut, at
@@ -223,17 +226,21 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
             System.currentTimeMillis());
     this.publisher = publisher;
 
-    // source → base projection; each cube-meter aggregate node seals and forwards SegmentCells to
-    // one shared shuffle-sink node (the transport); each raw table writes rows to the serving
-    // store.
-    // The base projection broadcasts every fact to every child.
+    // source → base projection → fact-type dispatch; each cube-meter aggregate node seals and
+    // forwards SegmentCells to one shared shuffle-sink node (the transport); each raw table writes
+    // rows to the serving store.
+    // The dispatch node routes each fact only to the children whose bound fact type matches
+    // (compiled at install time), instead of broadcasting every fact to every node — the nodes'
+    // own gates are unchanged, they just no longer see the facts they would reject by type.
     // The union of var.* names any active dataset groups or filters by — so the base projection's
     // variable enrichment resolves only those names (point lookups, early-terminating) instead of
     // scanning the whole scope. Recomputed on each catalog reload.
     final Set<String> variableNames = variableNames(cubes, tables);
+    final FactTypeDispatcher dispatcher = new FactTypeDispatcher();
     final ProcessorTopology.Builder<SourceRecord> builder =
         ProcessorTopology.<SourceRecord>builder()
-            .source("projection", new AnalyticsBaseProjection(state, variableNames));
+            .source("projection", new AnalyticsBaseProjection(state, variableNames))
+            .processor("dispatch", dispatcher, "projection");
     final List<String> meterNodes = new ArrayList<>();
     final List<SegmentSealingAggregation<Fact, ?, ?>> aggregations = new ArrayList<>();
     for (final ActiveCube cube : cubes) {
@@ -243,10 +250,10 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
       // aggregates). This keeps Stage 1's work and the shuffle to one stream per meter.
       for (final CompiledMeter meter : finestTierPerMeter(cube.compiled().meters())) {
         final String node = "meter-" + meter.aggId();
-        builder.processor(
-            node,
-            meterProcessor(cube, meter, segmentStride, openSegments, provider, aggregations),
-            "projection");
+        final CubeMeterProcessor processor =
+            meterProcessor(cube, meter, segmentStride, openSegments, provider, aggregations);
+        builder.processor(node, processor, "dispatch");
+        dispatcher.route(node, processor.factType());
         meterNodes.add(node);
       }
     }
@@ -259,16 +266,18 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
     int tableIndex = 0;
     for (final ActiveTable table : tables) {
       datasetStore.schemaManager().ensureTable(table.compiled());
-      builder.processor(
-          "table-" + tableIndex++,
-          new TableRowProcessor(table.registered(), table.compiled(), servingWriter),
-          "projection");
+      final String node = "table-" + tableIndex++;
+      final TableRowProcessor processor =
+          new TableRowProcessor(table.registered(), table.compiled(), servingWriter);
+      builder.processor(node, processor, "dispatch");
+      dispatcher.route(node, processor.factType());
     }
     // Process definitions take the direct path: a built-in raw table written straight to serving,
     // not a declared dataset. See ProcessDefinitionSink.
     datasetStore.schemaManager().ensureTable(ProcessDefinitionSink.TABLE);
-    builder.processor(
-        "process-definitions", new ProcessDefinitionSink(servingWriter), "projection");
+    final ProcessDefinitionSink definitionSink = new ProcessDefinitionSink(servingWriter);
+    builder.processor("process-definitions", definitionSink, "dispatch");
+    dispatcher.route("process-definitions", definitionSink.factType());
 
     topology = builder.build();
     sealingAggregations = List.copyOf(aggregations);

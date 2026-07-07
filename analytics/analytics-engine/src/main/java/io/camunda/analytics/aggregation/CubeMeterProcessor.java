@@ -34,7 +34,7 @@ public final class CubeMeterProcessor implements Processor<Fact, SegmentCell> {
 
   private final FactType factType;
   private final RegisteredDataset dataset;
-  private final List<FilterPredicate> filters;
+  private final List<CompiledFilter> filters;
   private final SegmentSealingAggregation<Fact, ?, ?> aggregation;
   private final ForwardingSegmentSink<?> sink;
 
@@ -46,9 +46,14 @@ public final class CubeMeterProcessor implements Processor<Fact, SegmentCell> {
       final ForwardingSegmentSink<?> sink) {
     this.factType = factType;
     this.dataset = dataset;
-    this.filters = List.copyOf(filters);
+    this.filters = filters.stream().map(CompiledFilter::new).toList();
     this.aggregation = aggregation;
     this.sink = sink;
+  }
+
+  /** The bound fact type this meter folds — the stage routes only matching facts here. */
+  public FactType factType() {
+    return factType;
   }
 
   @Override
@@ -83,15 +88,8 @@ public final class CubeMeterProcessor implements Processor<Fact, SegmentCell> {
   }
 
   private boolean matchesFilters(final Fact fact) {
-    for (final FilterPredicate filter : filters) {
-      final Object value = fact.get(filter.field());
-      final boolean equal = value != null && String.valueOf(value).equals(filter.value());
-      final boolean matches =
-          switch (filter.operator()) {
-            case EQUALS -> equal;
-            case NOT_EQUALS -> !equal;
-          };
-      if (!matches) {
+    for (final CompiledFilter filter : filters) {
+      if (!filter.matches(fact)) {
         return false;
       }
     }

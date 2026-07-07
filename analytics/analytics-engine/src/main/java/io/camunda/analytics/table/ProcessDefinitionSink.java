@@ -56,6 +56,11 @@ public final class ProcessDefinitionSink implements Processor<Fact, Void> {
     this.writer = writer;
   }
 
+  /** The fact type this sink consumes — the stage routes only matching facts here. */
+  public FactType factType() {
+    return FactType.PROCESS_DEFINITION;
+  }
+
   @Override
   public void process(final Fact fact) {
     if (fact.factType() != FactType.PROCESS_DEFINITION) {

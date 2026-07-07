@@ -44,6 +44,11 @@ public final class TableRowProcessor implements Processor<Fact, Void> {
     this.writer = writer;
   }
 
+  /** The bound fact type this table keeps — the stage routes only matching facts here. */
+  public FactType factType() {
+    return factType;
+  }
+
   @Override
   public void process(final Fact fact) {
     if (fact.factType() != factType
