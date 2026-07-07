@@ -223,13 +223,17 @@ public final class StandardDatasets {
             .window(ONE_MINUTE_MS)
             .lateness(GRACE_MS)
             .build(),
-        // Non-refund completed-dispute counts and duration percentiles grouped by the process-set
-        // 'type' variable (the bank-dispute classification) — the standard exerciser of the
-        // name-targeted variable enrichment (grouping AND filtering by var.* fields) on the
-        // realistic load.
+        // Completed-dispute counts and duration percentiles grouped by the process-set 'type'
+        // variable (the bank-dispute classification) — the standard exerciser of the name-targeted
+        // variable enrichment (grouping AND filtering by var.* fields) on the realistic load. The
+        // filter must reference a ROOT-scoped variable: an output-mapping target lives (and dies)
+        // in its element's flow scope, so a subprocess-mapped variable (e.g. this process's
+        // isRefund) is never visible from the process-instance completion fact and an EQUALS
+        // filter on it would silently reject every fact. customerId comes from the start payload,
+        // which always lands at the root scope.
         DatasetDeclaration.builder("dispute-types", FactType.PROCESS_INSTANCE)
             .filterEquals("transition", Transition.COMPLETED.name())
-            .filterEquals("var.isRefund", "false")
+            .filterNotNull("var.customerId")
             .dimension("bpmnProcessId", DimensionType.STRING)
             .dimension("var.type", DimensionType.STRING)
             .meter(Meter.of("count", MeterCatalog.COUNT))
