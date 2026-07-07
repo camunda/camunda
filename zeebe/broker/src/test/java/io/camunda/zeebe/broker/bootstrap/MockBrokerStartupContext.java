@@ -77,7 +77,8 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   private final Map<String, PartitionManager> partitionManagers = new LinkedHashMap<>();
   private RocksDbResources sharedRocksDbResources;
   private BrokerAdminServiceImpl brokerAdminService = mock(BrokerAdminServiceImpl.class);
-  private JobStreamService jobStreamService = mock(JobStreamService.class);
+  // Default service used when auto-creating PhysicalTenantEngineContext entries.
+  private JobStreamService defaultJobStreamService = mock(JobStreamService.class);
   private ClusterConfigurationService clusterConfigurationService =
       mock(ClusterConfigurationService.class);
   private BrokerClient brokerClient = mock(BrokerClient.class);
@@ -290,14 +291,14 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
     this.brokerAdminService = brokerAdminService;
   }
 
-  @Override
+  /** Test helper — not part of {@link BrokerStartupContext}. */
   public JobStreamService getJobStreamService() {
-    return jobStreamService;
+    return defaultJobStreamService;
   }
 
-  @Override
+  /** Test helper — sets the default {@link JobStreamService} used when auto-creating contexts. */
   public void setJobStreamService(final JobStreamService jobStreamService) {
-    this.jobStreamService = jobStreamService;
+    this.defaultJobStreamService = jobStreamService;
   }
 
   @Override
@@ -359,6 +360,26 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
                 featureFlags,
                 brokerConfiguration,
                 exporterRepository));
+            new PhysicalTenantContext(
+                securityConfiguration,
+                brokerRequestAuthorizationConverter,
+                featureFlags,
+                defaultJobStreamService));
+  }
+
+  @Override
+  public void updatePhysicalTenantEngineContext(
+      final String physicalTenantId, final PhysicalTenantContext context) {
+    physicalTenantEngineContexts.put(physicalTenantId, context);
+  }
+
+  public void setPhysicalTenantEngineContext(
+      final String physicalTenantId, final PhysicalTenantContext context) {
+    physicalTenantEngineContexts.put(physicalTenantId, context);
+  }
+
+  public void setSecurityConfiguration(final EngineSecurityConfig securityConfiguration) {
+    this.securityConfiguration = securityConfiguration;
   }
 
   @Override
