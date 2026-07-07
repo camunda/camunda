@@ -44,6 +44,9 @@ abstract class AbstractServerConnection implements ServerConnection {
     } else {
       log.debug("No handler for message type {} from {}", subject, message.sender());
 
+      // no handler consumes the message, so the payload must be released here
+      message.payload().release();
+
       byte[] subjectBytes = null;
       if (subject != null) {
         subjectBytes = StringUtil.getBytes(subject);

@@ -23,6 +23,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.MoreExecutors;
 import io.atomix.cluster.messaging.ByteArrayPayload;
+import io.atomix.cluster.messaging.InboundPayload;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.ManagedPayload;
 import io.atomix.cluster.messaging.MessagingConfig;
@@ -333,8 +334,11 @@ public final class NettyMessagingService implements ManagedMessagingService {
       final String type, final BiConsumer<Address, byte[]> handler, final Executor executor) {
     handlers.register(
         type,
-        (message, connection) ->
-            executor.execute(() -> handler.accept(message.sender(), message.payloadAsBytes())));
+        (message, connection) -> {
+          final var sender = message.sender();
+          final var payload = consumePayload(message);
+          executor.execute(() -> handler.accept(sender, payload));
+        });
   }
 
   @Override
@@ -344,28 +348,30 @@ public final class NettyMessagingService implements ManagedMessagingService {
       final Executor executor) {
     handlers.register(
         type,
-        (message, connection) ->
-            executor.execute(
-                () -> {
-                  byte[] responsePayload = null;
-                  ProtocolReply.Status status = ProtocolReply.Status.OK;
-                  try {
-                    responsePayload = handler.apply(message.sender(), message.payloadAsBytes());
-                  } catch (final Exception e) {
-                    log.warn(
-                        "Unexpected error while handling message {} from {}",
-                        message.subject(),
-                        message.sender(),
-                        e);
+        (message, connection) -> {
+          final var payload = consumePayload(message);
+          executor.execute(
+              () -> {
+                byte[] responsePayload = null;
+                ProtocolReply.Status status = ProtocolReply.Status.OK;
+                try {
+                  responsePayload = handler.apply(message.sender(), payload);
+                } catch (final Exception e) {
+                  log.warn(
+                      "Unexpected error while handling message {} from {}",
+                      message.subject(),
+                      message.sender(),
+                      e);
 
-                    status = ProtocolReply.Status.ERROR_HANDLER_EXCEPTION;
-                    final String exceptionMessage = e.getMessage();
-                    if (exceptionMessage != null) {
-                      responsePayload = StringUtil.getBytes(exceptionMessage);
-                    }
+                  status = ProtocolReply.Status.ERROR_HANDLER_EXCEPTION;
+                  final String exceptionMessage = e.getMessage();
+                  if (exceptionMessage != null) {
+                    responsePayload = StringUtil.getBytes(exceptionMessage);
                   }
-                  connection.reply(message.id(), status, Optional.ofNullable(responsePayload));
-                }));
+                }
+                connection.reply(message.id(), status, Optional.ofNullable(responsePayload));
+              });
+        });
   }
 
   @Override
@@ -380,7 +386,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
           final var id = message.id();
           final var subject = message.subject();
           final var sender = message.sender();
-          final var payload = message.payloadAsBytes();
+          final var payload = consumePayload(message);
           handler
               .apply(sender, payload)
               .whenComplete(
@@ -422,7 +428,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
           final var id = message.id();
           final var subject = message.subject();
           final var sender = message.sender();
-          final var payload = message.payloadAsBytes();
+          final var payload = consumePayload(message);
           handler
               .apply(sender, payload)
               .whenComplete(
@@ -450,6 +456,65 @@ public final class NettyMessagingService implements ManagedMessagingService {
                     connection.reply(id, status, responsePayload);
                   });
         });
+  }
+
+  @Override
+  public void registerHandlerWithInboundPayload(
+      final String type,
+      final BiFunction<Address, InboundPayload, CompletableFuture<byte[]>> handler) {
+    handlers.register(
+        type,
+        (message, connection) -> {
+          final var id = message.id();
+          final var subject = message.subject();
+          final var sender = message.sender();
+          // ownership of the payload transfers to the handler, which must release it on every
+          // path; payloads that cannot be read in place (e.g. composite payloads dispatched over
+          // the local loopback) are materialized first
+          final var raw = message.payload();
+          final var payload =
+              raw instanceof final InboundPayload inbound
+                  ? inbound
+                  : new ByteArrayPayload(raw.toBytes());
+          final CompletableFuture<byte[]> result;
+          try {
+            result = handler.apply(sender, payload);
+          } catch (final Exception e) {
+            payload.release();
+            throw e;
+          }
+          result.whenComplete(
+              (response, error) -> {
+                byte[] responsePayload = null;
+                final ProtocolReply.Status status;
+
+                if (error == null) {
+                  status = ProtocolReply.Status.OK;
+                  responsePayload = response;
+                } else {
+                  log.warn(
+                      "Unexpected error while handling message {} from {}", subject, sender, error);
+
+                  status = ProtocolReply.Status.ERROR_HANDLER_EXCEPTION;
+                  final String exceptionMessage = error.getMessage();
+                  if (exceptionMessage != null) {
+                    responsePayload = StringUtil.getBytes(exceptionMessage);
+                  }
+                }
+                connection.reply(id, status, Optional.ofNullable(responsePayload));
+              });
+        });
+  }
+
+  /**
+   * Materializes the message payload and releases the potentially buffer-backed original, for
+   * handlers that consume plain byte arrays.
+   */
+  private static byte[] consumePayload(final ProtocolMessage message) {
+    final var payload = message.payload();
+    final var bytes = payload.toBytes();
+    payload.release();
+    return bytes;
   }
 
   @Override

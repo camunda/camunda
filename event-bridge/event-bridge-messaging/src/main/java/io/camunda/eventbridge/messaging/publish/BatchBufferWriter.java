@@ -44,7 +44,7 @@ public final class BatchBufferWriter implements BufferWriter {
     for (int i = 0; i < entries.size(); i++) {
       final var entry = entries.get(i);
 
-      buffer.putBytes(writePos, entry.requestBytes(), entry.batchOffset(), entry.batchLength());
+      buffer.putBytes(writePos, entry.payload().view(), entry.batchOffset(), entry.batchLength());
       EventBridgeBatch.patchPosition(buffer, writePos, batchPosition);
       EventBridgeBatch.patchTimestamp(buffer, writePos, timestamp);
 

@@ -10,15 +10,18 @@ package io.atomix.cluster.messaging;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import java.util.List;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Payload backed by a heap byte array. The array is handed over on construction and must not be
  * mutated afterwards: large payloads are wrapped (not copied) into the outbound channel and may be
  * read by the I/O thread after this call returns.
  */
-public class ByteArrayPayload implements ManagedPayload {
+public class ByteArrayPayload implements InboundPayload {
 
   private final byte[] bytes;
+  private UnsafeBuffer view;
 
   public ByteArrayPayload(final byte[] bytes) {
     this.bytes = bytes == null ? new byte[0] : bytes;
@@ -26,6 +29,14 @@ public class ByteArrayPayload implements ManagedPayload {
 
   public byte[] getBytes() {
     return bytes;
+  }
+
+  @Override
+  public DirectBuffer view() {
+    if (view == null) {
+      view = new UnsafeBuffer(bytes);
+    }
+    return view;
   }
 
   @Override

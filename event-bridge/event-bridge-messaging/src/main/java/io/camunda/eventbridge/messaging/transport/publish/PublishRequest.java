@@ -7,21 +7,22 @@
  */
 package io.camunda.eventbridge.messaging.transport.publish;
 
+import io.atomix.cluster.messaging.InboundPayload;
 import io.camunda.eventbridge.protocol.ExecutePublishRequestDecoder;
 import io.camunda.eventbridge.protocol.MessageHeaderDecoder;
 
-public record PublishRequest(byte[] requestBytes, int batchOffset, int batchLength) {
+public record PublishRequest(InboundPayload payload, int batchOffset, int batchLength) {
 
   private static final int BATCH_OFFSET =
       MessageHeaderDecoder.ENCODED_LENGTH
           + ExecutePublishRequestDecoder.BLOCK_LENGTH
           + ExecutePublishRequestDecoder.entryBatchHeaderLength();
 
-  static PublishRequest from(final byte[] requestBytes) {
-    if (requestBytes.length <= BATCH_OFFSET) {
+  static PublishRequest from(final InboundPayload payload) {
+    if (payload.length() <= BATCH_OFFSET) {
       throw new IllegalArgumentException("Request too short");
     }
 
-    return new PublishRequest(requestBytes, BATCH_OFFSET, requestBytes.length - BATCH_OFFSET);
+    return new PublishRequest(payload, BATCH_OFFSET, payload.length() - BATCH_OFFSET);
   }
 }

@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.transport;
 
+import io.atomix.cluster.messaging.InboundPayload;
 import io.atomix.cluster.messaging.ManagedPayload;
 import java.util.concurrent.CompletableFuture;
 
@@ -17,6 +18,14 @@ public interface RequestHandler {
   CompletableFuture<byte[]> handle(byte[] requestBytes);
 
   default CompletableFuture<ManagedPayload> handleWithManagedPayload(final byte[] requestBytes) {
+    throw new UnsupportedOperationException();
+  }
+
+  /**
+   * Handles a request whose payload is read in place. Ownership of the payload transfers to the
+   * handler, which must release it exactly once on every path.
+   */
+  default CompletableFuture<byte[]> handleInbound(final InboundPayload payload) {
     throw new UnsupportedOperationException();
   }
 }

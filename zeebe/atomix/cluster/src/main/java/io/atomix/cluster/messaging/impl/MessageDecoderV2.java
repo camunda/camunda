@@ -18,6 +18,8 @@ package io.atomix.cluster.messaging.impl;
 
 import static com.google.common.base.Preconditions.checkState;
 
+import io.atomix.cluster.messaging.ByteArrayPayload;
+import io.atomix.cluster.messaging.ManagedPayload;
 import io.atomix.utils.net.Address;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -25,6 +27,13 @@ import java.util.List;
 
 /** Protocol version 2 message decoder. */
 class MessageDecoderV2 extends AbstractMessageDecoder {
+
+  /**
+   * Requests at or above this size keep a retained slice of the receive buffer instead of being
+   * copied to the heap; consumers release the slice after use. Below it, the copy is cheaper than
+   * pinning the (larger) receive buffer, and the payload stays garbage-collected.
+   */
+  static final int SLICE_THRESHOLD = 4 * 1024;
 
   private DecoderState currentState = DecoderState.READ_SENDER_HOST_LENGTH;
   private int senderHostLength;
@@ -34,7 +43,7 @@ class MessageDecoderV2 extends AbstractMessageDecoder {
   private ProtocolMessage.Type type;
   private long messageId;
   private int contentLength;
-  private byte[] content;
+  private ManagedPayload payload;
   private int subjectLength;
 
   @Override
@@ -87,12 +96,17 @@ class MessageDecoderV2 extends AbstractMessageDecoder {
         if (buffer.readableBytes() < contentLength) {
           return;
         }
-        if (contentLength > 0) {
+        if (contentLength >= SLICE_THRESHOLD && type == ProtocolMessage.Type.REQUEST) {
+          // large request: reference the receive buffer instead of copying; the consumer of the
+          // dispatched message releases the slice
+          payload = new NettyInboundPayload(buffer.readRetainedSlice(contentLength));
+        } else if (contentLength > 0) {
           // TODO: Perform a sanity check on the size before allocating
-          content = new byte[contentLength];
+          final byte[] content = new byte[contentLength];
           buffer.readBytes(content);
+          payload = new ByteArrayPayload(content);
         } else {
-          content = EMPTY_PAYLOAD;
+          payload = new ByteArrayPayload(EMPTY_PAYLOAD);
         }
 
         switch (type) {
@@ -125,7 +139,8 @@ class MessageDecoderV2 extends AbstractMessageDecoder {
             }
             final String subject = readString(buffer, subjectLength);
             final ProtocolRequest message =
-                new ProtocolRequest(messageId, senderAddress, subject, content);
+                new ProtocolRequest(messageId, senderAddress, subject, payload);
+            payload = null;
             out.add(message);
             currentState = DecoderState.READ_TYPE;
             break;
@@ -140,7 +155,8 @@ class MessageDecoderV2 extends AbstractMessageDecoder {
               return;
             }
             final ProtocolReply.Status status = ProtocolReply.Status.forId(buffer.readByte());
-            final ProtocolReply message = new ProtocolReply(messageId, content, status);
+            final ProtocolReply message = new ProtocolReply(messageId, payload, status);
+            payload = null;
             out.add(message);
             currentState = DecoderState.READ_TYPE;
             break;
@@ -151,6 +167,17 @@ class MessageDecoderV2 extends AbstractMessageDecoder {
       default:
         checkState(false, "Must not be here");
     }
+  }
+
+  @Override
+  protected void handlerRemoved0(final ChannelHandlerContext context) throws Exception {
+    // a message whose content was already sliced but whose trailer never arrived would otherwise
+    // leak the retained receive buffer when the channel closes mid-frame
+    if (payload != null) {
+      payload.release();
+      payload = null;
+    }
+    super.handlerRemoved0(context);
   }
 
   /** V2 decoder state. */

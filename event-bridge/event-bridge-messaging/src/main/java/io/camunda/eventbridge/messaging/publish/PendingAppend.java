@@ -24,6 +24,12 @@ final class PendingAppend implements AppendListener, Runnable {
   // double completion would corrupt the publisher's in-flight accounting and the context pool.
   private final AtomicBoolean completionScheduled = new AtomicBoolean();
 
+  // The entries' transport payloads are released as soon as the batch bytes are safely in the
+  // journal (onWrite) or the append terminally failed. onWrite and the terminal callbacks all run
+  // on the raft thread; the synchronous flush-failure release runs on the appender actor before
+  // any callback can exist — so a plain flag suffices.
+  private boolean entriesReleased;
+
   private int capturedEntryCount;
   private int capturedBatchLength;
   private long firstBatchPosition;
@@ -43,6 +49,7 @@ final class PendingAppend implements AppendListener, Runnable {
     commitError = null;
     firstBatchPosition = firstPosition;
     completionScheduled.set(false);
+    entriesReleased = false;
   }
 
   /** Encapsulates the accumulation of entries and their respective metrics. */
@@ -88,10 +95,31 @@ final class PendingAppend implements AppendListener, Runnable {
     return entries.get(index);
   }
 
+  /**
+   * Releases the entries' transport payloads. Idempotent; called once the batch bytes were copied
+   * into the journal, on a terminal failure, or when the append never reached the log.
+   */
+  void releaseEntries() {
+    if (entriesReleased) {
+      return;
+    }
+    entriesReleased = true;
+    for (int i = 0; i < entries.size(); i++) {
+      entries.get(i).release();
+    }
+  }
+
   // --- AppendListener Callbacks ---
 
   @Override
+  public void onWrite(final long index, final long highestPosition) {
+    // the journal copied the batch bytes; the transport payloads are no longer needed
+    releaseEntries();
+  }
+
+  @Override
   public void onWriteError(final Throwable error) {
+    releaseEntries();
     completeWith(error);
   }
 
@@ -102,6 +130,7 @@ final class PendingAppend implements AppendListener, Runnable {
 
   @Override
   public void onCommitError(final long index, final Throwable error) {
+    releaseEntries();
     completeWith(error);
   }
 

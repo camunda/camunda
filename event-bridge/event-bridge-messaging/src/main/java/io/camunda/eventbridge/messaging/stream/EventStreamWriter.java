@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.messaging.stream;
 
+import io.atomix.cluster.messaging.InboundPayload;
 import io.camunda.eventbridge.messaging.publish.InboundQueue;
 import io.camunda.eventbridge.messaging.publish.InflightBatchEntry;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -23,9 +24,14 @@ public final class EventStreamWriter {
     this.drainNotifier = drainNotifier;
   }
 
+  /**
+   * Attempts to hand the batch to the appender. On {@code true} the pipeline takes ownership of the
+   * payload and releases it once the batch is persisted (or failed); on {@code false} the caller
+   * keeps ownership.
+   */
   public boolean tryWrite(
       final long requestId,
-      final byte[] requestBytes,
+      final InboundPayload payload,
       final int batchOffset,
       final int batchLength) {
 
@@ -33,7 +39,7 @@ public final class EventStreamWriter {
       return false;
     }
 
-    final var entry = InflightBatchEntry.of(requestId, requestBytes, batchOffset, batchLength);
+    final var entry = InflightBatchEntry.of(requestId, payload, batchOffset, batchLength);
 
     if (!inbound.offer(entry)) {
       return false;

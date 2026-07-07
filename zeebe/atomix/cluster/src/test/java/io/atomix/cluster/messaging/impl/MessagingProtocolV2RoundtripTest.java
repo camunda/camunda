@@ -8,10 +8,13 @@
 package io.atomix.cluster.messaging.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.atomix.cluster.messaging.ByteArrayPayload;
 import io.atomix.utils.net.Address;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.util.IllegalReferenceCountException;
 import java.util.concurrent.ThreadLocalRandom;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
@@ -42,6 +45,76 @@ final class MessagingProtocolV2RoundtripTest {
     assertThat(decoded.id()).isEqualTo(17);
     assertThat(decoded.subject()).isEqualTo("test-subject");
     assertThat(decoded.payloadAsBytes()).isEqualTo(payload);
+    decoded.payload().release();
+  }
+
+  @Test
+  void shouldSliceLargeRequestsAndCopySmallOnes() {
+    // given
+    final var small = new ProtocolRequest(1, address, "s", randomBytes(16));
+    final var large =
+        new ProtocolRequest(2, address, "l", randomBytes(MessageDecoderV2.SLICE_THRESHOLD));
+
+    // when
+    final ProtocolRequest decodedSmall = roundtrip(small);
+    final ProtocolRequest decodedLarge = roundtrip(large);
+
+    // then: small requests stay heap-backed, large ones reference the receive buffer
+    assertThat(decodedSmall.payload()).isInstanceOf(ByteArrayPayload.class);
+    assertThat(decodedLarge.payload()).isInstanceOf(NettyInboundPayload.class);
+
+    // reading in place matches the materialized bytes
+    final var inbound = (NettyInboundPayload) decodedLarge.payload();
+    final byte[] viewed = new byte[inbound.length()];
+    inbound.view().getBytes(0, viewed, 0, viewed.length);
+    assertThat(viewed).isEqualTo(decodedLarge.payloadAsBytes());
+
+    // the slice is reference-counted: releasing it once frees it
+    inbound.release();
+    assertThatThrownBy(inbound::release).isInstanceOf(IllegalReferenceCountException.class);
+  }
+
+  @Test
+  void shouldKeepRepliesHeapBacked() {
+    // given: replies are consumed as byte arrays on the client dispatch path and must not require
+    // an explicit release
+    final var reply =
+        new ProtocolReply(
+            5, randomBytes(MessageDecoderV2.SLICE_THRESHOLD * 2), ProtocolReply.Status.OK);
+
+    // when
+    final ProtocolReply decoded = roundtrip(reply);
+
+    // then
+    assertThat(decoded.payload()).isInstanceOf(ByteArrayPayload.class);
+  }
+
+  @Test
+  void shouldReleaseAPendingSliceWhenTheChannelClosesMidFrame() {
+    // given: a large request whose content was decoded but whose subject trailer never arrives
+    final var encodeChannel = new EmbeddedChannel(new MessageEncoderV2(address));
+    final var decodeChannel = new EmbeddedChannel(new MessageDecoderV2());
+    encodeChannel.writeOutbound(
+        new ProtocolRequest(7, address, "sub", randomBytes(MessageDecoderV2.SLICE_THRESHOLD)));
+
+    final var frame = decodeChannel.alloc().buffer();
+    Object outbound;
+    while ((outbound = encodeChannel.readOutbound()) != null) {
+      if (outbound instanceof final ByteBuf buf) {
+        frame.writeBytes(buf);
+        buf.release();
+      }
+    }
+    final var truncated = frame.readRetainedSlice(frame.readableBytes() - 3);
+    frame.release();
+
+    // when: the truncated frame arrives and the channel closes mid-message
+    decodeChannel.writeInbound(truncated);
+    assertThat(decodeChannel.<Object>readInbound()).isNull();
+    decodeChannel.finishAndReleaseAll();
+
+    // then: the retained content slice was released along with the channel
+    assertThat(truncated.refCnt()).isZero();
   }
 
   @ParameterizedTest

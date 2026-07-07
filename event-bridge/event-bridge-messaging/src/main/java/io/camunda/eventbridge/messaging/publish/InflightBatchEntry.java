@@ -7,28 +7,42 @@
  */
 package io.camunda.eventbridge.messaging.publish;
 
+import io.atomix.cluster.messaging.InboundPayload;
 import io.camunda.eventbridge.protocol.EventBridgeBatch;
+import java.nio.ByteOrder;
 
 /**
- * Immutable reference to a batch from the original Netty byte array. No data copying. Reads {@code
- * entryCount} once at creation.
+ * Immutable reference to a batch inside the original transport payload. No data copying. Reads
+ * {@code entryCount} once at creation.
+ *
+ * <p>Once accepted by the pipeline (a successful {@link
+ * io.camunda.eventbridge.messaging.stream.EventStreamWriter#tryWrite}), the pipeline owns the
+ * payload and must {@link #release()} it exactly once — after the batch was copied into the log, or
+ * on any failure/shutdown path.
  *
  * @param requestId unique ID for response correlation
- * @param requestBytes the original Netty byte array
- * @param batchOffset offset of the EventBridgeBatch within the byte array
+ * @param payload the original transport payload holding the request bytes
+ * @param batchOffset offset of the EventBridgeBatch within the payload
  * @param batchLength total length of the EventBridgeBatch
- * @param entryCount number of entries in the batch (read once from the byte array)
+ * @param entryCount number of entries in the batch (read once from the payload)
  */
 public record InflightBatchEntry(
-    long requestId, byte[] requestBytes, int batchOffset, int batchLength, int entryCount) {
+    long requestId, InboundPayload payload, int batchOffset, int batchLength, int entryCount) {
 
   public static InflightBatchEntry of(
       final long requestId,
-      final byte[] requestBytes,
+      final InboundPayload payload,
       final int batchOffset,
       final int batchLength) {
     final var entryCount =
-        ByteUtil.readInt(requestBytes, batchOffset + EventBridgeBatch.ENTRY_COUNT_OFFSET);
-    return new InflightBatchEntry(requestId, requestBytes, batchOffset, batchLength, entryCount);
+        payload
+            .view()
+            .getInt(batchOffset + EventBridgeBatch.ENTRY_COUNT_OFFSET, ByteOrder.LITTLE_ENDIAN);
+    return new InflightBatchEntry(requestId, payload, batchOffset, batchLength, entryCount);
+  }
+
+  /** Releases the underlying transport payload; the batch bytes must not be read afterwards. */
+  void release() {
+    payload.release();
   }
 }

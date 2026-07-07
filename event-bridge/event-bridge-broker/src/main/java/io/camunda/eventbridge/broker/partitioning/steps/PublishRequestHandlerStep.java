@@ -31,7 +31,7 @@ public final class PublishRequestHandlerStep implements PartitionStartupStep {
 
     final var topic =
         PublishRequestHandler.topicName(context.getRoutingGroup(), context.getPartitionId());
-    context.getRequestHandlerRegistry().register(topic, handler);
+    context.getRequestHandlerRegistry().registerWithInboundPayload(topic, handler);
 
     return CompletableActorFuture.completed(null);
   }

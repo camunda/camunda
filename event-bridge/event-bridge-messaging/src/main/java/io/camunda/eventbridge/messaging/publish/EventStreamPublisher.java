@@ -122,6 +122,7 @@ public final class EventStreamPublisher extends Actor {
     inbound.drainAndCheckRemaining(
         entry -> {
           listener.onFailed(entry.requestId(), error);
+          entry.release();
           return true; // continue draining, ignoring max limits
         });
 
@@ -129,10 +130,13 @@ public final class EventStreamPublisher extends Actor {
     for (int i = 0; i < drainedEntries.size(); i++) {
       final var entry = drainedEntries.get(i);
       listener.onFailed(entry.requestId(), error);
+      entry.release();
       unreleasedPermits += entry.entryCount();
     }
 
-    // Phase 3: Salvage flow control permits trapped in asynchronous Raft futures
+    // Phase 3: Salvage flow control permits trapped in asynchronous Raft futures. Their payloads
+    // are NOT released here: the Raft append may still be serializing them on its own thread, and
+    // its onWrite/onWriteError/onCommitError callbacks release them even after this actor closed.
     for (int i = 0; i < activeAppends.size(); i++) {
       final var append = activeAppends.get(i);
       unreleasedPermits += append.entryCount();
@@ -237,6 +241,8 @@ public final class EventStreamPublisher extends Actor {
     } catch (final Exception e) {
       position = firstBatchPosition; // Rollback
 
+      // the append never reached the log, so no callback will release the payloads
+      append.releaseEntries();
       for (int i = 0; i < append.entriesSize(); i++) {
         listener.onFailed(append.getEntry(i).requestId(), e);
       }

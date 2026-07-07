@@ -359,6 +359,20 @@ public interface MessagingService {
   }
 
   /**
+   * Registers a message handler that reads the request payload in place instead of receiving a heap
+   * copy. Ownership of the payload transfers to the handler, which must {@link
+   * InboundPayload#release()} it exactly once on every path after consuming the bytes.
+   *
+   * @param type message type.
+   * @param handler message handler
+   */
+  default void registerHandlerWithInboundPayload(
+      final String type,
+      final BiFunction<Address, InboundPayload, CompletableFuture<byte[]>> handler) {
+    throw new UnsupportedOperationException();
+  }
+
+  /**
    * Unregister current handler, if one exists for message type.
    *
    * @param type message type

@@ -7,6 +7,8 @@
  */
 package io.camunda.eventbridge.messaging.transport.publish;
 
+import io.atomix.cluster.messaging.ByteArrayPayload;
+import io.atomix.cluster.messaging.InboundPayload;
 import io.camunda.eventbridge.messaging.publish.PublishResponse;
 import io.camunda.eventbridge.messaging.stream.EventStreamWriter;
 import io.camunda.eventbridge.protocol.RejectionReason;
@@ -35,10 +37,16 @@ public final class PublishRequestHandler implements RequestHandler {
 
   @Override
   public CompletableFuture<byte[]> handle(final byte[] requestBytes) {
+    return handleInbound(new ByteArrayPayload(requestBytes));
+  }
+
+  @Override
+  public CompletableFuture<byte[]> handleInbound(final InboundPayload payload) {
     final PublishRequest request;
     try {
-      request = PublishRequest.from(requestBytes);
+      request = PublishRequest.from(payload);
     } catch (final IllegalArgumentException e) {
+      payload.release();
       return CompletableFuture.failedFuture(e);
     }
 
@@ -46,10 +54,12 @@ public final class PublishRequestHandler implements RequestHandler {
 
     if (!writer.tryWrite(
         registration.requestId(),
-        request.requestBytes(),
+        request.payload(),
         request.batchOffset(),
         request.batchLength())) {
+      // the pipeline did not take ownership, so the payload is released here
       correlator.cancel(registration.requestId());
+      payload.release();
       return CompletableFuture.completedFuture(
           PublishResponse.error(RejectionReason.BACKPRESSURE, "Partition " + partitionId));
     }
