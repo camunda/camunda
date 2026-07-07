@@ -7,27 +7,52 @@
  */
 package io.camunda.analytics.dimension;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import org.agrona.MutableDirectBuffer;
 
 /**
  * A value-equal tuple of dimension values conforming to a {@link DimensionSchema} — the grouping
- * key the combiner buffers by and the durable rollup stores. Values are positional, matching the
- * schema's column order; a {@code null} value is the "unknown"/absent bucket for that dimension.
- * The generic replacement for the per-metric key records (e.g. {@code RegionKey}); the streaming
- * library only sees it as an opaque, value-equal key.
+ * key the combiner buffers by and the durable rollup stores. The key <em>is</em> its canonical
+ * serialized form (ADR 0008): it wraps the encoded bytes of the {@link DimensionKeyWire} layout
+ * (kind-tagged msgpack, schema order), identity is byte equality (UTF-8 byte equality is string
+ * equality), and the hash is computed once. That makes every hop free of per-column serde: the
+ * selector encodes straight off the fact, the shuffle and the RocksDB cell key reuse the same
+ * bytes, and Stage 2 wraps received bytes without decoding.
+ *
+ * <p>{@link #values()}/{@link #get} decode lazily (once, memoized) — only the serving edge, which
+ * renders {@code cell_key} strings and binds JDBC parameters, ever materializes column values. A
+ * {@code null} value is the "unknown"/absent bucket for that dimension.
  */
 public final class DimensionKey {
 
   private final DimensionSchema schema;
-  private final List<Object> values;
 
-  private DimensionKey(final DimensionSchema schema, final List<Object> values) {
+  // The canonical encoded bytes. An owned key holds an exact-length array it never mutates; the
+  // selector's reusable probe key re-points these fields at its encoder scratch (same class, so
+  // byte-wise equals makes a probe-vs-owned map lookup correct).
+  private byte[] encoded;
+  private int offset;
+  private int length;
+  private int hash;
+
+  // Lazily decoded column values, memoized for the serving edge. Not part of identity.
+  private List<Object> decoded;
+
+  /** An owned key over an exact-length encoded array (never mutated afterwards). */
+  private DimensionKey(final DimensionSchema schema, final byte[] encoded) {
     this.schema = schema;
-    this.values = values;
+    this.encoded = encoded;
+    offset = 0;
+    length = encoded.length;
+    hash = hash(schema, encoded, 0, encoded.length);
+  }
+
+  /** An unbound probe view; {@link #wrapView} points it at an encoder's scratch buffer. */
+  private DimensionKey(final DimensionSchema schema) {
+    this.schema = schema;
   }
 
   public static DimensionKey of(final DimensionSchema schema, final Object... values) {
@@ -41,38 +66,101 @@ public final class DimensionKey {
       throw new IllegalArgumentException(
           "expected " + schema.size() + " values for " + schema + " but got " + values.size());
     }
-    final List<Object> copy = new ArrayList<>(values.size());
+    final DimensionKeyWire wire = new DimensionKeyWire();
+    wire.begin(schema.size());
     for (int i = 0; i < values.size(); i++) {
-      final Object value = values.get(i);
-      validate(schema.column(i), value);
-      copy.add(value);
+      encode(wire, schema.column(i), values.get(i));
     }
-    return new DimensionKey(schema, Collections.unmodifiableList(copy));
+    return new DimensionKey(schema, wire.copyBytes());
   }
 
-  private static void validate(final DimensionColumn column, final Object value) {
+  /** Encodes one validated column value; the type check preserves {@code of}'s strictness. */
+  private static void encode(
+      final DimensionKeyWire wire, final DimensionColumn column, final Object value) {
     if (value == null) {
+      wire.addNull();
       return;
     }
-    final boolean ok =
-        switch (column.type()) {
-          case STRING, TEXT -> value instanceof String;
-          case LONG -> value instanceof Long;
-          case INT -> value instanceof Integer;
-          case BOOLEAN -> value instanceof Boolean;
-        };
-    if (!ok) {
-      throw new IllegalArgumentException(
-          "value "
-              + value
-              + " ("
-              + value.getClass().getSimpleName()
-              + ") is not "
-              + column.type()
-              + " for dimension '"
-              + column.name()
-              + "'");
+    switch (column.type()) {
+      case STRING, TEXT -> {
+        if (value instanceof final String string) {
+          wire.addString(string);
+        } else {
+          throw typeMismatch(column, value);
+        }
+      }
+      case LONG -> {
+        if (value instanceof final Long longValue) {
+          wire.addLong(longValue);
+        } else {
+          throw typeMismatch(column, value);
+        }
+      }
+      case INT -> {
+        if (value instanceof final Integer intValue) {
+          wire.addInt(intValue);
+        } else {
+          throw typeMismatch(column, value);
+        }
+      }
+      case BOOLEAN -> {
+        if (value instanceof final Boolean booleanValue) {
+          wire.addBoolean(booleanValue);
+        } else {
+          throw typeMismatch(column, value);
+        }
+      }
     }
+  }
+
+  static IllegalArgumentException typeMismatch(final DimensionColumn column, final Object value) {
+    return new IllegalArgumentException(
+        "value "
+            + value
+            + " ("
+            + value.getClass().getSimpleName()
+            + ") is not "
+            + column.type()
+            + " for dimension '"
+            + column.name()
+            + "'");
+  }
+
+  /**
+   * Wraps already-canonical encoded bytes into an owned key <em>without</em> decoding columns — the
+   * Stage-2/recover path (the schema comes from the owning cube). The caller hands over ownership
+   * of {@code encoded}; it must be exact-length and never mutated afterwards.
+   */
+  static DimensionKey fromEncoded(final DimensionSchema schema, final byte[] encoded) {
+    return new DimensionKey(schema, encoded);
+  }
+
+  /** A reusable probe view for map lookups; see {@link DimensionKeySelector}. */
+  static DimensionKey view(final DimensionSchema schema) {
+    return new DimensionKey(schema);
+  }
+
+  /** Re-points a probe view at {@code [offset, offset+length)} of a scratch buffer. */
+  void wrapView(final byte[] buffer, final int viewOffset, final int viewLength) {
+    encoded = buffer;
+    offset = viewOffset;
+    length = viewLength;
+    hash = hash(schema, buffer, viewOffset, viewLength);
+    decoded = null;
+  }
+
+  /** An owned, storable copy of a probe view (or {@code this} if already owned). */
+  DimensionKey toOwned() {
+    return new DimensionKey(schema, copyEncoded());
+  }
+
+  private static int hash(
+      final DimensionSchema schema, final byte[] bytes, final int offset, final int length) {
+    int result = schema.hashCode();
+    for (int i = offset; i < offset + length; i++) {
+      result = 31 * result + bytes[i];
+    }
+    return result;
   }
 
   public DimensionSchema schema() {
@@ -80,11 +168,16 @@ public final class DimensionKey {
   }
 
   public List<Object> values() {
-    return values;
+    if (decoded == null) {
+      decoded =
+          Collections.unmodifiableList(
+              Arrays.asList(DimensionKeyWire.decode(schema, encoded, offset, length)));
+    }
+    return decoded;
   }
 
   public Object get(final int index) {
-    return values.get(index);
+    return values().get(index);
   }
 
   /** The value for the named dimension; throws if this key's schema has no such column. */
@@ -93,23 +186,45 @@ public final class DimensionKey {
     if (index < 0) {
       throw new IllegalArgumentException("no dimension '" + name + "' in " + schema);
     }
-    return values.get(index);
+    return values().get(index);
+  }
+
+  /** The length of the canonical encoded form. */
+  int encodedLength() {
+    return length;
+  }
+
+  /** Copies the canonical encoded form into {@code buffer} at {@code bufferOffset}. */
+  void writeEncoded(final MutableDirectBuffer buffer, final int bufferOffset) {
+    buffer.putBytes(bufferOffset, encoded, offset, length);
+  }
+
+  /** A fresh, exact-length copy of the canonical encoded form. */
+  byte[] copyEncoded() {
+    return Arrays.copyOfRange(encoded, offset, offset + length);
   }
 
   @Override
   public boolean equals(final Object o) {
     return o instanceof final DimensionKey other
+        && hash == other.hash
         && schema.equals(other.schema)
-        && values.equals(other.values);
+        && Arrays.equals(
+            encoded,
+            offset,
+            offset + length,
+            other.encoded,
+            other.offset,
+            other.offset + other.length);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(schema, values);
+    return hash;
   }
 
   @Override
   public String toString() {
-    return "DimensionKey" + values;
+    return "DimensionKey" + values();
   }
 }
