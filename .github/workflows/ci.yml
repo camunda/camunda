@@ -86,6 +86,7 @@ jobs:
       elasticsearch-8: ${{ steps.db-versions.outputs.elasticsearch-8 }}
       opensearch-2: ${{ steps.db-versions.outputs.opensearch-2 }}
       saas: ${{ steps.db-versions.outputs.saas }}
+      ci-database-matrix: ${{ steps.db-versions.outputs.ci-database-matrix }}
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Read DB versions
