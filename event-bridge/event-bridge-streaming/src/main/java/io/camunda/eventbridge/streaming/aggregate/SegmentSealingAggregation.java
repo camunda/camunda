@@ -173,11 +173,20 @@ public final class SegmentSealingAggregation<IN, K, ACC> implements Aggregation<
       // authoritative for the source partition.
       sourcePartition = coordinate.partition(value);
     }
+    // Probe with a possibly-reusable view key; an owned copy is made only when a new cell is
+    // inserted. On the hit path the map keeps its existing (owned) key — the probe is only
+    // compared, never stored.
+    final K probe = keySelector.probeKey(value);
     final Windowed<K> cell =
-        new Windowed<>(
-            keySelector.getKey(value), windows.windowStart(eventTime.applyAsLong(value)));
+        new Windowed<>(probe, windows.windowStart(eventTime.applyAsLong(value)));
     final ACC current = open.get(cell);
-    open.put(cell, aggregate.add(value, current == null ? aggregate.createAccumulator() : current));
+    if (current == null) {
+      open.put(
+          new Windowed<>(keySelector.ownKey(probe), cell.windowStart()),
+          aggregate.add(value, aggregate.createAccumulator()));
+    } else {
+      open.put(cell, aggregate.add(value, current));
+    }
   }
 
   /**

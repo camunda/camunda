@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.analytics.dimension.DimensionColumn;
 import io.camunda.analytics.dimension.DimensionKey;
+import io.camunda.analytics.dimension.DimensionKeySelector;
 import io.camunda.analytics.dimension.DimensionType;
 import io.camunda.analytics.fact.Fact;
 import io.camunda.analytics.fact.FactType;
@@ -59,7 +60,7 @@ final class DatasetCompilerTest {
             .field("processDefinitionKey", 100L)
             .field("var.region", "EU")
             .build();
-    assertThat(compiled.keySelector().getKey(fact))
+    assertThat(new DimensionKeySelector(compiled.grain()).getKey(fact))
         .isEqualTo(DimensionKey.of(compiled.grain(), 100L, "EU"));
     // the serving schema has one column per meter
     assertThat(compiled.schema().meterNames()).containsExactly("duration", "count");

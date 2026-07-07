@@ -8,7 +8,6 @@
 package io.camunda.analytics.dataset;
 
 import io.camunda.analytics.dimension.DimensionColumn;
-import io.camunda.analytics.dimension.DimensionKeySelector;
 import io.camunda.analytics.dimension.DimensionSchema;
 import io.camunda.analytics.meter.BoundMeter;
 import io.camunda.analytics.meter.Meter;
@@ -22,12 +21,12 @@ import java.util.Map;
 
 /**
  * Compiles a {@link DatasetDeclaration} into a runnable {@link CompiledDataset}: builds the grain
- * schema and its key selector, derives the fact binding (filters + per-variable enrichment timing),
- * and resolves each meter against the {@link MeterCatalog} for every declared window tier — each
- * getting a stable {@code aggId} from the {@link MeterIdRegistry}, keyed by {@code (cube, meter,
- * tier)} so tiers are independent rollups. The physical {@link DatasetSchema} is the grain plus one
- * accumulator column per meter. This is the "think backwards" step: the declaration alone
- * determines the fact stream, the grain, the aggregates, and the serving schema.
+ * schema, derives the fact binding (filters + per-variable enrichment timing), and resolves each
+ * meter against the {@link MeterCatalog} for every declared window tier — each getting a stable
+ * {@code aggId} from the {@link MeterIdRegistry}, keyed by {@code (cube, meter, tier)} so tiers are
+ * independent rollups. The physical {@link DatasetSchema} is the grain plus one accumulator column
+ * per meter. This is the "think backwards" step: the declaration alone determines the fact stream,
+ * the grain, the aggregates, and the serving schema.
  */
 public final class DatasetCompiler {
 
@@ -72,14 +71,7 @@ public final class DatasetCompiler {
 
     final DatasetSchema schema =
         new DatasetSchema(grain, declaration.meters().stream().map(Meter::name).toList());
-    return new CompiledDataset(
-        cubeId,
-        declaration.name(),
-        factBinding,
-        grain,
-        new DimensionKeySelector(grain),
-        meters,
-        schema);
+    return new CompiledDataset(cubeId, declaration.name(), factBinding, grain, meters, schema);
   }
 
   /**

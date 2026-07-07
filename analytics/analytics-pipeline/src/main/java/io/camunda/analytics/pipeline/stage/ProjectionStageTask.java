@@ -17,6 +17,7 @@ import io.camunda.analytics.dataset.ActiveTable;
 import io.camunda.analytics.dataset.CompiledMeter;
 import io.camunda.analytics.dataset.DimensionSpec;
 import io.camunda.analytics.dimension.DimensionKey;
+import io.camunda.analytics.dimension.DimensionKeySelector;
 import io.camunda.analytics.dimension.DimensionKeyValue;
 import io.camunda.analytics.fact.Fact;
 import io.camunda.analytics.meter.BoundMeter;
@@ -384,7 +385,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
         new SegmentSealingAggregation<>(
             meter.aggId(),
             bound.aggregate(),
-            cube.compiled().keySelector(),
+            new DimensionKeySelector(cube.compiled().grain()),
             COORDINATE,
             Fact::eventTime,
             meter.windows(),

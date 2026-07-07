@@ -18,6 +18,24 @@ package io.camunda.eventbridge.streaming.aggregate;
 @FunctionalInterface
 public interface KeySelector<IN, KEY> {
 
-  /** The grouping key for {@code value}. */
+  /** The grouping key for {@code value} — always an owned, storable key. */
   KEY getKey(IN value);
+
+  /**
+   * The grouping key for {@code value}, for an immediate map lookup only: the result may be a
+   * reusable view valid only until the selector's next call, so it must never be stored. A stateful
+   * selector overrides this to probe without allocating the owned key; the default is {@link
+   * #getKey}.
+   */
+  default KEY probeKey(final IN value) {
+    return getKey(value);
+  }
+
+  /**
+   * An owned, storable key equal to {@code key} — called before a probe key is inserted into a map.
+   * The default assumes {@link #probeKey} already returned an owned key.
+   */
+  default KEY ownKey(final KEY key) {
+    return key;
+  }
 }
