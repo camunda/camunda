@@ -13,11 +13,15 @@
 # because the backend service names, ports and context paths are derived from
 # the camunda-platform subchart templates.
 #
-# Known gap: the `global.preview.ingress.internalAuthBypass.enabled` source-IP
-# Vouch bypass (non-default) has no faithful Traefik Gateway API equivalent —
-# Traefik's ipAllowList rejects non-listed IPs rather than letting them skip
-# auth — and is therefore intentionally not translated here; revisit if a
-# consumer enables it.
+# Internal auth bypass: when `global.preview.ingress.internalAuthBypass.enabled`
+# is true (non-default; CI/testing only), a set of higher-priority header-matched
+# rules is prepended that skips the Vouch filter. Because Traefik's ipAllowList
+# rejects non-listed IPs (rather than letting them fall through to Vouch), a
+# plain source-range rule cannot express nginx's `satisfy: any`; instead the
+# bypass is selected by a header the internal CI client sends, and an ipAllowList
+# Middleware (templates/middleware-internal-bypass.yml) restricts those rules to
+# the internal source range so a forged header from outside is rejected, never
+# granted. Ordinary browser traffic sends no header and keeps the Vouch flow.
 ---
 {{- $camundaPlatform := deepCopy (index .Subcharts "camunda-platform") -}}
 {{- $_ := set .Values "camundaPlatform" (deepCopy (index .Values "camunda-platform")) -}}
@@ -30,6 +34,10 @@
 {{- if $errorsEnabled -}}
 {{- $errorsMiddleware = required "infra-preview-environments-gateway-api.errorPages.middlewareName must be set when errorPages.enabled is true so the HTTPRoute filters can reference the error-pages Middleware" $errorPages.middlewareName -}}
 {{- end -}}
+{{- $iab := .Values.global.preview.ingress.internalAuthBypass | default dict -}}
+{{- $bypassEnabled := $iab.enabled | default false -}}
+{{- $bypassHeaderName := (($iab.header) | default dict).name | default "X-Camunda-Preview-Auth-Bypass" -}}
+{{- $bypassHeaderValue := (($iab.header) | default dict).value | default "allow" -}}
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -44,6 +52,52 @@ spec:
   hostnames:
   - {{ include "ingress.domain" $ | quote }}
   rules:
+  {{- if $bypassEnabled }}
+  # --- Internal auth bypass (CI/testing only) -------------------------------
+  # Higher-priority, header-matched duplicates of every authenticated rule
+  # below, WITHOUT the Vouch filter. A header match is strictly more specific
+  # than the path-only authenticated rule, so a request carrying the bypass
+  # header is served here (Vouch-free) while all other traffic still matches the
+  # authenticated rule. The `internal-auth-bypass` ipAllowList Middleware
+  # (templates/middleware-internal-bypass.yml) restricts these rules to the
+  # internal source range, so a forged header from outside is rejected (403),
+  # never granted. Kept in lock-step with the authenticated backends below.
+  {{- $authBackends := list
+      (dict "path" .Values.camundaPlatform.console.contextPath "name" (include "console.fullname" $camundaPlatform) "port" .Values.camundaPlatform.console.service.port)
+      (dict "path" .Values.camundaPlatform.orchestration.contextPath "name" (printf "%s-gateway" (include "orchestration.fullname" $camundaPlatform)) "port" .Values.camundaPlatform.orchestration.service.httpPort)
+      (dict "path" (include "identity.keycloak.contextPath" $camundaPlatform) "name" (include "identity.keycloak.service" $camundaPlatform) "port" (include "identity.keycloak.port" $camundaPlatform))
+      (dict "path" .Values.camundaPlatform.identity.contextPath "name" (include "identity.fullname" $camundaPlatform) "port" .Values.camundaPlatform.identity.service.port)
+      (dict "path" .Values.camundaPlatform.optimize.contextPath "name" (include "optimize.fullname" $camundaPlatform) "port" .Values.camundaPlatform.optimize.service.port)
+      (dict "path" .Values.camundaPlatform.webModeler.contextPath "name" (include "webModeler.restapi.fullname" $camundaPlatform) "port" .Values.camundaPlatform.webModeler.restapi.service.port)
+      (dict "path" (include "webModeler.websocketContextPath" $camundaPlatform) "name" (include "webModeler.websockets.fullname" $camundaPlatform) "port" .Values.camundaPlatform.webModeler.websockets.service.port)
+      (dict "path" .Values.camundaPlatform.connectors.contextPath "name" (include "connectors.fullname" $camundaPlatform) "port" .Values.camundaPlatform.connectors.service.serverPort)
+  -}}
+  {{- range $b := $authBackends }}
+  - matches:
+    - path:
+        type: PathPrefix
+        value: {{ $b.path | quote }}
+      headers:
+      - name: {{ $bypassHeaderName | quote }}
+        value: {{ $bypassHeaderValue | quote }}
+    filters:
+    - type: ExtensionRef
+      extensionRef:
+        group: traefik.io
+        kind: Middleware
+        name: internal-auth-bypass
+    {{- if $errorsEnabled }}
+    - type: ExtensionRef
+      extensionRef:
+        group: traefik.io
+        kind: Middleware
+        name: {{ $errorsMiddleware }}
+    {{- end }}
+    backendRefs:
+    - name: {{ $b.name }}
+      port: {{ $b.port }}
+  {{- end }}
+  {{- end }}
   # app-root: redirect "/" to Console.
   - matches:
     - path:

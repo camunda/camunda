@@ -32,13 +32,29 @@ global:
     ingress:
       # The domain name under which to expose the preview environment
       domain: camunda.camunda.cloud
-      # WARNING: When enabled, this bypasses Vouch/Okta authentication for all
-      # requests originating from the 10.0.0.0/8 internal IP range, granting
-      # unauthenticated access to any client within that network. This is
-      # intended only for tightly controlled CI/testing scenarios (for example,
-      # CI access via a Teleport TCP tunnel).
+      # WARNING: When enabled, this lets internal clients bypass Vouch/Okta
+      # authentication. A dedicated set of higher-priority HTTPRoute rules
+      # (templates/httproute.yml) matches the `header` below and skips the Vouch
+      # filter; a Traefik ipAllowList Middleware (templates/middleware-internal-
+      # bypass.yml) then restricts those rules to `sourceRange`, so a client
+      # outside that network which forges the header is rejected rather than
+      # granted access. Intended only for tightly controlled CI/testing
+      # scenarios (for example, CI access via a Teleport TCP tunnel).
       internalAuthBypass:
         enabled: false
+        # Source ranges permitted to use the bypass (the in-cluster / Teleport
+        # tunnel network). Security is enforced here: the header alone never
+        # grants access.
+        sourceRange:
+        - 10.0.0.0/8
+        # Header an internal client sends to select the Vouch-bypass route.
+        # Non-secret by design — it only disambiguates bypass-vs-SSO so ordinary
+        # browser traffic (no header) still gets the SSO redirect. Must match
+        # what the CI client sends (camunda/c8-cross-component-e2e-tests
+        # Playwright config, gated by the PREVIEW_ENV_AUTH_BYPASS env var).
+        header:
+          name: X-Camunda-Preview-Auth-Bypass
+          value: allow
     secrets:
       name: camunda-credentials
 

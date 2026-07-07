@@ -1,0 +1,25 @@
+{{- with .Values.global.preview.ingress.internalAuthBypass }}
+{{- if .enabled }}
+# Traefik ipAllowList Middleware backing the internal auth-bypass HTTPRoute
+# rules (templates/httproute.yml). Only clients in `sourceRange` (the in-cluster
+# / Teleport-tunnel network) may use the bypass; any other client that forges
+# the bypass header is rejected with 403, so the public SSO-protected path is
+# never widened. The infra-preview-environments-gateway-api dependency ships an
+# equivalent Middleware, but its toggle is subchart-scoped; this copy is
+# rendered from the single documented
+# `global.preview.ingress.internalAuthBypass.enabled` switch so consumers have
+# one lever.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: internal-auth-bypass
+  labels:
+    {{- include "commonLabels" $ | nindent 4 }}
+  annotations:
+    {{- include "commonAnnotations" $ | nindent 4 }}
+spec:
+  ipAllowList:
+    sourceRange:
+      {{- toYaml .sourceRange | nindent 6 }}
+{{- end }}
+{{- end }}

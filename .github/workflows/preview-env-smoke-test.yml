@@ -199,6 +199,12 @@ jobs:
           PLAYWRIGHT_BASE_URL: https://${{ matrix.deployment.host }}
           PROJECT: chromium
           CI: true
+          # Preview envs are deployed with internalAuthBypass.enabled=true; the
+          # client tunnels in from the internal (10/8) network via Teleport, so
+          # sending this header selects the Vouch-free HTTPRoute (see c8sm chart
+          # global.preview.ingress.internalAuthBypass). Playwright injects the
+          # matching header when this is set to 'true'.
+          PREVIEW_ENV_AUTH_BYPASS: 'true'
           DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD: demo
           DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET: admin
           DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD: admin
