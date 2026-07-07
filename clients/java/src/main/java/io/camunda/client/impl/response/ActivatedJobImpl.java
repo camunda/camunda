@@ -60,6 +60,7 @@ public final class ActivatedJobImpl implements ActivatedJob {
   private final Set<String> tags;
   private final Long rootProcessInstanceKey;
   private final String businessId;
+  private final String leaseToken;
 
   private Map<String, Object> variablesAsMap;
 
@@ -94,6 +95,8 @@ public final class ActivatedJobImpl implements ActivatedJob {
     rootProcessInstanceKey = null;
     // proto strings default to "" when unset; expose as null like the REST response
     businessId = job.getBusinessId().isEmpty() ? null : job.getBusinessId();
+    // leaseToken is a proto3 optional field: absence (no lease) is represented by hasLeaseToken()
+    leaseToken = job.hasLeaseToken() ? job.getLeaseToken() : null;
   }
 
   public ActivatedJobImpl(
@@ -136,6 +139,7 @@ public final class ActivatedJobImpl implements ActivatedJob {
             ? Long.parseLong(job.getRootProcessInstanceKey())
             : null;
     businessId = job.getBusinessId();
+    leaseToken = job.getLeaseToken();
   }
 
   @Override
@@ -276,6 +280,11 @@ public final class ActivatedJobImpl implements ActivatedJob {
   @Override
   public String getBusinessId() {
     return businessId;
+  }
+
+  @Override
+  public String getLeaseToken() {
+    return leaseToken;
   }
 
   @Override
