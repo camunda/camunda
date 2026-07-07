@@ -57,6 +57,7 @@ import org.opensearch.client.opensearch._types.query_dsl.ExistsQuery;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
 import org.opensearch.client.opensearch.core.ReindexRequest;
+import org.opensearch.client.opensearch.core.ReindexResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.UpdateRequest;
@@ -569,11 +570,27 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
 
     try {
       final var reindexResponse = client.reindex(createMissingRequest);
-      return reindexResponse != null
-          && reindexResponse.total() != null
-          && reindexResponse.total() > 0;
+      if (reindexResponse == null) {
+        throw new MigrationException(
+            "Reindex request from %s returned null response".formatted(source));
+      }
+      validateReindexResponse(source, reindexResponse);
+      return reindexResponse.total() != null && reindexResponse.total() > 0;
     } catch (final IOException e) {
       throw new MigrationException(e);
+    }
+  }
+
+  private static void validateReindexResponse(
+      final String sourceIndex, final ReindexResponse response) {
+    if (Boolean.TRUE.equals(response.timedOut())) {
+      throw new MigrationException("Reindex request from %s timed out".formatted(sourceIndex));
+    }
+    final var failures = response.failures();
+    if (failures != null && !failures.isEmpty()) {
+      throw new MigrationException(
+          "Reindex request from %s index completed with %d failures"
+              .formatted(sourceIndex, failures.size()));
     }
   }
 

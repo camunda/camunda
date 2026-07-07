@@ -17,8 +17,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.BulkIndexByScrollFailure;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch.core.ReindexRequest;
+import co.elastic.clients.elasticsearch.core.ReindexResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
@@ -345,6 +348,51 @@ class ElasticsearchAdapterTest {
     // Size should match the number of unique task keys from the destination query (12 tasks)
     // This ensures we exceed the default ES search size of 10
     assertThat(sourceRequest.size()).isEqualTo(12);
+  }
+
+  @Test
+  void reindexLegacyMainIndexShouldThrowWhenResponseTimesOut() throws Exception {
+    // Given
+    final ReindexResponse reindexResponse = mock(ReindexResponse.class);
+    when(reindexResponse.timedOut()).thenReturn(true);
+    when(reindexResponse.failures()).thenReturn(List.of());
+    when(client.reindex(any(ReindexRequest.class))).thenReturn(reindexResponse);
+
+    // When/Then
+    assertThatThrownBy(() -> adapter.reindexLegacyMainIndex())
+        .isInstanceOf(MigrationException.class)
+        .hasMessageContaining("timed out");
+  }
+
+  @Test
+  void reindexLegacyMainIndexShouldThrowWhenResponseHasFailures() throws Exception {
+    // Given
+    final BulkIndexByScrollFailure failure = mock(BulkIndexByScrollFailure.class);
+    final ReindexResponse reindexResponse = mock(ReindexResponse.class);
+    when(reindexResponse.timedOut()).thenReturn(false);
+    when(reindexResponse.failures()).thenReturn(List.of(failure));
+    when(client.reindex(any(ReindexRequest.class))).thenReturn(reindexResponse);
+
+    // When/Then
+    assertThatThrownBy(() -> adapter.reindexLegacyMainIndex())
+        .isInstanceOf(MigrationException.class)
+        .hasMessageContaining("failures");
+  }
+
+  @Test
+  void reindexLegacyMainIndexShouldSucceedWhenResponseIsValid() throws Exception {
+    // Given
+    final ReindexResponse reindexResponse = mock(ReindexResponse.class);
+    when(reindexResponse.timedOut()).thenReturn(false);
+    when(reindexResponse.failures()).thenReturn(List.of());
+    when(reindexResponse.total()).thenReturn(5L);
+    when(client.reindex(any(ReindexRequest.class))).thenReturn(reindexResponse);
+
+    // When - should not throw
+    adapter.reindexLegacyMainIndex();
+
+    // Then
+    verify(client, times(1)).reindex(any(ReindexRequest.class));
   }
 
   @SuppressWarnings("unchecked")

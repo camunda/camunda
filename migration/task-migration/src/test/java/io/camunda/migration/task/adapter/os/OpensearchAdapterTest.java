@@ -36,8 +36,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.BulkIndexByScrollFailure;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
+import org.opensearch.client.opensearch.core.ReindexRequest;
+import org.opensearch.client.opensearch.core.ReindexResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
@@ -345,6 +348,51 @@ class OpensearchAdapterTest {
     // Size should match the number of unique task keys from the destination query (12 tasks)
     // This ensures we exceed the default OS search size of 10
     assertThat(sourceRequest.size()).isEqualTo(12);
+  }
+
+  @Test
+  void reindexLegacyMainIndexShouldThrowWhenResponseTimesOut() throws Exception {
+    // Given
+    final ReindexResponse reindexResponse = mock(ReindexResponse.class);
+    when(reindexResponse.timedOut()).thenReturn(true);
+    when(reindexResponse.failures()).thenReturn(List.of());
+    when(client.reindex(any(ReindexRequest.class))).thenReturn(reindexResponse);
+
+    // When/Then
+    assertThatThrownBy(() -> adapter.reindexLegacyMainIndex())
+        .isInstanceOf(MigrationException.class)
+        .hasMessageContaining("timed out");
+  }
+
+  @Test
+  void reindexLegacyMainIndexShouldThrowWhenResponseHasFailures() throws Exception {
+    // Given
+    final BulkIndexByScrollFailure failure = mock(BulkIndexByScrollFailure.class);
+    final ReindexResponse reindexResponse = mock(ReindexResponse.class);
+    when(reindexResponse.timedOut()).thenReturn(false);
+    when(reindexResponse.failures()).thenReturn(List.of(failure));
+    when(client.reindex(any(ReindexRequest.class))).thenReturn(reindexResponse);
+
+    // When/Then
+    assertThatThrownBy(() -> adapter.reindexLegacyMainIndex())
+        .isInstanceOf(MigrationException.class)
+        .hasMessageContaining("failures");
+  }
+
+  @Test
+  void reindexLegacyMainIndexShouldSucceedWhenResponseIsValid() throws Exception {
+    // Given
+    final ReindexResponse reindexResponse = mock(ReindexResponse.class);
+    when(reindexResponse.timedOut()).thenReturn(false);
+    when(reindexResponse.failures()).thenReturn(List.of());
+    when(reindexResponse.total()).thenReturn(5L);
+    when(client.reindex(any(ReindexRequest.class))).thenReturn(reindexResponse);
+
+    // When - should not throw
+    adapter.reindexLegacyMainIndex();
+
+    // Then
+    verify(client, times(1)).reindex(any(ReindexRequest.class));
   }
 
   @SuppressWarnings("unchecked")
