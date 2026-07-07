@@ -65,8 +65,7 @@ final class RemoteClientConnection extends AbstractClientConnection {
     final String toAddress = channel.remoteAddress().toString();
     final String subject = message.subject();
     messagingMetrics.countMessage(channel.remoteAddress().toString(), message.subject());
-    final byte[] payload = message.payloadAsBytes();
-    messagingMetrics.observeRequestSize(toAddress, subject, payload == null ? 0 : payload.length);
+    messagingMetrics.observeRequestSize(toAddress, subject, message.payload().length());
   }
 
   private void countReqResponseMetrics(
@@ -76,8 +75,7 @@ final class RemoteClientConnection extends AbstractClientConnection {
     messagingMetrics.countRequestResponse(toAddress, subject);
     messagingMetrics.incInFlightRequests(toAddress, subject);
     final var timer = messagingMetrics.startRequestTimer(subject);
-    final byte[] payload = message.payloadAsBytes();
-    messagingMetrics.observeRequestSize(toAddress, subject, payload == null ? 0 : payload.length);
+    messagingMetrics.observeRequestSize(toAddress, subject, message.payload().length());
 
     responseFuture.whenComplete(
         (success, failure) -> {
