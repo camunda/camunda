@@ -346,7 +346,7 @@ orchestration:
     - name: ATOMIX_LOG_LEVEL
       value: INFO
     - name: ZEEBE_LOG_LEVEL
-      value: DEBUG
+      value: INFO
     # To be able to load a separate/additional configuration
     # See https://github.com/camunda/camunda-platform-helm/issues/2197
     - name: SPRING_CONFIG_ADDITIONALLOCATION
