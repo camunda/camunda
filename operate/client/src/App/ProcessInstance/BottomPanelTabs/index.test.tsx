@@ -26,6 +26,7 @@ import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/inciden
 import {mockSearchIncidentsByElementInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByElementInstance';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {LocationLog} from 'modules/utils/LocationLog';
+import {modificationsStore} from 'modules/stores/modifications';
 
 const PROCESS_INSTANCE_ID = '123';
 
@@ -870,6 +871,35 @@ describe('<BottomPanelTabs />', () => {
     );
     expect(await screen.findByTestId('pathname')).toHaveTextContent(
       Paths.processInstanceInputMappings({
+        processInstanceId: PROCESS_INSTANCE_ID,
+      }),
+    );
+  });
+
+  it('should not switch to the details tab in modification mode', async () => {
+    modificationsStore.enableModificationMode();
+    mockFetchProcessInstance().withSuccess(
+      createProcessInstance({
+        processInstanceKey: PROCESS_INSTANCE_ID,
+        hasIncident: false,
+      }),
+    );
+    mockSearchElementInstances().withSuccess(searchResult([]));
+
+    const path = Paths.processInstanceVariables({
+      processInstanceId: PROCESS_INSTANCE_ID,
+    });
+    const {user} = render(<BottomPanelTabs isHistoryTabVisible />, {
+      wrapper: getWrapper(path),
+    });
+
+    await user.click(screen.getByRole('button', {name: 'Select element'}));
+
+    expect(await screen.findByTestId('search')).toHaveTextContent(
+      '?elementId=someElement',
+    );
+    expect(await screen.findByTestId('pathname')).toHaveTextContent(
+      Paths.processInstanceVariables({
         processInstanceId: PROCESS_INSTANCE_ID,
       }),
     );

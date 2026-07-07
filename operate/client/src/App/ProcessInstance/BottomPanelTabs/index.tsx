@@ -20,6 +20,7 @@ import {useElementInstanceIncidentsCount} from 'modules/queries/incidents/useEle
 import {useWaitStateStatistics} from 'modules/queries/waitStateStatistics/useWaitStateStatistics';
 import {hasProcessLevelWaitState} from 'modules/utils/waitStates';
 import {getClientConfig} from 'modules/utils/getClientConfig';
+import {modificationsStore} from 'modules/stores/modifications';
 
 function useSelectionAwareIncidentsCount(
   processInstanceKey: string,
@@ -79,7 +80,11 @@ const BottomPanelTabs: React.FC<{isHistoryTabVisible: boolean}> = ({
     // select an element without a previous selection.
     const prevHasSelection = prevHasSelectionRef.current;
     prevHasSelectionRef.current = hasSelection;
-    if (!hasSelection || prevHasSelection) {
+    if (
+      !hasSelection ||
+      prevHasSelection ||
+      modificationsStore.isModificationModeEnabled
+    ) {
       return;
     }
 
