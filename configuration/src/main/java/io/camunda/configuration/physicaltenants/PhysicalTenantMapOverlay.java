@@ -14,8 +14,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.jspecify.annotations.NullMarked;
+import org.springframework.boot.context.properties.bind.BindHandler;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.boot.context.properties.bind.handler.IgnoreTopLevelConverterNotFoundBindHandler;
 import org.springframework.core.env.Environment;
 
 /**
@@ -25,10 +27,13 @@ import org.springframework.core.env.Environment;
  * <p>Spring's {@code MapBinder} merges maps at the entry level only: entries the tenant overlay
  * does not touch survive, but a touched entry is rebuilt from just the tenant's sub-keys — a tenant
  * overriding one field of a shared entry would silently lose every root field it did not restate.
- * The engine repairs this: bind root → snapshot each registered map → bind the tenant overlay onto
- * the same instance → for each key the root declared, re-bind the tenant sub-prefix onto {@code
+ * Worse, Spring Boot 4.1 surfaces an empty YAML map ({@code providers: {}}) as an empty property
+ * value, and binding that resets the whole map — dropping every inherited root entry. The engine
+ * repairs both: bind root → snapshot each registered map → bind the tenant overlay onto the same
+ * instance → re-establish the root ∪ overlay union by re-binding, for <em>every</em> key the root
+ * declared (whether or not it survived the overlay bind), the tenant sub-prefix onto {@code
  * Bindable.ofInstance(rootValue)} so Spring layers only the tenant's delta onto the fully-populated
- * root POJO, and put it back.
+ * root POJO, and putting it back.
  *
  * <p>Boundary: only the maps registered in the spec are repaired. A typed {@code Map<String, Pojo>}
  * nested inside a registered map's value type would still lose untouched inner fields — {@code
@@ -36,6 +41,17 @@ import org.springframework.core.env.Environment;
  */
 @NullMarked
 final class PhysicalTenantMapOverlay {
+
+  /**
+   * Spring Boot 4.1 surfaces an empty YAML map ({@code providers: {}}) as an empty-string property
+   * at the map's own path. Because a spec's overlay bind is rooted at the config root itself, that
+   * value sits at the top level of the bind and a raw {@link Binder#bind} fails with a {@code
+   * ConverterNotFoundException}. Production {@code @ConfigurationProperties} binding tolerates
+   * exactly this via {@link IgnoreTopLevelConverterNotFoundBindHandler} — use the same handler so
+   * an empty tenant overlay means "nothing to overlay" instead of a startup crash.
+   */
+  private static final BindHandler EMPTY_TOLERANT_HANDLER =
+      new IgnoreTopLevelConverterNotFoundBindHandler();
 
   private PhysicalTenantMapOverlay() {}
 
@@ -49,7 +65,7 @@ final class PhysicalTenantMapOverlay {
     final Binder binder = Binder.get(environment);
     final R root =
         binder
-            .bind(spec.rootPrefix(), Bindable.of(spec.rootType()))
+            .bind(spec.rootPrefix(), Bindable.of(spec.rootType()), EMPTY_TOLERANT_HANDLER)
             .orElseGet(spec.defaultFactory());
 
     final String ptPrefix = spec.ptPrefix(tenantId);
@@ -61,7 +77,7 @@ final class PhysicalTenantMapOverlay {
     for (final MapDescriptor<R, ?> descriptor : spec.maps()) {
       rebinds.add(prepareRebind(descriptor, root, binder, ptPrefix));
     }
-    binder.bind(ptPrefix, Bindable.ofInstance(root));
+    binder.bind(ptPrefix, Bindable.ofInstance(root), EMPTY_TOLERANT_HANDLER);
     rebinds.forEach(Runnable::run);
 
     spec.postProcess().accept(context, root);
@@ -82,22 +98,24 @@ final class PhysicalTenantMapOverlay {
         return;
       }
       // Re-fetch AFTER the overlay bind: Spring's MapBinder.merge returns a COPY and the bean
-      // binder calls the setter, so the map captured before the bind may be stale.
+      // binder calls the setter, so the map captured before the bind may be stale. The re-fetched
+      // map cannot be null here: every registered value root keeps its maps non-null
+      // (field-initialized, null-coercing setters), and without a setter on MapDescriptor a null
+      // map could not be repaired anyway.
       final Map<String, V> resolved = descriptor.accessor().apply(root);
       if (resolved == null) {
         return;
       }
       snapshot.forEach(
           (key, rootValue) -> {
-            if (resolved.containsKey(key)) {
-              // Apply the tenant delta onto the pristine root POJO, then swap it back in for the
-              // Binder-created entry that holds only the tenant-specified fields. Both steps are
-              // required: the bind layers the override, the put restores the merged result.
-              binder.bind(
-                  ptPrefix + "." + descriptor.subPath() + "." + key,
-                  Bindable.ofInstance(rootValue));
-              resolved.put(key, rootValue);
-            }
+            // Apply the tenant delta onto the pristine root POJO, then swap it back in. Both steps
+            // are required: the bind layers the override, the put restores the merged result. The
+            // put is unconditional — a root key missing from the post-overlay map means an empty
+            // tenant map value reset it (Spring Boot 4.1 empty-YAML-map behavior), and inherited
+            // entries must survive that too.
+            binder.bind(
+                ptPrefix + "." + descriptor.subPath() + "." + key, Bindable.ofInstance(rootValue));
+            resolved.put(key, rootValue);
           });
     };
   }

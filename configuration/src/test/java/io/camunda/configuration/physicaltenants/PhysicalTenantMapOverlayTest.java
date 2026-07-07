@@ -108,6 +108,23 @@ class PhysicalTenantMapOverlayTest {
     assertThat(doc.getLocal().get("l").getPath()).isEqualTo("/root/local");
   }
 
+  // criterion 5: an empty tenant overlay must not drop inherited root entries — Spring Boot 4.1
+  // surfaces an empty YAML map (`document: {}`) as an empty-string property at the overlay's own
+  // bind root, which a raw bind would reject and which must instead mean "nothing to overlay"
+  @Test
+  void shouldKeepRootEntriesWhenTenantOverlayIsEmptyMapValue() {
+    final Document doc =
+        overlay(
+            Map.of(
+                "camunda.document.aws.shared-s3.bucket-name", "root-bucket",
+                "camunda.document.aws.shared-s3.region", "us-east-1",
+                "camunda.physical-tenants.tenanta.document", ""));
+
+    final Document.AwsStore store = doc.getAws().get("shared-s3");
+    assertThat(store.getBucketName()).isEqualTo("root-bucket");
+    assertThat(store.getRegion()).isEqualTo("us-east-1");
+  }
+
   // criterion 4: non-map properties keep plain two-bind semantics (inherit, or override whole)
   @Test
   void shouldLeaveNonMapPropertiesOnTwoBindSemantics() {

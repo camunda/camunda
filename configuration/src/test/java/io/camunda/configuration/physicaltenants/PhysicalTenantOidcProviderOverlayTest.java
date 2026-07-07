@@ -76,10 +76,11 @@ class PhysicalTenantOidcProviderOverlayTest {
                     "default-client")));
 
     // when / then resolving a tenant does not throw and yields no named providers
-    final AuthenticationConfiguration auth =
-        PhysicalTenantAuthenticationConfigurations.forPhysicalTenant("tenanta", environment);
-    assertThat(auth.getOidc().getClientId()).isEqualTo("default-client");
-    assertThat(auth.getProviders() == null ? null : auth.getProviders().getOidc()).isNullOrEmpty();
+    // (the flat default slot itself is outside this overlay — covered by the resolver test)
+    final OidcProvidersConfiguration providers =
+        PhysicalTenantAuthenticationProviderConfigurations.forPhysicalTenant(
+            "tenanta", environment);
+    assertThat(providers.getOidc()).isEmpty();
   }
 
   @Test
@@ -105,15 +106,15 @@ class PhysicalTenantOidcProviderOverlayTest {
                     "")));
 
     // when
-    final AuthenticationConfiguration auth =
-        PhysicalTenantAuthenticationConfigurations.forPhysicalTenant("default", environment);
+    final OidcProvidersConfiguration providers =
+        PhysicalTenantAuthenticationProviderConfigurations.forPhysicalTenant(
+            "default", environment);
 
     // then both inherited providers survive the empty overlay
-    assertThat(auth.getProviders()).isNotNull();
-    assertThat(auth.getProviders().getOidc()).containsKeys("tenanta", "tenantb");
-    assertThat(auth.getProviders().getOidc().get("tenanta").getIssuerUri())
+    assertThat(providers.getOidc()).containsKeys("tenanta", "tenantb");
+    assertThat(providers.getOidc().get("tenanta").getIssuerUri())
         .isEqualTo("http://localhost:8082/realms/tenanta");
-    assertThat(auth.getProviders().getOidc().get("tenantb").getIssuerUri())
+    assertThat(providers.getOidc().get("tenantb").getIssuerUri())
         .isEqualTo("http://localhost:8083/realms/tenantb");
   }
 
