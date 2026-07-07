@@ -259,6 +259,19 @@ public final class SearchQueryBuilders {
     return hasChild(q -> q.query(query).type(type)).toSearchQuery();
   }
 
+  public static SearchNestedQuery.Builder nested() {
+    return new SearchNestedQuery.Builder();
+  }
+
+  public static SearchNestedQuery nested(
+      final Function<SearchNestedQuery.Builder, ObjectBuilder<SearchNestedQuery>> fn) {
+    return fn.apply(nested()).build();
+  }
+
+  public static SearchQuery nestedQuery(final String path, final SearchQuery query) {
+    return nested(q -> q.path(path).query(query)).toSearchQuery();
+  }
+
   public static SearchTermQuery.Builder term() {
     return new SearchTermQuery.Builder();
   }

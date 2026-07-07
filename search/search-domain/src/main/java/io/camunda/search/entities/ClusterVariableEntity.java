@@ -8,6 +8,7 @@
 package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
@@ -19,7 +20,8 @@ public record ClusterVariableEntity(
     @Nullable String fullValue,
     @Nullable Boolean isPreview,
     ClusterVariableScope scope,
-    @Nullable String tenantId)
+    @Nullable String tenantId,
+    @Nullable List<MetadataEntry> metadata)
     implements TenantOwnedEntity {
 
   public ClusterVariableEntity {
@@ -33,4 +35,6 @@ public record ClusterVariableEntity(
   public boolean hasTenantScope() {
     return ClusterVariableScope.TENANT.equals(scope);
   }
+
+  public record MetadataEntry(String key, @Nullable String value, @Nullable Double valueNumber) {}
 }
