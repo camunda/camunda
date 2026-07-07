@@ -194,7 +194,8 @@ COPY --from=dist --chown=1001:0 /camunda/camunda-zeebe ${CAMUNDA_HOME}
 # RocksDB.loadLibrary() resolves it via System.loadLibrary without unpacking the jar.
 COPY --from=dist /camunda/rocksdb-lib/ /usr/java/packages/lib/
 
-RUN ln -s /driver-lib ${CAMUNDA_HOME}/driver-lib
+RUN chmod +x ${CAMUNDA_HOME}/bin/* && \
+    ln -s /driver-lib ${CAMUNDA_HOME}/driver-lib
 
 USER 1001:1001
 
