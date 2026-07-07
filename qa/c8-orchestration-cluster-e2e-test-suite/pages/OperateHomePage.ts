@@ -67,7 +67,11 @@ class OperateHomePage {
   }
 
   async clickProcessesTab(): Promise<void> {
-    await this.processesTab.click();
+    // The header nav re-renders during hydration, which can detach the link
+    // mid-click; retry until the click lands.
+    await expect(async () => {
+      await this.processesTab.click({timeout: 10_000});
+    }).toPass({timeout: 30_000});
   }
 
   async clickDashboardLink(): Promise<void> {

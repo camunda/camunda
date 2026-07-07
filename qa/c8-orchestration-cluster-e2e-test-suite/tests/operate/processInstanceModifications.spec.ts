@@ -427,21 +427,29 @@ test.describe('Process Instance Modifications', () => {
     test.describe('after adding a token to CollectMoney', () => {
       test.beforeEach(
         async ({
+          page,
           operateProcessInstancePage,
           operateProcessInstanceViewModificationModePage,
         }) => {
-          await operateProcessInstancePage.enterModificationMode();
-          await operateProcessInstanceViewModificationModePage.addTokenToFlowNode(
-            activityCollectMoney,
-          );
+          // Entering modification mode and adding a token renders extra diagram
+          // overlays; under memory pressure the renderer can crash mid-click
+          // ("Target crashed"). Reloading relaunches the renderer and discards
+          // the unsaved modification, so retry the whole enter-mode + add-token
+          // flow on a fresh page.
           await waitForAssertion({
             assertion: async () => {
+              await operateProcessInstancePage.enterModificationMode();
+              await operateProcessInstanceViewModificationModePage.addTokenToFlowNode(
+                activityCollectMoney,
+              );
               await operateProcessInstanceViewModificationModePage.verifyModificationOverlay(
                 activityCollectMoney,
                 1,
               );
             },
-            onFailure: async () => {},
+            onFailure: async () => {
+              await page.reload();
+            },
           });
         },
       );

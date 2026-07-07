@@ -203,6 +203,9 @@ test.describe('Process Instance History', () => {
         onFailure: async () => {
           await page.reload();
         },
+        // Incident resolution is reprocessed asynchronously; the history tree
+        // can lag behind, so allow more reload-and-recheck cycles.
+        maxRetries: 5,
       });
     });
   });

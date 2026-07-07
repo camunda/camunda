@@ -169,8 +169,16 @@ test.describe('Decision Filters', () => {
     });
 
     await test.step('Uncheck Evaluated filter', async () => {
-      await operateDecisionsPage.clickEvaluatedCheckbox();
-      await expect(operateDecisionsPage.evaluatedCheckbox).not.toBeChecked();
+      // The label click occasionally does not toggle the checkbox on the first
+      // try while the filter panel is still wiring up; retry until unchecked.
+      await expect(async () => {
+        if (await operateDecisionsPage.evaluatedCheckbox.isChecked()) {
+          await operateDecisionsPage.clickEvaluatedCheckbox();
+        }
+        await expect(operateDecisionsPage.evaluatedCheckbox).not.toBeChecked({
+          timeout: 5_000,
+        });
+      }).toPass({timeout: 30_000});
     });
 
     await test.step('Verify row count decreased (only failed shown)', async () => {

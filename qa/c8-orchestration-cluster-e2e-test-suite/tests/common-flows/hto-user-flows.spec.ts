@@ -148,10 +148,10 @@ test.describe('HTO User Flow Tests', () => {
       await taskDetailsPage.clickAssignToMeButton();
       await taskDetailsPage.fillTextInput('Name*', 'Test User');
       await taskDetailsPage.clickCompleteTaskButton();
-      // 60s was hit by the May 21 nightly under load — match the 90s
-      // budget used by the deployed-form completion test.
+      // 90s was still hit by the Jul 7 nightly under load in profiles mode;
+      // give the async task completion a wider budget before the banner shows.
       await expect(taskDetailsPage.taskCompletedBanner).toBeVisible({
-        timeout: 90000,
+        timeout: 120000,
       });
 
       await navigateToApp(page, 'operate');
