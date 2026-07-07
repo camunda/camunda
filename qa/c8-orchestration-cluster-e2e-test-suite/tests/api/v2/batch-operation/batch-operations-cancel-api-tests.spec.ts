@@ -42,7 +42,10 @@ test.describe.parallel('Cancel Batch Operation Tests', () => {
   }) => {
     const key =
       await test.step('Create cancelable batch operation', async () => {
-        return createCancellationBatch(request, 10);
+        // 30 instances (matching the suspend suite) keep the batch running
+        // long enough to cancel before it completes; a 10-instance batch can
+        // finish first, making the cancel return 404 instead of 204.
+        return createCancellationBatch(request, 30);
       });
 
     await test.step('Cancel batch operation', async () => {
@@ -60,7 +63,10 @@ test.describe.parallel('Cancel Batch Operation Tests', () => {
   }) => {
     const key =
       await test.step('Create cancelable batch operation', async () => {
-        return createCancellationBatch(request, 10);
+        // 30 instances (matching the suspend suite) keep the batch running
+        // long enough to cancel before it completes; a 10-instance batch can
+        // finish first, making the cancel return 404 instead of 204.
+        return createCancellationBatch(request, 30);
       });
 
     await test.step('Send first cancel request', async () => {
