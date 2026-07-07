@@ -8,8 +8,8 @@
 package io.camunda.zeebe.dynamic.config.api;
 
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.ConcurrentModificationException;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.OperationNotAllowed;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
@@ -42,7 +42,7 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
     // Restore is only allowed in recovery
     if (!isClusterRecovering(clusterConfiguration)) {
       return Either.left(
-          new OperationNotAllowed(
+          new ConcurrentModificationException(
               "Restore is only allowed while the cluster is in recovery mode."));
     }
 

@@ -210,6 +210,25 @@ public class RecoveryControllerTest extends RestControllerTest {
         .is5xxServerError();
   }
 
+  @Test
+  void shouldMapConcurrentModificationFromCoordinator() {
+    // given
+    Mockito.when(clusterConfigurationRequestSender.restore(Mockito.any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                Either.left(new ErrorResponse(ErrorCode.CONCURRENT_MODIFICATION, "boom"))));
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/restore")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{\"backupIds\": [100]}")
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.CONFLICT);
+  }
+
   @Nested
   @TestPropertySource(properties = {"camunda.data.primary-storage.backup.continuous=true"})
   class RestoreWithContinuousBackups {
