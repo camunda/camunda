@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.transport.stream.impl;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -29,9 +30,12 @@ final class ClientStreamRegistryTest {
     final var metadata = new TestSerializableData();
 
     // when - add 2 aggregated streams, bar (2 clients) and foo (1 client)
-    registry.addClient(BufferUtil.wrapString("bar"), metadata, CLIENT_STREAM_CONSUMER);
-    registry.addClient(BufferUtil.wrapString("foo"), metadata, CLIENT_STREAM_CONSUMER);
-    registry.addClient(BufferUtil.wrapString("bar"), metadata, CLIENT_STREAM_CONSUMER);
+    registry.addClient(
+        BufferUtil.wrapString("bar"), metadata, CLIENT_STREAM_CONSUMER, DEFAULT_PHYSICAL_TENANT_ID);
+    registry.addClient(
+        BufferUtil.wrapString("foo"), metadata, CLIENT_STREAM_CONSUMER, DEFAULT_PHYSICAL_TENANT_ID);
+    registry.addClient(
+        BufferUtil.wrapString("bar"), metadata, CLIENT_STREAM_CONSUMER, DEFAULT_PHYSICAL_TENANT_ID);
 
     // then
     assertThat(metrics.getAggregatedStreamCount()).isEqualTo(2);
@@ -43,10 +47,19 @@ final class ClientStreamRegistryTest {
     // given - 2 aggregated streams, bar and food
     final var metadata = new TestSerializableData();
     final var fooId =
-        registry.addClient(BufferUtil.wrapString("foo"), metadata, CLIENT_STREAM_CONSUMER);
+        registry.addClient(
+            BufferUtil.wrapString("foo"),
+            metadata,
+            CLIENT_STREAM_CONSUMER,
+            DEFAULT_PHYSICAL_TENANT_ID);
     final var barId =
-        registry.addClient(BufferUtil.wrapString("bar"), metadata, CLIENT_STREAM_CONSUMER);
-    registry.addClient(BufferUtil.wrapString("bar"), metadata, CLIENT_STREAM_CONSUMER);
+        registry.addClient(
+            BufferUtil.wrapString("bar"),
+            metadata,
+            CLIENT_STREAM_CONSUMER,
+            DEFAULT_PHYSICAL_TENANT_ID);
+    registry.addClient(
+        BufferUtil.wrapString("bar"), metadata, CLIENT_STREAM_CONSUMER, DEFAULT_PHYSICAL_TENANT_ID);
 
     // when - remove only one aggregated stream (bar still has one client)
     registry.removeClient(fooId.streamId());
@@ -61,9 +74,12 @@ final class ClientStreamRegistryTest {
   void shouldReportMetricsOnClear() {
     // given
     final var metadata = new TestSerializableData();
-    registry.addClient(BufferUtil.wrapString("bar"), metadata, CLIENT_STREAM_CONSUMER);
-    registry.addClient(BufferUtil.wrapString("foo"), metadata, CLIENT_STREAM_CONSUMER);
-    registry.addClient(BufferUtil.wrapString("bar"), metadata, CLIENT_STREAM_CONSUMER);
+    registry.addClient(
+        BufferUtil.wrapString("bar"), metadata, CLIENT_STREAM_CONSUMER, DEFAULT_PHYSICAL_TENANT_ID);
+    registry.addClient(
+        BufferUtil.wrapString("foo"), metadata, CLIENT_STREAM_CONSUMER, DEFAULT_PHYSICAL_TENANT_ID);
+    registry.addClient(
+        BufferUtil.wrapString("bar"), metadata, CLIENT_STREAM_CONSUMER, DEFAULT_PHYSICAL_TENANT_ID);
 
     // when
     registry.clear();

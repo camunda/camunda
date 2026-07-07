@@ -31,16 +31,18 @@ public interface ClientStreamer<M extends BufferWriter> extends CloseableSilentl
    * @param streamType type of the stream
    * @param metadata metadata associated with the stream
    * @param clientStreamConsumer consumer which process data received from the server
+   * @param physicalTenantId the physical tenant / partition physicalTenantId this stream belongs to
    * @return a unique id of the stream
    */
   ActorFuture<ClientStreamId> add(
       final DirectBuffer streamType,
       final M metadata,
-      final ClientStreamConsumer clientStreamConsumer);
+      final ClientStreamConsumer clientStreamConsumer,
+      final String physicalTenantId);
 
   /**
    * Removes a stream that is added via {@link ClientStreamer#add(DirectBuffer, BufferWriter,
-   * ClientStreamConsumer)}. After the returned future is completed, the {@link
+   * ClientStreamConsumer, String)}. After the returned future is completed, the {@link
    * ClientStreamConsumer} will not receive any more data.
    *
    * @param streamId unique id of the stream

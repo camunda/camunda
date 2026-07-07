@@ -9,6 +9,7 @@ package io.camunda.zeebe.transport.stream.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.stream.api.ClientStreamConsumer;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -25,7 +26,10 @@ class AggregatedClientStreamTest {
   private final TestClientStreamMetrics metrics = new TestClientStreamMetrics();
   private final AggregatedClientStream<TestSerializableData> stream =
       new AggregatedClientStream<>(
-          UUID.randomUUID(), new LogicalId<>(streamType, metadata), metrics);
+          UUID.randomUUID(),
+          new LogicalId<>(streamType, metadata),
+          PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+          metrics);
 
   @Test
   void shouldReportStreamCountOnAdd() {

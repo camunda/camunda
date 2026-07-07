@@ -87,8 +87,11 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
   public ActorFuture<ClientStreamId> add(
       final DirectBuffer streamType,
       final M metadata,
-      final ClientStreamConsumer clientStreamConsumer) {
-    return actor.call(() -> clientStreamManager.add(streamType, metadata, clientStreamConsumer));
+      final ClientStreamConsumer clientStreamConsumer,
+      final String physicalTenantId) {
+    return actor.call(
+        () ->
+            clientStreamManager.add(streamType, metadata, clientStreamConsumer, physicalTenantId));
   }
 
   @Override

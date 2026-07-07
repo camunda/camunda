@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.impl.stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.gateway.impl.stream.StreamJobsHandler.AsyncJobStreamRemover;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -34,7 +35,14 @@ final class AsyncJobStreamRemoverTest {
     remover.run();
 
     // when
-    final var id = jobStreamer.add(BufferUtil.wrapString("foo"), null, consumer).join();
+    final var id =
+        jobStreamer
+            .add(
+                BufferUtil.wrapString("foo"),
+                null,
+                consumer,
+                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+            .join();
     remover.streamId(id);
 
     // then
@@ -45,7 +53,14 @@ final class AsyncJobStreamRemoverTest {
   void shouldRemoveStreamOnRun() {
     // given - a stream observer which is added before being cancelled
     final var remover = new AsyncJobStreamRemover(jobStreamer, Runnable::run);
-    final var id = jobStreamer.add(BufferUtil.wrapString("foo"), null, consumer).join();
+    final var id =
+        jobStreamer
+            .add(
+                BufferUtil.wrapString("foo"),
+                null,
+                consumer,
+                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+            .join();
     remover.streamId(id);
 
     // when
@@ -62,7 +77,8 @@ final class AsyncJobStreamRemoverTest {
     public ActorFuture<ClientStreamId> add(
         final DirectBuffer streamType,
         final JobActivationProperties metadata,
-        final ClientStreamConsumer clientStreamConsumer) {
+        final ClientStreamConsumer clientStreamConsumer,
+        final String physicalTenantId) {
       final var id = new StreamId(streamType);
       consumers.put(id, clientStreamConsumer);
       return CompletableActorFuture.completed(id);

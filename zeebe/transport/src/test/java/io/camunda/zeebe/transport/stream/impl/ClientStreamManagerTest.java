@@ -84,7 +84,8 @@ class ClientStreamManagerTest {
   @Test
   void shouldAddStream() {
     // when
-    final var streamId = clientStreamManager.add(streamType, metadata, NOOP_CONSUMER);
+    final var streamId =
+        clientStreamManager.add(streamType, metadata, NOOP_CONSUMER, DEFAULT_PHYSICAL_TENANT_ID);
 
     // then
     assertThat(registry.getClient(streamId)).isNotEmpty();
@@ -95,7 +96,8 @@ class ClientStreamManagerTest {
     // given
     final var serverId = MemberId.anonymous();
     clientStreamManager.onServerJoined(serverId);
-    final var streamId = clientStreamManager.add(streamType, metadata, NOOP_CONSUMER);
+    final var streamId =
+        clientStreamManager.add(streamType, metadata, NOOP_CONSUMER, DEFAULT_PHYSICAL_TENANT_ID);
     clientStreamManager.onServerRemoved(serverId);
 
     // when
@@ -111,9 +113,17 @@ class ClientStreamManagerTest {
   void shouldAggregateStreamsWithSameStreamTypeAndMetadata() {
     // when
     final var uuid1 =
-        clientStreamManager.add(BufferUtil.wrapString("foo"), new TestMetadata(1), NOOP_CONSUMER);
+        clientStreamManager.add(
+            BufferUtil.wrapString("foo"),
+            new TestMetadata(1),
+            NOOP_CONSUMER,
+            DEFAULT_PHYSICAL_TENANT_ID);
     final var uuid2 =
-        clientStreamManager.add(BufferUtil.wrapString("foo"), new TestMetadata(1), NOOP_CONSUMER);
+        clientStreamManager.add(
+            BufferUtil.wrapString("foo"),
+            new TestMetadata(1),
+            NOOP_CONSUMER,
+            DEFAULT_PHYSICAL_TENANT_ID);
     final var stream1 = registry.getClient(uuid1).orElseThrow();
     final var stream2 = registry.getClient(uuid2).orElseThrow();
 
@@ -124,8 +134,12 @@ class ClientStreamManagerTest {
   @Test
   void shouldNoAggregateStreamsWithDifferentMetadata() {
     // when
-    final var uuid1 = clientStreamManager.add(streamType, new TestMetadata(1), NOOP_CONSUMER);
-    final var uuid2 = clientStreamManager.add(streamType, new TestMetadata(2), NOOP_CONSUMER);
+    final var uuid1 =
+        clientStreamManager.add(
+            streamType, new TestMetadata(1), NOOP_CONSUMER, DEFAULT_PHYSICAL_TENANT_ID);
+    final var uuid2 =
+        clientStreamManager.add(
+            streamType, new TestMetadata(2), NOOP_CONSUMER, DEFAULT_PHYSICAL_TENANT_ID);
     final var stream1 = registry.getClient(uuid1).orElseThrow();
     final var stream2 = registry.getClient(uuid2).orElseThrow();
 
@@ -137,9 +151,11 @@ class ClientStreamManagerTest {
   void shouldNoAggregateStreamsWithDifferentStreamType() {
     // when
     final var uuid1 =
-        clientStreamManager.add(BufferUtil.wrapString("foo"), metadata, NOOP_CONSUMER);
+        clientStreamManager.add(
+            BufferUtil.wrapString("foo"), metadata, NOOP_CONSUMER, DEFAULT_PHYSICAL_TENANT_ID);
     final var uuid2 =
-        clientStreamManager.add(BufferUtil.wrapString("bar"), metadata, NOOP_CONSUMER);
+        clientStreamManager.add(
+            BufferUtil.wrapString("bar"), metadata, NOOP_CONSUMER, DEFAULT_PHYSICAL_TENANT_ID);
     final var stream1 = registry.getClient(uuid1).orElseThrow();
     final var stream2 = registry.getClient(uuid2).orElseThrow();
 
@@ -156,7 +172,8 @@ class ClientStreamManagerTest {
     clientStreamManager.onServerJoined(server2);
 
     // when
-    final var uuid = clientStreamManager.add(streamType, metadata, NOOP_CONSUMER);
+    final var uuid =
+        clientStreamManager.add(streamType, metadata, NOOP_CONSUMER, DEFAULT_PHYSICAL_TENANT_ID);
 
     // then
     final UUID serverStreamId = getServerStreamId(uuid);
@@ -169,7 +186,8 @@ class ClientStreamManagerTest {
   @Test
   void shouldOpenStreamToNewlyAddedServer() {
     // given
-    final var uuid = clientStreamManager.add(streamType, metadata, NOOP_CONSUMER);
+    final var uuid =
+        clientStreamManager.add(streamType, metadata, NOOP_CONSUMER, DEFAULT_PHYSICAL_TENANT_ID);
     final var serverStream = registry.get(getServerStreamId(uuid)).orElseThrow();
 
     // when
@@ -184,9 +202,11 @@ class ClientStreamManagerTest {
   void shouldOpenStreamToNewlyAddedServerForAllOpenStreams() {
     // given
     final var stream1 =
-        clientStreamManager.add(BufferUtil.wrapString("foo"), metadata, NOOP_CONSUMER);
+        clientStreamManager.add(
+            BufferUtil.wrapString("foo"), metadata, NOOP_CONSUMER, DEFAULT_PHYSICAL_TENANT_ID);
     final var stream2 =
-        clientStreamManager.add(BufferUtil.wrapString("bar"), metadata, NOOP_CONSUMER);
+        clientStreamManager.add(
+            BufferUtil.wrapString("bar"), metadata, NOOP_CONSUMER, DEFAULT_PHYSICAL_TENANT_ID);
     final var serverStream1 = registry.get(getServerStreamId(stream1)).orElseThrow();
     final var serverStream2 = registry.get(getServerStreamId(stream2)).orElseThrow();
     // when
@@ -201,7 +221,8 @@ class ClientStreamManagerTest {
   @Test
   void shouldRemoveStream() {
     // given
-    final var uuid = clientStreamManager.add(streamType, metadata, NOOP_CONSUMER);
+    final var uuid =
+        clientStreamManager.add(streamType, metadata, NOOP_CONSUMER, DEFAULT_PHYSICAL_TENANT_ID);
     final var serverStreamId = getServerStreamId(uuid);
 
     // when
@@ -215,8 +236,10 @@ class ClientStreamManagerTest {
   @Test
   void shouldNotRemoveIfOtherClientStreamExist() {
     // given
-    final var uuid1 = clientStreamManager.add(streamType, metadata, NOOP_CONSUMER);
-    final var uuid2 = clientStreamManager.add(streamType, metadata, NOOP_CONSUMER);
+    final var uuid1 =
+        clientStreamManager.add(streamType, metadata, NOOP_CONSUMER, DEFAULT_PHYSICAL_TENANT_ID);
+    final var uuid2 =
+        clientStreamManager.add(streamType, metadata, NOOP_CONSUMER, DEFAULT_PHYSICAL_TENANT_ID);
     final var serverStreamId = getServerStreamId(uuid1);
 
     // when
@@ -239,7 +262,8 @@ class ClientStreamManagerTest {
             directBuffer -> {
               payloadReceived.wrap(directBuffer);
               return CompletableActorFuture.completed(null);
-            });
+            },
+            DEFAULT_PHYSICAL_TENANT_ID);
     final var streamId = getServerStreamId(clientStreamId);
 
     // when
@@ -281,7 +305,8 @@ class ClientStreamManagerTest {
             metadata,
             p -> {
               throw new RuntimeException("Expected");
-            });
+            },
+            DEFAULT_PHYSICAL_TENANT_ID);
     final var streamId = getServerStreamId(clientStreamId);
 
     // when
@@ -302,7 +327,8 @@ class ClientStreamManagerTest {
     // given
     final MemberId server = MemberId.from("1");
     clientStreamManager.onServerJoined(server);
-    final var uuid = clientStreamManager.add(streamType, metadata, NOOP_CONSUMER);
+    final var uuid =
+        clientStreamManager.add(streamType, metadata, NOOP_CONSUMER, DEFAULT_PHYSICAL_TENANT_ID);
     final var stream = registry.get(getServerStreamId(uuid)).orElseThrow();
     assertThat(stream.isConnected(server)).isTrue();
 
