@@ -45,8 +45,7 @@ import urllib.request
 PREFIX = "[new-flaky]"
 COMMENT_MARKER = "<!-- new-flaky-tests-alert -->"
 # The full sticky-state JSON is base64-encoded into this hidden marker in the
-# gate's PR comment. The comment — unlike a run-scoped artifact — survives the
-# "Re-run jobs" button and force-pushes, so it is the durable state store.
+# gate's PR comment (see the module docstring for why the comment holds state).
 STATE_MARKER_PREFIX = "<!-- flaky-gate-state: "
 SCHEMA_VERSION = 1
 MIN_CLEAN_RUNS = 3
@@ -147,9 +146,7 @@ def encode_state_marker(state: dict) -> str:
     """Serialize state into the hidden comment marker line.
 
     The full state JSON is base64-encoded inside an HTML comment: invisible in
-    the rendered comment, but round-trips exactly on the next run. This makes
-    the comment the durable state store — it survives the "Re-run jobs" button
-    and force-pushes, both of which delete run-scoped artifacts.
+    the rendered comment, but round-trips exactly on the next run.
     """
     payload = base64.b64encode(
         json.dumps(state, separators=(",", ":"), sort_keys=True).encode("utf-8")
@@ -815,11 +812,9 @@ def main() -> None:
     repo_root = os.environ.get("REPO_ROOT", os.getcwd())
     owner, name = repository.split("/", 1) if "/" in repository else (None, None)
 
-    # Load prior state. The gate's PR comment carries the full state in a hidden
-    # base64 marker and is the durable source of truth: it survives the "Re-run
-    # jobs" button and force-pushes, which delete the run-scoped artifact the
-    # gate used to rely on. STATE_FILE_IN remains a fallback for local
-    # / offline runs where the comment cannot be fetched.
+    # Load prior state from the gate's PR comment (the durable base64 marker).
+    # STATE_FILE_IN is a fallback for local / offline runs where the comment
+    # cannot be fetched.
     existing_comment_id: int | None = None
     prior_state: dict | None = None
     if owner and token:
@@ -879,7 +874,7 @@ def main() -> None:
     # -- Nothing-to-do short-circuit --------------------------------------
     # No prior tracked entries, no new flakes this run, and no bypass: there is
     # nothing to reconcile and nothing to show. Return without posting a comment
-    # or writing state (so no artifact is uploaded) — keeps clean PRs untouched.
+    # or writing state — keeps clean PRs untouched.
     if not bypass and not new_flaky_tests and not state["tests"]:
         print(f"{PREFIX} No prior state and no flaky tests this run — nothing to do.")
         set_output("has-new-flaky-tests", "false")
