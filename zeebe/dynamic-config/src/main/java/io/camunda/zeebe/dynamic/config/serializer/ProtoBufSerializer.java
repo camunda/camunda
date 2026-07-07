@@ -1420,6 +1420,9 @@ public class ProtoBufSerializer
     if (request.to() != null) {
       builder.setTo(request.to());
     }
+    if (request.databaseType() != null) {
+      builder.setDatabaseType(request.databaseType());
+    }
     builder.setContinuousBackups(request.continuousBackups());
     builder.setDryRun(request.dryRun());
 
@@ -1436,6 +1439,7 @@ public class ProtoBufSerializer
           request.getBackupIdsList(),
           from,
           to,
+          request.getDatabaseType(),
           request.getContinuousBackups(),
           request.getDryRun());
     } catch (final InvalidProtocolBufferException e) {

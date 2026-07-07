@@ -136,9 +136,10 @@ public sealed interface ClusterConfigurationManagementRequest {
   }
 
   record RestoreRequest(
-      @Nullable List<Long> backupIds,
+      List<Long> backupIds,
       @Nullable String from,
       @Nullable String to,
+      String databaseType,
       boolean continuousBackups,
       boolean dryRun)
       implements ClusterConfigurationManagementRequest {}

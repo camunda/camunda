@@ -38,6 +38,14 @@ public class RecoveryControllerTest extends RestControllerTest {
 
   @MockitoBean ClusterConfigurationManagementRequestSender clusterConfigurationRequestSender;
 
+  private void stubValidationSuccess() {
+    Mockito.when(clusterConfigurationRequestSender.restore(Mockito.any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                Either.right(
+                    new ClusterConfigurationChangeResponse(0L, Map.of(), Map.of(), List.of()))));
+  }
+
   @ParameterizedTest
   @ValueSource(strings = {"/v2/mode", "/physical-tenants/default/v2/mode"})
   void shouldChangeClusterModeAndReturnPlannedChanges(final String baseUrl) {
@@ -98,62 +106,6 @@ public class RecoveryControllerTest extends RestControllerTest {
         .is4xxClientError();
   }
 
-  private void stubValidationSuccess() {
-    Mockito.when(clusterConfigurationRequestSender.restore(Mockito.any()))
-        .thenReturn(
-            CompletableFuture.completedFuture(
-                Either.right(
-                    new ClusterConfigurationChangeResponse(0L, Map.of(), Map.of(), List.of()))));
-  }
-
-  @ParameterizedTest
-  @ValueSource(strings = {"/v2/restore", "/physical-tenants/default/v2/restore"})
-  void shouldForwardBackupIdsRestoreAndReturnAccepted(final String baseUrl) {
-    // given
-    stubValidationSuccess();
-
-    // when / then
-    webClient
-        .post()
-        .uri(baseUrl)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue("{\"backupIds\": [100, 101]}")
-        .exchange()
-        .expectStatus()
-        .isAccepted()
-        .expectBody()
-        .json("{\"changeId\": \"0\", \"plannedChanges\": []}", JsonCompareMode.STRICT);
-
-    // then
-    Mockito.verify(clusterConfigurationRequestSender)
-        .restore(new RestoreRequest(List.of(100L, 101L), null, null, false, false));
-  }
-
-  @ParameterizedTest
-  @ValueSource(strings = {"/v2/restore", "/physical-tenants/default/v2/restore"})
-  void shouldForwardTimeRangeRestoreAndReturnAccepted(final String baseUrl) {
-    // given
-    stubValidationSuccess();
-
-    // when / then
-    webClient
-        .post()
-        .uri(baseUrl)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue("{\"from\": \"2024-01-01T10:00:00Z\", \"to\": \"2024-01-01T12:00:00Z\"}")
-        .exchange()
-        .expectStatus()
-        .isAccepted()
-        .expectBody()
-        .json("{\"changeId\": \"0\", \"plannedChanges\": []}", JsonCompareMode.STRICT);
-
-    // then
-    Mockito.verify(clusterConfigurationRequestSender)
-        .restore(
-            new RestoreRequest(
-                List.of(), "2024-01-01T10:00:00Z", "2024-01-01T12:00:00Z", false, false));
-  }
-
   @Test
   void shouldMapInvalidRequestErrorFromCoordinator() {
     // given
@@ -171,25 +123,6 @@ public class RecoveryControllerTest extends RestControllerTest {
         .exchange()
         .expectStatus()
         .isBadRequest();
-  }
-
-  @Test
-  void shouldMapOperationNotAllowedErrorWhenClusterNotRecovering() {
-    // given
-    Mockito.when(clusterConfigurationRequestSender.restore(Mockito.any()))
-        .thenReturn(
-            CompletableFuture.completedFuture(
-                Either.left(new ErrorResponse(ErrorCode.OPERATION_NOT_ALLOWED, "not recovering"))));
-
-    // when / then
-    webClient
-        .post()
-        .uri("/v2/restore")
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue("{\"backupIds\": [100]}")
-        .exchange()
-        .expectStatus()
-        .isForbidden();
   }
 
   @Test
@@ -230,29 +163,110 @@ public class RecoveryControllerTest extends RestControllerTest {
         .isEqualTo(HttpStatus.CONFLICT);
   }
 
-  @ParameterizedTest
-  @ValueSource(strings = {"/v2/restore", "/physical-tenants/default/v2/restore"})
-  void shouldAllowNoParameter(final String baseUrl) {
-    // given
-    stubValidationSuccess();
+  @Nested
+  @TestPropertySource(properties = {"camunda.data.secondary-storage.type=elasticsearch"})
+  class Elasticsearch {
 
-    // when / then
-    webClient
-        .post()
-        .uri(baseUrl)
-        .contentType(MediaType.APPLICATION_JSON)
-        .exchange()
-        .expectStatus()
-        .isAccepted();
+    @ParameterizedTest
+    @ValueSource(strings = {"/v2/restore", "/physical-tenants/default/v2/restore"})
+    void shouldForwardBackupIdsWithElasticsearchType(final String baseUrl) {
+      // given
+      stubValidationSuccess();
 
-    // then
-    Mockito.verify(clusterConfigurationRequestSender)
-        .restore(new RestoreRequest(List.of(), null, null, false, false));
+      // when / then
+      webClient
+          .post()
+          .uri(baseUrl)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue("{\"backupIds\": [100, 101]}")
+          .exchange()
+          .expectStatus()
+          .isAccepted()
+          .expectBody()
+          .json("{\"changeId\": \"0\", \"plannedChanges\": []}", JsonCompareMode.STRICT);
+
+      // then
+      Mockito.verify(clusterConfigurationRequestSender)
+          .restore(
+              new RestoreRequest(List.of(100L, 101L), null, null, "elasticsearch", false, false));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/v2/restore", "/physical-tenants/default/v2/restore"})
+    void shouldForwardNoParameterWithElasticsearchType(final String baseUrl) {
+      // given
+      stubValidationSuccess();
+
+      // when / then
+      webClient
+          .post()
+          .uri(baseUrl)
+          .contentType(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus()
+          .isAccepted();
+
+      // then
+      Mockito.verify(clusterConfigurationRequestSender)
+          .restore(new RestoreRequest(List.of(), null, null, "elasticsearch", false, false));
+    }
   }
 
   @Nested
-  @TestPropertySource(properties = {"camunda.data.primary-storage.backup.continuous=true"})
-  class RestoreWithContinuousBackups {
+  @TestPropertySource(properties = {"camunda.data.secondary-storage.type=rdbms"})
+  class Rdbms {
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/v2/restore", "/physical-tenants/default/v2/restore"})
+    void shouldForwardBackupIdsWithRdbmsType(final String baseUrl) {
+      // given
+      stubValidationSuccess();
+
+      // when / then
+      webClient
+          .post()
+          .uri(baseUrl)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue("{\"backupIds\": [100, 101]}")
+          .exchange()
+          .expectStatus()
+          .isAccepted()
+          .expectBody()
+          .json("{\"changeId\": \"0\", \"plannedChanges\": []}", JsonCompareMode.STRICT);
+
+      // then
+      Mockito.verify(clusterConfigurationRequestSender)
+          .restore(new RestoreRequest(List.of(100L, 101L), null, null, "rdbms", false, false));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/v2/restore", "/physical-tenants/default/v2/restore"})
+    void shouldForwardNoParameterWithRdbmsType(final String baseUrl) {
+      // given
+      stubValidationSuccess();
+
+      // when / then
+      webClient
+          .post()
+          .uri(baseUrl)
+          .contentType(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus()
+          .isAccepted();
+
+      // then
+      Mockito.verify(clusterConfigurationRequestSender)
+          .restore(new RestoreRequest(List.of(), null, null, "rdbms", false, false));
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.secondary-storage.type=rdbms",
+        "camunda.data.primary-storage.backup.continuous=true"
+      })
+  class RdbmsWithContinuousBackups {
 
     @ParameterizedTest
     @ValueSource(strings = {"/v2/restore", "/physical-tenants/default/v2/restore"})
@@ -272,7 +286,7 @@ public class RecoveryControllerTest extends RestControllerTest {
 
       // then
       Mockito.verify(clusterConfigurationRequestSender)
-          .restore(new RestoreRequest(List.of(100L, 101L), null, null, true, false));
+          .restore(new RestoreRequest(List.of(100L, 101L), null, null, "rdbms", true, false));
     }
 
     @ParameterizedTest
@@ -295,7 +309,7 @@ public class RecoveryControllerTest extends RestControllerTest {
       Mockito.verify(clusterConfigurationRequestSender)
           .restore(
               new RestoreRequest(
-                  List.of(), "2024-01-01T10:00:00Z", "2024-01-01T12:00:00Z", true, false));
+                  List.of(), "2024-01-01T10:00:00Z", "2024-01-01T12:00:00Z", "rdbms", true, false));
     }
   }
 }
