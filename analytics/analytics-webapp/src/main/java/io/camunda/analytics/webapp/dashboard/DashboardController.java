@@ -30,6 +30,20 @@ public class DashboardController {
     this.repository = repository;
   }
 
+  /**
+   * One whole dashboard render in a single request: every widget payload computed against one
+   * per-render memo, so queries shared between widgets (the lifecycle series, the ratio series) run
+   * once instead of once per widget endpoint. The client fetches this instead of ~14 widget calls.
+   */
+  @GetMapping("/overview")
+  public DashboardOverview overview(
+      @RequestParam("process") final String bpmnProcessId,
+      @RequestParam("tenant") final String tenantId,
+      @RequestParam(value = "from", required = false) final Long from,
+      @RequestParam(value = "to", required = false) final Long to) {
+    return repository.overview(bpmnProcessId, tenantId, from, to);
+  }
+
   @GetMapping("/processes")
   public List<String> processes() {
     return repository.processes();

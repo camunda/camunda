@@ -26,6 +26,7 @@ import io.camunda.analytics.table.ProcessDefinitionSink;
 import io.camunda.analytics.webapp.DatasetCatalog;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +40,14 @@ import org.springframework.stereotype.Repository;
  * StandardDatasets}) and maps the finalized {@link ReportRow} measures to the dashboard DTOs. A
  * series read buckets at the cube's finest tier (one point per window); a summary read uses a
  * single bucket &ge; the range so the whole range collapses to one total row.
+ *
+ * <p><b>Render-scoped dedup.</b> Several widgets derive from the same underlying query (the
+ * process-instances lifecycle series feeds the SLA cohorts, the no-incident cohorts and the
+ * duration buckets; each ratio series feeds both its own widget and its cohort join). {@link
+ * #overview} computes one whole dashboard render against a single per-request memo, so each
+ * distinct serving query runs at most once per render; the memo lives only for that call, so
+ * nothing is ever stale across renders. The individual widget methods stay for the per-widget
+ * endpoints and use a fresh memo each.
  */
 @Repository
 public class DashboardRepository {
@@ -58,6 +67,34 @@ public class DashboardRepository {
     this.tableExecutor = tableExecutor;
   }
 
+  /**
+   * One whole dashboard render computed against a single memo: every distinct serving query runs at
+   * most once, however many widgets derive from it. Field names mirror the client's dashboard
+   * state, so the response is consumed as-is.
+   */
+  public DashboardOverview overview(
+      final String bpmnProcessId,
+      final String tenantId,
+      final Long fromWindow,
+      final Long toWindow) {
+    final Map<QueryKey, List<ReportRow>> memo = new HashMap<>();
+    return new DashboardOverview(
+        durationPercentiles(bpmnProcessId, fromWindow, toWindow, memo),
+        durationSummary(bpmnProcessId, fromWindow, toWindow, memo),
+        ratios(bpmnProcessId, "sla_compliance", fromWindow, toWindow, memo),
+        slaCohorts(bpmnProcessId, fromWindow, toWindow, memo),
+        ratios(bpmnProcessId, "no_incident", fromWindow, toWindow, memo),
+        noIncidentCohorts(bpmnProcessId, fromWindow, toWindow, memo),
+        durationBuckets(bpmnProcessId, fromWindow, toWindow, memo),
+        distinct(tenantId, fromWindow, toWindow, memo),
+        topProcesses(tenantId, fromWindow, toWindow, memo),
+        elementDurations(bpmnProcessId, fromWindow, toWindow, memo),
+        incidents(bpmnProcessId, fromWindow, toWindow, memo),
+        openIncidents(bpmnProcessId, memo),
+        activeInstances(bpmnProcessId, memo),
+        activatedInstances(bpmnProcessId, fromWindow, toWindow, memo));
+  }
+
   /** Process ids the process-instances cube has data for (for the process picker). */
   public List<String> processes() {
     final TreeSet<String> ids = new TreeSet<>();
@@ -68,7 +105,8 @@ public class DashboardRepository {
             null,
             null,
             List.of(),
-            List.of("lifecycle"))) {
+            List.of("lifecycle"),
+            newMemo())) {
       final Object id = row.dimensions().get("bpmnProcessId");
       if (id != null) {
         ids.add(id.toString());
@@ -82,7 +120,13 @@ public class DashboardRepository {
     final TreeSet<String> ids = new TreeSet<>();
     for (final ReportRow row :
         total(
-            "process-distinct", List.of("tenantId"), null, null, List.of(), List.of("distinct"))) {
+            "process-distinct",
+            List.of("tenantId"),
+            null,
+            null,
+            List.of(),
+            List.of("distinct"),
+            newMemo())) {
       final Object id = row.dimensions().get("tenantId");
       if (id != null) {
         ids.add(id.toString());
@@ -94,6 +138,14 @@ public class DashboardRepository {
   /** The per-window duration distribution for a process (control-chart trend). */
   public List<DurationPercentilePoint> durationPercentiles(
       final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
+    return durationPercentiles(bpmnProcessId, fromWindow, toWindow, newMemo());
+  }
+
+  private List<DurationPercentilePoint> durationPercentiles(
+      final String bpmnProcessId,
+      final Long fromWindow,
+      final Long toWindow,
+      final Map<QueryKey, List<ReportRow>> memo) {
     final List<DurationPercentilePoint> out = new ArrayList<>();
     for (final ReportRow row :
         series(
@@ -102,7 +154,8 @@ public class DashboardRepository {
             fromWindow,
             toWindow,
             List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
-            List.of("p95"))) {
+            List.of("p95"),
+            memo)) {
       out.add(durationPoint(row.windowStart(), (QuantileResult) row.measures().get("p95")));
     }
     out.sort(Comparator.comparingLong(DurationPercentilePoint::windowStart));
@@ -112,6 +165,14 @@ public class DashboardRepository {
   /** A single exact duration distribution over the range (for the KPI tiles). */
   public DurationPercentilePoint durationSummary(
       final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
+    return durationSummary(bpmnProcessId, fromWindow, toWindow, newMemo());
+  }
+
+  private DurationPercentilePoint durationSummary(
+      final String bpmnProcessId,
+      final Long fromWindow,
+      final Long toWindow,
+      final Map<QueryKey, List<ReportRow>> memo) {
     final long windowStart = fromWindow == null ? 0L : fromWindow;
     final List<ReportRow> rows =
         total(
@@ -120,7 +181,8 @@ public class DashboardRepository {
             fromWindow,
             toWindow,
             List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
-            List.of("p95"));
+            List.of("p95"),
+            memo);
     if (rows.isEmpty()) {
       return new DurationPercentilePoint(windowStart, 0, 0, 0, 0, 0, 0, 0);
     }
@@ -150,6 +212,15 @@ public class DashboardRepository {
    */
   public List<RatioPoint> ratios(
       final String bpmnProcessId, final String meter, final Long fromWindow, final Long toWindow) {
+    return ratios(bpmnProcessId, meter, fromWindow, toWindow, newMemo());
+  }
+
+  private List<RatioPoint> ratios(
+      final String bpmnProcessId,
+      final String meter,
+      final Long fromWindow,
+      final Long toWindow,
+      final Map<QueryKey, List<ReportRow>> memo) {
     final CompiledDataset dataset = datasetWithMeter(meter);
     if (dataset == null) {
       return List.of();
@@ -162,7 +233,8 @@ public class DashboardRepository {
             fromWindow,
             toWindow,
             List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
-            List.of(meter))) {
+            List.of(meter),
+            memo)) {
       if (row.measures().get(meter) instanceof final RatioResult r) {
         out.add(
             new RatioPoint(row.windowStart(), r.matched(), r.total(), r.ratio(), r.ratio(), false));
@@ -187,6 +259,14 @@ public class DashboardRepository {
   /** The per-window distinct-process estimate for a tenant. */
   public List<DistinctPoint> distinct(
       final String tenantId, final Long fromWindow, final Long toWindow) {
+    return distinct(tenantId, fromWindow, toWindow, newMemo());
+  }
+
+  private List<DistinctPoint> distinct(
+      final String tenantId,
+      final Long fromWindow,
+      final Long toWindow,
+      final Map<QueryKey, List<ReportRow>> memo) {
     final List<DistinctPoint> out = new ArrayList<>();
     for (final ReportRow row :
         series(
@@ -195,7 +275,8 @@ public class DashboardRepository {
             fromWindow,
             toWindow,
             List.of(FilterPredicate.equals("tenantId", tenantId)),
-            List.of("distinct"))) {
+            List.of("distinct"),
+            memo)) {
       final DistinctCountResult d = (DistinctCountResult) row.measures().get("distinct");
       out.add(new DistinctPoint(row.windowStart(), d.estimate(), d.lowerBound(), d.upperBound()));
     }
@@ -206,6 +287,14 @@ public class DashboardRepository {
   /** The ranked top processes for a tenant over the range. */
   public List<TopProcess> topProcesses(
       final String tenantId, final Long fromWindow, final Long toWindow) {
+    return topProcesses(tenantId, fromWindow, toWindow, newMemo());
+  }
+
+  private List<TopProcess> topProcesses(
+      final String tenantId,
+      final Long fromWindow,
+      final Long toWindow,
+      final Map<QueryKey, List<ReportRow>> memo) {
     final List<ReportRow> rows =
         total(
             "top-processes",
@@ -213,7 +302,8 @@ public class DashboardRepository {
             fromWindow,
             toWindow,
             List.of(FilterPredicate.equals("tenantId", tenantId)),
-            List.of("top"));
+            List.of("top"),
+            memo);
     if (rows.isEmpty()) {
       return List.of();
     }
@@ -232,6 +322,14 @@ public class DashboardRepository {
   /** Per-element duration summary for a process (for the flow-node heatmap). */
   public List<ElementDuration> elementDurations(
       final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
+    return elementDurations(bpmnProcessId, fromWindow, toWindow, newMemo());
+  }
+
+  private List<ElementDuration> elementDurations(
+      final String bpmnProcessId,
+      final Long fromWindow,
+      final Long toWindow,
+      final Map<QueryKey, List<ReportRow>> memo) {
     final List<ElementDuration> out = new ArrayList<>();
     for (final ReportRow row :
         total(
@@ -240,7 +338,8 @@ public class DashboardRepository {
             fromWindow,
             toWindow,
             List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
-            List.of("duration"))) {
+            List.of("duration"),
+            memo)) {
       final ExecutionTimeSummaryResult d =
           (ExecutionTimeSummaryResult) row.measures().get("duration");
       final Object elementId = row.dimensions().get("elementId");
@@ -261,14 +360,27 @@ public class DashboardRepository {
   /** Instances started (activated) for a process over the range. */
   public long activatedInstances(
       final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
-    final LifecycleSummaryResult lifecycle = lifecycle(bpmnProcessId, fromWindow, toWindow);
+    return activatedInstances(bpmnProcessId, fromWindow, toWindow, newMemo());
+  }
+
+  private long activatedInstances(
+      final String bpmnProcessId,
+      final Long fromWindow,
+      final Long toWindow,
+      final Map<QueryKey, List<ReportRow>> memo) {
+    final LifecycleSummaryResult lifecycle = lifecycle(bpmnProcessId, fromWindow, toWindow, memo);
     return lifecycle == null ? 0L : lifecycle.activated();
   }
 
   /** Current in-flight instance count for a process (activated − completed − terminated). */
   public long activeInstances(final String bpmnProcessId, final String tenantId) {
     // The process-instances grain carries no tenant, so the tenant argument is ignored here.
-    final LifecycleSummaryResult lifecycle = lifecycle(bpmnProcessId, null, null);
+    return activeInstances(bpmnProcessId, newMemo());
+  }
+
+  private long activeInstances(
+      final String bpmnProcessId, final Map<QueryKey, List<ReportRow>> memo) {
+    final LifecycleSummaryResult lifecycle = lifecycle(bpmnProcessId, null, null, memo);
     if (lifecycle == null) {
       return 0L;
     }
@@ -276,7 +388,10 @@ public class DashboardRepository {
   }
 
   private LifecycleSummaryResult lifecycle(
-      final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
+      final String bpmnProcessId,
+      final Long fromWindow,
+      final Long toWindow,
+      final Map<QueryKey, List<ReportRow>> memo) {
     final List<ReportRow> rows =
         total(
             "process-instances",
@@ -284,12 +399,18 @@ public class DashboardRepository {
             fromWindow,
             toWindow,
             List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
-            List.of("lifecycle"));
+            List.of("lifecycle"),
+            memo);
     return rows.isEmpty() ? null : (LifecycleSummaryResult) rows.get(0).measures().get("lifecycle");
   }
 
   /** Currently-open incident count for a process (sum of the ±1 delta level over the grain). */
   public long openIncidents(final String bpmnProcessId) {
+    return openIncidents(bpmnProcessId, newMemo());
+  }
+
+  private long openIncidents(
+      final String bpmnProcessId, final Map<QueryKey, List<ReportRow>> memo) {
     long open = 0L;
     for (final ReportRow row :
         total(
@@ -298,7 +419,8 @@ public class DashboardRepository {
             null,
             null,
             List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
-            List.of("open"))) {
+            List.of("open"),
+            memo)) {
       open += ((Number) row.measures().get("open")).longValue();
     }
     return Math.max(0L, open);
@@ -307,6 +429,14 @@ public class DashboardRepository {
   /** Incidents per flow node: raised (count over the range) + currently open (level gauge). */
   public List<IncidentFlowNode> incidents(
       final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
+    return incidents(bpmnProcessId, fromWindow, toWindow, newMemo());
+  }
+
+  private List<IncidentFlowNode> incidents(
+      final String bpmnProcessId,
+      final Long fromWindow,
+      final Long toWindow,
+      final Map<QueryKey, List<ReportRow>> memo) {
     // element -> {raised, open}; avg/max resolution duration are not modeled as a cube.
     final Map<String, long[]> byElement = new LinkedHashMap<>();
     for (final ReportRow row :
@@ -316,7 +446,8 @@ public class DashboardRepository {
             fromWindow,
             toWindow,
             List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
-            List.of("count"))) {
+            List.of("count"),
+            memo)) {
       byElement.computeIfAbsent(elementId(row), k -> new long[2])[0] =
           ((Number) row.measures().get("count")).longValue();
     }
@@ -327,7 +458,8 @@ public class DashboardRepository {
             fromWindow,
             toWindow,
             List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
-            List.of("open"))) {
+            List.of("open"),
+            memo)) {
       byElement.computeIfAbsent(elementId(row), k -> new long[2])[1] =
           Math.max(0L, ((Number) row.measures().get("open")).longValue());
     }
@@ -340,17 +472,25 @@ public class DashboardRepository {
   /** Per-start-cohort SLA breakdown, derived from the SLA-compliance ratio series. */
   public List<SlaCohortPoint> slaCohorts(
       final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
+    return slaCohorts(bpmnProcessId, fromWindow, toWindow, newMemo());
+  }
+
+  private List<SlaCohortPoint> slaCohorts(
+      final String bpmnProcessId,
+      final Long fromWindow,
+      final Long toWindow,
+      final Map<QueryKey, List<ReportRow>> memo) {
     // The cohort size ("started") and the still-open/maturing split come from the lifecycle summary
     // (every instance that started in the window); the met/breached split comes from the
     // completion-based SLA ratio. Joining the two keeps "started" the true cohort size rather than
     // just its settled part — a completion-based total badly undercounts starts while a large
     // backlog of instances is still running.
     final Map<Long, RatioPoint> settled = new LinkedHashMap<>();
-    for (final RatioPoint p : ratios(bpmnProcessId, "sla_compliance", fromWindow, toWindow)) {
+    for (final RatioPoint p : ratios(bpmnProcessId, "sla_compliance", fromWindow, toWindow, memo)) {
       settled.put(p.windowStart(), p);
     }
     final List<SlaCohortPoint> out = new ArrayList<>();
-    lifecycleByWindow(bpmnProcessId, fromWindow, toWindow)
+    lifecycleByWindow(bpmnProcessId, fromWindow, toWindow, memo)
         .forEach(
             (windowStart, lc) -> {
               final long started = lc.activated();
@@ -373,12 +513,20 @@ public class DashboardRepository {
    */
   public List<NoIncidentCohortPoint> noIncidentCohorts(
       final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
+    return noIncidentCohorts(bpmnProcessId, fromWindow, toWindow, newMemo());
+  }
+
+  private List<NoIncidentCohortPoint> noIncidentCohorts(
+      final String bpmnProcessId,
+      final Long fromWindow,
+      final Long toWindow,
+      final Map<QueryKey, List<ReportRow>> memo) {
     final Map<Long, RatioPoint> settled = new LinkedHashMap<>();
-    for (final RatioPoint p : ratios(bpmnProcessId, "no_incident", fromWindow, toWindow)) {
+    for (final RatioPoint p : ratios(bpmnProcessId, "no_incident", fromWindow, toWindow, memo)) {
       settled.put(p.windowStart(), p);
     }
     final List<NoIncidentCohortPoint> out = new ArrayList<>();
-    lifecycleByWindow(bpmnProcessId, fromWindow, toWindow)
+    lifecycleByWindow(bpmnProcessId, fromWindow, toWindow, memo)
         .forEach(
             (windowStart, lc) -> {
               final long started = lc.activated();
@@ -396,10 +544,14 @@ public class DashboardRepository {
 
   /**
    * Per-window lifecycle summaries for a process keyed by window start — the authoritative
-   * "started" cohort set (one entry per window in which any instance was activated).
+   * "started" cohort set (one entry per window in which any instance was activated). Shared by the
+   * cohort widgets and the duration buckets; the render memo makes it one query per render.
    */
   private Map<Long, LifecycleSummaryResult> lifecycleByWindow(
-      final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
+      final String bpmnProcessId,
+      final Long fromWindow,
+      final Long toWindow,
+      final Map<QueryKey, List<ReportRow>> memo) {
     final Map<Long, LifecycleSummaryResult> byWindow = new LinkedHashMap<>();
     for (final ReportRow row :
         series(
@@ -408,7 +560,8 @@ public class DashboardRepository {
             fromWindow,
             toWindow,
             List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
-            List.of("lifecycle"))) {
+            List.of("lifecycle"),
+            memo)) {
       if (row.measures().get("lifecycle") instanceof final LifecycleSummaryResult lc) {
         byWindow.put(row.windowStart(), lc);
       }
@@ -423,24 +576,23 @@ public class DashboardRepository {
    */
   public List<DurationBucketPoint> durationBuckets(
       final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
+    return durationBuckets(bpmnProcessId, fromWindow, toWindow, newMemo());
+  }
+
+  private List<DurationBucketPoint> durationBuckets(
+      final String bpmnProcessId,
+      final Long fromWindow,
+      final Long toWindow,
+      final Map<QueryKey, List<ReportRow>> memo) {
     final List<DurationBucketPoint> out = new ArrayList<>();
-    for (final ReportRow row :
-        series(
-            "process-instances",
-            List.of(),
-            fromWindow,
-            toWindow,
-            List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
-            List.of("lifecycle"))) {
-      final LifecycleSummaryResult lc = (LifecycleSummaryResult) row.measures().get("lifecycle");
-      if (lc == null) {
-        continue;
-      }
-      final long open = Math.max(0L, lc.activated() - lc.completed() - lc.terminated());
-      out.add(
-          new DurationBucketPoint(
-              row.windowStart(), lc.activated(), lc.duration().durationBands(), open));
-    }
+    lifecycleByWindow(bpmnProcessId, fromWindow, toWindow, memo)
+        .forEach(
+            (windowStart, lc) -> {
+              final long open = Math.max(0L, lc.activated() - lc.completed() - lc.terminated());
+              out.add(
+                  new DurationBucketPoint(
+                      windowStart, lc.activated(), lc.duration().durationBands(), open));
+            });
     out.sort(Comparator.comparingLong(DurationBucketPoint::windowStart));
     return out;
   }
@@ -490,6 +642,25 @@ public class DashboardRepository {
     return finest;
   }
 
+  /** A fresh single-call memo, so a per-widget endpoint reuses the same query paths. */
+  private static Map<QueryKey, List<ReportRow>> newMemo() {
+    return new HashMap<>();
+  }
+
+  /**
+   * The identity of one serving query within a render. Keyed on the <em>raw</em> widget arguments
+   * (a {@code null} bound stays {@code null}), so two widgets asking the same question share one
+   * result even though the executed query resolves "now" per call.
+   */
+  private record QueryKey(
+      boolean series,
+      String dataset,
+      List<String> groupBy,
+      Long fromWindow,
+      Long toWindow,
+      List<FilterPredicate> filters,
+      List<String> meters) {}
+
   /** Per-window series: bucket at the cube's finest tier (one output row per stored window). */
   private List<ReportRow> series(
       final String name,
@@ -497,14 +668,24 @@ public class DashboardRepository {
       final Long fromWindow,
       final Long toWindow,
       final List<FilterPredicate> filters,
-      final List<String> meters) {
-    final CompiledDataset dataset = catalog.require(name);
-    return executor
-        .execute(
-            new ReportQuery(
-                groupBy, fromMs(fromWindow), toMs(toWindow), finestTier(dataset), filters, meters),
-            dataset)
-        .rows();
+      final List<String> meters,
+      final Map<QueryKey, List<ReportRow>> memo) {
+    return memo.computeIfAbsent(
+        new QueryKey(true, name, groupBy, fromWindow, toWindow, filters, meters),
+        key -> {
+          final CompiledDataset dataset = catalog.require(name);
+          return executor
+              .execute(
+                  new ReportQuery(
+                      groupBy,
+                      fromMs(fromWindow),
+                      toMs(toWindow),
+                      finestTier(dataset),
+                      filters,
+                      meters),
+                  dataset)
+              .rows();
+        });
   }
 
   /**
@@ -517,12 +698,19 @@ public class DashboardRepository {
       final Long fromWindow,
       final Long toWindow,
       final List<FilterPredicate> filters,
-      final List<String> meters) {
-    final CompiledDataset dataset = catalog.require(name);
-    final long toMs = toMs(toWindow);
-    return executor
-        .execute(new ReportQuery(groupBy, fromMs(fromWindow), toMs, toMs, filters, meters), dataset)
-        .rows();
+      final List<String> meters,
+      final Map<QueryKey, List<ReportRow>> memo) {
+    return memo.computeIfAbsent(
+        new QueryKey(false, name, groupBy, fromWindow, toWindow, filters, meters),
+        key -> {
+          final CompiledDataset dataset = catalog.require(name);
+          final long toMs = toMs(toWindow);
+          return executor
+              .execute(
+                  new ReportQuery(groupBy, fromMs(fromWindow), toMs, toMs, filters, meters),
+                  dataset)
+              .rows();
+        });
   }
 
   private static long fromMs(final Long fromWindow) {

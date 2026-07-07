@@ -276,6 +276,28 @@ export interface QuestionInput {
   viz: string;
 }
 
+/**
+ * One whole dashboard render, fetched in a single request (GET /api/dashboard/overview). The
+ * server computes every widget against one per-render memo, so queries shared between widgets run
+ * once — and the browser issues one round trip instead of ~14.
+ */
+export interface DashboardOverview {
+  duration: DurationPoint[];
+  summary: DurationPoint;
+  sla: RatioPoint[];
+  slaCohorts: SlaCohortPoint[];
+  noIncident: RatioPoint[];
+  noIncidentCohorts: NoIncidentCohortPoint[];
+  durationBuckets: DurationBucketPoint[];
+  distinct: DistinctPoint[];
+  top: TopProcess[];
+  elements: ElementDuration[];
+  incidents: IncidentFlowNode[];
+  openIncidents: number;
+  activeNow: number;
+  activated: number;
+}
+
 async function getJson<T>(url: string): Promise<T> {
   const response = await fetch(url);
   if (!response.ok) {
@@ -302,6 +324,10 @@ const rangeQs = (r: TimeRange | null): string => (r ? `&from=${r.from}&to=${r.to
 export const api = {
   processes: () => getJson<string[]>("/api/dashboard/processes"),
   tenants: () => getJson<string[]>("/api/dashboard/tenants"),
+  overview: (process: string, tenant: string, range: TimeRange | null) =>
+    getJson<DashboardOverview>(
+      `/api/dashboard/overview?process=${q(process)}&tenant=${q(tenant)}${rangeQs(range)}`,
+    ),
   durationPercentiles: (process: string, range: TimeRange | null) =>
     getJson<DurationPoint[]>(
       `/api/dashboard/duration-percentiles?process=${q(process)}${rangeQs(range)}`,

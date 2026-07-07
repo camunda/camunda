@@ -17,16 +17,9 @@ import {
 } from "recharts";
 import {
   api,
+  type DashboardOverview,
   type DistinctPoint,
-  type DurationBucketPoint,
-  type DurationPoint,
-  type ElementDuration,
-  type IncidentFlowNode,
-  type NoIncidentCohortPoint,
-  type RatioPoint,
-  type SlaCohortPoint,
   type TimeRange,
-  type TopProcess,
 } from "../lib/api";
 import { chartColor } from "../lib/chartColors";
 import { formatCount, formatDuration, formatPercent, formatWindow } from "../lib/format";
@@ -51,86 +44,25 @@ interface DashboardProps {
   range: TimeRange | null;
 }
 
-interface DashboardData {
-  duration: DurationPoint[];
-  summary: DurationPoint;
-  sla: RatioPoint[];
-  slaCohorts: SlaCohortPoint[];
-  noIncident: RatioPoint[];
-  noIncidentCohorts: NoIncidentCohortPoint[];
-  durationBuckets: DurationBucketPoint[];
-  distinct: DistinctPoint[];
-  top: TopProcess[];
-  elements: ElementDuration[];
-  incidents: IncidentFlowNode[];
-  openIncidents: number;
-  activeNow: number;
-  activated: number;
-}
-
 const last = <T,>(xs: T[]): T | undefined => (xs.length ? xs[xs.length - 1] : undefined);
 
 export function Dashboard({ process, tenant, range }: DashboardProps) {
-  const [data, setData] = useState<DashboardData | null>(null);
+  const [data, setData] = useState<DashboardOverview | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     setData(null);
     setError(null);
-    Promise.all([
-      api.durationPercentiles(process, range),
-      api.durationSummary(process, range),
-      api.ratios(process, "sla_compliance", range),
-      api.slaCohorts(process, range),
-      api.ratios(process, "no_incident", range),
-      api.distinct(tenant, range),
-      api.topProcesses(tenant, range),
-      api.elementDurations(process, range),
-      api.incidents(process, range),
-      api.openIncidents(process),
-      api.activeInstances(process, tenant),
-      api.activatedInstances(process, range),
-      api.noIncidentCohorts(process, range),
-      api.durationBuckets(process, range),
-    ])
-      .then(
-        ([
-          duration,
-          summary,
-          sla,
-          slaCohorts,
-          noIncident,
-          distinct,
-          top,
-          elements,
-          incidents,
-          openIncidents,
-          activeNow,
-          activated,
-          noIncidentCohorts,
-          durationBuckets,
-        ]) => {
-          if (!cancelled) {
-            setData({
-              duration,
-              summary,
-              sla,
-              slaCohorts,
-              noIncident,
-              noIncidentCohorts,
-              durationBuckets,
-              distinct,
-              top,
-              elements,
-              incidents,
-              openIncidents,
-              activeNow,
-              activated,
-            });
-          }
-        },
-      )
+    // One request per render: the server computes every widget against one per-render memo, so
+    // queries shared between widgets (lifecycle series, ratio series) run once.
+    api
+      .overview(process, tenant, range)
+      .then((overview) => {
+        if (!cancelled) {
+          setData(overview);
+        }
+      })
       .catch((e: unknown) => {
         if (!cancelled) {
           setError(e instanceof Error ? e.message : String(e));
