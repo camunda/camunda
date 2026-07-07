@@ -11,11 +11,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.state.rocksdb.RocksDbStateStoreProvider;
+import io.camunda.eventbridge.streaming.state.rocksdb.StoreTuning;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -82,5 +87,55 @@ final class RocksDbStateStoreProviderTest {
     assertThat(registry.isClosed()).isFalse();
     registry.counter("still.usable").increment();
     assertThat(registry.find("still.usable").counter()).isNotNull();
+  }
+
+  @Test
+  void shouldKeepStockCompactionByDefault() throws Exception {
+    // given / when - the plain open, no tuning
+    try (final var provider =
+        RocksDbStateStoreProvider.<TestColumnFamilies>open(
+            dataDir.toFile(), new SimpleMeterRegistry())) {
+
+      // then - periodic compaction stays off, as it always has
+      assertThat(persistedOptions()).contains("periodic_compaction_seconds=0");
+    }
+  }
+
+  @Test
+  void shouldApplyDeleteAwareCompactionWhenTuned() throws Exception {
+    // given
+    final var tuning = new StoreTuning(false, true);
+
+    // when
+    try (final var provider =
+        RocksDbStateStoreProvider.<TestColumnFamilies>open(
+            dataDir.toFile(), new SimpleMeterRegistry(), tuning)) {
+      final KeyValueStore<DbLong, DbString> store =
+          provider.keyValueStore(TestColumnFamilies.KV, new DbLong(), new DbString());
+      final var key = new DbLong();
+      final var value = new DbString();
+      key.wrapLong(1);
+      value.wrapString("value");
+      store.put(key, value);
+
+      // then - the tuned instance works and RocksDB persisted the periodic-compaction interval
+      assertThat(store.get(key)).map(DbString::toString).hasValue("value");
+      assertThat(persistedOptions())
+          .contains(
+              "periodic_compaction_seconds="
+                  + RocksDbStateStoreProvider.PERIODIC_COMPACTION_INTERVAL.toSeconds());
+    }
+  }
+
+  /** The content of the newest OPTIONS file RocksDB wrote for the opened instance. */
+  private String persistedOptions() throws IOException {
+    try (final Stream<Path> files = Files.list(dataDir)) {
+      final Path optionsFile =
+          files
+              .filter(path -> path.getFileName().toString().startsWith("OPTIONS-"))
+              .max(Comparator.comparing(path -> path.getFileName().toString()))
+              .orElseThrow(() -> new AssertionError("no OPTIONS file written under " + dataDir));
+      return Files.readString(optionsFile);
+    }
   }
 }

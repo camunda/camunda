@@ -30,6 +30,7 @@ import io.camunda.eventbridge.streaming.processor.ProcessorTopology;
 import io.camunda.eventbridge.streaming.shuffle.ShuffleEnvelope;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.state.rocksdb.RocksDbStateStoreProvider;
+import io.camunda.eventbridge.streaming.state.rocksdb.StoreTuning;
 import io.camunda.eventbridge.streaming.window.Windowed;
 import io.camunda.zeebe.db.impl.DbBytes;
 import io.camunda.zeebe.db.impl.DbInt;
@@ -140,9 +141,11 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
       final DatasetStore datasetStore,
       final DatasetCatalog catalog,
       final long reloadCheckIntervalMs,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      final StoreTuning storeTuning) {
     final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider =
-        RocksDbStateStoreProvider.open(new File(baseDir + "-p" + partition), meterRegistry);
+        RocksDbStateStoreProvider.open(
+            new File(baseDir + "-p" + partition), meterRegistry, storeTuning);
     final KeyValueStore<DbBytes, DbBytes> cellStore =
         provider.keyValueStore(AnalyticsColumnFamilies.CUBE_CELLS, new DbBytes(), new DbBytes());
     final KeyValueStore<DbInt, DbLong> offsets =

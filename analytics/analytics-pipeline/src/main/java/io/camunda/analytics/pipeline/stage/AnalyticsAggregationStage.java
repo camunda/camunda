@@ -93,7 +93,8 @@ public final class AnalyticsAggregationStage {
                         backend.newDatasetStore(),
                         catalog,
                         config.reloadCheckIntervalMs(),
-                        meterRegistry))
+                        meterRegistry,
+                        config.storeTuning()))
             .maxPoll(MAX_RECORDS)
             .pollTimeout(POLL_TIMEOUT)
             .commitInterval(config.checkpointInterval())

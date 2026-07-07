@@ -37,6 +37,7 @@ import io.camunda.eventbridge.streaming.aggregate.SourceCoordinate;
 import io.camunda.eventbridge.streaming.processor.ProcessorTopology;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.state.rocksdb.RocksDbStateStoreProvider;
+import io.camunda.eventbridge.streaming.state.rocksdb.StoreTuning;
 import io.camunda.zeebe.db.impl.DbBytes;
 import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
@@ -192,9 +193,11 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
       final DatasetCatalog catalog,
       final long reloadCheckIntervalMs,
       final DatasetStore datasetStore,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      final StoreTuning storeTuning) {
     final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider =
-        RocksDbStateStoreProvider.open(new File(baseDir + "-p" + partition), meterRegistry);
+        RocksDbStateStoreProvider.open(
+            new File(baseDir + "-p" + partition), meterRegistry, storeTuning);
     final KeyValueStore<DbBytes, DbBytes> openSegments =
         provider.keyValueStore(AnalyticsColumnFamilies.OPEN_SEGMENT, new DbBytes(), new DbBytes());
     final KeyValueStore<DbInt, DbLong> offsets =

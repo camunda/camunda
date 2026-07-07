@@ -7,6 +7,7 @@
  */
 package io.camunda.analytics.pipeline.stage;
 
+import io.camunda.eventbridge.streaming.state.rocksdb.StoreTuning;
 import java.time.Duration;
 
 /**
@@ -33,6 +34,13 @@ import java.time.Duration;
  * @param reloadCheckIntervalMs how often, at a commit boundary, a task checks the dataset catalog
  *     for a live reload ({@code analytics.reloadCheckIntervalMs} — ADR 0005: must stay below the
  *     provisioning activation debounce so a new cube is picked up before it fills)
+ * @param stateConsistencyChecks whether the tasks' RocksDBs verify write preconditions and foreign
+ *     keys ({@code analytics.state.consistencyChecks}, default {@code false}: the stores are
+ *     disposable projections of the source log — a corrupt store is deleted and replayed, so the
+ *     per-write cost buys nothing here)
+ * @param stateDeleteAwareCompaction whether the tasks' RocksDBs periodically recompact old SST
+ *     files to purge accumulated tombstones ({@code analytics.state.deleteAwareCompaction}, default
+ *     {@code true}: scope clears make the stores tombstone-heavy)
  */
 public record AnalyticsPipelineConfig(
     String stage,
@@ -44,7 +52,9 @@ public record AnalyticsPipelineConfig(
     int segmentStride,
     int shuffleSchemaVersion,
     Duration checkpointInterval,
-    long reloadCheckIntervalMs) {
+    long reloadCheckIntervalMs,
+    boolean stateConsistencyChecks,
+    boolean stateDeleteAwareCompaction) {
 
   /** Reads the configuration for one stage from system properties, with the shared defaults. */
   public static AnalyticsPipelineConfig fromSystemProperties(final String stage) {
@@ -58,11 +68,18 @@ public record AnalyticsPipelineConfig(
         Integer.getInteger("segmentStride", 1000),
         Integer.getInteger("shuffleSchemaVersion", 1),
         Duration.ofMillis(Long.getLong("analytics.checkpointIntervalMs", 1000L)),
-        Long.getLong("analytics.reloadCheckIntervalMs", 10_000L));
+        Long.getLong("analytics.reloadCheckIntervalMs", 10_000L),
+        Boolean.parseBoolean(System.getProperty("analytics.state.consistencyChecks", "false")),
+        Boolean.parseBoolean(System.getProperty("analytics.state.deleteAwareCompaction", "true")));
   }
 
   /** The per-instance state directory this stage's RocksDBs live under. */
   public String stateDir() {
     return "data/analytics-" + stage + "-" + instanceId;
+  }
+
+  /** The RocksDB tuning the analytics tasks open their state stores with. */
+  public StoreTuning storeTuning() {
+    return new StoreTuning(stateConsistencyChecks, stateDeleteAwareCompaction);
   }
 }

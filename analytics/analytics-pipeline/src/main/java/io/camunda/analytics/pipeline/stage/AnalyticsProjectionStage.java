@@ -122,7 +122,8 @@ public final class AnalyticsProjectionStage {
                         catalog,
                         config.reloadCheckIntervalMs(),
                         backend.newDatasetStore(),
-                        meterRegistry))
+                        meterRegistry,
+                        config.storeTuning()))
             .maxPoll(MAX_RECORDS)
             .pollTimeout(POLL_TIMEOUT)
             .commitInterval(config.checkpointInterval())

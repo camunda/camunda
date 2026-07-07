@@ -32,6 +32,7 @@ import java.nio.file.Files;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -53,6 +54,13 @@ import org.slf4j.LoggerFactory;
 public final class RocksDbStateStoreProvider<
         CF extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
     implements StateStoreProvider<CF> {
+
+  /**
+   * How old an SST file may grow before {@link StoreTuning#deleteAwareCompaction()} recompacts it
+   * (and thereby purges its tombstones). Conservative: at most one extra rewrite of the stable
+   * bottom levels per hour, while bounding how long a tombstone pile-up can degrade scans.
+   */
+  public static final Duration PERIODIC_COMPACTION_INTERVAL = Duration.ofHours(1);
 
   private static final Logger LOG = LoggerFactory.getLogger(RocksDbStateStoreProvider.class);
 
@@ -84,9 +92,22 @@ public final class RocksDbStateStoreProvider<
         TimeUnit.MILLISECONDS);
   }
 
-  /** Opens (creating it and any parents) a RocksDB instance under {@code directory}. */
+  /**
+   * Opens (creating it and any parents) a RocksDB instance under {@code directory} with the stock
+   * {@link StoreTuning#DEFAULTS}.
+   */
   public static <CF extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
       RocksDbStateStoreProvider<CF> open(final File directory, final MeterRegistry meterRegistry) {
+    return open(directory, meterRegistry, StoreTuning.DEFAULTS);
+  }
+
+  /**
+   * Opens (creating it and any parents) a RocksDB instance under {@code directory}, tuned as the
+   * caller asks; {@link StoreTuning#DEFAULTS} is exactly the stock behavior.
+   */
+  public static <CF extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily>
+      RocksDbStateStoreProvider<CF> open(
+          final File directory, final MeterRegistry meterRegistry, final StoreTuning tuning) {
     try {
       Files.createDirectories(directory.toPath());
     } catch (final IOException e) {
@@ -94,8 +115,8 @@ public final class RocksDbStateStoreProvider<
     }
     final ZeebeDbFactory<CF> factory =
         new ZeebeRocksDbFactory<>(
-            new RocksDbConfiguration(),
-            new ConsistencyChecksSettings(true, true),
+            configurationFor(tuning),
+            new ConsistencyChecksSettings(tuning.consistencyChecks(), tuning.consistencyChecks()),
             new AccessMetricsConfiguration(Kind.NONE, 1),
             // ZeebeDb owns — and closes — the registry its factory supplies, so hand it a
             // composite wrapping the caller's registry: the DB's gauges land in the caller's
@@ -104,6 +125,20 @@ public final class RocksDbStateStoreProvider<
             () -> storeRegistry(meterRegistry, directory.getName()));
     // avoidFlush=false: this library takes no snapshots, so flush on close for durability.
     return new RocksDbStateStoreProvider<>(factory.createDb(directory, false), directory.getName());
+  }
+
+  private static RocksDbConfiguration configurationFor(final StoreTuning tuning) {
+    final var configuration = new RocksDbConfiguration();
+    if (tuning.deleteAwareCompaction()) {
+      // ZeebeDb's column-family options only accept RocksDB's string-typed option keys, which
+      // excludes the delete-triggered table-properties collector (CompactOnDeletionCollector);
+      // periodic compaction is the closest reachable knob — see StoreTuning#deleteAwareCompaction.
+      final var columnFamilyOptions = new Properties();
+      columnFamilyOptions.setProperty(
+          "periodic_compaction_seconds", Long.toString(PERIODIC_COMPACTION_INTERVAL.toSeconds()));
+      configuration.setColumnFamilyOptions(columnFamilyOptions);
+    }
+    return configuration;
   }
 
   private static MeterRegistry storeRegistry(final MeterRegistry parent, final String storeName) {
