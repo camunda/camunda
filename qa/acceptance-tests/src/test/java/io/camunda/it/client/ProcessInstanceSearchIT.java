@@ -1515,11 +1515,12 @@ public class ProcessInstanceSearchIT {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(f -> f.tenantId("<default>"))
+            .page(p -> p.limit(100))
             .send()
             .join();
 
     // then
-    assertThat(result.items()).hasSize(expectedTotal);
+    assertThat(result.page().totalItems()).isEqualTo(expectedTotal);
     assertThat(result.items()).allMatch(pi -> "<default>".equals(pi.getTenantId()));
   }
 
@@ -1583,11 +1584,13 @@ public class ProcessInstanceSearchIT {
         camundaClient
             .newProcessInstanceSearchRequest()
             .sort(s -> s.startDate().asc())
+            .page(p -> p.limit(100))
             .send()
             .join();
 
     // then - each startDate must not be after the next
     final var startDates = result.items().stream().map(ProcessInstance::getStartDate).toList();
+    assertThat(startDates).hasSizeGreaterThanOrEqualTo(2);
     for (int i = 0; i < startDates.size() - 1; i++) {
       assertThat(startDates.get(i))
           .as("startDate at index %d should not be after index %d", i, i + 1)
