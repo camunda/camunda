@@ -133,6 +133,9 @@ final class ProjectionStageTaskReloadTest {
     final KeyValueStore<DbInt, DbLong> offsets =
         provider.keyValueStore(
             AnalyticsColumnFamilies.CONSUMED_POSITION, new DbInt(), new DbLong());
+    final KeyValueStore<DbInt, DbLong> appliedPositions =
+        provider.keyValueStore(
+            AnalyticsColumnFamilies.ZEEBE_APPLIED_POSITION, new DbInt(), new DbLong());
     task =
         new ProjectionStageTask(
             1,
@@ -146,6 +149,7 @@ final class ProjectionStageTaskReloadTest {
             provider,
             openSegments,
             offsets,
+            appliedPositions,
             catalog,
             0L, // check the catalog at every commit
             0L);

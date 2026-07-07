@@ -104,11 +104,24 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
   private final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider;
   private final KeyValueStore<DbBytes, DbBytes> openSegments;
   private final KeyValueStore<DbInt, DbLong> offsets;
+  private final KeyValueStore<DbInt, DbLong> appliedPositions;
   private final DatasetCatalog catalog;
   private final long reloadCheckIntervalMs;
 
   private final DbInt offsetKey = new DbInt();
   private final DbLong offsetValue = new DbLong();
+  private final DbInt appliedKey = new DbInt();
+  private final DbLong appliedValue = new DbLong();
+
+  /**
+   * Pre-fold dedup (ADR 0007): the high-watermark of the last applied Zeebe record position per
+   * Zeebe partition. The exporter appends each Zeebe partition's records in non-decreasing position
+   * order and a retry only re-appends positions at-or-below what was already appended, so a record
+   * at-or-below its partition's watermark is a producer duplicate and is skipped before the fold.
+   * Heap-authoritative between commits; persisted into {@link #appliedPositions} inside the same
+   * atomic cut as the topology state and the consumed offset.
+   */
+  private final Map<Integer, Long> appliedWatermarks = new HashMap<>();
 
   // Rebuilt on reload; the sealing aggregations are collected from the current topology so commit
   // can watermark-seal them. appliedVersion/lastReloadCheckMs drive the throttled reload check.
@@ -141,6 +154,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
       final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider,
       final KeyValueStore<DbBytes, DbBytes> openSegments,
       final KeyValueStore<DbInt, DbLong> offsets,
+      final KeyValueStore<DbInt, DbLong> appliedPositions,
       final DatasetCatalog catalog,
       final long reloadCheckIntervalMs,
       final long nowMs) {
@@ -156,6 +170,9 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
     this.provider = provider;
     this.openSegments = openSegments;
     this.offsets = offsets;
+    this.appliedPositions = appliedPositions;
+    appliedPositions.forEach(
+        (key, value) -> appliedWatermarks.put(key.getValue(), value.getValue()));
     this.catalog = catalog;
     this.reloadCheckIntervalMs = reloadCheckIntervalMs;
     this.lastReloadCheckMs = nowMs;
@@ -183,6 +200,9 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
     final KeyValueStore<DbInt, DbLong> offsets =
         provider.keyValueStore(
             AnalyticsColumnFamilies.CONSUMED_POSITION, new DbInt(), new DbLong());
+    final KeyValueStore<DbInt, DbLong> appliedPositions =
+        provider.keyValueStore(
+            AnalyticsColumnFamilies.ZEEBE_APPLIED_POSITION, new DbInt(), new DbLong());
     return new ProjectionStageTask(
         partition,
         client,
@@ -195,6 +215,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
         provider,
         openSegments,
         offsets,
+        appliedPositions,
         catalog,
         reloadCheckIntervalMs,
         System.currentTimeMillis());
@@ -398,7 +419,18 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
 
   @Override
   public void process(final SourceRecord record) {
+    // Pre-fold dedup (ADR 0007): skip a producer duplicate — the same Zeebe record re-appended at
+    // a later Event Bridge offset arrives at-or-below its Zeebe partition's applied-position
+    // watermark. The Event Bridge offset still advances for skipped records (the runtime marks
+    // them processed regardless), so consumption progress is unaffected.
+    final int zeebePartition = record.record().getPartitionId();
+    final long zeebePosition = record.record().getPosition();
+    final Long watermark = appliedWatermarks.get(zeebePartition);
+    if (watermark != null && zeebePosition <= watermark) {
+      return;
+    }
     topology.process(record);
+    appliedWatermarks.put(zeebePartition, zeebePosition);
   }
 
   @Override
@@ -445,6 +477,13 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
           offsetKey.wrapInt(partition);
           offsetValue.wrapLong(offset);
           offsets.put(offsetKey, offsetValue);
+          // The pre-fold dedup watermarks join the same cut (one long per Zeebe partition), so a
+          // crash-replay resumes from the committed offset with the matching watermark state.
+          for (final Map.Entry<Integer, Long> watermark : appliedWatermarks.entrySet()) {
+            appliedKey.wrapInt(watermark.getKey());
+            appliedValue.wrapLong(watermark.getValue());
+            appliedPositions.put(appliedKey, appliedValue);
+          }
           topology.checkpoint();
         });
     maybeReload();

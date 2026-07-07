@@ -67,7 +67,17 @@ public enum AnalyticsColumnFamilies implements EnumValue, ScopedColumnFamily {
    * VARIABLE_ENTRIES} prefix scan entirely for the common case of an element with no local
    * variables — avoiding a RocksDB iterator seek (and the transaction it opens) per eviction.
    */
-  VARIABLE_SCOPES(7, ColumnFamilyScope.PARTITION_LOCAL);
+  VARIABLE_SCOPES(7, ColumnFamilyScope.PARTITION_LOCAL),
+
+  /**
+   * Stage-1 pre-fold dedup (ADR 0007): the high-watermark of the last <em>applied</em> Zeebe record
+   * position per Zeebe partition, {@code zeebePartitionId -> position}. Checked before folding each
+   * record — an exporter duplicate (the same Zeebe record re-appended at a later Event Bridge
+   * offset) arrives at-or-below the watermark and is skipped — and committed in the same atomic cut
+   * as the topology state and the consumed offset, so replay after a crash re-folds exactly the
+   * not-yet-committed records.
+   */
+  ZEEBE_APPLIED_POSITION(8, ColumnFamilyScope.PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope scope;
