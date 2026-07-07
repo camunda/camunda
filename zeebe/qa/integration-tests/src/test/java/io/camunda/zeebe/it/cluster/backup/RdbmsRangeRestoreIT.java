@@ -326,6 +326,7 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
     fsConfig.setBasePath(backupDir.toAbsolutePath().toString());
     cfg.getData().getPrimaryStorage().getBackup().setFilesystem(fsConfig);
     cfg.getData().getPrimaryStorage().getBackup().setStore(BackupStoreType.FILESYSTEM);
+    cfg.getData().getPrimaryStorage().getBackup().setContinuous(true);
   }
 
   private static void configureRdbms(final Camunda cfg) {
