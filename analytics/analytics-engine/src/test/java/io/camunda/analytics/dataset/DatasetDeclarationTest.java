@@ -90,6 +90,72 @@ final class DatasetDeclarationTest {
   }
 
   @Test
+  void shouldAcceptMinuteHourDayTiers() {
+    // given the canonical 1m/1h/1d tiering
+    final DatasetDeclaration declaration =
+        DatasetDeclaration.builder("tiered", FactType.PROCESS_INSTANCE)
+            .meter(Meter.of("n", MeterCatalog.COUNT))
+            .window(60_000L)
+            .window(3_600_000L)
+            .window(86_400_000L)
+            .build();
+
+    // then it is accepted as declared
+    assertThat(declaration.windowSizesMs()).containsExactly(60_000L, 3_600_000L, 86_400_000L);
+  }
+
+  @Test
+  void shouldRejectDuplicateWindowTiers() {
+    // when a tier is declared twice, then the declaration is rejected naming dataset and size
+    assertThatThrownBy(
+            () ->
+                DatasetDeclaration.builder("dup", FactType.PROCESS_INSTANCE)
+                    .meter(Meter.of("n", MeterCatalog.COUNT))
+                    .window(60_000L)
+                    .window(60_000L)
+                    .build())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("dataset 'dup'")
+        .hasMessageContaining("strictly ascending")
+        .hasMessageContaining("60000");
+  }
+
+  @Test
+  void shouldRejectUnorderedWindowTiers() {
+    // when tiers are declared coarse-to-fine, then the declaration is rejected naming both sizes
+    assertThatThrownBy(
+            () ->
+                DatasetDeclaration.builder("unordered", FactType.PROCESS_INSTANCE)
+                    .meter(Meter.of("n", MeterCatalog.COUNT))
+                    .window(3_600_000L)
+                    .window(60_000L)
+                    .build())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("dataset 'unordered'")
+        .hasMessageContaining("60000")
+        .hasMessageContaining("3600000");
+  }
+
+  @Test
+  void shouldRejectTierThatIsNotAMultipleOfTheFinestTier() {
+    // when a 90s/120s pair is declared (120s is not a multiple of 90s), then it is rejected —
+    // Stage 2 rolls coarse cells up from finest-tier cells, so a non-multiple tier is silently
+    // wrong
+    assertThatThrownBy(
+            () ->
+                DatasetDeclaration.builder("skewed", FactType.PROCESS_INSTANCE)
+                    .meter(Meter.of("n", MeterCatalog.COUNT))
+                    .window(90_000L)
+                    .window(120_000L)
+                    .build())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("dataset 'skewed'")
+        .hasMessageContaining("120000")
+        .hasMessageContaining("90000")
+        .hasMessageContaining("multiple");
+  }
+
+  @Test
   void shouldRejectNonPositiveWindow() {
     assertThatThrownBy(
             () ->

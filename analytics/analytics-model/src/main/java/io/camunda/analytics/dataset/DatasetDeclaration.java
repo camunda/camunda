@@ -69,15 +69,52 @@ public record DatasetDeclaration(
       if (windowSizesMs.isEmpty()) {
         throw new IllegalArgumentException("dataset '" + name + "' declares no window tiers");
       }
-      for (final long windowMs : windowSizesMs) {
-        if (windowMs <= 0) {
-          throw new IllegalArgumentException(
-              "dataset '" + name + "' has a non-positive window size: " + windowMs);
-        }
-      }
+      requireValidTiers(name, windowSizesMs);
     }
     if (latenessMs < 0) {
       throw new IllegalArgumentException("lateness must be non-negative, was " + latenessMs);
+    }
+  }
+
+  /**
+   * The window tiers must be positive, strictly ascending (which also rejects duplicates), and
+   * every coarser tier must be an integer multiple of the finest tier: Stage 2 derives coarse cells
+   * by rolling up finest-tier cells, and the query planner picks tiers by divisibility — a
+   * non-multiple tier (e.g. 90s next to 120s) would silently produce wrong coarse cells.
+   */
+  private static void requireValidTiers(final String name, final List<Long> windowSizesMs) {
+    for (final long windowMs : windowSizesMs) {
+      if (windowMs <= 0) {
+        throw new IllegalArgumentException(
+            "dataset '" + name + "' has a non-positive window size: " + windowMs);
+      }
+    }
+    final long finest = windowSizesMs.get(0);
+    for (int i = 1; i < windowSizesMs.size(); i++) {
+      final long previous = windowSizesMs.get(i - 1);
+      final long current = windowSizesMs.get(i);
+      if (current <= previous) {
+        throw new IllegalArgumentException(
+            "dataset '"
+                + name
+                + "' window tiers must be strictly ascending (no duplicates): "
+                + current
+                + "ms follows "
+                + previous
+                + "ms in "
+                + windowSizesMs);
+      }
+      if (current % finest != 0) {
+        throw new IllegalArgumentException(
+            "dataset '"
+                + name
+                + "' window tier "
+                + current
+                + "ms is not an integer multiple of the finest tier "
+                + finest
+                + "ms — coarse cells are rolled up from finest-tier cells, so every tier must"
+                + " divide evenly");
+      }
     }
   }
 

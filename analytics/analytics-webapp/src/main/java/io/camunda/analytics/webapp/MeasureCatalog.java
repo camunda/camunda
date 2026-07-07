@@ -101,11 +101,13 @@ public class MeasureCatalog {
       }
     }
     builder.meter(measure.meter().apply(effectiveParams));
-    // The measure's default tiers plus the requested granularity (so the read hits a stored tier).
+    // The measure's default tiers plus the requested granularity (so the read hits a stored tier),
+    // sorted so the declaration's tiers are ascending regardless of where the granularity falls.
     final List<Long> windows = new ArrayList<>(measure.windows());
     if (!windows.contains(granularityMs)) {
       windows.add(granularityMs);
     }
+    windows.sort(null);
     windows.forEach(builder::window);
     return new CompiledQuestion(datasetName, builder.build(), measure.meterName());
   }

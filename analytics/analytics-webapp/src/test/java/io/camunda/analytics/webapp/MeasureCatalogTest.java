@@ -136,6 +136,19 @@ final class MeasureCatalogTest {
   }
 
   @Test
+  void shouldKeepDerivedWindowTiersAscending() {
+    // when the requested granularity is finer than a measure's coarsest default tier
+    // (avg-duration defaults to minute+hour tiers; the minute granularity is already contained)
+    final DatasetDeclaration declaration =
+        catalog
+            .compile("process-instances", "avg-duration", Map.of(), List.of(), List.of(), 60_000L)
+            .declaration();
+
+    // then the tiers are ascending (the builder sorts, so tier validation holds)
+    assertThat(declaration.windowSizesMs()).isSorted().doesNotHaveDuplicates();
+  }
+
+  @Test
   void shouldCompileAWhereFilterIntoTheDataset() {
     final DatasetDeclaration declaration =
         catalog
