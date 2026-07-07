@@ -14,7 +14,7 @@ permissions:
   actions: write
 
 env:
-  TEST_OWNER: '@camunda/camundaex'
+  TEST_OWNER: '@camunda/c8-testing'
 
 jobs:
   trigger:

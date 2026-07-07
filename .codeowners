@@ -57,7 +57,11 @@ zeebe/pom.xml               @camunda/orchestration-cluster
 zeebe/qa/pom.xml            @camunda/orchestration-cluster
 buf.yaml                    @camunda/orchestration-cluster
 
-# see /qa/ ownership below in the qa-engineering section
+# Camunda Client & SB Starter
+/clients/                   @camunda/core-features
+
+# Spring utilities
+/spring-utils/              @camunda/core-features
 
 ################################
 ## @camunda/monorepo-devops-team
@@ -111,29 +115,27 @@ mwnw*                       @camunda/monorepo-devops-team
 /qa/acceptance-tests/src/test/java/io/camunda/it/util/       @camunda/qa-engineering @camunda/orchestration-cluster
 /qa/acceptance-tests/src/main/java/io/camunda/it/util/       @camunda/qa-engineering @camunda/orchestration-cluster
 
-################################
-## @camunda/camundaex
-################################
+# Acceptance tests overrides for orchestration-cluster
+/qa/acceptance-tests/src/test/java/io/camunda/it/client/     @camunda/core-features
+/qa/acceptance-tests/src/test/java/io/camunda/it/spring/     @camunda/core-features
 
-# Clients and SDKs
-/clients/                   @camunda/camundaex
+################################
+## @camunda/c8-testing
+################################
 
 # Testing frameworks
-/testing/                   @camunda/camundaex
-
-# Spring utilities
-/spring-utils/              @camunda/camundaex
-
-# Acceptance tests
-/qa/acceptance-tests/src/test/java/io/camunda/it/client/     @camunda/camundaex
-/qa/acceptance-tests/src/test/java/io/camunda/it/spring/     @camunda/camundaex
+/testing/                   @camunda/c8-testing
 
 # CI
-/.github/workflows/camunda8-getting-started-bundle.yaml @camunda/camundaex
-/.github/workflows/camunda-client-compatibility-test* @camunda/camundaex
-/.github/workflows/camunda-process-test-compatibility* @camunda/camundaex
-/.github/workflows/camunda-spring-boot-starter-compatibility-test* @camunda/camundaex
+/.github/workflows/camunda-process-test-compatibility* @camunda/c8-testing
 
+################################
+## @camunda/clients-sdks-ai-first-tooling
+################################
+
+# CI
+/.github/workflows/camunda8-getting-started-bundle.yaml @camunda/clients-sdks-ai-first-tooling
+/.github/workflows/camunda-client-compatibility-test* @camunda/clients-sdks-ai-first-tooling
 
 ################################
 ## @camunda/connectors-agentic-ai
@@ -320,6 +322,7 @@ optimize.Dockerfile         @camunda/core-features
 /.github/workflows/gh-inherit-core-fields.yml @camunda/core-features
 /.github/workflows/publish-zod-schemas.yml @camunda/core-features
 /.github/workflows/verify-x-added-in-version-annotations.yml @camunda/core-features
+/.github/workflows/camunda-spring-boot-starter-compatibility-test* @camunda/core-features
 
 ################################
 ## @camunda/reliability-testing
@@ -422,7 +425,7 @@ optimize.Dockerfile         @camunda/core-features
 # earlier rule (e.g. `/.github/workflows/zeebe*`) needs to be reverted to a
 # different team for a particular file.
 /.github/workflows/c8-orchestration-cluster-e2e-nightly-triage.yml @camunda/test-automation-team
-/.github/workflows/c8-orchestration-cluster-forward-compatibility-tests.yml @camunda/camundaex
+/.github/workflows/c8-orchestration-cluster-forward-compatibility-tests.yml @camunda/core-features
 /.github/workflows/c8-orchestration-cluster-request-validation-nightly.yml @camunda/qa-engineering
 /.github/workflows/zeebe-release-stable-dry-run.yml @camunda/monorepo-devops-team
 /.github/workflows/c8-orchestration-cluster-e2e-nightly-close-stale-fix-prs.yml    @camunda/test-automation-team

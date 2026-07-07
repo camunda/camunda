@@ -29,11 +29,13 @@ lookupTeamMedic["Distributed Systems"]=$distributedSystemsMedic
 lookupTeamMedic["DistributedSystems"]=$distributedSystemsMedic
 lookupTeamMedic["@camunda/zeebe-distributed-platform"]=$distributedSystemsMedic
 
-# @camunda-ex-medic
-camundaExMedic="<!subteam^S064J3N99A5|camunda-ex-medic>"
-lookupTeamMedic["Camunda Ex"]=$camundaExMedic
-lookupTeamMedic["CamundaEx"]=$camundaExMedic
-lookupTeamMedic["@camunda/camundaex"]=$camundaExMedic
+# @cpt-medic
+cptMedic="<!subteam^S0BGRACEPPS|cpt-medic>"
+lookupTeamMedic["@camunda/c8-testing"]=$cptMedic
+
+# @clients-sdks-ai-first-tooling-medic
+clientsSdksAiFirstToolingMedic="<!subteam^S0BFV0L5R2S|clients-sdks-ai-first-tooling-medic>"
+lookupTeamMedic["@camunda/clients-sdks-ai-first-tooling"]=$clientsSdksAiFirstToolingMedic
 
 # @distro-medic
 distroMedic="<!subteam^S053K7C7QKU|distro-medic>"

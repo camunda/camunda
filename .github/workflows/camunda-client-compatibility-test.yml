@@ -1,6 +1,6 @@
 # description: Daily compatibility tests for Camunda components across versions
 # type: CI
-# owner: @camunda/camundaex
+# owner: @camunda/core-features
 name: Camunda Compatibility Tests
 
 on:
@@ -31,7 +31,7 @@ defaults:
     shell: bash
 
 env:
-  TEST_OWNER: '@camunda/camundaex'
+  TEST_OWNER: '@camunda/core-features'
   FLAKY_TEST_RERUN_COUNT: '3'
 
 jobs:

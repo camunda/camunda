@@ -154,19 +154,19 @@ assert_owner \
   "qa/acceptance-tests/src/test/java/io/camunda/it/util/TestHelper.java" \
   "@camunda/qa-engineering" "@camunda/orchestration-cluster"
 
-# ── /qa/acceptance-tests → camundaex ─────────────────────────────────────────
+# ── /qa/acceptance-tests → core-features ─────────────────────────────────────────
 echo ""
-echo "── /qa/acceptance-tests → camundaex ──"
+echo "── /qa/acceptance-tests → core-features ──"
 
 assert_owner \
-  "acceptance-tests client/ → camundaex" \
+  "acceptance-tests client/ → core-features" \
   "qa/acceptance-tests/src/test/java/io/camunda/it/client/UnassignClientFromTenantIT.java" \
-  "@camunda/camundaex"
+  "@camunda/core-features"
 
 assert_owner \
-  "acceptance-tests spring/ → camundaex" \
+  "acceptance-tests spring/ → core-features" \
   "qa/acceptance-tests/src/test/java/io/camunda/it/spring/AbstractSpringDependenciesTest.java" \
-  "@camunda/camundaex"
+  "@camunda/core-features"
 
 # ── /qa/acceptance-tests → identity ──────────────────────────────────────────
 echo ""
