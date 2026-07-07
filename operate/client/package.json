@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@axe-core/playwright": "4.11.3",
+    "@axe-core/playwright": "4.12.1",
     "@bpmn-io/element-template-icon-renderer": "1.0.0",
     "@camunda/camunda-api-zod-schemas": "0.0.79",
     "@camunda/camunda-composite-components": "0.25.0",
