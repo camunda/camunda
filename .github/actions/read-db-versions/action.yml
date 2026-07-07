@@ -10,9 +10,6 @@ outputs:
     value: ${{ steps.parse.outputs.opensearch-2 }}
   saas:
     value: ${{ steps.parse.outputs.saas }}
-  ci-database-matrix:
-    description: JSON matrix (ES8 + OS2 + H2) for ci.yml database integration test jobs.
-    value: ${{ steps.parse.outputs.ci-database-matrix }}
 
 runs:
   using: composite

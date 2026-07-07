@@ -86,7 +86,6 @@ jobs:
       elasticsearch-8: ${{ steps.db-versions.outputs.elasticsearch-8 }}
       opensearch-2: ${{ steps.db-versions.outputs.opensearch-2 }}
       saas: ${{ steps.db-versions.outputs.saas }}
-      ci-database-matrix: ${{ steps.db-versions.outputs.ci-database-matrix }}
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Read DB versions
@@ -854,90 +853,186 @@ jobs:
   opensearch-integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes, generate-db-versions, build-distball ]
+    name: "General / Integration / OpenSearch ITs"
+    timeout-minutes: 20
     permissions:
       contents: read
-      id-token: write  # granted through to the reusable workflow's WIF GCS auth
-      actions: write   # reusable workflow's send-slack-notification job declares it; validated at startup even though ci.yml never triggers it
+      id-token: write  # gcs-build-cache-auth (WIF) mints a GitHub OIDC token for GCS downloads
+    runs-on: gcp-perf-core-16-default
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.generate-db-versions.outputs.ci-database-matrix) }}
-    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
-    secrets: inherit
-    with:
-      database-type: "${{ matrix.database-type }}"
-      database-container: "${{ matrix.database-container }}"
-      database-image-version: "${{ matrix.database-image-version }}"
-      database-name: "${{ matrix.database-name }}"
-      it-database-type: "${{ matrix.it-database-type }}"
-      use-shared-distball: true
+      matrix:
+        module:
+          - name: QA Acceptance Tests
+            maven_module: 'qa/acceptance-tests'
+          - name: QA Migration Tests
+            maven_module: 'qa/migration-tests'
+    env:
+      ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
+    services:
+      # Set up an OpenSearch service container
+      # https://docs.github.com/en/actions/use-cases-and-examples/using-containerized-services/about-service-containers
+      opensearch:
+        image: opensearchproject/opensearch:${{ needs.generate-db-versions.outputs.opensearch-2 }}
+        # Exposing the ports allow to be accessible via http://localhost:9200 in the runner
+        ports:
+          - 9200:9200
+        options: >-
+          --health-cmd "curl --silent --fail http://localhost:9200/_cluster/health"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+        env:
+          # Disabling the security to make sure we can access without tls in our tests
+          # https://opensearch.org/docs/latest/security/configuration/disable-enable-security/
+          DISABLE_SECURITY_PLUGIN: "true"
+          # We run a single node for our integration tests
+          discovery.type: "single-node"
+          # Disabling to make sure we can delete indices via wildcards
+          # https://opensearch.org/docs/latest/install-and-configure/configuring-opensearch/index-settings/
+          action.destructive_requires_name: "false"
+          # We have to specify an initial password to bootstrap OpenSearch
+          # https://opensearch.org/blog/replacing-default-admin-credentials/
+          OPENSEARCH_INITIAL_ADMIN_PASSWORD: "yourStrongPassword123!"
+          # We need to configure ISM to run more often, to make sure data is cleaned up earlier
+          # Useful for tests where we verify history clean up
+          # Default is 5 - unit is minutes
+          # https://opensearch.org/docs/latest/im-plugin/ism/settings/
+          plugins.index_state_management.job_interval: "1"
+          # A randomized delay that is added to a job's base run time to prevent a surge of activity from all indexes at the same time.
+          plugins.index_state_management.jitter: "0"
+          knn.algo_param.index_thread_qty: 4
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
+      - uses: actions/checkout@v4
+      # Consume the shared distball's io.camunda SNAPSHOTs instead of a full reactor build.
+      # These shards run on self-hosted gcp-perf runners where the artifact API is
+      # throughput-capped, so downloads use GCS (same-region, non-billable). See build-distball.
+      # gcs-build-cache-auth authenticates gcloud via vault+WIF for the downloads below.
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: it-elasticsearch
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          gcs-build-cache-auth: true
+      - uses: ./.github/actions/restore-shared-m2
+      - name: Download distball from GCS
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist/target
+          gcloud storage cp "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/camunda-zeebe-*.tar.gz" dist/target/
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
+      # Run specific integration tests with OS service container
+      #
+      # To communicate to the IT what database to expect and run against:
+      # -D test.integration.camunda.database.type=os
+      #
+      - name: Run integration test with externalized OS
+        shell: bash
+        run: >
+          ./mvnw -B -T 1 --no-snapshot-updates
+          -D forkCount=4
+          -D maven.javadoc.skip=true
+          -D skipUTs -D skipChecks
+          -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
+          -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
+          -D test.integration.camunda.database.type=os
+          -pl ${{ matrix.module.maven_module }}
+          verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Analyze Test Runs
+        id: analyze-test-run
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
+        with:
+          name: "[IT] Opensearch - ${{ matrix.module.name }}"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "opensearch-integration-tests/${{ matrix.module.maven_module }}"
+          build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          detailed_junit_tests: true
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
-  history-tests:
-    name: "History Integration Tests / ${{ matrix.name }}"
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
-    needs: [ detect-changes, generate-db-versions, build-distball ]
-    permissions:
-      contents: read
-      id-token: write  # granted through to the reusable workflow's WIF GCS auth
-      actions: write   # reusable workflow's send-slack-notification job declares it; validated at startup even though ci.yml never triggers it
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJSON(needs.generate-db-versions.outputs.ci-database-matrix) }}
-    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
-    secrets: inherit
-    with:
-      database-type: "${{ matrix.database-type }}"
-      database-container: "${{ matrix.database-container }}"
-      database-image-version: "${{ matrix.database-image-version }}"
-      database-name: "${{ matrix.database-name }}"
-      it-database-type: "${{ matrix.it-database-type }}"
-      maven-profiles: "history"
-      test-type: "history-tests"
-      test-type-label: "History"
-      runs-on: "gcp-perf-core-8-default"
-      use-shared-distball: true
-
-  identity-tests:
-    name: "Identity Integration Tests / ${{ matrix.name }}"
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
-    needs: [ detect-changes, generate-db-versions, build-distball ]
-    permissions:
-      contents: read
-      id-token: write  # granted through to the reusable workflow's WIF GCS auth
-      actions: write   # reusable workflow's send-slack-notification job declares it; validated at startup even though ci.yml never triggers it
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJSON(needs.generate-db-versions.outputs.ci-database-matrix) }}
-    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
-    secrets: inherit
-    with:
-      database-type: "${{ matrix.database-type }}"
-      database-container: "${{ matrix.database-container }}"
-      database-image-version: "${{ matrix.database-image-version }}"
-      database-name: "${{ matrix.database-name }}"
-      it-database-type: "${{ matrix.it-database-type }}"
-      maven-profiles: "identity-tests"
-      test-type: "identity-tests"
-      test-type-label: "Identity"
-      use-shared-distball: true
-
-  physical-tenant-acceptance-tests:
-    name: "Physical Tenant Acceptance Tests / H2"
+  rdbms-h2-integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
-    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
-    secrets: inherit
-    with:
-      database-type: "h2"
-      database-name: "H2"
-      # Lowercase to match the @DisabledIfSystemProperty(matches = "rdbms.*$") guards that skip
-      # RDBMS-incompatible tests.
-      it-database-type: "rdbms_h2"
-      physical-tenant: "tenanta"
-      # Scope to the tests that pass under physical-tenant mode; known gaps are excluded in the
-      # physical-tenant profile.
-      maven-profiles: "physical-tenant"
-      test-type: "physical-tenant-acceptance-tests"
-      test-type-label: "Physical Tenant Acceptance"
+    name: "General / Integration / RDBMS - H2 ITs"
+    timeout-minutes: 15
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    runs-on: gcp-perf-core-8-default
+    env:
+      ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@main
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: it-elasticsearch
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      # Build the platform before running the integration tests; skipping frontend
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
+      # Run specific integration tests with H2 inmemory database
+      #
+      # To communicate to the IT what database to expect and run against:
+      # -Dcamunda.it.database.type=rdbms
+      #
+      - name: Run integration test with InMemory H2
+        shell: bash
+        timeout-minutes: 10
+        run: >
+          ./mvnw -B -T 2 --no-snapshot-updates
+          -D forkCount=3
+          -D maven.javadoc.skip=true
+          -D skipUTs -D skipChecks
+          -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
+          -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
+          -D test.integration.camunda.database.type=rdbms
+          -pl 'qa/acceptance-tests'
+          verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Analyze Test Runs
+        id: analyze-test-run
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
+        with:
+          name: "[IT] RDBMS - H2"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          detailed_junit_tests: true
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   rdbms-integration-tests:
     if: needs.detect-changes.outputs.rdbms-integration-tests == 'true'
@@ -2145,10 +2240,8 @@ jobs:
       - elasticsearch-integration-tests
       - general-unit-tests
       - generate-db-versions
-      - history-tests
       - identity-frontend-sbom-snyk
       - identity-frontend-tests
-      - identity-tests
       - integration-tests
       - java-checks
       - junit-vintage-check
@@ -2161,7 +2254,7 @@ jobs:
       - pr-maven-snapshot
       - pr-vuln-check
       - protobuf-checks
-      - physical-tenant-acceptance-tests
+      - rdbms-h2-integration-tests
       - rdbms-integration-tests
       - renovatelint
       - setup-tests
