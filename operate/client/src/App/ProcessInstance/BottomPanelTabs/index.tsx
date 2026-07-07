@@ -17,6 +17,7 @@ import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstan
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/useProcessInstanceIncidentsCount';
 import {useElementInstanceIncidentsCount} from 'modules/queries/incidents/useElementInstanceIncidentsCount';
+import {modificationsStore} from 'modules/stores/modifications';
 
 function useSelectionAwareIncidentsCount(
   processInstanceKey: string,
@@ -65,7 +66,11 @@ const BottomPanelTabs: React.FC = () => {
     // select an element without a previous selection.
     const prevHasSelection = prevHasSelectionRef.current;
     prevHasSelectionRef.current = hasSelection;
-    if (!hasSelection || prevHasSelection) {
+    if (
+      !hasSelection ||
+      prevHasSelection ||
+      modificationsStore.isModificationModeEnabled
+    ) {
       return;
     }
 
