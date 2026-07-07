@@ -168,4 +168,34 @@ public final class ActivateJobsWithLeaseTest {
         .describedAs("the timed-out job retains its lease token")
         .isEqualTo(leaseToken);
   }
+
+  @Test
+  public void shouldRetainLeaseTokenAfterReplay() {
+    // given a leased job with a timeout
+    final long jobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
+    final Duration timeout = Duration.ofSeconds(10);
+    final String leaseToken =
+        ENGINE
+            .jobs()
+            .withType(jobType)
+            .withLease()
+            .withTimeout(timeout.toMillis())
+            .activate()
+            .getValue()
+            .getJobs()
+            .get(0)
+            .getLeaseToken();
+
+    // when the engine restarts and replays the log
+    ENGINE.replay();
+
+    // then the lease token survives, observable on a fresh event generated from the replayed state
+    ENGINE.increaseTime(timeout.plus(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL));
+    final Record<JobRecordValue> timedOut =
+        jobRecords(JobIntent.TIMED_OUT).withRecordKey(jobKey).getFirst();
+    assertThat(leaseToken).describedAs("the job was leased on activation").isNotEmpty();
+    assertThat(timedOut.getValue().getLeaseToken())
+        .describedAs("the lease token survives an engine restart and log replay")
+        .isEqualTo(leaseToken);
+  }
 }
