@@ -209,7 +209,7 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
     public boolean deployment = true;
     public boolean error = true;
     public boolean incident = true;
-    public boolean job = true;
+    public boolean job = false;
     public boolean jobBatch = false;
     public boolean message = true;
     public boolean messageBatch = false;
@@ -283,7 +283,7 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
     private List<String> variableValueTypeExclusion = new ArrayList<>();
 
     // optimize mode
-    private boolean optimizeModeEnabled = false;
+    private boolean optimizeModeEnabled = true;
 
     // export local variables flag
     private boolean exportLocalVariablesEnabled = true;
