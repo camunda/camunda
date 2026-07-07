@@ -49,10 +49,7 @@
     {
       "hostType": "docker",
       "matchHost": "https://docker.elastic.co",
-      "timeout": 30000
-    },
-    {
-      "timeout": 10000
+      "timeout": 150000
     }
   ],
   "packageRules": [
