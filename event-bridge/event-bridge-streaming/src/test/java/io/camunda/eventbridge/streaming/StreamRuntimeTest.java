@@ -414,6 +414,84 @@ final class StreamRuntimeTest {
   }
 
   @Test
+  void shouldFoldTheWholeBatchWhenAMemoryPressureCommitInterruptsIt() throws Exception {
+    // given — three records arriving in ONE poll batch, and a task that demands a checkpoint
+    // right after the first record is folded (as a full bounded cache would)
+    final List<String> processed = Collections.synchronizedList(new ArrayList<>());
+    final Map<Integer, Long> committedOffsets = new ConcurrentHashMap<>();
+    final CountDownLatch allCommitted = new CountDownLatch(1);
+
+    final Consumer consumer = mock(Consumer.class);
+    final EventBridgeClient client = mock(EventBridgeClient.class);
+    when(client.subscribe(any(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(consumer));
+    when(consumer.sendHeartbeat()).thenReturn(CompletableFuture.completedFuture(null));
+    when(consumer.poll(anyInt(), any()))
+        .thenReturn(
+            List.of(
+                new Event(5L, TOPIC, 1, "a".getBytes(StandardCharsets.UTF_8)),
+                new Event(6L, TOPIC, 1, "b".getBytes(StandardCharsets.UTF_8)),
+                new Event(7L, TOPIC, 1, "c".getBytes(StandardCharsets.UTF_8))))
+        .thenReturn(List.of());
+    when(consumer.commitOffset(any(), anyInt(), anyLong()))
+        .thenAnswer(
+            invocation -> {
+              committedOffsets.put(invocation.getArgument(1), invocation.getArgument(2));
+              if ((long) invocation.getArgument(2) == 7L) {
+                allCommitted.countDown();
+              }
+              return CompletableFuture.completedFuture(null);
+            });
+
+    final StreamRuntime<String> runtime =
+        StreamRuntime.<String>builder()
+            .client(client)
+            .group("g")
+            .instanceId("i")
+            .sourceTopic(TOPIC)
+            .deserializer(
+                (payload, partition, offset) -> new String(payload, StandardCharsets.UTF_8))
+            .taskFactory(
+                partition ->
+                    new Task<>() {
+                      @Override
+                      public void process(final String record) {
+                        processed.add(record);
+                      }
+
+                      @Override
+                      public boolean needsCheckpoint() {
+                        // Memory pressure exactly once: after the first record of the batch.
+                        return processed.size() == 1;
+                      }
+                    })
+            .transactionRunner(Runnable::run)
+            .offsetStore(
+                new OffsetStore() {
+                  @Override
+                  public Map<Integer, Long> restore() {
+                    return Map.of();
+                  }
+
+                  @Override
+                  public void store(final int partition, final long offset) {}
+                })
+            .commitInterval(Duration.ZERO)
+            .build();
+
+    // when
+    final Thread loop = new Thread(runtime::run, "runtime-under-test");
+    loop.start();
+
+    // then — the batch tail folded after the forced mid-batch commit; nothing was dropped
+    assertThat(allCommitted.await(5, TimeUnit.SECONDS)).isTrue();
+    runtime.stop();
+    loop.join(TimeUnit.SECONDS.toMillis(5));
+    assertThat(processed).containsExactly("a", "b", "c");
+    assertThat(committedOffsets).containsEntry(1, 7L);
+  }
+
+  @Test
   void shouldForceCommitWhenATaskIsOverCapacity() throws Exception {
     // given — a task that asks to be checkpointed (as a full bounded cache would), and a commit
     // clock so slow only the memory-pressure path can trigger the barrier

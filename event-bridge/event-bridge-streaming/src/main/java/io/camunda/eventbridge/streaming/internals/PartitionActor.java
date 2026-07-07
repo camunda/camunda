@@ -72,8 +72,13 @@ public final class PartitionActor<R> {
   private boolean stopRequested;
   private boolean finalized;
 
-  /** Reused drain batch, cleared per {@link #onWork()} cycle. Actor thread only. */
+  // The reused drain batch and the resume cursor into it. Entries drained from the queue live
+  // ONLY here until handled — when a mid-batch commit (memory pressure) suspends the fold, the
+  // unprocessed tail stays in the batch and onWork resumes from batchNext, so no drained entry is
+  // ever dropped (it is no longer in the queue; dropping it would silently lose the record until
+  // a restart replays it). Actor thread only.
   private final List<SourceEntry<R>> batch = new ArrayList<>();
+  private int batchNext;
 
   public PartitionActor(
       final Partition<R> partition,
@@ -160,21 +165,30 @@ public final class PartitionActor<R> {
     started.countDown();
   }
 
-  /** Drains and folds a bounded batch, then commits if due. Runs on the actor thread. */
+  /**
+   * Folds the current batch (resuming a tail a mid-batch commit left behind), refilling it from the
+   * queue when exhausted, then commits if due. Runs on the actor thread.
+   */
   private void onWork() {
     if (committing || finalized || !running.getAsBoolean()) {
       return;
     }
-    batch.clear();
-    partition.queue().drainTo(batch, maxProcessBatch);
-    for (final SourceEntry<R> entry : batch) {
+    if (batchNext >= batch.size()) {
+      batch.clear();
+      batchNext = 0;
+      partition.queue().drainTo(batch, maxProcessBatch);
+    }
+    while (batchNext < batch.size()) {
+      final SourceEntry<R> entry = batch.get(batchNext);
+      batchNext++;
       handleEntry(entry);
       if (committing || finalized || !running.getAsBoolean()) {
-        return; // a memory-pressure commit started, or a fatal error stopped the runtime
+        return; // a fatal error stopped the runtime, or a commit suspended the fold — the
+        // unprocessed tail stays in the batch and resumes from batchNext
       }
       if (partition.task().needsCheckpoint()) {
         beginCommit();
-        return; // resumes via onCommitted
+        return; // resumes via onCommitted, continuing this batch from batchNext
       }
     }
     maybeCommit();
@@ -286,7 +300,8 @@ public final class PartitionActor<R> {
       finalizeStop();
       return;
     }
-    control.submit(this::onWork); // resume draining anything queued during the commit
+    // Resume the suspended batch tail first (if any), then anything queued during the commit.
+    control.submit(this::onWork);
   }
 
   private void onStop() {
