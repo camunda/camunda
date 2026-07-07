@@ -38,6 +38,8 @@ public final class FeatureFlagsCfg {
   private boolean enableStraightThroughProcessingLoopDetector =
       DEFAULT_SETTINGS.enableStraightThroughProcessingLoopDetector();
   private boolean enableMessageBodyOnExpired = DEFAULT_SETTINGS.enableMessageBodyOnExpired();
+  private boolean evaluateBoundaryEventCorrelationKeyInActivityScope =
+      DEFAULT_SETTINGS.evaluateBoundaryEventCorrelationKeyInActivityScope();
 
   public boolean isEnableYieldingDueDateChecker() {
     return enableYieldingDueDateChecker;
@@ -88,6 +90,16 @@ public final class FeatureFlagsCfg {
     this.enableMessageBodyOnExpired = enableMessageBodyOnExpired;
   }
 
+  public boolean isEvaluateBoundaryEventCorrelationKeyInActivityScope() {
+    return evaluateBoundaryEventCorrelationKeyInActivityScope;
+  }
+
+  public void setEvaluateBoundaryEventCorrelationKeyInActivityScope(
+      final boolean evaluateBoundaryEventCorrelationKeyInActivityScope) {
+    this.evaluateBoundaryEventCorrelationKeyInActivityScope =
+        evaluateBoundaryEventCorrelationKeyInActivityScope;
+  }
+
   public FeatureFlags toFeatureFlags() {
     return new FeatureFlags(
         enableYieldingDueDateChecker,
@@ -95,7 +107,8 @@ public final class FeatureFlagsCfg {
         enableMessageTtlCheckerAsync,
         enableTimerDueDateCheckerAsync,
         enableStraightThroughProcessingLoopDetector,
-        enableMessageBodyOnExpired
+        enableMessageBodyOnExpired,
+        evaluateBoundaryEventCorrelationKeyInActivityScope
         /*, enableFoo*/ );
   }
 

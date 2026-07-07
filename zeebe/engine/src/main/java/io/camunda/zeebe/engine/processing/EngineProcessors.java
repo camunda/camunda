@@ -189,7 +189,8 @@ public final class EngineProcessors {
             transientProcessMessageSubscriptionState,
             expressionLanguageMetrics,
             config,
-            incidentMetrics);
+            incidentMetrics,
+            featureFlags.evaluateBoundaryEventCorrelationKeyInActivityScope());
 
     typedRecordProcessors.withListener(bpmnBehaviors.incidentBehavior());
 
@@ -538,7 +539,8 @@ public final class EngineProcessors {
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
       final ExpressionLanguageMetrics expressionLanguageMetrics,
       final EngineConfiguration config,
-      final IncidentMetrics incidentMetrics) {
+      final IncidentMetrics incidentMetrics,
+      final boolean evaluateBoundaryEventCorrelationKeyInActivityScope) {
     return new BpmnBehaviorsImpl(
         processingState,
         writers,
@@ -553,7 +555,8 @@ public final class EngineProcessors {
         transientProcessMessageSubscriptionState,
         expressionLanguageMetrics,
         config,
-        incidentMetrics);
+        incidentMetrics,
+        evaluateBoundaryEventCorrelationKeyInActivityScope);
   }
 
   private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(
