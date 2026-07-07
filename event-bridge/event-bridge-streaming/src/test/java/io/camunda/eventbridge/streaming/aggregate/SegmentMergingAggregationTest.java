@@ -17,6 +17,7 @@ import io.camunda.eventbridge.streaming.window.Windowed;
 import io.camunda.eventbridge.streaming.window.Windows;
 import io.camunda.zeebe.db.impl.DbBytes;
 import io.camunda.zeebe.db.impl.DbLong;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -198,6 +199,111 @@ final class SegmentMergingAggregationTest {
     final List<byte[]> stored = new ArrayList<>();
     store.forEach((key, value) -> stored.add(value.getBytes().clone()));
     assertThat(stored).singleElement().isEqualTo(served.get(cell));
+  }
+
+  @Test
+  void shouldFinalizeOnlyTheDueWindowsAmongManyOpenCells() {
+    // given many open cells across distinct windows (size 1s, grace 2s)
+    final InMemoryResultSink<Windowed<String>, Long> sink = new InMemoryResultSink<>();
+    final KeyValueStore<DbBytes, DbBytes> store =
+        new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes());
+    final SegmentMergingAggregation<String, Long> merger =
+        merger(store, sink, TumblingWindows.ofSizeAndGrace(1_000L, 2_000L));
+    for (int i = 0; i < 10; i++) {
+      merger.merge(new Windowed<>("k" + i, i * 1_000L), i + 1L);
+    }
+
+    // when the watermark (maxEventTime 10s − grace 2s = 8s) passes a subset of the window ends
+    merger.checkpoint();
+
+    // then exactly the windows ending at or before the watermark were finalized and evicted from
+    // the durable store; the still-open ones were checkpointed
+    final List<Long> stored = new ArrayList<>();
+    store.forEach((key, value) -> stored.add(decodeWindowStart(key.getBytes())));
+    assertThat(stored).containsExactlyInAnyOrder(8_000L, 9_000L);
+    for (int i = 0; i < 8; i++) {
+      assertThat(sink.get(new Windowed<>("k" + i, i * 1_000L))).hasValue(i + 1L);
+    }
+
+    // and an open cell still folds while a finalized cell drops late deltas
+    merger.merge(new Windowed<>("k8", 8_000L), 10L);
+    merger.merge(new Windowed<>("k0", 0L), 100L);
+    merger.flush();
+    assertThat(sink.get(new Windowed<>("k8", 8_000L))).hasValue(19L);
+    assertThat(sink.get(new Windowed<>("k0", 0L))).hasValue(1L);
+  }
+
+  @Test
+  void shouldRecoverTheFinalizationIndexFromTheStore() {
+    // given two open cells checkpointed by a previous incarnation (grace keeps them open)
+    final KeyValueStore<DbBytes, DbBytes> store =
+        new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes());
+    final Windows windows = TumblingWindows.ofSizeAndGrace(1_000L, 2_000L);
+    final SegmentMergingAggregation<String, Long> before =
+        merger(store, new InMemoryResultSink<>(), windows);
+    before.merge(new Windowed<>("a", 0L), 3L);
+    before.merge(new Windowed<>("b", 1_000L), 4L);
+    before.checkpoint();
+
+    // when a fresh operator recovers and the watermark then passes the recovered windows' ends
+    final InMemoryResultSink<Windowed<String>, Long> sink = new InMemoryResultSink<>();
+    final SegmentMergingAggregation<String, Long> after = merger(store, sink, windows);
+    after.merge(new Windowed<>("c", 9_000L), 5L);
+    after.checkpoint();
+
+    // then the recovered cells were finalized off the rebuilt index and their durable cells
+    // deleted; only the fresh open cell remains
+    assertThat(sink.get(new Windowed<>("a", 0L))).hasValue(3L);
+    assertThat(sink.get(new Windowed<>("b", 1_000L))).hasValue(4L);
+    final List<Long> stored = new ArrayList<>();
+    store.forEach((key, value) -> stored.add(decodeWindowStart(key.getBytes())));
+    assertThat(stored).containsExactly(9_000L);
+  }
+
+  @Test
+  void shouldFinalizeADrainedCellAtItsWindowEndAndKeepTestingTheRest() {
+    // given a drained predicate (total >= 10) and a grace long enough that time never closes them
+    final InMemoryResultSink<Windowed<String>, Long> sink = new InMemoryResultSink<>();
+    final KeyValueStore<DbBytes, DbBytes> store =
+        new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes());
+    final SegmentMergingAggregation<String, Long> merger =
+        new SegmentMergingAggregation<>(
+            1,
+            SUM,
+            TumblingWindows.ofSizeAndGrace(1_000L, 60_000L),
+            sink,
+            store,
+            new StringRecordValue(),
+            new LongRecordValue(),
+            Runnable::run,
+            acc -> acc >= 10L);
+    final Windowed<String> undrained = new Windowed<>("slow", 0L);
+    final Windowed<String> drained = new Windowed<>("fast", 1_000L);
+    merger.merge(undrained, 3L);
+    merger.merge(drained, 10L);
+
+    // when both windows have ended (maxEventTime 2s) but only one accumulator has drained
+    merger.checkpoint();
+
+    // then the drained cell finalized at its window end (long before the grace backstop) and the
+    // undrained one stayed open
+    assertThat(sink.get(drained)).hasValue(10L);
+    final List<Long> stored = new ArrayList<>();
+    store.forEach((key, value) -> stored.add(decodeWindowStart(key.getBytes())));
+    assertThat(stored).containsExactly(0L);
+
+    // and the still-indexed candidate finalizes once it drains on a later checkpoint
+    merger.merge(undrained, 7L);
+    merger.checkpoint();
+    assertThat(sink.get(undrained)).hasValue(10L);
+    final List<Long> remaining = new ArrayList<>();
+    store.forEach((key, value) -> remaining.add(decodeWindowStart(key.getBytes())));
+    assertThat(remaining).isEmpty();
+  }
+
+  /** The {@code windowStart} of a durable cell key ({@code group ++ windowStart ++ key}). */
+  private static long decodeWindowStart(final byte[] cellKey) {
+    return ByteBuffer.wrap(cellKey).getLong(Integer.BYTES);
   }
 
   /** A window wide enough with grace that it stays open across the test. */

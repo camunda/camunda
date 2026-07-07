@@ -17,7 +17,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.Predicate;
 
 /**
@@ -56,6 +58,11 @@ public final class SegmentMergingAggregation<K, ACC> {
 
   // Heap working set: one running accumulator per cell.
   private final Map<Windowed<K>, ACC> cellTotal = new HashMap<>();
+  // Secondary index of the open cells by window end. A cell's end (windowStart + size) is constant,
+  // so maintenance is insert-on-first-touch + remove-on-finalize — and finalizeClosedWindows pops
+  // only the due candidates (windowEnd <= maxEventTime) instead of walking every open cell on
+  // every checkpoint.
+  private final NavigableMap<Long, Set<Windowed<K>>> cellsByWindowEnd = new TreeMap<>();
   private final Set<Windowed<K>> changedSinceFlush = new HashSet<>();
   private final Set<Windowed<K>> changedSinceCheckpoint = new HashSet<>();
   private final Set<Windowed<K>> evictedSinceCheckpoint = new HashSet<>();
@@ -115,6 +122,9 @@ public final class SegmentMergingAggregation<K, ACC> {
         current == null
             ? aggregate.mergeInto(aggregate.createAccumulator(), delta)
             : aggregate.mergeInto(current, delta));
+    if (current == null) {
+      indexCell(cell); // first touch — the cell's window end never changes afterwards
+    }
     changedSinceFlush.add(cell);
     changedSinceCheckpoint.add(cell);
     evictedSinceCheckpoint.remove(cell);
@@ -169,25 +179,42 @@ public final class SegmentMergingAggregation<K, ACC> {
       return;
     }
     final long watermark = maxEventTime - windows.graceMs();
-    final Iterator<Map.Entry<Windowed<K>, ACC>> it = cellTotal.entrySet().iterator();
-    while (it.hasNext()) {
-      final Map.Entry<Windowed<K>, ACC> entry = it.next();
-      final Windowed<K> cell = entry.getKey();
-      final long windowEnd = cell.windowStart() + windows.sizeMs();
-      final ACC value = entry.getValue();
-      if ((windowEnd <= maxEventTime && drained.test(value)) || windowEnd <= watermark) {
-        final byte[] serialized = serializedSinceFlush.remove(cell);
-        if (serialized != null) {
-          sink.upsert(cell, value, serialized); // final value, already serialized at the flush
-        } else {
-          sink.upsert(cell, value); // final value
+    // Only cells whose window has ended are candidates — a closed window (past the watermark)
+    // finalizes unconditionally, an ended-but-in-grace one only once its accumulator has drained.
+    // Cells with a later window end are untouched, so an idle checkpoint is O(1), not O(open
+    // cells).
+    final Iterator<Map.Entry<Long, Set<Windowed<K>>>> ends =
+        cellsByWindowEnd.headMap(maxEventTime, true).entrySet().iterator();
+    while (ends.hasNext()) {
+      final Map.Entry<Long, Set<Windowed<K>>> entry = ends.next();
+      final boolean closed = entry.getKey() <= watermark;
+      final Iterator<Windowed<K>> cells = entry.getValue().iterator();
+      while (cells.hasNext()) {
+        final Windowed<K> cell = cells.next();
+        final ACC value = cellTotal.get(cell);
+        if (closed || drained.test(value)) {
+          finalizeCell(cell, value);
+          cells.remove(); // evict from the window-end index
         }
-        changedSinceFlush.remove(cell);
-        changedSinceCheckpoint.remove(cell);
-        evictedSinceCheckpoint.add(cell); // delete the durable cell at the next checkpoint
-        it.remove(); // evict from the heap working set
+      }
+      if (entry.getValue().isEmpty()) {
+        ends.remove();
       }
     }
+  }
+
+  /** Emits the cell's final value, evicts it from the heap, and marks the durable cell deleted. */
+  private void finalizeCell(final Windowed<K> cell, final ACC value) {
+    final byte[] serialized = serializedSinceFlush.remove(cell);
+    if (serialized != null) {
+      sink.upsert(cell, value, serialized); // final value, already serialized at the flush
+    } else {
+      sink.upsert(cell, value); // final value
+    }
+    changedSinceFlush.remove(cell);
+    changedSinceCheckpoint.remove(cell);
+    evictedSinceCheckpoint.add(cell); // delete the durable cell at the next checkpoint
+    cellTotal.remove(cell); // evict from the heap working set
   }
 
   private void recover() {
@@ -197,8 +224,16 @@ public final class SegmentMergingAggregation<K, ACC> {
         (key, value) -> {
           final Windowed<K> cell = decodeCellKey(key.getBytes());
           cellTotal.put(cell, accValue.fromBytes(value.getBytes()));
+          indexCell(cell);
           maxEventTime = Math.max(maxEventTime, cell.windowStart() + windows.sizeMs());
         });
+  }
+
+  /** Registers an open cell under its (constant) window end for due-window finalization. */
+  private void indexCell(final Windowed<K> cell) {
+    cellsByWindowEnd
+        .computeIfAbsent(cell.windowStart() + windows.sizeMs(), end -> new HashSet<>())
+        .add(cell);
   }
 
   private void writeCell(final Windowed<K> cell, final ACC total) {
