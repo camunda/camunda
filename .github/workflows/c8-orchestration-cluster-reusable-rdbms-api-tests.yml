@@ -118,6 +118,12 @@ jobs:
             jdbc-url: "jdbc:mysql://localhost:3306/camunda"
             jdbc-username: "camunda"
             jdbc-password: "camunda"
+          - database-name: "MySQL 9.7"
+            database-type: "mysql"
+            database-image-version: "9.7"
+            jdbc-url: "jdbc:mysql://localhost:3306/camunda"
+            jdbc-username: "camunda"
+            jdbc-password: "camunda"
           # MariaDB
           - database-name: "MariaDB 10.11"
             database-type: "mariadb"
@@ -260,7 +266,7 @@ jobs:
             mysql)
               echo "Installing MySQL driver"
               curl -L -o dev-dist/lib/mysql-connector.jar \
-                https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/8.4.0/mysql-connector-j-8.4.0.jar
+                https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/9.7.0/mysql-connector-j-9.7.0.jar
               ;;
             mariadb)
               echo "Installing MariaDB driver"

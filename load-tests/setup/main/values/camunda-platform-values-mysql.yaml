@@ -38,7 +38,7 @@ orchestration:
         - sh
         - -c
         - >
-          wget https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/9.6.0/mysql-connector-j-9.6.0.jar
+          wget https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/9.7.0/mysql-connector-j-9.7.0.jar
           -O /driver-lib/mysql-driver.jar
       volumeMounts:
         - name: jdbcdrivers
