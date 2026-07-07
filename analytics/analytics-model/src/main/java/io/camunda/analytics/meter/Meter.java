@@ -49,12 +49,26 @@ public record Meter(String name, String type, String measureField, Map<String, S
 
   public int intParam(final String key, final int defaultValue) {
     final String value = params.get(key);
-    return value == null || value.isBlank() ? defaultValue : Integer.parseInt(value.trim());
+    if (value == null || value.isBlank()) {
+      return defaultValue;
+    }
+    try {
+      return Integer.parseInt(value.trim());
+    } catch (final NumberFormatException e) {
+      throw invalidParam(key, value, "an integer", e);
+    }
   }
 
   public double doubleParam(final String key, final double defaultValue) {
     final String value = params.get(key);
-    return value == null || value.isBlank() ? defaultValue : Double.parseDouble(value.trim());
+    if (value == null || value.isBlank()) {
+      return defaultValue;
+    }
+    try {
+      return Double.parseDouble(value.trim());
+    } catch (final NumberFormatException e) {
+      throw invalidParam(key, value, "a number", e);
+    }
   }
 
   /** A required string param; throws if absent or blank. */
@@ -72,10 +86,14 @@ public record Meter(String name, String type, String measureField, Map<String, S
     if (value == null || value.isBlank()) {
       return defaultValue;
     }
-    return Arrays.stream(value.split(","))
-        .map(String::trim)
-        .mapToDouble(Double::parseDouble)
-        .toArray();
+    try {
+      return Arrays.stream(value.split(","))
+          .map(String::trim)
+          .mapToDouble(Double::parseDouble)
+          .toArray();
+    } catch (final NumberFormatException e) {
+      throw invalidParam(key, value, "a comma-separated list of numbers", e);
+    }
   }
 
   /** A required comma-separated long array param; throws if absent. */
@@ -85,6 +103,27 @@ public record Meter(String name, String type, String measureField, Map<String, S
       throw new IllegalArgumentException(
           "meter '" + name + "' (" + type + ") requires param '" + key + "'");
     }
-    return Arrays.stream(value.split(",")).map(String::trim).mapToLong(Long::parseLong).toArray();
+    try {
+      return Arrays.stream(value.split(",")).map(String::trim).mapToLong(Long::parseLong).toArray();
+    } catch (final NumberFormatException e) {
+      throw invalidParam(key, value, "a comma-separated list of integers", e);
+    }
+  }
+
+  private IllegalArgumentException invalidParam(
+      final String key, final String value, final String expected, final Throwable cause) {
+    return new IllegalArgumentException(
+        "meter '"
+            + name
+            + "' ("
+            + type
+            + ") param '"
+            + key
+            + "' must be "
+            + expected
+            + ", was '"
+            + value
+            + "'",
+        cause);
   }
 }

@@ -10,6 +10,7 @@ package io.camunda.analytics.dataset;
 import io.camunda.analytics.dimension.DimensionColumn;
 import io.camunda.analytics.dimension.DimensionKeySelector;
 import io.camunda.analytics.dimension.DimensionSchema;
+import io.camunda.analytics.meter.BoundMeter;
 import io.camunda.analytics.meter.Meter;
 import io.camunda.analytics.meter.MeterCatalog;
 import io.camunda.analytics.meter.MeterIdRegistry;
@@ -64,7 +65,7 @@ public final class DatasetCompiler {
                 meter.name(),
                 windowMs,
                 aggId,
-                catalog.bind(meter),
+                bind(declaration, meter),
                 TumblingWindows.ofSizeAndGrace(windowMs, declaration.latenessMs())));
       }
     }
@@ -79,6 +80,29 @@ public final class DatasetCompiler {
         new DimensionKeySelector(grain),
         meters,
         schema);
+  }
+
+  /**
+   * Resolves one meter against the catalog — the compile-time validation gate for the stringly
+   * typed meter declaration (unknown type, missing measure, malformed params). A bind failure is
+   * rethrown as a {@link DatasetValidationException} carrying the dataset + meter context, so a bad
+   * declaration is rejected at admission time instead of blowing up a live topology reload.
+   */
+  private BoundMeter<?, ?> bind(final DatasetDeclaration declaration, final Meter meter) {
+    try {
+      return catalog.bind(meter);
+    } catch (final RuntimeException e) {
+      throw new DatasetValidationException(
+          "dataset '"
+              + declaration.name()
+              + "' declares an invalid meter '"
+              + meter.name()
+              + "' ("
+              + meter.type()
+              + "): "
+              + e.getMessage(),
+          e);
+    }
   }
 
   /**

@@ -30,6 +30,7 @@ import io.camunda.analytics.sketch.QuantileAggregateFunction;
 import io.camunda.analytics.sketch.TopKAggregateFunction;
 import io.camunda.eventbridge.streaming.aggregate.LongRecordValue;
 import io.camunda.eventbridge.streaming.aggregate.SumAggregateFunction;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -146,9 +147,7 @@ public final class MeterCatalog {
         .register(
             new MeterType<>(
                 HISTOGRAM,
-                m ->
-                    new HistogramAggregateFunction<>(
-                        m.requireMeasure()::asLong, m.requireLongArrayParam("thresholds")),
+                m -> new HistogramAggregateFunction<>(m.requireMeasure()::asLong, thresholds(m)),
                 m -> new HistogramValue()))
         .register(
             new MeterType<>(
@@ -178,11 +177,55 @@ public final class MeterCatalog {
                 m ->
                     new RatioAggregateFunction<>(
                         m.requireMeasure()::asDouble,
-                        RatioAggregateFunction.Comparison.valueOf(
-                            m.requireParam("op").toUpperCase(Locale.ROOT)),
+                        comparison(m),
                         m.doubleParam("threshold", 0.0)),
                 m -> new RatioAccumulatorValue(),
                 ratioSpec()));
+  }
+
+  /** The {@code ratio} numerator predicate; rejects an unknown op naming the known values. */
+  private static RatioAggregateFunction.Comparison comparison(final Meter meter) {
+    final String op = meter.requireParam("op");
+    try {
+      return RatioAggregateFunction.Comparison.valueOf(op.toUpperCase(Locale.ROOT));
+    } catch (final IllegalArgumentException e) {
+      throw new IllegalArgumentException(
+          "meter '"
+              + meter.name()
+              + "' ("
+              + meter.type()
+              + ") param 'op' has unknown comparison '"
+              + op
+              + "'; known: "
+              + List.of(RatioAggregateFunction.Comparison.values()),
+          e);
+    }
+  }
+
+  /** The {@code histogram} bucket bounds: required, non-empty, strictly increasing. */
+  private static long[] thresholds(final Meter meter) {
+    final long[] thresholds = meter.requireLongArrayParam("thresholds");
+    if (thresholds.length == 0) {
+      throw new IllegalArgumentException(
+          "meter '"
+              + meter.name()
+              + "' ("
+              + meter.type()
+              + ") param 'thresholds' must not be"
+              + " empty");
+    }
+    for (int i = 1; i < thresholds.length; i++) {
+      if (thresholds[i] <= thresholds[i - 1]) {
+        throw new IllegalArgumentException(
+            "meter '"
+                + meter.name()
+                + "' ("
+                + meter.type()
+                + ") param 'thresholds' must be strictly increasing, was "
+                + Arrays.toString(thresholds));
+      }
+    }
+    return thresholds;
   }
 
   /**
