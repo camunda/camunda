@@ -18,7 +18,6 @@ import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
-import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
@@ -128,9 +127,12 @@ public interface BrokerStartupContext {
 
   void setBrokerAdminService(final BrokerAdminServiceImpl brokerAdminService);
 
-  JobStreamService getJobStreamService();
-
-  void setJobStreamService(final JobStreamService jobStreamService);
+  /**
+   * Replaces the {@link PhysicalTenantContext} for the given physical tenant. Throws if the
+   * tenant id is not already registered.
+   */
+  void updatePhysicalTenantEngineContext(
+      String physicalTenantId, PhysicalTenantEngineContext context);
 
   ClusterConfigurationService getClusterConfigurationService();
 

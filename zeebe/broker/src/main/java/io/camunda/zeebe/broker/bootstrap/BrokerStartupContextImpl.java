@@ -65,7 +65,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final List<PartitionRaftListener> partitionRaftListeners = new ArrayList<>();
   private final Duration shutdownTimeout;
   private final MeterRegistry meterRegistry;
-  private final Map<String, PhysicalTenantContext> physicalTenantEngineContexts;
+  private final Map<String, PhysicalTenantContext> physicalTenantEngineContexts =
+      new LinkedHashMap<>();
   private final Function<String, UserServices> userServicesForTenant;
   private final PasswordEncoder passwordEncoder;
   private final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory;
@@ -84,7 +85,6 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final Map<String, PartitionManager> partitionManagers = new LinkedHashMap<>();
   private RocksDbResources sharedRocksDbResources;
   private BrokerAdminServiceImpl brokerAdminService;
-  private JobStreamService jobStreamService;
   private ClusterConfigurationService clusterConfigurationService;
   private SnapshotApiRequestHandler snapshotApiRequestHandler;
   private CheckpointSchedulingService checkpointSchedulingService;
@@ -118,7 +118,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.brokerClient = brokerClient;
     this.shutdownTimeout = shutdownTimeout;
     this.meterRegistry = requireNonNull(meterRegistry);
-    this.physicalTenantEngineContexts = Map.copyOf(physicalTenantEngineContexts);
+    this.physicalTenantEngineContexts.putAll(physicalTenantEngineContexts);
     this.userServicesForTenant = userServicesForTenant;
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoderFactory = jwtDecoderFactory;
@@ -295,13 +295,12 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   }
 
   @Override
-  public JobStreamService getJobStreamService() {
-    return jobStreamService;
-  }
-
-  @Override
-  public void setJobStreamService(final JobStreamService jobStreamService) {
-    this.jobStreamService = jobStreamService;
+  public void updatePhysicalTenantEngineContext(
+      final String physicalTenantId, final PhysicalTenantEngineContext context) {
+    if (!physicalTenantEngineContexts.containsKey(physicalTenantId)) {
+      throw new IllegalArgumentException("Unknown physical tenant id '" + physicalTenantId + "'");
+    }
+    physicalTenantEngineContexts.put(physicalTenantId, context);
   }
 
   @Override
