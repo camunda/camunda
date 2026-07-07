@@ -13,7 +13,7 @@ metadata:
     camunda.io/purpose: load-test
 
     app.kubernetes.io/component: zeebe-broker
-    app.kubernetes.io/version: "SNAPSHOT"
+
 apiVersion: v1
 data:
   startup.sh: |
@@ -250,7 +250,7 @@ data:
                 prefix: "zeebe-record"
               retention:
                 enabled: true
-                minimumAge: "1d"
+                minimumAge: "3d"
                 policyName: "zeebe-record-retention-policy"
           camundaexporter:
             className: "io.camunda.exporter.CamundaExporter"

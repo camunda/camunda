@@ -10,7 +10,7 @@ package io.camunda.zeebe.dynamic.config.util;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
-import io.atomix.primitive.partition.PartitionId;
+import io.camunda.cluster.PartitionId;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;

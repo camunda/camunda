@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.transport.stream.impl;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.AtomixCluster;
@@ -408,7 +409,8 @@ final class StreamIntegrationTest {
                 return data;
               },
               dynamicErrorHandler,
-              RemoteStreamMetrics.noop());
+              RemoteStreamMetrics.noop(),
+              DEFAULT_PHYSICAL_TENANT_ID);
     }
 
     private void start() {
@@ -444,7 +446,9 @@ final class StreamIntegrationTest {
       final var factory = new TransportFactory(actorScheduler);
       streamService =
           factory.createRemoteStreamClient(
-              cluster.getCommunicationService(), ClientStreamMetrics.noop());
+              cluster.getCommunicationService(),
+              ClientStreamMetrics.noop(),
+              DEFAULT_PHYSICAL_TENANT_ID);
     }
 
     private void start() {

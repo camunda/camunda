@@ -10,7 +10,7 @@ package io.camunda.zeebe.broker.partitioning;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerRule.assignSocketAddresses;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.zeebe.broker.Broker;

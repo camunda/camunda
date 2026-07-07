@@ -48,7 +48,7 @@ jobs:
           - 'qa/http/c8run-tests/application-h2.yaml'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ inputs.branch }}
           fetch-depth: 0
@@ -113,7 +113,7 @@ jobs:
       - name: Install IntelliJ HTTP Client
         shell: bash
         run: |
-          curl -f -L -o ijhttp.zip "https://jb.gg/ijhttp/latest"
+          curl -f -L -o ijhttp.zip "https://download.jetbrains.com/resources/intellij/http-client/262.7132.23/intellij-http-client.zip"
           unzip ijhttp.zip
           ijhttp/ijhttp qa/http/c8run-tests/c8run-tests.http --private-env-file qa/http/http-client.private.env.json --env ${{ matrix.env }} --report -t 60000
 

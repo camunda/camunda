@@ -9,7 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller.authentication;
 
 import static io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper.toCamundaUser;
 
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.gateway.protocol.model.CamundaUserResult;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.query.TenantQuery;

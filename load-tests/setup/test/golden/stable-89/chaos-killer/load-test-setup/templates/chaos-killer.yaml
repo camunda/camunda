@@ -51,7 +51,7 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: chaos-killer
-              image: bitnami/kubectl:TEST
+              image: bitnami/kubectl:latest
               imagePullPolicy: IfNotPresent
               env:
                 - name: CHAOS_TARGET_PATTERNS

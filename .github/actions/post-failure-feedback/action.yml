@@ -7,7 +7,7 @@ description: >
 
 inputs:
   failure_category:
-    description: "infra | flaky | product | test | external | unknown"
+    description: "infra | test-infra | flaky | product | test | external | unknown"
     required: true
   stage:
     description: "Pipeline stage, e.g. helm-integration / saas-e2e"
@@ -60,6 +60,7 @@ runs:
   steps:
     - name: Render & post failure feedback
       shell: bash
+      continue-on-error: true
       env:
         FB_CATEGORY: ${{ inputs.failure_category }}
         FB_STAGE: ${{ inputs.stage }}

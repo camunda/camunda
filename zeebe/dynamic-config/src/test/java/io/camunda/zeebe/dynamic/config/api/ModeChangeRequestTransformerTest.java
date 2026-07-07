@@ -11,9 +11,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -35,12 +36,17 @@ final class ModeChangeRequestTransformerTest {
     // when
     final var result = transformer.operations(clusterConfiguration);
 
-    // then
     EitherAssert.assertThat(result).isRight();
-    assertThat(result.get())
+    final var operations = result.get();
+    assertThat(operations).hasSize(4);
+    assertThat(operations.subList(0, 2))
         .containsExactlyInAnyOrder(
             new ModeChangeOperation(id0, Mode.RECOVERING),
             new ModeChangeOperation(id1, Mode.RECOVERING));
+    assertThat(operations.subList(2, 4))
+        .containsExactlyInAnyOrder(
+            new AwaitModeChangeOperation(id0, Mode.RECOVERING),
+            new AwaitModeChangeOperation(id1, Mode.RECOVERING));
   }
 
   @Test
@@ -57,10 +63,16 @@ final class ModeChangeRequestTransformerTest {
 
     // then
     EitherAssert.assertThat(result).isRight();
-    assertThat(result.get())
+    final var operations = result.get();
+    assertThat(operations).hasSize(4);
+    assertThat(operations.subList(0, 2))
         .containsExactlyInAnyOrder(
             new ModeChangeOperation(id0, Mode.PROCESSING),
             new ModeChangeOperation(id1, Mode.PROCESSING));
+    assertThat(operations.subList(2, 4))
+        .containsExactlyInAnyOrder(
+            new AwaitModeChangeOperation(id0, Mode.PROCESSING),
+            new AwaitModeChangeOperation(id1, Mode.PROCESSING));
   }
 
   @Test
@@ -77,7 +89,10 @@ final class ModeChangeRequestTransformerTest {
 
     // then
     EitherAssert.assertThat(result).isRight();
-    assertThat(result.get()).containsExactly(new ModeChangeOperation(id0, Mode.RECOVERING));
+    assertThat(result.get())
+        .containsExactly(
+            new ModeChangeOperation(id0, Mode.RECOVERING),
+            new AwaitModeChangeOperation(id0, Mode.RECOVERING));
   }
 
   @Test
@@ -94,7 +109,10 @@ final class ModeChangeRequestTransformerTest {
 
     // then
     EitherAssert.assertThat(result).isRight();
-    assertThat(result.get()).containsExactly(new ModeChangeOperation(id1, Mode.PROCESSING));
+    assertThat(result.get())
+        .containsExactly(
+            new ModeChangeOperation(id1, Mode.PROCESSING),
+            new AwaitModeChangeOperation(id1, Mode.PROCESSING));
   }
 
   @Test

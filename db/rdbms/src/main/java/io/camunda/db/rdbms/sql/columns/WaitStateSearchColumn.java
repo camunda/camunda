@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.sql.columns;
 import io.camunda.search.entities.WaitStateEntity;
 
 public enum WaitStateSearchColumn implements SearchColumn<WaitStateEntity> {
+  WAIT_STATE_KEY("waitStateKey"),
   ELEMENT_INSTANCE_KEY("elementInstanceKey"),
   PROCESS_INSTANCE_KEY("processInstanceKey"),
   ROOT_PROCESS_INSTANCE_KEY("rootProcessInstanceKey"),

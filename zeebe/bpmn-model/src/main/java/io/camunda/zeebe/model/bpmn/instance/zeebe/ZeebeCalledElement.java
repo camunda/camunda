@@ -23,6 +23,18 @@ public interface ZeebeCalledElement extends BpmnModelElementInstance {
 
   void setProcessId(String processId);
 
+  String getBusinessId();
+
+  void setBusinessId(String businessId);
+
+  /**
+   * Returns whether the {@code businessId} attribute is present on the element, independently of
+   * its value. A present-but-empty attribute ({@code businessId=""}) returns {@code true} here
+   * while {@link #getBusinessId()} returns {@code null}, which lets callers distinguish "override
+   * with no Business ID" (present) from "inherit the parent's Business ID" (absent).
+   */
+  boolean hasBusinessId();
+
   boolean isPropagateAllChildVariablesEnabled();
 
   void setPropagateAllChildVariablesEnabled(boolean propagateAllChildVariablesEnabled);

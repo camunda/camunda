@@ -77,30 +77,30 @@ type QueryGlobalTaskListenersRequestBody = z.infer<typeof queryGlobalTaskListene
 const queryGlobalTaskListenersResponseBodySchema = getQueryResponseBodySchema(globalTaskListenerSchema);
 type QueryGlobalTaskListenersResponseBody = z.infer<typeof queryGlobalTaskListenersResponseBodySchema>;
 
-const searchGlobalTaskListeners: Endpoint = {
+const searchGlobalTaskListeners = {
 	method: 'POST',
-	getUrl: () => `/${API_VERSION}/global-task-listeners/search`,
-};
+	getUrl: () => `/${API_VERSION}/global-task-listeners/search` as const,
+} as const satisfies Endpoint;
 
-const createGlobalTaskListener: Endpoint = {
+const createGlobalTaskListener = {
 	method: 'POST',
-	getUrl: () => `/${API_VERSION}/global-task-listeners`,
-};
+	getUrl: () => `/${API_VERSION}/global-task-listeners` as const,
+} as const satisfies Endpoint;
 
-const getGlobalTaskListener: Endpoint<{id: string}> = {
+const getGlobalTaskListener = {
 	method: 'GET',
-	getUrl: ({id}) => `/${API_VERSION}/global-task-listeners/${id}`,
-};
+	getUrl: ({id}) => `/${API_VERSION}/global-task-listeners/${id}` as const,
+} as const satisfies Endpoint<{id: string}>;
 
-const updateGlobalTaskListener: Endpoint<{id: string}> = {
+const updateGlobalTaskListener = {
 	method: 'PUT',
-	getUrl: ({id}) => `/${API_VERSION}/global-task-listeners/${id}`,
-};
+	getUrl: ({id}) => `/${API_VERSION}/global-task-listeners/${id}` as const,
+} as const satisfies Endpoint<{id: string}>;
 
-const deleteGlobalTaskListener: Endpoint<{id: string}> = {
+const deleteGlobalTaskListener = {
 	method: 'DELETE',
-	getUrl: ({id}) => `/${API_VERSION}/global-task-listeners/${id}`,
-};
+	getUrl: ({id}) => `/${API_VERSION}/global-task-listeners/${id}` as const,
+} as const satisfies Endpoint<{id: string}>;
 
 export {
 	globalListenerSourceSchema,

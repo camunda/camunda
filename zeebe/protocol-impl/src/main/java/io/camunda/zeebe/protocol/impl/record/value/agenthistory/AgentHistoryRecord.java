@@ -14,6 +14,7 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -252,5 +253,9 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
   @Override
   public AgentHistoryMetrics getMetrics() {
     return metricsProp.getValue();
+  }
+
+  public AgentHistoryRecord ignoreLease() {
+    return setJobLease(JobRecord.EMPTY_LEASE);
   }
 }

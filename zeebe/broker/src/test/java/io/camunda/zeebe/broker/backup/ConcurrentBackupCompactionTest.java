@@ -15,13 +15,13 @@ import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.MemberId;
-import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.impl.LogCompactor;
 import io.atomix.raft.metrics.RaftServiceMetrics;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.utils.concurrent.ThreadContext;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.management.BackupService;
 import io.camunda.zeebe.broker.utils.InlineThreadContext;
@@ -120,7 +120,7 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
         manage(
             new BackupService(
                 BrokerMemberId.from(nodeId),
-                partitionId,
+                new PartitionId("raft", partitionId),
                 backupStore,
                 snapshotStore,
                 dataDirectory,

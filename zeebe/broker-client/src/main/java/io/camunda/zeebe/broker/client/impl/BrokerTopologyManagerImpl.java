@@ -12,6 +12,7 @@ import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.Member;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.client.api.BrokerClientMetricsDoc.PartitionRoleValues;
 import io.camunda.zeebe.broker.client.api.BrokerClientTopologyMetrics;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
@@ -20,7 +21,6 @@ import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.impl.BrokerClientTopologyImpl.ConfiguredClusterState;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.Actor;
 import java.util.HashMap;
@@ -57,6 +57,7 @@ public final class BrokerTopologyManagerImpl extends Actor
   public BrokerTopologyManagerImpl(
       final Supplier<Set<Member>> membersSupplier,
       final BrokerClientTopologyMetrics topologyMetrics) {
+    super("GatewayTopologyManager");
     this.membersSupplier = membersSupplier;
     this.topologyMetrics = topologyMetrics;
   }
@@ -170,7 +171,7 @@ public final class BrokerTopologyManagerImpl extends Actor
     topologyPerGroup = Map.copyOf(updated);
 
     // temp: only update metrics for default group until we support group-specific metrics
-    if (Protocol.DEFAULT_PARTITION_GROUP_NAME.equals(group)) {
+    if (PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(group)) {
       updateMetrics(newGroupTopology);
     }
   }
@@ -180,11 +181,6 @@ public final class BrokerTopologyManagerImpl extends Actor
         .findFirst()
         .map(BrokerClientTopologyImpl::configuredClusterState)
         .orElse(BrokerClientTopologyImpl.uninitialized().configuredClusterState());
-  }
-
-  @Override
-  public String getName() {
-    return "GatewayTopologyManager";
   }
 
   @Override
@@ -255,17 +251,17 @@ public final class BrokerTopologyManagerImpl extends Actor
     // Run the full comparison + listener-notification logic against the default group once.
     final var oldDefault =
         topologyPerGroup.getOrDefault(
-            Protocol.DEFAULT_PARTITION_GROUP_NAME, BrokerClientTopologyImpl.uninitialized());
+            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, BrokerClientTopologyImpl.uninitialized());
     final var updatedDefault = updateConfiguredClusterState(clusterTopology, oldDefault);
     final var newConfiguredState = updatedDefault.configuredClusterState();
 
     final Map<String, BrokerClientTopologyImpl> allGroups = new HashMap<>(topologyPerGroup);
-    allGroups.put(Protocol.DEFAULT_PARTITION_GROUP_NAME, updatedDefault);
+    allGroups.put(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, updatedDefault);
 
     // temp: apply the same configured state to all other known groups. This must be revisited when
     // we add support for group-specific cluster configurations.
     memberPropertiesPerGroup.keySet().stream()
-        .filter(group -> !group.equals(Protocol.DEFAULT_PARTITION_GROUP_NAME))
+        .filter(group -> !group.equals(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
         .forEach(
             group -> {
               final var oldGroup =

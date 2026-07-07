@@ -169,10 +169,7 @@ public final class ZeebePartitionFactory {
             rocksDbConfiguration,
             consistencyChecks.getSettings(),
             new AccessMetricsConfiguration(databaseCfg.getAccessMetrics()),
-            () ->
-                MicrometerUtil.wrap(
-                    partitionMeterRegistry,
-                    PartitionKeyNames.tags(partitionId.group(), partitionId.number())),
+            () -> MicrometerUtil.wrap(partitionMeterRegistry, PartitionKeyNames.tags(partitionId)),
             rocksDbResources);
     final StateController stateController =
         createStateController(raftPartition, zeebeFactory, snapshotStore, snapshotStore);

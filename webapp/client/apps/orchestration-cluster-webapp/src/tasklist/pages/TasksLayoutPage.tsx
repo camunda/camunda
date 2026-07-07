@@ -12,7 +12,7 @@ import type {CurrentUser, UserTask} from '@camunda/camunda-api-zod-schemas/8.10'
 import {AvailableTasks} from '#/tasklist/modules/available-tasks/components/AvailableTasks';
 import {CollapsiblePanel} from '#/tasklist/modules/available-tasks/components/CollapsiblePanel';
 import {Filters} from '#/tasklist/modules/available-tasks/components/Filters';
-import {Options} from '#/tasklist/modules/available-tasks/components/Options';
+import {AutoSelectNextTaskToggle} from '#/tasklist/modules/available-tasks/components/AutoSelectNextTaskToggle';
 import styles from './TasksLayoutPage.module.scss';
 import {Outlet} from '@tanstack/react-router';
 
@@ -48,7 +48,7 @@ const TasksLayoutPage: React.FC<Props> = ({
 					onScrollDown={onScrollDown}
 					onScrollUp={onScrollUp}
 				/>
-				<Options />
+				<AutoSelectNextTaskToggle />
 			</Stack>
 			<div className={styles.detailsPanel}>
 				<Outlet />

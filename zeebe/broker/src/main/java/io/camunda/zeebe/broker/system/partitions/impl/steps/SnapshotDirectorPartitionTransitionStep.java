@@ -61,7 +61,7 @@ public final class SnapshotDirectorPartitionTransitionStep implements PartitionT
       final var continuousBackup = context.getBrokerCfg().getData().getBackup().isContinuous();
       final var director =
           AsyncSnapshotDirector.of(
-              context.getPartitionId(),
+              context.partitionId(),
               context.getStreamProcessor(),
               context.getStateController(),
               processingMode,

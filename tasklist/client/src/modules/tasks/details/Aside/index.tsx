@@ -23,6 +23,7 @@ type Props = {
   candidateUsers: string[];
   candidateGroups: string[];
   tenantId: string;
+  businessId: string | null | undefined;
   user: CurrentUser;
 };
 
@@ -35,6 +36,7 @@ const Aside: React.FC<Props> = ({
   candidateUsers,
   candidateGroups,
   tenantId,
+  businessId,
   user,
 }) => {
   const taskTenant =
@@ -122,6 +124,15 @@ const Aside: React.FC<Props> = ({
             </span>
             <br />
             <span className={styles.itemBody}>{formatDate(followUpDate)}</span>
+          </ContainedListItem>
+        ) : null}
+        {businessId ? (
+          <ContainedListItem>
+            <span className={styles.itemHeading}>
+              {t('taskDetailsBusinessIdLabel')}
+            </span>
+            <br />
+            <span className={styles.itemBody}>{businessId}</span>
           </ContainedListItem>
         ) : null}
       </ContainedList>

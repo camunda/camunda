@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.transport;
 
-import io.atomix.primitive.partition.PartitionId;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 
 public interface ServerTransport extends ServerOutput, AutoCloseable {

@@ -57,6 +57,11 @@ public class BackupStatusRequest extends BrokerRequest<BackupStatusResponse> {
   }
 
   @Override
+  public boolean shouldRouteToRecovery() {
+    return true;
+  }
+
+  @Override
   public BufferWriter getRequestWriter() {
     return null;
   }

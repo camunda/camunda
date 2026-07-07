@@ -117,6 +117,48 @@ public class AuthorizationDeleteAuthorizationTest {
             "Insufficient permissions to perform operation 'DELETE' on resource 'AUTHORIZATION'");
   }
 
+  @Test
+  public void shouldReflectRevokedAuthorizationImmediately() {
+    // given — user has AUTHORIZATION:CREATE; prime the scope cache with an ALLOW
+    final var user = createUser();
+    final var targetUser = createUser();
+    final var grantKey =
+        addAuthorizationToUser(
+            user, AuthorizationResourceType.AUTHORIZATION, PermissionType.CREATE, "*");
+    engine
+        .authorization()
+        .newAuthorization()
+        .withOwnerId(targetUser.getUsername())
+        .withOwnerType(AuthorizationOwnerType.USER)
+        .withResourceType(AuthorizationResourceType.RESOURCE)
+        .withResourceMatcher(AuthorizationResourceMatcher.ANY)
+        .withResourceId("*")
+        .withPermissions(PermissionType.CREATE)
+        .create(user.getUsername());
+
+    // when — revoke the CREATE grant; scope cache must be invalidated immediately
+    engine.authorization().deleteAuthorization(grantKey).delete(DEFAULT_USER.getUsername());
+
+    // then — user can no longer create an authorization; revocation is not deferred to TTL expiry
+    final var rejection =
+        engine
+            .authorization()
+            .newAuthorization()
+            .withOwnerId(targetUser.getUsername())
+            .withOwnerType(AuthorizationOwnerType.USER)
+            .withResourceType(AuthorizationResourceType.RESOURCE)
+            .withResourceMatcher(AuthorizationResourceMatcher.ANY)
+            .withResourceId("*")
+            .withPermissions(PermissionType.DELETE)
+            .expectRejection()
+            .create(user.getUsername());
+
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(
+            "Insufficient permissions to perform operation 'CREATE' on resource 'AUTHORIZATION'");
+  }
+
   private UserRecordValue createUser() {
     return engine
         .user()

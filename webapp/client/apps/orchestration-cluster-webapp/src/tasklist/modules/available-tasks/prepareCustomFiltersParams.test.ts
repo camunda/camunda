@@ -131,6 +131,12 @@ describe('prepareCustomFiltersParams', () => {
 		expect(result).toEqual({elementId: 'my-task-id'});
 	});
 
+	it('should pass businessId through unchanged', () => {
+		const result = prepareCustomFiltersParams({...DEFAULTS, businessId: 'order-123'}, 'demo');
+
+		expect(result).toEqual({businessId: 'order-123'});
+	});
+
 	it('should build a full combined param set', () => {
 		const result = prepareCustomFiltersParams(
 			{
@@ -143,6 +149,7 @@ describe('prepareCustomFiltersParams', () => {
 				followUpDateFrom: new Date('2024-02-01T00:00:00.000Z'),
 				followUpDateTo: new Date('2024-02-28T23:59:59.000Z'),
 				taskId: 'task-42',
+				businessId: 'order-123',
 			},
 			'demo',
 		);
@@ -154,6 +161,7 @@ describe('prepareCustomFiltersParams', () => {
 			processDefinitionKey: 'process-1',
 			tenantId: '<default>',
 			elementId: 'task-42',
+			businessId: 'order-123',
 		});
 		expect(result.dueDateFrom).toBeDefined();
 		expect(result.dueDateTo).toBeDefined();

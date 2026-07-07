@@ -10,7 +10,11 @@ package io.camunda.zeebe.engine.processing.identity;
 import static io.camunda.zeebe.engine.processing.identity.PermissionsBehavior.AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_UPDATE;
 
 import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.security.core.authz.LazyTokenClaimsConverter;
+import io.camunda.security.core.port.in.AuthorizationCheckPort;
+import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.identity.adapter.AuthorizationScopeStateAdapter;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
@@ -24,9 +28,14 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRe
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import org.jspecify.annotations.NullMarked;
+import org.slf4j.Logger;
 
+@NullMarked
 public class AuthorizationUpdateProcessor
     implements DistributedTypedRecordProcessor<AuthorizationRecord> {
+
+  private static final Logger LOG = Loggers.ENGINE_IDENTITY_LOGGER;
 
   private final KeyGenerator keyGenerator;
   private final CommandDistributionBehavior distributionBehavior;
@@ -37,14 +46,18 @@ public class AuthorizationUpdateProcessor
   private final AuthorizationCheckBehavior authorizationCheckBehavior;
   private final PermissionsBehavior permissionsBehavior;
   private final AuthorizationEntityValidator authorizationEntityChecker;
+  private final AuthorizationScopeStateAdapter authorizationScopeStateAdapter;
 
   public AuthorizationUpdateProcessor(
       final Writers writers,
       final KeyGenerator keyGenerator,
       final ProcessingState processingState,
       final CommandDistributionBehavior distributionBehavior,
+      final AuthorizationCheckPort authCheckPort,
+      final LazyTokenClaimsConverter claimsConverter,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final EngineSecurityConfig securityConfig) {
+      final EngineSecurityConfig securityConfig,
+      final AuthorizationScopeStateAdapter authorizationScopeStateAdapter) {
     this.keyGenerator = keyGenerator;
     this.distributionBehavior = distributionBehavior;
     stateWriter = writers.state();
@@ -52,12 +65,17 @@ public class AuthorizationUpdateProcessor
     rejectionWriter = writers.rejection();
     sideEffectWriter = writers.sideEffect();
     authorizationCheckBehavior = authCheckBehavior;
-    permissionsBehavior = new PermissionsBehavior(processingState, authCheckBehavior);
+    permissionsBehavior =
+        new PermissionsBehavior(processingState, authCheckPort, claimsConverter, securityConfig);
     authorizationEntityChecker = new AuthorizationEntityValidator(processingState, securityConfig);
+    this.authorizationScopeStateAdapter = authorizationScopeStateAdapter;
   }
 
   @Override
   public void processNewCommand(final TypedRecord<AuthorizationRecord> command) {
+    LOG.debug(
+        "Processing UPDATE authorization command for key {}",
+        command.getValue().getAuthorizationKey());
     permissionsBehavior
         .isAuthorized(command)
         .flatMap(
@@ -76,6 +94,7 @@ public class AuthorizationUpdateProcessor
         .ifRightOrLeft(
             authorizationRecord -> writeEventAndDistribute(command, authorizationRecord),
             (rejection) -> {
+              LOG.debug("Rejecting UPDATE authorization command: {}", rejection.reason());
               rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
               responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
             });
@@ -83,6 +102,9 @@ public class AuthorizationUpdateProcessor
 
   @Override
   public void processDistributedCommand(final TypedRecord<AuthorizationRecord> command) {
+    LOG.debug(
+        "Processing distributed UPDATE authorization command for key {}",
+        command.getValue().getAuthorizationKey());
     permissionsBehavior
         .authorizationExists(command.getValue(), AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_UPDATE)
         .flatMap(s -> authorizationEntityChecker.ownerAndResourceExists(command))
@@ -95,6 +117,7 @@ public class AuthorizationUpdateProcessor
               sideEffectWriter.appendSideEffect(
                   () -> {
                     authorizationCheckBehavior.clearAuthorizationsCache();
+                    authorizationScopeStateAdapter.invalidateAll();
                     return true;
                   });
             },
@@ -107,6 +130,7 @@ public class AuthorizationUpdateProcessor
   private void writeEventAndDistribute(
       final TypedRecord<AuthorizationRecord> command,
       final AuthorizationRecord authorizationRecord) {
+    LOG.debug("Updating authorization with key {}", authorizationRecord.getAuthorizationKey());
     final long key = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(
         authorizationRecord.getAuthorizationKey(),
@@ -124,6 +148,7 @@ public class AuthorizationUpdateProcessor
     sideEffectWriter.appendSideEffect(
         () -> {
           authorizationCheckBehavior.clearAuthorizationsCache();
+          authorizationScopeStateAdapter.invalidateAll();
           return true;
         });
   }

@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.broker.client.impl;
 
-import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClientMetricsDoc.AdditionalErrorCodes;
 import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
@@ -19,6 +18,7 @@ import io.camunda.zeebe.broker.client.api.PartitionNotFoundException;
 import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
+import io.camunda.zeebe.dynamic.config.state.MemberState.State;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
@@ -30,11 +30,8 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
-import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 
 final class BrokerRequestManager extends Actor {
 
@@ -214,16 +211,20 @@ final class BrokerRequestManager extends Actor {
   private BrokerAddressProvider determineBrokerNodeIdProvider(final BrokerRequest<?> request) {
     final var partitionGroup = request.getPartitionGroup();
     if (request.getBrokerId().isPresent()) {
-      return new BrokerAddressProvider(
-          partitionGroup, clusterState -> request.getBrokerId().orElseThrow());
+      return BrokerAddressProvider.fixed(
+          topologyManager, partitionGroup, clusterState -> request.getBrokerId().orElseThrow());
     } else if (request.addressesSpecificPartition()) {
       final BrokerClusterState topology = topologyManager.getTopology(partitionGroup);
       if (topology != null && !topology.getPartitions().contains(request.getPartitionId())) {
         throw new PartitionNotFoundException(request.getPartitionId());
       }
       throwIfPartitionInactive(partitionGroup, request.getPartitionId());
-      // already know partition id
-      return new BrokerAddressProvider(partitionGroup, request.getPartitionId());
+      if (request.shouldRouteToRecovery()) {
+        return BrokerAddressProvider.leaderOrAnyRecovery(
+            topologyManager, partitionGroup, request.getPartitionId());
+      }
+      return BrokerAddressProvider.leader(
+          topologyManager, partitionGroup, request.getPartitionId());
     } else if (request.requiresPartitionId()) {
       final var strategy = request.requestDispatchStrategy().orElse(dispatchStrategy);
 
@@ -239,10 +240,11 @@ final class BrokerRequestManager extends Actor {
 
       throwIfPartitionInactive(partitionGroup, partitionId);
 
-      return new BrokerAddressProvider(partitionGroup, request.getPartitionId());
+      return BrokerAddressProvider.leader(
+          topologyManager, partitionGroup, request.getPartitionId());
     } else {
       // random broker of the request's partition group
-      return new BrokerAddressProvider(partitionGroup);
+      return BrokerAddressProvider.randomBroker(topologyManager, partitionGroup);
     }
   }
 
@@ -254,8 +256,21 @@ final class BrokerRequestManager extends Actor {
 
     final var inactiveNodes = topology.getInactiveNodesForPartition(partitionId);
     final var someNodesInactive = !inactiveNodes.isEmpty();
-    final var noPartitionLeader = topology.getLeaderForPartition(partitionId) == null;
-    if (someNodesInactive && noPartitionLeader) {
+    final var leaderNode = topology.getLeaderForPartition(partitionId);
+
+    // If nodes are in recovery, do not throw so that requests can be routed to the
+    // recovering partitions. Whether a request is actually routed there is decided separately,
+    // based on BrokerRequest#shouldRouteToRecovery, when picking the BrokerAddressProvider.
+    final var clusterConfiguration = topologyManager.getClusterConfiguration();
+    final var nodeInRecovery =
+        inactiveNodes.stream()
+            .anyMatch(
+                node -> {
+                  final var member = clusterConfiguration.getMember(node.memberId());
+                  return member != null && member.state() == State.RECOVERING;
+                });
+
+    if (someNodesInactive && leaderNode == null && !nodeInRecovery) {
       throw new PartitionInactiveException(partitionId);
     }
   }
@@ -293,39 +308,5 @@ final class BrokerRequestManager extends Actor {
         Supplier<String> nodeAddressSupplier,
         ClientRequest clientRequest,
         Duration timeout);
-  }
-
-  @NullMarked
-  private class BrokerAddressProvider implements Supplier<@Nullable String> {
-
-    private final String partitionGroup;
-    private final Function<BrokerClusterState, @Nullable BrokerMemberId> nodeIdSelector;
-
-    BrokerAddressProvider(final String partitionGroup) {
-      this(partitionGroup, BrokerClusterState::getRandomBroker);
-    }
-
-    BrokerAddressProvider(final String partitionGroup, final int partitionId) {
-      this(partitionGroup, state -> state.getLeaderForPartition(partitionId));
-    }
-
-    BrokerAddressProvider(
-        final String partitionGroup,
-        final Function<BrokerClusterState, @Nullable BrokerMemberId> nodeIdSelector) {
-      this.partitionGroup = partitionGroup;
-      this.nodeIdSelector = nodeIdSelector;
-    }
-
-    @Override
-    public @Nullable String get() {
-      final BrokerClusterState topology = topologyManager.getTopology(partitionGroup);
-      if (topology != null) {
-        final var brokerId = nodeIdSelector.apply(topology);
-        if (brokerId != null) {
-          return topology.getBrokerAddress(brokerId);
-        }
-      }
-      return null;
-    }
   }
 }

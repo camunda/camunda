@@ -7,10 +7,16 @@
  */
 package io.camunda.zeebe.broker.system.configuration.backup;
 
+import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.azure.AzureBackupStore;
+import io.camunda.zeebe.backup.filesystem.FilesystemBackupStore;
+import io.camunda.zeebe.backup.gcs.GcsBackupStore;
+import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.backup.schedule.Schedule;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import java.time.Duration;
+import org.jspecify.annotations.Nullable;
 
 public class BackupCfg implements ConfigurationEntry {
 
@@ -149,6 +155,23 @@ public class BackupCfg implements ConfigurationEntry {
 
   public void setRetention(final BackupSchedulerRetentionCfg retention) {
     this.retention = retention;
+  }
+
+  public interface BackupStoreFactory {
+    /** Returns {@code null} for {@link BackupCfg.BackupStoreType#NONE}. */
+    @Nullable
+    static BackupStore createStore(final BackupCfg backupCfg) {
+      return switch (backupCfg.getStore()) {
+        case NONE -> null;
+        case S3 -> S3BackupStore.of(S3BackupStoreConfig.toStoreConfig(backupCfg.getS3()));
+        case GCS -> GcsBackupStore.of(GcsBackupStoreConfig.toStoreConfig(backupCfg.getGcs()));
+        case AZURE ->
+            AzureBackupStore.of(AzureBackupStoreConfig.toStoreConfig(backupCfg.getAzure()));
+        case FILESYSTEM ->
+            FilesystemBackupStore.of(
+                FilesystemBackupStoreConfig.toStoreConfig(backupCfg.getFilesystem()));
+      };
+    }
   }
 
   public enum BackupStoreType {

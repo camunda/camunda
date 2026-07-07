@@ -14,7 +14,7 @@ metadata:
     camunda.io/purpose: load-test
 
     app.kubernetes.io/component: connectors
-    app.kubernetes.io/version: "8.8.11"
+
 data:
   application.yaml: |    
     server:

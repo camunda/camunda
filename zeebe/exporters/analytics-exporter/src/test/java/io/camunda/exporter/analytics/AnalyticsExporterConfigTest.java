@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.analytics;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -95,5 +96,39 @@ class AnalyticsExporterConfigTest {
         .doesNotThrowAnyException();
     assertThatCode(() -> new AnalyticsExporterConfig().setSamplingRate(1.0).validate())
         .doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldReturnSameDigestStringForEqualConfigs() {
+    // given
+    final var config = new AnalyticsExporterConfig().setSamplingRate(0.5);
+
+    // when
+    final var first = config.toExporterDigestString();
+    final var second = config.toExporterDigestString();
+
+    // then
+    assertThat(first).isEqualTo(second);
+  }
+
+  @Test
+  void shouldReturnDifferentDigestStringWhenSamplingRateChanges() {
+    // given
+    final var configA = new AnalyticsExporterConfig().setSamplingRate(0.5);
+    final var configB = new AnalyticsExporterConfig().setSamplingRate(0.25);
+
+    // when / then
+    assertThat(configA.toExporterDigestString()).isNotEqualTo(configB.toExporterDigestString());
+  }
+
+  @Test
+  void shouldReturnSameDigestStringWhenNonBehaviorConfigChanges() {
+    // given
+    final var configA = new AnalyticsExporterConfig().setSamplingRate(1.0);
+    final var configB =
+        new AnalyticsExporterConfig().setSamplingRate(1.0).setEndpoint("https://other.example.com");
+
+    // when / then
+    assertThat(configA.toExporterDigestString()).isEqualTo(configB.toExporterDigestString());
   }
 }

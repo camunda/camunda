@@ -110,7 +110,7 @@ jobs:
           vault-url: ${{ secrets.VAULT_ADDR }}
 
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Collect stale backport PRs
         id: collect
@@ -162,7 +162,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           sparse-checkout: .github
       - name: Observe build status
@@ -206,7 +206,7 @@ jobs:
           repositories: "camunda,zeebe-process-test"
   
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
   
       - name: Notify stale backport PRs
         env:
@@ -263,7 +263,7 @@ jobs:
           repositories: "monorepo-ci-data"
 
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Get Slack secrets from Vault
         id: secrets
@@ -340,7 +340,7 @@ jobs:
           message_ts=$(echo "$response" | jq -r '
             [(.messages // [])[] | select(
               .bot_id != null and
-              (.blocks[]?.text?.text? // "" | test("Stale Backport PRs"))
+              (.blocks[]?.text?.text? // "" | test("Stale Backport PRs"; "i"))
             )] | first | .ts // ""')
 
           if [[ -n "$message_ts" ]]; then
@@ -420,7 +420,7 @@ jobs:
             [(.items // [])[] | select(
               .type == "message" and
               .message.bot_id != null and
-              (.message.blocks[]?.text?.text? // "" | test("Stale Backport PRs"))
+              (.message.blocks[]?.text?.text? // "" | test("Stale Backport PRs"; "i"))
             ) | .message.ts] | .[]' | while read -r ts; do
             echo "Unpinning old message: $ts" >&2
             resp=$(curl -s -X POST "https://slack.com/api/pins.remove" \
@@ -516,7 +516,7 @@ jobs:
             '
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           sparse-checkout: .github
       - name: Observe build status

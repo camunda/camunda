@@ -280,6 +280,159 @@ test: add operate batch cancel assertion for RDBMS
 fix: retry flaky identity role assignment check
 ```
 
+## Product-Bug Escalation
+
+Read this whenever you suspect a failure is a **product regression**, not a test defect. A
+**product-bug** verdict means: **file (or reuse) a tracking issue against the owning component, then
+SKIP the failing test with a bug-linked annotation and open ONE PR carrying that skip.** Skipping is
+the only sanctioned way to make a confirmed product regression green — you still must NOT mask it
+with a viewport resize, timeout bump, selector tweak, or weakened assertion. **Skipping is allowed
+ONLY here** (a confirmed product bug that passes all three gates AND has a filed/linked ticket); for
+flakiness, a can't-determine failure, or any other reason, `test.skip()` / `test.fixme()` /
+`test.only` remain **absolutely forbidden**.
+
+You may reach a product-bug verdict ONLY after passing **all three gates below, in order**. If any
+gate fails, fall back to the normal test-side fix. Product-bug is not an escape hatch for a test you
+find hard to fix, and you must never mask a regression with a viewport resize, a timeout bump, or a
+weakened assertion (e.g. an Operate variables-scrolling regression must NOT be "fixed" by resizing
+the window).
+
+**Gate A — Rule out flakiness.** The failure must be deterministic. You cannot re-run, so use
+evidence: every retry attempt in `results.json` failed (a `failed → passed` retry is flakiness — fix
+with a wait/retry); and the failure reproduces across both tasklist modes / DBs that share the flow,
+or has failed on consecutive nights. If it looks intermittent → flakiness fix, not a product bug.
+
+**Gate B — Pin it to a recent product change.** Identify the owning module (table below) and find
+the breaking change. You are already inside the `camunda/camunda` checkout (on `${TARGET_REF}`), so
+run `git` from the current directory — do not reference `$ws_dir` (it is not set in your shell):
+
+```bash
+git log --since=<YYYY-MM-DD> --oneline -- <module-path>   # e.g. operate/ identity/
+# or, for a precise surface:
+gh search code --repo camunda/camunda "<aria-label / data-testid / endpoint>" --limit 5 --json path
+```
+
+Bound the window with when the test first went red. Name a plausible commit (or documented behavior
+change) when you can — it goes in `suspect_commit` and the Slack thread. **If you cannot pin a
+specific commit but Gate A and Gate C clearly hold** (deterministic failure, test still correct, the
+app is visibly misbehaving), still escalate as a product bug with `suspect_commit: "not pinned"` and
+note what you ruled out — i.e. complete the full product-bug escalation (file/reuse the ticket +
+annotated `test.skip(...)` + skip PR). Do NOT instead mask the failure (viewport/timeout/selector
+tweak or a weakened assertion), and do NOT do a bare `test.skip()` without a filed/linked ticket.
+Only re-examine for a test-side cause if Gate A or Gate C is genuinely in doubt.
+
+**Gate C — Confirm the test is still correct.** The assertion must still match intended behavior,
+the selector must target a real element, and the test must not be stale. If the test itself is wrong
+→ that is a test fix (Step 4), not a product bug. **For any API test that failed with a non-happy
+response (unexpected status, error body, or wrong payload), "still correct" also requires the request
+the test SENT to conform to the API agreement** — diff the request (endpoint, method, body shape,
+field types, enum casing, params) against `zeebe/gateway-protocol/src/main/proto/v2/*.yaml`. If the
+request conforms and the response is still wrong, it is a genuine product bug (escalate; do not change
+the test); if the request is malformed or the test is badly planned, fix the test. **If the test uses
+the conventional shape that sibling filters use but the contract itself is the outlier and no request
+shape works, the contract/spec is the bug — escalate; do NOT rewrite the test to match a broken
+agreement (#56636 is exactly this case).** A backend-agnostic failure is, by itself, evidence of
+neither a product bug nor a test bug.
+
+### Owning-component routing
+
+Orchestration-suite failures almost always trace to a module inside this same repo (`camunda/camunda`):
+
+|           Failure surface           |           Issue repo            |                 Module path                 |
+|-------------------------------------|---------------------------------|---------------------------------------------|
+| Operate                             | `camunda/camunda`               | `operate/`                                  |
+| Tasklist                            | `camunda/camunda`               | `tasklist/`                                 |
+| Identity / authorization / RBA      | `camunda/camunda`               | `identity/`, `authentication/`, `security/` |
+| Zeebe / engine / gateway / REST API | `camunda/camunda`               | `zeebe/`, `gateways/`, `service/`           |
+| Optimize                            | `camunda/camunda`               | `optimize/`                                 |
+| c8Run setup / packaging             | `camunda/camunda`               | `c8run/`                                    |
+| Helm chart / deploy config          | `camunda/camunda-platform-helm` | `charts/`                                   |
+
+### Filing the bug ticket (dedupe FIRST)
+
+> **Token:** use the default `GH_TOKEN` (the qa-processes App token) for ALL `gh` calls FIRST —
+> filing/searching issues in `camunda/camunda` and Gate B lookups; qa-processes generally already
+> has the access. ONLY if a call fails (e.g. filing in a different repo such as
+> `camunda/camunda-platform-helm`) retry the SAME command once with the fallback PAT
+> `GH_TOKEN="$GH_PAT" gh ...`. Always qa-processes first; the PAT is a backup.
+
+1. **Compute the fingerprint** — `sha256` of `<version>::<file>::<test_name>`, first 8 chars (MUST
+   match the triage dispatcher exactly so it can suppress re-dispatch):
+
+   ```bash
+   FP=$(printf '%s::%s::%s' "<version>" "<file>" "<test_name>" | sha256sum | cut -c1-8)
+   ```
+
+   **Search for an existing issue** (the marker is globally unique):
+
+   ```bash
+   gh search issues "nightly-product-bug fp=${FP} is:issue" --owner camunda --state all \
+     --limit 1 --json number,url,state,repository --jq '.[0]'
+   ```
+
+   - Open issue exists → reuse it (comment with this nightly run); do NOT file a new one.
+   - Closed issue for the same FP → reopen (`gh issue reopen`) and comment, then reuse its URL.
+   - **Also check for a human-filed bug that predates this automation** (no fingerprint marker):
+     `gh search issues "<key symptom words> is:issue" --owner camunda --state open --json number,title,url,repository`
+     and scan titles for the same regression (e.g. #55864 "Variable list is no longer scrollable").
+     If you find a clear match, **reuse it** instead of filing a duplicate: comment linking this
+     nightly run, then **append** the fingerprint line to its body so future runs dedupe and the
+     dispatcher suppresses it. Preserve the existing body and use real newlines (a literal `\n` in
+     `--body` is written verbatim, not a newline):
+
+     ```bash
+     body=$(gh issue view <n> --repo <owner>/<repo> --json body --jq .body)
+     printf '%s\n\nFingerprint: nightly-product-bug fp=%s\n' "$body" "${FP}" \
+       | gh issue edit <n> --repo <owner>/<repo> --body-file -
+     ```
+
+     Put its URL in `fix-meta.json`.
+
+2. **File the issue** when none exists. You MAY use the repo's `create-issue` skill (bug template +
+   component label), but the body MUST contain the fingerprint line below so dedupe works:
+
+   ```bash
+   gh issue create --repo camunda/camunda \
+     --title "<module>: <one-line symptom> (nightly <version>)" \
+     --label "kind/bug" --label "nightly-detected" \
+     --body "$(cat <<'BODY'
+   Detected by orchestration-cluster nightly triage. The failing test is **correct** and the failure
+   is **not flaky** — it traces to a recent product change.
+
+   - **Failing test:** `<file>` › `<test_name>` (<test_type>, <version>)
+   - **Symptom:** <what the screenshot / error shows>
+   - **Suspected change:** <commit sha + subject, or PR #, or docs reference>
+   - **Nightly run(s):** <e2e / api run URLs>
+   - **Triage run:** <triage_run_url>
+
+   Fingerprint: nightly-product-bug fp=<FP>
+   BODY
+   )"
+   ```
+
+   The `Fingerprint:` line is **mandatory**. `kind/bug` / `nightly-detected` are defaults — drop a
+   label the repo rejects rather than failing.
+
+3. **Skip the failing test with a bug-linked annotation**, static `test.skip(...)` form, with the
+   annotation comment on the line directly above — exact format, no deviation:
+
+   ```ts
+   // Skipped due to bug #<number>: <issue-url>
+   test.skip('<exact test title>', async ({ ... }) => {
+   ```
+
+   Skip only the failing test (not the whole `describe`) unless every test in the block shares the
+   bug. Lint the changed file.
+
+4. **Open ONE PR** with the skip(s): `test:` type (commitlint rejects `fix:` for test-only changes),
+   title like `test: skip <spec> pending bug #<number>`, body linking the issue + nightly/triage
+   runs. All product-bug skips for this dispatch go in the same branch + PR.
+
+5. Record the verdict in `/tmp/fix-meta.json` (see the product-bug schema in **Result manifest**) —
+   the skip PR goes in `prs`, the issue(s) in `product_bugs` — and stop.
+
+---
+
 ## Nightly Fix Agent
 
 This section is read automatically by the Claude Code agent dispatched from
@@ -386,15 +539,49 @@ a specific assertion or action. Typical patterns:
 - **API response shape change** — only a test-side fix is in scope if the
   test was asserting on a field that legitimately moved/renamed. If the
   endpoint regressed, this is a product bug — see Step 4.
+- **Any unexpected / non-happy API response** (an unexpected status — 4xx *or*
+  5xx — an error body, or a wrong/empty payload) — before deciding, check the
+  request the test SENT against both the API agreement AND the established
+  convention. Diff the request (endpoint, method, body shape, field types, enum
+  values/casing, params) against the OpenAPI/proto contract in
+  `zeebe/gateway-protocol/src/main/proto/v2/*.yaml`, compare with how sibling
+  filters are queried (they share conventions — e.g. every enum filter is a single
+  `field: {$in: [...]}` property), and re-read what the test verifies. Then decide:
+  - **Request conforms and matches the test's intent, but the response is still
+    wrong** → the product is misbehaving → **product bug** (Step 4); do NOT change
+    the test to pass.
+  - **Request is malformed / the test is badly planned** (wrong body shape, field
+    type, enum casing, or endpoint) → **fix the test**, even when it looks
+    well-formed.
+  - **The contract/spec ITSELF is the bug** — the test uses the conventional shape
+    that every sibling filter uses, yet the contract is the outlier and NO request
+    shape works → escalate as a **product/spec bug** (Step 4). Do NOT rewrite the
+    test to match a broken agreement — that masks the bug. "Contradicts the
+    contract" is a test fix ONLY when the contract agrees with the convention; if
+    the contract is the outlier, the contract is wrong.
+
+  A backend-agnostic failure (same on ES and RDBMS) is by itself evidence of
+  neither a product nor a test bug — a malformed request AND a broken contract both
+  fail on every backend; decide by conformance to the *convention*, not the literal
+  contract alone. Worked example (#56636): `eventTypes` is declared as an *array*
+  while every other enum filter is a single `{$in: [...]}` property, so both
+  `eventTypes: {$in: [...]}` (convention → "cannot be parsed") and
+  `eventTypes: [{$in: [...]}]` (matches the array spec → "Type definition error")
+  fail → the *spec* is the outlier → **product/spec bug: skip & escalate**, NOT a
+  test fix.
 
 **Step 4 — Decide: fix or stop.**
 
-If the failure is **clearly a product bug** (e.g., a 500 from the server, a
-panel that never renders despite correct backend response, an authorization
-regression) and no test-side change is reasonable: write `{"prs":[]}` to
-`/tmp/fix-meta.json` and stop. Do not open a PR. Do not skip the test.
+If a minimal test-side fix exists, apply it (Step 5 below).
 
-If a minimal test-side fix exists, apply it.
+If the failure is a **product regression** (e.g., a 500 from the server, a panel that never renders
+despite a correct backend response, an authorization regression, lost scrolling) and no test-side
+change is reasonable, follow **`## Product-Bug Escalation`**: pass Gate A (not flaky), Gate B (pin
+the recent product change), Gate C (test still correct), then **file/reuse a tracking issue** against
+the owning module, **skip** the failing test with the `// Skipped due to bug #<number>: <url>`
+annotation, and open ONE skip PR (the skip PR goes in `prs`, the issue in `product_bugs`). Never mask
+the regression with a viewport / timeout / selector tweak or a weakened assertion **instead of**
+skipping.
 
 ### Apply the fix
 
@@ -444,7 +631,7 @@ If a minimal test-side fix exists, apply it.
 
 - **Allowed tools:** `gh`, `git`, `grep`, `rg`, `cat`, `find`, `jq`, `sed`, `awk`, `unzip`, `npx prettier`, `npx eslint`, `npm run responses:regenerate`.
 - **Forbidden:** `make`, `mvn`, `./mvnw`, `docker`, `kubectl`, `helm`, `npm install`, `npm run build`, `npm run test`, `npx playwright test`. The fix agent does **not** execute tests — it fixes from artifact evidence only. Verification is delegated to the on-demand workflows triggered by the calling workflow.
-- **NO skipping — EVER:** `test.skip()`, `test.fixme()`, `test.only`, and all pending variants are banned. There are no exceptions, not even for confirmed product bugs. If you cannot fix in code, write `{"prs":[]}` and stop.
+- **Skipping is forbidden EXCEPT for a confirmed product bug:** the ONLY sanctioned use of `test.skip()` is a product regression that passes all three gates in `## Product-Bug Escalation` and has a filed/linked ticket — there you skip with the mandatory `// Skipped due to bug #<number>: <url>` annotation and open one skip PR. For flakiness, can't-determine, or any other reason, `test.skip()` / `test.fixme()` / `test.only` remain **absolutely forbidden** — never leave a bare `{"prs":[]}` with no issue filed either.
 - **Never edit `json-body-assertions/_generated/responses.json` by hand.** This file is auto-generated. If an API response changes, regenerate it with `npm run responses:regenerate` and commit the result. Manual edits will be overwritten and produce misleading diffs.
 - **Minimal diff:** no refactoring, no dependency bumps, no unrelated edits, no formatting sweeps on untouched files.
 - **PR title type must be `test:`** — commitlint rejects `fix:` for test-only changes (see Commit / PR Conventions above).
@@ -500,6 +687,34 @@ on-demand verification run is triggered: `c8-orchestration-cluster-e2e-tests-on-
 no verification run is triggered and the fix is never validated automatically.**
 
 Use `{"prs": []}` if no PR was opened (regardless of reason).
+
+A confirmed product bug always lands as a skip PR, so `prs` carries that PR (set `has_e2e`/`has_api`
+from the skipped test types so the skip is verified) and `product_bugs` lists one object per
+filed/reused issue (a dispatch may yield several bugs):
+
+```json
+{
+  "prs": [{"number": 1234, "owner": "camunda", "repo": "camunda", "branch": "fix/nightly-8.10-skip-operate-vars", "has_e2e": true, "has_api": false}],
+  "category": "product-bug",
+  "product_bugs": [
+    {
+      "repo": "camunda/camunda",
+      "component": "operate",
+      "issue_url": "https://github.com/camunda/camunda/issues/55864",
+      "issue_number": 55864,
+      "fingerprint": "<FP>",
+      "root_cause": "One sentence: which product change broke which flow.",
+      "suspect_commit": "<sha + subject, or PR #, or docs reference>",
+      "skipped_tests": ["<file> › <test_name>"]
+    }
+  ]
+}
+```
+
+`category`, the skip PR in `prs`, and a non-empty `product_bugs` are all required for this verdict.
+`suspect_commit` is surfaced directly in the Slack thread. The triage dispatcher reads each issue's
+fingerprint marker to suppress re-dispatch while the issue is open; once the skip PR merges the test
+no longer runs, and when the issue is later closed the skip should be removed so the test runs again.
 
 ## Workflow-Level Failure Fix Agent
 

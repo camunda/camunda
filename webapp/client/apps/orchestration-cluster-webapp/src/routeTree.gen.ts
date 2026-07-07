@@ -27,7 +27,7 @@ import { Route as AuthTasklistTasksIndexRouteImport } from './routes/_auth/taskl
 import { Route as AuthTasklistTasksUserTaskKeyRouteRouteImport } from './routes/_auth/tasklist/_tasks/$userTaskKey/route'
 import { Route as AuthTasklistTasksUserTaskKeyIndexRouteImport } from './routes/_auth/tasklist/_tasks/$userTaskKey/index'
 import { Route as AuthTasklistTasksUserTaskKeyProcessRouteImport } from './routes/_auth/tasklist/_tasks/$userTaskKey/process'
-import { Route as AuthTasklistTasksUserTaskKeyHistoryRouteImport } from './routes/_auth/tasklist/_tasks/$userTaskKey/history'
+import { Route as AuthTasklistTasksUserTaskKeyHistoryRouteRouteImport } from './routes/_auth/tasklist/_tasks/$userTaskKey/history/route'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -122,8 +122,8 @@ const AuthTasklistTasksUserTaskKeyProcessRoute =
     path: '/process',
     getParentRoute: () => AuthTasklistTasksUserTaskKeyRouteRoute,
   } as any)
-const AuthTasklistTasksUserTaskKeyHistoryRoute =
-  AuthTasklistTasksUserTaskKeyHistoryRouteImport.update({
+const AuthTasklistTasksUserTaskKeyHistoryRouteRoute =
+  AuthTasklistTasksUserTaskKeyHistoryRouteRouteImport.update({
     id: '/history',
     path: '/history',
     getParentRoute: () => AuthTasklistTasksUserTaskKeyRouteRoute,
@@ -144,7 +144,7 @@ export interface FileRoutesByFullPath {
   '/operate/': typeof AuthOperateIndexRoute
   '/tasklist/$userTaskKey': typeof AuthTasklistTasksUserTaskKeyRouteRouteWithChildren
   '/tasklist/': typeof AuthTasklistTasksIndexRoute
-  '/tasklist/$userTaskKey/history': typeof AuthTasklistTasksUserTaskKeyHistoryRoute
+  '/tasklist/$userTaskKey/history': typeof AuthTasklistTasksUserTaskKeyHistoryRouteRoute
   '/tasklist/$userTaskKey/process': typeof AuthTasklistTasksUserTaskKeyProcessRoute
   '/tasklist/$userTaskKey/': typeof AuthTasklistTasksUserTaskKeyIndexRoute
 }
@@ -159,7 +159,7 @@ export interface FileRoutesByTo {
   '/tasklist/processes': typeof AuthTasklistProcessesRoute
   '/admin': typeof AuthAdminIndexRoute
   '/operate': typeof AuthOperateIndexRoute
-  '/tasklist/$userTaskKey/history': typeof AuthTasklistTasksUserTaskKeyHistoryRoute
+  '/tasklist/$userTaskKey/history': typeof AuthTasklistTasksUserTaskKeyHistoryRouteRoute
   '/tasklist/$userTaskKey/process': typeof AuthTasklistTasksUserTaskKeyProcessRoute
   '/tasklist/$userTaskKey': typeof AuthTasklistTasksUserTaskKeyIndexRoute
 }
@@ -181,7 +181,7 @@ export interface FileRoutesById {
   '/_auth/operate/': typeof AuthOperateIndexRoute
   '/_auth/tasklist/_tasks/$userTaskKey': typeof AuthTasklistTasksUserTaskKeyRouteRouteWithChildren
   '/_auth/tasklist/_tasks/': typeof AuthTasklistTasksIndexRoute
-  '/_auth/tasklist/_tasks/$userTaskKey/history': typeof AuthTasklistTasksUserTaskKeyHistoryRoute
+  '/_auth/tasklist/_tasks/$userTaskKey/history': typeof AuthTasklistTasksUserTaskKeyHistoryRouteRoute
   '/_auth/tasklist/_tasks/$userTaskKey/process': typeof AuthTasklistTasksUserTaskKeyProcessRoute
   '/_auth/tasklist/_tasks/$userTaskKey/': typeof AuthTasklistTasksUserTaskKeyIndexRoute
 }
@@ -380,7 +380,7 @@ declare module '@tanstack/react-router' {
       id: '/_auth/tasklist/_tasks/$userTaskKey/history'
       path: '/history'
       fullPath: '/tasklist/$userTaskKey/history'
-      preLoaderRoute: typeof AuthTasklistTasksUserTaskKeyHistoryRouteImport
+      preLoaderRoute: typeof AuthTasklistTasksUserTaskKeyHistoryRouteRouteImport
       parentRoute: typeof AuthTasklistTasksUserTaskKeyRouteRoute
     }
   }
@@ -418,15 +418,15 @@ const AuthOperateRouteRouteWithChildren =
   AuthOperateRouteRoute._addFileChildren(AuthOperateRouteRouteChildren)
 
 interface AuthTasklistTasksUserTaskKeyRouteRouteChildren {
-  AuthTasklistTasksUserTaskKeyHistoryRoute: typeof AuthTasklistTasksUserTaskKeyHistoryRoute
+  AuthTasklistTasksUserTaskKeyHistoryRouteRoute: typeof AuthTasklistTasksUserTaskKeyHistoryRouteRoute
   AuthTasklistTasksUserTaskKeyProcessRoute: typeof AuthTasklistTasksUserTaskKeyProcessRoute
   AuthTasklistTasksUserTaskKeyIndexRoute: typeof AuthTasklistTasksUserTaskKeyIndexRoute
 }
 
 const AuthTasklistTasksUserTaskKeyRouteRouteChildren: AuthTasklistTasksUserTaskKeyRouteRouteChildren =
   {
-    AuthTasklistTasksUserTaskKeyHistoryRoute:
-      AuthTasklistTasksUserTaskKeyHistoryRoute,
+    AuthTasklistTasksUserTaskKeyHistoryRouteRoute:
+      AuthTasklistTasksUserTaskKeyHistoryRouteRoute,
     AuthTasklistTasksUserTaskKeyProcessRoute:
       AuthTasklistTasksUserTaskKeyProcessRoute,
     AuthTasklistTasksUserTaskKeyIndexRoute:

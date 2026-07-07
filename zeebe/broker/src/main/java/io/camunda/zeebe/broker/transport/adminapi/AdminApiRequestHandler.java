@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.transport.adminapi;
 import io.atomix.cluster.BrokerMemberId;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
@@ -33,12 +34,13 @@ public class AdminApiRequestHandler
   private final BrokerMemberId memberId;
 
   public AdminApiRequestHandler(
+      final PartitionId partitionId,
       final AtomixServerTransport transport,
       final PartitionAdminAccess adminAccess,
       final RaftPartition raftPartition,
       final ClusterConfigurationService clusterConfigurationService,
       final BrokerMemberId memberId) {
-    super(ApiRequestReader::new, ApiResponseWriter::new);
+    super("AdminApi", partitionId, ApiRequestReader::new, ApiResponseWriter::new);
     this.transport = transport;
     this.adminAccess = adminAccess;
 

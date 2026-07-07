@@ -112,20 +112,20 @@ type QueryElementInstancesRequestBody = z.infer<typeof queryElementInstancesRequ
 const queryElementInstancesResponseBodySchema = getQueryResponseBodySchema(elementInstanceSchema);
 type QueryElementInstancesResponseBody = z.infer<typeof queryElementInstancesResponseBodySchema>;
 
-const queryElementInstances: Endpoint = {
+const queryElementInstances = {
 	method: 'POST',
 	getUrl() {
-		return `/${API_VERSION}/element-instances/search`;
+		return `/${API_VERSION}/element-instances/search` as const;
 	},
-};
+} as const satisfies Endpoint;
 
-const getElementInstance: Endpoint<Pick<ElementInstance, 'elementInstanceKey'>> = {
+const getElementInstance = {
 	method: 'GET',
 	getUrl(params) {
 		const {elementInstanceKey} = params;
-		return `/${API_VERSION}/element-instances/${elementInstanceKey}`;
+		return `/${API_VERSION}/element-instances/${elementInstanceKey}` as const;
 	},
-};
+} as const satisfies Endpoint<Pick<ElementInstance, 'elementInstanceKey'>>;
 
 const getElementInstanceResponseBodySchema = elementInstanceSchema;
 type GetElementInstanceResponseBody = z.infer<typeof getElementInstanceResponseBodySchema>;
@@ -136,13 +136,13 @@ const updateElementInstanceVariablesRequestBodySchema = z.object({
 });
 type UpdateElementInstanceVariablesRequestBody = z.infer<typeof updateElementInstanceVariablesRequestBodySchema>;
 
-const updateElementInstanceVariables: Endpoint<Pick<ElementInstance, 'elementInstanceKey'>> = {
+const updateElementInstanceVariables = {
 	method: 'PUT',
 	getUrl(params) {
 		const {elementInstanceKey} = params;
-		return `/${API_VERSION}/element-instances/${elementInstanceKey}/variables`;
+		return `/${API_VERSION}/element-instances/${elementInstanceKey}/variables` as const;
 	},
-};
+} as const satisfies Endpoint<Pick<ElementInstance, 'elementInstanceKey'>>;
 
 const queryElementInstanceIncidentsRequestBodySchema = queryIncidentsRequestBodySchema;
 type QueryElementInstanceIncidentsRequestBody = z.infer<typeof queryElementInstanceIncidentsRequestBodySchema>;
@@ -150,10 +150,10 @@ type QueryElementInstanceIncidentsRequestBody = z.infer<typeof queryElementInsta
 const queryElementInstanceIncidentsResponseBodySchema = queryIncidentsResponseBodySchema;
 type QueryElementInstanceIncidentsResponseBody = z.infer<typeof queryElementInstanceIncidentsResponseBodySchema>;
 
-const queryElementInstanceIncidents: Endpoint<Pick<ElementInstance, 'elementInstanceKey'>> = {
+const queryElementInstanceIncidents = {
 	method: 'POST',
-	getUrl: ({elementInstanceKey}) => `/${API_VERSION}/element-instances/${elementInstanceKey}/incidents/search`,
-};
+	getUrl: ({elementInstanceKey}) => `/${API_VERSION}/element-instances/${elementInstanceKey}/incidents/search` as const,
+} as const satisfies Endpoint<Pick<ElementInstance, 'elementInstanceKey'>>;
 
 export {
 	queryElementInstances,

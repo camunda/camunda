@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
-import io.atomix.primitive.partition.PartitionId;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.SnapshotReplicationListener;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
@@ -33,7 +33,6 @@ import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.health.HealthStatus;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import org.slf4j.Logger;
 
@@ -49,7 +48,6 @@ public final class ZeebePartition extends Actor
   private final StartupProcess<PartitionStartupContext> startupProcess;
 
   private Role raftRole;
-  private final String actorName;
   private final List<FailureListener> failureListeners;
   private final HealthMetrics healthMetrics;
   private final RoleMetrics roleMetrics;
@@ -67,6 +65,7 @@ public final class ZeebePartition extends Actor
       final PartitionStartupAndTransitionContextImpl transitionContext,
       final PartitionTransition transition,
       final List<StartupStep<PartitionStartupContext>> startupSteps) {
+    super("ZeebePartition", transitionContext.partitionId());
     context = transitionContext.getPartitionContext();
     adminAccess =
         new ZeebePartitionAdminAccess(
@@ -83,8 +82,6 @@ public final class ZeebePartition extends Actor
 
     transition.setConcurrencyControl(actor);
 
-    final var partitionId = context.getPartitionId();
-    actorName = buildActorName("ZeebePartition", partitionId);
     transitionContext.setComponentHealthMonitor(
         new CriticalComponentsHealthMonitor(
             componentName(context.partitionId()),
@@ -108,18 +105,6 @@ public final class ZeebePartition extends Actor
 
   public PartitionAdminAccess getAdminAccess() {
     return adminAccess;
-  }
-
-  @Override
-  protected Map<String, String> createContext() {
-    final var actorContext = super.createContext();
-    actorContext.put(ACTOR_PROP_PARTITION_ID, Integer.toString(context.getPartitionId()));
-    return actorContext;
-  }
-
-  @Override
-  public String getName() {
-    return actorName;
   }
 
   @Override
@@ -203,7 +188,7 @@ public final class ZeebePartition extends Actor
 
   @Override
   protected void handleFailure(final Throwable failure) {
-    LOG.warn("Uncaught exception in {}.", actorName, failure);
+    LOG.warn("Uncaught exception in {}.", getName(), failure);
     // Most probably exception happened in the middle of installing leader or follower services
     // because this actor is not doing anything else
     onInstallFailure(failure);

@@ -23,6 +23,7 @@ const customFiltersSchema = z.object({
   followUpDateFrom: z.coerce.date().optional(),
   followUpDateTo: z.coerce.date().optional(),
   taskId: z.string().trim().optional(),
+  businessId: z.string().trim().optional(),
   variables: z
     .array(
       z

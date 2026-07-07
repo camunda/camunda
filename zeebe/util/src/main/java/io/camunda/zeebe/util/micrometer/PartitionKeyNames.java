@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.util.micrometer;
 
+import io.camunda.cluster.PartitionId;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Tags;
 
@@ -30,12 +31,12 @@ public enum PartitionKeyNames implements KeyName {
     }
   };
 
-  public static Tags tags(final String physicalTenantId, final int partitionId) {
+  public static Tags tags(final PartitionId partitionId) {
     return Tags.of(
         PHYSICAL_TENANT.asString(),
-        physicalTenantId,
+        partitionId.group(),
         PARTITION.asString(),
-        String.valueOf(partitionId));
+        String.valueOf(partitionId.number()));
   }
 
   /**

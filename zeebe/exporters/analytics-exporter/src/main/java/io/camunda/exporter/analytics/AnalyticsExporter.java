@@ -13,6 +13,7 @@ import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +34,7 @@ public class AnalyticsExporter implements Exporter {
   private HandlerRegistry handlers;
   private AnalyticsExporterContext analyticsContext;
   private AnalyticsExporterMetadata metadata;
+  private MeterRegistry meterRegistry;
   private ScheduledTask metricFlushTask;
   private ScheduledTask heartbeatTask;
 
@@ -48,17 +50,22 @@ public class AnalyticsExporter implements Exporter {
   public void configure(final Context context) {
     config = context.getConfiguration().instantiate(AnalyticsExporterConfig.class).validate();
 
+    handlers = AnalyticsHandlerCatalog.build(otelSdkManager).apply(context);
+    meterRegistry = context.getMeterRegistry();
+
     analyticsContext =
         AnalyticsExporterContext.create(
-            resolveLicenseKey(context), resolveClusterId(context), context.getPartitionId());
-
-    handlers = AnalyticsHandlerCatalog.build(otelSdkManager).apply(context);
+            resolveLicenseKey(context),
+            resolveClusterId(context),
+            context.getPartitionId(),
+            resolveDigest(handlers, config));
 
     LOG.info(
-        "Analytics exporter configured: endpoint={}, clusterId={}, partitionId={}",
+        "Analytics exporter configured: endpoint={}, clusterId={}, partitionId={}, exporterDigest={}",
         config.getEndpoint(),
         analyticsContext.clusterId(),
-        analyticsContext.partitionId());
+        analyticsContext.partitionId(),
+        analyticsContext.exporterDigest());
   }
 
   @Override
@@ -69,7 +76,7 @@ public class AnalyticsExporter implements Exporter {
             .readMetadata()
             .map(AnalyticsExporterMetadata::deserialize)
             .orElse(new AnalyticsExporterMetadata());
-    otelSdkManager.initialize(config, analyticsContext, metadata);
+    otelSdkManager.initialize(config, analyticsContext, metadata, meterRegistry);
     scheduleMetricFlush();
     scheduleHeartbeat();
     LOG.info("Analytics exporter opened");
@@ -173,6 +180,16 @@ public class AnalyticsExporter implements Exporter {
     } catch (final NoSuchMethodError e) {
       final var fromEnv = System.getenv(CLUSTER_ID_ENV_VAR);
       return fromEnv != null ? fromEnv : "";
+    }
+  }
+
+  private String resolveDigest(
+      final HandlerRegistry handlers, final AnalyticsExporterConfig config) {
+    try {
+      return AnalyticsExporterDigest.compute(handlers, config);
+    } catch (final Exception e) {
+      LOG.warn("Failed to compute exporter digest; resource attribute will be empty", e);
+      return "";
     }
   }
 }

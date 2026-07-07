@@ -51,6 +51,14 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   public static final String IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX =
       "io.camunda.agenticai:aiagent";
 
+  /**
+   * Sentinel lease token that does not scope to a specific job activation, meaning "apply to every
+   * activation of this job". Used to signal "the whole job is gone" — e.g. when discarding agent
+   * history for a destroyed job, an empty lease discards all items for the job regardless of which
+   * activation produced them.
+   */
+  public static final String EMPTY_LEASE = "";
+
   public static final DirectBuffer NO_HEADERS = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
   public static final String RETRIES = "retries";
   public static final String TIMEOUT = "timeout";
@@ -91,6 +99,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
       new StringValue("rootProcessInstanceKey");
   private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
   private static final StringValue PRIORITY_KEY = new StringValue(PRIORITY);
+  private static final StringValue LEASE_TOKEN_KEY = new StringValue("leaseToken");
   private final StringProperty typeProp = new StringProperty(TYPE_KEY, EMPTY_STRING);
   private final StringProperty workerProp = new StringProperty(WORKER_KEY, EMPTY_STRING);
   private final LongProperty deadlineProp = new LongProperty(DEADLINE_KEY, -1);
@@ -138,9 +147,10 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1L);
   private final StringProperty businessIdProp = new StringProperty(BUSINESS_ID_KEY, EMPTY_STRING);
   private final IntegerProperty priorityProp = new IntegerProperty(PRIORITY_KEY, 0);
+  private final StringProperty leaseTokenProp = new StringProperty(LEASE_TOKEN_KEY, EMPTY_STRING);
 
   public JobRecord() {
-    super(27);
+    super(28);
     declareProperty(deadlineProp)
         .declareProperty(timeoutProp)
         .declareProperty(workerProp)
@@ -168,7 +178,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
         .declareProperty(isJobToUserTaskMigrationProp)
         .declareProperty(rootProcessInstanceKeyProp)
         .declareProperty(priorityProp)
-        .declareProperty(businessIdProp);
+        .declareProperty(businessIdProp)
+        .declareProperty(leaseTokenProp);
   }
 
   public void wrapWithoutVariables(final JobRecord record) {
@@ -201,6 +212,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     rootProcessInstanceKeyProp.setValue(record.getRootProcessInstanceKey());
     priorityProp.setValue(record.getPriority());
     businessIdProp.setValue(record.getBusinessIdBuffer());
+    leaseTokenProp.setValue(record.getLeaseTokenBuffer());
   }
 
   public void wrap(final JobRecord record) {
@@ -424,6 +436,21 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   @JsonIgnore
   public DirectBuffer getBusinessIdBuffer() {
     return businessIdProp.getValue();
+  }
+
+  @Override
+  public String getLeaseToken() {
+    return bufferAsString(leaseTokenProp.getValue());
+  }
+
+  public JobRecord setLeaseToken(final String leaseToken) {
+    leaseTokenProp.setValue(leaseToken);
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getLeaseTokenBuffer() {
+    return leaseTokenProp.getValue();
   }
 
   public JobRecord setElementInstanceKey(final long elementInstanceKey) {

@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker;
 
-import io.atomix.primitive.partition.PartitionId;
+import io.camunda.cluster.PartitionId;
 
 /**
  * Can be implemented and used to react on partition role changes, like on Leader on Actor should be

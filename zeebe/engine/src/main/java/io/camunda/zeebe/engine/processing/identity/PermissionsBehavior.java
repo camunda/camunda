@@ -7,14 +7,19 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
+import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.authz.LazyTokenClaimsConverter;
+import io.camunda.security.core.port.in.AuthorizationCheckPort;
+import io.camunda.zeebe.auth.Authorization;
+import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.state.authorization.PersistedAuthorization;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
@@ -22,7 +27,10 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.Set;
+import org.jspecify.annotations.NullMarked;
+import org.slf4j.Logger;
 
+@NullMarked
 public class PermissionsBehavior {
 
   public static final String PERMISSIONS_FOR_RESOURCE_IDENTIFIER_ALREADY_EXISTS_MESSAGE =
@@ -34,13 +42,22 @@ public class PermissionsBehavior {
   public static final String AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_DELETION =
       "Expected to delete authorization with key %s, but an authorization with this key does not exist";
 
+  private static final Logger LOG = Loggers.ENGINE_IDENTITY_LOGGER;
+
   private final AuthorizationState authorizationState;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final AuthorizationCheckPort authCheckPort;
+  private final LazyTokenClaimsConverter claimsConverter;
+  private final EngineSecurityConfig securityConfig;
 
   public PermissionsBehavior(
-      final ProcessingState processingState, final AuthorizationCheckBehavior authCheckBehavior) {
+      final ProcessingState processingState,
+      final AuthorizationCheckPort authCheckPort,
+      final LazyTokenClaimsConverter claimsConverter,
+      final EngineSecurityConfig securityConfig) {
     authorizationState = processingState.getAuthorizationState();
-    this.authCheckBehavior = authCheckBehavior;
+    this.authCheckPort = authCheckPort;
+    this.claimsConverter = claimsConverter;
+    this.securityConfig = securityConfig;
   }
 
   public Either<Rejection, AuthorizationRecord> isAuthorized(
@@ -50,15 +67,62 @@ public class PermissionsBehavior {
 
   public Either<Rejection, AuthorizationRecord> isAuthorized(
       final TypedRecord<AuthorizationRecord> command, final PermissionType permissionType) {
-    final var authorizationRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.AUTHORIZATION)
-            .permissionType(permissionType)
-            .build();
-    return authCheckBehavior
-        .isAuthorizedOrInternalCommand(authorizationRequest)
-        .map(unused -> command.getValue());
+    if (command.isInternalCommand()) {
+      LOG.trace("Skipping authorization check for internal command {}", command.getIntent());
+      return Either.right(command.getValue());
+    }
+    final var authorizations = command.getAuthorizations();
+    if (Boolean.TRUE.equals(authorizations.get(Authorization.AUTHORIZED_ANONYMOUS_USER))) {
+      LOG.trace(
+          "Skipping authorization check for anonymous user on command {}", command.getIntent());
+      return Either.right(command.getValue());
+    }
+    if (!securityConfig.isAuthorizationsEnabled()
+        && !securityConfig.isMultiTenancyChecksEnabled()) {
+      LOG.trace(
+          "Skipping authorization check for command {}: security disabled (authz={}, multiTenancy={})",
+          command.getIntent(),
+          securityConfig.isAuthorizationsEnabled(),
+          securityConfig.isMultiTenancyChecksEnabled());
+      return Either.right(command.getValue());
+    }
+    if (authorizations.get(Authorization.AUTHORIZED_USERNAME) == null
+        && authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) == null) {
+      // No principal identity present: the CSL claims converter would throw. Mirror main's
+      // non-throwing contract — authorize when authorization checks are disabled (authorization
+      // commands are not tenant-owned, so the multi-tenancy check is a no-op), otherwise reject.
+      if (!securityConfig.isAuthorizationsEnabled()) {
+        return Either.right(command.getValue());
+      }
+      LOG.debug(
+          "Rejecting command {}: neither username nor clientId claim is present",
+          command.getIntent());
+      return Either.left(
+          AuthorizationRejectionMapper.forbidden(
+              permissionType, AuthorizationResourceType.AUTHORIZATION));
+    }
+    LOG.trace(
+        "Checking {} permission on AUTHORIZATION resource for command {}",
+        permissionType,
+        command.getIntent());
+    final var auth = claimsConverter.convert(authorizations);
+    final var cslPermType = AuthzModelMapper.fromProtocol(permissionType);
+    final var result =
+        authCheckPort.check(
+            auth,
+            RequiredAuthorization.of(
+                b ->
+                    b.authorization()
+                        .permissionType(cslPermType)
+                        .resourceId(AuthorizationScope.WILDCARD_CHAR)));
+    if (result.isLeft()) {
+      LOG.debug(
+          "Authorization check rejected for command {}: {}",
+          command.getIntent(),
+          result.leftValue());
+      return Either.left(AuthorizationRejectionMapper.toRejection(result.leftValue()));
+    }
+    return Either.right(command.getValue());
   }
 
   public Either<Rejection, PersistedAuthorization> authorizationExists(
@@ -78,7 +142,7 @@ public class PermissionsBehavior {
     for (final PermissionType permission : record.getPermissionTypes()) {
       final var addedAuthorizationScope = createAuthorizationScope(record);
       final var currentAuthorizationScopes =
-          authCheckBehavior.getDirectAuthorizedAuthorizationScopes(
+          authorizationState.getAuthorizationScopes(
               record.getOwnerType(), record.getOwnerId(), record.getResourceType(), permission);
 
       if (currentAuthorizationScopes.contains(addedAuthorizationScope)) {

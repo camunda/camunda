@@ -85,7 +85,7 @@ test.describe.parallel('Get Process instance Tests', () => {
   });
 
   test('Get Process Instance - Not Found', async ({request}) => {
-    const unknownProcessInstanceKey = '2251799813694876';
+    const unknownProcessInstanceKey = '9999999999999999';
     const res = await request.get(
       buildUrl(`/process-instances/${unknownProcessInstanceKey}`),
       {

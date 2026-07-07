@@ -7,6 +7,137 @@ option java_package = "io.camunda.zeebe.dynamic.config.protocol";
 
 message GossipState { ClusterTopology clusterTopology = 1; }
 
+// ---- New multi-partition-group configuration model (8.10) ----
+
+// Top-level wrapper for the new configuration model. version is always
+// an initial version (0) and reserved for a future root-level fast path.
+message CurrentClusterConfiguration {
+  int64 version = 1;
+  GlobalConfiguration globalConfiguration = 2;
+  map<string, PartitionGroupConfiguration> partitionGroups = 3;
+  PhasedChangeState phasedChangeState = 4;
+}
+
+// Cluster wide configuration that are not specific to partition groups.
+message GlobalConfiguration {
+  int64 version = 1;
+  string clusterId = 2;
+  map<string, BrokerState> members = 3;
+  PartitionDistributorConfig partitionDistributor = 4;
+  ClusterChangePlan pendingChanges = 5;
+  CompletedChange lastChange = 6;
+}
+
+// Tracks per-group partition assignment for a single named Raft group.
+// Does not hold broker lifecycle state.
+message PartitionGroupConfiguration {
+  int64 version = 1;
+  int64 incarnationNumber = 2;
+  bool recovery = 3;
+  map<string, BrokerPartitionState> members = 4;
+  RoutingState routingState = 5;
+  ClusterChangePlan pendingChanges = 6;
+  CompletedChange lastChange = 7;
+}
+
+// Broker lifecycle state. Holds State and timestamps; no partition assignment.
+message BrokerState {
+  int64 version = 1;
+  google.protobuf.Timestamp lastUpdated = 2;
+  State state = 3;
+}
+
+// A broker's partition assignment within a single group. No lifecycle State.
+message BrokerPartitionState {
+  int64 version = 1;
+  google.protobuf.Timestamp lastUpdated = 2;
+  map<int32, PartitionState> partitions = 3;
+}
+
+// Pre-computed sequence of phases for cluster-spanning operations.
+message PhasedChangePlan {
+  int64 id = 1;
+  int32 currentPhaseIndex = 2;
+  repeated PhasedChangePlanPhase phases = 3;
+  google.protobuf.Timestamp startedAt = 4;
+}
+
+// Minimal record of a completed phased change, kept for observability and ID monotonicity.
+message CompletedPhasedChange {
+  int64 id = 1;
+  PhasedChangePlanStatus status = 2;
+  google.protobuf.Timestamp startedAt = 3;
+  google.protobuf.Timestamp completedAt = 4;
+}
+
+// Wrapper that holds at most one pending plan and the last completed change.
+message PhasedChangeState {
+  PhasedChangePlan pendingPlan = 1;
+  CompletedPhasedChange lastChange = 2;
+}
+
+// A single phase in a PhasedChangePlan; either global or per-group.
+message PhasedChangePlanPhase {
+  oneof phase {
+    GlobalPhase globalPhase = 1;
+    PartitionGroupParallelPhase partitionGroupParallelPhase = 2;
+  }
+}
+
+// Operations written to GlobalConfiguration.pendingChanges when this phase
+// is activated.
+message GlobalPhase {
+  repeated GlobalChangeOperation operations = 1;
+}
+
+// Operations written atomically to named groups' pendingChanges when this
+// phase is activated.
+message PartitionGroupParallelPhase {
+  map<string, PartitionGroupOperationList> groupOperations = 1;
+}
+
+// A list of operations for a single partition group within a parallel phase.
+message PartitionGroupOperationList {
+  repeated PartitionGroupChangeOperation operations = 1;
+}
+
+// An operation that targets GlobalConfiguration (broker lifecycle and cluster-wide config).
+message GlobalChangeOperation {
+  string memberId = 1;
+  oneof operation {
+    MemberJoinOperation memberJoin = 2;
+    MemberLeaveOperation memberLeave = 3;
+    MemberRemoveOperation memberRemove = 4;
+    PreScalingOperation preScaling = 5;
+    PostScalingOperation postScaling = 6;
+    UpdatePartitionDistributorConfigOperation updatePartitionDistributorConfig = 7;
+  }
+}
+
+// An operation that targets a single PartitionGroupConfiguration.
+message PartitionGroupChangeOperation {
+  string memberId = 1;
+  oneof operation {
+    PartitionJoinOperation partitionJoin = 2;
+    PartitionLeaveOperation partitionLeave = 3;
+    PartitionReconfigurePriorityOperation partitionReconfigurePriority = 4;
+    PartitionForceReconfigureOperation partitionForceReconfigure = 5;
+    PartitionDisableExporterOperation partitionDisableExporter = 6;
+    PartitionEnableExporterOperation partitionEnableExporter = 7;
+    PartitionDeleteExporterOperation partitionDeleteExporter = 8;
+    PartitionBootstrapOperation partitionBootstrap = 9;
+    StartPartitionScaleUpOperation initiateScaleUpPartitions = 10;
+    AwaitRedistributionCompletion awaitRedistributionCompletion = 11;
+    AwaitRelocationCompletion awaitRelocationCompletion = 12;
+    UpdateRoutingState updateRoutingState = 13;
+    DeleteHistoryOperation deleteHistory = 14;
+    UpdateIncarnationNumberOperation updateIncarnationNumber = 15;
+    ModeChangeOperation modeChange = 16;
+    AwaitModeChangeOperation awaitModeChange = 17;
+  }
+}
+
+// Legacy message for cluster configuration, will be deprecated from 8.10.
 message ClusterTopology {
   int64 version = 1;
   map<string, MemberState> members = 2;
@@ -111,6 +242,7 @@ message TopologyChangeOperation {
     PostScalingOperation postScaling = 20;
     UpdatePartitionDistributorConfigOperation updatePartitionDistributorConfig = 21;
     ModeChangeOperation modeChange = 24;
+    AwaitModeChangeOperation awaitModeChange = 25;
   }
 }
 
@@ -222,6 +354,10 @@ message ModeChangeOperation {
   Mode mode = 1;
 }
 
+message AwaitModeChangeOperation {
+  Mode mode = 1;
+}
+
 enum State {
   UNKNOWN = 0;
   JOINING = 1;
@@ -238,6 +374,15 @@ enum ChangeStatus {
   COMPLETED = 2;
   FAILED = 3;
   CANCELLED = 4;
+}
+
+// Terminal outcome of a CompletedPhasedChange. Unlike ChangeStatus, this enum
+// excludes IN_PROGRESS since it is only used once a change has finished.
+enum PhasedChangePlanStatus {
+  PHASED_CHANGE_STATUS_UNKNOWN = 0;
+  PHASED_CHANGE_COMPLETED = 1;
+  PHASED_CHANGE_FAILED = 2;
+  PHASED_CHANGE_CANCELLED = 3;
 }
 
 enum ExporterStateEnum {

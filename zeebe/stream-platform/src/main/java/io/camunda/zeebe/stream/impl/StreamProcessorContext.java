@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.stream.impl;
 
+import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
@@ -34,6 +36,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private static final StreamProcessorListener NOOP_LISTENER = processedCommand -> {};
   private ActorControl actor;
   private LogStream logStream;
+  private PartitionId partitionId;
   private LogStreamReader logStreamReader;
   private RecordValues recordValues;
   private TransactionContext transactionContext;
@@ -78,6 +81,22 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   @Override
   public int getPartitionId() {
     return getLogStream().getPartitionId();
+  }
+
+  /**
+   * Returns the composite partition id (partition group + number). Falls back to the default
+   * partition group when none was configured, so callers that only set up a log stream still get a
+   * usable value.
+   */
+  public PartitionId partitionId() {
+    return partitionId != null
+        ? partitionId
+        : new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, getPartitionId());
+  }
+
+  public StreamProcessorContext partitionId(final PartitionId partitionId) {
+    this.partitionId = partitionId;
+    return this;
   }
 
   @Override

@@ -18,8 +18,16 @@ class TaskDetailPage extends BasePage {
 		this.header = new Header(page, 'Camunda Tasklist');
 	}
 
-	async goto(userTaskKey: string) {
-		return this.page.goto(`/tasklist/${userTaskKey}`);
+	async goto(userTaskKey: string, search?: string) {
+		return this.page.goto(`/tasklist/${userTaskKey}${search ?? ''}`);
+	}
+
+	async gotoProcess(userTaskKey: string) {
+		return this.page.goto(`/tasklist/${userTaskKey}/process`);
+	}
+
+	async gotoHistory(userTaskKey: string, search?: string) {
+		return this.page.goto(`/tasklist/${userTaskKey}/history${search ?? ''}`);
 	}
 
 	get skeleton() {
@@ -58,6 +66,22 @@ class TaskDetailPage extends BasePage {
 		return this.page.getByTestId('history-tab-content');
 	}
 
+	get historyLoadError() {
+		return this.page.getByText('Something went wrong');
+	}
+
+	get historyForbiddenError() {
+		return this.page.getByText("You don't have permission to view task history");
+	}
+
+	get historyRetryButton() {
+		return this.page.getByRole('button', {name: 'Try again'});
+	}
+
+	historyColumnHeader(name: RegExp | string) {
+		return this.historyTabContent.getByRole('columnheader', {name});
+	}
+
 	get completionLabel() {
 		return this.page.getByTestId('completion-label');
 	}
@@ -66,8 +90,80 @@ class TaskDetailPage extends BasePage {
 		return this.page.getByRole('button', {name: /Turn on notifications/});
 	}
 
+	get assignButton() {
+		return this.page.getByRole('button', {name: /Assign to me/i});
+	}
+
+	get unassignButton() {
+		return this.page.getByRole('button', {name: /^Unassign$/i});
+	}
+
+	get assigningStatus() {
+		return this.page.getByText('Assigning...');
+	}
+
+	get unassigningStatus() {
+		return this.page.getByText('Unassigning...');
+	}
+
+	get assignmentSuccessful() {
+		return this.page.getByText('Assignment successful');
+	}
+
+	get unassignmentSuccessful() {
+		return this.page.getByText('Unassignment successful');
+	}
+
+	get completeTaskButton() {
+		return this.page.getByRole('button', {name: /^Complete Task$/i});
+	}
+
+	get autoSelectNextTaskSwitch() {
+		return this.page.getByRole('switch', {name: 'Auto-select first available task'});
+	}
+
+	get completingTaskStatus() {
+		return this.page.getByText('Completing task...');
+	}
+
+	get completionFailed() {
+		return this.page.getByText('Completion failed');
+	}
+
 	taskName(name: string) {
 		return this.page.getByText(name);
+	}
+
+	processName(name: string) {
+		return this.processTabContent.getByText(name);
+	}
+
+	processVersion(version: number) {
+		return this.processTabContent.getByText(`Version: ${version}`);
+	}
+
+	get processDiagramZoomReset() {
+		return this.processTabContent.getByRole('button', {name: 'Reset diagram zoom'});
+	}
+
+	get processDiagramZoomIn() {
+		return this.processTabContent.getByRole('button', {name: 'Zoom in diagram'});
+	}
+
+	get processDiagramZoomOut() {
+		return this.processTabContent.getByRole('button', {name: 'Zoom out diagram'});
+	}
+
+	get processForbiddenError() {
+		return this.processTabContent.getByText("You don't have permission to view the process");
+	}
+
+	get processLoadError() {
+		return this.processTabContent.getByText('Process could not be loaded');
+	}
+
+	get processRetryButton() {
+		return this.processTabContent.getByRole('button', {name: 'Try again'});
 	}
 
 	async seedHideNotificationBanner() {

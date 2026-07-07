@@ -16,6 +16,10 @@ concurrency:
   cancel-in-progress: true
   group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
 
+env:
+  SUITE_DIR: qa/c8-orchestration-cluster-e2e-test-suite
+  CLIENT_DIR: ./operate/client
+
 jobs:
   read-versions:
     runs-on: ubuntu-latest
@@ -24,7 +28,7 @@ jobs:
     outputs:
       elasticsearch-8: ${{ steps.db-versions.outputs.elasticsearch-8 }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Read DB versions
         id: db-versions
         uses: ./.github/actions/read-db-versions
@@ -46,7 +50,7 @@ jobs:
           - 9300:9300
     steps:
       - name: Check out repository code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Import Secrets
         id: secrets
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
@@ -65,19 +69,21 @@ jobs:
           node-version: 24
 
       - name: Install node dependencies
-        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
-        run: npm ci
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.SUITE_DIR }}
 
       - name: Install frontend dependencies
-        working-directory: ./operate/client
-        run: npm ci
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.CLIENT_DIR }}
 
       - name: Install Playwright
         run: npx playwright install --with-deps chromium
-        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+        working-directory: ${{ env.SUITE_DIR }}
 
       - name: Build frontend
-        working-directory: ./operate/client
+        working-directory: ${{ env.CLIENT_DIR }}
         run: npm run build
         env:
           NODE_OPTIONS: --max_old_space_size=4096
@@ -151,7 +157,7 @@ jobs:
 
       - name: Python setup
         if: always()
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: "3.x"
 
@@ -165,7 +171,7 @@ jobs:
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
           ZEEBE_REST_ADDRESS: "http://localhost:8080"
         run: npm run test -- --project=operate-e2e
-        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+        working-directory: ${{ env.SUITE_DIR }}
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:

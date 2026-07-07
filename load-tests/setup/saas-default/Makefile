@@ -14,7 +14,7 @@ all: install
 install: install-load-test
 
 .PHONY: realistic
-realistic: additional_load_test_configuration = -f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml --set global.image.repository=registry.camunda.cloud/team-zeebe --set global.image.pullSecrets[0].name=harbor-registry
+realistic: additional_load_test_configuration = -f load-test-values-realistic-benchmark.yaml --set global.image.repository=registry.camunda.cloud/team-zeebe --set global.image.pullSecrets[0].name=harbor-registry
 realistic: install-load-test
 
 .PHONY: typical
@@ -39,6 +39,7 @@ install-load-test:
 		--set saas.credentials.zeebeGrpcAddress="$${ZEEBE_GRPC_ADDRESS}" \
 		--set saas.credentials.authorizationAudience="$${ZEEBE_TOKEN_AUDIENCE}" \
 		-f load-test-values.yaml \
+		-f load-test-values-generated.yaml \
 		$(additional_load_test_configuration)
 
 .PHONY: clean

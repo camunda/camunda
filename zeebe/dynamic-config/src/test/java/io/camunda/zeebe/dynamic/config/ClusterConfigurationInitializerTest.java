@@ -13,8 +13,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import io.atomix.cluster.MemberId;
-import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.FileInitializer;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.GossipInitializer;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.InitializerError.PersistedConfigurationIsBroken;

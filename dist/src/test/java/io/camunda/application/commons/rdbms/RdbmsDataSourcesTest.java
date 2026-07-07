@@ -14,9 +14,9 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 
 import com.zaxxer.hikari.HikariDataSource;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Rdbms;
 import io.camunda.configuration.RdbmsConnectionPool;
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;

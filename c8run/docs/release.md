@@ -87,11 +87,15 @@ change. The two versions the release workflows take as inputs are:
 The minor (e.g. `8.8`) is derived from it automatically; you do not enter it separately.
 
 > **Docker Compose readiness (8.7/8.8 only).** For branches whose `c8run/.env` pins `COMPOSE_TAG`,
-> the RC workflow **verifies** that the rolling `docker-compose-<minor>` release already pins the
-> target `CAMUNDA_VERSION` and fails the build if it is behind. Make sure the Renovate PR above is
-> merged (or the release train has refreshed the compose) before triggering the RC. C8Run cannot
-> refresh the compose itself — it pins only 2 of Docker Compose's component versions. `main`/`stable/8.9`
-> have no Docker Compose dependency and skip this check.
+> the RC workflow checks that the rolling `docker-compose-<minor>` release already pins the target
+> versions. If it is behind (the release train dispatches C8Run RC before Renovate refreshes the
+> compose), the workflow **self-heals**: it dispatches the camunda-distributions
+> `docker-compose-force-bump.yaml` workflow with the supplied component versions, waits (bounded,
+> ~20 min) for the rolling release to rebuild, then re-checks and proceeds. Self-heal needs the
+> `optimizeVersion`/`identityVersion`/`webModelerVersion` inputs (and `consoleVersion` on 8.8) — the
+> release train supplies them. An **ad-hoc** run that omits them still hard-fails if the compose is
+> behind; merge the Renovate PR above (or otherwise refresh the compose) first. `main`/`stable/8.9`
+> have no Docker Compose dependency and skip this check entirely.
 
 You can cross-check that no c8run artifacts have been published yet for the target release:
 
@@ -134,7 +138,8 @@ gh workflow run c8run-release-rc.yaml \
 
 The workflow then:
 
-1. (8.7/8.8) verifies the rolling `docker-compose-<minor>` is at the target version;
+1. (8.7/8.8) verifies the rolling `docker-compose-<minor>` is at the target version, self-healing it
+   via the camunda-distributions force-bump workflow if it is behind (see Docker Compose readiness above);
 2. updates `c8run/.env` in place and builds + signs + notarizes the four OS artifacts;
 3. pushes them to Harbor as `registry.camunda.cloud/team-distribution/c8run:<camundaVersion>-rc`;
 4. opens the `c8run/.env` bump PR (merged after QA sign-off by the release train).

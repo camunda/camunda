@@ -11,7 +11,7 @@ import static io.camunda.tasklist.util.ThreadUtil.sleepFor;
 import static io.camunda.zeebe.protocol.record.value.TenantOwned.DEFAULT_TENANT_IDENTIFIER;
 
 import io.camunda.client.impl.command.StreamUtil;
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;

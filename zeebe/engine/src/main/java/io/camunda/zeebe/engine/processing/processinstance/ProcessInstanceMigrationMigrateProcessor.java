@@ -119,7 +119,11 @@ public class ProcessInstanceMigrationMigrateProcessor
         new ProcessInstanceMigrationJobBehavior(stateWriter, jobState, incidentState);
     migrationUserTaskBehaviour =
         new ProcessInstanceMigrationUserTaskBehavior(
-            stateWriter, jobState, processingState.getUserTaskState(), bpmnBehaviors);
+            stateWriter,
+            writers.command(),
+            jobState,
+            processingState.getUserTaskState(),
+            bpmnBehaviors);
     migrationSequenceFlowBehaviour =
         new ProcessInstanceMigrationSequenceFlowBehavior(
             keyGenerator, stateWriter, elementInstanceState);

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.stream.impl;
 
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -17,14 +18,14 @@ import java.util.EnumMap;
 class AsyncScheduleServiceContext {
   private final ActorSchedulingService actorSchedulingService;
   private final ProcessingScheduleServiceFactory actorServiceFactory;
-  private final int partitionId;
+  private final PartitionId partitionId;
 
   private final EnumMap<AsyncTaskGroup, AsyncProcessingScheduleServiceActor> asyncActors;
 
   public AsyncScheduleServiceContext(
       final ActorSchedulingService actorSchedulingService,
       final ProcessingScheduleServiceFactory actorServiceFactory,
-      final int partitionId) {
+      final PartitionId partitionId) {
     this.actorSchedulingService = actorSchedulingService;
     this.actorServiceFactory = actorServiceFactory;
 

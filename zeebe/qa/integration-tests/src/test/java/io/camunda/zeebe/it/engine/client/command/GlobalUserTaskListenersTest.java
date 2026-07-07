@@ -29,6 +29,10 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import org.junit.jupiter.api.AutoClose;
@@ -540,7 +544,7 @@ public class GlobalUserTaskListenersTest {
         .await();
 
     // Cancel the process (with the task)
-    camundaClient.newCancelInstanceCommand(processInstanceKey).send();
+    camundaClient.newCancelInstanceCommand(processInstanceKey).send().join();
 
     // then: the "creating" job and the task are correctly canceled
     RecordingExporter.userTaskRecords(UserTaskIntent.CANCELED)
@@ -551,6 +555,133 @@ public class GlobalUserTaskListenersTest {
         .withJobListenerEventType(JobListenerEventType.CREATING)
         .withType("global")
         .await();
+  }
+
+  @Test
+  void shouldTriggerGlobalUpdatingListenerCreatedViaApi() {
+    // given: a global updating listener defined via the API and a process with a user task
+    // Start from a clean broker so that no global listeners created by previous tests leak into
+    // this one (a leftover "creating" listener without a worker would otherwise block user-task
+    // creation and make this test hang).
+    restartBrokerWithCleanState();
+
+    camundaClient
+        .newCreateGlobalTaskListenerRequest()
+        .id("apiUpdating")
+        .type("apiUpdating")
+        .eventTypes(GlobalTaskListenerEventType.UPDATING)
+        .send()
+        .join();
+
+    setupAutocompleteWorker("apiUpdating");
+
+    final BpmnModelInstance processDefinition =
+        Bpmn.createExecutableProcess("processWithUserTask")
+            .startEvent("start")
+            .userTask("task", AbstractUserTaskBuilder::zeebeUserTask)
+            .endEvent("end")
+            .done();
+    final long processDefinitionKey = resourcesHelper.deployProcess(processDefinition);
+    final long processInstanceKey = resourcesHelper.createProcessInstance(processDefinitionKey);
+    final var userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("task")
+            .getFirst()
+            .getValue();
+
+    // when: the user task is updated
+    camundaClient
+        .newUpdateUserTaskCommand(userTask.getUserTaskKey())
+        .priority(55)
+        .action("escalate")
+        .send()
+        .join();
+
+    // then: the global updating listener is executed
+    assertThat(
+            RecordingExporter.records()
+                .skipUntil(
+                    r -> // skip until task update is started
+                    r.getIntent() == UserTaskIntent.UPDATING
+                            && ((UserTaskRecordValue) r.getValue()).getProcessInstanceKey()
+                                == processInstanceKey)
+                .limit(
+                    r -> // stop after task update has been completed
+                    r.getIntent() == UserTaskIntent.UPDATED
+                            && ((UserTaskRecordValue) r.getValue()).getProcessInstanceKey()
+                                == processInstanceKey)
+                // get all completed task listener jobs
+                .jobRecords()
+                .withJobKind(JobKind.TASK_LISTENER)
+                .withIntent(JobIntent.COMPLETED))
+        .extracting(Record::getValue)
+        // check that all jobs are for updating event
+        .allMatch(job -> job.getJobListenerEventType() == JobListenerEventType.UPDATING)
+        .extracting(JobRecordValue::getType)
+        // check that the global listener has been executed
+        .containsExactly("apiUpdating");
+  }
+
+  @Test
+  void shouldTriggerGlobalCompletingListenerCreatedViaApi() {
+    // given: a global completing listener defined via the API and a process with a user task
+    // Start from a clean broker so that no global listeners created by previous tests leak into
+    // this one (a leftover "creating" listener without a worker would otherwise block user-task
+    // creation and make this test hang).
+    restartBrokerWithCleanState();
+
+    camundaClient
+        .newCreateGlobalTaskListenerRequest()
+        .id("apiCompleting")
+        .type("apiCompleting")
+        .eventTypes(GlobalTaskListenerEventType.COMPLETING)
+        .send()
+        .join();
+
+    setupAutocompleteWorker("apiCompleting");
+
+    final BpmnModelInstance processDefinition =
+        Bpmn.createExecutableProcess("processWithUserTask")
+            .startEvent("start")
+            .userTask("task", AbstractUserTaskBuilder::zeebeUserTask)
+            .endEvent("end")
+            .done();
+    final long processDefinitionKey = resourcesHelper.deployProcess(processDefinition);
+    final long processInstanceKey = resourcesHelper.createProcessInstance(processDefinitionKey);
+    final var userTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("task")
+            .getFirst()
+            .getValue();
+
+    // when: the user task is completed
+    camundaClient.newCompleteUserTaskCommand(userTask.getUserTaskKey()).send().join();
+
+    // then: the global completing listener is executed
+    assertThat(
+            RecordingExporter.records()
+                .skipUntil(
+                    r -> // skip until task completion is started
+                    r.getIntent() == UserTaskIntent.COMPLETING
+                            && ((UserTaskRecordValue) r.getValue()).getProcessInstanceKey()
+                                == processInstanceKey)
+                .limit(
+                    r -> // stop after task completion has been completed
+                    r.getIntent() == UserTaskIntent.COMPLETED
+                            && ((UserTaskRecordValue) r.getValue()).getProcessInstanceKey()
+                                == processInstanceKey)
+                // get all completed task listener jobs
+                .jobRecords()
+                .withJobKind(JobKind.TASK_LISTENER)
+                .withIntent(JobIntent.COMPLETED))
+        .extracting(Record::getValue)
+        // check that all jobs are for completing event
+        .allMatch(job -> job.getJobListenerEventType() == JobListenerEventType.COMPLETING)
+        .extracting(JobRecordValue::getType)
+        // check that the global listener has been executed
+        .containsExactly("apiCompleting");
   }
 
   private void setupAutocompleteWorker(final String jobType) {
@@ -574,6 +705,36 @@ public class GlobalUserTaskListenersTest {
     }
     ZEEBE.start();
     ZEEBE.awaitCompleteTopology();
+  }
+
+  /**
+   * Restarts the broker with an empty global-listener configuration and a fresh data directory.
+   *
+   * <p>The broker is shared and static across all tests in this class, and its data directory is
+   * reused across restarts. Both configuration-defined and API-created global listeners therefore
+   * survive a plain {@link #restartBroker()} and leak into subsequent tests. Tests that rely on API
+   * listeners only (and expect exactly one listener to fire) use this method to guarantee a clean
+   * slate.
+   */
+  private void restartBrokerWithCleanState() {
+    if (ZEEBE.isStarted()) {
+      ZEEBE.stop();
+      RecordingExporter.reset();
+    }
+    // drop configuration-defined listeners and start from an empty data directory so that no
+    // configuration-defined or API-created listener from a previous test survives
+    configureGlobalListeners(List.of());
+    ZEEBE.withWorkingDirectory(createTempDataDirectory());
+    ZEEBE.start();
+    ZEEBE.awaitCompleteTopology();
+  }
+
+  private static Path createTempDataDirectory() {
+    try {
+      return Files.createTempDirectory("global-user-task-listeners-it");
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   private GlobalListenerCfg createListenerConfig(

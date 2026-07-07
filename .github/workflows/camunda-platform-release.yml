@@ -96,8 +96,20 @@ jobs:
     steps:
       - name: Output Inputs
         run: echo "${{ toJSON(github.event.inputs) }}"
-        # This step generates a GitHub App token to be used in Git operations as a workaround  for
-        # the known GitHub issue described in https://github.com/camunda/camunda/issues/28522
+      - name: Parse Release Version
+        run: |
+          if [[ "${RELEASE_VERSION}" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            {
+              echo "RELEASE_MAJOR=${BASH_REMATCH[1]}"
+              echo "RELEASE_MINOR=${BASH_REMATCH[2]}"
+              echo "RELEASE_PATCH=${BASH_REMATCH[3]}"
+              echo "IS_STABLE_VERSION=true"
+            } >> "$GITHUB_ENV"
+          else
+            echo "IS_STABLE_VERSION=false" >> "$GITHUB_ENV"
+          fi
+      # This step generates a GitHub App token to be used in Git operations as a workaround  for
+      # the known GitHub issue described in https://github.com/camunda/camunda/issues/28522
       - name: Generate GitHub token
         id: github-token
         uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6c85c5de572dbc1790e5e7b4636c2ad9f5b614d8 # generate-github-app-token-from-vault-secrets: v1.1.0
@@ -110,7 +122,7 @@ jobs:
           vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
           vault-url: ${{ secrets.VAULT_ADDR }}
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ env.RELEASE_BRANCH }}
           # Overriding the default GITHUB_TOKEN with a GitHub App token in order to workaround
@@ -297,15 +309,31 @@ jobs:
           retention-days: 5
       - name: Update Compat Version
         run: |
-          if [[ ! "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Skipping updating the compat version as ${RELEASE_VERSION} is not a stable version"
+          if [[ "$IS_STABLE_VERSION" != "true" ]]; then
+            echo "Skipping: ${RELEASE_VERSION} is not a stable version"
             exit 0
           fi
 
-          ./mvnw -B versions:set-property -DgenerateBackupPoms=false -Dproperty=backwards.compat.version -DnewVersion="${RELEASE_VERSION}" -P\!include-optimize
+          if [[ "$RELEASE_PATCH" == "0" ]]; then
+            PREV_MINOR=$((RELEASE_MINOR - 1))
+            if [[ "$PREV_MINOR" -lt 0 ]]; then
+              echo "ERROR: Cannot compute previous minor for ${RELEASE_VERSION} (MINOR=0). Please set 'backwards.compat.version' in parent/pom.xml to the last stable release from the previous release line (e.g. 8.<minor>.<patch> for a 9.0.0 release), then re-run the workflow."
+              exit 1
+            fi
+            COMPAT_VERSION="${RELEASE_MAJOR}.${PREV_MINOR}.0"
+            ./mvnw -B versions:set-property -DgenerateBackupPoms=false -Dproperty=backwards.compat.version -DnewVersion="${COMPAT_VERSION}" -P\!include-optimize
+          else
+            echo "Patch release: backwards.compat.version not updated (stays at minor baseline)"
+          fi
+
           FILE=$(./mvnw -B help:evaluate -Dexpression=ignored.changes.file -q -DforceStdout -P\!include-optimize)
           rm -f "clients/java/${FILE}" "test/${FILE}" "exporter-api/${FILE}" "protocol/${FILE}" "bpmn-model/${FILE}"
-          git commit -am "build(project): update java compat versions"
+          git diff --quiet HEAD || git commit -am "build(project): update java compat versions"
+      - name: Debug Compat Version
+        if: ${{ inputs.dryRun }}
+        run: |
+          echo "=== Compat Version after Update Compat Version step ==="
+          ./mvnw -B help:evaluate -Dexpression=backwards.compat.version -q -DforceStdout -P\!include-optimize
       - name: Delete version-specific allowed API breaking changes
         run: |
           IFS=$'\n' readarray -t files <<< "$(find . -name 'ignored-changes.json')"
@@ -373,7 +401,7 @@ jobs:
       DOCKER_IMAGE: camunda/optimize
       DOCKER_INFOSEC_REGISTRY_IMAGE: europe-west1-docker.pkg.dev/team-infosec/camunda/optimize-8
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets
@@ -507,7 +535,7 @@ jobs:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/camunda
       DOCKER_IMAGE: camunda/camunda
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets
@@ -644,7 +672,7 @@ jobs:
       (needs.optimize-docker.result == 'success' || needs.optimize-docker.result == 'skipped') &&
       needs.camunda-docker.result == 'success' }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ env.RELEASE_BRANCH }}
           fetch-depth: 0 # To fetch tags as well - necessary for the changelog generation
@@ -797,7 +825,7 @@ jobs:
       (needs.optimize-docker.result == 'success' || needs.optimize-docker.result == 'skipped') &&
       needs.camunda-docker.result == 'success' }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets

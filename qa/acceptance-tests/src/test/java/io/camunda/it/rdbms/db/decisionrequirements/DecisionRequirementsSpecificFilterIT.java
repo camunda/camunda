@@ -7,7 +7,7 @@
  */
 package io.camunda.it.rdbms.db.decisionrequirements;
 
-import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static io.camunda.it.rdbms.db.fixtures.DecisionRequirementsFixtures.createAndSaveDecisionRequirement;
 import static io.camunda.it.rdbms.db.fixtures.DecisionRequirementsFixtures.createAndSaveRandomDecisionRequirements;
 import static org.assertj.core.api.Assertions.assertThat;

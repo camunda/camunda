@@ -34,7 +34,7 @@ export {default as getScreenBounds} from './getScreenBounds';
 export {default as ignoreFragments} from './ignoreFragments';
 export {default as isReactElement} from './isReactElement';
 export {incompatibleFilters} from './incompatibleFilters';
-export {loadDefinitions} from './loadDefinitions';
+export {loadDefinitions, loadVersions} from './loadDefinitions';
 
-export type {Definition} from './loadDefinitions';
+export type {Definition, Version} from './loadDefinitions';
 export type {ReportEvaluationPayload} from './reportService';

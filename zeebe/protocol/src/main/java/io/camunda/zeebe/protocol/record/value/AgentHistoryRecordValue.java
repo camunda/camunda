@@ -61,7 +61,13 @@ public interface AgentHistoryRecordValue extends RecordValue, TenantOwned, Proce
   /** Returns the key of the job that triggered the agent for this entry. */
   long getJobKey();
 
-  /** Returns the job lease token identifying which job activation produced this history entry. */
+  /**
+   * Returns the job lease token identifying which job activation produced this history entry.
+   *
+   * <p>An empty string means the entry is not scoped to a specific activation and applies to
+   * <b>all</b> pending items of the job, whereas a non-empty lease scopes it to the single
+   * activation holding that lease.
+   */
   String getJobLease();
 
   /** Returns the iteration counter (conversation round with the LLM). */
@@ -95,8 +101,13 @@ public interface AgentHistoryRecordValue extends RecordValue, TenantOwned, Proce
     /** Returns the document reference; populated when contentType is DOCUMENT. */
     DocumentReferenceValue getDocumentReference();
 
-    /** Returns the structured object payload; populated when contentType is OBJECT. */
-    Map<String, Object> getObject();
+    /**
+     * Returns the JSON value payload when contentType is OBJECT; {@code null} otherwise. The value
+     * may be any JSON type: a {@link java.util.Map} for objects, {@link java.util.List} for arrays,
+     * or a scalar ({@link Integer}, {@link Long}, {@link Float}, {@link Double}, {@link Boolean},
+     * {@link String}).
+     */
+    Object getObject();
   }
 
   /** Represents a tool call embedded in this history entry. */

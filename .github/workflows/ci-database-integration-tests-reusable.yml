@@ -84,16 +84,17 @@ jobs:
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
       - run: |
           if [ -z "${{ inputs.database-container }}" ]; then
             echo "DATABASE_CONTAINER=${{ inputs.database-type }}" >> "$GITHUB_ENV"
           else
             echo "DATABASE_CONTAINER=${{ inputs.database-container }}" >> "$GITHUB_ENV"
           fi
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - uses: ./.github/actions/setup-build
         with:
+          dockerhub-readonly: true
           maven-cache-key-modifier: "it-database-${{ inputs.database-type }}"
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
@@ -204,7 +205,7 @@ jobs:
                   text: "Scheduled Database Integration Tests for **${{inputs.database-name}}** on **${{ github.ref_name }}** FAILED or WERE CANCELLED\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
       # Send metrics about CI health
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           sparse-checkout: .github
       - name: Observe build status

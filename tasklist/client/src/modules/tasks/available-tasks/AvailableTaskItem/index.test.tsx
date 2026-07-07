@@ -299,4 +299,28 @@ describe('<Task />', () => {
     expect(screen.getByTitle(`Overdue Yesterday`)).toBeInTheDocument();
     expect(screen.queryByText('Due')).not.toBeInTheDocument();
   });
+
+  it('should render a task with Business ID', () => {
+    render(
+      <AvailableTaskItem
+        taskId="1"
+        displayName="name"
+        processDisplayName="processName"
+        businessId="order-4711"
+        creationDate="2024-05-29T14:00:00.000Z"
+        assignee={currentUser.username}
+        followUpDate={null}
+        dueDate={null}
+        completionDate={null}
+        priority={50}
+        currentUser={currentUser}
+        position={0}
+      />,
+      {
+        wrapper: createWrapper(),
+      },
+    );
+
+    expect(screen.getByText('order-4711')).toBeInTheDocument();
+  });
 });

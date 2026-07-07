@@ -8,8 +8,8 @@
 package io.camunda.application.commons.identity;
 
 import io.camunda.authentication.config.spi.SessionStoreAdapter;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.exporter.config.ConnectionTypes;

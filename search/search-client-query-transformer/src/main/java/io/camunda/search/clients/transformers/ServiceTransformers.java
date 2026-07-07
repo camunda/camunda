@@ -24,6 +24,7 @@ import io.camunda.search.aggregation.ProcessDefinitionMessageSubscriptionStatist
 import io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAggregation;
 import io.camunda.search.aggregation.UsageMetricsAggregation;
 import io.camunda.search.aggregation.UsageMetricsTUAggregation;
+import io.camunda.search.aggregation.WaitStateStatisticsAggregation;
 import io.camunda.search.aggregation.result.AggregationResultBase;
 import io.camunda.search.aggregation.result.DecisionDefinitionLatestVersionAggregationResult;
 import io.camunda.search.aggregation.result.GlobalJobStatisticsAggregationResult;
@@ -41,6 +42,7 @@ import io.camunda.search.aggregation.result.ProcessDefinitionMessageSubscription
 import io.camunda.search.aggregation.result.ProcessInstanceFlowNodeStatisticsAggregationResult;
 import io.camunda.search.aggregation.result.UsageMetricsAggregationResult;
 import io.camunda.search.aggregation.result.UsageMetricsTUAggregationResult;
+import io.camunda.search.aggregation.result.WaitStateStatisticsAggregationResult;
 import io.camunda.search.clients.aggregator.SearchAggregator;
 import io.camunda.search.clients.core.AggregationResult;
 import io.camunda.search.clients.core.SearchQueryRequest;
@@ -62,6 +64,7 @@ import io.camunda.search.clients.transformers.aggregation.ProcessDefinitionMessa
 import io.camunda.search.clients.transformers.aggregation.ProcessInstanceFlowNodeStatisticsAggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.UsageMetricsAggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.UsageMetricsTUAggregationTransformer;
+import io.camunda.search.clients.transformers.aggregation.WaitStateStatisticsAggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.AggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.DecisionDefinitionLatestVersionAggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.GlobalJobStatisticsAggregationResultTransformer;
@@ -79,6 +82,7 @@ import io.camunda.search.clients.transformers.aggregation.result.ProcessDefiniti
 import io.camunda.search.clients.transformers.aggregation.result.ProcessInstanceFlowNodeStatisticsAggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.UsageMetricsAggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.UsageMetricsTUAggregationResultTransformer;
+import io.camunda.search.clients.transformers.aggregation.result.WaitStateStatisticsAggregationResultTransformer;
 import io.camunda.search.clients.transformers.entity.AgentHistoryEntityTransformer;
 import io.camunda.search.clients.transformers.entity.AgentInstanceEntityTransformer;
 import io.camunda.search.clients.transformers.entity.AuditLogEntityTransformer;
@@ -156,6 +160,7 @@ import io.camunda.search.clients.transformers.filter.UserTaskFilterTransformer;
 import io.camunda.search.clients.transformers.filter.VariableFilterTransformer;
 import io.camunda.search.clients.transformers.filter.VariableValueFilterTransformer;
 import io.camunda.search.clients.transformers.filter.WaitStateFilterTransformer;
+import io.camunda.search.clients.transformers.filter.WaitStateStatisticsFilterTransformer;
 import io.camunda.search.clients.transformers.query.TypedSearchQueryTransformer;
 import io.camunda.search.clients.transformers.result.DecisionInstanceResultConfigTransformer;
 import io.camunda.search.clients.transformers.result.DecisionRequirementsResultConfigTransformer;
@@ -240,6 +245,7 @@ import io.camunda.search.filter.UserFilter;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.filter.VariableValueFilter;
+import io.camunda.search.filter.WaitStateStatisticsFilter;
 import io.camunda.search.query.AgentInstanceHistoryQuery;
 import io.camunda.search.query.AgentInstanceQuery;
 import io.camunda.search.query.AuditLogQuery;
@@ -287,6 +293,7 @@ import io.camunda.search.query.UsageMetricsTUQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
+import io.camunda.search.query.WaitStateStatisticsQuery;
 import io.camunda.search.result.DecisionInstanceQueryResultConfig;
 import io.camunda.search.result.DecisionRequirementsQueryResultConfig;
 import io.camunda.search.result.DeployedResourceQueryResultConfig;
@@ -501,7 +508,8 @@ public final class ServiceTransformers {
             JobErrorStatisticsQuery.class,
             GlobalListenerQuery.class,
             DeployedResourceQuery.class,
-            ElementInstanceWaitStateQuery.class)
+            ElementInstanceWaitStateQuery.class,
+            WaitStateStatisticsQuery.class)
         .forEach(cls -> mappers.put(cls, searchQueryTransformer));
 
     // document entity -> domain entity
@@ -720,6 +728,9 @@ public final class ServiceTransformers {
     mappers.put(
         ElementInstanceWaitStateFilter.class,
         new WaitStateFilterTransformer(indexDescriptors.get(WaitStateTemplate.class)));
+    mappers.put(
+        WaitStateStatisticsFilter.class,
+        new WaitStateStatisticsFilterTransformer(indexDescriptors.get(WaitStateTemplate.class)));
     // result config -> source config
     mappers.put(
         DecisionInstanceQueryResultConfig.class, new DecisionInstanceResultConfigTransformer());
@@ -773,6 +784,8 @@ public final class ServiceTransformers {
         new JobTimeSeriesStatisticsAggregationTransformer());
     mappers.put(
         JobErrorStatisticsAggregation.class, new JobErrorStatisticsAggregationTransformer());
+    mappers.put(
+        WaitStateStatisticsAggregation.class, new WaitStateStatisticsAggregationTransformer());
 
     // aggregation result
     mappers.put(
@@ -821,5 +834,8 @@ public final class ServiceTransformers {
     mappers.put(
         JobErrorStatisticsAggregationResult.class,
         new JobErrorStatisticsAggregationResultTransformer());
+    mappers.put(
+        WaitStateStatisticsAggregationResult.class,
+        new WaitStateStatisticsAggregationResultTransformer());
   }
 }

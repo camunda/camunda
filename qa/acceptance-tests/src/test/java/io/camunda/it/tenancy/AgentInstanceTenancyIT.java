@@ -106,6 +106,8 @@ public class AgentInstanceTenancyIT {
         .content(List.of(AgentInstanceHistoryContent.text("Hello from " + TENANT_A)))
         .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))
         .execute();
+    // Complete job A so JobCompleteProcessor emits AGENT_HISTORY:COMMIT for its items.
+    adminClient.newCompleteCommand(jobKeyA).execute();
 
     final var resultB = createAgentInstanceWithResult(adminClient, TENANT_B);
     agentInstanceKeyB = resultB.agentInstanceKey();
@@ -121,17 +123,13 @@ public class AgentInstanceTenancyIT {
         .content(List.of(AgentInstanceHistoryContent.text("Hello from " + TENANT_B)))
         .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))
         .execute();
+    // Complete job B so its history items also transition to COMMITTED.
+    adminClient.newCompleteCommand(jobKeyB).execute();
 
     waitForAgentInstanceToBeIndexed(adminClient, agentInstanceKeyA);
     waitForAgentInstanceToBeIndexed(adminClient, agentInstanceKeyB);
-    // Agent history search is not supported on RDBMS; searchHistory tests are already
-    // individually disabled via @DisabledIfSystemProperty for rdbms.* backends.
-    if (!System.getProperty("test.integration.camunda.database.type", "")
-        .toLowerCase()
-        .startsWith("rdbms")) {
-      waitForHistoryItemsToBeIndexed(adminClient, agentInstanceKeyA, 1);
-      waitForHistoryItemsToBeIndexed(adminClient, agentInstanceKeyB, 1);
-    }
+    waitForHistoryItemsToBeIndexed(adminClient, agentInstanceKeyA, 1);
+    waitForHistoryItemsToBeIndexed(adminClient, agentInstanceKeyB, 1);
   }
 
   // ── search ────────────────────────────────────────────────────────────────
@@ -256,7 +254,6 @@ public class AgentInstanceTenancyIT {
   // ── searchHistory ─────────────────────────────────────────────────────────
 
   @Test
-  @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
   void searchHistoryShouldReturnOnlyTenantAHistoryForUser1(
       @Authenticated(USER1) final CamundaClient camundaClient) {
     // user1 belongs to TENANT_A only
@@ -270,7 +267,6 @@ public class AgentInstanceTenancyIT {
   }
 
   @Test
-  @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
   void searchHistoryShouldReturnAllHistoryForAdmin(
       @Authenticated(ADMIN) final CamundaClient camundaClient) {
     final var resultA =
@@ -283,7 +279,6 @@ public class AgentInstanceTenancyIT {
   }
 
   @Test
-  @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
   void searchHistoryShouldReturnEmptyForUserWithNoTenant(
       @Authenticated(USER2) final CamundaClient camundaClient) {
     final var resultA =

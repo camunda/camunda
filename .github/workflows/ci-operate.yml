@@ -37,6 +37,7 @@ env:
   TEST_OWNER: '@camunda/core-features'
   GHA_BEST_PRACTICES_LINTER: enabled
   TEST_PRODUCT: Operate
+  CLIENT_DIR: operate/client
 
 jobs:
   # run every time this CI file is called
@@ -73,9 +74,9 @@ jobs:
       BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
       TEST_TYPE: Build
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: ./.github/actions/setup-build
@@ -115,17 +116,19 @@ jobs:
       TEST_TYPE: Unit
     defaults:
       run:
-        working-directory: operate/client
+        working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 24
-      - run: npm ci
-        name: Install dependencies
+      - name: Install dependencies
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.CLIENT_DIR }}
       - run: npm run test -- --no-file-parallelism --maxWorkers 1 --reporter=blob --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
         name: Unit & Integration tests
         env:
@@ -161,16 +164,18 @@ jobs:
       TEST_TYPE: Unit
     defaults:
       run:
-        working-directory: operate/client
+        working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 24
-      - run: npm ci
-        name: Install dependencies
+      - name: Install dependencies
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.CLIENT_DIR }}
       - name: Download blob reports
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -192,17 +197,19 @@ jobs:
       TEST_PRODUCT: Operate
     defaults:
       run:
-        working-directory: operate/client
+        working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 24
-      - run: npm ci
-        name: Install dependencies
+      - name: Install dependencies
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.CLIENT_DIR }}
       - run: npm run ts-check
         name: Type checks
       - name: Observe build status
@@ -227,17 +234,19 @@ jobs:
       TEST_PRODUCT: Operate
     defaults:
       run:
-        working-directory: operate/client
+        working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 24
-      - run: npm ci
-        name: Install dependencies
+      - name: Install dependencies
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.CLIENT_DIR }}
       - run: npm run lint:eslint
         name: ESLint
       - name: Observe build status
@@ -261,17 +270,19 @@ jobs:
       TEST_PRODUCT: Operate
     defaults:
       run:
-        working-directory: operate/client
+        working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 24
-      - run: npm ci
-        name: Install dependencies
+      - name: Install dependencies
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.CLIENT_DIR }}
       - run: npm run lint:prettier
         name: Prettier
       - name: Observe build status
@@ -294,15 +305,15 @@ jobs:
     env:
       TEST_TYPE: Tool
     container:
-      image: mcr.microsoft.com/playwright:v1.60.0
+      image: mcr.microsoft.com/playwright:v1.61.1
       options: --user 1001:1000
     defaults:
       run:
-        working-directory: operate/client
+        working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
       - name: Check out repository code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Setup NodeJS
@@ -310,7 +321,9 @@ jobs:
         with:
           node-version: 24
       - name: Install node dependencies
-        run: npm ci
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.CLIENT_DIR }}
       - name: Build frontend
         run: npm run build
       - name: Run A11y tests
@@ -345,15 +358,15 @@ jobs:
     env:
       TEST_TYPE: visual-regression
     container:
-      image: mcr.microsoft.com/playwright:v1.60.0
+      image: mcr.microsoft.com/playwright:v1.61.1
       options: --user 1001:1000
     defaults:
       run:
-        working-directory: operate/client
+        working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
       - name: Check out repository code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Setup NodeJS
@@ -361,7 +374,9 @@ jobs:
         with:
           node-version: 24
       - name: Install node dependencies
-        run: npm ci
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.CLIENT_DIR }}
       - name: Build frontend
         run: npm run build:visual-regression
       - name: Run Visual regression tests
@@ -395,11 +410,11 @@ jobs:
       TEST_TYPE: visual-regression
     defaults:
       run:
-        working-directory: operate/client
+        working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
       - name: Check out repository code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: Setup NodeJS
@@ -407,7 +422,9 @@ jobs:
         with:
           node-version: 24
       - name: Install node dependencies
-        run: npm ci
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.CLIENT_DIR }}
       - name: Download blob reports
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -432,25 +449,27 @@ jobs:
     env:
       TEST_TYPE: screenshot-update
     container:
-      image: mcr.microsoft.com/playwright:v1.60.0
+      image: mcr.microsoft.com/playwright:v1.61.1
       options: --user 1001:1000
     defaults:
       run:
-        working-directory: operate/client
+        working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version: 24
-      - run: npm ci
-        name: Install dependencies
+      - name: Install dependencies
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.CLIENT_DIR }}
       - name: Build frontend
         run: npm run build
       - name: Run Playwright
-        working-directory: ./operate/client
+        working-directory: ${{ env.CLIENT_DIR }}
         run: npm run generate-screenshots
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()

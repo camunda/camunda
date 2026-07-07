@@ -67,6 +67,7 @@ import io.camunda.client.protocol.rest.ProcessDefinitionInstanceVersionStatistic
 import io.camunda.client.protocol.rest.ProcessDefinitionResult;
 import io.camunda.client.protocol.rest.ProcessInstanceResult;
 import io.camunda.client.protocol.rest.ProcessInstanceSequenceFlowsQueryResult;
+import io.camunda.client.protocol.rest.ProcessInstanceWaitStateStatisticsQueryResult;
 import io.camunda.client.protocol.rest.ResourceResult;
 import io.camunda.client.protocol.rest.RoleCreateResult;
 import io.camunda.client.protocol.rest.RoleResult;
@@ -239,6 +240,12 @@ public class RestGatewayService {
   public void onProcessInstanceCallHierarchyRequest(
       final long processInstanceKey, final Object[] response) {
     registerGet(RestGatewayPaths.getProcessInstanceCallHierarchyUrl(processInstanceKey), response);
+  }
+
+  public void onProcessInstanceWaitStateStatisticsRequest(
+      final long processInstanceKey, final ProcessInstanceWaitStateStatisticsQueryResult response) {
+    registerGet(
+        RestGatewayPaths.getProcessInstanceWaitStateStatisticsUrl(processInstanceKey), response);
   }
 
   public void onProcessInstanceRequest(

@@ -33,7 +33,7 @@ class ClusterVariableStateTest {
   }
 
   @Test
-  void shouldStoreAndRetrieveMetadataForGloballyScopedVariable() {
+  void shouldStoreAndRetrieveGloballyScopedVariable() {
     // given
     final var metadata = Map.<String, Object>of("credentialType", "OAUTH2");
     final var record =
@@ -54,7 +54,7 @@ class ClusterVariableStateTest {
   }
 
   @Test
-  void shouldStoreAndRetrieveMetadataForTenantScopedVariable() {
+  void shouldStoreAndRetrieveTenantScopedVariable() {
     // given
     final var tenantId = "tenant-1";
     final var metadata = Map.<String, Object>of("credentialType", "API_KEY", "version", "2");

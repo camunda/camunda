@@ -9,22 +9,25 @@ package io.camunda.zeebe.broker.partitioning;
 
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
-import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
+import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -57,26 +60,32 @@ public final class RecoveryPartitionManager
   private final ClusterConfigurationService clusterConfigurationService;
   private final ClusterMembershipService membershipService;
   private final TopologyManagerImpl topologyManager;
-  private final String dataDirectory;
   private final MeterRegistry meterRegistry;
+  private final BrokerCfg brokerCfg;
+  private final BrokerInfo brokerInfo;
+  private final AtomixServerTransport gatewayBrokerTransport;
 
   public RecoveryPartitionManager(
       final String partitionGroup,
-      final String dataDirectory,
+      final BrokerCfg brokerCfg,
+      final BrokerInfo brokerInfo,
       final ConcurrencyControl concurrencyControl,
       final ClusterConfigurationService clusterConfigurationService,
       final ClusterMembershipService membershipService,
       final ActorSchedulingService schedulingService,
       final MeterRegistry meterRegistry,
+      final AtomixServerTransport gatewayBrokerTransport,
       final TopologyManagerImpl topologyManager) {
     this.partitionGroup = partitionGroup;
     this.concurrencyControl = concurrencyControl;
     actorSchedulingService = schedulingService;
     this.clusterConfigurationService = clusterConfigurationService;
     this.topologyManager = topologyManager;
-    this.dataDirectory = dataDirectory;
     this.meterRegistry = meterRegistry;
     this.membershipService = membershipService;
+    this.brokerCfg = brokerCfg;
+    this.brokerInfo = brokerInfo;
+    this.gatewayBrokerTransport = gatewayBrokerTransport;
   }
 
   @Override
@@ -175,7 +184,10 @@ public final class RecoveryPartitionManager
         actorSchedulingService,
         topologyManager,
         meterRegistry,
-        concurrencyControl);
+        concurrencyControl,
+        brokerCfg,
+        brokerInfo,
+        gatewayBrokerTransport);
   }
 
   private void stopInternal(final ActorFuture<Void> result) {
@@ -199,6 +211,7 @@ public final class RecoveryPartitionManager
   }
 
   private Path partitionDirectory(final PartitionId partitionId) {
+    final var dataDirectory = brokerCfg.getData().getDirectory();
     return RaftPartitionFactory.getPartitionDirectory(partitionId, dataDirectory);
   }
 

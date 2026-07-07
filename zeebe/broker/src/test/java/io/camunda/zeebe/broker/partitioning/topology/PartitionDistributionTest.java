@@ -10,8 +10,8 @@ package io.camunda.zeebe.broker.partitioning.topology;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
-import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
+import io.camunda.cluster.PartitionId;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;

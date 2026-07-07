@@ -14,7 +14,7 @@ metadata:
     camunda.io/purpose: load-test
 
     app.kubernetes.io/component: zeebe-broker
-    app.kubernetes.io/version: "SNAPSHOT"
+
   annotations:
 spec:
   replicas: 3
@@ -42,7 +42,7 @@ spec:
         camunda.io/purpose: load-test
 
         app.kubernetes.io/component: zeebe-broker
-        app.kubernetes.io/version: "SNAPSHOT"
+
       annotations:
 
     spec:
@@ -52,7 +52,7 @@ spec:
         []
       containers:
         - name: orchestration
-          image: docker.io/camunda/camunda:TEST
+          image: docker.io/camunda/camunda:SNAPSHOT
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: true
@@ -88,6 +88,8 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+            - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_NUMBEROFREPLICAS
+              value: "1"
             - name: ZEEBE_LOG_APPENDER
               value: Stackdriver
             - name: ZEEBE_LOG_STACKDRIVER_SERVICENAME

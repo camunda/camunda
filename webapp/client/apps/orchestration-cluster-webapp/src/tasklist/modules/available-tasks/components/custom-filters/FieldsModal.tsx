@@ -40,6 +40,7 @@ import {
 import {ProcessesSelect} from './ProcessesSelect';
 import {ProcessesSelectErrorFallback} from './ProcessesSelectErrorFallback';
 import {MultitenancySelect} from './MultitenancySelect';
+import {AdvancedStringFilter} from './AdvancedStringFilter';
 import styles from './FieldsModal.module.scss';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 
@@ -59,6 +60,7 @@ const ADVANCED_FILTERS: Array<keyof NamedCustomFilters> = [
 	'followUpDateFrom',
 	'followUpDateTo',
 	'taskId',
+	'businessId',
 	'variables',
 ];
 
@@ -398,6 +400,14 @@ const FieldsModal: React.FC<Props> = ({isOpen, onClose, onApply, onSave, onEdit,
 													/>
 												)}
 											</Field>
+
+											<div className={styles.secondColumn}>
+												<AdvancedStringFilter
+													name="businessId"
+													label={t('tasklist.customFiltersModalBusinessIdLabel')}
+													selectableOperators={['$eq', '$like', '$in']}
+												/>
+											</div>
 
 											<FieldArray name="variables">
 												{({fields, meta: arrayMeta}) => (

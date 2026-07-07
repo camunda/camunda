@@ -20,8 +20,8 @@ var update = flag.Bool("update-golden", false,
 // secondary_storage, enable_optimize, and the install vs install-stable target.
 //
 // Workload, when set, selects a Makefile workload profile (scenario=<workload>).
-// Workload scenarios render only the load-tester chart — that is where the
-// workload flags apply — so they don't duplicate the storage-matrix renders.
+// Workload scenarios render the combined load-test-setup chart — workload flags
+// pass through the parent chart to the load-tester subchart.
 //
 // SetupTarget, when set, names an alternative Makefile target for rendering the
 // load-test-setup chart only — used to test opt-in chart features that have a
@@ -48,10 +48,10 @@ type versionedScenario struct {
 //
 // The workload scenarios (max, realistic) are the profiles we run most often.
 // They only change load-tester flags, so they use elasticsearch as a fixed
-// backend and render just the load-tester chart. "realistic" pulls a values file
-// from the camunda-load-tests-helm repo at render time — the same live-latest
-// policy as the load-tester chart itself, so its golden is regenerated when that
-// file changes.
+// backend and render the combined load-test-setup chart. "realistic" pulls a
+// values file from the camunda-load-tests-helm repo at render time — the same
+// live-latest policy as the load-tester chart itself, so its golden is
+// regenerated when that file changes.
 var defaultScenarios = []scenario{
 	{Name: "elasticsearch", Storage: "elasticsearch", Optimize: true, Stable: false},
 	{Name: "opensearch", Storage: "opensearch", Optimize: true, Stable: false},
@@ -137,10 +137,8 @@ func TestGoldenFiles(t *testing.T) {
 			ns := Scaffold(t, s.Version, namespace, s.Storage, strconv.FormatBool(s.Optimize))
 			defer ns.Cleanup()
 
-			// Workload scenarios only affect the load-tester chart, so we
-			// render just that one with the workload profile applied.
 			if s.Workload != "" {
-				renderAndAssert(t, s.Version, s.Name, "load-tester", ns, "template-load-test", s.Workload)
+				renderAndAssert(t, s.Version, s.Name, "load-test-setup", ns, "template-load-test-setup", s.Workload)
 				return
 			}
 
@@ -160,36 +158,50 @@ func TestGoldenFiles(t *testing.T) {
 			}
 
 			renderAndAssert(t, s.Version, s.Name, "platform", ns, platformTarget, "")
-			renderAndAssert(t, s.Version, s.Name, "load-tester", ns, "template-load-test", "")
 			renderAndAssert(t, s.Version, s.Name, "load-test-setup", ns, "template-load-test-setup", "")
 		})
 	}
 }
 
+// TestInstallLoadTestSetupKeepsMakefileFlagsWhenAdditionalConfigurationIsProvided
+// simulates the real CI invocation (camunda-load-test.yml), which always sets
+// additional_load_test_setup_configuration on the make command line. In GNU
+// Make, a command-line-origin variable silently suppresses any later `+=` to
+// it inside the Makefile, so a makefile-computed default routed through that
+// variable would be dropped in real CI while a plain `make` invocation still
+// looks fine. Runs across every versioned setup dir so a version-specific
+// regression of this pattern (as happened in stable-88/stable-89) fails here
+// instead of only surfacing in a manual review pass.
 func TestInstallLoadTestSetupKeepsMakefileFlagsWhenAdditionalConfigurationIsProvided(t *testing.T) {
-	ns := Scaffold(t, "main", "c8-golden-setup-flags", "postgresql", "true")
-	defer ns.Cleanup()
+	for _, version := range versions {
+		t.Run(version, func(t *testing.T) {
+			t.Parallel()
 
-	cmd := exec.Command(
-		"make",
-		"-n",
-		"install-load-test-setup",
-		"chaos=true",
-		"additional_load_test_setup_configuration=--set metricsExporter.image.tag=test-tag",
-	)
-	cmd.Dir = ns.Dir
-	out, err := cmd.CombinedOutput()
-	require.NoError(t, err, "make dry-run failed:\n%s", string(out))
+			ns := Scaffold(t, version, "c8-golden-setup-flags-"+version, "elasticsearch", "true")
+			defer ns.Cleanup()
 
-	helmCommand := string(out)
-	require.Contains(t, helmCommand, "--set metricsExporter.database.url=http://elastic:9200")
-	require.Contains(t, helmCommand, "--set chaosKiller.enabled=true")
-	require.Contains(t, helmCommand, "--set metricsExporter.image.tag=test-tag")
-	require.Less(
-		t,
-		strings.Index(helmCommand, "--set chaosKiller.enabled=true"),
-		strings.Index(helmCommand, "--set metricsExporter.image.tag=test-tag"),
-	)
+			cmd := exec.Command(
+				"make",
+				"-n",
+				"install-load-test-setup",
+				"chaos=true",
+				"additional_load_test_setup_configuration=--set metricsExporter.image.tag=test-tag",
+			)
+			cmd.Dir = ns.Dir
+			out, err := cmd.CombinedOutput()
+			require.NoError(t, err, "make dry-run failed:\n%s", string(out))
+
+			helmCommand := string(out)
+			require.Contains(t, helmCommand, "--set metricsExporter.database.url=http://elastic:9200")
+			require.Contains(t, helmCommand, "--set chaosKiller.enabled=true")
+			require.Contains(t, helmCommand, "--set metricsExporter.image.tag=test-tag")
+			require.Less(
+				t,
+				strings.Index(helmCommand, "--set chaosKiller.enabled=true"),
+				strings.Index(helmCommand, "--set metricsExporter.image.tag=test-tag"),
+			)
+		})
+	}
 }
 
 // renderAndAssert renders a chart via the scaffolded Makefile's make target and
@@ -219,10 +231,10 @@ func TestNormalize(t *testing.T) {
 
 	require.NotContains(t, got, "helm.sh/chart")
 	require.NotContains(t, got, "checksum/config")
+	require.NotContains(t, got, "app.kubernetes.io/version")
 	require.NotContains(t, got, "2025-12-31")            // date value normalized away
 	require.Contains(t, got, "deadline-date: TEST_DATE") // label kept, value normalized
-	require.Contains(t, got, "image: registry.example.com/camunda/zeebe:TEST")
-	require.Contains(t, got, `app.kubernetes.io/version: "8.6.0"`) // kept
+	require.Contains(t, got, "image: registry.example.com/camunda/zeebe:8.6.0")
 
 	// Idempotent.
 	require.Equal(t, got, normalize(got))

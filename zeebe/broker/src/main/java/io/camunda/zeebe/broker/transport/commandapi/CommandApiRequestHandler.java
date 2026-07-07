@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.commandapi;
 
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
@@ -38,8 +39,8 @@ final class CommandApiRequestHandler
   private boolean isDiskSpaceAvailable = true;
   private boolean processingPaused;
 
-  CommandApiRequestHandler() {
-    super(CommandApiRequestReader::new, CommandApiResponseWriter::new);
+  CommandApiRequestHandler(final PartitionId partitionId) {
+    super("CommandApi", partitionId, CommandApiRequestReader::new, CommandApiResponseWriter::new);
   }
 
   @Override

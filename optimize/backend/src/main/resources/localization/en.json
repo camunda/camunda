@@ -26,6 +26,12 @@
     "processFilter": {
       "label": "Process",
       "placeholder": "All processes"
+    },
+    "versionFilter": {
+      "label": "Version",
+      "all": "All versions",
+      "latest": "Latest version",
+      "version": "Version {version}"
     }
   },
   "navigation": {
@@ -330,7 +336,8 @@
       "agentInstance": "Agent instance",
       "totalTokens": "Total tokens",
       "inputTokens": "Input tokens",
-      "outputTokens": "Output tokens"
+      "outputTokens": "Output tokens",
+      "toolCalls": "Tool calls"
     },
     "groupBy": {
       "label": "Group by",
@@ -1605,7 +1612,11 @@
       "agenticFailureRateByVersionName": "Failure rate by process version",
       "agenticFailureRateByVersionDescription": "Percentage of completed agentic process instances that encountered a resolved incident, broken down by process definition version.",
       "agenticKpiToolCallsName": "Total tool calls",
-      "agenticKpiToolCallsDescription": "Total number of tool calls made by agents in completed agentic process instances in the selected period."
+      "agenticKpiToolCallsDescription": "Total number of tool calls made by agents in completed agentic process instances in the selected period.",
+      "agenticToolCallsHeatmapName": "Tool calls per flow node",
+      "agenticToolCallsHeatmapDescription": "Total tool calls made per flow node across completed agentic process instances, shown as a heat map overlay on the process diagram.",
+      "agenticDurationHeatmapName": "Duration per flow node",
+      "agenticDurationHeatmapDescription": "Average duration per flow node across completed agentic process instances, shown as a heat map overlay on the process diagram."
     }
   },
   "managementDashboard": {

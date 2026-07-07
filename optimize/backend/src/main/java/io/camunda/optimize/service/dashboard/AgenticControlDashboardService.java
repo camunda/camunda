@@ -31,6 +31,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisua
 import io.camunda.optimize.dto.optimize.query.report.single.process.distributed.NoneDistributedByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.EndDateGroupByDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.group.FlowNodesGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessDefinitionKeyGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessDefinitionVersionGroupByDto;
@@ -109,8 +110,14 @@ public class AgenticControlDashboardService {
   public static final String KPI_TOOL_CALLS_NAME = "agenticKpiToolCallsName";
   public static final String KPI_TOOL_CALLS_DESCRIPTION = "agenticKpiToolCallsDescription";
 
+  public static final String TOOL_CALLS_HEATMAP_NAME = "agenticToolCallsHeatmapName";
+  public static final String TOOL_CALLS_HEATMAP_DESCRIPTION = "agenticToolCallsHeatmapDescription";
+
   public static final String DURATION_STABILITY_NAME = "agenticDurationStabilityName";
   public static final String DURATION_STABILITY_DESCRIPTION = "agenticDurationStabilityDescription";
+
+  public static final String DURATION_HEATMAP_NAME = "agenticDurationHeatmapName";
+  public static final String DURATION_HEATMAP_DESCRIPTION = "agenticDurationHeatmapDescription";
 
   // Deterministic report IDs — derived from fixed seed strings so IDs are stable across restarts
   // and DB reimports. Same seed always produces the same UUID (UUID v3 / name-based).
@@ -147,6 +154,12 @@ public class AgenticControlDashboardService {
           .toString();
   public static final String KPI_TOOL_CALLS_REPORT_ID =
       UUID.nameUUIDFromBytes("agentic-tool-calls-total".getBytes(StandardCharsets.UTF_8))
+          .toString();
+  public static final String TOOL_CALLS_HEATMAP_REPORT_ID =
+      UUID.nameUUIDFromBytes("agentic-tool-calls-heatmap".getBytes(StandardCharsets.UTF_8))
+          .toString();
+  public static final String DURATION_HEATMAP_REPORT_ID =
+      UUID.nameUUIDFromBytes("agentic-duration-heatmap".getBytes(StandardCharsets.UTF_8))
           .toString();
 
   private static final long INSTANCE_END_DATE_ROLLING_DAYS = 30L;
@@ -210,6 +223,8 @@ public class AgenticControlDashboardService {
     tiles.add(buildP95DurationReport());
     tiles.add(buildFailureRateByVersionReport());
     tiles.add(buildTotalToolCallsReport());
+    tiles.add(buildToolCallsHeatmapReport());
+    tiles.add(buildDurationHeatmapReport());
 
     // Always upsert the dashboard too — tile list can grow across versions and the cold-start
     // guard would leave an existing deployment stuck on the old layout.
@@ -229,6 +244,11 @@ public class AgenticControlDashboardService {
             .groupBy(new NoneGroupByDto())
             .distributedBy(new NoneDistributedByDto())
             .visualization(ProcessVisualization.NUMBER)
+            // Surface the description as the tile subtitle instead of the auto-derived label.
+            .configuration(
+                SingleReportConfigurationDto.builder()
+                    .subtitle(KPI_EXECUTION_COMPLETED_DESCRIPTION)
+                    .build())
             .filter(
                 ProcessFilterBuilder.filter()
                     .completedInstancesOnly()
@@ -260,6 +280,11 @@ public class AgenticControlDashboardService {
             .groupBy(new NoneGroupByDto())
             .distributedBy(new NoneDistributedByDto())
             .visualization(ProcessVisualization.NUMBER)
+            // Surface the description as the tile subtitle instead of the auto-derived label.
+            .configuration(
+                SingleReportConfigurationDto.builder()
+                    .subtitle(KPI_EXECUTION_AVG_DURATION_DESCRIPTION)
+                    .build())
             .filter(
                 ProcessFilterBuilder.filter()
                     .completedInstancesOnly()
@@ -291,6 +316,11 @@ public class AgenticControlDashboardService {
             .groupBy(new NoneGroupByDto())
             .distributedBy(new NoneDistributedByDto())
             .visualization(ProcessVisualization.NUMBER)
+            // Surface the description as the tile subtitle instead of the auto-derived label.
+            .configuration(
+                SingleReportConfigurationDto.builder()
+                    .subtitle(KPI_EXECUTION_INCIDENT_RATE_DESCRIPTION)
+                    .build())
             .filter(
                 ProcessFilterBuilder.filter()
                     .completedInstancesOnly()
@@ -543,6 +573,8 @@ public class AgenticControlDashboardService {
       final PositionDto position) {
     final SingleReportConfigurationDto config = new SingleReportConfigurationDto();
     config.setAggregationTypes(new AggregationDto(AggregationType.PERCENTILE, percentile));
+    // Surface the description as the tile subtitle instead of the auto-derived label.
+    config.setSubtitle(descriptionKey);
     final ProcessReportDataDto reportData =
         ProcessReportDataDto.builder()
             .definitions(Collections.emptyList())
@@ -663,11 +695,13 @@ public class AgenticControlDashboardService {
             .groupBy(new NoneGroupByDto())
             .distributedBy(new NoneDistributedByDto())
             .visualization(ProcessVisualization.NUMBER)
+            // Surface the description as the tile subtitle instead of the auto-derived label.
             .configuration(
                 SingleReportConfigurationDto.builder()
                     .aggregationTypes(
                         new LinkedHashSet<>(
                             Collections.singletonList(new AggregationDto(AggregationType.SUM))))
+                    .subtitle(KPI_TOOL_CALLS_DESCRIPTION)
                     .build())
             .filter(
                 ProcessFilterBuilder.filter()
@@ -690,6 +724,92 @@ public class AgenticControlDashboardService {
         new PositionDto(0, 6),
         new DimensionDto(18, 2),
         Map.of(TILE_CONFIG_SECTION, TILE_SECTION_RELIABILITY_AND_TOOL_CALLS));
+  }
+
+  // Per-flow-node tool-call counts rendered as a process diagram heat map. Only visible when a
+  // single process definition is selected (L1) because heatmaps require BPMN XML from a concrete
+  // definition; the dashboard's process-scope filter supplies that definition + XML at render time.
+  private DashboardReportTileDto buildToolCallsHeatmapReport() {
+    final ProcessReportDataDto reportData =
+        ProcessReportDataDto.builder()
+            .definitions(Collections.emptyList())
+            .view(new ProcessViewDto(ProcessViewEntity.FLOW_NODE, ViewProperty.TOOL_CALLS))
+            .groupBy(new FlowNodesGroupByDto())
+            .distributedBy(new NoneDistributedByDto())
+            .visualization(ProcessVisualization.HEAT)
+            .configuration(
+                SingleReportConfigurationDto.builder()
+                    .aggregationTypes(
+                        new LinkedHashSet<>(
+                            Collections.singletonList(new AggregationDto(AggregationType.SUM))))
+                    .build())
+            .filter(
+                ProcessFilterBuilder.filter()
+                    .completedInstancesOnly()
+                    .add()
+                    .hasAgentInstances()
+                    .add()
+                    .buildList())
+            .agenticControlReport(true)
+            .build();
+    reportWriter.createOrUpdateSingleProcessReport(
+        TOOL_CALLS_HEATMAP_REPORT_ID,
+        null,
+        reportData,
+        TOOL_CALLS_HEATMAP_NAME,
+        TOOL_CALLS_HEATMAP_DESCRIPTION,
+        null);
+    return buildTile(
+        TOOL_CALLS_HEATMAP_REPORT_ID,
+        new PositionDto(0, 14),
+        new DimensionDto(18, 4),
+        Map.of(
+            TILE_CONFIG_VISIBLE_IN_L1_ONLY,
+            true,
+            TILE_CONFIG_SECTION,
+            TILE_SECTION_RELIABILITY_AND_TOOL_CALLS));
+  }
+
+  // Average duration per flow node rendered as a process diagram heat map, so operators can see
+  // which step of an agentic process is slowest. Like the tool-calls heat map it is only visible
+  // once a single process definition is selected (L1): heatmaps need BPMN XML from a concrete
+  // definition, which the dashboard's process-scope filter supplies at render time. Duration is
+  // aggregated across all flow nodes of completed, agent-bearing instances.
+  private DashboardReportTileDto buildDurationHeatmapReport() {
+    final ProcessReportDataDto reportData =
+        ProcessReportDataDto.builder()
+            .definitions(Collections.emptyList())
+            .view(new ProcessViewDto(ProcessViewEntity.FLOW_NODE, ViewProperty.DURATION))
+            .groupBy(new FlowNodesGroupByDto())
+            .distributedBy(new NoneDistributedByDto())
+            .visualization(ProcessVisualization.HEAT)
+            .configuration(
+                SingleReportConfigurationDto.builder()
+                    .aggregationTypes(
+                        new LinkedHashSet<>(
+                            Collections.singletonList(new AggregationDto(AggregationType.AVERAGE))))
+                    .build())
+            .filter(
+                ProcessFilterBuilder.filter()
+                    .completedInstancesOnly()
+                    .add()
+                    .hasAgentInstances()
+                    .add()
+                    .buildList())
+            .agenticControlReport(true)
+            .build();
+    reportWriter.createOrUpdateSingleProcessReport(
+        DURATION_HEATMAP_REPORT_ID,
+        null,
+        reportData,
+        DURATION_HEATMAP_NAME,
+        DURATION_HEATMAP_DESCRIPTION,
+        null);
+    return buildTile(
+        DURATION_HEATMAP_REPORT_ID,
+        new PositionDto(0, 14),
+        new DimensionDto(18, 4),
+        Map.of(TILE_CONFIG_VISIBLE_IN_L1_ONLY, true, TILE_CONFIG_SECTION, TILE_SECTION_DURATION));
   }
 
   private DashboardDefinitionRestDto buildAgentDashboard(final List<DashboardReportTileDto> tiles) {

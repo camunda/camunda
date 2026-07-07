@@ -25,7 +25,7 @@ global:
     # Image.repository defines the repository from which to fetch the docker images
     repository: "registry.camunda.cloud/team-zeebe"
     # Image.tag defines the tag / version which should be used in the chart
-    tag: 8.7.0
+    tag: 8.7.34
     ## @param global.image.pullPolicy defines the image pull policy which should be used https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
     pullPolicy: Always
     ## @param global.image.pullSecrets can be used to configure image pull secrets https://kubernetes.io/docs/concepts/containers/images/#specifying-imagepullsecrets-on-a-pod
@@ -210,6 +210,9 @@ operate:
     # https://docs.camunda.io/docs/8.7/self-managed/operate-deployment/operate-configuration/#json-logging-configuration
     - name: OPERATE_LOG_APPENDER
       value: Stackdriver
+    # https://docs.camunda.io/docs/8.7/self-managed/operate-deployment/operate-configuration/#settings-for-shards-and-replicas
+    - name: CAMUNDA_OPERATE_ELASTICSEARCH_NUMBER_OF_REPLICAS
+      value: "1"
   nodeSelector:
     topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
   tolerations:
@@ -235,6 +238,9 @@ tasklist:
     # https://docs.camunda.io/docs/8.7/self-managed/tasklist-deployment/tasklist-configuration/#json-logging-configuration
     - name: TASKLIST_LOG_APPENDER
       value: Stackdriver
+    # https://docs.camunda.io/docs/8.7/self-managed/tasklist-deployment/tasklist-configuration/#settings-for-shards-and-replicas
+    - name: CAMUNDA_TASKLIST_ELASTICSEARCH_NUMBER_OF_REPLICAS
+      value: "1"
   nodeSelector:
     topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
   tolerations:
@@ -276,7 +282,7 @@ zeebe:
   image:
     registry: docker.io
     repository: camunda/zeebe
-    tag: "8.7.33"
+    tag: 8.7.34
   # ClusterSize defines the amount of brokers (=replicas), which are deployed via helm
   clusterSize: "3"
   # PartitionCount defines how many zeebe partitions are set up in the cluster
@@ -363,7 +369,7 @@ zeebe:
     ## @param zeebe.retention.enabled if true, the ILM Policy is created and applied to the index templates.
     enabled: true
     ## @param zeebe.retention.minimumAge defines how old the data must be, before the data is deleted as a duration.
-    minimumAge: 1d # Optimize needs time to import data before ILM cleanup
+    minimumAge: 3d # Optimize needs time to import data before ILM cleanup (see #56443)
   # @param core.env can be used to set extra environment variables in each broker container
   env:
     # Enable JSON logging for google cloud stackdriver
@@ -384,6 +390,9 @@ zeebe:
       # Marked optional so Spring does not fail if this file is not mounted in a given deployment configuration.
       value: "/usr/local/zeebe/config/application.yml,optional:/usr/local/zeebe/config/application-override.yml"
 
+    - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_NUMBEROFREPLICAS
+      value: "1"
+
 zeebeGateway:
   # Replicas defines how many standalone gateways are deployed
   replicas: 2
@@ -395,7 +404,7 @@ zeebeGateway:
     # Image.registry defines which image registry to use
     registry: docker.io
     # Image.tag defines the tag / version which should be used in the chart
-    tag: "8.7.33"
+    tag: 8.7.34
   # LogLevel defines the log level which is used by the gateway
   logLevel: debug
 

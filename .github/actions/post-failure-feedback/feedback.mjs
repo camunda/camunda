@@ -48,6 +48,14 @@ const CATALOG = {
       `If it persists, ping <${RELIABILITY}|#alwaysgreen-reliability> — the owner team triages cluster/runner issues.`,
     ],
   },
+  'test-infra': {
+    title: 'Test infrastructure issue — not your code',
+    emoji: '🟠',
+    steps: [
+      'Re-run the failed job.',
+      `If it persists, ping the owner team — the test environment (cluster, login endpoint) may need attention.`,
+    ],
+  },
   external: {
     title: 'External dependency failure (registry / Harbor / marketplace)',
     emoji: '🟠',
@@ -157,23 +165,19 @@ async function upsertPrComment(m, md) {
       `repos/${m.repo}/issues/${m.pr}/comments`,
       '--paginate',
       '--jq',
-      '.[] | {id, body}',
+      `.[] | select(.body | contains("${MARKER}")) | .id`,
     ]);
-    const existing = stdout
-      .split('\n')
-      .filter(Boolean)
-      .map((l) => JSON.parse(l))
-      .find((c) => (c.body || '').includes(MARKER));
-    if (existing) {
+    const existingId = stdout.trim();
+    if (existingId) {
       await gh([
         'api',
         '--method',
         'PATCH',
-        `repos/${m.repo}/issues/comments/${existing.id}`,
+        `repos/${m.repo}/issues/comments/${existingId}`,
         '-f',
         `body=${md}`,
       ]);
-      console.log(`[feedback] updated PR #${m.pr} comment ${existing.id}`);
+      console.log(`[feedback] updated PR #${m.pr} comment ${existingId}`);
     } else {
       await gh([
         'api',

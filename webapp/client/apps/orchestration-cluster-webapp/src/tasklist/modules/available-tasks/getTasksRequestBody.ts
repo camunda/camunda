@@ -8,6 +8,7 @@
 
 import type {QueryUserTasksRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
 import {getStateLocally} from '#/shared/browser-storage/local-storage';
+import {advancedStringFilterCodec} from '#/tasklist/modules/available-tasks/advancedStringFilter';
 import {isBuiltInFilter, type TasklistIndexSearch} from '#/tasklist/modules/available-tasks/searchSchema';
 
 const SORT_BY_FIELD: Record<
@@ -39,6 +40,7 @@ function getTasksRequestBody(
 		followUpDateFrom,
 		followUpDateTo,
 		elementId,
+		businessId,
 	} = search;
 	const sort: QueryUserTasksRequestBody['sort'] = [
 		{
@@ -118,6 +120,13 @@ function getTasksRequestBody(
 
 	if (elementId !== undefined) {
 		customFilter.elementId = elementId;
+	}
+
+	if (businessId !== undefined) {
+		const decoded = advancedStringFilterCodec.safeDecode(businessId);
+		if (decoded.success) {
+			customFilter.businessId = decoded.data;
+		}
 	}
 
 	if (dueDateFrom !== undefined && dueDateTo !== undefined) {

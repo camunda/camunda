@@ -7,6 +7,10 @@
  */
 package io.camunda.zeebe.transport.stream.impl.messages;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+
+import java.util.Objects;
+
 public enum StreamTopics {
   ADD("stream-add"),
   PUSH("stream-push"),
@@ -20,7 +24,11 @@ public enum StreamTopics {
     this.topic = topic;
   }
 
-  public String topic() {
-    return topic;
+  public String topic(final String physicalTenantId) {
+    Objects.requireNonNull(physicalTenantId, "physicalTenantId must not be null");
+    if (DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
+      return topic;
+    }
+    return physicalTenantId + "-" + topic;
   }
 }

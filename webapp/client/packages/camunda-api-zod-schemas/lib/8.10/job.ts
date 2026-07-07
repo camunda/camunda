@@ -125,12 +125,12 @@ const queryJobsRequestBodySchema = getQueryRequestBodySchema({
 
 type QueryJobsRequestBody = z.infer<typeof queryJobsRequestBodySchema>;
 
-const queryJobs: Endpoint = {
+const queryJobs = {
 	method: 'POST',
 	getUrl() {
-		return `/${API_VERSION}/jobs/search`;
+		return `/${API_VERSION}/jobs/search` as const;
 	},
-};
+} as const satisfies Endpoint;
 
 const queryJobsResponseBodySchema = getQueryResponseBodySchema(jobSchema);
 type QueryJobsResponseBody = z.infer<typeof queryJobsResponseBodySchema>;
@@ -174,12 +174,12 @@ const activateJobsResponseBodySchema = z.object({
 });
 type ActivateJobsResponseBody = z.infer<typeof activateJobsResponseBodySchema>;
 
-const activateJobs: Endpoint = {
+const activateJobs = {
 	method: 'POST',
 	getUrl() {
-		return `/${API_VERSION}/jobs/activation`;
+		return `/${API_VERSION}/jobs/activation` as const;
 	},
-};
+} as const satisfies Endpoint;
 
 const failJobRequestBodySchema = z.object({
 	retries: z.number().optional(),
@@ -189,14 +189,14 @@ const failJobRequestBodySchema = z.object({
 });
 type FailJobRequestBody = z.infer<typeof failJobRequestBodySchema>;
 
-const failJob: Endpoint<Pick<Job, 'jobKey'>> = {
+const failJob = {
 	method: 'POST',
 	getUrl(params) {
 		const {jobKey} = params;
 
-		return `/${API_VERSION}/jobs/${jobKey}/failure`;
+		return `/${API_VERSION}/jobs/${jobKey}/failure` as const;
 	},
-};
+} as const satisfies Endpoint<Pick<Job, 'jobKey'>>;
 
 const throwJobErrorRequestBodySchema = z.object({
 	errorCode: z.string(),
@@ -205,14 +205,14 @@ const throwJobErrorRequestBodySchema = z.object({
 });
 type ThrowJobErrorRequestBody = z.infer<typeof throwJobErrorRequestBodySchema>;
 
-const throwJobError: Endpoint<Pick<Job, 'jobKey'>> = {
+const throwJobError = {
 	method: 'POST',
 	getUrl(params) {
 		const {jobKey} = params;
 
-		return `/${API_VERSION}/jobs/${jobKey}/error`;
+		return `/${API_VERSION}/jobs/${jobKey}/error` as const;
 	},
-};
+} as const satisfies Endpoint<Pick<Job, 'jobKey'>>;
 
 const jobResultCorrectionsSchema = z.object({}).passthrough();
 type JobResultCorrections = z.infer<typeof jobResultCorrectionsSchema>;
@@ -230,14 +230,14 @@ const completeJobRequestBodySchema = z.object({
 });
 type CompleteJobRequestBody = z.infer<typeof completeJobRequestBodySchema>;
 
-const completeJob: Endpoint<Pick<Job, 'jobKey'>> = {
+const completeJob = {
 	method: 'POST',
 	getUrl(params) {
 		const {jobKey} = params;
 
-		return `/${API_VERSION}/jobs/${jobKey}/completion`;
+		return `/${API_VERSION}/jobs/${jobKey}/completion` as const;
 	},
-};
+} as const satisfies Endpoint<Pick<Job, 'jobKey'>>;
 
 const jobChangesetSchema = z.object({
 	retries: z.number().int().optional(),
@@ -251,14 +251,14 @@ const updateJobRequestBodySchema = z.object({
 });
 type UpdateJobRequestBody = z.infer<typeof updateJobRequestBodySchema>;
 
-const updateJob: Endpoint<Pick<Job, 'jobKey'>> = {
+const updateJob = {
 	method: 'PATCH',
 	getUrl(params) {
 		const {jobKey} = params;
 
-		return `/${API_VERSION}/jobs/${jobKey}`;
+		return `/${API_VERSION}/jobs/${jobKey}` as const;
 	},
-};
+} as const satisfies Endpoint<Pick<Job, 'jobKey'>>;
 
 export {
 	queryJobs,

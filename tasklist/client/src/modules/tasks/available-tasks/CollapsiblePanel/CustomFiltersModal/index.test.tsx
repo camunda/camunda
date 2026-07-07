@@ -209,6 +209,9 @@ describe('<CustomFiltersModal />', () => {
       within(dialog).queryByRole('textbox', {name: /task id/i}),
     ).not.toBeInTheDocument();
     expect(
+      within(dialog).queryByRole('textbox', {name: /business id/i}),
+    ).not.toBeInTheDocument();
+    expect(
       within(dialog).queryByRole('group', {name: /task variables/i}),
     ).not.toBeInTheDocument();
     expect(
@@ -240,6 +243,9 @@ describe('<CustomFiltersModal />', () => {
     ).toBeInTheDocument();
     expect(
       within(dialog).getByRole('textbox', {name: /task id/i}),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole('textbox', {name: /business id/i}),
     ).toBeInTheDocument();
     expect(
       within(dialog).getByRole('group', {name: /task variables/i}),
@@ -350,6 +356,7 @@ describe('<CustomFiltersModal />', () => {
         followUpDateFrom: mockDate,
         followUpDateTo: mockDate,
         taskId: 'task-0',
+        businessId: 'eq_business-0',
         variables: [
           {
             name: 'variable-0',
@@ -406,6 +413,10 @@ describe('<CustomFiltersModal />', () => {
       'task-0',
     );
 
+    expect(
+      within(dialog).getByRole('textbox', {name: /business id/i}),
+    ).toHaveValue('business-0');
+
     const variablesGroup = within(dialog).getByRole('group', {
       name: /task variables/i,
     });
@@ -429,6 +440,7 @@ describe('<CustomFiltersModal />', () => {
       followUpDateFrom: new Date('2022-01-01'),
       followUpDateTo: new Date('2022-01-01'),
       taskId: 'task-0',
+      businessId: 'eq_business-0',
       variables: [
         {
           name: 'variable-0',
@@ -486,6 +498,10 @@ describe('<CustomFiltersModal />', () => {
     await user.type(
       within(dialog).getByRole('textbox', {name: /task id/i}),
       'task-0',
+    );
+    await user.type(
+      within(dialog).getByRole('textbox', {name: /business id/i}),
+      'business-0',
     );
     await user.click(
       within(dialog).getByRole('button', {name: /add variable/i}),

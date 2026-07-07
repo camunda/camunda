@@ -150,10 +150,7 @@ public class AgentInstanceHistoryImpl implements AgentInstanceHistory {
       return new DocumentContent(
           ref != null ? new DocumentReferenceResponseImpl((DocumentReference) ref) : null);
     } else if (proto instanceof AgentInstanceObjectContent) {
-      @SuppressWarnings("unchecked")
-      final Map<String, Object> obj =
-          (Map<String, Object>) ((AgentInstanceObjectContent) proto).getObject();
-      return new ObjectContent(obj);
+      return new ObjectContent(((AgentInstanceObjectContent) proto).getObject());
     }
     return null;
   }

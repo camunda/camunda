@@ -13,7 +13,7 @@ metadata:
     camunda.io/purpose: load-test
 
     app.kubernetes.io/component: zeebe-broker
-    app.kubernetes.io/version: "SNAPSHOT"
+
 apiVersion: v1
 data:
   startup.sh: |

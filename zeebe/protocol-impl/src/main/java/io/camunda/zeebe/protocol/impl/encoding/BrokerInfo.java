@@ -16,7 +16,7 @@ import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.versionHeaderLe
 import static io.camunda.zeebe.protocol.record.BrokerInfoEncoder.zoneHeaderLength;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
-import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.protocol.impl.Loggers;
 import io.camunda.zeebe.protocol.record.BrokerInfoDecoder;
 import io.camunda.zeebe.protocol.record.BrokerInfoDecoder.AddressesDecoder;
@@ -61,7 +61,7 @@ import org.slf4j.Logger;
 @NullMarked
 public final class BrokerInfo implements BufferReader, BufferWriter {
 
-  public static final String DEFAULT_PARTITION_GROUP = Protocol.DEFAULT_PARTITION_GROUP_NAME;
+  public static final String DEFAULT_PARTITION_GROUP = PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
   private static final String BROKER_INFO_PROPERTY_NAME = "brokerInfo";
   private static final DirectBuffer COMMAND_API_NAME = wrapString("commandApi");
@@ -555,7 +555,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
    * namespaced key of the form {@code "brokerInfo:<partitionGroup>"}.
    */
   public static String brokerInfoPropertyName(final String partitionGroup) {
-    if (Protocol.DEFAULT_PARTITION_GROUP_NAME.equals(partitionGroup)) {
+    if (PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(partitionGroup)) {
       return BROKER_INFO_PROPERTY_NAME;
     }
     return BROKER_INFO_PROPERTY_NAME + ":" + partitionGroup;

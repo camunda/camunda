@@ -508,6 +508,37 @@ class AgentHistoryExportHandlerTest {
     assertThat(mappedRef.metadata().processDefinitionId()).isEqualTo("my-process");
   }
 
+  @Test
+  void shouldMapNonMapObjectContent() {
+    // given — OBJECT content with a non-map value (array of scalars)
+    final var arrayValue = List.of(10, 20, 30);
+    final var content =
+        ImmutableAgentHistoryMessageContentValue.builder()
+            .withContentType(AgentHistoryContentType.OBJECT)
+            .withObject(arrayValue)
+            .build();
+    final var recordValue =
+        ImmutableAgentHistoryRecordValue.builder()
+            .from(buildRecordValue())
+            .withContent(List.of(content))
+            .build();
+    final Record<AgentHistoryRecordValue> record =
+        factory.generateRecord(
+            ValueType.AGENT_HISTORY,
+            r -> r.withIntent(AgentHistoryIntent.CREATED).withKey(62L).withValue(recordValue));
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(writer).create(modelCaptor.capture());
+    final var mappedItem = modelCaptor.getValue().contentItems().getFirst();
+    assertThat(mappedItem.contentType()).isEqualTo(ContentType.OBJECT);
+    assertThat(mappedItem.text()).isNull();
+    assertThat(mappedItem.documentReference()).isNull();
+    assertThat(mappedItem.object()).isEqualTo(arrayValue);
+  }
+
   /**
    * Builds a fully-populated record value that will not throw during export. In particular: - role
    * is non-UNSPECIFIED - metrics is populated - content has a TEXT item (no UNSPECIFIED content

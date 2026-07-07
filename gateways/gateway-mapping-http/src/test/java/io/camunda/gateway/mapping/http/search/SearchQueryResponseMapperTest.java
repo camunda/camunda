@@ -8,6 +8,7 @@
 package io.camunda.gateway.mapping.http.search;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse.StateEnum;
@@ -18,6 +19,7 @@ import io.camunda.gateway.protocol.model.IncidentStateEnum;
 import io.camunda.gateway.protocol.model.JobListenerEventTypeEnum;
 import io.camunda.gateway.protocol.model.JobSearchQueryResult;
 import io.camunda.gateway.protocol.model.JobWaitStateDetails;
+import io.camunda.gateway.protocol.model.ProcessInstanceWaitStateStatisticsResult;
 import io.camunda.search.entities.AgentInstanceEntity;
 import io.camunda.search.entities.AgentInstanceHistoryEntity;
 import io.camunda.search.entities.AgentInstanceHistoryEntity.AgentInstanceHistoryCommitStatus;
@@ -63,6 +65,7 @@ import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.entities.WaitStateConditionDetails;
 import io.camunda.search.entities.WaitStateEntity;
 import io.camunda.search.entities.WaitStateJobDetails;
+import io.camunda.search.entities.WaitStateStatisticsEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.user.CamundaUserDTO;
 import java.time.OffsetDateTime;
@@ -722,6 +725,26 @@ class SearchQueryResponseMapperTest {
   }
 
   @Test
+  void shouldMapWaitStateStatistics() {
+    // given
+    final var entities =
+        List.of(
+            new WaitStateStatisticsEntity("task-a", 1L),
+            new WaitStateStatisticsEntity("task-b", 500L));
+
+    // when
+    final var result =
+        SearchQueryResponseMapper.toProcessInstanceWaitStateStatisticsResult(entities);
+
+    // then
+    assertThat(result.getItems())
+        .extracting(
+            ProcessInstanceWaitStateStatisticsResult::getElementId,
+            ProcessInstanceWaitStateStatisticsResult::getWaitingCount)
+        .containsExactly(tuple("task-a", 1L), tuple("task-b", 500L));
+  }
+
+  @Test
   void shouldMapRootProcessInstanceKeyForAuditLog() {
     // given
     final var entity =
@@ -1138,6 +1161,7 @@ class SearchQueryResponseMapperTest {
             3); // retries
     final var entity =
         new WaitStateEntity.Builder()
+            .waitStateKey(111L)
             .processInstanceKey(789L)
             .elementInstanceKey(111L)
             .elementId("serviceTask")
@@ -1165,6 +1189,7 @@ class SearchQueryResponseMapperTest {
         new WaitStateConditionDetails("= x > 5", List.of("create", "update"));
     final var entity =
         new WaitStateEntity.Builder()
+            .waitStateKey(111L)
             .processInstanceKey(789L)
             .elementInstanceKey(111L)
             .elementId("cond-ice")

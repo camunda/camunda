@@ -314,6 +314,116 @@ final class IncidentUpdateTaskTest {
     }
 
     @Test
+    void shouldApplySparseTreePathWhenProcessInstanceImportedWithoutTreePath() {
+      // given - the child process instance document exists (is imported) but carries no treePath,
+      // e.g. migrated 8.7 data or a partial list-view document re-created via upsert. Putting a
+      // null treePath into the ConcurrentHashMap used to throw an NPE; and merely skipping the
+      // entry would stall the batch forever in a MISSING_DATA retry loop. Instead a sparse tree
+      // path is applied so the incident update makes progress.
+      final var task =
+          new IncidentUpdateTask(
+              metadata,
+              repository,
+              false,
+              10,
+              EXECUTOR,
+              incidentNotifier,
+              metrics,
+              LOGGER,
+              Duration.ZERO);
+      final var childWithoutTreePath = new ProcessInstanceDocument("3", "list-view", 3, null);
+      when(repository.getProcessInstances(any()))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  List.of(parentProcessInstance, childWithoutTreePath)));
+
+      // when
+      final var result = task.execute();
+
+      // then - no NPE, no retry: the batch is processed with a sparse tree path rooted at the PI
+      assertThat(result).succeedsWithin(TIMEOUT);
+      verify(metrics, never()).recordIncidentUpdatesRetriesNeeded(anyInt());
+      verify(repository).bulkUpdate(bulkUpdateCaptor.capture());
+      final var update = bulkUpdateCaptor.getValue();
+      assertThat(update.incidentRequests())
+          .hasSize(1)
+          .containsEntry(
+              "5",
+              new DocumentUpdate(
+                  "5",
+                  "incidents",
+                  Map.of(
+                      IncidentTemplate.STATE,
+                      IncidentState.ACTIVE,
+                      IncidentTemplate.TREE_PATH,
+                      "PI_3/FNI_4"),
+                  null));
+      // only the PI and flow node referenced by the sparse path are touched (no parent ancestry)
+      assertThat(update.listViewRequests())
+          .hasSize(2)
+          .containsEntry(
+              "3",
+              new DocumentUpdate("3", "list-view", Map.of(ListViewTemplate.INCIDENT, true), "3"))
+          .containsEntry(
+              "4",
+              new DocumentUpdate("4", "list-view", Map.of(ListViewTemplate.INCIDENT, true), "3"));
+      assertThat(update.flowNodeInstanceRequests())
+          .hasSize(1)
+          .containsEntry(
+              "4",
+              new DocumentUpdate(
+                  "4", "flow-nodes", Map.of(FlowNodeInstanceTemplate.INCIDENT, true), null));
+      assertThat(metadata.getLastIncidentUpdatePosition()).isEqualTo(highestPosition);
+      verify(metrics).recordIncidentUpdatesProcessed(1);
+      verify(metrics).recordIncidentUpdatesDocumentsUpdated(4);
+    }
+
+    @Test
+    void shouldApplySparseTreePathWhenProcessInstanceImportedWithEmptyTreePath() {
+      // given - same as above but the treePath is an empty string rather than null; both are
+      // treated as "imported but without a usable tree path".
+      final var task =
+          new IncidentUpdateTask(
+              metadata,
+              repository,
+              false,
+              10,
+              EXECUTOR,
+              incidentNotifier,
+              metrics,
+              LOGGER,
+              Duration.ZERO);
+      final var childWithEmptyTreePath = new ProcessInstanceDocument("3", "list-view", 3, "");
+      when(repository.getProcessInstances(any()))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  List.of(parentProcessInstance, childWithEmptyTreePath)));
+
+      // when
+      final var result = task.execute();
+
+      // then - processed with the sparse fallback, not retried
+      assertThat(result).succeedsWithin(TIMEOUT);
+      verify(metrics, never()).recordIncidentUpdatesRetriesNeeded(anyInt());
+      verify(repository).bulkUpdate(bulkUpdateCaptor.capture());
+      final var update = bulkUpdateCaptor.getValue();
+      assertThat(update.incidentRequests())
+          .hasSize(1)
+          .containsEntry(
+              "5",
+              new DocumentUpdate(
+                  "5",
+                  "incidents",
+                  Map.of(
+                      IncidentTemplate.STATE,
+                      IncidentState.ACTIVE,
+                      IncidentTemplate.TREE_PATH,
+                      "PI_3/FNI_4"),
+                  null));
+      assertThat(metadata.getLastIncidentUpdatePosition()).isEqualTo(highestPosition);
+    }
+
+    @Test
     void shouldFailOnMissingFlowNodeInstance() {
       // given
       final var task =

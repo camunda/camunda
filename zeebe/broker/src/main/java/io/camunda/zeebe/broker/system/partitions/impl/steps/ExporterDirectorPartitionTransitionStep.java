@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 import static java.util.Objects.requireNonNullElse;
 
 import io.atomix.raft.RaftServer.Role;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.BlockingExporter;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
@@ -23,8 +24,6 @@ import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
-import io.camunda.zeebe.protocol.Protocol;
-import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
@@ -123,7 +122,7 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
     final ExporterDirectorContext exporterCtx =
         new ExporterDirectorContext()
             .id(EXPORTER_PROCESSOR_ID)
-            .name(Actor.buildActorName("Exporter", context.getPartitionId()))
+            .partitionId(context.partitionId())
             .clock(context.getStreamClock())
             .logStream(context.getLogStream())
             .zeebeDb(context.getZeebeDb())
@@ -136,7 +135,8 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
             .clusterId(requireNonNullElse(brokerCfg.getCluster().getClusterId(), ""))
             .licenseKey(brokerCfg.getLicenseKey())
             .tenantName(tenantName)
-            .receiveOnLegacySubject(Protocol.DEFAULT_PARTITION_GROUP_NAME.equals(tenantName));
+            .receiveOnLegacySubject(
+                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(tenantName));
 
     final ExporterDirector director =
         exporterDirectorBuilder.apply(exporterCtx, context.getExporterPhase());

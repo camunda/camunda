@@ -11,11 +11,11 @@ import static io.camunda.zeebe.broker.transport.partitionapi.InterPartitionComma
 import static io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderImpl.TOPIC_PREFIX;
 
 import io.atomix.raft.RaftServer.Role;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderService;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.List;
 import java.util.Objects;
@@ -102,13 +102,13 @@ public final class InterPartitionCommandServiceStep implements PartitionTransiti
 
     final var receivingSubjects =
         config.isReceiveOnLegacySubject()
-                && Objects.equals(partitionId.group(), Protocol.DEFAULT_PARTITION_GROUP_NAME)
+                && Objects.equals(partitionId.group(), PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
             ? List.of(legacyReceivingSubject, receivingSubject)
             : List.of(receivingSubject);
 
     final var receiver =
         new InterPartitionCommandReceiverActor(
-            context.getPartitionId(),
+            partitionId,
             context.getClusterCommunicationService(),
             logStreamWriter,
             receivingSubjects);
@@ -136,7 +136,7 @@ public final class InterPartitionCommandServiceStep implements PartitionTransiti
 
     final var sender =
         new InterPartitionCommandSenderService(
-            context.getClusterCommunicationService(), sendingSubject);
+            context.partitionId(), context.getClusterCommunicationService(), sendingSubject);
     final var actorStarted = context.getActorSchedulingService().submitActor(sender);
     actorStarted.onComplete(
         (ignore, error) -> {

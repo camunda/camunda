@@ -42,8 +42,8 @@ import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.utils.serializer.Serializer;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.journal.SegmentInfo;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
@@ -166,7 +166,6 @@ public class RaftPartitionServer implements HealthMonitorable {
   }
 
   private RaftServer buildServer(final MeterRegistry meterRegistry) {
-    final var partitionId = partition.id().number();
     final var electionConfig =
         config.isPriorityElectionEnabled()
             ? RaftElectionConfig.ofPriorityElection(
@@ -175,7 +174,7 @@ public class RaftPartitionServer implements HealthMonitorable {
 
     return RaftServer.builder(localMemberId)
         .withName(partition.name())
-        .withPartitionId(partitionId)
+        .withPartitionId(partition.id())
         .withMembershipService(membershipService)
         .withProtocol(createServerProtocol())
         .withPartitionConfig(config)
@@ -327,7 +326,7 @@ public class RaftPartitionServer implements HealthMonitorable {
     final var sendingContext = new RaftMessageContext(sendingSubject);
 
     final var receivingSubjects =
-        partitionGroup.equals(Protocol.DEFAULT_PARTITION_GROUP_NAME)
+        partitionGroup.equals(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
                 && config.isReceiveOnLegacySubject()
             ? List.of(
                 PARTITION_NAME_FORMAT.formatted("raft-partition", partitionId),

@@ -7,7 +7,7 @@
  */
 package io.camunda.it.rdbms.db.role;
 
-import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextStringId;
 import static io.camunda.it.rdbms.db.fixtures.GroupFixtures.createAndSaveGroup;
 import static io.camunda.it.rdbms.db.fixtures.RoleFixtures.createAndSaveRandomRolesWithMembers;

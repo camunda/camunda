@@ -8,12 +8,10 @@
 package io.camunda.optimize.service.db.es.report.interpreter.groupby.process.flownode;
 
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_FLOW_NODE;
-import static io.camunda.optimize.service.db.report.result.CompositeCommandResult.GroupByResult;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
-import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -27,8 +25,6 @@ import io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.springframework.context.annotation.Conditional;
@@ -92,31 +88,16 @@ public class ProcessGroupByFlowNodeInterpreterES extends AbstractGroupByFlowNode
             filteredFlowNodes ->
                 filteredFlowNodes.aggregations().get(NESTED_EVENTS_AGGREGATION).sterms())
         .ifPresent(
-            byFlowNodeIdAggregation -> {
-              final Map<String, String> flowNodeNames =
-                  helper.getFlowNodeNames(context.getReportData());
-              final List<GroupByResult> groupedData = new ArrayList<>();
-              for (final StringTermsBucket flowNodeBucket :
-                  byFlowNodeIdAggregation.buckets().array()) {
-                final String flowNodeKey = flowNodeBucket.key().stringValue();
-                if (flowNodeNames.containsKey(flowNodeKey)) {
-                  final List<CompositeCommandResult.DistributedByResult> singleResult =
-                      distributedByInterpreter.retrieveResult(
-                          response, flowNodeBucket.aggregations(), context);
-                  final String label = flowNodeNames.get(flowNodeKey);
-                  groupedData.add(
-                      GroupByResult.createGroupByResult(flowNodeKey, label, singleResult));
-                  flowNodeNames.remove(flowNodeKey);
-                }
-              }
-              helper.addMissingGroupByKeys(
-                  flowNodeNames,
-                  groupedData,
-                  context,
-                  distributedByInterpreter.createEmptyResult(context));
-              helper.removeHiddenModelElements(groupedData, context);
-              compositeCommandResult.setGroups(groupedData);
-            });
+            byFlowNodeIdAggregation ->
+                compositeCommandResult.setGroups(
+                    helper.mapFlowNodeBucketsToGroupByResults(
+                        byFlowNodeIdAggregation.buckets().array(),
+                        bucket -> bucket.key().stringValue(),
+                        bucket ->
+                            distributedByInterpreter.retrieveResult(
+                                response, bucket.aggregations(), context),
+                        context,
+                        distributedByInterpreter.createEmptyResult(context))));
   }
 
   @Override

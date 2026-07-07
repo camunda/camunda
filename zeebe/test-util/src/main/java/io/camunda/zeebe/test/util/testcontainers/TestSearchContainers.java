@@ -33,7 +33,7 @@ public final class TestSearchContainers {
   private static final DockerImageName POSTGRES_IMAGE =
       DockerImageName.parse("postgres").withTag("15.3-alpine");
   private static final DockerImageName MARIADB_IMAGE =
-      DockerImageName.parse("mariadb").withTag("11.4");
+      DockerImageName.parse("mariadb").withTag("12.3");
   private static final DockerImageName MYSQL_IMAGE = DockerImageName.parse("mysql").withTag("8.4");
   private static final DockerImageName MSSQLSERVER_IMAGE =
       DockerImageName.parse("mcr.microsoft.com/mssql/server").withTag("2022-latest");

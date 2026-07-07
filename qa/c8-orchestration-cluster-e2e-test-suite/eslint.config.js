@@ -78,7 +78,10 @@ export default [
       'license-header': licenseHeaderPlugin,
     },
     rules: {
-      'license-header/header': ['error', './license-header.js'],
+      'license-header/header': [
+        'error',
+        path.join(__dirname, 'license-header.js'),
+      ],
     },
   },
 

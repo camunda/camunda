@@ -58,15 +58,15 @@ const incidentSchema = z.object({
 });
 type Incident = z.infer<typeof incidentSchema>;
 
-const resolveIncident: Endpoint<Pick<Incident, 'incidentKey'>> = {
+const resolveIncident = {
 	method: 'POST',
-	getUrl: ({incidentKey}) => `/${API_VERSION}/incidents/${incidentKey}/resolution`,
-};
+	getUrl: ({incidentKey}) => `/${API_VERSION}/incidents/${incidentKey}/resolution` as const,
+} as const satisfies Endpoint<Pick<Incident, 'incidentKey'>>;
 
-const getIncident: Endpoint<Pick<Incident, 'incidentKey'>> = {
+const getIncident = {
 	method: 'GET',
-	getUrl: ({incidentKey}) => `/${API_VERSION}/incidents/${incidentKey}`,
-};
+	getUrl: ({incidentKey}) => `/${API_VERSION}/incidents/${incidentKey}` as const,
+} as const satisfies Endpoint<Pick<Incident, 'incidentKey'>>;
 
 const getIncidentResponseBodySchema = incidentSchema;
 type GetIncidentResponseBody = z.infer<typeof getIncidentResponseBodySchema>;
@@ -108,10 +108,10 @@ type QueryIncidentsRequestBody = z.infer<typeof queryIncidentsRequestBodySchema>
 const queryIncidentsResponseBodySchema = getQueryResponseBodySchema(incidentSchema);
 type QueryIncidentsResponseBody = z.infer<typeof queryIncidentsResponseBodySchema>;
 
-const queryIncidents: Endpoint = {
+const queryIncidents = {
 	method: 'POST',
-	getUrl: () => `/${API_VERSION}/incidents/search`,
-};
+	getUrl: () => `/${API_VERSION}/incidents/search` as const,
+} as const satisfies Endpoint;
 
 export {
 	resolveIncident,

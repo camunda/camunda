@@ -10,6 +10,8 @@ package io.camunda.zeebe.broker.transport.queryapi;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.system.configuration.QueryApiCfg;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.engine.state.QueryService.ClosedServiceException;
@@ -321,7 +323,9 @@ final class QueryApiRequestHandlerTest {
   private QueryApiRequestHandler createQueryApiRequestHandler(final boolean enabled) {
     final var config = new QueryApiCfg();
     config.setEnabled(enabled);
-    final var requestHandler = new QueryApiRequestHandler(config);
+    final var requestHandler =
+        new QueryApiRequestHandler(
+            new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1), config);
     scheduler.submitActor(requestHandler);
 
     return requestHandler;

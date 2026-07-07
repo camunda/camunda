@@ -34,4 +34,8 @@ public final class ClusterVariableInstance extends UnpackedObject implements DbV
   public DirectBuffer getValueBuffer() {
     return clusterVariable.getValue().getValueBuffer();
   }
+
+  public DirectBuffer getMetadataBuffer() {
+    return clusterVariable.getValue().getMetadataBuffer();
+  }
 }

@@ -19,6 +19,7 @@ defaults:
 
 env:
   TEST_OWNER: '@camunda/core-features'
+  VERIFIER_DIR: .github/scripts/x-added-in-version-check
 
 jobs:
   verify:
@@ -37,7 +38,7 @@ jobs:
           echo "safe=$SAFE_REF" >> "$GITHUB_OUTPUT"
 
       - name: Checkout camunda/camunda at requested ref
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ steps.ref.outputs.ref }}
 
@@ -70,11 +71,12 @@ jobs:
           echo "GIT_TERMINAL_PROMPT=0" >> "$GITHUB_ENV"
 
       - name: Install verifier dependencies
-        working-directory: ${{ github.workspace }}/.github/scripts/x-added-in-version-check
-        run: npm ci
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.VERIFIER_DIR }}
 
       - name: Build verifier artefacts (endpoint-map + version-map)
-        working-directory: ${{ github.workspace }}/.github/scripts/x-added-in-version-check
+        working-directory: ${{ github.workspace }}/${{ env.VERIFIER_DIR }}
         env:
           # LATEST_BRANCH is not consumed by the in-repo scripts directly.
           # build-artefacts.mjs clones `return-of-api-added-in-analysis` and
@@ -88,7 +90,7 @@ jobs:
 
       - name: Run CI verifier
         id: verify
-        working-directory: ${{ github.workspace }}/.github/scripts/x-added-in-version-check
+        working-directory: ${{ github.workspace }}/${{ env.VERIFIER_DIR }}
         env:
           # Spec lives in the host checkout (camunda/camunda at the requested ref).
           OCA_SPEC_PATH: ${{ github.workspace }}/zeebe/gateway-protocol/src/main/proto/v2

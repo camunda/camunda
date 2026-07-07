@@ -111,12 +111,12 @@ type QueryElementInstanceInspectionRequestBody = z.infer<typeof queryElementInst
 const queryElementInstanceInspectionResponseBodySchema = getQueryResponseBodySchema(elementInstanceInspectionSchema);
 type QueryElementInstanceInspectionResponseBody = z.infer<typeof queryElementInstanceInspectionResponseBodySchema>;
 
-const queryElementInstanceInspection: Endpoint = {
+const queryElementInstanceInspection = {
 	method: 'POST',
 	getUrl() {
-		return `/${API_VERSION}/element-instances/wait-states/search`;
+		return `/${API_VERSION}/element-instances/wait-states/search` as const;
 	},
-};
+} as const satisfies Endpoint;
 
 export {
 	waitStateTypeSchema,

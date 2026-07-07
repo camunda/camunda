@@ -30,8 +30,8 @@ import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeResult;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Either;
@@ -220,10 +220,10 @@ public final class ClusterConfigurationManagementRequestsHandler
   }
 
   @Override
-  public ActorFuture<ClusterConfigurationChangeResponse> enterRecovery(
-      final ModeChangeRequest recoveryModeRequest) {
+  public ActorFuture<ClusterConfigurationChangeResponse> modeChange(
+      final ModeChangeRequest modeChangeRequest) {
     return handleRequest(
-        recoveryModeRequest.dryRun(), new ModeChangeRequestTransformer(recoveryModeRequest.mode()));
+        modeChangeRequest.dryRun(), new ModeChangeRequestTransformer(modeChangeRequest.mode()));
   }
 
   @Override

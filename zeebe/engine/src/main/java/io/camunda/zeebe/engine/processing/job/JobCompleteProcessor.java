@@ -31,11 +31,13 @@ import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.AgentInfo;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
+import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -201,6 +203,13 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
 
     stateWriter.appendFollowUpEvent(command.getKey(), JobIntent.COMPLETED, job);
     responseWriter.writeEventOnCommand(command.getKey(), JobIntent.COMPLETED, job, command);
+
+    if (job.isAgentic()) {
+      commandWriter.appendFollowUpCommand(
+          command.getKey(),
+          AgentHistoryIntent.COMMIT,
+          new AgentHistoryRecord().setJobKey(command.getKey()).setJobLease(""));
+    }
 
     jobMetrics.countJobEvent(JobAction.COMPLETED, job.getJobKind(), job.getType());
 

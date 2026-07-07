@@ -41,10 +41,10 @@ const getTopologyResponseBodySchema = z.object({
 });
 type GetTopologyResponseBody = z.infer<typeof getTopologyResponseBodySchema>;
 
-const getTopology: Endpoint = {
+const getTopology = {
 	method: 'GET',
-	getUrl: () => `/${API_VERSION}/topology`,
-};
+	getUrl: () => `/${API_VERSION}/topology` as const,
+} as const satisfies Endpoint;
 
 export {
 	partitionRoleSchema,

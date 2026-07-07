@@ -18,6 +18,7 @@ import {
   jsonHeaders,
 } from '../../../../utils/http';
 import {
+  cancelBatchOperation,
   createCancellationBatch,
   createCompletedBatchOperation,
   expectBatchState,
@@ -147,6 +148,64 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
 
     await test.step('Poll until batch operation is suspended', async () => {
       await expectBatchState(request, key, 'SUSPENDED');
+    });
+  });
+
+  test('Resume suspended batch operation runs to completion', async ({
+    request,
+  }) => {
+    const key = await test.step('Create cancel batch operation', async () => {
+      return createCancellationBatch(request, 30, 'batch_suspension_process');
+    });
+
+    await test.step('Suspend batch operation', async () => {
+      const res = await suspendBatchOperation(request, key);
+      await assertStatusCode(res, 204);
+    });
+
+    await test.step('Poll until batch operation is suspended', async () => {
+      await expectBatchState(request, key, 'SUSPENDED');
+    });
+
+    await test.step('Resume batch operation', async () => {
+      const res = await resumeBatchOperation(request, key);
+      await assertStatusCode(res, 204);
+    });
+
+    await test.step('Poll until batch operation is completed', async () => {
+      await expectBatchState(request, key, 'COMPLETED');
+    });
+  });
+
+  test('Cancel suspended batch operation transitions to CANCELED', async ({
+    request,
+  }) => {
+    // Use a large instance count so the cancellation batch stays ACTIVE long
+    // enough for the suspend command to catch it in flight. A batch of only 30
+    // instances can finish cancelling (reaching a terminal state) before the
+    // suspend request is processed under nightly contention, which makes the
+    // suspend endpoint return a permanent 404 NOT_FOUND. This mirrors the proven
+    // suspension pattern in tests/operate/batchOperations.spec.ts.
+    const key = await test.step('Create cancel batch operation', async () => {
+      return createCancellationBatch(request, 500, 'batch_suspension_process');
+    });
+
+    await test.step('Suspend batch operation', async () => {
+      const res = await suspendBatchOperation(request, key);
+      await assertStatusCode(res, 204);
+    });
+
+    await test.step('Poll until batch operation is suspended', async () => {
+      await expectBatchState(request, key, 'SUSPENDED');
+    });
+
+    await test.step('Cancel suspended batch operation', async () => {
+      const res = await cancelBatchOperation(request, key);
+      await assertStatusCode(res, 204);
+    });
+
+    await test.step('Poll until batch operation is canceled', async () => {
+      await expectBatchState(request, key, 'CANCELED');
     });
   });
 });

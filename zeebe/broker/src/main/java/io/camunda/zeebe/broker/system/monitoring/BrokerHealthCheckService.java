@@ -8,8 +8,8 @@
 package io.camunda.zeebe.broker.system.monitoring;
 
 import io.atomix.cluster.MemberId;
-import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
@@ -18,6 +18,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.health.CriticalComponentsHealthMonitor;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.health.HealthMonitorable;
+import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.health.HealthStatus;
 import java.util.Collection;
 import java.util.Map;
@@ -115,6 +116,7 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
       final MemberId nodeId,
       final HealthTreeMetrics healthGraphMetrics,
       final Set<String> expectedPhysicalTenants) {
+    super("HealthCheckService");
     this.expectedPhysicalTenants = Set.copyOf(expectedPhysicalTenants);
     healthMonitor =
         new CriticalComponentsHealthMonitor(
@@ -200,11 +202,6 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
   }
 
   @Override
-  public String getName() {
-    return "HealthCheckService";
-  }
-
-  @Override
   protected void onActorStarted() {
     healthMonitor.startMonitoring();
   }
@@ -227,6 +224,10 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
 
   public boolean isBrokerHealthy() {
     return !actor.isClosed() && getBrokerHealth() == HealthStatus.HEALTHY;
+  }
+
+  public HealthReport getHealthReport() {
+    return healthMonitor.getHealthReport();
   }
 
   private HealthStatus getBrokerHealth() {

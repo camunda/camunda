@@ -87,7 +87,7 @@ final class AgentHistoryHandlerTest {
   @ParameterizedTest(name = "[{index}] Should populate all entity fields for ''{0}'' intent")
   @EnumSource(
       value = AgentHistoryIntent.class,
-      names = {"CREATE", "COMMIT"},
+      names = {"CREATE", "COMMIT", "DISCARD"},
       mode = Mode.EXCLUDE)
   void shouldUpdateEntityForAllHandledIntents(final AgentHistoryIntent intent) {
     // given — updateEntity() must populate ALL fields for every handled intent; the partial update
@@ -280,7 +280,7 @@ final class AgentHistoryHandlerTest {
   @ParameterizedTest(name = "[{index}] Intent ''{0}'' should map to the expected commitStatus")
   @EnumSource(
       value = AgentHistoryIntent.class,
-      names = {"CREATE", "COMMIT"},
+      names = {"CREATE", "COMMIT", "DISCARD"},
       mode = Mode.EXCLUDE)
   void shouldMapIntentToExpectedCommitStatus(final AgentHistoryIntent intent) {
     // given
@@ -356,6 +356,42 @@ final class AgentHistoryHandlerTest {
               assertThat(content.text()).isNull();
               assertThat(content.documentReference()).isNull();
               assertThat(content.object()).isEqualTo(objectData);
+            });
+  }
+
+  @Test
+  void shouldMapNonMapObjectContent() {
+    // given — OBJECT content with a non-map value (array of scalars)
+    final var arrayValue = List.of(10, 20, 30);
+    final var contentItem =
+        ImmutableAgentHistoryMessageContentValue.builder()
+            .withContentType(io.camunda.zeebe.protocol.record.value.AgentHistoryContentType.OBJECT)
+            .withText("")
+            .withObject(arrayValue)
+            .build();
+    final var recordValue =
+        ImmutableAgentHistoryRecordValue.builder()
+            .from(buildMinimalRecordValue(1L, 1))
+            .withContent(List.of(contentItem))
+            .build();
+    final Record<AgentHistoryRecordValue> record =
+        factory.generateRecord(
+            ValueType.AGENT_HISTORY,
+            r -> r.withIntent(AgentHistoryIntent.CREATED).withValue(recordValue));
+    final var entity = new AgentHistoryEntity().setId("1");
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getContent())
+        .singleElement()
+        .satisfies(
+            content -> {
+              assertThat(content.contentType()).isEqualTo(AgentHistoryContentType.OBJECT);
+              assertThat(content.text()).isNull();
+              assertThat(content.documentReference()).isNull();
+              assertThat(content.object()).isEqualTo(arrayValue);
             });
   }
 

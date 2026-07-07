@@ -7,6 +7,9 @@ paths:
       tags:
         - Element instance
       operationId: searchElementInstances
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -41,6 +44,9 @@ paths:
       tags:
         - Element instance
       operationId: searchElementInstanceWaitStates
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -76,6 +82,8 @@ paths:
       tags:
         - Element instance
       operationId: getElementInstance
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -119,6 +127,8 @@ paths:
       tags:
         - Element instance
       operationId: createElementInstanceVariables
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: UPDATE_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -165,6 +175,8 @@ paths:
       tags:
         - Element instance
       operationId: searchElementInstanceIncidents
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -219,6 +231,8 @@ paths:
       tags:
         - Ad-hoc sub-process
       operationId: activateAdHocSubProcessActivities
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: UPDATE_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []

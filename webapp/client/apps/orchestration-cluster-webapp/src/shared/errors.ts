@@ -24,4 +24,11 @@ class ForbiddenError extends Error {
 	}
 }
 
-export {ComponentNotAvailableError, ForbiddenError};
+class EmptyProcessXmlError extends Error {
+	constructor() {
+		super('Process definition XML is empty');
+		this.name = 'EmptyProcessXmlError';
+	}
+}
+
+export {ComponentNotAvailableError, EmptyProcessXmlError, ForbiddenError};

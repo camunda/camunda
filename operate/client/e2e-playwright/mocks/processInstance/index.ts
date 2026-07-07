@@ -17,6 +17,7 @@ import type {
   QueryElementInstancesResponseBody,
   QueryAuditLogsResponseBody,
   QueryElementInstanceInspectionResponseBody,
+  GetProcessInstanceWaitStateStatisticsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 
 type InstanceMock = {
@@ -29,6 +30,7 @@ type InstanceMock = {
   variables: Variable[];
   incidents?: QueryProcessInstanceIncidentsResponseBody;
   waitStates?: QueryElementInstanceInspectionResponseBody;
+  waitStateStatistics?: GetProcessInstanceWaitStateStatisticsResponseBody;
 };
 
 function mockResponses({
@@ -42,6 +44,7 @@ function mockResponses({
   incidents,
   auditLogs,
   waitStates,
+  waitStateStatistics,
 }: {
   processInstanceDetail?: ProcessInstance;
   callHierarchy?: GetProcessInstanceCallHierarchyResponseBody;
@@ -53,6 +56,7 @@ function mockResponses({
   incidents?: QueryProcessInstanceIncidentsResponseBody;
   auditLogs?: QueryAuditLogsResponseBody;
   waitStates?: QueryElementInstanceInspectionResponseBody;
+  waitStateStatistics?: GetProcessInstanceWaitStateStatisticsResponseBody;
 }) {
   return (route: Route) => {
     if (route.request().url().includes('/v2/authentication/me')) {
@@ -162,6 +166,16 @@ function mockResponses({
       return route.fulfill({
         status: 200,
         body: JSON.stringify({items: [], page: {totalItems: 0}}),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (route.request().url().includes('statistics/wait-states')) {
+      return route.fulfill({
+        status: 200,
+        body: JSON.stringify(waitStateStatistics ?? {items: []}),
         headers: {
           'content-type': 'application/json',
         },
@@ -326,6 +340,7 @@ export {instanceWithIncident} from './instanceWithIncident.mocks';
 export {orderProcessInstance} from './orderProcessInstance.mocks';
 export {runningInstance} from './runningInstance.mocks';
 export {waitStateProcessInstance} from './waitStateProcessInstance.mocks';
+export {waitStateRunningInstance} from './waitStateRunningInstance.mocks';
 export {runningOrderProcessInstance} from './runningOrderProcessInstance.mocks';
 export {compensationProcessInstance} from './compensationProcessInstance.mocks';
 export {documentReferenceProcessInstance} from './documentReferenceProcessInstance.mocks';

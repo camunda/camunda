@@ -21,12 +21,11 @@ public class ExitRecoveryApplier implements MemberOperationApplier {
   private static final String TRANSITION_ERROR_MESSAGE =
       "Expected to exit recovery for member %s, but the member is not part of the cluster";
   private final MemberId memberId;
-  private final ModeChangeExecutor recoveryModeChangeExecutor;
+  private final ModeChangeExecutor modeChangeExecutor;
 
-  public ExitRecoveryApplier(
-      final MemberId memberId, final ModeChangeExecutor recoveryModeChangeExecutor) {
+  public ExitRecoveryApplier(final MemberId memberId, final ModeChangeExecutor modeChangeExecutor) {
     this.memberId = memberId;
-    this.recoveryModeChangeExecutor = recoveryModeChangeExecutor;
+    this.modeChangeExecutor = modeChangeExecutor;
   }
 
   @Override
@@ -60,7 +59,7 @@ public class ExitRecoveryApplier implements MemberOperationApplier {
   public ActorFuture<UnaryOperator<MemberState>> applyOperation() {
     final CompletableActorFuture<UnaryOperator<MemberState>> result =
         new CompletableActorFuture<>();
-    recoveryModeChangeExecutor
+    modeChangeExecutor
         .exitRecovery()
         .onComplete(
             (ignore, error) -> {

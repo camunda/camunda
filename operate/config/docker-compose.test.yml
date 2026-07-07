@@ -23,7 +23,7 @@ services:
       - ./els-snapshots:/usr/local/els-snapshots
   camunda:
     container_name: camunda
-    image: camunda/camunda:8.9.5
+    image: camunda/camunda:8.9.11
     environment:
       - SPRING_PROFILES_ACTIVE=broker,operate,tasklist,consolidated-auth,dev-data
       - CAMUNDA_SECURITY_AUTHENTICATION_METHOD=basic

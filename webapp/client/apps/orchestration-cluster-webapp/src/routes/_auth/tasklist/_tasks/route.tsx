@@ -7,7 +7,7 @@
  */
 
 import {useCallback, useMemo} from 'react';
-import {createFileRoute, notFound, retainSearchParams, stripSearchParams} from '@tanstack/react-router';
+import {createFileRoute, notFound, redirect, retainSearchParams, stripSearchParams} from '@tanstack/react-router';
 import {useSuspenseInfiniteQuery, useSuspenseQuery} from '@tanstack/react-query';
 import {queries} from '#/shared/http/queries';
 import {TasksLayoutPage} from '#/tasklist/pages/TasksLayoutPage';
@@ -18,6 +18,8 @@ import {
 	stripCustomFilterParams,
 } from '#/tasklist/modules/available-tasks/searchSchema';
 import {getTasksRequestBody} from '#/tasklist/modules/available-tasks/getTasksRequestBody';
+import {getStateLocally} from '#/shared/browser-storage/local-storage';
+import {tracking} from '#/shared/tracking';
 
 export const Route = createFileRoute('/_auth/tasklist/_tasks')({
 	validateSearch: tasklistIndexSearchSchema,
@@ -29,15 +31,35 @@ export const Route = createFileRoute('/_auth/tasklist/_tasks')({
 			stripCustomFilterParams,
 		],
 	},
-	loaderDeps: ({search}) => ({...search}),
 	notFoundComponent: () => {
 		throw notFound({routeId: '/_auth/tasklist'});
 	},
-	loader: async ({context: {queryClient}, deps}) => {
+	beforeLoad: async ({context: {queryClient}, search, location}) => {
+		const isAutoSelectNextTaskEnabled = getStateLocally('tasklist.autoSelectNextTask') === true;
+		const isFromTaskCompletion = location.state.tasklistAutoSelectSource === 'task-completion';
+		const shouldAutoSelectNextTask = isAutoSelectNextTaskEnabled && isFromTaskCompletion;
 		const currentUser = await queryClient.ensureQueryData(queries.getCurrentUser());
-		return queryClient.ensureInfiniteQueryData(
-			queries.queryUserTasks(getTasksRequestBody(deps, {currentUsername: currentUser.username})),
-		);
+		const queryOptions = queries.queryUserTasks(getTasksRequestBody(search, {currentUsername: currentUser.username}));
+		const {pages} = await queryClient.ensureInfiniteQueryData(queryOptions);
+		const tasks = pages.flatMap((page) => page.items);
+		const nextOpenTaskIndex = tasks.findIndex(({state}) => state === 'CREATED');
+		const nextOpenTask = tasks[nextOpenTaskIndex];
+
+		if (shouldAutoSelectNextTask && nextOpenTask !== undefined) {
+			tracking.track({
+				eventName: 'tasklist:task-opened',
+				by: 'auto-select',
+				position: nextOpenTaskIndex,
+				filter: search.filter,
+				sorting: search.sortBy,
+			});
+			throw redirect({
+				to: '/tasklist/$userTaskKey',
+				params: {userTaskKey: nextOpenTask.userTaskKey},
+				search,
+				replace: true,
+			});
+		}
 	},
 	component: function TasksLayoutRoute() {
 		const search = Route.useSearch();

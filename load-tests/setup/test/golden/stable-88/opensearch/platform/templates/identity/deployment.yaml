@@ -14,7 +14,7 @@ metadata:
     camunda.io/purpose: load-test
 
     app.kubernetes.io/component: identity
-    app.kubernetes.io/version: "8.8.12"
+
   annotations:
     {}
 spec:
@@ -41,17 +41,16 @@ spec:
         camunda.io/purpose: load-test
 
         app.kubernetes.io/component: identity
-        app.kubernetes.io/version: "8.8.12"
+
       annotations:
 
     spec:
       imagePullSecrets:
         - name: harbor-registry
       initContainers:
-        []
       containers:
         - name: camunda-platform
-          image: camunda/identity:TEST
+          image: camunda/identity:8.8.14
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false

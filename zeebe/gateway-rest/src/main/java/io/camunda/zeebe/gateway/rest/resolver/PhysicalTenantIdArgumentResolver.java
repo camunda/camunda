@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.resolver;
 
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.spring.utils.PhysicalTenantContext;
 import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import org.springframework.core.MethodParameter;

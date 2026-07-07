@@ -407,6 +407,49 @@ out by GCP every ~24h.
 
 The `clean` job works regardless and cleans up both the platform and load-test deployments.
 
+## Helm Chart Version Management
+
+The Camunda Platform Helm Chart version pinned in each versioned setup folder is tracked and
+automatically updated by [Renovate](https://docs.renovatebot.com/). A custom regex manager in
+`.github/renovate.json` reads a structured annotation comment immediately before the
+`camunda_platform_helm_chart_version` assignment in each `newLoadTest.sh`.
+
+### Annotation format
+
+```sh
+# renovate: version=<tag-prefix>
+camunda_platform_helm_chart_version="<chart-version>"
+```
+
+The `version=` value must match the GitHub tag prefix used in the
+[`camunda/camunda-platform-helm`](https://github.com/camunda/camunda-platform-helm) repository.
+Tags follow the pattern `<tag-prefix>-<chart-version>`, for example
+`camunda-platform-8.9-14.4.1`.
+
+### Update rules
+
+- **`main`**: Renovate opens PRs for all version types (including pre-releases such as `-alpha`).
+- **`stable/*` branches**: Renovate opens PRs for patch updates only.
+
+In any case, Renovate will try to keep the Camunda Platform Helm Chart to the
+latest available version for the related Camunda version.
+
+### Adding a new versioned folder
+
+When adding a versioned setup folder for a new stable branch (e.g. `stable-8X/`):
+
+1. Add the annotation comment immediately above the `camunda_platform_helm_chart_version`
+   assignment in the new `newLoadTest.sh`:
+
+   ```sh
+   # renovate: version=camunda-platform-8.X
+   camunda_platform_helm_chart_version="a.b.c"
+   ```
+2. The `camunda_platform_helm_chart_version` value should match the actual Helm
+   Chart version for that specific Camunda version.
+
+There should not be any need to update `.github/renovate.json` when a new version is added.
+
 ## Load testing Camunda SaaS
 
 _You need a Kubernetes Cluster at your disposal to run the load test itself, which then connects to your Camunda SaaS Cluster._

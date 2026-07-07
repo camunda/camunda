@@ -7,9 +7,9 @@
  */
 package io.camunda.configuration.physicaltenants;
 
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationException;
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;

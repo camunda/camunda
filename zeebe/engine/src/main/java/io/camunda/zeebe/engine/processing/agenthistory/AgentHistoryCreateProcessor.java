@@ -138,10 +138,6 @@ public final class AgentHistoryCreateProcessor implements TypedRecordProcessor<A
 
     stateWriter.appendFollowUpEvent(historyKey, AgentHistoryIntent.CREATED, event);
     responseWriter.writeEventOnCommand(historyKey, AgentHistoryIntent.CREATED, event, command);
-
-    // TODO: remove once the pending-commit lifecycle is implemented (#55033); at that point
-    // COMMITTED will be emitted by AgentHistoryCommitProcessor after the job completes.
-    stateWriter.appendFollowUpEvent(historyKey, AgentHistoryIntent.COMMITTED, event);
   }
 
   private void writeRejection(

@@ -7,8 +7,8 @@
  */
 package io.camunda.application.commons.search;
 
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.clients.reader.AuthorizationReader;
@@ -33,7 +33,7 @@ public class SearchClientReaderConfiguration {
           final var secondaryStorage = physicalTenantCfg.getData().getSecondaryStorage();
           return new IndexDescriptors(
               secondaryStorage
-                  .getElasticsearchOrOpensearch()
+                  .elasticsearchOrOpensearch()
                   .orElseThrow(
                       () ->
                           new IllegalStateException(

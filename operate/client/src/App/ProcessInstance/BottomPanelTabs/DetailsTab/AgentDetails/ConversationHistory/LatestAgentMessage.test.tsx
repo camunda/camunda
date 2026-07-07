@@ -128,7 +128,7 @@ describe('<LatestAgentMessage />', () => {
     expect(message.getByText('I will help you with that.')).toBeInTheDocument();
   });
 
-  it('should render tool call buttons for a message with tool calls', async () => {
+  it('should render tool call intents for a message with tool calls', async () => {
     mockSearchAgentInstanceHistory(AGENT_INSTANCE_KEY).withSuccess(
       searchResult([
         mockAgentInstanceHistoryItem({
@@ -167,10 +167,8 @@ describe('<LatestAgentMessage />', () => {
 
     const message = within(screen.getByTestId('conversation-message-msg-2'));
     expect(
-      message.getByRole('button', {
-        name: '"doSomething" tool call. Click to open details.',
-      }),
-    ).toBeEnabled();
+      message.getByRole('button', {name: '"doSomething" tool call.'}),
+    ).toBeDisabled();
     expect(
       message.getByRole('button', {name: '"noElement" tool call.'}),
     ).toBeDisabled();

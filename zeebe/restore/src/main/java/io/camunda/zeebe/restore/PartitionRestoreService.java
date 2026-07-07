@@ -245,7 +245,7 @@ public class PartitionRestoreService {
     final RestorableSnapshotStore snapshotStore =
         new FileBasedSnapshotStore(
             brokerId,
-            partition.id().number(),
+            partition.id(),
             partition.dataDirectory().toPath(),
             checksumProvider,
             meterRegistry);

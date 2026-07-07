@@ -28,12 +28,13 @@ jobs:
     permissions: {}
     env:
       TEST_TYPE: Tool
+      TEST_PRODUCT: Identity
     defaults:
       run:
         working-directory: identity/client
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         timeout-minutes: 1
       - name: Print metadata
         uses: ./.github/actions/print-metadata
@@ -71,12 +72,13 @@ jobs:
     permissions: {}
     env:
       TEST_TYPE: Tool
+      TEST_PRODUCT: Operate
     defaults:
       run:
         working-directory: operate/client
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         timeout-minutes: 1
       - name: Print metadata
         uses: ./.github/actions/print-metadata
@@ -115,12 +117,13 @@ jobs:
     permissions: {}
     env:
       TEST_TYPE: Tool
+      TEST_PRODUCT: Tasklist
     defaults:
       run:
         working-directory: tasklist/client
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         timeout-minutes: 1
       - name: Print metadata
         uses: ./.github/actions/print-metadata
@@ -162,16 +165,17 @@ jobs:
         working-directory: optimize/client
     env:
       TEST_TYPE: Tool
+      TEST_PRODUCT: Optimize
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         timeout-minutes: 1
       - name: Print metadata
         uses: ./.github/actions/print-metadata
       - name: "Parse pom.xml for versions"
         id: "pom_info"
-        uses: YunaBraska/java-info-action@06acbcb53e1e6234536ce18519dcd5d24a7e5fbe # 3.0.7
+        uses: YunaBraska/java-info-action@11a434ffbf6bb3357363d1933be71a4076a90a6b # 3.0.11
         with:
           work-dir: ./optimize
       - uses: camunda/infra-global-github-actions/setup-yarn-cache@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # setup-yarn-cache: v1.0.0
@@ -212,6 +216,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {}
+    env:
+      TEST_TYPE: Tool
+      TEST_PRODUCT: Camunda
     needs:
       - identity-fe-sbom-snyk
       - operate-fe-sbom-snyk
@@ -219,7 +226,7 @@ jobs:
       - optimize-fe-sbom-snyk
     if: always() && contains(needs.*.result, 'failure')
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         timeout-minutes: 1
       - name: Print metadata
         uses: ./.github/actions/print-metadata

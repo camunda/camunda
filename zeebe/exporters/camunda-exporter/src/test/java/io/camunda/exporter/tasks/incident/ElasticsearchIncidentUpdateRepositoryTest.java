@@ -16,6 +16,8 @@ import co.elastic.clients.elasticsearch.core.ClearScrollResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.elasticsearch.indices.ElasticsearchIndicesAsyncClient;
+import co.elastic.clients.elasticsearch.indices.RefreshResponse;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentBulkUpdate;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
@@ -32,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -148,6 +151,71 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
     inOrder.verifyNoMoreInteractions();
   }
 
+  @Test
+  void shouldRefreshPostImporterQueueIndexBeforeReadingBatch() {
+    // given
+    final var repository = createRepository();
+    final var indicesClient = Mockito.mock(ElasticsearchIndicesAsyncClient.class);
+    Mockito.when(client.indices()).thenReturn(indicesClient);
+    Mockito.when(indicesClient.refresh(Mockito.any(Function.class)))
+        .thenReturn(CompletableFuture.completedFuture(buildMinimalRefreshResponse()));
+    Mockito.when(client.search(Mockito.any(SearchRequest.class), Mockito.any(Class.class)))
+        .thenReturn(CompletableFuture.completedFuture(buildMinimalSearchResponse()));
+
+    // when
+    final var result = repository.getPendingIncidentsBatch(-1L, 100);
+
+    // then - the queue write index is refreshed before the batch search runs, so a lagging shard
+    // exposes its writes and no pending entry is skipped by the forward-only cursor
+    assertThat(result).succeedsWithin(Duration.ofSeconds(5));
+    final var inOrder = Mockito.inOrder(client, indicesClient);
+    inOrder.verify(indicesClient).refresh(Mockito.any(Function.class));
+    inOrder.verify(client).search(Mockito.any(SearchRequest.class), Mockito.any(Class.class));
+  }
+
+  @Test
+  void shouldFailBatchWithoutSearchingWhenRefreshFails() {
+    // given
+    final var repository = createRepository();
+    final var indicesClient = Mockito.mock(ElasticsearchIndicesAsyncClient.class);
+    Mockito.when(client.indices()).thenReturn(indicesClient);
+    Mockito.when(indicesClient.refresh(Mockito.any(Function.class)))
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("refresh failed")));
+
+    // when
+    final var result = repository.getPendingIncidentsBatch(-1L, 100);
+
+    // then - a failed refresh must abort the batch (and let it retry) rather than search a
+    // potentially stale, partially-refreshed index and advance the cursor past unseen entries
+    assertThat(result).failsWithin(Duration.ofSeconds(5));
+    Mockito.verify(client, Mockito.never())
+        .search(Mockito.any(SearchRequest.class), Mockito.any(Class.class));
+  }
+
+  @Test
+  void shouldDisablePartialResultsOnPendingBatchSearch() {
+    // given
+    final var repository = createRepository();
+    final var indicesClient = Mockito.mock(ElasticsearchIndicesAsyncClient.class);
+    Mockito.when(client.indices()).thenReturn(indicesClient);
+    Mockito.when(indicesClient.refresh(Mockito.any(Function.class)))
+        .thenReturn(CompletableFuture.completedFuture(buildMinimalRefreshResponse()));
+    final var searchCaptor = ArgumentCaptor.forClass(SearchRequest.class);
+    Mockito.when(client.search(searchCaptor.capture(), Mockito.any(Class.class)))
+        .thenReturn(CompletableFuture.completedFuture(buildMinimalSearchResponse()));
+
+    // when
+    repository.getPendingIncidentsBatch(-1L, 100).toCompletableFuture().join();
+
+    // then - an unavailable shard must fail the search (triggering a retry) instead of silently
+    // returning partial hits and letting the cursor skip the entries on the missing shard
+    assertThat(searchCaptor.getValue().allowPartialSearchResults()).isFalse();
+  }
+
+  private RefreshResponse buildMinimalRefreshResponse() {
+    return RefreshResponse.of(r -> r.shards(s -> s.total(1).successful(1).failed(0)));
+  }
+
   private ClearScrollResponse buildMinimalClearScrollResponse() {
     return new ClearScrollResponse.Builder().succeeded(true).numFreed(1).build();
   }
@@ -175,6 +243,7 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
     return new ElasticsearchIncidentUpdateRepository(
         1,
         "pendingUpdateAlias",
+        "pendingUpdateFullQualifiedName",
         "incidentAlias",
         "listViewAlias",
         "listViewFullQualifiedName",

@@ -40,49 +40,21 @@ const jobDetails: WaitStateDetails = {
 };
 
 describe('getWaitStateLabel', () => {
-  it('should return null for empty array', () => {
-    expect(getWaitStateLabel([])).toBeNull();
+  it('should return null for a zero waiting count', () => {
+    expect(getWaitStateLabel(0)).toBeNull();
   });
 
-  it('should return "Waiting" for non-timer wait states', () => {
-    expect(
-      getWaitStateLabel([
-        buildWaitState({
-          waitStateType: 'MESSAGE',
-          messageName: 'foo',
-          correlationKey: null,
-        }),
-      ]),
-    ).toBe('Waiting');
+  it('should return null for a negative waiting count', () => {
+    expect(getWaitStateLabel(-1)).toBeNull();
   });
 
-  it('should return null when only timer wait states exist', () => {
-    expect(
-      getWaitStateLabel([
-        buildWaitState({
-          waitStateType: 'TIMER',
-          dueDate: Date.parse('2026-01-01T00:00:00Z'),
-          repetitions: null,
-        }),
-      ]),
-    ).toBeNull();
+  it('should return "Waiting" for a single waiting instance', () => {
+    expect(getWaitStateLabel(1)).toBe('Waiting');
   });
 
-  it('should return "Waiting" when mixed timer and non-timer wait states exist', () => {
-    expect(
-      getWaitStateLabel([
-        buildWaitState({
-          waitStateType: 'TIMER',
-          dueDate: Date.parse('2026-01-01T00:00:00Z'),
-          repetitions: null,
-        }),
-        buildWaitState({
-          waitStateType: 'MESSAGE',
-          messageName: 'foo',
-          correlationKey: null,
-        }),
-      ]),
-    ).toBe('Waiting');
+  it('should return the count for multiple waiting instances', () => {
+    expect(getWaitStateLabel(2)).toBe('2 waiting');
+    expect(getWaitStateLabel(42)).toBe('42 waiting');
   });
 });
 

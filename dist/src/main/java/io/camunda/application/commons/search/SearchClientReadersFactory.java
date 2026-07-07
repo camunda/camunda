@@ -52,6 +52,7 @@ import io.camunda.search.clients.reader.UserDocumentReader;
 import io.camunda.search.clients.reader.UserTaskDocumentReader;
 import io.camunda.search.clients.reader.VariableDocumentReader;
 import io.camunda.search.clients.reader.WaitStateDocumentReader;
+import io.camunda.search.clients.reader.WaitStateStatisticsDocumentReader;
 import io.camunda.search.clients.reader.utils.IncidentErrorHashCodeNormalizer;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
@@ -125,6 +126,8 @@ public final class SearchClientReadersFactory {
             executor, descriptors.get(FlowNodeInstanceTemplate.class));
     final var waitStateReader =
         new WaitStateDocumentReader(executor, descriptors.get(WaitStateTemplate.class));
+    final var waitStateStatisticsReader =
+        new WaitStateStatisticsDocumentReader(executor, descriptors.get(WaitStateTemplate.class));
     final var formReader = new FormDocumentReader(executor, descriptors.get(FormIndex.class));
     final var incidentReader =
         new IncidentDocumentReader(executor, descriptors.get(IncidentTemplate.class));
@@ -258,6 +261,7 @@ public final class SearchClientReadersFactory {
         incidentProcessInstanceStatisticsByErrorReader,
         incidentProcessInstanceStatisticsByDefinitionReader,
         globalListenerReader,
-        waitStateReader);
+        waitStateReader,
+        waitStateStatisticsReader);
   }
 }

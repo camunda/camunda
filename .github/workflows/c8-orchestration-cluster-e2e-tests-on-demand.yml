@@ -39,7 +39,7 @@ jobs:
           fi
           echo "Branch '$BRANCH' exists."
 
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
 
@@ -82,7 +82,7 @@ jobs:
           echo "Input branch: $BRANCH"
           echo "Base branch: $BASE_BRANCH"
           echo "Camunda mode: $CAMUNDA_MODE"
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ github.event.inputs.branch }}
 
@@ -232,7 +232,7 @@ jobs:
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Python setup
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: "3.x"
 
@@ -322,7 +322,7 @@ jobs:
           echo "Base branch: $BASE_BRANCH"
           echo "Camunda mode: $CAMUNDA_MODE"
 
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ github.event.inputs.branch }}
 
@@ -526,7 +526,7 @@ jobs:
           echo "Camunda mode: $CAMUNDA_MODE"
           echo "Tasklist mode: $TASKLIST_MODE"
 
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ github.event.inputs.branch }}
 
@@ -682,7 +682,7 @@ jobs:
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Python setup
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: "3.x"
 

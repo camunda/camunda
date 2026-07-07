@@ -42,33 +42,34 @@ import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.DeleteHistoryOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ModeChangeOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionBootstrapOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PostScalingOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PreScalingOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.*;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateIncarnationNumberOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdatePartitionDistributorConfigOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberRemoveOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PostScalingOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PreScalingOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartitionDistributorConfigOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.DeleteHistoryOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.*;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
@@ -550,6 +551,11 @@ public class ProtoBufSerializer
               Topology.ModeChangeOperation.newBuilder()
                   .setMode(toProtoTopologyMode(modeChangeOperation.mode()))
                   .build());
+      case final AwaitModeChangeOperation awaitModeChangeOperation ->
+          builder.setAwaitModeChange(
+              Topology.AwaitModeChangeOperation.newBuilder()
+                  .setMode(toProtoTopologyMode(awaitModeChangeOperation.mode()))
+                  .build());
     }
     return builder.build();
   }
@@ -875,6 +881,10 @@ public class ProtoBufSerializer
     } else if (topologyChangeOperation.hasModeChange()) {
       final var modeChangeProto = topologyChangeOperation.getModeChange();
       return new ModeChangeOperation(memberId, fromProtoTopologyMode(modeChangeProto.getMode()));
+    } else if (topologyChangeOperation.hasAwaitModeChange()) {
+      final var awaitModeChangeProto = topologyChangeOperation.getAwaitModeChange();
+      return new AwaitModeChangeOperation(
+          memberId, fromProtoTopologyMode(awaitModeChangeProto.getMode()));
     } else {
       // If the node does not know of a type, the exception thrown will prevent
       // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any
@@ -1379,10 +1389,10 @@ public class ProtoBufSerializer
   }
 
   @Override
-  public byte[] encodeModeChangeRequest(final ModeChangeRequest recoveryModeRequest) {
+  public byte[] encodeModeChangeRequest(final ModeChangeRequest modeChangeRequest) {
     return Requests.ModeChangeRequest.newBuilder()
-        .setMode(toProtoRequestMode(recoveryModeRequest.mode()))
-        .setDryRun(recoveryModeRequest.dryRun())
+        .setMode(toProtoRequestMode(modeChangeRequest.mode()))
+        .setDryRun(modeChangeRequest.dryRun())
         .build()
         .toByteArray();
   }

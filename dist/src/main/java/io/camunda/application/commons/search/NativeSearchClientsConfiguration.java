@@ -8,8 +8,8 @@
 package io.camunda.application.commons.search;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.search.connect.tenant.SearchClients;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;

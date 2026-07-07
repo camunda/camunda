@@ -20,6 +20,7 @@ import static io.camunda.optimize.service.db.report.plan.process.ProcessDistribu
 import static io.camunda.optimize.service.db.report.plan.process.ProcessDistributedBy.PROCESS_DISTRIBUTED_BY_PROCESS;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessDistributedBy.PROCESS_DISTRIBUTED_BY_USER_TASK;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessDistributedBy.PROCESS_DISTRIBUTED_BY_VARIABLE;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_AGENT_FLOW_NODE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_AGENT_PROCESS_DEFINITION_KEY;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_ASSIGNEE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_CANDIDATE_GROUP;
@@ -47,6 +48,7 @@ import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PRO
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_TOTAL_TOKENS;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_FLOW_NODE_DURATION;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_FLOW_NODE_FREQUENCY;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_FLOW_NODE_TOOL_CALLS;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_INCIDENT_DURATION;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_INCIDENT_FREQUENCY;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_INSTANCE_DURATION;
@@ -682,7 +684,13 @@ public enum ProcessExecutionPlan implements ExecutionPlan {
       PROCESS_DISTRIBUTED_BY_NONE,
       MAP),
   PROCESS_AGENT_TOTAL_TOKENS_GROUP_BY_NONE(
-      PROCESS_VIEW_AGENT_TOTAL_TOKENS, PROCESS_GROUP_BY_NONE, PROCESS_DISTRIBUTED_BY_NONE, NUMBER);
+      PROCESS_VIEW_AGENT_TOTAL_TOKENS, PROCESS_GROUP_BY_NONE, PROCESS_DISTRIBUTED_BY_NONE, NUMBER),
+
+  FLOW_NODE_TOOL_CALLS_GROUP_BY_AGENT_FLOW_NODE(
+      PROCESS_VIEW_FLOW_NODE_TOOL_CALLS,
+      PROCESS_GROUP_BY_AGENT_FLOW_NODE,
+      PROCESS_DISTRIBUTED_BY_NONE,
+      MAP);
 
   private final ProcessView view;
   private final ProcessGroupBy groupBy;

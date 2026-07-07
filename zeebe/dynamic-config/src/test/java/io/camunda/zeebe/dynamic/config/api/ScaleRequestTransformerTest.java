@@ -10,21 +10,24 @@ package io.camunda.zeebe.dynamic.config.api;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
-import io.atomix.primitive.partition.PartitionId;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.dynamic.config.PartitionDistributor;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRedistributionCompletion;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRelocationCompletion;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.StartPartitionScaleUp;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PostScalingOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PreScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRedistributionCompletion;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRelocationCompletion;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.StartPartitionScaleUp;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -335,6 +338,75 @@ class ScaleRequestTransformerTest {
     @Test
     void shouldScaleInZoneAwareCluster() {
       shouldScaleAndReassign(3, 3, ZONE_AWARE_CONFIG, SCALED_MEMBERS, UNSCALED_MEMBERS);
+    }
+
+    @Test
+    void shouldUseLowestMemberOfScalingZoneAsCoordinator() {
+      // given: cluster with zone-a and zone-b, scaling only zone-b from 1 to 2 brokers.
+      // The default coordinator would be zone-a_0 (lowest overall), but the pre/post scaling
+      // callbacks must run on a broker in zone-b so they operate on zone-b's node-id state.
+      final Set<MemberId> newMembers = new HashSet<>(UNSCALED_MEMBERS);
+      newMembers.add(MemberId.from("zone-b", 1));
+      final var oldTopology =
+          ConfigurationUtil.getClusterConfigFrom(
+                  ZONE_AWARE_CONFIG
+                      .toDistributor()
+                      .distributePartitions(
+                          UNSCALED_MEMBERS,
+                          getSortedPartitionIds(3),
+                          ZONE_AWARE_CONFIG.replicationFactor()),
+                  partitionConfig,
+                  "clusterId")
+              .setPartitionDistributorConfig(ZONE_AWARE_CONFIG);
+
+      // when
+      final var operations =
+          new ScaleRequestTransformer(
+                  newMembers, Optional.empty(), Optional.empty(), Optional.of("zone-b"))
+              .operations(oldTopology)
+              .get();
+
+      // then
+      final var expectedCoordinator = MemberId.from("zone-b", 0);
+      AssertionsForInterfaceTypes.assertThat(operations)
+          .filteredOn(PreScalingOperation.class::isInstance)
+          .extracting(op -> ((PreScalingOperation) op).memberId())
+          .containsExactly(expectedCoordinator);
+      AssertionsForInterfaceTypes.assertThat(operations)
+          .filteredOn(PostScalingOperation.class::isInstance)
+          .extracting(op -> ((PostScalingOperation) op).memberId())
+          .containsExactly(expectedCoordinator);
+    }
+
+    @Test
+    void shouldSkipScalingCallbacksWhenAddingNewZone() {
+      // given: existing zone-a and zone-b, adding a broker in a brand-new zone-c that has no
+      // existing broker
+      final Set<MemberId> newMembers = new HashSet<>(UNSCALED_MEMBERS);
+      newMembers.add(MemberId.from("zone-c", 0));
+      final var oldTopology =
+          ConfigurationUtil.getClusterConfigFrom(
+                  ZONE_AWARE_CONFIG
+                      .toDistributor()
+                      .distributePartitions(
+                          UNSCALED_MEMBERS,
+                          getSortedPartitionIds(3),
+                          ZONE_AWARE_CONFIG.replicationFactor()),
+                  partitionConfig,
+                  "clusterId")
+              .setPartitionDistributorConfig(ZONE_AWARE_CONFIG);
+
+      // when
+      final var operations =
+          new ScaleRequestTransformer(
+                  newMembers, Optional.empty(), Optional.empty(), Optional.of("zone-c"))
+              .operations(oldTopology)
+              .get();
+
+      // then: no pre/post scaling callbacks, the new zone's brokers create their leases on startup
+      AssertionsForInterfaceTypes.assertThat(operations)
+          .noneMatch(PreScalingOperation.class::isInstance)
+          .noneMatch(PostScalingOperation.class::isInstance);
     }
   }
 }

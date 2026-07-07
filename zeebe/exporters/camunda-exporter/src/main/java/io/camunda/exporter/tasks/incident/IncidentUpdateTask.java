@@ -291,7 +291,27 @@ public final class IncidentUpdateTask implements BackgroundTask {
     instances.forEach(
         instance -> {
           data.processInstanceIndices().put(instance.id(), instance.index());
-          data.processInstanceTreePaths().put(instance.key(), instance.treePath());
+          // An imported process instance may have a null/empty treePath (e.g. migrated 8.7 data, or
+          // a partial list-view document re-created via upsert after archival, where
+          // ListViewProcessInstanceFromProcessInstanceHandler only writes treePath when non-null).
+          // The treePath map is a ConcurrentHashMap, which rejects null values, so a raw put would
+          // throw an NPE. This is a permanent condition that would never resolve by retrying, so
+          // instead of skipping the entry (which would stall downstream as MISSING_DATA, or fail in
+          // processIncidentInBatch when the key is absent), we fall back to a sparse tree path so
+          // the incident update can still make progress. A genuinely not-yet-imported instance is
+          // absent from this result entirely, so it still has no entry here and is retried.
+          final var treePath = instance.treePath();
+          if (treePath == null || treePath.isEmpty()) {
+            final var sparseTreePath =
+                new TreePath().startTreePath(String.valueOf(instance.key())).toString();
+            logger.warn(
+                "Process instance {} has no treePath. Falling back to the sparse tree path {} so incident updates can make progress.",
+                instance.key(),
+                sparseTreePath);
+            data.processInstanceTreePaths().put(instance.key(), sparseTreePath);
+          } else {
+            data.processInstanceTreePaths().put(instance.key(), treePath);
+          }
         });
   }
 

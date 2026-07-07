@@ -53,7 +53,7 @@ jobs:
     strategy:
       fail-fast: true
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Log Input Variables
         run: |
@@ -213,14 +213,14 @@ jobs:
           service_account: "github-actions-camunda@team-infosec.iam.gserviceaccount.com"
 
       - name: Login to infosec registry
-        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4
         with:
           registry: europe-west1-docker.pkg.dev
           username: oauth2accesstoken
           password: ${{ steps.auth.outputs.access_token }}
 
       - name: Checkout release branch
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ env.BRANCH }}
           fetch-depth: 0
@@ -233,7 +233,7 @@ jobs:
 
       - name: "Read Java / Version Info"
         id: "pom-info"
-        uses: YunaBraska/java-info-action@06acbcb53e1e6234536ce18519dcd5d24a7e5fbe # 3.0.7
+        uses: YunaBraska/java-info-action@11a434ffbf6bb3357363d1933be71a4076a90a6b # 3.0.11
         with:
           work-dir: ./optimize
 

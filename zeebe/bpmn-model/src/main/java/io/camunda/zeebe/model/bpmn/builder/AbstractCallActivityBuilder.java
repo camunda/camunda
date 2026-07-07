@@ -57,6 +57,13 @@ public class AbstractCallActivityBuilder<B extends AbstractCallActivityBuilder<B
     return myself;
   }
 
+  public B zeebeBusinessId(final String businessId) {
+    final ZeebeCalledElement calledElement =
+        getCreateSingleExtensionElement(ZeebeCalledElement.class);
+    calledElement.setBusinessId(businessId);
+    return myself;
+  }
+
   public B zeebePropagateAllChildVariables(final boolean propagateAllChildVariables) {
     final ZeebeCalledElement calledElement =
         getCreateSingleExtensionElement(ZeebeCalledElement.class);

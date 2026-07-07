@@ -1,5 +1,36 @@
 # Changelog
 
+## v0.0.80
+
+### 🚀 Enhancements
+
+- enhance endpoint mapping types ([#56683](https://github.com/camunda/camunda/issues/56683))
+
+### ❤️ Contributors
+
+- Vinicius Goulart ([@vsgoulart](https://github.com/vsgoulart))
+
+## v0.0.79
+
+### 🚀 Enhancements
+
+- Add wait state statistics endpoint to the 8.10 process-instance schema ([#56422](https://github.com/camunda/camunda/issues/56422))
+
+### ❤️ Contributors
+
+- Daniel Kelemen ([@danielkelemen](https://github.com/danielkelemen))
+
+## v0.0.78
+
+### 🚀 Enhancements
+
+- Add `businessId` property to decision-instance schema ([#52098](https://github.com/camunda/camunda/issues/52098))
+- Add `businessId` property to user-task schema ([#51691](https://github.com/camunda/camunda/issues/51691))
+
+### ❤️ Contributors
+
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
 ## v0.0.77
 
 ### 🚀 Enhancements

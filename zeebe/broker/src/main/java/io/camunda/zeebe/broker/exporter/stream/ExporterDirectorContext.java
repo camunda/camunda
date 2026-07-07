@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.exporter.stream;
 
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector.ExporterInitializationInfo;
 import io.camunda.zeebe.broker.system.partitions.PartitionMessagingService;
@@ -24,7 +25,7 @@ public final class ExporterDirectorContext {
   public static final Duration DEFAULT_DISTRIBUTION_INTERVAL = Duration.ofSeconds(15);
 
   private int id;
-  private String name;
+  private PartitionId partitionId;
   private LogStream logStream;
   private Map<ExporterDescriptor, ExporterInitializationInfo> descriptors;
   private ZeebeDb zeebeDb;
@@ -41,10 +42,6 @@ public final class ExporterDirectorContext {
 
   public int getId() {
     return id;
-  }
-
-  public String getName() {
-    return name;
   }
 
   public LogStream getLogStream() {
@@ -101,11 +98,6 @@ public final class ExporterDirectorContext {
 
   public ExporterDirectorContext id(final int id) {
     this.id = id;
-    return this;
-  }
-
-  public ExporterDirectorContext name(final String name) {
-    this.name = name;
     return this;
   }
 
@@ -173,6 +165,15 @@ public final class ExporterDirectorContext {
 
   public ExporterDirectorContext receiveOnLegacySubject(final boolean receiveOnLegacySubject) {
     this.receiveOnLegacySubject = receiveOnLegacySubject;
+    return this;
+  }
+
+  public PartitionId getPartitionId() {
+    return partitionId;
+  }
+
+  public ExporterDirectorContext partitionId(final PartitionId partitionId) {
+    this.partitionId = partitionId;
     return this;
   }
 

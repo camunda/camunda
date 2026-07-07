@@ -1,0 +1,43 @@
+---
+name: npm ci with retry
+
+# owner: @camunda/monorepo-devops-team
+
+description: >
+  Runs `npm ci` wrapped in retry logic so a singular transient npm-registry
+  network failure does not fail the whole job.
+
+inputs:
+  directory:
+    description: >
+      Directory to install dependencies in. The retry action runs from the
+      repository root and ignores `working-directory`, so this must be passed
+      explicitly.
+    required: true
+  max_attempts:
+    description: Maximum number of attempts before giving up.
+    required: false
+    default: "3"
+  retry_wait_seconds:
+    description: Seconds to wait between attempts.
+    required: false
+    default: "5"
+  timeout_minutes:
+    description: Timeout per attempt in minutes.
+    required: false
+    default: "10"
+
+runs:
+  using: composite
+  steps:
+    - name: Install node dependencies
+      uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+      with:
+        max_attempts: ${{ inputs.max_attempts }}
+        retry_wait_seconds: ${{ inputs.retry_wait_seconds }}
+        timeout_minutes: ${{ inputs.timeout_minutes }}
+        # Pin to bash so a forward-slash `directory` works consistently on
+        # Linux, container images, and Windows runners (git-bash).
+        shell: bash
+        command: |
+          cd "${{ inputs.directory }}" && npm ci

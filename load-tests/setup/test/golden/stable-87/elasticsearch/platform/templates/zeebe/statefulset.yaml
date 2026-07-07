@@ -14,7 +14,7 @@ metadata:
     camunda.io/purpose: load-test
 
     app.kubernetes.io/component: zeebe-broker
-    app.kubernetes.io/version: "8.7.33"
+
   annotations:
 spec:
   replicas: 3
@@ -42,7 +42,7 @@ spec:
         camunda.io/purpose: load-test
 
         app.kubernetes.io/component: zeebe-broker
-        app.kubernetes.io/version: "8.7.33"
+
       annotations:
 
     spec:
@@ -52,7 +52,7 @@ spec:
         []
       containers:
         - name: zeebe
-          image: docker.io/camunda/zeebe:TEST
+          image: docker.io/camunda/zeebe:8.7.34
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: true
@@ -115,6 +115,8 @@ spec:
               value: INFO
             - name: SPRING_CONFIG_ADDITIONALLOCATION
               value: /usr/local/zeebe/config/application.yml,optional:/usr/local/zeebe/config/application-override.yml
+            - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_NUMBEROFREPLICAS
+              value: "1"
           envFrom:
             - configMapRef:
                 name: c8-golden-stable-87-elasticsearch-camunda-platform-documentstore-env-vars

@@ -28,6 +28,7 @@ on:
 
 env:
   TEST_OWNER: '@camunda/monorepo-devops-team'
+  E2E_DIR: e2e-tests
 
 jobs:
   deploy-8-8:
@@ -159,8 +160,15 @@ jobs:
           owner: camunda
           repositories: c8-cross-component-e2e-tests
 
+      # Sparse-checkout .github so local composite actions (npm-ci-with-retry,
+      # observe-build-status) resolve.
+      - name: Check out .github for local actions
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          sparse-checkout: .github
+
       - name: Checkout Smoke Tests
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           repository: camunda/c8-cross-component-e2e-tests
           token: ${{ steps.github-token.outputs.token }}
@@ -172,18 +180,19 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: e2e-tests/package-lock.json
+          cache-dependency-path: ${{ env.E2E_DIR }}/package-lock.json
 
       - name: Install Dependencies
-        working-directory: e2e-tests
-        run: npm ci
+        uses: ./.github/actions/npm-ci-with-retry
+        with:
+          directory: ${{ env.E2E_DIR }}
 
       - name: Install Playwright Browsers
-        working-directory: e2e-tests
+        working-directory: ${{ env.E2E_DIR }}
         run: npx playwright install chromium --with-deps
 
       - name: Run Smoke Tests
-        working-directory: e2e-tests
+        working-directory: ${{ env.E2E_DIR }}
         env:
           LOCAL_TEST: true
           MINOR_VERSION: SM-${{ matrix.deployment.version }}
@@ -209,9 +218,6 @@ jobs:
             e2e-tests/html-report/
             e2e-tests/test-results/
           retention-days: 7
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          sparse-checkout: .github
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -352,7 +358,7 @@ jobs:
               ]
             }
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           sparse-checkout: .github
       - name: Observe build status

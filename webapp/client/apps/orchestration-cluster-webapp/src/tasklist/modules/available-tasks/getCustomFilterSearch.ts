@@ -36,6 +36,7 @@ function getCustomFilterSearch(options: {
 		followUpDateFrom: undefined,
 		followUpDateTo: undefined,
 		elementId: undefined,
+		businessId: undefined,
 	};
 
 	const sortBy = currentSearch.sortBy === 'completion' ? 'creation' : currentSearch.sortBy;

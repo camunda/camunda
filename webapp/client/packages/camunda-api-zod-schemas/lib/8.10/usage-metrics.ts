@@ -30,7 +30,7 @@ type GetUsageMetricsParams = {
 	withTenants?: boolean;
 };
 
-const getUsageMetrics: Endpoint<GetUsageMetricsParams> = {
+const getUsageMetrics = {
 	method: 'GET',
 	getUrl: ({startTime, endTime, tenantId, withTenants}) => {
 		const queryParams = new URLSearchParams({startTime, endTime});
@@ -41,9 +41,9 @@ const getUsageMetrics: Endpoint<GetUsageMetricsParams> = {
 			queryParams.set('withTenants', String(withTenants));
 		}
 
-		return `/${API_VERSION}/system/usage-metrics?${queryParams.toString()}`;
+		return `/${API_VERSION}/system/usage-metrics?${queryParams.toString()}` as const;
 	},
-};
+} as const satisfies Endpoint<GetUsageMetricsParams>;
 
 export {getUsageMetrics, usageMetricsSchema, getUsageMetricsResponseBodySchema};
 export type {UsageMetrics, GetUsageMetricsResponseBody, GetUsageMetricsParams};

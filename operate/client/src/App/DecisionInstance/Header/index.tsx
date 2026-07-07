@@ -18,7 +18,11 @@ import {useDecisionInstance} from 'modules/queries/decisionInstances/useDecision
 import type {DrdPanelState} from 'modules/queries/decisionInstances/useDrdPanelState';
 import {getClientConfig} from 'modules/utils/getClientConfig';
 
-const getHeaderColumns = (isMultiTenancyEnabled: boolean = false) => {
+const getHeaderColumns = (options: {
+  isMultiTenancyEnabled?: boolean;
+  hasBusinessId?: boolean;
+}) => {
+  const {isMultiTenancyEnabled = false, hasBusinessId = false} = options;
   return [
     {
       name: 'Decision Instance Key',
@@ -28,6 +32,14 @@ const getHeaderColumns = (isMultiTenancyEnabled: boolean = false) => {
       name: 'Version',
       skeletonWidth: '33px',
     },
+    ...(hasBusinessId
+      ? [
+          {
+            name: 'Business ID',
+            skeletonWidth: '137px',
+          },
+        ]
+      : []),
     ...(isMultiTenancyEnabled
       ? [
           {
@@ -57,19 +69,25 @@ const Header: React.FC<HeaderProps> = ({
   onChangeDrdPanelState,
 }) => {
   const isMultiTenancyEnabled = getClientConfig().multiTenancyEnabled;
-  const headerColumns = getHeaderColumns(isMultiTenancyEnabled);
   const tenantsById = useAvailableTenants();
   const {data: decisionInstance, status} = useDecisionInstance(
     decisionEvaluationInstanceKey,
   );
 
   if (status === 'pending') {
-    return <Skeleton headerColumns={headerColumns} />;
+    return (
+      <Skeleton headerColumns={getHeaderColumns({isMultiTenancyEnabled})} />
+    );
   }
 
   if (status === 'success' && decisionInstance !== null) {
     const tenantId = decisionInstance.tenantId;
     const tenantName = tenantsById[tenantId] ?? tenantId;
+    const hasBusinessId = decisionInstance.businessId !== null;
+    const headerColumns = getHeaderColumns({
+      isMultiTenancyEnabled,
+      hasBusinessId,
+    });
     const versionColumnTitle = `View decision "${
       decisionInstance.decisionDefinitionName
     } version ${decisionInstance.decisionDefinitionVersion}" instances${
@@ -115,6 +133,11 @@ const Header: React.FC<HeaderProps> = ({
                 {decisionInstance.decisionDefinitionVersion}
               </Link>
             ),
+          },
+          {
+            hidden: !hasBusinessId,
+            title: decisionInstance.businessId ?? undefined,
+            content: decisionInstance.businessId,
           },
           {
             hidden: !isMultiTenancyEnabled,

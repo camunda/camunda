@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.VisibleForTesting;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
@@ -57,6 +58,11 @@ final class HandlerRegistry {
     return handlers.entrySet().stream()
         .flatMap(e -> e.getValue().keySet().stream().map(intent -> Map.entry(e.getKey(), intent)))
         .collect(Collectors.toUnmodifiableSet());
+  }
+
+  /** Package-private production seam consumed by {@link AnalyticsExporterDigest}. */
+  Map<ValueType, Map<Intent, AnalyticsHandler<?>>> registeredHandlers() {
+    return Collections.unmodifiableMap(handlers);
   }
 
   /** Routes the record to its handler. Does nothing if no handler is registered. */

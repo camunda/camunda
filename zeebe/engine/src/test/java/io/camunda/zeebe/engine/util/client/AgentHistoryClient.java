@@ -35,6 +35,15 @@ public final class AgentHistoryClient {
                   .withSourceRecordPosition(position)
                   .getFirst();
 
+  // Shared by commit() and discard(): both wait for the first follow-up event (COMMITTED or
+  // DISCARDED) at the command's source position.
+  private static final Function<Long, Record<AgentHistoryRecordValue>> FOLLOW_UP_EVENT_EXPECTATION =
+      (position) ->
+          RecordingExporter.agentHistoryRecords()
+              .onlyEvents()
+              .withSourceRecordPosition(position)
+              .getFirst();
+
   private final CommandWriter writer;
   private final AgentHistoryRecord record = new AgentHistoryRecord();
   private List<String> authorizedTenantIds = List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
@@ -104,5 +113,15 @@ public final class AgentHistoryClient {
             record,
             authorizedTenantIds.toArray(new String[0]));
     return (expectRejection ? CREATE_REJECTION_EXPECTATION : CREATED_EXPECTATION).apply(position);
+  }
+
+  public Record<AgentHistoryRecordValue> commit() {
+    final long position = writer.writeCommand(AgentHistoryIntent.COMMIT, record);
+    return FOLLOW_UP_EVENT_EXPECTATION.apply(position);
+  }
+
+  public Record<AgentHistoryRecordValue> discard() {
+    final long position = writer.writeCommand(AgentHistoryIntent.DISCARD, record);
+    return FOLLOW_UP_EVENT_EXPECTATION.apply(position);
   }
 }

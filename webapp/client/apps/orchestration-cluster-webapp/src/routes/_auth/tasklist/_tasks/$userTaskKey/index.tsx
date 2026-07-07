@@ -6,10 +6,19 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute} from '@tanstack/react-router';
+import {createFileRoute, useSearch} from '@tanstack/react-router';
+import {useSuspenseQuery} from '@tanstack/react-query';
+import {queries} from '#/shared/http/queries';
+import {TaskDetailsTaskPage} from '#/tasklist/pages/TaskDetailsTaskPage';
 
 export const Route = createFileRoute('/_auth/tasklist/_tasks/$userTaskKey/')({
-	component: function TaskTabPlaceholder() {
-		return <div data-testid="task-tab-content" />;
+	component: function TaskTabRoute() {
+		const {userTaskKey} = Route.useParams();
+		const search = useSearch({from: '/_auth/tasklist/_tasks'});
+		const {data: task} = useSuspenseQuery(queries.getUserTask(userTaskKey));
+		const {data: currentUser} = useSuspenseQuery(queries.getCurrentUser());
+
+		return <TaskDetailsTaskPage task={task} currentUser={currentUser} search={search} />;
 	},
+	remountDeps: ({params: {userTaskKey}}) => [userTaskKey],
 });

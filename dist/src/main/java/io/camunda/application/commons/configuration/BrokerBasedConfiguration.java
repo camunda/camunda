@@ -20,10 +20,13 @@ import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.gateway.RestApiCompositeFilter;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.gateway.rest.impl.filters.FilterRepository;
+import io.camunda.zeebe.util.MemberIdUtil;
 import jakarta.servlet.Filter;
 import java.time.Duration;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.context.LifecycleProperties;
 import org.springframework.context.annotation.Bean;
@@ -34,6 +37,7 @@ import org.springframework.web.filter.CompositeFilter;
 @Configuration(proxyBeanMethods = false)
 @Profile(value = {"broker", "restore"})
 public class BrokerBasedConfiguration {
+  private static final Logger LOG = LoggerFactory.getLogger(BrokerBasedConfiguration.class);
 
   private final WorkingDirectory workingDirectory;
   private final BrokerCfg properties;
@@ -75,7 +79,9 @@ public class BrokerBasedConfiguration {
     final var cpuThreads = threadCfg.getCpuThreadCount();
     final var ioThreads = threadCfg.getIoThreadCount();
     final var metricsEnabled = properties.getExperimental().getFeatures().isEnableActorMetrics();
-    final var nodeId = String.valueOf(properties.getCluster().getNodeId());
+    final var nodeId =
+        MemberIdUtil.memberIdString(
+            properties.getCluster().getZone(), properties.getCluster().getNodeId());
     return new SchedulerConfiguration(cpuThreads, ioThreads, metricsEnabled, "Broker", nodeId);
   }
 

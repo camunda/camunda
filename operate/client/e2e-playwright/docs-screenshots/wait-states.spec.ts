@@ -36,6 +36,7 @@ test.describe('wait states', () => {
         variables: waitStateProcessInstance.variables,
         xml: waitStateProcessInstance.xml,
         waitStates: waitStateProcessInstance.waitStates,
+        waitStateStatistics: waitStateProcessInstance.waitStateStatistics,
       }),
     );
 
@@ -54,7 +55,7 @@ test.describe('wait states', () => {
     ).toBeVisible();
 
     await page.screenshot({
-      path: 'e2e-playwright/docs-screenshots/wait-states/operate-wait-state-service-task.png',
+      path: 'e2e-playwright/docs-screenshots/wait-states/operate-wait-states.png',
     });
   });
 });

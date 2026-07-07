@@ -405,7 +405,7 @@ public final class AgentHistoryEntity
       AgentHistoryContentType contentType,
       String text,
       DocumentReferenceEntity documentReference,
-      Map<String, Object> object) {
+      Object object) {
 
     public static AgentHistoryContentValue text(final String text) {
       return new AgentHistoryContentValue(AgentHistoryContentType.TEXT, text, null, null);
@@ -417,7 +417,7 @@ public final class AgentHistoryEntity
           AgentHistoryContentType.DOCUMENT, null, documentReference, null);
     }
 
-    public static AgentHistoryContentValue object(final Map<String, Object> object) {
+    public static AgentHistoryContentValue object(final Object object) {
       return new AgentHistoryContentValue(AgentHistoryContentType.OBJECT, null, null, object);
     }
   }

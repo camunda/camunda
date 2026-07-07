@@ -11,7 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.authentication.config.BasicAuthBeansConfiguration;
 import io.camunda.authentication.config.OidcOverrideBeansConfiguration;
 import io.camunda.authentication.config.WebSecurityConfig;
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.search.clients.auth.DisabledResourceAccessProvider;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.context.CamundaAuthenticationHolder;

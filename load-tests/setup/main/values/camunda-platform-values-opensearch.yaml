@@ -22,6 +22,32 @@ orchestration:
     secondaryStorage:
       type: opensearch
 
+  env:
+    - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_NUMBEROFREPLICAS
+      value: "1"
+
+    ## The values below are duplicated from
+    ## camunda-platform-values-defaults.yaml. Keep them in sync.
+    # Enable JSON logging for google cloud stackdriver
+    - name: ZEEBE_LOG_APPENDER
+      value: Stackdriver
+    - name: ZEEBE_LOG_STACKDRIVER_SERVICENAME
+      value: zeebe
+    - name: ZEEBE_LOG_STACKDRIVER_SERVICEVERSION
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.namespace
+    - name: ATOMIX_LOG_LEVEL
+      value: INFO
+    - name: ZEEBE_LOG_LEVEL
+      value: DEBUG
+    # To be able to load a separate/additional configuration
+    # See https://github.com/camunda/camunda-platform-helm/issues/2197
+    - name: SPRING_CONFIG_ADDITIONALLOCATION
+      # application-override.yml is listed second so it has higher priority and can override application.yml.
+      # Marked optional so Spring does not fail if this file is not mounted in a given deployment configuration.
+      value: "/usr/local/camunda/config/application.yml,optional:/usr/local/camunda/config/application-override.yml"
+
 #################################################################################################
 ################################################### Disable Elasticsearch when using OpenSearch
 #################################################################################################
@@ -55,6 +81,16 @@ config:
     plugins.security.disabled: true
     # Disable deprecation logging to avoid filling up the logs with warnings about deprecated features that we might be using in our tests
     logger.org.opensearch.deprecation: "OFF"
+
+  # Log as JSON
+  log4j2.properties: |
+    appender.console.type = Console
+    appender.console.name = console
+    appender.console.layout.type = OpenSearchJsonLayout
+    appender.console.layout.type_name = json_logger
+
+    rootLogger.level = info
+    rootLogger.appenderRef.console.ref = console
 
 extraEnvs:
   - name: OPENSEARCH_INITIAL_ADMIN_PASSWORD

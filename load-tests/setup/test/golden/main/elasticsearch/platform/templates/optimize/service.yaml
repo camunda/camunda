@@ -14,7 +14,7 @@ metadata:
     camunda.io/purpose: load-test
 
     app.kubernetes.io/component: optimize
-    app.kubernetes.io/version: "8.10.0-alpha1"
+
   annotations:
 spec:
   type: ClusterIP

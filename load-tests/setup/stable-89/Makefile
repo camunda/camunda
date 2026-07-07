@@ -1,7 +1,6 @@
 namespace ?= __NAMESPACE__
 secondary_storage ?= __STORAGE_TYPE__
 template_output_dir ?= .
-helm_chart ?= camunda-platform-8.9
 enable_optimize ?= __ENABLE_OPTIMIZE__
 # Enable the chaos-killer CronJob (randomly deletes one matching pod per run).
 # Use named targets (make install-chaos) or pass directly: make install chaos=true
@@ -17,8 +16,7 @@ additional_platform_configuration ?=
 # See the load test README for example values and guidance.
 additional_load_test_configuration ?=
 
-helm_chart_platform := charts/camunda-platform-helm/charts/$(helm_chart)
-helm_chart_load_tests := camunda-load-tests/camunda-load-tests
+helm_chart_platform := charts/camunda-platform
 
 # Scenario: controls the workload profile for the load test.
 # Options: latency, realistic, typical, max, archiver
@@ -26,19 +24,19 @@ helm_chart_load_tests := camunda-load-tests/camunda-load-tests
 scenario ?=
 
 ifeq ($(scenario),latency)
-_scenario_load_test_flags := --set starter.rate=1 --set workers.worker.replicas=1
+_scenario_load_test_flags := --set load-tester.starter.rate=1 --set load-tester.workers.worker.replicas=1
 _scenario_platform_flags  :=
 else ifeq ($(scenario),realistic)
-_scenario_load_test_flags := -f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml
+_scenario_load_test_flags := -f load-tester-values-realistic-benchmark.yaml
 _scenario_platform_flags  :=
 else ifeq ($(scenario),typical)
-_scenario_load_test_flags := --set starter.rate=50 --set workers.worker.replicas=6 --set starter.bpmnXmlPath=bpmn/typical_process.bpmn
+_scenario_load_test_flags := --set load-tester.starter.rate=50 --set load-tester.workers.worker.replicas=6 --set load-tester.starter.bpmnXmlPath=bpmn/typical_process.bpmn
 _scenario_platform_flags  :=
 else ifeq ($(scenario),max)
-_scenario_load_test_flags := --set starter.rate=300
+_scenario_load_test_flags := --set load-tester.starter.rate=300
 _scenario_platform_flags  := --set-file 'orchestration.extraConfiguration[1].content=./camunda-platform-override-values.yaml'
 else ifeq ($(scenario),archiver)
-_scenario_load_test_flags := --set starter.rate=1 --set starter.rateDuration=10m --set starter.processId=multiInstanceElements --set starter.bpmnXmlPath=bpmn/multiInstanceElements.bpmn --set starter.payloadPath=bpmn/multiInstanceElementsPayload.json --set workers.worker.replicas=0
+_scenario_load_test_flags := --set load-tester.starter.rate=1 --set load-tester.starter.rateDuration=10m --set load-tester.starter.processId=multiInstanceElements --set load-tester.starter.bpmnXmlPath=bpmn/multiInstanceElements.bpmn --set load-tester.starter.payloadPath=bpmn/multiInstanceElementsPayload.json --set load-tester.workers.worker.replicas=0
 _scenario_platform_flags  :=
 else
 _scenario_load_test_flags :=
@@ -54,19 +52,18 @@ platform_values := -f camunda-platform-values-defaults.yaml
 helm_chart_load_test_setup := charts/load-test-setup
 load_test_setup_values := -f load-test-setup-values.yaml
 additional_load_test_setup_configuration ?=
+# Makefile-side load-test-setup flags. Separate from `additional_load_test_setup_configuration`,
+# which CI sets on the make command line and would suppress `+=` here.
+_load_test_setup_flags :=
 
 # The Docker image tag for the load test metrics exporter
 metrics_exporter_image_tag := latest
-
-# Makefile-side load-test flags. Separate from `additional_load_test_configuration`,
-# which CI sets on the make command line and would suppress `+=` here.
-_secondary_storage_load_test_flags :=
 
 # Add secondary storage values
 ifneq ($(filter $(secondary_storage),postgresql mysql mariadb mssql oracle),)
 	platform_values += -f camunda-platform-values-rdbms.yaml
 else ifeq ($(secondary_storage),none)
-	_secondary_storage_load_test_flags += --set global.extraConfig.load-tester.monitor-data-availability=false
+	_load_test_setup_flags += --set global.extraConfig.load-tester.monitor-data-availability=false
 endif
 platform_values += -f camunda-platform-values-$(secondary_storage).yaml
 
@@ -91,33 +88,41 @@ platform_values_stable := $(platform_values) -f values-stable.yaml
 ifeq ($(secondary_storage),elasticsearch)
 	install_es_prom_exporter := true
 	es_prom_exporter_es_uri := http://elastic:9200
-	additional_load_test_setup_configuration += --set metricsExporter.database.url=http://elastic:9200
+	_load_test_setup_flags += --set metricsExporter.database.url=http://elastic:9200
 else ifeq ($(secondary_storage),opensearch)
 	install_es_prom_exporter := true
 	es_prom_exporter_es_uri := http://opensearch:9200
-	additional_load_test_setup_configuration += --set metricsExporter.database.url=http://opensearch:9200
+	_load_test_setup_flags += --set metricsExporter.database.url=http://opensearch:9200
 else ifeq ($(enable_optimize),true)
 	# Here, the secondary storage is either none or a RDBMS database.
 	# Elasticsearch is always used in this case as the backend for Optimize.
 	install_es_prom_exporter := true
 	es_prom_exporter_es_uri := http://elastic:9200
-	additional_load_test_setup_configuration += --set metricsExporter.database.url=http://elastic:9200
+	_load_test_setup_flags += --set metricsExporter.database.url=http://elastic:9200
 else
 	install_es_prom_exporter := false
 endif
 
 ifeq ($(chaos),true)
-	additional_load_test_setup_configuration += --set chaosKiller.enabled=true
+	_load_test_setup_flags += --set chaosKiller.enabled=true
 endif
+
+# Shared helm flags for the load-test-setup chart, used by both install and template targets.
+load_test_setup_flags = $(load_test_setup_values) \
+    -f load-tester-values-defaults.yaml \
+    $(_load_test_setup_flags) \
+    $(_scenario_load_test_flags) \
+    $(additional_load_test_setup_configuration) \
+    $(additional_load_test_configuration)
 
 .PHONY: all
 all: install
 
 .PHONY: install
-install: check-deadline install-load-test-setup install-storage install-platform install-load-test install-elasticsearch-exporter
+install: check-deadline install-load-test-setup install-storage install-platform install-elasticsearch-exporter
 
 .PHONY: install-stable
-install-stable: check-deadline install-load-test-setup install-storage install-platform-stable install-load-test install-elasticsearch-exporter
+install-stable: check-deadline install-load-test-setup install-storage install-platform-stable install-elasticsearch-exporter
 
 # Fail fast if the namespace TTL deadline (read from load-test-setup-values.yaml,
 # the single source of truth) is today or in the past — the TTL cleanup
@@ -148,11 +153,12 @@ check-deadline:
 .PHONY: create-namespace
 create-namespace:
 	@echo "Making sure the namespace $(namespace) exists..."
-	kubectl get namespace "$(namespace)" > /dev/null 2>&1 || kubectl create namespace "$(namespace)"
+	@# Sleep a bit to let Kubernetes finish the creation of the namespace and make it fully consistent for read and write operations.
+	kubectl get namespace "$(namespace)" > /dev/null 2>&1 || (kubectl create namespace "$(namespace)" && sleep 1)
 
 # Apply the camunda-credentials secret. Idempotent: rerunning after a TTL
 # deletion reapplies the SAME credentials, so the orchestration secret in
-# load-test-values.yaml stays in sync with the live secret.
+# load-tester-values-defaults.yaml stays in sync with the live secret.
 .PHONY: create-credentials
 create-credentials:
 	@echo "Applying camunda-credentials secret for namespace $(namespace)..."
@@ -236,7 +242,8 @@ install-platform-stable:
 		$(_scenario_platform_flags) \
 		$(additional_platform_configuration)
 
-# Install the load-test-setup Helm Chart
+# Install the load-test-setup Helm Chart (includes the camunda-load-tests subchart).
+# Load-test scenario flags and values are passed here; no separate install-load-test target needed.
 .PHONY: install-load-test-setup
 install-load-test-setup: create-namespace
 	helm upgrade load-test-setup $(helm_chart_load_test_setup) \
@@ -245,20 +252,7 @@ install-load-test-setup: create-namespace
 		--reset-then-reuse-values \
 		--render-subchart-notes \
 		--take-ownership --create-namespace \
-		$(load_test_setup_values) $(additional_load_test_setup_configuration)
-
-# Install/upgrade load test helm chart
-.PHONY: install-load-test
-install-load-test:
-	helm upgrade $(namespace)-test $(helm_chart_load_tests) \
-		--install \
-		--namespace $(namespace) \
-		--reset-then-reuse-values \
-		--render-subchart-notes \
-		-f load-test-values.yaml \
-		$(_scenario_load_test_flags) \
-		$(_secondary_storage_load_test_flags) \
-		$(additional_load_test_configuration)
+		$(load_test_setup_flags)
 
 # Generates templates from the Camunda Platform helm chart
 .PHONY: template
@@ -283,25 +277,13 @@ template-stable:
 template-load-test-setup:
 	helm template load-test-setup $(helm_chart_load_test_setup) \
 		--namespace $(namespace) \
-		$(load_test_setup_values) \
-		$(additional_load_test_setup_configuration) \
+		$(load_test_setup_flags) \
 		--output-dir $(template_output_dir)
 
 # Renders the load-test-setup chart with the chaos-killer enabled.
 .PHONY: template-load-test-setup-chaos
 template-load-test-setup-chaos:
 	$(MAKE) template-load-test-setup chaos=true
-
-# Generates templates from the load test helm chart
-.PHONY: template-load-test
-template-load-test:
-	helm template $(namespace)-test $(helm_chart_load_tests) \
-		--namespace $(namespace) \
-		-f load-test-values.yaml \
-		$(_scenario_load_test_flags) \
-		$(_secondary_storage_load_test_flags) \
-		$(additional_load_test_configuration) \
-		--output-dir $(template_output_dir)
 
 # Print the resolved scenario flags without running any Helm commands
 .PHONY: print-scenario

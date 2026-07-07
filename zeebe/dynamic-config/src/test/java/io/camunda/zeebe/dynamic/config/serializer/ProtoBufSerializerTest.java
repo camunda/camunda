@@ -29,10 +29,13 @@ import io.camunda.zeebe.dynamic.config.protocol.Topology.ExporterStateEnum;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.MessageCorrelation.HashMod;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.RoutingState;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
 import java.util.List;
 import java.util.Map;
@@ -236,7 +239,9 @@ final class ProtoBufSerializerTest {
             Map.of(MemberId.from("2"), MemberState.initializeAsActive(Map.of())),
             List.of(
                 new MemberLeaveOperation(MemberId.from("1")),
-                new PartitionJoinOperation(MemberId.from("2"), 1, 2)));
+                new PartitionJoinOperation(MemberId.from("2"), 1, 2),
+                new ModeChangeOperation(MemberId.from("2"), Mode.RECOVERING),
+                new AwaitModeChangeOperation(MemberId.from("2"), Mode.RECOVERING)));
 
     // when
     final var encodedResponse = protoBufSerializer.encodeResponse(topologyChangeResponse);

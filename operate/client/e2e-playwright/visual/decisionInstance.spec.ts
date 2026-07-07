@@ -80,6 +80,30 @@ test.describe('decision instance page', () => {
     await expect(page).toHaveScreenshot();
   });
 
+  test('evaluated (with business id)', async ({page, decisionInstancePage}) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        decisionInstanceDetail: {
+          ...mockEvaluatedDecisionInstance,
+          businessId: 'order-12345',
+        },
+        decisionInstancesSearch: mockEvaluatedDecisionInstancesSearch,
+        xml: mockEvaluatedXml,
+      }),
+    );
+
+    await decisionInstancePage.gotoDecisionInstance({
+      decisionInstanceKey: '1',
+    });
+
+    await expect(
+      page.getByTestId('instance-header').getByText('order-12345'),
+    ).toBeVisible();
+
+    await expect(page).toHaveScreenshot();
+  });
+
   test('evaluated (drd panel maximised)', async ({
     page,
     decisionInstancePage,

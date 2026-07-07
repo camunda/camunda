@@ -97,7 +97,7 @@ class OtelSdkManagerTest {
         new OtelSdkManager()
             .initialize(
                 new AnalyticsExporterConfig().setEndpoint("http://localhost:1"),
-                AnalyticsExporterContext.create("test-license", "test-cluster", 1),
+                AnalyticsExporterContext.create("test-license", "test-cluster", 1, ""),
                 new AnalyticsExporterMetadata());
 
     // when — @Timeout is the assertion: if logEvent blocks, we die
@@ -247,7 +247,9 @@ class OtelSdkManagerTest {
         new OtelSdkManager() {
           @Override
           protected LogRecordExporter createLogExporter(
-              final AnalyticsExporterConfig cfg, final AnalyticsExporterContext context) {
+              final AnalyticsExporterConfig cfg,
+              final AnalyticsExporterContext context,
+              final MicrometerMeterProvider bridge) {
             return exporterFrom(
                 logs -> {
                   received.addAll(logs);
@@ -256,7 +258,7 @@ class OtelSdkManagerTest {
           }
         }.initialize(
             new AnalyticsExporterConfig().setPushInterval("PT0.1S"),
-            AnalyticsExporterContext.create("test-license", "test-cluster", 1),
+            AnalyticsExporterContext.create("test-license", "test-cluster", 1, ""),
             new AnalyticsExporterMetadata(5L, 0));
 
     // when
@@ -292,7 +294,9 @@ class OtelSdkManagerTest {
     return new OtelSdkManager() {
       @Override
       protected LogRecordExporter createLogExporter(
-          final AnalyticsExporterConfig cfg, final AnalyticsExporterContext context) {
+          final AnalyticsExporterConfig cfg,
+          final AnalyticsExporterContext context,
+          final MicrometerMeterProvider bridge) {
         return exporterFrom(exportFn);
       }
     }.initialize(
@@ -300,7 +304,7 @@ class OtelSdkManagerTest {
             .setMaxQueueSize(maxQueueSize)
             .setMaxBatchSize(maxBatchSize)
             .setPushInterval("PT0.1S"),
-        AnalyticsExporterContext.create("test-license", "test-cluster", 1),
+        AnalyticsExporterContext.create("test-license", "test-cluster", 1, ""),
         new AnalyticsExporterMetadata());
   }
 
@@ -322,6 +326,37 @@ class OtelSdkManagerTest {
         return CompletableResultCode.ofSuccess();
       }
     };
+  }
+
+  @Test
+  void shouldExposeOtelSdkLogCreatedMetricInMicrometer() {
+    // given
+    final var micrometerRegistry = new io.micrometer.core.instrument.simple.SimpleMeterRegistry();
+    final var logExporter =
+        io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter.create();
+    final var manager = TestOtelSdkManager.inMemoryWithRegistry(logExporter, micrometerRegistry);
+
+    try {
+      // when — otel.sdk.log.created increments synchronously on emit(), no flush needed
+      manager.logEvent(
+          io.camunda.exporter.analytics.AnalyticsAttributes.Event.PROCESS_INSTANCE_CREATED,
+          1L,
+          b -> {});
+
+      // then — SdkLoggerProvider emits otel.sdk.log.created on every emit()
+      assertThat(
+              micrometerRegistry
+                  .find("otel.sdk.log.created")
+                  .tag(
+                      MicrometerMeterProvider.COMPONENT_TAG_KEY,
+                      MicrometerMeterProvider.COMPONENT_TAG_VALUE)
+                  .counter())
+          .isNotNull()
+          .extracting(io.micrometer.core.instrument.Counter::count)
+          .isEqualTo(1.0);
+    } finally {
+      manager.close();
+    }
   }
 
   @Nested

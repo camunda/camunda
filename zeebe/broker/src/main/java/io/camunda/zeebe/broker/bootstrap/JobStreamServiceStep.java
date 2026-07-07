@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+
 import io.camunda.zeebe.broker.jobstream.JobStreamMetrics;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.jobstream.RemoteJobStreamErrorHandlerService;
@@ -48,7 +50,8 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
                 clusterServices.getCommunicationService(),
                 JobStreamServiceStep::readJobActivationProperties,
                 errorHandlerService,
-                new JobStreamMetrics(brokerStartupContext.getMeterRegistry()));
+                new JobStreamMetrics(brokerStartupContext.getMeterRegistry()),
+                DEFAULT_PHYSICAL_TENANT_ID);
     final var errorHandlerStarted = scheduler.submitActor(errorHandlerService);
 
     errorHandlerStarted.onComplete(

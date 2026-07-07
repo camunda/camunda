@@ -14,7 +14,7 @@ metadata:
     camunda.io/purpose: load-test
 
     app.kubernetes.io/component: connectors
-    app.kubernetes.io/version: "8.8.11"
+
   annotations:
     {}
 spec:
@@ -41,17 +41,16 @@ spec:
         camunda.io/purpose: load-test
 
         app.kubernetes.io/component: connectors
-        app.kubernetes.io/version: "8.8.11"
+
       annotations:
 
     spec:
       imagePullSecrets:
         - name: harbor-registry
       initContainers:
-        []
       containers:
         - name: connectors
-          image: camunda/connectors-bundle:TEST
+          image: camunda/connectors-bundle:8.8.15
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false

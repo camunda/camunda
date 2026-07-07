@@ -61,46 +61,46 @@ type QueryUsersRequestBody = z.infer<typeof queryUsersRequestBodySchema>;
 const queryUsersResponseBodySchema = getQueryResponseBodySchema(userSchema);
 type QueryUsersResponseBody = z.infer<typeof queryUsersResponseBodySchema>;
 
-const createUser: Endpoint = {
+const createUser = {
 	method: 'POST',
 	getUrl() {
-		return `/${API_VERSION}/users`;
+		return `/${API_VERSION}/users` as const;
 	},
-};
+} as const satisfies Endpoint;
 
-const queryUsers: Endpoint = {
+const queryUsers = {
 	method: 'POST',
 	getUrl() {
-		return `/${API_VERSION}/users/search`;
+		return `/${API_VERSION}/users/search` as const;
 	},
-};
+} as const satisfies Endpoint;
 
-const getUser: Endpoint<Pick<User, 'username'>> = {
+const getUser = {
 	method: 'GET',
 	getUrl(params) {
 		const {username} = params;
 
-		return `/${API_VERSION}/users/${username}`;
+		return `/${API_VERSION}/users/${username}` as const;
 	},
-};
+} as const satisfies Endpoint<Pick<User, 'username'>>;
 
-const deleteUser: Endpoint<Pick<User, 'username'>> = {
+const deleteUser = {
 	method: 'DELETE',
 	getUrl(params) {
 		const {username} = params;
 
-		return `/${API_VERSION}/users/${username}`;
+		return `/${API_VERSION}/users/${username}` as const;
 	},
-};
+} as const satisfies Endpoint<Pick<User, 'username'>>;
 
-const updateUser: Endpoint<Pick<User, 'username'>> = {
+const updateUser = {
 	method: 'PATCH',
 	getUrl(params) {
 		const {username} = params;
 
-		return `/${API_VERSION}/users/${username}`;
+		return `/${API_VERSION}/users/${username}` as const;
 	},
-};
+} as const satisfies Endpoint<Pick<User, 'username'>>;
 
 export {
 	createUser,

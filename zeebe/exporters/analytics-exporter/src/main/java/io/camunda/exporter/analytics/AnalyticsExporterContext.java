@@ -38,17 +38,26 @@ public final class AnalyticsExporterContext {
   private final String clusterId;
   private final int partitionId;
   private final Mac signer;
+  private final String exporterDigest;
 
   private AnalyticsExporterContext(
-      final String fingerprint, final String clusterId, final int partitionId, final Mac signer) {
+      final String fingerprint,
+      final String clusterId,
+      final int partitionId,
+      final Mac signer,
+      final String exporterDigest) {
     this.fingerprint = fingerprint;
     this.clusterId = clusterId;
     this.partitionId = partitionId;
     this.signer = signer;
+    this.exporterDigest = exporterDigest;
   }
 
   static AnalyticsExporterContext create(
-      final String licenseKey, final String clusterId, final int partitionId) {
+      final String licenseKey,
+      final String clusterId,
+      final int partitionId,
+      final String exporterDigest) {
     if (licenseKey == null || licenseKey.isBlank()) {
       throw new IllegalArgumentException("licenseKey must not be null or blank");
     }
@@ -57,7 +66,8 @@ public final class AnalyticsExporterContext {
       final var fingerprint = HEX.formatHex(MessageDigest.getInstance(SHA_256).digest(keyBytes));
       final var signer = Mac.getInstance(HMAC_SHA_256);
       signer.init(new SecretKeySpec(keyBytes, HMAC_SHA_256));
-      return new AnalyticsExporterContext(fingerprint, clusterId, partitionId, signer);
+      return new AnalyticsExporterContext(
+          fingerprint, clusterId, partitionId, signer, exporterDigest);
     } catch (final NoSuchAlgorithmException e) {
       throw new IllegalStateException(
           "JVM does not support required crypto algorithms (SHA-256 or HmacSHA256)", e);
@@ -76,6 +86,10 @@ public final class AnalyticsExporterContext {
 
   int partitionId() {
     return partitionId;
+  }
+
+  String exporterDigest() {
+    return exporterDigest;
   }
 
   /**

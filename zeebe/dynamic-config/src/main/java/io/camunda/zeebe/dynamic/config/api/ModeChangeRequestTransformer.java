@@ -10,11 +10,14 @@ package io.camunda.zeebe.dynamic.config.api;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
 import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.util.Either;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map.Entry;
 
 public final class ModeChangeRequestTransformer implements ConfigurationChangeRequest {
 
@@ -28,13 +31,17 @@ public final class ModeChangeRequestTransformer implements ConfigurationChangeRe
   public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
       final ClusterConfiguration clusterConfiguration) {
     final State sourceState = mode == Mode.RECOVERING ? State.ACTIVE : State.RECOVERING;
-    final var operations =
+    final var members =
         clusterConfiguration.members().entrySet().stream()
             .filter(e -> e.getValue().state() == sourceState)
-            .map(
-                e ->
-                    (ClusterConfigurationChangeOperation) new ModeChangeOperation(e.getKey(), mode))
+            .map(Entry::getKey)
             .toList();
+
+    // All members first start the change operation and complete it async
+    // Following up with a verification step that the operation completed successfully
+    final List<ClusterConfigurationChangeOperation> operations = new ArrayList<>();
+    members.forEach(memberId -> operations.add(new ModeChangeOperation(memberId, mode)));
+    members.forEach(memberId -> operations.add(new AwaitModeChangeOperation(memberId, mode)));
 
     return Either.right(operations);
   }

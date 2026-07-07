@@ -362,7 +362,12 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
             (response, error) ->
                 metrics.measureArchiverReindex(response != null ? response.total() : null, timer),
             executor)
-        .thenApplyAsync(ignored -> null, executor);
+        .thenApplyAsync(
+            response -> {
+              validateReindexResponse(sourceIndexName, response);
+              return null;
+            },
+            executor);
   }
 
   @Override
@@ -473,6 +478,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
             .requestCache(false)
             .allowNoIndices(true)
             .ignoreUnavailable(true)
+            .allowPartialSearchResults(false)
             .query(query)
             .size(size)
             .source(s -> s.fetch(false))

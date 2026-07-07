@@ -3675,14 +3675,14 @@
           "text": "All",
           "value": "$__all"
         },
-        "definition": "label_values(atomix_role{cluster=\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"},partion)",
+        "definition": "label_values(atomix_role{cluster=\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"},partition)",
         "includeAll": true,
         "multi": true,
         "name": "partition",
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(atomix_role{cluster=\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"},partion)",
+          "query": "label_values(atomix_role{cluster=\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"},partition)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 2,

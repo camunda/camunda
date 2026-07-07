@@ -21,8 +21,8 @@ class AnalyticsExporterContextTest {
   @Test
   void shouldComputeDeterministicFingerprint() {
     // given / when
-    final var ctx1 = AnalyticsExporterContext.create("test-license", "cluster-1", 1);
-    final var ctx2 = AnalyticsExporterContext.create("test-license", "cluster-1", 1);
+    final var ctx1 = AnalyticsExporterContext.create("test-license", "cluster-1", 1, "");
+    final var ctx2 = AnalyticsExporterContext.create("test-license", "cluster-1", 1, "");
 
     // then
     assertThat(ctx1.fingerprint())
@@ -34,8 +34,8 @@ class AnalyticsExporterContextTest {
   @Test
   void shouldProduceDifferentFingerprintsForDifferentLicenses() {
     // given / when
-    final var ctx1 = AnalyticsExporterContext.create("license-a", "cluster-1", 1);
-    final var ctx2 = AnalyticsExporterContext.create("license-b", "cluster-1", 1);
+    final var ctx1 = AnalyticsExporterContext.create("license-a", "cluster-1", 1, "");
+    final var ctx2 = AnalyticsExporterContext.create("license-b", "cluster-1", 1, "");
 
     // then
     assertThat(ctx1.fingerprint()).isNotEqualTo(ctx2.fingerprint());
@@ -44,8 +44,8 @@ class AnalyticsExporterContextTest {
   @Test
   void shouldProduceDifferentFingerprintsForDifferentClusters() {
     // given / when
-    final var ctx1 = AnalyticsExporterContext.create("test-license", "cluster-a", 1);
-    final var ctx2 = AnalyticsExporterContext.create("test-license", "cluster-b", 1);
+    final var ctx1 = AnalyticsExporterContext.create("test-license", "cluster-a", 1, "");
+    final var ctx2 = AnalyticsExporterContext.create("test-license", "cluster-b", 1, "");
 
     // then — fingerprint is derived from license only, not cluster
     // but these are different contexts, verify they are independent
@@ -56,14 +56,14 @@ class AnalyticsExporterContextTest {
   @Test
   void shouldRejectMissingLicenseKey() {
     // when / then
-    assertThatThrownBy(() -> AnalyticsExporterContext.create(null, "cluster-1", 1))
+    assertThatThrownBy(() -> AnalyticsExporterContext.create(null, "cluster-1", 1, ""))
         .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
   void shouldRejectBlankLicenseKey() {
     // when / then
-    assertThatThrownBy(() -> AnalyticsExporterContext.create("  ", "cluster-1", 1))
+    assertThatThrownBy(() -> AnalyticsExporterContext.create("  ", "cluster-1", 1, ""))
         .isInstanceOf(IllegalArgumentException.class);
   }
 
@@ -72,7 +72,7 @@ class AnalyticsExporterContextTest {
     // given
     final var licenseKey = "test-license";
     final var clusterId = "cluster-1";
-    final var ctx = AnalyticsExporterContext.create(licenseKey, clusterId, 1);
+    final var ctx = AnalyticsExporterContext.create(licenseKey, clusterId, 1, "");
 
     // when
     final var headers = ctx.computeSignatureHeaders();
@@ -96,8 +96,8 @@ class AnalyticsExporterContextTest {
     final var clusterId = "cluster-1";
     final var timestamp = "1234567890";
 
-    final var ctxA = AnalyticsExporterContext.create(licenseA, clusterId, 1);
-    final var ctxB = AnalyticsExporterContext.create(licenseB, clusterId, 1);
+    final var ctxA = AnalyticsExporterContext.create(licenseA, clusterId, 1, "");
+    final var ctxB = AnalyticsExporterContext.create(licenseB, clusterId, 1, "");
 
     // when — compute HMAC with identical canonical structure but different keys
     final var canonicalA = ctxA.fingerprint() + "|" + clusterId + "|" + timestamp;
@@ -113,7 +113,7 @@ class AnalyticsExporterContextTest {
   @Test
   void shouldRedactSensitiveFieldsInToString() {
     // given
-    final var ctx = AnalyticsExporterContext.create("secret-license", "cluster-1", 1);
+    final var ctx = AnalyticsExporterContext.create("secret-license", "cluster-1", 1, "");
 
     // then
     assertThat(ctx.toString())

@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.interceptors.impl;
 
-import static io.camunda.configuration.api.physicaltenants.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.CLIENT_ID;
 import static io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.GROUPS_CLAIMS;
 import static io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.USERNAME;

@@ -9,9 +9,10 @@ package io.camunda.zeebe.broker.system.partitions;
 
 import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
-import io.atomix.primitive.partition.PartitionId;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
+import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupStore;
@@ -41,7 +42,6 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -100,7 +100,9 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   public TestPartitionTransitionContext() {
     transitionMeterRegistry =
         MicrometerUtil.wrap(
-            startupMeterRegistry, PartitionKeyNames.tags(Protocol.DEFAULT_PARTITION_GROUP_NAME, 1));
+            startupMeterRegistry,
+            PartitionKeyNames.tags(
+                new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1)));
     healthMetrics = new HealthTreeMetrics(transitionMeterRegistry);
   }
 
@@ -111,7 +113,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
 
   @Override
   public PartitionId partitionId() {
-    return new PartitionId(Protocol.DEFAULT_PARTITION_GROUP_NAME, getPartitionId());
+    return new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, getPartitionId());
   }
 
   @Override

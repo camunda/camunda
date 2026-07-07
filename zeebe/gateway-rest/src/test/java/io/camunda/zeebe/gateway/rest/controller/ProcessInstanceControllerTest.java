@@ -19,6 +19,7 @@ import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.SequenceFlowEntity;
+import io.camunda.search.entities.WaitStateStatisticsEntity;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -2431,6 +2432,72 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .json(response, JsonCompareMode.STRICT);
 
     verify(processInstanceServices).sequenceFlows(eq(processInstanceKey), any());
+  }
+
+  @Test
+  public void shouldReturnWaitStateStatistics() {
+    // given
+    final long processInstanceKey = 1L;
+    when(processInstanceServices.waitStateStatistics(eq(processInstanceKey), any()))
+        .thenReturn(List.of(new WaitStateStatisticsEntity("task-a", 7L)));
+    final var response =
+        """
+            {"items":[
+              {
+                "elementId": "task-a",
+                "waitingCount": 7
+              }
+            ]}""";
+
+    // when / then
+    webClient
+        .get()
+        .uri(
+            "%s/%d/statistics/wait-states"
+                .formatted(PROCESS_INSTANCES_START_URL, processInstanceKey))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(response, JsonCompareMode.STRICT);
+
+    verify(processInstanceServices).waitStateStatistics(eq(processInstanceKey), any());
+  }
+
+  @Test
+  public void shouldReturn404ForUnknownProcessInstanceWaitStateStatistics() {
+    // given
+    final long processInstanceKey = 1L;
+    when(processInstanceServices.waitStateStatistics(eq(processInstanceKey), any()))
+        .thenThrow(
+            new ServiceException(
+                "Process Instance with key '1' not found", ServiceException.Status.NOT_FOUND));
+
+    final var expectedBody =
+        """
+            {
+                "type": "about:blank",
+                "title": "NOT_FOUND",
+                "status": 404,
+                "detail": "Process Instance with key '1' not found",
+                "instance": "/v2/process-instances/1/statistics/wait-states"
+            }""";
+
+    // when / then
+    webClient
+        .get()
+        .uri(
+            "%s/%d/statistics/wait-states"
+                .formatted(PROCESS_INSTANCES_START_URL, processInstanceKey))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound()
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
   }
 
   @Test

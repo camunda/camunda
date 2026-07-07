@@ -7,9 +7,9 @@
  */
 package io.camunda.configuration.physicaltenants;
 
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationException;
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -46,9 +46,8 @@ import org.springframework.core.env.Environment;
  * for any property the tenant did not override, those getters resolve legacy properties exactly as
  * they would on the root {@code Camunda}.
  *
- * <p>If no {@value
- * io.camunda.configuration.api.physicaltenants.PhysicalTenantIds#DEFAULT_PHYSICAL_TENANT_ID} tenant
- * is declared under {@code camunda.physical-tenants.*}, an entry under that key is synthesized from
+ * <p>If no {@value io.camunda.cluster.PhysicalTenantIds#DEFAULT_PHYSICAL_TENANT_ID} tenant is
+ * declared under {@code camunda.physical-tenants.*}, an entry under that key is synthesized from
  * the root configuration so that consumers can always address the root configuration as a tenant.
  * An explicit {@code default} declaration is honored as-is.
  */

@@ -31,7 +31,7 @@ import org.slf4j.Logger;
 @NullMarked
 public final class MembershipStateAdapter implements MembershipPort {
 
-  private static final Logger LOG = Loggers.ENGINE_PROCESSING_LOGGER;
+  private static final Logger LOG = Loggers.ENGINE_IDENTITY_LOGGER;
 
   private final MappingRuleState mappingRuleState;
   private final MembershipState membershipState;
@@ -72,6 +72,9 @@ public final class MembershipStateAdapter implements MembershipPort {
     final var rawGroups = query.tokenClaims().get(Authorization.USER_GROUPS_CLAIMS);
     final var result = new LinkedHashSet<String>();
     if (rawGroups instanceof List<?> groupsClaims) {
+      // OIDC mode: groups come solely from the token claim. This matches main's
+      // ClaimsExtractor.getGroups, which ignores mapping-rule group memberships when a groups claim
+      // is present.
       groupsClaims.stream()
           .filter(String.class::isInstance)
           .map(String.class::cast)
@@ -79,13 +82,13 @@ public final class MembershipStateAdapter implements MembershipPort {
     } else {
       getMemberships(toEntityType(query.principalType()), query.principalId(), RelationType.GROUP)
           .forEach(result::add);
+      query
+          .resolvedMappingRuleIds()
+          .forEach(
+              ruleId ->
+                  getMemberships(EntityType.MAPPING_RULE, ruleId, RelationType.GROUP)
+                      .forEach(result::add));
     }
-    query
-        .resolvedMappingRuleIds()
-        .forEach(
-            ruleId ->
-                getMemberships(EntityType.MAPPING_RULE, ruleId, RelationType.GROUP)
-                    .forEach(result::add));
     return new ArrayList<>(result);
   }
 

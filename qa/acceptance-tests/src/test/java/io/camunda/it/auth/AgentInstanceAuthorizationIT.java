@@ -126,6 +126,9 @@ class AgentInstanceAuthorizationIT {
         .content(List.of(AgentInstanceHistoryContent.text("hello")))
         .producedAt(OffsetDateTime.parse("2025-06-01T12:00:00Z"))
         .execute();
+    // Complete job1 so JobCompleteProcessor emits AGENT_HISTORY:COMMIT, transitioning
+    // the history item to COMMITTED so it becomes searchable.
+    adminClient.newCompleteCommand(jobKey1).execute();
 
     agentInstanceKey2 = createAgentInstance(adminClient, PROCESS_ID_2).agentInstanceKey();
     final var result3 = createAgentInstance(adminClient, PROCESS_ID_3);
@@ -136,13 +139,7 @@ class AgentInstanceAuthorizationIT {
     waitForAgentInstanceToBeIndexed(adminClient, agentInstanceKey1);
     waitForAgentInstanceToBeIndexed(adminClient, agentInstanceKey2);
     waitForAgentInstanceToBeIndexed(adminClient, agentInstanceKey3);
-    // Agent history search is not supported on RDBMS; searchHistory tests are already
-    // individually disabled via @DisabledIfSystemProperty for rdbms.* backends.
-    if (!System.getProperty("test.integration.camunda.database.type", "")
-        .toLowerCase()
-        .startsWith("rdbms")) {
-      waitForHistoryItemsToBeIndexed(adminClient, agentInstanceKey1, 1);
-    }
+    waitForHistoryItemsToBeIndexed(adminClient, agentInstanceKey1, 1);
   }
 
   // ── search ────────────────────────────────────────────────────────────────
@@ -342,7 +339,6 @@ class AgentInstanceAuthorizationIT {
   // ── searchHistory ─────────────────────────────────────────────────────────
 
   @Test
-  @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
   void searchHistoryShouldReturnHistoryForAuthorizedUser(
       @Authenticated(USER1) final CamundaClient camundaClient) {
     // user1 has READ_PROCESS_INSTANCE on PROCESS_ID_1
@@ -355,7 +351,6 @@ class AgentInstanceAuthorizationIT {
   }
 
   @Test
-  @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
   void searchHistoryShouldReturnEmptyForUnauthorizedUser(
       @Authenticated(USER1) final CamundaClient camundaClient) {
     // user1 has no READ_PROCESS_INSTANCE on PROCESS_ID_2

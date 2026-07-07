@@ -9,9 +9,9 @@ package io.camunda.application.commons.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationHelper;
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import java.util.HashMap;

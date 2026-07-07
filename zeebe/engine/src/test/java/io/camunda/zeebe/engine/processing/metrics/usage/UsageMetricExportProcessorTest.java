@@ -14,6 +14,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.engine.metrics.TenantMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.metrics.PersistedUsageMetrics;
@@ -26,21 +27,25 @@ import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.IntervalTyp
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.InstantSource;
 import java.util.Map;
 import java.util.Set;
 import org.agrona.DirectBuffer;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class UsageMetricExportProcessorTest {
   private static final long ASSIGNEE_HASH_1 = getStringHashValue("assignee1");
   private static final String TENANT_1 = "tenant1";
+  private static final String TENANT_2 = "tenant2";
   private MutableUsageMetricState state;
   private StateWriter stateWriter;
   private UsageMetricExportProcessor processor;
   private TypedRecord<UsageMetricRecord> record;
   private InstantSource clock;
+  private SimpleMeterRegistry meterRegistry;
 
   @BeforeEach
   void setUp() {
@@ -48,6 +53,7 @@ class UsageMetricExportProcessorTest {
     state = mock(MutableUsageMetricState.class);
     record = mock(TypedRecord.class);
     clock = mock(InstantSource.class);
+    meterRegistry = new SimpleMeterRegistry();
     final UsageMetricRecord recordValue = new UsageMetricRecord();
     final var keyGenerator = mock(KeyGenerator.class);
     final var writers = mock(Writers.class);
@@ -58,7 +64,13 @@ class UsageMetricExportProcessorTest {
     when(record.getValue()).thenReturn(recordValue);
     when(clock.millis()).thenReturn(2L);
 
-    processor = new UsageMetricExportProcessor(state, writers, keyGenerator, clock);
+    processor =
+        new UsageMetricExportProcessor(
+            state, writers, keyGenerator, clock, new TenantMetrics(meterRegistry));
+  }
+
+  private double activeTenantGaugeValue() {
+    return meterRegistry.get("zeebe.active.tenants.count").gauge().value();
   }
 
   private DirectBuffer toDirectBuffer(final Object data) {
@@ -237,6 +249,87 @@ class UsageMetricExportProcessorTest {
                 .setCounterValues(toDirectBuffer(Map.of()))
                 .setSetValues(toDirectBuffer(Map.of(TENANT_1, Set.of(ASSIGNEE_HASH_1)))));
     verifyAppendFollowUpNoneEvent(2);
+  }
+
+  @Test
+  void shouldInitializeActiveTenantGaugeAtZero() {
+    Assertions.assertThat(activeTenantGaugeValue()).isZero();
+  }
+
+  @Test
+  void shouldIncrementGaugeWhenNewTenantsSeenViaRPI() {
+    when(state.getActiveBucket())
+        .thenReturn(
+            new PersistedUsageMetrics().setFromTime(1).setTenantRPIMap(Map.of(TENANT_1, 5L)));
+
+    processor.processRecord(record);
+
+    Assertions.assertThat(activeTenantGaugeValue()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldIncrementGaugeWhenNewTenantsSeenViaEDI() {
+    when(state.getActiveBucket())
+        .thenReturn(
+            new PersistedUsageMetrics().setFromTime(1).setTenantEDIMap(Map.of(TENANT_1, 3L)));
+
+    processor.processRecord(record);
+
+    Assertions.assertThat(activeTenantGaugeValue()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldIncrementGaugeWhenNewTenantsSeenViaTU() {
+    when(state.getActiveBucket())
+        .thenReturn(
+            new PersistedUsageMetrics()
+                .setFromTime(1)
+                .setTenantTUMap(Map.of(TENANT_1, Set.of(ASSIGNEE_HASH_1))));
+
+    processor.processRecord(record);
+
+    Assertions.assertThat(activeTenantGaugeValue()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldAccumulateTenantsAcrossMultipleExportIntervals() {
+    when(state.getActiveBucket())
+        .thenReturn(
+            new PersistedUsageMetrics().setFromTime(1).setTenantRPIMap(Map.of(TENANT_1, 1L)));
+    processor.processRecord(record);
+
+    when(state.getActiveBucket())
+        .thenReturn(
+            new PersistedUsageMetrics().setFromTime(2).setTenantRPIMap(Map.of(TENANT_2, 1L)));
+    processor.processRecord(record);
+
+    Assertions.assertThat(activeTenantGaugeValue()).isEqualTo(2);
+  }
+
+  @Test
+  void shouldNotDoubleCountTenantsSeenInMultipleIntervals() {
+    when(state.getActiveBucket())
+        .thenReturn(
+            new PersistedUsageMetrics().setFromTime(1).setTenantRPIMap(Map.of(TENANT_1, 1L)));
+    processor.processRecord(record);
+    processor.processRecord(record);
+
+    Assertions.assertThat(activeTenantGaugeValue()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldCountDistinctTenantsAcrossRPIEDIAndTU() {
+    when(state.getActiveBucket())
+        .thenReturn(
+            new PersistedUsageMetrics()
+                .setFromTime(1)
+                .setTenantRPIMap(Map.of(TENANT_1, 1L))
+                .setTenantEDIMap(Map.of(TENANT_1, 1L, TENANT_2, 1L))
+                .setTenantTUMap(Map.of(TENANT_2, Set.of(ASSIGNEE_HASH_1))));
+
+    processor.processRecord(record);
+
+    Assertions.assertThat(activeTenantGaugeValue()).isEqualTo(2);
   }
 
   private void verifyAppendFollowUpNoneEvent(final long resetTime) {

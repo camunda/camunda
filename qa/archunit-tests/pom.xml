@@ -161,6 +161,7 @@
             <dep>io.camunda:zeebe-gateway-rest:test-jar</dep>
           </ignoredUnusedDeclaredDependencies>
           <ignoredUsedUndeclaredDependencies>
+            <dep>io.camunda:camunda-db-rdbms</dep>
             <dep>io.camunda:camunda-gateway-mcp</dep>
             <dep>io.camunda:camunda-client-java</dep>
             <dep>io.camunda:camunda-service</dep>
@@ -169,6 +170,7 @@
             <dep>io.camunda:camunda-security-protocol</dep>
             <dep>io.camunda:zeebe-stream-platform</dep>
             <dep>io.camunda:zeebe-workflow-engine</dep>
+            <dep>io.camunda:webapps-schema</dep>
             <dep>org.springframework:spring-beans</dep>
             <dep>org.springframework:spring-context</dep>
             <dep>org.springframework:spring-web</dep>

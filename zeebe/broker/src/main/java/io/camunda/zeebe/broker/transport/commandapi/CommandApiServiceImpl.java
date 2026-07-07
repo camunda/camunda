@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.commandapi;
 
-import io.atomix.primitive.partition.PartitionId;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.configuration.QueryApiCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
@@ -35,16 +35,12 @@ public final class CommandApiServiceImpl extends Actor
       final ServerTransport serverTransport,
       final ActorSchedulingService scheduler,
       final QueryApiCfg queryApiCfg) {
+    super("CommandApiService", partitionId);
     this.partitionId = partitionId;
     this.serverTransport = serverTransport;
     this.scheduler = scheduler;
-    commandHandler = new CommandApiRequestHandler();
-    queryHandler = new QueryApiRequestHandler(queryApiCfg);
-  }
-
-  @Override
-  public String getName() {
-    return "CommandApiService";
+    commandHandler = new CommandApiRequestHandler(partitionId);
+    queryHandler = new QueryApiRequestHandler(partitionId, queryApiCfg);
   }
 
   @Override

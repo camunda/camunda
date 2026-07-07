@@ -23,7 +23,7 @@
     <!-- Camunda dependencies -->
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>configuration-api</artifactId>
+      <artifactId>camunda-cluster</artifactId>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>

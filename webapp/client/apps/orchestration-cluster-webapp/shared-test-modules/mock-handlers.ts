@@ -11,37 +11,37 @@ import {createEndpointMock} from './mock-endpoint';
 
 const mockQueryUserTasksEndpoint = createEndpointMock({
 	endpoint: endpoints.queryUserTasks.getUrl(),
-	method: endpoints.queryUserTasks.method as 'POST',
+	method: endpoints.queryUserTasks.method,
 });
 
 const mockGetProcessDefinitionInstanceStatisticsEndpoint = createEndpointMock({
 	endpoint: endpoints.getProcessDefinitionInstanceStatistics.getUrl(),
-	method: endpoints.getProcessDefinitionInstanceStatistics.method as 'POST',
+	method: endpoints.getProcessDefinitionInstanceStatistics.method,
 });
 
 const mockQueryProcessDefinitionsEndpoint = createEndpointMock({
 	endpoint: endpoints.queryProcessDefinitions.getUrl(),
-	method: endpoints.queryProcessDefinitions.method as 'POST',
+	method: endpoints.queryProcessDefinitions.method,
 });
 
 const mockGetIncidentProcessInstanceStatisticsByErrorEndpoint = createEndpointMock({
 	endpoint: endpoints.getIncidentProcessInstanceStatisticsByError.getUrl(),
-	method: endpoints.getIncidentProcessInstanceStatisticsByError.method as 'POST',
+	method: endpoints.getIncidentProcessInstanceStatisticsByError.method,
 });
 
 const mockGetProcessDefinitionInstanceVersionStatisticsEndpoint = createEndpointMock({
 	endpoint: endpoints.getProcessDefinitionInstanceVersionStatistics.getUrl(),
-	method: endpoints.getProcessDefinitionInstanceVersionStatistics.method as 'POST',
+	method: endpoints.getProcessDefinitionInstanceVersionStatistics.method,
 });
 
 const mockGetIncidentProcessInstanceStatisticsByDefinitionEndpoint = createEndpointMock({
 	endpoint: endpoints.getIncidentProcessInstanceStatisticsByDefinition.getUrl(),
-	method: endpoints.getIncidentProcessInstanceStatisticsByDefinition.method as 'POST',
+	method: endpoints.getIncidentProcessInstanceStatisticsByDefinition.method,
 });
 
 const mockQueryBatchOperationsEndpoint = createEndpointMock({
 	endpoint: endpoints.queryBatchOperations.getUrl(),
-	method: endpoints.queryBatchOperations.method as 'POST',
+	method: endpoints.queryBatchOperations.method,
 });
 
 const mockCurrentUserEndpoint = createEndpointMock({
@@ -79,6 +79,31 @@ const mockGetUserTaskEndpoint = createEndpointMock({
 	method: endpoints.getUserTask.method,
 });
 
+const mockGetProcessDefinitionXmlEndpoint = createEndpointMock({
+	endpoint: endpoints.getProcessDefinitionXml.getUrl({processDefinitionKey: ':processDefinitionKey'}),
+	method: endpoints.getProcessDefinitionXml.method,
+});
+
+const mockAssignTaskEndpoint = createEndpointMock({
+	endpoint: endpoints.assignTask.getUrl({userTaskKey: ':userTaskKey'}),
+	method: endpoints.assignTask.method,
+});
+
+const mockUnassignTaskEndpoint = createEndpointMock({
+	endpoint: endpoints.unassignTask.getUrl({userTaskKey: ':userTaskKey'}),
+	method: endpoints.unassignTask.method,
+});
+
+const mockCompleteTaskEndpoint = createEndpointMock({
+	endpoint: endpoints.completeTask.getUrl({userTaskKey: ':userTaskKey'}),
+	method: endpoints.completeTask.method,
+});
+
+const mockQueryUserTaskAuditLogsEndpoint = createEndpointMock({
+	endpoint: endpoints.queryUserTaskAuditLogs.getUrl({userTaskKey: ':userTaskKey'}),
+	method: endpoints.queryUserTaskAuditLogs.method,
+});
+
 export {
 	mockCurrentUserEndpoint,
 	mockLoginEndpoint,
@@ -87,6 +112,11 @@ export {
 	mockLicenseEndpoint,
 	mockSaasTokenEndpoint,
 	mockGetUserTaskEndpoint,
+	mockGetProcessDefinitionXmlEndpoint,
+	mockAssignTaskEndpoint,
+	mockUnassignTaskEndpoint,
+	mockCompleteTaskEndpoint,
+	mockQueryUserTaskAuditLogsEndpoint,
 	mockQueryUserTasksEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,

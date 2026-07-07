@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.transport.partitionapi;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.utils.serializer.serializers.DefaultSerializers;
+import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.backup.api.CheckpointListener;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
@@ -17,7 +18,6 @@ import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.Actor;
 import java.util.List;
-import java.util.Map;
 import org.slf4j.Logger;
 
 /**
@@ -29,34 +29,19 @@ import org.slf4j.Logger;
 public final class InterPartitionCommandReceiverActor extends Actor
     implements DiskSpaceUsageListener, CheckpointListener {
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
-  private final String actorName;
   private final ClusterCommunicationService communicationService;
-  private final int partitionId;
   private final InterPartitionCommandReceiverImpl receiver;
   private final List<String> receivingSubjects;
 
   public InterPartitionCommandReceiverActor(
-      final int partitionId,
+      final PartitionId partitionId,
       final ClusterCommunicationService communicationService,
       final LogStreamWriter logStreamWriter,
       final List<String> receivingSubjects) {
-    this.partitionId = partitionId;
+    super("InterPartitionCommandReceiverActor", partitionId);
     this.communicationService = communicationService;
     receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
-    actorName = buildActorName(getClass().getSimpleName(), partitionId);
     this.receivingSubjects = receivingSubjects;
-  }
-
-  @Override
-  protected Map<String, String> createContext() {
-    final var context = super.createContext();
-    context.put(ACTOR_PROP_PARTITION_ID, Integer.toString(partitionId));
-    return context;
-  }
-
-  @Override
-  public String getName() {
-    return actorName;
   }
 
   @Override

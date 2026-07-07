@@ -9,8 +9,8 @@ package io.camunda.application.commons.service;
 
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
 import io.camunda.application.commons.document.CamundaDocumentStoreConfigurationLoader;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
 import io.camunda.gateway.protocol.model.JobActivationResult;
@@ -204,6 +204,7 @@ public class CamundaServicesConfiguration {
                       tenantId,
                       brokerClient,
                       securityContextProvider,
+                      search,
                       search,
                       search,
                       incident,

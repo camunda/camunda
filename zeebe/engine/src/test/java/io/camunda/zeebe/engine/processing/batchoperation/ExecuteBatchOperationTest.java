@@ -25,6 +25,8 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -131,5 +133,76 @@ public final class ExecuteBatchOperationTest extends AbstractBatchOperationTest 
         .containsOnly(
             RejectionType.NOT_FOUND,
             "No batch operation found for key '%d'.".formatted(batchOperationKey));
+  }
+
+  @Test
+  public void shouldRejectExecuteWhenBatchOperationIsSuspended() {
+    // given
+    final var processInstanceKeys = Set.of(1L, 2L, 3L);
+    final var batchOperationKey = createNewCancelProcessInstanceBatchOperation(processInstanceKeys);
+
+    engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).suspend();
+
+    RecordingExporter.batchOperationLifecycleRecords()
+        .withBatchOperationKey(batchOperationKey)
+        .withIntent(BatchOperationIntent.SUSPENDED)
+        .await();
+
+    // when
+    engine
+        .batchOperation()
+        .newExecution()
+        .withBatchOperationKey(batchOperationKey)
+        .expectRejection()
+        .execute();
+
+    // then
+    assertThat(
+            RecordingExporter.batchOperationExecutionRecords(BatchOperationExecutionIntent.EXECUTE)
+                .withBatchOperationKey(batchOperationKey)
+                .onlyCommandRejections()
+                .getFirst())
+        .extracting(Record::getRejectionType, Record::getRejectionReason)
+        .containsOnly(
+            RejectionType.INVALID_STATE,
+            "Batch operation '%d' is suspended.".formatted(batchOperationKey));
+  }
+
+  @Test
+  public void shouldProcessAllItemsAcrossMultipleBatches() {
+    // given
+    final var processInstanceKeys =
+        LongStream.rangeClosed(1, 25).boxed().collect(Collectors.toSet());
+    final var batchOperationKey = createNewCancelProcessInstanceBatchOperation(processInstanceKeys);
+
+    // then
+    assertThat(
+            RecordingExporter.batchOperationLifecycleRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .withIntent(BatchOperationIntent.COMPLETED)
+                .exists())
+        .isTrue();
+
+    processInstanceKeys.forEach(
+        key ->
+            assertThat(
+                    RecordingExporter.processInstanceRecords()
+                        .withRecordType(RecordType.COMMAND)
+                        .withProcessInstanceKey(key)
+                        .withIntent(ProcessInstanceIntent.CANCEL)
+                        .exists())
+                .describedAs("process instance %d should have been cancelled", key)
+                .isTrue());
+
+    final var executingCycles =
+        RecordingExporter.batchOperationExecutionRecords()
+            .withBatchOperationKey(batchOperationKey)
+            .limit(
+                r ->
+                    r.getIntent() == BatchOperationExecutionIntent.EXECUTED
+                        && r.getValue().getItemKeys().isEmpty())
+            .filter(r -> r.getIntent() == BatchOperationExecutionIntent.EXECUTING)
+            .count();
+    assertThat(executingCycles).isEqualTo(3);
   }
 }

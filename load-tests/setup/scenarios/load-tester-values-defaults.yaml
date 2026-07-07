@@ -1,0 +1,54 @@
+global:
+  commonLabels:
+    camunda.io/purpose: load-test
+  image:
+    repository: registry.camunda.cloud/team-zeebe
+    pullSecrets:
+      - name: harbor-registry
+
+  preferRest:
+    enabled: false
+
+  nodeSelector:
+    component: benchmark-n2-standard-4
+
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
+
+  # Enable Stackdriver-formatted JSON logging on starter and worker pods so
+  # Cloud Logging picks up severity, sourceLocation, and serviceContext the
+  # same way it does for zeebe/operate/etc. Toggle is read by
+  # load-tests/load-tester/src/main/resources/log4j2.xml.
+  extraEnvVars:
+    - name: LOAD_TESTER_LOG_APPENDER
+      value: Stackdriver
+    - name: LOAD_TESTER_LOG_STACKDRIVER_SERVICENAME
+      value: load-tester
+    - name: LOAD_TESTER_LOG_STACKDRIVER_SERVICEVERSION
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.namespace
+    # Optimize report-evaluation meter secret (starter-only); meter is off unless enabled per-run.
+    - name: OPTIMIZE_LOADTEST_CLIENT_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: camunda-credentials
+          key: identity-optimize-loadtest-client-secret
+
+# Values for the load-tester subchart (nested under its alias).
+# global.* keys above propagate automatically; only non-global keys need nesting.
+load-tester:
+  # OAuth configuration for load tests
+  saas:
+    # Enable OAuth authentication
+    enabled: true
+
+    # Credentials for the OAuth authentication
+    credentials:
+      # The name of the Kubernetes secrets where to find the OIDC parameters.
+      # The "load-test-credentials" Secret is created by the "load-test-setup"
+      # Helm Chart.
+      existingSecret: load-test-credentials

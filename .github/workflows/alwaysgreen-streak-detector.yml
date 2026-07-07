@@ -63,7 +63,7 @@ jobs:
       contents: read
     steps:
       - name: Check out repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Import Slack token from Vault
         id: slack-secrets
@@ -162,6 +162,7 @@ jobs:
             # ----------------------------------------------------------------
             ACTIVE_MARKER="${STREAK_MARKER_ACTIVE} on ${BASE_REF}"
             EXISTING_TS=""
+            HISTORY_FAILED=false
 
             SLACK_HISTORY=$(curl -sS -X GET \
               -H "Authorization: Bearer ${SLACK_TOKEN}" \
@@ -180,7 +181,22 @@ jobs:
                 echo "  No existing active streak message for ${BASE_REF}"
               fi
             else
+              HISTORY_FAILED=true
               echo "  conversations.history failed: $(jq -r '.error // "unknown"' <<<"$SLACK_HISTORY") — will post fresh if needed"
+            fi
+
+            # Guard: only when the conversations.history API call itself failed
+            # (not when it succeeded but found no message — e.g. after deletion or
+            # a marker change, where re-posting a fresh alert is the correct action).
+            # When the API is unavailable and the streak has already exceeded the
+            # threshold, the crossing-point alert was sent in a prior run; skip this
+            # tick to prevent repeated chat.postMessage calls.
+            # Fix: grant channels:history scope to the Slack bot to remove this
+            # guard and enable proper silent find-and-update behaviour.
+            if [[ "${HISTORY_FAILED}" == "true" && "${IS_STREAK}" == "true" && ${STREAK} -gt ${STREAK_THRESHOLD} ]]; then
+              echo "  ⚠️  conversations.history unavailable, streak=${STREAK} > ${STREAK_THRESHOLD} — skipping to avoid repeated alerts"
+              SUMMARY_LINES+=("- \`${BASE_REF}\`: ⚠️ skipped repeat alert (conversations.history unavailable, streak=${STREAK}/${STREAK_THRESHOLD}) — grant channels:history scope to the Slack bot to re-enable silent updates")
+              continue
             fi
 
             # ----------------------------------------------------------------

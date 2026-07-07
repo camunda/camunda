@@ -188,6 +188,7 @@ const mockCalledDecisionInstance = {
   processDefinitionKey: PROCESS_DEFINITION_KEY,
   tenantId: '<default>',
   rootProcessInstanceKey: null,
+  businessId: null,
 } satisfies DecisionInstance;
 
 const mockUserTask = {
@@ -215,6 +216,7 @@ const mockUserTask = {
   externalFormReference: null,
   tags: [],
   priority: 50,
+  businessId: null,
 } satisfies UserTask;
 
 const mockUserTaskWithDetails = {

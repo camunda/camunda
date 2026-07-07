@@ -11,7 +11,7 @@ import static io.camunda.zeebe.broker.test.EmbeddedBrokerRule.assignSocketAddres
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.zeebe.broker.Broker;

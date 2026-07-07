@@ -34,7 +34,8 @@ jobs:
     # Skip analysis on fork PRs as they cannot access FOSSA due to lack of credentials
     if: github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork
     # If you change the job timeout, update the timeout in camunda/infra-global-github-actions/fossa/pr-check accordingly.
-    timeout-minutes: 31
+    # Budget = one normal run (~25m) + one retry on hang (~30m) + small scheduling margin.
+    timeout-minutes: 65
     strategy:
       fail-fast: false
       # The matrix is necessary to run separate analyses
@@ -55,8 +56,8 @@ jobs:
             -Dquickly=true
             -DskipQaBuild=true
     steps:
-    - uses: camunda/infra-global-github-actions/start-build-monitor@be5b0496892a83e6b3c5cedb818b771e8ed68121 # main
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
+    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
     # Import FOSSA_API_KEY secret from Vault
     - name: Import Secrets
@@ -101,7 +102,23 @@ jobs:
       if: contains(fromJson('["optimize", "single-app"]'), matrix.project.name)
       uses: ./.github/actions/adjust-pom-for-license-analysis
 
-    - name: Analyze project
+    # The FOSSA CLI occasionally hangs on a single analyzer call, exhausting the job timeout
+    # (see INC-6263). Run with a per-attempt step timeout that's just above the normal ~25m
+    # completion, and retry once on failure so a hang is killed early and recovered.
+    - name: Analyze project (attempt 1)
+      id: analyze1
+      continue-on-error: true
+      timeout-minutes: 30
+      uses: camunda/infra-global-github-actions/fossa/analyze@fc4fa13813cbc1835129967f10a12f24aa7a393c
+      with:
+        api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
+        branch: ${{  steps.info.outputs.head-ref }}
+        path: ${{ matrix.project.path }}
+        revision-id: ${{ steps.info.outputs.head-revision }}
+
+    - name: Analyze project (attempt 2)
+      if: steps.analyze1.outcome != 'success'
+      timeout-minutes: 30
       uses: camunda/infra-global-github-actions/fossa/analyze@fc4fa13813cbc1835129967f10a12f24aa7a393c
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
@@ -150,7 +167,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Check for aborted jobs
         continue-on-error: true
         uses: ./.github/actions/observe-aborted-jobs

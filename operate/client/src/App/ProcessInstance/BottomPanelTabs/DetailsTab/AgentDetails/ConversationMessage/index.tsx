@@ -8,7 +8,7 @@
 
 import {useReducer} from 'react';
 import {Button, Tag, Tooltip} from '@carbon/react';
-import {Document, Maximize} from '@carbon/react/icons';
+import {Document, Maximize, Tools} from '@carbon/react/icons';
 import type {
   AgentInstanceHistoryItem,
   AgentInstanceHistoryRole,
@@ -30,7 +30,7 @@ import {
 import {MarkdownMessage} from './MarkdownMessage';
 import {MessageDetailsModal} from './MessageDetailsModal';
 
-type Actor = AgentInstanceHistoryRole | 'SYSTEM';
+type Actor = Exclude<AgentInstanceHistoryRole, 'TOOL_RESULT'> | 'SYSTEM';
 type ContentItem = AgentInstanceHistoryItem['content'][number];
 type ToolCall = AgentInstanceHistoryItem['toolCalls'][number];
 type Metrics = AgentInstanceHistoryItem['metrics'];
@@ -39,14 +39,12 @@ const readableTitleByActor: Record<Actor, string> = {
   SYSTEM: 'System prompt',
   USER: 'User message',
   ASSISTANT: 'Assistant message',
-  TOOL_RESULT: 'Tool result',
 };
 
 const labelByActor: Record<Actor, string> = {
   SYSTEM: 'System',
   USER: 'User',
   ASSISTANT: 'Assistant',
-  TOOL_RESULT: 'Tool Result',
 };
 
 function formatDuration(ms: number): string {
@@ -59,7 +57,6 @@ type ConversationMessageProps = {
   historyItemKey?: string;
   metrics?: Metrics | null;
   toolCalls?: ToolCall[];
-  onToolCallClick?: (toolCall: ToolCall) => void;
 };
 
 const ConversationMessage: React.FC<ConversationMessageProps> = ({
@@ -68,7 +65,6 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
   historyItemKey,
   metrics = null,
   toolCalls = [],
-  onToolCallClick,
 }) => {
   const [messageDetails, dispatch] = useReducer(
     messageDetailsReducer,
@@ -154,22 +150,16 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
       {toolCalls.length > 0 && (
         <AttachmentsContainer>
           <AttachmentsLabel>Tool calls</AttachmentsLabel>
-          {toolCalls.map((tc) => {
-            const isDisabled = tc.elementId === null;
-            const label = isDisabled
-              ? `"${tc.toolName}" tool call.`
-              : `"${tc.toolName}" tool call. Click to open details.`;
-            return (
-              <AttachmentButton
-                key={tc.toolCallId}
-                aria-label={label}
-                disabled={isDisabled}
-                onClick={() => onToolCallClick?.(tc)}
-              >
-                {tc.toolName}
-              </AttachmentButton>
-            );
-          })}
+          {toolCalls.map((tc) => (
+            <AttachmentButton
+              key={tc.toolCallId}
+              aria-label={`"${tc.toolName}" tool call.`}
+              disabled
+            >
+              <Tools size={12} />
+              {tc.toolName}
+            </AttachmentButton>
+          ))}
         </AttachmentsContainer>
       )}
       {messageDetails.state === 'visible' && (

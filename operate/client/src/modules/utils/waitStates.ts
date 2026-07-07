@@ -9,20 +9,13 @@
 import type {ElementInstanceInspection} from '@camunda/camunda-api-zod-schemas/8.10';
 import {formatDate} from 'modules/utils/date';
 
-function getWaitStateLabel(
-  waitStates: ElementInstanceInspection[],
-): string | null {
-  if (waitStates.length === 0) {
+function getWaitStateLabel(waitingCount: number): string | null {
+  if (waitingCount <= 0) {
     return null;
   }
 
-  // Timer wait states should not show a label on the diagram overlay
-  const nonTimerWaitStates = waitStates.filter(
-    (ws) => ws.details.waitStateType !== 'TIMER',
-  );
-
-  if (nonTimerWaitStates.length === 0) {
-    return null;
+  if (waitingCount > 1) {
+    return `${waitingCount} waiting`;
   }
 
   return 'Waiting';
@@ -123,20 +116,4 @@ function getEarliestTimerDueDate(
   return earliestDueDate;
 }
 
-function isBeforeAllExecutionListenerWaitState(
-  item: ElementInstanceInspection,
-): boolean {
-  return (
-    item.elementType === 'MULTI_INSTANCE_BODY' &&
-    item.details.waitStateType === 'JOB' &&
-    item.details.jobKind === 'EXECUTION_LISTENER' &&
-    item.details.listenerEventType === 'BEFORE_ALL'
-  );
-}
-
-export {
-  getWaitStateLabel,
-  getWaitStateStatusItems,
-  getEarliestTimerDueDate,
-  isBeforeAllExecutionListenerWaitState,
-};
+export {getWaitStateLabel, getWaitStateStatusItems, getEarliestTimerDueDate};

@@ -14,7 +14,7 @@ metadata:
     camunda.io/purpose: load-test
 
     app.kubernetes.io/component: operate
-    app.kubernetes.io/version: "8.7.29"
+
   annotations:
     {}
 spec:
@@ -41,7 +41,7 @@ spec:
         camunda.io/purpose: load-test
 
         app.kubernetes.io/component: operate
-        app.kubernetes.io/version: "8.7.29"
+
       annotations:
 
     spec:
@@ -49,7 +49,7 @@ spec:
         - name: harbor-registry
       initContainers:
         - name: migration
-          image: camunda/operate:TEST
+          image: camunda/operate:8.7.29
           command: ['/bin/sh', '/usr/local/operate/bin/migrate']
           securityContext:
             allowPrivilegeEscalation: false
@@ -62,6 +62,8 @@ spec:
           env:
             - name: OPERATE_LOG_APPENDER
               value: Stackdriver
+            - name: CAMUNDA_OPERATE_ELASTICSEARCH_NUMBER_OF_REPLICAS
+              value: "1"
           resources:
             limits:
               cpu: 2000m
@@ -79,7 +81,7 @@ spec:
               mountPath: /camunda
       containers:
         - name: operate
-          image: camunda/operate:TEST
+          image: camunda/operate:8.7.29
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
@@ -137,6 +139,8 @@ spec:
               value: zeebe:26502
             - name: OPERATE_LOG_APPENDER
               value: Stackdriver
+            - name: CAMUNDA_OPERATE_ELASTICSEARCH_NUMBER_OF_REPLICAS
+              value: "1"
           envFrom:
             - configMapRef:
                 name: c8-golden-stable-87-elasticsearch-camunda-platform-identity-env-vars

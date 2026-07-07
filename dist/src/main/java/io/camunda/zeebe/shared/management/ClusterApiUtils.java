@@ -19,35 +19,36 @@ import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperatio
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.DeleteHistoryOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ModeChangeOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionBootstrapOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PostScalingOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PreScalingOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRedistributionCompletion;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRelocationCompletion;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.StartPartitionScaleUp;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateIncarnationNumberOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdatePartitionDistributorConfigOperation;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberRemoveOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PostScalingOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PreScalingOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartitionDistributorConfigOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.FixedConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRobinConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.DeleteHistoryOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRedistributionCompletion;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRelocationCompletion;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.StartPartitionScaleUp;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
@@ -295,6 +296,10 @@ final class ClusterApiUtils {
                     .operation(OperationEnum.EXIT_RECOVERY)
                     .brokerId(brokerIdValue(modeChange.memberId()));
           };
+      case final AwaitModeChangeOperation modeChange ->
+          new Operation()
+              .operation(OperationEnum.AWAIT_MODE_CHANGE)
+              .brokerId(brokerIdValue(modeChange.memberId()));
       default -> new Operation().operation(OperationEnum.UNKNOWN);
     };
   }
@@ -546,7 +551,7 @@ final class ClusterApiUtils {
                   .partitionId(partitionForceReconfigureOperation.partitionId())
                   .brokers(
                       partitionForceReconfigureOperation.members().stream()
-                          .map(m -> brokerIdValue(m))
+                          .map(ClusterApiUtils::brokerIdValue)
                           .toList());
           case final MemberRemoveOperation memberRemoveOperation ->
               new TopologyChangeCompletedInner()
@@ -606,7 +611,7 @@ final class ClusterApiUtils {
                   .brokerId(brokerIdValue(preScalingOperation.memberId()))
                   .brokers(
                       preScalingOperation.clusterMembers().stream()
-                          .map(m -> brokerIdValue(m))
+                          .map(ClusterApiUtils::brokerIdValue)
                           .toList());
           case final PostScalingOperation postScalingOperation ->
               new TopologyChangeCompletedInner()
@@ -614,7 +619,7 @@ final class ClusterApiUtils {
                   .brokerId(brokerIdValue(postScalingOperation.memberId()))
                   .brokers(
                       postScalingOperation.clusterMembers().stream()
-                          .map(m -> brokerIdValue(m))
+                          .map(ClusterApiUtils::brokerIdValue)
                           .toList());
           case final UpdatePartitionDistributorConfigOperation
                   updatePartitionDistributorConfigOperation ->
@@ -636,6 +641,10 @@ final class ClusterApiUtils {
                         .operation(TopologyChangeCompletedInner.OperationEnum.EXIT_RECOVERY)
                         .brokerId(brokerIdValue(modeChange.memberId()));
               };
+          case final AwaitModeChangeOperation modeChange ->
+              new TopologyChangeCompletedInner()
+                  .operation(TopologyChangeCompletedInner.OperationEnum.AWAIT_MODE_CHANGE)
+                  .brokerId(brokerIdValue(modeChange.memberId()));
           default ->
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.UNKNOWN);

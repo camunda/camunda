@@ -7,11 +7,17 @@
  */
 package io.camunda.db.rdbms.sql;
 
+import io.camunda.db.rdbms.read.domain.AgentHistoryDbQuery;
 import io.camunda.db.rdbms.write.domain.AgentHistoryDbModel;
+import java.util.List;
 
 public interface AgentHistoryMapper extends ProcessInstanceDependantMapper {
 
   void insert(AgentHistoryDbModel model);
 
   void updateCommitStatus(AgentHistoryDbModel model);
+
+  Long count(AgentHistoryDbQuery query);
+
+  List<AgentHistoryDbModel> search(AgentHistoryDbQuery query);
 }

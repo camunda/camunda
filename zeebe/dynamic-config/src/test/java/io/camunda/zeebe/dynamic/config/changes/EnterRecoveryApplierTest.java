@@ -14,6 +14,7 @@ import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor.NoopModeChange
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
+import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.time.Duration;
@@ -36,6 +37,12 @@ final class EnterRecoveryApplierTest {
 
         @Override
         public CompletableActorFuture<Void> exitRecovery() {
+          return CompletableActorFuture.completedExceptionally(
+              new RuntimeException("Force failure"));
+        }
+
+        @Override
+        public CompletableActorFuture<Void> awaitModeApplied(final Mode mode) {
           return CompletableActorFuture.completedExceptionally(
               new RuntimeException("Force failure"));
         }

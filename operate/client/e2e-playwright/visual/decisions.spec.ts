@@ -193,7 +193,41 @@ test.describe('decisions page', () => {
     await decisionsPage.displayOptionalFilter('Process Instance Key');
     await decisionsPage.displayOptionalFilter('Decision Instance Key(s)');
     await decisionsPage.decisionInstanceKeysFilter.type('aaa');
+    await decisionsPage.displayOptionalFilter('Business ID');
     await decisionsPage.displayOptionalFilter('Evaluation Date Range');
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test('business id column and filter visible', async ({
+    page,
+    decisionsPage,
+  }) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        decisionDefinitions: mockedDecisionDefinitions,
+        decisionInstances: {
+          page: mockDecisionInstances.page,
+          items: mockDecisionInstances.items.map((instance, i) => ({
+            ...instance,
+            businessId: `order-${i}`,
+          })),
+        },
+        decisionXml: mockDecisionXml,
+      }),
+    );
+
+    await decisionsPage.gotoDecisionsPage({
+      searchParams: {
+        evaluated: 'true',
+        failed: 'true',
+        decisionDefinitionId: 'invoiceClassification',
+        decisionDefinitionVersion: '2',
+      },
+    });
+
+    await decisionsPage.displayOptionalFilter('Business ID');
 
     await expect(page).toHaveScreenshot();
   });

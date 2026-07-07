@@ -1195,6 +1195,123 @@ TenantId:
 
 `x-semantic-provider` and `x-semantic-client-minted` are **not** lint-enforced — they're consumer-only signals. Add them by review.
 
+### 2.19 Required-permission annotations (`x-required-permissions`)
+
+Declares the authorization permission(s) a given operation enforces — the
+canonical, machine-readable endpoint → permission binding (single source of
+truth for RBAC). See ADR
+[`docs/adr/security/001-endpoint-required-permission-mapping.md`](adr/security/001-endpoint-required-permission-mapping.md).
+
+**Every operation MUST declare `x-required-permissions`.** It is an array; the
+entries are ANDed. An empty array means the endpoint enforces no permission
+(**unrestricted** — note this is an *authorization* property: the endpoint is
+still authenticated, it just needs no specific permission; it is not "public" in
+the unauthenticated sense). Requiring the key even when empty distinguishes
+"explicitly unrestricted" from "forgot to annotate".
+
+```yaml
+# Static single permission — the common case
+/process-instances:
+  post:
+    operationId: createProcessInstance
+    x-required-permissions:
+      - { resourceType: PROCESS_DEFINITION, permissionType: CREATE_PROCESS_INSTANCE }
+
+# Explicitly unrestricted — authenticated, but no specific permission required
+/topology:
+  get:
+    operationId: getTopology
+    x-required-permissions: []
+```
+
+Three entry shapes are supported:
+
+|  Shape  |                             YAML                             |                              Meaning                               |
+|---------|--------------------------------------------------------------|--------------------------------------------------------------------|
+| static  | `{ resourceType: X, permissionType: Y }`                     | A concrete permission. Both are enum members and a **valid pair**. |
+| any-of  | `{ anyOf: [ {resourceType, permissionType}, ... ] }`         | At least one of the listed permissions suffices (OR).              |
+| dynamic | `{ dynamic: true, note: "<how it is resolved at runtime>" }` | Permission resolved from the request body/path at runtime.         |
+
+```yaml
+# any-of (e.g. a user task readable via the process or the task itself)
+x-required-permissions:
+  - anyOf:
+      - { resourceType: PROCESS_DEFINITION, permissionType: READ_USER_TASK }
+      - { resourceType: USER_TASK, permissionType: READ }
+
+# dynamic (e.g. resource deletion — permission depends on the resource type)
+x-required-permissions:
+  - dynamic: true
+    note: Resolved from the deployed resource type — DELETE_PROCESS, DELETE_DRD, DELETE_FORM or DELETE_RESOURCE on RESOURCE.
+```
+
+`resourceType` must be a member of `AuthorizationResourceType`, `permissionType`
+a member of `PermissionType`, and the **pair** one the resource type actually
+supports. Valid pairs are recorded in
+[`resource-permissions.json`](../zeebe/gateway-protocol/src/main/proto/v2/resource-permissions.json),
+which mirrors `AuthorizationResourceType.buildResourcePermissionsMap()` and is
+kept honest by `ResourcePermissionsRegistryTest`.
+
+#### What the Spectral rules enforce
+
+- `required-permissions-shape` (severity `error`) — each entry matches the
+  documented schema (exactly one of: a static `{resourceType, permissionType}`
+  pair, an `anyOf` group, or `{dynamic: true, note}`).
+- `verify-required-permissions` (severity `error`, custom JS function) — every
+  operation under `paths` declares `x-required-permissions`, and every static
+  `{resourceType, permissionType}` pair is a valid pair per
+  `resource-permissions.json`. Adding a new endpoint without a declared binding
+  is therefore a lint error, not a style nit.
+- `permission-enforcement-shape` (severity `error`) — when present,
+  `x-permission-enforcement` is either `reject` or `filter` (see below).
+
+The engine remains the sole **enforcer**; the declared mapping is kept honest by
+a separate drift guard (see the ADR).
+
+#### Deny outcome (`x-permission-enforcement`)
+
+`x-required-permissions` says *what* permission an endpoint requires; it does not
+say *how* the endpoint behaves when the caller lacks it. That deny outcome is not
+uniform:
+
+- **`reject`** (the default when the marker is absent) — the caller receives a
+  `4xx` and no data. Writes return `403 Forbidden`; single-resource point reads
+  (`get…ByKey`) return `404 Not Found`, because an unauthorized resource is
+  indistinguishable from a missing one.
+- **`filter`** — the caller receives `200 OK` with the result set **scoped to the
+  resources they are authorized for** (possibly empty). This is the contract of
+  collection/aggregate reads backed directly by the search client, where
+  authorization is pushed into the query as a filter rather than evaluated as a
+  gate — i.e. the top-level `search…` collection queries, the membership/relation
+  `search…For{Group,Role,Tenant}` queries, the `…Statistics` / usage-metrics
+  aggregates — plus `activateJobs`, which silently filters out jobs of process
+  definitions the caller cannot update (enforced in `JobBatchCollector`, not the
+  `@ExcludeAuthorizationCheck` processor).
+
+Note that **not every `search…` endpoint filters.** Sub-resource searches that
+gate on a parent point-read first (e.g. `searchProcessInstanceIncidents`,
+`searchUserTaskVariables`, `searchUserTaskAuditLogs` call `getByKey` on the parent
+before querying) **reject** with the parent's `404` when the caller cannot read
+the parent — so they are left at the default `reject`.
+
+```yaml
+operationId: searchUsers
+x-permission-enforcement: filter
+x-required-permissions:
+  - { resourceType: USER, permissionType: READ }
+```
+
+The marker is **optional**: omit it for the common `reject` case, set it
+explicitly to `filter` where results are scoped. A `filter` endpoint must declare
+at least one required permission (an unrestricted `[]` endpoint has nothing to filter
+by) — `verify-required-permissions` enforces this.
+
+This classification is a *claim*; the deterministic *proof* is the spec-driven
+runtime auth test (api-test-generator#374), which uses the marker to assert the
+correct deny shape — `4xx` for `reject`, `200` + target-absent for `filter`. See
+ADR decision **D8** for why static derivation of the deny outcome is unsound and
+the runtime oracle is authoritative.
+
 ---
 
 ## 3. Spectral linting & custom rules

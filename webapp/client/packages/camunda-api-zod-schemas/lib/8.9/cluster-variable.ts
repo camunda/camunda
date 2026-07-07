@@ -58,51 +58,51 @@ type QueryClusterVariablesRequestBody = z.infer<typeof queryClusterVariablesRequ
 const queryClusterVariablesResponseBodySchema = getQueryResponseBodySchema(clusterVariableSearchResultSchema);
 type QueryClusterVariablesResponseBody = z.infer<typeof queryClusterVariablesResponseBodySchema>;
 
-const searchClusterVariables: Endpoint<{truncateValues?: boolean}> = {
+const searchClusterVariables = {
 	method: 'POST',
 	getUrl: ({truncateValues} = {}) =>
-		`/${API_VERSION}/cluster-variables/search${truncateValues !== undefined ? `?truncateValues=${truncateValues}` : ''}`,
-};
+		`/${API_VERSION}/cluster-variables/search${truncateValues !== undefined ? `?truncateValues=${truncateValues}` : ''}` as const,
+} as const satisfies Endpoint<{truncateValues?: boolean}>;
 
-const createGlobalClusterVariable: Endpoint = {
+const createGlobalClusterVariable = {
 	method: 'POST',
-	getUrl: () => `/${API_VERSION}/cluster-variables/global`,
-};
+	getUrl: () => `/${API_VERSION}/cluster-variables/global` as const,
+} as const satisfies Endpoint;
 
-const createTenantClusterVariable: Endpoint<{tenantId: string}> = {
+const createTenantClusterVariable = {
 	method: 'POST',
-	getUrl: ({tenantId}) => `/${API_VERSION}/cluster-variables/tenants/${tenantId}`,
-};
+	getUrl: ({tenantId}) => `/${API_VERSION}/cluster-variables/tenants/${tenantId}` as const,
+} as const satisfies Endpoint<{tenantId: string}>;
 
-const getGlobalClusterVariable: Endpoint<{name: string}> = {
+const getGlobalClusterVariable = {
 	method: 'GET',
-	getUrl: ({name}) => `/${API_VERSION}/cluster-variables/global/${name}`,
-};
+	getUrl: ({name}) => `/${API_VERSION}/cluster-variables/global/${name}` as const,
+} as const satisfies Endpoint<{name: string}>;
 
-const getTenantClusterVariable: Endpoint<{tenantId: string; name: string}> = {
+const getTenantClusterVariable = {
 	method: 'GET',
-	getUrl: ({tenantId, name}) => `/${API_VERSION}/cluster-variables/tenants/${tenantId}/${name}`,
-};
+	getUrl: ({tenantId, name}) => `/${API_VERSION}/cluster-variables/tenants/${tenantId}/${name}` as const,
+} as const satisfies Endpoint<{tenantId: string; name: string}>;
 
-const updateGlobalClusterVariable: Endpoint<{name: string}> = {
+const updateGlobalClusterVariable = {
 	method: 'PUT',
-	getUrl: ({name}) => `/${API_VERSION}/cluster-variables/global/${name}`,
-};
+	getUrl: ({name}) => `/${API_VERSION}/cluster-variables/global/${name}` as const,
+} as const satisfies Endpoint<{name: string}>;
 
-const updateTenantClusterVariable: Endpoint<{tenantId: string; name: string}> = {
+const updateTenantClusterVariable = {
 	method: 'PUT',
-	getUrl: ({tenantId, name}) => `/${API_VERSION}/cluster-variables/tenants/${tenantId}/${name}`,
-};
+	getUrl: ({tenantId, name}) => `/${API_VERSION}/cluster-variables/tenants/${tenantId}/${name}` as const,
+} as const satisfies Endpoint<{tenantId: string; name: string}>;
 
-const deleteGlobalClusterVariable: Endpoint<{name: string}> = {
+const deleteGlobalClusterVariable = {
 	method: 'DELETE',
-	getUrl: ({name}) => `/${API_VERSION}/cluster-variables/global/${name}`,
-};
+	getUrl: ({name}) => `/${API_VERSION}/cluster-variables/global/${name}` as const,
+} as const satisfies Endpoint<{name: string}>;
 
-const deleteTenantClusterVariable: Endpoint<{tenantId: string; name: string}> = {
+const deleteTenantClusterVariable = {
 	method: 'DELETE',
-	getUrl: ({tenantId, name}) => `/${API_VERSION}/cluster-variables/tenants/${tenantId}/${name}`,
-};
+	getUrl: ({tenantId, name}) => `/${API_VERSION}/cluster-variables/tenants/${tenantId}/${name}` as const,
+} as const satisfies Endpoint<{tenantId: string; name: string}>;
 
 export {
 	clusterVariableScopeSchema,

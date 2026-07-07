@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.data.os;
 
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.search.connect.tenant.SearchClients;
 import io.camunda.spring.utils.ConditionalOnWebappEnabled;
 import io.camunda.tasklist.data.DataGenerator;

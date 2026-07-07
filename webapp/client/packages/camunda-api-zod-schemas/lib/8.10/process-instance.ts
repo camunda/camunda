@@ -134,10 +134,10 @@ const cancelProcessInstanceRequestBodySchema = z
 	.optional();
 type CancelProcessInstanceRequestBody = z.infer<typeof cancelProcessInstanceRequestBodySchema>;
 
-const getProcessInstance: Endpoint<Pick<ProcessInstance, 'processInstanceKey'>> = {
+const getProcessInstance = {
 	method: 'GET',
-	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}`,
-};
+	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}` as const,
+} as const satisfies Endpoint<Pick<ProcessInstance, 'processInstanceKey'>>;
 
 const createProcessInstanceRequestBodySchema = z.object({
 	variables: z.record(z.string(), variableSchema).optional(),
@@ -173,20 +173,20 @@ const createProcessInstanceResponseBodySchema = z.object({
 
 type CreateProcessInstanceResponseBody = z.infer<typeof createProcessInstanceResponseBodySchema>;
 
-const createProcessInstance: Endpoint = {
+const createProcessInstance = {
 	method: 'POST',
-	getUrl: () => `/${API_VERSION}/process-instances`,
-};
+	getUrl: () => `/${API_VERSION}/process-instances` as const,
+} as const satisfies Endpoint;
 
-const queryProcessInstances: Endpoint = {
+const queryProcessInstances = {
 	method: 'POST',
-	getUrl: () => `/${API_VERSION}/process-instances/search`,
-};
+	getUrl: () => `/${API_VERSION}/process-instances/search` as const,
+} as const satisfies Endpoint;
 
-const cancelProcessInstance: Endpoint<Pick<ProcessInstance, 'processInstanceKey'>> = {
+const cancelProcessInstance = {
 	method: 'POST',
-	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/cancellation`,
-};
+	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/cancellation` as const,
+} as const satisfies Endpoint<Pick<ProcessInstance, 'processInstanceKey'>>;
 
 const queryProcessInstanceIncidentsRequestBodySchema = queryIncidentsRequestBodySchema;
 type QueryProcessInstanceIncidentsRequestBody = z.infer<typeof queryProcessInstanceIncidentsRequestBodySchema>;
@@ -194,15 +194,15 @@ type QueryProcessInstanceIncidentsRequestBody = z.infer<typeof queryProcessInsta
 const queryProcessInstanceIncidentsResponseBodySchema = queryIncidentsResponseBodySchema;
 type QueryProcessInstanceIncidentsResponseBody = z.infer<typeof queryProcessInstanceIncidentsResponseBodySchema>;
 
-const queryProcessInstanceIncidents: Endpoint<Pick<ProcessInstance, 'processInstanceKey'>> = {
+const queryProcessInstanceIncidents = {
 	method: 'POST',
-	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/incidents/search`,
-};
+	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/incidents/search` as const,
+} as const satisfies Endpoint<Pick<ProcessInstance, 'processInstanceKey'>>;
 
-const getProcessInstanceCallHierarchy: Endpoint<Pick<ProcessInstance, 'processInstanceKey'>> = {
+const getProcessInstanceCallHierarchy = {
 	method: 'GET',
-	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/call-hierarchy`,
-};
+	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/call-hierarchy` as const,
+} as const satisfies Endpoint<Pick<ProcessInstance, 'processInstanceKey'>>;
 
 const callHierarchySchema = z.object({
 	processInstanceKey: z.string(),
@@ -213,11 +213,11 @@ type CallHierarchy = z.infer<typeof callHierarchySchema>;
 const getProcessInstanceCallHierarchyResponseBodySchema = z.array(callHierarchySchema);
 type GetProcessInstanceCallHierarchyResponseBody = z.infer<typeof getProcessInstanceCallHierarchyResponseBodySchema>;
 
-const getProcessInstanceStatistics: Endpoint<GetProcessInstanceStatisticsParams> = {
+const getProcessInstanceStatistics = {
 	method: 'GET',
 	getUrl: ({processInstanceKey, statisticName = 'element-instances'}) =>
-		`/${API_VERSION}/process-instances/${processInstanceKey}/statistics/${statisticName}`,
-};
+		`/${API_VERSION}/process-instances/${processInstanceKey}/statistics/${statisticName}` as const,
+} as const satisfies Endpoint<GetProcessInstanceStatisticsParams>;
 
 const getProcessInstanceStatisticsResponseBodySchema = getCollectionResponseBodySchema(
 	processDefinitionStatisticSchema,
@@ -228,10 +228,28 @@ type GetProcessInstanceStatisticsParams = Pick<ProcessInstance, 'processInstance
 	statisticName: StatisticName;
 };
 
-const getProcessInstanceSequenceFlows: Endpoint<Pick<ProcessInstance, 'processInstanceKey'>> = {
+const getProcessInstanceWaitStateStatistics = {
 	method: 'GET',
-	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/sequence-flows`,
-};
+	getUrl: ({processInstanceKey}) =>
+		`/${API_VERSION}/process-instances/${processInstanceKey}/statistics/wait-states` as const,
+} as const satisfies Endpoint<Pick<ProcessInstance, 'processInstanceKey'>>;
+
+const waitStateStatisticSchema = z.object({
+	elementId: z.string(),
+	waitingCount: z.number().int(),
+});
+type WaitStateStatistic = z.infer<typeof waitStateStatisticSchema>;
+
+const getProcessInstanceWaitStateStatisticsResponseBodySchema =
+	getCollectionResponseBodySchema(waitStateStatisticSchema);
+type GetProcessInstanceWaitStateStatisticsResponseBody = z.infer<
+	typeof getProcessInstanceWaitStateStatisticsResponseBodySchema
+>;
+
+const getProcessInstanceSequenceFlows = {
+	method: 'GET',
+	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/sequence-flows` as const,
+} as const satisfies Endpoint<Pick<ProcessInstance, 'processInstanceKey'>>;
 
 const sequenceFlowSchema = z.object({
 	processInstanceKey: z.string(),
@@ -263,10 +281,10 @@ type CreateIncidentResolutionBatchOperationResponseBody = z.infer<
 	typeof createIncidentResolutionBatchOperationResponseBodySchema
 >;
 
-const createIncidentResolutionBatchOperation: Endpoint = {
+const createIncidentResolutionBatchOperation = {
 	method: 'POST',
-	getUrl: () => `/${API_VERSION}/process-instances/incident-resolution`,
-};
+	getUrl: () => `/${API_VERSION}/process-instances/incident-resolution` as const,
+} as const satisfies Endpoint;
 
 const createCancellationBatchOperationRequestBodySchema = z.object({
 	filter: getOrFilterSchema(queryProcessInstancesFilterSchema),
@@ -281,10 +299,10 @@ const createCancellationBatchOperationResponseBodySchema = z.object({
 
 type CreateCancellationBatchOperationResponseBody = z.infer<typeof createCancellationBatchOperationResponseBodySchema>;
 
-const createCancellationBatchOperation: Endpoint = {
+const createCancellationBatchOperation = {
 	method: 'POST',
-	getUrl: () => `/${API_VERSION}/process-instances/cancellation`,
-};
+	getUrl: () => `/${API_VERSION}/process-instances/cancellation` as const,
+} as const satisfies Endpoint;
 
 const createDeletionBatchOperationRequestBodySchema = z.object({
 	filter: getOrFilterSchema(queryProcessInstancesFilterSchema),
@@ -299,10 +317,10 @@ const createDeletionBatchOperationResponseBodySchema = z.object({
 
 type CreateDeletionBatchOperationResponseBody = z.infer<typeof createDeletionBatchOperationResponseBodySchema>;
 
-const createDeletionBatchOperation: Endpoint = {
+const createDeletionBatchOperation = {
 	method: 'POST',
-	getUrl: () => `/${API_VERSION}/process-instances/deletion`,
-};
+	getUrl: () => `/${API_VERSION}/process-instances/deletion` as const,
+} as const satisfies Endpoint;
 
 const createMigrationBatchOperationRequestBodySchema = z.object({
 	filter: getOrFilterSchema(queryProcessInstancesFilterSchema),
@@ -326,10 +344,10 @@ const createMigrationBatchOperationResponseBodySchema = z.object({
 
 type CreateMigrationBatchOperationResponseBody = z.infer<typeof createMigrationBatchOperationResponseBodySchema>;
 
-const createMigrationBatchOperation: Endpoint = {
+const createMigrationBatchOperation = {
 	method: 'POST',
-	getUrl: () => `/${API_VERSION}/process-instances/migration`,
-};
+	getUrl: () => `/${API_VERSION}/process-instances/migration` as const,
+} as const satisfies Endpoint;
 
 const createModificationBatchOperationRequestBodySchema = z.object({
 	filter: getOrFilterSchema(queryProcessInstancesFilterSchema),
@@ -350,10 +368,10 @@ const createModificationBatchOperationResponseBodySchema = z.object({
 
 type CreateModificationBatchOperationResponseBody = z.infer<typeof createModificationBatchOperationResponseBodySchema>;
 
-const createModificationBatchOperation: Endpoint = {
+const createModificationBatchOperation = {
 	method: 'POST',
-	getUrl: () => `/${API_VERSION}/process-instances/modification`,
-};
+	getUrl: () => `/${API_VERSION}/process-instances/modification` as const,
+} as const satisfies Endpoint;
 
 const variableInstructionSchema = z.object({
 	variables: z.record(z.string(), z.unknown()),
@@ -381,10 +399,10 @@ const modifyProcessInstanceRequestBodySchema = z
 	);
 type ModifyProcessInstanceRequestBody = z.infer<typeof modifyProcessInstanceRequestBodySchema>;
 
-const modifyProcessInstance: Endpoint<Pick<ProcessInstance, 'processInstanceKey'>> = {
+const modifyProcessInstance = {
 	method: 'POST',
-	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/modification`,
-};
+	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/modification` as const,
+} as const satisfies Endpoint<Pick<ProcessInstance, 'processInstanceKey'>>;
 
 const resolveProcessInstanceIncidentsResponseBodySchema = z.object({
 	batchOperationKey: z.string(),
@@ -393,10 +411,11 @@ const resolveProcessInstanceIncidentsResponseBodySchema = z.object({
 
 type ResolveProcessInstanceIncidentsResponseBody = z.infer<typeof resolveProcessInstanceIncidentsResponseBodySchema>;
 
-const resolveProcessInstanceIncidents: Endpoint<Pick<ProcessInstance, 'processInstanceKey'>> = {
+const resolveProcessInstanceIncidents = {
 	method: 'POST',
-	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/incident-resolution`,
-};
+	getUrl: ({processInstanceKey}) =>
+		`/${API_VERSION}/process-instances/${processInstanceKey}/incident-resolution` as const,
+} as const satisfies Endpoint<Pick<ProcessInstance, 'processInstanceKey'>>;
 
 export {
 	createProcessInstance,
@@ -406,6 +425,7 @@ export {
 	queryProcessInstanceIncidents,
 	getProcessInstanceCallHierarchy,
 	getProcessInstanceStatistics,
+	getProcessInstanceWaitStateStatistics,
 	getProcessInstanceSequenceFlows,
 	createIncidentResolutionBatchOperation,
 	createCancellationBatchOperation,
@@ -424,6 +444,8 @@ export {
 	queryProcessInstanceIncidentsResponseBodySchema,
 	getProcessInstanceCallHierarchyResponseBodySchema,
 	getProcessInstanceStatisticsResponseBodySchema,
+	getProcessInstanceWaitStateStatisticsResponseBodySchema,
+	waitStateStatisticSchema,
 	getProcessInstanceSequenceFlowsResponseBodySchema,
 	createIncidentResolutionBatchOperationResponseBodySchema,
 	createCancellationBatchOperationResponseBodySchema,
@@ -454,6 +476,8 @@ export type {
 	StatisticName,
 	ProcessInstance,
 	GetProcessInstanceStatisticsResponseBody,
+	GetProcessInstanceWaitStateStatisticsResponseBody,
+	WaitStateStatistic,
 	CreateIncidentResolutionBatchOperationRequestBody,
 	CreateIncidentResolutionBatchOperationResponseBody,
 	CreateCancellationBatchOperationRequestBody,

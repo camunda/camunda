@@ -7,6 +7,8 @@ paths:
       tags:
         - Mapping rule
       operationId: createMappingRule
+      x-required-permissions:
+        - { resourceType: MAPPING_RULE, permissionType: CREATE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -60,6 +62,8 @@ paths:
       tags:
         - Mapping rule
       operationId: updateMappingRule
+      x-required-permissions:
+        - { resourceType: MAPPING_RULE, permissionType: UPDATE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -115,6 +119,8 @@ paths:
       tags:
         - Mapping rule
       operationId: deleteMappingRule
+      x-required-permissions:
+        - { resourceType: MAPPING_RULE, permissionType: DELETE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -153,6 +159,8 @@ paths:
       tags:
         - Mapping rule
       operationId: getMappingRule
+      x-required-permissions:
+        - { resourceType: MAPPING_RULE, permissionType: READ }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -194,6 +202,9 @@ paths:
       tags:
         - Mapping rule
       operationId: searchMappingRule
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: MAPPING_RULE, permissionType: READ }
       security:
         - bearerAuth: []
         - basicAuth: []

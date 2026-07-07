@@ -26,7 +26,7 @@ import io.camunda.zeebe.dynamic.config.PersistedClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateRoutingState;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator;
 import io.camunda.zeebe.util.CloseableSilently;
@@ -340,8 +340,7 @@ public class RestoreManager implements CloseableSilently {
       final PartitionMetadata metadata, final RaftPartitionFactory factory) {
     final var partitionId = metadata.id();
     final var partitionRegistry =
-        MicrometerUtil.wrap(
-            meterRegistry, PartitionKeyNames.tags(partitionId.group(), partitionId.number()));
+        MicrometerUtil.wrap(meterRegistry, PartitionKeyNames.tags(partitionId));
 
     return new InstrumentedRaftPartition(
         factory.createRaftPartition(metadata, partitionRegistry), partitionRegistry);

@@ -6,6 +6,8 @@ paths:
       tags:
         - Group
       operationId: createGroup
+      x-required-permissions:
+        - { resourceType: GROUP, permissionType: CREATE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -67,6 +69,9 @@ paths:
       tags:
         - Group
       operationId: searchGroups
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: GROUP, permissionType: READ }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -101,6 +106,8 @@ paths:
       tags:
         - Group
       operationId: getGroup
+      x-required-permissions:
+        - { resourceType: GROUP, permissionType: READ }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -143,6 +150,8 @@ paths:
       tags:
         - Group
       operationId: updateGroup
+      x-required-permissions:
+        - { resourceType: GROUP, permissionType: UPDATE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -193,6 +202,8 @@ paths:
       tags:
         - Group
       operationId: deleteGroup
+      x-required-permissions:
+        - { resourceType: GROUP, permissionType: DELETE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -232,6 +243,8 @@ paths:
       tags:
         - Group
       operationId: assignUserToGroup
+      x-required-permissions:
+        - { resourceType: GROUP, permissionType: UPDATE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -288,6 +301,8 @@ paths:
       tags:
         - Group
       operationId: unassignUserFromGroup
+      x-required-permissions:
+        - { resourceType: GROUP, permissionType: UPDATE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -338,6 +353,9 @@ paths:
       tags:
         - Group
       operationId: searchUsersForGroup
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: GROUP, permissionType: READ }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -389,6 +407,8 @@ paths:
       tags:
         - Group
       operationId: assignClientToGroup
+      x-required-permissions:
+        - { resourceType: GROUP, permissionType: UPDATE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -445,6 +465,8 @@ paths:
       tags:
         - Group
       operationId: unassignClientFromGroup
+      x-required-permissions:
+        - { resourceType: GROUP, permissionType: UPDATE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -495,6 +517,9 @@ paths:
       tags:
         - Group
       operationId: searchClientsForGroup
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: GROUP, permissionType: READ }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -546,6 +571,8 @@ paths:
       tags:
         - Group
       operationId: assignMappingRuleToGroup
+      x-required-permissions:
+        - { resourceType: GROUP, permissionType: UPDATE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -600,6 +627,8 @@ paths:
       tags:
         - Group
       operationId: unassignMappingRuleFromGroup
+      x-required-permissions:
+        - { resourceType: GROUP, permissionType: UPDATE }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -648,6 +677,9 @@ paths:
       tags:
         - Group
       operationId: searchMappingRulesForGroup
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: MAPPING_RULE, permissionType: READ }
       security:
         - bearerAuth: []
         - basicAuth: []
@@ -699,6 +731,9 @@ paths:
       tags:
         - Group
       operationId: searchRolesForGroup
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: ROLE, permissionType: READ }
       security:
         - bearerAuth: []
         - basicAuth: []

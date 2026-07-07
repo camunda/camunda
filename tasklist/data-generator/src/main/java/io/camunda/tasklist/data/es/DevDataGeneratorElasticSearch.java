@@ -8,7 +8,7 @@
 package io.camunda.tasklist.data.es;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import io.camunda.configuration.api.physicaltenants.PhysicalTenantIds;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.search.connect.tenant.SearchClients;
 import io.camunda.spring.utils.ConditionalOnWebappEnabled;
 import io.camunda.tasklist.data.DataGenerator;

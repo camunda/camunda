@@ -8,12 +8,15 @@
 package io.camunda.zeebe.engine.processing.incident;
 
 import static io.camunda.zeebe.engine.processing.incident.IncidentHelper.assertIncidentCreated;
+import static io.camunda.zeebe.engine.processing.processinstance.migration.MigrationTestUtil.extractProcessDefinitionKeyByProcessId;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.processing.processinstance.BusinessIdValidator;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
+import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -27,6 +30,7 @@ import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -485,6 +489,229 @@ public final class CallActivityIncidentTest {
         .containsExactly(
             List.of(parentProcessInstanceKey, callActivityInstanceKey),
             List.of(childProcessInstanceKey, failingElementInstanceKey));
+  }
+
+  @Test
+  public void shouldNotCreateIncidentWhenBusinessIdIsExplicitNull() {
+    // given - an explicit null discards the business id
+    deployParentWithChildBusinessId("=null");
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(parentProcessId)
+            .withBusinessId("parent-business-id")
+            .create();
+
+    // then - no incident; the child is created with no business id
+    Assertions.assertThat(getChildProcessInstance(processInstanceKey).getValue()).hasBusinessId("");
+  }
+
+  @Test
+  public void shouldNotCreateIncidentWhenBusinessIdFeelEvaluatesToEmptyString() {
+    // given - a FEEL expression evaluating to an empty string is treated like '=null'
+    deployParentWithChildBusinessId("=\"\"");
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(parentProcessId)
+            .withBusinessId("parent-business-id")
+            .create();
+
+    // then - no incident; the child is created with no business id
+    Assertions.assertThat(getChildProcessInstance(processInstanceKey).getValue()).hasBusinessId("");
+  }
+
+  @Test
+  public void shouldCreateIncidentWhenBusinessIdVariableNotExists() {
+    // given - a FEEL expression referencing a variable that is never provided
+    deployParentWithChildBusinessId("=businessIdVar");
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
+
+    // then
+    final Record<IncidentRecordValue> incident = getIncident(processInstanceKey);
+    final Record<ProcessInstanceRecordValue> elementInstance =
+        getCallActivityInstance(processInstanceKey);
+
+    assertIncidentCreated(incident, elementInstance)
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            """
+            Expected to resolve the business id for the call activity from expression 'businessIdVar', but it evaluated to null. \
+            The evaluation reported the following warnings:
+            [NO_VARIABLE_FOUND] No variable found with name 'businessIdVar'""");
+  }
+
+  @Test
+  public void shouldCreateIncidentWhenBusinessIdFeelEvaluatesToNullWithNonVariableWarning() {
+    // given - a FEEL expression that coerces to null through a failure other than a missing
+    // variable (here: an unknown function)
+    deployParentWithChildBusinessId("=unknownFunction()");
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
+
+    // then - any null accompanied by evaluation warnings is an incident, not an intentional discard
+    final Record<IncidentRecordValue> incident = getIncident(processInstanceKey);
+    final Record<ProcessInstanceRecordValue> elementInstance =
+        getCallActivityInstance(processInstanceKey);
+
+    assertIncidentCreated(incident, elementInstance).hasErrorType(ErrorType.EXTRACT_VALUE_ERROR);
+    assertThat(incident.getValue().getErrorMessage())
+        .contains(
+            "Expected to resolve the business id for the call activity from expression 'unknownFunction()', but it evaluated to null.")
+        .contains("The evaluation reported the following warnings:");
+  }
+
+  @Test
+  public void shouldCreateIncidentWhenBusinessIdFeelResolvesToTooLongValue() {
+    // given - a FEEL expression whose variable resolves to a value longer than the maximum
+    deployParentWithChildBusinessId("=businessIdVar");
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(parentProcessId)
+            .withVariable(
+                "businessIdVar", "b".repeat(BusinessIdValidator.MAX_BUSINESS_ID_LENGTH + 1))
+            .create();
+
+    // then
+    final Record<IncidentRecordValue> incident = getIncident(processInstanceKey);
+    final Record<ProcessInstanceRecordValue> elementInstance =
+        getCallActivityInstance(processInstanceKey);
+
+    assertIncidentCreated(incident, elementInstance)
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "Expected to resolve a valid business id for the call activity, but it exceeds the max length of %d."
+                .formatted(BusinessIdValidator.MAX_BUSINESS_ID_LENGTH));
+  }
+
+  @Test
+  public void shouldCreateIncidentWhenBusinessIdResolvesToNonString() {
+    // given - a FEEL expression that resolves to a number
+    deployParentWithChildBusinessId("=42");
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
+
+    // then
+    final Record<IncidentRecordValue> incident = getIncident(processInstanceKey);
+    final Record<ProcessInstanceRecordValue> elementInstance =
+        getCallActivityInstance(processInstanceKey);
+
+    assertIncidentCreated(incident, elementInstance)
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "Expected the business id for the call activity to resolve to a string, but expression '42' evaluated to 'NUMBER'.");
+  }
+
+  @Test
+  public void shouldResolveIncidentAfterProvidingBusinessIdVariable() {
+    // given - a missing-variable incident at the call activity
+    deployParentWithChildBusinessId("=businessIdVar");
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(parentProcessId).create();
+    final Record<IncidentRecordValue> incident = getIncident(processInstanceKey);
+
+    // when - the variable is provided and the incident is resolved
+    ENGINE
+        .variables()
+        .ofScope(processInstanceKey)
+        .withDocument(Map.of("businessIdVar", "resolved-business-id"))
+        .update();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    // then - the child is created with the now-resolvable business id
+    Assertions.assertThat(getChildProcessInstance(processInstanceKey).getValue())
+        .hasBusinessId("resolved-business-id");
+  }
+
+  @Test
+  public void shouldResolveBusinessIdIncidentAfterMigratingToFixedVersion() {
+    // given - a source version whose call activity business id references a variable that is
+    // never provided, and a target version whose call activity resolves it from an available one
+    final String sourceProcessId = Strings.newRandomValidBpmnId();
+    final String targetProcessId = Strings.newRandomValidBpmnId();
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                "wf-child.bpmn",
+                Bpmn.createExecutableProcess(childProcessId).startEvent().endEvent().done())
+            .withXmlResource(
+                "wf-source.bpmn",
+                Bpmn.createExecutableProcess(sourceProcessId)
+                    .startEvent()
+                    .callActivity(
+                        "call",
+                        c -> c.zeebeProcessId(childProcessId).zeebeBusinessId("=businessIdVar"))
+                    .done())
+            .withXmlResource(
+                "wf-target.bpmn",
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .callActivity(
+                        "call", c -> c.zeebeProcessId(childProcessId).zeebeBusinessId("=orderId"))
+                    .done())
+            .deploy();
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(sourceProcessId)
+            .withVariable("orderId", "migrated-business-id")
+            .create();
+    final Record<IncidentRecordValue> incident = getIncident(processInstanceKey);
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    // when - the instance is migrated to the fixed version and the incident is resolved
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("call", "call")
+        .migrate();
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    // then - the child is created with the business id re-evaluated from the migrated definition
+    Assertions.assertThat(getChildProcessInstance(processInstanceKey).getValue())
+        .hasBusinessId("migrated-business-id");
+  }
+
+  private void deployParentWithChildBusinessId(final String businessId) {
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "wf-parent.bpmn",
+            Bpmn.createExecutableProcess(parentProcessId)
+                .startEvent()
+                .callActivity(
+                    "call", c -> c.zeebeProcessId(childProcessId).zeebeBusinessId(businessId))
+                .done())
+        .withXmlResource(
+            "wf-child.bpmn",
+            Bpmn.createExecutableProcess(childProcessId).startEvent().endEvent().done())
+        .deploy();
+  }
+
+  private Record<ProcessInstanceRecordValue> getChildProcessInstance(
+      final long parentProcessInstanceKey) {
+    return RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withParentProcessInstanceKey(parentProcessInstanceKey)
+        .withElementType(BpmnElementType.PROCESS)
+        .getFirst();
   }
 
   private Record<ProcessInstanceRecordValue> getCallActivityInstance(

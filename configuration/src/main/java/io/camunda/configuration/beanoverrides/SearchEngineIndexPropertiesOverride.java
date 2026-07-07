@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration.beanoverrides;
 
+import io.camunda.configuration.Camunda;
 import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
@@ -46,9 +47,12 @@ public class SearchEngineIndexPropertiesOverride {
   public SearchEngineIndexProperties searchEngineIndexProperties() {
     final SearchEngineIndexProperties override = new SearchEngineIndexProperties();
     BeanUtils.copyProperties(legacySearchEngineIndexProperties, override);
+    applyTo(unifiedConfiguration.getCamunda(), override);
+    return override;
+  }
 
-    final SecondaryStorage secondaryStorage =
-        unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
+  public static void applyTo(final Camunda camunda, final SearchEngineIndexProperties override) {
+    final SecondaryStorage secondaryStorage = camunda.getData().getSecondaryStorage();
 
     final DocumentBasedSecondaryStorageDatabase database =
         (secondaryStorage.getType() == SecondaryStorageType.elasticsearch)
@@ -70,7 +74,5 @@ public class SearchEngineIndexPropertiesOverride {
     if (!database.getRefreshIntervalByIndexName().isEmpty()) {
       override.setRefreshIntervalByIndexName(database.getRefreshIntervalByIndexName());
     }
-
-    return override;
   }
 }

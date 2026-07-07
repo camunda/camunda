@@ -37,7 +37,7 @@ import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstance
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 import {mockSearchMessageSubscriptions} from 'modules/mocks/api/v2/messageSubscriptions/searchMessageSubscriptions';
 import {mockSearchAgentInstances} from 'modules/mocks/api/v2/agentInstances/searchAgentInstances';
-import {mockSearchElementInstanceInspection} from 'modules/mocks/api/v2/elementInstanceInspection/searchElementInstanceInspection';
+import {mockFetchProcessInstanceWaitStateStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstanceWaitStateStatistics';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {
   SearchParamsUpdater,
@@ -215,7 +215,7 @@ describe('TopPanel', () => {
 
     mockSearchAgentInstances().withSuccess(searchResult([]));
 
-    mockSearchElementInstanceInspection().withSuccess(searchResult([]));
+    mockFetchProcessInstanceWaitStateStatistics().withSuccess({items: []});
   });
 
   afterEach(() => {
@@ -462,28 +462,10 @@ describe('TopPanel', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should add an active overlay for a multi-instance body waiting for a beforeAll execution listener', async () => {
-    mockSearchElementInstanceInspection().withSuccess(
-      searchResult([
-        {
-          rootProcessInstanceKey: 'instance_id',
-          processInstanceKey: 'instance_id',
-          elementInstanceKey: '9999',
-          elementId: 'multi-instance-task',
-          elementType: 'MULTI_INSTANCE_BODY',
-          tenantId: '<default>',
-          bpmnProcessId: 'process-def-1',
-          details: {
-            waitStateType: 'JOB',
-            jobKey: '8888',
-            jobType: 'io.camunda:execution-listener:1',
-            jobKind: 'EXECUTION_LISTENER',
-            listenerEventType: 'BEFORE_ALL',
-            retries: null,
-          },
-        },
-      ]),
-    );
+  it('should add an active overlay for a waiting multi-instance body missing from element-instances statistics', async () => {
+    mockFetchProcessInstanceWaitStateStatistics().withSuccess({
+      items: [{elementId: 'multi-instance-service-task', waitingCount: 1}],
+    });
 
     render(<TopPanel />, {wrapper: getWrapper()});
 
@@ -494,14 +476,15 @@ describe('TopPanel', () => {
       expect(
         diagramOverlaysStore.state.overlays.find(
           ({elementId, type}) =>
-            elementId === 'multi-instance-task' && type === 'elementState',
+            elementId === 'multi-instance-service-task' &&
+            type === 'elementState',
         ),
       ).toBeDefined();
     });
 
     const activeOverlay = diagramOverlaysStore.state.overlays.find(
       ({elementId, type}) =>
-        elementId === 'multi-instance-task' && type === 'elementState',
+        elementId === 'multi-instance-service-task' && type === 'elementState',
     );
 
     const payload = activeOverlay?.payload as {
@@ -510,5 +493,53 @@ describe('TopPanel', () => {
     };
     expect(payload?.elementState).toBe('active');
     expect(payload?.count).toBeUndefined();
+  });
+
+  it('should not add an active overlay for a waiting non-multi-instance element missing from statistics', async () => {
+    // service-task-3 is a plain task absent from element-instances stats; a
+    // waiting count alone must not synthesize an active overlay for it.
+    mockFetchProcessInstanceWaitStateStatistics().withSuccess({
+      items: [{elementId: 'service-task-3', waitingCount: 1}],
+    });
+
+    render(<TopPanel />, {wrapper: getWrapper()});
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('diagram-spinner'),
+    );
+
+    expect(
+      diagramOverlaysStore.state.overlays.find(
+        ({elementId, type}) =>
+          elementId === 'service-task-3' && type === 'elementState',
+      ),
+    ).toBeUndefined();
+  });
+
+  it('should render a waiting overlay with a count label for a waiting element', async () => {
+    mockFetchProcessInstanceWaitStateStatistics().withSuccess({
+      items: [
+        {elementId: 'service-task-7', waitingCount: 5},
+        {elementId: 'service-task-1', waitingCount: 1},
+      ],
+    });
+
+    render(<TopPanel />, {wrapper: getWrapper()});
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('diagram-spinner'),
+    );
+
+    await waitFor(() => {
+      expect(
+        diagramOverlaysStore.state.overlays.some(
+          ({elementId, type}) =>
+            elementId === 'service-task-7' && type === 'waitingState',
+        ),
+      ).toBe(true);
+    });
+
+    expect(await screen.findByText('5 waiting')).toBeInTheDocument();
+    expect(screen.getByText('Waiting')).toBeInTheDocument();
   });
 });

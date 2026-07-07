@@ -53,10 +53,10 @@ type SystemConfiguration = z.infer<typeof systemConfigurationSchema>;
 const getSystemConfigurationResponseBodySchema = systemConfigurationSchema;
 type GetSystemConfigurationResponseBody = z.infer<typeof getSystemConfigurationResponseBodySchema>;
 
-const getSystemConfiguration: Endpoint = {
+const getSystemConfiguration = {
 	method: 'GET',
-	getUrl: () => `/${API_VERSION}/system/configuration`,
-};
+	getUrl: () => `/${API_VERSION}/system/configuration` as const,
+} as const satisfies Endpoint;
 
 export {
 	jobMetricsConfigurationSchema,

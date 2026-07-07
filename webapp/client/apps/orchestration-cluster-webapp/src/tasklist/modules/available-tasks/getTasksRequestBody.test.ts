@@ -74,6 +74,7 @@ describe('getTasksRequestBody', () => {
 				processDefinitionKey: 'process-1',
 				tenantId: '<default>',
 				elementId: 'task-1',
+				businessId: 'eq_order-123',
 				dueDateFrom: '2024-01-01T00:00:00.000Z',
 				dueDateTo: '2024-01-31T00:00:00.000Z',
 				followUpDateFrom: '2024-02-01T00:00:00.000Z',
@@ -90,6 +91,7 @@ describe('getTasksRequestBody', () => {
 				processDefinitionKey: 'process-1',
 				tenantId: '<default>',
 				elementId: 'task-1',
+				businessId: {$eq: 'order-123'},
 				dueDate: {$gte: '2024-01-01T00:00:00.000Z', $lte: '2024-01-31T00:00:00.000Z'},
 				followUpDate: {$gte: '2024-02-01T00:00:00.000Z', $lte: '2024-02-28T00:00:00.000Z'},
 			},
@@ -113,6 +115,15 @@ describe('getTasksRequestBody', () => {
 		);
 
 		expect(result.filter).not.toHaveProperty('dueDate');
+	});
+
+	it('should omit businessId when it cannot be decoded', () => {
+		const result = getTasksRequestBody(
+			{filter: 'custom', sortBy: 'creation', businessId: 'plain-value'},
+			{currentUsername: 'demo'},
+		);
+
+		expect(result.filter).not.toHaveProperty('businessId');
 	});
 
 	it.for([

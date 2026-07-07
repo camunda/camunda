@@ -11,6 +11,7 @@ import {HttpResponse} from 'msw';
 import {z} from 'zod';
 import {
 	mockCurrentUserEndpoint,
+	mockGetUserTaskEndpoint,
 	mockLicenseEndpoint,
 	mockQueryUserTasksEndpoint,
 	mockSystemConfigurationEndpoint,
@@ -179,6 +180,42 @@ test.describe('Filter request bodies', () => {
 			await tasklistIndexPage.openSortMenu();
 			await expect(tasklistIndexPage.sortOption('Completion date')).toBeVisible();
 		});
+	});
+
+	test('should not auto-select completed tasks when auto-select is enabled', async ({
+		network,
+		page,
+		tasklistIndexPage,
+		taskDetailPage,
+	}) => {
+		await page.addInitScript(`localStorage.setItem('tasklist.autoSelectNextTask', JSON.stringify(true))`);
+		network.use(
+			mockQueryUserTasksEndpoint({
+				schema: createUserTasksRequestSchema({
+					filter: z.object({
+						state: z.literal('COMPLETED'),
+					}),
+					sortField: 'completionDate',
+				}),
+				successResponse: HttpResponse.json(
+					createQueryUserTasksResponse({
+						items: [createUserTask({userTaskKey: '1', name: 'Completed task', state: 'COMPLETED'})],
+					}),
+				),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
+			mockGetUserTaskEndpoint({
+				successResponse: HttpResponse.json(
+					createUserTask({userTaskKey: '1', name: 'Completed task', state: 'COMPLETED'}),
+				),
+			}),
+		);
+
+		await page.goto('/tasklist?filter=completed&sortBy=completion');
+
+		await expect(page).toHaveURL(/\/tasklist\?filter=completed&sortBy=completion$/);
+		await expect(tasklistIndexPage.taskItem('Completed task')).toBeVisible();
+		await expect(taskDetailPage.taskName('Completed task')).toBeVisible();
 	});
 });
 

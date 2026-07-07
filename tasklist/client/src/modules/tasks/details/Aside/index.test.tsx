@@ -26,6 +26,7 @@ const completedTaskMock = {
   candidateUsers: [],
   candidateGroups: [],
   tenantId: 'default',
+  businessId: null,
 };
 
 const unassignedTaskMock = {
@@ -37,6 +38,7 @@ const unassignedTaskMock = {
   candidateUsers: ['jane candidate'],
   candidateGroups: ['accounting candidate'],
   tenantId: 'default',
+  businessId: null,
 };
 
 const UserName = () => {
@@ -161,5 +163,32 @@ describe('<Aside />', () => {
     );
 
     expect(screen.getByText(label)).toBeInTheDocument();
+  });
+
+  it('should render Business ID when present', () => {
+    render(
+      <Aside
+        {...unassignedTaskMock}
+        businessId="order-4711"
+        user={currentUser}
+      />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
+
+    expect(screen.getByText('Business ID')).toBeInTheDocument();
+    expect(screen.getByText('order-4711')).toBeInTheDocument();
+  });
+
+  it('should not render Business ID when not set', () => {
+    render(
+      <Aside {...unassignedTaskMock} businessId={null} user={currentUser} />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
+
+    expect(screen.queryByText('Business ID')).not.toBeInTheDocument();
   });
 });

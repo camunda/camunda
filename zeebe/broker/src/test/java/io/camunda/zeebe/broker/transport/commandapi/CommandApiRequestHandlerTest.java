@@ -14,6 +14,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
@@ -40,7 +42,9 @@ import org.junit.Test;
 
 public class CommandApiRequestHandlerTest {
   @Rule public final ControlledActorSchedulerRule scheduler = new ControlledActorSchedulerRule();
-  final CommandApiRequestHandler handler = new CommandApiRequestHandler();
+  final CommandApiRequestHandler handler =
+      new CommandApiRequestHandler(
+          new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 0));
   private LogStreamWriter logStreamWriter;
 
   @Before

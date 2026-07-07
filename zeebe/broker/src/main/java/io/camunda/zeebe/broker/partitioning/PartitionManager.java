@@ -8,19 +8,19 @@
 package io.camunda.zeebe.broker.partitioning;
 
 import io.atomix.cluster.MemberId;
-import io.atomix.primitive.partition.PartitionId;
 import io.atomix.raft.partition.RaftPartition;
+import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.Collection;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 
 public interface PartitionManager {
-  String DEFAULT_GROUP_NAME = Protocol.DEFAULT_PARTITION_GROUP_NAME;
+  String DEFAULT_GROUP_NAME = PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
   /**
    * @return the partition with the given id or null if partition does not exist
@@ -101,12 +101,14 @@ public interface PartitionManager {
 
     return new RecoveryPartitionManager(
         physicalTenantId,
-        brokerStartupContext.getBrokerConfiguration().getData().getDirectory(),
+        brokerStartupContext.getBrokerConfiguration(),
+        brokerStartupContext.getBrokerInfo(),
         brokerStartupContext.getConcurrencyControl(),
         brokerStartupContext.getClusterConfigurationService(),
         brokerStartupContext.getClusterServices().getMembershipService(),
         brokerStartupContext.getActorSchedulingService(),
         brokerStartupContext.getMeterRegistry(),
+        brokerStartupContext.getGatewayBrokerTransport(),
         topologyManager);
   }
 }

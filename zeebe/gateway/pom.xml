@@ -104,6 +104,12 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-cluster</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-atomix-cluster</artifactId>
     </dependency>
 

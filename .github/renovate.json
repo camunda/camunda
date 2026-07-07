@@ -47,6 +47,11 @@
       "password": "{{ secrets.ARTIFACTORY_PASSWORD }}"
     },
     {
+      "hostType": "docker",
+      "matchHost": "https://docker.elastic.co",
+      "timeout": 30000
+    },
+    {
       "timeout": 10000
     }
   ],
@@ -71,6 +76,25 @@
       "registryUrls": [
         "https://repo.maven.apache.org/maven2",
         "https://artifacts.camunda.com/artifactory/herodevs-nes"
+      ]
+    },
+    {
+      "description": "Keep Spring versions in client-facing poms resolvable from Maven Central. Must stay after the HeroDevs NES rule above, since registryUrls replaces (not merges) and last match wins. See https://github.com/camunda/camunda/issues/56520.",
+      "matchDatasources": [
+        "maven"
+      ],
+      "matchPackageNames": [
+        "/^org\\.springframework(\\..+)?:/"
+      ],
+      "matchFileNames": [
+        "library-parent/pom.xml",
+        "clients/camunda-spring-boot-3-starter/pom.xml",
+        "clients/camunda-spring-boot-4-starter/pom.xml",
+        "testing/camunda-process-test-spring-boot-3/pom.xml",
+        "testing/camunda-process-test-spring-boot-4/pom.xml"
+      ],
+      "registryUrls": [
+        "https://maven-central.storage-download.googleapis.com/maven2"
       ]
     },
     {
@@ -734,7 +758,36 @@
       ],
       "groupName": "form-js",
       "groupSlug": "form-js"
+    },
+    {
+      "description": "Simplify the commit message when updating the Camunda Platform Helm Chart for load tests",
+      "matchDepNames": ["camunda/camunda-platform-helm"],
+      "matchDatasources": ["github-tags"],
+      "matchFileNames": ["load-tests/**"],
+      "commitMessageTopic": "camunda-platform Helm Chart"
+    },
+    {
+      "description": "Authorize the 'main' load test to deploy alpha version of the Camunda Platform Helm Chart",
+      "matchDepNames": ["camunda/camunda-platform-helm"],
+      "matchDatasources": ["github-tags"],
+      "matchFileNames": ["load-tests/setup/main/**"],
+      "ignoreUnstable": false
+    },
+    {
+      "description": "Bump Docker images used by load tests ; keep the same major.minor and update only for patch releases",
+      "matchFileNames": [
+        "load-tests/setup/*/values/*.y*ml"
+      ],
+      "matchDatasources": ["docker"],
+      "matchPackageNames": [
+        "docker.io/camunda/zeebe",
+        "docker.io/camunda/camunda"
+      ],
+      "allowedVersions": "<= {{{major}}}.{{{minor}}}"
     }
+  ],
+  "ignorePaths": [
+      "load-tests/setup/test/golden/**"
   ],
   "dockerfile": {
     "managerFilePatterns": [
@@ -743,6 +796,12 @@
     "ignorePaths": [
       "zeebe/load-tests/**",
       "clients/go/vendor/**"
+    ]
+  },
+  "helm-values": {
+    "managerFilePatterns": [
+      "**/values.y*ml",
+      "load-tests/setup/*/values/*.y*ml"
     ]
   },
   "customManagers": [
@@ -755,6 +814,18 @@
         "renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s.* '(?<currentValue>.*)'\\s"
       ],
       "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
+    },
+    {
+      "description": "Track camunda-platform-helm chart tags pinned in load test scripts.",
+      "customType": "regex",
+      "managerFilePatterns": ["load-tests/setup/*/newLoadTest.sh"],
+      "matchStrings": [
+        "renovate: version=(?<parentVersion>.*?)\\s+camunda_platform_helm_chart_version=\"(?<currentValue>[^\"]+)\""
+      ],
+      "extractVersionTemplate": "^{{{parentVersion}}}-(?<version>\\S+)$",
+      "datasourceTemplate": "github-tags",
+      "depNameTemplate": "camunda/camunda-platform-helm",
+      "versioningTemplate": "regex:(?<major>\\d+)(\\.(?<minor>\\d+))?(\\.(?<patch>\\d+))(-alpha(?<prerelease>.*))?$"
     },
     {
       "customType": "regex",

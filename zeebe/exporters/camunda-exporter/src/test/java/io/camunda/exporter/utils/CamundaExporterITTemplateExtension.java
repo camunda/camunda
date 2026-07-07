@@ -19,7 +19,7 @@ import io.camunda.search.test.utils.SearchDBExtension;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.extension.Extension;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
@@ -28,11 +28,8 @@ import org.junit.jupiter.api.extension.ParameterResolver;
 import org.junit.jupiter.api.extension.TestTemplateInvocationContext;
 import org.junit.jupiter.api.extension.TestTemplateInvocationContextProvider;
 
-public class CamundaExporterITTemplateExtension
-    implements TestTemplateInvocationContextProvider, BeforeAllCallback {
+public class CamundaExporterITTemplateExtension implements TestTemplateInvocationContextProvider {
 
-  protected SearchClientAdapter elsClientAdapter;
-  protected SearchClientAdapter osClientAdapter;
   private final SearchDBExtension extension;
 
   public CamundaExporterITTemplateExtension(final SearchDBExtension extension) {
@@ -53,18 +50,23 @@ public class CamundaExporterITTemplateExtension
   }
 
   @Override
-  public Stream<TestTemplateInvocationContext> provideTestTemplateInvocationContexts(
-      final ExtensionContext extensionContext) {
+  public @NonNull Stream<TestTemplateInvocationContext> provideTestTemplateInvocationContexts(
+      final @NonNull ExtensionContext extensionContext) {
+    final SearchClientAdapter osClientAdapter =
+        new SearchClientAdapter(extension.osClient(), extension.objectMapper());
+
     final var openSearchAwsInstanceUrl =
         Optional.ofNullable(System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL)).orElse("");
     if (openSearchAwsInstanceUrl.isEmpty()) {
+      final SearchClientAdapter elsClientAdapter =
+          new SearchClientAdapter(extension.esClient(), extension.objectMapper());
       return Stream.of(
           invocationContext(getConfigWithConnectionDetails(OPENSEARCH), osClientAdapter),
           invocationContext(getConfigWithConnectionDetails(ELASTICSEARCH), elsClientAdapter));
-    } else {
-      return Stream.of(
-          invocationContext(getConfigWithConnectionDetails(OPENSEARCH), osClientAdapter));
     }
+
+    return Stream.of(
+        invocationContext(getConfigWithConnectionDetails(OPENSEARCH), osClientAdapter));
   }
 
   protected ParameterResolver exporterConfigResolver(final ExporterConfiguration config) {
@@ -134,13 +136,5 @@ public class CamundaExporterITTemplateExtension
     config.getConnect().setType(connectionType.getType());
     config.getConnect().setAwsEnabled(extension.isAws());
     return config;
-  }
-
-  @Override
-  public void beforeAll(final ExtensionContext context) throws Exception {
-    if (Optional.ofNullable(System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL)).isEmpty()) {
-      elsClientAdapter = new SearchClientAdapter(extension.esClient(), extension.objectMapper());
-    }
-    osClientAdapter = new SearchClientAdapter(extension.osClient(), extension.objectMapper());
   }
 }

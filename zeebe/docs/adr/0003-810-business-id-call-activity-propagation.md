@@ -49,11 +49,23 @@ expression, evaluated by the engine at child instance creation. An empty string 
 Business ID to null (matching 8.9 engine behaviour for an absent Business ID). Any other value is a
 literal Business ID.
 
-**D4. Invalid configuration is rejected at deploy or raised as an incident at runtime.** A child
-`businessId` defined with an invalid FEEL expression rejects the process on deployment. At runtime, a
-FEEL expression that evaluates to null, to an empty string, or to an invalid value (e.g. longer than
-256 characters), and a literal that violates Business ID constraints (e.g. longer than 256
-characters), raise an incident at the call activity.
+**D4. Invalid runtime values raise a resolvable incident; discards do not.** A child `businessId`
+defined with an invalid FEEL expression, or a **static literal that exceeds the maximum length** (256
+characters), rejects the process on deployment — both are statically knowable, so they fail fast. At
+runtime, when the child instance is created:
+
+- an **explicit `=null`**, an **empty literal** (`businessId=""`), and a **FEEL expression that
+  evaluates to null or an empty string** all **discard** the child Business ID — the child starts with
+  no Business ID and **no incident** is raised (consistent with the engine-wide "empty string = not
+  set" convention);
+- an incident is raised when a **FEEL expression evaluates to null but reports evaluation warnings**
+  (i.e. the null was coerced from a failure such as a missing variable, function, or property, as
+  opposed to an intentional `=null`), when a **FEEL expression evaluates to a value that exceeds the
+  maximum length** (256 characters), or when a **FEEL expression resolves to a non-string, non-null
+  type** (e.g. number, boolean, list).
+
+Incidents are resolvable: correcting the variables or the expression and retrying activation creates
+the child with the intended Business ID.
 
 ## Alternatives considered
 
@@ -74,11 +86,11 @@ characters), raise an incident at the call activity.
 - A single attribute carries four distinct behaviours (propagate / literal / FEEL / null) selected by
   value form; modeling tools must surface this so the absent-vs-empty-vs-`=` distinction is clear to
   authors.
-- FEEL evaluation happens at child instance creation, so propagation failures (null/empty/oversized
-  results) surface as runtime incidents at the call activity rather than at deploy time.
+- FEEL evaluation happens at child instance creation, so a null or empty result discards the Business
+  ID, while a missing-variable reference, an over-long value, or a non-string/non-null result surfaces
+  as a resolvable runtime incident at the call activity rather than at deploy time.
 - Future extensions — deriving the child Business ID from the parent's (e.g. `=businessId + "-suffix"`)
-  or a literal fallback when a FEEL expression yields null — are accommodated by the FEEL form but are
-  not part of this decision.
+  — are accommodated by the FEEL form but are not part of this decision.
 
 ## Source
 

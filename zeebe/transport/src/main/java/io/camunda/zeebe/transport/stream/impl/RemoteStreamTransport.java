@@ -42,38 +42,43 @@ public final class RemoteStreamTransport<M> extends Actor {
   private final ClusterCommunicationService transport;
   private final RemoteStreamApiHandler<M> requestHandler;
   private final LongUnaryOperator retryDelaySupplier;
+  private final String physicalTenantId;
 
   public RemoteStreamTransport(
-      final ClusterCommunicationService transport, final RemoteStreamApiHandler<M> requestHandler) {
-    this(transport, requestHandler, new ExponentialBackoff());
+      final ClusterCommunicationService transport,
+      final RemoteStreamApiHandler<M> requestHandler,
+      final String physicalTenantId) {
+    this(transport, requestHandler, new ExponentialBackoff(), physicalTenantId);
   }
 
   @VisibleForTesting
   RemoteStreamTransport(
       final ClusterCommunicationService transport,
       final RemoteStreamApiHandler<M> requestHandler,
-      final LongUnaryOperator retryDelaySupplier) {
+      final LongUnaryOperator retryDelaySupplier,
+      final String physicalTenantId) {
     this.transport = transport;
     this.requestHandler = requestHandler;
     this.retryDelaySupplier = retryDelaySupplier;
+    this.physicalTenantId = physicalTenantId;
   }
 
   @Override
   protected void onActorStarting() {
     transport.replyTo(
-        StreamTopics.ADD.topic(),
+        StreamTopics.ADD.topic(physicalTenantId),
         MessageUtil::parseAddRequest,
         requestHandler::add,
         BufferUtil::bufferAsArray,
         actor::run);
     transport.replyTo(
-        StreamTopics.REMOVE.topic(),
+        StreamTopics.REMOVE.topic(physicalTenantId),
         MessageUtil::parseRemoveRequest,
         requestHandler::remove,
         BufferUtil::bufferAsArray,
         actor::run);
     transport.replyTo(
-        StreamTopics.REMOVE_ALL.topic(),
+        StreamTopics.REMOVE_ALL.topic(physicalTenantId),
         Function.identity(),
         this::onRemoveAll,
         Function.identity(),
@@ -82,9 +87,9 @@ public final class RemoteStreamTransport<M> extends Actor {
 
   @Override
   protected void onActorClosing() {
-    transport.unsubscribe(StreamTopics.ADD.topic());
-    transport.unsubscribe(StreamTopics.REMOVE.topic());
-    transport.unsubscribe(StreamTopics.REMOVE_ALL.topic());
+    transport.unsubscribe(StreamTopics.ADD.topic(physicalTenantId));
+    transport.unsubscribe(StreamTopics.REMOVE.topic(physicalTenantId));
+    transport.unsubscribe(StreamTopics.REMOVE_ALL.topic(physicalTenantId));
     requestHandler.close();
   }
 
@@ -118,7 +123,7 @@ public final class RemoteStreamTransport<M> extends Actor {
   private CompletableFuture<Void> sendRestartStreamsRequest(final MemberId receiver) {
     return transport
         .send(
-            StreamTopics.RESTART_STREAMS.topic(),
+            StreamTopics.RESTART_STREAMS.topic(physicalTenantId),
             ArrayUtil.EMPTY_BYTE_ARRAY,
             Function.identity(),
             Function.identity(),

@@ -142,6 +142,7 @@ describe('useDrillDownNavigation', () => {
           rootProcessInstanceKey: null,
           elementInstanceKey: 'el-inst-1',
           rootDecisionDefinitionKey: 'def-1',
+          businessId: null,
         },
       ]),
     );
@@ -185,6 +186,7 @@ describe('useDrillDownNavigation', () => {
             rootProcessInstanceKey: null,
             elementInstanceKey: 'el-inst-1',
             rootDecisionDefinitionKey: 'def-1',
+            businessId: null,
           },
         ],
         2,

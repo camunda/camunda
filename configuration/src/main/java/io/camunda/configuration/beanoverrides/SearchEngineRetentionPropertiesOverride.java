@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration.beanoverrides;
 
+import io.camunda.configuration.Camunda;
 import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
 import io.camunda.configuration.Retention;
 import io.camunda.configuration.SecondaryStorage;
@@ -48,23 +49,26 @@ public class SearchEngineRetentionPropertiesOverride {
   public SearchEngineRetentionProperties searchEngineRetentionProperties() {
     final SearchEngineRetentionProperties override = new SearchEngineRetentionProperties();
     BeanUtils.copyProperties(legacySearchEngineRetentionProperties, override);
-
-    populateFromRetention(override);
-    populateFromSecondaryStorage(override);
-
+    applyTo(unifiedConfiguration.getCamunda(), override);
     return override;
   }
 
-  private void populateFromRetention(final SearchEngineRetentionProperties override) {
-    final Retention retention =
-        unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getRetention();
+  public static void applyTo(
+      final Camunda camunda, final SearchEngineRetentionProperties override) {
+    populateFromRetention(camunda, override);
+    populateFromSecondaryStorage(camunda, override);
+  }
+
+  private static void populateFromRetention(
+      final Camunda camunda, final SearchEngineRetentionProperties override) {
+    final Retention retention = camunda.getData().getSecondaryStorage().getRetention();
     override.setEnabled(retention.isEnabled());
     override.setMinimumAge(retention.getMinimumAge());
   }
 
-  private void populateFromSecondaryStorage(final SearchEngineRetentionProperties override) {
-    final SecondaryStorage secondaryStorage =
-        unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
+  private static void populateFromSecondaryStorage(
+      final Camunda camunda, final SearchEngineRetentionProperties override) {
+    final SecondaryStorage secondaryStorage = camunda.getData().getSecondaryStorage();
 
     final DocumentBasedSecondaryStorageDatabase database =
         switch (secondaryStorage.getType()) {

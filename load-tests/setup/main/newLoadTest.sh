@@ -32,7 +32,7 @@ manifests under resources/ (namespace + credentials). The cluster itself is
 unchanged by this script — namespace and secret are created on first
 `make install` via `kubectl apply -f resources/...`. Reruns of `make install`
 after a TTL deletion recreate both from the same baked manifests, so
-credentials stay in sync with `load-test-values.yaml`.
+credentials stay in sync with `load-tester-values-defaults.yaml`.
 EOF
 }
 
@@ -51,7 +51,8 @@ fi
 ### First parameter is used as namespace name
 ### For a new namespace a new folder will be created
 
-helm_chart="camunda-platform-8.10"
+# renovate: version=camunda-platform-8.10
+camunda_platform_helm_chart_version="15.0.0-alpha1"
 namespace="$1"
 
 # Add c8- prefix if not present
@@ -136,13 +137,14 @@ mkdir -p "$TARGET_DIRECTORY"
 # (defaults + override + load-test + stable), and the matching
 # camunda-platform-values-${secondaryStorage}.yaml. Flat layout so the
 # per-namespace Makefile's -f <file>.yaml references resolve unchanged.
-cp -v  "Makefile"                                                "$TARGET_DIRECTORY/"
-cp -rv ../charts/                                                "$TARGET_DIRECTORY/"
-cp -v  "values/camunda-platform-override-values.yaml"            "$TARGET_DIRECTORY/"
-cp -v  "values/load-test-values.yaml"                            "$TARGET_DIRECTORY/"
-cp -v  "values/values-stable.yaml"                               "$TARGET_DIRECTORY/"
-cp -v  "values/camunda-platform-values-defaults.yaml"            "$TARGET_DIRECTORY/"
-cp -v  "values/camunda-platform-values-${secondaryStorage}.yaml" "$TARGET_DIRECTORY/"
+cp -v  "Makefile"                                                 "$TARGET_DIRECTORY/"
+cp -rv ../charts/                                                 "$TARGET_DIRECTORY/"
+cp -v  "values/camunda-platform-override-values.yaml"             "$TARGET_DIRECTORY/"
+cp -v  "../scenarios/load-tester-values-defaults.yaml"            "$TARGET_DIRECTORY/"
+cp -v  "values/values-stable.yaml"                                "$TARGET_DIRECTORY/"
+cp -v  "../scenarios/load-tester-values-realistic-benchmark.yaml" "$TARGET_DIRECTORY/"
+cp -v  "values/camunda-platform-values-defaults.yaml"             "$TARGET_DIRECTORY/"
+cp -v  "values/camunda-platform-values-${secondaryStorage}.yaml"  "$TARGET_DIRECTORY/"
 
 # Storage-specific copies.
 case "$secondaryStorage" in
@@ -174,7 +176,7 @@ sed_inplace "s/__STORAGE_TYPE__/$secondaryStorage/"   Makefile
 sed_inplace "s/__ENABLE_OPTIMIZE__/$enable_optimize/" Makefile
 
 # Bake values into the resource manifests and the platform/load-test values.
-sed_inplace "s/__NAMESPACE__/$namespace/" load-test-values.yaml
+sed_inplace "s/__NAMESPACE__/$namespace/" load-tester-values-defaults.yaml
 sed_targets=(*.yaml)
 [[ -d databases ]] && sed_targets+=(databases/*.yaml)
 sed_inplace "s/__AVAILABILITY_ZONE__/$availability_zone/" "${sed_targets[@]}"
@@ -187,6 +189,13 @@ author: "$git_author"
 deadlineDate: "$deadline_date"
 # Can be unset using "topologyZone: ~"
 topologyZone: $availability_zone
+# Propagated to the camunda-load-tests (load-tester) subchart via Helm global
+# coalescing.
+global:
+  commonLabels:
+    camunda.io/created-by: "$git_author"
+  nodeSelector:
+    topology.kubernetes.io/zone: $availability_zone
 EOF
 
 # Add/update helm repositories
@@ -198,16 +207,13 @@ helm repo update
 # The directory where local Helm Charts will be stored in.
 CHARTS_DIR="charts"
 
-# Clone Platform Helm so we can run the latest chart
-# TODO: 347642d30179479f8ab8a2f00b2d979be05f5a8c is the latest commit before the removal of the
-# embedded Bitnami Helm Chart.
-# We should remove the checkout of this specific revision once we have a solution to replace these
-# removed dependencies.
+echo "Pulling Camunda Platform Helm Chart: $camunda_platform_helm_chart_version"
+helm pull camunda/camunda-platform \
+    --untar --untardir "$CHARTS_DIR" \
+    --version "$camunda_platform_helm_chart_version" \
 
-git clone --depth 1 --revision 347642d30179479f8ab8a2f00b2d979be05f5a8c --single-branch https://github.com/camunda/camunda-platform-helm.git "$CHARTS_DIR/camunda-platform-helm"
-
-# Make deps
-helm dependency build "$CHARTS_DIR/camunda-platform-helm/charts/$helm_chart"
+echo "Resolving load-test-setup subchart dependencies..."
+helm dependency update "$CHARTS_DIR/load-test-setup"
 
 echo
 echo "Scaffolding complete. Next steps:"
