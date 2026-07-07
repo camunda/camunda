@@ -11,7 +11,6 @@ import static io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirect
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.cluster.PhysicalTenantIds;
-import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
@@ -127,7 +126,6 @@ public final class SystemContext {
 
   private final Duration shutdownTimeout;
   private final BrokerCfg brokerCfg;
-  private final IdentityConfiguration identityConfiguration;
   private Map<String, String> diagnosticContext;
   private final ActorScheduler scheduler;
   private final AtomixCluster cluster;
@@ -150,7 +148,6 @@ public final class SystemContext {
   public SystemContext(
       final Duration shutdownTimeout,
       final BrokerCfg brokerCfg,
-      final IdentityConfiguration identityConfiguration,
       final ActorScheduler scheduler,
       final AtomixCluster cluster,
       final BrokerClient brokerClient,
@@ -165,7 +162,6 @@ public final class SystemContext {
       final PhysicalTenantIds physicalTenantIds) {
     this.shutdownTimeout = shutdownTimeout;
     this.brokerCfg = brokerCfg;
-    this.identityConfiguration = identityConfiguration;
     this.scheduler = scheduler;
     this.cluster = cluster;
     this.brokerClient = brokerClient;
@@ -694,10 +690,6 @@ public final class SystemContext {
 
   public BrokerCfg getBrokerConfiguration() {
     return brokerCfg;
-  }
-
-  public IdentityConfiguration getIdentityConfiguration() {
-    return identityConfiguration;
   }
 
   public AtomixCluster getCluster() {

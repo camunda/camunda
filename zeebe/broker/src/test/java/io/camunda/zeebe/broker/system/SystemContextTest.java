@@ -593,7 +593,6 @@ final class SystemContextTest {
         new SystemContext(
             SystemContext.DEFAULT_SHUTDOWN_TIMEOUT,
             new BrokerCfg(),
-            null,
             mock(ActorScheduler.class),
             mock(AtomixCluster.class),
             mock(BrokerClient.class),
@@ -676,7 +675,6 @@ final class SystemContextTest {
     return new SystemContext(
         SystemContext.DEFAULT_SHUTDOWN_TIMEOUT,
         brokerCfg,
-        null,
         mock(ActorScheduler.class),
         mock(AtomixCluster.class),
         mock(BrokerClient.class),

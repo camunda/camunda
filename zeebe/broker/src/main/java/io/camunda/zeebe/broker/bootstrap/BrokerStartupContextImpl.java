@@ -12,11 +12,9 @@ import static java.util.Objects.requireNonNull;
 
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.cluster.PhysicalTenantIds;
-import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
-import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
@@ -59,7 +57,6 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
 
   private final BrokerInfo brokerInfo;
   private final BrokerCfg configuration;
-  private final IdentityConfiguration identityConfiguration;
   private final SpringBrokerBridge springBrokerBridge;
   private final ActorSchedulingService actorScheduler;
   private final BrokerHealthCheckService healthCheckService;
@@ -97,7 +94,6 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   public BrokerStartupContextImpl(
       final BrokerInfo brokerInfo,
       final BrokerCfg configuration,
-      final IdentityConfiguration identityConfiguration,
       final SpringBrokerBridge springBrokerBridge,
       final ActorSchedulingService actorScheduler,
       final BrokerHealthCheckService healthCheckService,
@@ -123,7 +119,6 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.healthCheckService = requireNonNull(healthCheckService);
     this.exporterRepository = requireNonNull(exporterRepository);
     this.clusterServices = requireNonNull(clusterServices);
-    this.identityConfiguration = identityConfiguration;
     this.brokerClient = brokerClient;
     this.shutdownTimeout = shutdownTimeout;
     this.meterRegistry = requireNonNull(meterRegistry);
@@ -151,11 +146,6 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public BrokerCfg getBrokerConfiguration() {
     return configuration;
-  }
-
-  @Override
-  public IdentityConfiguration getIdentityConfiguration() {
-    return identityConfiguration;
   }
 
   @Override
@@ -357,16 +347,6 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public MeterRegistry getMeterRegistry() {
     return meterRegistry;
-  }
-
-  @Override
-  public EngineSecurityConfig getSecurityConfiguration() {
-    final var ctx = physicalTenantEngineContexts.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
-    if (ctx == null) {
-      throw new IllegalStateException(
-          "No security configuration registered for the default physical tenant");
-    }
-    return ctx.securityConfig();
   }
 
   @Override

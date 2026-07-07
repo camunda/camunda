@@ -9,11 +9,9 @@ package io.camunda.zeebe.broker.bootstrap;
 
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.cluster.PhysicalTenantIds;
-import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
-import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
@@ -58,8 +56,6 @@ public interface BrokerStartupContext {
   BrokerInfo getBrokerInfo();
 
   BrokerCfg getBrokerConfiguration();
-
-  IdentityConfiguration getIdentityConfiguration();
 
   SpringBrokerBridge getSpringBrokerBridge();
 
@@ -145,9 +141,6 @@ public interface BrokerStartupContext {
   void setRequestIdGenerator(SnowflakeIdGenerator requestIdGenerator);
 
   MeterRegistry getMeterRegistry();
-
-  /** Returns the security configuration for the {@code default} physical tenant. */
-  EngineSecurityConfig getSecurityConfiguration();
 
   /**
    * Returns the engine context for the given physical tenant.
