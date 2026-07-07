@@ -35,7 +35,7 @@ final class RestoreParameterValidatorTest {
   }
 
   @Test
-  void shouldRejectNoParameters() {
+  void shouldRejectNoParametersWhenNoContinuousBackups() {
     // when / then
     assertThatExceptionOfType(IllegalArgumentException.class)
         .isThrownBy(
