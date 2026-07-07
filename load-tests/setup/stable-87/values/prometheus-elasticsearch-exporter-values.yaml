@@ -1,7 +1,7 @@
 fullnameOverride: "prom-els-exporter"
 
 es:
-  uri: http://elastic:9200
+  uri: http://elasticsearch-es-http:9200
 
 commonLabels:
   camunda.io/created-by: __AUTHOR__

@@ -42,7 +42,7 @@ data:
       # Cluster name
       clusterName: elasticsearch
       # Elasticsearch full url
-      url: "http://elastic:9200"
+      url: "http://elasticsearch-es-http:9200"
 
     # Tasklist configuration file
     camunda.tasklist:
@@ -61,23 +61,23 @@ data:
         # Cluster name
         clusterName: elasticsearch
         # Host
-        host: elastic
+        host: elasticsearch-es-http
         # Transport port
         port: 9200
         # Elasticsearch full url
-        url: "http://elastic:9200"
+        url: "http://elasticsearch-es-http:9200"
       # ELS instance to export Zeebe data to
       zeebeElasticsearch:
         # Cluster name
         clusterName: elasticsearch
         # Host
-        host: elastic
+        host: elasticsearch-es-http
         # Transport port
         port: 9200
         # Index prefix, configured in Zeebe Elasticsearch exporter
         prefix: zeebe-record
         # Elasticsearch full url
-        url: "http://elastic:9200"
+        url: "http://elasticsearch-es-http:9200"
       # Zeebe instance
       zeebe:
         # Gateway address

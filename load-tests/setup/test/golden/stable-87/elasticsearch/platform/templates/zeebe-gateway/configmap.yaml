@@ -32,7 +32,7 @@ data:
       # Cluster name
       clusterName: elasticsearch
       # Elasticsearch full url
-      url: "http://elastic:9200"
+      url: "http://elasticsearch-es-http:9200"
 
     server:
       address: "0.0.0.0"

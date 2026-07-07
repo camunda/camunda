@@ -150,15 +150,19 @@ cp -v  "Makefile"                                                 "$TARGET_DIREC
 cp -rv ../charts/                                                 "$TARGET_DIRECTORY/"
 cp -v  "values/camunda-platform-override-values.yaml"             "$TARGET_DIRECTORY/"
 cp -v  "../scenarios/load-tester-values-defaults.yaml"            "$TARGET_DIRECTORY/"
-cp -v  "../scenarios/load-tester-values-realistic-benchmark.yaml" "$TARGET_DIRECTORY/"
 cp -v  "values/values-stable.yaml"                                "$TARGET_DIRECTORY/"
+cp -v  "../scenarios/load-tester-values-realistic-benchmark.yaml" "$TARGET_DIRECTORY/"
 cp -v  "values/camunda-platform-values-defaults.yaml"             "$TARGET_DIRECTORY/"
 cp -v  "values/camunda-platform-values-${secondaryStorage}.yaml"  "$TARGET_DIRECTORY/"
+
+# Don't configure Elasticsearch unless specifically enabled (secondary storage)
+elasticsearchEnabled=false
 
 # Storage-specific copies.
 case "$secondaryStorage" in
   elasticsearch)
     cp -v "values/prometheus-elasticsearch-exporter-values.yaml" "$TARGET_DIRECTORY/"
+    elasticsearchEnabled=true
     ;;
 esac
 
@@ -190,6 +194,7 @@ author: "$git_author"
 deadlineDate: "$deadline_date"
 # Can be unset using "topologyZone: ~"
 topologyZone: $availability_zone
+
 # Propagated to the camunda-load-tests (load-tester) subchart via Helm global
 # coalescing.
 global:
@@ -198,12 +203,6 @@ global:
   nodeSelector:
     topology.kubernetes.io/zone: $availability_zone
 camundaManagementUrl: "http://zeebe-gateway:9600"
-
-metricsExporter:
-  database:
-    # TODO: remove and use the default once this setup uses the Elasticsearch
-    # ECK resource instead of the Elasticsearch Bitnami Helm Chart.
-    url: http://elastic:9200
 
 loadTest:
   client:
@@ -219,6 +218,12 @@ loadTest:
       secret:
         # We need to provision a specific secret through Identity/Keycloak
         key: identity-zeebe-client-token
+
+elasticsearch:
+  # Elasticsearch settings are configured through the options from
+  # charts/load-test-setup/values.yaml
+  enabled: $elasticsearchEnabled
+  version: 8.17.4
 EOF
 
 # Add/update helm repositories

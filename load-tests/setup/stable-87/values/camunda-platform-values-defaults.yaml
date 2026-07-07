@@ -462,3 +462,8 @@ prometheusServiceMonitor:
   labels:
     release: monitoring
   scrapeInterval: 30s
+
+# Disable the default built-in Elasticsearch Bitnami Helm Chart dependency from
+# the Camunda Platform Helm Chart.
+elasticsearch:
+  enabled: false
