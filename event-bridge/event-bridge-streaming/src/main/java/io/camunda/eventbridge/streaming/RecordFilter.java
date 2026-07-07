@@ -13,10 +13,12 @@ package io.camunda.eventbridge.streaming;
  * a subset of record types can skip decoding and enqueuing the rest by peeking the payload's
  * metadata.
  *
- * <p>A rejected record is neither enqueued nor folded; its offset needs no separate handling — it
- * is covered by the commit of the next accepted record. Filtering here (rather than at the
- * producer) keeps every record on the topic for other consumer groups; each consumer skips only
- * what it does not need.
+ * <p>A rejected record is neither decoded nor folded, but its offset is still accounted for: the
+ * next accepted record's commit covers it, and a poll that <em>ends</em> on a rejected run hands
+ * the processor one coalesced offset-only advance, so commits, watermark-driven seals and — when a
+ * payload-timestamp peek is configured — stream time keep moving through filtered-only stretches.
+ * Filtering here (rather than at the producer) keeps every record on the topic for other consumer
+ * groups; each consumer skips only what it does not need.
  */
 @FunctionalInterface
 public interface RecordFilter {

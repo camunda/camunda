@@ -15,7 +15,8 @@ package io.camunda.eventbridge.streaming.internals;
  *
  * @param <R> the decoded record type
  */
-public sealed interface SourceEntry<R> permits SourceEntry.Decoded, SourceEntry.DecodeFailure {
+public sealed interface SourceEntry<R>
+    permits SourceEntry.Decoded, SourceEntry.DecodeFailure, SourceEntry.Filtered {
 
   /** The source offset this item was decoded from. */
   long offset();
@@ -28,4 +29,14 @@ public sealed interface SourceEntry<R> permits SourceEntry.Decoded, SourceEntry.
    * a poison record fails or skips deterministically at its exact offset rather than off-thread.
    */
   record DecodeFailure<R>(long offset, RuntimeException cause) implements SourceEntry<R> {}
+
+  /**
+   * A coalesced run of filter-rejected records ending at {@code offset} — nothing to fold, but the
+   * processor advances its pending commit position past the run, so the commit clock and the
+   * watermark-driven segment seals keep moving during filtered-only stretches. {@code eventTimeMs}
+   * is the run's highest event time when the source can peek it off the raw payload (so event-time
+   * windows keep closing too), or {@link Long#MIN_VALUE} when it cannot — an unknown time leaves
+   * stream time untouched.
+   */
+  record Filtered<R>(long offset, long eventTimeMs) implements SourceEntry<R> {}
 }

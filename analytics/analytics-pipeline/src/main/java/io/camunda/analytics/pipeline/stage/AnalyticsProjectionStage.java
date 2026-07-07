@@ -117,6 +117,9 @@ public final class AnalyticsProjectionStage {
             // event time = the Zeebe record timestamp, so the runtime advances stream time and
             // finalizes closed windows even for keys that stop receiving records.
             .timestampExtractor(sourceRecord -> sourceRecord.record().getTimestamp())
+            // ... and for filter-rejected records, peeked off the raw payload — so commits, seals
+            // and window closes keep moving through stretches where every record is filtered.
+            .payloadTimestamps(codec::timestamp)
             // One self-contained task per source partition: its own RocksDB, projection, per-cube
             // sealing aggregations and publisher, owning its durability (restore/commit) — the
             // runtime dedups its resume gap and drives its per-partition atomic commit.

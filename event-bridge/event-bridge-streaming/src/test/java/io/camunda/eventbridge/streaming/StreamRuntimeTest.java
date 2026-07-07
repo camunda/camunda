@@ -328,6 +328,92 @@ final class StreamRuntimeTest {
   }
 
   @Test
+  void shouldAdvanceCommitAndStreamTimePastAFilteredTail() throws Exception {
+    // given — one accepted record followed by a filtered-only tail carrying newer event times
+    final List<String> processed = new ArrayList<>();
+    final Map<Integer, Long> committedOffsets = new ConcurrentHashMap<>();
+    final CountDownLatch tailCommitted = new CountDownLatch(1);
+    final CountDownLatch tailTimeSeen = new CountDownLatch(1);
+
+    final Consumer consumer = mock(Consumer.class);
+    final EventBridgeClient client = mock(EventBridgeClient.class);
+    when(client.subscribe(any(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(consumer));
+    when(consumer.sendHeartbeat()).thenReturn(CompletableFuture.completedFuture(null));
+    when(consumer.poll(anyInt(), any()))
+        .thenReturn(
+            List.of(
+                new Event(5L, TOPIC, 1, "keep:100".getBytes(StandardCharsets.UTF_8)),
+                new Event(6L, TOPIC, 1, "skip:200".getBytes(StandardCharsets.UTF_8)),
+                new Event(7L, TOPIC, 1, "skip:300".getBytes(StandardCharsets.UTF_8))))
+        .thenReturn(List.of());
+    when(consumer.commitOffset(any(), anyInt(), anyLong()))
+        .thenAnswer(
+            invocation -> {
+              committedOffsets.put(invocation.getArgument(1), invocation.getArgument(2));
+              if ((long) invocation.getArgument(2) == 7L) {
+                tailCommitted.countDown();
+              }
+              return CompletableFuture.completedFuture(null);
+            });
+
+    final StreamRuntime<String> runtime =
+        StreamRuntime.<String>builder()
+            .client(client)
+            .group("g")
+            .instanceId("i")
+            .sourceTopic(TOPIC)
+            .deserializer(
+                (payload, partition, offset) -> new String(payload, StandardCharsets.UTF_8))
+            .recordFilter(payload -> new String(payload, StandardCharsets.UTF_8).startsWith("keep"))
+            .payloadTimestamps(
+                payload -> Long.parseLong(new String(payload, StandardCharsets.UTF_8).substring(5)))
+            .timestampExtractor(record -> Long.parseLong(record.substring(5)))
+            .taskFactory(
+                partition ->
+                    new Task<>() {
+                      @Override
+                      public void process(final String record) {
+                        processed.add(record);
+                      }
+
+                      @Override
+                      public void advanceStreamTime(final long streamTimeMs) {
+                        if (streamTimeMs >= 300L) {
+                          tailTimeSeen.countDown();
+                        }
+                      }
+                    })
+            .transactionRunner(Runnable::run)
+            .offsetStore(
+                new OffsetStore() {
+                  @Override
+                  public Map<Integer, Long> restore() {
+                    return Map.of();
+                  }
+
+                  @Override
+                  public void store(final int partition, final long offset) {}
+                })
+            .commitInterval(Duration.ZERO)
+            .punctuationInterval(Duration.ofMillis(10))
+            .build();
+
+    // when
+    final Thread loop = new Thread(runtime::run, "runtime-under-test");
+    loop.start();
+
+    // then — the commit position and stream time both advanced past the filtered run, even though
+    // nothing after offset 5 was folded
+    assertThat(tailCommitted.await(5, TimeUnit.SECONDS)).isTrue();
+    assertThat(tailTimeSeen.await(5, TimeUnit.SECONDS)).isTrue();
+    runtime.stop();
+    loop.join(TimeUnit.SECONDS.toMillis(5));
+    assertThat(processed).containsExactly("keep:100");
+    assertThat(committedOffsets).containsEntry(1, 7L);
+  }
+
+  @Test
   void shouldForceCommitWhenATaskIsOverCapacity() throws Exception {
     // given — a task that asks to be checkpointed (as a full bounded cache would), and a commit
     // clock so slow only the memory-pressure path can trigger the barrier

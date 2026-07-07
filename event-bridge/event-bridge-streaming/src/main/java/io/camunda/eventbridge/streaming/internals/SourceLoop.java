@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.IntFunction;
+import java.util.function.ToLongFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,6 +58,7 @@ public final class SourceLoop<R> {
   private final String instanceId;
   private final MessageDeserializer<R> deserializer;
   private final RecordFilter recordFilter;
+  private final ToLongFunction<byte[]> payloadTimestamps;
   private final IntFunction<Task<R>> taskFactory;
   private final Function<Partition<R>, PartitionActor<R>> partitionActorFactory;
   private final Map<Integer, Long> restoredBaselines;
@@ -72,12 +74,19 @@ public final class SourceLoop<R> {
   private final Queue<Integer> newlyRevoked = new ConcurrentLinkedQueue<>();
   private final Set<Integer> rebuiltThisPoll = new HashSet<>();
 
+  // Per-partition tail of a filter-rejected run within the current poll. A later accepted record
+  // supersedes it (its commit covers the run); a tail still standing at the end of the poll is
+  // flushed as ONE coalesced Filtered entry so the actor's commit position — and, when the
+  // payload's event time can be peeked, stream time — advances past filtered-only stretches.
+  private final Map<PartitionActor<R>, FilteredTail> filteredTails = new HashMap<>();
+
   public SourceLoop(
       final Consumer consumer,
       final String sourceTopic,
       final String instanceId,
       final MessageDeserializer<R> deserializer,
       final RecordFilter recordFilter,
+      final ToLongFunction<byte[]> payloadTimestamps,
       final IntFunction<Task<R>> taskFactory,
       final Function<Partition<R>, PartitionActor<R>> partitionActorFactory,
       final Map<Integer, Long> restoredBaselines,
@@ -91,6 +100,7 @@ public final class SourceLoop<R> {
     this.instanceId = instanceId;
     this.deserializer = deserializer;
     this.recordFilter = recordFilter;
+    this.payloadTimestamps = payloadTimestamps;
     this.taskFactory = taskFactory;
     this.partitionActorFactory = partitionActorFactory;
     this.restoredBaselines = restoredBaselines;
@@ -174,6 +184,7 @@ public final class SourceLoop<R> {
       return;
     }
     rebuiltThisPoll.clear();
+    filteredTails.clear(); // drop any tail a previous poll aborted on — losing an advance is safe
     final Set<PartitionActor<R>> touched = new LinkedHashSet<>();
     for (final Event event : events) {
       final int partitionId = event.partitionId();
@@ -192,12 +203,35 @@ public final class SourceLoop<R> {
         continue; // already folded into durable state — skip before the decode cost
       }
       if (!recordFilter.accept(event.payload())) {
-        continue; // filtered: the processor does not fold this record — skip decode and enqueue
+        // Filtered: skip decode and enqueue, but remember the run's tail so the commit position
+        // still advances past it if no accepted record follows in this poll.
+        final FilteredTail tail = filteredTails.computeIfAbsent(actor, a -> new FilteredTail());
+        tail.offset = offset;
+        if (payloadTimestamps != null) {
+          tail.eventTimeMs =
+              Math.max(tail.eventTimeMs, payloadTimestamps.applyAsLong(event.payload()));
+        }
+        continue;
       }
+      filteredTails.remove(actor); // this record's commit covers any earlier filtered run
       actor.offer(toEntry(event, offset)); // blocks when full — back-pressure
       touched.add(actor);
     }
+    if (!filteredTails.isEmpty()) {
+      for (final Map.Entry<PartitionActor<R>, FilteredTail> entry : filteredTails.entrySet()) {
+        final FilteredTail tail = entry.getValue();
+        entry.getKey().offer(new SourceEntry.Filtered<>(tail.offset, tail.eventTimeMs));
+        touched.add(entry.getKey());
+      }
+      filteredTails.clear();
+    }
     touched.forEach(PartitionActor::signalWork);
+  }
+
+  /** The mutable tail of one partition's filter-rejected run within the current poll. */
+  private static final class FilteredTail {
+    private long offset;
+    private long eventTimeMs = Long.MIN_VALUE;
   }
 
   private SourceEntry<R> toEntry(final Event event, final long offset) {

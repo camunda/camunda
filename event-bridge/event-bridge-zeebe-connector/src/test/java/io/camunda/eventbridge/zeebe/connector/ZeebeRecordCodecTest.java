@@ -51,6 +51,24 @@ final class ZeebeRecordCodecTest {
   }
 
   @Test
+  void shouldPeekTimestampWithoutDecoding() {
+    // given — a record with a distinctive event timestamp
+    final JobRecord value = new JobRecord().setType("payment");
+    final RecordMetadata metadata =
+        new RecordMetadata()
+            .recordType(RecordType.EVENT)
+            .valueType(ValueType.JOB)
+            .intent(JobIntent.CREATED);
+    final Record<JobRecord> record = new CopiedRecord<>(value, metadata, 42L, 1, 100L, 99L, 1234L);
+
+    // when
+    final long timestamp = codec.timestamp(codec.serialize(record));
+
+    // then — the payload's leading field is the event timestamp
+    assertThat(timestamp).isEqualTo(1234L);
+  }
+
+  @Test
   void shouldTakeLogCoordinatesFromEnvelopeNotPayload() {
     // given
     final JobRecord value = new JobRecord().setType("payment");

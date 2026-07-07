@@ -106,6 +106,15 @@ public final class ZeebeRecordCodec {
   }
 
   /**
+   * Reads only the record's event timestamp — the payload's leading field — without any decode.
+   * Cheap enough to run per filtered record, so a filtered run's coalesced advance can carry the
+   * run's event time and keep stream time moving.
+   */
+  public long timestamp(final byte[] payload) {
+    return new UnsafeBuffer(payload).getLong(0, ORDER);
+  }
+
+  /**
    * Reads only the record's {@link ValueType} and {@link Intent} from the payload's metadata,
    * skipping the (MsgPack) value decode — cheap enough to filter records before a full {@link
    * #deserialize}. Returns whether {@code filter} accepts the pair; a consumer that folds only a

@@ -185,6 +185,14 @@ public final class PartitionActor<R> {
     if (offset <= partition.baseline()) {
       return; // already folded into durable state (resume-gap dedup)
     }
+    if (entry instanceof SourceEntry.Filtered<R> filtered) {
+      // A coalesced filtered run: nothing to fold, but the commit position advances past it so
+      // commits and watermark seals keep moving during filtered-only stretches — and so does
+      // stream time, when the source could peek the run's event time (MIN_VALUE is inert).
+      partition.markProcessed(offset);
+      partition.observeStreamTime(filtered.eventTimeMs());
+      return;
+    }
     if (entry instanceof SourceEntry.DecodeFailure<R> failure) {
       onRecordError(offset, failure.cause());
       return;
@@ -225,7 +233,9 @@ public final class PartitionActor<R> {
     final Task<R> task = partition.task();
     task.flush();
     task.punctuateWallClock(System.currentTimeMillis());
-    if (timestampExtractor != null && partition.hasStreamTime()) {
+    // Stream time is fed by the timestamp extractor and by filtered-run peeks; hasStreamTime()
+    // stays false until either observed something, so no extra null guard is needed.
+    if (partition.hasStreamTime()) {
       task.advanceStreamTime(partition.streamTime());
     }
     maybeCommit();

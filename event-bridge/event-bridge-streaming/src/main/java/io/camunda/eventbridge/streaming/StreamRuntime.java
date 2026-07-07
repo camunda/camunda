@@ -78,6 +78,7 @@ public final class StreamRuntime<R> implements AutoCloseable {
   private final String sourceTopic;
   private final MessageDeserializer<R> deserializer;
   private final RecordFilter recordFilter;
+  private final ToLongFunction<byte[]> payloadTimestamps;
   private final IntFunction<Task<R>> taskFactory;
   private final TransactionRunner transactionRunner;
   private final OffsetStore offsets;
@@ -107,6 +108,7 @@ public final class StreamRuntime<R> implements AutoCloseable {
     sourceTopic = builder.sourceTopic;
     deserializer = builder.deserializer;
     recordFilter = builder.recordFilter;
+    payloadTimestamps = builder.payloadTimestamps;
     taskFactory = builder.taskFactory;
     transactionRunner = builder.transactionRunner;
     offsets = builder.offsets;
@@ -231,6 +233,7 @@ public final class StreamRuntime<R> implements AutoCloseable {
             instanceId,
             deserializer,
             recordFilter,
+            payloadTimestamps,
             taskFactory,
             partitionActorFactory,
             restoredBaselines,
@@ -342,6 +345,7 @@ public final class StreamRuntime<R> implements AutoCloseable {
     private String sourceTopic;
     private MessageDeserializer<R> deserializer;
     private RecordFilter recordFilter = RecordFilter.ACCEPT_ALL;
+    private ToLongFunction<byte[]> payloadTimestamps;
     private IntFunction<Task<R>> taskFactory;
     // Runtime-managed durability. Optional: a task that owns its durability (ownsDurability()) uses
     // its own transaction and offset store instead, so these stay at their no-op defaults.
@@ -405,6 +409,17 @@ public final class StreamRuntime<R> implements AutoCloseable {
      */
     public Builder<R> recordFilter(final RecordFilter recordFilter) {
       this.recordFilter = recordFilter;
+      return this;
+    }
+
+    /**
+     * An optional peek of a raw payload's event time, used only for filter-rejected records so
+     * their (coalesced) advance carries the run's event time and stream time keeps moving during
+     * filtered-only stretches. Without it a filtered run advances the commit position but not
+     * stream time. Must be cheap — it runs on the source thread before any decode.
+     */
+    public Builder<R> payloadTimestamps(final ToLongFunction<byte[]> payloadTimestamps) {
+      this.payloadTimestamps = payloadTimestamps;
       return this;
     }
 
