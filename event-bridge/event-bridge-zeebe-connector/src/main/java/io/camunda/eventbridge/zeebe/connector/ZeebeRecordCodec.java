@@ -25,21 +25,24 @@ import org.agrona.concurrent.UnsafeBuffer;
  * Binary codec for Zeebe records carried as Event Bridge payloads.
  *
  * <p>A payload is the <em>event</em> (the record value, in its native MsgPack form) together with
- * its {@link RecordMetadata} (SBE-encoded) and the original event timestamp. The timestamp is the
- * engine event time and is part of the payload, since it is a property of the event rather than a
- * coordinate the carrying log assigns — analytics downstream rely on it (e.g. process execution
- * time). Pure log coordinates that the source log assigns — position, partition — are re-supplied
- * from the Event Bridge envelope when a record is reconstructed on the consume side (see {@link
- * #deserialize(byte[], int, long)}). The record key <em>is</em> carried: for many value types (e.g.
- * a {@code PROCESS_INSTANCE} element record) the key is the element-instance identity that
- * downstream analytics correlate an activation with its completion on, so dropping it would
- * collapse every element onto one state entry. The source record position is not carried and
- * defaults to {@code -1}.
+ * its {@link RecordMetadata} (SBE-encoded), the original event timestamp, and the record's Zeebe
+ * origin coordinate. The timestamp is the engine event time and is part of the payload, since it is
+ * a property of the event rather than a coordinate the carrying log assigns — analytics downstream
+ * rely on it (e.g. process execution time). The origin coordinate {@code (partitionId, position)}
+ * is carried too (ADR 0007): it is the record's <em>stable identity</em> — positions are strictly
+ * monotone per Zeebe partition — which consumers need to deduplicate at-least-once producer
+ * re-appends. The Event Bridge envelope's own coordinates (partition, offset) are consumption/
+ * progress coordinates, not identity, and keep flowing separately alongside the reconstructed
+ * record. The record key <em>is</em> carried as well: for many value types (e.g. a {@code
+ * PROCESS_INSTANCE} element record) the key is the element-instance identity that downstream
+ * analytics correlate an activation with its completion on, so dropping it would collapse every
+ * element onto one state entry. The source record position is not carried and defaults to {@code
+ * -1}.
  *
  * <p>Frame layout (little-endian):
  *
  * <pre>
- *   timestamp(8) | key(8) | metadataLength(4) | metadata[metadataLength] | value[...]
+ *   timestamp(8) | key(8) | position(8) | partitionId(4) | metadataLength(4) | metadata[metadataLength] | value[...]
  * </pre>
  *
  * <p><b>Threading.</b> A codec instance is <em>not</em> thread-safe: it reuses internal buffer
@@ -55,6 +58,8 @@ public final class ZeebeRecordCodec {
   private static final ByteOrder ORDER = ByteOrder.LITTLE_ENDIAN;
   private static final int TIMESTAMP_FIELD = Long.BYTES;
   private static final int KEY_FIELD = Long.BYTES;
+  private static final int POSITION_FIELD = Long.BYTES;
+  private static final int PARTITION_ID_FIELD = Integer.BYTES;
   private static final int METADATA_LENGTH_FIELD = Integer.BYTES;
 
   /** Reusable wrapper around the payload being written; the payload array itself is per-call. */
@@ -83,7 +88,13 @@ public final class ZeebeRecordCodec {
     final int valueLength = value.getLength();
     final byte[] payload =
         new byte
-            [TIMESTAMP_FIELD + KEY_FIELD + METADATA_LENGTH_FIELD + metadataLength + valueLength];
+            [TIMESTAMP_FIELD
+                + KEY_FIELD
+                + POSITION_FIELD
+                + PARTITION_ID_FIELD
+                + METADATA_LENGTH_FIELD
+                + metadataLength
+                + valueLength];
     final MutableDirectBuffer buffer = writeBuffer;
     buffer.wrap(payload);
 
@@ -92,6 +103,10 @@ public final class ZeebeRecordCodec {
     offset += TIMESTAMP_FIELD;
     buffer.putLong(offset, record.getKey(), ORDER);
     offset += KEY_FIELD;
+    buffer.putLong(offset, record.getPosition(), ORDER);
+    offset += POSITION_FIELD;
+    buffer.putInt(offset, record.getPartitionId(), ORDER);
+    offset += PARTITION_ID_FIELD;
     buffer.putInt(offset, metadataLength, ORDER);
     offset += METADATA_LENGTH_FIELD;
     metadata.write(buffer, offset);
@@ -102,11 +117,13 @@ public final class ZeebeRecordCodec {
   }
 
   /**
-   * Reconstructs a record from an Event Bridge payload. The event timestamp and record key are
-   * carried in the payload and preserved; the pure log coordinates position and partition are taken
-   * from the envelope. The source record position is not carried and defaults to {@code -1}.
+   * Reconstructs a record from an Event Bridge payload. The event timestamp, record key, and the
+   * record's <em>real</em> Zeebe origin coordinate {@code (partitionId, position)} are all carried
+   * in the payload and preserved — the Event Bridge envelope's coordinates never leak into the
+   * record; they flow separately as consumption/progress coordinates. The source record position is
+   * not carried and defaults to {@code -1}.
    */
-  public Record<?> deserialize(final byte[] payload, final int partitionId, final long position) {
+  public Record<?> deserialize(final byte[] payload) {
     final DirectBuffer buffer = readBuffer;
     readBuffer.wrap(payload);
 
@@ -115,6 +132,10 @@ public final class ZeebeRecordCodec {
     offset += TIMESTAMP_FIELD;
     final long key = buffer.getLong(offset, ORDER);
     offset += KEY_FIELD;
+    final long position = buffer.getLong(offset, ORDER);
+    offset += POSITION_FIELD;
+    final int partitionId = buffer.getInt(offset, ORDER);
+    offset += PARTITION_ID_FIELD;
     final int metadataLength = buffer.getInt(offset, ORDER);
     offset += METADATA_LENGTH_FIELD;
 
@@ -151,7 +172,8 @@ public final class ZeebeRecordCodec {
   public boolean accepts(final byte[] payload, final BiPredicate<ValueType, Intent> filter) {
     final DirectBuffer buffer = readBuffer;
     readBuffer.wrap(payload);
-    int offset = TIMESTAMP_FIELD + KEY_FIELD; // skip the timestamp and key
+    // skip the timestamp, key, and origin coordinate
+    int offset = TIMESTAMP_FIELD + KEY_FIELD + POSITION_FIELD + PARTITION_ID_FIELD;
     final int metadataLength = buffer.getInt(offset, ORDER);
     offset += METADATA_LENGTH_FIELD;
     // wrap() resets the flyweight before decoding, so no state leaks between records.

@@ -36,7 +36,7 @@ final class ZeebeRecordCodecTest {
 
     // when
     final byte[] payload = codec.serialize(record);
-    final Record<?> deserialized = codec.deserialize(payload, 7, 555L);
+    final Record<?> deserialized = codec.deserialize(payload);
 
     // then
     assertThat(deserialized.getRecordType()).isEqualTo(RecordType.EVENT);
@@ -69,8 +69,8 @@ final class ZeebeRecordCodecTest {
   }
 
   @Test
-  void shouldTakeLogCoordinatesFromEnvelopeNotPayload() {
-    // given
+  void shouldRoundTripTheZeebeOriginCoordinateFromThePayload() {
+    // given a record with a distinctive Zeebe origin coordinate (partition 1, position 100)
     final JobRecord value = new JobRecord().setType("payment");
     final RecordMetadata metadata =
         new RecordMetadata()
@@ -79,12 +79,13 @@ final class ZeebeRecordCodecTest {
             .intent(JobIntent.CREATED);
     final Record<JobRecord> record = new CopiedRecord<>(value, metadata, 42L, 1, 100L, 99L, 1234L);
 
-    // when — reconstructed against a different partition/position than the source
-    final Record<?> deserialized = codec.deserialize(codec.serialize(record), 7, 555L);
+    // when — carried through the Event Bridge, whose envelope assigns its own coordinates
+    final Record<?> deserialized = codec.deserialize(codec.serialize(record));
 
-    // then — log coordinates come from the envelope, not the original record
-    assertThat(deserialized.getPartitionId()).isEqualTo(7);
-    assertThat(deserialized.getPosition()).isEqualTo(555L);
+    // then — the record keeps its real Zeebe coordinates; the Event Bridge envelope coordinates
+    // do not leak into the record (they flow separately as consumption coordinates)
+    assertThat(deserialized.getPartitionId()).isEqualTo(1);
+    assertThat(deserialized.getPosition()).isEqualTo(100L);
   }
 
   @Test
@@ -98,8 +99,8 @@ final class ZeebeRecordCodecTest {
             .intent(JobIntent.CREATED);
     final Record<JobRecord> record = new CopiedRecord<>(value, metadata, 42L, 1, 100L, 99L, 1234L);
 
-    // when — reconstructed against a different partition/position than the source
-    final Record<?> deserialized = codec.deserialize(codec.serialize(record), 7, 555L);
+    // when
+    final Record<?> deserialized = codec.deserialize(codec.serialize(record));
 
     // then — the event timestamp is a property of the event, preserved from the payload
     assertThat(deserialized.getTimestamp()).isEqualTo(1234L);
@@ -137,8 +138,8 @@ final class ZeebeRecordCodecTest {
     // when: serialize twice, then decode both payloads with the same instance
     final byte[] firstPayload = codec.serialize(first);
     final byte[] secondPayload = codec.serialize(second);
-    final Record<?> firstDecoded = codec.deserialize(firstPayload, 7, 1L);
-    final Record<?> secondDecoded = codec.deserialize(secondPayload, 7, 2L);
+    final Record<?> firstDecoded = codec.deserialize(firstPayload);
+    final Record<?> secondDecoded = codec.deserialize(secondPayload);
 
     // then: serialization is stable across reuse, and the first decode survives the second
     assertThat(codec.serialize(first)).isEqualTo(firstPayload);
@@ -203,8 +204,8 @@ final class ZeebeRecordCodecTest {
             .intent(JobIntent.CREATED);
     final Record<JobRecord> record = new CopiedRecord<>(value, metadata, 42L, 1, 100L, 99L, 1234L);
 
-    // when reconstructed against a different partition/position than the source
-    final Record<?> deserialized = codec.deserialize(codec.serialize(record), 7, 555L);
+    // when
+    final Record<?> deserialized = codec.deserialize(codec.serialize(record));
 
     // then — the key is carried in the payload so downstream can correlate on entity identity
     assertThat(deserialized.getKey()).isEqualTo(42L);

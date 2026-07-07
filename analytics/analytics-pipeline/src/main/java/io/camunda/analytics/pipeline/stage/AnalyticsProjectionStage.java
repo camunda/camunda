@@ -91,10 +91,11 @@ public final class AnalyticsProjectionStage {
             .group(config.group())
             .instanceId(config.instanceId())
             .sourceTopic(config.sourceTopic())
+            // The reconstructed record keeps its real Zeebe origin coordinate from the payload;
+            // the Event Bridge (partition, offset) flow separately as consumption coordinates.
             .deserializer(
                 (payload, partition, offset) ->
-                    new SourceRecord(
-                        partition, offset, codec.deserialize(payload, partition, offset)))
+                    new SourceRecord(partition, offset, codec.deserialize(payload)))
             // Source-side filter: peek the record's (valueType, intent) from the metadata and skip
             // the far costlier value decode + enqueue for records the base projection ignores
             // (jobs, timers, sequence-flow/activating intents, …).

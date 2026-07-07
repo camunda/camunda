@@ -3,6 +3,8 @@
 # Live demo of the WHOLE analytics stack, left running so you can open the webapp:
 #
 #   1. a fresh Event Bridge cluster that AUTO-CREATES topic 'zeebe-records'
+#      (the zeebe-records payload frame changed with ADR 0007 — a topic seeded before it must be
+#      dropped and re-seeded; this script always starts from a fresh cluster, so it is unaffected)
 #   2. a 2-broker OC cluster (StandaloneCamunda, partitions=2 RF=1) with the ZeebeRecordExporter
 #      wired into BOTH brokers, pinned to funnel every record into EB partition 1 (REST :8088/:8089)
 #   3. the ONE analytics application (Spring Boot, :8090): serving API + BOTH ingest stages

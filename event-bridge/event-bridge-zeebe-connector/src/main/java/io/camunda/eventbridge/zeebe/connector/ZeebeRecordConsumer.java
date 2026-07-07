@@ -56,7 +56,7 @@ public final class ZeebeRecordConsumer implements AutoCloseable {
                     event.topic(),
                     event.partitionId(),
                     event.position(),
-                    codec.deserialize(event.payload(), event.partitionId(), event.position())))
+                    codec.deserialize(event.payload())))
         .toList();
   }
 
