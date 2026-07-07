@@ -438,18 +438,12 @@ public final class RdbmsDatasetQueryClient implements DatasetQueryClient {
     }
   }
 
-  /** Normalises a JDBC-read value to the type {@link DimensionKey} expects for the column. */
+  /**
+   * Normalises a JDBC-read value to the type {@link DimensionKey} expects for the column: a TEXT
+   * column comes back as a CLOB on some drivers (e.g. H2) — read it fully to a String first — then
+   * the shared {@link DimensionType#coerce(Object)} does the type coercion.
+   */
   private static Object coerceRead(final DimensionType type, final Object value) {
-    if (value == null) {
-      return null;
-    }
-    return switch (type) {
-      // A TEXT column comes back as a CLOB on some drivers (e.g. H2) — read it fully to a String;
-      // a VARCHAR/text column is already a String.
-      case STRING, TEXT -> value instanceof final Clob clob ? clobToString(clob) : value.toString();
-      case LONG -> ((Number) value).longValue();
-      case INT -> ((Number) value).intValue();
-      case BOOLEAN -> value instanceof Boolean b ? b : Boolean.parseBoolean(value.toString());
-    };
+    return type.coerce(value instanceof final Clob clob ? clobToString(clob) : value);
   }
 }

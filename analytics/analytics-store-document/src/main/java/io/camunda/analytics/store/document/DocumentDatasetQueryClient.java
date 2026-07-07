@@ -102,7 +102,7 @@ public final class DocumentDatasetQueryClient implements DatasetQueryClient {
       }
       final List<Object> values = new ArrayList<>(grain.size());
       for (final DimensionColumn column : grain) {
-        values.add(coerce(column.type(), source.get(DocumentCubeNames.field(column.name()))));
+        values.add(column.type().coerce(source.get(DocumentCubeNames.field(column.name()))));
       }
       final long windowStart = ((Number) source.get(DocumentCubeNames.WINDOW_START)).longValue();
       final CellKey cellKey = new CellKey(values, windowStart);
@@ -169,7 +169,7 @@ public final class DocumentDatasetQueryClient implements DatasetQueryClient {
       for (final DimensionColumn column : columns) {
         values.put(
             column.name(),
-            coerce(column.type(), source.get(DocumentCubeNames.field(column.name()))));
+            column.type().coerce(source.get(DocumentCubeNames.field(column.name()))));
       }
       rows.add(new TableRow(values));
     }
@@ -239,7 +239,7 @@ public final class DocumentDatasetQueryClient implements DatasetQueryClient {
         }
         final List<Object> values = new ArrayList<>(grain.size());
         for (final DimensionColumn column : grain) {
-          values.add(coerce(column.type(), source.get(DocumentCubeNames.field(column.name()))));
+          values.add(column.type().coerce(source.get(DocumentCubeNames.field(column.name()))));
         }
         final long windowStart = ((Number) source.get(DocumentCubeNames.WINDOW_START)).longValue();
         final byte[] accumulator =
@@ -313,9 +313,12 @@ public final class DocumentDatasetQueryClient implements DatasetQueryClient {
               for (final String dim : fetch.groupBy()) {
                 final int dimIndex = dataset.grain().indexOf(dim);
                 group.add(
-                    coerce(
-                        dataset.grain().columns().get(dimIndex).type(),
-                        keyValues.get(DocumentCubeNames.field(dim))));
+                    dataset
+                        .grain()
+                        .columns()
+                        .get(dimIndex)
+                        .type()
+                        .coerce(keyValues.get(DocumentCubeNames.field(dim))));
               }
               final GroupBucket gb = new GroupBucket(group, bucketStart);
               groupValues.putIfAbsent(gb, group);
@@ -466,18 +469,6 @@ public final class DocumentDatasetQueryClient implements DatasetQueryClient {
       case STRING, TEXT -> SearchQueryBuilders.term(field, value);
       case LONG, INT -> SearchQueryBuilders.term(field, Long.parseLong(value));
       case BOOLEAN -> SearchQueryBuilders.term(field, Boolean.parseBoolean(value));
-    };
-  }
-
-  private static Object coerce(final DimensionType type, final Object value) {
-    if (value == null) {
-      return null;
-    }
-    return switch (type) {
-      case STRING, TEXT -> value.toString();
-      case LONG -> ((Number) value).longValue();
-      case INT -> ((Number) value).intValue();
-      case BOOLEAN -> value instanceof Boolean b ? b : Boolean.parseBoolean(value.toString());
     };
   }
 
