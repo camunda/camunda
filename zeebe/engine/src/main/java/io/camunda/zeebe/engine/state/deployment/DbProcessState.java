@@ -38,6 +38,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.Instant;
 import java.time.InstantSource;
 import java.util.HashMap;
 import java.util.List;
@@ -123,10 +124,14 @@ public final class DbProcessState implements MutableProcessState {
     // Since this transformer is used for processes from the engine state, we set the max length to
     // Integer.MAX_VALUE, because validation has already happened during deployment and we want to
     // be able to transform processes even if the max length has been changes in the meantime.
+    // Use a fixed epoch clock — BPMN model rebuilding on cache miss must be deterministic
+    // regardless of when it runs (including during engine replay). Transformation only parses
+    // expressions; evaluation happens later at runtime with the live engine clock.
     transformer =
         new BpmnTransformer(
             ExpressionLanguageFactory.createExpressionLanguage(
-                new ZeebeFeelEngineClock(clock), expressionLanguageMetrics),
+                new ZeebeFeelEngineClock(InstantSource.fixed(Instant.EPOCH)),
+                expressionLanguageMetrics),
             TRANSFORMER_MAX_NAME_FIELD_LENGTH);
     processDefinitionKey = new DbLong();
     persistedProcess = new PersistedProcess();

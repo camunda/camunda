@@ -16,12 +16,12 @@ import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 /**
  * Persists a deployed process and freezes the sub-transformer versions that were active at deploy
  * time. The versions are read from {@link ProcessRecord#getTransformerVersions()} — they were
- * stamped there by the deployment processor from {@code
- * VersionedTransformerCatalog.defaultCatalog().currentVersionsById()}.
+ * stamped there by the deployment processor from {@link
+ * io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer#currentVersionsById()}.
  *
  * <p>Versions are embedded into {@link io.camunda.zeebe.engine.state.deployment.PersistedProcess}
  * (no separate column family), so replay reconstructs the exact transformer pipeline without any
- * catalog call.
+ * external catalog call.
  */
 final class ProcessCreatedV3Applier implements TypedEventApplier<ProcessIntent, ProcessRecord> {
 
