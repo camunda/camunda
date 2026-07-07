@@ -38,6 +38,7 @@ faces-config.NavData
 *.DS_Store
 .java-version
 .gradle
+buildSrc/.kotlin/
 .worktree
 work/
 tngp-data
@@ -111,3 +112,7 @@ load-tests/setup/c8-*
 
 # Broker data written by `spring-boot:run` in dist/ (e.g. webapp `make env-up`)
 /dist/data/
+
+# Gradle
+build/
+build-cache/
