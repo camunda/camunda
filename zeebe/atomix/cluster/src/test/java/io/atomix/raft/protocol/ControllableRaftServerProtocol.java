@@ -57,13 +57,16 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
   private final Map<CompletableFuture<?>, Long> timeoutQueue = new HashMap<>();
   private long currentTime = 0;
   private final long requestTimeoutMillis = Duration.ofSeconds(5).toMillis();
+  private final long configurationChangeTimeoutMillis;
 
   public ControllableRaftServerProtocol(
       final MemberId memberId,
       final Map<MemberId, ControllableRaftServerProtocol> servers,
-      final Map<MemberId, Queue<Tuple<Runnable, CompletableFuture<?>>>> messageQueue) {
+      final Map<MemberId, Queue<Tuple<Runnable, CompletableFuture<?>>>> messageQueue,
+      final Duration configurationChangeTimeout) {
     this.servers = servers;
     this.messageQueue = messageQueue;
+    configurationChangeTimeoutMillis = configurationChangeTimeout.toMillis();
     localMemberId = memberId;
     messageQueue.put(memberId, new LinkedList<>());
     servers.put(memberId, this);
@@ -114,14 +117,22 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
       final MemberId memberId,
       final Runnable requestHandler,
       final CompletableFuture<?> responseFuture) {
-    final var message = new Tuple<Runnable, CompletableFuture<?>>(requestHandler, responseFuture);
-    messageQueue.computeIfAbsent(memberId, m -> new LinkedList<>()).add(message);
-    addTimeOut(responseFuture);
+    send(memberId, requestHandler, responseFuture, requestTimeoutMillis);
   }
 
-  private void addTimeOut(final CompletableFuture<?> responseFuture) {
+  private void send(
+      final MemberId memberId,
+      final Runnable requestHandler,
+      final CompletableFuture<?> responseFuture,
+      final long timeoutMillis) {
+    final var message = new Tuple<Runnable, CompletableFuture<?>>(requestHandler, responseFuture);
+    messageQueue.computeIfAbsent(memberId, m -> new LinkedList<>()).add(message);
+    addTimeOut(responseFuture, timeoutMillis);
+  }
+
+  private void addTimeOut(final CompletableFuture<?> responseFuture, final long timeoutMillis) {
     if (responseFuture != null) {
-      timeoutQueue.put(responseFuture, currentTime + requestTimeoutMillis);
+      timeoutQueue.put(responseFuture, currentTime + timeoutMillis);
     }
   }
 
@@ -171,7 +182,8 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
                 .thenCompose(listener -> listener.reconfigure(request))
                 .thenAccept(
                     response -> send(localMemberId, () -> responseFuture.complete(response), null)),
-        responseFuture);
+        responseFuture,
+        configurationChangeTimeoutMillis);
     return responseFuture;
   }
 
@@ -200,7 +212,8 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
                 .thenCompose(listener -> listener.join(request))
                 .thenAccept(
                     response -> send(localMemberId, () -> responseFuture.complete(response), null)),
-        responseFuture);
+        responseFuture,
+        configurationChangeTimeoutMillis);
     return responseFuture;
   }
 
@@ -215,7 +228,8 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
                 .thenCompose(listener -> listener.leave(request))
                 .thenAccept(
                     response -> send(localMemberId, () -> responseFuture.complete(response), null)),
-        responseFuture);
+        responseFuture,
+        configurationChangeTimeoutMillis);
     return responseFuture;
   }
 

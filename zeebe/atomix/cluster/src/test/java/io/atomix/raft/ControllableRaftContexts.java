@@ -245,6 +245,9 @@ public final class ControllableRaftContexts {
   public RaftContext createRaftContext(
       final MemberId memberId, final Random random, final RaftStorage storage) {
     final var partitionConfig = new RaftPartitionConfig();
+    // RaftPartitionConfig has no default for the configuration change timeout, it is usually
+    // provided by the broker configuration (ExperimentalRaftCfg). Use the production default.
+    partitionConfig.setConfigurationChangeTimeout(Duration.ofSeconds(10));
     partitionConfigurator.accept(partitionConfig);
     final var raft =
         new RaftContext(
@@ -252,7 +255,11 @@ public final class ControllableRaftContexts {
             new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
             memberId,
             mock(ClusterMembershipService.class, withSettings().stubOnly()),
-            new ControllableRaftServerProtocol(memberId, serverProtocols, messageQueue),
+            new ControllableRaftServerProtocol(
+                memberId,
+                serverProtocols,
+                messageQueue,
+                partitionConfig.getConfigurationChangeTimeout()),
             storage,
             getRaftThreadContextFactory(memberId),
             () -> random,
