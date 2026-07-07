@@ -202,12 +202,13 @@ public final class SegmentSealingAggregation<IN, K, ACC> implements Aggregation<
    * shuffle and never reach the serving store. Called by the owner as it commits, it makes those
    * sparse cells visible with bounded lag.
    *
-   * <p>TODO(analytics): the caller feeds this the event-bridge offset, which is <em>not</em> a
-   * sound watermark under at-least-once delivery — the same Zeebe event can be delivered at two
-   * offsets, and offsets are sparse. The proper fix stamps facts with the stable Zeebe {@code
-   * (partitionId, position)} and dedups source deliveries by it, then drives this off that
-   * position. Until then a redelivery could re-open and re-seal a segment; acceptable only for
-   * demonstrating liveness.
+   * <p>The caller feeds this its committed source offset. That is sound as long as the caller
+   * dedups <em>producer</em> duplicates before the fold (each upstream event folds exactly once, by
+   * its stable origin identity): the source topic is immutable, so its offsets are then a
+   * deterministic identity for topic content — a crash-replay over the same offsets re-folds the
+   * same values, re-seals a byte-identical delta for the same segment, and downstream drops the
+   * re-emit by {@code (segment, chunk)}. The watermark is therefore a pure <em>liveness</em> signal
+   * ("the source has consumed past this segment"), not an identity mechanism.
    */
   public void sealCompletedUpTo(final long watermark) {
     if (openSegment != NO_SEGMENT && segments.index(watermark) > openSegment) {

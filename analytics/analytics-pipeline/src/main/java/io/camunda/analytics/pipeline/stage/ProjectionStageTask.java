@@ -458,8 +458,9 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
     // Liveness: seal every segment the source has fully advanced past (the committed offset is the
     // watermark), so sparse cells — e.g. an incident meter that then goes quiet — reach the shuffle
     // even without a natural boundary crossing. The seal forwards SegmentCells into the shuffle
-    // sink, so it must run before the flush below. See SegmentSealingAggregation#sealCompletedUpTo
-    // for the at-least-once TODO on using the offset as the watermark.
+    // sink, so it must run before the flush below. Using the offset as the watermark is sound
+    // because the pre-fold dedup in process() eliminates producer duplicates (ADR 0007); see
+    // SegmentSealingAggregation#sealCompletedUpTo.
     for (final SegmentSealingAggregation<Fact, ?, ?> aggregation : sealingAggregations) {
       aggregation.sealCompletedUpTo(offset);
     }
