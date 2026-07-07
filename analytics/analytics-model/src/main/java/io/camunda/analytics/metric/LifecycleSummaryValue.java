@@ -7,14 +7,13 @@
  */
 package io.camunda.analytics.metric;
 
+import io.camunda.analytics.sketch.SketchMemory;
 import io.camunda.eventbridge.streaming.aggregate.RecordValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.apache.datasketches.kll.KllDoublesSketch;
-import org.apache.datasketches.memory.Memory;
 
 /**
  * Record flyweight for the composite {@link LifecycleSummary}: the three transition counters and
@@ -62,8 +61,21 @@ public final class LifecycleSummaryValue extends UnpackedObject
 
   @Override
   public LifecycleSummary value() {
-    final KllDoublesSketch sketch =
-        KllDoublesSketch.heapify(Memory.wrap(BufferUtil.bufferAsArray(sketchProp.getValue())));
+    return valueWith(KllDoublesSketch.heapify(SketchMemory.memoryOf(sketchProp.getValue())));
+  }
+
+  /**
+   * Merge-only decode: the counters and exact stats are plain longs, and the KLL sketch is a
+   * read-only wrap over the serialized bytes — no array copy, no heap materialization. Valid only
+   * as the delta argument of a merge; the sketch aliases {@code bytes} and rejects updates.
+   */
+  @Override
+  public LifecycleSummary fromBytesForMerge(final byte[] bytes) {
+    wrap(new UnsafeBuffer(bytes), 0, bytes.length);
+    return valueWith(KllDoublesSketch.wrap(SketchMemory.memoryOf(sketchProp.getValue())));
+  }
+
+  private LifecycleSummary valueWith(final KllDoublesSketch sketch) {
     final ExecutionTimeSummary duration =
         new ExecutionTimeSummary(
             countProp.getValue(),

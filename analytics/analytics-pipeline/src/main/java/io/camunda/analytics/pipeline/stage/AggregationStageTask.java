@@ -21,6 +21,7 @@ import io.camunda.analytics.serving.spi.DatasetStore;
 import io.camunda.analytics.serving.spi.DatasetWriter;
 import io.camunda.eventbridge.streaming.Task;
 import io.camunda.eventbridge.streaming.TransactionRunner;
+import io.camunda.eventbridge.streaming.aggregate.RecordValue;
 import io.camunda.eventbridge.streaming.aggregate.SegmentDedup;
 import io.camunda.eventbridge.streaming.aggregate.SegmentMergingAggregation;
 import io.camunda.eventbridge.streaming.processor.ProcessorTopology;
@@ -203,19 +204,19 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
         finest = meter;
       }
     }
+    // One codec flyweight for the whole meter group (the applier runs on the task's single
+    // thread), decoding each delta once through the merge-only path: the mergers fold a delta into
+    // an accumulator they own and never store it, so all tiers can share one read-only view.
+    @SuppressWarnings("unchecked")
+    final RecordValue<ACC> deltaCodec = (RecordValue<ACC>) tiers.get(0).bound().accumulatorCodec();
     byStreamId.put(
         finest.aggId(),
         (keyBytes, windowStart, accBytes) -> {
           final DimensionKey key = keyCodec.fromBytes(keyBytes);
+          final ACC delta = deltaCodec.fromBytesForMerge(accBytes);
           for (final TierMerger<ACC> tier : tierMergers) {
             final long tierWindowStart = windowStart - Math.floorMod(windowStart, tier.windowMs());
-            // Decode a fresh accumulator per tier: the first delta becomes the cell's running
-            // total,
-            // so tiers must not share one mutable instance.
-            tier.merger()
-                .merge(
-                    new Windowed<>(key, tierWindowStart),
-                    tier.bound().accumulatorCodec().fromBytes(accBytes));
+            tier.merger().merge(new Windowed<>(key, tierWindowStart), delta);
           }
         });
   }

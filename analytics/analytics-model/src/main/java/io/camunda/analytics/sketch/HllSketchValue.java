@@ -10,7 +10,6 @@ package io.camunda.analytics.sketch;
 import io.camunda.eventbridge.streaming.aggregate.RecordValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
-import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.apache.datasketches.hll.HllSketch;
 
@@ -37,6 +36,17 @@ public final class HllSketchValue extends UnpackedObject implements RecordValue<
 
   @Override
   public HllSketch value() {
-    return HllSketch.heapify(BufferUtil.bufferAsArray(sketchProp.getValue()));
+    return HllSketch.heapify(SketchMemory.memoryOf(sketchProp.getValue()));
+  }
+
+  /**
+   * Merge-only decode: a read-only sketch wrapped directly over the serialized compact bytes — no
+   * array copy, no heap materialization. Valid only as the delta argument of a merge (a {@code
+   * Union} reads it fine); it aliases {@code bytes} and rejects updates.
+   */
+  @Override
+  public HllSketch fromBytesForMerge(final byte[] bytes) {
+    wrap(new UnsafeBuffer(bytes), 0, bytes.length);
+    return HllSketch.wrap(SketchMemory.memoryOf(sketchProp.getValue()));
   }
 }

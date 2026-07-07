@@ -50,4 +50,15 @@ public interface RecordValue<T> extends DbValue {
     wrap(new UnsafeBuffer(bytes), 0, bytes.length);
     return value();
   }
+
+  /**
+   * Reads a domain value from bytes for <em>merge-only</em> consumption: the result may be a
+   * read-only view aliasing {@code bytes}, so it must only ever be passed as the delta argument of
+   * a merge and discarded — never stored as an accumulator, mutated, or re-serialized. The default
+   * is the full heap decode of {@link #fromBytes}; implementations override it when a zero-copy
+   * read-only view exists (e.g. wrapping a serialized sketch instead of heapifying it).
+   */
+  default T fromBytesForMerge(final byte[] bytes) {
+    return fromBytes(bytes);
+  }
 }
