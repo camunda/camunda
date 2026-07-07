@@ -12,21 +12,27 @@ import {styles} from '@carbon/type';
 type Size = 'small' | 'medium' | 'large';
 
 const getFontStyle = ({$size}: {$size: Size}) => css`
-	${$size === 'small' &&
-	css`
-		${styles.bodyCompact01};
-		color: var(--cds-text-secondary);
-	`}
-	${$size === 'medium' &&
-	css`
-		${styles.heading01};
-		color: var(--cds-text-primary);
-	`}
-	${$size === 'large' &&
-	css`
-		${styles.heading02};
-		color: var(--cds-text-primary);
-	`}
+	${
+		$size === 'small' &&
+		css`
+			${styles.bodyCompact01};
+			color: var(--cds-text-secondary);
+		`
+	}
+	${
+		$size === 'medium' &&
+		css`
+			${styles.heading01};
+			color: var(--cds-text-primary);
+		`
+	}
+	${
+		$size === 'large' &&
+		css`
+			${styles.heading02};
+			color: var(--cds-text-primary);
+		`
+	}
 `;
 
 const Wrapper = styled.div<{$size: Size}>`
@@ -60,15 +66,19 @@ const Label = styled.div<{$isRed?: boolean; $size?: 'small' | 'medium'}>`
 		text-overflow: ellipsis;
 		${styles.bodyCompact01}
 		color: var(--cds-text-secondary);
-		${$size === 'medium' &&
-		css`
-			${styles.headingCompact01}
-			color: var(--cds-text-primary);
-		`}
-		${$isRed &&
-		css`
-			color: var(--cds-text-error);
-		`}
+		${
+			$size === 'medium' &&
+			css`
+				${styles.headingCompact01}
+				color: var(--cds-text-primary);
+			`
+		}
+		${
+			$isRed &&
+			css`
+				color: var(--cds-text-error);
+			`
+		}
 	`}
 `;
 
@@ -78,18 +88,24 @@ const BarContainer = styled.div`
 `;
 
 const getBarHeight = ($size: Size) => css`
-	${$size === 'small' &&
-	css`
-		height: var(--cds-spacing-01);
-	`}
-	${$size === 'medium' &&
-	css`
-		height: var(--cds-spacing-02);
-	`}
-	${$size === 'large' &&
-	css`
-		height: var(--cds-spacing-03);
-	`}
+	${
+		$size === 'small' &&
+		css`
+			height: var(--cds-spacing-01);
+		`
+	}
+	${
+		$size === 'medium' &&
+		css`
+			height: var(--cds-spacing-02);
+		`
+	}
+	${
+		$size === 'large' &&
+		css`
+			height: var(--cds-spacing-03);
+		`
+	}
 `;
 
 const ActiveInstancesBar = styled.div<{$isPassive?: boolean; $size: Size}>`

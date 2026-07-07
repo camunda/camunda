@@ -11,6 +11,8 @@ import type {KnipConfig} from 'knip';
 const config: KnipConfig = {
 	entry: ['src/vitest-modules/vitest.setup.ts'],
 	ignore: [
+		'src/global.d.ts',
+		'src/operate/shared/Diagram/bpmn-js.d.ts',
 		'src/shared/feature-flags.ts',
 		'shared-test-modules/mock-handlers.ts',
 		'src/shared/browser-storage/session-storage.ts',
@@ -31,6 +33,9 @@ const config: KnipConfig = {
 		'src/operate/shared/PaginatedSortableTable/**',
 	],
 	ignoreDependencies: ['@vitest/browser', '@devbookhq/splitter'],
+	typescript: {
+		config: ['tsconfig.browser.json', 'tsconfig.vitest.json', 'tsconfig.node.json'],
+	},
 };
 
 export default config;

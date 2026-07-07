@@ -37,8 +37,7 @@ type MachineContext = Omit<MachineInput, 'initialTaskState' | 'initialAssignee'>
 };
 
 type TaskCompletionEvent =
-	| {type: 'task.complete'}
-	| {type: 'task.updated'; taskState: UserTask['state']; assignee: string | null};
+	{type: 'task.complete'} | {type: 'task.updated'; taskState: UserTask['state']; assignee: string | null};
 
 type TaskCompletionStatusTag = 'status:completing' | 'status:completion_successful' | 'status:completion_failed';
 
