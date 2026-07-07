@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
+import java.util.List;
 
 public interface AgentInstanceState {
 
@@ -15,4 +16,9 @@ public interface AgentInstanceState {
    * @return the stored record, or {@code null} if no record exists for the given key
    */
   AgentInstanceRecord getRecord(long agentInstanceKey);
+
+  /**
+   * @return the keys of all agent instances currently associated with the given process instance
+   */
+  List<Long> getAgentInstanceKeysByProcessInstanceKey(long processInstanceKey);
 }
