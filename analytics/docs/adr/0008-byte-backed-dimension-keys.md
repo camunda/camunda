@@ -1,6 +1,6 @@
 # ADR 0008 — Byte-backed dimension keys: the key is its serialized form
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-07-07
 - Scope: `analytics/analytics-model` (DimensionKey/DimensionKeySelector/DimensionKeyValue, Fact,
   MeasureRef), `analytics/analytics-engine` (projection state interfaces, derivers, sinks),
