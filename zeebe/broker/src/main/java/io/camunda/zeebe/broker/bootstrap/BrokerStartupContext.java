@@ -23,7 +23,7 @@ import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
-import io.camunda.zeebe.broker.system.PhysicalTenantEngineContext;
+import io.camunda.zeebe.broker.system.PhysicalTenantContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.broker.system.management.CheckpointSchedulingService;
@@ -147,7 +147,7 @@ public interface BrokerStartupContext {
    *
    * @throws IllegalArgumentException if the physical tenant id is unknown
    */
-  PhysicalTenantEngineContext getPhysicalTenantEngineContext(String physicalTenantId);
+  PhysicalTenantContext getPhysicalTenantEngineContext(String physicalTenantId);
 
   Function<String, UserServices> getUserServicesForTenant();
 

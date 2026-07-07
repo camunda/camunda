@@ -15,7 +15,7 @@ import io.camunda.zeebe.util.FeatureFlags;
  * Bundles all per-physical-tenant objects required to bootstrap the engine for a given physical
  * tenant. Passed as a single unit through the broker startup chain instead of three parallel maps.
  */
-public record PhysicalTenantEngineContext(
+public record PhysicalTenantContext(
     EngineSecurityConfig securityConfig,
     BrokerRequestAuthorizationConverter authorizationConverter,
     FeatureFlags featureFlags) {}

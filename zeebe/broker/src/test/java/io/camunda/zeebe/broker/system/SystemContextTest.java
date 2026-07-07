@@ -599,7 +599,7 @@ final class SystemContextTest {
             new SimpleMeterRegistry(),
             Map.of(
                 tenantId,
-                new PhysicalTenantEngineContext(
+                new PhysicalTenantContext(
                     EngineSecurityConfigurations.defaultConfig(),
                     mock(BrokerRequestAuthorizationConverter.class),
                     flags)),
@@ -661,14 +661,14 @@ final class SystemContextTest {
       final BrokerCfg brokerCfg,
       final Map<String, EngineSecurityConfig> configsByTenant,
       final Map<String, BrokerRequestAuthorizationConverter> convertersByTenant) {
-    final Map<String, PhysicalTenantEngineContext> contextsByTenant = new HashMap<>();
+    final Map<String, PhysicalTenantContext> contextsByTenant = new HashMap<>();
     configsByTenant
         .keySet()
         .forEach(
             tenantId ->
                 contextsByTenant.put(
                     tenantId,
-                    new PhysicalTenantEngineContext(
+                    new PhysicalTenantContext(
                         configsByTenant.get(tenantId),
                         convertersByTenant.get(tenantId),
                         FeatureFlags.createDefaultForTests())));

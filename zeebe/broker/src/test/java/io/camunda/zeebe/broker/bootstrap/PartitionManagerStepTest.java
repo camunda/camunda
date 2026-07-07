@@ -26,7 +26,7 @@ import io.camunda.zeebe.broker.partitioning.RecoveryPartitionManager;
 import io.camunda.zeebe.broker.partitioning.startup.ZeebePartitionFactory;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
-import io.camunda.zeebe.broker.system.PhysicalTenantEngineContext;
+import io.camunda.zeebe.broker.system.PhysicalTenantContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
@@ -224,9 +224,9 @@ class PartitionManagerStepTest {
       final var secCfg = EngineSecurityConfigurations.unauthenticatedAndUnauthorized();
       final var conv = new BrokerRequestAuthorizationConverter(secCfg);
       testBrokerStartupContext.setPhysicalTenantEngineContext(
-          PHYSICAL_TENANT_ID, new PhysicalTenantEngineContext(secCfg, conv, flagsA));
+          PHYSICAL_TENANT_ID, new PhysicalTenantContext(secCfg, conv, flagsA));
       testBrokerStartupContext.setPhysicalTenantEngineContext(
-          secondTenantId, new PhysicalTenantEngineContext(secCfg, conv, flagsB));
+          secondTenantId, new PhysicalTenantContext(secCfg, conv, flagsB));
 
       final var secondFuture = CONCURRENCY_CONTROL.<BrokerStartupContext>createFuture();
       final var secondStep = new PartitionManagerStep(secondTenantId);
