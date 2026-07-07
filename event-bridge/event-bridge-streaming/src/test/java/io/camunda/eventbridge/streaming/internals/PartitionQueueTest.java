@@ -88,6 +88,25 @@ final class PartitionQueueTest {
   }
 
   @Test
+  void shouldRefuseOfferWhenFullWithoutBlocking() {
+    // given — a queue at capacity
+    final PartitionQueue<String> queue = new PartitionQueue<>(2);
+    assertThat(queue.offer(new Decoded<>(1L, "a"))).isTrue();
+    assertThat(queue.offer(new Decoded<>(2L, "b"))).isTrue();
+
+    // when — offering into the full queue
+    final boolean accepted = queue.offer(new Decoded<>(3L, "c"));
+
+    // then — the offer is refused (the caller pauses instead of blocking) and nothing is lost
+    assertThat(accepted).isFalse();
+    assertThat(queue.remainingCapacity()).isZero();
+    final List<SourceEntry<String>> out = new ArrayList<>();
+    queue.drainTo(out, 10);
+    assertThat(out).extracting(SourceEntry::offset).containsExactly(1L, 2L);
+    assertThat(queue.offer(new Decoded<>(3L, "c"))).isTrue();
+  }
+
+  @Test
   void shouldRejectNonPositiveCapacity() {
     assertThatThrownBy(() -> new PartitionQueue<>(0)).isInstanceOf(IllegalArgumentException.class);
   }

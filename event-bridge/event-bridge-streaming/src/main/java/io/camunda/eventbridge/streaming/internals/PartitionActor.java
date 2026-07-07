@@ -140,6 +140,28 @@ public final class PartitionActor<R> {
     partition.queue().put(entry);
   }
 
+  /**
+   * Enqueues a decoded entry without blocking, returning {@code false} when the partition's queue
+   * is full — the caller (the source thread) pauses the partition instead of blocking on it.
+   */
+  public boolean tryOffer(final SourceEntry<R> entry) {
+    return partition.queue().offer(entry);
+  }
+
+  /**
+   * The free capacity of the partition's queue. The queue is SPSC with the source thread as its
+   * only producer, so a value read from the source thread is conservatively safe: the consumer only
+   * drains concurrently, meaning the true free capacity is at least the returned value.
+   */
+  public int queueRemainingCapacity() {
+    return partition.queue().remainingCapacity();
+  }
+
+  /** The fixed capacity of the partition's queue (power-of-two rounded by the backing queue). */
+  public int queueCapacity() {
+    return partition.queue().capacity();
+  }
+
   /** Wakes the actor to drain its queue; safe to call from the source thread. */
   public void signalWork() {
     workAvailable.signal();

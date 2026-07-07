@@ -62,6 +62,14 @@ public final class PartitionQueue<R> {
   }
 
   /**
+   * Enqueues one entry without blocking, returning {@code false} when the queue is full. The source
+   * uses the refusal as its signal to pause the partition rather than block on it.
+   */
+  public boolean offer(final SourceEntry<R> entry) {
+    return entries.offer(entry);
+  }
+
+  /**
    * Enqueues one entry, blocking the source until space frees (back-pressure) via a lock-free
    * spin/park backoff. Propagates an interrupt as {@link InterruptedException} so the source can
    * wind down on shutdown.
