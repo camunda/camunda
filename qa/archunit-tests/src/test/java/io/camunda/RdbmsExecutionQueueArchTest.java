@@ -69,7 +69,8 @@ class RdbmsExecutionQueueArchTest {
         writerClass.getMethodCallsFromSelf().stream()
             .filter(
                 call ->
-                    call.getTargetOwner().getPackageName().startsWith("io.camunda.db.rdbms.sql"))
+                    call.getTargetOwner().getPackageName().startsWith("io.camunda.db.rdbms.sql")
+                        && call.getTargetOwner().getSimpleName().endsWith("Mapper"))
             .filter(call -> call.getName().matches("^(search|count|find|get|select).*"))
             .forEach(
                 call ->

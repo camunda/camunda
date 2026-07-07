@@ -22,9 +22,10 @@ import io.camunda.db.rdbms.sql.columns.SearchColumn;
 /**
  * Enforces that all {@link SearchColumn} implementations are Java enums.
  *
- * <p>{@link io.camunda.db.rdbms.read.service.AbstractEntityReader} calls {@code .values()} on the
- * {@code SearchColumn} type to enumerate sortable fields. A non-enum implementation breaks this at
- * runtime because only enums have a generated {@code values()} method.
+ * <p>Each {@code *DbReader} constructor passes {@code SomeSearchColumn.values()} to {@link
+ * io.camunda.db.rdbms.read.service.AbstractEntityReader}, which builds a lookup map over the array.
+ * Only enums have a compiler-generated {@code values()} method, so a class-based implementation
+ * would fail to compile at the call sites in the {@code *DbReader} constructors.
  */
 @AnalyzeClasses(
     packages = "io.camunda.db.rdbms.sql.columns",
@@ -49,11 +50,12 @@ public final class SearchColumnArchTest {
                             item.getName()
                                 + " implements SearchColumn but is not an enum."
                                 + " SearchColumn implementations must be enums so that"
-                                + " AbstractEntityReader can call .values() on them."));
+                                + " *DbReader constructors can call .values() on them."));
                   }
                 }
               })
           .because(
-              "AbstractEntityReader relies on SearchColumn.values() to enumerate sortable"
-                  + " fields; a class-based implementation breaks this at runtime");
+              "*DbReader constructors call SomeSearchColumn.values() and pass the array to"
+                  + " AbstractEntityReader; only enums have a compiler-generated values() method,"
+                  + " so a class-based implementation would fail to compile at those call sites");
 }
