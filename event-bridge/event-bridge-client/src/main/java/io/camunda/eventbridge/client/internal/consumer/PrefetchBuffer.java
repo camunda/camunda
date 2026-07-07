@@ -14,21 +14,22 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 
 /**
  * Bounded per-partition buffer holding prefetched {@link Event}s, together with the concurrency
  * primitives that coordinate the background fetcher and a blocked {@code poll}.
  *
- * <p>All mutable state — the per-partition deques, the in-flight fetch counts, and the fetch
- * generation counter — is guarded by a single {@link ReentrantLock}; the {@link Condition} on that
- * lock lets a poll park until data is available (or the buffer is signalled on close). The
- * generation counter is bumped on any seek or reassignment so that fetches issued from a stale
- * cursor can be discarded when they complete.
+ * <p>All mutable state — the per-partition {@link PartitionState}s (deque, in-flight fetch count,
+ * buffered bytes) and the fetch generation counter — is guarded by a single {@link ReentrantLock};
+ * the {@link Condition} on that lock lets a poll park until data is available (or the buffer is
+ * signalled on close). The generation counter is bumped on any seek or reassignment so that fetches
+ * issued from a stale cursor can be discarded when they complete.
  *
  * <p>Prefetch depth bounds how many fetches per partition may be outstanding at once: a partition
  * is eligible for another fetch while its in-flight count plus a slot for any buffered batch is
@@ -49,11 +50,20 @@ public final class PrefetchBuffer {
 
   private final ReentrantLock lock = new ReentrantLock();
   private final Condition dataAvailable = lock.newCondition();
-  private final Map<TopicPartition, ArrayDeque<Event>> buffers = new LinkedHashMap<>();
-  private final Map<TopicPartition, Integer> inFlight = new HashMap<>();
 
-  /** Running buffered-payload bytes per partition, so a drop is O(1) rather than a re-scan. */
-  private final Map<TopicPartition, Long> bytesByPartition = new HashMap<>();
+  /**
+   * Per-partition buffer, in-flight count and byte tally in one object with primitive fields —
+   * hot-path counter updates (per fetch, per event) stay boxing-free.
+   */
+  private final Map<TopicPartition, PartitionState> partitions = new HashMap<>();
+
+  /**
+   * The partition set in sorted drain order, rebuilt only when the set changes rather than sorted
+   * on every {@link #drainInto} call.
+   */
+  private final List<TopicPartition> sortedPartitions = new ArrayList<>();
+
+  private boolean sortedPartitionsDirty;
 
   private final int prefetchDepth;
   private final long maxBufferedBytes;
@@ -90,6 +100,16 @@ public final class PrefetchBuffer {
     }
   }
 
+  /** Computes {@code decision} while holding the buffer lock and returns its result. */
+  public <T> T supplyLocked(final Supplier<T> decision) {
+    lock.lock();
+    try {
+      return decision.get();
+    } finally {
+      lock.unlock();
+    }
+  }
+
   /** Returns the current fetch generation. Caller must hold the lock. */
   public int generation() {
     return fetchGeneration;
@@ -105,13 +125,11 @@ public final class PrefetchBuffer {
 
   /** Clears the buffered events for {@code tp}, if any. Caller must hold the lock. */
   public void clear(final TopicPartition tp) {
-    final ArrayDeque<Event> buf = buffers.get(tp);
-    if (buf != null) {
-      buf.clear();
-    }
-    final Long bytes = bytesByPartition.remove(tp);
-    if (bytes != null) {
-      bufferedBytes -= bytes;
+    final PartitionState state = partitions.get(tp);
+    if (state != null) {
+      state.buffer.clear();
+      bufferedBytes -= state.bufferedBytes;
+      state.bufferedBytes = 0;
     }
   }
 
@@ -119,16 +137,15 @@ public final class PrefetchBuffer {
    * Drops buffers and in-flight markers for partitions not in {@code retained}. Caller holds lock.
    */
   public void retain(final Collection<TopicPartition> retained) {
-    final var it = bytesByPartition.entrySet().iterator();
+    final Iterator<Map.Entry<TopicPartition, PartitionState>> it = partitions.entrySet().iterator();
     while (it.hasNext()) {
-      final Map.Entry<TopicPartition, Long> entry = it.next();
+      final Map.Entry<TopicPartition, PartitionState> entry = it.next();
       if (!retained.contains(entry.getKey())) {
-        bufferedBytes -= entry.getValue();
+        bufferedBytes -= entry.getValue().bufferedBytes;
         it.remove();
+        sortedPartitionsDirty = true;
       }
     }
-    buffers.keySet().retainAll(retained);
-    inFlight.keySet().retainAll(retained);
   }
 
   /**
@@ -148,11 +165,11 @@ public final class PrefetchBuffer {
       // next poll drains it back under the cap, after which the caller's kick claims again.
       if (bufferedBytes < maxBufferedBytes) {
         for (final TopicPartition tp : owned) {
-          final ArrayDeque<Event> buf = buffers.get(tp);
-          final int bufferedSlot = (buf != null && !buf.isEmpty()) ? 1 : 0;
-          int occupied = inFlight.getOrDefault(tp, 0) + bufferedSlot;
+          final PartitionState state = state(tp);
+          final int bufferedSlot = state.buffer.isEmpty() ? 0 : 1;
+          int occupied = state.inFlight + bufferedSlot;
           while (occupied < prefetchDepth) {
-            inFlight.merge(tp, 1, Integer::sum);
+            state.inFlight++;
             toFetch.add(tp);
             occupied++;
           }
@@ -169,15 +186,19 @@ public final class PrefetchBuffer {
 
   /** Decrements the in-flight count for {@code tp}. Caller must hold the lock. */
   public void clearInFlight(final TopicPartition tp) {
-    inFlight.computeIfPresent(tp, (ignored, count) -> count <= 1 ? null : count - 1);
+    final PartitionState state = partitions.get(tp);
+    if (state != null && state.inFlight > 0) {
+      state.inFlight--;
+    }
   }
 
   /** Appends {@code event} to {@code tp}'s buffer, creating it if absent. Caller holds lock. */
   public void add(final TopicPartition tp, final Event event) {
-    buffers.computeIfAbsent(tp, ignored -> new ArrayDeque<>()).add(event);
+    final PartitionState state = state(tp);
+    state.buffer.add(event);
     final long size = sizeOf(event);
     bufferedBytes += size;
-    bytesByPartition.merge(tp, size, Long::sum);
+    state.bufferedBytes += size;
   }
 
   /**
@@ -193,8 +214,8 @@ public final class PrefetchBuffer {
 
   /** True if {@code tp} currently has buffered events. Caller must hold the lock. */
   public boolean hasBuffered(final TopicPartition tp) {
-    final ArrayDeque<Event> buf = buffers.get(tp);
-    return buf != null && !buf.isEmpty();
+    final PartitionState state = partitions.get(tp);
+    return state != null && !state.buffer.isEmpty();
   }
 
   /** Wakes any poll parked on the buffer. Caller must hold the lock. */
@@ -217,23 +238,24 @@ public final class PrefetchBuffer {
    * Caller must hold the lock.
    */
   public void drainInto(final List<Event> out, final int maxRecords) {
-    final var partitions = new ArrayList<>(buffers.keySet());
-    Collections.sort(partitions);
-    for (final TopicPartition tp : partitions) {
-      final ArrayDeque<Event> buf = buffers.get(tp);
+    if (sortedPartitionsDirty) {
+      sortedPartitions.clear();
+      sortedPartitions.addAll(partitions.keySet());
+      Collections.sort(sortedPartitions);
+      sortedPartitionsDirty = false;
+    }
+    for (int i = 0; i < sortedPartitions.size(); i++) {
+      final PartitionState state = partitions.get(sortedPartitions.get(i));
+      final ArrayDeque<Event> buf = state.buffer;
       long drained = 0;
-      while (buf != null && !buf.isEmpty() && out.size() < maxRecords) {
+      while (!buf.isEmpty() && out.size() < maxRecords) {
         final Event event = buf.poll();
         drained += sizeOf(event);
         out.add(event);
       }
       if (drained > 0) {
         bufferedBytes -= drained;
-        if (buf.isEmpty()) {
-          bytesByPartition.remove(tp); // fully drained — tally is zero
-        } else {
-          bytesByPartition.merge(tp, -drained, Long::sum); // partial drain — keep the remainder
-        }
+        state.bufferedBytes -= drained;
       }
       if (out.size() >= maxRecords) {
         break;
@@ -243,8 +265,8 @@ public final class PrefetchBuffer {
 
   /** True if no partition has buffered events. Caller must hold the lock. */
   public boolean isEmpty() {
-    for (final ArrayDeque<Event> buf : buffers.values()) {
-      if (!buf.isEmpty()) {
+    for (final PartitionState state : partitions.values()) {
+      if (!state.buffer.isEmpty()) {
         return false;
       }
     }
@@ -280,6 +302,24 @@ public final class PrefetchBuffer {
       lock.unlock();
     }
     return out;
+  }
+
+  /** Returns {@code tp}'s state, creating it (and dirtying the drain order) if absent. */
+  private PartitionState state(final TopicPartition tp) {
+    PartitionState state = partitions.get(tp);
+    if (state == null) {
+      state = new PartitionState();
+      partitions.put(tp, state);
+      sortedPartitionsDirty = true;
+    }
+    return state;
+  }
+
+  /** One partition's buffered events, outstanding fetch count and buffered-payload byte tally. */
+  private static final class PartitionState {
+    private final ArrayDeque<Event> buffer = new ArrayDeque<>();
+    private int inFlight;
+    private long bufferedBytes;
   }
 
   /** Predicate consulted while a poll is parked, so a close wakes it. */

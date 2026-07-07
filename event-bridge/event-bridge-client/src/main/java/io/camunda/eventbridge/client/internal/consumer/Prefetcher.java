@@ -105,6 +105,13 @@ public final class Prefetcher {
         .whenComplete((result, error) -> onFetchComplete(tp, gen, fromPosition, result, error));
   }
 
+  /** How a completed fetch re-arms, decided under the buffer lock (enum — no per-fetch array). */
+  private enum Rearm {
+    NONE,
+    RETRY_NOW,
+    RETRY_DELAYED
+  }
+
   /** Handles a completed background fetch: buffer new events, then re-arm. */
   private void onFetchComplete(
       final TopicPartition tp,
@@ -112,54 +119,56 @@ public final class Prefetcher {
       final long fromPosition,
       final FetchResult result,
       final Throwable error) {
-    final boolean[] retry = {false, false}; // [retryNow, retryDelayed]
-    buffer.runLocked(
-        () -> {
-          buffer.clearInFlight(tp);
-          if (gen != buffer.generation() || !subscription.owns(tp)) {
-            return; // a seek/reassignment happened while this fetch was in flight — discard result
-          }
-          if (error != null) {
-            LOG.debug("Fetch failed for {}; will retry", tp, error);
-            retry[1] = true;
-          } else if (result != null && result.isSuccess()) {
-            long next = fromPosition;
-            boolean any = false;
-            for (final var entry : result.entries(fromPosition)) {
-              buffer.add(
-                  tp, new Event(entry.position(), tp.topic(), tp.partition(), entry.value()));
-              next = entry.position() + 1;
-              any = true;
-            }
-            if (!any) {
-              // Parked long-poll returned empty (still at the tip) — re-arm immediately; the
-              // emptiness already cost LONG_POLL_MS of server-side waiting, so this is not a spin.
-              retry[0] = true;
-            } else {
-              subscription.setNextPosition(tp, next);
-              buffer.signal();
-            }
-          } else if (result != null && result.isOutOfRange()) {
-            // Cursor below the earliest retained record, or an earliest-fetch on a still-empty
-            // partition. Mark unresolved so the next fetch re-applies the reset policy (resolved
-            // off-lock in issueFetch), and back off rather than retrying immediately: when the
-            // reset
-            // resolves to the same out-of-range position (e.g. a freshly created topic with no
-            // records yet), an immediate retry would hot-spin until the first record appears.
-            LOG.warn("Fetch out of range for {} at {}; resetting", tp, fromPosition);
-            subscription.setNextPosition(tp, SubscriptionState.UNSET_POSITION);
-            retry[1] = true;
-          } else {
-            LOG.debug(
-                "Fetch failed for {}: {}; will retry",
-                tp,
-                result == null ? "no result" : result.error());
-            retry[1] = true;
-          }
-        });
-    if (retry[0]) {
+    final Rearm rearm =
+        buffer.supplyLocked(
+            () -> {
+              buffer.clearInFlight(tp);
+              if (gen != buffer.generation() || !subscription.owns(tp)) {
+                // A seek/reassignment happened while this fetch was in flight — discard the result.
+                return Rearm.NONE;
+              }
+              if (error != null) {
+                LOG.debug("Fetch failed for {}; will retry", tp, error);
+                return Rearm.RETRY_DELAYED;
+              }
+              if (result != null && result.isSuccess()) {
+                long next = fromPosition;
+                boolean any = false;
+                for (final var entry : result.entries(fromPosition)) {
+                  buffer.add(
+                      tp, new Event(entry.position(), tp.topic(), tp.partition(), entry.value()));
+                  next = entry.position() + 1;
+                  any = true;
+                }
+                if (!any) {
+                  // Parked long-poll returned empty (still at the tip) — re-arm immediately; the
+                  // emptiness already cost LONG_POLL_MS of server-side waiting, so this is no spin.
+                  return Rearm.RETRY_NOW;
+                }
+                subscription.setNextPosition(tp, next);
+                buffer.signal();
+                return Rearm.NONE;
+              }
+              if (result != null && result.isOutOfRange()) {
+                // Cursor below the earliest retained record, or an earliest-fetch on a still-empty
+                // partition. Mark unresolved so the next fetch re-applies the reset policy
+                // (resolved off-lock in issueFetch), and back off rather than retrying immediately:
+                // when the reset resolves to the same out-of-range position (e.g. a freshly created
+                // topic with no records yet), an immediate retry would hot-spin until the first
+                // record appears.
+                LOG.warn("Fetch out of range for {} at {}; resetting", tp, fromPosition);
+                subscription.setNextPosition(tp, SubscriptionState.UNSET_POSITION);
+                return Rearm.RETRY_DELAYED;
+              }
+              LOG.debug(
+                  "Fetch failed for {}: {}; will retry",
+                  tp,
+                  result == null ? "no result" : result.error());
+              return Rearm.RETRY_DELAYED;
+            });
+    if (rearm == Rearm.RETRY_NOW) {
       kick();
-    } else if (retry[1] && !closed.getAsBoolean()) {
+    } else if (rearm == Rearm.RETRY_DELAYED && !closed.getAsBoolean()) {
       executor.schedule(this::kick, FETCH_ERROR_BACKOFF_MS, TimeUnit.MILLISECONDS);
     }
   }
