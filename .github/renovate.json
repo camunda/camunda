@@ -507,7 +507,7 @@
         "docker"
       ],
       "matchPackageNames": [
-        "registry.camunda.cloud/team-zeebe",
+        "/^registry\\.camunda\\.cloud\\/team-zeebe\\//",
         "europe-west1-docker.pkg.dev/camunda-benchmark/quayio/prometheuscommunity/elasticsearch-exporter"
       ],
       "enabled": false
