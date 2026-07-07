@@ -14,6 +14,7 @@ import io.camunda.analytics.aggregation.ShuffleSinkProcessor;
 import io.camunda.analytics.dataset.ActiveCube;
 import io.camunda.analytics.dataset.ActiveTable;
 import io.camunda.analytics.dataset.CompiledMeter;
+import io.camunda.analytics.dataset.DimensionSpec;
 import io.camunda.analytics.dimension.DimensionKey;
 import io.camunda.analytics.dimension.DimensionKeyValue;
 import io.camunda.analytics.fact.Fact;
@@ -41,9 +42,11 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -182,6 +185,32 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
    * open-segment store and serving writer, and collects the sealing aggregations. Called once at
    * construction and again on each live reload; the caller inits the returned topology.
    */
+  /**
+   * The union of {@code var.*} names any active dataset groups or filters by (grain dimension
+   * columns + filter predicates, across cubes and raw tables), stripped of the {@code var.} prefix
+   * — exactly the variables the enrichment must resolve. Both dimensions and filters are collected
+   * so a dataset that only <em>filters</em> by a variable still gets it resolved.
+   */
+  private static Set<String> variableNames(
+      final List<ActiveCube> cubes, final List<ActiveTable> tables) {
+    final Set<String> names = new HashSet<>();
+    for (final ActiveCube cube : cubes) {
+      cube.compiled().grain().columns().forEach(c -> addVariableName(names, c.name()));
+      cube.compiled().factBinding().filters().forEach(f -> addVariableName(names, f.field()));
+    }
+    for (final ActiveTable table : tables) {
+      table.compiled().columns().forEach(c -> addVariableName(names, c.name()));
+      table.compiled().factBinding().filters().forEach(f -> addVariableName(names, f.field()));
+    }
+    return names;
+  }
+
+  private static void addVariableName(final Set<String> names, final String field) {
+    if (field.startsWith(DimensionSpec.VARIABLE_PREFIX)) {
+      names.add(field.substring(DimensionSpec.VARIABLE_PREFIX.length()));
+    }
+  }
+
   private void installTopology(final List<ActiveCube> cubes, final List<ActiveTable> tables) {
     final StateBackedProjectionState state = StateBackedProjectionState.fromProvider(provider);
     final EnvelopePublisher publisher =
@@ -194,9 +223,13 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
     // one shared shuffle-sink node (the transport); each raw table writes rows to the serving
     // store.
     // The base projection broadcasts every fact to every child.
+    // The union of var.* names any active dataset groups or filters by — so the base projection's
+    // variable enrichment resolves only those names (point lookups, early-terminating) instead of
+    // scanning the whole scope. Recomputed on each catalog reload.
+    final Set<String> variableNames = variableNames(cubes, tables);
     final ProcessorTopology.Builder<SourceRecord> builder =
         ProcessorTopology.<SourceRecord>builder()
-            .source("projection", new AnalyticsBaseProjection(state));
+            .source("projection", new AnalyticsBaseProjection(state, variableNames));
     final List<String> meterNodes = new ArrayList<>();
     final List<SegmentSealingAggregation<Fact, ?, ?>> aggregations = new ArrayList<>();
     for (final ActiveCube cube : cubes) {

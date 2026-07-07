@@ -14,6 +14,7 @@ import io.camunda.analytics.state.ElementEntity;
 import io.camunda.analytics.state.immutable.ProjectionState;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -27,12 +28,17 @@ public final class ElementCompletedDeriver implements FactDeriver {
   private final ProjectionState state;
   private final Consumer<Fact> facts;
   private final Transition transition;
+  private final Set<String> variableNames;
 
   public ElementCompletedDeriver(
-      final ProjectionState state, final Consumer<Fact> facts, final Transition transition) {
+      final ProjectionState state,
+      final Consumer<Fact> facts,
+      final Transition transition,
+      final Set<String> variableNames) {
     this.state = state;
     this.facts = facts;
     this.transition = transition;
+    this.variableNames = variableNames;
   }
 
   @Override
@@ -52,9 +58,10 @@ public final class ElementCompletedDeriver implements FactDeriver {
             .field("endTime", row.end())
             .field("durationMs", row.durationMs())
             .field("hadIncident", row.hadIncident())
-            // Lazy, collect-once: the visible variable snapshot is resolved only if a dataset reads
-            // a var.* dimension/filter, and then at most once across all cube-meters.
-            .variables(() -> state.variables(elementInstanceKey));
+            // Lazy, collect-once, and name-targeted: resolved only if a dataset reads a var.*
+            // dimension/filter, and then only the specific names any dataset needs (not the whole
+            // scope), at most once across all cube-meters.
+            .variables(() -> state.variables(elementInstanceKey, variableNames));
     if (isProcess) {
       fact.field("processInstanceKey", value.getProcessInstanceKey())
           .field("completedNormally", transition == Transition.COMPLETED);

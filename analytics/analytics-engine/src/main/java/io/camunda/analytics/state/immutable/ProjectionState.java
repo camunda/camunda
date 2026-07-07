@@ -10,6 +10,7 @@ package io.camunda.analytics.state.immutable;
 import io.camunda.analytics.state.ElementEntity;
 import io.camunda.analytics.state.IncidentEntity;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * The read view of the Model-A base projection: the materialized rows a deriver reads to build a
@@ -30,4 +31,13 @@ public interface ProjectionState {
    * variable visibility. Empty if none.
    */
   Map<String, String> variables(long scopeKey);
+
+  /**
+   * Like {@link #variables(long)} but resolves ONLY the named variables — via point lookups up the
+   * scope hierarchy that stop as soon as every requested name is found, rather than scanning the
+   * whole scope (the engine's fetch-only-needed-names read). Empty if {@code names} is empty. The
+   * enrichment path passes the union of {@code var.*} names any dataset groups or filters by, so a
+   * fact only pays to resolve the variables some meter actually reads.
+   */
+  Map<String, String> variables(long scopeKey, Set<String> names);
 }

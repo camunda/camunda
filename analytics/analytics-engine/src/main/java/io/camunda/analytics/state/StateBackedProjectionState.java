@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * The Model-A base projection on top of the {@code event-bridge-streaming} state library: the
@@ -143,6 +144,38 @@ public final class StateBackedProjectionState implements MutableProjectionState,
           (key, value) ->
               resolved.putIfAbsent(
                   variableName(key.getBytes()), BufferUtil.bufferAsString(value.getBuffer())));
+      elementKey.wrapLong(scope);
+      final ElementEntity row = elements.get(elementKey).orElse(null);
+      if (row == null) {
+        break; // no row for this scope — the chain ends
+      }
+      scope = row.parentScopeKey();
+    }
+    return resolved;
+  }
+
+  @Override
+  public Map<String, String> variables(final long scopeKey, final Set<String> names) {
+    if (names.isEmpty()) {
+      return Map.of();
+    }
+    // Resolve ONLY the requested names via point lookups (bloom-filter-friendly) up the scope
+    // hierarchy — nearer scope wins — and stop as soon as every name is found, instead of a prefix
+    // scan of the whole scope. This is the engine's job-activation read: fetch only what's needed.
+    final Map<String, String> resolved = new LinkedHashMap<>();
+    long scope = scopeKey;
+    for (int depth = 0;
+        scope > 0 && depth < MAX_SCOPE_DEPTH && resolved.size() < names.size();
+        depth++) {
+      for (final String name : names) {
+        if (resolved.containsKey(name)) {
+          continue; // a nearer scope already resolved this name
+        }
+        variableKey.wrapBytes(variableKey(scope, name));
+        variables
+            .get(variableKey)
+            .ifPresent(value -> resolved.put(name, BufferUtil.bufferAsString(value.getBuffer())));
+      }
       elementKey.wrapLong(scope);
       final ElementEntity row = elements.get(elementKey).orElse(null);
       if (row == null) {

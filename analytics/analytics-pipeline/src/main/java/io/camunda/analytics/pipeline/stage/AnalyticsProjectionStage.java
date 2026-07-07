@@ -9,6 +9,7 @@ package io.camunda.analytics.pipeline.stage;
 
 import io.camunda.analytics.pipeline.store.AnalyticsBackend;
 import io.camunda.analytics.pipeline.store.AnalyticsBackends;
+import io.camunda.analytics.projection.AnalyticsBaseProjection;
 import io.camunda.analytics.projection.SourceRecord;
 import io.camunda.analytics.serving.catalog.DatasetCatalog;
 import io.camunda.analytics.serving.spi.MetadataStore;
@@ -109,6 +110,10 @@ public final class AnalyticsProjectionStage {
                 (payload, partition, offset) ->
                     new SourceRecord(
                         partition, offset, codec.deserialize(payload, partition, offset)))
+            // Source-side filter: peek the record's (valueType, intent) from the metadata and skip
+            // the far costlier value decode + enqueue for records the base projection ignores
+            // (jobs, timers, sequence-flow/activating intents, …).
+            .recordFilter(payload -> codec.accepts(payload, AnalyticsBaseProjection::handles))
             // event time = the Zeebe record timestamp, so the runtime advances stream time and
             // finalizes closed windows even for keys that stop receiving records.
             .timestampExtractor(sourceRecord -> sourceRecord.record().getTimestamp())

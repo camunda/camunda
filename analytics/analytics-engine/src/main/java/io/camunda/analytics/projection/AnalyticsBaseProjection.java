@@ -29,8 +29,10 @@ import io.camunda.eventbridge.streaming.processor.Processor;
 import io.camunda.eventbridge.streaming.processor.ProcessorContext;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -53,10 +55,13 @@ import java.util.function.Consumer;
 public final class AnalyticsBaseProjection implements Processor<SourceRecord, Fact> {
 
   private final MutableProjectionState state;
+  private final Set<String> variableNames;
   private RecordDispatch dispatch;
 
-  public AnalyticsBaseProjection(final MutableProjectionState state) {
+  public AnalyticsBaseProjection(
+      final MutableProjectionState state, final Set<String> variableNames) {
     this.state = state;
+    this.variableNames = variableNames;
   }
 
   @Override
@@ -84,14 +89,14 @@ public final class AnalyticsBaseProjection implements Processor<SourceRecord, Fa
             ProcessInstanceIntent.ELEMENT_COMPLETED,
             RecordHandler.applyDeriveEvict(
                 completed,
-                new ElementCompletedDeriver(state, facts, Transition.COMPLETED),
+                new ElementCompletedDeriver(state, facts, Transition.COMPLETED, variableNames),
                 elementEvict))
         .on(
             ValueType.PROCESS_INSTANCE,
             ProcessInstanceIntent.ELEMENT_TERMINATED,
             RecordHandler.applyDeriveEvict(
                 terminated,
-                new ElementCompletedDeriver(state, facts, Transition.TERMINATED),
+                new ElementCompletedDeriver(state, facts, Transition.TERMINATED, variableNames),
                 elementEvict))
         .onAnyIntent(ValueType.VARIABLE, RecordHandler.apply(new VariableApplier(state)))
         .on(
@@ -110,6 +115,26 @@ public final class AnalyticsBaseProjection implements Processor<SourceRecord, Fa
             ValueType.PROCESS,
             ProcessIntent.CREATED,
             RecordHandler.derive(new ProcessDeployedDeriver(facts)));
+  }
+
+  /**
+   * Whether the base projection folds a record of this {@code (valueType, intent)} — the fixed set
+   * mirrored from the {@link RecordDispatch} registrations above. The source-side filter uses this
+   * to skip <em>decoding</em> records the projection ignores (jobs, timers, message subscriptions,
+   * the {@code ELEMENT_ACTIVATING/COMPLETING} and {@code SEQUENCE_FLOW_TAKEN} intents, …). Keep in
+   * sync with the registrations.
+   */
+  public static boolean handles(final ValueType valueType, final Intent intent) {
+    return switch (valueType) {
+      case PROCESS_INSTANCE ->
+          intent == ProcessInstanceIntent.ELEMENT_ACTIVATED
+              || intent == ProcessInstanceIntent.ELEMENT_COMPLETED
+              || intent == ProcessInstanceIntent.ELEMENT_TERMINATED;
+      case VARIABLE -> true;
+      case INCIDENT -> intent == IncidentIntent.CREATED || intent == IncidentIntent.RESOLVED;
+      case PROCESS -> intent == ProcessIntent.CREATED;
+      default -> false;
+    };
   }
 
   @Override

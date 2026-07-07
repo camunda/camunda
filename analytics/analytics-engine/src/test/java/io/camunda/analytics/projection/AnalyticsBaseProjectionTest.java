@@ -37,6 +37,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
@@ -47,7 +48,8 @@ final class AnalyticsBaseProjectionTest {
 
   private final StateBackedProjectionState state = StateBackedProjectionState.inMemory();
   private final CapturingContext context = new CapturingContext();
-  private final AnalyticsBaseProjection projection = new AnalyticsBaseProjection(state);
+  private final AnalyticsBaseProjection projection =
+      new AnalyticsBaseProjection(state, Set.of("region"));
 
   AnalyticsBaseProjectionTest() {
     projection.init(context);
