@@ -32,7 +32,7 @@ orchestration:
       emptyDir: {}
   initContainers:
     - name: fetch-jdbc-drivers
-      image: alpine:3.19
+      image: alpine:3.24
       imagePullPolicy: Always
       command:
         - sh
