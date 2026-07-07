@@ -60,7 +60,7 @@ final class RestoreParameterValidatorTest {
   }
 
   @Test
-  void shouldRejectSingleBoundWithContinuousBackups() {
+  void shouldRejectSingleBoundWithoutContinuousBackups() {
     // when / then
     assertThatExceptionOfType(IllegalArgumentException.class)
         .isThrownBy(() -> RestoreParameterValidator.validate(false, EARLIER, NULL_INSTANT, false))
