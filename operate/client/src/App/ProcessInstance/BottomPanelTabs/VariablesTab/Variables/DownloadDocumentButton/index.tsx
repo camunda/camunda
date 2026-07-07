@@ -12,15 +12,10 @@ import type {DocumentInfo} from '../DocumentValueCell/parseDocumentVariable';
 import {TooltipTrigger} from './styled';
 import {tracking} from 'modules/tracking';
 
-function getTooltipText(document: DocumentInfo): string {
-  switch (true) {
-    case document.isExpired:
-      return 'Document has expired';
-    case document.link === null:
-      return 'Download not available for this document';
-    default:
-      return 'Download';
-  }
+function getDisabledTooltipText(document: DocumentInfo): string {
+  return document.isExpired
+    ? 'Document has expired'
+    : 'Download not available for this document';
 }
 
 type Props = {
@@ -30,7 +25,6 @@ type Props = {
 
 const DownloadDocumentButton: React.FC<Props> = ({document, variableName}) => {
   const isDisabled = document.link === null || document.isExpired;
-  const tooltipText = getTooltipText(document);
 
   const button = (
     <Button
@@ -42,7 +36,7 @@ const DownloadDocumentButton: React.FC<Props> = ({document, variableName}) => {
       size="sm"
       hasIconOnly
       renderIcon={Download}
-      iconDescription={tooltipText}
+      iconDescription="Download"
       tooltipPosition="top"
       tooltipAlignment="end"
       // @ts-expect-error - Solves rendering issues in `DocumentListModal`. Not exposed through TS but used at runtime.
@@ -65,7 +59,7 @@ const DownloadDocumentButton: React.FC<Props> = ({document, variableName}) => {
   }
 
   return (
-    <Tooltip label={tooltipText} align="top">
+    <Tooltip label={getDisabledTooltipText(document)} align="top">
       <TooltipTrigger tabIndex={0}>{button}</TooltipTrigger>
     </Tooltip>
   );

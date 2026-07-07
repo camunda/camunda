@@ -14,16 +14,14 @@ import {DocumentPreviewModal} from './DocumentPreviewModal';
 import {TooltipTrigger} from './styled';
 import {tracking} from 'modules/tracking';
 
-function getTooltipText(document: DocumentInfo): string {
+function getDisabledTooltipText(document: DocumentInfo): string {
   switch (true) {
     case document.isExpired:
       return 'Document has expired';
     case document.link === null:
       return 'Preview not available for this document';
-    case document.type === 'unknown':
-      return 'Preview not available for this document type';
     default:
-      return 'Preview';
+      return 'Preview not available for this document type';
   }
 }
 
@@ -35,7 +33,6 @@ type Props = {
 const PreviewDocumentButton: React.FC<Props> = ({document, variableName}) => {
   const isDisabled =
     document.link === null || document.isExpired || document.type === 'unknown';
-  const tooltipText = getTooltipText(document);
 
   return (
     <ModalStateManager
@@ -46,7 +43,7 @@ const PreviewDocumentButton: React.FC<Props> = ({document, variableName}) => {
             size="sm"
             hasIconOnly
             renderIcon={View}
-            iconDescription={tooltipText}
+            iconDescription="Preview"
             tooltipPosition="top"
             // @ts-expect-error - Solves rendering issues in `DocumentListModal`. Not exposed through TS but used at runtime.
             autoAlign={true}
@@ -69,7 +66,7 @@ const PreviewDocumentButton: React.FC<Props> = ({document, variableName}) => {
         }
 
         return (
-          <Tooltip label={tooltipText} align="top">
+          <Tooltip label={getDisabledTooltipText(document)} align="top">
             <TooltipTrigger tabIndex={0}>{button}</TooltipTrigger>
           </Tooltip>
         );
