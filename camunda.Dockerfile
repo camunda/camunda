@@ -185,7 +185,8 @@ COPY --from=jattach --chown=1001:0 /jattach /usr/local/bin/jattach
 COPY --link --chown=1001:0 zeebe/docker/utils/jvm.options ${CAMUNDA_HOME}/config/jvm.options
 COPY --from=dist --chown=1001:0 /camunda/camunda-zeebe ${CAMUNDA_HOME}
 
-RUN ln -s /driver-lib ${CAMUNDA_HOME}/driver-lib
+RUN chmod +x ${CAMUNDA_HOME}/bin/* && \
+    ln -s /driver-lib ${CAMUNDA_HOME}/driver-lib
 
 USER 1001:1001
 
