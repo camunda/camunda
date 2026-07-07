@@ -13,6 +13,7 @@ import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
@@ -20,15 +21,19 @@ import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -37,12 +42,17 @@ import org.springframework.web.bind.annotation.RequestParam;
 public final class RecoveryController {
 
   private static final Logger LOG = LoggerFactory.getLogger(RecoveryController.class);
+  private static final String CONTINUOUS_BACKUPS_PROPERTY =
+      "camunda.data.primary-storage.backup.continous";
 
   private final ClusterConfigurationManagementRequestSender clusterConfigurationRequestSender;
+  private final Environment environment;
 
   public RecoveryController(
-      final ClusterConfigurationManagementRequestSender clusterConfigurationRequestSender) {
+      final ClusterConfigurationManagementRequestSender clusterConfigurationRequestSender,
+      final Environment environment) {
     this.clusterConfigurationRequestSender = clusterConfigurationRequestSender;
+    this.environment = environment;
   }
 
   @CamundaPatchMapping(
@@ -60,6 +70,29 @@ public final class RecoveryController {
                 .thenApply(RecoveryController::unwrapOrThrow),
         RecoveryController::toClusterModeChangeResponse,
         HttpStatus.OK);
+  }
+
+  @CamundaPostMapping(path = "/restore")
+  public CompletableFuture<ResponseEntity<Object>> restore(
+      @PhysicalTenantId final String physicalTenantId,
+      @RequestBody final io.camunda.gateway.protocol.model.RestoreRequest restoreRequest,
+      @RequestParam(name = "dryRun", defaultValue = "false") final boolean dryRun) {
+    LOG.debug("Requested restore for physical tenant {}: {}", physicalTenantId, restoreRequest);
+    return RequestExecutor.executeServiceMethod(
+        () ->
+            clusterConfigurationRequestSender
+                .restore(toRestoreRequest(restoreRequest, dryRun))
+                .thenApply(RecoveryController::unwrapOrThrow),
+        RecoveryController::toClusterModeChangeResponse,
+        HttpStatus.ACCEPTED);
+  }
+
+  private RestoreRequest toRestoreRequest(
+      final io.camunda.gateway.protocol.model.RestoreRequest restoreRequest, final boolean dryRun) {
+    final List<Long> backupIds =
+        restoreRequest.getBackupIds() == null ? List.of() : restoreRequest.getBackupIds();
+    return new RestoreRequest(
+        backupIds, restoreRequest.getFrom(), restoreRequest.getTo(), continuousBackups(), dryRun);
   }
 
   private static ClusterConfigurationChangeResponse unwrapOrThrow(
@@ -104,5 +137,11 @@ public final class RecoveryController {
         .operation(operation.getClass().getSimpleName())
         .mode(mode)
         .build();
+  }
+
+  /** Returns true if continuous backups are enabled. */
+  private boolean continuousBackups() {
+    return Optional.ofNullable(environment.getProperty(CONTINUOUS_BACKUPS_PROPERTY, Boolean.class))
+        .orElse(false);
   }
 }
