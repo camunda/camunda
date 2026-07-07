@@ -565,7 +565,7 @@ final class ClusterConfigurationManagementApiTest {
         .isLeft()
         .left()
         .extracting(ErrorResponse::code)
-        .isEqualTo(ErrorCode.OPERATION_NOT_ALLOWED);
+        .isEqualTo(ErrorCode.CONCURRENT_MODIFICATION);
   }
 
   @Test
