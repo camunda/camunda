@@ -39,6 +39,16 @@ final class RestoreParameterValidatorTest {
     return new RestoreRequest(backupIds, from, to, databaseType, continuousBackups, false);
   }
 
+  @Test
+  void shouldAcceptDatabaseTypeCaseInsensitively() {
+    // when / then
+    assertThatCode(
+            () ->
+                RestoreParameterValidator.validate(
+                    request(BACKUP_ID, null, null, "ElasticSearch", false)))
+        .doesNotThrowAnyException();
+  }
+
   @Nested
   final class Rdbms {
 
@@ -169,16 +179,6 @@ final class RestoreParameterValidatorTest {
               () -> RestoreParameterValidator.validate(request(BACKUP_ID, EARLIER, null, DB, true)))
           .withMessage(BOTH_MESSAGE);
     }
-  }
-
-  @Test
-  void shouldAcceptDatabaseTypeCaseInsensitively() {
-    // when / then
-    assertThatCode(
-            () ->
-                RestoreParameterValidator.validate(
-                    request(BACKUP_ID, null, null, "ElasticSearch", false)))
-        .doesNotThrowAnyException();
   }
 
   @Nested
