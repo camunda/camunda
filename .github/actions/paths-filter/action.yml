@@ -247,7 +247,7 @@ runs:
   using: composite
   steps:
 
-  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+  - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
     id: filter-common
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
@@ -324,7 +324,7 @@ runs:
         - 'search/search-domain/**'
         - 'zeebe/exporters/rdbms-exporter/**'
 
-  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+  - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
     id: filter-github-actions
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
@@ -358,7 +358,7 @@ runs:
         echo "ci-relevant=false" >> "$GITHUB_OUTPUT"
       fi
 
-  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+  - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
     id: filter-identity
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
@@ -367,7 +367,7 @@ runs:
         identity-frontend-change:
           - 'identity/client/**'
 
-  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+  - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
     id: filter-zeebe
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
@@ -377,7 +377,7 @@ runs:
           - 'zeebe/**'
           - 'clients/**'
 
-  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+  - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
     id: filter-operate
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
@@ -389,7 +389,7 @@ runs:
         operate-frontend-change:
           - operate/client/**
 
-  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+  - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
     id: filter-tasklist
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
@@ -401,7 +401,7 @@ runs:
         tasklist-frontend-change:
           - tasklist/client/**
 
-  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+  - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
     id: filter-optimize
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
@@ -417,7 +417,7 @@ runs:
           - optimize/client/**
           - optimize/backend/src/main/resources/localization/**
 
-  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+  - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
     id: filter-webapp-client
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
@@ -426,7 +426,7 @@ runs:
         webapp-client-change:
           - 'webapp/client/**'
 
-  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+  - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
     id: filter-dep-manifests
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
@@ -442,7 +442,7 @@ runs:
           - '**/go.mod'
           - '**/go.sum'
 
-  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+  - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
     id: filter-docs
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
@@ -455,7 +455,7 @@ runs:
           - '.github/workflows/docs-build-deploy.yml'
           - '.github/workflows/docs-preview.yml'
 
-  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+  - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
     id: filter-c8-e2e-test-suite
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
@@ -464,7 +464,7 @@ runs:
         c8-e2e-test-suite-change:
           - 'qa/c8-orchestration-cluster-e2e-test-suite/**'
 
-  - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+  - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
     id: filter-load-test-setup
     with:
       base: ${{ github.event.merge_group.base_ref || '' }}
