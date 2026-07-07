@@ -48,9 +48,6 @@ public class SecurityPathAdapter implements SecurityPathPort {
           "/swagger/**",
           "/swagger-ui/**",
           "/v3/api-docs/**",
-          "/v2/rest-api.yaml",
-          "/new/**",
-          "/tasklist/new/**",
           "/favicon.ico");
 
   private static final Set<String> WEBAPP_PATHS =
