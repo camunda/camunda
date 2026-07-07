@@ -211,7 +211,7 @@ public class RecoveryControllerTest extends RestControllerTest {
   }
 
   @Nested
-  @TestPropertySource(properties = {"camunda.data.primary-storage.backup.continous=true"})
+  @TestPropertySource(properties = {"camunda.data.primary-storage.backup.continuous=true"})
   class RestoreWithContinuousBackups {
 
     @ParameterizedTest
