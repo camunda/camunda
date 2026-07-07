@@ -185,7 +185,9 @@ public final class EventAppliers implements EventApplier {
         AgentInstanceIntent.UPDATED,
         new AgentInstanceUpdatedApplier(
             state.getAgentInstanceState(), state.getElementInstanceState()));
-    register(AgentInstanceIntent.COMPLETED, NOOP_EVENT_APPLIER);
+    register(
+        AgentInstanceIntent.COMPLETED,
+        new AgentInstanceCompletedApplier(state.getAgentInstanceState()));
   }
 
   private void registerJobMetricsBatchEventAppliers(final MutableProcessingState state) {
