@@ -378,7 +378,9 @@ public final class EngineProcessors {
         keyGenerator,
         writers,
         commandDistributionBehavior,
-        securityConfig);
+        securityConfig,
+        authCheckBehavior,
+        authorizationScopeStateAdapter);
 
     IdentitySetupProcessors.addIdentitySetupProcessors(
         keyGenerator, typedRecordProcessors, writers, securityConfig, config);

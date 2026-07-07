@@ -11,7 +11,9 @@ import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -53,6 +55,8 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final EngineSecurityConfig securityConfig;
   private final MembershipState membershipState;
+  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final SideEffectWriter sideEffectWriter;
 
   public TenantAddEntityProcessor(
       final ProcessingState state,
@@ -60,7 +64,8 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final EngineSecurityConfig securityConfig) {
+      final EngineSecurityConfig securityConfig,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     tenantState = state.getTenantState();
     mappingRuleState = state.getMappingRuleState();
     groupState = state.getGroupState();
@@ -72,8 +77,10 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
+    sideEffectWriter = writers.sideEffect();
     this.commandDistributionBehavior = commandDistributionBehavior;
     this.securityConfig = securityConfig;
+    this.authCheckBehavior = authCheckBehavior;
   }
 
   @Override
@@ -112,6 +119,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
 
     stateWriter.appendFollowUpEvent(tenantKey, TenantIntent.ENTITY_ADDED, record);
     responseWriter.writeEventOnCommand(tenantKey, TenantIntent.ENTITY_ADDED, record, command);
+    invalidateMembershipCache();
 
     distributeCommand(command);
   }
@@ -124,9 +132,25 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
           command, record.getEntityId(), record.getEntityType(), record.getTenantId());
     } else {
       stateWriter.appendFollowUpEvent(command.getKey(), TenantIntent.ENTITY_ADDED, record);
+      invalidateMembershipCache();
     }
 
     commandDistributionBehavior.acknowledgeCommand(command);
+  }
+
+  /**
+   * Flushes the legacy authorization cache after a tenant-membership change. Non-migrated domains
+   * still resolve tenant membership through {@link AuthorizationCheckBehavior}'s cache, so a stale
+   * entry could otherwise authorize (or reject) against outdated membership until the TTL expires.
+   * The scope cache is not touched: it holds RBAC grants only, which a membership change does not
+   * affect.
+   */
+  private void invalidateMembershipCache() {
+    sideEffectWriter.appendSideEffect(
+        () -> {
+          authCheckBehavior.clearAuthorizationsCache();
+          return true;
+        });
   }
 
   /** Loads the persisted tenant by the tenant id. */

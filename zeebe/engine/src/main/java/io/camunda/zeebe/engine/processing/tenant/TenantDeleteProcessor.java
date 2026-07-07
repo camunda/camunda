@@ -10,7 +10,10 @@ package io.camunda.zeebe.engine.processing.tenant;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
+import io.camunda.zeebe.engine.processing.identity.adapter.AuthorizationScopeStateAdapter;
+import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -48,13 +51,18 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
+  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final AuthorizationScopeStateAdapter authorizationScopeStateAdapter;
+  private final SideEffectWriter sideEffectWriter;
 
   public TenantDeleteProcessor(
       final ProcessingState state,
       final PermissionsBehavior permissionsBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
-      final CommandDistributionBehavior commandDistributionBehavior) {
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final AuthorizationScopeStateAdapter authorizationScopeStateAdapter) {
     tenantState = state.getTenantState();
     authorizationState = state.getAuthorizationState();
     userState = state.getUserState();
@@ -64,7 +72,10 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
+    sideEffectWriter = writers.sideEffect();
     this.commandDistributionBehavior = commandDistributionBehavior;
+    this.authCheckBehavior = authCheckBehavior;
+    this.authorizationScopeStateAdapter = authorizationScopeStateAdapter;
   }
 
   @Override
@@ -98,6 +109,7 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
 
     stateWriter.appendFollowUpEvent(tenantKey, TenantIntent.DELETED, record);
     responseWriter.writeEventOnCommand(tenantKey, TenantIntent.DELETED, record, command);
+    invalidateAuthorizationCaches();
 
     distributeCommand(command);
   }
@@ -113,6 +125,7 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
               deleteAuthorizations(command.getValue());
               stateWriter.appendFollowUpEvent(
                   command.getKey(), TenantIntent.DELETED, command.getValue());
+              invalidateAuthorizationCaches();
             },
             () ->
                 rejectCommand(
@@ -141,6 +154,21 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
         .withKey(keyGenerator.nextKey())
         .inQueue(DistributionQueue.IDENTITY.getQueueId())
         .distribute(command);
+  }
+
+  /**
+   * Flushes both authorization caches after a tenant is deleted. Deleting a tenant removes its
+   * memberships (stale in {@link AuthorizationCheckBehavior}'s legacy cache, used by non-migrated
+   * domains) and its authorization grants (stale in the {@link AuthorizationScopeStateAdapter}
+   * scope cache), so both must be invalidated.
+   */
+  private void invalidateAuthorizationCaches() {
+    sideEffectWriter.appendSideEffect(
+        () -> {
+          authCheckBehavior.clearAuthorizationsCache();
+          authorizationScopeStateAdapter.invalidateAll();
+          return true;
+        });
   }
 
   private void removeAssignedEntities(final TenantRecord record) {
