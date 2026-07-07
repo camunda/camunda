@@ -43,6 +43,7 @@ public final class DatasetCompiler {
       throw new IllegalArgumentException(
           "projected dataset '" + declaration.name() + "' must be compiled via compileTable");
     }
+    validateFilters(declaration);
     final List<DimensionColumn> columns = new ArrayList<>();
     final Map<String, EnrichmentTiming> enrichment = new LinkedHashMap<>();
     for (final DimensionSpec dimension : declaration.dimensions()) {
@@ -98,6 +99,26 @@ public final class DatasetCompiler {
   }
 
   /**
+   * The compile-time validation gate for the stringly typed filter values — an ordering operator
+   * needs a numeric bound, {@code IN} a non-empty list (see {@link
+   * FilterPredicate#validateValue()}). A failure is rethrown as a {@link
+   * DatasetValidationException} carrying the dataset + filter context, the same admission gate as
+   * meter params: a bad declaration is rejected at compile/provisioning time instead of silently
+   * never matching a fact.
+   */
+  private static void validateFilters(final DatasetDeclaration declaration) {
+    for (final FilterPredicate filter : declaration.filters()) {
+      try {
+        filter.validateValue();
+      } catch (final RuntimeException e) {
+        // reads: dataset 'x' declares an invalid filter on 'f' (GT): value must be ...
+        throw new DatasetValidationException(
+            "dataset '" + declaration.name() + "' declares an invalid " + e.getMessage(), e);
+      }
+    }
+  }
+
+  /**
    * Compiles a {@link DatasetKind#TABLE} declaration into a runnable {@link CompiledTable}: the
    * fact binding (source fact, filters, per-variable enrichment) and the declared dimensions as the
    * projected row columns. No meters/windows/aggIds — a projected row is written directly, not
@@ -107,6 +128,7 @@ public final class DatasetCompiler {
     if (declaration.kind() != DatasetKind.TABLE) {
       throw new IllegalArgumentException("dataset '" + declaration.name() + "' is not projected");
     }
+    validateFilters(declaration);
     final List<DimensionColumn> columns = new ArrayList<>();
     final Map<String, EnrichmentTiming> enrichment = new LinkedHashMap<>();
     for (final DimensionSpec dimension : declaration.dimensions()) {

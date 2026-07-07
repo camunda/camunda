@@ -12,6 +12,7 @@ import io.camunda.analytics.dataset.CompiledDataset;
 import io.camunda.analytics.dataset.DatasetDeclaration;
 import io.camunda.analytics.dataset.DatasetKind;
 import io.camunda.analytics.dataset.EnrichmentTiming;
+import io.camunda.analytics.dataset.FilterPredicate;
 import io.camunda.analytics.dataset.RegisteredDataset;
 import io.camunda.analytics.dimension.DimensionType;
 import io.camunda.analytics.fact.FactType;
@@ -265,7 +266,7 @@ public class AnalyticsController {
         builder.asTable(keyField);
       }
       if (filters != null) {
-        filters.forEach(f -> builder.filterEquals(f.field(), f.value()));
+        filters.forEach(f -> builder.filter(f.toPredicate()));
       }
       if (dimensions != null) {
         for (final DimensionRequest dim : dimensions) {
@@ -295,7 +296,14 @@ public class AnalyticsController {
   public record MeterRequest(
       String name, String type, String measureField, Map<String, String> params) {}
 
-  public record FilterRequest(String field, String value) {}
+  /** One declared filter; a missing operator means {@code EQUALS} (the pre-operator wire shape). */
+  public record FilterRequest(String field, FilterPredicate.Operator operator, String value) {
+
+    FilterPredicate toPredicate() {
+      return new FilterPredicate(
+          field, operator == null ? FilterPredicate.Operator.EQUALS : operator, value);
+    }
+  }
 
   /** Read view of a dataset spec for the UI. */
   public record DatasetView(

@@ -193,6 +193,88 @@ final class DatasetCompilerTest {
   }
 
   @Test
+  void shouldRejectNonNumericOrderingFilterAtCompileTime() {
+    // given an ordering filter whose declared bound is not a number
+    final DatasetDeclaration declaration =
+        DatasetDeclaration.builder("filter-check", FactType.PROCESS_INSTANCE)
+            .filterGreaterThan("durationMs", "fast")
+            .dimension("bpmnProcessId", DimensionType.STRING)
+            .meter(Meter.of("count", MeterCatalog.COUNT))
+            .window(60_000L)
+            .build();
+
+    // when compiled, then it is rejected naming the dataset, the filter field, the operator, and
+    // the offending value — not silently compiled into a filter that never matches
+    assertThatThrownBy(() -> compiler.compile(1L, declaration))
+        .isInstanceOf(DatasetValidationException.class)
+        .hasMessageContaining("dataset 'filter-check'")
+        .hasMessageContaining("filter on 'durationMs'")
+        .hasMessageContaining("GT")
+        .hasMessageContaining("'fast'");
+  }
+
+  @Test
+  void shouldRejectEmptyInListFilterAtCompileTime() {
+    // given an IN filter whose list is empty after trimming
+    final DatasetDeclaration declaration =
+        DatasetDeclaration.builder("filter-check", FactType.PROCESS_INSTANCE)
+            .filterIn("bpmnProcessId", " , ,")
+            .dimension("bpmnProcessId", DimensionType.STRING)
+            .meter(Meter.of("count", MeterCatalog.COUNT))
+            .window(60_000L)
+            .build();
+
+    // when compiled, then it is rejected with the dataset + filter context
+    assertThatThrownBy(() -> compiler.compile(1L, declaration))
+        .isInstanceOf(DatasetValidationException.class)
+        .hasMessageContaining("dataset 'filter-check'")
+        .hasMessageContaining("filter on 'bpmnProcessId'")
+        .hasMessageContaining("IN")
+        .hasMessageContaining("non-empty");
+  }
+
+  @Test
+  void shouldRejectInvalidFilterOnProjectedTableAtCompileTime() {
+    // given a projected table declaring the same bad ordering filter
+    final DatasetDeclaration declaration =
+        DatasetDeclaration.builder("row-check", FactType.PROCESS_INSTANCE)
+            .asTable("processInstanceKey")
+            .filterLessThan("durationMs", "slow")
+            .dimension("bpmnProcessId", DimensionType.STRING)
+            .build();
+
+    // when compiled via the table path, then the same admission gate rejects it
+    assertThatThrownBy(() -> compiler.compileTable(1L, declaration))
+        .isInstanceOf(DatasetValidationException.class)
+        .hasMessageContaining("dataset 'row-check'")
+        .hasMessageContaining("filter on 'durationMs'")
+        .hasMessageContaining("LT");
+  }
+
+  @Test
+  void shouldCompileWellFormedOperatorFilters() {
+    // given one filter per operator, each with a well-formed value
+    final DatasetDeclaration declaration =
+        DatasetDeclaration.builder("filter-ok", FactType.PROCESS_INSTANCE)
+            .filterEquals("bpmnProcessId", "invoice")
+            .filterNotEquals("state", "CANCELED")
+            .filterLessThan("durationMs", "9000")
+            .filterLessOrEqual("durationMs", "9000")
+            .filterGreaterThan("durationMs", "1.5")
+            .filterGreaterOrEqual("durationMs", "-7")
+            .filterIn("tenantId", "a, b,c")
+            .filterIsNull("incidentKey")
+            .filterNotNull("processDefinitionKey")
+            .dimension("bpmnProcessId", DimensionType.STRING)
+            .meter(Meter.of("count", MeterCatalog.COUNT))
+            .window(60_000L)
+            .build();
+
+    // when / then it compiles, carrying every filter into the fact binding
+    assertThat(compiler.compile(1L, declaration).factBinding().filters()).hasSize(9);
+  }
+
+  @Test
   void shouldAssignStableAggIdsAcrossRecompile() {
     // given a registry shared across two compiler instances (a restart)
     final InMemoryMeterIdStore store = new InMemoryMeterIdStore();

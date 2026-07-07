@@ -114,7 +114,16 @@ export type SourceFact = "PROCESS_INSTANCE" | "ELEMENT" | "INCIDENT" | "PROCESS_
 export type DatasetKind = "AGGREGATED" | "TABLE";
 export type DimensionType = "STRING" | "LONG" | "INT" | "BOOLEAN";
 export type Enrichment = "EVENT_TIME" | "PI_CREATE" | "PI_COMPLETE";
-export type FilterOperator = "EQUALS";
+export type FilterOperator =
+  | "EQUALS"
+  | "NOT_EQUALS"
+  | "LT"
+  | "LE"
+  | "GT"
+  | "GE"
+  | "IN"
+  | "IS_NULL"
+  | "NOT_NULL";
 export type Combination = "UNION";
 
 /** The fixed catalog of meter types offered by the builder. */

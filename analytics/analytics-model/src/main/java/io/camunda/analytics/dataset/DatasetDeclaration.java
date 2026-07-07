@@ -236,6 +236,11 @@ public record DatasetDeclaration(
       return this;
     }
 
+    public Builder filter(final FilterPredicate filter) {
+      filters.add(filter);
+      return this;
+    }
+
     public Builder filterNotEquals(final String field, final String value) {
       filters.add(FilterPredicate.notEquals(field, value));
       return this;
@@ -243,6 +248,42 @@ public record DatasetDeclaration(
 
     public Builder filterEquals(final String field, final String value) {
       filters.add(FilterPredicate.equals(field, value));
+      return this;
+    }
+
+    public Builder filterLessThan(final String field, final String value) {
+      filters.add(FilterPredicate.lessThan(field, value));
+      return this;
+    }
+
+    public Builder filterLessOrEqual(final String field, final String value) {
+      filters.add(FilterPredicate.lessOrEqual(field, value));
+      return this;
+    }
+
+    public Builder filterGreaterThan(final String field, final String value) {
+      filters.add(FilterPredicate.greaterThan(field, value));
+      return this;
+    }
+
+    public Builder filterGreaterOrEqual(final String field, final String value) {
+      filters.add(FilterPredicate.greaterOrEqual(field, value));
+      return this;
+    }
+
+    /** Keep facts whose {@code field} is in the comma-separated {@code values} list. */
+    public Builder filterIn(final String field, final String values) {
+      filters.add(FilterPredicate.in(field, values));
+      return this;
+    }
+
+    public Builder filterIsNull(final String field) {
+      filters.add(FilterPredicate.isNull(field));
+      return this;
+    }
+
+    public Builder filterNotNull(final String field) {
+      filters.add(FilterPredicate.notNull(field));
       return this;
     }
 

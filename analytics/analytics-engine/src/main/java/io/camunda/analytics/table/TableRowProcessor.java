@@ -7,8 +7,8 @@
  */
 package io.camunda.analytics.table;
 
+import io.camunda.analytics.aggregation.CompiledFilter;
 import io.camunda.analytics.dataset.CompiledTable;
-import io.camunda.analytics.dataset.FilterPredicate;
 import io.camunda.analytics.dataset.RegisteredDataset;
 import io.camunda.analytics.dimension.DimensionColumn;
 import io.camunda.analytics.dimension.Utf8View;
@@ -32,7 +32,7 @@ public final class TableRowProcessor implements Processor<Fact, Void> {
 
   private final FactType factType;
   private final RegisteredDataset dataset;
-  private final List<FilterPredicate> filters;
+  private final List<CompiledFilter> filters;
   private final CompiledTable table;
   private final DatasetWriter writer;
 
@@ -40,7 +40,7 @@ public final class TableRowProcessor implements Processor<Fact, Void> {
       final RegisteredDataset dataset, final CompiledTable table, final DatasetWriter writer) {
     factType = table.factBinding().factType();
     this.dataset = dataset;
-    filters = List.copyOf(table.factBinding().filters());
+    filters = table.factBinding().filters().stream().map(CompiledFilter::new).toList();
     this.table = table;
     this.writer = writer;
   }
@@ -74,13 +74,8 @@ public final class TableRowProcessor implements Processor<Fact, Void> {
   }
 
   private boolean matchesFilters(final Fact fact) {
-    for (final FilterPredicate filter : filters) {
-      final Object value = fact.get(filter.field());
-      final boolean matches =
-          filter.operator() == FilterPredicate.Operator.EQUALS
-              && value != null
-              && String.valueOf(value).equals(filter.value());
-      if (!matches) {
+    for (final CompiledFilter filter : filters) {
+      if (!filter.matches(fact)) {
         return false;
       }
     }
