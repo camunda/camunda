@@ -18,14 +18,15 @@ import io.camunda.analytics.meter.PushdownColumn;
 import io.camunda.analytics.meter.PushdownSpec;
 import io.camunda.analytics.serving.internal.SketchScalar;
 import io.camunda.analytics.serving.spi.DatasetWriter;
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -44,6 +45,13 @@ import org.apache.ibatis.session.SqlSessionFactory;
  * accumulator is a {@code byte[]} blob and the column set is per-dataset dynamic, which bind far
  * more robustly through JDBC than through a mapper. The dynamic <em>read</em> path is where MyBatis
  * earns its keep (see {@link RdbmsDatasetQueryClient}).
+ *
+ * <p>Upserts are <em>JDBC-batched</em>: each distinct upsert SQL keeps one {@link
+ * PreparedStatement} open on the session's connection, every cell {@code addBatch()}es onto it, and
+ * {@link #flush()} runs {@code executeBatch()} on each before committing. So a whole commit's worth
+ * of cells for a cube goes to the database as one batched round-trip instead of one {@code
+ * executeUpdate()} per cell — the win is large over a network (Postgres) and still real in-process
+ * (H2).
  */
 public final class RdbmsDatasetWriter implements DatasetWriter {
 
@@ -57,6 +65,11 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
    * no-op there); bounded by the number of distinct months a writer touches.
    */
   private final Set<String> ensuredPartitions = new HashSet<>();
+
+  /**
+   * One open {@link PreparedStatement} per distinct upsert SQL, reused across flushes for batching.
+   */
+  private final Map<String, PreparedStatement> statements = new HashMap<>();
 
   private SqlSession session;
 
@@ -221,19 +234,42 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
 
   @Override
   public void flush() {
-    if (session != null) {
-      // force: the upserts run as raw JDBC on the session's connection, so MyBatis does not see the
-      // session as dirty and a plain commit() would be a no-op, dropping the writes on close.
-      session.commit(true);
+    if (session == null) {
+      return;
     }
+    executeBatches();
+    // force: the batched upserts run as raw JDBC on the session's connection, so MyBatis does not
+    // see the session as dirty and a plain commit() would be a no-op, dropping the writes on close.
+    session.commit(true);
   }
 
   @Override
   public void close() {
-    if (session != null) {
-      session.commit(true);
-      session.close();
-      session = null;
+    if (session == null) {
+      return;
+    }
+    executeBatches();
+    session.commit(true);
+    for (final PreparedStatement statement : statements.values()) {
+      try {
+        statement.close();
+      } catch (final SQLException e) {
+        // best effort on close
+      }
+    }
+    statements.clear();
+    session.close();
+    session = null;
+  }
+
+  /** Runs the accumulated batch on every open statement (an empty batch is a harmless no-op). */
+  private void executeBatches() {
+    for (final PreparedStatement statement : statements.values()) {
+      try {
+        statement.executeBatch();
+      } catch (final SQLException e) {
+        throw new IllegalStateException("failed to execute upsert batch", e);
+      }
     }
   }
 
@@ -295,13 +331,25 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
   }
 
   private void execute(final String sql, final Binder binder, final String what) {
-    final Connection connection = session().getConnection();
-    try (PreparedStatement statement = connection.prepareStatement(sql)) {
+    try {
+      final PreparedStatement statement = statementFor(sql);
       binder.bind(statement);
-      statement.executeUpdate();
+      statement.addBatch();
     } catch (final SQLException e) {
-      throw new IllegalStateException("failed to upsert into " + what, e);
+      throw new IllegalStateException("failed to batch upsert into " + what, e);
     }
+  }
+
+  /**
+   * The cached prepared statement for this SQL on the session's connection, opened on first use.
+   */
+  private PreparedStatement statementFor(final String sql) throws SQLException {
+    PreparedStatement statement = statements.get(sql);
+    if (statement == null) {
+      statement = session().getConnection().prepareStatement(sql);
+      statements.put(sql, statement);
+    }
+    return statement;
   }
 
   private SqlSession session() {
