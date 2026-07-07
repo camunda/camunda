@@ -270,6 +270,8 @@ jobs:
     with:
       image_tag: ${{ needs.test-data.outputs.image-tag }}
       environment: prod
+      skip_destroy_previous: false
+
 
   notify:
     name: Notify on failure
