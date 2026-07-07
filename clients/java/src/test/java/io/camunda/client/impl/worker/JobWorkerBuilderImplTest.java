@@ -18,6 +18,7 @@ package io.camunda.client.impl.worker;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -269,6 +270,35 @@ class JobWorkerBuilderImplTest {
         () ->
             assertThat(tenantIdCaptor.getValue())
                 .containsOnly(zeebeClientConfig.getDefaultTenantId()));
+  }
+
+  @Test
+  void shouldForwardWithLeaseOnPoll() {
+    // given
+    final ActivateJobsCommandStep3 lastStep = Mockito.mock(Answers.RETURNS_SELF);
+    Mockito.when(
+            jobClient.newActivateJobsCommand().jobType(anyString()).maxJobsToActivate(anyInt()))
+        .thenReturn(lastStep);
+    Mockito.when(lastStep.tenantIds(anyList())).thenReturn(lastStep);
+    Mockito.when(lastStep.tenantFilter(any(TenantFilter.class))).thenReturn(lastStep);
+    Mockito.when(lastStep.withLease(anyBoolean())).thenReturn(lastStep);
+    Mockito.when(lastStep.requestTimeout(any())).thenReturn(lastStep);
+    final CamundaFuture<ActivateJobsResponse> camundaFuture = Mockito.mock();
+    Mockito.when(lastStep.send()).thenReturn(camundaFuture);
+    Mockito.when(camundaFuture.exceptionally(any())).thenReturn(Mockito.mock());
+
+    // when
+    jobWorkerBuilder
+        .jobType("some-type")
+        .handler(mock())
+        .timeout(Duration.ofSeconds(5))
+        .name("worker")
+        .maxJobsActive(30)
+        .withLease(true)
+        .open();
+
+    // then
+    await(() -> verify(lastStep).withLease(true));
   }
 
   @Test
