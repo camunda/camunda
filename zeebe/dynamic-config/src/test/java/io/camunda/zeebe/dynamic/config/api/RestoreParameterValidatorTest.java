@@ -40,7 +40,7 @@ final class RestoreParameterValidatorTest {
     assertThatExceptionOfType(IllegalArgumentException.class)
         .isThrownBy(
             () -> RestoreParameterValidator.validate(false, NULL_INSTANT, NULL_INSTANT, false))
-        .withMessage("Must specify either --backupId or --from/--to.");
+        .withMessage("Must specify either backupId or from/to.");
   }
 
   @Test
@@ -48,8 +48,7 @@ final class RestoreParameterValidatorTest {
     // when / then
     assertThatExceptionOfType(IllegalArgumentException.class)
         .isThrownBy(() -> RestoreParameterValidator.validate(true, EARLIER, NULL_INSTANT, true))
-        .withMessage(
-            "Cannot specify both --backupId and --from/--to parameters. Choose one approach.");
+        .withMessage("Cannot specify both backupId and from/to parameters. Choose one approach.");
   }
 
   @Test
@@ -57,7 +56,7 @@ final class RestoreParameterValidatorTest {
     // when / then
     assertThatExceptionOfType(IllegalArgumentException.class)
         .isThrownBy(() -> RestoreParameterValidator.validate(false, EARLIER, LATER, false))
-        .withMessage("Time range restore (--from/--to) is only supported for continuous backups.");
+        .withMessage("Time range restore (from/to) is only supported for continuous backups.");
   }
 
   @Test
@@ -65,7 +64,7 @@ final class RestoreParameterValidatorTest {
     // when / then
     assertThatExceptionOfType(IllegalArgumentException.class)
         .isThrownBy(() -> RestoreParameterValidator.validate(false, EARLIER, NULL_INSTANT, false))
-        .withMessage("Time range restore (--from/--to) is only supported for continuous backups.");
+        .withMessage("Time range restore (from/to) is only supported for continuous backups.");
   }
 
   @Test
@@ -82,6 +81,6 @@ final class RestoreParameterValidatorTest {
     assertThatExceptionOfType(IllegalArgumentException.class)
         .isThrownBy(() -> RestoreParameterValidator.validate(false, LATER, EARLIER, true))
         .withMessage(
-            "Invalid time range: --from (%s) must be before --to (%s)".formatted(LATER, EARLIER));
+            "Invalid time range: from (%s) must be before to (%s)".formatted(LATER, EARLIER));
   }
 }
