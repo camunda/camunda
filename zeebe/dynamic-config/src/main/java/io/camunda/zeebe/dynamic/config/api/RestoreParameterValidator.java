@@ -41,12 +41,21 @@ public final class RestoreParameterValidator {
   }
 
   public static void validate(
+      final boolean hasBackupId, final @Nullable Instant from, final @Nullable Instant to) {
+    final var noArgs = !hasBackupId && from == null && to == null;
+    final boolean hasTimeRange = hasTimeRange(from, to);
+    validate(hasBackupId, from, to, noArgs || hasTimeRange);
+  }
+
+  static void validate(
       final boolean hasBackupId,
       final @Nullable Instant from,
       final @Nullable Instant to,
       final boolean continuousBackups) {
-    final boolean hasTimeRange = from != null || to != null;
-    illegalArgument(!hasBackupId && !hasTimeRange, "Must specify either backupId or from/to.");
+    final boolean hasTimeRange = hasTimeRange(from, to);
+    illegalArgument(
+        !hasBackupId && !hasTimeRange && !continuousBackups,
+        "Must specify either backupId or from/to.");
 
     illegalArgument(
         hasBackupId && hasTimeRange,
@@ -59,6 +68,10 @@ public final class RestoreParameterValidator {
     illegalArgument(
         from != null && to != null && from.isAfter(to),
         "Invalid time range: from (%s) must be before to (%s)".formatted(from, to));
+  }
+
+  private static boolean hasTimeRange(@Nullable final Instant from, @Nullable final Instant to) {
+    return from != null || to != null;
   }
 
   private static @Nullable Instant parseTimestamp(
