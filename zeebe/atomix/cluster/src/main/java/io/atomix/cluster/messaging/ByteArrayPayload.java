@@ -5,9 +5,8 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.atomix.cluster.messaging.impl;
+package io.atomix.cluster.messaging;
 
-import io.atomix.cluster.messaging.ManagedPayload;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import java.util.List;
@@ -18,13 +17,6 @@ import java.util.List;
  * read by the I/O thread after this call returns.
  */
 public class ByteArrayPayload implements ManagedPayload {
-
-  /**
-   * Below this size, copying into the (pooled) frame buffer is cheaper than the extra buffer
-   * component and write vector a wrapped array costs; above it, wrapping avoids duplicating the
-   * payload and keeps pooled frame buffers small.
-   */
-  private static final int WRAP_THRESHOLD = 4 * 1024;
 
   private final byte[] bytes;
 
@@ -39,6 +31,11 @@ public class ByteArrayPayload implements ManagedPayload {
   @Override
   public int length() {
     return bytes.length;
+  }
+
+  @Override
+  public byte[] toBytes() {
+    return bytes;
   }
 
   @Override

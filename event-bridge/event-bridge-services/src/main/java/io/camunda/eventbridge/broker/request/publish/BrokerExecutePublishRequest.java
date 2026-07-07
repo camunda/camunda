@@ -99,4 +99,14 @@ public abstract class BrokerExecutePublishRequest<T> extends BrokerRequest<T> {
   public int write(final MutableDirectBuffer buffer, final int offset) {
     return request.write(buffer, offset);
   }
+
+  @Override
+  public DirectBuffer bulkPayload() {
+    return request.getValue();
+  }
+
+  @Override
+  public int writeHeader(final MutableDirectBuffer buffer, final int offset) {
+    return request.writeHeader(buffer, offset);
+  }
 }

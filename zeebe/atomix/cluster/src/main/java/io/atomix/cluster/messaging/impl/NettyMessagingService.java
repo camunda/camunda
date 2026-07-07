@@ -22,6 +22,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.MoreExecutors;
+import io.atomix.cluster.messaging.ByteArrayPayload;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.ManagedPayload;
 import io.atomix.cluster.messaging.MessagingConfig;
@@ -280,6 +281,18 @@ public final class NettyMessagingService implements ManagedMessagingService {
       final Address address,
       final String type,
       final byte[] payload,
+      final boolean keepAlive,
+      final Duration timeout,
+      final Executor executor) {
+    return sendAndReceive(
+        address, type, new ByteArrayPayload(payload), keepAlive, timeout, executor);
+  }
+
+  @Override
+  public CompletableFuture<byte[]> sendAndReceive(
+      final Address address,
+      final String type,
+      final ManagedPayload payload,
       final boolean keepAlive,
       final Duration timeout,
       final Executor executor) {

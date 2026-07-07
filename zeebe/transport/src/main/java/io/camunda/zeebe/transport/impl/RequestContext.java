@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.transport.impl;
 
+import io.atomix.cluster.messaging.ManagedPayload;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
@@ -23,7 +24,7 @@ final class RequestContext {
   private final CompletableActorFuture<DirectBuffer> currentFuture;
   private final Supplier<@Nullable String> nodeAddressSupplier;
   private final String topicName;
-  private final byte[] requestBytes;
+  private final ManagedPayload payload;
   private final boolean shouldRetry;
   private final long startTime;
   private final Duration timeout;
@@ -35,14 +36,14 @@ final class RequestContext {
       final CompletableActorFuture<DirectBuffer> currentFuture,
       final Supplier<@Nullable String> nodeAddressSupplier,
       final String topicName,
-      final byte[] requestBytes,
+      final ManagedPayload payload,
       final Predicate<DirectBuffer> responseValidator,
       final boolean shouldRetry,
       final Duration timeout) {
     this.currentFuture = currentFuture;
     this.nodeAddressSupplier = nodeAddressSupplier;
     this.topicName = topicName;
-    this.requestBytes = requestBytes;
+    this.payload = payload;
     this.shouldRetry = shouldRetry;
     startTime = ActorClock.currentTimeMillis();
     this.responseValidator = responseValidator;
@@ -62,8 +63,8 @@ final class RequestContext {
     return topicName;
   }
 
-  byte[] getRequestBytes() {
-    return requestBytes;
+  ManagedPayload getPayload() {
+    return payload;
   }
 
   public Duration getTimeout() {

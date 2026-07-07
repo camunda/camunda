@@ -13,6 +13,7 @@ import io.camunda.eventbridge.protocol.MessageHeaderDecoder;
 import io.camunda.eventbridge.protocol.MessageHeaderEncoder;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.nio.ByteOrder;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -71,5 +72,21 @@ public class ExecutePublishRequest implements BufferReader, BufferWriter {
         .putEntryBatch(value, 0, value.capacity());
 
     return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
+  }
+
+  /**
+   * Writes everything up to (and including) the entry-batch length prefix, i.e. the frame after
+   * which the batch bytes follow verbatim. Lets the transport reference the wrapped batch buffer
+   * instead of re-serializing it.
+   *
+   * @return the number of header bytes written
+   */
+  public int writeHeader(final MutableDirectBuffer buffer, final int offset) {
+    bodyEncoder.wrapAndApplyHeader(buffer, offset, headerEncoder);
+    // The var-data length prefix putEntryBatch would write, without the batch bytes themselves.
+    buffer.putInt(bodyEncoder.limit(), value.capacity(), ByteOrder.LITTLE_ENDIAN);
+    return headerEncoder.encodedLength()
+        + bodyEncoder.sbeBlockLength()
+        + ExecutePublishRequestEncoder.entryBatchHeaderLength();
   }
 }

@@ -17,6 +17,7 @@
 package io.atomix.cluster.messaging.impl;
 
 import com.google.common.base.MoreObjects;
+import io.atomix.cluster.messaging.ByteArrayPayload;
 import io.atomix.cluster.messaging.ManagedPayload;
 
 /** Internal reply message. */

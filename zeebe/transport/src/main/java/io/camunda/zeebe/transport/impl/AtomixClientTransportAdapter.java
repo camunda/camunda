@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.transport.impl;
 
+import io.atomix.cluster.messaging.ByteArrayPayload;
+import io.atomix.cluster.messaging.CompositePayload;
+import io.atomix.cluster.messaging.ManagedPayload;
 import io.atomix.cluster.messaging.MessagingException;
 import io.atomix.cluster.messaging.MessagingService;
 import io.camunda.zeebe.scheduler.Actor;
@@ -62,11 +65,7 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
       final boolean shouldRetry,
       final Duration timeout) {
 
-    // copy once
-    final var length = clientRequest.getLength();
-    final var requestBytes = new byte[length];
-    final var buffer = new UnsafeBuffer(requestBytes);
-    clientRequest.write(buffer, 0);
+    final ManagedPayload payload = serialize(clientRequest);
 
     final var partitionId = clientRequest.getPartitionId();
     final var requestType = clientRequest.getRequestType();
@@ -80,7 +79,7 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
             requestFuture,
             nodeAddressSupplier,
             topicName,
-            requestBytes,
+            payload,
             responseValidator,
             shouldRetry,
             timeout);
@@ -92,6 +91,24 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
         });
 
     return requestFuture;
+  }
+
+  /**
+   * Serializes the request into its transport payload. Requests with a bulk payload get a composite
+   * of the serialized header and the referenced (not copied) payload buffer; all others are
+   * serialized whole, once.
+   */
+  private static ManagedPayload serialize(final ClientRequest clientRequest) {
+    final var bulkPayload = clientRequest.bulkPayload();
+    if (bulkPayload != null) {
+      final var headerBytes = new byte[clientRequest.getLength() - bulkPayload.capacity()];
+      clientRequest.writeHeader(new UnsafeBuffer(headerBytes), 0);
+      return new CompositePayload(headerBytes, bulkPayload);
+    }
+
+    final var requestBytes = new byte[clientRequest.getLength()];
+    clientRequest.write(new UnsafeBuffer(requestBytes), 0);
+    return new ByteArrayPayload(requestBytes);
   }
 
   private void tryToSend(final RequestContext requestContext) {
@@ -157,9 +174,14 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
           requestContext.getTopicName());
     }
 
-    final var requestBytes = requestContext.getRequestBytes();
     messagingService
-        .sendAndReceive(nodeAddress, requestContext.getTopicName(), requestBytes, calculateTimeout)
+        .sendAndReceive(
+            nodeAddress,
+            requestContext.getTopicName(),
+            requestContext.getPayload(),
+            true,
+            calculateTimeout,
+            Runnable::run)
         .whenCompleteAsync(
             (response, errorOnRequest) -> handleResponse(requestContext, response, errorOnRequest),
             actor);

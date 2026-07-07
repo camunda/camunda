@@ -44,7 +44,7 @@ public abstract class ProtocolMessage {
   }
 
   public byte[] payloadAsBytes() {
-    return ((ByteArrayPayload) payload).getBytes();
+    return payload.toBytes();
   }
 
   public ManagedPayload payload() {

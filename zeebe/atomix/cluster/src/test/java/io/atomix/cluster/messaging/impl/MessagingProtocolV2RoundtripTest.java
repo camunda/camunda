@@ -21,7 +21,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Pipes encoded protocol messages back through the decoder to verify the encoder's output stays
- * parseable — in particular across the payload wrap-vs-copy threshold in {@link ByteArrayPayload}.
+ * parseable — in particular across the payload wrap-vs-copy threshold in ByteArrayPayload.
  */
 @Execution(ExecutionMode.CONCURRENT)
 final class MessagingProtocolV2RoundtripTest {
