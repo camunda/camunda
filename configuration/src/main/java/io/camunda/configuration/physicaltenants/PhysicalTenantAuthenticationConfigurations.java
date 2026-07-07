@@ -10,9 +10,11 @@ package io.camunda.configuration.physicaltenants;
 import io.camunda.configuration.Camunda;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
+import io.camunda.security.api.model.config.oidc.OidcProvidersConfiguration;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.core.env.Environment;
@@ -49,8 +51,9 @@ public final class PhysicalTenantAuthenticationConfigurations {
             .orElseGet(AuthenticationConfiguration::new);
 
     // snapshot pristine root provider POJOs before the PT overlay mutates them
+    final Map<String, OidcConfiguration> rootProviders = namedProviders(auth);
     final Map<String, OidcConfiguration> rootOidc =
-        new LinkedHashMap<>(auth.getProviders().getOidc());
+        rootProviders == null ? new LinkedHashMap<>() : new LinkedHashMap<>(rootProviders);
 
     final String ptPrefix = PT_PREFIX_TEMPLATE.formatted(tenantId);
     binder.bind(ptPrefix, Bindable.ofInstance(auth));
@@ -71,7 +74,7 @@ public final class PhysicalTenantAuthenticationConfigurations {
       final Map<String, OidcConfiguration> rootOidc,
       final Binder binder,
       final String ptPrefix) {
-    final Map<String, OidcConfiguration> postOverlayProviders = auth.getProviders().getOidc();
+    final Map<String, OidcConfiguration> postOverlayProviders = namedProviders(auth);
     final Map<String, OidcConfiguration> union = new LinkedHashMap<>();
     // Seed with the map as the overlay bind left it (PT-only providers, plus any partially-bound
     // shared ids), then overwrite every root id with its pristine root object + overlay delta.
@@ -84,6 +87,16 @@ public final class PhysicalTenantAuthenticationConfigurations {
               ptPrefix + ".providers.oidc." + providerId, Bindable.ofInstance(rootProvider));
           union.put(providerId, rootProvider);
         });
-    auth.getProviders().setOidc(union);
+    // getProviders() is null only when neither root nor overlay declared any providers, in which
+    // case the union is empty and there is nothing to write.
+    if (auth.getProviders() != null) {
+      auth.getProviders().setOidc(union);
+    }
+  }
+
+  private static @Nullable Map<String, OidcConfiguration> namedProviders(
+      final AuthenticationConfiguration auth) {
+    final OidcProvidersConfiguration providers = auth.getProviders();
+    return providers == null ? null : providers.getOidc();
   }
 }

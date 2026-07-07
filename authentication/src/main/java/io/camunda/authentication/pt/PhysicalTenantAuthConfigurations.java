@@ -274,7 +274,11 @@ public final class PhysicalTenantAuthConfigurations {
           binder.bind(ptPrefix + ".providers.oidc." + id, Bindable.ofInstance(rootProvider));
           union.put(id, rootProvider);
         });
-    config.getProviders().setOidc(union);
+    // getProviders() is null only when neither root nor overlay declared any providers, in which
+    // case the union is empty and there is nothing to write.
+    if (config.getProviders() != null) {
+      config.getProviders().setOidc(union);
+    }
   }
 
   private static Map<String, OidcConfiguration> snapshotProviders(
