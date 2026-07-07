@@ -12,8 +12,6 @@ import io.camunda.zeebe.broker.bootstrap.BrokerContext;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContextImpl;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupProcess;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
-import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
-import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
@@ -25,7 +23,6 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.LogUtil;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.exception.UncheckedExecutionException;
-import io.camunda.zeebe.util.jar.ExternalJarLoadException;
 import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.netty.util.NetUtil;
 import java.util.List;
@@ -37,7 +34,6 @@ public final class Broker implements AutoCloseable {
   public static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
   private final SystemContext systemContext;
-  private final ExporterRepository exporterRepository;
   private boolean isClosed = false;
 
   private CompletableFuture<Broker> startFuture;
@@ -47,21 +43,11 @@ public final class Broker implements AutoCloseable {
   private final BrokerStartupActor brokerStartupActor;
   private BrokerContext brokerContext;
 
-  // TODO just used by tests ...
   public Broker(
       final SystemContext systemContext,
       final SpringBrokerBridge springBrokerBridge,
       final List<PartitionListener> additionalPartitionListeners) {
-    this(systemContext, springBrokerBridge, additionalPartitionListeners, new ExporterRepository());
-  }
-
-  public Broker(
-      final SystemContext systemContext,
-      final SpringBrokerBridge springBrokerBridge,
-      final List<PartitionListener> additionalPartitionListeners,
-      final ExporterRepository exporterRepository) {
     this.systemContext = systemContext;
-    this.exporterRepository = exporterRepository;
 
     final ActorScheduler scheduler = this.systemContext.getScheduler();
     final BrokerInfo localBroker = createBrokerInfo(getConfig());
@@ -82,7 +68,6 @@ public final class Broker implements AutoCloseable {
             springBrokerBridge,
             scheduler,
             healthCheckService,
-            buildExporterRepository(getConfig()),
             new ClusterServicesImpl(systemContext.getCluster()),
             systemContext.getBrokerClient(),
             additionalPartitionListeners,
@@ -166,23 +151,6 @@ public final class Broker implements AutoCloseable {
     }
 
     return result;
-  }
-
-  private ExporterRepository buildExporterRepository(final BrokerCfg cfg) {
-    exporterRepository.setLicenseKey(cfg.getLicenseKey());
-    final var exporterEntries = cfg.getExporters().entrySet();
-    for (final var exporterEntry : exporterEntries) {
-      final var id = exporterEntry.getKey();
-      final var exporterCfg = exporterEntry.getValue();
-      try {
-        exporterRepository.load(id, exporterCfg);
-      } catch (final ExporterLoadException | ExternalJarLoadException e) {
-        throw new IllegalStateException(
-            "Failed to load exporter with configuration: " + exporterCfg, e);
-      }
-    }
-
-    return exporterRepository;
   }
 
   public BrokerCfg getConfig() {

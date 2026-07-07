@@ -16,6 +16,7 @@ import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -107,7 +108,11 @@ public final class SystemContextTestFactory {
         singleValueMap(
             physicalTenantIds,
             new PhysicalTenantContext(
-                securityConfiguration, brokerRequestAuthorizationConverter, featureFlags)),
+                securityConfiguration,
+                brokerRequestAuthorizationConverter,
+                featureFlags,
+                brokerCfg,
+                new ExporterRepository())),
         tenantId -> userServices,
         passwordEncoder,
         authConfig -> jwtDecoder,

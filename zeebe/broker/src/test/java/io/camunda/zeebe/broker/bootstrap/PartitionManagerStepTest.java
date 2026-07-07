@@ -20,6 +20,7 @@ import io.atomix.cluster.MemberConfig;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfigurations;
+import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.partitioning.RecoveryPartitionManager;
@@ -224,9 +225,21 @@ class PartitionManagerStepTest {
       final var secCfg = EngineSecurityConfigurations.unauthenticatedAndUnauthorized();
       final var conv = new BrokerRequestAuthorizationConverter(secCfg);
       testBrokerStartupContext.setPhysicalTenantEngineContext(
-          PHYSICAL_TENANT_ID, new PhysicalTenantContext(secCfg, conv, flagsA));
+          PHYSICAL_TENANT_ID,
+          new PhysicalTenantContext(
+              secCfg,
+              conv,
+              flagsA,
+              testBrokerStartupContext.getBrokerConfiguration(),
+              new ExporterRepository()));
       testBrokerStartupContext.setPhysicalTenantEngineContext(
-          secondTenantId, new PhysicalTenantContext(secCfg, conv, flagsB));
+          secondTenantId,
+          new PhysicalTenantContext(
+              secCfg,
+              conv,
+              flagsB,
+              testBrokerStartupContext.getBrokerConfiguration(),
+              new ExporterRepository()));
 
       final var secondFuture = CONCURRENCY_CONTROL.<BrokerStartupContext>createFuture();
       final var secondStep = new PartitionManagerStep(secondTenantId);

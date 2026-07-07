@@ -18,7 +18,6 @@ import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
-import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
@@ -55,6 +54,13 @@ public interface BrokerStartupContext {
 
   BrokerInfo getBrokerInfo();
 
+  /**
+   * Return the broker configuration shared across all physical tenants. This should be used only
+   * for broker-wide configuration. The components that run per physical tenant must use the
+   * configuration from #getPhysicalTenantEngineContext(String physicalTenantId) instead.
+   *
+   * @return
+   */
   BrokerCfg getBrokerConfiguration();
 
   SpringBrokerBridge getSpringBrokerBridge();
@@ -100,8 +106,6 @@ public interface BrokerStartupContext {
   DiskSpaceUsageMonitor getDiskSpaceUsageMonitor();
 
   void setDiskSpaceUsageMonitor(DiskSpaceUsageMonitor diskSpaceUsageMonitor);
-
-  ExporterRepository getExporterRepository();
 
   /** Returns all currently registered partition managers, keyed by physical tenant ID. */
   Map<String, PartitionManager> getPartitionManagers();

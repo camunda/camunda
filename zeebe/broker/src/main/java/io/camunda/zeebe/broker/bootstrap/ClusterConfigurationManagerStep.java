@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+
 import io.camunda.zeebe.broker.partitioning.topology.ClusterChangeExecutorImpl;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.DynamicClusterConfigurationService;
@@ -34,7 +36,12 @@ public class ClusterConfigurationManagerStep
     final ClusterChangeExecutor clusterChangeExecutor =
         new ClusterChangeExecutorImpl(
             brokerStartupContext.getConcurrencyControl(),
-            brokerStartupContext.getExporterRepository(),
+            // Temp: use the default physical tenant engine context to get the exporter repository.
+            // This is a temporary solution until we support multiple physical tenants in dynamic
+            // cluster config module.
+            brokerStartupContext
+                .getPhysicalTenantEngineContext(DEFAULT_PHYSICAL_TENANT_ID)
+                .exporterRepository(),
             brokerStartupContext.getNodeIdProvider(),
             brokerStartupContext.getMeterRegistry(),
             Optional.ofNullable(

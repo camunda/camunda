@@ -109,6 +109,10 @@ public interface PartitionTransitionContext extends PartitionContext {
 
   int getMaxFragmentSize();
 
+  /**
+   * Returns the configuration for the physical tenant of this partition. This configuration
+   * contains both the shared properties and the properties overridden for the physical tenant.
+   */
   BrokerCfg getBrokerCfg();
 
   EngineSecurityConfig getSecurityConfig();

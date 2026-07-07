@@ -29,6 +29,7 @@ import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.security.validation.IdentityInitializationException;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
@@ -602,7 +603,9 @@ final class SystemContextTest {
                 new PhysicalTenantContext(
                     EngineSecurityConfigurations.defaultConfig(),
                     mock(BrokerRequestAuthorizationConverter.class),
-                    flags)),
+                    flags,
+                    new BrokerCfg(),
+                    new ExporterRepository())),
             ignored -> mock(UserServices.class),
             mock(PasswordEncoder.class),
             authConfig -> mock(JwtDecoder.class),
@@ -671,7 +674,9 @@ final class SystemContextTest {
                     new PhysicalTenantContext(
                         configsByTenant.get(tenantId),
                         convertersByTenant.get(tenantId),
-                        FeatureFlags.createDefaultForTests())));
+                        FeatureFlags.createDefaultForTests(),
+                        brokerCfg,
+                        new ExporterRepository())));
     return new SystemContext(
         SystemContext.DEFAULT_SHUTDOWN_TIMEOUT,
         brokerCfg,
