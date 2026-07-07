@@ -251,7 +251,7 @@ True positives are unaffected by design:
 For each active entry, the detector runs:
 
 ```bash
-git log --format=%H -L:<method_name>:<file_path> <merge-base(base, HEAD)>..HEAD
+git log --format=%H -L:<method_name>[(]:<file_path> <merge-base(base, HEAD)>..HEAD
 ```
 
 Git's `-L :funcname:file` matcher uses language-aware function-boundary
@@ -259,13 +259,32 @@ detection (Java's default funcname regex). The first SHA output is the
 most-recent commit that modified the method body within the range. None
 means no modification, so the counter stays at 0.
 
+The `[(]` suffix anchors the regex to the method **declaration** by requiring
+the name to be immediately followed by `(` (google-java-format leaves no space
+before the parameter list). Without it, a short name matches inside a longer
+method header sharing its prefix — a query for `getVersion` would also match
+`getVersionLowerCase(`, and `-L` locks onto whichever declaration appears
+first, tracking the wrong method. The `[(]` character class is used rather than
+an escaped `\(`, which git's `-L` parser rejects with "parentheses not
+balanced".
+
+This detection depends on git's Java funcname driver being active. The repo
+has no `*.java diff=java` gitattributes, so the composite action enables the
+built-in driver for the gate's checkout only (appends `*.java diff=java` to
+`.git/info/attributes`, which is local and not committed) and then verifies it
+took effect via `git check-attr diff`, failing loud otherwise. See
+`action.yml`.
+
 Known limitations:
 
-- **Java overloads** share a method name; they are treated as a single unit.
-  Modifying any overload of the same name counts as "fix attempted." Worth
-  noting in PR review but rarely problematic in practice.
-- **Renamed / moved tests** that change file or class are not followed.
-  Use `ci:flaky-test-bypass` for those.
+- **Java overloads** share a method name; since all overloads share `name(`,
+  they are treated as a single unit. Modifying any overload of the same name
+  counts as "fix attempted." Worth noting in PR review but rarely problematic
+  in practice.
+- **Renamed / moved tests** that change file or class are not followed by
+  `-L`. Such a change also re-keys the entry (the key is
+  `package.class.method`), so the test simply re-alerts fresh; use
+  `ci:flaky-test-bypass` if that is unwanted.
 
 ## Per-test counter semantics
 
