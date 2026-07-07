@@ -57,8 +57,7 @@ final class RestoreParameterValidatorTest {
     // when / then
     assertThatExceptionOfType(IllegalArgumentException.class)
         .isThrownBy(() -> RestoreParameterValidator.validate(false, EARLIER, LATER, false))
-        .withMessage(
-            "Time range restore (--from/--to) is not supported for the configured secondary storage.");
+        .withMessage("Time range restore (--from/--to) is only supported for continuous backups.");
   }
 
   @Test
@@ -66,8 +65,7 @@ final class RestoreParameterValidatorTest {
     // when / then
     assertThatExceptionOfType(IllegalArgumentException.class)
         .isThrownBy(() -> RestoreParameterValidator.validate(false, EARLIER, NULL_INSTANT, false))
-        .withMessage(
-            "Time range restore (--from/--to) is not supported for the configured secondary storage.");
+        .withMessage("Time range restore (--from/--to) is only supported for continuous backups.");
   }
 
   @Test
