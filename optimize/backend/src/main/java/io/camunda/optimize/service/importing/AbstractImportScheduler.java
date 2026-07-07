@@ -32,11 +32,13 @@ public abstract class AbstractImportScheduler<T extends SchedulerConfig> {
 
   public synchronized void startImportScheduling() {
     LOG.info("Start scheduling import from {}.", dataImportSourceDto);
+    if (importMediators.isEmpty()) {
+      return;
+    }
     if (mediatorExecutor == null || mediatorExecutor.isShutdown()) {
-      final int poolSize = Math.max(1, importMediators.size());
       mediatorExecutor =
           Executors.newScheduledThreadPool(
-              poolSize,
+              importMediators.size(),
               r -> {
                 final Thread t = new Thread(r, getClass().getSimpleName() + "-importer");
                 t.setDaemon(true);
@@ -49,7 +51,9 @@ public abstract class AbstractImportScheduler<T extends SchedulerConfig> {
   public synchronized void stopImportScheduling() {
     LOG.info("Stop scheduling import from {}.", dataImportSourceDto);
     if (mediatorExecutor != null) {
-      mediatorExecutor.shutdown();
+      // shutdownNow (rather than shutdown) cancels already-scheduled backoff-delayed reschedule
+      // tasks so a stopped scheduler cannot keep running mediators in the background.
+      mediatorExecutor.shutdownNow();
     }
   }
 
