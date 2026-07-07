@@ -185,22 +185,29 @@ public class TopicDataController {
             });
   }
 
-  /** Same binary layout the client SDK parses: firstPos|lastPos|highWatermark|len|batchBytes. */
+  /**
+   * Same binary layout the client SDK parses: firstPos|lastPos|highWatermark|len|batchBytes. The
+   * single allocation here is the gateway's only copy of the batch bytes on this path: it copies
+   * straight from the transport buffer that {@link FetchResponse} windows into.
+   */
   private static byte[] toClientFetchResponse(final FetchResponse response) {
-    final byte[] data = response.getData();
-    return ByteBuffer.allocate(Long.BYTES * 3 + Integer.BYTES + data.length)
+    final int dataLength = response.getDataLength();
+    final byte[] frame = new byte[Long.BYTES * 3 + Integer.BYTES + dataLength];
+    final var buffer = ByteBuffer.wrap(frame);
+    buffer
         .putLong(response.getFirstPosition())
         .putLong(response.getLastPosition())
         .putLong(response.getHighWatermark())
-        .putInt(data.length)
-        .put(data)
-        .array();
+        .putInt(dataLength);
+    response.getData().getBytes(0, frame, buffer.position(), dataLength);
+    return frame;
   }
 
   /** Decodes the fetched batch into individual entries at or after {@code offset}. */
   private static FetchResponseJson toFetchResponseJson(
       final FetchResponse response, final long offset) {
-    final byte[] data = response.getData();
+    final byte[] data = new byte[response.getDataLength()];
+    response.getData().getBytes(0, data, 0, data.length);
     final var builder =
         FetchResponseJson.newBuilder()
             .setFirstBatchPosition(response.getFirstPosition())

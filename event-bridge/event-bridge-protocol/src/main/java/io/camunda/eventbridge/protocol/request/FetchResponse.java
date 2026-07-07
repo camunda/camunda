@@ -12,11 +12,16 @@ import io.camunda.eventbridge.protocol.FetchResponseDecoder;
 import io.camunda.eventbridge.protocol.MessageHeaderDecoder;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Decodes a {@code FetchResponse} SBE message. The broker encodes the same wire layout, but streams
  * the {@code data} bytes zero-copy via {@code sendfile}; from the reader's side it is an ordinary
  * SBE message.
+ *
+ * <p>{@link #getData()} is a window into the wrapped transport buffer, not a copy: it is only valid
+ * as long as that buffer is neither reused nor freed. Callers that need the bytes beyond the
+ * response lifecycle must copy them out.
  */
 public class FetchResponse implements BufferReader {
 
@@ -27,7 +32,7 @@ public class FetchResponse implements BufferReader {
   private long firstPosition;
   private long lastPosition = -1;
   private long highWatermark;
-  private byte[] data = new byte[0];
+  private final UnsafeBuffer data = new UnsafeBuffer(0, 0);
 
   public ErrorCode getErrorCode() {
     return errorCode;
@@ -45,8 +50,13 @@ public class FetchResponse implements BufferReader {
     return highWatermark;
   }
 
-  public byte[] getData() {
+  /** Window over the fetched batch bytes inside the wrapped transport buffer. */
+  public DirectBuffer getData() {
     return data;
+  }
+
+  public int getDataLength() {
+    return data.capacity();
   }
 
   @Override
@@ -58,15 +68,13 @@ public class FetchResponse implements BufferReader {
     highWatermark = bodyDecoder.highWatermark();
 
     final int dataLength = bodyDecoder.dataLength();
-    // Guard against a corrupt/forged var-data length before allocating: it cannot exceed the
+    // Guard against a corrupt/forged var-data length before wrapping: it cannot exceed the
     // bytes actually available in this message.
     if (dataLength < 0 || dataLength > length) {
       throw new IllegalArgumentException(
           "FetchResponse dataLength " + dataLength + " out of bounds for message length " + length);
     }
-    data = new byte[dataLength];
-    if (dataLength > 0) {
-      bodyDecoder.getData(data, 0, dataLength);
-    }
+    final int dataOffset = bodyDecoder.limit() + FetchResponseDecoder.dataHeaderLength();
+    data.wrap(buffer, dataOffset, dataLength);
   }
 }
