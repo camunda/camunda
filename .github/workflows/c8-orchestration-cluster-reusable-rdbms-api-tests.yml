@@ -24,6 +24,9 @@ on:
 permissions:
   contents: read
 
+env:
+  TEST_OWNER: '@camunda/test-automation-team'
+
 jobs:
   nightly-build-rdbms-dist:
     name: "Build Camunda distribution (${{ inputs.branch }})"

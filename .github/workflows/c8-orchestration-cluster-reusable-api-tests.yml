@@ -22,6 +22,9 @@ on:
 permissions:
   contents: read
 
+env:
+  TEST_OWNER: '@camunda/test-automation-team'
+
 jobs:
   nightly-api-tests:
     name: API Tests (${{ inputs.branch }} - Mode ${{ inputs.camunda_mode }})

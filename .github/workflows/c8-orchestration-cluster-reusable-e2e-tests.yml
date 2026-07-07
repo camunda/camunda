@@ -21,6 +21,9 @@ on:
 permissions:
   contents: read
 
+env:
+  TEST_OWNER: '@camunda/test-automation-team'
+
 jobs:
   nightly-e2e-tests:
     name: E2E Tests (${{ inputs.branch }} - Tasklist ${{ inputs.tasklist_mode }} mode)

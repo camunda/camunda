@@ -66,7 +66,20 @@
 /.github/workflows/ci-optimize.yml                        @camunda/core-features
 /.github/workflows/optimize-check-c4.yml                  @camunda/core-features
 /.github/workflows/optimize-e2e-tests-sm-nightly.yml      @camunda/core-features
-/.github/workflows/optimize-ci-data-upgrade-nightly.yml   @camunda/core-features
+/.github/workflows/optimize-ci-data-upgrade-nightly.yml                       @camunda/core-features
+/.github/workflows/assign-urgency-to-issues-cron.yml                          @camunda/core-features
+/.github/workflows/c8-orchestration-cluster-nightly-metrics-report.yml        @camunda/core-features
+/.github/workflows/c8-orchestration-cluster-responses-regenerate.yml          @camunda/core-features
+/.github/workflows/frontend-sbom-snyk-nightly.yml                             @camunda/core-features
+/.github/workflows/optimize-release-optimize-c8-only.yml                      @camunda/core-features
+/.github/workflows/publish-zod-schemas.yml                                    @camunda/core-features
+/.github/workflows/verify-x-added-in-version-annotations.yml                 @camunda/core-features
+/.github/workflows/zeebe-aws-aurora-dispatch-tests.yml                        @camunda/core-features
+/.github/workflows/zeebe-aws-os-dispatch-tests.yml                            @camunda/core-features
+/.github/workflows/zeebe-daily-qa.yml                                         @camunda/core-features
+/.github/workflows/zeebe-snyk.yml                                             @camunda/core-features
+/.github/workflows/zeebe-version-compatibility.yml                            @camunda/core-features
+/.github/workflows/zeebe-weekly-e2e.yml                                       @camunda/core-features
 
 # Unit Test Suites
 /operate/common/src/test/java/io/camunda/operate/OperateCoreFeaturesTestSuite.java    @camunda/core-features
@@ -86,7 +99,8 @@
 /.github/workflows/zeebe-search-integration-tests.yml             @camunda/data-layer
 /.github/workflows/operate-test-backup-restore.yml                @camunda/data-layer
 /.github/workflows/operate-test-importer.yml                      @camunda/data-layer
-/.github/workflows/ci-operate.yml
+/.github/workflows/data-layer-nightly-tests.yml                   @camunda/data-layer
+/.github/workflows/ci-operate.yml                                 @camunda/core-features @camunda/data-layer
 
 # Unit Test Suites
 /operate/common/src/test/java/io/camunda/operate/OperateDataLayerTestSuite.java    @camunda/data-layer
@@ -193,6 +207,31 @@
 /library-parent/ @camunda/c8-java-sdk
 /testing/        @camunda/c8-testing
 
+# CI Files
+/.github/workflows/c8-orchestration-cluster-forward-compatibility-tests.yml          @camunda/camundaex
+/.github/workflows/camunda-client-compatibility-test.yml                             @camunda/camundaex
+/.github/workflows/camunda-client-compatibility-test-trigger.yml                     @camunda/camundaex
+/.github/workflows/camunda-process-test-compatibility-trigger.yml                    @camunda/camundaex
+/.github/workflows/camunda-spring-boot-starter-compatibility-test.yml               @camunda/camundaex
+/.github/workflows/camunda-spring-boot-starter-compatibility-test-trigger.yml       @camunda/camundaex
+
 # C8 REST OpenAPI specification
 /zeebe/gateway-protocol/src/main/proto/v2/ @camunda/c8-api-team
 /docs/rest-api-endpoint-guidelines.md @camunda/c8-api-team
+
+############################
+## Test Automation Team   ##
+############################
+
+/.github/workflows/c8-orchestration-cluster-e2e-nightly-triage.yml                @camunda/test-automation-team
+/.github/workflows/c8-orchestration-cluster-e2e-nightly-close-stale-fix-prs.yml   @camunda/test-automation-team
+/.github/workflows/c8-orchestration-cluster-nightly-8.7-api-es.yml                @camunda/test-automation-team
+/.github/workflows/c8-orchestration-cluster-nightly-8.7-e2e.yml                   @camunda/test-automation-team
+/.github/workflows/c8-orchestration-cluster-nightly-8.8-api-es.yml                @camunda/test-automation-team
+/.github/workflows/c8-orchestration-cluster-nightly-8.8-e2e.yml                   @camunda/test-automation-team
+/.github/workflows/c8-orchestration-cluster-nightly-8.9-api-es.yml                @camunda/test-automation-team
+/.github/workflows/c8-orchestration-cluster-nightly-8.9-api-rdbms.yml             @camunda/test-automation-team
+/.github/workflows/c8-orchestration-cluster-nightly-8.9-e2e.yml                   @camunda/test-automation-team
+/.github/workflows/c8-orchestration-cluster-nightly-main-api-es.yml               @camunda/test-automation-team
+/.github/workflows/c8-orchestration-cluster-nightly-main-api-rdbms.yml            @camunda/test-automation-team
+/.github/workflows/c8-orchestration-cluster-nightly-main-e2e.yml                  @camunda/test-automation-team
