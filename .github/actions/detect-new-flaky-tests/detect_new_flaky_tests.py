@@ -253,7 +253,16 @@ def method_last_modified_in_range(file_path: str, method_name: str,
     """
     if not file_path or not method_name or not base_sha or not head_sha:
         return None
-    safe = re.escape(method_name)
+    # Anchor the funcname regex to the method *declaration* by requiring the
+    # name to be immediately followed by '(' (google-java-format leaves no
+    # space before the parameter list). Without this, a short name matches
+    # inside a longer method header sharing its prefix — e.g. a query for
+    # `getVersion` also matches `getVersionLowerCase(`, and git -L locks onto
+    # whichever declaration appears first, tracking the wrong method and
+    # returning the wrong "last modified" SHA. Use the '[(]' character class,
+    # not an escaped '\(' — git's -L parser rejects the latter with
+    # "parentheses not balanced".
+    safe = re.escape(method_name) + "[(]"
     rc, out, err = _run_git(
         ["log", "--format=%H", f"-L:{safe}:{file_path}",
          f"{base_sha}..{head_sha}"],
