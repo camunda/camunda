@@ -441,6 +441,7 @@ components:
         - tags
         - userTask
         - priority
+        - leaseToken
       properties:
         type:
           description: The type of the job (should match what was requested).
@@ -537,6 +538,12 @@ components:
             Jobs created before 8.10 have no stored priority; the API returns 0 for such jobs.
           type: integer
           format: int32
+        leaseToken:
+          description: |
+            The lease token identifying this activation. This is `null` when the job was
+            activated without a lease.
+          nullable: true
+          type: string
       x-properties-added-in-version:
         - propertyName: kind
           addedInVersion: "8.8"
@@ -551,6 +558,8 @@ components:
         - propertyName: priority
           addedInVersion: "8.10"
         - propertyName: businessId
+          addedInVersion: "8.10"
+        - propertyName: leaseToken
           addedInVersion: "8.10"
 
     UserTaskProperties:
