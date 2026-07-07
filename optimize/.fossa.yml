@@ -14,3 +14,9 @@ maven:
   - provided
   - system
   - test
+
+targets:
+  exclude:
+    # Maven is the license source of truth. The Gradle build is a parallel experiment;
+    # exclude it so FOSSA never runs its Gradle analyzer (which also lacks config-cache support).
+    - type: gradle

@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.jboss.forge.roaster.Roaster;
@@ -46,19 +45,35 @@ public final class DiscriminatorModelPostProcessor {
 
   private static final String JSON_IGNORE_PROPS =
       "com.fasterxml.jackson.annotation.JsonIgnoreProperties";
-  private static final String JSON_TYPE_INFO =
-      "com.fasterxml.jackson.annotation.JsonTypeInfo";
-  private static final String JSON_SUB_TYPES =
-      "com.fasterxml.jackson.annotation.JsonSubTypes";
+  private static final String JSON_TYPE_INFO = "com.fasterxml.jackson.annotation.JsonTypeInfo";
+  private static final String JSON_SUB_TYPES = "com.fasterxml.jackson.annotation.JsonSubTypes";
 
   public static void main(final String[] args) throws IOException {
-    if (args.length != 2) {
+    if (args.length != 3) {
       throw new IllegalArgumentException(
-          "Usage: DiscriminatorModelPostProcessor <specDir> <genDir>");
+          "Usage: DiscriminatorModelPostProcessor <specDir> <inputGenDir> <outputGenDir>");
     }
     final Path specDir = Path.of(args[0]);
-    final Path genDir = Path.of(args[1]);
-    new DiscriminatorModelPostProcessor().run(specDir, genDir);
+    final Path inputGenDir = Path.of(args[1]);
+    final Path outputGenDir = Path.of(args[2]);
+    if (!inputGenDir.equals(outputGenDir)) {
+      copyDir(inputGenDir, outputGenDir);
+    }
+    new DiscriminatorModelPostProcessor().run(specDir, outputGenDir);
+  }
+
+  private static void copyDir(final Path src, final Path dst) throws IOException {
+    try (final Stream<Path> files = Files.walk(src)) {
+      for (final Path source : (Iterable<Path>) files::iterator) {
+        final Path dest = dst.resolve(src.relativize(source));
+        if (Files.isDirectory(source)) {
+          Files.createDirectories(dest);
+        } else {
+          Files.createDirectories(dest.getParent());
+          Files.copy(source, dest, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        }
+      }
+    }
   }
 
   @SuppressWarnings("unchecked")
@@ -212,8 +227,7 @@ public final class DiscriminatorModelPostProcessor {
 
     final String content = licenseHeader + iface;
     Files.writeString(parentFile, content);
-    System.out.printf(
-        "[DiscriminatorModelPostProcessor] rewrote %s as interface%n", parentName);
+    System.out.printf("[DiscriminatorModelPostProcessor] rewrote %s as interface%n", parentName);
     return true;
   }
 
