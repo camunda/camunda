@@ -87,6 +87,12 @@ elasticsearch:
   # -- Set to true to deploy an Elasticsearch cluster via the ECK operator.
   enabled: false
 
+  # -- The name of the underlying Elasticsearch resource.
+  # Changing this also changes the names of the other resources deployed by the
+  # ECK Operator, like the Kubernetes Services exposing the access to
+  # Elasticsearch.
+  name: elasticsearch
+
   # -- Elasticsearch version to deploy. Must be within the range supported by the installed ECK operator (>= 8.x)
   # See https://www.elastic.co/docs/deploy-manage/deploy/cloud-on-k8s#stack-compatibility
   version: 8.18.0

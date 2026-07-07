@@ -2,15 +2,20 @@
 Deploys an ECK-managed Elasticsearch cluster.
 ECK names the underlying Kubernetes service `<metadata.name>-es-http`, in this case `elasticsearch-es-http`.
 Services which are connecting to Elasticsearch **must** be configured to use this service name to access Elasticsearch.
+
+References:
+
+* https://www.elastic.co/docs/deploy-manage/deploy/cloud-on-k8s/elasticsearch-configuration
+* https://www.elastic.co/docs/reference/cloud-on-k8s/api-reference
 */ -}}
 {{- if .Values.elasticsearch.enabled -}}
 apiVersion: elasticsearch.k8s.elastic.co/v1
 kind: Elasticsearch
 metadata:
-  name: elasticsearch
+  name: {{ .Values.elasticsearch.name }}
   labels:
-    camunda.io/purpose: load-test
     camunda.io/created-by: "{{ .Values.author }}"
+    camunda.io/purpose: load-test
 spec:
   version: {{ .Values.elasticsearch.version }}
 
@@ -37,7 +42,10 @@ spec:
     podTemplate:
       metadata:
         labels:
-          app.kubernetes.io/component: elasticsearch
+          app.kubernetes.io/component: master
+          app.kubernetes.io/name: elasticsearch
+          camunda.io/created-by: "{{ .Values.author }}"
+          camunda.io/purpose: load-test
 
       spec:
         containers:
