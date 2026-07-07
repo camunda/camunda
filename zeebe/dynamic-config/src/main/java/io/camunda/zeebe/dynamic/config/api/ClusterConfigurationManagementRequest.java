@@ -14,8 +14,10 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 
 /** Defines the supported requests for the configuration management. */
 public sealed interface ClusterConfigurationManagementRequest {
@@ -132,4 +134,12 @@ public sealed interface ClusterConfigurationManagementRequest {
       return new ModeChangeRequest(Mode.PROCESSING, dryRun);
     }
   }
+
+  record RestoreRequest(
+      @Nullable List<Long> backupIds,
+      @Nullable String from,
+      @Nullable String to,
+      boolean continuousBackups,
+      boolean dryRun)
+      implements ClusterConfigurationManagementRequest {}
 }

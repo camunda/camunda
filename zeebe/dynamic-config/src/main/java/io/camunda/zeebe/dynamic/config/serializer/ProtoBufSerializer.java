@@ -26,6 +26,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
@@ -1402,6 +1403,41 @@ public class ProtoBufSerializer
     try {
       final var request = Requests.ModeChangeRequest.parseFrom(encodedRequest);
       return new ModeChangeRequest(toMode(request.getMode()), request.getDryRun());
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
+  }
+
+  @Override
+  public byte[] encodeRestoreRequest(final RestoreRequest request) {
+    final var builder = Requests.RestoreRequest.newBuilder();
+    if (request.backupIds() != null) {
+      builder.addAllBackupIds(request.backupIds());
+    }
+    if (request.from() != null) {
+      builder.setFrom(request.from());
+    }
+    if (request.to() != null) {
+      builder.setTo(request.to());
+    }
+    builder.setContinuousBackups(request.continuousBackups());
+    builder.setDryRun(request.dryRun());
+
+    return builder.build().toByteArray();
+  }
+
+  @Override
+  public RestoreRequest decodeRestoreRequest(final byte[] encodedRequest) {
+    try {
+      final var request = Requests.RestoreRequest.parseFrom(encodedRequest);
+      final String from = request.hasFrom() ? request.getFrom() : null;
+      final String to = request.hasTo() ? request.getTo() : null;
+      return new RestoreRequest(
+          request.getBackupIdsList(),
+          from,
+          to,
+          request.getContinuousBackups(),
+          request.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }
