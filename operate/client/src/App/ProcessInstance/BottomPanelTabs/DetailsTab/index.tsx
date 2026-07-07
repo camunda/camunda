@@ -25,7 +25,13 @@ import {useMessageSubscriptions} from 'modules/queries/messageSubscriptions/useM
 import {getClientConfig} from 'modules/utils/getClientConfig';
 import {mergePathname} from 'modules/request/mergePathname';
 import {getExecutionDuration} from './getExecutionDuration';
-import {EmptyMessageContainer, Container, Callout} from './styled';
+import {
+  EmptyMessageContainer,
+  Container,
+  Callout,
+  SectionContainer,
+  SectionHeading,
+} from './styled';
 import {StructuredList} from 'modules/components/StructuredList';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useAgentInstanceForElement} from 'modules/queries/agentInstances/useAgentInstanceForElement';
@@ -514,18 +520,6 @@ const DetailsTab: React.FC = () => {
             subtitle="Consider migrating to Camunda user tasks."
           />
         )}
-      {!showAgentInstance && clientConfig.waitStatesEnabled && (
-        <WaitingStatus waitStates={elementWaitStates} />
-      )}
-      <StructuredList
-        label="Element Instance Details"
-        headerSize="sm"
-        headerColumns={[
-          {cellContent: 'Property', width: '30%'},
-          {cellContent: 'Value', width: '70%'},
-        ]}
-        rows={rows}
-      />
       {showAgentInstance && (
         <AgentDetails
           agentInstance={agentInstance}
@@ -534,6 +528,21 @@ const DetailsTab: React.FC = () => {
           selectedElementInstanceKey={elementInstanceKey}
         />
       )}
+      {!showAgentInstance && clientConfig.waitStatesEnabled && (
+        <WaitingStatus waitStates={elementWaitStates} />
+      )}
+      <SectionContainer>
+        <SectionHeading>Element Instance</SectionHeading>
+        <StructuredList
+          label="Element Instance Details"
+          headerSize="sm"
+          headerColumns={[
+            {cellContent: 'Property', width: '30%'},
+            {cellContent: 'Value', width: '70%'},
+          ]}
+          rows={rows}
+        />
+      </SectionContainer>
     </Container>
   );
 };

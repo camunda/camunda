@@ -986,6 +986,31 @@ describe('<DetailsTab />', () => {
     expect(screen.getByText('Waiting for job: customJob')).toBeInTheDocument();
   });
 
+  it('should render AgentDetails before the element instance details', async () => {
+    mockFetchElementInstance('123456789').withSuccess(mockElementInstance);
+    mockSearchAgentInstances().withSuccess(
+      searchResult([mockAgentInstance({elementId: 'Task_1'})]),
+    );
+
+    render(<DetailsTab />, {
+      wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
+    });
+
+    const agentHeading = await screen.findByRole('heading', {
+      name: 'AI Agent',
+      level: 5,
+    });
+    const elementInstanceHeading = await screen.findByRole('heading', {
+      name: 'Element Instance',
+      level: 5,
+    });
+
+    expect(
+      agentHeading.compareDocumentPosition(elementInstanceHeading) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it('should render the WaitingStatus before the element instance details', async () => {
     mockFetchElementInstance('123456789').withSuccess({
       ...mockElementInstance,
@@ -1018,11 +1043,17 @@ describe('<DetailsTab />', () => {
       wrapper: getWrapper('elementId=Task_1&elementInstanceKey=123456789'),
     });
 
-    const waitingStatus = await screen.findByTestId('waiting-status');
-    const elementInstanceKey = await screen.findByText('Element Instance Key');
+    const waitingStatusHeading = await screen.findByRole('heading', {
+      name: 'Status',
+      level: 5,
+    });
+    const elementInstanceHeading = await screen.findByRole('heading', {
+      name: 'Element Instance',
+      level: 5,
+    });
 
     expect(
-      waitingStatus.compareDocumentPosition(elementInstanceKey) &
+      waitingStatusHeading.compareDocumentPosition(elementInstanceHeading) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });
