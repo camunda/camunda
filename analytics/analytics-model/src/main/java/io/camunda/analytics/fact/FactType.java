@@ -8,9 +8,9 @@
 package io.camunda.analytics.fact;
 
 /**
- * The kind of entity a {@link Fact} describes. This replaces routing by concrete fact class ({@code
- * TypeRoutingAggregation} keyed on {@code Class}) with a stable tag a dataset declares its source
- * as — so one generic fact type serves every metric.
+ * The kind of entity a {@link Fact} describes. This replaces routing by concrete fact class (an
+ * aggregation dispatch keyed on {@code Class}) with a stable tag a dataset declares its source as —
+ * so one generic fact type serves every metric.
  */
 public enum FactType {
   PROCESS_INSTANCE,

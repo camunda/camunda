@@ -15,7 +15,7 @@ import java.util.Optional;
  * Test-only {@link Aggregation} double: folds facts by key into an in-memory map, buffering until
  * {@link #flush()} (or {@link #close()}), and exposes the merged value per key via {@link #get}.
  * Used by the processor/topology/transforming plumbing tests to assert that facts reach a rollup —
- * the production materialization model is {@link MaterializedAggregation}/{@link ResultSink},
+ * the production materialization model is {@link SegmentMergingAggregation}/{@link ResultSink},
  * exercised by the aggregation tests, not this helper.
  *
  * @param <F> the fact type
