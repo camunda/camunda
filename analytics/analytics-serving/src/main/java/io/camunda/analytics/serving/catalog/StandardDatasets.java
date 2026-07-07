@@ -222,6 +222,20 @@ public final class StandardDatasets {
                     Map.of("op", "eq", "threshold", "0")))
             .window(ONE_MINUTE_MS)
             .lateness(GRACE_MS)
+            .build(),
+        // Non-refund completed-dispute counts and duration percentiles grouped by the process-set
+        // 'type' variable (the bank-dispute classification) — the standard exerciser of the
+        // name-targeted variable enrichment (grouping AND filtering by var.* fields) on the
+        // realistic load.
+        DatasetDeclaration.builder("dispute-types", FactType.PROCESS_INSTANCE)
+            .filterEquals("transition", Transition.COMPLETED.name())
+            .filterEquals("var.isRefund", "false")
+            .dimension("bpmnProcessId", DimensionType.STRING)
+            .dimension("var.type", DimensionType.STRING)
+            .meter(Meter.of("count", MeterCatalog.COUNT))
+            .meter(Meter.of("p95", MeterCatalog.PERCENTILE, "durationMs"))
+            .window(ONE_MINUTE_MS)
+            .lateness(GRACE_MS)
             .build());
   }
 
