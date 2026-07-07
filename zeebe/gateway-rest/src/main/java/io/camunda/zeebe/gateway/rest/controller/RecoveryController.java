@@ -43,7 +43,7 @@ public final class RecoveryController {
 
   private static final Logger LOG = LoggerFactory.getLogger(RecoveryController.class);
   private static final String CONTINUOUS_BACKUPS_PROPERTY =
-      "camunda.data.primary-storage.backup.continous";
+      "camunda.data.primary-storage.backup.continuous";
 
   private final ClusterConfigurationManagementRequestSender clusterConfigurationRequestSender;
   private final Environment environment;
