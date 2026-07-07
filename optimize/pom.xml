@@ -60,7 +60,7 @@
 
     <!-- DATABASE -->
     <!-- Elasticsearch-->
-    <version.elasticsearch-java-client>8.19.17</version.elasticsearch-java-client>
+    <version.elasticsearch-java-client>8.19.18</version.elasticsearch-java-client>
     <version.elasticsearch>8.19.17</version.elasticsearch>
     <!-- The least supported elasticsearch version we should test against-->
     <elasticsearch.test.version>8.19.11</elasticsearch.test.version>
