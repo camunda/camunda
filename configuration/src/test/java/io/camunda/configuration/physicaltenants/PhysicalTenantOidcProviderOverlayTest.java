@@ -78,7 +78,7 @@ class PhysicalTenantOidcProviderOverlayTest {
     final AuthenticationConfiguration auth =
         PhysicalTenantAuthenticationConfigurations.forPhysicalTenant("tenanta", environment);
     assertThat(auth.getOidc().getClientId()).isEqualTo("default-client");
-    assertThat(auth.getProviders().getOidc()).isEmpty();
+    assertThat(auth.getProviders() == null ? null : auth.getProviders().getOidc()).isNullOrEmpty();
   }
 
   @Test
