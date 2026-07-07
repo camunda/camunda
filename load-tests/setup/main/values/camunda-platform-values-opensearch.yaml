@@ -6,7 +6,7 @@ global:
     enabled: true
     url:
       protocol: http
-      host: opensearch
+      host: "opensearch"
       port: 9200
 
 ########################################################################################

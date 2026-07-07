@@ -8,6 +8,9 @@ apiVersion: elasticsearch.k8s.elastic.co/v1
 kind: Elasticsearch
 metadata:
   name: elasticsearch
+  labels:
+    camunda.io/purpose: load-test
+    camunda.io/created-by: "{{ .Values.author }}"
 spec:
   version: {{ .Values.elasticsearch.version }}
 
