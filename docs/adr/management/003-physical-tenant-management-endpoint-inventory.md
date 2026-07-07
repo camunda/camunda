@@ -70,19 +70,39 @@ Per-PT endpoints exist in both unprefixed (default tenant) and
 cluster-admin). Exact resource naming (`backups/runtime` vs `backup`,
 singular/plural) is finalized in OpenAPI review; the table fixes semantics.
 
-|                            Endpoint                            |  Scope  |                                                                                   Behavior                                                                                    |
-|----------------------------------------------------------------|---------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `POST /v2/backups/runtime`                                     | per PT  | Trigger runtime backup of the tenant's partition group; 202 + backupId. Mirrors actuator `backupRuntime` semantics incl. error mapping (409 exists, 502 incomplete topology). |
-| `GET /v2/backups/runtime[/{backupId}]`                         | per PT  | List / status, aggregated over the tenant's partitions.                                                                                                                       |
-| `DELETE /v2/backups/runtime/{backupId}`                        | per PT  | Delete backup.                                                                                                                                                                |
-| `POST /v2/backups/history` + GET/DELETE                        | per PT  | ES/OS clusters only (endpoint absent on RDBMS clusters, as today via `@ConditionalOnSecondaryStorageType`). Uses the tenant's `BackupRepository` (DL task).                   |
-| `POST /v2/exporting/pause?soft=` / `POST /v2/exporting/resume` | per PT  | Pause/resume exporting on the tenant's partitions only. In REST because backup is in REST — a backup procedure must not straddle two surfaces.                                |
-| `GET /cluster/v2/status`                                       | cluster | Per ADR 001 D4 (per-tenant statuses + aggregate; doubles as tenant list).                                                                                                     |
-| `GET /cluster/v2/topology`                                     | cluster | Per ADR 001 D5 (all groups, grouped by tenant).                                                                                                                               |
-| `POST /cluster/v2/backups/runtime`                             | cluster | Fan-out to every PT — contract in D2.                                                                                                                                         |
-| `GET /cluster/v2/backups/runtime/{backupId}`                   | cluster | Status per tenant for that id, plus aggregate state.                                                                                                                          |
-| `POST /cluster/v2/backups/history` + GET                       | cluster | Same fan-out contract, ES/OS only.                                                                                                                                            |
-| `POST /cluster/v2/exporting/{pause\|resume}`                   | cluster | All tenants.                                                                                                                                                                  |
+The per-PT surface must reach **full parity** with the corresponding
+actuator operations (`BackupEndpoint`, `BackupController`,
+`ExportingEndpoint`): the per-PT REST endpoints are the *only* management
+access a tenant principal has, so any actuator operation without a REST
+sibling would silently remain operator-only. The OpenAPI review must diff
+the spec against the actuator operation set as a completeness check.
+
+Per-PT endpoints (unprefixed = default tenant):
+
+|                            Endpoint                            |                                                                                                                                                                                                          Behavior                                                                                                                                                                                                          |
+|----------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `POST /v2/backups/runtime`                                     | Trigger runtime backup of the tenant's partition group; 202 + backupId. `backupId` in the body is required in manual mode and **forbidden** when continuous backups or a backup/checkpoint schedule is enabled (the id is generated) — same validation as the actuator (`BackupEndpoint.take()`/`take(long)`). Same error mapping (400 invalid id, 409 exists / concurrent scaling, 502 incomplete topology, 504 timeout). |
+| `GET /v2/backups/runtime`                                      | List backups, aggregated over the tenant's partitions; optional id-prefix filter (query param, e.g. `?prefix=12*`) replacing the actuator's `{prefix*}` path selector.                                                                                                                                                                                                                                                     |
+| `GET /v2/backups/runtime/{backupId}`                           | Status of one backup, aggregated over the tenant's partitions.                                                                                                                                                                                                                                                                                                                                                             |
+| `DELETE /v2/backups/runtime/{backupId}`                        | Delete backup.                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `GET /v2/backups/runtime/state`                                | Per-partition checkpoint states, backup states, and backup ranges for the tenant's group (actuator `GET backupRuntime/state`).                                                                                                                                                                                                                                                                                             |
+| `POST /v2/backups/runtime/state/sync`                          | Re-sync checkpoint/backup metadata from the tenant's backup store (post-restore/DR recovery); returns the updated state (actuator `POST backupRuntime/state/sync`).                                                                                                                                                                                                                                                        |
+| `DELETE /v2/backups/runtime/state`                             | Delete the tenant's runtime backup state (actuator `DELETE backupRuntime/state`).                                                                                                                                                                                                                                                                                                                                          |
+| `POST /v2/backups/history`                                     | Trigger history backup; returns the scheduled snapshot names. ES/OS clusters only (endpoint absent on RDBMS clusters, as today via `@ConditionalOnSecondaryStorageType`). Uses the tenant's `BackupRepository` (DL task).                                                                                                                                                                                                  |
+| `GET /v2/backups/history[/{backupId}]`                         | Status by id / list; the list carries the actuator's `verbose` and `pattern` query parameters. ES/OS only.                                                                                                                                                                                                                                                                                                                 |
+| `DELETE /v2/backups/history/{backupId}`                        | Delete history backup. ES/OS only.                                                                                                                                                                                                                                                                                                                                                                                         |
+| `POST /v2/exporting/pause?soft=` / `POST /v2/exporting/resume` | Pause/resume exporting on the tenant's partitions only. In REST because backup is in REST — a backup procedure must not straddle two surfaces.                                                                                                                                                                                                                                                                             |
+
+Cluster-wide endpoints: **every backup and exporting operation above has a
+`/cluster/v2/...` sibling** that fans out to all tenants and returns
+responses grouped by `physicalTenantId` (triggers follow the D2 contract;
+reads aggregate per tenant plus an overall state). Enumerated once here
+rather than per row; the OpenAPI spec lists them individually. In addition:
+
+|          Endpoint          |                                 Behavior                                  |
+|----------------------------|---------------------------------------------------------------------------|
+| `GET /cluster/v2/status`   | Per ADR 001 D4 (per-tenant statuses + aggregate; doubles as tenant list). |
+| `GET /cluster/v2/topology` | Per ADR 001 D5 (all groups, grouped by tenant).                           |
 
 Restore endpoints are **not** part of this milestone: the Restore API epic
 (Panos) owns them, including per-PT support; this inventory reserves no
@@ -111,6 +131,16 @@ decision), not an atomic snapshot:
   of sibling backups when one tenant's backup later fails. (A "watch this
   set of backup ids" convenience API is a possible later addition, not
   8.10 scope.)
+- **Continuous/scheduled mode caveat**: the shared caller-supplied id only
+  applies to manual-mode backups. When a tenant has continuous backups or
+  a backup/checkpoint schedule enabled, ids are generated and an explicit
+  id is rejected (`BackupEndpoint.take()`). Since backup configuration is
+  per-PT, tenants of one cluster may be in different modes. The cluster
+  trigger therefore: with an explicit id, fails 400 if *any* tenant is in
+  generated-id mode; without an id, fails 400 if *any* tenant is in
+  manual mode, and otherwise returns the generated per-tenant ids. Mixed
+  configurations get no best-effort behavior — the operator must fall back
+  to per-tenant triggers.
 
 ### D3. Actuator endpoints: PT behavior in 8.10
 
