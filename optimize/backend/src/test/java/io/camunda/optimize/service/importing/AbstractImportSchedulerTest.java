@@ -153,9 +153,13 @@ class AbstractImportSchedulerTest {
     // Awaitility's during() (holds continuously for part of the backoff window) rather than a
     // single point-in-time read, since a stalled/descheduled test thread could otherwise observe
     // the count after the real reschedule already happened and flake under a loaded CI runner.
+    // A short, fast poll loop (10ms) with real margin before the real 200ms backoff fires, since
+    // Awaitility's own default poll interval/delay would otherwise eat most of a tight budget.
     await()
-        .during(Duration.ofMillis(backoffMs / 2))
-        .atMost(Duration.ofMillis(backoffMs))
+        .pollDelay(Duration.ZERO)
+        .pollInterval(Duration.ofMillis(10))
+        .during(Duration.ofMillis(50))
+        .atMost(Duration.ofMillis(150))
         .untilAsserted(
             () ->
                 assertThat(runCount.get())
@@ -184,9 +188,11 @@ class AbstractImportSchedulerTest {
     final ImportMediator successMediator = mock(ImportMediator.class);
 
     // small backoff so the failing mediator retries a few times without spinning in a tight,
-    // zero-delay loop (and flooding the log) for the duration of the test
-    when(failingMediator.getBackoffTimeInMs()).thenReturn(50L);
-    when(successMediator.getBackoffTimeInMs()).thenReturn(0L);
+    // zero-delay loop (and flooding the log) for the duration of the test. lenient: the test only
+    // waits on successMediator, so whether failingMediator's background thread has reached its
+    // reschedule decision by the time the test ends is an unasserted timing race.
+    lenient().when(failingMediator.getBackoffTimeInMs()).thenReturn(50L);
+    lenient().when(successMediator.getBackoffTimeInMs()).thenReturn(0L);
 
     when(failingMediator.runImport()).thenThrow(new RuntimeException("simulated ES failure"));
     when(successMediator.runImport())
