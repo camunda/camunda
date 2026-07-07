@@ -59,6 +59,9 @@ public final class SegmentMergingAggregation<K, ACC> {
   private final Set<Windowed<K>> changedSinceFlush = new HashSet<>();
   private final Set<Windowed<K>> changedSinceCheckpoint = new HashSet<>();
   private final Set<Windowed<K>> evictedSinceCheckpoint = new HashSet<>();
+  // A changed cell's serialized total, produced once at flush and reused by the checkpoint (a
+  // commit flushes right before it checkpoints); invalidated when the cell changes again.
+  private final Map<Windowed<K>, byte[]> serializedSinceFlush = new HashMap<>();
   private long maxEventTime = Long.MIN_VALUE;
 
   public SegmentMergingAggregation(
@@ -115,13 +118,19 @@ public final class SegmentMergingAggregation<K, ACC> {
     changedSinceFlush.add(cell);
     changedSinceCheckpoint.add(cell);
     evictedSinceCheckpoint.remove(cell);
+    serializedSinceFlush.remove(cell); // the cached serialized form (if any) is stale now
     maxEventTime = Math.max(maxEventTime, cell.windowStart() + windows.sizeMs());
   }
 
   /** Wall-clock tick: converge the serving view for the cells changed since the last flush. */
   public void flush() {
     for (final Windowed<K> cell : changedSinceFlush) {
-      sink.upsert(cell, cellTotal.get(cell));
+      final ACC total = cellTotal.get(cell);
+      // Serialize once and hand the bytes to the sink; the checkpoint reuses them for the durable
+      // write instead of serializing the same unchanged total a second time.
+      final byte[] serialized = accValue.toBytes(total);
+      serializedSinceFlush.put(cell, serialized);
+      sink.upsert(cell, total, serialized);
     }
     changedSinceFlush.clear();
   }
@@ -145,6 +154,9 @@ public final class SegmentMergingAggregation<K, ACC> {
         });
     changedSinceCheckpoint.clear();
     evictedSinceCheckpoint.clear();
+    // The cache only bridges one commit's flush -> checkpoint; drop it rather than shadowing every
+    // open cell's accumulator with a second serialized copy.
+    serializedSinceFlush.clear();
   }
 
   public void close() {
@@ -164,7 +176,12 @@ public final class SegmentMergingAggregation<K, ACC> {
       final long windowEnd = cell.windowStart() + windows.sizeMs();
       final ACC value = entry.getValue();
       if ((windowEnd <= maxEventTime && drained.test(value)) || windowEnd <= watermark) {
-        sink.upsert(cell, value); // final value
+        final byte[] serialized = serializedSinceFlush.remove(cell);
+        if (serialized != null) {
+          sink.upsert(cell, value, serialized); // final value, already serialized at the flush
+        } else {
+          sink.upsert(cell, value); // final value
+        }
         changedSinceFlush.remove(cell);
         changedSinceCheckpoint.remove(cell);
         evictedSinceCheckpoint.add(cell); // delete the durable cell at the next checkpoint
@@ -186,7 +203,10 @@ public final class SegmentMergingAggregation<K, ACC> {
 
   private void writeCell(final Windowed<K> cell, final ACC total) {
     cellKey.wrapBytes(encodeCellKey(cell));
-    cellValue.wrapBytes(accValue.toBytes(total));
+    // A commit flushes right before it checkpoints, so an unchanged-since-flush cell reuses the
+    // bytes the flush already produced; the fallback covers a checkpoint without a prior flush.
+    final byte[] serialized = serializedSinceFlush.get(cell);
+    cellValue.wrapBytes(serialized != null ? serialized : accValue.toBytes(total));
     cellStore.put(cellKey, cellValue);
   }
 

@@ -48,4 +48,14 @@ public final class CubeServingSink<ACC> implements ResultSink<Windowed<Dimension
     writer.upsertCell(
         dataset, cell.key(), cell.windowStart(), windowSize, meterName, accCodec.toBytes(value));
   }
+
+  /**
+   * Serialize-once path: the merging aggregation already encoded the accumulator (with the same
+   * codec type) for its durable checkpoint, so reuse those bytes instead of encoding the identical
+   * value a second time per commit.
+   */
+  @Override
+  public void upsert(final Windowed<DimensionKey> cell, final ACC value, final byte[] serialized) {
+    writer.upsertCell(dataset, cell.key(), cell.windowStart(), windowSize, meterName, serialized);
+  }
 }

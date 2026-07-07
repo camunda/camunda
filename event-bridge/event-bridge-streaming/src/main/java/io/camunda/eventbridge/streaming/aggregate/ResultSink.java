@@ -22,4 +22,14 @@ public interface ResultSink<K, V> {
 
   /** Idempotently sets the value for {@code key} (insert or overwrite). */
   void upsert(K key, V value);
+
+  /**
+   * Like {@link #upsert(Object, Object)}, but the caller also hands over {@code value}'s serialized
+   * form (produced by the aggregation's own codec) so a sink that persists bytes does not serialize
+   * the same value a second time. The default ignores the bytes and delegates to the two-argument
+   * overload; sinks that store the serialized form override it.
+   */
+  default void upsert(final K key, final V value, final byte[] serialized) {
+    upsert(key, value);
+  }
 }
