@@ -9,6 +9,8 @@ package io.camunda.eventbridge.streaming.shuffle;
 
 import io.camunda.eventbridge.streaming.shuffle.sbe.MessageHeaderDecoder;
 import io.camunda.eventbridge.streaming.shuffle.sbe.MessageHeaderEncoder;
+import io.camunda.eventbridge.streaming.shuffle.sbe.Operation;
+import io.camunda.eventbridge.streaming.shuffle.sbe.PayloadKind;
 import io.camunda.eventbridge.streaming.shuffle.sbe.ShuffleEnvelopeDecoder;
 import io.camunda.eventbridge.streaming.shuffle.sbe.ShuffleEnvelopeDecoder.CellsDecoder;
 import io.camunda.eventbridge.streaming.shuffle.sbe.ShuffleEnvelopeEncoder;
@@ -30,6 +32,10 @@ import org.agrona.concurrent.UnsafeBuffer;
  * {@link #encode} calls (the returned frame is always a fresh copy), so an instance must not be
  * shared by concurrently encoding threads — one codec per publisher. {@link #decode(byte[])} is
  * static and allocates per call.
+ *
+ * <p>This codec is the <em>only</em> class that may touch the SBE-generated {@code shuffle.sbe}
+ * package: it maps the facade's {@link ShufflePayloadKind}/{@link ShuffleOperation} onto the
+ * generated wire enums, so every other consumer stays independent of the generated encoding.
  */
 public final class ShuffleEnvelopeCodec {
 
@@ -47,8 +53,8 @@ public final class ShuffleEnvelopeCodec {
             .segment(envelope.segment())
             .chunk(envelope.chunk())
             .moreChunks((short) (envelope.moreChunks() ? 1 : 0))
-            .payloadKind(envelope.payloadKind())
-            .operation(envelope.operation())
+            .payloadKind(toWire(envelope.payloadKind()))
+            .operation(toWire(envelope.operation()))
             .cellsCount(envelope.cells().size());
     for (final CellDelta cell : envelope.cells()) {
       cells.next().streamId(cell.streamId()).windowStart(cell.windowStart());
@@ -83,8 +89,8 @@ public final class ShuffleEnvelopeCodec {
     final long segment = decoder.segment();
     final int chunk = decoder.chunk();
     final boolean moreChunks = decoder.moreChunks() != 0;
-    final var payloadKind = decoder.payloadKind();
-    final var operation = decoder.operation();
+    final ShufflePayloadKind payloadKind = fromWire(decoder.payloadKind());
+    final ShuffleOperation operation = fromWire(decoder.operation());
 
     final List<CellDelta> cells = new ArrayList<>();
     for (final CellsDecoder cell : decoder.cells()) {
@@ -107,5 +113,41 @@ public final class ShuffleEnvelopeCodec {
         payloadKind,
         operation,
         cells);
+  }
+
+  // Facade <-> wire mapping: keeps the SBE-generated enums out of the public envelope API. The
+  // facade enums are exhaustive, so encoding needs no default; decoding rejects a frame whose
+  // enum value this codec version does not know (NULL_VAL / SBE_UNKNOWN) instead of guessing.
+
+  private static PayloadKind toWire(final ShufflePayloadKind kind) {
+    return switch (kind) {
+      case AGGREGATE_DELTA -> PayloadKind.AGGREGATE_DELTA;
+      case REFERENCE -> PayloadKind.REFERENCE;
+    };
+  }
+
+  private static ShufflePayloadKind fromWire(final PayloadKind kind) {
+    return switch (kind) {
+      case AGGREGATE_DELTA -> ShufflePayloadKind.AGGREGATE_DELTA;
+      case REFERENCE -> ShufflePayloadKind.REFERENCE;
+      default -> throw new IllegalArgumentException("unknown payload kind on the wire: " + kind);
+    };
+  }
+
+  private static Operation toWire(final ShuffleOperation operation) {
+    return switch (operation) {
+      case MERGE -> Operation.MERGE;
+      case UPSERT -> Operation.UPSERT;
+      case DELETE -> Operation.DELETE;
+    };
+  }
+
+  private static ShuffleOperation fromWire(final Operation operation) {
+    return switch (operation) {
+      case MERGE -> ShuffleOperation.MERGE;
+      case UPSERT -> ShuffleOperation.UPSERT;
+      case DELETE -> ShuffleOperation.DELETE;
+      default -> throw new IllegalArgumentException("unknown operation on the wire: " + operation);
+    };
   }
 }

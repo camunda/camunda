@@ -12,8 +12,8 @@ import io.camunda.eventbridge.streaming.aggregate.SegmentMergingAggregation;
 import io.camunda.eventbridge.streaming.processor.Processor;
 import io.camunda.eventbridge.streaming.shuffle.CellDelta;
 import io.camunda.eventbridge.streaming.shuffle.ShuffleEnvelope;
-import io.camunda.eventbridge.streaming.shuffle.sbe.Operation;
-import io.camunda.eventbridge.streaming.shuffle.sbe.PayloadKind;
+import io.camunda.eventbridge.streaming.shuffle.ShuffleOperation;
+import io.camunda.eventbridge.streaming.shuffle.ShufflePayloadKind;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,8 +63,8 @@ public final class CubeMergeProcessor implements Processor<ShuffleEnvelope, Void
 
   @Override
   public void process(final ShuffleEnvelope envelope) {
-    if (envelope.payloadKind() != PayloadKind.AGGREGATE_DELTA
-        || envelope.operation() != Operation.MERGE) {
+    if (envelope.payloadKind() != ShufflePayloadKind.AGGREGATE_DELTA
+        || envelope.operation() != ShuffleOperation.MERGE) {
       return; // reference/upsert records are idempotent by key — no dedup, no merge
     }
     final int sourcePartition = envelope.producerPartition();

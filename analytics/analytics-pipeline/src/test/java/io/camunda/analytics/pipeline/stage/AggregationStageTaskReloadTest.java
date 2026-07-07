@@ -29,8 +29,8 @@ import io.camunda.analytics.store.rdbms.RdbmsDatasetStore;
 import io.camunda.eventbridge.streaming.aggregate.AggregateFunction;
 import io.camunda.eventbridge.streaming.shuffle.CellDelta;
 import io.camunda.eventbridge.streaming.shuffle.ShuffleEnvelope;
-import io.camunda.eventbridge.streaming.shuffle.sbe.Operation;
-import io.camunda.eventbridge.streaming.shuffle.sbe.PayloadKind;
+import io.camunda.eventbridge.streaming.shuffle.ShuffleOperation;
+import io.camunda.eventbridge.streaming.shuffle.ShufflePayloadKind;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.state.rocksdb.RocksDbStateStoreProvider;
 import io.camunda.zeebe.db.impl.DbBytes;
@@ -220,8 +220,8 @@ final class AggregationStageTaskReloadTest {
         ++segment,
         0,
         false,
-        PayloadKind.AGGREGATE_DELTA,
-        Operation.MERGE,
+        ShufflePayloadKind.AGGREGATE_DELTA,
+        ShuffleOperation.MERGE,
         List.of(new CellDelta(handle.aggId(), 0L, key, oneFact(handle.meter()))));
   }
 

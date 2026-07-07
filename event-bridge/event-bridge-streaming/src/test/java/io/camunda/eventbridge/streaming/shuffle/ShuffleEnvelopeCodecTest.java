@@ -10,8 +10,6 @@ package io.camunda.eventbridge.streaming.shuffle;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.eventbridge.streaming.shuffle.sbe.Operation;
-import io.camunda.eventbridge.streaming.shuffle.sbe.PayloadKind;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -21,8 +19,8 @@ final class ShuffleEnvelopeCodecTest {
   private final ShuffleEnvelopeCodec codec = new ShuffleEnvelopeCodec();
 
   private static ShuffleEnvelope envelope(
-      final PayloadKind kind,
-      final Operation operation,
+      final ShufflePayloadKind kind,
+      final ShuffleOperation operation,
       final boolean moreChunks,
       final List<CellDelta> cells) {
     return new ShuffleEnvelope(
@@ -34,8 +32,8 @@ final class ShuffleEnvelopeCodecTest {
     // given a segment batch with two cell deltas (different keys / streams)
     final ShuffleEnvelope original =
         envelope(
-            PayloadKind.AGGREGATE_DELTA,
-            Operation.MERGE,
+            ShufflePayloadKind.AGGREGATE_DELTA,
+            ShuffleOperation.MERGE,
             false,
             List.of(
                 new CellDelta(1, 60_000L, new byte[] {1, 2}, new byte[] {9, 9}),
@@ -47,8 +45,8 @@ final class ShuffleEnvelopeCodecTest {
     // then (recursive comparison so the byte[] fields compare by content)
     assertThat(decoded).usingRecursiveComparison().isEqualTo(original);
     assertThat(decoded.cells()).hasSize(2);
-    assertThat(decoded.payloadKind()).isEqualTo(PayloadKind.AGGREGATE_DELTA);
-    assertThat(decoded.operation()).isEqualTo(Operation.MERGE);
+    assertThat(decoded.payloadKind()).isEqualTo(ShufflePayloadKind.AGGREGATE_DELTA);
+    assertThat(decoded.operation()).isEqualTo(ShuffleOperation.MERGE);
     assertThat(decoded.segment()).isEqualTo(128L);
     assertThat(decoded.producerPartition()).isEqualTo(3);
   }
@@ -58,8 +56,8 @@ final class ShuffleEnvelopeCodecTest {
     // given a chunk that is not the last for its (partition, segment)
     final ShuffleEnvelope original =
         envelope(
-            PayloadKind.AGGREGATE_DELTA,
-            Operation.MERGE,
+            ShufflePayloadKind.AGGREGATE_DELTA,
+            ShuffleOperation.MERGE,
             true,
             List.of(new CellDelta(1, 0L, new byte[] {1}, new byte[] {2})));
 
@@ -72,22 +70,22 @@ final class ShuffleEnvelopeCodecTest {
     // given a reference record (idempotent by key — needs no segment dedup)
     final ShuffleEnvelope original =
         envelope(
-            PayloadKind.REFERENCE,
-            Operation.UPSERT,
+            ShufflePayloadKind.REFERENCE,
+            ShuffleOperation.UPSERT,
             false,
             List.of(new CellDelta(0, 0L, new byte[] {7}, new byte[] {0, 0})));
 
     // then dispatch fields are readable from the header alone
     final ShuffleEnvelope decoded = ShuffleEnvelopeCodec.decode(codec.encode(original));
-    assertThat(decoded.payloadKind()).isEqualTo(PayloadKind.REFERENCE);
-    assertThat(decoded.operation()).isEqualTo(Operation.UPSERT);
+    assertThat(decoded.payloadKind()).isEqualTo(ShufflePayloadKind.REFERENCE);
+    assertThat(decoded.operation()).isEqualTo(ShuffleOperation.UPSERT);
     assertThat(decoded).usingRecursiveComparison().isEqualTo(original);
   }
 
   @Test
   void shouldRoundTripAnEmptyBatch() {
     final ShuffleEnvelope original =
-        envelope(PayloadKind.AGGREGATE_DELTA, Operation.MERGE, false, List.of());
+        envelope(ShufflePayloadKind.AGGREGATE_DELTA, ShuffleOperation.MERGE, false, List.of());
     assertThat(ShuffleEnvelopeCodec.decode(codec.encode(original)).cells()).isEmpty();
   }
 
@@ -96,8 +94,8 @@ final class ShuffleEnvelopeCodecTest {
     // given
     final ShuffleEnvelope original =
         envelope(
-            PayloadKind.AGGREGATE_DELTA,
-            Operation.MERGE,
+            ShufflePayloadKind.AGGREGATE_DELTA,
+            ShuffleOperation.MERGE,
             false,
             List.of(new CellDelta(1, 0L, new byte[] {5, 5}, new byte[] {6})));
 
@@ -112,16 +110,16 @@ final class ShuffleEnvelopeCodecTest {
     // given two envelopes of different sizes encoded by the same instance (reused scratch buffer)
     final ShuffleEnvelope larger =
         envelope(
-            PayloadKind.AGGREGATE_DELTA,
-            Operation.MERGE,
+            ShufflePayloadKind.AGGREGATE_DELTA,
+            ShuffleOperation.MERGE,
             false,
             List.of(
                 new CellDelta(1, 60_000L, new byte[] {1, 2, 3, 4}, new byte[] {9, 9, 9, 9}),
                 new CellDelta(2, 60_000L, new byte[] {5, 6}, new byte[] {8})));
     final ShuffleEnvelope smaller =
         envelope(
-            PayloadKind.AGGREGATE_DELTA,
-            Operation.MERGE,
+            ShufflePayloadKind.AGGREGATE_DELTA,
+            ShuffleOperation.MERGE,
             false,
             List.of(new CellDelta(3, 0L, new byte[] {7}, new byte[] {1})));
 
@@ -144,8 +142,8 @@ final class ShuffleEnvelopeCodecTest {
     final byte[] frame =
         codec.encode(
             envelope(
-                PayloadKind.REFERENCE,
-                Operation.UPSERT,
+                ShufflePayloadKind.REFERENCE,
+                ShuffleOperation.UPSERT,
                 false,
                 List.of(new CellDelta(0, 0L, new byte[] {1}, new byte[] {1}))));
     frame[4] = (byte) 0xFF;

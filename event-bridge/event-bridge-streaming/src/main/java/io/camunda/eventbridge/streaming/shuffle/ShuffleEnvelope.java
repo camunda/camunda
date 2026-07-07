@@ -7,8 +7,6 @@
  */
 package io.camunda.eventbridge.streaming.shuffle;
 
-import io.camunda.eventbridge.streaming.shuffle.sbe.Operation;
-import io.camunda.eventbridge.streaming.shuffle.sbe.PayloadKind;
 import java.util.List;
 
 /**
@@ -34,8 +32,8 @@ public record ShuffleEnvelope(
     long segment,
     int chunk,
     boolean moreChunks,
-    PayloadKind payloadKind,
-    Operation operation,
+    ShufflePayloadKind payloadKind,
+    ShuffleOperation operation,
     List<CellDelta> cells) {
 
   public ShuffleEnvelope {

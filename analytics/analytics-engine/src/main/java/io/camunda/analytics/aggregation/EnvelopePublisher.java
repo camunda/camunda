@@ -10,8 +10,8 @@ package io.camunda.analytics.aggregation;
 import io.camunda.eventbridge.streaming.shuffle.CellDelta;
 import io.camunda.eventbridge.streaming.shuffle.ShuffleEnvelope;
 import io.camunda.eventbridge.streaming.shuffle.ShuffleEnvelopeCodec;
-import io.camunda.eventbridge.streaming.shuffle.sbe.Operation;
-import io.camunda.eventbridge.streaming.shuffle.sbe.PayloadKind;
+import io.camunda.eventbridge.streaming.shuffle.ShuffleOperation;
+import io.camunda.eventbridge.streaming.shuffle.ShufflePayloadKind;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -102,8 +102,8 @@ public final class EnvelopePublisher {
               key.segment(),
               chunk,
               false,
-              PayloadKind.AGGREGATE_DELTA,
-              Operation.MERGE,
+              ShufflePayloadKind.AGGREGATE_DELTA,
+              ShuffleOperation.MERGE,
               entry.getValue());
       transport.send(key.factsPartition(), codec.encode(envelope));
     }
