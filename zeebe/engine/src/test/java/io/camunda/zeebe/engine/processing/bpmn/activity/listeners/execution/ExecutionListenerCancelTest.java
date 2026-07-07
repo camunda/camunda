@@ -1696,11 +1696,11 @@ public class ExecutionListenerCancelTest {
         .withType(CANCEL_EL_TYPE)
         .await();
 
-    // when: take a snapshot and reprocess (simulates a leader restart with snapshot recovery)
+    // when: take a snapshot and replay (simulates a leader restart with snapshot recovery)
     ENGINE.snapshot();
-    ENGINE.reprocess();
+    ENGINE.replay();
 
-    // then: completing the cancel-EL job after reprocess still drives the process to TERMINATED
+    // then: completing the cancel-EL job after replay still drives the process to TERMINATED
     ENGINE.job().ofInstance(processInstanceKey).withType(CANCEL_EL_TYPE).complete();
     assertThat(
             RecordingExporter.processInstanceRecords()

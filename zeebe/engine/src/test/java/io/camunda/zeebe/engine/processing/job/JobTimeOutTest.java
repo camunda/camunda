@@ -61,18 +61,18 @@ public final class JobTimeOutTest {
     jobRecords(TIMED_OUT).withType(jobType).getFirst();
     ENGINE.jobs().withType(jobType).activate();
 
-    // then activated again
+    // then the job's event lifecycle is CREATED -> TIMED_OUT
     final List<Record<JobRecordValue>> jobEvents =
-        jobRecords().withType(jobType).limit(3).collect(Collectors.toList());
+        jobRecords().withType(jobType).onlyEvents().limit(2).collect(Collectors.toList());
 
     assertThat(jobEvents).extracting(Record::getKey).contains(jobKey);
     assertThat(jobEvents)
         .extracting(Record::getIntent)
-        .containsExactly(JobIntent.CREATED, JobIntent.TIME_OUT, JobIntent.TIMED_OUT);
+        .containsExactly(JobIntent.CREATED, JobIntent.TIMED_OUT);
   }
 
   @Test
-  public void shouldTimeOutAfterReprocessing() {
+  public void shouldTimeOutAfterReplay() {
     // given
     final long jobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
     final Duration timeout = Duration.ofSeconds(10);
@@ -87,7 +87,7 @@ public final class JobTimeOutTest {
     ENGINE.job().withKey(jobKey).complete();
 
     // when
-    ENGINE.reprocess();
+    ENGINE.replay();
 
     // then
     ENGINE.increaseTime(timeout.plus(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL));

@@ -79,7 +79,7 @@ public final class KeyGeneratorAfterRestartTest {
     // during replay, ReplayStateMachine.onRecordReplayed calls setKeyIfHigher(record.getKey())
     // for all record types — the rejection and its originating command both have
     // key=anomalouslyLargeKey
-    engine.reprocess();
+    engine.replay();
 
     // guard: confirm the rejection record was actually replayed (re-exported) after restart
     // if this assertion fails the test did not exercise the path under investigation
