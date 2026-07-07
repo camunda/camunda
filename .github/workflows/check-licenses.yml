@@ -24,15 +24,35 @@ env:
   GHA_BEST_PRACTICES_LINTER: enabled
 
 jobs:
+  detect-changes:
+    name: Detect dependency file changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: read
+    outputs:
+      fossa-changes: ${{ steps.filter.outputs.fossa-changes }}
+    steps:
+    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      timeout-minutes: 1
+    - name: Detect changes
+      uses: ./.github/actions/paths-filter
+      id: filter
+
   analyze:
     name: "Analyze ${{ matrix.project.name }} dependencies"
+    needs: [detect-changes]
     permissions:
       # Needed for camunda/infra-global-github-actions/fossa/info
       actions: read
       contents: read
     runs-on: ${{ matrix.project.runner }}
-    # Skip analysis on fork PRs as they cannot access FOSSA due to lack of credentials
-    if: github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork
+    # Never run on fork PRs (no FOSSA credentials). Otherwise run when fossa-changes is true, which the
+    # paths-filter sets for every push event (keeping the base-branch FOSSA baseline current) and, on
+    # pull requests, when dependency manifests or CI-relevant GitHub Actions/workflow files changed.
+    if: >-
+      (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork) &&
+      needs.detect-changes.outputs.fossa-changes == 'true'
     # If you change the job timeout, update the timeout in camunda/infra-global-github-actions/fossa/pr-check accordingly.
     # Budget = one normal run (~25m) + one retry on hang (~30m) + small scheduling margin.
     timeout-minutes: 65
