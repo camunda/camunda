@@ -35,12 +35,18 @@ import {ForbiddenPage} from 'modules/components/ForbiddenPage';
 import {ReactQueryProvider} from 'modules/react-query/ReactQueryProvider';
 import {PageErrorBoundary} from 'modules/components/PageErrorBoundary';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
+import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 
 const DefaultTabRedirect: React.FC = () => {
   const location = useLocation();
   const {data: processInstance} = useProcessInstance();
+  const {hasSelection} = useProcessInstanceElementSelection();
   const pathname =
-    processInstance?.hasIncident === true ? 'incidents' : 'variables';
+    processInstance?.hasIncident === true
+      ? 'incidents'
+      : hasSelection
+        ? 'details'
+        : 'variables';
   return <Navigate to={{pathname, search: location.search}} replace />;
 };
 
