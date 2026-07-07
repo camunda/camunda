@@ -28,7 +28,7 @@ Some of the necessary steps you need to take are:
 
 ```sh
 ## Authenticate to the benchmark cluster via Teleport
-tsh login --proxy=camunda.teleport.sh:443
+tsh login --proxy=camunda.teleport.sh:443 --auth=okta
 tsh kube login camunda-benchmark-prod
 
 ## Log in to the Harbor container registry
