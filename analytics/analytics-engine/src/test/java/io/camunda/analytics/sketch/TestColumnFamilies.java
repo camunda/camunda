@@ -15,14 +15,8 @@ import io.camunda.zeebe.protocol.ScopedColumnFamily;
 public enum TestColumnFamilies implements EnumValue, ScopedColumnFamily {
   /** Reserved default (RocksDB requires a default CF). */
   DEFAULT(0, ColumnFamilyScope.PARTITION_LOCAL),
-  /** A {@code DbLong -> DbString} store. */
-  KV(1, ColumnFamilyScope.PARTITION_LOCAL),
-  /** A {@code (DbLong, DbString) -> DbString} store, for prefix scans. */
-  COMPOSITE(2, ColumnFamilyScope.PARTITION_LOCAL),
-  /** Durable rollup cells: {@code windowStart ++ codec(key) -> codec(acc)}. */
-  CELLS(3, ColumnFamilyScope.PARTITION_LOCAL),
-  /** Durable rollup offsets: {@code partitionId -> position} (plus the watermark slot). */
-  OFFSETS(4, ColumnFamilyScope.PARTITION_LOCAL);
+  /** Durable rollup cells: {@code group ++ windowStart ++ codec(key) -> codec(acc)}. */
+  CELLS(1, ColumnFamilyScope.PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope scope;

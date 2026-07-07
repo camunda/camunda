@@ -10,18 +10,19 @@ package io.camunda.analytics.sketch;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
-import io.camunda.eventbridge.streaming.aggregate.DurableMaterializedAggregation;
-import io.camunda.eventbridge.streaming.aggregate.InMemoryResultSink;
-import io.camunda.eventbridge.streaming.aggregate.SourceCoordinate;
+import io.camunda.eventbridge.streaming.aggregate.ResultSink;
+import io.camunda.eventbridge.streaming.aggregate.SegmentMergingAggregation;
 import io.camunda.eventbridge.streaming.aggregate.StringRecordValue;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.state.rocksdb.RocksDbStateStoreProvider;
 import io.camunda.eventbridge.streaming.window.TumblingWindows;
 import io.camunda.eventbridge.streaming.window.Windowed;
 import io.camunda.zeebe.db.impl.DbBytes;
-import io.camunda.zeebe.db.impl.DbLong;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import org.apache.datasketches.kll.KllDoublesSketch;
 import org.apache.datasketches.quantilescommon.QuantileSearchCriteria;
 import org.junit.jupiter.api.AfterEach;
@@ -30,9 +31,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * Exercises a sketch-backed metric ({@link QuantileAggregateFunction}) through the RocksDB {@link
- * DurableMaterializedAggregation}, so the sketch record flyweight is validated on the real durable
- * path: decode the stored cell, merge the batch partial, re-encode — across flushes and across a
+ * Exercises a sketch-backed metric ({@link QuantileAggregateFunction}) through the RocksDB-backed
+ * {@link SegmentMergingAggregation} — the live Stage-2 reduce operator — so the sketch record
+ * flyweight ({@link KllDoublesSketchValue}) is validated on the real durable path: a segment delta
+ * is decoded through the merge-only wrap ({@code fromBytesForMerge}), folded into the owned running
+ * total, encoded into the durable cell at the checkpoint, and decoded again on recovery after a
  * restart.
  */
 final class DurableSketchRollupTest {
@@ -40,27 +43,17 @@ final class DurableSketchRollupTest {
   private static final long HOUR = 3_600_000L;
   private static final long LATENESS = 60_000L;
 
-  private record Duration(String region, long ms, long timestamp, int partition, long position) {}
+  private static final QuantileAggregateFunction<Double> QUANTILE =
+      new QuantileAggregateFunction<>(d -> d);
 
-  private static final QuantileAggregateFunction<Duration> QUANTILE =
-      new QuantileAggregateFunction<>(d -> (double) d.ms());
-
-  private static final SourceCoordinate<Duration> COORD =
-      new SourceCoordinate<>() {
-        @Override
-        public int partition(final Duration d) {
-          return d.partition();
-        }
-
-        @Override
-        public long position(final Duration d) {
-          return d.position();
-        }
-      };
+  /**
+   * One codec flyweight for both the delta decode and the merger's durable cells, as the stage
+   * shares one per meter group.
+   */
+  private static final KllDoublesSketchValue CODEC = new KllDoublesSketchValue();
 
   @TempDir private Path dataDir;
   private RocksDbStateStoreProvider<TestColumnFamilies> provider;
-  private InMemoryResultSink<Windowed<String>, KllDoublesSketch> sink;
 
   @BeforeEach
   void setUp() {
@@ -74,27 +67,29 @@ final class DurableSketchRollupTest {
 
   private void open() {
     provider = RocksDbStateStoreProvider.open(dataDir.toFile(), new SimpleMeterRegistry());
-    sink = new InMemoryResultSink<>();
   }
 
-  private DurableMaterializedAggregation<Duration, String, KllDoublesSketch> newRollup() {
+  private SegmentMergingAggregation<String, KllDoublesSketch> newMerger(final MapSink sink) {
     final KeyValueStore<DbBytes, DbBytes> cells =
         provider.keyValueStore(TestColumnFamilies.CELLS, new DbBytes(), new DbBytes());
-    final KeyValueStore<DbBytes, DbLong> offsets =
-        provider.keyValueStore(TestColumnFamilies.OFFSETS, new DbBytes(), new DbLong());
-    return new DurableMaterializedAggregation<>(
+    return new SegmentMergingAggregation<>(
         1,
         QUANTILE,
-        Duration::region,
-        Duration::timestamp,
-        COORD,
         TumblingWindows.ofSizeAndGrace(HOUR, LATENESS),
         sink,
         cells,
-        offsets,
         new StringRecordValue(),
-        new KllDoublesSketchValue(),
+        CODEC,
         provider::runInTransaction);
+  }
+
+  /** A sealed segment's from-empty delta over the observations {@code from..to}, as bytes. */
+  private static byte[] deltaOf(final int from, final int to) {
+    KllDoublesSketch acc = QUANTILE.createAccumulator();
+    for (int i = from; i <= to; i++) {
+      acc = QUANTILE.add((double) i, acc);
+    }
+    return CODEC.toBytes(acc);
   }
 
   private static double median(final KllDoublesSketch sketch) {
@@ -102,23 +97,22 @@ final class DurableSketchRollupTest {
   }
 
   @Test
-  void shouldMergeSketchAcrossFlushes() {
+  void shouldFoldReadOnlySketchDeltasIntoTheRunningTotal() {
     // given
-    final var rollup = newRollup();
+    final MapSink sink = new MapSink();
+    final SegmentMergingAggregation<String, KllDoublesSketch> merger = newMerger(sink);
+    final Windowed<String> cell = new Windowed<>("EU", 0L);
 
-    // when — the low half is folded and flushed, then the high half folded and flushed into the
-    // same window/region cell (forcing decode -> merge -> encode of the durable sketch)
-    for (int i = 1; i <= 50; i++) {
-      rollup.accept(new Duration("EU", i, 1_000L, 1, i));
-    }
-    rollup.flush();
-    for (int i = 51; i <= 100; i++) {
-      rollup.accept(new Duration("EU", i, 2_000L, 1, i));
-    }
-    rollup.flush();
+    // when — two sealed segments' deltas arrive serialized and are decoded through the merge-only
+    // wrap (a read-only sketch aliasing the bytes, the production decode), then folded into the
+    // cell's running total the merger owns
+    merger.merge(cell, CODEC.fromBytesForMerge(deltaOf(1, 50)));
+    merger.flush();
+    merger.merge(cell, CODEC.fromBytesForMerge(deltaOf(51, 100)));
+    merger.flush();
 
-    // then — the durable sketch spans all 100 observations, not just the last batch
-    final KllDoublesSketch stored = sink.get(new Windowed<>("EU", 0L)).orElseThrow();
+    // then — the served sketch spans all 100 observations, not just the last delta
+    final KllDoublesSketch stored = sink.get(cell).orElseThrow();
     assertThat(stored.getN()).isEqualTo(100L);
     assertThat(stored.getMinItem()).isEqualTo(1.0);
     assertThat(stored.getMaxItem()).isEqualTo(100.0);
@@ -127,26 +121,73 @@ final class DurableSketchRollupTest {
 
   @Test
   void shouldRecoverSketchAcrossRestart() throws Exception {
-    // given — 50 observations flushed, then the store is closed (crash/restart)
-    final var before = newRollup();
-    for (int i = 1; i <= 50; i++) {
-      before.accept(new Duration("EU", i, 1_000L, 1, i));
-    }
+    // given — the low half folded and checkpointed (the running sketch is encoded into the durable
+    // RocksDB cell), then the store is closed (crash/restart)
+    final Windowed<String> cell = new Windowed<>("EU", 0L);
+    final SegmentMergingAggregation<String, KllDoublesSketch> before = newMerger(new MapSink());
+    before.merge(cell, CODEC.fromBytesForMerge(deltaOf(1, 50)));
     before.flush();
-    before.checkpoint(); // make the sketch + offset durable before the restart
+    before.checkpoint();
     provider.close();
 
-    // when — the store is reopened and a fresh rollup recovers, then folds 50 more
+    // when — the store is reopened and a fresh merger recovers (full decode of the stored cell),
+    // then folds the high half onto the recovered sketch
     open();
-    final var recovered = newRollup();
-    for (int i = 51; i <= 100; i++) {
-      recovered.accept(new Duration("EU", i, 2_000L, 1, i));
-    }
+    final MapSink sink = new MapSink();
+    final SegmentMergingAggregation<String, KllDoublesSketch> recovered = newMerger(sink);
+    recovered.merge(cell, CODEC.fromBytesForMerge(deltaOf(51, 100)));
     recovered.flush();
 
     // then — the recovered sketch merged onto the persisted base (all 100 observations)
-    final KllDoublesSketch stored = sink.get(new Windowed<>("EU", 0L)).orElseThrow();
+    final KllDoublesSketch stored = sink.get(cell).orElseThrow();
     assertThat(stored.getN()).isEqualTo(100L);
     assertThat(median(stored)).isCloseTo(50.0, within(3.0));
+  }
+
+  @Test
+  void shouldReencodeTheRecoveredSketchAcrossASecondRestart() throws Exception {
+    // given — the low half checkpointed, a restart, then the high half folded onto the recovered
+    // sketch and checkpointed again: decode -> merge -> re-encode of the durable cell
+    final Windowed<String> cell = new Windowed<>("EU", 0L);
+    final SegmentMergingAggregation<String, KllDoublesSketch> first = newMerger(new MapSink());
+    first.merge(cell, CODEC.fromBytesForMerge(deltaOf(1, 50)));
+    first.checkpoint();
+    provider.close();
+    open();
+    final SegmentMergingAggregation<String, KllDoublesSketch> second = newMerger(new MapSink());
+    second.merge(cell, CODEC.fromBytesForMerge(deltaOf(51, 100)));
+    second.checkpoint();
+    provider.close();
+
+    // when — a second restart recovers the re-encoded cell and a delta for a much later window
+    // advances the watermark past the cell's window end, finalizing it
+    open();
+    final MapSink sink = new MapSink();
+    final SegmentMergingAggregation<String, KllDoublesSketch> third = newMerger(sink);
+    third.merge(new Windowed<>("EU", 10 * HOUR), CODEC.fromBytesForMerge(deltaOf(1, 1)));
+    third.checkpoint();
+
+    // then — the finalized value is the complete 100-observation sketch, proving the checkpoint
+    // re-encoded the recovered-and-merged sketch losslessly
+    final KllDoublesSketch stored = sink.get(cell).orElseThrow();
+    assertThat(stored.getN()).isEqualTo(100L);
+    assertThat(stored.getMinItem()).isEqualTo(1.0);
+    assertThat(stored.getMaxItem()).isEqualTo(100.0);
+    assertThat(median(stored)).isCloseTo(50.0, within(3.0));
+  }
+
+  /** A heap-backed idempotent sink (overwrite by key) capturing the served sketches. */
+  private static final class MapSink implements ResultSink<Windowed<String>, KllDoublesSketch> {
+
+    private final Map<Windowed<String>, KllDoublesSketch> values = new HashMap<>();
+
+    @Override
+    public void upsert(final Windowed<String> key, final KllDoublesSketch value) {
+      values.put(key, value);
+    }
+
+    Optional<KllDoublesSketch> get(final Windowed<String> key) {
+      return Optional.ofNullable(values.get(key));
+    }
   }
 }
