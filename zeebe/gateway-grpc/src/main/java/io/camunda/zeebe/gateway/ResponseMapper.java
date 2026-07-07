@@ -412,6 +412,12 @@ public final class ResponseMapper {
       builder.setUserTask(toUserTaskProperties(job.getCustomHeaders()));
     }
 
+    // leaseToken is optional on the wire: leave it unset (rather than an empty string) when the
+    // job was activated without a lease, so clients can distinguish "no lease" from a token
+    if (!job.getLeaseToken().isEmpty()) {
+      builder.setLeaseToken(job.getLeaseToken());
+    }
+
     return builder.build();
   }
 

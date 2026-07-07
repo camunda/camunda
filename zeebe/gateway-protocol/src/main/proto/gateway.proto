@@ -129,6 +129,9 @@ message ActivatedJob {
   int32 priority = 19;
   // the business ID of the owning process instance; null when the instance has none
   string businessId = 20;
+  // the lease token identifying this activation; unset when the job was activated without a
+  // lease
+  optional string leaseToken = 21;
 }
 
 message UserTaskProperties {
