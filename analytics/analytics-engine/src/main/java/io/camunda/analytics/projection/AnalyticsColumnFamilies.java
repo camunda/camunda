@@ -77,7 +77,17 @@ public enum AnalyticsColumnFamilies implements EnumValue, ScopedColumnFamily {
    * as the topology state and the consumed offset, so replay after a crash re-folds exactly the
    * not-yet-committed records.
    */
-  ZEEBE_APPLIED_POSITION(8, ColumnFamilyScope.PARTITION_LOCAL);
+  ZEEBE_APPLIED_POSITION(8, ColumnFamilyScope.PARTITION_LOCAL),
+
+  /**
+   * The Stage-2 segment dedup's admission watermarks: {@code sourcePartition(4) ++ streamId(4) ->
+   * segment(8) ++ chunk(4)} (big-endian), the last admitted {@code SegmentPosition} per shuffle
+   * stream. Persisted in the same atomic cut as the merged cells and the facts offset, and restored
+   * at task open, so a Stage-1 crash in its produce-before-commit gap (re-publishing a segment
+   * delta as a new facts-topic append) is still dropped by a restarted Stage 2 instead of being
+   * double-folded by the non-idempotent merge.
+   */
+  SHUFFLE_DEDUP_WATERMARK(9, ColumnFamilyScope.PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope scope;

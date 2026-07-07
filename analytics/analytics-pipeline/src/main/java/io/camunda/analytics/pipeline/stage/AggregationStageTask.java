@@ -23,7 +23,9 @@ import io.camunda.eventbridge.streaming.Task;
 import io.camunda.eventbridge.streaming.TransactionRunner;
 import io.camunda.eventbridge.streaming.aggregate.RecordValue;
 import io.camunda.eventbridge.streaming.aggregate.SegmentDedup;
+import io.camunda.eventbridge.streaming.aggregate.SegmentDedup.StreamKey;
 import io.camunda.eventbridge.streaming.aggregate.SegmentMergingAggregation;
+import io.camunda.eventbridge.streaming.aggregate.SegmentPosition;
 import io.camunda.eventbridge.streaming.processor.ProcessorTopology;
 import io.camunda.eventbridge.streaming.shuffle.ShuffleEnvelope;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
@@ -34,6 +36,7 @@ import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -71,11 +74,20 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
   private final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider;
   private final KeyValueStore<DbBytes, DbBytes> cellStore;
   private final KeyValueStore<DbInt, DbLong> offsets;
+  private final KeyValueStore<DbBytes, DbBytes> dedupStore;
   private final DatasetCatalog catalog;
   private final long reloadCheckIntervalMs;
 
   private final DbInt offsetKey = new DbInt();
   private final DbLong offsetValue = new DbLong();
+  private final DbBytes dedupKey = new DbBytes();
+  private final DbBytes dedupValue = new DbBytes();
+
+  /**
+   * The dedup watermarks as last persisted, so each commit writes only the streams whose admission
+   * watermark moved since the previous cut (the map itself is tiny — one entry per shuffle stream).
+   */
+  private final Map<StreamKey, SegmentPosition> persistedDedup = new HashMap<>();
 
   private ProcessorTopology<ShuffleEnvelope> topology;
   private long appliedVersion;
@@ -98,6 +110,7 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
       final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider,
       final KeyValueStore<DbBytes, DbBytes> cellStore,
       final KeyValueStore<DbInt, DbLong> offsets,
+      final KeyValueStore<DbBytes, DbBytes> dedupStore,
       final DatasetCatalog catalog,
       final long reloadCheckIntervalMs,
       final long nowMs) {
@@ -107,6 +120,12 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
     this.provider = provider;
     this.cellStore = cellStore;
     this.offsets = offsets;
+    this.dedupStore = dedupStore;
+    // Restore the dedup's admission watermarks once, at task open — the one SegmentDedup instance
+    // then survives every live reload, so a reload never forgets what was already admitted.
+    dedupStore.forEach(
+        (key, value) -> persistedDedup.put(decodeStreamKey(key), decodeSegmentPosition(value)));
+    dedup.restore(persistedDedup);
     this.catalog = catalog;
     this.reloadCheckIntervalMs = reloadCheckIntervalMs;
     this.lastReloadCheckMs = nowMs;
@@ -129,6 +148,9 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
     final KeyValueStore<DbInt, DbLong> offsets =
         provider.keyValueStore(
             AnalyticsColumnFamilies.CONSUMED_POSITION, new DbInt(), new DbLong());
+    final KeyValueStore<DbBytes, DbBytes> dedupStore =
+        provider.keyValueStore(
+            AnalyticsColumnFamilies.SHUFFLE_DEDUP_WATERMARK, new DbBytes(), new DbBytes());
     return new AggregationStageTask(
         partition,
         datasetStore,
@@ -136,6 +158,7 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
         provider,
         cellStore,
         offsets,
+        dedupStore,
         catalog,
         reloadCheckIntervalMs,
         System.currentTimeMillis());
@@ -298,9 +321,54 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
           offsetKey.wrapInt(partition);
           offsetValue.wrapLong(offset);
           offsets.put(offsetKey, offsetValue);
+          persistDedupWatermarks();
           topology.checkpoint();
         });
     maybeReload();
+  }
+
+  /**
+   * Persists the dedup's admission watermarks — only the streams that moved since the last cut —
+   * into the same transaction as the merged cells and the facts offset. Without this, a Stage-1
+   * crash in its produce-before-commit gap re-publishes a segment delta as a <em>new</em>
+   * facts-topic append, and a restarted (empty in-memory) dedup would re-admit and double-fold it.
+   */
+  private void persistDedupWatermarks() {
+    for (final Map.Entry<StreamKey, SegmentPosition> watermark : dedup.snapshot().entrySet()) {
+      if (watermark.getValue().equals(persistedDedup.get(watermark.getKey()))) {
+        continue;
+      }
+      dedupKey.wrapBytes(encodeStreamKey(watermark.getKey()));
+      dedupValue.wrapBytes(encodeSegmentPosition(watermark.getValue()));
+      dedupStore.put(dedupKey, dedupValue);
+      persistedDedup.put(watermark.getKey(), watermark.getValue());
+    }
+  }
+
+  /** Dedup watermark key: {@code sourcePartition(4) ++ streamId(4)}, big-endian. */
+  private static byte[] encodeStreamKey(final StreamKey key) {
+    return ByteBuffer.allocate(2 * Integer.BYTES)
+        .putInt(key.sourcePartition())
+        .putInt(key.streamId())
+        .array();
+  }
+
+  private static StreamKey decodeStreamKey(final DbBytes key) {
+    final ByteBuffer buffer = ByteBuffer.wrap(key.getBytes());
+    return new StreamKey(buffer.getInt(), buffer.getInt());
+  }
+
+  /** Dedup watermark value: {@code segment(8) ++ chunk(4)}, big-endian. */
+  private static byte[] encodeSegmentPosition(final SegmentPosition position) {
+    return ByteBuffer.allocate(Long.BYTES + Integer.BYTES)
+        .putLong(position.segment())
+        .putInt(position.chunk())
+        .array();
+  }
+
+  private static SegmentPosition decodeSegmentPosition(final DbBytes value) {
+    final ByteBuffer buffer = ByteBuffer.wrap(value.getBytes());
+    return new SegmentPosition(buffer.getLong(), buffer.getInt());
   }
 
   /**

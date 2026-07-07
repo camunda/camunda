@@ -51,11 +51,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * Incremental-reload behavior of the Stage-2 task: a catalog change rebuilds only what changed —
- * surviving aggregations keep their state (no re-recover prefix scan), added ones are constructed
- * and recovered once, removed ones are dropped, and serving DDL runs only for added datasets.
+ * Persistence of the Stage-2 segment-dedup watermarks: they commit in the same atomic cut as the
+ * merged cells and the facts offset and are restored at task open, so an already-admitted {@code
+ * (segment, chunk)} re-delivered after a restart — e.g. a Stage-1 crash in its
+ * produce-before-commit gap re-publishing the same delta as a new facts-topic append — is not
+ * double-folded by the non-idempotent merge, while a genuinely new chunk still admits.
  */
-final class AggregationStageTaskReloadTest {
+final class AggregationStageTaskDedupPersistenceTest {
 
   private static final String PROCESS = "order-process";
 
@@ -64,30 +66,14 @@ final class AggregationStageTaskReloadTest {
   private TestMetadataStore metadataStore;
   private DatasetRegistry registry;
   private DatasetCatalog catalog;
-  private CountingDatasetStore datasetStore;
   private RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider;
-  private CountingKeyValueStore cellStore;
-  private KeyValueStore<DbBytes, DbBytes> rawCells; // uncounted handle for assertions
   private AggregationStageTask task;
-  private long segment;
 
   @BeforeEach
   void setUp() {
     metadataStore = new TestMetadataStore();
     registry = new DatasetRegistry();
-    final JdbcDataSource dataSource = new JdbcDataSource();
-    dataSource.setURL("jdbc:h2:mem:reload-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1");
-    dataSource.setUser("sa");
-    datasetStore = new CountingDatasetStore(new RdbmsDatasetStore(dataSource));
-    provider =
-        RocksDbStateStoreProvider.open(
-            new File(stateDir.toFile(), "stage2"), new SimpleMeterRegistry());
-    cellStore =
-        new CountingKeyValueStore(
-            provider.keyValueStore(
-                AnalyticsColumnFamilies.CUBE_CELLS, new DbBytes(), new DbBytes()));
-    rawCells =
-        provider.keyValueStore(AnalyticsColumnFamilies.CUBE_CELLS, new DbBytes(), new DbBytes());
+    provision("cube-a");
   }
 
   @AfterEach
@@ -98,72 +84,49 @@ final class AggregationStageTaskReloadTest {
   }
 
   @Test
-  void shouldKeepExistingAggregationStateWhenAddingACube() {
-    // given a running task over one cube with one merged delta committed
-    final CubeHandle cubeA = provision("cube-a");
+  void shouldNotRefoldAnAlreadyAdmittedChunkAfterARestart() {
+    // given a delta admitted and committed durably
     openTask();
-    final CubeHandle handleA = resolve(cubeA);
-    assertThat(cellStore.scans(handleA.aggId())).isEqualTo(1); // recovered once at construction
-    task.process(envelope(handleA));
+    final CubeHandle handle = resolve();
+    task.process(envelope(handle, 1L, 0));
     task.commit(0L);
+    assertThat(durableTotal(handle)).isEqualTo(1L);
 
-    // when a second cube is provisioned and the next commit reloads the topology
-    final CubeHandle cubeB = provision("cube-b");
+    // when the task restarts over the same store and the same (segment, chunk) is re-delivered as
+    // a new facts-topic append (a producer re-emit, not a consumption replay)
+    task.close();
+    task = null;
+    openTask();
+    final CubeHandle reopened = resolve();
+    task.process(envelope(reopened, 1L, 0));
     task.commit(1L);
 
-    // then only the added cube's aggregation recovered and only its DDL ran — the existing one
-    // kept its wiring and in-heap state untouched
-    final CubeHandle handleB = resolve(cubeB);
-    assertThat(cellStore.scans(handleA.aggId())).isEqualTo(1);
-    assertThat(cellStore.scans(handleB.aggId())).isEqualTo(1);
-    assertThat(datasetStore.ensures(handleA.cubeId())).isEqualTo(1);
-    assertThat(datasetStore.ensures(handleB.cubeId())).isEqualTo(1);
+    // then the restored watermarks drop it — the durable total is unchanged
+    assertThat(durableTotal(reopened)).isEqualTo(1L);
 
-    // and a further delta folds onto the surviving cube's prior total
-    task.process(envelope(handleA));
+    // and a genuinely new chunk still admits and folds
+    task.process(envelope(reopened, 2L, 0));
     task.commit(2L);
-    assertThat(durableTotal(handleA)).isEqualTo(2L);
-  }
-
-  @Test
-  void shouldDropARemovedCubeAndRecoverAReaddedOneFromDurableStateOnly() {
-    // given a cube with one merged delta committed durably
-    final CubeHandle cubeA = provision("cube-a");
-    openTask();
-    final CubeHandle handleA = resolve(cubeA); // resolved before the cube disappears
-    task.process(envelope(handleA));
-    task.commit(0L);
-    assertThat(durableTotal(handleA)).isEqualTo(1L);
-
-    // when the cube is removed and the next commit reloads
-    metadataStore.hide(handleA.cubeId());
-    task.commit(1L);
-
-    // then its node is gone: a delta for its stream is dropped, the durable cell untouched
-    task.process(envelope(handleA));
-    task.commit(2L);
-    assertThat(durableTotal(handleA)).isEqualTo(1L);
-
-    // when the same id is re-added
-    metadataStore.unhide(handleA.cubeId());
-    task.commit(3L);
-
-    // then it recovered afresh from durable state only (a second recover scan, no leaked heap
-    // state) and folds forward from the durable total
-    assertThat(cellStore.scans(handleA.aggId())).isEqualTo(2);
-    task.process(envelope(handleA));
-    task.commit(4L);
-    assertThat(durableTotal(handleA)).isEqualTo(2L);
+    assertThat(durableTotal(reopened)).isEqualTo(2L);
   }
 
   private void openTask() {
     catalog = new DatasetCatalog(metadataStore);
+    final JdbcDataSource dataSource = new JdbcDataSource();
+    dataSource.setURL("jdbc:h2:mem:dedup-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1");
+    dataSource.setUser("sa");
+    provider =
+        RocksDbStateStoreProvider.open(
+            new File(stateDir.toFile(), "stage2"), new SimpleMeterRegistry());
+    final KeyValueStore<DbBytes, DbBytes> cellStore =
+        provider.keyValueStore(AnalyticsColumnFamilies.CUBE_CELLS, new DbBytes(), new DbBytes());
     final KeyValueStore<DbInt, DbLong> offsets =
         provider.keyValueStore(
             AnalyticsColumnFamilies.CONSUMED_POSITION, new DbInt(), new DbLong());
     final KeyValueStore<DbBytes, DbBytes> dedupStore =
         provider.keyValueStore(
             AnalyticsColumnFamilies.SHUFFLE_DEDUP_WATERMARK, new DbBytes(), new DbBytes());
+    final RdbmsDatasetStore datasetStore = new RdbmsDatasetStore(dataSource);
     task =
         new AggregationStageTask(
             1,
@@ -174,15 +137,13 @@ final class AggregationStageTaskReloadTest {
             offsets,
             dedupStore,
             catalog,
-            0L, // check the catalog at every commit
+            Long.MAX_VALUE, // no reload in these tests
             0L);
+    task.init();
   }
 
-  /** Everything a test needs of a cube, captured while it is visible in the catalog. */
-  private record CubeHandle(long cubeId, int aggId, CompiledMeter meter, DimensionSchema grain) {}
-
-  /** Declares and stores a single-meter COUNT cube; returns a handle with just its id. */
-  private CubeHandle provision(final String name) {
+  /** Declares and stores a single-meter COUNT cube. */
+  private void provision(final String name) {
     final DatasetDeclaration declaration =
         DatasetDeclaration.builder(name, FactType.PROCESS_INSTANCE)
             .dimension("bpmnProcessId", DimensionType.STRING)
@@ -192,62 +153,62 @@ final class AggregationStageTaskReloadTest {
             .build();
     final long cubeId = registry.admit(declaration, Map.of(), 0L).cubeId();
     metadataStore.datasetSpecStore().create(registry.get(cubeId).orElseThrow());
-    return new CubeHandle(cubeId, -1, null, null);
   }
 
-  /** Resolves the provisioned cube's compiled meter/grain from the live catalog. */
-  private CubeHandle resolve(final CubeHandle provisioned) {
+  /** Everything a test needs of the provisioned cube, resolved from the live catalog. */
+  private record CubeHandle(int aggId, CompiledMeter meter, DimensionSchema grain) {}
+
+  private CubeHandle resolve() {
     catalog.refresh();
-    for (final ActiveCube cube : catalog.cubes()) {
-      if (cube.registered().cubeId() == provisioned.cubeId()) {
-        final List<CompiledMeter> meters = cube.compiled().meters();
-        assertThat(meters).hasSize(1);
-        return new CubeHandle(
-            provisioned.cubeId(), meters.get(0).aggId(), meters.get(0), cube.compiled().grain());
-      }
-    }
-    throw new IllegalStateException("cube " + provisioned.cubeId() + " not in the catalog");
+    final List<ActiveCube> cubes = catalog.cubes();
+    assertThat(cubes).hasSize(1);
+    final ActiveCube cube = cubes.get(0);
+    final List<CompiledMeter> meters = cube.compiled().meters();
+    assertThat(meters).hasSize(1);
+    return new CubeHandle(meters.get(0).aggId(), meters.get(0), cube.compiled().grain());
   }
 
   /** One AGGREGATE_DELTA/MERGE envelope with a single one-fact cell delta for window 0. */
-  private ShuffleEnvelope envelope(final CubeHandle handle) {
+  private ShuffleEnvelope envelope(final CubeHandle handle, final long segment, final int chunk) {
     final byte[] key =
         new DimensionKeyValue(handle.grain()).toBytes(DimensionKey.of(handle.grain(), PROCESS));
     return new ShuffleEnvelope(
         0L,
         1,
         1,
-        ++segment,
-        0,
+        segment,
+        chunk,
         false,
         PayloadKind.AGGREGATE_DELTA,
         Operation.MERGE,
-        List.of(new CellDelta(handle.aggId(), 0L, key, oneFact(handle.meter()))));
+        List.of(new CellDelta(handle.aggId(), 0L, key, oneFact(handle.meter(), segment))));
   }
 
   /** A one-fact COUNT accumulator, encoded the way Stage 1 ships deltas. */
   @SuppressWarnings("unchecked")
-  private byte[] oneFact(final CompiledMeter meter) {
+  private byte[] oneFact(final CompiledMeter meter, final long position) {
     final BoundMeter<Object, Object> bound = (BoundMeter<Object, Object>) meter.bound();
     final AggregateFunction<FactRow, Object, Object> aggregate = bound.aggregate();
     final Fact fact =
         Fact.builder(FactType.PROCESS_INSTANCE)
             .field("bpmnProcessId", PROCESS)
             .eventTime(0L)
-            .source(1, segment)
+            .source(1, position)
             .build();
     final Object accumulator = aggregate.add(fact, aggregate.createAccumulator());
     return bound.accumulatorCodec().toBytes(accumulator);
   }
 
-  /** The long result of the meter's single durable cell, read through an uncounted handle. */
+  /** The long result of the meter's single durable cell. */
   @SuppressWarnings("unchecked")
   private long durableTotal(final CubeHandle handle) {
     final BoundMeter<Object, Object> bound = (BoundMeter<Object, Object>) handle.meter().bound();
+    final KeyValueStore<DbBytes, DbBytes> cells =
+        provider.keyValueStore(AnalyticsColumnFamilies.CUBE_CELLS, new DbBytes(), new DbBytes());
     final DbBytes prefix = new DbBytes();
     prefix.wrapBytes(ByteBuffer.allocate(Integer.BYTES).putInt(handle.aggId()).array());
     final List<Long> totals = new ArrayList<>();
-    rawCells.prefixScan(
+    cells.prefixScan(
         prefix,
         (key, value) -> {
           final Object accumulator = bound.accumulatorCodec().fromBytes(value.getBytes());
