@@ -1115,21 +1115,6 @@ public class WebSecurityConfig {
       }
     }
 
-    private Customizer<ProtectedResourceMetadataConfigurer>
-        oauthProtectedResourceMetadataCustomizer(
-            final ClientRegistrationRepository clientRegistrationRepository) {
-      final var issuerUris =
-          extractClientRegistrations(clientRegistrationRepository).stream()
-              .map(clientRegistration -> clientRegistration.getProviderDetails().getIssuerUri())
-              .filter(Objects::nonNull)
-              .distinct()
-              .toList();
-
-      return prmConfigurer ->
-          prmConfigurer.protectedResourceMetadataCustomizer(
-              prmBuilder -> issuerUris.forEach(prmBuilder::authorizationServer));
-    }
-
     private OAuth2AuthorizationRequestResolver authorizationRequestResolver(
         final ClientRegistrationRepository clientRegistrationRepository,
         final OidcAuthenticationConfigurationRepository oidcAuthenticationConfigurationRepository) {
