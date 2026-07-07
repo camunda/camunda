@@ -64,6 +64,9 @@ JVM_FLAGS=(
   --add-opens=java.base/java.util=ALL-UNNAMED
   --add-opens=java.base/java.lang=ALL-UNNAMED
   -XX:ActiveProcessorCount=2
+  # Pin H2's AUTO_SERVER to loopback so the second broker always reaches the shared oc-rdbms server,
+  # regardless of the machine's (changing) LAN IP — a LAN IP can become unroutable across networks.
+  -Dh2.bindAddress=127.0.0.1
 )
 
 dist_cp() { echo "${REPO_ROOT}/dist/target/classes:$(cat "${DIST_CP}")"; }
