@@ -97,7 +97,7 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
     final var user = persistedUser.get();
     final var authResult =
         permissionsBehavior.isAuthorized(
-            command, PermissionType.DELETE, AuthorizationResourceType.USER);
+            command, AuthorizationResourceType.USER, PermissionType.DELETE, username);
     if (authResult.isLeft()) {
       final var rejection = authResult.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());

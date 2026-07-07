@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.tenant;
 
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
-import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
@@ -81,8 +80,8 @@ public class DeleteTenantAuthorizationTest {
         user,
         AuthorizationResourceType.TENANT,
         PermissionType.DELETE,
-        WILDCARD.getMatcher(),
-        WILDCARD.getResourceId());
+        AuthorizationResourceMatcher.ID,
+        tenantId);
     assignUserToTenant(user.getUsername(), tenantId);
 
     // when
@@ -111,7 +110,9 @@ public class DeleteTenantAuthorizationTest {
     // then
     assertThat(rejectedDeleteRecord)
         .hasRejectionType(RejectionType.FORBIDDEN)
-        .hasRejectionReason("Expected to access tenant '*', but the principal is not authorized.");
+        .hasRejectionReason(
+            "Expected to access tenant '%s', but the principal is not authorized."
+                .formatted(tenantId));
   }
 
   private UserRecordValue createUser() {

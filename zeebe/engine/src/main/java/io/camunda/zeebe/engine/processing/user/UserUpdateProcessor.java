@@ -70,7 +70,7 @@ public class UserUpdateProcessor implements DistributedTypedRecordProcessor<User
 
     final var authResult =
         permissionsBehavior.isAuthorized(
-            command, PermissionType.UPDATE, AuthorizationResourceType.USER);
+            command, AuthorizationResourceType.USER, PermissionType.UPDATE, username);
     if (authResult.isLeft()) {
       final var rejection = authResult.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());

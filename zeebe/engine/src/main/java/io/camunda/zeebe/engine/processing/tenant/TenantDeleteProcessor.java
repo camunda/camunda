@@ -81,7 +81,7 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
 
     final var authResult =
         permissionsBehavior.isAuthorized(
-            command, PermissionType.DELETE, AuthorizationResourceType.TENANT);
+            command, AuthorizationResourceType.TENANT, PermissionType.DELETE, tenantId);
     if (authResult.isLeft()) {
       rejectCommandWithUnauthorizedError(command, authResult.getLeft());
       return;

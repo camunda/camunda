@@ -89,7 +89,7 @@ public class TenantCreateProcessor implements DistributedTypedRecordProcessor<Te
   private boolean isAuthorizedToCreate(final TypedRecord<TenantRecord> command) {
     final var authResult =
         permissionsBehavior.isAuthorized(
-            command, PermissionType.CREATE, AuthorizationResourceType.TENANT);
+            command, AuthorizationResourceType.TENANT, PermissionType.CREATE);
     if (authResult.isLeft()) {
       rejectCommandWithUnauthorizedError(command, authResult.getLeft());
       return false;

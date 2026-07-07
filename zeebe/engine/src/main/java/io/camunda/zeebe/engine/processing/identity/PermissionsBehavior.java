@@ -138,65 +138,6 @@ public class PermissionsBehavior {
     return Either.right(command.getValue());
   }
 
-  public <V extends UnifiedRecordValue> Either<Rejection, V> isAuthorized(
-      final TypedRecord<V> command,
-      final io.camunda.zeebe.protocol.record.value.PermissionType permissionType,
-      final io.camunda.zeebe.protocol.record.value.AuthorizationResourceType resourceType) {
-    if (command.isInternalCommand()) {
-      LOG.trace("Skipping authorization check for internal command {}", command.getIntent());
-      return Either.right(command.getValue());
-    }
-    final var authorizations = command.getAuthorizations();
-    if (Boolean.TRUE.equals(authorizations.get(Authorization.AUTHORIZED_ANONYMOUS_USER))) {
-      LOG.trace(
-          "Skipping authorization check for anonymous user on command {}", command.getIntent());
-      return Either.right(command.getValue());
-    }
-    if (!securityConfig.isAuthorizationsEnabled()
-        && !securityConfig.isMultiTenancyChecksEnabled()) {
-      LOG.trace(
-          "Skipping authorization check for command {}: security disabled (authz={}, multiTenancy={})",
-          command.getIntent(),
-          securityConfig.isAuthorizationsEnabled(),
-          securityConfig.isMultiTenancyChecksEnabled());
-      return Either.right(command.getValue());
-    }
-    if (authorizations.get(Authorization.AUTHORIZED_USERNAME) == null
-        && authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) == null) {
-      if (!securityConfig.isAuthorizationsEnabled()) {
-        return Either.right(command.getValue());
-      }
-      LOG.debug(
-          "Rejecting command {}: neither username nor clientId claim is present",
-          command.getIntent());
-      return Either.left(AuthorizationRejectionMapper.forbidden(permissionType, resourceType));
-    }
-    LOG.trace(
-        "Checking {} permission on {} resource for command {}",
-        permissionType,
-        resourceType,
-        command.getIntent());
-    final var auth = claimsConverter.convert(authorizations);
-    final var cslPermType = AuthzModelMapper.fromProtocol(permissionType);
-    final var cslResourceType = AuthzModelMapper.fromProtocol(resourceType);
-    final var result =
-        authCheckPort.check(
-            auth,
-            RequiredAuthorization.of(
-                b ->
-                    b.resourceType(cslResourceType)
-                        .permissionType(cslPermType)
-                        .resourceId(AuthorizationScope.WILDCARD_CHAR)));
-    if (result.isLeft()) {
-      LOG.debug(
-          "Authorization check rejected for command {}: {}",
-          command.getIntent(),
-          result.leftValue());
-      return Either.left(AuthorizationRejectionMapper.toRejection(result.leftValue()));
-    }
-    return Either.right(command.getValue());
-  }
-
   public Either<Rejection, PersistedAuthorization> authorizationExists(
       final AuthorizationRecord authorizationRecord, final String rejectionMessage) {
     final var key = authorizationRecord.getAuthorizationKey();

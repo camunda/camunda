@@ -102,7 +102,7 @@ public class UserCreateInitialAdminProcessor implements TypedRecordProcessor<Use
   private Either<String, Void> checkUserCreateAuthorization(final TypedRecord<UserRecord> command) {
     final var authResult =
         permissionsBehavior.isAuthorized(
-            command, PermissionType.CREATE, AuthorizationResourceType.USER);
+            command, AuthorizationResourceType.USER, PermissionType.CREATE);
     return authResult.fold(
         rejection -> Either.left(rejection.reason()), unused -> Either.right(null));
   }
@@ -110,7 +110,7 @@ public class UserCreateInitialAdminProcessor implements TypedRecordProcessor<Use
   private Either<String, Void> checkRoleUpdateAuthorization(final TypedRecord<UserRecord> command) {
     final var authResult =
         permissionsBehavior.isAuthorized(
-            command, PermissionType.UPDATE, AuthorizationResourceType.ROLE);
+            command, AuthorizationResourceType.ROLE, PermissionType.UPDATE);
     return authResult.fold(
         rejection -> Either.left(rejection.reason()), unused -> Either.right(null));
   }
