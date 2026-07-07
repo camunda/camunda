@@ -41,6 +41,14 @@ import org.agrona.concurrent.UnsafeBuffer;
  * <pre>
  *   timestamp(8) | key(8) | metadataLength(4) | metadata[metadataLength] | value[...]
  * </pre>
+ *
+ * <p><b>Threading.</b> A codec instance is <em>not</em> thread-safe: it reuses internal buffer
+ * wrappers (and, for {@link #accepts}, a metadata flyweight) across calls to keep the per-record
+ * paths allocation-free. Confine each instance to a single thread — e.g. the exporter thread on the
+ * serialize side, or the stream runtime's source thread on the consume side. The <em>results</em>
+ * are safe to hand off: {@link #serialize} returns a fresh array and {@link #deserialize} builds
+ * its record from per-call metadata/value objects, so a decoded record may outlive the call (e.g.
+ * buffered in a partition queue) without aliasing codec state.
  */
 public final class ZeebeRecordCodec {
 
@@ -48,6 +56,23 @@ public final class ZeebeRecordCodec {
   private static final int TIMESTAMP_FIELD = Long.BYTES;
   private static final int KEY_FIELD = Long.BYTES;
   private static final int METADATA_LENGTH_FIELD = Integer.BYTES;
+
+  /** Reusable wrapper around the payload being written; the payload array itself is per-call. */
+  private final UnsafeBuffer writeBuffer = new UnsafeBuffer(0, 0);
+
+  /**
+   * Reusable wrapper around the payload being read. Rewrapping is safe even though a deserialized
+   * value/metadata may retain views of the payload <em>array</em>: the decoded objects wrap the
+   * underlying array, never this wrapper object.
+   */
+  private final UnsafeBuffer readBuffer = new UnsafeBuffer(0, 0);
+
+  /**
+   * Metadata flyweight for {@link #accepts}/{@link #timestamp} peeks only — nothing of it escapes
+   * (the filter sees enums). {@link #deserialize} deliberately builds a fresh {@link
+   * RecordMetadata} instead, because the returned {@link CopiedRecord} retains it.
+   */
+  private final RecordMetadata peekMetadata = new RecordMetadata();
 
   /** Serializes a record's metadata and value into a single Event Bridge payload. */
   public byte[] serialize(final Record<?> record) {
@@ -59,7 +84,8 @@ public final class ZeebeRecordCodec {
     final byte[] payload =
         new byte
             [TIMESTAMP_FIELD + KEY_FIELD + METADATA_LENGTH_FIELD + metadataLength + valueLength];
-    final MutableDirectBuffer buffer = new UnsafeBuffer(payload);
+    final MutableDirectBuffer buffer = writeBuffer;
+    buffer.wrap(payload);
 
     int offset = 0;
     buffer.putLong(offset, record.getTimestamp(), ORDER);
@@ -81,7 +107,8 @@ public final class ZeebeRecordCodec {
    * from the envelope. The source record position is not carried and defaults to {@code -1}.
    */
   public Record<?> deserialize(final byte[] payload, final int partitionId, final long position) {
-    final DirectBuffer buffer = new UnsafeBuffer(payload);
+    final DirectBuffer buffer = readBuffer;
+    readBuffer.wrap(payload);
 
     int offset = 0;
     final long timestamp = buffer.getLong(offset, ORDER);
@@ -111,7 +138,8 @@ public final class ZeebeRecordCodec {
    * run's event time and keep stream time moving.
    */
   public long timestamp(final byte[] payload) {
-    return new UnsafeBuffer(payload).getLong(0, ORDER);
+    readBuffer.wrap(payload);
+    return readBuffer.getLong(0, ORDER);
   }
 
   /**
@@ -121,13 +149,14 @@ public final class ZeebeRecordCodec {
    * subset of record types can skip the far costlier value decode for the rest.
    */
   public boolean accepts(final byte[] payload, final BiPredicate<ValueType, Intent> filter) {
-    final DirectBuffer buffer = new UnsafeBuffer(payload);
+    final DirectBuffer buffer = readBuffer;
+    readBuffer.wrap(payload);
     int offset = TIMESTAMP_FIELD + KEY_FIELD; // skip the timestamp and key
     final int metadataLength = buffer.getInt(offset, ORDER);
     offset += METADATA_LENGTH_FIELD;
-    final RecordMetadata metadata = new RecordMetadata();
-    metadata.wrap(buffer, offset, metadataLength);
-    return filter.test(metadata.getValueType(), metadata.getIntent());
+    // wrap() resets the flyweight before decoding, so no state leaks between records.
+    peekMetadata.wrap(buffer, offset, metadataLength);
+    return filter.test(peekMetadata.getValueType(), peekMetadata.getIntent());
   }
 
   private static RecordMetadata toMetadata(final Record<?> record) {

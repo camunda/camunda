@@ -106,6 +106,93 @@ final class ZeebeRecordCodecTest {
   }
 
   @Test
+  void shouldKeepEarlierRecordsIntactWhenReusingTheCodecAcrossRecords() {
+    // given two distinct records, (de)serialized through the same codec instance — the codec
+    // reuses internal buffer wrappers, so an earlier decoded record must not alias codec state
+    final Record<JobRecord> first =
+        new CopiedRecord<>(
+            new JobRecord().setType("payment").setRetries(3).setWorker("worker-1"),
+            new RecordMetadata()
+                .recordType(RecordType.EVENT)
+                .valueType(ValueType.JOB)
+                .intent(JobIntent.CREATED),
+            42L,
+            1,
+            100L,
+            99L,
+            1234L);
+    final Record<JobRecord> second =
+        new CopiedRecord<>(
+            new JobRecord().setType("shipping").setRetries(7).setWorker("worker-2"),
+            new RecordMetadata()
+                .recordType(RecordType.EVENT)
+                .valueType(ValueType.JOB)
+                .intent(JobIntent.COMPLETED),
+            43L,
+            1,
+            101L,
+            99L,
+            5678L);
+
+    // when: serialize twice, then decode both payloads with the same instance
+    final byte[] firstPayload = codec.serialize(first);
+    final byte[] secondPayload = codec.serialize(second);
+    final Record<?> firstDecoded = codec.deserialize(firstPayload, 7, 1L);
+    final Record<?> secondDecoded = codec.deserialize(secondPayload, 7, 2L);
+
+    // then: serialization is stable across reuse, and the first decode survives the second
+    assertThat(codec.serialize(first)).isEqualTo(firstPayload);
+    assertThat(codec.serialize(second)).isEqualTo(secondPayload);
+    assertThat(firstDecoded.getIntent()).isEqualTo(JobIntent.CREATED);
+    assertThat(firstDecoded.getKey()).isEqualTo(42L);
+    assertThat(firstDecoded.getTimestamp()).isEqualTo(1234L);
+    final JobRecordValue firstValue = (JobRecordValue) firstDecoded.getValue();
+    assertThat(firstValue.getType()).isEqualTo("payment");
+    assertThat(firstValue.getWorker()).isEqualTo("worker-1");
+    assertThat(firstValue.getRetries()).isEqualTo(3);
+    final JobRecordValue secondValue = (JobRecordValue) secondDecoded.getValue();
+    assertThat(secondValue.getType()).isEqualTo("shipping");
+    assertThat(secondValue.getWorker()).isEqualTo("worker-2");
+  }
+
+  @Test
+  void shouldPeekAcceptsRepeatedlyWithoutStateLeakingBetweenRecords() {
+    // given payloads of two different intents peeked through the same codec instance
+    final byte[] created =
+        codec.serialize(
+            new CopiedRecord<>(
+                new JobRecord().setType("payment"),
+                new RecordMetadata()
+                    .recordType(RecordType.EVENT)
+                    .valueType(ValueType.JOB)
+                    .intent(JobIntent.CREATED),
+                42L,
+                1,
+                100L,
+                99L,
+                1234L));
+    final byte[] completed =
+        codec.serialize(
+            new CopiedRecord<>(
+                new JobRecord().setType("payment"),
+                new RecordMetadata()
+                    .recordType(RecordType.EVENT)
+                    .valueType(ValueType.JOB)
+                    .intent(JobIntent.COMPLETED),
+                42L,
+                1,
+                100L,
+                99L,
+                1234L));
+
+    // when / then: each peek sees exactly its own record's metadata, in any order
+    assertThat(codec.accepts(created, (type, intent) -> intent == JobIntent.CREATED)).isTrue();
+    assertThat(codec.accepts(completed, (type, intent) -> intent == JobIntent.CREATED)).isFalse();
+    assertThat(codec.accepts(created, (type, intent) -> intent == JobIntent.CREATED)).isTrue();
+    assertThat(codec.timestamp(created)).isEqualTo(1234L);
+  }
+
+  @Test
   void shouldPreserveRecordKey() {
     // given a record whose key is its entity identity (e.g. an element instance key)
     final JobRecord value = new JobRecord().setType("payment");
