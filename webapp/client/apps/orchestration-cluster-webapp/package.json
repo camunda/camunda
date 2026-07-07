@@ -58,7 +58,7 @@
 		"@msw/playwright": "0.6.7",
 		"@playwright/test": "1.61.1",
 		"@svgr/cli": "^8.1.0",
-		"@tanstack/devtools-vite": "0.7.0",
+		"@tanstack/devtools-vite": "0.8.1",
 		"@tanstack/react-devtools": "0.10.8",
 		"@types/node": "25.9.4",
 		"@types/react": "19.2.17",
