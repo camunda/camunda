@@ -57,7 +57,7 @@ runs:
     # Prior sticky state is recovered from the gate's own PR comment (a hidden
     # base64 marker), not a workflow artifact. The comment is durable across the
     # "Re-run jobs" button and force-pushes, both of which delete run-scoped
-    # artifacts and previously froze the clean-run counter (GAP-11). The detector
+    # artifacts and previously froze the clean-run counter. The detector
     # reads the comment directly via the GitHub API — no download step needed.
 
     # Method-fix detection uses `git log -L:<method>:<file>`, which needs git's
@@ -100,4 +100,4 @@ runs:
       run: python3 ${{ github.action_path }}/detect_new_flaky_tests.py
     # Updated state is persisted by the detector into the PR comment's hidden
     # marker (durable across re-runs / force-push). No artifact upload step —
-    # the run-scoped artifact was the root cause of GAP-11.
+    # the run-scoped artifact was the root cause of the stuck counter.

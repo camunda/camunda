@@ -12,7 +12,7 @@ State is persisted between gate runs inside the gate's PR comment: a hidden
 base64 `<!-- flaky-gate-state: … -->` marker holds the full JSON, and the
 visible comment body is a human-readable render of it. The comment is durable
 across the "Re-run jobs" button and force-pushes, unlike a run-scoped artifact
-(see GAP-11 / README "Why the PR comment holds state").
+(see README "Why the PR comment holds state").
 
 Inputs (environment variables):
   PR_FLAKY_TESTS_DATA    – JSON array of {job, flaky_tests}
@@ -149,7 +149,7 @@ def encode_state_marker(state: dict) -> str:
     The full state JSON is base64-encoded inside an HTML comment: invisible in
     the rendered comment, but round-trips exactly on the next run. This makes
     the comment the durable state store — it survives the "Re-run jobs" button
-    and force-pushes, both of which delete run-scoped artifacts (see GAP-11).
+    and force-pushes, both of which delete run-scoped artifacts.
     """
     payload = base64.b64encode(
         json.dumps(state, separators=(",", ":"), sort_keys=True).encode("utf-8")
@@ -809,7 +809,7 @@ def main() -> None:
     # Load prior state. The gate's PR comment carries the full state in a hidden
     # base64 marker and is the durable source of truth: it survives the "Re-run
     # jobs" button and force-pushes, which delete the run-scoped artifact the
-    # gate used to rely on (GAP-11). STATE_FILE_IN remains a fallback for local
+    # gate used to rely on. STATE_FILE_IN remains a fallback for local
     # / offline runs where the comment cannot be fetched.
     existing_comment_id: int | None = None
     prior_state: dict | None = None

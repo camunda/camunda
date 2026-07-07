@@ -40,8 +40,8 @@ This "re-runs count" guarantee depends on where state is stored. State lives
 in the gate's **PR comment** (a hidden base64 marker), not a workflow
 artifact. GitHub's "Re-run jobs" button and force-pushes both **delete
 run-scoped artifacts**, so an artifact-based counter silently reset on every
-re-run and could only advance via new distinct runs (throwaway commits) —
-this was GAP-11. The comment is durable across re-runs, attempts, and
+re-run and could only advance via new distinct runs (throwaway commits).
+The comment is durable across re-runs, attempts, and
 force-pushes, so a fixed test genuinely clears by re-running CI.
 
 ## How it works
@@ -113,7 +113,7 @@ Statuses: `active`, `cleared_via_fix`, `cleared_via_bypass`,
 ## Why the PR comment holds state
 
 State was previously a per-PR workflow artifact (`flaky-gate-state-pr-<N>`,
-selected newest-by-`created_at`). That was **GAP-11**: GitHub's "Re-run jobs"
+selected newest-by-`created_at`). The root cause: GitHub's "Re-run jobs"
 button starts a new run attempt and **deletes the run's own prior-attempt
 artifacts**, and `upload-artifact overwrite` is run-scoped. So a re-run could
 not see the counter its earlier attempt banked — it fell back to an older
