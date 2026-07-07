@@ -215,7 +215,7 @@
     <version.keycloak-client>26.0.10</version.keycloak-client>
     <version.jna>5.18.1</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
-    <version.mybatis-spring>4.0.0</version.mybatis-spring>
+    <version.mybatis-spring>4.1.0</version.mybatis-spring>
     <version.mybatis>3.5.19</version.mybatis>
     <version.mybatis-spring-boot-starter>4.0.1</version.mybatis-spring-boot-starter>
     <version.javassist>3.31.0-GA</version.javassist>
