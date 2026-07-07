@@ -26,8 +26,8 @@ import org.springframework.core.env.Environment;
 
 /**
  * Fail-fast startup validation for the per-physical-tenant OIDC provider selection {@code
- * providers.assigned} (issue #54730, see ADR-0004). This is the configuration-layer counterpart of
- * the auth-merge narrowing in {@code PhysicalTenantAuthConfigurations.narrowToAssigned} (the {@code
+ * providers.assigned} (issue #54730). This is the configuration-layer counterpart of the auth-merge
+ * narrowing in {@code PhysicalTenantAuthConfigurations.narrowToAssigned} (the {@code
  * authentication} module): validation rejects an invalid selection here so the merge only ever
  * <em>applies</em> an already-valid one — a non-default tenant can therefore never silently end up
  * with no providers and hence no usable API chain.
