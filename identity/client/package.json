@@ -27,7 +27,7 @@
     "date-fns": "4.4.0",
     "fuse.js": "7.4.0",
     "i18next": "26.3.0",
-    "mobx": "6.15.4",
+    "mobx": "6.16.1",
     "mobx-react-lite": "4.1.1",
     "react": "18.3.1",
     "react-debounced": "1.1.3",
