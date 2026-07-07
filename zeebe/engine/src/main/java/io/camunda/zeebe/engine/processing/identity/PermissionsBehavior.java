@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.state.authorization.PersistedAuthorization;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
@@ -67,6 +68,21 @@ public class PermissionsBehavior {
 
   public Either<Rejection, AuthorizationRecord> isAuthorized(
       final TypedRecord<AuthorizationRecord> command, final PermissionType permissionType) {
+    return isAuthorized(command, AuthorizationResourceType.AUTHORIZATION, permissionType);
+  }
+
+  public <R extends UnifiedRecordValue> Either<Rejection, R> isAuthorized(
+      final TypedRecord<R> command,
+      final AuthorizationResourceType resourceType,
+      final PermissionType permissionType) {
+    return isAuthorized(command, resourceType, permissionType, AuthorizationScope.WILDCARD_CHAR);
+  }
+
+  public <R extends UnifiedRecordValue> Either<Rejection, R> isAuthorized(
+      final TypedRecord<R> command,
+      final AuthorizationResourceType resourceType,
+      final PermissionType permissionType,
+      final String resourceId) {
     if (command.isInternalCommand()) {
       LOG.trace("Skipping authorization check for internal command {}", command.getIntent());
       return Either.right(command.getValue());
@@ -80,41 +96,38 @@ public class PermissionsBehavior {
     if (!securityConfig.isAuthorizationsEnabled()
         && !securityConfig.isMultiTenancyChecksEnabled()) {
       LOG.trace(
-          "Skipping authorization check for command {}: security disabled (authz={}, multiTenancy={})",
-          command.getIntent(),
-          securityConfig.isAuthorizationsEnabled(),
-          securityConfig.isMultiTenancyChecksEnabled());
+          "Skipping authorization check for command {}: security disabled", command.getIntent());
       return Either.right(command.getValue());
     }
     if (authorizations.get(Authorization.AUTHORIZED_USERNAME) == null
         && authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) == null) {
       // No principal identity present: the CSL claims converter would throw. Mirror main's
-      // non-throwing contract — authorize when authorization checks are disabled (authorization
-      // commands are not tenant-owned, so the multi-tenancy check is a no-op), otherwise reject.
+      // non-throwing contract — authorize when authorization checks are disabled (these identity
+      // resources are not tenant-owned, so the multi-tenancy check is a no-op), otherwise reject.
       if (!securityConfig.isAuthorizationsEnabled()) {
         return Either.right(command.getValue());
       }
       LOG.debug(
           "Rejecting command {}: neither username nor clientId claim is present",
           command.getIntent());
-      return Either.left(
-          AuthorizationRejectionMapper.forbidden(
-              permissionType, AuthorizationResourceType.AUTHORIZATION));
+      return Either.left(AuthorizationRejectionMapper.forbidden(permissionType, resourceType));
     }
     LOG.trace(
-        "Checking {} permission on AUTHORIZATION resource for command {}",
+        "Checking {} permission on {} resource for command {}",
         permissionType,
+        resourceType,
         command.getIntent());
     final var auth = claimsConverter.convert(authorizations);
     final var cslPermType = AuthzModelMapper.fromProtocol(permissionType);
+    final var cslResourceType = AuthzModelMapper.fromProtocol(resourceType);
     final var result =
         authCheckPort.check(
             auth,
             RequiredAuthorization.of(
                 b ->
-                    b.authorization()
+                    b.resourceType(cslResourceType)
                         .permissionType(cslPermType)
-                        .resourceId(AuthorizationScope.WILDCARD_CHAR)));
+                        .resourceId(resourceId)));
     if (result.isLeft()) {
       LOG.debug(
           "Authorization check rejected for command {}: {}",

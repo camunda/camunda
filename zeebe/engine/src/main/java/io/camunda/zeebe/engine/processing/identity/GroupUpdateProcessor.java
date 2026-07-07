@@ -8,8 +8,6 @@
 package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -25,12 +23,14 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<GroupRecord> {
 
   private final GroupState groupState;
   private final KeyGenerator keyGenerator;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final PermissionsBehavior permissionsBehavior;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
@@ -39,12 +39,12 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
   public GroupUpdateProcessor(
       final GroupState groupState,
       final KeyGenerator keyGenerator,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final PermissionsBehavior permissionsBehavior,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
     this.groupState = groupState;
     this.keyGenerator = keyGenerator;
-    this.authCheckBehavior = authCheckBehavior;
+    this.permissionsBehavior = permissionsBehavior;
     this.commandDistributionBehavior = commandDistributionBehavior;
     stateWriter = writers.state();
     responseWriter = writers.response();
@@ -56,14 +56,9 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
     final var record = command.getValue();
     final var groupId = record.getGroupId();
 
-    final var authorizationRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.GROUP)
-            .permissionType(PermissionType.UPDATE)
-            .addResourceId(groupId)
-            .build();
-    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
+    final var isAuthorized =
+        permissionsBehavior.isAuthorized(
+            command, AuthorizationResourceType.GROUP, PermissionType.UPDATE, groupId);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());

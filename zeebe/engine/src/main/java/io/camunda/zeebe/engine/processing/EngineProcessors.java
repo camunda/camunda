@@ -337,24 +337,6 @@ public final class EngineProcessors {
         securityConfig,
         config);
 
-    RoleProcessors.addRoleProcessors(
-        typedRecordProcessors,
-        processingState,
-        authCheckBehavior,
-        keyGenerator,
-        writers,
-        commandDistributionBehavior,
-        securityConfig);
-
-    GroupProcessors.addGroupProcessors(
-        typedRecordProcessors,
-        processingState,
-        authCheckBehavior,
-        keyGenerator,
-        writers,
-        commandDistributionBehavior,
-        securityConfig);
-
     ScalingProcessors.addScalingProcessors(
         commandDistributionBehavior,
         bpmnBehaviors,
@@ -371,14 +353,6 @@ public final class EngineProcessors {
         writers,
         commandDistributionBehavior,
         securityConfig);
-
-    MappingRuleProcessors.addMappingRuleProcessors(
-        typedRecordProcessors,
-        processingState,
-        authCheckBehavior,
-        keyGenerator,
-        writers,
-        commandDistributionBehavior);
 
     IdentitySetupProcessors.addIdentitySetupProcessors(
         keyGenerator, typedRecordProcessors, writers, securityConfig, config);
@@ -502,6 +476,36 @@ public final class EngineProcessors {
         authCheckBehavior,
         securityConfig,
         authorizationScopeStateAdapter);
+
+    GroupProcessors.addGroupProcessors(
+        typedRecordProcessors,
+        processingState,
+        authzService,
+        claimsConverter,
+        keyGenerator,
+        writers,
+        commandDistributionBehavior,
+        securityConfig);
+
+    RoleProcessors.addRoleProcessors(
+        typedRecordProcessors,
+        processingState,
+        authzService,
+        claimsConverter,
+        keyGenerator,
+        writers,
+        commandDistributionBehavior,
+        securityConfig);
+
+    MappingRuleProcessors.addMappingRuleProcessors(
+        typedRecordProcessors,
+        processingState,
+        authzService,
+        claimsConverter,
+        keyGenerator,
+        writers,
+        commandDistributionBehavior,
+        securityConfig);
   }
 
   private static TypedRecordProcessor<UserTaskRecord> createUserTaskProcessor(
