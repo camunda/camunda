@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.tenant;
 
+import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
@@ -36,9 +37,11 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import org.slf4j.Logger;
 
 public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<TenantRecord> {
 
+  private static final Logger LOG = Loggers.ENGINE_IDENTITY_LOGGER;
   private static final String TENANT_NOT_FOUND_ERROR_MESSAGE =
       "Expected to delete tenant with id '%s', but no tenant with this id exists.";
   private final TenantState tenantState;
@@ -165,7 +168,11 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
   private void invalidateAuthorizationCaches() {
     sideEffectWriter.appendSideEffect(
         () -> {
-          authCheckBehavior.clearAuthorizationsCache();
+          try {
+            authCheckBehavior.clearAuthorizationsCache();
+          } catch (final Exception e) {
+            LOG.warn("Failed to clear legacy authorization cache after tenant delete", e);
+          }
           authorizationScopeStateAdapter.invalidateAll();
           return true;
         });
