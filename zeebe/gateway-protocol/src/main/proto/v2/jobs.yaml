@@ -442,6 +442,7 @@ components:
         - userTask
         - priority
         - leaseToken
+        - physicalTenantId
       properties:
         type:
           description: The type of the job (should match what was requested).

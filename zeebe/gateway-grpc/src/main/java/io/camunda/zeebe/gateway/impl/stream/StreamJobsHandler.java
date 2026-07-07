@@ -9,9 +9,7 @@ package io.camunda.zeebe.gateway.impl.stream;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
-import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.gateway.ResponseMapper;
-import io.camunda.zeebe.gateway.interceptors.InterceptorUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJobImpl;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
@@ -28,7 +26,6 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
-import java.util.Objects;
 import java.util.concurrent.Executor;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
@@ -62,11 +59,6 @@ public class StreamJobsHandler extends Actor {
           Long.toString(jobActivationProperties.timeout()));
       return;
     }
-
-    final var physicalTenantId =
-        Objects.requireNonNullElse(
-            InterceptorUtil.getPhysicalTenantIdKey().get(),
-            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     handleInternal(jobType, jobActivationProperties, responseObserver, physicalTenantId);
   }
 

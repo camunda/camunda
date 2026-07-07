@@ -219,7 +219,7 @@ class ResponseMapperTest {
 
       final JobBatchRecord batchRecord = buildJobBatchRecord(jobRecord);
       final JobActivationResponse activationResponse =
-          new JobActivationResponse(123L, batchRecord, 1024 * 1024L);
+          new JobActivationResponse(123L, batchRecord, 1024 * 1024L, "default");
 
       // when
       final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
@@ -255,7 +255,7 @@ class ResponseMapperTest {
 
       final JobBatchRecord batchRecord = buildJobBatchRecord(jobRecord);
       final JobActivationResponse activationResponse =
-          new JobActivationResponse(123L, batchRecord, 1024 * 1024L);
+          new JobActivationResponse(123L, batchRecord, 1024 * 1024L, "default");
 
       // when
       final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
