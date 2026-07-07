@@ -21,7 +21,7 @@
     "@camunda/camunda-api-zod-schemas": "0.0.78",
     "@camunda/camunda-composite-components": "0.25.0",
     "@carbon/elements": "11.92.0",
-    "@carbon/react": "1.108.0",
+    "@carbon/react": "1.111.0",
     "@monaco-editor/react": "4.7.0",
     "@tanstack/react-query": "^5.100.14",
     "date-fns": "4.4.0",
