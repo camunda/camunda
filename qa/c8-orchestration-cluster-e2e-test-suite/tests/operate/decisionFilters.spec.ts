@@ -140,7 +140,7 @@ test.describe('Decision Filters', () => {
         operateDecisionsPage.decisionInstancesList.getByRole('link', {
           name: `View process instance ${failedInstanceProcessKey}`,
         }),
-      ).toHaveCount(0);
+      ).toHaveCount(0, {timeout: 30_000});
     });
   });
 

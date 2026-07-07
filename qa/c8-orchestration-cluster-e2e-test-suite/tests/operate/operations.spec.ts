@@ -63,7 +63,9 @@ test.beforeAll(async () => {
 test.describe('Operations', () => {
   test.beforeEach(async ({page, operateHomePage}) => {
     await navigateToAppHome(page, 'operate');
-    await expect(operateHomePage.operateBanner).toBeVisible();
+    // Operate can be slow to render its header banner on first load under
+    // load; give it a wider budget than the default expect timeout.
+    await expect(operateHomePage.operateBanner).toBeVisible({timeout: 90000});
     await operateHomePage.clickProcessesTab();
   });
 

@@ -599,22 +599,33 @@ test.describe('Process Instance History', () => {
 
     await test.step('Verify history changed accordingly', async () => {
       const nestedParentName = activitySecondSubprocess;
-      await operateProcessInstancePage.ensureElementExpandedInHistory(
-        nestedParentName,
-      );
-
-      await operateProcessInstancePage.verifyHistoryItemsStatus(
-        activitySecondSubprocess,
-        ['TERMINATED', 'ACTIVE'],
-      );
-      await operateProcessInstancePage.verifyHistoryItemsStatus(
-        eventStartSecondSubProcess,
-        ['COMPLETED', 'COMPLETED'],
-      );
-      await operateProcessInstancePage.verifyHistoryItemsStatus(
-        activitySendItems,
-        ['TERMINATED', 'ACTIVE'],
-      );
+      // The applied cancellation is reprocessed asynchronously, so the history
+      // tree can still show the token as ACTIVE right after apply. Reload and
+      // re-check (re-expanding the node each time) until the terminal statuses
+      // appear.
+      await waitForAssertion({
+        assertion: async () => {
+          await operateProcessInstancePage.ensureElementExpandedInHistory(
+            nestedParentName,
+          );
+          await operateProcessInstancePage.verifyHistoryItemsStatus(
+            activitySecondSubprocess,
+            ['TERMINATED', 'ACTIVE'],
+          );
+          await operateProcessInstancePage.verifyHistoryItemsStatus(
+            eventStartSecondSubProcess,
+            ['COMPLETED', 'COMPLETED'],
+          );
+          await operateProcessInstancePage.verifyHistoryItemsStatus(
+            activitySendItems,
+            ['TERMINATED', 'ACTIVE'],
+          );
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+        maxRetries: 5,
+      });
     });
 
     await test.step('Move all Send items', async () => {

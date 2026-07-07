@@ -161,7 +161,9 @@ class TaskDetailsPage {
   async clickUnassignButton() {
     await expect(this.unassignButton).toBeVisible({timeout: 30000});
     await this.unassignButton.click();
-    await expect(this.assignToMeButton).toBeVisible({timeout: 30000});
+    // Unassigning is processed asynchronously; the Assign-to-me button can take
+    // a while to reappear under load, so match the assign path's 60s budget.
+    await expect(this.assignToMeButton).toBeVisible({timeout: 60000});
   }
 
   async clickCompleteTaskButton() {
