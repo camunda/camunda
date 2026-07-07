@@ -313,6 +313,45 @@ class RequestMapperTest {
     }
 
     @Test
+    void shouldMapJobActivationWithLease() {
+      // given
+      final var request =
+          JobActivationRequest.Builder.create()
+              .type("test-job")
+              .maxJobsToActivate(10)
+              .timeout(5000L)
+              .tenantIds(List.of("tenant-a"))
+              .withLease(true)
+              .build();
+
+      // when
+      final var result = RequestMapper.toJobsActivationRequest(request, true);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      assertThat(result.get().withLease()).isTrue();
+    }
+
+    @Test
+    void shouldNotSetWithLeaseByDefault() {
+      // given
+      final var request =
+          JobActivationRequest.Builder.create()
+              .type("test-job")
+              .maxJobsToActivate(10)
+              .timeout(5000L)
+              .tenantIds(List.of("tenant-a"))
+              .build();
+
+      // when
+      final var result = RequestMapper.toJobsActivationRequest(request, true);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      assertThat(result.get().withLease()).isFalse();
+    }
+
+    @Test
     void shouldMapJobActivationWithAssignedTenantFilterAndNoTenantIds() {
       // given
       final var request =
