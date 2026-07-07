@@ -7,10 +7,11 @@
  */
 package io.camunda.analytics.state.immutable;
 
+import io.camunda.analytics.dimension.Utf8View;
 import io.camunda.analytics.state.ElementEntity;
 import io.camunda.analytics.state.IncidentEntity;
+import io.camunda.analytics.state.VariableNames;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * The read view of the Model-A base projection: the materialized rows a deriver reads to build a
@@ -28,16 +29,18 @@ public interface ProjectionState {
   /**
    * The variable snapshot visible to an element instance, resolved up the scope hierarchy from its
    * local scope to the process-instance scope (a nearer scope's value wins), like the engine's
-   * variable visibility. Empty if none.
+   * variable visibility. Empty if none. Values are owned UTF-8 views — never decoded to {@code
+   * String} on this path (ADR 0008).
    */
-  Map<String, String> variables(long scopeKey);
+  Map<String, Utf8View> variables(long scopeKey);
 
   /**
    * Like {@link #variables(long)} but resolves ONLY the named variables — via point lookups up the
    * scope hierarchy that stop as soon as every requested name is found, rather than scanning the
    * whole scope (the engine's fetch-only-needed-names read). Empty if {@code names} is empty. The
-   * enrichment path passes the union of {@code var.*} names any dataset groups or filters by, so a
-   * fact only pays to resolve the variables some meter actually reads.
+   * enrichment path passes the union of {@code var.*} names any dataset groups or filters by (their
+   * UTF-8 bytes precomputed once per topology), so a fact only pays to resolve the variables some
+   * meter actually reads — and gets them as value slices, not {@code String}s.
    */
-  Map<String, String> variables(long scopeKey, Set<String> names);
+  Map<String, Utf8View> variables(long scopeKey, VariableNames names);
 }

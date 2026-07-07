@@ -24,6 +24,7 @@ import io.camunda.analytics.projection.derive.ProcessDeployedDeriver;
 import io.camunda.analytics.projection.dispatch.RecordDispatch;
 import io.camunda.analytics.projection.dispatch.RecordHandler;
 import io.camunda.analytics.state.ElementStatus;
+import io.camunda.analytics.state.VariableNames;
 import io.camunda.analytics.state.mutable.MutableProjectionState;
 import io.camunda.eventbridge.streaming.processor.Processor;
 import io.camunda.eventbridge.streaming.processor.ProcessorContext;
@@ -32,7 +33,6 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
-import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -55,11 +55,11 @@ import java.util.function.Consumer;
 public final class AnalyticsBaseProjection implements Processor<SourceRecord, Fact> {
 
   private final MutableProjectionState state;
-  private final Set<String> variableNames;
+  private final VariableNames variableNames;
   private RecordDispatch dispatch;
 
   public AnalyticsBaseProjection(
-      final MutableProjectionState state, final Set<String> variableNames) {
+      final MutableProjectionState state, final VariableNames variableNames) {
     this.state = state;
     this.variableNames = variableNames;
   }

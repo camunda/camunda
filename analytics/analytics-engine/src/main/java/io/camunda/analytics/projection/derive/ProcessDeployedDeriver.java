@@ -7,12 +7,12 @@
  */
 package io.camunda.analytics.projection.derive;
 
+import io.camunda.analytics.dimension.Utf8View;
 import io.camunda.analytics.fact.Fact;
 import io.camunda.analytics.fact.FactType;
 import io.camunda.analytics.fact.Transition;
 import io.camunda.analytics.projection.SourceRecord;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
-import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
 
 /**
@@ -39,7 +39,7 @@ public final class ProcessDeployedDeriver implements FactDeriver {
               .field("processDefinitionKey", process.getProcessDefinitionKey())
               .field("version", process.getVersion())
               .field("tenantId", process.getTenantId())
-              .field("bpmnXml", new String(process.getResource(), StandardCharsets.UTF_8))
+              .field("bpmnXml", Utf8View.wrap(process.getResource()))
               .build());
     }
   }

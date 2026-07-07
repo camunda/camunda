@@ -28,6 +28,7 @@ import io.camunda.analytics.serving.catalog.DatasetCatalog;
 import io.camunda.analytics.serving.spi.DatasetStore;
 import io.camunda.analytics.serving.spi.DatasetWriter;
 import io.camunda.analytics.state.StateBackedProjectionState;
+import io.camunda.analytics.state.VariableNames;
 import io.camunda.analytics.table.ProcessDefinitionSink;
 import io.camunda.analytics.table.TableRowProcessor;
 import io.camunda.eventbridge.client.EventBridgeClient;
@@ -274,7 +275,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
     // The union of var.* names any active dataset groups or filters by — so the base projection's
     // variable enrichment resolves only those names (point lookups, early-terminating) instead of
     // scanning the whole scope. Recomputed on each catalog reload.
-    final Set<String> variableNames = variableNames(cubes, tables);
+    final VariableNames variableNames = VariableNames.of(variableNames(cubes, tables));
     final FactTypeDispatcher dispatcher = new FactTypeDispatcher();
     final ProcessorTopology.Builder<SourceRecord> builder =
         ProcessorTopology.<SourceRecord>builder()

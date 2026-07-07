@@ -370,7 +370,9 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
       return;
     }
     switch (type) {
-      case STRING, TEXT -> statement.setString(index, (String) value);
+      // Cube-cell dims decode to String; projected-row values may be UTF-8 views — either way
+      // this is the mandatory JDBC edge, so materialize via toString (identity for String).
+      case STRING, TEXT -> statement.setString(index, value.toString());
       case LONG -> statement.setLong(index, ((Number) value).longValue());
       case INT -> statement.setInt(index, ((Number) value).intValue());
       case BOOLEAN -> statement.setBoolean(index, (Boolean) value);

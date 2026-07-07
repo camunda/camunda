@@ -12,7 +12,7 @@ import io.camunda.analytics.fact.Transition;
 import io.camunda.analytics.projection.SourceRecord;
 import io.camunda.analytics.state.IncidentEntity;
 import io.camunda.analytics.state.immutable.ProjectionState;
-import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import java.util.function.Consumer;
 
 /** Emits a {@code +1} incident level fact on creation, reading the type off the just-opened row. */
@@ -28,7 +28,7 @@ public final class IncidentCreatedDeriver implements FactDeriver {
 
   @Override
   public void derive(final SourceRecord source) {
-    final IncidentRecordValue value = (IncidentRecordValue) source.record().getValue();
+    final IncidentRecord value = (IncidentRecord) source.record().getValue();
     final IncidentEntity row = state.incident(value.getElementInstanceKey());
     final String errorType =
         row != null

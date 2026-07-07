@@ -9,8 +9,12 @@ package io.camunda.analytics.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.analytics.dimension.Utf8View;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import org.agrona.DirectBuffer;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -32,12 +36,13 @@ final class StateBackedProjectionStateNamedVariablesTest {
   void shouldResolveOnlyTheRequestedNames() throws Exception {
     // given a scope holding several variables
     try (final StateBackedProjectionState state = StateBackedProjectionState.inMemory()) {
-      state.putVariable(PROCESS_SCOPE, "a", "1");
-      state.putVariable(PROCESS_SCOPE, "b", "2");
-      state.putVariable(PROCESS_SCOPE, "c", "3");
+      state.putVariable(PROCESS_SCOPE, buf("a"), buf("1"));
+      state.putVariable(PROCESS_SCOPE, buf("b"), buf("2"));
+      state.putVariable(PROCESS_SCOPE, buf("c"), buf("3"));
 
       // when only two names are requested
-      final Map<String, String> resolved = state.variables(PROCESS_SCOPE, Set.of("a", "c"));
+      final Map<String, String> resolved =
+          strings(state.variables(PROCESS_SCOPE, VariableNames.of(Set.of("a", "c"))));
 
       // then exactly those are returned — no over-fetch of the scope's other variables
       assertThat(resolved).containsOnly(Map.entry("a", "1"), Map.entry("c", "3"));
@@ -51,15 +56,16 @@ final class StateBackedProjectionStateNamedVariablesTest {
       state.activateElement(PROCESS_SCOPE, 1L, true, 0L);
       state.activateElement(SUBPROCESS_SCOPE, 2L, false, PROCESS_SCOPE);
       state.activateElement(TASK_SCOPE, 3L, false, SUBPROCESS_SCOPE);
-      state.putVariable(PROCESS_SCOPE, "shadowed", "process");
-      state.putVariable(PROCESS_SCOPE, "rootOnly", "root");
-      state.putVariable(SUBPROCESS_SCOPE, "shadowed", "subprocess");
-      state.putVariable(SUBPROCESS_SCOPE, "mid", "middle");
-      state.putVariable(TASK_SCOPE, "shadowed", "task");
+      state.putVariable(PROCESS_SCOPE, buf("shadowed"), buf("process"));
+      state.putVariable(PROCESS_SCOPE, buf("rootOnly"), buf("root"));
+      state.putVariable(SUBPROCESS_SCOPE, buf("shadowed"), buf("subprocess"));
+      state.putVariable(SUBPROCESS_SCOPE, buf("mid"), buf("middle"));
+      state.putVariable(TASK_SCOPE, buf("shadowed"), buf("task"));
 
       // when resolving from the innermost scope
       final Map<String, String> resolved =
-          state.variables(TASK_SCOPE, Set.of("shadowed", "mid", "rootOnly"));
+          strings(
+              state.variables(TASK_SCOPE, VariableNames.of(Set.of("shadowed", "mid", "rootOnly"))));
 
       // then each name comes from the nearest scope that defines it
       assertThat(resolved)
@@ -76,11 +82,12 @@ final class StateBackedProjectionStateNamedVariablesTest {
     try (final StateBackedProjectionState state = StateBackedProjectionState.inMemory()) {
       state.activateElement(PROCESS_SCOPE, 1L, true, 0L);
       state.activateElement(SUBPROCESS_SCOPE, 2L, false, PROCESS_SCOPE);
-      state.putVariable(PROCESS_SCOPE, "present", "yes");
+      state.putVariable(PROCESS_SCOPE, buf("present"), buf("yes"));
 
       // when a missing name is requested alongside a present one
       final Map<String, String> resolved =
-          state.variables(SUBPROCESS_SCOPE, Set.of("present", "missing"));
+          strings(
+              state.variables(SUBPROCESS_SCOPE, VariableNames.of(Set.of("present", "missing"))));
 
       // then the missing name is absent — no null entry, no placeholder
       assertThat(resolved).containsOnly(Map.entry("present", "yes"));
@@ -92,10 +99,10 @@ final class StateBackedProjectionStateNamedVariablesTest {
   void shouldReturnEmptyForEmptyNames() throws Exception {
     // given a scope with variables
     try (final StateBackedProjectionState state = StateBackedProjectionState.inMemory()) {
-      state.putVariable(PROCESS_SCOPE, "a", "1");
+      state.putVariable(PROCESS_SCOPE, buf("a"), buf("1"));
 
       // when no names are requested, then nothing is resolved (and nothing is read)
-      assertThat(state.variables(PROCESS_SCOPE, Set.of())).isEmpty();
+      assertThat(strings(state.variables(PROCESS_SCOPE, VariableNames.of(Set.of())))).isEmpty();
     }
   }
 
@@ -105,10 +112,11 @@ final class StateBackedProjectionStateNamedVariablesTest {
     // activation was never folded / already evicted) — the parent pointer is unknowable
     try (final StateBackedProjectionState state = StateBackedProjectionState.inMemory()) {
       state.activateElement(PROCESS_SCOPE, 1L, true, 0L);
-      state.putVariable(PROCESS_SCOPE, "a", "1");
+      state.putVariable(PROCESS_SCOPE, buf("a"), buf("1"));
 
       // when resolving from the row-less child scope
-      final Map<String, String> resolved = state.variables(TASK_SCOPE, Set.of("a"));
+      final Map<String, String> resolved =
+          strings(state.variables(TASK_SCOPE, VariableNames.of(Set.of("a"))));
 
       // then the chain cannot be walked past it — the parent's variable is NOT resolved
       assertThat(resolved).isEmpty();
@@ -119,10 +127,10 @@ final class StateBackedProjectionStateNamedVariablesTest {
   void shouldResolveLocalVariablesOfARowLessScopeBeforeTheChainEnds() throws Exception {
     // given a scope with a local variable but no element row
     try (final StateBackedProjectionState state = StateBackedProjectionState.inMemory()) {
-      state.putVariable(TASK_SCOPE, "local", "here");
+      state.putVariable(TASK_SCOPE, buf("local"), buf("here"));
 
       // when resolving from that scope, the local level is read before the chain walk stops
-      assertThat(state.variables(TASK_SCOPE, Set.of("local")))
+      assertThat(strings(state.variables(TASK_SCOPE, VariableNames.of(Set.of("local")))))
           .containsOnly(Map.entry("local", "here"));
     }
   }
@@ -133,17 +141,29 @@ final class StateBackedProjectionStateNamedVariablesTest {
     try (final StateBackedProjectionState state = StateBackedProjectionState.inMemory()) {
       state.activateElement(PROCESS_SCOPE, 1L, true, 0L);
       state.activateElement(SUBPROCESS_SCOPE, 2L, false, PROCESS_SCOPE);
-      state.putVariable(PROCESS_SCOPE, "a", "root-a");
-      state.putVariable(PROCESS_SCOPE, "b", "root-b");
-      state.putVariable(SUBPROCESS_SCOPE, "a", "sub-a");
+      state.putVariable(PROCESS_SCOPE, buf("a"), buf("root-a"));
+      state.putVariable(PROCESS_SCOPE, buf("b"), buf("root-b"));
+      state.putVariable(SUBPROCESS_SCOPE, buf("a"), buf("sub-a"));
 
       // when reading via the name-targeted lookup and via the full prefix-scan snapshot
-      final Map<String, String> named = state.variables(SUBPROCESS_SCOPE, Set.of("a", "b"));
-      final Map<String, String> full = state.variables(SUBPROCESS_SCOPE);
+      final Map<String, String> named =
+          strings(state.variables(SUBPROCESS_SCOPE, VariableNames.of(Set.of("a", "b"))));
+      final Map<String, String> full = strings(state.variables(SUBPROCESS_SCOPE));
 
       // then the two read paths agree on every requested name (same visibility rules)
       assertThat(named).containsOnly(Map.entry("a", "sub-a"), Map.entry("b", "root-b"));
       assertThat(full).containsAllEntriesOf(named);
     }
+  }
+
+  /** Mechanical adaptation to the byte-view signatures (ADR 0008); semantics unchanged. */
+  private static DirectBuffer buf(final String value) {
+    return BufferUtil.wrapString(value);
+  }
+
+  private static Map<String, String> strings(final Map<String, Utf8View> views) {
+    final Map<String, String> strings = new LinkedHashMap<>();
+    views.forEach((name, value) -> strings.put(name, value.toString()));
+    return strings;
   }
 }

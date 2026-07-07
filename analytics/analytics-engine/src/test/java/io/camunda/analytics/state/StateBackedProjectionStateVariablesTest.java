@@ -9,6 +9,9 @@ package io.camunda.analytics.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.analytics.dimension.Utf8View;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -22,9 +25,11 @@ final class StateBackedProjectionStateVariablesTest {
   void shouldClearVariablesForAScopeThatHasThem() throws Exception {
     // given
     try (final StateBackedProjectionState state = StateBackedProjectionState.inMemory()) {
-      state.putVariable(100L, "a", "1");
-      state.putVariable(100L, "b", "2");
-      assertThat(state.variables(100L)).containsEntry("a", "1").containsEntry("b", "2");
+      state.putVariable(100L, buf("a"), buf("1"));
+      state.putVariable(100L, buf("b"), buf("2"));
+      assertThat(state.variables(100L))
+          .containsEntry("a", Utf8View.of("1"))
+          .containsEntry("b", Utf8View.of("2"));
 
       // when
       state.clearVariables(100L);
@@ -40,11 +45,11 @@ final class StateBackedProjectionStateVariablesTest {
     try (final StateBackedProjectionState state = StateBackedProjectionState.inMemory()) {
       // when / then — clearing is a harmless no-op, and an unrelated scope's variables are
       // untouched
-      state.putVariable(200L, "keep", "yes");
+      state.putVariable(200L, buf("keep"), buf("yes"));
       state.clearVariables(999L);
 
       assertThat(state.variables(999L)).isEmpty();
-      assertThat(state.variables(200L)).containsEntry("keep", "yes");
+      assertThat(state.variables(200L)).containsEntry("keep", Utf8View.of("yes"));
     }
   }
 
@@ -52,7 +57,7 @@ final class StateBackedProjectionStateVariablesTest {
   void shouldStillClearVariablesAfterACheckpoint() throws Exception {
     // given variables and their scope marker made durable by a checkpoint
     try (final StateBackedProjectionState state = StateBackedProjectionState.inMemory()) {
-      state.putVariable(300L, "x", "1");
+      state.putVariable(300L, buf("x"), buf("1"));
       state.checkpoint();
 
       // when — the eviction path clears after the marker was flushed (not just held in the cache)
@@ -67,17 +72,22 @@ final class StateBackedProjectionStateVariablesTest {
   void shouldReclearAfterVariablesAreSetAgainOnTheSameScope() throws Exception {
     // given a scope cleared once (marker removed), then reused
     try (final StateBackedProjectionState state = StateBackedProjectionState.inMemory()) {
-      state.putVariable(400L, "a", "1");
+      state.putVariable(400L, buf("a"), buf("1"));
       state.clearVariables(400L);
       assertThat(state.variables(400L)).isEmpty();
 
       // when a new variable is set on the same scope (re-marking it) and cleared again
-      state.putVariable(400L, "b", "2");
-      assertThat(state.variables(400L)).containsEntry("b", "2");
+      state.putVariable(400L, buf("b"), buf("2"));
+      assertThat(state.variables(400L)).containsEntry("b", Utf8View.of("2"));
       state.clearVariables(400L);
 
       // then it is cleared again — the marker was re-established by the second put
       assertThat(state.variables(400L)).isEmpty();
     }
+  }
+
+  /** Mechanical adaptation to the byte-view signatures (ADR 0008); semantics unchanged. */
+  private static DirectBuffer buf(final String value) {
+    return BufferUtil.wrapString(value);
   }
 }

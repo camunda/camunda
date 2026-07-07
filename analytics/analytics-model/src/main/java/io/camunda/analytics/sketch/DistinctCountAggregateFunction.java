@@ -7,6 +7,7 @@
  */
 package io.camunda.analytics.sketch;
 
+import io.camunda.analytics.dimension.Utf8View;
 import io.camunda.eventbridge.streaming.aggregate.AggregateFunction;
 import java.util.function.Function;
 import org.apache.datasketches.hll.HllSketch;
@@ -32,9 +33,9 @@ public final class DistinctCountAggregateFunction<F>
   /** Standard deviations for the returned confidence bounds (2 ≈ 95%). */
   private static final int NUM_STD_DEV = 2;
 
-  private final Function<F, String> item;
+  private final Function<? super F, ?> item;
 
-  public DistinctCountAggregateFunction(final Function<F, String> item) {
+  public DistinctCountAggregateFunction(final Function<? super F, ?> item) {
     this.item = item;
   }
 
@@ -45,9 +46,14 @@ public final class DistinctCountAggregateFunction<F>
 
   @Override
   public HllSketch add(final F fact, final HllSketch sketch) {
-    final String value = item.apply(fact);
-    if (value != null) {
-      sketch.update(value);
+    // A UTF-8 view feeds its bytes without materializing a String: DataSketches hashes a String
+    // as its UTF-8 bytes, so both update paths produce bit-identical registers (pinned by
+    // HllSketchUtf8CompatibilityTest), and both skip the empty value the same way.
+    switch (item.apply(fact)) {
+      case null -> {}
+      case final Utf8View view -> sketch.update(view.utf8());
+      case final String string -> sketch.update(string);
+      case final Object value -> sketch.update(value.toString());
     }
     return sketch;
   }

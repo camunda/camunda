@@ -43,8 +43,21 @@ public record MeasureRef(String field) {
     return value instanceof final Boolean flag && flag ? 1.0 : 0.0;
   }
 
+  /**
+   * The measured field as a materialized {@code String} — a mandatory-edge read (top-k sketches
+   * genuinely store items). A UTF-8 view decodes lazily (memoized) here.
+   */
   public String asString(final FactRow fact) {
     final Object value = fact.get(field);
     return value == null ? null : value.toString();
+  }
+
+  /**
+   * The measured field's raw value, for meters that consume it natively without materializing —
+   * e.g. distinct-count hashes a UTF-8 view's bytes directly (bit-identical to hashing the {@code
+   * String}, ADR 0008).
+   */
+  public Object asValue(final FactRow fact) {
+    return fact.get(field);
   }
 }

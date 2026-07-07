@@ -67,8 +67,9 @@ final class DimensionKeyWire {
   }
 
   /** Adds a string column straight from its UTF-8 bytes — no {@code String} materialization. */
-  void addUtf8(final DirectBuffer utf8) {
-    element(KIND_STRING, utf8, 0L);
+  void addUtf8(final byte[] utf8) {
+    stringWrap.wrap(utf8);
+    element(KIND_STRING, stringWrap, 0L);
   }
 
   void addLong(final long value) {

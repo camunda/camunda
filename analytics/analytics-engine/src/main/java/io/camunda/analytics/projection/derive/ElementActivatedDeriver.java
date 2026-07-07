@@ -10,7 +10,7 @@ package io.camunda.analytics.projection.derive;
 import io.camunda.analytics.fact.Fact;
 import io.camunda.analytics.fact.Transition;
 import io.camunda.analytics.projection.SourceRecord;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import java.util.function.Consumer;
 
 /** Emits an {@code ACTIVATED} fact (structural fields only — no duration yet) on activation. */
@@ -24,8 +24,7 @@ public final class ElementActivatedDeriver implements FactDeriver {
 
   @Override
   public void derive(final SourceRecord source) {
-    final ProcessInstanceRecordValue value =
-        (ProcessInstanceRecordValue) source.record().getValue();
+    final ProcessInstanceRecord value = (ProcessInstanceRecord) source.record().getValue();
     facts.accept(ElementFacts.base(source, value, Transition.ACTIVATED).build());
   }
 }

@@ -74,7 +74,9 @@ public final class DimensionKeySelector implements KeySelector<FactRow, Dimensio
       }
       switch (column.type()) {
         case STRING, TEXT -> {
-          if (value instanceof final String string) {
+          if (value instanceof final Utf8View view) {
+            wire.addUtf8(view.utf8());
+          } else if (value instanceof final String string) {
             wire.addString(string);
           } else {
             throw DimensionKey.typeMismatch(column, value);

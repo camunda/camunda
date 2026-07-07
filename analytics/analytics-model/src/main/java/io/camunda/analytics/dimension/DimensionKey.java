@@ -85,6 +85,8 @@ public final class DimensionKey {
       case STRING, TEXT -> {
         if (value instanceof final String string) {
           wire.addString(string);
+        } else if (value instanceof final Utf8View view) {
+          wire.addUtf8(view.utf8());
         } else {
           throw typeMismatch(column, value);
         }

@@ -160,7 +160,7 @@ public final class MeterCatalog {
         .register(
             new MeterType<>(
                 DISTINCT,
-                m -> new DistinctCountAggregateFunction<>(m.requireMeasure()::asString),
+                m -> new DistinctCountAggregateFunction<>(m.requireMeasure()::asValue),
                 m -> new HllSketchValue()))
         .register(
             new MeterType<>(

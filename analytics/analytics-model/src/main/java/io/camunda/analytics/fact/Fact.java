@@ -9,6 +9,7 @@ package io.camunda.analytics.fact;
 
 import io.camunda.analytics.dataset.DimensionSpec;
 import io.camunda.analytics.dimension.FactRow;
+import io.camunda.analytics.dimension.Utf8View;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -46,8 +47,8 @@ public final class Fact implements FactRow {
   // memoized, so the many cube-meters that read the same forwarded fact resolve it at most once
   // (and a fact no dataset groups/filters by a variable never resolves any). Null for a fact with
   // no variable scope. Not part of identity — see equals/hashCode.
-  private final Supplier<Map<String, String>> variableSource;
-  private Map<String, String> resolvedVariables;
+  private final Supplier<Map<String, Utf8View>> variableSource;
+  private Map<String, Utf8View> resolvedVariables;
 
   public Fact(
       final FactType factType,
@@ -64,7 +65,7 @@ public final class Fact implements FactRow {
       final long eventTime,
       final int sourcePartition,
       final long sourcePosition,
-      final Supplier<Map<String, String>> variableSource) {
+      final Supplier<Map<String, Utf8View>> variableSource) {
     this.factType = Objects.requireNonNull(factType, "factType");
     this.fields = Map.copyOf(fields);
     this.eventTime = eventTime;
@@ -91,7 +92,7 @@ public final class Fact implements FactRow {
   }
 
   /** The visible variable snapshot, resolved once on first access and memoized. */
-  private Map<String, String> variables() {
+  private Map<String, Utf8View> variables() {
     if (resolvedVariables == null) {
       resolvedVariables = variableSource.get();
     }
@@ -160,7 +161,7 @@ public final class Fact implements FactRow {
     private long eventTime;
     private int sourcePartition;
     private long sourcePosition;
-    private Supplier<Map<String, String>> variableSource;
+    private Supplier<Map<String, Utf8View>> variableSource;
 
     private Builder(final FactType factType) {
       this.factType = Objects.requireNonNull(factType, "factType");
@@ -171,7 +172,7 @@ public final class Fact implements FactRow {
      * memoize) through it. The supplier is invoked at most once, on first access, so pass a cheap
      * reference to live projection state rather than a pre-collected map.
      */
-    public Builder variables(final Supplier<Map<String, String>> variableSource) {
+    public Builder variables(final Supplier<Map<String, Utf8View>> variableSource) {
       this.variableSource = variableSource;
       return this;
     }

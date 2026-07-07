@@ -7,30 +7,31 @@
  */
 package io.camunda.analytics.projection.derive;
 
+import io.camunda.analytics.dimension.Utf8View;
 import io.camunda.analytics.fact.Fact;
 import io.camunda.analytics.fact.FactType;
 import io.camunda.analytics.fact.Transition;
 import io.camunda.analytics.projection.SourceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 
 /**
  * The structural fields shared by the element/process-instance facts (activation and completion).
+ * String-typed fields ride as UTF-8 views over the record's own buffers (ADR 0008); tenantId has no
+ * buffer getter on the record, so it stays a {@code String}.
  */
 final class ElementFacts {
 
   private ElementFacts() {}
 
   static Fact.Builder base(
-      final SourceRecord source,
-      final ProcessInstanceRecordValue value,
-      final Transition transition) {
+      final SourceRecord source, final ProcessInstanceRecord value, final Transition transition) {
     final boolean isProcess = value.getBpmnElementType() == BpmnElementType.PROCESS;
     return Fact.builder(isProcess ? FactType.PROCESS_INSTANCE : FactType.ELEMENT)
         .eventTime(source.record().getTimestamp())
         .source(source.partitionId(), source.offset())
         .transition(transition)
-        .field("bpmnProcessId", value.getBpmnProcessId())
+        .field("bpmnProcessId", Utf8View.copyOf(value.getBpmnProcessIdBuffer()))
         .field("processDefinitionKey", value.getProcessDefinitionKey())
         .field("version", value.getVersion())
         .field("tenantId", value.getTenantId());

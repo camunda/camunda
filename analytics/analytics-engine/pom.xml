@@ -74,13 +74,14 @@
       <artifactId>datasketches-java</artifactId>
     </dependency>
 
-    <!-- Test -->
-    <!-- builds Zeebe records (CopiedRecord/RecordMetadata/...) for the projector test -->
+    <!-- the concrete record values the connector decodes: appliers/derivers read their
+         buffer-view getters (get...Buffer()) so string fields ride as UTF-8 slices (ADR 0008) -->
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol-impl</artifactId>
-      <scope>test</scope>
     </dependency>
+
+    <!-- Test -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>

@@ -9,11 +9,13 @@ package io.camunda.analytics.projection;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.analytics.dimension.Utf8View;
 import io.camunda.analytics.fact.Fact;
 import io.camunda.analytics.fact.FactType;
 import io.camunda.analytics.fact.Transition;
 import io.camunda.analytics.state.ElementStatus;
 import io.camunda.analytics.state.StateBackedProjectionState;
+import io.camunda.analytics.state.VariableNames;
 import io.camunda.eventbridge.streaming.processor.ProcessorContext;
 import io.camunda.eventbridge.streaming.processor.PunctuationType;
 import io.camunda.eventbridge.streaming.processor.Punctuator;
@@ -49,7 +51,7 @@ final class AnalyticsBaseProjectionTest {
   private final StateBackedProjectionState state = StateBackedProjectionState.inMemory();
   private final CapturingContext context = new CapturingContext();
   private final AnalyticsBaseProjection projection =
-      new AnalyticsBaseProjection(state, Set.of("region"));
+      new AnalyticsBaseProjection(state, VariableNames.of(Set.of("region")));
 
   AnalyticsBaseProjectionTest() {
     projection.init(context);
@@ -76,7 +78,7 @@ final class AnalyticsBaseProjectionTest {
     assertThat(completed.get("endTime")).isEqualTo(1500L);
     assertThat(completed.get("completedNormally")).isEqualTo(true);
     assertThat(completed.get("hadIncident")).isEqualTo(false);
-    assertThat(completed.get("bpmnProcessId")).isEqualTo("order");
+    assertThat(completed.get("bpmnProcessId")).isEqualTo(Utf8View.of("order"));
     assertThat(completed.eventTime()).isEqualTo(1500L);
   }
 
@@ -114,7 +116,7 @@ final class AnalyticsBaseProjectionTest {
     projection.process(process(ProcessInstanceIntent.ELEMENT_COMPLETED, 1500L, 12L));
 
     assertThat(only(FactType.PROCESS_INSTANCE, Transition.COMPLETED).get("var.region"))
-        .isEqualTo("EU");
+        .isEqualTo(Utf8View.of("EU"));
   }
 
   @Test
@@ -127,13 +129,14 @@ final class AnalyticsBaseProjectionTest {
     // (flow) scope chain — the engine's variable visibility
     assertThat(state.variables(TASK_KEY))
         .as("resolved up the scope hierarchy")
-        .containsEntry("region", "EU");
+        .containsEntry("region", Utf8View.of("EU"));
 
     // when the task completes
     projection.process(task(ProcessInstanceIntent.ELEMENT_COMPLETED, 1300L, 13L));
 
     // then its completion fact carries the process-instance-scoped variable
-    assertThat(only(FactType.ELEMENT, Transition.COMPLETED).get("var.region")).isEqualTo("EU");
+    assertThat(only(FactType.ELEMENT, Transition.COMPLETED).get("var.region"))
+        .isEqualTo(Utf8View.of("EU"));
   }
 
   @Test

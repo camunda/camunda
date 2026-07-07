@@ -14,9 +14,10 @@ package io.camunda.analytics.dimension;
  * value for a field.
  *
  * <p>A missing field returns {@code null} (the "unknown" bucket for a dimension); a present value
- * is a {@code String}, {@code Long}, {@code Integer}, or {@code Boolean}, matching {@link
- * DimensionType}. This keeps the generic core independent of any concrete fact class: existing
- * facts expose a thin adapter, and the generic fact (a later phase) implements this natively.
+ * is a {@code String} or {@link Utf8View} (byte-carried string, ADR 0008), {@code Long}, {@code
+ * Integer}, or {@code Boolean}, matching {@link DimensionType}. This keeps the generic core
+ * independent of any concrete fact class: existing facts expose a thin adapter, and the generic
+ * fact (a later phase) implements this natively.
  */
 @FunctionalInterface
 public interface FactRow {

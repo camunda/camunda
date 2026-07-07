@@ -9,6 +9,7 @@ package io.camunda.analytics.state.mutable;
 
 import io.camunda.analytics.state.ElementStatus;
 import io.camunda.analytics.state.immutable.ProjectionState;
+import org.agrona.DirectBuffer;
 
 /**
  * The write view of the Model-A base projection and its <em>sole</em> mutator: appliers fold each
@@ -34,8 +35,12 @@ public interface MutableProjectionState extends ProjectionState {
   /** Drops an element row (evict-after-emit). */
   void evictElement(long elementInstanceKey);
 
-  /** Puts one scoped variable ({@code (scopeKey, name) -> value}). */
-  void putVariable(long scopeKey, String name, String value);
+  /**
+   * Puts one scoped variable ({@code (scopeKey, name) -> value}). Name and value arrive as UTF-8
+   * views over the source record's bytes (ADR 0008) and are copied into the store — the buffers are
+   * only borrowed for the call.
+   */
+  void putVariable(long scopeKey, DirectBuffer name, DirectBuffer value);
 
   /** Drops every variable scoped to an element instance (on its terminal transition). */
   void clearVariables(long scopeKey);

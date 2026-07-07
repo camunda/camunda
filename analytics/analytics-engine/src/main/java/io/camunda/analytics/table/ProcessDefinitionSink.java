@@ -11,6 +11,7 @@ import io.camunda.analytics.dataset.CompiledTable;
 import io.camunda.analytics.dataset.FactBinding;
 import io.camunda.analytics.dimension.DimensionColumn;
 import io.camunda.analytics.dimension.DimensionType;
+import io.camunda.analytics.dimension.Utf8View;
 import io.camunda.analytics.fact.Fact;
 import io.camunda.analytics.fact.FactType;
 import io.camunda.analytics.serving.spi.DatasetWriter;
@@ -72,8 +73,13 @@ public final class ProcessDefinitionSink implements Processor<Fact, Void> {
     }
     final List<Object> values = new ArrayList<>(TABLE.columns().size());
     for (final DimensionColumn column : TABLE.columns()) {
-      values.add(fact.get(column.name()));
+      values.add(text(fact.get(column.name())));
     }
     writer.upsertRow(TABLE, String.valueOf(key), values);
+  }
+
+  /** Projected rows are a mandatory String edge: a UTF-8 view materializes here, once per row. */
+  private static Object text(final Object value) {
+    return value instanceof final Utf8View view ? view.toString() : value;
   }
 }

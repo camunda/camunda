@@ -7,11 +7,12 @@
  */
 package io.camunda.analytics.projection.derive;
 
+import io.camunda.analytics.dimension.Utf8View;
 import io.camunda.analytics.fact.Fact;
 import io.camunda.analytics.fact.FactType;
 import io.camunda.analytics.fact.Transition;
 import io.camunda.analytics.projection.SourceRecord;
-import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 
 /** The structural fields shared by the incident facts (creation and resolution). */
 final class IncidentFacts {
@@ -20,7 +21,7 @@ final class IncidentFacts {
 
   static Fact.Builder base(
       final SourceRecord source,
-      final IncidentRecordValue incident,
+      final IncidentRecord incident,
       final Transition transition,
       final String errorType,
       final long delta) {
@@ -28,8 +29,8 @@ final class IncidentFacts {
         .eventTime(source.record().getTimestamp())
         .source(source.partitionId(), source.offset())
         .transition(transition)
-        .field("bpmnProcessId", incident.getBpmnProcessId())
-        .field("elementId", incident.getElementId())
+        .field("bpmnProcessId", Utf8View.copyOf(incident.getBpmnProcessIdBuffer()))
+        .field("elementId", Utf8View.copyOf(incident.getElementIdBuffer()))
         .field("tenantId", incident.getTenantId())
         .field("errorType", errorType)
         .field("delta", delta);

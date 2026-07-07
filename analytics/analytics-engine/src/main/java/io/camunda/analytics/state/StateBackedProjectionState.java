@@ -7,6 +7,7 @@
  */
 package io.camunda.analytics.state;
 
+import io.camunda.analytics.dimension.Utf8View;
 import io.camunda.analytics.projection.AnalyticsColumnFamilies;
 import io.camunda.analytics.state.mutable.MutableProjectionState;
 import io.camunda.eventbridge.streaming.state.StoreBuilder;
@@ -18,7 +19,6 @@ import io.camunda.zeebe.db.impl.DbBytes;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
-import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.nio.ByteBuffer;
@@ -27,7 +27,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import org.agrona.DirectBuffer;
 
 /**
  * The Model-A base projection on top of the {@code event-bridge-streaming} state library: the
@@ -135,11 +135,11 @@ public final class StateBackedProjectionState implements MutableProjectionState,
   }
 
   @Override
-  public Map<String, String> variables(final long scopeKey) {
+  public Map<String, Utf8View> variables(final long scopeKey) {
     // Resolve up the scope hierarchy (local scope first, then parents up to the process instance),
     // so a nearer scope's value wins — the engine's variable visibility. The parent chain is read
     // off the element rows (parents are still active while a child completes).
-    final Map<String, String> resolved = new LinkedHashMap<>();
+    final Map<String, Utf8View> resolved = new LinkedHashMap<>();
     long scope = scopeKey;
     for (int depth = 0; scope > 0 && depth < MAX_SCOPE_DEPTH; depth++) {
       variablePrefix.wrapBytes(instancePrefix(scope));
@@ -147,7 +147,7 @@ public final class StateBackedProjectionState implements MutableProjectionState,
           variablePrefix,
           (key, value) ->
               resolved.putIfAbsent(
-                  variableName(key.getBytes()), BufferUtil.bufferAsString(value.getBuffer())));
+                  variableName(key.getBytes()), Utf8View.copyOf(value.getBuffer())));
       elementKey.wrapLong(scope);
       final ElementEntity row = elements.get(elementKey).orElse(null);
       if (row == null) {
@@ -159,26 +159,28 @@ public final class StateBackedProjectionState implements MutableProjectionState,
   }
 
   @Override
-  public Map<String, String> variables(final long scopeKey, final Set<String> names) {
+  public Map<String, Utf8View> variables(final long scopeKey, final VariableNames names) {
     if (names.isEmpty()) {
       return Map.of();
     }
     // Resolve ONLY the requested names via point lookups (bloom-filter-friendly) up the scope
     // hierarchy — nearer scope wins — and stop as soon as every name is found, instead of a prefix
     // scan of the whole scope. This is the engine's job-activation read: fetch only what's needed.
-    final Map<String, String> resolved = new LinkedHashMap<>();
+    // Each name's UTF-8 key bytes were precomputed once (VariableNames); the value is copied out
+    // as a UTF-8 view, never decoded to String.
+    final Map<String, Utf8View> resolved = new LinkedHashMap<>();
     long scope = scopeKey;
     for (int depth = 0;
         scope > 0 && depth < MAX_SCOPE_DEPTH && resolved.size() < names.size();
         depth++) {
-      for (final String name : names) {
-        if (resolved.containsKey(name)) {
+      for (final VariableNames.Name name : names.names()) {
+        if (resolved.containsKey(name.name())) {
           continue; // a nearer scope already resolved this name
         }
-        variableKey.wrapBytes(variableKey(scope, name));
+        variableKey.wrapBytes(variableKey(scope, name.utf8()));
         variables
             .get(variableKey)
-            .ifPresent(value -> resolved.put(name, BufferUtil.bufferAsString(value.getBuffer())));
+            .ifPresent(value -> resolved.put(name.name(), Utf8View.copyOf(value.getBuffer())));
       }
       elementKey.wrapLong(scope);
       final ElementEntity row = elements.get(elementKey).orElse(null);
@@ -243,9 +245,9 @@ public final class StateBackedProjectionState implements MutableProjectionState,
   }
 
   @Override
-  public void putVariable(final long scopeKey, final String name, final String value) {
+  public void putVariable(final long scopeKey, final DirectBuffer name, final DirectBuffer value) {
     variableKey.wrapBytes(variableKey(scopeKey, name));
-    variableValue.wrapString(value);
+    variableValue.wrapBuffer(value);
     variables.put(variableKey, variableValue);
     // Mark the scope as holding variables so eviction knows it must clear (see clearVariables).
     variableScopeKey.wrapLong(scopeKey);
@@ -329,12 +331,18 @@ public final class StateBackedProjectionState implements MutableProjectionState,
     return ByteBuffer.allocate(Long.BYTES).putLong(processInstanceKey).array();
   }
 
-  private static byte[] variableKey(final long processInstanceKey, final String name) {
-    final byte[] nameBytes = name.getBytes(StandardCharsets.UTF_8);
-    return ByteBuffer.allocate(Long.BYTES + nameBytes.length)
+  private static byte[] variableKey(final long processInstanceKey, final byte[] nameUtf8) {
+    return ByteBuffer.allocate(Long.BYTES + nameUtf8.length)
         .putLong(processInstanceKey)
-        .put(nameBytes)
+        .put(nameUtf8)
         .array();
+  }
+
+  private static byte[] variableKey(final long processInstanceKey, final DirectBuffer name) {
+    final byte[] key = new byte[Long.BYTES + name.capacity()];
+    ByteBuffer.wrap(key, 0, Long.BYTES).putLong(processInstanceKey);
+    name.getBytes(0, key, Long.BYTES, name.capacity());
+    return key;
   }
 
   private static String variableName(final byte[] key) {

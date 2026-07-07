@@ -7,14 +7,15 @@
  */
 package io.camunda.analytics.projection.derive;
 
+import io.camunda.analytics.dimension.Utf8View;
 import io.camunda.analytics.fact.Fact;
 import io.camunda.analytics.fact.Transition;
 import io.camunda.analytics.projection.SourceRecord;
 import io.camunda.analytics.state.ElementEntity;
+import io.camunda.analytics.state.VariableNames;
 import io.camunda.analytics.state.immutable.ProjectionState;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
-import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -28,13 +29,13 @@ public final class ElementCompletedDeriver implements FactDeriver {
   private final ProjectionState state;
   private final Consumer<Fact> facts;
   private final Transition transition;
-  private final Set<String> variableNames;
+  private final VariableNames variableNames;
 
   public ElementCompletedDeriver(
       final ProjectionState state,
       final Consumer<Fact> facts,
       final Transition transition,
-      final Set<String> variableNames) {
+      final VariableNames variableNames) {
     this.state = state;
     this.facts = facts;
     this.transition = transition;
@@ -48,8 +49,7 @@ public final class ElementCompletedDeriver implements FactDeriver {
     if (row == null) {
       return; // no activation was folded (out of order / already evicted) — nothing to derive
     }
-    final ProcessInstanceRecordValue value =
-        (ProcessInstanceRecordValue) source.record().getValue();
+    final ProcessInstanceRecord value = (ProcessInstanceRecord) source.record().getValue();
     final boolean isProcess = value.getBpmnElementType() == BpmnElementType.PROCESS;
 
     final Fact.Builder fact =
@@ -66,7 +66,7 @@ public final class ElementCompletedDeriver implements FactDeriver {
       fact.field("processInstanceKey", value.getProcessInstanceKey())
           .field("completedNormally", transition == Transition.COMPLETED);
     } else {
-      fact.field("elementId", value.getElementId())
+      fact.field("elementId", Utf8View.copyOf(value.getElementIdBuffer()))
           .field("elementType", value.getBpmnElementType().name());
     }
     facts.accept(fact.build());

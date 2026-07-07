@@ -14,6 +14,7 @@ import io.camunda.analytics.dimension.DimensionKey;
 import io.camunda.analytics.dimension.DimensionKeySelector;
 import io.camunda.analytics.dimension.DimensionSchema;
 import io.camunda.analytics.dimension.DimensionType;
+import io.camunda.analytics.dimension.Utf8View;
 import io.camunda.analytics.fact.Fact;
 import io.camunda.analytics.fact.FactType;
 import java.util.Map;
@@ -159,7 +160,7 @@ final class RdbmsCellKeyGoldenTest {
     // variable missing from the visible snapshot (→ unknown bucket)
     final Fact fact =
         Fact.builder(FactType.PROCESS_INSTANCE)
-            .variables(() -> Map.of("region", "EU-west"))
+            .variables(() -> Map.of("region", Utf8View.of("EU-west")))
             .build();
     final DimensionKey key = new DimensionKeySelector(VAR_GRAIN).getKey(fact);
 
