@@ -20,6 +20,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 
@@ -75,6 +76,7 @@ public interface PartitionManager {
         brokerStartupContext.getPhysicalTenantEngineContext(physicalTenantId);
 
     final JobStreamService jobStreamService = null;
+    final var engineContext = brokerStartupContext.getPhysicalTenantEngineContext(physicalTenantId);
 
     // Combine global listeners with this tenant's error handler so each handler only ever
     // sees its own group's partitions, resolving the bare-int partition-id aliasing bug.
