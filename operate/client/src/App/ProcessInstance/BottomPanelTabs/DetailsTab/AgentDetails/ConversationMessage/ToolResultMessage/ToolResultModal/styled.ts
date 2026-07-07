@@ -13,7 +13,7 @@ const EDITOR_BASIS = '400px';
 const COLUMN_GAP = '1rem'; // --cds-spacing-05
 
 const Description = styled.p`
-  // Modal's set a default top margin for paragraph content.
+  // Modals set a default top margin for paragraph content.
   margin-block-start: 0 !important;
   color: var(--cds-text-secondary);
 `;
