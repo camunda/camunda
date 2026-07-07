@@ -61,6 +61,62 @@ class PhysicalTenantOidcProviderOverlayTest {
   }
 
   @Test
+  void shouldResolveWithoutErrorWhenNoNamedProvidersAreConfigured() {
+    // given a config that uses only the default slot, so no providers map exists
+    environment
+        .getPropertySources()
+        .addFirst(
+            new MapPropertySource(
+                "test",
+                Map.of(
+                    "camunda.security.authentication.oidc.issuer-uri",
+                    "http://localhost:8081/realms/default",
+                    "camunda.security.authentication.oidc.client-id",
+                    "default-client")));
+
+    // when / then resolving a tenant does not throw and yields no named providers
+    final AuthenticationConfiguration auth =
+        PhysicalTenantAuthenticationConfigurations.forPhysicalTenant("tenanta", environment);
+    assertThat(auth.getOidc().getClientId()).isEqualTo("default-client");
+    assertThat(auth.getProviders() == null ? null : auth.getProviders().getOidc()).isNullOrEmpty();
+  }
+
+  @Test
+  void shouldKeepRootProvidersWhenTenantOverlayHasEmptyProvidersMap() {
+    // given root declares two named providers, and the tenant's only overlay is an empty
+    // `providers` map. Spring Boot 4.1 surfaces an empty YAML map (`providers: {}`) as an empty
+    // property value; binding it onto the root instance must not reset the inherited providers.
+    environment
+        .getPropertySources()
+        .addFirst(
+            new MapPropertySource(
+                "test",
+                Map.of(
+                    "camunda.security.authentication.providers.oidc.tenanta.issuer-uri",
+                    "http://localhost:8082/realms/tenanta",
+                    "camunda.security.authentication.providers.oidc.tenanta.client-id",
+                    "tenanta-client",
+                    "camunda.security.authentication.providers.oidc.tenantb.issuer-uri",
+                    "http://localhost:8083/realms/tenantb",
+                    "camunda.security.authentication.providers.oidc.tenantb.client-id",
+                    "tenantb-client",
+                    "camunda.physical-tenants.default.security.authentication.providers",
+                    "")));
+
+    // when
+    final AuthenticationConfiguration auth =
+        PhysicalTenantAuthenticationConfigurations.forPhysicalTenant("default", environment);
+
+    // then both inherited providers survive the empty overlay
+    assertThat(auth.getProviders()).isNotNull();
+    assertThat(auth.getProviders().getOidc()).containsKeys("tenanta", "tenantb");
+    assertThat(auth.getProviders().getOidc().get("tenanta").getIssuerUri())
+        .isEqualTo("http://localhost:8082/realms/tenanta");
+    assertThat(auth.getProviders().getOidc().get("tenantb").getIssuerUri())
+        .isEqualTo("http://localhost:8083/realms/tenantb");
+  }
+
+  @Test
   void shouldOverrideOnlyTheFieldsTenantSets() {
     // given root declares a full tenanta provider; the PT overlay overrides only
     // client-id/secret/audiences — omitting issuer-uri, username-claim, client-id-claim,

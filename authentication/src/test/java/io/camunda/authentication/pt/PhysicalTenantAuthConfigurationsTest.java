@@ -388,6 +388,53 @@ class PhysicalTenantAuthConfigurationsTest {
     assertThat(tenanta.getClientId()).isEqualTo("camunda-pt-tenanta-client"); // overlay wins
   }
 
+  @Test
+  void shouldKeepRootNamedProvidersForDefaultTenantWithEmptyProvidersOverlay() throws Exception {
+    // Reproduces the multi-tenant demo's `default` overlay: `providers: {}` (present but empty).
+    // The default tenant declares no `assigned`, so it must keep the FULL root union — both named
+    // providers inherited from the cluster config, alongside the default slot. A present-but-empty
+    // providers overlay must be a no-op, not a reset of the inherited providers map.
+    final String yaml =
+        """
+        camunda:
+          security:
+            authentication:
+              method: oidc
+              oidc:
+                client-id: camunda-pt-default-client
+                issuer-uri: http://localhost:8081/realms/default
+                audiences: [pt-default-aud]
+              providers:
+                oidc:
+                  tenanta:
+                    client-id: camunda-pt-default-via-tenanta-client
+                    issuer-uri: http://localhost:8082/realms/tenanta
+                    audiences: [pt-default-via-tenanta-aud]
+                  tenantb:
+                    client-id: camunda-pt-tenantb-client
+                    issuer-uri: http://localhost:8083/realms/tenantb
+                    audiences: [pt-tenantb-aud]
+          physical-tenants:
+            default:
+              security:
+                authentication:
+                  providers: {}
+        """;
+
+    final AuthenticationConfiguration cfg =
+        PhysicalTenantAuthConfigurations.forPhysicalTenant("default", yamlEnv(yaml));
+
+    // default slot survives
+    assertThat(cfg.getOidc().getIssuerUri()).isEqualTo("http://localhost:8081/realms/default");
+    // both inherited named providers survive the empty `providers: {}` overlay
+    assertThat(cfg.getProviders()).isNotNull();
+    assertThat(cfg.getProviders().getOidc()).containsKeys("tenanta", "tenantb");
+    assertThat(cfg.getProviders().getOidc().get("tenanta").getIssuerUri())
+        .isEqualTo("http://localhost:8082/realms/tenanta");
+    assertThat(cfg.getProviders().getOidc().get("tenantb").getIssuerUri())
+        .isEqualTo("http://localhost:8083/realms/tenantb");
+  }
+
   // -------------------------------------------------------------------------
   // 7. providers.assigned narrows a non-default tenant to its selected providers (#54730)
   // -------------------------------------------------------------------------
