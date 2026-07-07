@@ -173,7 +173,9 @@ jobs:
           repository: camunda/c8-cross-component-e2e-tests
           token: ${{ steps.github-token.outputs.token }}
           path: e2e-tests
-          ref: main
+          # TEST BRANCH ONLY — pin the e2e client to the auth-bypass-header PR so
+          # this run exercises both PRs together. Revert to `main` before merge.
+          ref: fix/preview-env-auth-bypass-header
 
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
