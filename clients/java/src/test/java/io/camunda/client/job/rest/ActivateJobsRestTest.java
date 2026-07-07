@@ -295,6 +295,38 @@ public final class ActivateJobsRestTest extends ClientRestTest {
   }
 
   @Test
+  void shouldSetWithLease() {
+    // given
+    gatewayService.onActivateJobsRequest(new JobActivationResult());
+
+    // when
+    client
+        .newActivateJobsCommand()
+        .jobType("foo")
+        .maxJobsToActivate(3)
+        .withLease(true)
+        .send()
+        .join();
+
+    // then
+    final JobActivationRequest request = gatewayService.getLastRequest(JobActivationRequest.class);
+    assertThat(request.getWithLease()).isTrue();
+  }
+
+  @Test
+  void shouldNotSetWithLeaseByDefault() {
+    // given
+    gatewayService.onActivateJobsRequest(new JobActivationResult());
+
+    // when
+    client.newActivateJobsCommand().jobType("foo").maxJobsToActivate(3).send().join();
+
+    // then
+    final JobActivationRequest request = gatewayService.getLastRequest(JobActivationRequest.class);
+    assertThat(request.getWithLease()).isFalse();
+  }
+
+  @Test
   void shouldSetFetchVariablesAsVargs() {
     // given
     final String[] fetchVariables = new String[] {"foo", "bar", "baz"};

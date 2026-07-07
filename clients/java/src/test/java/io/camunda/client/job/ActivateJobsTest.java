@@ -559,6 +559,32 @@ public final class ActivateJobsTest extends ClientTest {
   }
 
   @Test
+  public void shouldSetWithLease() {
+    // when
+    client
+        .newActivateJobsCommand()
+        .jobType("foo")
+        .maxJobsToActivate(1)
+        .withLease(true)
+        .send()
+        .join();
+
+    // then
+    final ActivateJobsRequest request = gatewayService.getLastRequest();
+    assertThat(request.getWithLease()).isTrue();
+  }
+
+  @Test
+  public void shouldNotSetWithLeaseByDefault() {
+    // when
+    client.newActivateJobsCommand().jobType("foo").maxJobsToActivate(1).send().join();
+
+    // then
+    final ActivateJobsRequest request = gatewayService.getLastRequest();
+    assertThat(request.getWithLease()).isFalse();
+  }
+
+  @Test
   public void shouldSetProvidedDefaultWorkerNameWhenNullPropertyIsProvidedInBuilder() {
     final String workerName = "workerName";
     // given

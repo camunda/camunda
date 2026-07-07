@@ -143,6 +143,13 @@ public final class ActivateJobsCommandImpl
   }
 
   @Override
+  public ActivateJobsCommandStep3 withLease(final boolean withLease) {
+    grpcRequestObjectBuilder.setWithLease(withLease);
+    httpRequestObject.setWithLease(withLease);
+    return this;
+  }
+
+  @Override
   public ActivateJobsCommandStep3 requestTimeout(final Duration requestTimeout) {
     grpcRequestObjectBuilder.setRequestTimeout(requestTimeout.toMillis());
     httpRequestObject.setRequestTimeout(requestTimeout.toMillis());
