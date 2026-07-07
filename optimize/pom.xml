@@ -48,8 +48,8 @@
     <jetty.version>12.0.33</jetty.version>
     <jackson.version>2.18.1</jackson.version>
     <jsonpath.version>2.9.0</jsonpath.version>
-    <apache.http5-client.version>5.6.2</apache.http5-client.version>
-    <apache.http5-core.version>5.4.3</apache.http5-core.version>
+    <apache.http5-client.version>5.5</apache.http5-client.version>
+    <apache.http5-core.version>5.3.6</apache.http5-core.version>
     <guava.version>33.3.1-jre</guava.version>
     <spring.boot.version>3.5.15</spring.boot.version>
     <!-- Override Spring Boot's opentelemetry version to address CVE-2026-45292 -->
@@ -127,22 +127,6 @@
         <version>${opentelemetry.version}</version>
         <type>pom</type>
         <scope>import</scope>
-      </dependency>
-      <!-- Override Spring Boot's httpcomponents-client5/core5 versions to address CVE-2026-54399 -->
-      <dependency>
-        <groupId>org.apache.httpcomponents.client5</groupId>
-        <artifactId>httpclient5</artifactId>
-        <version>${apache.http5-client.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.httpcomponents.core5</groupId>
-        <artifactId>httpcore5</artifactId>
-        <version>${apache.http5-core.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.httpcomponents.core5</groupId>
-        <artifactId>httpcore5-h2</artifactId>
-        <version>${apache.http5-core.version}</version>
       </dependency>
       <dependency>
         <groupId>org.springframework.boot</groupId>
