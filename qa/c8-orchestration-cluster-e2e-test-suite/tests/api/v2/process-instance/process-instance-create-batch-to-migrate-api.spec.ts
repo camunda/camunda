@@ -209,6 +209,20 @@ test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
       migrateMe: true,
     });
 
+    await test.step('Wait for the variable to be indexed before migrating', async () => {
+      // The migration batch resolves its filter against secondary storage.
+      // The freshly-set `migrateMe` variable is indexed asynchronously and can
+      // lag behind the user task, so migrating too early matches 0 instances
+      // and the batch completes without doing anything. Poll the same filter
+      // first to guarantee the variable is queryable before we migrate.
+      await waitForInstanceQueryableByVariable(
+        request,
+        localState.processInstanceKey2,
+        'migrateMe',
+        'true',
+      );
+    });
+
     await test.step('Migrate only instance with specific variable', async () => {
       await expect(async () => {
         const res = await request.post(
@@ -353,6 +367,28 @@ test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
       );
     });
   });
+
+  const waitForInstanceQueryableByVariable = async (
+    request: APIRequestContext,
+    processInstanceKey: string,
+    variableName: string,
+    variableValue: string,
+  ) => {
+    await expect(async () => {
+      const res = await request.post(buildUrl('/process-instances/search'), {
+        headers: jsonHeaders(),
+        data: {
+          filter: {
+            processInstanceKey,
+            variables: [{name: variableName, value: variableValue}],
+          },
+        },
+      });
+      await assertStatusCode(res, 200);
+      const json = await res.json();
+      expect(json.page.totalItems).toBe(1);
+    }).toPass(postMigrationAssertionOptions);
+  };
 
   const verifyBothInstancesAreAtElementId = async (
     request: APIRequestContext,
