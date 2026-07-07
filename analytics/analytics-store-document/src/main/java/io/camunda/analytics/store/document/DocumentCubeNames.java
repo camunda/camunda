@@ -8,7 +8,7 @@
 package io.camunda.analytics.store.document;
 
 import io.camunda.analytics.dimension.DimensionKey;
-import io.camunda.analytics.serving.internal.Identifiers;
+import io.camunda.analytics.serving.support.Identifiers;
 import java.util.Base64;
 
 /**

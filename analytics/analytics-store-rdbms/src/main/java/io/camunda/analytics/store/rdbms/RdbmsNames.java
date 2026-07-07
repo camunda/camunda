@@ -8,7 +8,7 @@
 package io.camunda.analytics.store.rdbms;
 
 import io.camunda.analytics.dimension.DimensionKey;
-import io.camunda.analytics.serving.internal.Identifiers;
+import io.camunda.analytics.serving.support.Identifiers;
 import java.time.YearMonth;
 
 /**
