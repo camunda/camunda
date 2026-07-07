@@ -10,7 +10,7 @@ package io.camunda.eventbridge.client;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.eventbridge.batch.BatchBuilder;
-import io.camunda.eventbridge.client.FetchResult.FetchedEntry;
+import io.camunda.eventbridge.batch.BatchReader;
 import io.camunda.eventbridge.client.FetchResult.Outcome;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -49,12 +49,36 @@ final class FetchResultTest {
     assertThat(result.highWatermark()).isEqualTo(42L);
 
     final List<byte[]> values = new ArrayList<>();
-    for (final FetchedEntry entry : result.entries()) {
-      values.add(entry.getValueCopy());
+    for (final BatchReader.Entry entry : result.entries()) {
+      values.add(entry.value());
     }
     assertThat(values)
         .extracting(v -> new String(v, StandardCharsets.UTF_8))
         .containsExactly("v1", "v2");
+  }
+
+  @Test
+  void shouldSkipKeyCopiesOnTheFetchPath() {
+    // given: a batch whose entries carry keys on the wire
+    final byte[] batch =
+        new BatchBuilder()
+            .add("k1", "v1".getBytes(StandardCharsets.UTF_8))
+            .add("k2", "v2".getBytes(StandardCharsets.UTF_8))
+            .build();
+    final var result = FetchResult.parse(fetchBody(10L, 11L, 42L, batch));
+
+    // when: iterating the fetch-path entries
+    final List<BatchReader.Entry> entries = result.entries();
+
+    // then: positions and values match the key-copying reader, but no key bytes are materialized
+    final List<BatchReader.Entry> withKeys =
+        BatchReader.read(batch, 0, batch.length, Long.MIN_VALUE);
+    assertThat(entries).hasSameSizeAs(withKeys);
+    for (int i = 0; i < entries.size(); i++) {
+      assertThat(entries.get(i).position()).isEqualTo(withKeys.get(i).position());
+      assertThat(entries.get(i).value()).isEqualTo(withKeys.get(i).value());
+      assertThat(entries.get(i).key()).isEmpty();
+    }
   }
 
   @Test
@@ -66,8 +90,8 @@ final class FetchResultTest {
     final var result = FetchResult.parse(body);
 
     // when: read a value copy, then mutate the original response array beyond the header
-    final FetchedEntry entry = result.entries().iterator().next();
-    final byte[] valueCopy = entry.getValueCopy();
+    final BatchReader.Entry entry = result.entries().iterator().next();
+    final byte[] valueCopy = entry.value();
     Arrays.fill(body, HEADER_SIZE, body.length, (byte) 0);
 
     // then: the previously returned copy is unaffected

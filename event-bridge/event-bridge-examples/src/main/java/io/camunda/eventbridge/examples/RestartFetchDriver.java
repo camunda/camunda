@@ -71,10 +71,7 @@ public final class RestartFetchDriver {
         int count = 0;
         for (final var e : f.entries(0)) {
           System.out.println(
-              "  @"
-                  + e.getPosition()
-                  + " = "
-                  + new String(e.getValueCopy(), StandardCharsets.UTF_8));
+              "  @" + e.position() + " = " + new String(e.value(), StandardCharsets.UTF_8));
           count++;
         }
         System.out.println("  entries=" + count);

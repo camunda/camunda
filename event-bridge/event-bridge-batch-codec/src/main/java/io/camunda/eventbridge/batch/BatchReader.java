@@ -22,6 +22,8 @@ import java.util.List;
  */
 public final class BatchReader {
 
+  private static final byte[] NO_KEY = new byte[0];
+
   private BatchReader() {}
 
   /** A decoded entry: its log position and copies of its key and value bytes. */
@@ -34,6 +36,25 @@ public final class BatchReader {
    */
   public static List<Entry> read(
       final byte[] data, final int offset, final int length, final long fromPosition) {
+    return read(data, offset, length, fromPosition, true);
+  }
+
+  /**
+   * Like {@link #read(byte[], int, int, long)}, but does not copy the per-entry key bytes: every
+   * entry carries the same shared empty key. For consumers that only need positions and values
+   * (e.g. the client fetch path), this skips one array copy per entry.
+   */
+  public static List<Entry> readSkippingKeys(
+      final byte[] data, final int offset, final int length, final long fromPosition) {
+    return read(data, offset, length, fromPosition, false);
+  }
+
+  private static List<Entry> read(
+      final byte[] data,
+      final int offset,
+      final int length,
+      final long fromPosition,
+      final boolean copyKeys) {
     final List<Entry> out = new ArrayList<>();
     final int end = offset + length;
     int batchOffset = offset;
@@ -73,8 +94,13 @@ public final class BatchReader {
 
         final long position = batchPosition + i;
         if (position >= fromPosition) {
-          final byte[] key = new byte[keyLength];
-          System.arraycopy(data, keyOffset, key, 0, keyLength);
+          final byte[] key;
+          if (copyKeys) {
+            key = new byte[keyLength];
+            System.arraycopy(data, keyOffset, key, 0, keyLength);
+          } else {
+            key = NO_KEY;
+          }
           final byte[] value = new byte[valueLength];
           System.arraycopy(data, valueOffset, value, 0, valueLength);
           out.add(new Entry(position, key, value));

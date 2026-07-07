@@ -69,9 +69,9 @@ public final class PublishFetchExample {
             "    p"
                 + p
                 + "@"
-                + entry.getPosition()
+                + entry.position()
                 + " = "
-                + new String(entry.getValueCopy(), StandardCharsets.UTF_8));
+                + new String(entry.value(), StandardCharsets.UTF_8));
       }
     }
   }

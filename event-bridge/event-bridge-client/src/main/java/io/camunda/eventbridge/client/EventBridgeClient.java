@@ -35,7 +35,7 @@ import java.util.concurrent.CompletableFuture;
  * // Fetch raw batches from a topic partition
  * var result = client.fetchFromTopic("orders", 1, 1, 64 * 1024).join();
  * for (var entry : result.entries(1)) {
- *   System.out.println(entry.getPosition() + ": " + new String(entry.getValueCopy()));
+ *   System.out.println(entry.position() + ": " + new String(entry.value()));
  * }
  * }</pre>
  *

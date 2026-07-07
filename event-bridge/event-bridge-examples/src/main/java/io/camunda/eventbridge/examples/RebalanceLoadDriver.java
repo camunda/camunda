@@ -130,7 +130,7 @@ public final class RebalanceLoadDriver {
       // Filter to entries at/after the requested offset — a batch may begin before `from`.
       for (final var entry : result.entries(from)) {
         count++;
-        lastPos = entry.getPosition();
+        lastPos = entry.position();
       }
       if (count > 0) {
         consumed.get(p).addAndGet(count);

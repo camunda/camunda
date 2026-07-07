@@ -127,9 +127,8 @@ public final class Prefetcher {
             boolean any = false;
             for (final var entry : result.entries(fromPosition)) {
               buffer.add(
-                  tp,
-                  new Event(entry.getPosition(), tp.topic(), tp.partition(), entry.getValueCopy()));
-              next = entry.getPosition() + 1;
+                  tp, new Event(entry.position(), tp.topic(), tp.partition(), entry.value()));
+              next = entry.position() + 1;
               any = true;
             }
             if (!any) {

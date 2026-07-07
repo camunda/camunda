@@ -8,6 +8,7 @@
 package io.camunda.eventbridge.client;
 
 import io.camunda.eventbridge.batch.BatchReader;
+import java.util.List;
 
 /**
  * Result of a fetch: zero or more complete batches plus the partition's high watermark, classified
@@ -46,7 +47,7 @@ public final class FetchResult {
   /**
    * The full response body (including the header) for an {@link Outcome#OK} result, read from
    * {@link #dataOffset} onward — the payload is never copied into a separate array; only per-entry
-   * key/value copies are made on demand. Empty for the non-OK factory results.
+   * value copies are made on demand. Empty for the non-OK factory results.
    */
   private final byte[] body;
 
@@ -103,7 +104,7 @@ public final class FetchResult {
     }
 
     // Keep the response array as-is and read the batch region in place (offset HEADER_SIZE); the
-    // payload is never copied, only per-entry key/value copies are made when entries are iterated.
+    // payload is never copied, only per-entry value copies are made when entries are iterated.
     return new FetchResult(
         Outcome.OK,
         firstBatchPosition,
@@ -167,35 +168,17 @@ public final class FetchResult {
   /**
    * Iterates over individual entries, skipping those before {@code startOffset}. The broker returns
    * complete batches, so the first batch may contain entries before the requested offset. Each
-   * returned {@link FetchedEntry} owns copies of its key/value bytes.
+   * returned {@link BatchReader.Entry} owns a copy of its value bytes (it must outlive the shared
+   * response array); keys are not needed on the fetch path, so {@link BatchReader.Entry#key()} is
+   * always empty here and the per-entry key copy is skipped.
    */
-  public Iterable<FetchedEntry> entries(final long startOffset) {
-    return BatchReader.read(body, dataOffset, dataLength, startOffset).stream()
-        .map(FetchedEntry::new)
-        .toList();
+  public List<BatchReader.Entry> entries(final long startOffset) {
+    return BatchReader.readSkippingKeys(body, dataOffset, dataLength, startOffset);
   }
 
   /** Iterates over all entries without skipping. */
-  public Iterable<FetchedEntry> entries() {
+  public List<BatchReader.Entry> entries() {
     return entries(Long.MIN_VALUE);
-  }
-
-  /** A single fetched entry: its log position and copies of its key and value bytes. */
-  public static final class FetchedEntry {
-
-    private final BatchReader.Entry entry;
-
-    FetchedEntry(final BatchReader.Entry entry) {
-      this.entry = entry;
-    }
-
-    public long getPosition() {
-      return entry.position();
-    }
-
-    public byte[] getValueCopy() {
-      return entry.value();
-    }
   }
 
   private static long readLong(final byte[] data, final int offset) {
