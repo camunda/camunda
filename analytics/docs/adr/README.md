@@ -13,3 +13,6 @@ Module-scoped ADRs for the Optimize analytics pipeline (`analytics/analytics-eng
 - [0004 — Cube read path: prune, stream, and push down aggregation](0004-cube-read-path.md)
 - [0005 — Runtime dataset provisioning and live activation](0005-runtime-dataset-provisioning.md)
 - [0006 — Reports over multiple datasets](0006-multi-dataset-reports.md)
+- [0007 — Stable source coordinates: dedup the Zeebe stream before the fold](0007-stable-source-coordinates.md)
+- [0008 — Byte-backed dimension keys: the key is its serialized form](0008-byte-backed-dimension-keys.md)
+
