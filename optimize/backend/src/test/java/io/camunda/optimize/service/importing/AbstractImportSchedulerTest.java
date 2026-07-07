@@ -8,6 +8,7 @@
 package io.camunda.optimize.service.importing;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -16,10 +17,12 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.optimize.dto.optimize.ZeebeConfigDto;
 import io.camunda.optimize.service.importing.zeebe.ZeebeImportScheduler;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -43,6 +46,8 @@ class AbstractImportSchedulerTest {
     // given
     final CountDownLatch fastMediatorRan = new CountDownLatch(1);
     final CountDownLatch releaseSlowMediator = new CountDownLatch(1);
+    final CountDownLatch slowMediatorStarted = new CountDownLatch(1);
+    final AtomicBoolean slowMediatorCompleted = new AtomicBoolean(false);
 
     final ImportMediator slowMediator = mock(ImportMediator.class);
     final ImportMediator fastMediator = mock(ImportMediator.class);
@@ -55,7 +60,9 @@ class AbstractImportSchedulerTest {
     when(slowMediator.runImport())
         .thenAnswer(
             inv -> {
+              slowMediatorStarted.countDown();
               releaseSlowMediator.await(5, TimeUnit.SECONDS);
+              slowMediatorCompleted.set(true);
               return CompletableFuture.completedFuture(null);
             });
     when(fastMediator.runImport())
@@ -71,10 +78,17 @@ class AbstractImportSchedulerTest {
     // when
     scheduler.startImportScheduling();
 
-    // then: fastMediator completes even though slowMediator is still blocked
+    // then: fastMediator completes while slowMediator is confirmed still running (not just
+    // never scheduled), proving genuine concurrency rather than a lucky ordering
+    assertThat(slowMediatorStarted.await(2, TimeUnit.SECONDS))
+        .as("slow mediator should have started running on its own thread")
+        .isTrue();
     assertThat(fastMediatorRan.await(2, TimeUnit.SECONDS))
         .as("fast mediator should complete independently of the blocked slow mediator")
         .isTrue();
+    assertThat(slowMediatorCompleted.get())
+        .as("slow mediator should still be blocked when the fast mediator has already completed")
+        .isFalse();
 
     releaseSlowMediator.countDown();
   }
@@ -141,11 +155,15 @@ class AbstractImportSchedulerTest {
         .as("mediator should not have been rescheduled immediately after first run with backoff")
         .isEqualTo(1);
 
-    // after backoff elapses, it runs again
-    Thread.sleep(backoffMs + 100);
-    assertThat(runCount.get())
-        .as("mediator should have run again after backoff elapsed")
-        .isGreaterThanOrEqualTo(2);
+    // after backoff elapses, it runs again. Polled via Awaitility rather than a fixed
+    // Thread.sleep + buffer, so this doesn't flake under a slow/loaded CI runner.
+    await()
+        .atMost(Duration.ofMillis(backoffMs + 2000))
+        .untilAsserted(
+            () ->
+                assertThat(runCount.get())
+                    .as("mediator should have run again after backoff elapsed")
+                    .isGreaterThanOrEqualTo(2));
   }
 
   @Test
