@@ -70,7 +70,7 @@ runs:
         echo "opensearch-url=$OS_URL" >> "$GITHUB_OUTPUT"
 
     - name: Pre-login to AWS
-      uses: aws-actions/configure-aws-credentials@99214aa6889fcddfa57764031d71add364327e59 # v6.1.3
+      uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b # v6.2.1
       with:
         aws-region: ${{ env.AWS_REGION }}
         web-identity-token-file: ${{ env.AWS_WEB_IDENTITY_TOKEN_FILE }}
