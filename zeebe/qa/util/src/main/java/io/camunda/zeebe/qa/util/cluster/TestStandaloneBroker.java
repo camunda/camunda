@@ -30,8 +30,8 @@ import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration.MemoryAllocationStr
 import io.camunda.zeebe.qa.util.actuator.BrokerHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
+import io.camunda.zeebe.qa.util.cluster.util.RuntimePorts;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
-import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -112,10 +112,21 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
   @Override
   public int mappedPort(final TestZeebePort port) {
+    final var network = unifiedConfig.getCluster().getNetwork();
     return switch (port) {
-      case COMMAND -> unifiedConfig.getCluster().getNetwork().getCommandApi().getPort();
-      case GATEWAY -> unifiedConfig.getApi().getGrpc().getPort();
-      case CLUSTER -> unifiedConfig.getCluster().getNetwork().getInternalApi().getPort();
+      case COMMAND ->
+          resolveEphemeralPort(
+              network.getCommandApi().getPort(),
+              "command API",
+              () -> RuntimePorts.commandApiPort(this));
+      case GATEWAY ->
+          resolveEphemeralPort(
+              unifiedConfig.getApi().getGrpc().getPort(),
+              "gRPC",
+              () -> RuntimePorts.embeddedGatewayPort(this));
+      case CLUSTER ->
+          resolveEphemeralPort(
+              network.getInternalApi().getPort(), "cluster", () -> RuntimePorts.clusterPort(this));
       default -> super.mappedPort(port);
     };
   }
@@ -456,18 +467,11 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     unifiedConfig.getProcessing().setEnablePreconditionsCheck(true);
     unifiedConfig.getProcessing().setEnableForeignKeyChecks(true);
 
-    // Set dynamic ports via properties (these aren't in unified config yet)
-    unifiedConfig
-        .getCluster()
-        .getNetwork()
-        .getCommandApi()
-        .setPort(SocketUtil.getNextAddress().getPort());
-    unifiedConfig
-        .getCluster()
-        .getNetwork()
-        .getInternalApi()
-        .setPort(SocketUtil.getNextAddress().getPort());
-    unifiedConfig.getApi().getGrpc().setPort(SocketUtil.getNextAddress().getPort());
+    // use OS-assigned ephemeral ports to allow multiple concurrent instances; the actual ports
+    // are resolved from the running application (see #mappedPort)
+    unifiedConfig.getCluster().getNetwork().getCommandApi().setPort(0);
+    unifiedConfig.getCluster().getNetwork().getInternalApi().setPort(0);
+    unifiedConfig.getApi().getGrpc().setPort(0);
 
     withSecondaryStorageType(SecondaryStorageType.none);
   }

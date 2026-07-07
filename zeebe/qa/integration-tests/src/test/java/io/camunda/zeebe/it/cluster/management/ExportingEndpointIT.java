@@ -32,7 +32,7 @@ final class ExportingEndpointIT {
   @TestZeebe(initMethod = "initTestCluster")
   private static TestCluster cluster;
 
-  @AutoClose private final CamundaClient client = cluster.newClientBuilder().build();
+  @AutoClose private CamundaClient client = cluster.newClientBuilder().build();
 
   @SuppressWarnings("unused")
   static void initTestCluster() {
@@ -156,6 +156,10 @@ final class ExportingEndpointIT {
     getActuator().pause();
     cluster.shutdown();
     cluster.start();
+
+    // the cluster restarted on fresh OS-assigned ports, so the old client is stale
+    client.close();
+    client = cluster.newClientBuilder().build();
 
     client
         .newPublishMessageCommand()
@@ -329,6 +333,10 @@ final class ExportingEndpointIT {
     // when
     cluster.shutdown();
     cluster.start();
+
+    // the cluster restarted on fresh OS-assigned ports, so the old client is stale
+    client.close();
+    client = cluster.newClientBuilder().build();
 
     client
         .newPublishMessageCommand()

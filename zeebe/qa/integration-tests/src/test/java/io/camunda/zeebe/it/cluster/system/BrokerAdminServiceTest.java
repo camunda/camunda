@@ -226,7 +226,7 @@ public class BrokerAdminServiceTest {
     partitions.pauseProcessing();
 
     // when
-    zeebe.stop().start().awaitCompleteTopology();
+    restartBroker();
 
     // then
     assertThat(partitions.query().get(1).streamProcessorPhase()).isEqualTo(Phase.PAUSED.toString());
@@ -239,7 +239,7 @@ public class BrokerAdminServiceTest {
     partitions.resumeProcessing();
 
     // when
-    zeebe.stop().start().awaitCompleteTopology();
+    restartBroker();
 
     // then
     assertThat(partitions.query().get(1).streamProcessorPhase())
@@ -252,7 +252,7 @@ public class BrokerAdminServiceTest {
     partitions.pauseExporting();
 
     // when
-    zeebe.stop().start().awaitCompleteTopology();
+    restartBroker();
 
     // then
     assertThat(partitions.query().get(1).exporterPhase())
@@ -266,7 +266,7 @@ public class BrokerAdminServiceTest {
     partitions.resumeExporting();
 
     // when
-    zeebe.stop().start().awaitCompleteTopology();
+    restartBroker();
 
     // then
     assertThat(partitions.query().get(1).exporterPhase())
@@ -291,6 +291,13 @@ public class BrokerAdminServiceTest {
     assertThat(clock.instant()).isEqualTo(expectedInstant);
     assertThat(clock.modificationType()).isEqualTo("Pin");
     assertThat(clock.modification()).containsEntry("at", expectedInstant.toString());
+  }
+
+  private void restartBroker() {
+    zeebe.stop().start().awaitCompleteTopology();
+
+    // the broker restarted on fresh OS-assigned ports, so the old actuator is stale
+    partitions = PartitionsActuator.of(zeebe);
   }
 
   private void waitForSnapshotAtBroker() {

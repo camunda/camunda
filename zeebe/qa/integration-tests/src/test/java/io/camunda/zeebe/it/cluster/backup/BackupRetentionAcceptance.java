@@ -61,7 +61,6 @@ public interface BackupRetentionAcceptance extends ClockSupport {
   default void shouldMaintainRollingWindowAndDeleteOldBackupsWithRangeMarkers() {
 
     pinClock(getTestCluster());
-    final var actuator = BackupActuator.of(getTestCluster().availableGateway());
 
     // The checkpoint scheduler fires immediately on startup, creating an automatic backup.
     // The first attempt may fail if no valid snapshot exists yet (snapshot positions >=
@@ -84,6 +83,8 @@ public interface BackupRetentionAcceptance extends ClockSupport {
 
     restartClusterWithRetention();
 
+    // create the actuator only after the restart, as the cluster binds fresh OS-assigned ports
+    final var actuator = BackupActuator.of(getTestCluster().availableGateway());
     Awaitility.await("Retention deletes old backups")
         .atMost(Duration.ofSeconds(90))
         .pollInterval(Duration.ofSeconds(5))

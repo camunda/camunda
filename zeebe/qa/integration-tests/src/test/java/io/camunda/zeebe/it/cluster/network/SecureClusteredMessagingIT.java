@@ -15,6 +15,7 @@ import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneGateway;
+import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.asserts.SslAssert;
@@ -88,27 +89,29 @@ final class SecureClusteredMessagingIT {
 
   /** Verifies that both the command and internal APIs of the broker are correctly secured. */
   private void assertBrokerMessagingServicesAreSecured(final TestStandaloneBroker broker) {
-    // Use BrokerBasedProperties instead of unified configuration here because the
-    // advertised addresses are not initialized. The unified configuration does not
-    // provide an applyDefaults() method like NetworkCfg does for setting the addresses.
+    // Use BrokerBasedProperties for the advertised hosts, but resolve the ports from the running
+    // application: the configured ports stay 0 (OS-assigned) and are only known at runtime.
     final var brokerBasedProperties = broker.bean(BrokerBasedProperties.class);
     final var commandApiAddress =
-        brokerBasedProperties.getNetwork().getCommandApi().getAdvertisedAddress();
+        new InetSocketAddress(
+            brokerBasedProperties.getNetwork().getCommandApi().getAdvertisedHost(),
+            broker.mappedPort(TestZeebePort.COMMAND));
     final var internalApiAddress =
-        brokerBasedProperties.getNetwork().getInternalApi().getAdvertisedAddress();
+        new InetSocketAddress(
+            brokerBasedProperties.getNetwork().getInternalApi().getAdvertisedHost(),
+            broker.mappedPort(TestZeebePort.CLUSTER));
 
     assertAddressIsSecured(brokerBasedProperties.getCluster().getNodeId(), commandApiAddress);
     assertAddressIsSecured(brokerBasedProperties.getCluster().getNodeId(), internalApiAddress);
   }
 
   private InetSocketAddress getGatewayAddress(final TestCluster cluster) {
-    // Use GatewayBasedProperties instead of the unified configuration to resolve the
-    // advertised address and port via ClusterCfg, because the getters contain logic
-    // that is not available in the unified configuration.
-    final ClusterCfg clusterConfig =
-        cluster.availableGateway().bean(GatewayBasedProperties.class).getCluster();
+    // Use GatewayBasedProperties for the advertised host, but resolve the port from the running
+    // application: the configured port stays 0 (OS-assigned) and is only known at runtime.
+    final var gateway = cluster.availableGateway();
+    final ClusterCfg clusterConfig = gateway.bean(GatewayBasedProperties.class).getCluster();
     final var address =
-        Address.from(clusterConfig.getAdvertisedHost(), clusterConfig.getAdvertisedPort());
+        Address.from(clusterConfig.getAdvertisedHost(), gateway.mappedPort(TestZeebePort.CLUSTER));
     return address.socketAddress();
   }
 

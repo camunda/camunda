@@ -270,8 +270,8 @@ public final class TestClusterBuilder {
    * enabled and the right topology check configured. Additionally, {@link TestCluster#gateways()}
    * will also include them, along with any other additional standalone gateway.
    *
-   * <p>For standalone gateways, if {@link #brokersCount} is at least one, then a random broker is
-   * picked as the contact point for all gateways.
+   * <p>Initial contact points are not configured here: with OS-assigned ports, no broker address is
+   * known before it is started. {@link TestCluster#start()} configures them once known.
    *
    * @return a new Zeebe cluster
    */
@@ -338,13 +338,9 @@ public final class TestClusterBuilder {
       brokers.put(brokerId, broker);
     }
 
-    // since initial contact points has to contain all known brokers, we can only configure it
-    // AFTER the base broker configuration
-    final var contactPoints = getInitialContactPoints();
-    brokers.values().stream()
-        .map(TestStandaloneBroker::unifiedConfig)
-        .map(Camunda::getCluster)
-        .forEach(cfg -> cfg.setInitialContactPoints(contactPoints));
+    // initial contact points cannot be configured here: ports are OS-assigned on bind, so no
+    // broker address is known before it is started. TestCluster#start starts a seed broker
+    // first and configures the contact points of all other nodes from its resolved address.
   }
 
   private TestStandaloneBroker createBroker(final int index) {
@@ -419,14 +415,7 @@ public final class TestClusterBuilder {
               cluster.setNodeId(index);
               cluster.setGatewayId(id);
               cluster.setName(name);
-              cluster.setInitialContactPoints(getInitialContactPoints());
             });
-  }
-
-  private List<String> getInitialContactPoints() {
-    return brokers.values().stream()
-        .map(builder -> builder.address(TestZeebePort.CLUSTER))
-        .toList();
   }
 
   /**

@@ -14,6 +14,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.StatusResponse.Status;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneGateway;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
@@ -45,6 +46,12 @@ public class ClusterStatusTest {
 
   @BeforeEach
   void beforeEach() {
+    // brokers restart on fresh OS-assigned ports; if all brokers were stopped, a gateway that kept
+    // running only knows the old broker addresses and can never rediscover the restarted brokers,
+    // so restart it along with the brokers to re-resolve the contact points
+    if (CLUSTER.brokers().values().stream().noneMatch(TestStandaloneBroker::isStarted)) {
+      CLUSTER.gateways().values().forEach(TestStandaloneGateway::stop);
+    }
     CLUSTER.start().awaitCompleteTopology();
   }
 

@@ -20,6 +20,7 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
+import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,6 +47,16 @@ final class JobStreamLifecycleIT {
             .withBrokersCount(2)
             .withGatewaysCount(2)
             .withEmbeddedGateway(false)
+            .withGatewayConfig(
+                gateway -> {
+                  gateway.withUnauthenticatedAccess();
+                  // shouldAggregateStreamsEvenAcrossRestarts verifies that the client's streams
+                  // transparently re-register with a restarted gateway, which requires the
+                  // gateway to come back on the same gRPC endpoint; pre-assign a fixed port
+                  // instead of the default OS-assigned one, which changes on every start
+                  gateway.withUnifiedConfig(
+                      cfg -> cfg.getApi().getGrpc().setPort(SocketUtil.getNextAddress().getPort()));
+                })
             .build();
   }
 

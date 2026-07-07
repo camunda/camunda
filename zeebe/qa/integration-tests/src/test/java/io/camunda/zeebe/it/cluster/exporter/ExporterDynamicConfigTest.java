@@ -39,6 +39,10 @@ final class ExporterDynamicConfigTest {
 
     // when -- restart with new exporter
     zeebe.withRecordingExporter(true).start().awaitCompleteTopology();
+
+    // the broker restarted on fresh OS-assigned ports, so the old client is stale
+    client.close();
+    client = zeebe.newClientBuilder().build();
     client.newPublishMessageCommand().messageName("test").correlationKey("test").send().join();
 
     // then

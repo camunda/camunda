@@ -41,7 +41,6 @@ public class ClusterPurgeTest {
             .start()) {
 
       cluster.awaitCompleteTopology();
-      final var actuator = ClusterActuator.of(cluster.availableGateway());
 
       // Restart broker - increases the raft term of the partition
       cluster
@@ -54,6 +53,8 @@ public class ClusterPurgeTest {
               });
 
       cluster.awaitCompleteTopology();
+      // create the actuator only after the restart, as the broker binds fresh OS-assigned ports
+      final var actuator = ClusterActuator.of(cluster.availableGateway());
 
       // when
 

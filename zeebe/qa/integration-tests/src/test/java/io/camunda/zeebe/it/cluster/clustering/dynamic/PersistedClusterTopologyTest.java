@@ -104,6 +104,10 @@ public class PersistedClusterTopologyTest {
     cluster.awaitCompleteTopology(
         CLUSTER_SIZE, PARTITION_COUNT, REPLICATION_FACTOR, Duration.ofSeconds(10));
 
+    // the cluster restarted on fresh OS-assigned ports, so the old client is stale
+    client.close();
+    client = cluster.newClientBuilder().build();
+
     client
         .newCreateInstanceCommand()
         .processDefinitionKey(deploymentEvent.getProcesses().getFirst().getProcessDefinitionKey())

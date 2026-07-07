@@ -14,13 +14,18 @@ import io.atomix.cluster.MemberId;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.response.BrokerInfo;
+import io.camunda.zeebe.qa.util.cluster.util.RuntimePorts;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
@@ -108,6 +113,38 @@ public final class TestCluster implements CloseableSilently {
     this.partitionsCount = partitionsCount;
     this.brokers = Collections.unmodifiableMap(brokers);
     this.gateways = Collections.unmodifiableMap(gateways);
+
+    // with OS-assigned ports, member addresses change on every start, so contact points cannot be
+    // configured statically; every node resolves them on start from the currently running brokers
+    nodes()
+        .values()
+        .forEach(
+            node -> {
+              if (node instanceof final TestSpringApplication<?> app) {
+                app.withInitialContactPointsSupplier(this::currentContactPoints);
+              }
+            });
+  }
+
+  /**
+   * Returns the current cluster addresses of all brokers whose address is known: either because a
+   * fixed port is configured, or because the broker is running (or starting) on an OS-assigned
+   * port. Evaluated on every node start, so that a (re)started node always contacts live members.
+   */
+  private List<String> currentContactPoints() {
+    return brokers.values().stream().map(this::contactPointOf).flatMap(Optional::stream).toList();
+  }
+
+  private Optional<String> contactPointOf(final TestStandaloneBroker broker) {
+    final var configuredPort =
+        broker.unifiedConfig().getCluster().getNetwork().getInternalApi().getPort();
+    if (configuredPort != 0) {
+      return Optional.of(broker.host() + ":" + configuredPort);
+    }
+
+    return RuntimePorts.clusterPort(broker).stream()
+        .mapToObj(port -> broker.host() + ":" + port)
+        .findFirst();
   }
 
   /** Returns a new cluster builder */
@@ -136,9 +173,20 @@ public final class TestCluster implements CloseableSilently {
         partitionsCount,
         replicationFactor);
 
+    // ports are OS-assigned on bind, so no broker address is known before it is started; start a
+    // seed broker first so its resolved address can serve as initial contact point for the rest.
+    // the seed is started asynchronously because its startup only completes once the other
+    // brokers have joined; we only wait until its cluster port is bound
+    final var seedStart = startSeedBroker();
+    final var startingSeed = seedStart.map(SeedStart::seed).orElse(null);
+
     final var started =
-        nodes().values().stream()
-            .map(node -> CompletableFuture.runAsync(node::start))
+        Stream.concat(
+                seedStart.map(SeedStart::pendingStart).stream(),
+                nodes().values().stream()
+                    // the seed is still starting: not started, but must not be started again
+                    .filter(node -> node != startingSeed && !node.isStarted())
+                    .map(node -> CompletableFuture.runAsync(node::start)))
             .toArray(CompletableFuture[]::new);
     try {
       CompletableFuture.allOf(started).get(2, TimeUnit.MINUTES);
@@ -148,7 +196,51 @@ public final class TestCluster implements CloseableSilently {
     } catch (final Exception e) {
       throw new RuntimeException("Failed to start cluster " + name, e);
     }
+
     return this;
+  }
+
+  /**
+   * Starts a seed broker if no node is started yet and the cluster ports are not yet known.
+   *
+   * <p>The seed is started asynchronously: a broker's startup only completes once the cluster
+   * configuration is bootstrapped, which requires the other brokers to be reachable. We only wait
+   * until the seed's cluster port is bound, so that the contact point suppliers of the other nodes,
+   * which are subsequently started by the caller, can resolve the seed's address.
+   *
+   * @return the pending seed startup, or empty if no seed needs to be started
+   */
+  private Optional<SeedStart> startSeedBroker() {
+    if (brokers.isEmpty() || nodes().values().stream().anyMatch(TestApplication::isStarted)) {
+      return Optional.empty();
+    }
+
+    // no need to sequence the startup when all broker addresses are known upfront because the
+    // test configured fixed ports
+    final var allPortsKnown =
+        brokers.values().stream()
+            .allMatch(
+                broker ->
+                    broker.unifiedConfig().getCluster().getNetwork().getInternalApi().getPort()
+                        != 0);
+    if (allPortsKnown) {
+      return Optional.empty();
+    }
+
+    final var seed =
+        brokers.entrySet().stream()
+            .min(Map.Entry.comparingByKey(Comparator.comparing(MemberId::id)))
+            .orElseThrow()
+            .getValue();
+    LOGGER.info("Starting broker {} as the seed node of cluster {}", seed.nodeId(), name);
+    final var seedStart = CompletableFuture.runAsync(seed::start);
+
+    Awaitility.await("until the cluster port of seed broker %s is bound".formatted(seed))
+        .atMost(Duration.ofMinutes(1))
+        .failFast("seed broker failed to start", () -> seedStart.isCompletedExceptionally())
+        .until(() -> RuntimePorts.clusterPort(seed), OptionalInt::isPresent);
+
+    return Optional.of(new SeedStart(seed, seedStart));
   }
 
   /**
@@ -446,4 +538,6 @@ public final class TestCluster implements CloseableSilently {
         .filter(TestGateway.class::isInstance)
         .map(node -> (TestGateway<?>) node);
   }
+
+  private record SeedStart(TestStandaloneBroker seed, CompletableFuture<Void> pendingStart) {}
 }

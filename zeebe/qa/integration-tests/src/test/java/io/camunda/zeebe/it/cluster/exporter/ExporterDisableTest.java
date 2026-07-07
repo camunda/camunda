@@ -111,6 +111,10 @@ final class ExporterDisableTest {
     cluster.shutdown();
     cluster.start().awaitCompleteTopology();
 
+    // the cluster restarted on fresh OS-assigned ports, so the old client is stale
+    client.close();
+    client = cluster.newClientBuilder().build();
+
     generateEventsOnAllPartitions();
 
     // then
