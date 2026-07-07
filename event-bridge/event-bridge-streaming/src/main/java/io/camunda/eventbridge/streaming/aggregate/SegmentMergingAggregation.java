@@ -160,9 +160,17 @@ public final class SegmentMergingAggregation<K, ACC> {
     serializedSinceFlush.clear();
   }
 
+  /**
+   * Graceful shutdown: converge the serving view, but do <b>not</b> checkpoint. The serving upserts
+   * are idempotent by key, so publishing ahead of the offset cut is safe — the restarted replay
+   * re-converges them. The durable cells are not: a close between process and commit would persist
+   * folds the committed offset (and the dedup admission watermark, which is also only persisted at
+   * the commit cut) does not cover, so the replayed batches would be re-admitted and double-folded
+   * onto the close-persisted totals. Durable cells therefore move only in {@link #checkpoint()},
+   * inside the owner's commit cut; uncommitted folds are simply lost here and rebuilt by replay.
+   */
   public void close() {
     flush();
-    checkpoint();
   }
 
   private void finalizeClosedWindows() {

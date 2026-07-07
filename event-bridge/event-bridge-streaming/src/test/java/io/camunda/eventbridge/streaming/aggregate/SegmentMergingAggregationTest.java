@@ -301,6 +301,38 @@ final class SegmentMergingAggregationTest {
     assertThat(remaining).isEmpty();
   }
 
+  @Test
+  void shouldNotPersistStateAheadOfTheLastCheckpointOnClose() {
+    // given a running total whose first delta was checkpointed (the owner's commit cut)
+    final KeyValueStore<DbBytes, DbBytes> store =
+        new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes());
+    final InMemoryResultSink<Windowed<String>, Long> sinkBefore = new InMemoryResultSink<>();
+    final SegmentMergingAggregation<String, Long> before = merger(store, sinkBefore, keepOpen());
+    final Windowed<String> cell = new Windowed<>("k", 0L);
+    before.merge(cell, 3L);
+    before.checkpoint();
+
+    // when a later delta folds and the operator closes gracefully WITHOUT a commit
+    before.merge(cell, 4L);
+    before.close();
+
+    // then the close converged the (idempotent) serving view but the durable cell still matches
+    // the last commit — not the close; a cell persisted ahead of the offset cut would be
+    // double-folded when the uncommitted delta replays after restart
+    assertThat(sinkBefore.get(cell)).hasValue(7L);
+    final List<Long> stored = new ArrayList<>();
+    final LongRecordValue codec = new LongRecordValue();
+    store.forEach((key, value) -> stored.add(codec.fromBytes(value.getBytes())));
+    assertThat(stored).containsExactly(3L);
+
+    // and a fresh operator recovers the commit and folds the replayed delta exactly once
+    final InMemoryResultSink<Windowed<String>, Long> sinkAfter = new InMemoryResultSink<>();
+    final SegmentMergingAggregation<String, Long> after = merger(store, sinkAfter, keepOpen());
+    after.merge(cell, 4L);
+    after.flush();
+    assertThat(sinkAfter.get(cell)).hasValue(7L);
+  }
+
   /** The {@code windowStart} of a durable cell key ({@code group ++ windowStart ++ key}). */
   private static long decodeWindowStart(final byte[] cellKey) {
     return ByteBuffer.wrap(cellKey).getLong(Integer.BYTES);
