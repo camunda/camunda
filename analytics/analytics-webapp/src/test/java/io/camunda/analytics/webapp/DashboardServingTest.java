@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.analytics.fact.Fact;
 import io.camunda.analytics.fact.FactType;
 import io.camunda.analytics.fact.Transition;
+import io.camunda.analytics.query.TableQueryExecutor;
 import io.camunda.analytics.webapp.ServingTestSupport.Fixture;
 import io.camunda.analytics.webapp.dashboard.DashboardRepository;
 import io.camunda.analytics.webapp.dashboard.DistinctPoint;
@@ -35,7 +36,11 @@ final class DashboardServingTest {
   @BeforeEach
   void setUp() {
     fixture = ServingTestSupport.create();
-    repository = new DashboardRepository(fixture.executor(), fixture.catalog());
+    repository =
+        new DashboardRepository(
+            fixture.executor(),
+            fixture.catalog(),
+            new TableQueryExecutor(fixture.datasetStore().queryClient()));
   }
 
   @AfterEach
