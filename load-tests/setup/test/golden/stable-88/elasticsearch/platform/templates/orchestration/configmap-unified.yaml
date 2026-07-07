@@ -100,7 +100,7 @@ data:
           autoconfigure-camunda-exporter: true
           type: "elasticsearch"
           elasticsearch:
-            url: "http://elastic:9200"
+            url: "http://elasticsearch-es-http:9200"
             cluster-name: "elasticsearch"
             username: ""
             password: "${VALUES_ELASTICSEARCH_PASSWORD:}"
@@ -241,7 +241,7 @@ data:
           elasticsearch:
             className: "io.camunda.zeebe.exporter.ElasticsearchExporter"
             args:
-              url: "http://elastic:9200"
+              url: "http://elasticsearch-es-http:9200"
               index:
                 prefix: "zeebe-record"
                 numberOfReplicas: "1"
@@ -254,7 +254,7 @@ data:
             args:
               connect:
                 type: "elasticsearch"
-                url: "http://elastic:9200"
+                url: "http://elasticsearch-es-http:9200"
                 awsEnabled: false
               history:
                 elsRolloverDateFormat: "date"

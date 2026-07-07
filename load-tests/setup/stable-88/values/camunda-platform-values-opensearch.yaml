@@ -2,6 +2,7 @@
 ################################################### Global cluster configuration
 ########################################################################################
 global:
+  # Disable Elasticsearch secondary storage when using OpenSearch.
   elasticsearch:
     enabled: false
 
@@ -21,12 +22,6 @@ orchestration:
   data:
     secondaryStorage:
       type: opensearch
-
-#################################################################################################
-################################################### Disable Elasticsearch when using OpenSearch
-#################################################################################################
-elasticsearch:
-  enabled: false
 
 ###########################################################################
 #######
