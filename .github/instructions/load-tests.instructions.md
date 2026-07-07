@@ -42,6 +42,21 @@ When reviewing changes to load tests, workflows, or load test infrastructure:
    This lets Renovate automatically track Helm chart patch updates on that stable branch.
    See `load-tests/setup/README.md#helm-chart-version-management` for full details.
 
+4. **Command-line flag precedence**: A flag added via `+=` to
+   `additional_load_test_setup_configuration` or `additional_load_test_configuration` in a
+   `load-tests/setup/*/Makefile` is silently dropped when CI passes that same variable on the
+   `make` command line (as `camunda-load-test.yml` always does) — GNU Make blocks any later `+=`
+   to a variable once it has command-line origin, even if the CLI value is empty
+   ([Overriding](https://www.gnu.org/software/make/manual/html_node/Overriding.html),
+   [Override Directive](https://www.gnu.org/software/make/manual/html_node/Override-Directive.html)).
+   Route makefile-computed defaults through a dedicated accumulator instead (see
+   `_load_test_setup_flags` in any versioned Makefile), and verify with:
+   ```sh
+   make -n <target> ... additional_load_test_setup_configuration="--set foo=bar"
+   ```
+   A plain `make -n <target>` dry run — or the golden file tests, which never set this variable on
+   the command line — will not catch this class of regression.
+
 ## What gets backported
 
 **Never backport** (update the versioned folder on `main` instead):
