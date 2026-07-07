@@ -149,11 +149,20 @@ class AbstractImportSchedulerTest {
     scheduler.startImportScheduling();
     assertThat(firstRunComplete.await(2, TimeUnit.SECONDS)).isTrue();
 
-    // then: immediately after the first run, the mediator should NOT have run again yet
-    // (it's waiting for backoffMs)
-    assertThat(runCount.get())
-        .as("mediator should not have been rescheduled immediately after first run with backoff")
-        .isEqualTo(1);
+    // then: the mediator should not be rescheduled before backoff elapses. Checked with
+    // Awaitility's during() (holds continuously for part of the backoff window) rather than a
+    // single point-in-time read, since a stalled/descheduled test thread could otherwise observe
+    // the count after the real reschedule already happened and flake under a loaded CI runner.
+    await()
+        .during(Duration.ofMillis(backoffMs / 2))
+        .atMost(Duration.ofMillis(backoffMs))
+        .untilAsserted(
+            () ->
+                assertThat(runCount.get())
+                    .as(
+                        "mediator should not have been rescheduled immediately after first run"
+                            + " with backoff")
+                    .isEqualTo(1));
 
     // after backoff elapses, it runs again. Polled via Awaitility rather than a fixed
     // Thread.sleep + buffer, so this doesn't flake under a slow/loaded CI runner.
