@@ -24,7 +24,8 @@ import java.util.function.Predicate;
  * Merges immutable segment deltas into <b>one running accumulator per cell</b> and converges an
  * idempotent {@link ResultSink}, so a read hits a single cell. It is the reduce side of the
  * segment-delta shuffle: each delta is the from-empty accumulator of one sealed segment for a cell,
- * and this operator folds it into the cell's total via {@link AggregateFunction#merge}.
+ * and this operator folds it into the cell's total via {@link AggregateFunction#mergeInto} (the
+ * total is owned by this operator, so the in-place fold is safe).
  *
  * <p>Unlike per-writer slots, it keeps just one accumulator per cell — so exactly-once rests on
  * merging each delta at most once. That dedup is the caller's responsibility, done once per batch
@@ -102,8 +103,15 @@ public final class SegmentMergingAggregation<K, ACC> {
         && cell.windowStart() + windows.sizeMs() + windows.graceMs() <= maxEventTime) {
       return;
     }
+    // The running total is always an accumulator this operator owns: the first delta is folded
+    // into a fresh accumulator rather than stored, so a delta may be a transient read-only view
+    // (RecordValue#fromBytesForMerge) and the in-place mergeInto never mutates a caller's object.
     final ACC current = cellTotal.get(cell);
-    cellTotal.put(cell, current == null ? delta : aggregate.merge(current, delta));
+    cellTotal.put(
+        cell,
+        current == null
+            ? aggregate.mergeInto(aggregate.createAccumulator(), delta)
+            : aggregate.mergeInto(current, delta));
     changedSinceFlush.add(cell);
     changedSinceCheckpoint.add(cell);
     evictedSinceCheckpoint.remove(cell);

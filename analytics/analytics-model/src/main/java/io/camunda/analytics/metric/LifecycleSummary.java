@@ -54,6 +54,18 @@ public final class LifecycleSummary {
     duration.record(durationMs);
   }
 
+  /**
+   * Folds {@code other} into this summary in place — the mutating counterpart of {@link
+   * #merge(LifecycleSummary, LifecycleSummary)} for a summary this caller owns. {@code other} is
+   * not modified, so it may be a read-only decoded view.
+   */
+  public void merge(final LifecycleSummary other) {
+    activated += other.activated;
+    completed += other.completed;
+    terminated += other.terminated;
+    duration.merge(other.duration);
+  }
+
   public static LifecycleSummary merge(final LifecycleSummary a, final LifecycleSummary b) {
     return new LifecycleSummary(
         a.activated + b.activated,

@@ -73,6 +73,13 @@ public final class TopKAggregateFunction<F>
     return merged;
   }
 
+  /** In place: the frequency merge folds directly into the caller-owned target sketch. */
+  @Override
+  public ItemsSketch<String> mergeInto(
+      final ItemsSketch<String> target, final ItemsSketch<String> delta) {
+    return target.merge(delta);
+  }
+
   @Override
   public TopKResult getResult(final ItemsSketch<String> sketch) {
     final Row<String>[] rows = sketch.getFrequentItems(ErrorType.NO_FALSE_POSITIVES);

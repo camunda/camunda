@@ -65,6 +65,20 @@ public final class ExecutionTimeSummary {
   }
 
   /**
+   * Folds {@code other} into this summary in place (additive stats + KLL merge) — the mutating
+   * counterpart of {@link #merge(ExecutionTimeSummary, ExecutionTimeSummary)} for a summary this
+   * caller owns. {@code other} is not modified, so it may be a read-only decoded view; this
+   * summary's sketch must be a writable heap sketch.
+   */
+  public void merge(final ExecutionTimeSummary other) {
+    count += other.count;
+    totalMs += other.totalMs;
+    minMs = Math.min(minMs, other.minMs);
+    maxMs = Math.max(maxMs, other.maxMs);
+    sketch.merge(other.sketch);
+  }
+
+  /**
    * Combines two summaries into a fresh one (additive stats + KLL union), commutative/associative.
    */
   public static ExecutionTimeSummary merge(

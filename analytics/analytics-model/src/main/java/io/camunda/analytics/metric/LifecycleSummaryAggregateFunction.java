@@ -60,6 +60,13 @@ public final class LifecycleSummaryAggregateFunction
     return LifecycleSummary.merge(a, b);
   }
 
+  /** In place: counters and the duration summary fold directly into the caller-owned target. */
+  @Override
+  public LifecycleSummary mergeInto(final LifecycleSummary target, final LifecycleSummary delta) {
+    target.merge(delta);
+    return target;
+  }
+
   @Override
   public LifecycleSummaryResult getResult(final LifecycleSummary acc) {
     return new LifecycleSummaryResult(

@@ -68,6 +68,13 @@ public final class QuantileAggregateFunction<F>
     return merged;
   }
 
+  /** In place: KLL merges directly into the caller-owned target, no fresh sketch per fold. */
+  @Override
+  public KllDoublesSketch mergeInto(final KllDoublesSketch target, final KllDoublesSketch delta) {
+    target.merge(delta);
+    return target;
+  }
+
   @Override
   public QuantileResult getResult(final KllDoublesSketch sketch) {
     if (sketch.isEmpty()) {

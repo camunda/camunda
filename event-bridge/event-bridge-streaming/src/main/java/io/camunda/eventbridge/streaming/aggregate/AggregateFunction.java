@@ -38,6 +38,20 @@ public interface AggregateFunction<IN, ACC, OUT> {
   /** Combines two partial accumulators (commutative, associative). */
   ACC merge(ACC a, ACC b);
 
+  /**
+   * Combines {@code delta} into {@code target} — semantically identical to {@link #merge(Object,
+   * Object)} but allowed to mutate and return {@code target}, avoiding the fresh accumulator a pure
+   * merge builds per call. The default falls back to the pure {@link #merge}, so implementations
+   * only override it when an in-place fold is cheaper (e.g. sketch accumulators).
+   *
+   * <p>Callers must own {@code target} exclusively: never pass an accumulator that aliases a stored
+   * slot or a read-only decoded view. {@code delta} is never mutated, so it may be a read-only view
+   * (e.g. a sketch wrapped over serialized bytes) and may be reused across calls.
+   */
+  default ACC mergeInto(final ACC target, final ACC delta) {
+    return merge(target, delta);
+  }
+
   /** Derives the read-facing result from an accumulator. */
   OUT getResult(ACC accumulator);
 }

@@ -47,6 +47,14 @@ public final class ExecutionTimeSummaryAggregateFunction<F>
     return ExecutionTimeSummary.merge(a, b);
   }
 
+  /** In place: stats and the KLL sketch fold directly into the caller-owned target summary. */
+  @Override
+  public ExecutionTimeSummary mergeInto(
+      final ExecutionTimeSummary target, final ExecutionTimeSummary delta) {
+    target.merge(delta);
+    return target;
+  }
+
   @Override
   public ExecutionTimeSummaryResult getResult(final ExecutionTimeSummary acc) {
     return acc.result(ranks);

@@ -52,6 +52,15 @@ public final class DistinctCountAggregateFunction<F>
     return sketch;
   }
 
+  /**
+   * {@inheritDoc}
+   *
+   * <p>Deliberately no {@code mergeInto} override: an {@link HllSketch} cannot absorb another in
+   * place — a union always goes through a {@link Union} whose {@code getResult()} copies out a
+   * fresh sketch — and a reused per-instance {@code Union} would break this function's stateless
+   * contract (one instance is shared between the pipeline and query threads via the bound meter).
+   * The delta side still gets cheaper via the read-only wrap decode ({@code fromBytesForMerge}).
+   */
   @Override
   public HllSketch merge(final HllSketch a, final HllSketch b) {
     final Union union = new Union(LG_CONFIG_K);
