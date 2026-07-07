@@ -175,11 +175,16 @@ test.describe('Process Instances Filters', () => {
     await test.step('Inline filter narrows the list', async () => {
       await waitForAssertion({
         assertion: async () => {
-          await expect(page.getByText('1 result')).toBeVisible();
+          await expect(page.getByText('1 result')).toBeVisible({
+            timeout: 30_000,
+          });
         },
         onFailure: async () => {
           await page.reload();
         },
+        // The filtered instance is indexed asynchronously; allow more
+        // reload-and-recheck cycles before failing.
+        maxRetries: 5,
       });
       await expect(
         operateProcessesPage.processInstancesTable.getByText(

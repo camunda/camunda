@@ -190,8 +190,12 @@ export class OperateFiltersPanelPage {
   async selectVersion(option: string) {
     await expect(this.processNameFilter).toBeVisible();
     await expect(this.processVersionFilter).toBeEnabled();
-    await this.processVersionFilter.click();
-    await expect(this.getOptionByName(option)).toBeVisible({timeout: 30000});
+    // The version dropdown can fail to open, or render before its options have
+    // loaded; retry opening it until the target option is present.
+    await expect(async () => {
+      await this.processVersionFilter.click();
+      await expect(this.getOptionByName(option)).toBeVisible({timeout: 5_000});
+    }).toPass({timeout: 30_000});
     await this.getOptionByName(option).click({timeout: 30000});
   }
 

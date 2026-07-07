@@ -909,9 +909,13 @@ class OperateProcessInstancePage {
   }
 
   async ensureElementExpandedInHistory(expandingElementName: string) {
-    const expandingElements = await (
-      await this.getNestedParentLocatorInHistory(expandingElementName)
-    ).all();
+    const parentLocator =
+      await this.getNestedParentLocatorInHistory(expandingElementName);
+    // The instance history tree renders asynchronously after modifications are
+    // applied, so wait for the node to appear before collecting matches —
+    // otherwise .all() resolves to an empty list and nothing gets expanded.
+    await expect(parentLocator.first()).toBeVisible({timeout: 30000});
+    const expandingElements = await parentLocator.all();
     for (const element of expandingElements) {
       await expect(element).toBeVisible();
       let isExpanded = await element.getAttribute('aria-expanded');

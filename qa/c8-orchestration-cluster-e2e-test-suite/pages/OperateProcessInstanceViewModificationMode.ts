@@ -311,6 +311,12 @@ export class OperateProcessInstanceViewModificationModePage {
   }
 
   async clickAddModificationButtononPopup(): Promise<void> {
+    // The popup briefly swaps its buttons for a spinner while an in-flight
+    // element-stats fetch resolves; wait it out so the click lands on a stable
+    // button. Passes immediately when the spinner is not present.
+    await this.page
+      .getByTestId('dropdown-spinner')
+      .waitFor({state: 'hidden', timeout: 15000});
     await this.addModificationButtononPopup.click();
   }
 
