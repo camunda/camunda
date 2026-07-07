@@ -27,6 +27,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -227,6 +228,26 @@ public class RecoveryControllerTest extends RestControllerTest {
         .exchange()
         .expectStatus()
         .isEqualTo(HttpStatus.CONFLICT);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"/v2/restore", "/physical-tenants/default/v2/restore"})
+  void shouldAllowNoParameter(final String baseUrl) {
+    // given
+    stubValidationSuccess();
+
+    // when / then
+    webClient
+        .post()
+        .uri(baseUrl)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isAccepted();
+
+    // then
+    Mockito.verify(clusterConfigurationRequestSender)
+        .restore(new RestoreRequest(List.of(), null, null, false, false));
   }
 
   @Nested

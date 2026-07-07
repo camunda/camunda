@@ -75,7 +75,8 @@ public final class RecoveryController {
   @CamundaPostMapping(path = "/restore")
   public CompletableFuture<ResponseEntity<Object>> restore(
       @PhysicalTenantId final String physicalTenantId,
-      @RequestBody final io.camunda.gateway.protocol.model.RestoreRequest restoreRequest,
+      @RequestBody(required = false)
+          final io.camunda.gateway.protocol.model.RestoreRequest restoreRequest,
       @RequestParam(name = "dryRun", defaultValue = "false") final boolean dryRun) {
     LOG.debug("Requested restore for physical tenant {}: {}", physicalTenantId, restoreRequest);
     return RequestExecutor.executeServiceMethod(
@@ -89,6 +90,9 @@ public final class RecoveryController {
 
   private RestoreRequest toRestoreRequest(
       final io.camunda.gateway.protocol.model.RestoreRequest restoreRequest, final boolean dryRun) {
+    if (restoreRequest == null) {
+      return new RestoreRequest(List.of(), null, null, continuousBackups(), dryRun);
+    }
     final List<Long> backupIds =
         restoreRequest.getBackupIds() == null ? List.of() : restoreRequest.getBackupIds();
     return new RestoreRequest(

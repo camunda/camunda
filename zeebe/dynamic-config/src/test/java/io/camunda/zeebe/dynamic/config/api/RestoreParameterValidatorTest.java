@@ -28,7 +28,7 @@ final class RestoreParameterValidatorTest {
   }
 
   @Test
-  void shouldAcceptTimeRangeOnlyWhenRangesAllowed() {
+  void shouldAcceptTimeRangeWithContinuousBackups() {
     // when / then
     assertThatCode(() -> RestoreParameterValidator.validate(false, EARLIER, LATER, true))
         .doesNotThrowAnyException();
@@ -41,6 +41,14 @@ final class RestoreParameterValidatorTest {
         .isThrownBy(
             () -> RestoreParameterValidator.validate(false, NULL_INSTANT, NULL_INSTANT, false))
         .withMessage("Must specify either backupId or from/to.");
+  }
+
+  @Test
+  void shouldAllowNoParametersWithContinuousBackups() {
+    // when / then
+    assertThatCode(
+            () -> RestoreParameterValidator.validate(false, NULL_INSTANT, NULL_INSTANT, true))
+        .doesNotThrowAnyException();
   }
 
   @Test

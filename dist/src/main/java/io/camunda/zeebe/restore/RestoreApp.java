@@ -221,7 +221,7 @@ public class RestoreApp implements ApplicationRunner {
   }
 
   private void validateParameters() {
-    RestoreParameterValidator.validate(hasBackupId(), from, to, hasTimeRange());
+    RestoreParameterValidator.validate(hasBackupId(), from, to);
   }
 
   private boolean hasTimeRange() {
