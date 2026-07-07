@@ -72,17 +72,17 @@ final class DashboardServingTest {
 
   @Test
   void shouldReturnSlaRatioFromServingStore() {
-    // given four completed instances, three within the 300s SLA threshold
+    // given four completed instances, three within the default 9s SLA threshold (durationMs <= 9s)
     final long window =
         ServingTestSupport.seed(
             fixture,
             "process-sla",
             "sla_compliance",
-            completed(100_000L, 200_000L, 300_000L, 400_000L),
+            completed(4_000L, 6_000L, 9_000L, 12_000L),
             PROCESS);
 
-    // when the SLA-met ratio series is read
-    final List<RatioPoint> ratios = repository.ratios(PROCESS, "sla_met", null, null);
+    // when the SLA-compliance ratio series is read (by its declared meter name)
+    final List<RatioPoint> ratios = repository.ratios(PROCESS, "sla_compliance", null, null);
 
     // then it is matched=3 of total=4 for the seeded window
     assertThat(ratios)
@@ -99,11 +99,11 @@ final class DashboardServingTest {
 
   @Test
   void shouldReturnUnmodeledRatioAsEmpty() {
-    // given a seeded SLA cube but a metric with no declared dataset
+    // given a seeded SLA cube but a meter name no declared dataset owns
     ServingTestSupport.seed(fixture, "process-sla", "sla_compliance", completed(100_000L), PROCESS);
 
-    // when / then — no-incident has no cube, so it reads empty
-    assertThat(repository.ratios(PROCESS, "no_incident", null, null)).isEmpty();
+    // when / then — no dataset declares this meter, so it reads empty
+    assertThat(repository.ratios(PROCESS, "unmodeled_ratio", null, null)).isEmpty();
   }
 
   @Test
