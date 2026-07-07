@@ -8,6 +8,7 @@
 package io.camunda.analytics.aggregation;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.analytics.dimension.DimensionColumn;
 import io.camunda.analytics.dimension.DimensionKey;
@@ -75,6 +76,50 @@ final class EnvelopePublisherTest {
   void shouldBeANoOpWhenNothingBuffered() {
     new EnvelopePublisher(transport, 1, 0L).flush();
     assertThat(sent).isEmpty();
+  }
+
+  @Test
+  void shouldFlushDeterministicallyBySegmentThenFactsPartition() {
+    // given cells buffered in scrambled segment/facts-partition order
+    final EnvelopePublisher publisher = new EnvelopePublisher(transport, 1, 0L);
+    publisher.add(0, 2L, 2, cell(10));
+    publisher.add(0, 0L, 3, cell(11));
+    publisher.add(0, 2L, 1, cell(12));
+    publisher.add(0, 0L, 1, cell(13));
+    publisher.add(0, 1L, 2, cell(14));
+
+    // when
+    publisher.flush();
+
+    // then: envelopes leave ordered by segment, then facts partition — replay-stable chunking
+    assertThat(sent)
+        .extracting(s -> s.envelope().segment(), Sent::partition)
+        .containsExactly(tuple(0L, 1), tuple(0L, 3), tuple(1L, 2), tuple(2L, 1), tuple(2L, 2));
+    // ... and each envelope of a segment gets the next monotonic chunk in that order
+    assertThat(sent).extracting(s -> s.envelope().chunk()).containsExactly(0, 1, 0, 0, 1);
+  }
+
+  @Test
+  void shouldNotGrowChunkCountersAcrossPrunedSegments() {
+    // given a publisher flushing a long run of advancing segments, pruned at each "commit" the way
+    // the owning stage task does once no stream can seal below the watermark's segment anymore
+    final EnvelopePublisher publisher = new EnvelopePublisher(transport, 1, 0L);
+
+    // when
+    for (long segment = 0; segment < 100; segment++) {
+      publisher.add(0, segment, 1, cell(10));
+      publisher.flush();
+      publisher.pruneChunkCountersBelow(segment);
+    }
+
+    // then: the counter map stays bounded instead of accreting one entry per segment ever flushed
+    assertThat(publisher.trackedSegments()).isLessThanOrEqualTo(1);
+
+    // ... and the retained (at-watermark) segment keeps its monotonic chunk across the prunes
+    sent.clear();
+    publisher.add(0, 99L, 1, cell(11));
+    publisher.flush();
+    assertThat(sent).singleElement().satisfies(s -> assertThat(s.envelope().chunk()).isEqualTo(1));
   }
 
   @Test

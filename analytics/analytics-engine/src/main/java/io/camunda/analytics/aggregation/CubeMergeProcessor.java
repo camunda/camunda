@@ -46,6 +46,12 @@ public final class CubeMergeProcessor implements Processor<ShuffleEnvelope, Void
   private final Map<Integer, CellApplier> byStreamId;
   private final List<SegmentMergingAggregation<?, ?>> mergers;
 
+  /**
+   * Reused per-envelope admit-once-per-stream memo (the task processes envelopes one at a time on
+   * its actor thread), cleared at the start of each envelope.
+   */
+  private final Map<Integer, Boolean> admitted = new HashMap<>();
+
   public CubeMergeProcessor(
       final SegmentDedup dedup,
       final Map<Integer, CellApplier> byStreamId,
@@ -66,7 +72,7 @@ public final class CubeMergeProcessor implements Processor<ShuffleEnvelope, Void
     final int chunk = envelope.chunk();
     // Admit once per stream in this envelope (all of a stream's cells share its (segment, chunk));
     // a re-emit of that stream's batch is skipped, while a sibling stream's late segment is kept.
-    final Map<Integer, Boolean> admitted = new HashMap<>();
+    admitted.clear();
     for (final CellDelta cell : envelope.cells()) {
       final boolean merge =
           admitted.computeIfAbsent(

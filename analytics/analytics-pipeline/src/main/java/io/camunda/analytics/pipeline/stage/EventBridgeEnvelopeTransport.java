@@ -30,6 +30,9 @@ public final class EventBridgeEnvelopeTransport implements EnvelopeTransport {
   private final String topic;
   private final Map<Integer, BatchPublisher> batches = new HashMap<>();
 
+  /** Reused per flush; a fresh flush repopulates it, so a failed join leaves no stale awaits. */
+  private final List<CompletableFuture<?>> futures = new ArrayList<>();
+
   public EventBridgeEnvelopeTransport(final EventBridgeClient client, final String topic) {
     this.client = client;
     this.topic = topic;
@@ -45,9 +48,10 @@ public final class EventBridgeEnvelopeTransport implements EnvelopeTransport {
     if (batches.isEmpty()) {
       return;
     }
-    final List<CompletableFuture<?>> futures = new ArrayList<>();
+    futures.clear();
     batches.forEach((partition, batch) -> futures.add(batch.publishToTopic(topic, partition)));
     CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+    futures.clear();
     batches.clear();
   }
 }

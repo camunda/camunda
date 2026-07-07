@@ -91,6 +91,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
   private final String factsTopic;
   private final int factsPartitions;
   private final int segmentStride;
+  private final Segments segments;
   private final int schemaVersion;
   private final DatasetStore datasetStore;
   private final DatasetWriter servingWriter;
@@ -107,6 +108,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
   // can watermark-seal them. appliedVersion/lastReloadCheckMs drive the throttled reload check.
   private ProcessorTopology<SourceRecord> topology;
   private List<SegmentSealingAggregation<Fact, ?, ?>> sealingAggregations;
+  private EnvelopePublisher publisher;
   private long appliedVersion;
   private long lastReloadCheckMs;
 
@@ -130,6 +132,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
     this.factsTopic = factsTopic;
     this.factsPartitions = factsPartitions;
     this.segmentStride = segmentStride;
+    segments = Segments.ofStride(segmentStride);
     this.schemaVersion = schemaVersion;
     this.datasetStore = datasetStore;
     this.servingWriter = servingWriter;
@@ -218,6 +221,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
             new EventBridgeEnvelopeTransport(client, factsTopic),
             schemaVersion,
             System.currentTimeMillis());
+    this.publisher = publisher;
 
     // source → base projection; each cube-meter aggregate node seals and forwards SegmentCells to
     // one shared shuffle-sink node (the transport); each raw table writes rows to the serving
@@ -379,6 +383,10 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
     // persist the full offset + the topology's state (base projection + every open segment) as one
     // atomic cut on this partition's provider.
     topology.flush();
+    // The watermark seal above closed every stream below the committed offset's segment, so their
+    // published chunk counters can never be consulted again — prune them to keep the publisher's
+    // per-segment chunk map bounded.
+    publisher.pruneChunkCountersBelow(segments.index(offset));
     servingWriter.flush();
     provider.runInTransaction(
         () -> {
