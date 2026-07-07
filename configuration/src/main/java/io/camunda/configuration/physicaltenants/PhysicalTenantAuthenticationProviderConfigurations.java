@@ -25,6 +25,14 @@ import org.springframework.core.env.Environment;
  * security.authentication}: only the named-provider map suffers the {@code MapBinder} defect, so
  * the sibling authentication fields (the flat {@code oidc} slot, {@code method}, …) stay on the
  * resolver's generic two-bind and the installer replaces just the providers subtree.
+ *
+ * <p>Note: {@code io.camunda.authentication.pt.PhysicalTenantAuthConfigurations} in the
+ * authentication module solves the same provider merge for its own {@code
+ * AuthenticationConfiguration} tree with a hand-rolled variant of this strategy (rooted at {@code
+ * .authentication}, empty-map case handled by the post-bind union rebuild alone). The two must stay
+ * behavior-equivalent; behavioral fixes to this engine likely apply there too. Harmonizing them
+ * into one mechanism is tracked in <a
+ * href="https://github.com/camunda/camunda/issues/56964">#56964</a>.
  */
 @NullMarked
 public final class PhysicalTenantAuthenticationProviderConfigurations {
@@ -37,7 +45,6 @@ public final class PhysicalTenantAuthenticationProviderConfigurations {
           List.of(
               new MapDescriptor<OidcProvidersConfiguration, OidcConfiguration>(
                   "oidc", OidcConfiguration.class, OidcProvidersConfiguration::getOidc)),
-          MapOverlaySpec.noHook(),
           MapOverlaySpec.noHook(),
           (camunda, providers) ->
               camunda.getSecurity().getAuthentication().setProviders(providers));

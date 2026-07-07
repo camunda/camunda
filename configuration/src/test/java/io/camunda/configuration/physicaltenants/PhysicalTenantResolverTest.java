@@ -194,6 +194,33 @@ class PhysicalTenantResolverTest {
   }
 
   @Test
+  void shouldKeepRootProvidersWhenTenantOverlayHasEmptyProvidersMap() {
+    // given root declares a named provider and the tenant's only providers overlay is an empty
+    // map — Spring Boot 4.1 surfaces `providers: {}` as an empty property value, which must mean
+    // "nothing to overlay" through the full resolver path (bind, overlay, installer), not a reset
+    // of the inherited providers
+    setProperties(
+        Map.of(
+            "camunda.security.authentication.providers.oidc.shared.issuer-uri",
+                "http://localhost:8082/realms/shared",
+            "camunda.security.authentication.providers.oidc.shared.client-id", "shared-client",
+            "camunda.physical-tenants.tenanta.security.authentication.providers", "",
+            "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+                "tenanta"),
+        "tenanta");
+
+    // when
+    final Camunda tenantA = newResolver().forPhysicalTenant("tenanta");
+
+    // then the inherited provider survives the empty overlay
+    final var shared = tenantA.getSecurity().getAuthentication().getProviders().getOidc();
+    assertThat(shared).containsKey("shared");
+    assertThat(shared.get("shared").getIssuerUri())
+        .isEqualTo("http://localhost:8082/realms/shared");
+    assertThat(shared.get("shared").getClientId()).isEqualTo("shared-client");
+  }
+
+  @Test
   void shouldSynthesizeDefaultTenantFromRootWhenNoTenantsAreDeclared() {
     // given only root configuration is set
     setProperties(Map.of("camunda.cluster.size", 5));

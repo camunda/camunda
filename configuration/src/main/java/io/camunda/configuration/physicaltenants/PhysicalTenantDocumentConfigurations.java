@@ -47,7 +47,6 @@ public final class PhysicalTenantDocumentConfigurations {
                   "local", LocalStore.class, Document::getLocal),
               new MapDescriptor<Document, InMemoryStore>(
                   "in-memory", InMemoryStore.class, Document::getInMemory)),
-          MapOverlaySpec.noHook(),
           PhysicalTenantDocumentConfigurations::postProcess,
           Camunda::setDocument);
 

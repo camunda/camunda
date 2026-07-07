@@ -30,7 +30,6 @@ import org.springframework.boot.context.properties.bind.Binder;
  * @param defaultFactory fallback when nothing is bound under the root prefix
  * @param maps the {@code Map<String, V>} properties reachable from the root that need the
  *     snapshot-then-rebind repair
- * @param prepare optional domain hook run after the root bind, before the tenant overlay
  * @param postProcess optional domain hook run after the overlay completed
  * @param installer attaches the resolved config to the per-tenant {@link Camunda}
  */
@@ -40,7 +39,6 @@ record MapOverlaySpec<R>(
     Class<R> rootType,
     Supplier<R> defaultFactory,
     List<MapDescriptor<R, ?>> maps,
-    BiConsumer<OverlayContext, R> prepare,
     BiConsumer<OverlayContext, R> postProcess,
     BiConsumer<Camunda, R> installer) {
 
@@ -71,6 +69,6 @@ record MapOverlaySpec<R>(
   record MapDescriptor<R, V>(
       String subPath, Class<V> valueType, Function<R, Map<String, V>> accessor) {}
 
-  /** Per-invocation context handed to the {@code prepare}/{@code postProcess} hooks. */
+  /** Per-invocation context handed to the {@code postProcess} hook. */
   record OverlayContext(String tenantId, String ptPrefix, Binder binder) {}
 }

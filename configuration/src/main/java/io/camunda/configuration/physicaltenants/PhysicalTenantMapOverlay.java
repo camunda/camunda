@@ -69,8 +69,6 @@ final class PhysicalTenantMapOverlay {
             .orElseGet(spec.defaultFactory());
 
     final String ptPrefix = spec.ptPrefix(tenantId);
-    final OverlayContext context = new OverlayContext(tenantId, ptPrefix, binder);
-    spec.prepare().accept(context, root);
 
     // Snapshot every map BEFORE the overlay bind mutates it; defer the per-key rebind.
     final List<Runnable> rebinds = new ArrayList<>();
@@ -80,7 +78,7 @@ final class PhysicalTenantMapOverlay {
     binder.bind(ptPrefix, Bindable.ofInstance(root), EMPTY_TOLERANT_HANDLER);
     rebinds.forEach(Runnable::run);
 
-    spec.postProcess().accept(context, root);
+    spec.postProcess().accept(new OverlayContext(tenantId, ptPrefix, binder), root);
     return root;
   }
 

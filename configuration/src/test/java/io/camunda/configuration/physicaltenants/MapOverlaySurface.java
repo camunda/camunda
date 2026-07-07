@@ -38,6 +38,14 @@ import org.springframework.boot.context.properties.source.ConfigurationPropertyN
  *       whose values have no bindable sub-fields. Such maps are listed in {@link
  *       #DEFAULT_MERGE_ALLOWLIST}.
  * </ul>
+ *
+ * <p>Boundary: the guards do not descend into collection element types — a map reachable only
+ * through a {@code List<Pojo>} element is never visited, and a {@code Map<String, List<Pojo>>}
+ * value is classified scalar-safe. This is deliberate, not a blind spot for the bug class: the
+ * silent-sibling-loss hazard exists only where Spring <em>merges</em> an overlay into existing
+ * content, and only {@code MapBinder} does that — {@code CollectionBinder.merge} clears the
+ * existing collection and replaces it wholesale, so everything below a collection is populated
+ * entirely from the overlay with no partially-merged root instance to lose fields from.
  */
 final class MapOverlaySurface {
 
@@ -122,8 +130,10 @@ final class MapOverlaySurface {
       }
       if (valueArg instanceof final ParameterizedType nested
           && nested.getRawType() instanceof final Class<?> raw) {
-        // e.g. Map<String, Map<..>> or Map<String, List<..>>: the value is a JDK container, not a
-        // POJO — return the raw container class so isPojo classifies it as scalar-safe.
+        // e.g. Map<String, Map<..>> or Map<String, List<..>>: the value is a JDK container that
+        // Spring replaces as a whole on override (only MapBinder merges; CollectionBinder does
+        // not), so a touched entry has whole-value semantics with no silent field loss — return
+        // the raw container class so isPojo classifies it as scalar-safe.
         return raw;
       }
     }

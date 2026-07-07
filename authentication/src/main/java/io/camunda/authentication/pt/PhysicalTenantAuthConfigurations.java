@@ -68,6 +68,14 @@ import org.springframework.core.env.Environment;
  * issuer-uri}): the config getters never return {@code null} (the api setters coerce {@code null}
  * to an empty instance), and CSL's {@code flatten} ignores a slot or provider with no usable
  * config, so a content-less slot is simply not turned into a chain.
+ *
+ * <p>Note: {@code io.camunda.configuration.physicaltenants
+ * .PhysicalTenantAuthenticationProviderConfigurations} in the configuration module solves the same
+ * provider merge for the unified-configuration tree via the generic spec-driven overlay engine
+ * (rooted at {@code .providers}, empty-map case additionally covered by an empty-tolerant bind
+ * handler). The two must stay behavior-equivalent; behavioral fixes here likely apply there too.
+ * Harmonizing them into one mechanism is tracked in <a
+ * href="https://github.com/camunda/camunda/issues/56964">#56964</a>.
  */
 public final class PhysicalTenantAuthConfigurations {
 
