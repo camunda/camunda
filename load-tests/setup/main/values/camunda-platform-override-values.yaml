@@ -3,3 +3,8 @@
 # when scenario=max, to disable checks that would add overhead during maximum-load tests.
 zeebe.broker.experimental.consistencyChecks.enablePreconditions: "false"
 zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks: "false"
+# Raft timeout experiment profile (DO NOT MERGE). requestTimeout is set equal to the
+# election timeout, matching the relationship of the stock defaults.
+zeebe.broker.cluster.electionTimeout: "200ms"
+zeebe.broker.cluster.heartbeatInterval: "20ms"
+zeebe.broker.experimental.raft.requestTimeout: "200ms"
