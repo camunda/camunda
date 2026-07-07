@@ -7,6 +7,9 @@
  */
 package io.camunda.optimize.service.importing;
 
+import static io.camunda.optimize.MetricEnum.IMPORT_CYCLE_DURATION_METRIC;
+import static io.camunda.optimize.MetricEnum.IMPORT_MEDIATOR_ERROR_METRIC;
+import static io.camunda.optimize.MetricEnum.IMPORT_RECORDS_IMPORTED_METRIC;
 import static io.camunda.optimize.MetricEnum.INDEXING_DURATION_METRIC;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -16,6 +19,7 @@ import io.camunda.optimize.service.importing.engine.service.ImportService;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import io.camunda.optimize.service.util.BackoffCalculator;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Timer;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -39,10 +43,18 @@ public abstract class PositionBasedImportMediator<
   @Override
   public CompletableFuture<Void> runImport() {
     final CompletableFuture<Void> importCompleted = new CompletableFuture<>();
+    final Timer.Sample cycleSample = Timer.start(Metrics.globalRegistry);
+    importCompleted.whenComplete(
+        (result, throwable) ->
+            cycleSample.stop(
+                OptimizeMetrics.getTimer(
+                    IMPORT_CYCLE_DURATION_METRIC, getRecordType(), getPartitionId())));
     boolean pageIsPresent;
     try {
       pageIsPresent = importNextPage(() -> importCompleted.complete(null));
     } catch (final Exception e) {
+      OptimizeMetrics.getCounter(IMPORT_MEDIATOR_ERROR_METRIC, getRecordType(), getPartitionId())
+          .increment();
       logger.error("Was not able to import next page, skipping this round.", e);
       importCompleted.complete(null);
       pageIsPresent = false;
@@ -111,6 +123,10 @@ public abstract class PositionBasedImportMediator<
                 endTime.toInstant().toEpochMilli() - startTime.toInstant().toEpochMilli();
             final Timer indexingDurationTimer = getIndexingDurationTimer();
             indexingDurationTimer.record(took, MILLISECONDS);
+
+            OptimizeMetrics.getCounter(
+                    IMPORT_RECORDS_IMPORTED_METRIC, getRecordType(), getPartitionId())
+                .increment(entitiesNextPage.size());
 
             importIndexHandler.updateLastPersistedEntityPositionAndSequence(
                 currentPageLastEntityPosition, currentPageLastEntitySequence);
