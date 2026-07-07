@@ -15,6 +15,8 @@ import io.camunda.analytics.serving.spi.AggregatedRow;
 import io.camunda.analytics.serving.spi.Cell;
 import io.camunda.analytics.serving.spi.DatasetFetch;
 import io.camunda.analytics.serving.spi.DatasetQueryClient;
+import io.camunda.eventbridge.streaming.aggregate.AggregateFunction;
+import io.camunda.eventbridge.streaming.aggregate.RecordValue;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -26,10 +28,10 @@ import java.util.Map;
  * Additive meters come back finalized from the store ({@link DatasetQueryClient#fetchAggregated} —
  * {@code DIRECT} or {@code PUSH_DOWN}); sketch/summary meters are streamed ({@link
  * DatasetQueryClient#streamCells}) and app-merged here — projecting each cell to the requested
- * group-by, bucketing its window at the requested granularity, merging accumulators via {@code
- * AggregateFunction.merge}, then finalizing with {@code getResult}. The app-merge is exact for
- * every mergeable sketch, and the pushdown is exact for every additive meter, so a mixed cube is
- * one union of the two.
+ * group-by, bucketing its window at the requested granularity, merging decoded deltas into one
+ * running accumulator per (group, meter) via {@code AggregateFunction.mergeInto}, then finalizing
+ * with {@code getResult}. The app-merge is exact for every mergeable sketch, and the pushdown is
+ * exact for every additive meter, so a mixed cube is one union of the two.
  */
 public final class DatasetQueryExecutor {
 
@@ -58,8 +60,19 @@ public final class DatasetQueryExecutor {
     }
 
     // Sketch/blob meters: stream cells and app-merge each meter's accumulator per (group, bucket).
+    // Resolve each meter's bound meter and one codec flyweight once per fetch, not per cell: the
+    // bound lookup is a linear scan of the dataset's meters and the codec is a fresh flyweight per
+    // call, and the app-merge here is single-threaded, so one reused instance per meter is safe.
+    final Map<String, ResolvedMeter> resolvedByMeter = new LinkedHashMap<>();
     final Map<GroupKey, Map<String, Object>> accumulators = new LinkedHashMap<>();
     for (final DatasetFetch fetch : plan.streamFetches()) {
+      final Map<String, ResolvedMeter> resolved = new LinkedHashMap<>();
+      for (final String meter : fetch.meters()) {
+        final ResolvedMeter resolvedMeter =
+            ResolvedMeter.of(boundOf(dataset, meter, fetch.windowSize()));
+        resolved.put(meter, resolvedMeter);
+        resolvedByMeter.putIfAbsent(meter, resolvedMeter);
+      }
       client.streamCells(
           fetch,
           cell -> {
@@ -72,11 +85,7 @@ public final class DatasetQueryExecutor {
               if (bytes == null) {
                 continue;
               }
-              final BoundMeter<?, ?> bound = boundOf(dataset, meter, fetch.windowSize());
-              byMeter.merge(
-                  meter,
-                  decode(bound, bytes),
-                  (current, decoded) -> merge(bound, current, decoded));
+              resolved.get(meter).mergeDelta(byMeter, meter, bytes);
             }
           });
     }
@@ -87,8 +96,7 @@ public final class DatasetQueryExecutor {
               measuresByGroup.computeIfAbsent(group, g -> new LinkedHashMap<>());
           byMeter.forEach(
               (meter, acc) ->
-                  measures.put(
-                      meter, result(boundOf(dataset, meter, streamTierOf(plan, meter)), acc)));
+                  measures.put(meter, resolvedByMeter.get(meter).aggregate().getResult(acc)));
         });
 
     final List<ReportRow> rows = new ArrayList<>(measuresByGroup.size());
@@ -118,33 +126,37 @@ public final class DatasetQueryExecutor {
         "no compiled meter '" + meter + "' at tier " + windowSize + " in '" + dataset.name() + "'");
   }
 
-  private static long streamTierOf(final QueryPlan plan, final String meter) {
-    for (final DatasetFetch fetch : plan.streamFetches()) {
-      if (fetch.meters().contains(meter)) {
-        return fetch.windowSize();
-      }
-    }
-    throw new IllegalStateException("streamed meter '" + meter + "' absent from the plan");
-  }
-
   private static long alignDown(final long value, final long bucket) {
     return value - Math.floorMod(value, bucket);
   }
 
-  @SuppressWarnings("unchecked")
-  private static Object decode(final BoundMeter<?, ?> bound, final byte[] bytes) {
-    return ((BoundMeter<Object, Object>) bound).accumulatorCodec().fromBytes(bytes);
-  }
+  /**
+   * One streamed meter's per-query merge context: the aggregate function plus a single reusable
+   * codec flyweight, resolved once instead of per cell. Deltas are decoded through the codec's
+   * merge-only path (possibly a read-only view over the cell's bytes) and folded in place into a
+   * running accumulator this executor owns — the first delta seeds a fresh accumulator, so a
+   * decoded view is never stored.
+   */
+  private record ResolvedMeter(
+      AggregateFunction<Object, Object, Object> aggregate, RecordValue<Object> codec) {
 
-  @SuppressWarnings("unchecked")
-  private static Object merge(
-      final BoundMeter<?, ?> bound, final Object current, final Object decoded) {
-    return ((BoundMeter<Object, Object>) bound).aggregate().merge(current, decoded);
-  }
+    @SuppressWarnings("unchecked")
+    static ResolvedMeter of(final BoundMeter<?, ?> bound) {
+      final BoundMeter<Object, Object> cast = (BoundMeter<Object, Object>) bound;
+      return new ResolvedMeter(
+          (AggregateFunction<Object, Object, Object>) (AggregateFunction<?, ?, ?>) cast.aggregate(),
+          cast.accumulatorCodec());
+    }
 
-  @SuppressWarnings("unchecked")
-  private static Object result(final BoundMeter<?, ?> bound, final Object acc) {
-    return ((BoundMeter<Object, Object>) bound).aggregate().getResult(acc);
+    void mergeDelta(final Map<String, Object> byMeter, final String meter, final byte[] bytes) {
+      final Object delta = codec.fromBytesForMerge(bytes);
+      final Object current = byMeter.get(meter);
+      byMeter.put(
+          meter,
+          current == null
+              ? aggregate.mergeInto(aggregate.createAccumulator(), delta)
+              : aggregate.mergeInto(current, delta));
+    }
   }
 
   /** A value-equal reduction key: the group-by dimension values (in order) plus the time bucket. */
