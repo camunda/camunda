@@ -12,8 +12,8 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * A heap-backed {@link ResultSink} for tests and demos: an idempotent map upsert (overwrite by
- * key). A durable implementation is an RDBMS upsert or an Elasticsearch index-by-deterministic-id.
+ * A heap-backed {@link ResultSink} for tests: an idempotent map upsert (overwrite by key). A
+ * durable implementation is an RDBMS upsert or an Elasticsearch index-by-deterministic-id.
  *
  * @param <K> the key type
  * @param <V> the value type
