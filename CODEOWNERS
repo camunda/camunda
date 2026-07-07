@@ -26,6 +26,20 @@
 /.github/actions/dependency-vuln-check/*                 @camunda/engineering-operations
 /.github/dependency-review-config.json                   @camunda/engineering-operations
 
+# Gradle build (parallel path to Maven) by Monorepo DevOps team
+/build.gradle.kts                                        @camunda/engineering-operations
+/settings.gradle.kts                                     @camunda/engineering-operations
+/gradle.properties                                       @camunda/engineering-operations
+/gradlew                                                 @camunda/engineering-operations
+/gradlew.bat                                             @camunda/engineering-operations
+/gradle/                                                 @camunda/engineering-operations
+/buildSrc/                                               @camunda/engineering-operations
+# Convention-plugin exceptions (owned by the domain team, last match wins)
+/buildSrc/src/main/kotlin/buildlogic.sbe-conventions.gradle.kts              @camunda/zeebe-distributed-platform
+/buildSrc/src/main/kotlin/buildlogic.netty-tcnative-runtime-conventions.gradle.kts @camunda/zeebe-distributed-platform
+/buildSrc/src/main/kotlin/buildlogic.frontend-webjar-conventions.gradle.kts  @camunda/core-features
+/buildSrc/src/main/kotlin/buildlogic.client-conventions.gradle.kts           @camunda/c8-java-sdk
+
 ###################
 ## Core Features ##
 ###################
@@ -156,7 +170,7 @@
 /.claude/skills/ci-security-compliance/**        @camunda/engineering-operations
 /.claude/skills/ci-validation/**                 @camunda/engineering-operations
 /.claude/skills/ci-workflow-authoring/**         @camunda/engineering-operations
-
+/.claude/skills/gradle-build-parity/**           @camunda/engineering-operations
 # Engine-expert skill
 /.claude/skills/engine-expert/  @korthout @camunda/core-features
 
