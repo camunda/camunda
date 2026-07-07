@@ -106,7 +106,7 @@ public final class SystemContextTestFactory {
         meterRegistry,
         singleValueMap(
             physicalTenantIds,
-            new PhysicalTenantEngineContext(
+            new PhysicalTenantContext(
                 securityConfiguration, brokerRequestAuthorizationConverter, featureFlags)),
         tenantId -> userServices,
         passwordEncoder,

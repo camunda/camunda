@@ -10,9 +10,9 @@ package io.camunda.zeebe.broker;
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Processing;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
-import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
@@ -25,7 +25,7 @@ import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
-import io.camunda.zeebe.broker.system.PhysicalTenantEngineContext;
+import io.camunda.zeebe.broker.system.PhysicalTenantContext;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -65,14 +65,13 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private static final Logger LOGGER = Loggers.SYSTEM_LOGGER;
 
   private final BrokerBasedConfiguration configuration;
-  private final IdentityConfiguration identityConfiguration;
   private final SpringBrokerBridge springBrokerBridge;
   private final ActorScheduler actorScheduler;
   private final AtomixCluster cluster;
   private final BrokerClient brokerClient;
   private final BrokerShutdownHelper shutdownHelper;
   private final MeterRegistry meterRegistry;
-  private final Map<String, PhysicalTenantEngineContext> physicalTenantEngineContexts;
+  private final Map<String, PhysicalTenantContext> physicalTenantEngineContexts;
   private final ServiceRegistry serviceRegistry;
   private final PasswordEncoder passwordEncoder;
   private final ScopedJwtDecoderFactory scopedJwtDecoderFactory;
@@ -86,7 +85,6 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   @Autowired
   public BrokerModuleConfiguration(
       final BrokerBasedConfiguration configuration,
-      final IdentityConfiguration identityConfiguration,
       final SpringBrokerBridge springBrokerBridge,
       final ActorScheduler actorScheduler,
       final AtomixCluster cluster,
@@ -104,7 +102,6 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       final NodeIdProvider nodeIdProvider,
       final PhysicalTenantIds physicalTenantIds) {
     this.configuration = configuration;
-    this.identityConfiguration = identityConfiguration;
     this.springBrokerBridge = springBrokerBridge;
     this.actorScheduler = actorScheduler;
     this.cluster = cluster;
@@ -186,8 +183,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     }
   }
 
-  private PhysicalTenantEngineContext buildPhysicalTenantEngineContext(
-      final io.camunda.configuration.Camunda camunda) {
+  private PhysicalTenantContext buildPhysicalTenantEngineContext(final Camunda camunda) {
     final var s = camunda.getSecurity();
     final var securityConfig =
         new EngineSecurityConfig(
@@ -199,7 +195,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             s.getCompiledGroupIdValidationPattern());
     final var authorizationConverter = new BrokerRequestAuthorizationConverter(securityConfig);
     final var featureFlags = buildFeatureFlags(camunda.getProcessing());
-    return new PhysicalTenantEngineContext(securityConfig, authorizationConverter, featureFlags);
+    return new PhysicalTenantContext(securityConfig, authorizationConverter, featureFlags);
   }
 
   private FeatureFlags buildFeatureFlags(final Processing p) {

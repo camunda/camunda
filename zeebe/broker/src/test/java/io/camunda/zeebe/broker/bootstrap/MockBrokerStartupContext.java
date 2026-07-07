@@ -29,7 +29,7 @@ import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
-import io.camunda.zeebe.broker.system.PhysicalTenantEngineContext;
+import io.camunda.zeebe.broker.system.PhysicalTenantContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.broker.system.management.CheckpointSchedulingService;
@@ -95,7 +95,7 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   private BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter =
       mock(BrokerRequestAuthorizationConverter.class);
   private FeatureFlags featureFlags = FeatureFlags.createDefaultForTests();
-  private final Map<String, PhysicalTenantEngineContext> physicalTenantEngineContexts =
+  private final Map<String, PhysicalTenantContext> physicalTenantEngineContexts =
       new LinkedHashMap<>();
   private CheckpointSchedulingService checkpointSchedulingService =
       mock(CheckpointSchedulingService.class);
@@ -358,11 +358,11 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   }
 
   @Override
-  public PhysicalTenantEngineContext getPhysicalTenantEngineContext(final String physicalTenantId) {
+  public PhysicalTenantContext getPhysicalTenantEngineContext(final String physicalTenantId) {
     return physicalTenantEngineContexts.computeIfAbsent(
         physicalTenantId,
         id ->
-            new PhysicalTenantEngineContext(
+            new PhysicalTenantContext(
                 securityConfiguration, brokerRequestAuthorizationConverter, featureFlags));
   }
 
@@ -431,7 +431,7 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   }
 
   public void setPhysicalTenantEngineContext(
-      final String physicalTenantId, final PhysicalTenantEngineContext context) {
+      final String physicalTenantId, final PhysicalTenantContext context) {
     physicalTenantEngineContexts.put(physicalTenantId, context);
   }
 

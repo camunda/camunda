@@ -26,7 +26,7 @@ import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
-import io.camunda.zeebe.broker.system.PhysicalTenantEngineContext;
+import io.camunda.zeebe.broker.system.PhysicalTenantContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.broker.system.management.CheckpointSchedulingService;
@@ -67,7 +67,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final List<PartitionRaftListener> partitionRaftListeners = new ArrayList<>();
   private final Duration shutdownTimeout;
   private final MeterRegistry meterRegistry;
-  private final Map<String, PhysicalTenantEngineContext> physicalTenantEngineContexts;
+  private final Map<String, PhysicalTenantContext> physicalTenantEngineContexts;
   private final Function<String, UserServices> userServicesForTenant;
   private final PasswordEncoder passwordEncoder;
   private final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory;
@@ -103,7 +103,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final List<PartitionListener> additionalPartitionListeners,
       final Duration shutdownTimeout,
       final MeterRegistry meterRegistry,
-      final Map<String, PhysicalTenantEngineContext> physicalTenantEngineContexts,
+      final Map<String, PhysicalTenantContext> physicalTenantEngineContexts,
       final Function<String, UserServices> userServicesForTenant,
       final PasswordEncoder passwordEncoder,
       final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory,
@@ -350,7 +350,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   }
 
   @Override
-  public PhysicalTenantEngineContext getPhysicalTenantEngineContext(final String physicalTenantId) {
+  public PhysicalTenantContext getPhysicalTenantEngineContext(final String physicalTenantId) {
     if (!physicalTenantEngineContexts.containsKey(physicalTenantId)) {
       throw new IllegalArgumentException("Unknown physical tenant id '" + physicalTenantId + "'");
     }
