@@ -22,6 +22,8 @@ import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
+import io.camunda.zeebe.broker.jobstream.RemoteJobStreamErrorHandlerService;
+import io.camunda.zeebe.broker.jobstream.YieldingJobStreamErrorHandler;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.partitioning.RecoveryPartitionManager;
 import io.camunda.zeebe.broker.partitioning.startup.ZeebePartitionFactory;
@@ -41,6 +43,7 @@ import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -286,6 +289,40 @@ class PartitionManagerStepTest {
 
       // then
       assertThat(startupFuture).succeedsWithin(TIME_OUT);
+    }
+
+    @Test
+    void shouldRegisterJobStreamErrorHandlerInPartitionListeners() throws Exception {
+      // given — a job stream service with a real, identifiable error handler
+      final var errorHandler =
+          new RemoteJobStreamErrorHandlerService(new YieldingJobStreamErrorHandler());
+      final var jobStreamService = mock(JobStreamService.class);
+      when(jobStreamService.errorHandlerService()).thenReturn(errorHandler);
+
+      final var secCfg = EngineSecurityConfigurations.unauthenticatedAndUnauthorized();
+      final var conv = new BrokerRequestAuthorizationConverter(secCfg);
+      testBrokerStartupContext.setPhysicalTenantEngineContext(
+          PHYSICAL_TENANT_ID,
+          new PhysicalTenantEngineContext(
+              secCfg, conv, FeatureFlags.createDefaultForTests(), jobStreamService));
+
+      // when
+      sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);
+      assertThat(startupFuture).succeedsWithin(TIME_OUT);
+
+      // then — the error handler is wired into the partition manager's factory, not the global list
+      final var factoryField = PartitionManagerImpl.class.getDeclaredField("zeebePartitionFactory");
+      factoryField.setAccessible(true);
+      final var listenersField = ZeebePartitionFactory.class.getDeclaredField("partitionListeners");
+      listenersField.setAccessible(true);
+
+      final var manager =
+          (PartitionManagerImpl)
+              testBrokerStartupContext.getPartitionManagers().get(PHYSICAL_TENANT_ID);
+      final var listeners = (List<?>) listenersField.get(factoryField.get(manager));
+      assertThat(listeners).anySatisfy(l -> assertThat(l).isSameAs(errorHandler));
+      assertThat(testBrokerStartupContext.getPartitionListeners())
+          .noneSatisfy(l -> assertThat(l).isSameAs(errorHandler));
     }
   }
 
