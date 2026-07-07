@@ -7,10 +7,14 @@
  */
 package io.camunda.eventbridge.client.internal.consumer;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.eventbridge.batch.BatchBuilder;
+import io.camunda.eventbridge.client.FetchResult;
 import io.camunda.eventbridge.client.OffsetResetPolicy;
 import io.camunda.eventbridge.client.TopicPartition;
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
@@ -88,6 +92,43 @@ final class PrefetcherTest {
   }
 
   @Test
+  void shouldBufferAnInFlightFetchThatLandsAfterPause() {
+    // given: one controllable in-flight fetch for the partition
+    final AtomicReference<CompletableFuture<FetchResult>> inFlight = new AtomicReference<>();
+    final Fetcher fetcher =
+        (topic, partition, offset, maxBytes, minBytes, maxWaitMs) -> {
+          final CompletableFuture<FetchResult> fetch = new CompletableFuture<>();
+          inFlight.compareAndSet(null, fetch); // keep the first; any later fetch never completes
+          return fetch;
+        };
+    final SubscriptionState subscription =
+        new SubscriptionState(fetcher, OffsetResetPolicy.EARLIEST);
+    final PrefetchBuffer buffer = new PrefetchBuffer(1);
+    final TopicPartition tp = new TopicPartition("t1", 1);
+    buffer.runLocked(
+        () -> {
+          subscription.applyOwnedPartitions(List.of(tp));
+          subscription.setNextPosition(tp, 0L);
+        });
+    final Prefetcher prefetcher =
+        new Prefetcher(fetcher, executor, subscription, buffer, () -> false, 1 << 20, 0, 5_000L);
+    prefetcher.kick();
+
+    // when: the partition is paused while the fetch is in flight, and the fetch then lands
+    buffer.runLocked(() -> buffer.pause(tp));
+    inFlight
+        .get()
+        .complete(
+            FetchResult.parse(
+                fetchBody(0L, 0L, 1L, new BatchBuilder().add("v".getBytes(UTF_8)).build())));
+
+    // then: the landed events are retained (not delivered) until the partition is resumed
+    assertThat(buffer.drain(10, 0L, () -> false)).isEmpty();
+    buffer.runLocked(() -> buffer.resume(tp));
+    assertThat(buffer.drain(10, 0L, () -> false)).hasSize(1);
+  }
+
+  @Test
   void shouldPassConfiguredMinBytesToFetch() {
     // given
     final AtomicInteger observedMinBytes = new AtomicInteger(-1);
@@ -112,5 +153,17 @@ final class PrefetcherTest {
     // then: the configured minBytes (and longPollMs) are threaded into the fetch call
     assertThat(observedMinBytes.get()).isEqualTo(512);
     assertThat(observedMaxWaitMs.get()).isEqualTo(7_000L);
+  }
+
+  /** A successful fetch body: header (positions, high watermark, data length) plus batch data. */
+  private static byte[] fetchBody(
+      final long firstPos, final long lastPos, final long highWatermark, final byte[] data) {
+    return ByteBuffer.allocate(Long.BYTES * 3 + Integer.BYTES + data.length)
+        .putLong(firstPos)
+        .putLong(lastPos)
+        .putLong(highWatermark)
+        .putInt(data.length)
+        .put(data)
+        .array();
   }
 }

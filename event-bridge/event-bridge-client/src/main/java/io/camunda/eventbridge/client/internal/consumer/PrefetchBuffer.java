@@ -14,9 +14,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
@@ -43,6 +45,13 @@ import java.util.function.Supplier;
  * the cap. This is a soft cap (fetches already in flight still land), so total memory is bounded by
  * {@code maxBufferedBytes} plus the outstanding in-flight fetches.
  *
+ * <p>A partition can be <em>paused</em>: {@link #claim(List)} stops issuing fetches for it (a fetch
+ * already in flight still lands and is retained) and {@link #drainInto(List, int)} skips its
+ * buffered events, while the pause mark and the buffered events survive a seek ({@link #clear}).
+ * Bytes retained on paused partitions are tracked separately ({@code pausedBytes}) and excluded
+ * from the total-bytes fetch gate, so a paused partition's backlog cannot stall fetches for active
+ * partitions. Pause marks are dropped with the partition on {@link #retain(Collection)}.
+ *
  * <p>Callers that need to combine a position update with a buffer mutation atomically run both
  * under {@link #runLocked(Runnable)} so the whole critical section observes a single lock hold.
  */
@@ -68,6 +77,12 @@ public final class PrefetchBuffer {
   private final int prefetchDepth;
   private final long maxBufferedBytes;
   private long bufferedBytes;
+
+  /**
+   * The share of {@link #bufferedBytes} held on paused partitions, excluded from the fetch gate.
+   */
+  private long pausedBytes;
+
   private int fetchGeneration;
 
   /** Creates a buffer with the historical depth-1, unbounded-bytes behavior. */
@@ -123,29 +138,77 @@ public final class PrefetchBuffer {
     fetchGeneration++;
   }
 
-  /** Clears the buffered events for {@code tp}, if any. Caller must hold the lock. */
+  /**
+   * Clears the buffered events for {@code tp}, if any. A pause mark survives the clear (a seek
+   * repositions the cursor but does not resume the partition). Caller must hold the lock.
+   */
   public void clear(final TopicPartition tp) {
     final PartitionState state = partitions.get(tp);
     if (state != null) {
       state.buffer.clear();
       bufferedBytes -= state.bufferedBytes;
+      if (state.paused) {
+        pausedBytes -= state.bufferedBytes;
+      }
       state.bufferedBytes = 0;
     }
   }
 
   /**
-   * Drops buffers and in-flight markers for partitions not in {@code retained}. Caller holds lock.
+   * Drops buffers, in-flight markers, and pause marks for partitions not in {@code retained} — a
+   * revoked partition loses its pause mark with its state. Caller holds lock.
    */
   public void retain(final Collection<TopicPartition> retained) {
     final Iterator<Map.Entry<TopicPartition, PartitionState>> it = partitions.entrySet().iterator();
     while (it.hasNext()) {
       final Map.Entry<TopicPartition, PartitionState> entry = it.next();
       if (!retained.contains(entry.getKey())) {
-        bufferedBytes -= entry.getValue().bufferedBytes;
+        final PartitionState state = entry.getValue();
+        bufferedBytes -= state.bufferedBytes;
+        if (state.paused) {
+          pausedBytes -= state.bufferedBytes;
+        }
         it.remove();
         sortedPartitionsDirty = true;
       }
     }
+  }
+
+  /**
+   * Marks {@code tp} paused: no further fetch slot is claimed for it and its buffered events are
+   * held back from draining until {@link #resume(TopicPartition)}. Idempotent; the fetch position
+   * is untouched. Caller must hold the lock.
+   */
+  public void pause(final TopicPartition tp) {
+    final PartitionState state = state(tp);
+    if (!state.paused) {
+      state.paused = true;
+      pausedBytes += state.bufferedBytes;
+    }
+  }
+
+  /**
+   * Clears {@code tp}'s pause mark so it is fetched and drained again. Idempotent; unknown
+   * partitions are ignored. The caller signals any parked poll — retained events on the resumed
+   * partition may now satisfy it. Caller must hold the lock.
+   */
+  public void resume(final TopicPartition tp) {
+    final PartitionState state = partitions.get(tp);
+    if (state != null && state.paused) {
+      state.paused = false;
+      pausedBytes -= state.bufferedBytes;
+    }
+  }
+
+  /** The currently paused partitions. Caller must hold the lock. */
+  public Set<TopicPartition> pausedPartitions() {
+    final Set<TopicPartition> out = new HashSet<>();
+    for (final Map.Entry<TopicPartition, PartitionState> entry : partitions.entrySet()) {
+      if (entry.getValue().paused) {
+        out.add(entry.getKey());
+      }
+    }
+    return out;
   }
 
   /**
@@ -162,10 +225,15 @@ public final class PrefetchBuffer {
     try {
       gen = fetchGeneration;
       // Total-bytes backpressure: while the buffer is at/over the cap, issue no new fetches. The
-      // next poll drains it back under the cap, after which the caller's kick claims again.
-      if (bufferedBytes < maxBufferedBytes) {
+      // next poll drains it back under the cap, after which the caller's kick claims again. Bytes
+      // retained on paused partitions are excluded, so a paused backlog cannot stall active
+      // partitions' fetches.
+      if (bufferedBytes - pausedBytes < maxBufferedBytes) {
         for (final TopicPartition tp : owned) {
           final PartitionState state = state(tp);
+          if (state.paused) {
+            continue; // paused: issue no new fetch until resumed
+          }
           final int bufferedSlot = state.buffer.isEmpty() ? 0 : 1;
           int occupied = state.inFlight + bufferedSlot;
           while (occupied < prefetchDepth) {
@@ -192,13 +260,20 @@ public final class PrefetchBuffer {
     }
   }
 
-  /** Appends {@code event} to {@code tp}'s buffer, creating it if absent. Caller holds lock. */
+  /**
+   * Appends {@code event} to {@code tp}'s buffer, creating it if absent. Events landing on a paused
+   * partition (a fetch that was in flight when the pause was marked) are retained and delivered
+   * after resume. Caller holds lock.
+   */
   public void add(final TopicPartition tp, final Event event) {
     final PartitionState state = state(tp);
     state.buffer.add(event);
     final long size = sizeOf(event);
     bufferedBytes += size;
     state.bufferedBytes += size;
+    if (state.paused) {
+      pausedBytes += size;
+    }
   }
 
   /**
@@ -234,8 +309,8 @@ public final class PrefetchBuffer {
   }
 
   /**
-   * Drains up to {@code maxRecords} buffered events in sorted partition order into {@code out}.
-   * Caller must hold the lock.
+   * Drains up to {@code maxRecords} buffered events in sorted partition order into {@code out},
+   * skipping paused partitions (their events are retained until resume). Caller must hold the lock.
    */
   public void drainInto(final List<Event> out, final int maxRecords) {
     if (sortedPartitionsDirty) {
@@ -246,6 +321,10 @@ public final class PrefetchBuffer {
     }
     for (int i = 0; i < sortedPartitions.size(); i++) {
       final PartitionState state = partitions.get(sortedPartitions.get(i));
+      if (state.paused) {
+        // Skipped at drain time rather than invalidating the cached order on every pause/resume.
+        continue;
+      }
       final ArrayDeque<Event> buf = state.buffer;
       long drained = 0;
       while (!buf.isEmpty() && out.size() < maxRecords) {
@@ -263,10 +342,13 @@ public final class PrefetchBuffer {
     }
   }
 
-  /** True if no partition has buffered events. Caller must hold the lock. */
+  /**
+   * True if no <em>drainable</em> (non-paused) partition has buffered events — data held only on
+   * paused partitions parks a poll rather than spinning it. Caller must hold the lock.
+   */
   public boolean isEmpty() {
     for (final PartitionState state : partitions.values()) {
-      if (!state.buffer.isEmpty()) {
+      if (!state.paused && !state.buffer.isEmpty()) {
         return false;
       }
     }
@@ -275,8 +357,9 @@ public final class PrefetchBuffer {
 
   /**
    * Drains the next batch of buffered events, blocking up to {@code timeoutNanos} for the
-   * background fetcher to deliver at least one record. Returns as soon as any partition has data,
-   * on timeout, or when {@code closed} becomes true (via {@link #signalLocked()}).
+   * background fetcher to deliver at least one record. Returns as soon as any non-paused partition
+   * has data, on timeout, or when {@code closed} becomes true (via {@link #signalLocked()}); a
+   * resume must {@link #signal()} so a poll parked over paused-only data wakes.
    *
    * @param closed supplier consulted under the lock so a close signal returns the poll
    */
@@ -315,11 +398,15 @@ public final class PrefetchBuffer {
     return state;
   }
 
-  /** One partition's buffered events, outstanding fetch count and buffered-payload byte tally. */
+  /**
+   * One partition's buffered events, outstanding fetch count, buffered-payload byte tally, and
+   * pause mark.
+   */
   private static final class PartitionState {
     private final ArrayDeque<Event> buffer = new ArrayDeque<>();
     private int inFlight;
     private long bufferedBytes;
+    private boolean paused;
   }
 
   /** Predicate consulted while a poll is parked, so a close wakes it. */
