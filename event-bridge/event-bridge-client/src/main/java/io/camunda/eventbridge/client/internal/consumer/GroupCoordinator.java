@@ -222,6 +222,14 @@ public final class GroupCoordinator {
     if (closed.getAsBoolean()) {
       return;
     }
+    // A heartbeat may be scheduled from more than one trigger — the initial join and any manual
+    // sendHeartbeat() both land here on success. Cancel the previously scheduled beat before
+    // rescheduling; otherwise each trigger starts its own self-rescheduling chain and the consumer
+    // heartbeats at a multiple of the configured interval forever.
+    final ScheduledFuture<?> previous = scheduledHeartbeat;
+    if (previous != null) {
+      previous.cancel(false);
+    }
     // Reschedule regardless of success: a transient heartbeat failure must not silently stop the
     // heartbeat loop and let the consumer expire from the group.
     scheduledHeartbeat =
