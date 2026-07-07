@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 
 final class CachingKeyValueStoreTest {
@@ -138,6 +139,35 @@ final class CachingKeyValueStoreTest {
   }
 
   @Test
+  void shouldScanTheOverlayRebuiltAfterCheckpoint() {
+    // given — a first generation of writes made durable by a checkpoint (the dirty overlay resets)
+    final CountingDelegate delegate = new CountingDelegate();
+    final CachingKeyValueStore<DbString, DbLong> cache = cacheOver(delegate, LARGE_BUDGET);
+    put(cache, "a", 1L);
+    put(cache, "c", 3L);
+    cache.checkpoint();
+
+    // when — a second generation of buffered writes: an override, an insert, and a delete of a
+    // now-clean (checkpointed) entry
+    put(cache, "a", 10L);
+    put(cache, "b", 2L);
+    delete(cache, "c");
+    final List<String> seen = new ArrayList<>();
+    cache.forEach((k, v) -> seen.add(k.toString() + "=" + v.getValue()));
+
+    // then — the fresh overlay merges over the checkpointed state in key order
+    assertThat(seen).containsExactly("a=10", "b=2");
+
+    // when — the second checkpoint flushes the new generation
+    cache.checkpoint();
+
+    // then — the delegate converges on the merged view
+    assertThat(get(delegate, "a")).isEqualTo(10L);
+    assertThat(get(delegate, "b")).isEqualTo(2L);
+    assertThat(get(delegate, "c")).isEqualTo(-1L);
+  }
+
+  @Test
   void shouldReportOverCapacityWhileDirtyThenClearAfterCheckpoint() {
     // given — a tiny budget
     final CountingDelegate delegate = new CountingDelegate();
@@ -208,6 +238,11 @@ final class CachingKeyValueStoreTest {
     @Override
     public void prefixScan(final DbKey prefix, final BiConsumer<DbString, DbLong> visitor) {
       inner.prefixScan(prefix, visitor);
+    }
+
+    @Override
+    public void prefixScanKeys(final DbKey prefix, final Consumer<DbString> visitor) {
+      inner.prefixScanKeys(prefix, visitor);
     }
 
     @Override
