@@ -427,6 +427,7 @@ class PhysicalTenantAuthConfigurationsTest {
     // default slot survives
     assertThat(cfg.getOidc().getIssuerUri()).isEqualTo("http://localhost:8081/realms/default");
     // both inherited named providers survive the empty `providers: {}` overlay
+    assertThat(cfg.getProviders()).isNotNull();
     assertThat(cfg.getProviders().getOidc()).containsKeys("tenanta", "tenantb");
     assertThat(cfg.getProviders().getOidc().get("tenanta").getIssuerUri())
         .isEqualTo("http://localhost:8082/realms/tenanta");

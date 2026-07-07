@@ -108,6 +108,7 @@ class PhysicalTenantOidcProviderOverlayTest {
         PhysicalTenantAuthenticationConfigurations.forPhysicalTenant("default", environment);
 
     // then both inherited providers survive the empty overlay
+    assertThat(auth.getProviders()).isNotNull();
     assertThat(auth.getProviders().getOidc()).containsKeys("tenanta", "tenantb");
     assertThat(auth.getProviders().getOidc().get("tenanta").getIssuerUri())
         .isEqualTo("http://localhost:8082/realms/tenanta");
