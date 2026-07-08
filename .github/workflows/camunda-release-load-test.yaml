@@ -80,7 +80,7 @@ jobs:
     timeout-minutes: 5
     permissions: {}
     outputs:
-      sanitized-name: c8-${{ steps.sanitize.outputs.branch_name }}
+      sanitized-name: ${{ steps.sanitize.outputs.branch_name }}
       test-tag: ${{ steps.prepare_tag.outputs.test-tag }}
     steps:
       - id: sanitize
