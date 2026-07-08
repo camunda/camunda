@@ -185,6 +185,18 @@ public interface JobWorkerBuilderStep1 {
     JobWorkerBuilderStep3 fetchVariables(String... fetchVariables);
 
     /**
+     * Activate the jobs polled by this worker with a lease. When enabled, each activated job is
+     * assigned a distinct lease token, fencing the complete, fail, and throw-error commands against
+     * a superseded activation of the same job.
+     *
+     * <p>Only applies to the polling path. If not set, jobs are activated without a lease.
+     *
+     * @param withLease whether to activate the jobs with a lease
+     * @return the builder for this worker
+     */
+    JobWorkerBuilderStep3 withLease(boolean withLease);
+
+    /**
      * Sets the backoff supplier. The supplier is called to determine the retry delay after each
      * failed request; the worker then waits until the returned delay has elapsed before sending the
      * next request. Note that this is used <strong>only</strong> when activating jobs - failures in

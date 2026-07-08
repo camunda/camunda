@@ -64,6 +64,7 @@ public final class JobWorkerBuilderImpl
   private Duration pollInterval;
   private Duration requestTimeout;
   private List<String> fetchVariables;
+  private boolean withLease;
   private final List<String> defaultTenantIds;
   private final List<String> customTenantIds;
   private TenantFilter tenantFilter;
@@ -161,6 +162,12 @@ public final class JobWorkerBuilderImpl
   }
 
   @Override
+  public JobWorkerBuilderStep3 withLease(final boolean withLease) {
+    this.withLease = withLease;
+    return this;
+  }
+
+  @Override
   public JobWorkerBuilderStep3 backoffSupplier(final BackoffSupplier backoffSupplier) {
     this.backoffSupplier = backoffSupplier;
     return this;
@@ -230,7 +237,8 @@ public final class JobWorkerBuilderImpl
             fetchVariables,
             getTenantIds(),
             tenantFilter,
-            maxJobsActive);
+            maxJobsActive,
+            withLease);
 
     final Executor jobExecutor;
     if (enableStreaming) {

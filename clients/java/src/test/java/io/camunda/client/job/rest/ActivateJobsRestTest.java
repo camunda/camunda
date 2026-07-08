@@ -298,6 +298,39 @@ public final class ActivateJobsRestTest extends ClientRestTest {
   }
 
   @Test
+  void shouldSetWithLease() {
+    // given
+    gatewayService.onActivateJobsRequest(new JobActivationResult());
+
+    // when
+    client
+        .newActivateJobsCommand()
+        .jobType("foo")
+        .maxJobsToActivate(3)
+        .withLease(true)
+        .send()
+        .join();
+
+    // then
+    final JobActivationRequest request = gatewayService.getLastRequest(JobActivationRequest.class);
+    assertThat(request.getWithLease()).isTrue();
+  }
+
+  @Test
+  void shouldNotSendWithLeaseByDefault() {
+    // given - a request that never touches withLease
+    gatewayService.onActivateJobsRequest(new JobActivationResult());
+
+    // when
+    client.newActivateJobsCommand().jobType("foo").maxJobsToActivate(3).send().join();
+
+    // then - the field is genuinely absent on the wire, not an explicit false, so older gateways
+    // that don't know this field yet don't reject the request
+    final JobActivationRequest request = gatewayService.getLastRequest(JobActivationRequest.class);
+    assertThat(request.getWithLease()).isNull();
+  }
+
+  @Test
   void shouldSetFetchVariablesAsVargs() {
     // given
     final String[] fetchVariables = new String[] {"foo", "bar", "baz"};
