@@ -463,6 +463,10 @@
       <groupId>io.camunda</groupId>
       <artifactId>dynamic-node-id-provider</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-restore</artifactId>
+    </dependency>
   </dependencies>
 
   <build>

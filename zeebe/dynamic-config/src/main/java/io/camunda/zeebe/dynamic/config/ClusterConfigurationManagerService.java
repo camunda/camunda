@@ -17,8 +17,10 @@ import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.StaticIni
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.SyncInitializer;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSupplier;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestsHandler;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestServer;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestValidator;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliersImpl;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator;
@@ -33,6 +35,7 @@ import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyMetrics;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.util.ClusterConfigurationRequestValidators;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.AsyncClosable;
@@ -63,6 +66,8 @@ public final class ClusterConfigurationManagerService
   private final TopologyManagerMetrics topologyManagerMetrics;
   private final MemberId localMemberId;
   private ModeChangeExecutor modeChangeExecutor;
+  private final ClusterConfigurationRequestValidators validators =
+      new ClusterConfigurationRequestValidators();
 
   public ClusterConfigurationManagerService(
       final Path dataRootDirectory,
@@ -107,7 +112,10 @@ public final class ClusterConfigurationManagerService
             communicationService,
             new ProtoBufSerializer(),
             new ClusterConfigurationManagementRequestsHandler(
-                configurationChangeCoordinator, localMemberId, managerActor));
+                configurationChangeCoordinator,
+                localMemberId,
+                managerActor,
+                validators::validateRequest));
 
     clusterConfigurationManager.setConfigurationGossiper(
         clusterConfigurationGossiper::updateClusterConfiguration);
@@ -281,6 +289,15 @@ public final class ClusterConfigurationManagerService
 
   public void removeTopologyChangedListener() {
     clusterConfigurationManager.removeTopologyChangedListener();
+  }
+
+  public void registerRequestValidator(final ClusterConfigurationRequestValidator<?> validator) {
+    validators.registerValidator(validator);
+  }
+
+  public void removeRequestValidator(
+      final Class<? extends ClusterConfigurationManagementRequest> requestType) {
+    validators.deregisterValidator(requestType);
   }
 
   @Override
