@@ -7,13 +7,14 @@
  */
 package io.camunda.exporter.handlers.auditlog;
 
+import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import java.util.HashSet;
 import java.util.Set;
 
 public final class AuditLogHandlerBuilder {
-  final Set<AuditLogHandler<?>> handlers = new HashSet<>();
+  final Set<ExportHandler<?, ?>> handlers = new HashSet<>();
   private final String indexName;
   private final String auditLogCleanupIndexName;
   private final AuditLogConfiguration auditLog;
@@ -34,12 +35,13 @@ public final class AuditLogHandlerBuilder {
     return new AuditLogHandlerBuilder(indexName, auditLogCleanupIndexName, auditLog);
   }
 
-  public AuditLogHandlerBuilder addHandler(final AuditLogTransformer<?> transformer) {
-    handlers.add(new AuditLogHandler<>(indexName, auditLogCleanupIndexName, transformer, auditLog));
+  public AuditLogHandlerBuilder addHandlers(final AuditLogTransformer<?> transformer) {
+    handlers.add(new AuditLogHandler<>(indexName, transformer, auditLog));
+    handlers.add(new AuditLogCleanupHandler<>(auditLogCleanupIndexName, transformer, auditLog));
     return this;
   }
 
-  public Set<AuditLogHandler<?>> build() {
+  public Set<ExportHandler<?, ?>> build() {
     return new HashSet<>(handlers);
   }
 }

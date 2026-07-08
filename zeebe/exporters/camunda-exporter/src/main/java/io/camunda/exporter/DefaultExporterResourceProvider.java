@@ -555,11 +555,11 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
 
     if (partitionId == PROCESS_DEFINITION_PARTITION) {
       AuditLogTransformerRegistry.createPartitionSpecificTransformers()
-          .forEach(auditLogBuilder::addHandler);
+          .forEach(auditLogBuilder::addHandlers);
     }
 
     AuditLogTransformerRegistry.createAllPartitionTransformers()
-        .forEach(auditLogBuilder::addHandler);
+        .forEach(auditLogBuilder::addHandlers);
 
     exportHandlers.addAll(auditLogBuilder.build());
   }

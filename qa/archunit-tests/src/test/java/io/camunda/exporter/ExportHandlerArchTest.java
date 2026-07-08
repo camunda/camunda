@@ -7,7 +7,6 @@
  */
 package io.camunda.exporter;
 
-import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaCall;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.junit.AnalyzeClasses;
@@ -19,24 +18,18 @@ import com.tngtech.archunit.lang.SimpleConditionEvent;
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
 import io.camunda.archunit.DoNotIncludeTestsOrTestJars;
 import io.camunda.exporter.handlers.ExportHandler;
-import io.camunda.exporter.handlers.auditlog.AuditLogHandler;
 import io.camunda.exporter.store.BatchRequest;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @AnalyzeClasses(packages = "io.camunda.exporter", importOptions = DoNotIncludeTestsOrTestJars.class)
 public class ExportHandlerArchTest {
-  // TODO remove these once the violations are fixed
-  private static final DescribedPredicate<JavaClass> VIOLATING_EXPORTERS =
-      JavaClass.Predicates.type(AuditLogHandler.class);
 
   @ArchTest
   static final ArchRule EXPORT_HANDLERS_SHOULD_ONLY_WRITE_TO_ONE_INDEX =
       ArchRuleDefinition.classes()
           .that()
           .areAssignableTo(ExportHandler.class)
-          .and()
-          .areNotAssignableTo(VIOLATING_EXPORTERS)
           .should(
               new ArchCondition<>("only write to a single index") {
                 @Override

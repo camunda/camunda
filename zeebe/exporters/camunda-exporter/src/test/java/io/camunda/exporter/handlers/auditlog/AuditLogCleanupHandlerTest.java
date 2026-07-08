@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.handlers.auditlog;
 
+import static io.camunda.zeebe.protocol.record.ValueType.DECISION_EVALUATION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -16,17 +17,15 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogActorType;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
+import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
+import io.camunda.webapps.schema.entities.auditlog.AuditLogCleanupEntity;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogEntityType;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationCategory;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationType;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogTenantScope;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer.TransformerConfig;
+import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -40,9 +39,9 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class AuditLogHandlerTest {
+public class AuditLogCleanupHandlerTest {
 
-  private static final String INDEX_NAME = "test-audit-log";
+  private static final String INDEX_NAME = "test-audit-log-cleanup";
   private static final String ENTITY_ID = "test-id";
   private static final String USERNAME = "test-user";
   private static final String TENANT = "test-tenant";
@@ -53,7 +52,7 @@ class AuditLogHandlerTest {
           .from(factory.generateObject(ImmutableProcessInstanceModificationRecordValue.class))
           .withTenantId(TENANT)
           .build();
-  private final Record<RecordValue> record =
+  private final io.camunda.zeebe.protocol.record.Record<RecordValue> record =
       factory.generateRecord(
           ValueType.PROCESS_INSTANCE_MODIFICATION,
           r ->
@@ -63,19 +62,20 @@ class AuditLogHandlerTest {
 
   private AuditLogConfiguration config;
   private AuditLogTransformer<RecordValue> transformer;
-  private AuditLogHandler<RecordValue> handler;
+  private AuditLogCleanupHandler<RecordValue> handler;
 
   @BeforeEach
   void setUp() {
     config = mock(AuditLogConfiguration.class);
     transformer = mock(AuditLogTransformer.class);
-    handler = new AuditLogHandler<>(INDEX_NAME, transformer, config);
+    handler = new AuditLogCleanupHandler<>(INDEX_NAME, transformer, config);
   }
 
   @Test
   void shouldNotHandleRecordWhenTransformerDoesNotSupport() {
     when(config.isEnabled(any())).thenReturn(true);
     when(transformer.supports(any())).thenReturn(false);
+    when(transformer.triggersCleanUp(any())).thenReturn(true);
 
     assertThat(handler.handlesRecord(record)).isFalse();
   }
@@ -84,14 +84,37 @@ class AuditLogHandlerTest {
   void shouldNotHandleRecordWhenAuditLogIsNotEnabled() {
     when(transformer.supports(any())).thenReturn(true);
     when(config.isEnabled(any())).thenReturn(false);
+    when(transformer.triggersCleanUp(any())).thenReturn(true);
 
     assertThat(handler.handlesRecord(record)).isFalse();
+  }
+
+  @Test
+  void shouldNotHandleRecordWhenCleanupIsNotTriggered() {
+    when(transformer.supports(any())).thenReturn(true);
+    when(config.isEnabled(any())).thenReturn(true);
+    when(transformer.triggersCleanUp(any())).thenReturn(false);
+
+    assertThat(handler.handlesRecord(record)).isFalse();
+  }
+
+  @Test
+  void shouldNotHandleRecordWhenEntityTypeIsDecision() {
+    final io.camunda.zeebe.protocol.record.Record<RecordValue> decisionRecord =
+        ImmutableRecord.builder().from(record).withValueType(DECISION_EVALUATION).build();
+
+    when(transformer.supports(any())).thenReturn(true);
+    when(config.isEnabled(any())).thenReturn(true);
+    when(transformer.triggersCleanUp(any())).thenReturn(true);
+
+    assertThat(handler.handlesRecord(decisionRecord)).isFalse();
   }
 
   @Test
   void shouldHandleRecord() {
     when(transformer.supports(any())).thenReturn(true);
     when(config.isEnabled(any())).thenReturn(true);
+    when(transformer.triggersCleanUp(any())).thenReturn(true);
 
     assertThat(handler.handlesRecord(record)).isTrue();
   }
@@ -122,7 +145,7 @@ class AuditLogHandlerTest {
 
   @Test
   void shouldAddEntityOnFlush() throws PersistenceException {
-    final var entity = new AuditLogEntity().setId(ENTITY_ID);
+    final var entity = new AuditLogCleanupEntity().setId(ENTITY_ID);
     final var batchRequest = mock(BatchRequest.class);
 
     handler.flush(entity, batchRequest);
@@ -135,56 +158,20 @@ class AuditLogHandlerTest {
   void shouldUpdateEntity() {
     when(transformer.triggersCleanUp(any(Record.class))).thenReturn(true);
 
-    final var entity = new AuditLogEntity().setId(ENTITY_ID);
+    final var entity = new AuditLogCleanupEntity().setId(ENTITY_ID);
 
     // Create a properly populated AuditLogEntry that the transformer will return
-    final var entry = createAuditLogEntry();
+    // final var entry = createAuditLogEntry();
 
-    when(transformer.create(record)).thenReturn(entry);
+    // when(transformer.create(record)).thenReturn(entry);
     handler.updateEntity(record, entity);
 
     // Verify all fields are properly mapped
     assertThat(entity.getId()).isEqualTo(ENTITY_ID);
-    assertThat(entity.getEntityKey()).isEqualTo(String.valueOf(record.getKey()));
+    assertThat(entity.getKey()).isEqualTo(String.valueOf(record.getKey()));
+    assertThat(entity.getKeyField()).isEqualTo(AuditLogTemplate.ENTITY_KEY);
     assertThat(entity.getEntityType()).isEqualTo(AuditLogEntityType.PROCESS_INSTANCE);
-    assertThat(entity.getOperationType()).isEqualTo(AuditLogOperationType.MODIFY);
-    assertThat(entity.getCategory()).isEqualTo(AuditLogOperationCategory.DEPLOYED_RESOURCES);
-    assertThat(entity.getActorType()).isEqualTo(AuditLogActorType.USER);
-    assertThat(entity.getActorId()).isEqualTo(USERNAME);
-    assertThat(entity.getTenantId()).isEqualTo(TENANT);
-    assertThat(entity.getTenantScope()).isEqualTo(AuditLogTenantScope.TENANT);
-    assertThat(entity.getBatchOperationKey()).isEqualTo(123L);
-    assertThat(entity.getBatchOperationType())
-        .isEqualTo(
-            io.camunda.zeebe.protocol.record.value.BatchOperationType.CANCEL_PROCESS_INSTANCE);
-    assertThat(entity.getProcessInstanceKey()).isEqualTo(value.getProcessInstanceKey());
-    assertThat(entity.getEntityVersion()).isEqualTo(record.getRecordVersion());
-    assertThat(entity.getEntityValueType())
-        .isEqualTo(ValueType.PROCESS_INSTANCE_MODIFICATION.value());
-    assertThat(entity.getEntityOperationIntent())
-        .isEqualTo(ProcessInstanceModificationIntent.MODIFIED.value());
-    assertThat(entity.getTimestamp())
-        .isEqualTo(
-            OffsetDateTime.ofInstant(Instant.ofEpochMilli(record.getTimestamp()), ZoneOffset.UTC));
-    assertThat(entity.getResult())
-        .isEqualTo(io.camunda.webapps.schema.entities.auditlog.AuditLogOperationResult.SUCCESS);
-    assertThat(entity.getProcessDefinitionId()).isEqualTo("process-def-id");
-    assertThat(entity.getProcessDefinitionKey()).isEqualTo(456L);
-    assertThat(entity.getElementInstanceKey()).isEqualTo(789L);
-    assertThat(entity.getJobKey()).isEqualTo(101L);
-    assertThat(entity.getUserTaskKey()).isEqualTo(202L);
-    assertThat(entity.getDecisionEvaluationKey()).isEqualTo(303L);
-    assertThat(entity.getDecisionRequirementsId()).isEqualTo("drg-id");
-    assertThat(entity.getDecisionRequirementsKey()).isEqualTo(404L);
-    assertThat(entity.getDecisionDefinitionId()).isEqualTo("decision-id");
-    assertThat(entity.getDecisionDefinitionKey()).isEqualTo(505L);
-    assertThat(entity.getDeploymentKey()).isEqualTo(606L);
-    assertThat(entity.getFormKey()).isEqualTo(707L);
-    assertThat(entity.getResourceKey()).isEqualTo(808L);
-    assertThat(entity.getRootProcessInstanceKey()).isEqualTo(909L);
-    assertThat(entity.getRelatedEntityKey()).isEqualTo("related-entity-key");
-    assertThat(entity.getRelatedEntityType()).isEqualTo(AuditLogEntityType.USER);
-    assertThat(entity.getEntityDescription()).isEqualTo("entity-description");
+    assertThat(entity.getPartitionId()).isEqualTo(record.getPartitionId());
   }
 
   AuditLogEntry createAuditLogEntry() {
