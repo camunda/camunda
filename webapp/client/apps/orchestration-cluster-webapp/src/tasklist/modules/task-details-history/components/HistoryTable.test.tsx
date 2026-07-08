@@ -75,7 +75,7 @@ describe('<HistoryTable />', () => {
 			{path: '/tasklist/$userTaskKey/history', initialEntry: '/tasklist/2251799813685281/history'},
 		);
 
-		await userEvent.click(screen.getByRole('button', {name: 'Open details'}).first());
+		await userEvent.click(screen.getByRole('link', {name: 'Open details'}).first());
 
 		await expect.poll(() => router.state.location.pathname).toBe('/tasklist/2251799813685281/history/create-log');
 	});
@@ -89,7 +89,7 @@ describe('<HistoryTable />', () => {
 			},
 		);
 
-		await userEvent.click(screen.getByRole('button', {name: 'Open details'}).first());
+		await userEvent.click(screen.getByRole('link', {name: 'Open details'}).first());
 
 		await expect.poll(() => router.state.location.pathname).toBe('/tasklist/2251799813685281/history/create-log');
 		expect(router.state.location.search).toEqual({sort: 'actorId+asc'});

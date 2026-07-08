@@ -104,7 +104,7 @@ test.describe('Task details history', () => {
 		await expect(taskDetailPage.historyTabContent.getByText('Create task')).toBeVisible();
 		await expect(taskDetailPage.detailsInfo).toBeVisible();
 
-		await taskDetailPage.historyDetailsButton.first().click();
+		await taskDetailPage.historyDetailsLink.first().click();
 
 		await expect(taskDetailPage.historyTab).toHaveAttribute('aria-current', 'page');
 		await expect(taskDetailPage.historyDetailsModal.getByRole('heading', {name: 'Create task'})).toBeVisible();

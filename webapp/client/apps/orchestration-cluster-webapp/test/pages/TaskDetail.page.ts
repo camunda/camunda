@@ -94,8 +94,8 @@ class TaskDetailPage extends BasePage {
 		return this.historyDetailsModal.getByRole('button', {name: 'Close'});
 	}
 
-	get historyDetailsButton() {
-		return this.historyTabContent.getByRole('button', {name: 'Open details'});
+	get historyDetailsLink() {
+		return this.historyTabContent.getByRole('link', {name: 'Open details'});
 	}
 
 	get completionLabel() {
