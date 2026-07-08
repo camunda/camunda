@@ -16,6 +16,7 @@ Check `docs/monorepo-docs/ci.md` first.
 - Add `timeout-minutes` per job.
 - Pin all external actions to commit SHAs.
 - Ensure each job ends with `observe-build-status` step.
+- Fail fast: validate cheap preconditions (required secrets, Vault reachability, input/tag contracts) in a preflight step or job before expensive build/test steps.
 
 ## Unified CI Criteria
 
