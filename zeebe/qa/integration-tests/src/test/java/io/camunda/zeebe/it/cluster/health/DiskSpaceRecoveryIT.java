@@ -98,6 +98,7 @@ final class DiskSpaceRecoveryIT {
                   cfg.getCluster().getNetwork().setMaxMessageSize(DataSize.ofMegabytes(1));
                   cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
                 })
+            .withStartupTimeout(Duration.ofSeconds(90))
             .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
             .withEnv(UNPROTECTED_API_ENV_VAR, "true")
             .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false");
