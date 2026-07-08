@@ -8,6 +8,7 @@
 
 import {Page, Locator, expect} from '@playwright/test';
 import {sleep} from 'utils/sleep';
+import {waitForAssertion} from 'utils/waitForAssertion';
 
 class OperateProcessInstancePage {
   private page: Page;
@@ -84,6 +85,14 @@ class OperateProcessInstancePage {
   readonly deleteVariableModificationButton: Locator;
   readonly cancelModificationSummaryButton: Locator;
   readonly undoButton: Locator;
+  readonly metadataPopover: Locator;
+  readonly incidentSection: Locator;
+  readonly rootCauseProcessName: Locator;
+  readonly rootCauseProcessId: Locator;
+  readonly incidentErrorType: Locator;
+  readonly incidentErrorIndicators: Locator;
+  readonly incidentErrorMessage: Locator;
+  readonly calledProcessInstanceLink: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -229,6 +238,20 @@ class OperateProcessInstancePage {
       .getByRole('dialog')
       .getByRole('button', {name: 'Cancel'});
     this.undoButton = page.getByRole('button', {name: /undo/i});
+    this.incidentErrorIndicators = page.getByTestId('incident-error-indicator');
+    this.metadataPopover = page.getByTestId('popover');
+    this.incidentErrorType = this.metadataPopover
+      .getByText('Type')
+      .locator('xpath=following-sibling::*[1]');
+    this.incidentErrorMessage = this.metadataPopover.locator('text=/error/i');
+    this.incidentSection = page.getByText(/incident\s*view/i);
+    this.rootCauseProcessName = this.metadataPopover.getByText(
+      /root cause process name/i,
+    );
+    this.rootCauseProcessId = this.metadataPopover.getByRole('link').first();
+    this.calledProcessInstanceLink = this.metadataPopover
+      .getByTestId('called-process-instance')
+      .getByRole('link');
   }
 
   async connectorResultVariableName(name: string): Promise<Locator> {
@@ -476,6 +499,73 @@ class OperateProcessInstancePage {
     for (const elementId of elementIds) {
       await expect(this.getDiagramElement(elementId)).toBeVisible();
     }
+  }
+
+  async clickIncidentsBanner(): Promise<void> {
+    await this.incidentsBanner.click();
+  }
+
+  async countIncidentErrorIndicators(): Promise<number> {
+    return await this.incidentErrorIndicators.count();
+  }
+
+  async clickOnElementInDiagram(elementId: string): Promise<void> {
+    await this.clickDiagramElement(elementId);
+  }
+
+  async closeIncidentsPanel(): Promise<void> {
+    await expect(this.incidentsBanner).toContainText(/hide/i, {
+      timeout: 10000,
+    });
+
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(this.incidentsBanner).toContainText(/view/i, {
+          timeout: 3000,
+        });
+      },
+      onFailure: async () => {
+        await this.incidentsBanner.scrollIntoViewIfNeeded();
+        await this.incidentsBanner.click();
+      },
+      maxRetries: 3,
+    });
+  }
+
+  async getIncidentCount(): Promise<number> {
+    const headingText = await this.incidentsViewHeader.textContent();
+    if (!headingText) {
+      return 0;
+    }
+
+    const match = headingText.match(/(\d+)\s+results?/i);
+    return match ? parseInt(match[1], 10) : 0;
+  }
+
+  async verifyIncidentCount(expectedCount: number): Promise<void> {
+    const actualCount = await this.getIncidentCount();
+    expect(actualCount).toBe(expectedCount);
+  }
+
+  getCalledProcessLink(processName: string): Locator {
+    return this.page.getByRole('link', {name: processName});
+  }
+
+  async clickOnRootCauseProcessName(): Promise<void> {
+    await expect(this.rootCauseProcessName).toBeVisible();
+    await this.rootCauseProcessId.click();
+  }
+
+  async clickCalledProcessLink(processName: string): Promise<void> {
+    await this.getCalledProcessLink(processName).click();
+  }
+
+  async clickCalledProcessInstanceLink(): Promise<void> {
+    await this.calledProcessInstanceLink.click();
+  }
+
+  getIncidentErrorMessageByText(errorText: string): Locator {
+    return this.metadataPopover.getByText(errorText);
   }
 }
 
