@@ -10,7 +10,6 @@ package io.camunda.zeebe.gateway.rest.controller;
 import io.camunda.gateway.protocol.model.LicenseResponse;
 import io.camunda.service.ManagementServices;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
-import io.camunda.zeebe.gateway.rest.annotation.ClusterScoped;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -18,7 +17,6 @@ import java.time.format.DateTimeFormatter;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
-@ClusterScoped
 @RequestMapping(path = {"/v2"})
 public class LicenseController {
 
