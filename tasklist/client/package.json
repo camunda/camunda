@@ -92,7 +92,7 @@
     "jsdom": "26.1.0",
     "monaco-editor": "0.55.1",
     "msw": "2.14.6",
-    "prettier": "3.8.3",
+    "prettier": "3.9.4",
     "resize-observer-polyfill": "1.5.1",
     "rollup-plugin-sbom": "3.2.2",
     "source-map-explorer": "2.5.3",
