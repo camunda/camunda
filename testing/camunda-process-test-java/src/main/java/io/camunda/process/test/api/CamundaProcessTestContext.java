@@ -408,6 +408,19 @@ public interface CamundaProcessTestContext {
       final Map<String, Object> variables);
 
   /**
+   * Creates local variables for a specific element within a process instance. Variables are created
+   * in the element's local scope and are not propagated to parent scopes.
+   *
+   * @param processInstanceSelector the selector to identify the process instance
+   * @param elementSelector the selector to identify the element
+   * @param variables a map of variables to create in local scope
+   */
+  void createLocalVariables(
+      final ProcessInstanceSelector processInstanceSelector,
+      final ElementSelector elementSelector,
+      final Map<String, Object> variables);
+
+  /**
    * Completes a job of a user task listener matching the specified selector.
    *
    * @param jobSelector the selector to identify the job to complete

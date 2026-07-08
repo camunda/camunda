@@ -91,4 +91,28 @@ public class UpdateVariablesInstructionTest {
     // then
     verify(processTestContext).updateLocalVariables(any(), any(), eq(variables));
   }
+
+  @Test
+  void shouldCreateLocalVariables() {
+    // given
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("localVar", "localValue");
+
+    final UpdateVariablesInstruction instruction =
+        ImmutableUpdateVariablesInstruction.builder()
+            .processInstanceSelector(
+                ImmutableProcessInstanceSelector.builder()
+                    .processDefinitionId(PROCESS_DEFINITION_ID)
+                    .build())
+            .elementSelector(ImmutableElementSelector.builder().elementId(ELEMENT_ID).build())
+            .putAllVariables(variables)
+            .createLocalVariables(true)
+            .build();
+
+    // when
+    instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
+
+    // then
+    verify(processTestContext).createLocalVariables(any(), any(), eq(variables));
+  }
 }

@@ -55,4 +55,16 @@ public interface UpdateVariablesInstruction extends TestCaseInstruction {
    * @return the element selector or empty if not set
    */
   Optional<ElementSelector> getElementSelector();
+
+  /**
+   * Whether to create variables locally in the scope of the element (requires elementSelector).
+   * When true, variables are created in the element's local scope and are not propagated to parent
+   * scopes. Optional, defaults to false.
+   *
+   * @return true if variables should be created in local scope
+   */
+  @Value.Default
+  default boolean getCreateLocalVariables() {
+    return false;
+  }
 }

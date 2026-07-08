@@ -662,6 +662,38 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   @Override
+  public void createLocalVariables(
+      final ProcessInstanceSelector processInstanceSelector,
+      final ElementSelector elementSelector,
+      final Map<String, Object> variables) {
+    final CamundaClient client = createClient();
+
+    awaitProcessInstance(
+        processInstanceSelector,
+        client,
+        pi ->
+            awaitElementInstance(
+                pi.getProcessInstanceKey(),
+                elementSelector,
+                client,
+                ei -> {
+                  LOGGER.debug(
+                      "Create local variables for element [{}, elementInstanceKey: '{}'] in process instance [processInstanceKey: '{}'] with variables {}",
+                      elementSelector.describe(),
+                      ei.getElementInstanceKey(),
+                      pi.getProcessInstanceKey(),
+                      variables);
+
+                  client
+                      .newSetVariablesCommand(ei.getElementInstanceKey())
+                      .variables(variables)
+                      .local(true)
+                      .send()
+                      .join();
+                }));
+  }
+
+  @Override
   public void completeJobOfUserTaskListener(
       final JobSelector jobSelector, final Consumer<CompleteUserTaskJobResultStep1> jobResult) {
     final CamundaClient client = createClient();
