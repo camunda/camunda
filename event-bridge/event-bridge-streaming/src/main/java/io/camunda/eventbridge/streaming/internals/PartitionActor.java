@@ -65,6 +65,7 @@ public final class PartitionActor<R> {
   private final Duration punctuationInterval;
   private final long commitIntervalNanos;
   private final int maxProcessBatch;
+  private final CutMetrics metrics;
   private final BooleanSupplier running;
   private final Runnable onFatal;
 
@@ -80,6 +81,9 @@ public final class PartitionActor<R> {
   // A frozen cut is being persisted on the IO thread. Unlike committing, folding continues; the
   // flag only enforces single-flight (no second freeze) and the budget-exhausted write stall.
   private boolean cutInFlight;
+  // Whether the fold is currently write-stalled, so the stall counter counts entries into the
+  // stall rather than every re-check; reset when the in-flight cut completes.
+  private boolean writeStalled;
   private boolean stopRequested;
   private boolean finalized;
 
@@ -100,6 +104,7 @@ public final class PartitionActor<R> {
       final Duration punctuationInterval,
       final long commitIntervalNanos,
       final int maxProcessBatch,
+      final CutMetrics metrics,
       final BooleanSupplier running,
       final Runnable onFatal) {
     this.partition = partition;
@@ -110,6 +115,7 @@ public final class PartitionActor<R> {
     this.punctuationInterval = punctuationInterval;
     this.commitIntervalNanos = commitIntervalNanos;
     this.maxProcessBatch = maxProcessBatch;
+    this.metrics = metrics;
     this.running = running;
     this.onFatal = onFatal;
     actor =
@@ -222,7 +228,12 @@ public final class PartitionActor<R> {
       if (partition.task().needsCheckpoint()) {
         if (cutInFlight) {
           // Write stall: budget exhausted (active + frozen entries are pinned) while a cut is
-          // still persisting — the batch tail stays and onCutPersisted resumes it.
+          // still persisting — the batch tail stays and onCutPersisted resumes it. Count only
+          // the entry into the stall, not every re-check while stalled.
+          if (!writeStalled) {
+            writeStalled = true;
+            metrics.countWriteStall();
+          }
           return;
         }
         beginCommit();
@@ -320,18 +331,24 @@ public final class PartitionActor<R> {
     }
     final long offset = partition.pending();
     // The barrier: the freeze converges buffered output and detaches the cut — cheap actor-thread
-    // work; the durable write is what gets offloaded.
+    // work; the durable write is what gets offloaded. The freeze timer is the residual pause.
+    final long freezeStart = System.nanoTime();
     final CommitCut cut = partition.task().freezeCut(offset);
     if (cut == null) {
       beginLegacyCommit(offset);
       return;
     }
+    metrics.observeFreeze(System.nanoTime() - freezeStart);
     cutInFlight = true;
     final CompletableActorFuture<Void> persisted = new CompletableActorFuture<>();
     sinkExecutor.execute(
         () -> {
+          // IO-thread pickup to persist completion: the pause the old synchronous commit design
+          // would have imposed on the fold — the feature's measured win.
+          final long persistStart = System.nanoTime();
           try {
             committer.persistCut(partition, offset, cut);
+            metrics.observePersist(System.nanoTime() - persistStart);
             persisted.complete(null);
           } catch (final Throwable t) {
             persisted.completeExceptionally(t);
@@ -362,10 +379,12 @@ public final class PartitionActor<R> {
    */
   private void onCutPersisted(final long offset, final CommitCut cut, final Throwable error) {
     cutInFlight = false;
+    writeStalled = false;
     cut.complete(error == null);
     if (error != null) {
       // Merged back: the next freeze re-includes this cut's delta. The commit clock was not
       // reset, so maybeCommit retries on the next tick.
+      metrics.countRetry();
       LOG.warn(
           "Persisting the cut of partition {} at offset {} failed; will retry",
           id(),

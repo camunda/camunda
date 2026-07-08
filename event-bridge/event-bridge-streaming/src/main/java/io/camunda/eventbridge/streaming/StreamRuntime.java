@@ -10,12 +10,14 @@ package io.camunda.eventbridge.streaming;
 import io.camunda.eventbridge.client.Consumer;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.client.TopicPartition;
+import io.camunda.eventbridge.streaming.internals.CutMetrics;
 import io.camunda.eventbridge.streaming.internals.Partition;
 import io.camunda.eventbridge.streaming.internals.PartitionActor;
 import io.camunda.eventbridge.streaming.internals.PartitionCommitter;
 import io.camunda.eventbridge.streaming.internals.SourceLoop;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.SchedulingHints;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -94,6 +96,7 @@ public final class StreamRuntime<R> implements AutoCloseable {
   private final int partitionQueueCapacity;
   private final int maxProcessBatch;
   private final int sinkIoThreads;
+  private final MeterRegistry meterRegistry;
   private final ActorScheduler injectedScheduler;
   private final ExecutorService injectedSinkExecutor;
   private final ThreadFactory sinkThreadFactory;
@@ -124,6 +127,7 @@ public final class StreamRuntime<R> implements AutoCloseable {
     partitionQueueCapacity = builder.partitionQueueCapacity;
     maxProcessBatch = builder.maxProcessBatch;
     sinkIoThreads = builder.sinkIoThreads;
+    meterRegistry = builder.meterRegistry;
     injectedScheduler = builder.actorScheduler;
     injectedSinkExecutor = builder.sinkExecutor;
     sinkThreadFactory =
@@ -213,6 +217,7 @@ public final class StreamRuntime<R> implements AutoCloseable {
                   punctuationInterval,
                   commitIntervalNanos,
                   maxProcessBatch,
+                  CutMetrics.of(meterRegistry, partition.id()),
                   () -> running,
                   this::stop);
           scheduler.submitActor(partitionActor.actor(), SchedulingHints.cpuBound()).join();
@@ -372,6 +377,7 @@ public final class StreamRuntime<R> implements AutoCloseable {
     private int partitionQueueCapacity = 10_000;
     private int maxProcessBatch = 2_000;
     private int sinkIoThreads = 4;
+    private MeterRegistry meterRegistry;
     private ActorScheduler actorScheduler;
     private ExecutorService sinkExecutor;
     private ThreadFactory sinkThreadFactory;
@@ -528,6 +534,17 @@ public final class StreamRuntime<R> implements AutoCloseable {
      */
     public Builder<R> sinkExecutor(final ExecutorService sinkExecutor) {
       this.sinkExecutor = sinkExecutor;
+      return this;
+    }
+
+    /**
+     * The registry for the runtime's cut instrumentation: per-partition freeze/persist timers and
+     * retry/write-stall counters, tagged by partition id only. Optional: when omitted, every
+     * recording is a zero-allocation no-op — the runtime deliberately does not fall back to a
+     * global registry.
+     */
+    public Builder<R> meterRegistry(final MeterRegistry meterRegistry) {
+      this.meterRegistry = meterRegistry;
       return this;
     }
 

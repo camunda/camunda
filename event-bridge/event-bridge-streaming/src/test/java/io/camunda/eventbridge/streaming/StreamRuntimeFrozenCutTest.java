@@ -18,6 +18,9 @@ import static org.mockito.Mockito.when;
 import io.camunda.eventbridge.client.Consumer;
 import io.camunda.eventbridge.client.Event;
 import io.camunda.eventbridge.client.EventBridgeClient;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -68,11 +71,19 @@ final class StreamRuntimeFrozenCutTest {
   }
 
   private StreamRuntime<String> runtime(final FrozenCutTask task, final List<String> journal) {
-    return runtime(task, journal, Duration.ZERO);
+    return runtime(task, journal, Duration.ZERO, null);
   }
 
   private StreamRuntime<String> runtime(
       final FrozenCutTask task, final List<String> journal, final Duration commitInterval) {
+    return runtime(task, journal, commitInterval, null);
+  }
+
+  private StreamRuntime<String> runtime(
+      final FrozenCutTask task,
+      final List<String> journal,
+      final Duration commitInterval,
+      final MeterRegistry meterRegistry) {
     task.journal = journal;
     return StreamRuntime.<String>builder()
         .client(client)
@@ -101,6 +112,7 @@ final class StreamRuntimeFrozenCutTest {
             })
         .sinkIoThreads(1)
         .commitInterval(commitInterval)
+        .meterRegistry(meterRegistry)
         .build();
   }
 
@@ -274,6 +286,125 @@ final class StreamRuntimeFrozenCutTest {
     assertThat(task.completions).allMatch(Boolean::booleanValue);
     assertThat(task.persisted.stream().flatMap(List::stream)).containsExactly("e1", "e2");
     assertThat(task.closed).isTrue();
+  }
+
+  @Test
+  void shouldRecordFreezeAndPersistTimersForEveryCompletedCut() throws Exception {
+    // given — a meter registry and a batch committing through the frozen-cut path
+    stubClient();
+    final SimpleMeterRegistry registry = new SimpleMeterRegistry();
+    final FrozenCutTask task = new FrozenCutTask();
+    final AtomicBoolean delivered = new AtomicBoolean();
+    when(consumer.poll(anyInt(), any()))
+        .thenAnswer(
+            invocation -> delivered.getAndSet(true) ? List.of() : List.of(event(1), event(2)));
+    final List<String> journal = new CopyOnWriteArrayList<>();
+    final List<Long> committed = stubCommittedOffsets(journal);
+    final StreamRuntime<String> runtime = runtime(task, journal, Duration.ZERO, registry);
+    final Thread loop = new Thread(runtime::run, "runtime-under-test");
+    loop.start();
+
+    // when — the cut commits and the runtime stops (finishing any in-flight cut)
+    await().until(() -> committed.contains(2L));
+    runtime.stop();
+    loop.join(TimeUnit.SECONDS.toMillis(5));
+
+    // then — one freeze sample per frozen cut and one persist sample per completed cut, tagged by
+    // partition; no retries, no write stalls
+    final Timer freezeTimer =
+        registry.get("eb.streaming.cut.freeze.duration").tag("partition", "1").timer();
+    final Timer persistTimer =
+        registry.get("eb.streaming.cut.persist.duration").tag("partition", "1").timer();
+    assertThat(freezeTimer.count()).isPositive().isEqualTo(task.freezes.get());
+    assertThat(persistTimer.count())
+        .isEqualTo(task.completions.stream().filter(Boolean::booleanValue).count());
+    assertThat(retryCount(registry)).isZero();
+    assertThat(writeStallCount(registry)).isZero();
+  }
+
+  @Test
+  void shouldCountARetryWhenAPersistFailsAndTheCutMergesBack() throws Exception {
+    // given — the first persist fails after the cut was frozen
+    stubClient();
+    final SimpleMeterRegistry registry = new SimpleMeterRegistry();
+    final FrozenCutTask task = new FrozenCutTask();
+    task.persistFailures = 1;
+    final AtomicBoolean delivered = new AtomicBoolean();
+    when(consumer.poll(anyInt(), any()))
+        .thenAnswer(
+            invocation -> delivered.getAndSet(true) ? List.of() : List.of(event(1), event(2)));
+    final List<String> journal = new CopyOnWriteArrayList<>();
+    final List<Long> committed = stubCommittedOffsets(journal);
+    final StreamRuntime<String> runtime = runtime(task, journal, Duration.ZERO, registry);
+    final Thread loop = new Thread(runtime::run, "runtime-under-test");
+    loop.start();
+
+    // when — the failed cut merges back and the retry commits
+    await().until(() -> committed.contains(2L));
+    runtime.stop();
+    loop.join(TimeUnit.SECONDS.toMillis(5));
+
+    // then — exactly the injected failure is counted, and only successful persists are timed
+    assertThat(retryCount(registry)).isEqualTo(1.0);
+    assertThat(
+            registry.get("eb.streaming.cut.persist.duration").tag("partition", "1").timer().count())
+        .isEqualTo(task.completions.stream().filter(Boolean::booleanValue).count());
+  }
+
+  @Test
+  void shouldCountAWriteStallEntryExactlyOncePerStall() throws Exception {
+    // given — a two-record budget: the first batch freezes a cut whose persist hangs; the next
+    // batch exhausts the budget again while that cut is still in flight
+    stubClient();
+    final SimpleMeterRegistry registry = new SimpleMeterRegistry();
+    final FrozenCutTask task = new FrozenCutTask();
+    task.needsCheckpointAt = 2;
+    task.persistGate = new CountDownLatch(1);
+    final AtomicBoolean batch1Delivered = new AtomicBoolean();
+    final AtomicBoolean batch2Ready = new AtomicBoolean();
+    final AtomicBoolean batch2Delivered = new AtomicBoolean();
+    when(consumer.poll(anyInt(), any()))
+        .thenAnswer(
+            invocation -> {
+              if (!batch1Delivered.getAndSet(true)) {
+                return List.of(event(1), event(2));
+              }
+              if (batch2Ready.get() && !batch2Delivered.getAndSet(true)) {
+                return List.of(event(3), event(4), event(5));
+              }
+              return List.of();
+            });
+    final List<String> journal = new CopyOnWriteArrayList<>();
+    final List<Long> committed = stubCommittedOffsets(journal);
+    final StreamRuntime<String> runtime = runtime(task, journal, Duration.ofHours(1), registry);
+    final Thread loop = new Thread(runtime::run, "runtime-under-test");
+    loop.start();
+
+    // when — the budget-triggered cut is in flight and the fold exhausts the budget again
+    await().until(() -> task.freezes.get() == 1);
+    batch2Ready.set(true);
+    await().until(() -> task.processed.contains("e4"));
+
+    // then — the stall entry is counted once, not per re-check while stalled
+    await().until(() -> writeStallCount(registry) == 1.0);
+
+    // when — the in-flight cut completes and the stalled tail drains through further cuts
+    task.persistGate.countDown();
+    await().until(() -> committed.contains(5L));
+
+    // then — the counter still holds exactly the one stall entry
+    assertThat(writeStallCount(registry)).isEqualTo(1.0);
+
+    runtime.stop();
+    loop.join(TimeUnit.SECONDS.toMillis(5));
+  }
+
+  private static double retryCount(final SimpleMeterRegistry registry) {
+    return registry.get("eb.streaming.cut.retries").tag("partition", "1").counter().count();
+  }
+
+  private static double writeStallCount(final SimpleMeterRegistry registry) {
+    return registry.get("eb.streaming.write.stalls").tag("partition", "1").counter().count();
   }
 
   /**
