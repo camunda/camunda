@@ -91,7 +91,7 @@ public final class ActivateJobsWithLeaseTest {
             .get(0)
             .getLeaseToken();
     ENGINE.job().withKey(jobKey).withRetries(1).fail();
-    jobRecords(JobIntent.FAILED).withRecordKey(jobKey).getFirst();
+    jobRecords(JobIntent.FAILED).withRecordKey(jobKey).await();
 
     // when it is leased again
     final String secondToken =
