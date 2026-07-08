@@ -278,6 +278,10 @@ Zeebe Medic: can help with Zeebe-specific questions and tasks.
 
 Core Features Medic: can help with questions and tasks related to Operate, Tasklist, and other core features.
 
+CPT Medic: can help with questions and tasks related to the Zeebe Process Test project.
+
+Reliability/Testing Medic: can help with questions and tasks related to reliability and load testing.
+
 ## Backporting Guidelines
 
 We want the release process for all supported versions 8.6+ to be as similar as possible, to reduce maintenance effort, surprises and mental load. Improvements and fixes to the release process should always apply to all supported versions, if possible.
