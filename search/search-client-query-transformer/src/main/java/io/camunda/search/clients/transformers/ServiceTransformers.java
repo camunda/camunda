@@ -693,7 +693,7 @@ public final class ServiceTransformers {
     mappers.put(
         ProcessInstanceStatisticsFilter.class,
         new ProcessInstanceStatisticsFilterTransformer(
-            indexDescriptors.get(ListViewTemplate.class)));
+            indexDescriptors.get(FlowNodeInstanceTemplate.class)));
     mappers.put(
         BatchOperationFilter.class,
         new BatchOperationFilterTransformer(indexDescriptors.get(BatchOperationTemplate.class)));
