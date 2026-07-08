@@ -143,7 +143,9 @@ public class HttpClientFactory {
     try {
       final URIBuilder builder = new URIBuilder(basePath);
       final String physicalTenantId = config.getPhysicalTenantId();
-      if (config.appendPhysicalTenantPath() && physicalTenantId != null) {
+      if (config.appendPhysicalTenantPath()
+          && physicalTenantId != null
+          && !physicalTenantId.trim().isEmpty()) {
         builder.appendPath("/physical-tenants/" + physicalTenantId);
       }
       builder.appendPath(REST_API_PATH);

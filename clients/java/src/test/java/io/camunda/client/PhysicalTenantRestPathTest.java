@@ -76,4 +76,21 @@ final class PhysicalTenantRestPathTest {
     // then
     verify(getRequestedFor(urlEqualTo("/v2/topology")));
   }
+
+  @Test
+  void shouldUseVerbatimRestBasePathWhenPhysicalTenantBlank(final WireMockRuntimeInfo mockInfo) {
+    // given a blank physical tenant id, which must not produce a malformed /physical-tenants//v2
+    try (final CamundaClient client =
+        CamundaClient.newClientBuilder()
+            .preferRestOverGrpc(true)
+            .restAddress(URI.create(mockInfo.getHttpBaseUrl()))
+            .physicalTenantId("   ")
+            .build()) {
+      // when
+      sendTopologyRequest(client);
+    }
+
+    // then
+    verify(getRequestedFor(urlEqualTo("/v2/topology")));
+  }
 }
