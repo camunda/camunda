@@ -86,6 +86,11 @@ metadata:
 spec:
   instances: 1
   image: europe-west1-docker.pkg.dev/ci-30-162810/quay/keycloak/keycloak:26.6.3
+  # The image above is the stock (non-augmented) Keycloak image pulled through the
+  # GAR cache. When spec.image is set, the operator assumes a pre-built image and
+  # starts with --optimized, which crash-loops on a stock image — disable that and
+  # let Keycloak run its build phase on startup.
+  startOptimized: false
   # Fixed initial admin so Identity can bootstrap the realm; see the kc-admin secret.
   bootstrapAdmin:
     user:
@@ -115,3 +120,25 @@ spec:
     # Trust the preview ingress's forwarded proto/host (TLS terminates at the Gateway).
     - name: proxy-headers
       value: xforwarded
+---
+# Allows this preview's HTTPRoute (templates/httproute.yml) to reference the
+# operator-created Keycloak Service across namespaces. Traefik's Gateway API
+# provider rejects ExternalName backends, so the /auth rules use a direct
+# cross-namespace backendRef instead — which Gateway API only permits when the
+# TARGET namespace grants it via a ReferenceGrant. Scoped to exactly this
+# preview's namespace (ReferenceGrant does not support wildcards).
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: {{ .Release.Name }}-kc
+  namespace: keycloak-operator
+  labels: {{ include "commonLabels" $ | nindent 4 }}
+  annotations: {{ include "commonAnnotations" $ | nindent 4 }}
+spec:
+  from:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    namespace: {{ .Release.Namespace }}
+  to:
+  - group: ""
+    kind: Service
