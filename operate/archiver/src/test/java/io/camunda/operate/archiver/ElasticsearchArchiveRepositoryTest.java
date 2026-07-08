@@ -356,6 +356,70 @@ public class ElasticsearchArchiveRepositoryTest {
   }
 
   @Test
+  public void testGetStandaloneDecisionInstancesNextBatchPacksEarliestBucketOnly() {
+    setDecisionInstanceMocks();
+
+    try (final MockedStatic<ElasticsearchUtil> elasticsearchUtilMockedStatic =
+        mockStatic(ElasticsearchUtil.class)) {
+      elasticsearchUtilMockedStatic
+          .when(
+              () ->
+                  ElasticsearchUtil.joinWithAnd(
+                      any(),
+                      eq(
+                          QueryBuilders.termsQuery(
+                              DecisionInstanceTemplate.PARTITION_ID, PARTITION_IDS)),
+                      eq(
+                          QueryBuilders.termQuery(
+                              DecisionInstanceTemplate.PROCESS_INSTANCE_KEY, -1))))
+          .thenCallRealMethod();
+
+      final SearchResponse searchResponse = mock(SearchResponse.class);
+      final SearchHits searchHits = mock(SearchHits.class);
+      when(searchResponse.getHits()).thenReturn(searchHits);
+
+      final SearchHit hitA = mock(SearchHit.class);
+      final SearchHit hitB = mock(SearchHit.class);
+      final SearchHit hitC = mock(SearchHit.class);
+      when(hitA.getId()).thenReturn("a");
+      when(hitB.getId()).thenReturn("b");
+      // hitC.getId() is NOT stubbed — takeWhile stops before hitC so getId() is never called
+      final DocumentField fieldA = mock(DocumentField.class);
+      final DocumentField fieldB = mock(DocumentField.class);
+      final DocumentField fieldC = mock(DocumentField.class);
+      when(fieldA.getValue()).thenReturn("2024-01-01");
+      when(fieldB.getValue()).thenReturn("2024-01-01");
+      when(fieldC.getValue()).thenReturn("2024-01-02");
+      when(hitA.field(DecisionInstanceTemplate.EVALUATION_DATE)).thenReturn(fieldA);
+      when(hitB.field(DecisionInstanceTemplate.EVALUATION_DATE)).thenReturn(fieldB);
+      when(hitC.field(DecisionInstanceTemplate.EVALUATION_DATE)).thenReturn(fieldC);
+      when(searchHits.getHits()).thenReturn(new SearchHit[] {hitA, hitB, hitC});
+
+      try (final MockedConstruction<SearchRequest> mockedConstruction =
+          mockConstruction(
+              SearchRequest.class,
+              (mock, context) -> {
+                when(mock.source(any())).thenReturn(mock);
+                when(mock.requestCache(false)).thenReturn(mock);
+              })) {
+        try (final MockedStatic<Timer> mockedTimer = mockStatic(Timer.class)) {
+          final Timer.Sample timer = mock(Timer.Sample.class);
+          when(timer.stop(any())).thenReturn(1000L);
+          mockedTimer.when(Timer::start).thenReturn(timer);
+          elasticsearchUtilMockedStatic
+              .when(() -> ElasticsearchUtil.searchAsync(any(), any(), any()))
+              .thenReturn(CompletableFuture.completedFuture(searchResponse));
+
+          final ArchiveBatch batch = underTest.getStandaloneDecisionNextBatch(PARTITION_IDS).join();
+          assertThat(batch).isNotNull();
+          assertThat(batch.getFinishDate()).isEqualTo("2024-01-01");
+          assertThat(batch.getIds()).isEqualTo(List.of("a", "b"));
+        }
+      }
+    }
+  }
+
+  @Test
   void shouldPassRoutingToBulkDeleteRequest() {
     // given
     final var docs =
