@@ -14,7 +14,9 @@ import io.camunda.eventbridge.streaming.window.Windows;
 import io.camunda.zeebe.db.impl.DbBytes;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.ToLongFunction;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -43,6 +45,12 @@ import org.agrona.concurrent.UnsafeBuffer;
  * without a store}, it keeps no durable aggregation state — the buffer is ephemeral and rebuilt by
  * replay, so the owner must commit offsets only up to {@link #safeOffset()} (Model R).
  *
+ * <p>The Model-F checkpoint is split so the durable write can run off the owner thread: {@link
+ * #freeze()} serializes the open buffer into an immutable snapshot and folding resumes immediately;
+ * {@link #persistFrozen()} writes the snapshot inside the transaction the runtime supplies; {@link
+ * #completeFrozen(boolean)} settles the outcome. {@link #checkpoint()} composes the three
+ * synchronously for callers without an asynchronous commit. All three are no-ops under Model R.
+ *
  * @param <IN> the value type folded
  * @param <K> the base grouping key type
  * @param <ACC> the accumulator type
@@ -64,11 +72,15 @@ public final class SegmentSealingAggregation<IN, K, ACC> implements Aggregation<
 
   // Durable open-segment checkpoint (Model F). Null when the aggregation keeps no durable state.
   private final GroupedCellStore<K, ACC> cells;
+  private final RecordValue<ACC> accCodec;
   private final TransactionRunner tx;
   private final Set<Windowed<K>> durablyWritten = new HashSet<>();
-  // Reused meta-value scratch: {@code openSegment(long) ++ sourcePartition(int)}, big-endian.
-  private final byte[] metaValue = new byte[Long.BYTES + Integer.BYTES];
-  private final UnsafeBuffer metaBuffer = new UnsafeBuffer(metaValue);
+
+  // The outstanding frozen open-segment snapshot (null when none): every open cell serialized at
+  // freeze time, the durable rows that must go (sealed away since the last successful cut), and
+  // the segment meta. Owned by the freeze/complete pair on the owner thread; persistFrozen only
+  // reads it.
+  private FrozenSnapshot<K> frozen;
 
   private final WindowedCellState<K, ACC> open = new WindowedCellState<>();
   private long openSegment = NO_SEGMENT;
@@ -152,6 +164,7 @@ public final class SegmentSealingAggregation<IN, K, ACC> implements Aggregation<
     this.segments = segments;
     this.sink = sink;
     cells = openStore == null ? null : new GroupedCellStore<>(group, openStore, keyCodec, accCodec);
+    this.accCodec = accCodec;
     this.tx = tx;
   }
 
@@ -235,28 +248,102 @@ public final class SegmentSealingAggregation<IN, K, ACC> implements Aggregation<
     sink.flush();
   }
 
+  /**
+   * Commit-interval tick as one synchronous cut: {@link #freeze()} the open buffer, persist it
+   * inside one transaction, {@link #completeFrozen(boolean) complete}. Callers that overlap the
+   * persist with processing drive the three steps themselves instead — freeze and complete on the
+   * owner thread, {@link #persistFrozen()} inside the transaction the runtime supplies.
+   */
   @Override
   public void checkpoint() {
     if (cells == null) {
       // Model R: no durable aggregation state; the open buffer is ephemeral and rebuilt by replay.
       return;
     }
-    // Model F: persist the open buffer + meta so the full committed offset lands on matching state.
-    tx.runInTransaction(
-        () -> {
-          for (final Windowed<K> cell : durablyWritten) {
-            if (!open.contains(cell)) {
-              cells.delete(cell);
-            }
-          }
-          durablyWritten.clear();
-          open.forEachOpen(
-              (cell, acc) -> {
-                cells.put(cell, acc);
-                durablyWritten.add(cell);
-              });
-          writeMeta();
-        });
+    freeze();
+    try {
+      tx.runInTransaction(this::persistFrozen);
+    } catch (final RuntimeException e) {
+      completeFrozen(false);
+      throw e;
+    }
+    completeFrozen(true);
+  }
+
+  /**
+   * Owner thread: snapshots the open buffer as immutable bytes. The open cells are not serialized
+   * until they are persisted, so the freeze serializes them here — O(open buffer) codec work but no
+   * store writes — rather than copy-on-write the live accumulators. Also captures the durable rows
+   * to delete (written by the last successful cut but sealed away since) and the segment meta, so a
+   * seal or fold after the freeze cannot leak into the frozen cut. No-op under Model R.
+   *
+   * @throws IllegalStateException if a frozen snapshot is already outstanding
+   */
+  public void freeze() {
+    if (cells == null) {
+      return;
+    }
+    if (frozen != null) {
+      throw new IllegalStateException(
+          "expected no outstanding frozen open-segment snapshot, but freeze() was called again"
+              + " before completeFrozen()");
+    }
+    final Map<Windowed<K>, byte[]> snapshot = new HashMap<>();
+    open.forEachOpen((cell, acc) -> snapshot.put(cell, accCodec.toBytes(acc)));
+    final Set<Windowed<K>> stale = new HashSet<>();
+    for (final Windowed<K> cell : durablyWritten) {
+      if (!snapshot.containsKey(cell)) {
+        stale.add(cell);
+      }
+    }
+    frozen = new FrozenSnapshot<>(snapshot, stale, encodeMeta());
+  }
+
+  /**
+   * Flusher thread, inside the caller's commit transaction: deletes the stale rows, then writes
+   * every frozen cell's at-freeze bytes and the frozen meta. Touches only the frozen snapshot and
+   * the cell store (which the owner thread itself only uses on this path and at recovery), never
+   * the live buffer — the owner keeps folding, even sealing, concurrently. No-op under Model R.
+   *
+   * @throws IllegalStateException if nothing is frozen
+   */
+  public void persistFrozen() {
+    if (cells == null) {
+      return;
+    }
+    if (frozen == null) {
+      throw new IllegalStateException(
+          "expected a frozen open-segment snapshot to persist," + " but none");
+    }
+    for (final Windowed<K> cell : frozen.staleCells()) {
+      cells.delete(cell);
+    }
+    frozen.cells().forEach(cells::putSerialized);
+    cells.putMeta(frozen.meta());
+  }
+
+  /**
+   * Owner thread, once the transaction's outcome is known. Success: the frozen snapshot <em>is</em>
+   * the durable state now — remember its rows so the next freeze can compute the stale set.
+   * Failure: discard it; the snapshot is a full image (not an incremental delta), so the next
+   * freeze re-captures everything against the unchanged durable rows and nothing is lost. No-op
+   * under Model R.
+   *
+   * @throws IllegalStateException if nothing is frozen
+   */
+  public void completeFrozen(final boolean success) {
+    if (cells == null) {
+      return;
+    }
+    if (frozen == null) {
+      throw new IllegalStateException(
+          "expected a frozen open-segment snapshot to complete," + " but none");
+    }
+    if (success) {
+      durablyWritten.clear();
+      durablyWritten.addAll(frozen.cells().keySet());
+    }
+    frozen = null;
   }
 
   @Override
@@ -278,10 +365,16 @@ public final class SegmentSealingAggregation<IN, K, ACC> implements Aggregation<
         });
   }
 
-  /** The group's meta row: {@code openSegment ++ sourcePartition}, under the bare-group key. */
-  private void writeMeta() {
-    metaBuffer.putLong(0, openSegment, ByteOrder.BIG_ENDIAN);
-    metaBuffer.putInt(Long.BYTES, sourcePartition, ByteOrder.BIG_ENDIAN);
-    cells.putMeta(metaValue);
+  /** The group's meta row value: {@code openSegment ++ sourcePartition}, big-endian. */
+  private byte[] encodeMeta() {
+    final byte[] meta = new byte[Long.BYTES + Integer.BYTES];
+    final UnsafeBuffer buffer = new UnsafeBuffer(meta);
+    buffer.putLong(0, openSegment, ByteOrder.BIG_ENDIAN);
+    buffer.putInt(Long.BYTES, sourcePartition, ByteOrder.BIG_ENDIAN);
+    return meta;
   }
+
+  /** One freeze's immutable snapshot of the open segment: cell bytes, rows to delete, meta. */
+  private record FrozenSnapshot<K>(
+      Map<Windowed<K>, byte[]> cells, Set<Windowed<K>> staleCells, byte[] meta) {}
 }

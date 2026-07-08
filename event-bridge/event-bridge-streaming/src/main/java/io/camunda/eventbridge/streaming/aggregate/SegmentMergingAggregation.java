@@ -8,12 +8,14 @@
 package io.camunda.eventbridge.streaming.aggregate;
 
 import io.camunda.eventbridge.streaming.TransactionRunner;
+import io.camunda.eventbridge.streaming.aggregate.WindowedCellState.CheckpointDelta;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.window.Windowed;
 import io.camunda.eventbridge.streaming.window.Windows;
 import io.camunda.zeebe.db.impl.DbBytes;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.function.Predicate;
 
 /**
@@ -30,6 +32,13 @@ import java.util.function.Predicate;
  * store through a {@link GroupedCellStore} (keyed {@code group ++ windowStart ++ codec(key)}; the
  * {@code group} lets several operators share one store and scan only their own cells). Closed
  * windows are finalized, emitted, and evicted. Single-writer, like every operator.
+ *
+ * <p>Checkpointing is split so the durable write can run off the owner thread: {@link #freeze()}
+ * captures the delta-to-persist as immutable, already-serialized bytes and processing resumes
+ * immediately; {@link #persistFrozen()} writes the frozen delta inside the transaction the runtime
+ * supplies; {@link #completeFrozen(boolean)} drops it on success or merges it back on failure.
+ * {@link #checkpoint()} composes the three synchronously for callers without an asynchronous
+ * commit.
  *
  * @param <K> the grouping key type
  * @param <ACC> the accumulator type
@@ -48,9 +57,17 @@ public final class SegmentMergingAggregation<K, ACC> {
   // finalization and tracked for flush/checkpoint deltas.
   private final WindowedCellState<K, ACC> open = new WindowedCellState<>();
   // A changed cell's serialized total, produced once at flush and reused by the checkpoint (a
-  // commit flushes right before it checkpoints); invalidated when the cell changes again.
-  private final Map<Windowed<K>, byte[]> serializedSinceFlush = new HashMap<>();
+  // commit flushes right before it checkpoints); invalidated when the cell changes again. The
+  // cache only bridges flush -> checkpoint, so freeze() steals the whole map (installing a fresh
+  // one) rather than shadowing every open cell's accumulator with a second serialized copy.
+  private Map<Windowed<K>, byte[]> serializedSinceFlush = new HashMap<>();
   private long maxEventTime = Long.MIN_VALUE;
+
+  // The outstanding frozen checkpoint delta (null when none): the changed/evicted cell sets stolen
+  // from the working set plus the at-freeze serialized bytes of every frozen changed cell. Owned
+  // by the freeze/complete pair on the owner thread; persistFrozen only reads it.
+  private CheckpointDelta<K> frozenCells;
+  private Map<Windowed<K>, byte[]> frozenSerialized;
 
   public SegmentMergingAggregation(
       final int group,
@@ -123,24 +140,112 @@ public final class SegmentMergingAggregation<K, ACC> {
   }
 
   /**
-   * Commit-interval tick: finalize closed windows, then persist changed/evicted cells in one txn.
+   * Commit-interval tick as one synchronous cut: {@link #freeze()} the delta, persist it inside one
+   * transaction, {@link #completeFrozen(boolean) complete}. Callers that overlap the persist with
+   * processing drive the three steps themselves instead — freeze and complete on the owner thread,
+   * {@link #persistFrozen()} inside the transaction the runtime supplies.
    */
   public void checkpoint() {
+    freeze();
+    try {
+      tx.runInTransaction(this::persistFrozen);
+    } catch (final RuntimeException e) {
+      completeFrozen(false);
+      throw e;
+    }
+    completeFrozen(true);
+  }
+
+  /**
+   * Owner thread: finalizes closed windows, flushes, and steals the checkpoint delta — the
+   * changed/evicted cell sets plus the serialized bytes of every changed cell — into the frozen
+   * slot, installing fresh empty trackers so folding resumes immediately. The frozen delta is
+   * immutable data: later folds touch only the live accumulators and trackers, never the frozen
+   * bytes, so no copy-on-write of live accumulators is needed.
+   *
+   * <p>Invariant (checked): after the flush, {@code serializedSinceFlush} holds current bytes for
+   * every cell changed since the last checkpoint — a change invalidates the cached bytes and
+   * re-marks the cell for exactly the flush that just ran, and an eviction removes the cell from
+   * the changed set altogether.
+   *
+   * @throws IllegalStateException if a frozen delta is already outstanding
+   */
+  public void freeze() {
+    if (frozenCells != null) {
+      throw new IllegalStateException(
+          "expected no outstanding frozen checkpoint delta, but freeze() was called again before"
+              + " completeFrozen()");
+    }
     finalizeClosedWindows();
-    tx.runInTransaction(
-        () -> {
-          open.forEachChangedSinceCheckpoint(
-              (cell, total) -> {
-                if (total != null) {
-                  writeCell(cell, total);
-                }
-              });
-          open.forEachEvictedSinceCheckpoint(this::deleteCell);
-        });
-    open.clearCheckpointDelta();
-    // The cache only bridges one commit's flush -> checkpoint; drop it rather than shadowing every
-    // open cell's accumulator with a second serialized copy.
-    serializedSinceFlush.clear();
+    flush();
+    final CheckpointDelta<K> delta = open.stealCheckpointDelta();
+    final Map<Windowed<K>, byte[]> serialized = serializedSinceFlush;
+    serializedSinceFlush = new HashMap<>();
+    for (final Windowed<K> cell : delta.changed()) {
+      if (!serialized.containsKey(cell)) {
+        throw new IllegalStateException(
+            "expected serialized bytes for every changed cell after the freeze flush, but cell "
+                + cell
+                + " has none");
+      }
+    }
+    frozenCells = delta;
+    frozenSerialized = serialized;
+  }
+
+  /**
+   * Flusher thread, inside the caller's commit transaction: writes the frozen delta to the durable
+   * cells — the at-freeze bytes for every frozen changed cell, a delete for every frozen evicted
+   * cell. Touches only the frozen slot and the cell store (which the owner thread itself only uses
+   * on this path and at recovery), never the live working state — the owner keeps folding
+   * concurrently.
+   *
+   * @throws IllegalStateException if nothing is frozen
+   */
+  public void persistFrozen() {
+    if (frozenCells == null) {
+      throw new IllegalStateException("expected a frozen checkpoint delta to persist, but none");
+    }
+    for (final Windowed<K> cell : frozenCells.changed()) {
+      cells.putSerialized(cell, frozenSerialized.get(cell));
+    }
+    for (final Windowed<K> cell : frozenCells.evicted()) {
+      cells.delete(cell);
+    }
+  }
+
+  /**
+   * Owner thread, once the transaction's outcome is known. Success: the frozen delta is durable —
+   * drop it. Failure: merge it back so the next freeze re-includes it — frozen changed cells are
+   * re-marked changed and their bytes re-cached, frozen evicted cells re-marked for deletion. The
+   * live state always wins; the frozen delta only fills gaps: a cell re-changed since the freeze
+   * keeps its newer total and its pending (or already re-cached) re-serialization, a cell evicted
+   * since the freeze stays evicted, and a cell re-created since the freeze is not re-deleted.
+   *
+   * @throws IllegalStateException if nothing is frozen
+   */
+  public void completeFrozen(final boolean success) {
+    if (frozenCells == null) {
+      throw new IllegalStateException("expected a frozen checkpoint delta to complete, but none");
+    }
+    if (!success) {
+      open.mergeBackCheckpointDelta(frozenCells);
+      for (final Entry<Windowed<K>, byte[]> frozen : frozenSerialized.entrySet()) {
+        final Windowed<K> cell = frozen.getKey();
+        // The frozen bytes fill a gap only while they are still current: not for a cell re-changed
+        // (its re-serialization is pending or already re-cached), and not for one evicted since
+        // the freeze (the merge-back left it out of the changed set; its delete supersedes any
+        // write). Restoring stale bytes would serve or persist an outdated total.
+        if (open.isChangedSinceFlush(cell)
+            || serializedSinceFlush.containsKey(cell)
+            || !open.isChangedSinceCheckpoint(cell)) {
+          continue;
+        }
+        serializedSinceFlush.put(cell, frozen.getValue());
+      }
+    }
+    frozenCells = null;
+    frozenSerialized = null;
   }
 
   /**
@@ -149,7 +254,7 @@ public final class SegmentMergingAggregation<K, ACC> {
    * re-converges them. The durable cells are not: a close between process and commit would persist
    * folds the committed offset (and the dedup admission watermark, which is also only persisted at
    * the commit cut) does not cover, so the replayed batches would be re-admitted and double-folded
-   * onto the close-persisted totals. Durable cells therefore move only in {@link #checkpoint()},
+   * onto the close-persisted totals. Durable cells therefore move only in the checkpoint's persist,
    * inside the owner's commit cut; uncommitted folds are simply lost here and rebuilt by replay.
    */
   public void close() {
@@ -195,20 +300,5 @@ public final class SegmentMergingAggregation<K, ACC> {
 
   private long windowEnd(final Windowed<K> cell) {
     return cell.windowStart() + windows.sizeMs();
-  }
-
-  private void writeCell(final Windowed<K> cell, final ACC total) {
-    // A commit flushes right before it checkpoints, so an unchanged-since-flush cell reuses the
-    // bytes the flush already produced; the fallback covers a checkpoint without a prior flush.
-    final byte[] serialized = serializedSinceFlush.get(cell);
-    if (serialized != null) {
-      cells.putSerialized(cell, serialized);
-    } else {
-      cells.put(cell, total);
-    }
-  }
-
-  private void deleteCell(final Windowed<K> cell) {
-    cells.delete(cell);
   }
 }

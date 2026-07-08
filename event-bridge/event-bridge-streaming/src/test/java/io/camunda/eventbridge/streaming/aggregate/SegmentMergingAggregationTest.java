@@ -8,8 +8,10 @@
 package io.camunda.eventbridge.streaming.aggregate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 
+import io.camunda.eventbridge.streaming.TransactionRunner;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.state.memory.InMemoryKeyValueStore;
 import io.camunda.eventbridge.streaming.window.TumblingWindows;
@@ -22,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.junit.jupiter.api.Test;
@@ -55,15 +58,16 @@ final class SegmentMergingAggregationTest {
       final KeyValueStore<DbBytes, DbBytes> store,
       final InMemoryResultSink<Windowed<String>, Long> sink,
       final Windows windows) {
+    return merger(store, sink, windows, Runnable::run);
+  }
+
+  private static SegmentMergingAggregation<String, Long> merger(
+      final KeyValueStore<DbBytes, DbBytes> store,
+      final InMemoryResultSink<Windowed<String>, Long> sink,
+      final Windows windows,
+      final TransactionRunner tx) {
     return new SegmentMergingAggregation<>(
-        1,
-        SUM,
-        windows,
-        sink,
-        store,
-        new StringRecordValue(),
-        new LongRecordValue(),
-        Runnable::run);
+        1, SUM, windows, sink, store, new StringRecordValue(), new LongRecordValue(), tx);
   }
 
   @Test
@@ -333,9 +337,220 @@ final class SegmentMergingAggregationTest {
     assertThat(sinkAfter.get(cell)).hasValue(7L);
   }
 
+  @Test
+  void shouldPersistTheAtFreezeBytesWhenFoldsContinueAfterTheFreeze() {
+    // given a frozen checkpoint delta capturing a total of 3
+    final KeyValueStore<DbBytes, DbBytes> store =
+        new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes());
+    final SegmentMergingAggregation<String, Long> merger =
+        merger(store, new InMemoryResultSink<>(), keepOpen());
+    final Windowed<String> cell = new Windowed<>("k", 0L);
+    merger.merge(cell, 3L);
+    merger.freeze();
+
+    // when the owner keeps folding while the frozen delta persists
+    merger.merge(cell, 4L);
+    merger.persistFrozen();
+    merger.completeFrozen(true);
+
+    // then the durable cell holds the at-freeze value, not the concurrent fold
+    assertThat(storedTotals(store)).containsExactly(3L);
+
+    // and the next cut persists the newer total
+    merger.checkpoint();
+    assertThat(storedTotals(store)).containsExactly(7L);
+  }
+
+  @Test
+  void shouldLandAnEvictionAfterAPersistedCutInTheNextCut() {
+    // given a cell persisted by one cut (grace keeps it open)
+    final KeyValueStore<DbBytes, DbBytes> store =
+        new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes());
+    final SegmentMergingAggregation<String, Long> merger =
+        merger(store, new InMemoryResultSink<>(), TumblingWindows.ofSizeAndGrace(1_000L, 2_000L));
+    final Windowed<String> cell = new Windowed<>("k", 0L);
+    merger.merge(cell, 5L);
+    merger.checkpoint();
+    assertThat(storedWindowStarts(store)).containsExactly(0L);
+
+    // when event time closes the window and the next cut freezes the eviction
+    merger.merge(new Windowed<>("later", 10_000L), 1L);
+    merger.freeze();
+
+    // then the durable row is untouched until that cut persists — and gone right after
+    assertThat(storedWindowStarts(store)).containsExactly(0L);
+    merger.persistFrozen();
+    merger.completeFrozen(true);
+    assertThat(storedWindowStarts(store)).containsExactly(10_000L);
+  }
+
+  @Test
+  void shouldRetryAFailedCheckpointFromTheMergedBackDeltaWithoutReserializing() {
+    // given a flushed total whose checkpoint transaction fails
+    final CountingLongValue codec = new CountingLongValue();
+    final AtomicBoolean failTransaction = new AtomicBoolean();
+    final TransactionRunner tx =
+        operations -> {
+          if (failTransaction.get()) {
+            throw new IllegalStateException("transaction failed");
+          }
+          operations.run();
+        };
+    final KeyValueStore<DbBytes, DbBytes> store =
+        new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes());
+    final SegmentMergingAggregation<String, Long> merger =
+        new SegmentMergingAggregation<>(
+            1,
+            SUM,
+            keepOpen(),
+            new InMemoryResultSink<>(),
+            store,
+            new StringRecordValue(),
+            codec,
+            tx);
+    final Windowed<String> cell = new Windowed<>("k", 0L);
+    merger.merge(cell, 3L);
+    merger.flush();
+    failTransaction.set(true);
+    assertThatThrownBy(merger::checkpoint).hasMessage("transaction failed");
+    assertThat(storedTotals(store)).as("the failed cut persisted nothing").isEmpty();
+
+    // when the next checkpoint retries with nothing re-folded or re-flushed in between
+    failTransaction.set(false);
+    merger.checkpoint();
+
+    // then the merged-back frozen bytes were reused — persisted without a second serialization
+    assertThat(storedTotals(store)).containsExactly(3L);
+    assertThat(codec.serializations).isEqualTo(1);
+  }
+
+  @Test
+  void shouldServeTheLiveFoldNotTheStaleFrozenBytesAfterAFailedCut() {
+    // given a frozen cut whose persist never ran, and a newer fold landing before its completion
+    final KeyValueStore<DbBytes, DbBytes> store =
+        new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes());
+    final InMemoryResultSink<Windowed<String>, Long> sink = new InMemoryResultSink<>();
+    final SegmentMergingAggregation<String, Long> merger =
+        merger(store, sink, TumblingWindows.ofSizeAndGrace(1_000L, 2_000L));
+    final Windowed<String> cell = new Windowed<>("k", 0L);
+    merger.merge(cell, 3L);
+    merger.freeze();
+    merger.merge(cell, 4L);
+
+    // when the cut fails and the window then closes on the next checkpoint
+    merger.completeFrozen(false);
+    merger.merge(new Windowed<>("later", 10_000L), 1L);
+    merger.checkpoint();
+
+    // then the finalized value is the live total — the stale frozen bytes did not shadow it
+    assertThat(sink.get(cell)).hasValue(7L);
+    assertThat(storedWindowStarts(store)).containsExactly(10_000L);
+  }
+
+  @Test
+  void shouldDeleteAnEvictedCellOnRetryAfterAFailedCheckpoint() {
+    // given a durable row whose eviction cut fails
+    final AtomicBoolean failTransaction = new AtomicBoolean();
+    final TransactionRunner tx =
+        operations -> {
+          if (failTransaction.get()) {
+            throw new IllegalStateException("transaction failed");
+          }
+          operations.run();
+        };
+    final KeyValueStore<DbBytes, DbBytes> store =
+        new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes());
+    final InMemoryResultSink<Windowed<String>, Long> sink = new InMemoryResultSink<>();
+    final SegmentMergingAggregation<String, Long> merger =
+        merger(store, sink, TumblingWindows.ofSizeAndGrace(1_000L, 2_000L), tx);
+    final Windowed<String> cell = new Windowed<>("k", 0L);
+    merger.merge(cell, 5L);
+    merger.checkpoint();
+    merger.merge(new Windowed<>("later", 10_000L), 1L); // closes the cell's window
+    failTransaction.set(true);
+    assertThatThrownBy(merger::checkpoint).hasMessage("transaction failed");
+    assertThat(storedWindowStarts(store)).containsExactly(0L);
+
+    // when a late delta for the evicted window arrives and the checkpoint retries
+    merger.merge(cell, 100L); // dropped: the window closed and the cell was evicted
+    failTransaction.set(false);
+    merger.checkpoint();
+
+    // then the merged-back eviction landed and the late delta did not resurrect the cell
+    assertThat(storedWindowStarts(store)).containsExactly(10_000L);
+    assertThat(sink.get(cell)).hasValue(5L);
+  }
+
+  @Test
+  void shouldKeepAResurrectedCellWhoseEvictionWasNeverPersisted() {
+    // given a drained cell evicted by a frozen cut that then fails
+    final KeyValueStore<DbBytes, DbBytes> store =
+        new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes());
+    final InMemoryResultSink<Windowed<String>, Long> sink = new InMemoryResultSink<>();
+    final SegmentMergingAggregation<String, Long> merger =
+        new SegmentMergingAggregation<>(
+            1,
+            SUM,
+            TumblingWindows.ofSizeAndGrace(1_000L, 60_000L),
+            sink,
+            store,
+            new StringRecordValue(),
+            new LongRecordValue(),
+            Runnable::run,
+            acc -> acc >= 10L);
+    final Windowed<String> cell = new Windowed<>("k", 0L);
+    merger.merge(cell, 10L); // drained — the freeze finalizes and evicts it
+    merger.freeze();
+    assertThat(sink.get(cell)).hasValue(10L);
+
+    // when a late (still in grace) delta resurrects the cell before the failed cut completes
+    merger.merge(cell, 5L);
+    merger.completeFrozen(false);
+    merger.checkpoint();
+
+    // then the resurrected cell survives the retried cut — its row is written, not deleted
+    assertThat(storedTotals(store)).containsExactly(5L);
+  }
+
+  @Test
+  void shouldRejectOverlappingFreezesAndUnpairedPersistOrComplete() {
+    // given an outstanding frozen delta
+    final SegmentMergingAggregation<String, Long> merger =
+        merger(
+            new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes()),
+            new InMemoryResultSink<>(),
+            keepOpen());
+    merger.merge(new Windowed<>("k", 0L), 1L);
+    merger.freeze();
+
+    // when / then a second freeze is rejected while one is outstanding
+    assertThatThrownBy(merger::freeze).isInstanceOf(IllegalStateException.class);
+
+    // and once completed, persist/complete without a freeze are rejected too
+    merger.persistFrozen();
+    merger.completeFrozen(true);
+    assertThatThrownBy(merger::persistFrozen).isInstanceOf(IllegalStateException.class);
+    assertThatThrownBy(() -> merger.completeFrozen(true)).isInstanceOf(IllegalStateException.class);
+  }
+
   /** The {@code windowStart} of a durable cell key ({@code group ++ windowStart ++ key}). */
   private static long decodeWindowStart(final byte[] cellKey) {
     return ByteBuffer.wrap(cellKey).getLong(Integer.BYTES);
+  }
+
+  /** Every durable cell's total, decoded through the accumulator codec. */
+  private static List<Long> storedTotals(final KeyValueStore<DbBytes, DbBytes> store) {
+    final List<Long> stored = new ArrayList<>();
+    final LongRecordValue codec = new LongRecordValue();
+    store.forEach((key, value) -> stored.add(codec.fromBytes(value.getBytes())));
+    return stored;
+  }
+
+  /** Every durable cell's {@code windowStart}, identifying which cells have rows. */
+  private static List<Long> storedWindowStarts(final KeyValueStore<DbBytes, DbBytes> store) {
+    final List<Long> stored = new ArrayList<>();
+    store.forEach((key, value) -> stored.add(decodeWindowStart(key.getBytes())));
+    return stored;
   }
 
   /** A window wide enough with grace that it stays open across the test. */

@@ -8,13 +8,16 @@
 package io.camunda.eventbridge.streaming.aggregate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.eventbridge.streaming.TransactionRunner;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.state.memory.InMemoryKeyValueStore;
 import io.camunda.eventbridge.streaming.window.TumblingWindows;
 import io.camunda.zeebe.db.impl.DbBytes;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 
 final class SegmentSealingAggregationTest {
@@ -55,6 +58,11 @@ final class SegmentSealingAggregationTest {
   /** A durable (Model-F) aggregation checkpointing its open segment to {@code store}. */
   private SegmentSealingAggregation<Ev, String, Long> durable(
       final KeyValueStore<DbBytes, DbBytes> store) {
+    return durable(store, Runnable::run);
+  }
+
+  private SegmentSealingAggregation<Ev, String, Long> durable(
+      final KeyValueStore<DbBytes, DbBytes> store, final TransactionRunner tx) {
     return new SegmentSealingAggregation<>(
         1,
         new SumAggregateFunction<>(Ev::value),
@@ -67,7 +75,7 @@ final class SegmentSealingAggregationTest {
         store,
         new StringRecordValue(),
         new LongRecordValue(),
-        Runnable::run);
+        tx);
   }
 
   private SegmentSink<String, Long> sink() {
@@ -221,5 +229,114 @@ final class SegmentSealingAggregationTest {
     // then only segment 1's open partial ("b" = 7) is sealed — segment 0's cells were not
     // resurrected
     assertThat(emitted).containsExactly(new Sealed("b", 0L, 0, 1L, 7L));
+  }
+
+  @Test
+  void shouldPersistTheAtFreezeOpenBufferWhenFoldsContinueAfterTheFreeze() {
+    // given a durable aggregation frozen mid-segment
+    final KeyValueStore<DbBytes, DbBytes> store =
+        new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes());
+    final SegmentSealingAggregation<Ev, String, Long> before = durable(store);
+    before.accept(new Ev(0, 0L, 100L, "a", 5L));
+    before.freeze();
+
+    // when the owner keeps folding the open segment while the frozen snapshot persists
+    before.accept(new Ev(0, 5L, 100L, "a", 3L));
+    before.persistFrozen();
+    before.completeFrozen(true);
+
+    // then a recovery sees exactly the at-freeze partial — the later fold replays from the cut
+    final SegmentSealingAggregation<Ev, String, Long> after = durable(store);
+    after.accept(new Ev(0, 10L, 100L, "a", 100L)); // seals segment 0
+    assertThat(emitted).containsExactly(new Sealed("a", 0L, 0, 0L, 5L));
+  }
+
+  @Test
+  void shouldPersistTheFrozenSegmentEvenWhenItSealsBeforeThePersist() {
+    // given a frozen open segment
+    final KeyValueStore<DbBytes, DbBytes> store =
+        new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes());
+    final SegmentSealingAggregation<Ev, String, Long> before = durable(store);
+    before.accept(new Ev(0, 0L, 100L, "a", 5L));
+    before.freeze();
+
+    // when a crossing record seals it (clearing the live buffer) before the snapshot persists
+    before.accept(new Ev(0, 10L, 100L, "b", 7L));
+    before.persistFrozen();
+    before.completeFrozen(true);
+    emitted.clear();
+
+    // then recovery restores the frozen segment-0 partial and the replayed crossing record
+    // re-seals it intact
+    final SegmentSealingAggregation<Ev, String, Long> after = durable(store);
+    after.accept(new Ev(0, 10L, 100L, "b", 7L));
+    assertThat(emitted).containsExactly(new Sealed("a", 0L, 0, 0L, 5L));
+  }
+
+  @Test
+  void shouldNotLoseStaleRowDeletionsWhenACheckpointFails() {
+    // given segment 0 checkpointed durably and then sealed away
+    final AtomicBoolean failTransaction = new AtomicBoolean();
+    final TransactionRunner tx =
+        operations -> {
+          if (failTransaction.get()) {
+            throw new IllegalStateException("transaction failed");
+          }
+          operations.run();
+        };
+    final KeyValueStore<DbBytes, DbBytes> store =
+        new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes());
+    final SegmentSealingAggregation<Ev, String, Long> before = durable(store, tx);
+    before.accept(new Ev(0, 0L, 100L, "a", 5L));
+    before.checkpoint();
+    before.accept(new Ev(0, 10L, 100L, "b", 7L)); // seals segment 0, opens segment 1
+
+    // when the next checkpoint fails and a later one retries
+    failTransaction.set(true);
+    assertThatThrownBy(before::checkpoint).hasMessage("transaction failed");
+    failTransaction.set(false);
+    before.checkpoint();
+
+    // then recovery sees only segment 1's open partial — the stale segment-0 row was deleted by
+    // the retried cut, not lost with the failed one
+    emitted.clear();
+    final SegmentSealingAggregation<Ev, String, Long> after = durable(store);
+    after.accept(new Ev(0, 20L, 100L, "b", 1L));
+    assertThat(emitted).containsExactly(new Sealed("b", 0L, 0, 1L, 7L));
+  }
+
+  @Test
+  void shouldTreatTheSplitCheckpointAsANoOpWithoutDurableState() {
+    // given a Model R aggregation with an open partial
+    final SegmentSealingAggregation<Ev, String, Long> aggregation = aggregation();
+    aggregation.accept(new Ev(0, 3L, 100L, "a", 4L));
+
+    // when the split checkpoint steps run
+    aggregation.freeze();
+    aggregation.persistFrozen();
+    aggregation.completeFrozen(true);
+
+    // then nothing seals and nothing becomes durable — the open buffer replays instead
+    assertThat(emitted).isEmpty();
+    assertThat(aggregation.safeOffset()).isEqualTo(SegmentSealingAggregation.NO_OFFSET);
+  }
+
+  @Test
+  void shouldRejectOverlappingFreezesAndUnpairedPersistOrComplete() {
+    // given a durable aggregation with an outstanding frozen snapshot
+    final SegmentSealingAggregation<Ev, String, Long> aggregation =
+        durable(new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes()));
+    aggregation.accept(new Ev(0, 0L, 100L, "a", 5L));
+    aggregation.freeze();
+
+    // when / then a second freeze is rejected while one is outstanding
+    assertThatThrownBy(aggregation::freeze).isInstanceOf(IllegalStateException.class);
+
+    // and once completed, persist/complete without a freeze are rejected too
+    aggregation.persistFrozen();
+    aggregation.completeFrozen(true);
+    assertThatThrownBy(aggregation::persistFrozen).isInstanceOf(IllegalStateException.class);
+    assertThatThrownBy(() -> aggregation.completeFrozen(true))
+        .isInstanceOf(IllegalStateException.class);
   }
 }

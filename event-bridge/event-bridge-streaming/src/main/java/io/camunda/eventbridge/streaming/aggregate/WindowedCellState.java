@@ -17,7 +17,6 @@ import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 /**
  * The heap working set of a segment aggregation: the open {@code (key, window) -> accumulator}
@@ -37,6 +36,11 @@ import java.util.function.Consumer;
  * feeds into {@link #index(Windowed, long)} and {@link #markChanged(Windowed)} — an owner that
  * needs neither (the sealing side) simply never calls them.
  *
+ * <p>The checkpoint delta supports being <em>stolen</em>: {@link #stealCheckpointDelta()} hands the
+ * changed/evicted sets over for an asynchronous persist and installs fresh empty ones, so folding
+ * continues while the stolen cut is written; a failed persist {@link
+ * #mergeBackCheckpointDelta(CheckpointDelta) merges it back} so the next cut re-includes it.
+ *
  * @param <K> the base grouping key type
  * @param <ACC> the accumulator type
  */
@@ -48,8 +52,9 @@ final class WindowedCellState<K, ACC> {
   // candidates instead of walking every open cell.
   private final NavigableMap<Long, Set<Windowed<K>>> cellsByWindowEnd = new TreeMap<>();
   private final Set<Windowed<K>> changedSinceFlush = new HashSet<>();
-  private final Set<Windowed<K>> changedSinceCheckpoint = new HashSet<>();
-  private final Set<Windowed<K>> evictedSinceCheckpoint = new HashSet<>();
+  // Non-final: stealCheckpointDelta hands the sets over and installs fresh replacements.
+  private Set<Windowed<K>> changedSinceCheckpoint = new HashSet<>();
+  private Set<Windowed<K>> evictedSinceCheckpoint = new HashSet<>();
 
   /**
    * The cell's accumulator, or {@code null} if the cell is not open. Probe-safe (see class doc).
@@ -98,6 +103,14 @@ final class WindowedCellState<K, ACC> {
     evictedSinceCheckpoint.remove(cell);
   }
 
+  boolean isChangedSinceFlush(final Windowed<K> cell) {
+    return changedSinceFlush.contains(cell);
+  }
+
+  boolean isChangedSinceCheckpoint(final Windowed<K> cell) {
+    return changedSinceCheckpoint.contains(cell);
+  }
+
   void forEachChangedSinceFlush(final BiConsumer<Windowed<K>, ACC> consumer) {
     for (final Windowed<K> cell : changedSinceFlush) {
       consumer.accept(cell, open.get(cell));
@@ -108,23 +121,38 @@ final class WindowedCellState<K, ACC> {
     changedSinceFlush.clear();
   }
 
-  /** The value passed may be {@code null} if the cell is no longer open. */
-  void forEachChangedSinceCheckpoint(final BiConsumer<Windowed<K>, ACC> consumer) {
-    for (final Windowed<K> cell : changedSinceCheckpoint) {
-      consumer.accept(cell, open.get(cell));
-    }
+  /**
+   * Hands over the changed/evicted-since-checkpoint sets as one frozen checkpoint cut and installs
+   * fresh empty trackers, so the owner keeps tracking new changes while the stolen cut persists.
+   * This state never touches the returned sets again.
+   */
+  CheckpointDelta<K> stealCheckpointDelta() {
+    final CheckpointDelta<K> delta =
+        new CheckpointDelta<>(changedSinceCheckpoint, evictedSinceCheckpoint);
+    changedSinceCheckpoint = new HashSet<>();
+    evictedSinceCheckpoint = new HashSet<>();
+    return delta;
   }
 
-  void forEachEvictedSinceCheckpoint(final Consumer<Windowed<K>> consumer) {
-    for (final Windowed<K> cell : evictedSinceCheckpoint) {
-      consumer.accept(cell);
+  /**
+   * Re-adds a stolen (but never persisted) delta into the current tracking so the next cut
+   * re-includes it. Union semantics where the current state wins and the stolen delta only fills
+   * gaps: a stolen changed cell that was evicted after the steal stays evicted (it must not be
+   * resurrected into the changed set), and a stolen evicted cell that was re-created after the
+   * steal stays changed (its durable row must not be deleted). The two current sets therefore stay
+   * disjoint.
+   */
+  void mergeBackCheckpointDelta(final CheckpointDelta<K> delta) {
+    for (final Windowed<K> cell : delta.changed()) {
+      if (!evictedSinceCheckpoint.contains(cell)) {
+        changedSinceCheckpoint.add(cell);
+      }
     }
-  }
-
-  /** Clears both checkpoint deltas; called only after the checkpoint transaction succeeded. */
-  void clearCheckpointDelta() {
-    changedSinceCheckpoint.clear();
-    evictedSinceCheckpoint.clear();
+    for (final Windowed<K> cell : delta.evicted()) {
+      if (!changedSinceCheckpoint.contains(cell) && !open.containsKey(cell)) {
+        evictedSinceCheckpoint.add(cell);
+      }
+    }
   }
 
   /**
@@ -166,4 +194,10 @@ final class WindowedCellState<K, ACC> {
      */
     boolean tryFinalize(long windowEnd, Windowed<K> cell, ACC value);
   }
+
+  /**
+   * The changed/evicted cell sets of one checkpoint cut, stolen by {@link #stealCheckpointDelta()}.
+   * The sets are disjoint and owned by the holder once stolen.
+   */
+  record CheckpointDelta<K>(Set<Windowed<K>> changed, Set<Windowed<K>> evicted) {}
 }
