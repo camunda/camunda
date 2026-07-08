@@ -12,6 +12,7 @@ import io.camunda.eventbridge.streaming.shuffle.ShuffleEnvelope;
 import io.camunda.eventbridge.streaming.shuffle.ShuffleEnvelopeCodec;
 import io.camunda.eventbridge.streaming.shuffle.ShuffleOperation;
 import io.camunda.eventbridge.streaming.shuffle.ShufflePayloadKind;
+import io.camunda.eventbridge.streaming.sink.FrozenOutbox;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -34,10 +35,13 @@ import java.util.function.Consumer;
  * thread (chunk assignment included — cheap, no transport), {@link #publishFrozen()} sends exactly
  * those frames on the IO thread, and {@link #completeFrozen(boolean)} drops them on success or
  * retains them for the next cut on failure — a re-publish is safe because the reducer dedups by
- * {@code (segment, chunk)}. While a frozen cut is outstanding the IO thread owns the transport, so
- * {@link #flush()} defers (the buffered deltas stay staged for the next flush or freeze). {@link
- * #flush()} remains the synchronous path: it publishes any retained frames of a failed cut first,
- * then the buffer.
+ * {@code (segment, chunk)}. The frame lifecycle (detach, retain, re-emit retained frames ahead of
+ * newer output — preserving the per-stream monotonic {@code (segment, chunk)} sequence the
+ * reducer's dedup relies on) lives in a {@link FrozenOutbox}; this class keeps the encoding, the
+ * chunk counters and the transport. While a frozen cut is outstanding the IO thread owns the
+ * transport, so {@link #flush()} defers (the buffered deltas stay staged for the next flush or
+ * freeze). {@link #flush()} remains the synchronous path: it publishes any retained frames of a
+ * failed cut first, then the buffer.
  */
 public final class EnvelopePublisher {
 
@@ -74,16 +78,11 @@ public final class EnvelopePublisher {
   private record PreparedEnvelope(int factsPartition, byte[] frame) {}
 
   /**
-   * The outstanding frozen cut's frames (null when none): encoded at the freeze barrier, owned by
-   * the IO thread between {@link #publishFrozen()} and {@link #completeFrozen(boolean)}.
+   * The prepared frames' cut lifecycle: encoded into it at the freeze barrier, owned by the IO
+   * thread between {@link #publishFrozen()} and {@link #completeFrozen(boolean)}, and retained
+   * across a failed cut for retry-first re-publication.
    */
-  private List<PreparedEnvelope> frozenFrames;
-
-  /**
-   * A failed cut's frames, re-published ahead of newer output (order preserves the per-stream
-   * monotonic {@code (segment, chunk)} sequence the reducer's dedup relies on). Owner thread only.
-   */
-  private final List<PreparedEnvelope> retryFrames = new ArrayList<>();
+  private final FrozenOutbox<PreparedEnvelope> outbox = new FrozenOutbox<>();
 
   public EnvelopePublisher(
       final EnvelopeTransport transport, final int schemaVersion, final long producedAt) {
@@ -111,18 +110,16 @@ public final class EnvelopePublisher {
 
   /** Publishes every buffered group as one envelope (chunked per segment), then flushes durably. */
   public void flush() {
-    if (frozenFrames != null) {
+    if (outbox.hasFrozen()) {
       // An in-flight frozen cut owns the transport on the IO thread. Defer this freshness flush:
       // the buffered deltas stay staged and the next flush or freeze delivers them.
       return;
     }
-    if (buffer.isEmpty() && retryFrames.isEmpty()) {
+    if (buffer.isEmpty() && !outbox.hasStaged()) {
       return;
     }
-    for (final PreparedEnvelope prepared : retryFrames) {
-      transport.send(prepared.factsPartition(), prepared.frame());
-    }
-    retryFrames.clear();
+    // Any retained frames of a failed cut go out first, then the freshly encoded buffer.
+    outbox.drainPending(prepared -> transport.send(prepared.factsPartition(), prepared.frame()));
     encodeBuffered(prepared -> transport.send(prepared.factsPartition(), prepared.frame()));
     transport.flush();
   }
@@ -136,16 +133,13 @@ public final class EnvelopePublisher {
    * @throws IllegalStateException if a frozen cut is already outstanding
    */
   public void freeze() {
-    if (frozenFrames != null) {
+    if (outbox.hasFrozen()) {
       throw new IllegalStateException(
           "expected no outstanding frozen envelope frames, but freeze() was called again before"
               + " completeFrozen()");
     }
-    final List<PreparedEnvelope> frames = new ArrayList<>(retryFrames.size() + buffer.size());
-    frames.addAll(retryFrames);
-    retryFrames.clear();
-    encodeBuffered(frames::add);
-    frozenFrames = frames;
+    encodeBuffered(outbox::stage);
+    outbox.freeze();
   }
 
   /**
@@ -157,16 +151,10 @@ public final class EnvelopePublisher {
    * @throws IllegalStateException if nothing is frozen
    */
   public void publishFrozen() {
-    if (frozenFrames == null) {
-      throw new IllegalStateException("expected frozen envelope frames to publish, but none");
+    if (outbox.drainFrozen(prepared -> transport.send(prepared.factsPartition(), prepared.frame()))
+        > 0) {
+      transport.flush();
     }
-    if (frozenFrames.isEmpty()) {
-      return;
-    }
-    for (final PreparedEnvelope prepared : frozenFrames) {
-      transport.send(prepared.factsPartition(), prepared.frame());
-    }
-    transport.flush();
   }
 
   /**
@@ -178,13 +166,7 @@ public final class EnvelopePublisher {
    * @throws IllegalStateException if nothing is frozen
    */
   public void completeFrozen(final boolean success) {
-    if (frozenFrames == null) {
-      throw new IllegalStateException("expected frozen envelope frames to complete, but none");
-    }
-    if (!success) {
-      retryFrames.addAll(frozenFrames);
-    }
-    frozenFrames = null;
+    outbox.completeFrozen(success);
   }
 
   /**
