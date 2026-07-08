@@ -73,6 +73,8 @@ spec:
               value: "3"
             - name: CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE
               value: "1000"
+            - name: CAMUNDA_OPTIMIZE_ZEEBE_INCLUDE_OBJECT_VARIABLE
+              value: "false"
           resources:
             limits:
               cpu: 2000m
@@ -133,6 +135,8 @@ spec:
               value: "3"
             - name: CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE
               value: "1000"
+            - name: CAMUNDA_OPTIMIZE_ZEEBE_INCLUDE_OBJECT_VARIABLE
+              value: "false"
           envFrom:
             - configMapRef:
                 name: c8-golden-stable-89-rdbms-optimize-camunda-platform-identity-env-vars
