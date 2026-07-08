@@ -120,19 +120,23 @@ public final class ClusterVariableFilterTransformer
       return nestedQuery(ClusterVariableIndex.METADATA, keyQuery);
     }
 
-    final var innerClauses = new ArrayList<SearchQuery>();
-    innerClauses.add(keyQuery);
-    var negated = false;
-    for (final UntypedOperation operation : valueOperations) {
-      if (operation.operator() == Operator.NOT_EXISTS) {
-        negated = true;
-      } else {
-        innerClauses.add(toMetadataValueQuery(operation));
+    final var negated =
+        valueOperations.stream().anyMatch(op -> op.operator() == Operator.NOT_EXISTS);
+    if (negated) {
+      if (valueOperations.size() > 1) {
+        throw new IllegalArgumentException(
+            "NOT_EXISTS cannot be combined with other operations for the same metadata key: "
+                + filter.key());
       }
+      return not(nestedQuery(ClusterVariableIndex.METADATA, keyQuery));
     }
 
-    final var nested = nestedQuery(ClusterVariableIndex.METADATA, and(innerClauses));
-    return negated ? not(nested) : nested;
+    final var innerClauses = new ArrayList<SearchQuery>();
+    innerClauses.add(keyQuery);
+    for (final UntypedOperation operation : valueOperations) {
+      innerClauses.add(toMetadataValueQuery(operation));
+    }
+    return nestedQuery(ClusterVariableIndex.METADATA, and(innerClauses));
   }
 
   private SearchQuery toMetadataValueQuery(final UntypedOperation operation) {

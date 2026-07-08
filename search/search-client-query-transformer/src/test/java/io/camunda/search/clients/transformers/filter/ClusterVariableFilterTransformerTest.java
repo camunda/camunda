@@ -12,6 +12,7 @@ import static io.camunda.search.filter.Operation.exists;
 import static io.camunda.search.filter.Operation.gte;
 import static io.camunda.search.filter.Operation.like;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchNestedQuery;
@@ -113,6 +114,44 @@ public final class ClusterVariableFilterTransformerTest extends AbstractTransfor
     assertThat(nested.path()).isEqualTo(ClusterVariableIndex.METADATA);
     final var inner = (SearchBoolQuery) nested.query().queryOption();
     assertThat(inner.must()).hasSize(2);
+  }
+
+  @Test
+  public void shouldQueryMetadataByNonExistence() {
+    // given
+    final var metadataFilter =
+        new MetadataValueFilter.Builder()
+            .key("kind")
+            .valueOperation(UntypedOperation.of(exists(false)))
+            .build();
+    final var filter =
+        new ClusterVariableFilter.Builder().metadataOperations(metadataFilter).build();
+
+    // when
+    final var searchQuery = transformQuery(filter);
+
+    // then
+    final var bool = (SearchBoolQuery) searchQuery.queryOption();
+    assertThat(bool.mustNot()).hasSize(1);
+    final var nested = (SearchNestedQuery) bool.mustNot().getFirst().queryOption();
+    assertThat(nested.path()).isEqualTo(ClusterVariableIndex.METADATA);
+    assertIsTermQuery(nested.query(), ClusterVariableIndex.METADATA_KEY, "kind");
+  }
+
+  @Test
+  public void shouldRejectNotExistsCombinedWithOtherOperations() {
+    // given
+    final var metadataFilter =
+        new MetadataValueFilter.Builder()
+            .key("kind")
+            .valueOperation(UntypedOperation.of(exists(false)))
+            .valueOperation(UntypedOperation.of(eq("CREDENTIAL")))
+            .build();
+    final var filter =
+        new ClusterVariableFilter.Builder().metadataOperations(metadataFilter).build();
+
+    // when / then
+    assertThatThrownBy(() -> transformQuery(filter)).isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
