@@ -51,6 +51,7 @@ public record BrokerPartitionState(
 
   public BrokerPartitionState {
     Objects.requireNonNull(mode, "mode must not be null");
+    Objects.requireNonNull(lastUpdated, "lastUpdated must not be null");
     partitions = ImmutableSortedMap.copyOf(partitions);
   }
 

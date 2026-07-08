@@ -40,7 +40,7 @@ import org.jspecify.annotations.Nullable;
  * <p>This class is immutable; every mutating method returns a new instance.
  *
  * @param version version of this group configuration, bumped at plan boundaries
- * @param incarnationNumber incarnation number of this group configuration
+ * @param incarnationNumber incarnation number of this group, incremented after the data is purged.
  * @param members per-broker partition state within this group
  * @param routingState routing state scoped to this group, if any
  * @param pendingChanges the ongoing change plan for this group, if any
