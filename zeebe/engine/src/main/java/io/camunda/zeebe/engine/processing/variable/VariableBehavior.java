@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.variable.DocumentEntry;
 import io.camunda.zeebe.engine.state.variable.IndexedDocument;
 import io.camunda.zeebe.engine.state.variable.VariableInstance;
+import io.camunda.zeebe.engine.util.validation.NestingDepthValidator;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -297,18 +298,22 @@ public final class VariableBehavior {
    * @return Either with Rejection if validation fails, or Void if validation succeeds
    */
   public Either<Rejection, Void> validateVariables(final DirectBuffer variableBuffer) {
-    return VariableNestingDepthValidator.validate(variableBuffer, maxVariableNestingDepth)
-        .mapLeft(failure -> new Rejection(RejectionType.INVALID_ARGUMENT, failure.getMessage()));
+    return NestingDepthValidator.validate(variableBuffer, maxVariableNestingDepth)
+        .mapLeft(
+            failure ->
+                new Rejection(
+                    RejectionType.INVALID_ARGUMENT,
+                    "Failed to validate variables: " + failure.getMessage()));
   }
 
   private void validateBuffer(final long scopeKey, final DirectBuffer variableBuffer)
       throws VariableValidationException {
     final Either<Failure, Void> validate =
-        VariableNestingDepthValidator.validate(variableBuffer, maxVariableNestingDepth);
+        NestingDepthValidator.validate(variableBuffer, maxVariableNestingDepth);
     if (validate.isLeft()) {
       throw new VariableValidationException(
           String.format(
-              "Failed to validate document for scope %d: %s",
+              "Failed to validate variable document for scope %d: %s",
               scopeKey, validate.getLeft().getMessage()));
     }
   }

@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.processing.variable;
+package io.camunda.zeebe.engine.util.validation;
 
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
@@ -16,7 +16,7 @@ import java.util.Deque;
 import org.agrona.DirectBuffer;
 
 /**
- * Validates that a msgpack variable document does not exceed a configurable maximum nesting depth.
+ * Validates that a msgpack document does not exceed a configurable maximum nesting depth.
  *
  * <p>Deep nesting (beyond the Jackson {@code StreamWriteConstraints} default of 1000 levels) would
  * break the Elasticsearch/OpenSearch exporter when it serializes the document to JSON, causing
@@ -25,31 +25,31 @@ import org.agrona.DirectBuffer;
  * <p>The depth walk is <em>iterative</em> (uses an explicit stack via {@link ArrayDeque}) and
  * therefore cannot itself overflow the call stack on deeply-nested input.
  */
-public final class VariableNestingDepthValidator {
+public final class NestingDepthValidator {
 
   static final String NESTING_DEPTH_EXCEEDED_ERROR_MESSAGE =
-      "Expected variable document to be nested at most %d levels deep, but it exceeds that limit";
-  private static final String INVALID_VARIABLES_MSGPACK_ERROR_MESSAGE =
-      "Expected variables to be valid msgpack, but it could not be read: '%s'";
+      "Expected document to be nested at most %d levels deep, but it exceeds that limit";
+  private static final String INVALID_MSGPACK_ERROR_MESSAGE =
+      "Expected to be valid msgpack, but it could not be read: '%s'";
 
-  private VariableNestingDepthValidator() {}
+  private NestingDepthValidator() {}
 
   /**
    * Validates that the given msgpack document does not exceed {@code maxNestingDepth} levels of
    * container nesting.
    *
-   * @param variablesBuffer the msgpack document to validate
+   * @param buffer the msgpack document to validate
    * @param maxNestingDepth the maximum allowed nesting depth (inclusive)
    * @return {@link Either#right(Object)} when within the limit; {@link Either#left(Object)} with a
    *     {@link Failure} when the limit is exceeded
    */
   public static Either<Failure, Void> validate(
-      final DirectBuffer variablesBuffer, final int maxNestingDepth) {
-    if (isEmpty(variablesBuffer)) {
+      final DirectBuffer buffer, final int maxNestingDepth) {
+    if (isEmpty(buffer)) {
       return Either.right(null);
     }
     try {
-      if (exceedsMaxDepth(variablesBuffer, maxNestingDepth)) {
+      if (exceedsMaxDepth(buffer, maxNestingDepth)) {
         return Either.left(
             new Failure(
                 NESTING_DEPTH_EXCEEDED_ERROR_MESSAGE.formatted(maxNestingDepth),
@@ -58,7 +58,7 @@ public final class VariableNestingDepthValidator {
     } catch (final RuntimeException exception) {
       return Either.left(
           new Failure(
-              INVALID_VARIABLES_MSGPACK_ERROR_MESSAGE.formatted(exception.getMessage()),
+              INVALID_MSGPACK_ERROR_MESSAGE.formatted(exception.getMessage()),
               ErrorType.IO_MAPPING_ERROR));
     }
     return Either.right(null);

@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.processing.variable;
+package io.camunda.zeebe.engine.util.validation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -14,7 +14,7 @@ import io.camunda.zeebe.protocol.record.value.ErrorType;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
-public final class VariableNestingDepthValidatorTest {
+public final class NestingDepthValidatorTest {
 
   @Test
   public void shouldNotExceedDepthForFlatDocument() {
@@ -22,7 +22,7 @@ public final class VariableNestingDepthValidatorTest {
     final var buffer = msgPackOf("{\"a\": 1, \"b\": 2}");
 
     // when / then
-    assertThat(VariableNestingDepthValidator.exceedsMaxDepth(buffer, 1)).isFalse();
+    assertThat(NestingDepthValidator.exceedsMaxDepth(buffer, 1)).isFalse();
   }
 
   @Test
@@ -31,8 +31,8 @@ public final class VariableNestingDepthValidatorTest {
     final var buffer = msgPackOf("{\"a\": [[[1]]]}");
 
     // when / then
-    assertThat(VariableNestingDepthValidator.exceedsMaxDepth(buffer, 4)).isFalse();
-    assertThat(VariableNestingDepthValidator.exceedsMaxDepth(buffer, 3)).isTrue();
+    assertThat(NestingDepthValidator.exceedsMaxDepth(buffer, 4)).isFalse();
+    assertThat(NestingDepthValidator.exceedsMaxDepth(buffer, 3)).isTrue();
   }
 
   @Test
@@ -41,8 +41,8 @@ public final class VariableNestingDepthValidatorTest {
     final var buffer = msgPackOf("{\"a\": [{\"b\": 1}]}");
 
     // when / then
-    assertThat(VariableNestingDepthValidator.exceedsMaxDepth(buffer, 3)).isFalse();
-    assertThat(VariableNestingDepthValidator.exceedsMaxDepth(buffer, 2)).isTrue();
+    assertThat(NestingDepthValidator.exceedsMaxDepth(buffer, 3)).isFalse();
+    assertThat(NestingDepthValidator.exceedsMaxDepth(buffer, 2)).isTrue();
   }
 
   @Test
@@ -51,14 +51,14 @@ public final class VariableNestingDepthValidatorTest {
     final var buffer = msgPackOf("{\"a\": {}, \"b\": []}");
 
     // when / then
-    assertThat(VariableNestingDepthValidator.exceedsMaxDepth(buffer, 2)).isFalse();
-    assertThat(VariableNestingDepthValidator.exceedsMaxDepth(buffer, 1)).isTrue();
+    assertThat(NestingDepthValidator.exceedsMaxDepth(buffer, 2)).isFalse();
+    assertThat(NestingDepthValidator.exceedsMaxDepth(buffer, 1)).isTrue();
   }
 
   @Test
   void shouldReturnRightForNullBuffer() {
     // when
-    final var result = VariableNestingDepthValidator.validate(null, 1000);
+    final var result = NestingDepthValidator.validate(null, 1000);
 
     // then
     assertThat(result.isRight()).isTrue();
@@ -70,7 +70,7 @@ public final class VariableNestingDepthValidatorTest {
     final var buffer = new UnsafeBuffer(new byte[0]);
 
     // when
-    final var result = VariableNestingDepthValidator.validate(buffer, 1000);
+    final var result = NestingDepthValidator.validate(buffer, 1000);
 
     // then
     assertThat(result.isRight()).isTrue();
@@ -82,7 +82,7 @@ public final class VariableNestingDepthValidatorTest {
     final var buffer = msgPackOf(buildNestedJson(1000));
 
     // when
-    final var result = VariableNestingDepthValidator.validate(buffer, 1000);
+    final var result = NestingDepthValidator.validate(buffer, 1000);
 
     // then
     assertThat(result.isRight()).isTrue();
@@ -94,14 +94,13 @@ public final class VariableNestingDepthValidatorTest {
     final var buffer = msgPackOf(buildNestedJson(1001));
 
     // when
-    final var result = VariableNestingDepthValidator.validate(buffer, 1000);
+    final var result = NestingDepthValidator.validate(buffer, 1000);
 
     // then
     assertThat(result.isLeft()).isTrue();
     assertThat(result.getLeft().getErrorType()).isEqualTo(ErrorType.IO_MAPPING_ERROR);
     assertThat(result.getLeft().getMessage())
-        .isEqualTo(
-            VariableNestingDepthValidator.NESTING_DEPTH_EXCEEDED_ERROR_MESSAGE.formatted(1000));
+        .isEqualTo(NestingDepthValidator.NESTING_DEPTH_EXCEEDED_ERROR_MESSAGE.formatted(1000));
   }
 
   @Test
@@ -110,7 +109,7 @@ public final class VariableNestingDepthValidatorTest {
     final var buffer = msgPackOf(buildNestedJson(50_000));
 
     // when / then — must not throw
-    final var result = VariableNestingDepthValidator.validate(buffer, 1000);
+    final var result = NestingDepthValidator.validate(buffer, 1000);
 
     assertThat(result.isLeft()).isTrue();
 
