@@ -132,6 +132,9 @@ message ActivatedJob {
   // the lease token identifying this activation; unset when the job was activated without a
   // lease
   optional string leaseToken = 21;
+  // the id of the physical tenant that the job-activation request was routed to;
+  // the default physical tenant when the request did not specify one
+  string physicalTenantId = 22;
 }
 
 message UserTaskProperties {

@@ -190,7 +190,8 @@ public final class ResponseMapper {
     while (jobKeys.hasNext() && jobs.hasNext()) {
       final LongValue jobKey = jobKeys.next();
       final JobRecord job = jobs.next();
-      final ActivatedJobResult activatedJob = toActivatedJob(jobKey.getValue(), job);
+      final ActivatedJobResult activatedJob =
+          toActivatedJob(jobKey.getValue(), job, activationResponse.physicalTenantId());
 
       // This is the message size of the message from the broker, not the size of the REST message
       final int activatedJobSize = job.getLength();
@@ -210,7 +211,8 @@ public final class ResponseMapper {
     return new RestJobActivationResult(response, sizeExceedingJobs);
   }
 
-  private static ActivatedJobResult toActivatedJob(final long jobKey, final JobRecord job) {
+  private static ActivatedJobResult toActivatedJob(
+      final long jobKey, final JobRecord job, final String physicalTenantId) {
     // rootProcessInstanceKey is only set for process instances created after version 8.9
     final long rootProcessInstanceKey = job.getRootProcessInstanceKey();
     return ActivatedJobResult.Builder.create()
@@ -238,6 +240,7 @@ public final class ResponseMapper {
         .userTask(toUserTaskProperties(job))
         .priority(job.getPriority())
         .leaseToken(emptyToNull(job.getLeaseToken()))
+        .physicalTenantId(physicalTenantId)
         .build();
   }
 

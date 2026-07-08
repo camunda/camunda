@@ -10,4 +10,4 @@ package io.camunda.zeebe.gateway.impl.job;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 
 public record JobActivationResponse(
-    long key, JobBatchRecord brokerResponse, long maxResponseSize) {}
+    long key, JobBatchRecord brokerResponse, long maxResponseSize, String physicalTenantId) {}

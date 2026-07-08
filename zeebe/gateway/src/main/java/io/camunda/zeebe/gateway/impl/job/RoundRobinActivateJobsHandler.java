@@ -168,7 +168,11 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
           final var response = brokerResponse.getResponse();
           final JobActivationResult<T> jobActivationResult =
               activationResultMapper.apply(
-                  new JobActivationResponse(brokerResponse.getKey(), response, maxMessageSize));
+                  new JobActivationResponse(
+                      brokerResponse.getKey(),
+                      response,
+                      maxMessageSize,
+                      request.getRequest().getPartitionGroup()));
 
           final List<ActivatedJob> jobsToDefer = jobActivationResult.getJobsToDefer();
           if (!jobsToDefer.isEmpty()) {

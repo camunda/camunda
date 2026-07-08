@@ -49,6 +49,7 @@ public final class ActivatedJobImpl implements ActivatedJob {
   private final String elementId;
   private final long elementInstanceKey;
   private final String tenantId;
+  private final String physicalTenantId;
   private final String worker;
   private final int retries;
   private final int priority;
@@ -87,6 +88,7 @@ public final class ActivatedJobImpl implements ActivatedJob {
     elementId = job.getElementId();
     elementInstanceKey = job.getElementInstanceKey();
     tenantId = job.getTenantId();
+    physicalTenantId = job.getPhysicalTenantId();
     userTask = job.hasUserTask() ? new UserTaskPropertiesImpl(job.getUserTask()) : null;
     kind = EnumUtil.convert(job.getKind(), JobKind.class);
     listenerEventType = EnumUtil.convert(job.getListenerEventType(), ListenerEventType.class);
@@ -129,6 +131,7 @@ public final class ActivatedJobImpl implements ActivatedJob {
     elementId = getOrEmpty(job.getElementId());
     elementInstanceKey = parseLongOrEmpty(job.getElementInstanceKey());
     tenantId = getOrEmpty(job.getTenantId());
+    physicalTenantId = getOrEmpty(job.getPhysicalTenantId());
     userTask = job.getUserTask() != null ? new UserTaskPropertiesImpl(job.getUserTask()) : null;
     kind = EnumUtil.convert(job.getKind(), JobKind.class);
     listenerEventType = EnumUtil.convert(job.getListenerEventType(), ListenerEventType.class);
@@ -257,6 +260,11 @@ public final class ActivatedJobImpl implements ActivatedJob {
   @Override
   public String getTenantId() {
     return tenantId;
+  }
+
+  @Override
+  public String getPhysicalTenantId() {
+    return physicalTenantId;
   }
 
   @Override

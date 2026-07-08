@@ -65,7 +65,7 @@ class ResponseMapperTest {
 
       final JobBatchRecord batchRecord = buildJobBatchRecordWithRootProcessInstanceKey(jobRecord);
       final JobActivationResponse activationResponse =
-          new JobActivationResponse(123L, batchRecord, 1024 * 1024L);
+          new JobActivationResponse(123L, batchRecord, 1024 * 1024L, "default");
 
       // when
       final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
@@ -105,7 +105,7 @@ class ResponseMapperTest {
 
       final JobBatchRecord batchRecord = buildJobBatchRecord(jobRecord);
       final JobActivationResponse activationResponse =
-          new JobActivationResponse(123L, batchRecord, 1024 * 1024L);
+          new JobActivationResponse(123L, batchRecord, 1024 * 1024L, "default");
 
       // when
       final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
@@ -146,7 +146,7 @@ class ResponseMapperTest {
 
       final JobBatchRecord batchRecord = buildJobBatchRecord(jobRecord);
       final JobActivationResponse activationResponse =
-          new JobActivationResponse(123L, batchRecord, 1024 * 1024L);
+          new JobActivationResponse(123L, batchRecord, 1024 * 1024L, "default");
 
       // when
       final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
@@ -182,7 +182,7 @@ class ResponseMapperTest {
 
       final JobBatchRecord batchRecord = buildJobBatchRecord(jobRecord);
       final JobActivationResponse activationResponse =
-          new JobActivationResponse(123L, batchRecord, 1024 * 1024L);
+          new JobActivationResponse(123L, batchRecord, 1024 * 1024L, "default");
 
       // when
       final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
@@ -219,7 +219,7 @@ class ResponseMapperTest {
 
       final JobBatchRecord batchRecord = buildJobBatchRecord(jobRecord);
       final JobActivationResponse activationResponse =
-          new JobActivationResponse(123L, batchRecord, 1024 * 1024L);
+          new JobActivationResponse(123L, batchRecord, 1024 * 1024L, "default");
 
       // when
       final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
@@ -255,7 +255,7 @@ class ResponseMapperTest {
 
       final JobBatchRecord batchRecord = buildJobBatchRecord(jobRecord);
       final JobActivationResponse activationResponse =
-          new JobActivationResponse(123L, batchRecord, 1024 * 1024L);
+          new JobActivationResponse(123L, batchRecord, 1024 * 1024L, "default");
 
       // when
       final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
@@ -292,7 +292,7 @@ class ResponseMapperTest {
 
       final JobBatchRecord batchRecord = buildJobBatchRecord(jobRecord);
       final JobActivationResponse activationResponse =
-          new JobActivationResponse(123L, batchRecord, 1024 * 1024L);
+          new JobActivationResponse(123L, batchRecord, 1024 * 1024L, "default");
 
       // when
       final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
@@ -301,6 +301,40 @@ class ResponseMapperTest {
       assertThat(result.getActivateJobsResponse().getJobs())
           .singleElement()
           .satisfies(job -> assertThat(job.getPriority()).isEqualTo(80));
+    }
+
+    @Test
+    void shouldMapPhysicalTenantIdToActivatedJobResult() {
+      // given
+      final JobRecord jobRecord =
+          new JobRecord()
+              .setJobKind(JobKind.BPMN_ELEMENT)
+              .setType("test-type")
+              .setBpmnProcessId("procId")
+              .setElementId("elementId")
+              .setProcessInstanceKey(456L)
+              .setProcessDefinitionVersion(1)
+              .setProcessDefinitionKey(123L)
+              .setElementInstanceKey(555L)
+              .setWorker("worker")
+              .setRetries(3)
+              .setDeadline(0L)
+              .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+      final byte[] emptyVariables = MsgPackConverter.convertToMsgPack(Collections.emptyMap());
+      jobRecord.setVariables(new UnsafeBuffer(emptyVariables));
+
+      final JobBatchRecord batchRecord = buildJobBatchRecord(jobRecord);
+      final JobActivationResponse activationResponse =
+          new JobActivationResponse(123L, batchRecord, 1024 * 1024L, "riskproduction");
+
+      // when
+      final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
+
+      // then
+      assertThat(result.getActivateJobsResponse().getJobs())
+          .singleElement()
+          .satisfies(job -> assertThat(job.getPhysicalTenantId()).isEqualTo("riskproduction"));
     }
 
     static Stream<ActivatedJobWithUserTaskPropsCase> activatedJobWithUserTaskPropsCases() {
@@ -400,7 +434,7 @@ class ResponseMapperTest {
       final JobBatchRecord batchRecord = buildJobBatchRecord(jobRecord);
 
       final JobActivationResponse activationResponse =
-          new JobActivationResponse(123L, batchRecord, 1024 * 1024L);
+          new JobActivationResponse(123L, batchRecord, 1024 * 1024L, "default");
 
       // when
       final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
