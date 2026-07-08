@@ -45,9 +45,6 @@ class SecurityPathAdapterTest {
             "/health",
             "/startup",
             "/post-logout",
-            "/swagger/**",
-            "/swagger-ui/**",
-            "/v3/api-docs/**",
             "/favicon.ico");
   }
 
@@ -73,7 +70,10 @@ class SecurityPathAdapterTest {
             "/decisions/*",
             "/instances",
             "/instances/*",
-            "/default-ui.css");
+            "/default-ui.css",
+            "/swagger/**",
+            "/swagger-ui/**",
+            "/v3/api-docs/**");
   }
 
   @Test
@@ -92,7 +92,10 @@ class SecurityPathAdapterTest {
             "/tasklist/favicon.ico",
             "/webapp/assets/**",
             "/webapp/custom.css",
-            "/webapp/favicon.ico");
+            "/webapp/favicon.ico",
+            "/swagger/**",
+            "/swagger-ui/**",
+            "/v3/api-docs/**");
   }
 
   @Test
