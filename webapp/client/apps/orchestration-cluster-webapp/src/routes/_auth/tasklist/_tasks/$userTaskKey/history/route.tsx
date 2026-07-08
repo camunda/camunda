@@ -7,7 +7,7 @@
  */
 
 import {useCallback, useMemo} from 'react';
-import {createFileRoute, stripSearchParams} from '@tanstack/react-router';
+import {createFileRoute, Outlet, stripSearchParams} from '@tanstack/react-router';
 import {useSuspenseInfiniteQuery} from '@tanstack/react-query';
 import {queries} from '#/shared/http/queries';
 import {TaskDetailsHistoryErrorPage} from '#/tasklist/pages/TaskDetailsHistoryErrorPage';
@@ -45,6 +45,16 @@ export const Route = createFileRoute('/_auth/tasklist/_tasks/$userTaskKey/histor
 			}
 		}, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
-		return <TaskDetailsHistoryPage auditLogs={auditLogs} search={search} onScrollDown={onScrollDown} />;
+		return (
+			<>
+				<TaskDetailsHistoryPage
+					userTaskKey={userTaskKey}
+					auditLogs={auditLogs}
+					search={search}
+					onScrollDown={onScrollDown}
+				/>
+				<Outlet />
+			</>
+		);
 	},
 });

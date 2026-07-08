@@ -14,12 +14,13 @@ import {HistoryTable} from '#/tasklist/modules/task-details-history/components/H
 import styles from './TaskDetailsHistoryPage.module.scss';
 
 type Props = {
+	userTaskKey: string;
 	auditLogs: AuditLog[];
 	search: TaskDetailsHistorySearch;
 	onScrollDown: () => void;
 };
 
-const TaskDetailsHistoryPage: React.FC<Props> = ({auditLogs, search, onScrollDown}) => {
+const TaskDetailsHistoryPage: React.FC<Props> = ({userTaskKey, auditLogs, search, onScrollDown}) => {
 	const {t} = useTranslation();
 
 	const handleScroll: React.UIEventHandler<HTMLDivElement> = (event) => {
@@ -47,7 +48,7 @@ const TaskDetailsHistoryPage: React.FC<Props> = ({auditLogs, search, onScrollDow
 	return (
 		<div className={styles.container} data-testid="history-tab-content">
 			<div className={styles.tableContainer} data-testid="history-scroll-container" onScroll={handleScroll}>
-				<HistoryTable auditLogs={auditLogs} search={search} />
+				<HistoryTable userTaskKey={userTaskKey} auditLogs={auditLogs} search={search} />
 			</div>
 		</div>
 	);

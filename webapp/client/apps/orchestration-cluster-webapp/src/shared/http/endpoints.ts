@@ -20,6 +20,7 @@ import {
 	type QueryUserTaskAuditLogsRequestBody,
 	type UserTask,
 	type ProcessDefinition,
+	type AuditLog,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 import {mergePathname} from './mergePathname';
@@ -192,6 +193,13 @@ const endpoints = {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.queryUserTaskAuditLogs.method,
 			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getAuditLog: ({auditLogKey}: Pick<AuditLog, 'auditLogKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getAuditLog.getUrl({auditLogKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getAuditLog.method,
 			headers: {'Content-Type': 'application/json'},
 		}),
 };

@@ -49,7 +49,7 @@ const TaskDetailsLayout: React.FC<Props> = ({task, currentUser, assignButton, ch
 			key: 'history',
 			title: t('tasklist.taskDetailsHistoryTabLabel'),
 			label: t('tasklist.taskDetailsShowHistoryLabel'),
-			selected: hasRouteMatch('/tasklist/$userTaskKey/history'),
+			selected: hasRouteMatch('/tasklist/$userTaskKey/history', '/tasklist/$userTaskKey/history/$auditLogKey'),
 			to: '/tasklist/$userTaskKey/history',
 		},
 	] satisfies TypeSafeTabItem[];

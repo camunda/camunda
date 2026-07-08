@@ -8,7 +8,7 @@
 
 import React from 'react';
 import {useTranslation} from 'react-i18next';
-import {Link, useParams} from '@tanstack/react-router';
+import {Link, useMatch} from '@tanstack/react-router';
 import {Stack} from '@carbon/react';
 import {Calendar, CheckmarkFilled, Warning, Notification} from '@carbon/react/icons';
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
@@ -22,7 +22,7 @@ import {PriorityLabel} from './PriorityLabel';
 import styles from './Task.module.scss';
 
 type Props = {
-	taskId: string;
+	userTaskKey: string;
 	displayName: string;
 	processDisplayName: string;
 	businessId: string | null;
@@ -38,7 +38,7 @@ type Props = {
 const Task = React.forwardRef<HTMLDivElement, Props>(
 	(
 		{
-			taskId,
+			userTaskKey,
 			displayName,
 			processDisplayName,
 			businessId,
@@ -53,8 +53,11 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
 		ref,
 	) => {
 		const {t} = useTranslation();
-		const {userTaskKey} = useParams({strict: false});
-		const isActive = userTaskKey === taskId;
+		const match = useMatch({
+			from: '/_auth/tasklist/_tasks/$userTaskKey',
+			shouldThrow: false,
+		});
+		const isActive = match?.params.userTaskKey === userTaskKey;
 
 		const creationDate = formatISODateTime(creationDateString);
 		const completionDate = formatISODate(completionDateString);
@@ -72,14 +75,15 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
 				<Link
 					className={styles.taskLink}
 					to="/tasklist/$userTaskKey"
-					params={{userTaskKey: taskId}}
+					search
+					params={{userTaskKey}}
 					aria-label={getNavLinkLabel({
 						displayName,
 						assigneeId: assignee,
 						currentUsername: currentUser.username,
 					})}
 				>
-					<Stack className={styles.fullWidthAndHeight} data-testid={`task-${taskId}`} gap={3} ref={ref}>
+					<Stack className={styles.fullWidthAndHeight} data-testid={`task-${userTaskKey}`} gap={3} ref={ref}>
 						<div className={cn(styles.flex, styles.flexColumn)}>
 							<span className={styles.name}>{displayName}</span>
 							<span className={styles.label}>{processDisplayName}</span>

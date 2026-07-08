@@ -19,10 +19,17 @@ const auditLogs = [
 	createAuditLog({auditLogKey: 'assign-log', operationType: 'ASSIGN', relatedEntityKey: 'demo'}),
 ];
 
+const userTaskKey = '2251799813685281';
+
 describe('<TaskDetailsHistoryPage />', () => {
 	it('should tell the user when the task has no history', async () => {
 		const screen = await render(
-			<TaskDetailsHistoryPage auditLogs={[]} search={{sort: 'timestamp+desc'}} onScrollDown={vi.fn()} />,
+			<TaskDetailsHistoryPage
+				userTaskKey={userTaskKey}
+				auditLogs={[]}
+				search={{sort: 'timestamp+desc'}}
+				onScrollDown={vi.fn()}
+			/>,
 		);
 
 		await expect.element(screen.getByText('No history entries found for this task')).toBeVisible();
@@ -30,7 +37,14 @@ describe('<TaskDetailsHistoryPage />', () => {
 
 	it('should show the task history when entries exist', async () => {
 		const screen = await renderWithRouter(
-			() => <TaskDetailsHistoryPage auditLogs={auditLogs} search={{sort: 'timestamp+desc'}} onScrollDown={vi.fn()} />,
+			() => (
+				<TaskDetailsHistoryPage
+					userTaskKey={userTaskKey}
+					auditLogs={auditLogs}
+					search={{sort: 'timestamp+desc'}}
+					onScrollDown={vi.fn()}
+				/>
+			),
 			{path: '/tasklist/$userTaskKey/history', initialEntry: '/tasklist/2251799813685281/history'},
 		);
 
@@ -44,7 +58,12 @@ describe('<TaskDetailsHistoryPage />', () => {
 		const screen = await renderWithRouter(
 			() => (
 				<div style={{height: '100px', display: 'flex'}}>
-					<TaskDetailsHistoryPage auditLogs={auditLogs} search={{sort: 'timestamp+desc'}} onScrollDown={onScrollDown} />
+					<TaskDetailsHistoryPage
+						userTaskKey={userTaskKey}
+						auditLogs={auditLogs}
+						search={{sort: 'timestamp+desc'}}
+						onScrollDown={onScrollDown}
+					/>
 				</div>
 			),
 			{path: '/tasklist/$userTaskKey/history', initialEntry: '/tasklist/2251799813685281/history'},

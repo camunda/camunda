@@ -10,6 +10,7 @@ import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
 import {
 	mockCurrentUserEndpoint,
+	mockGetAuditLogEndpoint,
 	mockGetUserTaskEndpoint,
 	mockLicenseEndpoint,
 	mockQueryUserTaskAuditLogsEndpoint,
@@ -89,6 +90,32 @@ test('should match the task history view', async ({network, taskDetailPage, page
 	await expect(taskDetailPage.historyTabContent.getByText('Create task')).toBeVisible();
 	await expect(taskDetailPage.historyTabContent.getByText('Assign task')).toBeVisible();
 	await expect(taskDetailPage.historyTabContent.getByText('Complete task')).toBeVisible();
+
+	await expect(page).toHaveScreenshot();
+});
+
+test('should match the task history details modal', async ({network, taskDetailPage, page}) => {
+	const auditLog = createAuditLog({
+		auditLogKey: 'assign-log',
+		operationType: 'ASSIGN',
+		actorId: 'jane',
+		relatedEntityKey: 'demo',
+		timestamp: '2024-01-02T10:00:00.000Z',
+	});
+
+	network.use(
+		mockQueryUserTaskAuditLogsEndpoint({
+			successResponse: HttpResponse.json(createQueryUserTaskAuditLogsResponse({items: historyEntries})),
+		}),
+		mockGetAuditLogEndpoint({
+			successResponse: HttpResponse.json(auditLog),
+		}),
+	);
+
+	await taskDetailPage.seedHideNotificationBanner();
+	await taskDetailPage.gotoHistoryDetails(USER_TASK_KEY, 'assign-log');
+	await expect(taskDetailPage.historyDetailsModal.getByRole('heading', {name: 'Assign task'})).toBeVisible();
+	await expect(taskDetailPage.historyDetailsModal.getByText('Assignee')).toBeVisible();
 
 	await expect(page).toHaveScreenshot();
 });
