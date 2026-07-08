@@ -21,6 +21,7 @@ import static io.camunda.optimize.service.db.os.writer.OpenSearchWriterUtil.crea
 
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.repository.UserIdMigrationRepository;
+import io.camunda.optimize.service.db.repository.script.UserIdMigrationScriptFactory;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.io.IOException;
@@ -48,18 +49,6 @@ public class UserIdMigrationRepositoryOS implements UserIdMigrationRepository {
     PROCESS_OVERVIEW_INDEX_NAME
   };
 
-  private static final String MIGRATE_COLLECTION_ROLES_SCRIPT =
-      "for (def role : ctx._source.data.roles) {"
-          + "  if (role.identity.id == params.oldId) {"
-          + "    role.identity.id = params.newId;"
-          + "    role.id = 'USER:' + params.newId;"
-          + "  }"
-          + "}";
-
-  private static final String MIGRATE_OWNER_SCRIPT =
-      "if (ctx._source.owner == params.oldId) { ctx._source.owner = params.newId; }"
-          + "if (ctx._source.lastModifier == params.oldId) { ctx._source.lastModifier = params.newId; }";
-
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(UserIdMigrationRepositoryOS.class);
 
@@ -86,14 +75,17 @@ public class UserIdMigrationRepositoryOS implements UserIdMigrationRepository {
         Map.of("oldId", JsonData.of(oldUserId), "newId", JsonData.of(newUserId));
 
     final Script rolesScript =
-        createDefaultScriptWithPrimitiveParams(MIGRATE_COLLECTION_ROLES_SCRIPT, params);
+        createDefaultScriptWithPrimitiveParams(
+            UserIdMigrationScriptFactory.createMigrateCollectionRolesScript(), params);
     osClient.updateByQueryTask(
         "collection roles for user " + oldUserId,
         rolesScript,
         buildCollectionRolesQuery(oldUserId),
         COLLECTION_INDEX_NAME);
 
-    final Script ownerScript = createDefaultScriptWithPrimitiveParams(MIGRATE_OWNER_SCRIPT, params);
+    final Script ownerScript =
+        createDefaultScriptWithPrimitiveParams(
+            UserIdMigrationScriptFactory.createMigrateOwnerScript(), params);
     osClient.updateByQueryTask(
         "owner/lastModifier for user " + oldUserId,
         ownerScript,
