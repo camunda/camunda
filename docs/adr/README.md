@@ -18,6 +18,11 @@ ADR for that domain is written.
 
 ## Index
 
+- `configuration/001-aws-credentials-configuration.md` — AWS credentials are
+  inline properties on each consumer's config block (Option C, consistent with
+  camunda/camunda#54366), built from one shared credentials type/factory
+  supporting static keys and IRSA, per-physical-tenant overridable via the
+  existing two-bind (camunda/camunda#53493, camunda/camunda#53494).
 - `security/001-endpoint-required-permission-mapping.md` — canonical v2 REST
   endpoint → required-permission mapping via the `x-required-permissions`
   OpenAPI vendor extension, with Spectral gap guard and engine drift guard
