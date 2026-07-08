@@ -1238,6 +1238,49 @@ public class JobSearchIT {
         .isEqualTo(taskABpmnJob.getLastUpdateTime());
   }
 
+  @Test
+  void shouldReturnEmptyForNonExistentJobKey() {
+    // when
+    final var result =
+        camundaClient.newJobSearchRequest().filter(f -> f.jobKey(Long.MAX_VALUE)).send().join();
+
+    // then
+    assertThat(result.items()).isEmpty();
+  }
+
+  @Test
+  void shouldNarrowResultsWhenCombiningTypeAndStateFilters() {
+    // type=taskABpmn alone returns 1; state=COMPLETED alone returns 5;
+    // AND of both must return 1 (taskABpmn is COMPLETED)
+    // when
+    final var result =
+        camundaClient
+            .newJobSearchRequest()
+            .filter(f -> f.type(o -> o.eq("taskABpmn")).state(o -> o.eq(JobState.COMPLETED)))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getType()).isEqualTo("taskABpmn");
+    assertThat(result.items().getFirst().getState()).isEqualTo(JobState.COMPLETED);
+  }
+
+  @Test
+  void shouldReturnEmptyWhenTypeAndStateAreContradictory() {
+    // taskABpmn is COMPLETED; filtering for it with state=CREATED is impossible
+    // when
+    final var result =
+        camundaClient
+            .newJobSearchRequest()
+            .filter(f -> f.type(o -> o.eq("taskABpmn")).state(o -> o.eq(JobState.CREATED)))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).isEmpty();
+  }
+
   private static void waitUntilNewJobHasBeenCreated(final int expectedCount) {
     Awaitility.await("should wait until job has been created")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
