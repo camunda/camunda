@@ -116,7 +116,7 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
                 clusterServices.getCommunicationService(),
                 JobStreamServiceStep::readJobActivationProperties,
                 errorHandlerService,
-                new JobStreamMetrics(brokerStartupContext.getMeterRegistry()),
+                new JobStreamMetrics(brokerStartupContext.getMeterRegistry(), physicalTenantId),
                 physicalTenantId);
 
     final var result = concurrencyControl.<JobStreamService>createFuture();
@@ -125,6 +125,7 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
     errorHandlerStarted.onComplete(
         (ok, err) -> {
           if (err != null) {
+            remoteStreamService.closeAsync(concurrencyControl);
             result.completeExceptionally(err);
             return;
           }
@@ -135,6 +136,7 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
                   (streamer, error) -> {
                     if (error != null) {
                       errorHandlerService.closeAsync();
+                      remoteStreamService.closeAsync(concurrencyControl);
                       result.completeExceptionally(error);
                       return;
                     }

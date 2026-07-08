@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.bootstrap;
 import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -70,7 +71,8 @@ final class JobStreamServiceStepTest {
 
     @Test
     void shouldStoreJobStreamServiceInEngineContextAfterStartup() {
-      // given — PhysicalTenantIds.DEFAULT has only DEFAULT_PHYSICAL_TENANT_ID as known tenant
+      // given — no pre-existing service; a null default makes the step's write observable
+      ctx.setJobStreamService(null);
 
       // when
       sut.startupInternal(ctx, CONCURRENCY_CONTROL, startupFuture);
@@ -78,14 +80,16 @@ final class JobStreamServiceStepTest {
 
       // then
       assertThat(startupFuture.isDone()).as("startup completed").isTrue();
+      assertThat(startupFuture.isCompletedExceptionally()).as("no startup error").isFalse();
       assertThat(ctx.getPhysicalTenantEngineContext(DEFAULT_PHYSICAL_TENANT_ID).jobStreamService())
           .isNotNull();
     }
 
     @Test
     void shouldCreateDistinctServicesForEachPhysicalTenant() {
-      // given — two distinct physical tenants
+      // given — two distinct physical tenants, no pre-existing services
       final var secondTenantId = "second";
+      ctx.setJobStreamService(null);
       ctx.setPhysicalTenantIds(() -> Set.of(DEFAULT_PHYSICAL_TENANT_ID, secondTenantId));
 
       // when
@@ -94,6 +98,7 @@ final class JobStreamServiceStepTest {
 
       // then — each tenant gets its own isolated service instance
       assertThat(startupFuture.isDone()).as("startup completed").isTrue();
+      assertThat(startupFuture.isCompletedExceptionally()).as("no startup error").isFalse();
       final var defaultService =
           ctx.getPhysicalTenantEngineContext(DEFAULT_PHYSICAL_TENANT_ID).jobStreamService();
       final var secondService =
@@ -101,6 +106,21 @@ final class JobStreamServiceStepTest {
       assertThat(defaultService).isNotNull();
       assertThat(secondService).isNotNull();
       assertThat(defaultService).isNotSameAs(secondService);
+    }
+
+    @Test
+    void shouldRegisterDefaultTenantServiceSupplierWithSpringBrokerBridge() {
+      // given
+      ctx.setJobStreamService(null);
+
+      // when
+      sut.startupInternal(ctx, CONCURRENCY_CONTROL, startupFuture);
+      completeAllScheduledActors();
+
+      // then — the bridge supplier is wired to the default physical tenant's service
+      assertThat(startupFuture.isDone()).as("startup completed").isTrue();
+      assertThat(startupFuture.isCompletedExceptionally()).as("no startup error").isFalse();
+      verify(ctx.getSpringBrokerBridge()).registerJobStreamServiceSupplier(notNull());
     }
 
     @Test
@@ -114,6 +134,7 @@ final class JobStreamServiceStepTest {
 
       // then — error handler goes into each PartitionManager's listeners, not the global list
       assertThat(startupFuture.isDone()).as("startup completed").isTrue();
+      assertThat(startupFuture.isCompletedExceptionally()).as("no startup error").isFalse();
       verify(spyCtx, never()).addPartitionListener(any());
     }
   }

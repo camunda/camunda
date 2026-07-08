@@ -18,15 +18,19 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class JobStreamMetrics implements RemoteStreamMetrics {
+
+  private static final String PHYSICAL_TENANT_ID_TAG = "physicalTenantId";
   private final AtomicInteger streamCount = new AtomicInteger(0);
   private final Map<ErrorCode, Counter> pushTryFailedCount = new EnumMap<>(ErrorCode.class);
 
   private final MeterRegistry registry;
+  private final String physicalTenantId;
   private final Counter pushSuccessCount;
   private final Counter pushFailedCount;
 
-  public JobStreamMetrics(final MeterRegistry registry) {
+  public JobStreamMetrics(final MeterRegistry registry, final String physicalTenantId) {
     this.registry = registry;
+    this.physicalTenantId = physicalTenantId;
 
     pushSuccessCount = registerCounter(JobStreamMetricsDoc.PUSH_SUCCESS_COUNT);
     pushFailedCount = registerCounter(JobStreamMetricsDoc.PUSH_FAILED_COUNT);
@@ -34,11 +38,15 @@ public class JobStreamMetrics implements RemoteStreamMetrics {
     final var streamCountDoc = JobStreamMetricsDoc.STREAM_COUNT;
     Gauge.builder(streamCountDoc.getName(), streamCount, Number::intValue)
         .description(streamCountDoc.getDescription())
+        .tag(PHYSICAL_TENANT_ID_TAG, physicalTenantId)
         .register(registry);
   }
 
   private Counter registerCounter(final JobStreamMetricsDoc doc, final Tag... tags) {
-    final var builder = Counter.builder(doc.getName()).description(doc.getDescription());
+    final var builder =
+        Counter.builder(doc.getName())
+            .description(doc.getDescription())
+            .tag(PHYSICAL_TENANT_ID_TAG, physicalTenantId);
     for (final var tag : tags) {
       builder.tag(tag.getKey(), tag.getValue());
     }
