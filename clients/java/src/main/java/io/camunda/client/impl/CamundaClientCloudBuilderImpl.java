@@ -167,6 +167,12 @@ public class CamundaClientCloudBuilderImpl
   }
 
   @Override
+  public CamundaClientBuilder appendPhysicalTenantPath(final boolean appendPhysicalTenantPath) {
+    innerBuilder.appendPhysicalTenantPath(appendPhysicalTenantPath);
+    return this;
+  }
+
+  @Override
   @ExperimentalApi("https://github.com/camunda/camunda/issues/14106")
   public CamundaClientBuilder defaultJobWorkerTenantIds(final List<String> tenantIds) {
     Loggers.LOGGER.debug(
