@@ -1,6 +1,6 @@
 # description: Regenerates load-tests/setup golden files (rendered Kubernetes manifests) and
 #              commits the diff back to the PR branch when the "generate-golden" label is
-#              present. Companion to load-test-golden-test.yml, which only verifies.
+#              present. Companion to the load-test-golden-tests job in ci.yml, which only verifies.
 # test location: load-tests/setup/test
 # type: ci
 # owner: @camunda/reliability-testing
