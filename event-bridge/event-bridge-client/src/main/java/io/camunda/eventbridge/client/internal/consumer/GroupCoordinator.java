@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -250,6 +251,7 @@ public final class GroupCoordinator {
   public CompletableFuture<Void> sendHeartbeat() {
     checkNotClosed.run();
 
+    final String snapshotMemberId = memberId;
     final long snapshotEpoch = memberEpoch;
     final List<TopicPartition> snapshotOwned = subscription.ownedPartitions();
 
@@ -257,7 +259,7 @@ public final class GroupCoordinator {
         "/v1/groups/"
             + URLEncoder.encode(groupId, StandardCharsets.UTF_8).replace("+", "%20")
             + "/members/"
-            + URLEncoder.encode(memberId, StandardCharsets.UTF_8).replace("+", "%20")
+            + URLEncoder.encode(snapshotMemberId, StandardCharsets.UTF_8).replace("+", "%20")
             + "/heartbeat";
 
     final var body =
@@ -272,7 +274,8 @@ public final class GroupCoordinator {
         .postProtobufRaw(path, body, "heartbeat")
         .handleAsync(
             (httpResponse, error) ->
-                onHeartbeatResponse(snapshotEpoch, snapshotOwned, httpResponse, error),
+                onHeartbeatResponse(
+                    snapshotMemberId, snapshotEpoch, snapshotOwned, httpResponse, error),
             executor)
         .thenCompose(future -> future);
   }
@@ -284,6 +287,7 @@ public final class GroupCoordinator {
    * completes from.
    */
   private CompletableFuture<Void> onHeartbeatResponse(
+      final String snapshotMemberId,
       final long snapshotEpoch,
       final List<TopicPartition> snapshotOwned,
       final BinaryResponse httpResponse,
@@ -297,6 +301,25 @@ public final class GroupCoordinator {
       throw new CoordinatorUnavailableException("Heartbeat rejected — coordinator unavailable");
     }
     if (httpResponse.statusCode() == 409) {
+      // A 409 only means THIS request's membership is fenced/unknown. If a rejoin already replaced
+      // the member identity while this heartbeat was in flight, the 409 refers to the PREVIOUS
+      // membership and must be discarded — treating it as a fence of the fresh membership rejoins
+      // again, abandons the healthy member, and (with the next stale beat) loops forever: after a
+      // suspend/clock jump this fenced->rejoin->stale-409->rejoin storm kept the group in permanent
+      // rebalance with no owned partitions.
+      if (!Objects.equals(snapshotMemberId, memberId) || snapshotEpoch != memberEpoch) {
+        LOG.debug(
+            "[Heartbeat][Consumer={}] discarding stale 409 for previous membership {} (epoch {}) of"
+                + " group {}; current member {} (epoch {})",
+            instanceId,
+            snapshotMemberId,
+            snapshotEpoch,
+            groupId,
+            memberId,
+            memberEpoch);
+        scheduleSendHeartbeat();
+        return CompletableFuture.completedFuture(null);
+      }
       // Fenced or unknown member (stale epoch, or the coordinator failed over and lost in-memory
       // membership). Re-register instead of heartbeating forever as a ghost.
       LOG.warn(
@@ -438,11 +461,23 @@ public final class GroupCoordinator {
   public CompletableFuture<Void> commitOffset(
       final String topic, final int partitionId, final long position) {
     checkNotClosed.run();
+    final String memberIdAtSend = memberId;
     return doCommitOffset(topic, partitionId, position)
         .handle(
             (ignored, error) -> {
               final Throwable cause = unwrap(error);
               if (cause instanceof ConsumerNotRegisteredException) {
+                // Same staleness rule as the heartbeat 409: if a rejoin already replaced the
+                // membership while this commit was in flight, the rejection refers to the PREVIOUS
+                // member — retry with the fresh membership WITHOUT triggering another rejoin
+                // (rejoin-on-stale-rejection races the heartbeat's rejoin and feeds the storm).
+                if (!Objects.equals(memberIdAtSend, memberId)) {
+                  LOG.debug(
+                      "Commit rejected for previous membership {}; retrying once as {}",
+                      memberIdAtSend,
+                      memberId);
+                  return doCommitOffset(topic, partitionId, position);
+                }
                 LOG.warn(
                     "Consumer not registered on commitOffset; rejoining and retrying once: {}",
                     cause.getMessage());

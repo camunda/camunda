@@ -157,6 +157,50 @@ final class GroupCoordinatorHeartbeatTest {
     assertThat(scheduledBeats.get(2).isCancelled()).isFalse();
   }
 
+  @Test
+  void shouldDiscardAStale409FromAPreviousMembership() {
+    // given a heartbeat in flight for the current member whose response is delayed
+    final CompletableFuture<BinaryResponse> delayed = new CompletableFuture<>();
+    when(transport.postProtobufRaw(contains("/heartbeat"), any(), eq("heartbeat")))
+        .thenReturn(delayed);
+    final CompletableFuture<Void> staleBeat = coordinator.sendHeartbeat();
+
+    // and a rejoin that replaces the membership while that heartbeat is still in flight
+    when(transport.postProtobufRaw(contains("/members"), any(), eq("rejoin")))
+        .thenReturn(
+            CompletableFuture.completedFuture(new BinaryResponse(201, joinResponse("c2", 2))));
+    coordinator.rejoin().join();
+
+    // when the 409 for the PREVIOUS membership finally lands
+    delayed.complete(new BinaryResponse(409, new byte[0]));
+    staleBeat.join();
+
+    // then it is discarded — the fresh membership is kept and no further rejoin is triggered
+    // (one rejoin from setUp + one explicit above; a third would be the storm)
+    assertThat(coordinator.memberId()).isEqualTo("c2");
+    assertThat(coordinator.memberEpoch()).isEqualTo(2);
+    Mockito.verify(transport, Mockito.times(2))
+        .postProtobufRaw(contains("/members"), any(), eq("rejoin"));
+  }
+
+  @Test
+  void shouldStillRejoinOnA409ForTheCurrentMembership() {
+    // given a heartbeat whose 409 genuinely fences the CURRENT membership
+    when(transport.postProtobufRaw(contains("/heartbeat"), any(), eq("heartbeat")))
+        .thenReturn(CompletableFuture.completedFuture(new BinaryResponse(409, new byte[0])));
+    when(transport.postProtobufRaw(contains("/members"), any(), eq("rejoin")))
+        .thenReturn(
+            CompletableFuture.completedFuture(new BinaryResponse(201, joinResponse("c2", 2))));
+
+    // when it lands with no rejoin having replaced the identity meanwhile
+    coordinator.sendHeartbeat().join();
+
+    // then the coordinator re-registers (setUp's rejoin + this one)
+    assertThat(coordinator.memberId()).isEqualTo("c2");
+    Mockito.verify(transport, Mockito.times(2))
+        .postProtobufRaw(contains("/members"), any(), eq("rejoin"));
+  }
+
   private static byte[] joinResponse(final String memberId, final long epoch) {
     return JoinResponse.newBuilder()
         .setMemberId(memberId)
