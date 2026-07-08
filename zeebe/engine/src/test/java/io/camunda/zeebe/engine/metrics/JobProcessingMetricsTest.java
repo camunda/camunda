@@ -78,6 +78,7 @@ public class JobProcessingMetricsTest {
   public void allCountsStartAtNull() {
     assertThat(findJobCounter("created", JOB_TYPE, scenario.jobKind)).isEmpty();
     assertThat(findJobCounter("activated", JOB_TYPE, scenario.jobKind)).isEmpty();
+    assertThat(findJobCounter("skipped", JOB_TYPE, scenario.jobKind)).isEmpty();
     assertThat(findJobCounter("timed out", JOB_TYPE, scenario.jobKind)).isEmpty();
     assertThat(findJobCounter("completed", JOB_TYPE, scenario.jobKind)).isEmpty();
     assertThat(findJobCounter("failed", JOB_TYPE, scenario.jobKind)).isEmpty();
@@ -110,6 +111,29 @@ public class JobProcessingMetricsTest {
 
     // then
     assertThat(jobMetric("activated", jobType, scenario.jobKind)).isOne();
+  }
+
+  @Test
+  public void shouldCountSkipped() {
+    // given
+    engine.deployment().withXmlResource(scenario.process).deploy();
+
+    // use a unique job type so the skip counter is isolated from other tests
+    final String jobType = String.format("%s_%s_skipped", JOB_TYPE, scenario.jobKind);
+    final long processInstanceKey = createProcessInstanceWithJob(jobType);
+
+    // lease the job, then fail it back to activatable so it stays leased but activatable
+    engine.jobs().withType(jobType).withLease().activate();
+    engine.job().ofInstance(processInstanceKey).withType(jobType).withRetries(1).fail();
+    RecordingExporter.jobRecords(JobIntent.FAILED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when activating without a lease, the leased job is skipped
+    engine.jobs().withType(jobType).activate();
+
+    // then
+    assertThat(jobMetric("skipped", jobType, scenario.jobKind)).isOne();
   }
 
   @Test
