@@ -83,6 +83,12 @@ public final class BrokerTopologyManagerImpl extends Actor
               .flatMap(m -> m.keySet().stream())
               .distinct()
               .forEach(listener::brokerAdded);
+          // Backfill group-aware listener per physicalTenantId
+          memberPropertiesPerGroup.forEach(
+              (physicalTenantId, groupMap) ->
+                  groupMap
+                      .keySet()
+                      .forEach(id -> listener.brokerAddedToGroup(id, physicalTenantId)));
         });
   }
 
@@ -114,7 +120,7 @@ public final class BrokerTopologyManagerImpl extends Actor
 
   private void addBroker(final BrokerInfo brokerInfo) {
     final var brokerMemberId = BrokerMemberId.from(brokerInfo.getZone(), brokerInfo.getNodeId());
-    final var group = brokerInfo.getPartitionGroup();
+    final var physicalTenantId = brokerInfo.getPartitionGroup();
     actor.run(
         () -> {
           // Notify listeners only on the first appearance of this broker across all groups.
@@ -126,9 +132,13 @@ public final class BrokerTopologyManagerImpl extends Actor
           }
 
           memberPropertiesPerGroup
-              .computeIfAbsent(group, g -> new HashMap<>())
+              .computeIfAbsent(physicalTenantId, id -> new HashMap<>())
               .put(brokerMemberId, brokerInfo);
-          rebuildGroupTopology(group);
+          rebuildGroupTopology(physicalTenantId);
+
+          // Notify group-aware listeners every time (per physicalTenantId, not just on first
+          // appearance).
+          topologyListeners.forEach(l -> l.brokerAddedToGroup(brokerMemberId, physicalTenantId));
         });
   }
 
@@ -147,9 +157,9 @@ public final class BrokerTopologyManagerImpl extends Actor
         () -> {
           final Set<String> groupsToRebuild = new HashSet<>();
           memberPropertiesPerGroup.forEach(
-              (group, groupMap) -> {
+              (physicalTenantId, groupMap) -> {
                 if (groupMap.remove(brokerMemberId) != null) {
-                  groupsToRebuild.add(group);
+                  groupsToRebuild.add(physicalTenantId);
                 }
               });
 
@@ -160,18 +170,19 @@ public final class BrokerTopologyManagerImpl extends Actor
         });
   }
 
-  private void rebuildGroupTopology(final String group) {
-    final var groupMembers = memberPropertiesPerGroup.getOrDefault(group, Map.of()).values();
+  private void rebuildGroupTopology(final String physicalTenantId) {
+    final var groupMembers =
+        memberPropertiesPerGroup.getOrDefault(physicalTenantId, Map.of()).values();
     final var configuredState = currentConfiguredState();
     final var newGroupTopology =
         BrokerClientTopologyImpl.fromMemberProperties(groupMembers, configuredState);
 
     final Map<String, BrokerClientTopologyImpl> updated = new HashMap<>(topologyPerGroup);
-    updated.put(group, newGroupTopology);
+    updated.put(physicalTenantId, newGroupTopology);
     topologyPerGroup = Map.copyOf(updated);
 
     // temp: only update metrics for default group until we support group-specific metrics
-    if (PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(group)) {
+    if (PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
       updateMetrics(newGroupTopology);
     }
   }
@@ -261,13 +272,16 @@ public final class BrokerTopologyManagerImpl extends Actor
     // temp: apply the same configured state to all other known groups. This must be revisited when
     // we add support for group-specific cluster configurations.
     memberPropertiesPerGroup.keySet().stream()
-        .filter(group -> !group.equals(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
+        .filter(
+            physicalTenantId ->
+                !physicalTenantId.equals(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
         .forEach(
-            group -> {
+            physicalTenantId -> {
               final var oldGroup =
-                  topologyPerGroup.getOrDefault(group, BrokerClientTopologyImpl.uninitialized());
+                  topologyPerGroup.getOrDefault(
+                      physicalTenantId, BrokerClientTopologyImpl.uninitialized());
               allGroups.put(
-                  group,
+                  physicalTenantId,
                   new BrokerClientTopologyImpl(oldGroup.liveClusterState(), newConfiguredState));
             });
 

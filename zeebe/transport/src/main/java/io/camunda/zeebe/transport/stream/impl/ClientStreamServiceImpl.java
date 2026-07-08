@@ -25,7 +25,9 @@ import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
 
@@ -41,23 +43,20 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
   private final ClusterCommunicationService communicationService;
   private final ClientStreamRegistry<M> registry;
   private final ClientStreamApiHandler apiHandler;
-  private final String physicalTenantId;
+
+  /** Tracks which physicalTenantId topics already have a RESTART_STREAMS listener registered. */
+  private final Set<String> registeredRestartPhysicalTenants = new HashSet<>();
 
   public ClientStreamServiceImpl(
-      final ClusterCommunicationService communicationService,
-      final ClientStreamMetrics metrics,
-      final String physicalTenantId) {
+      final ClusterCommunicationService communicationService, final ClientStreamMetrics metrics) {
     this.communicationService = communicationService;
-    this.physicalTenantId = physicalTenantId;
     registry = new ClientStreamRegistry<>(metrics);
 
     // ClientStreamRequestManager must use same actor as this because it is mutating shared
     // ClientStream objects.
     clientStreamManager =
         new ClientStreamManager<>(
-            registry,
-            new ClientStreamRequestManager<>(communicationService, actor, physicalTenantId),
-            metrics);
+            registry, new ClientStreamRequestManager<>(communicationService, actor), metrics);
     apiHandler = new ClientStreamApiHandler(clientStreamManager, actor);
   }
 
@@ -70,12 +69,9 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
         BufferUtil::bufferAsArray,
         actor::run);
 
-    communicationService.replyTo(
-        StreamTopics.RESTART_STREAMS.topic(physicalTenantId),
-        Function.identity(),
-        apiHandler::handleRestartRequest,
-        Function.identity(),
-        actor::run);
+    // Pre-register the default group's RESTART topic so restarted legacy brokers are handled
+    // even before the first brokerAddedToGroup callback fires.
+    registerRestartHandler(DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   @Override
@@ -105,8 +101,12 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
   }
 
   @Override
-  public void onServerJoined(final MemberId memberId) {
-    actor.run(() -> clientStreamManager.onServerJoined(memberId));
+  public void onServerJoinedToGroup(final MemberId memberId, final String physicalTenantId) {
+    actor.run(
+        () -> {
+          registerRestartHandler(physicalTenantId);
+          clientStreamManager.onServerJoinedToGroup(memberId, physicalTenantId);
+        });
   }
 
   @Override
@@ -133,5 +133,16 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
                 .flatMap(agg -> agg.list().stream())
                 .map(s -> (ClientStream<M>) s)
                 .toList());
+  }
+
+  private void registerRestartHandler(final String physicalTenantId) {
+    if (registeredRestartPhysicalTenants.add(physicalTenantId)) {
+      communicationService.replyTo(
+          StreamTopics.RESTART_STREAMS.topic(physicalTenantId),
+          Function.identity(),
+          apiHandler::handleRestartRequest,
+          Function.identity(),
+          actor::run);
+    }
   }
 }

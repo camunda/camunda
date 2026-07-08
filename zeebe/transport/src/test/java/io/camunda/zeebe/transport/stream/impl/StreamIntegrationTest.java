@@ -86,10 +86,10 @@ final class StreamIntegrationTest {
     server2.start();
     client.start();
 
-    client.streamService.onServerJoined(
-        server1.cluster.getMembershipService().getLocalMember().id());
-    client.streamService.onServerJoined(
-        server2.cluster.getMembershipService().getLocalMember().id());
+    client.streamService.onServerJoinedToGroup(
+        server1.cluster.getMembershipService().getLocalMember().id(), DEFAULT_PHYSICAL_TENANT_ID);
+    client.streamService.onServerJoinedToGroup(
+        server2.cluster.getMembershipService().getLocalMember().id(), DEFAULT_PHYSICAL_TENANT_ID);
     clientStreamer = client.streamService.streamer();
   }
 
@@ -345,7 +345,7 @@ final class StreamIntegrationTest {
                   .hasValue(Set.of(server2.memberId())));
 
       // when
-      client.streamService.onServerJoined(server1.memberId());
+      client.streamService.onServerJoinedToGroup(server1.memberId(), DEFAULT_PHYSICAL_TENANT_ID);
 
       // then
       awaitStreamAdded(streamType, streamId, server1, server2);
@@ -414,7 +414,8 @@ final class StreamIntegrationTest {
       try (final var restartedServer =
           new TestServer(createClusterNode(clusterNodes.get(0), clusterNodes))) {
         restartedServer.start();
-        client.streamService.onServerJoined(restartedServer.memberId());
+        client.streamService.onServerJoinedToGroup(
+            restartedServer.memberId(), DEFAULT_PHYSICAL_TENANT_ID);
 
         // then
         awaitStreamAdded(streamType, streamId, restartedServer, server2);
@@ -483,9 +484,7 @@ final class StreamIntegrationTest {
       final var factory = new TransportFactory(actorScheduler);
       streamService =
           factory.createRemoteStreamClient(
-              cluster.getCommunicationService(),
-              ClientStreamMetrics.noop(),
-              DEFAULT_PHYSICAL_TENANT_ID);
+              cluster.getCommunicationService(), ClientStreamMetrics.noop());
     }
 
     private void start() {
