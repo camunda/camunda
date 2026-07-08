@@ -402,9 +402,9 @@ components:
             another worker): a command carrying a stale lease token is rejected rather than racing
             with the newer activation. Once a job has been activated with a lease, it is served
             only to leasing workers of that job type; a homogeneous fleet per job type is
-            recommended. Defaults to false, which activates jobs without a lease.
+            recommended. Omit or set to false to activate jobs without a lease.
           type: boolean
-          default: false
+          nullable: true
       required:
         - type
         - maxJobsToActivate

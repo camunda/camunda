@@ -119,10 +119,14 @@ public final class JobPollerImpl implements JobPoller {
             .timeout(timeout)
             .workerName(workerName)
             .tenantIds(tenantIds)
-            .tenantFilter(tenantFilter)
-            .withLease(withLease);
+            .tenantFilter(tenantFilter);
     if (fetchVariables != null) {
       activateCommand.fetchVariables(fetchVariables);
+    }
+    // only set when true: an explicit false is still sent over the wire, which would break
+    // rolling upgrades against a gateway that doesn't yet know this field
+    if (withLease) {
+      activateCommand.withLease(true);
     }
     activateCommand
         .requestTimeout(requestTimeout)

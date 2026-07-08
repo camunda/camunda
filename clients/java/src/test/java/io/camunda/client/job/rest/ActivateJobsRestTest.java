@@ -314,16 +314,17 @@ public final class ActivateJobsRestTest extends ClientRestTest {
   }
 
   @Test
-  void shouldNotSetWithLeaseByDefault() {
-    // given
+  void shouldNotSendWithLeaseByDefault() {
+    // given - a request that never touches withLease
     gatewayService.onActivateJobsRequest(new JobActivationResult());
 
     // when
     client.newActivateJobsCommand().jobType("foo").maxJobsToActivate(3).send().join();
 
-    // then
+    // then - the field is genuinely absent on the wire, not an explicit false, so older gateways
+    // that don't know this field yet don't reject the request
     final JobActivationRequest request = gatewayService.getLastRequest(JobActivationRequest.class);
-    assertThat(request.getWithLease()).isFalse();
+    assertThat(request.getWithLease()).isNull();
   }
 
   @Test
