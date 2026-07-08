@@ -62,6 +62,12 @@ public final class ClientProperties {
   public static final String PHYSICAL_TENANT_ID = "camunda.client.physicalTenantId";
 
   /**
+   * @see CamundaClientBuilder#appendPhysicalTenantPath(boolean)
+   */
+  public static final String APPEND_PHYSICAL_TENANT_PATH =
+      "camunda.client.appendPhysicalTenantPath";
+
+  /**
    * @see CamundaClientBuilder#defaultJobWorkerTenantIds(List)
    */
   public static final String DEFAULT_JOB_WORKER_TENANT_IDS = "camunda.client.worker.tenantIds";

@@ -1473,6 +1473,11 @@ public final class CamundaClientTest {
             }
 
             @Override
+            public boolean appendPhysicalTenantPath() {
+              return false;
+            }
+
+            @Override
             public List<String> getDefaultJobWorkerTenantIds() {
               return Arrays.asList("tenant-a", "tenant-b");
             }
@@ -1638,6 +1643,7 @@ public final class CamundaClientTest {
       assertThat(builder.getRestAddress()).isEqualTo(source.getRestAddress());
       assertThat(builder.getDefaultTenantId()).isEqualTo(source.getDefaultTenantId());
       assertThat(builder.getPhysicalTenantId()).isEqualTo(source.getPhysicalTenantId());
+      assertThat(builder.appendPhysicalTenantPath()).isEqualTo(source.appendPhysicalTenantPath());
       assertThat(builder.getDefaultJobWorkerTenantIds())
           .isEqualTo(source.getDefaultJobWorkerTenantIds());
       assertThat(builder.getDefaultJobWorkerTenantFilter())

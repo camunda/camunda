@@ -112,6 +112,8 @@ public class CamundaClientProperties {
    */
   private String physicalTenantId;
 
+  private boolean appendPhysicalTenantPath = DEFAULT_APPEND_PHYSICAL_TENANT_PATH;
+
   /** The request timeout to use when not overridden by a specific command. */
   private Duration requestTimeout = DEFAULT_REQUEST_TIMEOUT;
 
@@ -170,6 +172,14 @@ public class CamundaClientProperties {
 
   public void setPhysicalTenantId(final String physicalTenantId) {
     this.physicalTenantId = physicalTenantId;
+  }
+
+  public boolean getAppendPhysicalTenantPath() {
+    return appendPhysicalTenantPath;
+  }
+
+  public void setAppendPhysicalTenantPath(final boolean appendPhysicalTenantPath) {
+    this.appendPhysicalTenantPath = appendPhysicalTenantPath;
   }
 
   public CamundaClientWorkerProperties getWorker() {
