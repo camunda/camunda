@@ -49,6 +49,15 @@ import org.slf4j.LoggerFactory;
  * tagged with {@code store=<directory name>} and refreshed on a modest schedule. These are the
  * numbers that prove or disprove tombstone accumulation in a store.
  *
+ * <p><b>Concurrency:</b> the provider holds two transaction contexts over the one database. Writes
+ * — {@link #runInTransaction} and each store's put/delete — use the write context; each store's
+ * reads and scans use a dedicated read context, so a reading thread never touches the write
+ * context's transaction (its write batch, its buffers) and may run concurrently with a thread
+ * committing a write transaction. Reads therefore see committed state only; state buffered in an
+ * open write transaction is expected to be served from heap overlays above this store. Each context
+ * remains single-threaded: at most one writing thread and at most one reading thread at a time, and
+ * {@link #keyValueStore} calls must not race either of them (create stores during wiring).
+ *
  * @param <CF> the caller's column-family enum
  */
 public final class RocksDbStateStoreProvider<
@@ -68,13 +77,22 @@ public final class RocksDbStateStoreProvider<
   private static final Duration METRICS_POLL_INTERVAL = Duration.ofSeconds(10);
 
   private final ZeebeDb<CF> zeebeDb;
-  private final TransactionContext context;
+  private final TransactionContext writeContext;
+  private final TransactionContext readContext;
   private final ScheduledExecutorService metricsPoller;
   private final Map<CF, KeyValueStore<?, ?>> stores = new HashMap<>();
 
   private RocksDbStateStoreProvider(final ZeebeDb<CF> zeebeDb, final String storeName) {
     this.zeebeDb = zeebeDb;
-    context = zeebeDb.createContext();
+    writeContext = zeebeDb.createContext();
+    // Each context owns its own write batch, so a reader on the read context never sees — or
+    // races on — the write context's uncommitted transaction. Pin the read context's transaction
+    // open once: every read then joins it instead of opening (and empty-committing) a transaction
+    // per read, which would needlessly enter RocksDB's write path and queue behind an in-flight
+    // commit. The pinned transaction's batch stays empty forever — nothing ever writes through the
+    // read context — so every read falls through the empty batch to the committed database state.
+    readContext = zeebeDb.createContext();
+    readContext.getCurrentTransaction();
     // Take an eager first snapshot so the gauges exist as soon as the provider is open, then
     // refresh them periodically; each snapshot is a handful of cheap property reads.
     zeebeDb.exportMetrics();
@@ -165,15 +183,22 @@ public final class RocksDbStateStoreProvider<
         stores.computeIfAbsent(
             columnFamily,
             cf -> {
-              final ColumnFamily<K, V> handle =
-                  zeebeDb.createColumnFamily(cf, context, keyFlyweight, valueFlyweight);
-              return new RocksDbKeyValueStore<>(handle, context);
+              // Two handles over the same column family, one per context: each handle carries its
+              // own serialization buffers, so the write path and the read path share no mutable
+              // state. The caller's flyweights are shared between the handles, but only the read
+              // path ever deserializes into them (the write path only serializes its arguments),
+              // so they stay owned by the reading thread.
+              final ColumnFamily<K, V> writeHandle =
+                  zeebeDb.createColumnFamily(cf, writeContext, keyFlyweight, valueFlyweight);
+              final ColumnFamily<K, V> readHandle =
+                  zeebeDb.createColumnFamily(cf, readContext, keyFlyweight, valueFlyweight);
+              return new RocksDbKeyValueStore<>(writeHandle, writeContext, readHandle);
             });
   }
 
   @Override
   public void runInTransaction(final Runnable operations) {
-    context.runInTransaction(operations::run);
+    writeContext.runInTransaction(operations::run);
   }
 
   @Override

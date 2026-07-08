@@ -17,53 +17,72 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
- * A {@link KeyValueStore} over a single ZeebeDb {@link ColumnFamily}. Writes run in a transaction
- * so each is atomic and durable; reads and scans delegate to the column family directly.
+ * A {@link KeyValueStore} over a single ZeebeDb column family, split into two independently usable
+ * halves: writes go through the provider's write {@link TransactionContext} (each write is its own
+ * transaction unless it joins an enclosing {@link
+ * io.camunda.eventbridge.streaming.state.api.StateStoreProvider#runInTransaction} scope), while
+ * reads and scans go through a second {@link ColumnFamily} handle bound to the provider's dedicated
+ * read context.
+ *
+ * <p><b>Visibility contract:</b> reads observe <em>committed</em> state only. A write sitting in an
+ * open (not yet committed) transaction on the write context is invisible to the read path — by
+ * design: dirty state is expected to live in heap overlays above this store (e.g. the caching
+ * layer), so committed-only visibility is exactly what a cache miss needs.
+ *
+ * <p><b>Threading contract:</b> because the two halves use separate transaction contexts (separate
+ * write batches, separate key/value serialization buffers), one thread may run write transactions
+ * while another thread reads and scans concurrently. Each half is itself single-threaded: at most
+ * one thread writes at a time and at most one thread reads at a time.
  */
 final class RocksDbKeyValueStore<K extends DbKey, V extends DbValue>
     implements KeyValueStore<K, V> {
 
-  private final ColumnFamily<K, V> columnFamily;
-  private final TransactionContext context;
+  private final ColumnFamily<K, V> writeColumnFamily;
+  private final TransactionContext writeContext;
+  private final ColumnFamily<K, V> readColumnFamily;
 
-  RocksDbKeyValueStore(final ColumnFamily<K, V> columnFamily, final TransactionContext context) {
-    this.columnFamily = columnFamily;
-    this.context = context;
+  RocksDbKeyValueStore(
+      final ColumnFamily<K, V> writeColumnFamily,
+      final TransactionContext writeContext,
+      final ColumnFamily<K, V> readColumnFamily) {
+    this.writeColumnFamily = writeColumnFamily;
+    this.writeContext = writeContext;
+    this.readColumnFamily = readColumnFamily;
   }
 
   @Override
   public void put(final K key, final V value) {
-    context.runInTransaction(() -> columnFamily.upsert(key, value));
+    writeContext.runInTransaction(() -> writeColumnFamily.upsert(key, value));
   }
 
   @Override
   public void delete(final K key) {
-    context.runInTransaction(() -> columnFamily.deleteIfExists(key));
+    writeContext.runInTransaction(() -> writeColumnFamily.deleteIfExists(key));
   }
 
   @Override
   public Optional<V> get(final K key) {
-    return Optional.ofNullable(columnFamily.get(key));
+    return Optional.ofNullable(readColumnFamily.get(key));
   }
 
   @Override
   public boolean exists(final K key) {
-    return columnFamily.exists(key);
+    return readColumnFamily.exists(key);
   }
 
   @Override
   public void prefixScan(final DbKey prefix, final BiConsumer<K, V> visitor) {
-    columnFamily.whileEqualPrefix(prefix, visitor);
+    readColumnFamily.whileEqualPrefix(prefix, visitor);
   }
 
   @Override
   public void prefixScanKeys(final DbKey prefix, final Consumer<K> visitor) {
     // The key-only overload skips reading each value from RocksDB entirely.
-    columnFamily.whileEqualPrefix(prefix, visitor);
+    readColumnFamily.whileEqualPrefix(prefix, visitor);
   }
 
   @Override
   public void forEach(final BiConsumer<K, V> visitor) {
-    columnFamily.forEach(visitor);
+    readColumnFamily.forEach(visitor);
   }
 }
