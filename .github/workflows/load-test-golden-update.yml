@@ -64,10 +64,19 @@ jobs:
           git add load-tests/setup/test/golden/
           if git diff --cached --quiet; then
             echo "No golden file changes to commit."
-          else
-            git commit -m "test: update golden files"
-            git push origin HEAD:"$BRANCH"
+            exit 0
           fi
+          git commit -m "test: update golden files"
+          for attempt in 1 2 3; do
+            if git push origin HEAD:"$BRANCH"; then
+              exit 0
+            fi
+            echo "Push rejected (attempt $attempt/3) — fetching and rebasing onto the current branch tip."
+            git fetch origin "$BRANCH"
+            git rebase "origin/$BRANCH"
+          done
+          echo "::error::Failed to push golden file updates after 3 attempts."
+          exit 1
 
       - name: Observe build status
         if: always()
