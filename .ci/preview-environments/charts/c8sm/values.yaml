@@ -218,6 +218,11 @@ camunda-platform:
     clusterSize: "1"
     partitionCount: "1"
     replicationFactor: "1"
+    # Single-node ECK Elasticsearch (templates/elasticsearch.yml): index replicas
+    # would stay unassigned and keep the ES cluster status Yellow forever, which
+    # blocks the ArgoCD app from ever reporting Healthy.
+    index:
+      replicas: "0"
     persistenceType: disk
     pvcSize: 1Gi
     javaOpts: >-
