@@ -124,14 +124,8 @@ node.**
   secondary storage is unusable; degraded state is surfaced per tenant (D3,
   D4), in logs, and in metrics — not via node probes.
 
-Single-tenant clusters keep today's operational behavior: with only the
-default tenant configured, "at least one serviceable tenant" and "all
-tenants serviceable" coincide, and fail-fast-equivalent feedback comes from
-the tenant being visibly degraded rather than from a crash loop.
-*Whether ES/OS keeps blocking startup when the* only *configured tenant's
-storage is down (strict status quo) or converges on retry-in-background for
-consistency is left to implementation with Houssain's input on DB
-startup/liveness behavior.*
+Single-tenant clusters keep today's operational behavior. The background
+retry mechanism for schema initialization is already in place.
 
 **D3. `/v2/status` semantics are unchanged and per-PT.**
 
