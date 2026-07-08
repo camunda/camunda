@@ -21,6 +21,16 @@ import {waitForAssertion} from '../../utils/waitForAssertion';
 
 let instanceIds: string[] = [];
 
+// Operate's "Incidents by Error Message" filter groups and filters incidents by
+// a hash of their full error message. On the shared nightly cluster, incidents
+// from previous runs are not cleaned up, so identical error messages across runs
+// collapse into a single group whose filter then returns every run's instances,
+// breaking the exact single-instance assertion below. Tag the error messages with
+// a per-run id so this run's incidents get a unique hash (and thus an isolated
+// dashboard group) while still sharing the same truncated prefix between Type A
+// and Type B — the scenario this test exercises.
+const ERROR_MESSAGE_RUN_ID = `run-${Date.now()}`;
+
 test.beforeAll(async ({request}) => {
   test.setTimeout(180000);
 
@@ -40,8 +50,7 @@ test.beforeAll(async ({request}) => {
   ]);
 
   createWorker('incidentGenerator', true, {}, (job) => {
-    const BASE_ERROR_MESSAGE =
-      'This is an error message for testing purposes. This error message is very long to ensure it is truncated in the UI.';
+    const BASE_ERROR_MESSAGE = `${ERROR_MESSAGE_RUN_ID} This is an error message for testing purposes. This error message is very long to ensure it is truncated in the UI.`;
     if (job.variables.incidentType === 'Incident Type A') {
       return job.fail(`${BASE_ERROR_MESSAGE} Type A`);
     } else {
@@ -147,7 +156,9 @@ test.describe('Dashboard', () => {
     operateProcessInstancePage,
   }) => {
     await test.step('Select incident type A and verify details', async () => {
-      await operateDashboardPage.clickIncidentByType(/type a/i);
+      await operateDashboardPage.clickIncidentByType(
+        new RegExp(`${ERROR_MESSAGE_RUN_ID}.*type a`, 'i'),
+      );
       await waitForAssertion({
         assertion: async () => {
           await expect(
@@ -169,7 +180,9 @@ test.describe('Dashboard', () => {
 
     await test.step('Select incident type B and verify details', async () => {
       await operateDashboardPage.gotoDashboardPage();
-      await operateDashboardPage.clickIncidentByType(/type b/i);
+      await operateDashboardPage.clickIncidentByType(
+        new RegExp(`${ERROR_MESSAGE_RUN_ID}.*type b`, 'i'),
+      );
       await waitForAssertion({
         assertion: async () => {
           await expect(
