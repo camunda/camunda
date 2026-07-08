@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.Consumer;
 
 /**
  * Batches a partition's sealed cell deltas into {@link ShuffleEnvelope}s and publishes them via an
@@ -27,6 +28,16 @@ import java.util.Map.Entry;
  * the reducer's segment dedup admits each exactly once and skips re-emits. Flush order is
  * deterministic (by segment then facts partition), so a replay reproduces identical chunking. An
  * empty flush is a no-op (the freshness tick emits nothing new).
+ *
+ * <p><b>Frozen cuts.</b> For a commit cut that persists in the background, publication splits into
+ * three steps: {@link #freeze()} encodes the buffered deltas into immutable frames on the owner
+ * thread (chunk assignment included — cheap, no transport), {@link #publishFrozen()} sends exactly
+ * those frames on the IO thread, and {@link #completeFrozen(boolean)} drops them on success or
+ * retains them for the next cut on failure — a re-publish is safe because the reducer dedups by
+ * {@code (segment, chunk)}. While a frozen cut is outstanding the IO thread owns the transport, so
+ * {@link #flush()} defers (the buffered deltas stay staged for the next flush or freeze). {@link
+ * #flush()} remains the synchronous path: it publishes any retained frames of a failed cut first,
+ * then the buffer.
  */
 public final class EnvelopePublisher {
 
@@ -42,7 +53,8 @@ public final class EnvelopePublisher {
   private final Map<SegmentKey, Integer> nextChunk = new HashMap<>();
 
   /**
-   * Reused per publisher; flushes alternate between the actor and commit threads, never overlap.
+   * Reused per publisher; encoding happens only where the buffer is owned — a freeze on the actor
+   * thread or a synchronous flush on the commit thread — never concurrently.
    */
   private final ShuffleEnvelopeCodec codec = new ShuffleEnvelopeCodec();
 
@@ -57,6 +69,21 @@ public final class EnvelopePublisher {
   private record BufferKey(int sourcePartition, long segment, int factsPartition) {}
 
   private record SegmentKey(int sourcePartition, long segment) {}
+
+  /** An encoded envelope staged for publication: its target facts partition and wire frame. */
+  private record PreparedEnvelope(int factsPartition, byte[] frame) {}
+
+  /**
+   * The outstanding frozen cut's frames (null when none): encoded at the freeze barrier, owned by
+   * the IO thread between {@link #publishFrozen()} and {@link #completeFrozen(boolean)}.
+   */
+  private List<PreparedEnvelope> frozenFrames;
+
+  /**
+   * A failed cut's frames, re-published ahead of newer output (order preserves the per-stream
+   * monotonic {@code (segment, chunk)} sequence the reducer's dedup relies on). Owner thread only.
+   */
+  private final List<PreparedEnvelope> retryFrames = new ArrayList<>();
 
   public EnvelopePublisher(
       final EnvelopeTransport transport, final int schemaVersion, final long producedAt) {
@@ -84,6 +111,87 @@ public final class EnvelopePublisher {
 
   /** Publishes every buffered group as one envelope (chunked per segment), then flushes durably. */
   public void flush() {
+    if (frozenFrames != null) {
+      // An in-flight frozen cut owns the transport on the IO thread. Defer this freshness flush:
+      // the buffered deltas stay staged and the next flush or freeze delivers them.
+      return;
+    }
+    if (buffer.isEmpty() && retryFrames.isEmpty()) {
+      return;
+    }
+    for (final PreparedEnvelope prepared : retryFrames) {
+      transport.send(prepared.factsPartition(), prepared.frame());
+    }
+    retryFrames.clear();
+    encodeBuffered(prepared -> transport.send(prepared.factsPartition(), prepared.frame()));
+    transport.flush();
+  }
+
+  /**
+   * Owner thread, at the commit barrier: encodes every buffered group into immutable frames —
+   * chunks assigned exactly as {@link #flush()} would — prefixed by any retained frames of a failed
+   * cut, and stages them as the outstanding frozen cut. Cheap (no transport); folding may resume
+   * and buffer new deltas immediately, they belong to the next cut.
+   *
+   * @throws IllegalStateException if a frozen cut is already outstanding
+   */
+  public void freeze() {
+    if (frozenFrames != null) {
+      throw new IllegalStateException(
+          "expected no outstanding frozen envelope frames, but freeze() was called again before"
+              + " completeFrozen()");
+    }
+    final List<PreparedEnvelope> frames = new ArrayList<>(retryFrames.size() + buffer.size());
+    frames.addAll(retryFrames);
+    retryFrames.clear();
+    encodeBuffered(frames::add);
+    frozenFrames = frames;
+  }
+
+  /**
+   * IO thread, outside the state transaction: publishes the frozen frames, then flushes the
+   * transport durably (produce-before-commit). Touches only the frozen frames and the transport —
+   * never the live buffer the owner thread keeps filling. Idempotent under replay: the reducer
+   * drops a re-emitted {@code (segment, chunk)}.
+   *
+   * @throws IllegalStateException if nothing is frozen
+   */
+  public void publishFrozen() {
+    if (frozenFrames == null) {
+      throw new IllegalStateException("expected frozen envelope frames to publish, but none");
+    }
+    if (frozenFrames.isEmpty()) {
+      return;
+    }
+    for (final PreparedEnvelope prepared : frozenFrames) {
+      transport.send(prepared.factsPartition(), prepared.frame());
+    }
+    transport.flush();
+  }
+
+  /**
+   * Owner thread, once the cut's outcome is known. Success: the frames are durable downstream —
+   * drop them. Failure: retain them so the next cut (or the next synchronous {@link #flush()})
+   * re-publishes them first; whether or not the failed publish actually delivered, the re-send is
+   * dropped by the reducer's {@code (segment, chunk)} dedup.
+   *
+   * @throws IllegalStateException if nothing is frozen
+   */
+  public void completeFrozen(final boolean success) {
+    if (frozenFrames == null) {
+      throw new IllegalStateException("expected frozen envelope frames to complete, but none");
+    }
+    if (!success) {
+      retryFrames.addAll(frozenFrames);
+    }
+    frozenFrames = null;
+  }
+
+  /**
+   * Encodes every buffered group in deterministic flush order, assigning each segment's next
+   * monotonic chunk, and clears the buffer. Runs only on the thread that owns the buffer.
+   */
+  private void encodeBuffered(final Consumer<PreparedEnvelope> out) {
     if (buffer.isEmpty()) {
       return;
     }
@@ -105,13 +213,12 @@ public final class EnvelopePublisher {
               ShufflePayloadKind.AGGREGATE_DELTA,
               ShuffleOperation.MERGE,
               entry.getValue());
-      transport.send(key.factsPartition(), codec.encode(envelope));
+      out.accept(new PreparedEnvelope(key.factsPartition(), codec.encode(envelope)));
     }
     flushOrder.clear();
     buffer.clear();
     lastKey = null;
     lastGroup = null;
-    transport.flush();
   }
 
   /**

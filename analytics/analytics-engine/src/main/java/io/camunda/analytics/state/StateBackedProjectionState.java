@@ -309,6 +309,33 @@ public final class StateBackedProjectionState implements MutableProjectionState,
     caches.forEach(CachingKeyValueStore::checkpoint);
   }
 
+  /**
+   * Owner thread, at the commit barrier: freezes every store's dirty overlay into an immutable
+   * snapshot (pointer swaps only), detaching the projection's part of the cut from the live caches
+   * so folding resumes while {@link #persistFrozen()} runs in the background. The asynchronous
+   * split of {@link #checkpoint()}, fanned out over the same stores.
+   */
+  public void freeze() {
+    caches.forEach(CachingKeyValueStore::freeze);
+  }
+
+  /**
+   * Flusher thread, inside the caller's commit transaction: drains every store's frozen overlay to
+   * its durable delegate. Touches only frozen data — never the mutable overlays the owner thread
+   * keeps writing to.
+   */
+  public void persistFrozen() {
+    caches.forEach(CachingKeyValueStore::persistFrozen);
+  }
+
+  /**
+   * Owner thread, once the cut's outcome is known: retires every store's frozen overlay on success,
+   * or merges it back underneath the live writes (newer wins) so the next freeze re-includes it.
+   */
+  public void completeFrozen(final boolean success) {
+    caches.forEach(cache -> cache.completeFrozen(success));
+  }
+
   @Override
   public boolean needsCheckpoint() {
     for (final CachingKeyValueStore<?, ?> cache : caches) {

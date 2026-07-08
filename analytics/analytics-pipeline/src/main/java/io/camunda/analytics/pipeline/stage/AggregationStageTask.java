@@ -19,6 +19,7 @@ import io.camunda.analytics.projection.AnalyticsColumnFamilies;
 import io.camunda.analytics.serving.catalog.DatasetCatalog;
 import io.camunda.analytics.serving.spi.DatasetStore;
 import io.camunda.analytics.serving.spi.DatasetWriter;
+import io.camunda.eventbridge.streaming.CommitCut;
 import io.camunda.eventbridge.streaming.Task;
 import io.camunda.eventbridge.streaming.TransactionRunner;
 import io.camunda.eventbridge.streaming.aggregate.RecordValue;
@@ -56,6 +57,13 @@ import org.slf4j.LoggerFactory;
  * offset live in the one provider, so {@link #commit(long)} makes them one atomic cut: converge the
  * sinks and flush the serving rows (produce-before-commit), then persist the offset + merged cells.
  *
+ * <p><b>Frozen cuts (streaming ADR 0005).</b> {@link #freezeCut(long)} detaches the same cut at the
+ * barrier — every merger's frozen checkpoint delta (closed windows finalized, changed cells
+ * converged), the staged serving rows, and the <em>at-barrier</em> dedup watermark snapshot — so
+ * the partition keeps merging while the IO thread flushes the serving rows and persists the state;
+ * {@link #commit(long)} remains the synchronous composition of that cut (the final stop commit and
+ * the fallback path).
+ *
  * <p><b>Live reload (ADR 0005).</b> The merge topology is built from the shared versioned {@link
  * DatasetCatalog}. At each {@link #commit(long)} — after the durable cut, at most once per
  * reload-check interval — the task checks the catalog version and, when it moved, rebuilds the
@@ -71,7 +79,7 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
 
   private final int partition;
   private final DatasetStore datasetStore;
-  private final DatasetWriter servingWriter;
+  private final FreezableDatasetWriter servingWriter;
   private final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider;
   private final KeyValueStore<DbBytes, DbBytes> cellStore;
   private final KeyValueStore<DbInt, DbLong> offsets;
@@ -91,6 +99,9 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
   private final Map<StreamKey, SegmentPosition> persistedDedup = new HashMap<>();
 
   private ProcessorTopology<ShuffleEnvelope> topology;
+  // The current topology's mergers, kept so the frozen cut can drive their
+  // freeze/persist/complete split directly; rebuilt with the topology on each live reload.
+  private List<SegmentMergingAggregation<?, ?>> activeMergers = List.of();
   private long appliedVersion;
   private long lastReloadCheckMs;
 
@@ -117,7 +128,9 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
       final long nowMs) {
     this.partition = partition;
     this.datasetStore = datasetStore;
-    this.servingWriter = servingWriter;
+    // Stage the serving writes on the heap so a frozen cut flushes exactly the rows its barrier
+    // covers while the actor keeps merging (and converging) past it.
+    this.servingWriter = new FreezableDatasetWriter(servingWriter);
     this.provider = provider;
     this.cellStore = cellStore;
     this.offsets = offsets;
@@ -206,6 +219,7 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
     // a removed-then-readded id reconstructs above and recovers from durable state only.
     wiringByStreamId.keySet().retainAll(byStreamId.keySet());
     appliedCubeIds = Set.copyOf(cubeIds);
+    activeMergers = List.copyOf(mergers);
     topology =
         ProcessorTopology.<ShuffleEnvelope>builder()
             .source("merge", new CubeMergeProcessor(dedup, byStreamId, mergers))
@@ -315,37 +329,96 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
 
   @Override
   public void commit(final long offset) {
-    // Produce-before-commit: converge the sinks and flush the (idempotent) serving rows, then
-    // persist the facts offset + the merged cells as one atomic cut on this partition's provider.
-    topology.flush();
-    servingWriter.flush();
-    provider.runInTransaction(
-        () -> {
-          offsetKey.wrapInt(partition);
-          offsetValue.wrapLong(offset);
-          offsets.put(offsetKey, offsetValue);
-          persistDedupWatermarks();
-          topology.checkpoint();
-        });
-    maybeReload();
+    // The synchronous composition of the frozen cut — the final stop commit and the fallback path.
+    // Same barrier, same produce-before-commit ordering, just with no merging in between.
+    final CommitCut cut = freezeCut(offset);
+    try {
+      cut.publish();
+      cut.persist();
+    } catch (final RuntimeException e) {
+      cut.complete(false);
+      throw e;
+    }
+    cut.complete(true);
+  }
+
+  @Override
+  public CommitCut freezeCut(final long offset) {
+    // The barrier: each merger finalizes its closed windows, converges its changed cells into the
+    // staged serving rows (its freeze includes the flush) and steals its checkpoint delta as
+    // immutable bytes; then the staged rows themselves are frozen. Post-barrier merges touch only
+    // the live accumulators and a fresh staging buffer — they belong to the next cut.
+    final List<SegmentMergingAggregation<?, ?>> mergers = activeMergers;
+    mergers.forEach(SegmentMergingAggregation::freeze);
+    final FreezableDatasetWriter servingWriter = this.servingWriter;
+    servingWriter.freeze();
+    // The dedup admission watermarks are snapshotted AT THE BARRIER: the persisted watermarks must
+    // describe exactly the admissions folded into the frozen cells. A snapshot taken at persist
+    // time would cover batches admitted after the freeze — merges the frozen cut does not contain
+    // — and a crash-replay would drop those batches as already admitted: silent data loss.
+    final Map<StreamKey, SegmentPosition> movedWatermarks = movedDedupWatermarks();
+
+    return new CommitCut() {
+
+      @Override
+      public void publish() {
+        // Produce-before-commit: the frozen serving rows become durable before the offset
+        // advances; the upserts are idempotent by key, so a replay re-writes rather than
+        // duplicates.
+        servingWriter.publishFrozen();
+      }
+
+      @Override
+      public void persist() {
+        // The frozen offset + the frozen dedup watermarks + every merger's frozen cells as one
+        // atomic cut on this partition's provider. Persisting the watermarks matters: without
+        // them, a Stage-1 crash in its produce-before-commit gap re-publishes a segment delta as
+        // a new facts-topic append, and a restarted (empty in-memory) dedup would re-admit and
+        // double-fold it. The task's key/value flyweights are safe here: they are only ever
+        // touched on this commit path, and cuts are single-flight per partition.
+        provider.runInTransaction(
+            () -> {
+              offsetKey.wrapInt(partition);
+              offsetValue.wrapLong(offset);
+              offsets.put(offsetKey, offsetValue);
+              for (final Map.Entry<StreamKey, SegmentPosition> watermark :
+                  movedWatermarks.entrySet()) {
+                dedupKey.wrapBytes(encodeStreamKey(watermark.getKey()));
+                dedupValue.wrapBytes(encodeSegmentPosition(watermark.getValue()));
+                dedupStore.put(dedupKey, dedupValue);
+              }
+              mergers.forEach(SegmentMergingAggregation::persistFrozen);
+            });
+      }
+
+      @Override
+      public void complete(final boolean success) {
+        mergers.forEach(merger -> merger.completeFrozen(success));
+        servingWriter.completeFrozen(success);
+        if (success) {
+          // Only now are the watermarks durable; recording them earlier would make the next cut
+          // skip re-persisting them after a failed transaction.
+          persistedDedup.putAll(movedWatermarks);
+          maybeReload();
+        }
+      }
+    };
   }
 
   /**
-   * Persists the dedup's admission watermarks — only the streams that moved since the last cut —
-   * into the same transaction as the merged cells and the facts offset. Without this, a Stage-1
-   * crash in its produce-before-commit gap re-publishes a segment delta as a <em>new</em>
-   * facts-topic append, and a restarted (empty in-memory) dedup would re-admit and double-fold it.
+   * The streams whose admission watermark moved since the last successful cut, snapshotted at the
+   * freeze barrier (the map is tiny — at most one entry per shuffle stream). The cut persists
+   * exactly these; {@link #persistedDedup} advances only once the cut succeeds.
    */
-  private void persistDedupWatermarks() {
+  private Map<StreamKey, SegmentPosition> movedDedupWatermarks() {
+    final Map<StreamKey, SegmentPosition> moved = new HashMap<>();
     for (final Map.Entry<StreamKey, SegmentPosition> watermark : dedup.snapshot().entrySet()) {
       if (watermark.getValue().equals(persistedDedup.get(watermark.getKey()))) {
         continue;
       }
-      dedupKey.wrapBytes(encodeStreamKey(watermark.getKey()));
-      dedupValue.wrapBytes(encodeSegmentPosition(watermark.getValue()));
-      dedupStore.put(dedupKey, dedupValue);
-      persistedDedup.put(watermark.getKey(), watermark.getValue());
+      moved.put(watermark.getKey(), watermark.getValue());
     }
+    return moved;
   }
 
   /** Dedup watermark key: {@code sourcePartition(4) ++ streamId(4)}, big-endian. */
@@ -404,6 +477,10 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
   public void close() {
     topology.close();
     try {
+      // Drain the rows the mergers' close converged (plus anything staged since the last commit) —
+      // idempotent upserts ahead of the offset cut are safe (a replay re-writes them), and it
+      // keeps the serving view as fresh as before the staging buffer existed.
+      servingWriter.flush();
       datasetStore.close();
     } catch (final Exception e) {
       LOG.warn("Failed to close serving store for facts partition {}", partition, e);

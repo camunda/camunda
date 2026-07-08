@@ -32,6 +32,7 @@ import io.camunda.analytics.state.VariableNames;
 import io.camunda.analytics.table.ProcessDefinitionSink;
 import io.camunda.analytics.table.TableRowProcessor;
 import io.camunda.eventbridge.client.EventBridgeClient;
+import io.camunda.eventbridge.streaming.CommitCut;
 import io.camunda.eventbridge.streaming.Task;
 import io.camunda.eventbridge.streaming.aggregate.SegmentSealingAggregation;
 import io.camunda.eventbridge.streaming.aggregate.Segments;
@@ -68,6 +69,12 @@ import org.slf4j.LoggerFactory;
  * topology's checkpoint. No {@code safeOffset} — a crash resumes exactly from the committed offset
  * onto the checkpointed open segments.
  *
+ * <p><b>Frozen cuts (streaming ADR 0005).</b> {@link #freezeCut(long)} detaches the same cut at the
+ * barrier — the watermark seal, the encoded shuffle frames, the staged serving rows, the at-barrier
+ * pre-fold dedup watermarks and every store's frozen overlay — so the partition keeps folding while
+ * the IO thread publishes and persists it; {@link #commit(long)} remains the synchronous
+ * composition of that cut (the final stop commit and the fallback path).
+ *
  * <p><b>Live reload (ADR 0005).</b> The topology is built from the shared versioned {@link
  * DatasetCatalog}, not a frozen list. At each {@link #commit(long)} — after the durable cut, at
  * most once per reload-check interval — the task checks the catalog version; when it moved it
@@ -103,7 +110,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
   private final Segments segments;
   private final int schemaVersion;
   private final DatasetStore datasetStore;
-  private final DatasetWriter servingWriter;
+  private final FreezableDatasetWriter servingWriter;
   private final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider;
   private final KeyValueStore<DbBytes, DbBytes> openSegments;
   private final KeyValueStore<DbInt, DbLong> offsets;
@@ -127,9 +134,12 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
   private final Map<Integer, Long> appliedWatermarks = new HashMap<>();
 
   // Rebuilt on reload; the sealing aggregations are collected from the current topology so commit
-  // can watermark-seal them. appliedVersion/lastReloadCheckMs drive the throttled reload check.
+  // can watermark-seal them, and the projection state is kept so the frozen cut can drive its
+  // freeze/persist/complete split directly. appliedVersion/lastReloadCheckMs drive the throttled
+  // reload check.
   private ProcessorTopology<SourceRecord> topology;
   private List<SegmentSealingAggregation<Fact, ?, ?>> sealingAggregations;
+  private StateBackedProjectionState projectionState;
   private EnvelopePublisher publisher;
   private long appliedVersion;
   private long lastReloadCheckMs;
@@ -169,7 +179,9 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
     segments = Segments.ofStride(segmentStride);
     this.schemaVersion = schemaVersion;
     this.datasetStore = datasetStore;
-    this.servingWriter = servingWriter;
+    // Stage the serving writes on the heap so a frozen cut flushes exactly the rows its barrier
+    // covers while the actor keeps folding (and writing) past it.
+    this.servingWriter = new FreezableDatasetWriter(servingWriter);
     this.provider = provider;
     this.openSegments = openSegments;
     this.offsets = offsets;
@@ -259,6 +271,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
 
   private void installTopology(final List<ActiveCube> cubes, final List<ActiveTable> tables) {
     final StateBackedProjectionState state = StateBackedProjectionState.fromProvider(provider);
+    projectionState = state;
     final EnvelopePublisher publisher =
         new EnvelopePublisher(
             new EventBridgeEnvelopeTransport(client, factsTopic),
@@ -460,39 +473,99 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
 
   @Override
   public void commit(final long offset) {
+    // The synchronous composition of the frozen cut — the final stop commit and the fallback path.
+    // Same barrier, same produce-before-commit ordering, just with no folding in between.
+    final CommitCut cut = freezeCut(offset);
+    try {
+      cut.publish();
+      cut.persist();
+    } catch (final RuntimeException e) {
+      cut.complete(false);
+      throw e;
+    }
+    cut.complete(true);
+  }
+
+  @Override
+  public CommitCut freezeCut(final long offset) {
     // Liveness: seal every segment the source has fully advanced past (the committed offset is the
     // watermark), so sparse cells — e.g. an incident meter that then goes quiet — reach the shuffle
     // even without a natural boundary crossing. The seal forwards SegmentCells into the shuffle
-    // sink, so it must run before the flush below. Using the offset as the watermark is sound
-    // because the pre-fold dedup in process() eliminates producer duplicates (ADR 0007); see
+    // sink, so it must run before the publisher freeze below. Using the offset as the watermark is
+    // sound because the pre-fold dedup in process() eliminates producer duplicates (ADR 0007); see
     // SegmentSealingAggregation#sealCompletedUpTo.
     for (final SegmentSealingAggregation<Fact, ?, ?> aggregation : sealingAggregations) {
       aggregation.sealCompletedUpTo(offset);
     }
-    // Produce-before-commit: publish the sealed shuffle deltas and flush the projected rows, then
-    // persist the full offset + the topology's state (base projection + every open segment) as one
-    // atomic cut on this partition's provider.
-    topology.flush();
+    // Everything the barrier's folds produced is already staged — projected rows at process(),
+    // sealed cells at the seal (SegmentSink.flush is a no-op) — so freezing the publisher and the
+    // serving buffer converges the cut's produced output; the cut publishes it on the IO thread.
+    final EnvelopePublisher publisher = this.publisher;
+    publisher.freeze();
     // The watermark seal above closed every stream below the committed offset's segment, so their
-    // published chunk counters can never be consulted again — prune them to keep the publisher's
-    // per-segment chunk map bounded.
+    // chunk counters (just consumed by the freeze's encode) can never be consulted again — prune
+    // them to keep the publisher's per-segment chunk map bounded.
     publisher.pruneChunkCountersBelow(segments.index(offset));
-    servingWriter.flush();
-    provider.runInTransaction(
-        () -> {
-          offsetKey.wrapInt(partition);
-          offsetValue.wrapLong(offset);
-          offsets.put(offsetKey, offsetValue);
-          // The pre-fold dedup watermarks join the same cut (one long per Zeebe partition), so a
-          // crash-replay resumes from the committed offset with the matching watermark state.
-          for (final Map.Entry<Integer, Long> watermark : appliedWatermarks.entrySet()) {
-            appliedKey.wrapInt(watermark.getKey());
-            appliedValue.wrapLong(watermark.getValue());
-            appliedPositions.put(appliedKey, appliedValue);
-          }
-          topology.checkpoint();
-        });
-    maybeReload();
+    final FreezableDatasetWriter servingWriter = this.servingWriter;
+    servingWriter.freeze();
+    // The pre-fold dedup watermarks are snapshotted AT THE BARRIER: the persisted watermarks must
+    // describe exactly the folds in the frozen state. A snapshot taken at persist time would cover
+    // positions folded after the freeze — folds the frozen cut does not contain — and a
+    // crash-replay would skip them as producer duplicates: silent data loss.
+    final Map<Integer, Long> frozenWatermarks = Map.copyOf(appliedWatermarks);
+    final StateBackedProjectionState state = projectionState;
+    state.freeze();
+    final List<SegmentSealingAggregation<Fact, ?, ?>> aggregations = sealingAggregations;
+    aggregations.forEach(SegmentSealingAggregation::freeze);
+
+    return new CommitCut() {
+
+      @Override
+      public void publish() {
+        // Produce-before-commit: the frozen sealed shuffle deltas and the frozen projected rows
+        // become durable at their destinations before the offset advances; both re-apply
+        // idempotently on a replay (segment/chunk dedup downstream, full-value upserts).
+        publisher.publishFrozen();
+        servingWriter.publishFrozen();
+      }
+
+      @Override
+      public void persist() {
+        // The frozen offset + the frozen dedup watermarks + the frozen topology state (base
+        // projection + every open segment) as one atomic cut on this partition's provider. The
+        // task's key/value flyweights are safe here: they are only ever touched on this commit
+        // path, and cuts are single-flight per partition.
+        provider.runInTransaction(
+            () -> {
+              offsetKey.wrapInt(partition);
+              offsetValue.wrapLong(offset);
+              offsets.put(offsetKey, offsetValue);
+              // The pre-fold dedup watermarks join the same cut (one long per Zeebe partition), so
+              // a crash-replay resumes from the committed offset with the matching watermark state.
+              for (final Map.Entry<Integer, Long> watermark : frozenWatermarks.entrySet()) {
+                appliedKey.wrapInt(watermark.getKey());
+                appliedValue.wrapLong(watermark.getValue());
+                appliedPositions.put(appliedKey, appliedValue);
+              }
+              state.persistFrozen();
+              aggregations.forEach(SegmentSealingAggregation::persistFrozen);
+            });
+      }
+
+      @Override
+      public void complete(final boolean success) {
+        publisher.completeFrozen(success);
+        servingWriter.completeFrozen(success);
+        state.completeFrozen(success);
+        aggregations.forEach(aggregation -> aggregation.completeFrozen(success));
+        // The live appliedWatermarks map stayed authoritative throughout; the frozen copy is
+        // simply dropped either way — a failed cut's watermarks are re-captured (together with
+        // any newer ones) by the next freeze.
+        if (success) {
+          maybeReload();
+        }
+      }
+    };
   }
 
   /**
@@ -526,6 +599,10 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
   public void close() {
     topology.close();
     try {
+      // Drain any rows staged since the last commit — idempotent upserts ahead of the offset cut
+      // are safe (a replay re-writes them), and it keeps the serving view as fresh as before the
+      // staging buffer existed, where in-flight rows were committed by the writer's close.
+      servingWriter.flush();
       datasetStore.close();
     } catch (final Exception e) {
       LOG.warn("Failed to close serving store for partition {}", partition, e);
