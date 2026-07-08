@@ -42,6 +42,7 @@ import io.camunda.process.test.utils.FakeChatModelAdapterProvider;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -388,6 +389,49 @@ public class JunitExtensionTest {
 
       // when/then
       assertThatThrownBy(() -> extension.beforeEach(extensionContext)).isEqualTo(exception);
+    }
+
+    @Test
+    void shouldReadCurrentRuntimeTimeToSetTestCaseStartTime() throws Exception {
+      // given
+      final Instant testCaseStartTime = Instant.now();
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      extension.beforeAll(extensionContext);
+      setManagementClientDummy(extension);
+      when(camundaManagementClient.getCurrentTime()).thenReturn(testCaseStartTime);
+
+      // when
+      extension.beforeEach(extensionContext);
+
+      // then
+      verify(camundaManagementClient).getCurrentTime();
+    }
+
+    @Test
+    void shouldContinueIfClockReadingFails() throws Exception {
+      // given
+      final CamundaProcessTestExtension extension =
+          new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
+
+      extension.beforeAll(extensionContext);
+      setManagementClientDummy(extension);
+      when(camundaManagementClient.getCurrentTime())
+          .thenThrow(new RuntimeException("clock not available"));
+
+      // when/then - should not throw; test case isolation simply falls back to no filter
+      extension.beforeEach(extensionContext);
+    }
+
+    private void setManagementClientDummy(final CamundaProcessTestExtension extension) {
+      try {
+        final Field cmcField = extension.getClass().getDeclaredField("camundaManagementClient");
+        cmcField.setAccessible(true);
+        cmcField.set(extension, camundaManagementClient);
+      } catch (final Throwable t) {
+        ExceptionUtils.throwAsUncheckedException(t);
+      }
     }
   }
 

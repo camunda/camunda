@@ -126,6 +126,7 @@ public class CamundaProcessTestExtension
   private JsonMapper jsonMapper;
 
   private CamundaManagementClient camundaManagementClient;
+  private Instant testCaseStartTime;
   private boolean clockResetEnabled = CamundaProcessTestRuntimeDefaults.CLOCK_RESET_ENABLED;
   private boolean dataDeletionEnabled = CamundaProcessTestRuntimeDefaults.DATA_DELETION_ENABLED;
 
@@ -315,8 +316,10 @@ public class CamundaProcessTestExtension
     }
 
     // initialize assertions
+    testCaseStartTime = readCurrentRuntimeTime();
     final CamundaDataSource dataSource =
         new CamundaDataSource(camundaProcessTestContext.createClient());
+    dataSource.setTestCaseStartTime(testCaseStartTime);
     CamundaAssert.initialize(dataSource);
 
     // initialize result collector
@@ -382,6 +385,7 @@ public class CamundaProcessTestExtension
     try {
       final CamundaDataSource dataSource =
           new CamundaDataSource(camundaProcessTestContext.createClient());
+      dataSource.setTestCaseStartTime(testCaseStartTime);
       final CoverageTestData coverageData = CoverageTestDataCollector.collectData(dataSource);
       coverageCollector.collectTestRunCoverage(
           context.getRequiredTestClass(),
@@ -473,6 +477,18 @@ public class CamundaProcessTestExtension
           "Failed to reset the time, skipping. Check the runtime for details. "
               + "Note that a dirty runtime may cause failures in other test cases.",
           t);
+    }
+  }
+
+  private Instant readCurrentRuntimeTime() {
+    try {
+      return camundaManagementClient.getCurrentTime();
+    } catch (final Throwable t) {
+      LOG.warn(
+          "Failed to read the current runtime time. Test case isolation by start time will be "
+              + "disabled for this test case.",
+          t);
+      return null;
     }
   }
 
