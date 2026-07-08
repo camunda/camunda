@@ -39,10 +39,12 @@ const TabPanel = styled(BaseTabPanel)<TabPanelProps>`
     return css`
       height: 100%;
       overflow: hidden;
-      ${$removePadding &&
-      css`
-        padding: 0;
-      `}
+      ${
+        $removePadding &&
+        css`
+          padding: 0;
+        `
+      }
     `;
   }}
 `;

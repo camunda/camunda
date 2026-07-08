@@ -45,8 +45,7 @@ const validateModifiedNameNotDuplicate =
   (
     variableName = '',
     allValues:
-      | {value?: string; newVariables?: Array<VariableFormValues>}
-      | undefined,
+      {value?: string; newVariables?: Array<VariableFormValues>} | undefined,
     meta,
   ) => {
     if (allValues?.newVariables === undefined) {
