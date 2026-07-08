@@ -15,34 +15,60 @@ import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /**
- * A bytes-bounded, read-through write-back cache over a durable {@link KeyValueStore}. Hot entries
- * are held on the heap up to a byte budget; a read miss falls through to the delegate and populates
- * the cache, and writes are buffered and flushed to the delegate only on {@link #checkpoint()}, so
- * they coalesce into the runtime's commit transaction rather than writing through per record.
+ * A bytes-bounded, read-through write-back cache over a durable {@link KeyValueStore}, layered so
+ * checkpoints can persist asynchronously. Reads resolve top-down, first hit wins:
  *
- * <p>Unlike an unbounded write-back cache, this one evicts under memory pressure — but only
- * <em>clean</em> entries (present in the delegate, so re-readable). A <em>dirty</em> entry (a
- * buffered put or delete not yet checkpointed) is pinned: flushing it early, outside the checkpoint
- * transaction, would put durable state ahead of the committed offset and break replay recovery. The
- * budget is therefore a soft bound between checkpoints — the dirty working set may exceed it — and
- * a firm one afterwards, once checkpoint marks everything clean. Recovery stays changelog-free: the
- * delegate advances as one atomic cut with the offsets, and a crash replays the source log.
+ * <ol>
+ *   <li><em>Mutable overlay</em> — dirty writes buffered since the last {@link #freeze()}. Every
+ *       {@link #put} and {@link #delete} lands here and only here.
+ *   <li><em>Frozen overlay</em> — the immutable snapshot currently being persisted. Never mutated:
+ *       a write to a key present here creates a new mutable-overlay entry instead, because a
+ *       flusher thread may be reading the frozen entry concurrently.
+ *   <li><em>Clean cache</em> — delegate-backed hot entries, access-ordered so the eldest is the
+ *       eviction candidate, trimmed to the byte budget.
+ *   <li>The durable delegate — a read miss falls through and populates the clean cache.
+ * </ol>
  *
- * <p>Reads and scans see the buffered writes: {@link #get}/{@link #exists} serve dirty values and
- * hide tombstones, and {@link #forEach}/{@link #prefixScan} merge the delegate's contents with the
- * dirty overlay in key order. Keys and values are serialized bytes in unsigned-byte order, matching
- * the delegate's scan semantics. Not thread-safe (single-writer, like the rest of the pipeline).
+ * <p>Checkpointing splits into three steps so processing pauses only for the cheap one: {@link
+ * #freeze()} swaps the mutable overlay into the frozen slot (pointer swaps only), {@link
+ * #persistFrozen()} drains the frozen entries to the delegate inside the commit transaction, and
+ * {@link #completeFrozen(boolean)} retires them into the clean cache on success or merges them back
+ * into the mutable overlay on failure so the next freeze re-includes them. {@link #checkpoint()}
+ * remains the synchronous composition of the three, used by the final commit on shutdown.
+ *
+ * <p>Overlay entries — mutable and frozen alike — are pinned: flushing or evicting them outside the
+ * checkpoint transaction would put durable state ahead of the committed offset and break replay
+ * recovery. The byte budget is therefore a soft bound while overlay entries exist (only clean
+ * entries evict) and a firm one after a successful checkpoint retires and trims the working set.
+ * Recovery stays changelog-free: the delegate advances as one atomic cut with the offsets, and a
+ * crash replays the source log.
+ *
+ * <p>Reads and scans see the buffered writes: {@link #get}/{@link #exists} serve overlay values and
+ * hide tombstones, and {@link #forEach}/{@link #prefixScan} merge the delegate's sorted stream with
+ * both sorted overlay indexes in key order — mutable wins over frozen wins over delegate, and a
+ * tombstone at any overlay level hides everything below. Keys and values are serialized bytes in
+ * unsigned-byte order, matching the delegate's scan semantics.
+ *
+ * <p><b>Threading:</b> single-writer with one exception. Every method except {@link
+ * #persistFrozen()} must run on the owner thread. {@link #persistFrozen()} may run on a flusher
+ * thread: it touches only the frozen overlay (immutable by then), its own dedicated flyweights, and
+ * the delegate — never the mutable overlay or the clean cache, which the owner thread may be using
+ * concurrently. The caller's executor handoff provides the happens-before edges around freeze and
+ * completion; there is no internal locking.
  *
  * @param <K> the key type (a {@link DbKey} flyweight)
  * @param <V> the value type (a {@link DbValue} flyweight)
@@ -50,56 +76,75 @@ import org.agrona.concurrent.UnsafeBuffer;
 public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
     implements KeyValueStore<K, V>, Checkpointable {
 
+  private static final byte[] NO_PREFIX = new byte[0];
+
   private final KeyValueStore<K, V> delegate;
+  // Owner-thread flyweights, used by reads and scans.
   private final K keyFlyweight;
   private final V valueFlyweight;
+  // Dedicated flyweights for persistFrozen, which may run on a flusher thread while the owner
+  // thread keeps wrapping the pair above — sharing them would race.
+  private final K persistKeyFlyweight;
+  private final V persistValueFlyweight;
   private final long maxBytes;
 
-  // Access-ordered so the eldest entry is the LRU eviction candidate. Keys are content-equal
-  // ByteBuffers (each wraps a full, offset-0 byte[]), so lookups match by key bytes.
-  private final LinkedHashMap<ByteBuffer, CacheEntry> cache = new LinkedHashMap<>(16, 0.75f, true);
+  // Mutable overlay: a hash map for point lookups plus a sorted index (unsigned key order) sharing
+  // the same CacheEntry objects, so scans read their overlay from a subMap (O(matches), not
+  // O(entries)). Hash keys are content-equal ByteBuffers, each wrapping a full, offset-0 byte[].
+  // freeze() steals both structures wholesale and installs fresh empty ones.
+  private HashMap<ByteBuffer, CacheEntry> mutableMap = new HashMap<>();
+  private TreeMap<byte[], CacheEntry> mutableIndex = new TreeMap<>(Arrays::compareUnsigned);
 
-  // The dirty entries again, in unsigned key order, sharing the cache's CacheEntry objects: scans
-  // read their overlay from a subMap of this index (O(matches), not O(cache)) and checkpoint
-  // flushes it (O(dirty)). Maintained on put/delete, emptied by checkpoint; clean entries — the
-  // only evictable ones — are never in it, so eviction leaves it untouched.
-  private final TreeMap<byte[], CacheEntry> dirtyIndex = new TreeMap<>(Arrays::compareUnsigned);
+  // Frozen overlay: non-null iff a snapshot is outstanding (between freeze and completeFrozen).
+  // Same shape as the mutable overlay; never mutated while outstanding.
+  private Map<ByteBuffer, CacheEntry> frozenMap;
+  private NavigableMap<byte[], CacheEntry> frozenIndex;
+
+  // Clean cache: delegate-backed entries only, access-ordered so the eldest entry is the LRU
+  // eviction candidate. Disjoint from both overlays — a key lives in at most one of
+  // {mutable, clean}, plus possibly the frozen overlay (whose entry then shadows the layers below).
+  private final LinkedHashMap<ByteBuffer, CacheEntry> cleanCache =
+      new LinkedHashMap<>(16, 0.75f, true);
+
+  // Approximate heap footprint of mutable + frozen + clean together.
   private long approxBytes;
 
-  // How many cached entries are clean (evictable). With a mostly-dirty cache every over-budget
-  // put would otherwise re-scan the whole pinned LRU prefix and find nothing; eviction
-  // short-circuits when this reaches zero. Maintained at every state transition: clean insert
-  // (read-through), clean->dirty (put/delete on a clean entry), dirty->clean (checkpoint), and
-  // clean removal (eviction).
-  private int cleanCount;
-
-  // Opt-in: a delete of a never-flushed dirty put annihilates the pair in the cache — neither the
-  // put nor a tombstone ever reaches the delegate. Sound ONLY under the caller's guarantee that a
-  // deleted key is never read again (deletes are garbage collection of dead rows, not semantics):
-  // if the delegate holds an older flushed value for the key, skipping the tombstone leaves it as
-  // unreachable dead space (reclaimed by compaction), never as a resurrectable read.
+  // Opt-in: a delete of a never-flushed dirty put annihilates the pair in the mutable overlay —
+  // neither the put nor a tombstone ever reaches the delegate. Sound ONLY under the caller's
+  // guarantee that a deleted key is never read again (deletes are garbage collection of dead rows,
+  // not semantics): if the delegate holds an older flushed value for the key, skipping the
+  // tombstone leaves it as unreachable dead space (reclaimed by compaction), never as a
+  // resurrectable read. A put whose key sits in the frozen overlay or the delegate is flushed —
+  // its delete must reach the delegate as a tombstone.
   private final boolean absorbDeletes;
 
   public CachingKeyValueStore(
       final KeyValueStore<K, V> delegate,
-      final K keyFlyweight,
-      final V valueFlyweight,
+      final Supplier<K> keyFlyweights,
+      final Supplier<V> valueFlyweights,
       final long maxBytes) {
-    this(delegate, keyFlyweight, valueFlyweight, maxBytes, false);
+    this(delegate, keyFlyweights, valueFlyweights, maxBytes, false);
   }
 
+  /**
+   * @param keyFlyweights must return a fresh flyweight on each call — the owner thread and the
+   *     persist step each need their own
+   * @param valueFlyweights must return a fresh flyweight on each call, like {@code keyFlyweights}
+   */
   public CachingKeyValueStore(
       final KeyValueStore<K, V> delegate,
-      final K keyFlyweight,
-      final V valueFlyweight,
+      final Supplier<K> keyFlyweights,
+      final Supplier<V> valueFlyweights,
       final long maxBytes,
       final boolean absorbDeletes) {
     if (maxBytes <= 0) {
       throw new IllegalArgumentException("maxBytes must be > 0, was " + maxBytes);
     }
     this.delegate = delegate;
-    this.keyFlyweight = keyFlyweight;
-    this.valueFlyweight = valueFlyweight;
+    keyFlyweight = keyFlyweights.get();
+    valueFlyweight = valueFlyweights.get();
+    persistKeyFlyweight = keyFlyweights.get();
+    persistValueFlyweight = valueFlyweights.get();
     this.maxBytes = maxBytes;
     this.absorbDeletes = absorbDeletes;
   }
@@ -108,21 +153,18 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
   public void put(final K key, final V value) {
     final byte[] keyBytes = toBytes(key);
     final byte[] valueBytes = toBytes(value);
-    final CacheEntry entry = cache.get(ByteBuffer.wrap(keyBytes));
-    if (entry == null) {
-      final CacheEntry created = CacheEntry.dirtyValue(valueBytes);
-      cache.put(ByteBuffer.wrap(keyBytes), created);
-      dirtyIndex.put(keyBytes, created);
-      approxBytes += keyBytes.length + valueBytes.length;
-    } else {
-      if (!entry.dirty) {
-        cleanCount--; // clean -> dirty
-      }
+    final CacheEntry entry = mutableMap.get(ByteBuffer.wrap(keyBytes));
+    if (entry != null) {
+      // In-place update of a mutable-overlay entry; flushed is a property of the key's presence in
+      // the delegate, so it carries over.
       approxBytes += valueBytes.length - footprintValue(entry);
       entry.value = valueBytes;
-      entry.dirty = true;
       entry.tombstone = false;
-      dirtyIndex.put(keyBytes, entry); // no-op if already dirty (same shared entry)
+    } else {
+      final CacheEntry created = new CacheEntry(valueBytes, false, shadowsFlushedKey(keyBytes));
+      mutableMap.put(ByteBuffer.wrap(keyBytes), created);
+      mutableIndex.put(keyBytes, created);
+      approxBytes += keyBytes.length + valueBytes.length;
     }
     evictIfNeeded();
   }
@@ -130,40 +172,63 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
   @Override
   public void delete(final K key) {
     final byte[] keyBytes = toBytes(key);
-    final CacheEntry entry = cache.get(ByteBuffer.wrap(keyBytes));
-    if (entry == null) {
-      final CacheEntry created = CacheEntry.tombstone();
-      cache.put(ByteBuffer.wrap(keyBytes), created);
-      dirtyIndex.put(keyBytes, created);
-      approxBytes += keyBytes.length;
-    } else if (absorbDeletes && entry.dirty && !entry.tombstone && !entry.flushed) {
-      // The put never reached the delegate — the pair annihilates: no write, no tombstone.
-      cache.remove(ByteBuffer.wrap(keyBytes));
-      dirtyIndex.remove(keyBytes);
-      approxBytes -= keyBytes.length + footprintValue(entry);
-    } else {
-      if (!entry.dirty) {
-        cleanCount--; // clean -> dirty tombstone
+    final CacheEntry entry = mutableMap.get(ByteBuffer.wrap(keyBytes));
+    if (entry != null) {
+      if (absorbDeletes && !entry.tombstone && !entry.flushed) {
+        // The put never reached the delegate (and no frozen put is headed there) — the pair
+        // annihilates: no write, no tombstone.
+        mutableMap.remove(ByteBuffer.wrap(keyBytes));
+        mutableIndex.remove(keyBytes);
+        approxBytes -= keyBytes.length + footprintValue(entry);
+      } else {
+        approxBytes -= footprintValue(entry);
+        entry.value = null;
+        entry.tombstone = true;
       }
-      approxBytes -= footprintValue(entry);
-      entry.value = null;
-      entry.dirty = true;
-      entry.tombstone = true;
-      dirtyIndex.put(keyBytes, entry); // no-op if already dirty (same shared entry)
+    } else {
+      final CacheEntry created = new CacheEntry(null, true, shadowsFlushedKey(keyBytes));
+      mutableMap.put(ByteBuffer.wrap(keyBytes), created);
+      mutableIndex.put(keyBytes, created);
+      approxBytes += keyBytes.length;
     }
-    // A tombstone is dirty, hence pinned; it must outlive eviction so a read-through does not
-    // resurrect the delegate's value before the delete is checkpointed.
+    // A tombstone is pinned in the mutable overlay; it must outlive eviction so a read-through
+    // does not resurrect the delegate's value before the delete is checkpointed.
+  }
+
+  /**
+   * Whether a new mutable-overlay entry for {@code keyBytes} starts out flushed: the delegate
+   * already holds the key (it shadows a clean entry) or is about to (it shadows a frozen put headed
+   * there). Evicts the shadowed clean entry — the overlay would hide it anyway, and dropping it
+   * keeps the clean cache disjoint from the overlays.
+   */
+  private boolean shadowsFlushedKey(final byte[] keyBytes) {
+    final CacheEntry clean = cleanCache.remove(ByteBuffer.wrap(keyBytes));
+    if (clean != null) {
+      approxBytes -= keyBytes.length + clean.value.length;
+      return true;
+    }
+    if (frozenMap != null) {
+      final CacheEntry frozen = frozenMap.get(ByteBuffer.wrap(keyBytes));
+      // A frozen tombstone is headed to the delegate as a delete, so the key stays un-flushed.
+      return frozen != null && !frozen.tombstone;
+    }
+    return false;
   }
 
   @Override
   public Optional<V> get(final K key) {
     final byte[] keyBytes = toBytes(key);
-    final CacheEntry entry = cache.get(ByteBuffer.wrap(keyBytes));
-    if (entry != null) {
-      if (entry.tombstone) {
+    final CacheEntry overlay = overlayEntry(keyBytes);
+    if (overlay != null) {
+      if (overlay.tombstone) {
         return Optional.empty();
       }
-      wrap(valueFlyweight, entry.value);
+      wrap(valueFlyweight, overlay.value);
+      return Optional.of(valueFlyweight);
+    }
+    final CacheEntry clean = cleanCache.get(ByteBuffer.wrap(keyBytes));
+    if (clean != null) {
+      wrap(valueFlyweight, clean.value);
       return Optional.of(valueFlyweight);
     }
     final Optional<V> fromDelegate = delegate.get(key);
@@ -171,8 +236,7 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
       return Optional.empty();
     }
     final byte[] valueBytes = toBytes(fromDelegate.get());
-    cache.put(ByteBuffer.wrap(keyBytes), CacheEntry.cleanValue(valueBytes));
-    cleanCount++; // read-through populates a clean entry
+    cleanCache.put(ByteBuffer.wrap(keyBytes), new CacheEntry(valueBytes, false, true));
     approxBytes += keyBytes.length + valueBytes.length;
     evictIfNeeded();
     wrap(valueFlyweight, valueBytes);
@@ -181,101 +245,220 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
 
   @Override
   public boolean exists(final K key) {
-    final CacheEntry entry = cache.get(ByteBuffer.wrap(toBytes(key)));
-    if (entry != null) {
-      return !entry.tombstone;
+    final byte[] keyBytes = toBytes(key);
+    final CacheEntry overlay = overlayEntry(keyBytes);
+    if (overlay != null) {
+      return !overlay.tombstone;
+    }
+    if (cleanCache.get(ByteBuffer.wrap(keyBytes)) != null) {
+      return true;
     }
     return delegate.exists(key);
   }
 
+  /**
+   * The overlay entry shadowing {@code keyBytes}, mutable before frozen; null if neither has it.
+   */
+  private CacheEntry overlayEntry(final byte[] keyBytes) {
+    final CacheEntry mutable = mutableMap.get(ByteBuffer.wrap(keyBytes));
+    if (mutable != null) {
+      return mutable;
+    }
+    return frozenMap == null ? null : frozenMap.get(ByteBuffer.wrap(keyBytes));
+  }
+
   @Override
   public void prefixScan(final DbKey prefix, final BiConsumer<K, V> visitor) {
-    merge(dirtyInPrefix(toBytes(prefix)), sink -> delegate.prefixScan(prefix, sink), visitor);
+    merge(overlayInPrefix(toBytes(prefix)), sink -> delegate.prefixScan(prefix, sink), visitor);
   }
 
   @Override
   public void prefixScanKeys(final DbKey prefix, final Consumer<K> visitor) {
     mergeKeys(
-        dirtyInPrefix(toBytes(prefix)), sink -> delegate.prefixScanKeys(prefix, sink), visitor);
+        overlayInPrefix(toBytes(prefix)), sink -> delegate.prefixScanKeys(prefix, sink), visitor);
   }
 
   @Override
   public void forEach(final BiConsumer<K, V> visitor) {
-    merge(dirtyIndex, delegate::forEach, visitor);
-  }
-
-  @Override
-  public void checkpoint() {
-    // Flush everything first, then transition entry states — so a delegate failure mid-flush
-    // leaves every entry still marked dirty for the retried checkpoint.
-    for (final Map.Entry<byte[], CacheEntry> dirty : dirtyIndex.entrySet()) {
-      final CacheEntry entry = dirty.getValue();
-      wrap(keyFlyweight, dirty.getKey());
-      if (entry.tombstone) {
-        delegate.delete(keyFlyweight);
-      } else {
-        wrap(valueFlyweight, entry.value);
-        delegate.put(keyFlyweight, valueFlyweight);
-      }
-    }
-    // Flushed puts are now clean (delegate-backed, so evictable); flushed tombstones are absent in
-    // the delegate, so drop them — a later read-through will correctly miss.
-    for (final Map.Entry<byte[], CacheEntry> dirty : dirtyIndex.entrySet()) {
-      final CacheEntry entry = dirty.getValue();
-      if (entry.tombstone) {
-        cache.remove(ByteBuffer.wrap(dirty.getKey()));
-        approxBytes -= dirty.getKey().length;
-      } else {
-        entry.dirty = false;
-        entry.flushed = true; // the delegate now holds this key — a later delete must tombstone
-        cleanCount++; // dirty -> clean (flushed, delegate-backed again)
-      }
-    }
-    dirtyIndex.clear();
-    // Everything is clean now, so the pinned working set can finally be trimmed back to budget.
-    evictIfNeeded();
+    merge(overlayInPrefix(NO_PREFIX), delegate::forEach, visitor);
   }
 
   /**
-   * Whether the cache is over its byte budget because dirty (un-flushable) entries could not be
-   * evicted. It is a signal to the runtime to run the commit barrier now: {@link #checkpoint()}
-   * flushes those entries as one atomic cut with the offset, after which they are clean and
-   * evicted. Flushing them any earlier would put durable state ahead of the committed offset.
+   * Steals the mutable overlay into the frozen slot and installs fresh empty structures — pointer
+   * swaps only, so processing can resume immediately. The frozen snapshot is immutable from here
+   * until {@link #completeFrozen(boolean)} releases it.
+   *
+   * @throws IllegalStateException if a frozen snapshot is already outstanding — the runtime
+   *     guarantees single-flight checkpoints, this guards against a violation
+   */
+  public void freeze() {
+    if (frozenIndex != null) {
+      throw new IllegalStateException(
+          "cannot freeze: a frozen snapshot is already outstanding and not yet completed");
+    }
+    frozenMap = mutableMap;
+    frozenIndex = mutableIndex;
+    mutableMap = new HashMap<>();
+    mutableIndex = new TreeMap<>(Arrays::compareUnsigned);
+  }
+
+  /**
+   * Drains the frozen snapshot to the delegate — puts for values, deletes for tombstones. The only
+   * method that may run off the owner thread: it reads the immutable frozen overlay through its own
+   * flyweights and never touches the mutable overlay or the clean cache. Failure leaves the frozen
+   * snapshot outstanding; the caller decides between retrying and {@link #completeFrozen(boolean)}
+   * with {@code success=false}.
+   *
+   * @throws IllegalStateException if no frozen snapshot is outstanding
+   */
+  public void persistFrozen() {
+    if (frozenIndex == null) {
+      throw new IllegalStateException("cannot persist: no frozen snapshot is outstanding");
+    }
+    for (final Map.Entry<byte[], CacheEntry> frozen : frozenIndex.entrySet()) {
+      final CacheEntry entry = frozen.getValue();
+      wrap(persistKeyFlyweight, frozen.getKey());
+      if (entry.tombstone) {
+        delegate.delete(persistKeyFlyweight);
+      } else {
+        wrap(persistValueFlyweight, entry.value);
+        delegate.put(persistKeyFlyweight, persistValueFlyweight);
+      }
+    }
+  }
+
+  /**
+   * Releases the frozen snapshot on the owner thread. On success the frozen entries reached the
+   * delegate: values retire into the clean cache (delegate-backed, evictable) unless a newer
+   * mutable write shadows them, tombstones drop, and the cache trims back to budget. On failure
+   * every frozen entry merges back into the mutable overlay — except where a newer mutable write
+   * exists for the key, which wins — so the next freeze re-includes it.
+   *
+   * @throws IllegalStateException if no frozen snapshot is outstanding
+   */
+  public void completeFrozen(final boolean success) {
+    if (frozenIndex == null) {
+      throw new IllegalStateException("cannot complete: no frozen snapshot is outstanding");
+    }
+    if (success) {
+      retireFrozen();
+    } else {
+      mergeBackFrozen();
+    }
+    frozenMap = null;
+    frozenIndex = null;
+    if (success) {
+      // Everything left is clean or freshly mutable, so the retired working set can be trimmed.
+      evictIfNeeded();
+    }
+  }
+
+  private void retireFrozen() {
+    for (final Map.Entry<byte[], CacheEntry> frozen : frozenIndex.entrySet()) {
+      final byte[] keyBytes = frozen.getKey();
+      final CacheEntry entry = frozen.getValue();
+      if (entry.tombstone) {
+        // The delete reached the delegate; a later read-through correctly misses.
+        approxBytes -= keyBytes.length;
+        continue;
+      }
+      final CacheEntry shadow = mutableMap.get(ByteBuffer.wrap(keyBytes));
+      if (shadow != null) {
+        // A newer mutable write supersedes the retired value — drop it rather than cache a stale
+        // shadowed copy. The delegate now holds the key, so the shadowing write is flushed: its
+        // delete must reach the delegate as a tombstone.
+        approxBytes -= keyBytes.length + entry.value.length;
+        if (!shadow.tombstone) {
+          shadow.flushed = true;
+        }
+      } else {
+        entry.flushed = true; // the delegate now holds this key — a later delete must tombstone
+        cleanCache.put(ByteBuffer.wrap(keyBytes), entry);
+      }
+    }
+  }
+
+  private void mergeBackFrozen() {
+    for (final Map.Entry<byte[], CacheEntry> frozen : frozenIndex.entrySet()) {
+      final byte[] keyBytes = frozen.getKey();
+      final CacheEntry entry = frozen.getValue();
+      if (mutableMap.containsKey(ByteBuffer.wrap(keyBytes))) {
+        // The key was re-written after the freeze — the newer mutable entry wins outright.
+        approxBytes -= keyBytes.length + footprintValue(entry);
+      } else {
+        mutableMap.put(ByteBuffer.wrap(keyBytes), entry);
+        mutableIndex.put(keyBytes, entry);
+      }
+    }
+  }
+
+  /**
+   * The synchronous composition of {@link #freeze()}, {@link #persistFrozen()} and {@link
+   * #completeFrozen(boolean)}, used by the final commit on shutdown. A persist failure merges the
+   * snapshot back before rethrowing, so every entry is dirty again for the retried checkpoint.
+   */
+  @Override
+  public void checkpoint() {
+    freeze();
+    try {
+      persistFrozen();
+    } catch (final RuntimeException | Error e) {
+      completeFrozen(false);
+      throw e;
+    }
+    completeFrozen(true);
+  }
+
+  /**
+   * Whether the cache is over its byte budget because overlay (un-flushable) entries could not be
+   * evicted. It is a signal to the runtime to run the commit barrier now: checkpointing flushes
+   * those entries as one atomic cut with the offset, after which they are clean and evicted.
+   * Flushing them any earlier would put durable state ahead of the committed offset.
    */
   public boolean overCapacity() {
     return approxBytes > maxBytes;
   }
 
   private void evictIfNeeded() {
-    if (approxBytes <= maxBytes || cleanCount == 0) {
-      return; // under budget, or everything is pinned dirty — a scan would find nothing
+    if (approxBytes <= maxBytes || cleanCache.isEmpty()) {
+      return; // under budget, or everything is pinned in an overlay — nothing to evict
     }
-    final Iterator<Map.Entry<ByteBuffer, CacheEntry>> it = cache.entrySet().iterator();
-    while (approxBytes > maxBytes && cleanCount > 0 && it.hasNext()) {
-      final Map.Entry<ByteBuffer, CacheEntry> cached = it.next();
-      final CacheEntry entry = cached.getValue();
-      if (entry.dirty) {
-        continue; // pinned until checkpoint (a put or a tombstone)
-      }
-      approxBytes -= cached.getKey().remaining() + entry.value.length;
+    final Iterator<Map.Entry<ByteBuffer, CacheEntry>> it = cleanCache.entrySet().iterator();
+    while (approxBytes > maxBytes && it.hasNext()) {
+      final Map.Entry<ByteBuffer, CacheEntry> clean = it.next();
+      approxBytes -= clean.getKey().remaining() + clean.getValue().value.length;
       it.remove();
-      cleanCount--;
     }
   }
 
   /**
-   * The dirty-index view holding exactly the dirty entries whose key starts with {@code
-   * prefixBytes}: every such key is {@code >= prefixBytes} and {@code < successor(prefixBytes)} in
-   * unsigned byte order — a range selection on the index, never a walk of the cache.
+   * The overlay entries whose key starts with {@code prefixBytes}, in unsigned key order, mutable
+   * shadowing frozen on equal keys — a lazy merge of range selections on both sorted indexes, never
+   * a walk of the caches.
    */
-  private NavigableMap<byte[], CacheEntry> dirtyInPrefix(final byte[] prefixBytes) {
+  private Iterator<Map.Entry<byte[], CacheEntry>> overlayInPrefix(final byte[] prefixBytes) {
+    final Iterator<Map.Entry<byte[], CacheEntry>> mutable =
+        inPrefix(mutableIndex, prefixBytes).entrySet().iterator();
+    if (frozenIndex == null) {
+      return mutable;
+    }
+    return new OverlayMergeIterator(
+        mutable, inPrefix(frozenIndex, prefixBytes).entrySet().iterator());
+  }
+
+  /**
+   * The index view holding exactly the entries whose key starts with {@code prefixBytes}: every
+   * such key is {@code >= prefixBytes} and {@code < successor(prefixBytes)} in unsigned byte order.
+   */
+  private static NavigableMap<byte[], CacheEntry> inPrefix(
+      final NavigableMap<byte[], CacheEntry> index, final byte[] prefixBytes) {
     if (prefixBytes.length == 0) {
-      return dirtyIndex;
+      return index;
     }
     final byte[] upper = successor(prefixBytes);
     return upper == null
-        ? dirtyIndex.tailMap(prefixBytes, true)
-        : dirtyIndex.subMap(prefixBytes, true, upper, false);
+        ? index.tailMap(prefixBytes, true)
+        : index.subMap(prefixBytes, true, upper, false);
   }
 
   /**
@@ -295,88 +478,86 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
   }
 
   /**
-   * Merges the delegate's entries with the dirty overlay in key order: a dirty put is emitted in
-   * place (overriding the delegate's entry for the same key), a tombstone hides the delegate's
+   * Merges the delegate's entries with the overlay stream in key order: an overlay put is emitted
+   * in place (overriding the delegate's entry for the same key), a tombstone hides the delegate's
    * entry, and unchanged delegate entries pass through.
    */
   private void merge(
-      final NavigableMap<byte[], CacheEntry> dirtyEntries,
+      final Iterator<Map.Entry<byte[], CacheEntry>> overlay,
       final Consumer<BiConsumer<K, V>> delegateScan,
       final BiConsumer<K, V> visitor) {
-    final Iterator<Map.Entry<byte[], CacheEntry>> dirty = dirtyEntries.entrySet().iterator();
-    // A one-slot cursor so the delegate callback can advance the dirty stream as it goes.
+    // A one-slot cursor so the delegate callback can advance the overlay stream as it goes.
     @SuppressWarnings("unchecked")
     final Map.Entry<byte[], CacheEntry>[] pending =
-        new Map.Entry[] {dirty.hasNext() ? dirty.next() : null};
+        new Map.Entry[] {overlay.hasNext() ? overlay.next() : null};
     delegateScan.accept(
         (delegateKey, delegateValue) -> {
           final byte[] keyBytes = toBytes(delegateKey);
-          // Dirty keys strictly before the delegate's: emit the puts; a tombstone here shadows a
+          // Overlay keys strictly before the delegate's: emit the puts; a tombstone here shadows a
           // key the delegate has already passed (or never had), so it just drops out.
           while (pending[0] != null && Arrays.compareUnsigned(pending[0].getKey(), keyBytes) < 0) {
             emit(pending[0], visitor);
-            pending[0] = dirty.hasNext() ? dirty.next() : null;
+            pending[0] = overlay.hasNext() ? overlay.next() : null;
           }
           if (pending[0] != null && Arrays.compareUnsigned(pending[0].getKey(), keyBytes) == 0) {
-            emit(pending[0], visitor); // a dirty put overrides, a tombstone hides
-            pending[0] = dirty.hasNext() ? dirty.next() : null;
+            emit(pending[0], visitor); // an overlay put overrides, a tombstone hides
+            pending[0] = overlay.hasNext() ? overlay.next() : null;
           } else {
             visitor.accept(delegateKey, delegateValue); // unchanged delegate entry
           }
         });
-    while (pending[0] != null) { // dirty keys after the last delegate key
+    while (pending[0] != null) { // overlay keys after the last delegate key
       emit(pending[0], visitor);
-      pending[0] = dirty.hasNext() ? dirty.next() : null;
+      pending[0] = overlay.hasNext() ? overlay.next() : null;
     }
   }
 
-  private void emit(final Map.Entry<byte[], CacheEntry> dirty, final BiConsumer<K, V> visitor) {
-    final CacheEntry entry = dirty.getValue();
+  private void emit(final Map.Entry<byte[], CacheEntry> overlay, final BiConsumer<K, V> visitor) {
+    final CacheEntry entry = overlay.getValue();
     if (entry.tombstone) {
       return;
     }
-    wrap(keyFlyweight, dirty.getKey());
+    wrap(keyFlyweight, overlay.getKey());
     wrap(valueFlyweight, entry.value);
     visitor.accept(keyFlyweight, valueFlyweight);
   }
 
   /**
-   * The key-only counterpart of {@link #merge}: interleaves dirty put keys with the delegate's keys
-   * in key order, dropping tombstoned keys, without touching any value.
+   * The key-only counterpart of {@link #merge}: interleaves overlay put keys with the delegate's
+   * keys in key order, dropping tombstoned keys, without touching any value.
    */
   private void mergeKeys(
-      final NavigableMap<byte[], CacheEntry> dirtyEntries,
+      final Iterator<Map.Entry<byte[], CacheEntry>> overlay,
       final Consumer<Consumer<K>> delegateScan,
       final Consumer<K> visitor) {
-    final Iterator<Map.Entry<byte[], CacheEntry>> dirty = dirtyEntries.entrySet().iterator();
     @SuppressWarnings("unchecked")
     final Map.Entry<byte[], CacheEntry>[] pending =
-        new Map.Entry[] {dirty.hasNext() ? dirty.next() : null};
+        new Map.Entry[] {overlay.hasNext() ? overlay.next() : null};
     delegateScan.accept(
         delegateKey -> {
           final byte[] keyBytes = toBytes(delegateKey);
           while (pending[0] != null && Arrays.compareUnsigned(pending[0].getKey(), keyBytes) < 0) {
             emitKey(pending[0], visitor);
-            pending[0] = dirty.hasNext() ? dirty.next() : null;
+            pending[0] = overlay.hasNext() ? overlay.next() : null;
           }
           if (pending[0] != null && Arrays.compareUnsigned(pending[0].getKey(), keyBytes) == 0) {
-            emitKey(pending[0], visitor); // a dirty put shadows, a tombstone hides
-            pending[0] = dirty.hasNext() ? dirty.next() : null;
+            emitKey(pending[0], visitor); // an overlay put shadows, a tombstone hides
+            pending[0] = overlay.hasNext() ? overlay.next() : null;
           } else {
             visitor.accept(delegateKey); // unchanged delegate key
           }
         });
-    while (pending[0] != null) { // dirty keys after the last delegate key
+    while (pending[0] != null) { // overlay keys after the last delegate key
       emitKey(pending[0], visitor);
-      pending[0] = dirty.hasNext() ? dirty.next() : null;
+      pending[0] = overlay.hasNext() ? overlay.next() : null;
     }
   }
 
-  private void emitKey(final Map.Entry<byte[], CacheEntry> dirty, final Consumer<K> visitor) {
-    if (dirty.getValue().tombstone) {
+  private void emitKey(final Map.Entry<byte[], CacheEntry> overlay, final Consumer<K> visitor) {
+    if (overlay.getValue().tombstone) {
       return;
     }
-    wrap(keyFlyweight, dirty.getKey());
+    wrap(keyFlyweight, overlay.getKey());
     visitor.accept(keyFlyweight);
   }
 
@@ -394,35 +575,75 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
     reader.wrap(new UnsafeBuffer(bytes), 0, bytes.length);
   }
 
-  /** A cached entry: a present value or a tombstone, either clean (delegate-backed) or dirty. */
+  /**
+   * A cached entry: a present value or a tombstone. Which layer it lives in — mutable overlay,
+   * frozen overlay, or clean cache — determines whether it is dirty, being persisted, or evictable.
+   */
   private static final class CacheEntry {
 
     private byte[] value; // null iff tombstone
-    private boolean dirty;
     private boolean tombstone;
-    // Whether the delegate is known to hold this key (read-through hit, or a checkpointed put).
-    // A dirty put created blind stays false until its first flush — the delete-absorption window.
+    // Whether the delegate holds this key — or an outstanding frozen put is about to make it hold
+    // it — so a delete must reach the delegate as a tombstone. A put created blind stays false
+    // until the snapshot containing it retires: the delete-absorption window.
     private boolean flushed;
 
-    static CacheEntry cleanValue(final byte[] value) {
-      final CacheEntry entry = new CacheEntry();
-      entry.value = value;
-      entry.flushed = true;
-      return entry;
+    CacheEntry(final byte[] value, final boolean tombstone, final boolean flushed) {
+      this.value = value;
+      this.tombstone = tombstone;
+      this.flushed = flushed;
+    }
+  }
+
+  /**
+   * Lazily merges the two sorted overlay ranges into one key-ordered stream. On equal keys the
+   * mutable entry wins and the frozen one is skipped, so downstream merging sees at most one
+   * overlay entry per key.
+   */
+  private static final class OverlayMergeIterator
+      implements Iterator<Map.Entry<byte[], CacheEntry>> {
+
+    private final Iterator<Map.Entry<byte[], CacheEntry>> mutable;
+    private final Iterator<Map.Entry<byte[], CacheEntry>> frozen;
+    private Map.Entry<byte[], CacheEntry> nextMutable;
+    private Map.Entry<byte[], CacheEntry> nextFrozen;
+
+    OverlayMergeIterator(
+        final Iterator<Map.Entry<byte[], CacheEntry>> mutable,
+        final Iterator<Map.Entry<byte[], CacheEntry>> frozen) {
+      this.mutable = mutable;
+      this.frozen = frozen;
+      nextMutable = mutable.hasNext() ? mutable.next() : null;
+      nextFrozen = frozen.hasNext() ? frozen.next() : null;
     }
 
-    static CacheEntry dirtyValue(final byte[] value) {
-      final CacheEntry entry = new CacheEntry();
-      entry.value = value;
-      entry.dirty = true;
-      return entry;
+    @Override
+    public boolean hasNext() {
+      return nextMutable != null || nextFrozen != null;
     }
 
-    static CacheEntry tombstone() {
-      final CacheEntry entry = new CacheEntry();
-      entry.dirty = true;
-      entry.tombstone = true;
-      return entry;
+    @Override
+    public Map.Entry<byte[], CacheEntry> next() {
+      if (!hasNext()) {
+        throw new NoSuchElementException();
+      }
+      final int cmp =
+          nextMutable == null
+              ? 1
+              : nextFrozen == null
+                  ? -1
+                  : Arrays.compareUnsigned(nextMutable.getKey(), nextFrozen.getKey());
+      if (cmp > 0) {
+        final Map.Entry<byte[], CacheEntry> emitted = nextFrozen;
+        nextFrozen = frozen.hasNext() ? frozen.next() : null;
+        return emitted;
+      }
+      final Map.Entry<byte[], CacheEntry> emitted = nextMutable;
+      nextMutable = mutable.hasNext() ? mutable.next() : null;
+      if (cmp == 0) {
+        nextFrozen = frozen.hasNext() ? frozen.next() : null; // the mutable write shadows it
+      }
+      return emitted;
     }
   }
 }

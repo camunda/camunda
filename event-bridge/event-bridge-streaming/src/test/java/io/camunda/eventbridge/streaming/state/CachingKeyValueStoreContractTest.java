@@ -30,8 +30,8 @@ final class CachingKeyValueStoreContractTest extends AbstractKeyValueStoreContra
   protected KeyValueStore<DbLong, DbString> longStore() {
     return new CachingKeyValueStore<>(
         provider.keyValueStore(TestColumnFamilies.KV, new DbLong(), new DbString()),
-        new DbLong(),
-        new DbString(),
+        DbLong::new,
+        DbString::new,
         LARGE_BUDGET);
   }
 
@@ -42,8 +42,8 @@ final class CachingKeyValueStoreContractTest extends AbstractKeyValueStoreContra
             TestColumnFamilies.COMPOSITE,
             new DbCompositeKey<>(new DbLong(), new DbString()),
             new DbString()),
-        new DbCompositeKey<>(new DbLong(), new DbString()),
-        new DbString(),
+        () -> new DbCompositeKey<>(new DbLong(), new DbString()),
+        DbString::new,
         LARGE_BUDGET);
   }
 }

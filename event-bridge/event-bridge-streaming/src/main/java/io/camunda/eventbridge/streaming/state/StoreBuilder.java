@@ -58,7 +58,8 @@ public final class StoreBuilder<
 
   /**
    * Declares a key-value store on {@code columnFamily}. The suppliers must return fresh flyweights
-   * on each call — the delegate and the cache each need their own.
+   * on each call — the delegate and the cache (which keeps separate flyweights for owner-thread
+   * reads and for persisting a frozen snapshot) each need their own.
    */
   public static <
           CF extends Enum<? extends EnumValue> & EnumValue & ScopedColumnFamily,
@@ -113,8 +114,8 @@ public final class StoreBuilder<
     }
     return new CachingKeyValueStore<>(
         provider.keyValueStore(columnFamily, keyFlyweight.get(), valueFlyweight.get()),
-        keyFlyweight.get(),
-        valueFlyweight.get(),
+        keyFlyweight,
+        valueFlyweight,
         cacheMaxBytes,
         absorbDeletes);
   }
