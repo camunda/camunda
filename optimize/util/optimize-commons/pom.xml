@@ -213,7 +213,7 @@
     <dependency>
       <groupId>org.mock-server</groupId>
       <artifactId>mockserver-core</artifactId>
-      <version>6.1.0</version>
+      <version>7.4.0</version>
       <scope>test</scope>
     </dependency>
 
