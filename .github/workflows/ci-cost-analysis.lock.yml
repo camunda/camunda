@@ -1,4 +1,4 @@
-# gh-aw-metadata: {"schema_version":"v4","frontmatter_hash":"23b630c0b3de057e26f6c226205521b9806e5bece6c69083f63f7a6f413f0a4d","body_hash":"8072e50471dc58096b2b750fa9d3511edf9f049311390c75b92cb80c45823468","compiler_version":"v0.77.5","strict":true,"agent_id":"copilot"}
+# gh-aw-metadata: {"schema_version":"v4","frontmatter_hash":"fd54bcc9328c4febfb54081a5de05ca0a8ccd2a9548bd59ede7d229a862388d2","body_hash":"0cde8a3b20931f35fbe6c2e7e9aa267ea1486a142abb144f83cf1a44e761bec0","compiler_version":"v0.77.5","strict":true,"agent_id":"copilot"}
 # gh-aw-manifest: {"version":1,"secrets":["COPILOT_GITHUB_TOKEN","GH_AW_GITHUB_MCP_SERVER_TOKEN","GH_AW_GITHUB_TOKEN","GITHUB_TOKEN"],"actions":[{"repo":"actions/checkout","sha":"de0fac2e4500dabe0009e67214ff5f5447ce83dd","version":"v6.0.2"},{"repo":"actions/download-artifact","sha":"3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c","version":"v8.0.1"},{"repo":"actions/github-script","sha":"3a2844b7e9c422d3c10d287c895573f7108da1b3","version":"v9.0.0"},{"repo":"actions/setup-node","sha":"48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e","version":"v6.4.0"},{"repo":"actions/upload-artifact","sha":"043fb46d1a93c77aae656e7c1c64a875d1fc6a0a","version":"v7.0.1"},{"repo":"github/gh-aw-actions/setup","sha":"3ea13c02d765410340d533515cb31a7eef2baaf0","version":"v0.77.5"}],"containers":[{"image":"ghcr.io/github/gh-aw-firewall/agent:0.25.58"},{"image":"ghcr.io/github/gh-aw-firewall/api-proxy:0.25.58"},{"image":"ghcr.io/github/gh-aw-firewall/cli-proxy:0.25.58"},{"image":"ghcr.io/github/gh-aw-firewall/squid:0.25.58"},{"image":"ghcr.io/github/gh-aw-mcpg:v0.3.22"},{"image":"ghcr.io/github/github-mcp-server:v1.1.0"},{"image":"node:lts-alpine","digest":"sha256:2bdb65ed1dab192432bc31c95f94155ca5ad7fc1392fb7eb7526ab682fa5bf14","pinned_image":"node:lts-alpine@sha256:2bdb65ed1dab192432bc31c95f94155ca5ad7fc1392fb7eb7526ab682fa5bf14"}]}
 #    ___                   _   _      
 #   / _ \                 | | (_)     
@@ -31,7 +31,7 @@
 #   - GITHUB_TOKEN
 #
 # Custom actions used:
-#   - actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+#   - actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 #   - actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
 #   - actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
 #   - actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0 (source v9)
@@ -190,20 +190,20 @@ jobs:
         run: |
           bash "${RUNNER_TEMP}/gh-aw/actions/create_prompt_first.sh"
           {
-          cat << 'GH_AW_PROMPT_12059f0dc98eea6b_EOF'
+          cat << 'GH_AW_PROMPT_037d4bb338890ae4_EOF'
           <system>
-          GH_AW_PROMPT_12059f0dc98eea6b_EOF
+          GH_AW_PROMPT_037d4bb338890ae4_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/xpia.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/temp_folder_prompt.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/markdown.md"
           cat "${RUNNER_TEMP}/gh-aw/prompts/safe_outputs_prompt.md"
-          cat << 'GH_AW_PROMPT_12059f0dc98eea6b_EOF'
+          cat << 'GH_AW_PROMPT_037d4bb338890ae4_EOF'
           <safe-output-tools>
           Tools: create_issue, update_issue, missing_tool, missing_data, noop
           </safe-output-tools>
-          GH_AW_PROMPT_12059f0dc98eea6b_EOF
+          GH_AW_PROMPT_037d4bb338890ae4_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/mcp_cli_tools_prompt.md"
-          cat << 'GH_AW_PROMPT_12059f0dc98eea6b_EOF'
+          cat << 'GH_AW_PROMPT_037d4bb338890ae4_EOF'
           <github-context>
           The following GitHub context information is available for this workflow:
           {{#if github.actor}}
@@ -235,12 +235,12 @@ jobs:
             - **Note**: If a branch you need is not in the list above and is not listed as an additional fetched ref, it has NOT been checked out. For private repositories you cannot fetch it without proper authentication. If the branch is required and not available, exit with an error and ask the user to add it to the `fetch:` option of the `checkout:` configuration (e.g., `fetch: ["refs/pulls/open/*"]` for all open PR refs, or `fetch: ["main", "feature/my-branch"]` for specific branches).
           </github-context>
           
-          GH_AW_PROMPT_12059f0dc98eea6b_EOF
+          GH_AW_PROMPT_037d4bb338890ae4_EOF
           cat "${RUNNER_TEMP}/gh-aw/prompts/cli_proxy_with_safeoutputs_prompt.md"
-          cat << 'GH_AW_PROMPT_12059f0dc98eea6b_EOF'
+          cat << 'GH_AW_PROMPT_037d4bb338890ae4_EOF'
           </system>
           {{#runtime-import .github/workflows/ci-cost-analysis.md}}
-          GH_AW_PROMPT_12059f0dc98eea6b_EOF
+          GH_AW_PROMPT_037d4bb338890ae4_EOF
           } > "$GH_AW_PROMPT"
       - name: Interpolate variables and render templates
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
@@ -384,6 +384,10 @@ jobs:
         run: bash "${RUNNER_TEMP}/gh-aw/actions/configure_gh_for_ghe.sh"
         env:
           GH_TOKEN: ${{ github.token }}
+      - name: Collect cost-relevant workflow diffs (DataOps)
+        run: "set -uo pipefail\nmkdir -p /tmp/gh-aw/data\ncd \"$GITHUB_WORKSPACE\"\n\n# Cost-relevant keys. run:/jobs:/on: are intentionally EXCLUDED — they appear in\n# virtually every workflow diff, so including them (or matching context lines) makes\n# the pre-filter drop nothing and forces the agent to read every changed file.\nCOST_RE='(runs-on|timeout-minutes|matrix|strategy|concurrency|paths|paths-ignore|services|container|continue-on-error|schedule|cron)'\n\n# 1. Candidate source files changed in the last 7 days (skip generated lock files —\n#    they are compiled from the source .md, so analysing them duplicates work).\ngit log --since=\"7 days ago\" --name-only --diff-filter=ACMR --pretty=format: \\\n  -- .github/workflows/ ':(exclude).github/workflows/*.lock.yml' \\\n  | sort -u | grep -v '^$' > /tmp/gh-aw/data/candidates.txt || true\n\n: > /tmp/gh-aw/data/diffs.txt\n: > /tmp/gh-aw/data/relevant.txt\nwhile IFS= read -r f; do\n  [ -n \"$f\" ] || continue\n  [ -f \"$f\" ] || continue\n  # 2. Pre-filter on the CHANGED lines and hunk headers of a zero-context (-U0) diff.\n  #    Matching only added/removed/hunk lines — not surrounding context — is what makes\n  #    the filter actually discriminate between cost-relevant and cosmetic changes.\n  diff=\"$(git log --since='7 days ago' -U0 -p --no-color -- \"$f\")\"\n  if ! printf '%s\\n' \"$diff\" | grep -E '^[-+@]' | grep -Eq \"$COST_RE\"; then\n    continue\n  fi\n  echo \"$f\" >> /tmp/gh-aw/data/relevant.txt\n  {\n    echo \"===== FILE: $f =====\"\n    git log --since='7 days ago' --format='COMMIT %h %ad %s' --date=short -- \"$f\"\n    echo \"----- DIFF (zero context) -----\"\n    printf '%s\\n' \"$diff\"\n    echo\n  } >> /tmp/gh-aw/data/diffs.txt\ndone < /tmp/gh-aw/data/candidates.txt\n\n{\n  echo \"candidates=$(wc -l < /tmp/gh-aw/data/candidates.txt)\"\n  echo \"cost_relevant_after_prefilter=$(wc -l < /tmp/gh-aw/data/relevant.txt)\"\n  echo \"diffs_bytes=$(wc -c < /tmp/gh-aw/data/diffs.txt)\"\n} > /tmp/gh-aw/data/summary.txt\ncat /tmp/gh-aw/data/summary.txt\n"
+        shell: bash
+
       - name: Configure Git credentials
         env:
           REPO_NAME: ${{ github.repository }}
@@ -454,9 +458,9 @@ jobs:
           mkdir -p "${RUNNER_TEMP}/gh-aw/safeoutputs"
           mkdir -p /tmp/gh-aw/safeoutputs
           mkdir -p /tmp/gh-aw/mcp-logs/safeoutputs
-          cat > "${RUNNER_TEMP}/gh-aw/safeoutputs/config.json" << 'GH_AW_SAFE_OUTPUTS_CONFIG_b9fa7634af41a3fa_EOF'
+          cat > "${RUNNER_TEMP}/gh-aw/safeoutputs/config.json" << 'GH_AW_SAFE_OUTPUTS_CONFIG_d34f341f1b69d77b_EOF'
           {"create_issue":{"labels":["area/build","component/build-pipeline"],"max":1},"create_report_incomplete_issue":{},"missing_data":{},"missing_tool":{},"noop":{"max":1,"report-as-issue":"true"},"report_incomplete":{},"update_issue":{"allow_body":true,"max":1,"target":"*"}}
-          GH_AW_SAFE_OUTPUTS_CONFIG_b9fa7634af41a3fa_EOF
+          GH_AW_SAFE_OUTPUTS_CONFIG_d34f341f1b69d77b_EOF
       - name: Generate Safe Outputs Tools
         env:
           GH_AW_TOOLS_META_JSON: |
@@ -716,7 +720,7 @@ jobs:
           
           mkdir -p /home/runner/.copilot
           GH_AW_NODE=$(which node 2>/dev/null || command -v node 2>/dev/null || echo node)
-          cat << GH_AW_MCP_CONFIG_c4992a4718556593_EOF | "$GH_AW_NODE" "${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.cjs"
+          cat << GH_AW_MCP_CONFIG_fd4a674e169ee7d1_EOF | "$GH_AW_NODE" "${RUNNER_TEMP}/gh-aw/actions/start_mcp_gateway.cjs"
           {
             "mcpServers": {
               "safeoutputs": {
@@ -741,7 +745,7 @@ jobs:
               "payloadDir": "${MCP_GATEWAY_PAYLOAD_DIR}"
             }
           }
-          GH_AW_MCP_CONFIG_c4992a4718556593_EOF
+          GH_AW_MCP_CONFIG_fd4a674e169ee7d1_EOF
       - name: Mount MCP servers as CLIs
         id: mount-mcp-clis
         continue-on-error: true
