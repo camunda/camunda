@@ -198,4 +198,46 @@ public final class ActivateJobsWithLeaseTest {
         .describedAs("the lease token survives an engine restart and log replay")
         .isEqualTo(leaseToken);
   }
+
+  @Test
+  public void shouldSkipLeasedJobWhenActivatingWithoutLease() {
+    // given a leased job that failed back to activatable, alongside two unleased jobs
+    final long leasedJobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
+    ENGINE.jobs().withType(jobType).withLease().activate();
+    ENGINE.job().withKey(leasedJobKey).withRetries(1).fail();
+    jobRecords(JobIntent.FAILED).withRecordKey(leasedJobKey).await();
+    final long unleasedJobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
+    final long otherUnleasedJobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
+
+    // when activating without a lease, with room for all three jobs
+    final Record<JobBatchRecordValue> batch =
+        ENGINE.jobs().withType(jobType).withMaxJobsToActivate(3).activate();
+
+    // then the leased job is skipped, the rest activate (no batch rejection)
+    assertThat(batch.getValue().getJobKeys())
+        .describedAs("activating without a lease skips the leased job and activates the rest")
+        .containsExactlyInAnyOrder(unleasedJobKey, otherUnleasedJobKey)
+        .doesNotContain(leasedJobKey);
+  }
+
+  @Test
+  public void shouldNotConsumeActivationSlotForSkippedLeasedJob() {
+    // given a leased job that failed back to activatable, alongside two unleased jobs.
+    // The leased job is created first (lowest key) so it is visited before the batch fills.
+    final long leasedJobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
+    ENGINE.jobs().withType(jobType).withLease().activate();
+    ENGINE.job().withKey(leasedJobKey).withRetries(1).fail();
+    jobRecords(JobIntent.FAILED).withRecordKey(leasedJobKey).await();
+    final long unleasedJobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
+    final long otherUnleasedJobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
+
+    // when activating without a lease, limited to two jobs
+    final Record<JobBatchRecordValue> batch =
+        ENGINE.jobs().withType(jobType).withMaxJobsToActivate(2).activate();
+
+    // then the skipped leased job does not consume an activation slot: both unleased jobs activate
+    assertThat(batch.getValue().getJobKeys())
+        .describedAs("the skipped leased job does not consume an activation slot")
+        .containsExactlyInAnyOrder(unleasedJobKey, otherUnleasedJobKey);
+  }
 }
