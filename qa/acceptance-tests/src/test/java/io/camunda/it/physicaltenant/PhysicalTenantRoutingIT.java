@@ -107,7 +107,7 @@ final class PhysicalTenantRoutingIT {
     assertThatThrownBy(() -> createInstance(tenantBRestClient, processId))
         .as("process deployed only to tenant A must not be visible on tenant B over REST")
         .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("404");
+        .satisfies(e -> assertThat(((ProblemException) e).code()).isEqualTo(404));
   }
 
   private static void deployProcess(final CamundaClient client, final String processId) {
