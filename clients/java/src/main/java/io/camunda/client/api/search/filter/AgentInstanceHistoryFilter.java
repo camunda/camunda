@@ -44,9 +44,9 @@ public interface AgentInstanceHistoryFilter extends SearchRequestFilter {
 
   AgentInstanceHistoryFilter jobKey(Consumer<BasicLongProperty> fn);
 
-  AgentInstanceHistoryFilter iteration(int value);
+  AgentInstanceHistoryFilter loopIteration(int value);
 
-  AgentInstanceHistoryFilter iteration(Consumer<IntegerProperty> fn);
+  AgentInstanceHistoryFilter loopIteration(Consumer<IntegerProperty> fn);
 
   AgentInstanceHistoryFilter commitStatus(AgentInstanceHistoryCommitStatus value);
 

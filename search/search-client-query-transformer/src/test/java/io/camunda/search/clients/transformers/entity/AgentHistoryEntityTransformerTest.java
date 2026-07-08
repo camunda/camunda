@@ -45,7 +45,7 @@ class AgentHistoryEntityTransformerTest {
     source.setPartitionId(1);
     source.setJobKey(500L);
     source.setJobLease("lease-token");
-    source.setIteration(3);
+    source.setLoopIteration(3);
     source.setRole(AgentHistoryRole.ASSISTANT);
     source.setCommitStatus(AgentHistoryCommitStatus.COMMITTED);
     source.setProducedAt(OffsetDateTime.parse("2024-06-01T12:00:00Z"));
@@ -78,7 +78,7 @@ class AgentHistoryEntityTransformerTest {
     assertThat(result.tenantId()).isEqualTo("<default>");
     assertThat(result.jobKey()).isEqualTo(500L);
     assertThat(result.jobLease()).isEqualTo("lease-token");
-    assertThat(result.iteration()).isEqualTo(3);
+    assertThat(result.loopIteration()).isEqualTo(3);
     assertThat(result.role()).isEqualTo(AgentInstanceHistoryRole.ASSISTANT);
     assertThat(result.commitStatus()).isEqualTo(AgentInstanceHistoryCommitStatus.COMMITTED);
     assertThat(result.producedAt()).isEqualTo(OffsetDateTime.parse("2024-06-01T12:00:00Z"));
@@ -122,16 +122,16 @@ class AgentHistoryEntityTransformerTest {
   }
 
   @Test
-  void shouldMapNullIterationAsNull() {
+  void shouldMapNullLoopIterationAsNull() {
     // given
     final var source = buildSource();
-    source.setIteration(null);
+    source.setLoopIteration(null);
 
     // when
     final AgentInstanceHistoryEntity result = transformer.apply(source);
 
     // then
-    assertThat(result.iteration()).isNull();
+    assertThat(result.loopIteration()).isNull();
   }
 
   @Test

@@ -810,7 +810,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
           "jobKey": "%d",
           "jobLease": "lease-abc",
           "role": "USER",
-          "iteration": 2,
+          "loopIteration": 2,
           "content": [
             { "contentType": "TEXT", "text": "What is in the invoice?" },
             { "contentType": "OBJECT", "object": { "key": "value" } }
@@ -843,7 +843,7 @@ class AgentInstanceControllerTest extends RestControllerTest {
         .createAgentHistoryItem(
             assertArg(
                 record -> {
-                  assertThat(record.getIteration()).isEqualTo(2);
+                  assertThat(record.getLoopIteration()).isEqualTo(2);
                   assertThat(record.getContent()).hasSize(2);
                   assertThat(record.getToolCalls()).hasSize(1);
                   assertThat(record.getToolCalls().get(0).getToolCallId()).isEqualTo("tc-001");

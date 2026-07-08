@@ -152,18 +152,18 @@ class SearchAgentInstanceHistoryTest extends ClientRestTest {
   }
 
   @Test
-  void shouldSearchWithIterationFilter() {
+  void shouldSearchWithLoopIterationFilter() {
     // when
     client
         .newAgentInstanceHistorySearchRequest(AGENT_INSTANCE_KEY)
-        .filter(f -> f.iteration(1))
+        .filter(f -> f.loopIteration(1))
         .send()
         .join();
 
     // then
     final AgentInstanceHistorySearchQuery request =
         gatewayService.getLastRequest(AgentInstanceHistorySearchQuery.class);
-    assertThat(request.getFilter().getIteration().get$Eq()).isEqualTo(1);
+    assertThat(request.getFilter().getLoopIteration().get$Eq()).isEqualTo(1);
   }
 
   @Test
@@ -187,11 +187,11 @@ class SearchAgentInstanceHistoryTest extends ClientRestTest {
   }
 
   @Test
-  void shouldSearchWithIterationSort() {
+  void shouldSearchWithLoopIterationSort() {
     // when
     client
         .newAgentInstanceHistorySearchRequest(AGENT_INSTANCE_KEY)
-        .sort(s -> s.iteration().asc())
+        .sort(s -> s.loopIteration().asc())
         .send()
         .join();
 
@@ -205,7 +205,8 @@ class SearchAgentInstanceHistoryTest extends ClientRestTest {
             AgentInstanceHistorySearchQuerySortRequest::getOrder)
         .containsExactly(
             tuple(
-                AgentInstanceHistorySearchQuerySortRequest.FieldEnum.ITERATION, SortOrderEnum.ASC));
+                AgentInstanceHistorySearchQuerySortRequest.FieldEnum.LOOP_ITERATION,
+                SortOrderEnum.ASC));
   }
 
   @Test
@@ -262,7 +263,7 @@ class SearchAgentInstanceHistoryTest extends ClientRestTest {
             .elementInstanceKey("200")
             .jobKey("300")
             .jobLease("lease-abc")
-            .iteration(3)
+            .loopIteration(3)
             .role(AgentInstanceHistoryRoleEnum.USER)
             .commitStatus(AgentInstanceHistoryCommitStatusEnum.COMMITTED)
             .producedAt(now.toString())
@@ -308,7 +309,7 @@ class SearchAgentInstanceHistoryTest extends ClientRestTest {
           softly.assertThat(item.getElementInstanceKey()).as("elementInstanceKey").isEqualTo(200L);
           softly.assertThat(item.getJobKey()).as("jobKey").isEqualTo(300L);
           softly.assertThat(item.getJobLease()).as("jobLease").isEqualTo("lease-abc");
-          softly.assertThat(item.getIteration()).as("iteration").isEqualTo(3);
+          softly.assertThat(item.getLoopIteration()).as("loopIteration").isEqualTo(3);
           softly.assertThat(item.getRole()).as("role").isEqualTo(AgentInstanceHistoryRole.USER);
           softly
               .assertThat(item.getCommitStatus())

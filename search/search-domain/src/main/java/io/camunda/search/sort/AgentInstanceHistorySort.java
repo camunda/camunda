@@ -32,8 +32,8 @@ public record AgentInstanceHistorySort(List<FieldSorting> orderings) implements 
       return this;
     }
 
-    public Builder iteration() {
-      currentOrdering = new FieldSorting("iteration", null);
+    public Builder loopIteration() {
+      currentOrdering = new FieldSorting("loopIteration", null);
       return this;
     }
 

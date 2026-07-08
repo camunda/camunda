@@ -26,7 +26,7 @@ public record AgentInstanceHistoryFilter(
     List<Operation<String>> roleOperations,
     List<Operation<Long>> elementInstanceKeyOperations,
     List<Operation<Long>> jobKeyOperations,
-    List<Operation<Integer>> iterationOperations,
+    List<Operation<Integer>> loopIterationOperations,
     List<Operation<String>> commitStatusOperations,
     List<Operation<OffsetDateTime>> producedAtOperations)
     implements FilterBase {
@@ -44,7 +44,7 @@ public record AgentInstanceHistoryFilter(
     private List<Operation<String>> roleOperations;
     private List<Operation<Long>> elementInstanceKeyOperations;
     private List<Operation<Long>> jobKeyOperations;
-    private List<Operation<Integer>> iterationOperations;
+    private List<Operation<Integer>> loopIterationOperations;
     private List<Operation<String>> commitStatusOperations;
     private List<Operation<OffsetDateTime>> producedAtOperations;
 
@@ -128,19 +128,19 @@ public record AgentInstanceHistoryFilter(
       return jobKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
-    public Builder iterationOperations(final List<Operation<Integer>> operations) {
-      iterationOperations = addValuesToList(iterationOperations, operations);
+    public Builder loopIterationOperations(final List<Operation<Integer>> operations) {
+      loopIterationOperations = addValuesToList(loopIterationOperations, operations);
       return this;
     }
 
     @SafeVarargs
-    public final Builder iterationOperations(
+    public final Builder loopIterationOperations(
         final Operation<Integer> operation, final Operation<Integer>... operations) {
-      return iterationOperations(collectValues(operation, operations));
+      return loopIterationOperations(collectValues(operation, operations));
     }
 
-    public Builder iterations(final Integer value, final Integer... values) {
-      return iterationOperations(FilterUtil.mapDefaultToOperation(value, values));
+    public Builder loopIterations(final Integer value, final Integer... values) {
+      return loopIterationOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
     public Builder commitStatusOperations(final List<Operation<String>> operations) {
@@ -183,7 +183,7 @@ public record AgentInstanceHistoryFilter(
           Objects.requireNonNullElse(roleOperations, Collections.emptyList()),
           Objects.requireNonNullElse(elementInstanceKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(jobKeyOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(iterationOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(loopIterationOperations, Collections.emptyList()),
           Objects.requireNonNullElse(commitStatusOperations, Collections.emptyList()),
           Objects.requireNonNullElse(producedAtOperations, Collections.emptyList()));
     }

@@ -470,7 +470,7 @@
       <column name="PARTITION_ID" type="INTEGER"/>
       <column name="JOB_KEY" type="BIGINT"/>
       <column name="JOB_LEASE" type="NVARCHAR(${userCharColumnSize})"/>
-      <column name="ITERATION" type="INTEGER"/>
+      <column name="LOOP_ITERATION" type="INTEGER"/>
       <column name="ROLE" type="VARCHAR(20)"/>
       <column name="COMMIT_STATUS" type="VARCHAR(20)"/>
       <column name="PRODUCED_AT" type="TIMESTAMP WITH TIME ZONE(3)"/>

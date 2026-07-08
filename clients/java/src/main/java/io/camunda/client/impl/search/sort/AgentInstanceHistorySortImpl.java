@@ -37,7 +37,7 @@ public class AgentInstanceHistorySortImpl extends SearchRequestSortBase<AgentIns
   }
 
   @Override
-  public AgentInstanceHistorySort iteration() {
-    return field("iteration");
+  public AgentInstanceHistorySort loopIteration() {
+    return field("loopIteration");
   }
 }

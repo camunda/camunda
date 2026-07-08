@@ -176,7 +176,7 @@ const agentInstanceHistoryItemSchema = z.object({
 	elementInstanceKey: z.string(),
 	jobKey: z.string(),
 	jobLease: z.string(),
-	iteration: z.number().int().nullable(),
+	loopIteration: z.number().int().nullable(),
 	role: agentInstanceHistoryRoleSchema,
 	content: z.array(agentInstanceMessageContentSchema),
 	toolCalls: z.array(agentInstanceToolCallSchema),
@@ -192,7 +192,7 @@ const agentInstanceHistoryFilterSchema = z
 		role: getEnumFilterSchema(agentInstanceHistoryRoleSchema),
 		elementInstanceKey: basicStringFilterSchema,
 		jobKey: basicStringFilterSchema,
-		iteration: advancedIntegerFilterSchema,
+		loopIteration: advancedIntegerFilterSchema,
 		commitStatus: getEnumFilterSchema(agentInstanceHistoryCommitStatusSchema),
 		producedAt: advancedDateTimeFilterSchema,
 	})
@@ -203,7 +203,7 @@ const createAgentInstanceHistoryItemRequestBodySchema = z.object({
 	elementInstanceKey: z.string(),
 	jobKey: z.string(),
 	jobLease: z.string(),
-	iteration: z.number().int().nullable().optional(),
+	loopIteration: z.number().int().nullable().optional(),
 	role: agentInstanceHistoryRoleSchema,
 	content: z.array(agentInstanceMessageContentSchema),
 	toolCalls: z.array(agentInstanceToolCallSchema).nullable().optional(),
@@ -218,7 +218,7 @@ const createAgentInstanceHistoryItemResponseBodySchema = z.object({
 type CreateAgentInstanceHistoryItemResponseBody = z.infer<typeof createAgentInstanceHistoryItemResponseBodySchema>;
 
 const queryAgentInstanceHistoryRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['producedAt', 'historyItemKey', 'iteration'] as const,
+	sortFields: ['producedAt', 'historyItemKey', 'loopIteration'] as const,
 	filter: agentInstanceHistoryFilterSchema,
 });
 type QueryAgentInstanceHistoryRequestBody = z.infer<typeof queryAgentInstanceHistoryRequestBodySchema>;

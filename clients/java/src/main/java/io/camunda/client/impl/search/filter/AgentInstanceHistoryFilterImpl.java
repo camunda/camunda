@@ -103,15 +103,15 @@ public class AgentInstanceHistoryFilterImpl
   }
 
   @Override
-  public AgentInstanceHistoryFilter iteration(final int value) {
-    return iteration(f -> f.eq(value));
+  public AgentInstanceHistoryFilter loopIteration(final int value) {
+    return loopIteration(f -> f.eq(value));
   }
 
   @Override
-  public AgentInstanceHistoryFilter iteration(final Consumer<IntegerProperty> fn) {
+  public AgentInstanceHistoryFilter loopIteration(final Consumer<IntegerProperty> fn) {
     final IntegerProperty property = new IntegerPropertyImpl();
     fn.accept(property);
-    filter.setIteration(provideSearchRequestProperty(property));
+    filter.setLoopIteration(provideSearchRequestProperty(property));
     return this;
   }
 

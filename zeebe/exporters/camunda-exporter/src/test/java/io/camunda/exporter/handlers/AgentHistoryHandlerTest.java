@@ -102,7 +102,7 @@ final class AgentHistoryHandlerTest {
     final String tenantId = "<default>";
     final long jobKey = 500L;
     final String jobLease = "lease-token-abc";
-    final int iteration = 3;
+    final int loopIteration = 3;
     final long producedAtMs = System.currentTimeMillis();
     final long inputTokens = 50L;
     final long outputTokens = 30L;
@@ -134,7 +134,7 @@ final class AgentHistoryHandlerTest {
             .withTenantId(tenantId)
             .withJobKey(jobKey)
             .withJobLease(jobLease)
-            .withIteration(iteration)
+            .withLoopIteration(loopIteration)
             .withRole(io.camunda.zeebe.protocol.record.value.AgentHistoryRole.ASSISTANT)
             .withProducedAt(producedAtMs)
             .withMetrics(
@@ -181,7 +181,7 @@ final class AgentHistoryHandlerTest {
     assertThat(entity.getTenantId()).isEqualTo(tenantId);
     assertThat(entity.getJobKey()).isEqualTo(jobKey);
     assertThat(entity.getJobLease()).isEqualTo(jobLease);
-    assertThat(entity.getIteration()).isEqualTo(iteration);
+    assertThat(entity.getLoopIteration()).isEqualTo(loopIteration);
     assertThat(entity.getRole()).isEqualTo(AgentHistoryRole.ASSISTANT);
     assertThat(entity.getCommitStatus()).isEqualTo(expectedStatus);
     assertThat(entity.getProducedAt())
@@ -544,8 +544,8 @@ final class AgentHistoryHandlerTest {
   }
 
   @Test
-  void shouldConvertNonPositiveIterationToNull() {
-    // given — iteration == 0 (non-positive sentinel → null)
+  void shouldConvertNonPositiveLoopIterationToNull() {
+    // given — loopIteration == 0 (non-positive sentinel → null)
     final var recordValue =
         ImmutableAgentHistoryRecordValue.builder().from(buildMinimalRecordValue(1L, 0)).build();
     final Record<AgentHistoryRecordValue> record =
@@ -558,11 +558,11 @@ final class AgentHistoryHandlerTest {
     underTest.updateEntity(record, entity);
 
     // then
-    assertThat(entity.getIteration()).isNull();
+    assertThat(entity.getLoopIteration()).isNull();
   }
 
   @Test
-  void shouldStorePositiveIterationAsIs() {
+  void shouldStorePositiveLoopIterationAsIs() {
     // given
     final var recordValue =
         ImmutableAgentHistoryRecordValue.builder().from(buildMinimalRecordValue(1L, 5)).build();
@@ -576,7 +576,7 @@ final class AgentHistoryHandlerTest {
     underTest.updateEntity(record, entity);
 
     // then
-    assertThat(entity.getIteration()).isEqualTo(5);
+    assertThat(entity.getLoopIteration()).isEqualTo(5);
   }
 
   @Test
@@ -609,7 +609,7 @@ final class AgentHistoryHandlerTest {
   }
 
   private AgentHistoryRecordValue buildMinimalRecordValue(
-      final long agentInstanceKey, final int iteration) {
+      final long agentInstanceKey, final int loopIteration) {
     return ImmutableAgentHistoryRecordValue.builder()
         .withAgentInstanceKey(agentInstanceKey)
         .withElementInstanceKey(1L)
@@ -620,7 +620,7 @@ final class AgentHistoryHandlerTest {
         .withTenantId("<default>")
         .withJobKey(30L)
         .withJobLease("lease")
-        .withIteration(iteration)
+        .withLoopIteration(loopIteration)
         .withRole(io.camunda.zeebe.protocol.record.value.AgentHistoryRole.ASSISTANT)
         .withProducedAt(System.currentTimeMillis())
         .withMetrics(

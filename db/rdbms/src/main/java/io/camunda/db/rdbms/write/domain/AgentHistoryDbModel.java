@@ -41,7 +41,7 @@ public class AgentHistoryDbModel implements Copyable<AgentHistoryDbModel> {
   private int partitionId;
   private long jobKey;
   private String jobLease;
-  private Integer iteration;
+  private Integer loopIteration;
   private AgentInstanceHistoryRole role;
   private AgentInstanceHistoryCommitStatus commitStatus;
   private OffsetDateTime producedAt;
@@ -75,7 +75,7 @@ public class AgentHistoryDbModel implements Copyable<AgentHistoryDbModel> {
         .partitionId(partitionId)
         .jobKey(jobKey)
         .jobLease(jobLease)
-        .iteration(iteration)
+        .loopIteration(loopIteration)
         .role(role)
         .commitStatus(commitStatus)
         .producedAt(producedAt)
@@ -184,12 +184,12 @@ public class AgentHistoryDbModel implements Copyable<AgentHistoryDbModel> {
     }
   }
 
-  public Integer iteration() {
-    return iteration;
+  public Integer loopIteration() {
+    return loopIteration;
   }
 
-  public void iteration(final Integer iteration) {
-    this.iteration = iteration;
+  public void loopIteration(final Integer loopIteration) {
+    this.loopIteration = loopIteration;
   }
 
   public AgentInstanceHistoryRole role() {
@@ -375,7 +375,7 @@ public class AgentHistoryDbModel implements Copyable<AgentHistoryDbModel> {
     private int partitionId;
     private long jobKey;
     private String jobLease;
-    private Integer iteration;
+    private Integer loopIteration;
     private AgentInstanceHistoryRole role;
     private AgentInstanceHistoryCommitStatus commitStatus;
     private OffsetDateTime producedAt;
@@ -440,8 +440,8 @@ public class AgentHistoryDbModel implements Copyable<AgentHistoryDbModel> {
       return this;
     }
 
-    public Builder iteration(final Integer iteration) {
-      this.iteration = iteration;
+    public Builder loopIteration(final Integer loopIteration) {
+      this.loopIteration = loopIteration;
       return this;
     }
 
@@ -499,7 +499,7 @@ public class AgentHistoryDbModel implements Copyable<AgentHistoryDbModel> {
       result.partitionId(partitionId);
       result.jobKey(jobKey);
       result.jobLease(jobLease);
-      result.iteration(iteration);
+      result.loopIteration(loopIteration);
       result.role(role);
       result.commitStatus(commitStatus);
       result.producedAt(producedAt);

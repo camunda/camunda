@@ -1109,7 +1109,7 @@ public class SearchQuerySortRequestMapper {
     } else {
       switch (field) {
         case HISTORY_ITEM_KEY -> builder.historyItemKey();
-        case ITERATION -> builder.iteration();
+        case LOOP_ITERATION -> builder.loopIteration();
         case PRODUCED_AT -> builder.producedAt();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }

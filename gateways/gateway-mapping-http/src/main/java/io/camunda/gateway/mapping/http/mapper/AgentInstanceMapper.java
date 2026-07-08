@@ -141,8 +141,8 @@ public class AgentInstanceMapper {
           record.setProducedAt(
               OffsetDateTime.parse(request.getProducedAt()).toInstant().toEpochMilli());
 
-          if (request.getIteration() != null) {
-            record.setIteration(request.getIteration());
+          if (request.getLoopIteration() != null) {
+            record.setLoopIteration(request.getLoopIteration());
           }
 
           for (final AgentInstanceMessageContent content : request.getContent()) {

@@ -17,9 +17,9 @@ import static io.camunda.webapps.schema.descriptors.template.AgentHistoryTemplat
 import static io.camunda.webapps.schema.descriptors.template.AgentHistoryTemplate.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.AgentHistoryTemplate.COMMIT_STATUS;
 import static io.camunda.webapps.schema.descriptors.template.AgentHistoryTemplate.ELEMENT_INSTANCE_KEY;
-import static io.camunda.webapps.schema.descriptors.template.AgentHistoryTemplate.ITERATION;
 import static io.camunda.webapps.schema.descriptors.template.AgentHistoryTemplate.JOB_KEY;
 import static io.camunda.webapps.schema.descriptors.template.AgentHistoryTemplate.KEY;
+import static io.camunda.webapps.schema.descriptors.template.AgentHistoryTemplate.LOOP_ITERATION;
 import static io.camunda.webapps.schema.descriptors.template.AgentHistoryTemplate.PRODUCED_AT;
 import static io.camunda.webapps.schema.descriptors.template.AgentHistoryTemplate.ROLE;
 
@@ -44,7 +44,7 @@ public class AgentHistoryFilterTransformer
     queries.addAll(stringOperations(ROLE, filter.roleOperations()));
     queries.addAll(longOperations(ELEMENT_INSTANCE_KEY, filter.elementInstanceKeyOperations()));
     queries.addAll(longOperations(JOB_KEY, filter.jobKeyOperations()));
-    queries.addAll(intOperations(ITERATION, filter.iterationOperations()));
+    queries.addAll(intOperations(LOOP_ITERATION, filter.loopIterationOperations()));
     queries.addAll(stringOperations(COMMIT_STATUS, filter.commitStatusOperations()));
     queries.addAll(dateTimeOperations(PRODUCED_AT, filter.producedAtOperations()));
     return and(queries);

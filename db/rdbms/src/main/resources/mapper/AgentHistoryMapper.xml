@@ -27,7 +27,7 @@
       PARTITION_ID,
       JOB_KEY,
       JOB_LEASE,
-      ITERATION,
+      LOOP_ITERATION,
       ROLE,
       COMMIT_STATUS,
       PRODUCED_AT,
@@ -49,7 +49,7 @@
       #{partitionId},
       #{jobKey},
       #{jobLease},
-      #{iteration},
+      #{loopIteration},
       #{role},
       #{commitStatus},
       #{producedAt, jdbcType=TIMESTAMP},
@@ -98,7 +98,7 @@
     <result property="partitionId" column="PARTITION_ID" javaType="java.lang.Integer"/>
     <result property="jobKey" column="JOB_KEY" javaType="long"/>
     <result property="jobLease" column="JOB_LEASE" javaType="java.lang.String"/>
-    <result property="iteration" column="ITERATION" javaType="java.lang.Integer"/>
+    <result property="loopIteration" column="LOOP_ITERATION" javaType="java.lang.Integer"/>
     <result property="role" column="ROLE"
       javaType="io.camunda.search.entities.AgentInstanceHistoryEntity$AgentInstanceHistoryRole"/>
     <result property="commitStatus" column="COMMIT_STATUS"
@@ -128,7 +128,7 @@
           ah.PARTITION_ID,
           ah.JOB_KEY,
           ah.JOB_LEASE,
-          ah.ITERATION,
+          ah.LOOP_ITERATION,
           ah.ROLE,
           ah.COMMIT_STATUS,
           ah.PRODUCED_AT,
@@ -205,9 +205,9 @@
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
-    <if test="filter.iterationOperations != null and !filter.iterationOperations.isEmpty()">
-      <foreach collection="filter.iterationOperations" item="operation">
-        AND ah.ITERATION
+    <if test="filter.loopIterationOperations != null and !filter.loopIterationOperations.isEmpty()">
+      <foreach collection="filter.loopIterationOperations" item="operation">
+        AND ah.LOOP_ITERATION
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>

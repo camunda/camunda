@@ -1620,9 +1620,9 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getJobKey())
           .map(mapToKeyOperations("jobKey", validationErrors))
           .ifPresent(builder::jobKeyOperations);
-      ofNullable(filter.getIteration())
-          .map(mapToIntegerOperations("iteration", validationErrors))
-          .ifPresent(builder::iterationOperations);
+      ofNullable(filter.getLoopIteration())
+          .map(mapToIntegerOperations("loopIteration", validationErrors))
+          .ifPresent(builder::loopIterationOperations);
       ofNullable(filter.getCommitStatus())
           .map(mapToStringOperations())
           .ifPresent(builder::commitStatusOperations);

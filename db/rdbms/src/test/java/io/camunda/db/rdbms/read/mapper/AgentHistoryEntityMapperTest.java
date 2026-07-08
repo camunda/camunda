@@ -39,7 +39,7 @@ class AgentHistoryEntityMapperTest {
     dbModel.partitionId(1);
     dbModel.jobKey(700L);
     dbModel.jobLease("lease-abc");
-    dbModel.iteration(3);
+    dbModel.loopIteration(3);
     dbModel.role(AgentInstanceHistoryRole.ASSISTANT);
     dbModel.commitStatus(AgentInstanceHistoryCommitStatus.COMMITTED);
     dbModel.producedAt(producedAt);
@@ -62,7 +62,7 @@ class AgentHistoryEntityMapperTest {
     assertThat(entity.tenantId()).isEqualTo("<default>");
     assertThat(entity.jobKey()).isEqualTo(700L);
     assertThat(entity.jobLease()).isEqualTo("lease-abc");
-    assertThat(entity.iteration()).isEqualTo(3);
+    assertThat(entity.loopIteration()).isEqualTo(3);
     assertThat(entity.role()).isEqualTo(AgentInstanceHistoryRole.ASSISTANT);
     assertThat(entity.commitStatus()).isEqualTo(AgentInstanceHistoryCommitStatus.COMMITTED);
     assertThat(entity.producedAt()).isEqualTo(producedAt);
@@ -107,7 +107,7 @@ class AgentHistoryEntityMapperTest {
     model.partitionId(1);
     model.jobKey(6L);
     model.jobLease("lease");
-    model.iteration(1);
+    model.loopIteration(1);
     model.role(AgentInstanceHistoryRole.USER);
     model.commitStatus(AgentInstanceHistoryCommitStatus.PENDING);
     model.producedAt(OffsetDateTime.parse("2024-01-01T00:00:00Z"));

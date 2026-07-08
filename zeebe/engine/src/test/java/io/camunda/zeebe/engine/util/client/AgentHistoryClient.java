@@ -73,8 +73,8 @@ public final class AgentHistoryClient {
     return this;
   }
 
-  public AgentHistoryClient withIteration(final int iteration) {
-    record.setIteration(iteration);
+  public AgentHistoryClient withLoopIteration(final int loopIteration) {
+    record.setLoopIteration(loopIteration);
     return this;
   }
 
