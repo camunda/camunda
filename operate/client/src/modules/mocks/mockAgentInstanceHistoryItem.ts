@@ -17,7 +17,7 @@ function mockAgentInstanceHistoryItem(
     elementInstanceKey: 'elem-1',
     jobKey: 'job-1',
     jobLease: 'lease-1',
-    iteration: 1,
+    loopIteration: 1,
     role: 'ASSISTANT',
     content: [{contentType: 'TEXT', text: 'Hello from assistant.'}],
     toolCalls: [],
