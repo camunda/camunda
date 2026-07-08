@@ -107,6 +107,15 @@ spec:
       key: password
   http:
     httpEnabled: true
+  # The operator exposes Keycloak through a basic Ingress BY DEFAULT. On camunda-ci
+  # (GKE) that class-less Ingress is picked up by the GCE ingress controller, which
+  # provisions an unwanted public LB + container-native NEGs and injects the
+  # cloud.google.com/load-balancer-neg-ready readiness gate into the pods — and since
+  # the GCE health check probes / while Keycloak serves under /auth, the gate never
+  # turns Ready and the Service never gets ready endpoints. We route /auth through
+  # the preview Gateway (templates/httproute.yml) instead, so disable it.
+  ingress:
+    enabled: false
   hostname:
     # Hostname only (no scheme/path): the token issuer https://<domain>/auth/realms/...
     # is composed from the forwarded proto (proxy-headers below) + this host +
