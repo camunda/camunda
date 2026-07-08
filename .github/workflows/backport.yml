@@ -52,7 +52,7 @@ jobs:
           # Token for git actions, e.g. git push
           token: ${{ steps.github-token.outputs.token }}
       - name: Create backport PRs
-        uses: korthout/backport-action@66065406958f46e82238fd59546f5a99e69e22aa # v4.5.2
+        uses: korthout/backport-action@2e830a1d0b8269505846ddd407a70876913ad1f8 # v4.6.0
         with:
           # Token to authenticate requests to GitHub
           github_token: ${{ steps.github-token.outputs.token }}
