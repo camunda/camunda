@@ -5,8 +5,10 @@
 #   1. a fresh Event Bridge cluster that AUTO-CREATES topic 'zeebe-records'
 #      (the zeebe-records payload frame changed with ADR 0007 — a topic seeded before it must be
 #      dropped and re-seeded; this script always starts from a fresh cluster, so it is unaffected)
-#   2. a 2-broker OC cluster (StandaloneCamunda, partitions=2 RF=1) with the ZeebeRecordExporter
-#      wired into BOTH brokers, pinned to funnel every record into EB partition 1 (REST :8088/:8089)
+#   2. an OC cluster (StandaloneCamunda, OC_BROKERS brokers = OC_PARTITIONS partitions, RF=1; the
+#      default 2/2) with the ZeebeRecordExporter wired into every broker. With one EB topic
+#      partition (the default) every record is pinned into it; with EB_TOPIC_PARTITIONS > 1 the
+#      exporter routes each record to the EB partition matching its source partition (1:1).
 #   3. the ONE analytics application (Spring Boot, :8090): serving API + BOTH ingest stages
 #      (Stage 1 projection + Stage 2 aggregation) in a single process -> serving store
 #   4. a continuous driver deploying + running THREE processes (order / payment-with-gateway /
@@ -35,7 +37,11 @@ APP_CP="${BASE}/app-cp.txt"
 
 EB_CLUSTER_DIR="${EB_CLUSTER_DIR:-/tmp/eb-cluster}"
 export EB_CLUSTER_DIR
-export EB_TOPICS_ARGS="-Devent-bridge.topics[0].name=zeebe-records -Devent-bridge.topics[0].partition-count=1 -Devent-bridge.topics[0].replication-factor=3"
+# Topology knobs (defaults preserve the classic 2-broker/1-EB-partition funnel).
+OC_BROKERS="${OC_BROKERS:-2}"
+OC_PARTITIONS="${OC_PARTITIONS:-${OC_BROKERS}}"
+EB_TOPIC_PARTITIONS="${EB_TOPIC_PARTITIONS:-1}"
+export EB_TOPICS_ARGS="-Devent-bridge.topics[0].name=zeebe-records -Devent-bridge.topics[0].partition-count=${EB_TOPIC_PARTITIONS} -Devent-bridge.topics[0].replication-factor=3"
 
 GW="http://localhost:8080"
 OC_REST="http://localhost:8088"
@@ -130,7 +136,7 @@ start() {
   echo "==> Waiting for '${TOPIC}' to be ACTIVE…"
   for _ in $(seq 1 60); do curl -fsS "${GW}/v1/topics" 2>/dev/null | grep -q ACTIVE && break || sleep 1; done
 
-  echo "==> Starting a 2-broker OC cluster (partitions=2, RF=1), exporter pinned to EB partition 1"
+  echo "==> Starting an ${OC_BROKERS}-broker OC cluster (partitions=${OC_PARTITIONS}, RF=1), exporter -> ${EB_TOPIC_PARTITIONS} EB partition(s)"
   # Two brokers on one host: node 0 keeps the well-known client ports (gRPC :26500 / REST :8088) the
   # load driver + workers use; node 1 gets a parallel, non-colliding set. Both brokers export via the
   # ZeebeRecordExporter with targetPartition=1, so partition 2's records (led by node 1) funnel into
@@ -139,12 +145,16 @@ start() {
   # the very first schema-table creation on a fresh DB — starting them together races two concurrent
   # CREATE TABLE DATABASECHANGELOG. Letting node 0 migrate the schema first, then node 1 attach to
   # the already-migrated DB, avoids the race; the Raft cluster still forms once both are up.
-  OC_REST_PORTS=(8088 8089)
-  OC_MGMT_PORTS=(9700 9701)
-  OC_CMD_PORTS=(26701 26703)
-  OC_INT_PORTS=(26702 26704)
-  OC_GRPC_PORTS=(26500 26510)
-  for node in 0 1; do
+  OC_REST_PORTS=(8088 8089 8087)
+  OC_MGMT_PORTS=(9700 9701 9702)
+  OC_CMD_PORTS=(26701 26703 26705)
+  OC_INT_PORTS=(26702 26704 26706)
+  OC_GRPC_PORTS=(26500 26510 26520)
+  OC_CONTACT_POINTS="localhost:26702"
+  for ((n = 1; n < OC_BROKERS; n++)); do
+    OC_CONTACT_POINTS="${OC_CONTACT_POINTS},localhost:${OC_INT_PORTS[$n]}"
+  done
+  for ((node = 0; node < OC_BROKERS; node++)); do
     echo "==> Starting OC broker ${node} (REST :${OC_REST_PORTS[$node]}, gRPC :${OC_GRPC_PORTS[$node]})"
     ( cd "${OC_DIR}"
       java "${JVM_FLAGS[@]}" -cp "$(dist_cp)" \
@@ -153,11 +163,10 @@ start() {
         -Dlogging.level.io.camunda.db.rdbms=WARN \
         -Dserver.port=${OC_REST_PORTS[$node]} -Dmanagement.server.port=${OC_MGMT_PORTS[$node]} \
         -Dzeebe.broker.cluster.nodeId=${node} \
-        -Dzeebe.broker.cluster.clusterSize=2 \
-        -Dzeebe.broker.cluster.partitionsCount=2 \
+        -Dzeebe.broker.cluster.clusterSize=${OC_BROKERS} \
+        -Dzeebe.broker.cluster.partitionsCount=${OC_PARTITIONS} \
         -Dzeebe.broker.cluster.replicationFactor=1 \
-        -Dzeebe.broker.cluster.initialContactPoints[0]=localhost:26702 \
-        -Dzeebe.broker.cluster.initialContactPoints[1]=localhost:26704 \
+        -Dzeebe.broker.cluster.initialContactPoints="${OC_CONTACT_POINTS}" \
         -Dzeebe.broker.network.commandApi.port=${OC_CMD_PORTS[$node]} \
         -Dzeebe.broker.network.internalApi.port=${OC_INT_PORTS[$node]} \
         -Dzeebe.broker.gateway.network.port=${OC_GRPC_PORTS[$node]} \
@@ -166,7 +175,7 @@ start() {
         -Dzeebe.broker.exporters.eventbridge.args.topic=${TOPIC} \
         -Dzeebe.broker.exporters.eventbridge.args.batchSize=5000 \
         -Dzeebe.broker.exporters.eventbridge.args.flushIntervalMs=1000 \
-        -Dzeebe.broker.exporters.eventbridge.args.targetPartition=1 \
+        -Dzeebe.broker.exporters.eventbridge.args.targetPartition=$(( EB_TOPIC_PARTITIONS == 1 ? 1 : 0 )) \
         -Dzeebe.broker.data.directory="${OC_DIR}/data-${node}" \
         io.camunda.application.StandaloneCamunda >"${OC_DIR}/oc-${node}.log" 2>&1 &
       echo "$!" >"${OC_DIR}/pid-${node}" )
