@@ -20,12 +20,36 @@ public class SuspendResumeChurnProperties {
   private int batchSize = 10;
   private Duration resumeDelay = Duration.ofSeconds(60);
 
+  // When true, churn alternates OFF/ON every phaseDuration (starting OFF), giving a repeated
+  // A/B on one warm cluster with no restarts — the clean way to attribute a backpressure delta
+  // to the churn rather than to warm-up/noise. The active phase is exported as the gauge
+  // suspend_resume_churn_phase_active (0/1) so it can be correlated against backpressure in
+  // Prometheus directly, without hand-aligning timestamps.
+  private boolean phased = false;
+  private Duration phaseDuration = Duration.ofMinutes(5);
+
   public boolean isEnabled() {
     return enabled;
   }
 
   public void setEnabled(final boolean enabled) {
     this.enabled = enabled;
+  }
+
+  public boolean isPhased() {
+    return phased;
+  }
+
+  public void setPhased(final boolean phased) {
+    this.phased = phased;
+  }
+
+  public Duration getPhaseDuration() {
+    return phaseDuration;
+  }
+
+  public void setPhaseDuration(final Duration phaseDuration) {
+    this.phaseDuration = phaseDuration;
   }
 
   public Duration getInterval() {
