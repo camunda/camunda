@@ -32,6 +32,9 @@ import org.opensearch.client.opensearch.indices.IndexState;
 
 public class SearchClientAdapter {
 
+  private static final String REFRESH_NULL_SHARDS_ERROR_MESSAGE = "No shards stats returned";
+  private static final String REFRESH_ERROR_MESSAGE = "Index refresh failed with shard failures: ";
+
   private final ElasticsearchClient elsClient;
   private final OpenSearchClient osClient;
   private final SchemaResourceSerializer schemaResourceSerializer;
@@ -372,10 +375,34 @@ public class SearchClientAdapter {
   }
 
   public void refresh() throws IOException {
+    refresh(null);
+  }
+
+  public void refresh(final String prefix) throws IOException {
+    final boolean usePrefix = prefix != null && !prefix.isEmpty();
+
     if (elsClient != null) {
-      elsClient.indices().refresh();
+      final var response =
+          usePrefix
+              ? elsClient.indices().refresh(r -> r.index(prefix + "*"))
+              : elsClient.indices().refresh();
+      if (response.shards() == null) {
+        throw new RuntimeException(REFRESH_NULL_SHARDS_ERROR_MESSAGE);
+      }
+
+      final var failures = response.shards().failures();
+      if (failures != null && !failures.isEmpty()) {
+        throw new RuntimeException(REFRESH_ERROR_MESSAGE + failures);
+      }
     } else if (osClient != null) {
-      osClient.indices().refresh();
+      final var response =
+          usePrefix
+              ? osClient.indices().refresh(r -> r.index(prefix + "*"))
+              : osClient.indices().refresh();
+      final var failures = response.shards().failures();
+      if (!failures.isEmpty()) {
+        throw new RuntimeException(REFRESH_ERROR_MESSAGE + failures);
+      }
     }
   }
 
