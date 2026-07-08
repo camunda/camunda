@@ -98,6 +98,7 @@ import io.camunda.exporter.handlers.operation.OperationFromIncidentHandler;
 import io.camunda.exporter.handlers.operation.OperationFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.operation.OperationFromVariableDocumentHandler;
 import io.camunda.exporter.handlers.usage.UsageMetricExportedHandler;
+import io.camunda.exporter.handlers.usage.UsageMetricTUExportedHandler;
 import io.camunda.exporter.handlers.waitstate.WaitStateHandlerBuilder;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
@@ -397,7 +398,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
                 batchOperationCache),
             new UsageMetricExportedHandler(
-                indexDescriptors.get(UsageMetricTemplate.class).getFullQualifiedName(),
+                indexDescriptors.get(UsageMetricTemplate.class).getFullQualifiedName()),
+            new UsageMetricTUExportedHandler(
                 indexDescriptors.get(UsageMetricTUTemplate.class).getFullQualifiedName()),
             new JobBatchMetricsExportedHandler(
                 indexDescriptors.get(JobMetricsBatchTemplate.class).getFullQualifiedName()),

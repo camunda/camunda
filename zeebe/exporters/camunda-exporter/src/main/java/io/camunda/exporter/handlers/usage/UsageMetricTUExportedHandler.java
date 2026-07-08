@@ -7,35 +7,25 @@
  */
 package io.camunda.exporter.handlers.usage;
 
-import io.camunda.exporter.handlers.usage.UsageMetricExportedHandler.UsageMetricsBatch;
-import io.camunda.webapps.schema.entities.metrics.UsageMetricsEntity;
+import io.camunda.exporter.handlers.usage.UsageMetricTUExportedHandler.UsageMetricsTUBatch;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType;
+import io.camunda.webapps.schema.entities.metrics.UsageMetricsTUEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue;
 import io.camunda.zeebe.util.DateUtil;
 import java.time.OffsetDateTime;
 import java.util.stream.Stream;
 
-public class UsageMetricExportedHandler
-    extends AbstractUsageMetricExportedHandler<UsageMetricsEntity, UsageMetricsBatch> {
-  private static final String ID_PATTERN = "%s_%s";
+public class UsageMetricTUExportedHandler
+    extends AbstractUsageMetricExportedHandler<UsageMetricsTUEntity, UsageMetricsTUBatch> {
+  private static final String TU_ID_PATTERN = "%s_%s_%s";
 
-  public UsageMetricExportedHandler(final String indexName) {
+  public UsageMetricTUExportedHandler(final String indexName) {
     super(indexName);
   }
 
   @Override
-  public Class<UsageMetricsBatch> getEntityType() {
-    return UsageMetricsBatch.class;
-  }
-
-  @Override
-  public UsageMetricsBatch createNewEntity(final String id) {
-    return new UsageMetricsBatch(id);
-  }
-
-  @Override
-  protected Stream<UsageMetricsEntity> extractMetrics(
+  protected Stream<UsageMetricsTUEntity> extractMetrics(
       final Record<UsageMetricRecordValue> record, final UsageMetricsEventType eventType) {
     final var recordKey = record.getKey();
     final var partitionId = record.getPartitionId();
@@ -43,37 +33,48 @@ public class UsageMetricExportedHandler
     final var startTime = DateUtil.toOffsetDateTime(recordValue.getStartTime());
     final var endTime = DateUtil.toOffsetDateTime(recordValue.getEndTime());
 
-    return recordValue.getCounterValues().entrySet().stream()
-        .map(
+    return recordValue.getSetValues().entrySet().stream()
+        .flatMap(
             entry -> {
               final var tenantId = entry.getKey();
-              final var counter = entry.getValue();
-              return createUsageMetricEntity(
-                  recordKey, partitionId, startTime, endTime, tenantId, eventType, counter);
+              final var set = entry.getValue();
+              return set.stream()
+                  .map(
+                      setValue ->
+                          createUsageMetricTUEntity(
+                              recordKey, partitionId, startTime, endTime, tenantId, setValue));
             });
   }
 
-  private UsageMetricsEntity createUsageMetricEntity(
+  @Override
+  public Class<UsageMetricsTUBatch> getEntityType() {
+    return UsageMetricsTUBatch.class;
+  }
+
+  @Override
+  public UsageMetricsTUBatch createNewEntity(final String id) {
+    return new UsageMetricsTUBatch(id);
+  }
+
+  private UsageMetricsTUEntity createUsageMetricTUEntity(
       final long recordKey,
       final int partitionId,
       final OffsetDateTime startTime,
       final OffsetDateTime endTime,
       final String tenantId,
-      final UsageMetricsEventType eventType,
-      final Long eventValue) {
+      final long assigneeHash) {
 
-    return new UsageMetricsEntity()
-        .setId(String.format(ID_PATTERN, recordKey, tenantId))
+    return new UsageMetricsTUEntity()
+        .setId(String.format(TU_ID_PATTERN, recordKey, tenantId, assigneeHash))
         .setPartitionId(partitionId)
         .setTenantId(tenantId)
         .setStartTime(startTime)
         .setEndTime(endTime)
-        .setEventType(eventType)
-        .setEventValue(eventValue);
+        .setAssigneeHash(assigneeHash);
   }
 
-  public static class UsageMetricsBatch extends Batch<UsageMetricsBatch, UsageMetricsEntity> {
-    public UsageMetricsBatch(final String id) {
+  public static class UsageMetricsTUBatch extends Batch<UsageMetricsTUBatch, UsageMetricsTUEntity> {
+    public UsageMetricsTUBatch(final String id) {
       super(id);
     }
   }

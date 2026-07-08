@@ -20,7 +20,6 @@ import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
 import io.camunda.archunit.DoNotIncludeTestsOrTestJars;
 import io.camunda.exporter.handlers.AuditLogHandler;
 import io.camunda.exporter.handlers.ExportHandler;
-import io.camunda.exporter.handlers.usage.UsageMetricExportedHandler;
 import io.camunda.exporter.store.BatchRequest;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -29,9 +28,7 @@ import java.util.stream.Collectors;
 public class ExportHandlerArchTest {
   // TODO remove these once the violations are fixed
   private static final DescribedPredicate<JavaClass> VIOLATING_EXPORTERS =
-      DescribedPredicate.or(
-          JavaClass.Predicates.type(AuditLogHandler.class),
-          JavaClass.Predicates.type(UsageMetricExportedHandler.class));
+      JavaClass.Predicates.type(AuditLogHandler.class);
 
   @ArchTest
   static final ArchRule EXPORT_HANDLERS_SHOULD_ONLY_WRITE_TO_ONE_INDEX =
