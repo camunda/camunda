@@ -26,7 +26,7 @@
 		"publish:zod-schemas": "npm run prepublishOnly && npm publish -w @camunda/camunda-api-zod-schemas",
 		"prettier:format": "prettier --write ."
 	},
-	"packageManager": "npm@11.16.0",
+	"packageManager": "npm@11.18.0",
 	"devDependencies": {
 		"@eslint/js": "10.0.1",
 		"@tanstack/eslint-plugin-query": "5.101.2",
