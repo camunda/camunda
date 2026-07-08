@@ -15,7 +15,7 @@ import {Task} from './Task';
 const currentUser = createCurrentUser({username: 'demo'});
 
 const baseProps = {
-	taskId: 'task-42',
+	userTaskKey: 'task-42',
 	displayName: 'Review invoice',
 	businessId: null,
 	processDisplayName: 'Invoice process',
