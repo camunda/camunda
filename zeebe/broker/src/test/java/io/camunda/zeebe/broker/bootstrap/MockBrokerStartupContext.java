@@ -74,11 +74,10 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   private EmbeddedGatewayService embeddedGatewayService;
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor = mock(DiskSpaceUsageMonitor.class);
   private final ExporterRepository exporterRepository = mock(ExporterRepository.class);
+  private final Map<String, JobStreamService> jobStreamServices = new LinkedHashMap<>();
   private final Map<String, PartitionManager> partitionManagers = new LinkedHashMap<>();
   private RocksDbResources sharedRocksDbResources;
   private BrokerAdminServiceImpl brokerAdminService = mock(BrokerAdminServiceImpl.class);
-  // Default service used when auto-creating PhysicalTenantEngineContext entries.
-  private JobStreamService defaultJobStreamService = mock(JobStreamService.class);
   private ClusterConfigurationService clusterConfigurationService =
       mock(ClusterConfigurationService.class);
   private BrokerClient brokerClient = mock(BrokerClient.class);
@@ -291,14 +290,19 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
     this.brokerAdminService = brokerAdminService;
   }
 
-  /** Test helper — not part of {@link BrokerStartupContext}. */
-  public JobStreamService getJobStreamService() {
-    return defaultJobStreamService;
+  @Override
+  public JobStreamService getJobStreamService(final String physicalTenantId) {
+    return jobStreamServices.get(physicalTenantId);
   }
 
-  /** Test helper — sets the default {@link JobStreamService} used when auto-creating contexts. */
-  public void setJobStreamService(final JobStreamService jobStreamService) {
-    this.defaultJobStreamService = jobStreamService;
+  @Override
+  public void addJobStreamService(final String physicalTenantId, final JobStreamService service) {
+    jobStreamServices.put(physicalTenantId, service);
+  }
+
+  @Override
+  public void removeJobStreamService(final String physicalTenantId) {
+    jobStreamServices.remove(physicalTenantId);
   }
 
   @Override
@@ -360,11 +364,6 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
                 featureFlags,
                 brokerConfiguration,
                 exporterRepository));
-            new PhysicalTenantContext(
-                securityConfiguration,
-                brokerRequestAuthorizationConverter,
-                featureFlags,
-                defaultJobStreamService));
   }
 
   @Override

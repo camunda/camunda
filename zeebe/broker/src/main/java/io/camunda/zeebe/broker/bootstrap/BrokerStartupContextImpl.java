@@ -82,6 +82,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private ManagedMessagingService commandApiMessagingService;
   private AdminApiRequestHandler adminApiService;
   private EmbeddedGatewayService embeddedGatewayService;
+  private final Map<String, JobStreamService> jobStreamServices = new LinkedHashMap<>();
   private final Map<String, PartitionManager> partitionManagers = new LinkedHashMap<>();
   private RocksDbResources sharedRocksDbResources;
   private BrokerAdminServiceImpl brokerAdminService;
@@ -259,6 +260,21 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   }
 
   @Override
+  public JobStreamService getJobStreamService(final String physicalTenantId) {
+    return jobStreamServices.get(physicalTenantId);
+  }
+
+  @Override
+  public void addJobStreamService(final String physicalTenantId, final JobStreamService service) {
+    jobStreamServices.put(physicalTenantId, service);
+  }
+
+  @Override
+  public void removeJobStreamService(final String physicalTenantId) {
+    jobStreamServices.remove(physicalTenantId);
+  }
+
+  @Override
   public Map<String, PartitionManager> getPartitionManagers() {
     return Collections.unmodifiableMap(partitionManagers);
   }
@@ -292,15 +308,6 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public void setBrokerAdminService(final BrokerAdminServiceImpl brokerAdminService) {
     this.brokerAdminService = brokerAdminService;
-  }
-
-  @Override
-  public void updatePhysicalTenantEngineContext(
-      final String physicalTenantId, final PhysicalTenantEngineContext context) {
-    if (!physicalTenantEngineContexts.containsKey(physicalTenantId)) {
-      throw new IllegalArgumentException("Unknown physical tenant id '" + physicalTenantId + "'");
-    }
-    physicalTenantEngineContexts.put(physicalTenantId, context);
   }
 
   @Override

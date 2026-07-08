@@ -17,6 +17,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationPropertiesImpl;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
@@ -26,8 +27,10 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -49,8 +52,6 @@ final class JobStreamServiceStepTest {
       startupFuture = CONCURRENCY_CONTROL.createFuture();
       ctx = new MockBrokerStartupContext();
       ctx.setConcurrencyControl(CONCURRENCY_CONTROL);
-      // Return incomplete futures so ActorFutureCollector's index loop finishes registering all
-      // callbacks before any callback fires and modifies the pending-futures list.
       final var mockScheduler = mock(ActorSchedulingService.class);
       when(mockScheduler.submitActor(any()))
           .thenAnswer(
@@ -62,18 +63,8 @@ final class JobStreamServiceStepTest {
       ctx.setActorSchedulingService(mockScheduler);
     }
 
-    /** Completes all scheduled actor futures, including ones added during completion callbacks. */
-    private void completeAllScheduledActors() {
-      for (int i = 0; i < scheduledActorFutures.size(); i++) {
-        scheduledActorFutures.get(i).complete(null);
-      }
-    }
-
     @Test
-    void shouldStoreJobStreamServiceInEngineContextAfterStartup() {
-      // given — no pre-existing service; a null default makes the step's write observable
-      ctx.setJobStreamService(null);
-
+    void shouldRegisterJobStreamServiceInBrokerContextAfterStartup() {
       // when
       sut.startupInternal(ctx, CONCURRENCY_CONTROL, startupFuture);
       completeAllScheduledActors();
@@ -81,15 +72,13 @@ final class JobStreamServiceStepTest {
       // then
       assertThat(startupFuture.isDone()).as("startup completed").isTrue();
       assertThat(startupFuture.isCompletedExceptionally()).as("no startup error").isFalse();
-      assertThat(ctx.getPhysicalTenantEngineContext(DEFAULT_PHYSICAL_TENANT_ID).jobStreamService())
-          .isNotNull();
+      assertThat(ctx.getJobStreamService(DEFAULT_PHYSICAL_TENANT_ID)).isNotNull();
     }
 
     @Test
     void shouldCreateDistinctServicesForEachPhysicalTenant() {
-      // given — two distinct physical tenants, no pre-existing services
+      // given — two distinct physical tenants
       final var secondTenantId = "second";
-      ctx.setJobStreamService(null);
       ctx.setPhysicalTenantIds(() -> Set.of(DEFAULT_PHYSICAL_TENANT_ID, secondTenantId));
 
       // when
@@ -99,10 +88,8 @@ final class JobStreamServiceStepTest {
       // then — each tenant gets its own isolated service instance
       assertThat(startupFuture.isDone()).as("startup completed").isTrue();
       assertThat(startupFuture.isCompletedExceptionally()).as("no startup error").isFalse();
-      final var defaultService =
-          ctx.getPhysicalTenantEngineContext(DEFAULT_PHYSICAL_TENANT_ID).jobStreamService();
-      final var secondService =
-          ctx.getPhysicalTenantEngineContext(secondTenantId).jobStreamService();
+      final var defaultService = ctx.getJobStreamService(DEFAULT_PHYSICAL_TENANT_ID);
+      final var secondService = ctx.getJobStreamService(secondTenantId);
       assertThat(defaultService).isNotNull();
       assertThat(secondService).isNotNull();
       assertThat(defaultService).isNotSameAs(secondService);
@@ -110,9 +97,6 @@ final class JobStreamServiceStepTest {
 
     @Test
     void shouldRegisterDefaultTenantServiceSupplierWithSpringBrokerBridge() {
-      // given
-      ctx.setJobStreamService(null);
-
       // when
       sut.startupInternal(ctx, CONCURRENCY_CONTROL, startupFuture);
       completeAllScheduledActors();
@@ -136,6 +120,76 @@ final class JobStreamServiceStepTest {
       assertThat(startupFuture.isDone()).as("startup completed").isTrue();
       assertThat(startupFuture.isCompletedExceptionally()).as("no startup error").isFalse();
       verify(spyCtx, never()).addPartitionListener(any());
+    }
+
+    @Test
+    void shouldShutDownAlreadyStartedServicesWhenOnePhysicalTenantFailsToStart() {
+      // given
+      final var secondTenantId = "second";
+      ctx.setPhysicalTenantIds(
+          () -> new LinkedHashSet<>(List.of(DEFAULT_PHYSICAL_TENANT_ID, secondTenantId)));
+
+      final var mockDefaultService = mock(JobStreamService.class);
+      // closeAsync must return a pending future so cleanup's CompletionWaiter finishes
+      // registering all callbacks before any of them fires and shrinks the pending list.
+      when(mockDefaultService.closeAsync(any()))
+          .thenAnswer(
+              inv -> {
+                final var f = new CompletableActorFuture<Void>();
+                scheduledActorFutures.add(f);
+                return f;
+              });
+
+      final var ctxForTest =
+          new MockBrokerStartupContext() {
+            @Override
+            public void addJobStreamService(final String tenantId, final JobStreamService service) {
+              super.addJobStreamService(
+                  tenantId,
+                  DEFAULT_PHYSICAL_TENANT_ID.equals(tenantId) ? mockDefaultService : service);
+            }
+          };
+      ctxForTest.setConcurrencyControl(CONCURRENCY_CONTROL);
+      ctxForTest.setPhysicalTenantIds(
+          () -> new LinkedHashSet<>(List.of(DEFAULT_PHYSICAL_TENANT_ID, secondTenantId)));
+
+      // The second submitActor call (second's errorHandler) fails; all others stay pending
+      // so CompletionWaiter registration loops complete before any callback fires.
+      final var actorIndex = new AtomicInteger();
+      final var mockSched = mock(ActorSchedulingService.class);
+      when(mockSched.submitActor(any()))
+          .thenAnswer(
+              inv -> {
+                final var f = new CompletableActorFuture<Void>();
+                scheduledActorFutures.add(f);
+                if (actorIndex.getAndIncrement() == 1) {
+                  f.completeExceptionally(new RuntimeException("actor start failed"));
+                }
+                return f;
+              });
+      ctxForTest.setActorSchedulingService(mockSched);
+
+      // when
+      sut.startupInternal(ctxForTest, CONCURRENCY_CONTROL, startupFuture);
+      completeAllScheduledActors();
+
+      // then
+      assertThat(startupFuture.isDone()).as("startup future resolved").isTrue();
+      assertThat(startupFuture.isCompletedExceptionally())
+          .as("startup completed exceptionally")
+          .isTrue();
+      assertThat(ctxForTest.getJobStreamService(DEFAULT_PHYSICAL_TENANT_ID))
+          .as("already-started service removed from map on partial failure")
+          .isNull();
+    }
+
+    private void completeAllScheduledActors() {
+      for (int i = 0; i < scheduledActorFutures.size(); i++) {
+        final var f = scheduledActorFutures.get(i);
+        if (!f.isDone()) {
+          f.complete(null);
+        }
+      }
     }
   }
 

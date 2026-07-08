@@ -73,8 +73,10 @@ public interface PartitionManager {
     final var physicalTenantContext =
         brokerStartupContext.getPhysicalTenantEngineContext(physicalTenantId);
 
-    final JobStreamService jobStreamService = null;
-    final var engineContext = brokerStartupContext.getPhysicalTenantEngineContext(physicalTenantId);
+    final var jobStreamService =
+        Objects.requireNonNull(
+            brokerStartupContext.getJobStreamService(physicalTenantId),
+            "JobStreamService not initialized for tenant " + physicalTenantId);
 
     // Combine global listeners with this tenant's error handler so each handler only ever
     // sees its own group's partitions, resolving the bare-int partition-id aliasing bug.

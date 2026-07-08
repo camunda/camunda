@@ -32,10 +32,9 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
 /**
- * Sets up one {@link JobStreamService} per physical tenant and stores it in the tenant's {@link
- * io.camunda.zeebe.broker.system.PhysicalTenantEngineContext}. Each service subscribes on its
- * group's transport topics so that streams registered for one physical tenant are never matched
- * against jobs from another.
+ * Sets up one {@link JobStreamService} per physical tenant and registers it in the broker startup
+ * context's job-stream-service map. Each service subscribes on its group's transport topics so that
+ * streams registered for one physical tenant are never matched against jobs from another.
  */
 public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
 
@@ -60,16 +59,20 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
         futures,
         (services, err) -> {
           if (err != null) {
-            startupFuture.completeExceptionally(err);
+            // Shut down any services that started successfully before completing exceptionally.
+            // shutdownTenantService is a no-op for tenants whose service was never stored.
+            final var cleanupFutures =
+                tenantIds.stream()
+                    .map(id -> shutdownTenantService(brokerStartupContext, id, concurrencyControl))
+                    .collect(new ActorFutureCollector<>(concurrencyControl));
+            concurrencyControl.runOnCompletion(
+                cleanupFutures, (ignored, cleanupErr) -> startupFuture.completeExceptionally(err));
             return;
           }
           brokerStartupContext
               .getSpringBrokerBridge()
               .registerJobStreamServiceSupplier(
-                  () ->
-                      brokerStartupContext
-                          .getPhysicalTenantEngineContext(DEFAULT_PHYSICAL_TENANT_ID)
-                          .jobStreamService());
+                  () -> brokerStartupContext.getJobStreamService(DEFAULT_PHYSICAL_TENANT_ID));
           startupFuture.complete(brokerStartupContext);
         });
   }
@@ -147,11 +150,7 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
                             new RemoteJobStreamer(streamer, clusterServices.getEventService()),
                             errorHandlerService);
                     clusterServices.getMembershipService().addListener(remoteStreamService);
-                    brokerStartupContext.updatePhysicalTenantEngineContext(
-                        physicalTenantId,
-                        brokerStartupContext
-                            .getPhysicalTenantEngineContext(physicalTenantId)
-                            .withJobStreamService(jobStreamService));
+                    brokerStartupContext.addJobStreamService(physicalTenantId, jobStreamService);
                     result.complete(jobStreamService);
                   });
         });
@@ -164,15 +163,13 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
       final String physicalTenantId,
       final ConcurrencyControl concurrencyControl) {
 
-    final var service = ctx.getPhysicalTenantEngineContext(physicalTenantId).jobStreamService();
+    final var service = ctx.getJobStreamService(physicalTenantId);
     if (service == null) {
       return CompletableActorFuture.completed(null);
     }
 
     ctx.getClusterServices().getMembershipService().removeListener(service.remoteStreamService());
-    ctx.updatePhysicalTenantEngineContext(
-        physicalTenantId,
-        ctx.getPhysicalTenantEngineContext(physicalTenantId).withJobStreamService(null));
+    ctx.removeJobStreamService(physicalTenantId);
 
     final var result = concurrencyControl.<Void>createFuture();
     service
