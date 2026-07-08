@@ -108,4 +108,17 @@ public interface MessageStartProcessInstanceRequestRecordValue extends RecordVal
    *     configuration. {@code -1} on reply records.
    */
   long getMessageDeadline();
+
+  /**
+   * @return the time-to-live (millis) of the originating published message on {@code P_K}. Carried
+   *     so {@code P_B} can deterministically decide whether a past-deadline request may still
+   *     activate: a request with {@code messageTtl > 0} whose {@code messageDeadline} has passed is
+   *     expiry-rejected without live evaluation, while a {@code messageTtl == 0} request is allowed
+   *     to fall through (it always arrives past its deadline, and its first-arrival activation is
+   *     the documented TTL=0 behavior). Defaults to {@code 0}, matching {@code
+   *     MessageRecordValue#getTimeToLive()}, whose absent value is likewise {@code 0} (a message
+   *     without a positive TTL is fire-and-forget); an unset field therefore falls through exactly
+   *     as a genuine TTL=0 message does.
+   */
+  long getMessageTtl();
 }

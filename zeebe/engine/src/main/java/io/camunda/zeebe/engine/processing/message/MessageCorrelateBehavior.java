@@ -393,7 +393,8 @@ public final class MessageCorrelateBehavior {
         .setMessageStartEventSubscriptionKey(messageStartEventSubscriptionKey)
         .setVariables(messageData.variables())
         .setTenantId(messageData.tenantId())
-        .setMessageDeadline(messageData.messageDeadline());
+        .setMessageDeadline(messageData.messageDeadline())
+        .setMessageTtl(messageData.messageTtl());
 
     stateWriter.appendFollowUpEvent(
         messageData.messageKey(), MessageStartProcessInstanceRequestIntent.REQUESTED, askRecord);
@@ -410,6 +411,7 @@ public final class MessageCorrelateBehavior {
         messageStartEventSubscriptionKey,
         messageData.variables(),
         messageData.messageDeadline(),
+        messageData.messageTtl(),
         messageData.tenantId());
   }
 
@@ -420,5 +422,6 @@ public final class MessageCorrelateBehavior {
       DirectBuffer variables,
       String tenantId,
       DirectBuffer businessId,
-      long messageDeadline) {}
+      long messageDeadline,
+      long messageTtl) {}
 }

@@ -117,6 +117,7 @@ public class DbMessageStartProcessInstanceAskStateTest {
     originalRecord.setMessageStartEventSubscriptionKey(789L);
     originalRecord.setTenantId("test-tenant");
     originalRecord.setMessageDeadline(99999L);
+    originalRecord.setMessageTtl(88888L);
 
     final var ask = new MessageStartProcessInstanceAsk().wrap(originalRecord);
 
@@ -135,6 +136,7 @@ public class DbMessageStartProcessInstanceAskStateTest {
     assertThat(populatedRecord.getMessageStartEventSubscriptionKey()).isEqualTo(789L);
     assertThat(populatedRecord.getTenantId()).isEqualTo("test-tenant");
     assertThat(populatedRecord.getMessageDeadline()).isEqualTo(99999L);
+    assertThat(populatedRecord.getMessageTtl()).isEqualTo(88888L);
   }
 
   @Test

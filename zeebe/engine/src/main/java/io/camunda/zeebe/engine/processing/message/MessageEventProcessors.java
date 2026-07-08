@@ -175,7 +175,6 @@ public final class MessageEventProcessors {
                 keyGenerator,
                 clock,
                 businessIdUniquenessEnabled,
-                config.getMessageStartAskRetryGrace(),
                 writers))
         .onCommand(
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
@@ -185,7 +184,6 @@ public final class MessageEventProcessors {
                 writers.command(),
                 processingState.getMessageStartProcessInstanceDedupState(),
                 config.getMessageStartDedupExpirationSweepBatchLimit(),
-                config.getMessageStartAskRetryGrace(),
                 clock))
         // Reply command processors on P_K - these handle the cross-partition replies from P_B
         .onCommand(
@@ -200,6 +198,10 @@ public final class MessageEventProcessors {
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
             MessageStartProcessInstanceRequestIntent.REJECT_NO_SUBSCRIPTION,
             new MessageStartProcessInstanceRequestRejectNoSubscriptionProcessor(writers.state()))
+        .onCommand(
+            ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
+            MessageStartProcessInstanceRequestIntent.REJECT_EXPIRED,
+            new MessageStartProcessInstanceRequestRejectExpiredProcessor(writers.state()))
         // Holder-liveness release query handler on P_B - answers whether a cross-partition
         // message-start holder instance is still active, so P_K can release its correlation-key
         // lock. The queries are dispatched by CrossPartitionMessageStartLockReleaseScheduler below.
@@ -227,8 +229,7 @@ public final class MessageEventProcessors {
         .withListener(
             new MessageStartDedupExpirationSweepScheduler(
                 config.getMessageStartDedupExpirationSweepInterval(),
-                scheduledTaskStateFactory.get().getMessageStartProcessInstanceDedupState(),
-                config.getMessageStartAskRetryGrace()))
+                scheduledTaskStateFactory.get().getMessageStartProcessInstanceDedupState()))
         .withListener(
             new PendingMessageStartAskCheckScheduler(
                 subscriptionCommandSender,

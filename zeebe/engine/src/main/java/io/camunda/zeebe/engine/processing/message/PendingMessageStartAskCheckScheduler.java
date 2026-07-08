@@ -37,10 +37,10 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Entries are removed from the state when the ask succeeds ({@code STARTED}) or the originating
  * buffered message expires on {@code P_K}; a rejection keeps the entry and increments its rejection
- * count. Each retry re-emits the same {@code messageDeadline} the original ask carried, so any
- * retry either lands on a live dedup row on {@code P_B} (same outcome) or arrives after both the
- * dedup row and the buffered message have expired together — in which case the pending-ask has
- * already been cleared locally and no retry is emitted.
+ * count. Each retry re-emits the same {@code messageDeadline} (and the same {@code messageTtl}) the
+ * original ask carried, so any retry either lands on a live dedup row on {@code P_B} (same outcome)
+ * or arrives after both the dedup row and the buffered message have expired together — in which
+ * case the pending-ask has already been cleared locally and no retry is emitted.
  */
 public final class PendingMessageStartAskCheckScheduler
     implements Runnable, StreamProcessorLifecycleAware {
@@ -134,6 +134,7 @@ public final class PendingMessageStartAskCheckScheduler
         ask.getMessageStartEventSubscriptionKey(),
         ask.getVariablesBuffer(),
         ask.getMessageDeadline(),
+        ask.getMessageTtl(),
         ask.getTenantIdBuffer().getStringWithoutLengthUtf8(0, ask.getTenantIdBuffer().capacity()));
 
     // Update the sent time to prevent it from being re-sent too soon
