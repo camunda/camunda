@@ -240,6 +240,9 @@ mwnw*                       @camunda/monorepo-devops-team
 /zeebe/msgpack-core/        @camunda/core-features
 /zeebe/msgpack-value/       @camunda/core-features
 
+# Secret store SPI
+/secret-store/              @camunda/core-features
+
 # Gateway modules
 /zeebe/gateway/             @camunda/core-features
 /zeebe/gateway-grpc/        @camunda/core-features
