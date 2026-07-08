@@ -88,7 +88,7 @@ runs:
     - name: Cache local Maven repository
       # Only use the full cache action if we're on main or stable/* branches
       if: ${{ steps.branch-detect.outputs.is-main-or-stable-branch == 'true' }}
-      uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ${{ env.MAVEN_CACHE_PATH }}
         key: ${{ env.MAVEN_CACHE_KEY }}
@@ -98,7 +98,7 @@ runs:
     - name: Restore maven cache
       # Restore cache (but don't save it) if we're not on main or stable/* branches and cache is enabled
       if: ${{ steps.branch-detect.outputs.is-main-or-stable-branch == 'false' && steps.is-cache-enabled.outputs.is-cache-enabled == 'true' }}
-      uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         # This has to match the 'Cache local Maven repository' step above
         path: ${{ env.MAVEN_CACHE_PATH }}
