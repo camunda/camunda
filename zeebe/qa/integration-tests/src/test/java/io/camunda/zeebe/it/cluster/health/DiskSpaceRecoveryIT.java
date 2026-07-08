@@ -98,6 +98,7 @@ final class DiskSpaceRecoveryIT {
                   cfg.getCluster().getNetwork().setMaxMessageSize(DataSize.ofMegabytes(1));
                   cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
                 })
+            // Increase startup timeout to reduce CI slow-start flakes; see #55457.
             .withStartupTimeout(Duration.ofSeconds(90))
             .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
             .withEnv(UNPROTECTED_API_ENV_VAR, "true")
