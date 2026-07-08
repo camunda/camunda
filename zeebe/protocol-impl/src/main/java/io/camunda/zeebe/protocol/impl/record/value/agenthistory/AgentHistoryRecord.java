@@ -258,34 +258,4 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
   public AgentHistoryRecord ignoreLease() {
     return setJobLease(JobRecord.EMPTY_LEASE);
   }
-
-  /**
-   * Returns a copy carrying only identity fields, dropping {@code content}, {@code toolCalls},
-   * {@code metrics}, and {@code producedAt}. This is what {@code AgentHistoryCreatedApplier}
-   * inserts into primary storage (RocksDB) for a {@code PENDING} item: once the {@code CREATED}
-   * event has carried the full payload to secondary storage, nothing reads it back out of primary
-   * storage — matching a {@code COMMIT}/{@code DISCARD} against an item only needs {@code
-   * jobKey}/{@code jobLease}, and deleting it only needs the same two fields. Storing the trimmed
-   * copy means the {@code COMMITTED}/{@code DISCARDED} events later read back out of state are
-   * trimmed too, with no extra stripping needed at emit time.
-   *
-   * <p>This is an explicit allow-list rather than a full copy with the payload cleared afterward,
-   * so a field added to this record in the future is excluded from primary storage by default —
-   * someone has to deliberately add it here for it to be persisted past {@code CREATED}.
-   */
-  public AgentHistoryRecord onlyIdentityFields() {
-    return new AgentHistoryRecord()
-        .setAgentHistoryKey(getAgentHistoryKey())
-        .setAgentInstanceKey(getAgentInstanceKey())
-        .setElementInstanceKey(getElementInstanceKey())
-        .setProcessInstanceKey(getProcessInstanceKey())
-        .setRootProcessInstanceKey(getRootProcessInstanceKey())
-        .setBpmnProcessId(getBpmnProcessId())
-        .setProcessDefinitionKey(getProcessDefinitionKey())
-        .setTenantId(getTenantId())
-        .setJobKey(getJobKey())
-        .setJobLease(getJobLease())
-        .setLoopIteration(getLoopIteration())
-        .setRole(getRole());
-  }
 }

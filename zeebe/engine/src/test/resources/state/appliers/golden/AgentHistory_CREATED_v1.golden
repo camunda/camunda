@@ -24,8 +24,34 @@ public final class AgentHistoryCreatedApplier
 
   @Override
   public void applyState(final long key, final AgentHistoryRecord value) {
-    // content/toolCalls/metrics/producedAt already reached secondary storage via the CREATED event
-    // itself — primary storage only needs identity fields to later match and delete the item.
-    agentHistoryState.insert(key, value.onlyIdentityFields());
+    // Store only the identity fields in primary storage (RocksDB). content/toolCalls/metrics/
+    // producedAt have already reached secondary storage via the CREATED event itself; nothing reads
+    // them back out of primary storage — matching a COMMIT/DISCARD only needs jobKey/jobLease, and
+    // deleting the item needs the same two fields. Storing the trimmed copy also means the
+    // COMMITTED/DISCARDED events re-emitted from state carry only identity fields, with no extra
+    // stripping needed at those emit sites.
+    //
+    // This is an explicit allow-list (not a full copy with payload cleared afterward) so that a
+    // field added to AgentHistoryRecord in the future is excluded from primary storage by default —
+    // someone has to deliberately add it here for it to be persisted past CREATED. Keeping the
+    // selection inline rather than in a shared helper also means any future change to which fields
+    // are stored requires a new applier version with its own golden file, preventing silent
+    // behavior
+    // changes to already-released appliers.
+    final var identityRecord =
+        new AgentHistoryRecord()
+            .setAgentHistoryKey(value.getAgentHistoryKey())
+            .setAgentInstanceKey(value.getAgentInstanceKey())
+            .setElementInstanceKey(value.getElementInstanceKey())
+            .setProcessInstanceKey(value.getProcessInstanceKey())
+            .setRootProcessInstanceKey(value.getRootProcessInstanceKey())
+            .setBpmnProcessId(value.getBpmnProcessId())
+            .setProcessDefinitionKey(value.getProcessDefinitionKey())
+            .setTenantId(value.getTenantId())
+            .setJobKey(value.getJobKey())
+            .setJobLease(value.getJobLease())
+            .setLoopIteration(value.getLoopIteration())
+            .setRole(value.getRole());
+    agentHistoryState.insert(key, identityRecord);
   }
 }
