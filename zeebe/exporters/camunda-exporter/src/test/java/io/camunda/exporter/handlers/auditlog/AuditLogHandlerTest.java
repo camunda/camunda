@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.handlers;
+package io.camunda.exporter.handlers.auditlog;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -16,7 +16,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.exceptions.PersistenceException;
-import io.camunda.exporter.handlers.AuditLogHandler.AuditLogBatch;
+import io.camunda.exporter.handlers.auditlog.AuditLogHandler.AuditLogBatch;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogActorType;

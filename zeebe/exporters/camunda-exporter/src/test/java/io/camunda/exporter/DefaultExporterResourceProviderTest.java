@@ -14,8 +14,8 @@ import static org.mockito.Mockito.mock;
 
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ExporterConfiguration;
-import io.camunda.exporter.handlers.AuditLogHandler;
 import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.handlers.auditlog.AuditLogHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedItemHandler;
 import io.camunda.exporter.handlers.waitstate.WaitStateAddHandler;
 import io.camunda.exporter.handlers.waitstate.WaitStateRemoveHandler;
