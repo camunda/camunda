@@ -367,4 +367,5 @@ prometheusServiceMonitor:
   enabled: true
   labels:
     release: monitoring
+    generate-golden-verification: scratch
   scrapeInterval: 30s
