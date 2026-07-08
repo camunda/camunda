@@ -75,6 +75,7 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
 				<Link
 					className={styles.taskLink}
 					to="/tasklist/$userTaskKey"
+					search
 					params={{userTaskKey}}
 					aria-label={getNavLinkLabel({
 						displayName,

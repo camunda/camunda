@@ -9,6 +9,7 @@
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {describe, expect} from 'vitest';
+import {userEvent} from 'vitest/browser';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {Task} from './Task';
 
@@ -82,6 +83,22 @@ describe('<Task />', () => {
 		});
 
 		await expect.element(screen.getByText('Critical', {exact: true})).toBeVisible();
+	});
+
+	it('should preserve the task list search params when opening the task', async () => {
+		const {router, ...screen} = await renderWithRouter(() => <Task {...baseProps} />, {
+			path: '/tasklist/$userTaskKey',
+			initialEntry: '/tasklist/other-task?filter=custom&sortBy=priority&processDefinitionKey=process-1',
+		});
+
+		await userEvent.click(screen.getByRole('link', {name: 'Unassigned task: Review invoice'}));
+
+		await expect.poll(() => router.state.location.pathname).toBe('/tasklist/task-42');
+		expect(router.state.location.search).toEqual({
+			filter: 'custom',
+			processDefinitionKey: 'process-1',
+			sortBy: 'priority',
+		});
 	});
 
 	it('should not render the priority label', async () => {
