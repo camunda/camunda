@@ -22,7 +22,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import io.camunda.application.commons.hub.ping.PingHubRunner.HubPingConfiguration;
-import io.camunda.application.commons.hub.ping.PingHubRunner.HubPingConfiguration.M2MCredentials;
 import io.camunda.service.ManagementServices;
 import io.camunda.service.license.LicenseType;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;

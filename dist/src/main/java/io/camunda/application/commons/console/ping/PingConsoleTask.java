@@ -9,6 +9,7 @@ package io.camunda.application.commons.console.ping;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.application.commons.console.ping.PingConsoleRunner.ConsolePingConfiguration;
+import io.camunda.application.commons.hub.ping.M2MTokenProvider;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.retry.RetryConfiguration;
 import io.camunda.zeebe.util.retry.RetryDecorator;
@@ -28,15 +29,18 @@ public class PingConsoleTask implements Runnable {
   private static final int MAX_RESPONSE_BODY_LENGTH = 1000;
   private final HttpClient client;
   private final ConsolePingConfiguration pingConfiguration;
+  private final M2MTokenProvider tokenProvider;
   private final RetryDecorator retryDecorator;
   private final String licensePayload;
 
   @VisibleForTesting
   public PingConsoleTask(
       final ConsolePingConfiguration pingConfiguration,
+      final M2MTokenProvider tokenProvider,
       final HttpClient client,
       final String licensePayload) {
     this.pingConfiguration = pingConfiguration;
+    this.tokenProvider = tokenProvider;
     this.client = client;
     retryDecorator =
         new RetryDecorator(
@@ -47,18 +51,22 @@ public class PingConsoleTask implements Runnable {
   }
 
   public PingConsoleTask(
-      final ConsolePingConfiguration pingConfiguration, final String licensePayload) {
-    this(pingConfiguration, HttpClient.newHttpClient(), licensePayload);
+      final ConsolePingConfiguration pingConfiguration,
+      final M2MTokenProvider tokenProvider,
+      final String licensePayload) {
+    this(pingConfiguration, tokenProvider, HttpClient.newHttpClient(), licensePayload);
   }
 
   @Override
   public void run() {
     try {
+      final String token = tokenProvider.getToken();
       final HttpRequest request =
           HttpRequest.newBuilder()
               .uri(pingConfiguration.endpoint())
               .header("Accept", "application/json")
               .header("Content-Type", "application/json")
+              .header("Authorization", "Bearer " + token)
               .POST(HttpRequest.BodyPublishers.ofString(licensePayload))
               .build();
 

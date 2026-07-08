@@ -9,7 +9,6 @@ package io.camunda.application.commons.hub.ping;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.application.commons.hub.ping.PingHubRunner.HubPingConfiguration.M2MCredentials;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -38,7 +37,7 @@ public class M2MTokenProvider {
   }
 
   @VisibleForTesting
-  M2MTokenProvider(final M2MCredentials credentials, final HttpClient httpClient) {
+  public M2MTokenProvider(final M2MCredentials credentials, final HttpClient httpClient) {
     this.credentials = credentials;
     this.httpClient = httpClient;
   }

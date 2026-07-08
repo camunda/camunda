@@ -243,8 +243,5 @@ public class PingHubRunner implements ApplicationRunner, BrokerTopologyListener 
       Duration pingPeriod,
       RetryConfiguration retry,
       Map<String, String> properties,
-      M2MCredentials credentials) {
-
-    public record M2MCredentials(URI tokenEndpoint, String clientId, String clientSecret) {}
-  }
+      M2MCredentials credentials) {}
 }

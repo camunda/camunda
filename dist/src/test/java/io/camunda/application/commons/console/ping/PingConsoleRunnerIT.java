@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import io.camunda.application.commons.console.ping.PingConsoleRunner.ConsolePingConfiguration;
+import io.camunda.application.commons.hub.ping.M2MCredentials;
 import io.camunda.service.ManagementServices;
 import io.camunda.service.license.LicenseType;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -54,6 +55,14 @@ public class PingConsoleRunnerIT {
     wireMockServer = new WireMockServer(0);
     wireMockServer.start();
     configureFor("localhost", wireMockServer.port());
+    stubFor(
+        post(urlEqualTo("/token"))
+            .willReturn(
+                aResponse()
+                    .withStatus(200)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody(
+                        "{\"access_token\":\"test-m2m-token\",\"token_type\":\"Bearer\",\"expires_in\":3600}")));
     stubFor(post(urlEqualTo("/ping")).willReturn(aResponse().withStatus(200).withBody("PONG")));
     when(BROKER_TOPOLOGY_MANAGER.getClusterConfiguration())
         .thenReturn(BROKER_CLUSTER_CONFIGURATION);
@@ -68,7 +77,7 @@ public class PingConsoleRunnerIT {
   @Test
   void shouldSendCorrectPayload() throws Exception {
     // given
-    final String mockUrl = "http://localhost:" + wireMockServer.port() + "/ping";
+    final String baseUrl = "http://localhost:" + wireMockServer.port();
     final Duration pingPeriod = Duration.ofMillis(200);
     final RetryConfiguration retryConfig = new RetryConfiguration();
     final String expectedBody =
@@ -97,9 +106,17 @@ public class PingConsoleRunnerIT {
     when(environment.getActiveProfiles())
         .thenReturn(new String[] {"gateway", "broker", "identity"});
 
+    final M2MCredentials credentials =
+        new M2MCredentials(URI.create(baseUrl + "/token"), "test-client-id", "test-client-secret");
     final ConsolePingConfiguration config =
         new ConsolePingConfiguration(
-            true, URI.create(mockUrl), "test-cluster-name", pingPeriod, retryConfig, null);
+            true,
+            URI.create(baseUrl + "/ping"),
+            "test-cluster-name",
+            pingPeriod,
+            retryConfig,
+            null,
+            credentials);
 
     final PingConsoleRunner pingConsoleRunner =
         new PingConsoleRunner(
@@ -109,12 +126,10 @@ public class PingConsoleRunnerIT {
     pingConsoleRunner.run(null);
 
     // then
-    await()
-        .atMost(10, TimeUnit.SECONDS)
-        .until(() -> wireMockServer.getAllServeEvents().size() >= 3);
+    await().atMost(10, TimeUnit.SECONDS).until(() -> pingEventsCount() >= 3);
 
-    final List<ServeEvent> serveEvents = wireMockServer.getAllServeEvents();
-    final String actualBody = serveEvents.get(0).getRequest().getBodyAsString();
+    final List<ServeEvent> pingEvents = pingServeEvents();
+    final String actualBody = pingEvents.get(0).getRequest().getBodyAsString();
 
     final ObjectMapper mapper = new ObjectMapper();
     final JsonNode expected = mapper.readTree(expectedBody);
@@ -124,9 +139,9 @@ public class PingConsoleRunnerIT {
   }
 
   @Test
-  void shouldNotIncludeAuthorizationHeader() throws Exception {
+  void shouldSendM2MTokenInAuthorizationHeader() throws Exception {
     // given
-    final String mockUrl = "http://localhost:" + wireMockServer.port() + "/ping";
+    final String baseUrl = "http://localhost:" + wireMockServer.port();
 
     applicationContext = mock(ApplicationContext.class);
     final Environment environment = mock(Environment.class);
@@ -137,14 +152,17 @@ public class PingConsoleRunnerIT {
     when(applicationContext.getEnvironment()).thenReturn(environment);
     when(environment.getActiveProfiles()).thenReturn(new String[] {"broker"});
 
+    final M2MCredentials credentials =
+        new M2MCredentials(URI.create(baseUrl + "/token"), "test-client-id", "test-client-secret");
     final ConsolePingConfiguration config =
         new ConsolePingConfiguration(
             true,
-            URI.create(mockUrl),
+            URI.create(baseUrl + "/ping"),
             "test-cluster-name",
             Duration.ofMillis(200),
             new RetryConfiguration(),
-            null);
+            null,
+            credentials);
 
     final PingConsoleRunner pingConsoleRunner =
         new PingConsoleRunner(
@@ -153,12 +171,24 @@ public class PingConsoleRunnerIT {
     // when
     pingConsoleRunner.run(null);
 
-    // then — legacy console ping sends no Authorization header
-    await()
-        .atMost(10, TimeUnit.SECONDS)
-        .until(() -> wireMockServer.getAllServeEvents().size() >= 1);
+    // then
+    await().atMost(10, TimeUnit.SECONDS).until(() -> pingEventsCount() >= 1);
 
-    final List<ServeEvent> serveEvents = wireMockServer.getAllServeEvents();
-    assertThat(serveEvents.get(0).getRequest().containsHeader("Authorization")).isFalse();
+    final List<ServeEvent> pingEvents = pingServeEvents();
+    assertThat(pingEvents).isNotEmpty();
+    assertThat(pingEvents.get(0).getRequest().getHeader("Authorization"))
+        .isEqualTo("Bearer test-m2m-token");
+  }
+
+  private long pingEventsCount() {
+    return wireMockServer.getAllServeEvents().stream()
+        .filter(e -> e.getRequest().getUrl().equals("/ping"))
+        .count();
+  }
+
+  private List<ServeEvent> pingServeEvents() {
+    return wireMockServer.getAllServeEvents().stream()
+        .filter(e -> e.getRequest().getUrl().equals("/ping"))
+        .toList();
   }
 }

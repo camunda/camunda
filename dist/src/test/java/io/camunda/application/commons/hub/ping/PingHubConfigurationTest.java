@@ -16,7 +16,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.application.commons.hub.ping.PingHubRunner.HubPingConfiguration;
-import io.camunda.application.commons.hub.ping.PingHubRunner.HubPingConfiguration.M2MCredentials;
 import io.camunda.service.ManagementServices;
 import io.camunda.service.license.LicenseType;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;

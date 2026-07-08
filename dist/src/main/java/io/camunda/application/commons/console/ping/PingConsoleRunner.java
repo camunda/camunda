@@ -12,6 +12,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.console.ping.PingConsoleRunner.ConsolePingConfiguration;
 import io.camunda.application.commons.console.ping.PingConsoleTask.LicensePayload;
+import io.camunda.application.commons.hub.ping.M2MCredentials;
+import io.camunda.application.commons.hub.ping.M2MTokenProvider;
 import io.camunda.service.ManagementServices;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -97,9 +99,10 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
         brokerTopologyManager.getClusterConfiguration().clusterId().get(),
         pingConfiguration.endpoint(),
         pingConfiguration.pingPeriod());
+    final var tokenProvider = new M2MTokenProvider(pingConfiguration.credentials());
     final var executor = createTaskExecutor();
     executor.scheduleAtFixedRate(
-        new PingConsoleTask(pingConfiguration, licensePayload.get()),
+        new PingConsoleTask(pingConfiguration, tokenProvider, licensePayload.get()),
         1000,
         pingConfiguration.pingPeriod().toMillis(),
         TimeUnit.MILLISECONDS);
@@ -146,6 +149,27 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
           < 0) {
         return Either.left("Max retry delay must be greater than or equal to min retry delay.");
       }
+    }
+    if (pingConfiguration.credentials() == null) {
+      return Either.left("M2M credentials must not be null.");
+    }
+    if (pingConfiguration.credentials().tokenEndpoint() == null) {
+      return Either.left("M2M token endpoint must not be null.");
+    }
+    if (pingConfiguration.credentials().tokenEndpoint().getScheme() == null
+        || pingConfiguration.credentials().tokenEndpoint().getHost() == null) {
+      return Either.left(
+          String.format(
+              "M2M token endpoint %s must be a valid URI.",
+              pingConfiguration.credentials().tokenEndpoint()));
+    }
+    if (pingConfiguration.credentials().clientId() == null
+        || pingConfiguration.credentials().clientId().isBlank()) {
+      return Either.left("M2M client ID must not be null or empty.");
+    }
+    if (pingConfiguration.credentials().clientSecret() == null
+        || pingConfiguration.credentials().clientSecret().isBlank()) {
+      return Either.left("M2M client secret must not be null or empty.");
     }
     if (licensePayload.isLeft()) {
       return Either.left(
@@ -232,5 +256,6 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
       String clusterName,
       Duration pingPeriod,
       RetryConfiguration retry,
-      Map<String, String> properties) {}
+      Map<String, String> properties,
+      M2MCredentials credentials) {}
 }
