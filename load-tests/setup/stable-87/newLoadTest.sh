@@ -11,14 +11,13 @@ ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 
 usage() {
   cat <<'EOF'
-Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize] [enable_single_zone] [enable_webapps]
+Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize] [enable_webapps]
 
 Arguments:
   namespace          Base namespace name. Will be prefixed with "c8-" if missing.
   secondaryStorage   Optional. One of: elasticsearch. Default: elasticsearch.
   ttl_days           Optional. Positive integer for namespace TTL in days. Default: 1.
   enable_optimize    Optional. true|false to enable Optimize. Default: true.
-  enable_single_zone Optional. true|false to deploy the cluster on a single zone. Default: true.
   enable_webapps     Optional. true|false to enable Operate and Tasklist. Default: true.
 
 Options:
@@ -102,18 +101,12 @@ if [[ "$enable_optimize" != "true" && "$enable_optimize" != "false" ]]; then
   exit 1
 fi
 
-enable_single_zone="${5:-true}"
-enable_single_zone=$(echo "$enable_single_zone" | tr '[:upper:]' '[:lower:]')
-
 # `hashmod_zone` is deterministic, so the zone baked into namespace.yaml and
-# the values files matches any re-applied manifest after TTL deletion.
-if [[ "$enable_single_zone" == "true" ]]; then
-  availability_zone="$(hashmod_zone "$namespace")"
-else
-  availability_zone="~"
-fi
+# the values files matches any re-applied manifest after TTL deletion. Every
+# load test pins its workloads to one zone; there is no unpinned mode.
+availability_zone="$(hashmod_zone "$namespace")"
 
-enable_webapps="${6:-true}"
+enable_webapps="${5:-true}"
 enable_webapps=$(echo "$enable_webapps" | tr '[:upper:]' '[:lower:]')
 if [[ "$enable_webapps" != "true" && "$enable_webapps" != "false" ]]; then
   echo "Error: Invalid enable_webapps value '$enable_webapps'"
@@ -188,7 +181,6 @@ cat <<EOF > load-test-setup-values.yaml
 name: "$namespace"
 author: "$git_author"
 deadlineDate: "$deadline_date"
-# Can be unset using "topologyZone: ~"
 topologyZone: $availability_zone
 # Propagated to the camunda-load-tests (load-tester) subchart via Helm global
 # coalescing.
