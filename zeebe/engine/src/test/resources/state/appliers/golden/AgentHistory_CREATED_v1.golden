@@ -24,6 +24,8 @@ public final class AgentHistoryCreatedApplier
 
   @Override
   public void applyState(final long key, final AgentHistoryRecord value) {
-    agentHistoryState.insert(key, value);
+    // content/toolCalls/metrics/producedAt already reached secondary storage via the CREATED event
+    // itself — primary storage only needs identity fields to later match and delete the item.
+    agentHistoryState.insert(key, value.onlyIdentityFields());
   }
 }
