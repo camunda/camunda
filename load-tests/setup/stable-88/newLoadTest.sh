@@ -134,23 +134,40 @@ cp -v  "Makefile"                                                 "$TARGET_DIREC
 cp -rv ../charts/                                                 "$TARGET_DIRECTORY/"
 cp -v  "values/camunda-platform-override-values.yaml"             "$TARGET_DIRECTORY/"
 cp -v  "../scenarios/load-tester-values-defaults.yaml"            "$TARGET_DIRECTORY/"
-cp -v  "../scenarios/load-tester-values-realistic-benchmark.yaml" "$TARGET_DIRECTORY/"
 cp -v  "values/values-stable.yaml"                                "$TARGET_DIRECTORY/"
+cp -v  "../scenarios/load-tester-values-realistic-benchmark.yaml" "$TARGET_DIRECTORY/"
 cp -v  "values/camunda-platform-values-defaults.yaml"             "$TARGET_DIRECTORY/"
 cp -v  "values/camunda-platform-values-${secondaryStorage}.yaml"  "$TARGET_DIRECTORY/"
+
+# Don't configure Elasticsearch unless specifically enabled (secondary storage,
+# or via Optimize)
+elasticsearchEnabled=false
 
 # Storage-specific copies.
 case "$secondaryStorage" in
   elasticsearch|opensearch)
     cp -v "values/prometheus-elasticsearch-exporter-values.yaml" "$TARGET_DIRECTORY/"
+    if [ "$secondaryStorage" = elasticsearch ]; then
+      elasticsearchEnabled=true
+    fi
     ;;
 esac
 
 if [[ "$enable_optimize" == "true" ]]; then
-  # Optimize needs specifically Elasticsearch (independently from the secondary
-  # storage configuration).
-  cp -v "values/camunda-platform-values-optimize-elasticsearch.yaml" "$TARGET_DIRECTORY/"
-  cp -v "values/prometheus-elasticsearch-exporter-values.yaml"       "$TARGET_DIRECTORY/"
+  # Optimize uses either Elasticsearch or OpenSearch (if configured as the
+  # secondary storage), or fallbacks to Elasticsearch if another secondary
+  # storage is used.
+  # We only request and configure Elasticsearch in this fallback case ; ES or
+  # OS should have been configured as part of the secondary storage
+  # configuration before, otherwise.
+  if [[ ! "$secondaryStorage" =~ ^(elasticsearch|opensearch)$ ]]; then
+    # Secondary storage is not ES nor OS: forcefully configures Optimize to
+    # use Elasticsearch.
+    elasticsearchEnabled=true
+    echo "Forcefully enabling Elasticsearch for Optimize"
+    cp -v "values/camunda-platform-values-optimize-elasticsearch.yaml" "$TARGET_DIRECTORY/"
+    cp -v "values/prometheus-elasticsearch-exporter-values.yaml"       "$TARGET_DIRECTORY/"
+  fi
 fi
 
 cd "$TARGET_DIRECTORY"
@@ -172,6 +189,7 @@ name: "$namespace"
 author: "$git_author"
 deadlineDate: "$deadline_date"
 topologyZone: $availability_zone
+
 # Propagated to the camunda-load-tests (load-tester) subchart via Helm global
 # coalescing.
 global:
@@ -180,11 +198,11 @@ global:
   nodeSelector:
     topology.kubernetes.io/zone: $availability_zone
 
-metricsExporter:
-  database:
-    # TODO: remove and use the default once this setup uses the Elasticsearch
-    # ECK resource instead of the Elasticsearch Bitnami Helm Chart.
-    url: http://elastic:9200
+elasticsearch:
+  # Elasticsearch settings are configured through the options from
+  # charts/load-test-setup/values.yaml
+  enabled: $elasticsearchEnabled
+  version: 8.18.0
 EOF
 
 # Add/update helm repositories
