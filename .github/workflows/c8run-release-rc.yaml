@@ -1,0 +1,702 @@
+# type: Release
+# owner: @camunda/distribution
+---
+name: "C8Run: Release Candidate"
+# run-name carries the full version so the release-train BPMN can find this run by name
+# (GET /actions/workflows/{id}/runs then match `name == c8run-rc-<camundaVersion>`). The version
+# is released exactly once, so it is a unique key without a separate correlation id.
+run-name: c8run-rc-${{ inputs.camundaVersion }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Release branch to build from (e.g., main, stable/8.7, stable/8.8)"
+        type: string
+        required: true
+        default: ""
+      camundaVersion:
+        description: "Full Camunda release version = the C8Run version (e.g., 8.8.29, 8.8.0-alpha4.1). The minor (e.g. 8.8) is derived from it."
+        type: string
+        required: true
+        default: ""
+      connectorsVersion:
+        description: "Full Connectors bundle version (e.g., 8.8.15)"
+        type: string
+        required: true
+        default: ""
+      # The following are only consumed by the Docker-Compose self-heal on docker-reliant branches
+      # (8.7/8.8). They let the preflight author a correct docker-compose .env when it is stale.
+      # The release train supplies them; ad-hoc runs may omit them (then a stale compose hard-fails).
+      optimizeVersion:
+        description: "Optimize version for the compose self-heal (docker-reliant branches only)."
+        type: string
+        required: false
+        default: ""
+      identityVersion:
+        description: "Standalone (management) Identity version for the compose self-heal (docker-reliant branches only)."
+        type: string
+        required: false
+        default: ""
+      webModelerVersion:
+        description: "Web Modeler version for the compose self-heal (docker-reliant branches only)."
+        type: string
+        required: false
+        default: ""
+      consoleVersion:
+        description: "Console version for the compose self-heal (8.8+ docker-reliant branches; 8.7 has no console)."
+        type: string
+        required: false
+        default: ""
+      dryRun:
+        description: "Dry run: build for real but stage to an isolated <version>-rc-dryrun Harbor tag and skip the .env bump PR. Nothing public is written; the dryrun tag is deletable residue."
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  HARBOR_REGISTRY_HOST: registry.camunda.cloud
+  HARBOR_REGISTRY_PROJECT: team-distribution
+  RC_REPOSITORY: c8run
+
+jobs:
+  # Gate: for docker-reliant branches (those whose c8run/.env pins COMPOSE_TAG), the bundled rolling
+  # docker-compose-<minor> release must already pin the target version. When it is behind (the release
+  # train dispatches C8Run RC before Renovate refreshes the compose), this job SELF-HEALS: it dispatches
+  # the camunda-distributions force-bump workflow with the train's component versions, waits (bounded)
+  # for the rolling release to rebuild, then re-verifies. Java-only branches (main, stable/8.9) have no
+  # COMPOSE_TAG and skip the gate entirely.
+  verify-compose:
+    name: Verify or remediate Docker Compose
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: read
+    steps:
+      - name: ℹ️ Print workflow inputs ℹ️
+        env:
+          WORKFLOW_INPUTS: ${{ toJson(inputs) }}
+        run: |
+          echo "Action Inputs:"
+          echo "${WORKFLOW_INPUTS}"
+
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ inputs.branch }}
+
+      - name: Detect Docker Compose dependency
+        id: detect
+        run: |
+          compose_tag="$(grep -E '^COMPOSE_TAG=' c8run/.env | head -1 | cut -d= -f2- || true)"
+          if [ -z "${compose_tag}" ]; then
+            echo "Java-only branch (no COMPOSE_TAG in c8run/.env) — no Docker Compose dependency. Skipping gate."
+          else
+            echo "Docker-reliant branch: COMPOSE_TAG=${compose_tag}."
+          fi
+          echo "compose_tag=${compose_tag}" >> "$GITHUB_OUTPUT"
+
+      # Distro CI app token scoped to camunda-distributions: reads the rolling release and dispatches the
+      # force-bump there. Only fetched for docker-reliant branches (Java-only branches skip remediation).
+      - name: Import distro CI app secrets
+        id: distro-secrets
+        if: steps.detect.outputs.compose_tag != ''
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/distribution/ci GH_APP_ID_DISTRO_CI;
+            secret/data/products/distribution/ci GH_APP_PRIVATE_KEY_DISTRO_CI;
+
+      - name: Generate distro CI app token
+        id: distro-token
+        if: steps.detect.outputs.compose_tag != ''
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ steps.distro-secrets.outputs.GH_APP_ID_DISTRO_CI }}
+          private-key: ${{ steps.distro-secrets.outputs.GH_APP_PRIVATE_KEY_DISTRO_CI }}
+          owner: camunda
+          repositories: camunda-distributions
+
+      - name: Verify or remediate the rolling docker-compose
+        if: steps.detect.outputs.compose_tag != ''
+        env:
+          COMPOSE_TAG: ${{ steps.detect.outputs.compose_tag }}
+          CAMUNDA_VERSION: ${{ inputs.camundaVersion }}
+          CONNECTORS_VERSION: ${{ inputs.connectorsVersion }}
+          OPTIMIZE_VERSION: ${{ inputs.optimizeVersion }}
+          IDENTITY_VERSION: ${{ inputs.identityVersion }}
+          WEB_MODELER_VERSION: ${{ inputs.webModelerVersion }}
+          CONSOLE_VERSION: ${{ inputs.consoleVersion }}
+          DRY_RUN: ${{ inputs.dryRun }}
+          GH_TOKEN: ${{ steps.distro-token.outputs.token }}
+          DISTRIBUTIONS_REPO: camunda/camunda-distributions
+        run: |
+          set -euo pipefail
+
+          # Reads the rolling release BODY (cheap; no zip download). The body's "## Versions" section
+          # lists every *_VERSION as `- KEY=value`. compose_pin extracts one KEY's pinned version.
+          compose_body() {
+            gh release view "docker-compose-${COMPOSE_TAG}" --repo "${DISTRIBUTIONS_REPO}" --json body --jq .body 2>/dev/null || true
+          }
+          compose_pin() {  # $1=body  $2=KEY
+            printf '%s\n' "$1" | grep -oE "^[-* ]*$2=[^[:space:]\`]+" | head -1 | cut -d= -f2- || true
+          }
+
+          # Versions the compose must pin, keyed by .env KEY. The monorepo version drives
+          # camunda/zeebe/operate/tasklist (8.7 pins CAMUNDA_ZEEBE_VERSION, 8.8+ CAMUNDA_VERSION — only
+          # the key the minor actually pins is checked); connectors is always supplied; the rest only
+          # when supplied. Checking every supplied component (not just the monorepo) prevents proceeding
+          # while the compose is stale for connectors/console/etc.
+          declare -A TARGET
+          TARGET[CAMUNDA_VERSION]="${CAMUNDA_VERSION}"
+          TARGET[CAMUNDA_ZEEBE_VERSION]="${CAMUNDA_VERSION}"
+          TARGET[CAMUNDA_OPERATE_VERSION]="${CAMUNDA_VERSION}"
+          TARGET[CAMUNDA_TASKLIST_VERSION]="${CAMUNDA_VERSION}"
+          TARGET[CAMUNDA_CONNECTORS_VERSION]="${CONNECTORS_VERSION}"
+          [ -n "${OPTIMIZE_VERSION}" ]    && TARGET[CAMUNDA_OPTIMIZE_VERSION]="${OPTIMIZE_VERSION}"
+          [ -n "${IDENTITY_VERSION}" ]    && TARGET[CAMUNDA_IDENTITY_VERSION]="${IDENTITY_VERSION}"
+          [ -n "${WEB_MODELER_VERSION}" ] && TARGET[CAMUNDA_WEB_MODELER_VERSION]="${WEB_MODELER_VERSION}"
+          [ -n "${CONSOLE_VERSION}" ]     && TARGET[CAMUNDA_CONSOLE_VERSION]="${CONSOLE_VERSION}"
+
+          # Optional components that, if the compose pins them but no version was supplied here, are
+          # blind spots the self-heal can neither verify nor fix.
+          OPTIONAL_KEYS="CAMUNDA_OPTIMIZE_VERSION CAMUNDA_IDENTITY_VERSION CAMUNDA_WEB_MODELER_VERSION CAMUNDA_CONSOLE_VERSION"
+
+          # Returns 0 (behind) when the release is missing OR any pinned-and-checked component is below
+          # its target; 1 when every present checked component is at/above target. Sets BEHIND_DETAIL.
+          compose_behind() {
+            local body key pin tgt lower behind=1; BEHIND_DETAIL=""
+            body="$(compose_body)"
+            [ -z "${body}" ] && { BEHIND_DETAIL=" release docker-compose-${COMPOSE_TAG} not found"; return 0; }
+            for key in "${!TARGET[@]}"; do
+              tgt="${TARGET[$key]}"
+              pin="$(compose_pin "${body}" "${key}")"
+              [ -z "${pin}" ] && continue
+              if [ "${pin}" != "${tgt}" ]; then
+                lower="$(printf '%s\n%s\n' "${pin}" "${tgt}" | sort -V | head -1)"
+                [ "${lower}" = "${pin}" ] && { BEHIND_DETAIL="${BEHIND_DETAIL} ${key}(pins ${pin}, want ${tgt})"; behind=0; }
+              fi
+            done
+            return ${behind}
+          }
+
+          # Optional components the compose pins but for which no version was supplied.
+          compose_blind_spots() {
+            local body key out=""
+            body="$(compose_body)"
+            for key in ${OPTIONAL_KEYS}; do
+              if [ -n "$(compose_pin "${body}" "${key}")" ] && [ -z "${TARGET[$key]+x}" ]; then
+                out="${out} ${key}"
+              fi
+            done
+            printf '%s' "${out# }"
+          }
+
+          if ! compose_behind; then
+            echo "Docker Compose is at or ahead of target for all checked components. Proceeding."
+            exit 0
+          fi
+          echo "Rolling docker-compose-${COMPOSE_TAG} is behind:${BEHIND_DETAIL}"
+
+          # depName -> version map for the force-bump, empties dropped (only present keys get written).
+          component_versions="$(jq -nc \
+            --arg mono "${CAMUNDA_VERSION}" \
+            --arg conn "${CONNECTORS_VERSION}" \
+            --arg opt "${OPTIMIZE_VERSION}" \
+            --arg ident "${IDENTITY_VERSION}" \
+            --arg wm "${WEB_MODELER_VERSION}" \
+            --arg con "${CONSOLE_VERSION}" \
+            '{
+              "camunda/camunda": $mono,
+              "camunda/zeebe": $mono,
+              "camunda/operate": $mono,
+              "camunda/tasklist": $mono,
+              "camunda/connectors-bundle": $conn,
+              "camunda/optimize": $opt,
+              "camunda/identity": $ident,
+              "camunda/web-modeler-restapi": $wm,
+              "camunda/hub": $wm,
+              "camunda/console": $con
+             } | with_entries(select(.value != ""))')"
+
+          if [ "${DRY_RUN}" = "true" ]; then
+            echo "🧪 DRY RUN: would dispatch docker-compose-force-bump for camunda-${COMPOSE_TAG} with:"
+            echo "${component_versions}" | jq .
+            echo "🧪 DRY RUN: skipping the real cross-repo dispatch/merge; proceeding to build (compose may be stale in the dryrun bundle)."
+            exit 0
+          fi
+
+          # Refuse to self-heal with a blind spot: a component the compose pins but no version was
+          # supplied (e.g. consoleVersion omitted on 8.8) would be left stale by the force-bump.
+          blind="$(compose_blind_spots)"
+          if [ -n "${blind}" ]; then
+            echo "::error::Rolling docker-compose-${COMPOSE_TAG} is behind and pins components with no supplied version: ${blind}. Self-heal would leave them stale. Supply the matching *Version inputs, or refresh the compose upstream (Renovate / release train) before building C8Run."
+            exit 1
+          fi
+
+          echo "Dispatching docker-compose-force-bump in ${DISTRIBUTIONS_REPO} for camunda-${COMPOSE_TAG}..."
+          gh workflow run docker-compose-force-bump.yaml \
+            --repo "${DISTRIBUTIONS_REPO}" \
+            --field "minor=${COMPOSE_TAG}" \
+            --field "componentVersions=${component_versions}" \
+            --field "reason=C8Run RC ${CAMUNDA_VERSION} preflight"
+
+          # Resolve the dispatched run: its run-name embeds the reason, which is unique per version.
+          # The run id names the bump PR branch (force-compose-bump/<minor>-<run_id>), letting the
+          # poll below track the PR itself instead of only the release body.
+          run_id=""
+          for _ in $(seq 1 12); do
+            run_id="$(gh run list --repo "${DISTRIBUTIONS_REPO}" --workflow docker-compose-force-bump.yaml \
+              --limit 10 --json databaseId,displayTitle \
+              --jq "[.[] | select(.displayTitle | contains(\"C8Run RC ${CAMUNDA_VERSION} preflight\"))][0].databaseId // empty")"
+            [ -n "${run_id}" ] && break
+            sleep 10
+          done
+          if [ -n "${run_id}" ]; then
+            echo "Force-bump run: https://github.com/${DISTRIBUTIONS_REPO}/actions/runs/${run_id}"
+          else
+            echo "::warning::Could not resolve the dispatched force-bump run; falling back to polling the release body only."
+          fi
+          pr_branch="force-compose-bump/${COMPOSE_TAG}-${run_id}"
+
+          # Bounded wait for the autorelease to rebuild the rolling release at target across ALL checked
+          # components. Poll the release body each round (no zip download); tolerate transient 404.
+          # Track the bump PR alongside: the force-bump's own merge can lose the race against the
+          # branch ruleset's required checks, so arm auto-merge on the PR as soon as it appears and
+          # fail fast only when the PR is closed unmerged. The PR, not the force-bump run's
+          # conclusion, is the source of truth for whether the bump is still in flight.
+          echo "Waiting for docker-compose-${COMPOSE_TAG} to reach the target versions..."
+          pr_number=""; pr_url=""; automerge_armed=""
+          attempt=1
+          max_attempts=52   # 52 x 30s = 26 min, within the job's 35 min timeout
+          until ! compose_behind; do
+            if [ "${attempt}" -ge "${max_attempts}" ]; then
+              echo "::error::Timed out after ${attempt} polls waiting for docker-compose-${COMPOSE_TAG} to reach target (still behind:${BEHIND_DETAIL}). Bump PR: ${pr_url:-not found}."
+              exit 1
+            fi
+            if [ -n "${run_id}" ]; then
+              if [ -z "${pr_number}" ]; then
+                pr_json="$(gh pr list --repo "${DISTRIBUTIONS_REPO}" --head "${pr_branch}" --state all \
+                  --json number,url --jq '.[0] // empty' || true)"
+                if [ -n "${pr_json}" ]; then
+                  pr_number="$(jq -r '.number' <<<"${pr_json}")"
+                  pr_url="$(jq -r '.url' <<<"${pr_json}")"
+                  echo "Bump PR: ${pr_url}"
+                fi
+              fi
+              if [ -n "${pr_number}" ]; then
+                pr_state="$(gh pr view "${pr_number}" --repo "${DISTRIBUTIONS_REPO}" --json state --jq .state || true)"
+                case "${pr_state}" in
+                  CLOSED)
+                    echo "::error::Bump PR ${pr_url} was closed without merging; docker-compose-${COMPOSE_TAG} cannot reach target (still behind:${BEHIND_DETAIL}). Force-bump run: https://github.com/${DISTRIBUTIONS_REPO}/actions/runs/${run_id}"
+                    exit 1
+                    ;;
+                  OPEN)
+                    if [ -z "${automerge_armed}" ]; then
+                      # Same remediation an on-call would do by hand: the distro app already merges
+                      # these PRs, so arming auto-merge needs no extra permissions.
+                      if gh pr merge "${pr_number}" --repo "${DISTRIBUTIONS_REPO}" --auto --squash; then
+                        automerge_armed=1
+                        echo "Armed auto-merge on ${pr_url}; it merges as soon as required checks pass."
+                      else
+                        echo "::warning::Could not arm auto-merge on ${pr_url}; it may need a manual merge."
+                      fi
+                    fi
+                    if [ $((attempt % 10)) -eq 0 ]; then
+                      echo "::warning::Bump PR ${pr_url} is still open after ${attempt} polls; check its required checks."
+                    fi
+                    ;;
+                esac
+              fi
+            fi
+            echo "  attempt ${attempt}/${max_attempts}: still behind:${BEHIND_DETAIL}; waiting 30s..."
+            attempt=$((attempt + 1))
+            sleep 30
+          done
+          echo "Docker Compose reached target for all checked components. Proceeding."
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  build:
+    name: C8Run - ${{ matrix.os.name }}
+    needs: verify-compose
+    runs-on: ${{ matrix.os.id }}
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        # macos-latest is ARM, macos-15-intel will execute on x86 runner.
+        os:
+          - name: Ubuntu (AMD64)
+            id: ubuntu-latest
+            artifactFileSuffix: linux-x86_64.tar.gz
+            workingDir: ./c8run
+            c8runArtifactName: c8run
+            packagerArtifactName: packager
+            command: ./c8run
+            packagingCmd: ./packager
+          - name: MacOS (ARM64)
+            id: macos-latest
+            artifactFileSuffix: darwin-aarch64.zip
+            workingDir: ./c8run
+            c8runArtifactName: c8run
+            packagerArtifactName: packager
+            command: ./c8run
+            packagingCmd: ./packager
+          - name: MacOS (AMD64)
+            id: macos-15-intel
+            artifactFileSuffix: darwin-x86_64.zip
+            workingDir: ./c8run
+            c8runArtifactName: c8run
+            packagerArtifactName: packager
+            command: ./c8run
+            packagingCmd: ./packager
+          - name: Windows (AMD64)
+            id: windows-latest
+            artifactFileSuffix: windows-x86_64.zip
+            workingDir: ./c8run
+            c8runArtifactName: c8run.exe
+            packagerArtifactName: packager.exe
+            command: ./c8run.exe
+            packagingCmd: ./packager.exe
+    env:
+      # Final artifact name; matches the packager output (camunda8-run-<CAMUNDA_VERSION>-<suffix>).
+      C8RUN_NAME_ARTIFACT: >-
+        camunda8-run-${{ inputs.camundaVersion }}-${{ matrix.os.artifactFileSuffix }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ inputs.branch }}
+
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/distribution/ci/nexus USER | NEXUS_USERNAME;
+            secret/data/products/distribution/ci/nexus PASSWORD | NEXUS_PASSWORD;
+            secret/data/products/distribution/ci APPLE_CERTIFICATE;
+            secret/data/products/distribution/ci APPLE_CERTIFICATE_PASSWORD;
+            secret/data/products/distribution/ci APPLE_DEVELOPER_ID;
+            secret/data/products/distribution/ci APPLE_DEVELOPER_PASSWORD;
+            secret/data/products/distribution/ci APPLE_TEAM_ID;
+            secret/data/products/distribution/ci APPLE_COMMON_NAME;
+            secret/data/products/distribution/ci HARBOR_REGISTRY_USER;
+            secret/data/products/distribution/ci HARBOR_REGISTRY_PASSWORD;
+
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version: ">=1.23.1"
+          cache: false # disabling since not working anyways without a cache-dependency-path specified
+
+      - name: Setup Java 21
+        uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520 # v5.4.0
+        with:
+          distribution: "temurin"
+          java-version: "21"
+
+      - uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520 # v5.4.0
+        with:
+          distribution: "temurin"
+          java-version: "25"
+
+      # Inject the build versions into c8run/.env in place, preserving every other key and comment
+      # (ELASTICSEARCH_VERSION, CAMUNDA_DOCKER_VERSION, COMPOSE_TAG, COMPOSE_EXTRACTED_FOLDER, etc.).
+      # This replaces the manual pre-merged ".env bump PR" runbook step and works on every branch
+      # regardless of whether the packager has a syncEnvFile (8.7/8.8 do not).
+      - name: Update c8run/.env with build versions
+        working-directory: ${{ matrix.os.workingDir }}
+        env:
+          CAMUNDA_VERSION: ${{ inputs.camundaVersion }}
+          CONNECTORS_VERSION: ${{ inputs.connectorsVersion }}
+        run: |
+          awk -v cv="${CAMUNDA_VERSION}" -v cnv="${CONNECTORS_VERSION}" '
+            /^CAMUNDA_VERSION=/    { print "CAMUNDA_VERSION=" cv; seen_cv=1; next }
+            /^CONNECTORS_VERSION=/ { print "CONNECTORS_VERSION=" cnv; seen_cnv=1; next }
+            { print }
+            END {
+              if (!seen_cv)  print "CAMUNDA_VERSION=" cv
+              if (!seen_cnv) print "CONNECTORS_VERSION=" cnv
+            }
+          ' .env > .env.tmp && mv .env.tmp .env
+
+      - name: ℹ️ Print resolved c8run/.env ℹ️
+        working-directory: ${{ matrix.os.workingDir }}
+        run: |
+          echo "Resolved c8run/.env to be bundled:"
+          cat .env
+
+      - name: Build artifact runtime distro
+        working-directory: ${{ matrix.os.workingDir }}
+        run: go build -o ${{ matrix.os.c8runArtifactName }} ./cmd/c8run
+
+      - name: Build artifact packaging distro
+        working-directory: ${{ matrix.os.workingDir }}
+        run: go build -o ${{ matrix.os.packagerArtifactName }} ./cmd/packager
+
+      - name: Create artifact package
+        working-directory: ${{ matrix.os.workingDir }}
+        run: ${{ matrix.os.packagingCmd }} package
+        env:
+          JAVA_ARTIFACTS_USER: ${{ steps.secrets.outputs.NEXUS_USERNAME }}
+          JAVA_ARTIFACTS_PASSWORD: ${{ steps.secrets.outputs.NEXUS_PASSWORD }}
+
+      - name: MacOS - Extract package
+        id: macos-extract
+        if: startsWith(matrix.os.name, 'MacOS')
+        run: |
+          mkdir -p tmp
+          mv "$C8RUN_NAME_ARTIFACT" tmp
+          cd tmp
+          unzip "$C8RUN_NAME_ARTIFACT"
+          extracted_dir="$(find . -mindepth 1 -maxdepth 1 -type d ! -name '__MACOSX' -print -quit)"
+          if [ -z "$extracted_dir" ]; then
+            echo "Unable to locate extracted directory"
+            exit 1
+          fi
+          extracted_dir="${extracted_dir#./}"
+          echo "Extracted directory: $extracted_dir"
+          echo "extracted_dir=./c8run/tmp/$extracted_dir" >> "$GITHUB_OUTPUT"
+        shell: bash
+        working-directory: ./c8run
+
+      - name: MacOS - Sign and notarize
+        if: startsWith(matrix.os.name, 'MacOS')
+        uses: ./.github/actions/sign-and-notarize
+        with:
+          p12-base64: ${{ steps.secrets.outputs.APPLE_CERTIFICATE }}
+          p12-password: ${{ steps.secrets.outputs.APPLE_CERTIFICATE_PASSWORD }}
+          developer-id-cert-name: ${{ steps.secrets.outputs.APPLE_DEVELOPER_ID }}
+          apple-id: ${{ steps.secrets.outputs.APPLE_DEVELOPER_ID }}
+          app-password: ${{ steps.secrets.outputs.APPLE_DEVELOPER_PASSWORD }}
+          team-id: ${{ steps.secrets.outputs.APPLE_TEAM_ID }}
+          path: ${{ steps.macos-extract.outputs.extracted_dir }}
+
+      - name: MacOS - Replace old artifact with codesigned artifact
+        if: startsWith(matrix.os.name, 'MacOS')
+        run: |
+          mv ./c8run/tmp/c8run_complete.zip ./c8run/"$C8RUN_NAME_ARTIFACT"
+
+      - name: Install regctl CLI
+        env:
+          REGCTL_VERSION: "0.11.5"
+          REGCTL_SHA_LINUX_AMD64: "c93aa7638749f5aaac1a8e01787321889c78f0101809bb2880343478d0ba0467"
+          REGCTL_SHA_DARWIN_ARM64: "f4d536d64d0c3cc1db7400902175a1c314675991d22e87e15c319501a2676d3f"
+          REGCTL_SHA_DARWIN_AMD64: "c132fdddda68b9c7584ac19f3b40cd17f71916c2bca8182270ebe65b55198a12"
+          REGCTL_SHA_WINDOWS_AMD64: "9b83975d464e4ee5a9f899a3ead26072ed67e9a8ed0f582897bfad8141b45938"
+        run: |
+          case "${RUNNER_OS}_${RUNNER_ARCH}" in
+            Linux_X64)   asset="regctl-linux-amd64";       sha="${REGCTL_SHA_LINUX_AMD64}" ;;
+            macOS_ARM64) asset="regctl-darwin-arm64";      sha="${REGCTL_SHA_DARWIN_ARM64}" ;;
+            macOS_X64)   asset="regctl-darwin-amd64";      sha="${REGCTL_SHA_DARWIN_AMD64}" ;;
+            Windows_X64) asset="regctl-windows-amd64.exe"; sha="${REGCTL_SHA_WINDOWS_AMD64}" ;;
+            *) echo "::error::unsupported runner ${RUNNER_OS}_${RUNNER_ARCH}"; exit 1 ;;
+          esac
+          dir="${HOME}/regctl-bin"; mkdir -p "${dir}"
+          out="${dir}/regctl"; [ "${RUNNER_OS}" = "Windows" ] && out="${dir}/regctl.exe"
+          curl -fsSL -o "${out}" "https://github.com/regclient/regclient/releases/download/v${REGCTL_VERSION}/${asset}"
+          actual="$(openssl dgst -sha256 "${out}" | awk '{print $NF}')"
+          if [ "${actual}" != "${sha}" ]; then
+            echo "::error::regctl checksum mismatch: got ${actual}, want ${sha}"; exit 1
+          fi
+          chmod +x "${out}"
+          echo "REGCTL=${out}" >> "$GITHUB_ENV"
+          "${out}" version
+
+      # Push this OS's artifact straight to its own per-OS Harbor tag (no GHA staging hop, no gather):
+      # the four runners stage concurrently, each uploading once.
+      - name: Push RC artifact to Harbor
+        working-directory: ${{ matrix.os.workingDir }}
+        env:
+          HARBOR_REGISTRY_USER: ${{ steps.secrets.outputs.HARBOR_REGISTRY_USER }}
+          HARBOR_REGISTRY_PASSWORD: ${{ steps.secrets.outputs.HARBOR_REGISTRY_PASSWORD }}
+          ARTIFACT: ${{ env.C8RUN_NAME_ARTIFACT }}
+          ARTIFACT_SUFFIX: ${{ matrix.os.artifactFileSuffix }}
+          RC_BASE: ${{ env.HARBOR_REGISTRY_HOST }}/${{ env.HARBOR_REGISTRY_PROJECT }}/${{ env.RC_REPOSITORY }}:${{ inputs.camundaVersion }}${{ inputs.dryRun && '-rc-dryrun' || '-rc' }}
+        run: |
+          if [ ! -f "${ARTIFACT}" ]; then
+            echo "::error::Built artifact ${ARTIFACT} not found in $(pwd)."
+            exit 1
+          fi
+          os_tag="${ARTIFACT_SUFFIX%%.*}"
+          case "${ARTIFACT_SUFFIX}" in
+            *.tar.gz) media_type="application/gzip" ;;
+            *.zip)    media_type="application/zip" ;;
+            *)        media_type="application/octet-stream" ;;
+          esac
+          rc_ref="${RC_BASE}-${os_tag}"
+          echo "Staging ${ARTIFACT} -> ${rc_ref}"
+          echo "Checksum (pre-push; compare against the public promote):"
+          openssl dgst -sha256 "${ARTIFACT}"
+
+          echo "${HARBOR_REGISTRY_PASSWORD}" | \
+            "${REGCTL}" registry login "${HARBOR_REGISTRY_HOST}" -u "${HARBOR_REGISTRY_USER}" --pass-stdin
+          # Upload in 320 MiB chunks (a monolithic PUT of the ~780 MB artifact overruns Harbor's
+          # ~60s per-request gateway timeout; 320 MiB measured ~33s/chunk at peak throughput).
+          "${REGCTL}" registry set "${HARBOR_REGISTRY_HOST}" --blob-chunk 335544320
+
+          attempt=1
+          until "${REGCTL}" artifact put --artifact-type application/vnd.camunda.c8run.v1 --file-title \
+            -f "${ARTIFACT}" -m "${media_type}" "${rc_ref}"; do
+            if [ "${attempt}" -ge 3 ]; then
+              echo "::error::regctl artifact put failed after ${attempt} attempts"
+              exit 1
+            fi
+            echo "::warning::regctl artifact put failed (attempt ${attempt}); re-authenticating and retrying..."
+            echo "${HARBOR_REGISTRY_PASSWORD}" | \
+              "${REGCTL}" registry login "${HARBOR_REGISTRY_HOST}" -u "${HARBOR_REGISTRY_USER}" --pass-stdin || true
+            attempt=$((attempt + 1))
+            sleep 30
+          done
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "c8run-rc-build/${{ matrix.os.name }}"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  rc-summary:
+    name: RC summary
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Release summary
+        env:
+          DRY_RUN: ${{ inputs.dryRun }}
+          BRANCH: ${{ inputs.branch }}
+          CAMUNDA_VERSION: ${{ inputs.camundaVersion }}
+          CONNECTORS_VERSION: ${{ inputs.connectorsVersion }}
+          RC_PREFIX: ${{ env.HARBOR_REGISTRY_HOST }}/${{ env.HARBOR_REGISTRY_PROJECT }}/${{ env.RC_REPOSITORY }}:${{ inputs.camundaVersion }}${{ inputs.dryRun && '-rc-dryrun' || '-rc' }}
+        run: |
+          {
+            if [ "${DRY_RUN}" = "true" ]; then
+              echo "🧪 C8Run RC staged to Harbor (DRY RUN) 🧪"
+              echo "- The .env bump PR was skipped."
+              echo "- Delete the dryrun tags when done: \`regctl tag rm ${RC_PREFIX}-<os>\` for each OS."
+            else
+              echo "⭐ C8Run RC staged to Harbor ⭐"
+            fi
+            echo "- Branch: \`${BRANCH}\`"
+            echo "- Version: \`${CAMUNDA_VERSION}\`"
+            echo "- Connectors: \`${CONNECTORS_VERSION}\`"
+            echo "- RC artifacts (one tag per OS):"
+            for os in linux-x86_64 darwin-aarch64 darwin-x86_64 windows-x86_64; do
+              echo "  - \`${RC_PREFIX}-${os}\`"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # Persist exactly what was built: open (do not merge) a c8run/.env bump PR against the release
+  # branch. This replaces the manual "Version Bump" runbook step. The PR is merged after QA sign-off
+  # by the release train (this workflow only opens it), so a QA-rejected RC rebuilt with other
+  # versions never leaves a wrong .env merged. Uses the Monorepo DevOps Automation app token (same as
+  # backport.yml) so the PR triggers CI and can clear the main ruleset + merge queue.
+  open-env-pr:
+    name: Open c8run/.env bump PR
+    needs: build
+    if: ${{ !inputs.dryRun }}
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions: {}
+    steps:
+      - name: Generate GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@7a9c6f3e477321400802c88290068f88a7ed5684 # main
+        with:
+          github-app-id-vault-key: MONOREPO_DEVOPS_AUTOMATION_APP_ID
+          github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+          github-app-private-key-vault-key: MONOREPO_DEVOPS_AUTOMATION_APP_PRIVATE_KEY
+          github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ inputs.branch }}
+          token: ${{ steps.github-token.outputs.token }}
+
+      - name: Open .env bump PR
+        env:
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          CAMUNDA_VERSION: ${{ inputs.camundaVersion }}
+          CONNECTORS_VERSION: ${{ inputs.connectorsVersion }}
+          BRANCH: ${{ inputs.branch }}
+        run: |
+          pr_branch="c8run-release-${CAMUNDA_VERSION}"
+          git config user.name "monorepo-devops-automation[bot]"
+          git config user.email "248077375+monorepo-devops-automation[bot]@users.noreply.github.com"
+          git checkout -b "${pr_branch}"
+
+          awk -v cv="${CAMUNDA_VERSION}" -v cnv="${CONNECTORS_VERSION}" '
+            /^CAMUNDA_VERSION=/    { print "CAMUNDA_VERSION=" cv; seen_cv=1; next }
+            /^CONNECTORS_VERSION=/ { print "CONNECTORS_VERSION=" cnv; seen_cnv=1; next }
+            { print }
+            END {
+              if (!seen_cv)  print "CAMUNDA_VERSION=" cv
+              if (!seen_cnv) print "CONNECTORS_VERSION=" cnv
+            }
+          ' c8run/.env > c8run/.env.tmp && mv c8run/.env.tmp c8run/.env
+
+          if git diff --quiet -- c8run/.env; then
+            echo "c8run/.env already at target versions; nothing to persist."
+            exit 0
+          fi
+
+          git add c8run/.env
+          git commit -m "deps: update c8run versions to ${CAMUNDA_VERSION}"
+          git push --force-with-lease origin "${pr_branch}"
+
+          if gh pr view "${pr_branch}" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            echo "PR for ${pr_branch} already exists; updated its branch."
+            exit 0
+          fi
+          gh pr create \
+            --repo "${{ github.repository }}" \
+            --base "${BRANCH}" \
+            --head "${pr_branch}" \
+            --title "deps: update c8run versions to ${CAMUNDA_VERSION}" \
+            --body "Persists the versions built for the C8Run \`${CAMUNDA_VERSION}\` release candidate (CAMUNDA_VERSION=\`${CAMUNDA_VERSION}\`, CONNECTORS_VERSION=\`${CONNECTORS_VERSION}\`). Merged after QA sign-off by the release train."
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
