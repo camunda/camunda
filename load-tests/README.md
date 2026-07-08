@@ -115,7 +115,7 @@ The setup for all of our load tests is equal for better comparability, and consi
 
 By default, the full Camunda Platform is deployed, including Orchestration Cluster (OC), Optimize (with history cleanup), Connectors (with OIDC authentication), and Identity with Keycloak as identity provider. This ensures load tests validate the system in a production-like configuration. Optimize can be disabled via the `enable-optimize` workflow input or the `newLoadTest.sh` script parameter. We always run load tests with a three-node OC cluster, configured with three partitions and a replication factor of three. Depending on the version of Camunda/Zeebe, we might only deploy Zeebe Brokers and the Zeebe (standalone) gateway (with two replicas) only (pre 8.8).
 
-An Elasticsearch cluster with three nodes is deployed as well, which is used to validate the performance of the exporters. Exporting and archiving throughput must be able to sustain the load of the cluster.
+An Elasticsearch cluster with three nodes is deployed as well, which is used to validate the performance of the exporters. Exporting and archiving throughput must be able to sustain the load of the cluster. The Elasticsearch cluster is managed by the [Elastic Cloud on Kubernetes (ECK) operator](https://www.elastic.co/docs/deploy-manage/deploy/cloud-on-k8s) via an `Elasticsearch` custom resource — see the [setup README](setup/README.md#eck-elasticsearch) for configuration details.
 
 Our [load test Helm Chart](https://github.com/camunda/camunda-load-tests-helm) deploys different load test applications. They can be distinguished into workers and starters. The related code can be found in the [Camunda mono repository](https://github.com/camunda/camunda/tree/main/load-tests/load-tester).
 
@@ -131,7 +131,7 @@ For posterity, the deployment between 8.8 and pre-8.8 differs slightly. The Plat
 
 Load tests can be configured with different secondary storage backends to validate Camunda's performance and reliability across various deployment scenarios:
 
-* **Elasticsearch** (default): Deploys a three-node Elasticsearch cluster. This is the standard configuration used to validate exporter performance and archiving throughput.
+* **Elasticsearch** (default): Deploys a three-node Elasticsearch cluster managed by the [ECK operator](https://www.elastic.co/docs/deploy-manage/deploy/cloud-on-k8s). This is the standard configuration used to validate exporter performance and archiving throughput.
 * **OpenSearch**: Deploys an OpenSearch cluster as an alternative to Elasticsearch.
 * **PostgreSQL**: Deploys a PostgreSQL database for RDBMS-based secondary storage testing.
 * **MySQL**: Deploys a MySQL database for RDBMS-based secondary storage testing.
