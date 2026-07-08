@@ -40,7 +40,7 @@ jobs:
       contents: read
       actions: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Trigger stable/8.9 nightly run
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -66,7 +66,7 @@ jobs:
     outputs:
       matrix: ${{ steps.read-versions.outputs.rdbms-matrix }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Read DB versions
         id: read-versions
         uses: ./.github/actions/read-db-versions

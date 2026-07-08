@@ -122,7 +122,7 @@ jobs:
           vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
           vault-url: ${{ secrets.VAULT_ADDR }}
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           ref: ${{ env.RELEASE_BRANCH }}
           # Overriding the default GITHUB_TOKEN with a GitHub App token in order to workaround
@@ -401,7 +401,7 @@ jobs:
       DOCKER_IMAGE: camunda/optimize
       DOCKER_INFOSEC_REGISTRY_IMAGE: europe-west1-docker.pkg.dev/team-infosec/camunda/optimize-8
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets
@@ -535,7 +535,7 @@ jobs:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/camunda
       DOCKER_IMAGE: camunda/camunda
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets
@@ -672,7 +672,7 @@ jobs:
       (needs.optimize-docker.result == 'success' || needs.optimize-docker.result == 'skipped') &&
       needs.camunda-docker.result == 'success' }}
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           ref: ${{ env.RELEASE_BRANCH }}
           fetch-depth: 0 # To fetch tags as well - necessary for the changelog generation
@@ -825,7 +825,7 @@ jobs:
       (needs.optimize-docker.result == 'success' || needs.optimize-docker.result == 'skipped') &&
       needs.camunda-docker.result == 'success' }}
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           ref: ${{ env.RELEASE_BRANCH }}
       - name: Import Secrets

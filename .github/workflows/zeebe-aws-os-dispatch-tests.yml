@@ -45,7 +45,7 @@ jobs:
       matrix:
         os_version: ${{ fromJSON(format('[{0}]', github.event.inputs.opensearch-version || '"2.19", "3.5"')) }}
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           ref: ${{ inputs.ref }}
       - name: Setup AWS OpenSearch
@@ -141,7 +141,7 @@ jobs:
             runs-on: aws-core-8-default
             owner: '@camunda/data-layer'
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Setup AWS OpenSearch
         uses: ./.github/actions/setup-aws-opensearch-env
         with:
@@ -232,7 +232,7 @@ jobs:
                 type: "mrkdwn"
                 text: "AWS OpenSearch Manual/Scheduled Run Integration Tests FAILED or WERE CANCELLED\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
     - name: Checkout
-      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       with:
         sparse-checkout: .github
     - name: Observe build status

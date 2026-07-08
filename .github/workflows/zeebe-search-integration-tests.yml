@@ -35,7 +35,7 @@ jobs:
     outputs:
       matrix: ${{ steps.read-versions.outputs.es-os-matrix }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Read DB versions
         id: read-versions
         uses: ./.github/actions/read-db-versions
