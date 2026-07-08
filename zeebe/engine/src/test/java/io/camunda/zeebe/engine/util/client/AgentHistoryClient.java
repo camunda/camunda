@@ -7,14 +7,20 @@
  */
 package io.camunda.zeebe.engine.util.client;
 
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryEmbeddedToolCall;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryMessageContent;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
+import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 public final class AgentHistoryClient {
@@ -85,6 +91,35 @@ public final class AgentHistoryClient {
 
   public AgentHistoryClient withTenantId(final String tenantId) {
     record.setTenantId(tenantId);
+    return this;
+  }
+
+  public AgentHistoryClient withTextContent(final String text) {
+    record.addContent(
+        new AgentHistoryMessageContent()
+            .setContentType(AgentHistoryContentType.TEXT)
+            .setText(text));
+    return this;
+  }
+
+  public AgentHistoryClient withToolCall(
+      final String toolCallId, final String toolName, final String elementId) {
+    record.addToolCall(
+        new AgentHistoryEmbeddedToolCall()
+            .setToolCallId(toolCallId)
+            .setToolName(toolName)
+            .setElementId(elementId)
+            .setArguments(BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(Map.of()))));
+    return this;
+  }
+
+  public AgentHistoryClient withMetrics(
+      final long inputTokens, final long outputTokens, final long durationMs) {
+    record
+        .getMetrics()
+        .setInputTokens(inputTokens)
+        .setOutputTokens(outputTokens)
+        .setDurationMs(durationMs);
     return this;
   }
 
