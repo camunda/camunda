@@ -222,7 +222,7 @@ camunda-platform:
     # would stay unassigned and keep the ES cluster status Yellow forever, which
     # blocks the ArgoCD app from ever reporting Healthy.
     index:
-      replicas: "0"
+      replicas: 0
     persistenceType: disk
     pvcSize: 1Gi
     javaOpts: >-
