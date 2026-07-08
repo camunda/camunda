@@ -185,10 +185,10 @@ public final class PhysicalTenantsITHelper {
       final TestGateway<?> gateway, final String tenantId) {
     final CamundaClientBuilder builder = gateway.newClientBuilder();
     if (!DEFAULT_TENANT_ID.equals(tenantId)) {
-      // gRPC is scoped via the header; REST is scoped by pointing the client at the tenant-prefixed
-      // root (the client appends /v2). Workaround until the client applies physicalTenantId to
-      // REST.
-      builder.physicalTenantId(tenantId).restAddress(restRootFor(gateway, tenantId));
+      // The client scopes both transports to the physical tenant: gRPC via the
+      // Camunda-Physical-Tenant header, and REST by auto-prefixing /physical-tenants/<id> onto the
+      // base REST address.
+      builder.physicalTenantId(tenantId);
     }
     return builder;
   }
