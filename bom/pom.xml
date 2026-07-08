@@ -234,6 +234,17 @@
       <name>Camunda BPM Snapshot Repository</name>
       <url>https://artifacts.camunda.com/artifactory/camunda-bpm-snapshots/</url>
     </repository>
+
+    <!-- Fallback in case some dependency isn't visible in the central mirror yet -->
+    <repository>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>maven-central-fallback</id>
+      <name>Maven Central Fallback</name>
+      <url>https://repo.maven.apache.org/maven2</url>
+      <layout>default</layout>
+    </repository>
   </repositories>
 
   <build>
