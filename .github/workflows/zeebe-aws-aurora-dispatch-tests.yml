@@ -25,7 +25,7 @@ defaults:
 jobs:
   integration-tests:
     name: "[IT] Camunda QA Integration Module. Aurora"
-    timeout-minutes: 30
+    timeout-minutes: 60
     permissions:
       contents: read
       actions: write
@@ -83,7 +83,7 @@ jobs:
         shell: bash
         run: >
           ./mvnw -B -T 2 --no-snapshot-updates
-          -D forkCount=2
+          -D forkCount=4
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
           -D flaky.test.reportDir=failsafe-reports
