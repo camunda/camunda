@@ -67,13 +67,21 @@ jobs:
             exit 0
           fi
           git commit -m "test: update golden files"
+
           for attempt in 1 2 3; do
             if git push origin HEAD:"$BRANCH"; then
               exit 0
             fi
-            echo "Push rejected (attempt $attempt/3) — fetching and rebasing onto the current branch tip."
+            echo "Push rejected (attempt $attempt/3) — resetting to the current branch tip and regenerating fresh."
             git fetch origin "$BRANCH"
-            git rebase "origin/$BRANCH"
+            git reset --hard "origin/$BRANCH"
+            make -C load-tests/setup/test update-golden
+            git add load-tests/setup/test/golden/
+            if git diff --cached --quiet; then
+              echo "Golden files already match the current branch tip — nothing to push."
+              exit 0
+            fi
+            git commit -m "test: update golden files"
           done
           echo "::error::Failed to push golden file updates after 3 attempts."
           exit 1
