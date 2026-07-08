@@ -68,14 +68,14 @@ func DownloadFile(filepath string, url string, authToken string) error {
 
 // downloadToFile performs one download attempt into path (truncating it) and reports
 // whether a failure is transient (network error, 5xx) and worth retrying.
-func downloadToFile(path string, url string, authToken string) (bool, error) {
+func downloadToFile(path string, url string, authToken string) (retryable bool, err error) {
 	out, err := os.Create(path)
 	if err != nil {
 		return false, fmt.Errorf("DownloadFile: failed to open file: %s\n%w\n%s", path, err, debug.Stack())
 	}
 	defer func() {
-		if err := out.Close(); err != nil {
-			log.Error().Err(err).Msg("failed to close file")
+		if closeErr := out.Close(); closeErr != nil && err == nil {
+			retryable, err = true, fmt.Errorf("DownloadFile: failed to close partial file: %s\n%w\n%s", path, closeErr, debug.Stack())
 		}
 	}()
 
