@@ -47,6 +47,23 @@
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-msgpack-value</artifactId>
     </dependency>
+    <!-- for the suspension-lookup benchmark (POC #56552, track b): a real RocksDB-backed
+         ZeebeDb + the SUSPENDED_PROCESS_INSTANCES column family. zeebe-db pulls RocksDB
+         transitively. Deliberately NOT depending on zeebe-workflow-engine — the benchmark
+         reproduces exactly the ColumnFamily<DbLong, DbNil>.exists() lookup that
+         DbSuspensionState.isSuspended() performs, without dragging the whole engine in. -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-db</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
+    </dependency>
   </dependencies>
 
   <build>
