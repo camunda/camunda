@@ -6,15 +6,27 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {z} from 'zod';
 import {safeJsonParse} from 'modules/utils';
 import {untruncateJson} from 'modules/utils/editor/untruncateJSON';
 import {mergePathname} from 'modules/request/mergePathname';
 import {getClientConfig} from 'modules/utils/getClientConfig';
 import {
   endpoints,
+  documentMetadataSchema,
   documentReferenceSchema,
-  type DocumentReference,
 } from '@camunda/camunda-api-zod-schemas/8.10';
+
+// connector-written references in variables may omit optional metadata keys.
+const relaxedDocumentReferenceSchema = documentReferenceSchema.extend({
+  metadata: documentMetadataSchema.partial({
+    expiresAt: true,
+    processDefinitionId: true,
+    processInstanceKey: true,
+    customProperties: true,
+  }),
+});
+type DocumentReference = z.infer<typeof relaxedDocumentReferenceSchema>;
 
 type DocumentType = 'image' | 'pdf' | 'json' | 'unknown';
 
@@ -32,7 +44,7 @@ type DocumentParseResult =
   | {type: 'list'; documents: DocumentInfo[]; isLowerBound: boolean};
 
 function isDocumentReference(value: unknown): value is DocumentReference {
-  return documentReferenceSchema.safeParse(value).success;
+  return relaxedDocumentReferenceSchema.safeParse(value).success;
 }
 
 const MIME_TYPE_MAP: Record<string, DocumentType> = {
@@ -61,9 +73,9 @@ function toDocumentInfo(ref: DocumentReference): DocumentInfo {
         )
       : null;
 
-  const isExpired =
-    ref.metadata.expiresAt !== null &&
-    Date.parse(ref.metadata.expiresAt) < Date.now();
+  const isExpired = ref.metadata.expiresAt
+    ? Date.parse(ref.metadata.expiresAt) < Date.now()
+    : false;
 
   return {
     link,

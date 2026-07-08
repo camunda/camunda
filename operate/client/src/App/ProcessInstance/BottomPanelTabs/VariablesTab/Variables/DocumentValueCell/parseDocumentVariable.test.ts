@@ -50,6 +50,33 @@ describe('parseDocumentVariable', () => {
     });
   });
 
+  it('should detect a connector reference that omits optional metadata fields', () => {
+    const value = JSON.stringify({
+      'camunda.document.type': 'camunda',
+      storeId: 'in-memory',
+      documentId: 'doc-123',
+      contentHash: 'sha256:abc',
+      metadata: {
+        contentType: 'image/png',
+        fileName: 'photo.png',
+        size: 109748,
+      },
+    });
+    const result = parseDocumentVariable(value, false);
+
+    expect(result).toEqual({
+      type: 'single',
+      document: {
+        link: '/v2/documents/doc-123?storeId=in-memory&contentHash=sha256%3Aabc',
+        fileName: 'photo.png',
+        type: 'image',
+        contentType: 'image/png',
+        size: 109748,
+        isExpired: false,
+      },
+    });
+  });
+
   it('should detect an array with a single document as single', () => {
     const value = JSON.stringify([makeDocRef()]);
     const result = parseDocumentVariable(value, false);
