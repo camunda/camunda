@@ -94,6 +94,73 @@ class PhysicalTenantWebappContextPathInterceptorTest {
   }
 
   @Test
+  void shouldPrefixBaseNameForPhysicalTenantRequest() {
+    // given — the unified webapp's model shape: contextPath is the bare servlet context path,
+    // baseName carries the /webapp/ suffix
+    final MockHttpServletRequest request = new MockHttpServletRequest();
+    PhysicalTenantContext.setPhysicalTenantId(request, "tenanta");
+    final ModelAndView modelAndView = new ModelAndView("webapp/index");
+    modelAndView.addObject("contextPath", "");
+    modelAndView.addObject("baseName", "/webapp/");
+
+    // when
+    interceptor.postHandle(request, new MockHttpServletResponse(), new Object(), modelAndView);
+
+    // then
+    assertThat(modelAndView.getModel().get("contextPath")).isEqualTo("/physical-tenants/tenanta");
+    assertThat(modelAndView.getModel().get("baseName"))
+        .isEqualTo("/physical-tenants/tenanta/webapp/");
+  }
+
+  @Test
+  void shouldInsertBaseNamePrefixAfterServletContextPath() {
+    // given — a non-empty servlet context path; the index controller's baseName includes it
+    final MockHttpServletRequest request = new MockHttpServletRequest();
+    request.setContextPath("/camunda");
+    PhysicalTenantContext.setPhysicalTenantId(request, "tenanta");
+    final ModelAndView modelAndView = new ModelAndView("webapp/index");
+    modelAndView.addObject("baseName", "/camunda/webapp/");
+
+    // when
+    interceptor.postHandle(request, new MockHttpServletResponse(), new Object(), modelAndView);
+
+    // then — the PT segment is inserted after the context path, not before it
+    assertThat(modelAndView.getModel().get("baseName"))
+        .isEqualTo("/camunda/physical-tenants/tenanta/webapp/");
+  }
+
+  @Test
+  void shouldNotChangeBaseNameForClusterRequest() {
+    // given — no physical tenant id stamped on the request
+    final MockHttpServletRequest request = new MockHttpServletRequest();
+    final ModelAndView modelAndView = new ModelAndView("webapp/index");
+    modelAndView.addObject("baseName", "/webapp/");
+
+    // when
+    interceptor.postHandle(request, new MockHttpServletResponse(), new Object(), modelAndView);
+
+    // then
+    assertThat(modelAndView.getModel().get("baseName")).isEqualTo("/webapp/");
+  }
+
+  @Test
+  void shouldNoOpWhenModelHasNoBaseName() {
+    // given — a legacy index controller model that only sets contextPath
+    final MockHttpServletRequest request = new MockHttpServletRequest();
+    PhysicalTenantContext.setPhysicalTenantId(request, "tenanta");
+    final ModelAndView modelAndView = new ModelAndView("operate/index");
+    modelAndView.addObject("contextPath", "/operate/");
+
+    // when
+    interceptor.postHandle(request, new MockHttpServletResponse(), new Object(), modelAndView);
+
+    // then
+    assertThat(modelAndView.getModel())
+        .doesNotContainKey("baseName")
+        .containsEntry("contextPath", "/physical-tenants/tenanta/operate/");
+  }
+
+  @Test
   void shouldNoOpWhenModelHasNoContextPath() {
     // given
     final MockHttpServletRequest request = new MockHttpServletRequest();
