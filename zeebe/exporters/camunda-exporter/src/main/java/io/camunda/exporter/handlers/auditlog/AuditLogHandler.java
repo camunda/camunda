@@ -29,9 +29,7 @@ import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransforme
 import io.camunda.zeebe.protocol.record.Agent;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * A generic handler for audit log records that delegates record-type-specific transformation to an
@@ -201,39 +199,6 @@ public class AuditLogHandler<R extends RecordValue>
         .map(AuditLogTenant::scope)
         .map(t -> io.camunda.webapps.schema.entities.auditlog.AuditLogTenantScope.valueOf(t.name()))
         .orElse(AuditLogTenantScope.GLOBAL);
-  }
-
-  public static AuditLogHandlerBuilder builder(
-      final String indexName,
-      final String auditLogCleanupIndexName,
-      final AuditLogConfiguration auditLog) {
-    return new AuditLogHandlerBuilder(indexName, auditLogCleanupIndexName, auditLog);
-  }
-
-  public static class AuditLogHandlerBuilder {
-    final Set<AuditLogHandler<?>> handlers = new HashSet<>();
-    private final String indexName;
-    private final String auditLogCleanupIndexName;
-    private final AuditLogConfiguration auditLog;
-
-    public AuditLogHandlerBuilder(
-        final String indexName,
-        final String auditLogCleanupIndexName,
-        final AuditLogConfiguration auditLog) {
-      this.indexName = indexName;
-      this.auditLogCleanupIndexName = auditLogCleanupIndexName;
-      this.auditLog = auditLog;
-    }
-
-    public AuditLogHandlerBuilder addHandler(final AuditLogTransformer<?> transformer) {
-      handlers.add(
-          new AuditLogHandler<>(indexName, auditLogCleanupIndexName, transformer, auditLog));
-      return this;
-    }
-
-    public Set<AuditLogHandler<?>> build() {
-      return new HashSet<>(handlers);
-    }
   }
 
   public static final class AuditLogBatch implements ExporterEntity<AuditLogBatch> {

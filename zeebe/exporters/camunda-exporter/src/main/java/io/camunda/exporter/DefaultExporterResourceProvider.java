@@ -77,7 +77,7 @@ import io.camunda.exporter.handlers.UserTaskJobBasedHandler;
 import io.camunda.exporter.handlers.UserTaskProcessInstanceHandler;
 import io.camunda.exporter.handlers.UserTaskVariableHandler;
 import io.camunda.exporter.handlers.VariableHandler;
-import io.camunda.exporter.handlers.auditlog.AuditLogHandler;
+import io.camunda.exporter.handlers.auditlog.AuditLogHandlerBuilder;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedItemHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationCreatedHandler;
@@ -551,7 +551,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
     final var auditLogCleanupIndexName =
         (indexDescriptors.get(AuditLogCleanupIndex.class).getFullQualifiedName());
     final var auditLogBuilder =
-        AuditLogHandler.builder(indexName, auditLogCleanupIndexName, auditLog);
+        AuditLogHandlerBuilder.builder(indexName, auditLogCleanupIndexName, auditLog);
 
     if (partitionId == PROCESS_DEFINITION_PARTITION) {
       AuditLogTransformerRegistry.createPartitionSpecificTransformers()
