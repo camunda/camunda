@@ -200,13 +200,14 @@ public class PingHubRunner implements ApplicationRunner, BrokerTopologyListener 
             managementServices.getCamundaLicenseExpiresAt() == null
                 ? null
                 : DATE_TIME_FORMATTER.format(managementServices.getCamundaLicenseExpiresAt()));
+    final List<String> activeProfiles = getActiveProfiles();
     final LicensePayload payload =
         new LicensePayload(
             license,
             clusterId,
             pingConfiguration.clusterName(),
             VersionUtil.getVersion(),
-            getActiveProfiles(),
+            activeProfiles.isEmpty() ? null : activeProfiles,
             pingConfiguration.properties());
     try {
       licensePayload = Either.right(objectMapper.writeValueAsString(payload));
