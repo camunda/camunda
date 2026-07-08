@@ -94,6 +94,49 @@ class TestBaseline(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
+# Method-fix detection: git log -L funcname anchoring
+# ---------------------------------------------------------------------------
+
+class TestMethodLastModified(unittest.TestCase):
+    def _captured_L_arg(self, method_name):
+        """Return the -L:... arg passed to git for a given method name."""
+        captured = {}
+
+        def fake_run_git(args, repo_root):
+            for a in args:
+                if a.startswith("-L:"):
+                    captured["L"] = a
+            return 0, "", ""
+
+        with mock.patch.object(d, "_run_git", side_effect=fake_run_git):
+            d.method_last_modified_in_range(
+                "path/To/C.java", method_name, "base", "head", "/repo")
+        return captured.get("L")
+
+    def test_L_arg_anchors_method_name_to_open_paren(self):
+        # The funcname regex must require '(' after the name so a query does
+        # not match a longer method sharing its prefix.
+        self.assertEqual(
+            self._captured_L_arg("getVersion"),
+            "-L:getVersion[(]:path/To/C.java",
+        )
+
+    def test_L_arg_escapes_regex_metacharacters(self):
+        # Defensive: any regex-special chars in the name are escaped before
+        # the '[(]' anchor is appended.
+        self.assertEqual(
+            self._captured_L_arg("get.value"),
+            "-L:get\\.value[(]:path/To/C.java",
+        )
+
+    def test_returns_none_on_missing_inputs(self):
+        self.assertIsNone(
+            d.method_last_modified_in_range("", "m", "b", "h", "/repo"))
+        self.assertIsNone(
+            d.method_last_modified_in_range("f", "", "b", "h", "/repo"))
+
+
+# ---------------------------------------------------------------------------
 # State persistence
 # ---------------------------------------------------------------------------
 
@@ -357,11 +400,11 @@ class TestRenderComment(unittest.TestCase):
             method_last_modified_sha="abcdef0",
             clean_runs_since_modified=1,
         ))
-        body = d.render_comment(state, "art-name")
+        body = d.render_comment(state)
         self.assertIn("⚠️ New Flaky Tests Detected", body)
         self.assertIn("Clean re-runs since fix: 1 / 3", body)
         self.assertIn("Method last modified at: `abcdef0`", body)
-        self.assertIn("art-name", body)
+        self.assertIn(d.STATE_MARKER_PREFIX, body)
 
     def test_all_clear_template(self):
         state = _make_state(_make_entry(
@@ -369,7 +412,7 @@ class TestRenderComment(unittest.TestCase):
             method_last_modified_sha="fix1",
             cleared_at="t",
         ))
-        body = d.render_comment(state, "art-name")
+        body = d.render_comment(state)
         self.assertIn("✅ Cleared", body)
         self.assertNotIn("⚠️", body)
         self.assertIn("<details>", body)
@@ -380,10 +423,42 @@ class TestRenderComment(unittest.TestCase):
             _make_entry(key="t2", status="cleared_via_bypass",
                          cleared_at="t"),
         )
-        body = d.render_comment(state, "art-name")
+        body = d.render_comment(state)
         self.assertIn("⚠️", body)
         self.assertIn("1 cleared test(s) (history)", body)
         self.assertIn("cleared via `ci:flaky-test-bypass`", body)
+
+
+class TestStateMarkerRoundtrip(unittest.TestCase):
+    def test_state_survives_render_then_extract(self):
+        # The rendered comment is the durable store: state embedded by
+        # render_comment must decode back identically on the next run.
+        state = _make_state(_make_entry(
+            method_last_modified_sha="fix1",
+            clean_runs_since_modified=2,
+        ))
+        body = d.render_comment(state)
+        recovered = d.extract_state_from_comment(body)
+        self.assertIsNotNone(recovered)
+        self.assertEqual(recovered["tests"][0]["clean_runs_since_modified"], 2)
+        self.assertEqual(recovered["tests"][0]["method_last_modified_sha"], "fix1")
+        self.assertEqual(recovered["pr_number"], state["pr_number"])
+
+    def test_extract_returns_none_without_marker(self):
+        self.assertIsNone(d.extract_state_from_comment(None))
+        self.assertIsNone(d.extract_state_from_comment(""))
+        self.assertIsNone(d.extract_state_from_comment("no marker here"))
+
+    def test_extract_returns_none_on_corrupt_payload(self):
+        corrupt = f"{d.COMMENT_MARKER}\n{d.STATE_MARKER_PREFIX}not!valid!base64 -->"
+        self.assertIsNone(d.extract_state_from_comment(corrupt))
+
+    def test_extract_returns_none_on_schema_mismatch(self):
+        import base64 as _b64
+        payload = _b64.b64encode(
+            json.dumps({"schema_version": 999}).encode()).decode()
+        body = f"{d.COMMENT_MARKER}\n{d.STATE_MARKER_PREFIX}{payload} -->"
+        self.assertIsNone(d.extract_state_from_comment(body))
 
 
 class TestMergeBase(unittest.TestCase):
