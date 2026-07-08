@@ -75,9 +75,11 @@ public class PingConsoleTask implements Runnable {
     try {
       resp = client.send(request, BodyHandlers.ofString());
     } catch (final IOException | InterruptedException e) {
+      // If the request fails due to a network issue, we should retry.
       throw new RetriableException("Network error: " + e.getMessage());
     }
 
+    // We should retry on server errors, timeouts or too many request.
     if (resp.statusCode() >= 500) {
       LOGGER.debug("Received server error: {}. A retry will be attempted.", resp.statusCode());
       throw new RetriableException("Server error: " + resp.statusCode(), resp.body());
@@ -86,6 +88,7 @@ public class PingConsoleTask implements Runnable {
       throw new RetriableException(
           "Too many requests or timeout: " + resp.statusCode(), resp.body());
     } else if (resp.statusCode() >= 400) {
+      // Should not retry for the remaining 4xx errors, but we log them.
       LOGGER.debug(
           "Received client error response: {}. No retry will be attempted.", resp.statusCode());
     }
