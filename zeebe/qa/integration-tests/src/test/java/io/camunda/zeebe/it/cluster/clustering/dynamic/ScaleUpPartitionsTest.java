@@ -50,6 +50,7 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
@@ -58,6 +59,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -68,6 +70,10 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 @ZeebeIntegration
+// Interrupt any test method hanging longer than 10 minutes so the remaining tests still run and
+// the failure is attributed with a stack trace, instead of the CI job timing out with no test
+// results at all (see https://github.com/camunda/camunda/issues/56666).
+@Timeout(value = 10, unit = TimeUnit.MINUTES)
 public class ScaleUpPartitionsTest {
   private static final Logger LOG = LoggerFactory.getLogger(ScaleUpPartitionsTest.class);
 
