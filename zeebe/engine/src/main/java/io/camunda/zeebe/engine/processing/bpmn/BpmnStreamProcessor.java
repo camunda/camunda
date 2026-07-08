@@ -67,6 +67,19 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
           ProcessInstanceIntent.COMPLETE_ELEMENT,
           ProcessInstanceIntent.COMPLETE_EXECUTION_LISTENER);
 
+  /**
+   * Benchmark-only worst-case toggle (POC #56552, track b). When true, the {@code isSuspended}
+   * lookup runs on <em>every</em> command instead of only the {@code BUFFERABLE_ON_SUSPEND} intents
+   * — the {@code contains(intent)} pre-filter no longer short-circuits it. Behaviour is unchanged
+   * (an instance is still only buffered when suspended AND the intent is bufferable); only the
+   * lookup frequency changes, so a throughput test can bound the always-on tax. Never enabled in
+   * production — defaults false, flipped via {@code
+   * -Dzeebe.benchmark.suspensionLookupAlwaysOn=true} or directly by a benchmark before the engine
+   * starts.
+   */
+  public static volatile boolean suspensionLookupAlwaysOn =
+      Boolean.getBoolean("zeebe.benchmark.suspensionLookupAlwaysOn");
+
   private final BpmnElementContextImpl context = new BpmnElementContextImpl();
 
   private final ProcessState processState;
@@ -135,7 +148,14 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     // into the buffer instead of processing them while the target instance is suspended.
     // TERMINATE_ELEMENT/CONTINUE_TERMINATING_ELEMENT are not in BUFFERABLE_ON_SUSPEND, so
     // cancellation still proceeds on a suspended instance.
-    if (BUFFERABLE_ON_SUSPEND.contains(intent)
+    if (suspensionLookupAlwaysOn) {
+      // benchmark worst case (track b): pay the lookup on EVERY command, then apply the same gate
+      final boolean suspended = suspensionState.isSuspended(recordValue.getProcessInstanceKey());
+      if (suspended && BUFFERABLE_ON_SUSPEND.contains(intent)) {
+        bufferCommand(record.getKey(), intent, recordValue);
+        return;
+      }
+    } else if (BUFFERABLE_ON_SUSPEND.contains(intent)
         && suspensionState.isSuspended(recordValue.getProcessInstanceKey())) {
       bufferCommand(record.getKey(), intent, recordValue);
       return;
