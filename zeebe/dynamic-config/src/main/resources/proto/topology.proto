@@ -33,11 +33,10 @@ message GlobalConfiguration {
 message PartitionGroupConfiguration {
   int64 version = 1;
   int64 incarnationNumber = 2;
-  bool recovery = 3;
-  map<string, BrokerPartitionState> members = 4;
-  RoutingState routingState = 5;
-  ClusterChangePlan pendingChanges = 6;
-  CompletedChange lastChange = 7;
+  map<string, BrokerPartitionState> members = 3;
+  RoutingState routingState = 4;
+  ClusterChangePlan pendingChanges = 5;
+  CompletedChange lastChange = 6;
 }
 
 // Broker lifecycle state. Holds State and timestamps; no partition assignment.
@@ -48,10 +47,14 @@ message BrokerState {
 }
 
 // A broker's partition assignment within a single group. No lifecycle State.
+// mode is the per-broker, per-group operating mode (PROCESSING or RECOVERING,
+// the structural equivalent of the legacy State.RECOVERING), scoped to this
+// group only.
 message BrokerPartitionState {
   int64 version = 1;
   google.protobuf.Timestamp lastUpdated = 2;
   map<int32, PartitionState> partitions = 3;
+  Mode mode = 4;
 }
 
 // Pre-computed sequence of phases for cluster-spanning operations.
