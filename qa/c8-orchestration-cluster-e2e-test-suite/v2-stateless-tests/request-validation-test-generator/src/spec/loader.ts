@@ -38,8 +38,7 @@ export async function loadSpec(file: string): Promise<SpecModel> {
 
       let rootOneOf: any[] | undefined;
       let discriminator:
-        | {propertyName: string; mapping?: Record<string, string>}
-        | undefined;
+        {propertyName: string; mapping?: Record<string, string>} | undefined;
       let bodyRequired: boolean | undefined;
       let multipartSchema: any | undefined;
       let multipartRequiredProps: string[] | undefined;

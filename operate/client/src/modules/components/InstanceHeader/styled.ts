@@ -41,12 +41,14 @@ const Td = styled.td<TDProps>`
   ${({$hideOverflowingContent = true}) => {
     return css`
       ${styles.label02};
-      ${$hideOverflowingContent &&
-      css`
-        text-overflow: ellipsis;
-        overflow: hidden;
-        white-space: nowrap;
-      `}
+      ${
+        $hideOverflowingContent &&
+        css`
+          text-overflow: ellipsis;
+          overflow: hidden;
+          white-space: nowrap;
+        `
+      }
     `;
   }}
 `;
@@ -65,10 +67,12 @@ const Container = styled.header<ContainerProps>`
       background-color: var(--cds-layer-01);
       padding: var(--cds-spacing-02) var(--cds-spacing-05);
       border-bottom: 1px solid var(--cds-border-subtle-01);
-      ${$hideBottomBorder &&
-      css`
-        border-bottom: none;
-      `}
+      ${
+        $hideBottomBorder &&
+        css`
+          border-bottom: none;
+        `
+      }
     `;
   }}
 `;

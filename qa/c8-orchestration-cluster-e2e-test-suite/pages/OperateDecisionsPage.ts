@@ -9,9 +9,7 @@
 import {Page, Locator, expect} from '@playwright/test';
 
 type OptionalFilter =
-  | 'Process Instance Key'
-  | 'Decision Instance Key(s)'
-  | 'Evaluation Date Range';
+  'Process Instance Key' | 'Decision Instance Key(s)' | 'Evaluation Date Range';
 
 interface SearchParams {
   evaluated?: string;

@@ -26,19 +26,25 @@ const StructuredListCell = styled(
   ${({$size = 'md', $width, $verticalCellPadding}) => {
     return css`
       vertical-align: top;
-      ${$size === 'sm' &&
-      css`
-        ${styles.label01};
-      `}
-      ${$width &&
-      css`
-        width: ${$width};
-      `}
-      ${$verticalCellPadding &&
-      css`
-        padding-top: ${$verticalCellPadding} !important;
-        padding-bottom: ${$verticalCellPadding} !important;
-      `}
+      ${
+        $size === 'sm' &&
+        css`
+          ${styles.label01};
+        `
+      }
+      ${
+        $width &&
+        css`
+          width: ${$width};
+        `
+      }
+      ${
+        $verticalCellPadding &&
+        css`
+          padding-top: ${$verticalCellPadding} !important;
+          padding-bottom: ${$verticalCellPadding} !important;
+        `
+      }
     `;
   }}
 `;

@@ -37,8 +37,7 @@ type AncestorScopeTypes = NonNullable<
 >['ancestorScopeType'];
 
 type AncestorScopeType =
-  | Extract<AncestorScopeTypes, 'inferred' | 'sourceParent'>
-  | undefined;
+  Extract<AncestorScopeTypes, 'inferred' | 'sourceParent'> | undefined;
 
 type ElementModificationPayload =
   | {
