@@ -10,6 +10,8 @@ package io.camunda.eventbridge.client.internal.consumer;
 import io.camunda.eventbridge.client.Event;
 import io.camunda.eventbridge.client.FetchResult;
 import io.camunda.eventbridge.client.TopicPartition;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
@@ -57,6 +59,12 @@ public final class Prefetcher {
    */
   private final long longPollMs;
 
+  /**
+   * Partitions whose empty-at-initial-position wait has already been logged, so a still-empty
+   * partition notes it once instead of on every backed-off retry. Cleared when a fetch succeeds.
+   */
+  private final Set<TopicPartition> emptyPartitionNoted = ConcurrentHashMap.newKeySet();
+
   public Prefetcher(
       final Fetcher fetcher,
       final ScheduledExecutorService executor,
@@ -94,7 +102,10 @@ public final class Prefetcher {
   /** Issues a single long-poll fetch for {@code tp} from its current fetch cursor. */
   private void issueFetch(final TopicPartition tp, final int gen) {
     long from = subscription.nextPosition(tp);
-    if (from == SubscriptionState.UNSET_POSITION) {
+    // Whether this fetch starts from a position the reset policy just resolved (rather than an
+    // established cursor) — an out-of-range answer to it is benign (see onFetchComplete).
+    final boolean resolvedStart = from == SubscriptionState.UNSET_POSITION;
+    if (resolvedStart) {
       from = subscription.resolveStartPosition(tp);
       subscription.setNextPosition(tp, from);
     }
@@ -102,7 +113,9 @@ public final class Prefetcher {
     fetcher
         .fetchFromTopic(
             tp.topic(), tp.partition(), fromPosition, fetchMaxBytes, fetchMinBytes, longPollMs)
-        .whenComplete((result, error) -> onFetchComplete(tp, gen, fromPosition, result, error));
+        .whenComplete(
+            (result, error) ->
+                onFetchComplete(tp, gen, fromPosition, resolvedStart, result, error));
   }
 
   /** How a completed fetch re-arms, decided under the buffer lock (enum — no per-fetch array). */
@@ -117,6 +130,7 @@ public final class Prefetcher {
       final TopicPartition tp,
       final int gen,
       final long fromPosition,
+      final boolean resolvedStart,
       final FetchResult result,
       final Throwable error) {
     final Rearm rearm =
@@ -132,6 +146,7 @@ public final class Prefetcher {
                 return Rearm.RETRY_DELAYED;
               }
               if (result != null && result.isSuccess()) {
+                emptyPartitionNoted.remove(tp);
                 long next = fromPosition;
                 boolean any = false;
                 for (final var entry : result.entries(fromPosition)) {
@@ -150,13 +165,31 @@ public final class Prefetcher {
                 return Rearm.NONE;
               }
               if (result != null && result.isOutOfRange()) {
-                // Cursor below the earliest retained record, or an earliest-fetch on a still-empty
-                // partition. Mark unresolved so the next fetch re-applies the reset policy
-                // (resolved off-lock in issueFetch), and back off rather than retrying immediately:
-                // when the reset resolves to the same out-of-range position (e.g. a freshly created
-                // topic with no records yet), an immediate retry would hot-spin until the first
-                // record appears.
-                LOG.warn("Fetch out of range for {} at {}; resetting", tp, fromPosition);
+                // Mark unresolved so the next fetch re-applies the reset policy (resolved off-lock
+                // in issueFetch), and back off rather than retrying immediately: when the reset
+                // resolves to the same out-of-range position (e.g. a freshly created topic with no
+                // records yet), an immediate retry would hot-spin until the first record appears.
+                if (resolvedStart) {
+                  // The fetch already started from the position the reset policy resolved, so this
+                  // is not a lost cursor — the partition simply has nothing to serve yet (a fresh
+                  // consumer on an empty topic). The reset re-resolves on every retry until the
+                  // first record lands; log the wait once per partition instead of per retry.
+                  if (emptyPartitionNoted.add(tp)) {
+                    LOG.debug(
+                        "Fetch out of range for {} at its initial position {}; the partition is"
+                            + " empty, waiting for the first record",
+                        tp,
+                        fromPosition);
+                  }
+                } else {
+                  // An established cursor (committed offset, prior fetch, or seek) fell below the
+                  // earliest retained record — records the consumer expected may be gone.
+                  LOG.warn(
+                      "Fetch out of range for {} at {}; resetting (records below the earliest"
+                          + " retained position may have been missed)",
+                      tp,
+                      fromPosition);
+                }
                 subscription.setNextPosition(tp, SubscriptionState.UNSET_POSITION);
                 return Rearm.RETRY_DELAYED;
               }

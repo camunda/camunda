@@ -10,11 +10,16 @@ package io.camunda.eventbridge.client.internal.consumer;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import io.camunda.eventbridge.batch.BatchBuilder;
 import io.camunda.eventbridge.client.FetchResult;
 import io.camunda.eventbridge.client.OffsetResetPolicy;
 import io.camunda.eventbridge.client.TopicPartition;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
@@ -24,6 +29,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 
 /**
  * Verifies prefetch depth (in-flight pipelining) and minBytes pass-through in {@link Prefetcher}.
@@ -153,6 +159,104 @@ final class PrefetcherTest {
     // then: the configured minBytes (and longPollMs) are threaded into the fetch call
     assertThat(observedMinBytes.get()).isEqualTo(512);
     assertThat(observedMaxWaitMs.get()).isEqualTo(7_000L);
+  }
+
+  @Test
+  void shouldLogTheEmptyPartitionWaitOnceAtDebugInsteadOfWarning() {
+    // given: a fresh consumer on an empty partition — every fetch answers out of range, even from
+    // the initial position the reset policy resolves (nothing has been published yet)
+    final List<CompletableFuture<FetchResult>> fetches = new ArrayList<>();
+    final Fetcher fetcher =
+        (topic, partition, offset, maxBytes, minBytes, maxWaitMs) -> {
+          final CompletableFuture<FetchResult> fetch = new CompletableFuture<>();
+          fetches.add(fetch);
+          return fetch;
+        };
+    final SubscriptionState subscription =
+        new SubscriptionState(fetcher, OffsetResetPolicy.EARLIEST);
+    final PrefetchBuffer buffer = new PrefetchBuffer(1);
+    final TopicPartition tp = new TopicPartition("t1", 1);
+    buffer.runLocked(() -> subscription.applyOwnedPartitions(List.of(tp)));
+    final Prefetcher prefetcher =
+        new Prefetcher(fetcher, executor, subscription, buffer, () -> false, 1 << 20, 0, 5_000L);
+    final ListAppender<ILoggingEvent> log = attachLog();
+
+    try {
+      // when: the initial fetch and two backed-off retries all come back out of range
+      for (int attempt = 0; attempt < 3; attempt++) {
+        prefetcher.kick();
+        fetches.get(attempt).complete(FetchResult.outOfRange());
+      }
+
+      // then: the benign wait is noted once at DEBUG, never at WARN
+      assertThat(outOfRangeEvents(log, Level.WARN)).isEmpty();
+      assertThat(outOfRangeEvents(log, Level.DEBUG)).hasSize(1);
+    } finally {
+      detachLog(log);
+    }
+  }
+
+  @Test
+  void shouldWarnWhenAnEstablishedCursorFallsOutOfRange() {
+    // given: a consumer whose cursor was established mid-stream (e.g. a committed offset)
+    final List<CompletableFuture<FetchResult>> fetches = new ArrayList<>();
+    final Fetcher fetcher =
+        (topic, partition, offset, maxBytes, minBytes, maxWaitMs) -> {
+          final CompletableFuture<FetchResult> fetch = new CompletableFuture<>();
+          fetches.add(fetch);
+          return fetch;
+        };
+    final SubscriptionState subscription =
+        new SubscriptionState(fetcher, OffsetResetPolicy.EARLIEST);
+    final PrefetchBuffer buffer = new PrefetchBuffer(1);
+    final TopicPartition tp = new TopicPartition("t1", 1);
+    buffer.runLocked(
+        () -> {
+          subscription.applyOwnedPartitions(List.of(tp));
+          subscription.setNextPosition(tp, 5L);
+        });
+    final Prefetcher prefetcher =
+        new Prefetcher(fetcher, executor, subscription, buffer, () -> false, 1 << 20, 0, 5_000L);
+    final ListAppender<ILoggingEvent> log = attachLog();
+
+    try {
+      // when: the mid-stream fetch falls out of range (records below the cursor are gone) and the
+      // reset-policy retry still finds nothing to serve
+      prefetcher.kick();
+      fetches.get(0).complete(FetchResult.outOfRange());
+      prefetcher.kick();
+      fetches.get(1).complete(FetchResult.outOfRange());
+
+      // then: the possible data loss is warned about exactly once; the benign follow-up reset from
+      // the re-resolved initial position drops to DEBUG
+      assertThat(outOfRangeEvents(log, Level.WARN)).hasSize(1);
+      assertThat(outOfRangeEvents(log, Level.DEBUG)).hasSize(1);
+    } finally {
+      detachLog(log);
+    }
+  }
+
+  private static ListAppender<ILoggingEvent> attachLog() {
+    final Logger logger = (Logger) LoggerFactory.getLogger(Prefetcher.class);
+    final ListAppender<ILoggingEvent> appender = new ListAppender<>();
+    appender.start();
+    logger.setLevel(Level.DEBUG);
+    logger.addAppender(appender);
+    return appender;
+  }
+
+  private static void detachLog(final ListAppender<ILoggingEvent> appender) {
+    final Logger logger = (Logger) LoggerFactory.getLogger(Prefetcher.class);
+    logger.detachAppender(appender);
+    logger.setLevel(null);
+  }
+
+  private static List<ILoggingEvent> outOfRangeEvents(
+      final ListAppender<ILoggingEvent> log, final Level level) {
+    return log.list.stream()
+        .filter(event -> event.getLevel() == level)
+        .filter(event -> event.getFormattedMessage().contains("out of range"))
+        .toList();
   }
 
   /** A successful fetch body: header (positions, high watermark, data length) plus batch data. */
