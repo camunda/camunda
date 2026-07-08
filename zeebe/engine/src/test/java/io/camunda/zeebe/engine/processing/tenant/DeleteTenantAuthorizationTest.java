@@ -111,7 +111,7 @@ public class DeleteTenantAuthorizationTest {
     assertThat(rejectedDeleteRecord)
         .hasRejectionType(RejectionType.FORBIDDEN)
         .hasRejectionReason(
-            "Insufficient permissions to perform operation 'DELETE' on resource 'TENANT', required resource identifiers are one of '[*, %s]'"
+            "Expected to access tenant '%s', but the principal is not authorized."
                 .formatted(tenantId));
   }
 

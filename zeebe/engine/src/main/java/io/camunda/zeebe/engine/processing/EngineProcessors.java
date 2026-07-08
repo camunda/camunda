@@ -57,6 +57,7 @@ import io.camunda.zeebe.engine.processing.identity.AuthorizationProcessors;
 import io.camunda.zeebe.engine.processing.identity.GroupProcessors;
 import io.camunda.zeebe.engine.processing.identity.IdentitySetupProcessors;
 import io.camunda.zeebe.engine.processing.identity.MappingRuleProcessors;
+import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.identity.RoleProcessors;
 import io.camunda.zeebe.engine.processing.identity.adapter.AuthorizationScopeStateAdapter;
 import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
@@ -312,13 +313,35 @@ public final class EngineProcessors {
         partitionsCount,
         config);
 
+    final var membershipStateAdapter =
+        new MembershipStateAdapter(
+            processingState.getMappingRuleState(), processingState.getMembershipState(), config);
+    final var authorizationScopeStateAdapter =
+        new AuthorizationScopeStateAdapter(processingState.getAuthorizationState(), config);
+    final var authorizationChecker = new AuthorizationChecker(authorizationScopeStateAdapter);
+    final var claimsConverter =
+        new LazyTokenClaimsConverter(
+            Authorization.AUTHORIZED_USERNAME,
+            Authorization.AUTHORIZED_CLIENT_ID,
+            false,
+            membershipStateAdapter);
+    final var propertyEvaluatorRegistry = new PropertyAuthorizationEvaluatorRegistry(List.of());
+    final var authzService =
+        new AuthorizationService(
+            authorizationChecker,
+            propertyEvaluatorRegistry,
+            securityConfig.isAuthorizationsEnabled(),
+            securityConfig.isMultiTenancyChecksEnabled());
+    final var permissionsBehavior =
+        new PermissionsBehavior(processingState, authzService, claimsConverter, securityConfig);
+
     UserProcessors.addUserProcessors(
         keyGenerator,
         typedRecordProcessors,
         processingState,
         writers,
         commandDistributionBehavior,
-        authCheckBehavior);
+        permissionsBehavior);
 
     ClockProcessors.addClockProcessors(
         typedRecordProcessors,
@@ -336,7 +359,9 @@ public final class EngineProcessors {
         commandDistributionBehavior,
         authCheckBehavior,
         securityConfig,
-        config);
+        authzService,
+        claimsConverter,
+        authorizationScopeStateAdapter);
 
     ScalingProcessors.addScalingProcessors(
         commandDistributionBehavior,
@@ -349,11 +374,13 @@ public final class EngineProcessors {
     TenantProcessors.addTenantProcessors(
         typedRecordProcessors,
         processingState,
-        authCheckBehavior,
+        permissionsBehavior,
         keyGenerator,
         writers,
         commandDistributionBehavior,
-        securityConfig);
+        securityConfig,
+        authCheckBehavior,
+        authorizationScopeStateAdapter);
 
     IdentitySetupProcessors.addIdentitySetupProcessors(
         keyGenerator, typedRecordProcessors, writers, securityConfig, config);
@@ -445,27 +472,9 @@ public final class EngineProcessors {
       final CommandDistributionBehavior commandDistributionBehavior,
       final AuthorizationCheckBehavior authCheckBehavior,
       final EngineSecurityConfig securityConfig,
-      final EngineConfiguration config) {
-    final var membershipStateAdapter =
-        new MembershipStateAdapter(
-            processingState.getMappingRuleState(), processingState.getMembershipState(), config);
-    final var authorizationScopeStateAdapter =
-        new AuthorizationScopeStateAdapter(processingState.getAuthorizationState(), config);
-    final var authorizationChecker = new AuthorizationChecker(authorizationScopeStateAdapter);
-    final var claimsConverter =
-        new LazyTokenClaimsConverter(
-            Authorization.AUTHORIZED_USERNAME,
-            Authorization.AUTHORIZED_CLIENT_ID,
-            false,
-            membershipStateAdapter);
-    final var propertyEvaluatorRegistry = new PropertyAuthorizationEvaluatorRegistry(List.of());
-    final var authzService =
-        new AuthorizationService(
-            authorizationChecker,
-            propertyEvaluatorRegistry,
-            securityConfig.isAuthorizationsEnabled(),
-            securityConfig.isMultiTenancyChecksEnabled());
-
+      final AuthorizationService authzService,
+      final LazyTokenClaimsConverter claimsConverter,
+      final AuthorizationScopeStateAdapter authorizationScopeStateAdapter) {
     AuthorizationProcessors.addAuthorizationProcessors(
         keyGenerator,
         typedRecordProcessors,
