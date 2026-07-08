@@ -45,9 +45,11 @@ public final class AnalyticsAggregationStage {
   private AnalyticsAggregationStage() {}
 
   public static void main(final String[] args) {
+    final AnalyticsPipelineConfig config = AnalyticsPipelineConfig.fromSystemProperties("stage2");
     final EventBridgeClient client = PipelineRuntimes.newClient();
     final ActorScheduler scheduler = PipelineRuntimes.startScheduler();
-    final ExecutorService sinkExecutor = PipelineRuntimes.newSinkExecutor();
+    // This stage cuts per facts partition, so the sink pool is sized by the facts topic.
+    final ExecutorService sinkExecutor = PipelineRuntimes.newSinkExecutor(config.factsPartitions());
     final StreamRuntime<ShuffleEnvelope> runtime = buildRuntime(client, scheduler, sinkExecutor);
     PipelineRuntimes.run(
         client, scheduler, sinkExecutor, List.of(new PipelineRuntimes.Member("stage2", runtime)));

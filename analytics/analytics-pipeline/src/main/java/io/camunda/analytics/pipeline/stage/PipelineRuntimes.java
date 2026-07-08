@@ -8,6 +8,7 @@
 package io.camunda.analytics.pipeline.stage;
 
 import io.camunda.eventbridge.client.EventBridgeClient;
+import io.camunda.eventbridge.client.EventBridgeClient.TopicInfo;
 import io.camunda.eventbridge.streaming.StreamRuntime;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import java.util.ArrayList;
@@ -59,9 +60,18 @@ public final class PipelineRuntimes {
     return scheduler;
   }
 
-  /** A bounded executor for the blocking per-partition sink commits (DB writes + offset commit). */
-  public static ExecutorService newSinkExecutor() {
-    final int sinkThreads = Integer.getInteger("analytics.sinkThreads", 4);
+  /**
+   * A bounded executor for the blocking per-partition sink commits (DB writes + offset commit).
+   * Sized for {@code partitionCount} partitions: their frozen cuts persist on this pool in parallel
+   * (streaming ADR 0005), so an undersized pool silently queues cuts and stretches each partition's
+   * frozen window. Defaults to the partition count clamped to [2, 2&times;available processors];
+   * override with {@code -Danalytics.sinkThreads}.
+   */
+  public static ExecutorService newSinkExecutor(final int partitionCount) {
+    final int sinkThreads =
+        Integer.getInteger(
+            "analytics.sinkThreads",
+            Math.clamp(partitionCount, 2, 2 * Runtime.getRuntime().availableProcessors()));
     final AtomicInteger sequence = new AtomicInteger();
     return Executors.newFixedThreadPool(
         sinkThreads,
@@ -71,6 +81,29 @@ public final class PipelineRuntimes {
           thread.setDaemon(true);
           return thread;
         });
+  }
+
+  /**
+   * The registered partition count of {@code topic} — the {@link #newSinkExecutor(int)} input for a
+   * stage whose partition count only the topic registry knows (e.g. Stage 1's source topic). A
+   * topic that is not registered yet, or an unreachable registry, contributes {@code 0}; the sink
+   * pool's minimum floor still applies.
+   */
+  public static int topicPartitions(final EventBridgeClient client, final String topic) {
+    try {
+      return client.listTopics().join().stream()
+          .filter(info -> topic.equals(info.name()))
+          .mapToInt(TopicInfo::partitionCount)
+          .findFirst()
+          .orElse(0);
+    } catch (final RuntimeException e) {
+      LOG.warn(
+          "Could not resolve the partition count of topic {}; the sink pool falls back to its"
+              + " minimum",
+          topic,
+          e);
+      return 0;
+    }
   }
 
   /**

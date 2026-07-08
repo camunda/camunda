@@ -8,6 +8,7 @@
 package io.camunda.analytics.webapp;
 
 import io.camunda.analytics.pipeline.stage.AnalyticsAggregationStage;
+import io.camunda.analytics.pipeline.stage.AnalyticsPipelineConfig;
 import io.camunda.analytics.pipeline.stage.AnalyticsProjectionStage;
 import io.camunda.analytics.pipeline.stage.PipelineRuntimes;
 import io.camunda.analytics.pipeline.stage.PipelineRuntimes.RunningPipeline;
@@ -57,9 +58,14 @@ public class AnalyticsPipelineLifecycle implements SmartLifecycle {
     if (pipeline != null) {
       return;
     }
+    final AnalyticsPipelineConfig config = AnalyticsPipelineConfig.fromSystemProperties("stage1");
     final EventBridgeClient client = PipelineRuntimes.newClient();
     final ActorScheduler scheduler = PipelineRuntimes.startScheduler();
-    final ExecutorService sinkExecutor = PipelineRuntimes.newSinkExecutor();
+    // Both stages' cuts share this pool, so it is sized by source + facts partitions.
+    final ExecutorService sinkExecutor =
+        PipelineRuntimes.newSinkExecutor(
+            PipelineRuntimes.topicPartitions(client, config.sourceTopic())
+                + config.factsPartitions());
     final StreamRuntime<SourceRecord> stage1 =
         AnalyticsProjectionStage.buildRuntime(client, scheduler, sinkExecutor);
     final StreamRuntime<ShuffleEnvelope> stage2 =
