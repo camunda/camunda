@@ -529,15 +529,25 @@ public final class EventAppliers implements EventApplier {
    *       when the success reply is processed; removes the pending-ask entry so the scheduler stops
    *       retrying.
    *   <li>{@code UNIQUENESS_REJECTED}: applied on {@code P_K} when the rejection reply is
-   *       processed; removes the pending-ask entry.
+   *       processed; backs the pending-ask entry off (increments its rejection count, keeps it) so
+   *       the scheduler re-sends it under exponential back-off until the holder frees the {@code
+   *       businessId} or the buffered message expires.
    *   <li>{@code NO_SUBSCRIPTION_REJECTED}: applied on {@code P_K} when the rejection reply is
-   *       processed; removes the pending-ask entry.
+   *       processed; backs the pending-ask entry off (increments its rejection count, keeps it) so
+   *       the scheduler re-sends it under exponential back-off until the subscription reaches
+   *       {@code P_B} or the buffered message expires.
    *   <li>{@code EXPIRED_REJECTED}: applied on {@code P_K} when the TTL-gated expiry guard's
    *       rejection reply is processed; backs the pending-ask entry off (does not remove it —
    *       removal stays owned by {@code P_K}'s message-expiry path).
    *   <li>{@code EXPIRED_DEDUP_DELETED}: removes a dedup entry after its post-completion expired
    *       dedup entry window has passed; emitted by the scheduled sweep.
    * </ul>
+   *
+   * <p>All three rejection intents ({@code UNIQUENESS_REJECTED}, {@code NO_SUBSCRIPTION_REJECTED},
+   * {@code EXPIRED_REJECTED}) share the same {@code askState.backOff(...)} semantics: the pending
+   * ask is kept with an incremented rejection count, never removed. Ask removal is owned
+   * exclusively by success ({@code STARTED}) and by {@code P_K}'s message-expiry path, which drops
+   * the buffered message and its ask at the message TTL.
    */
   private void registerMessageStartProcessInstanceRequestAppliers(
       final MutableProcessingState state) {
