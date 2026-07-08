@@ -10,7 +10,6 @@ package io.camunda.exporter.handlers.auditlog;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.exporter.exceptions.PersistenceException;
-import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.auditlog.AuditLogHandler.AuditLogBatch;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
@@ -25,16 +24,12 @@ import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationType;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogTenantScope;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
-import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogTenant;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.protocol.record.Agent;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
-import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -55,46 +50,25 @@ import java.util.Set;
  *
  * @param <R> the record value type this handler processes
  */
-public class AuditLogHandler<R extends RecordValue> implements ExportHandler<AuditLogBatch, R> {
+public class AuditLogHandler<R extends RecordValue>
+    extends AbstractAuditLogHandler<AuditLogBatch, R> {
 
   private final String indexName;
   private final String auditLogCleanupIndexName;
-  private final AuditLogTransformer<R> transformer;
-  private final AuditLogConfiguration configuration;
 
   public AuditLogHandler(
       final String indexName,
       final String auditLogCleanupIndexName,
       final AuditLogTransformer<R> transformer,
       final AuditLogConfiguration configuration) {
+    super(transformer, configuration);
     this.indexName = indexName;
     this.auditLogCleanupIndexName = auditLogCleanupIndexName;
-    this.transformer = transformer;
-    this.configuration = configuration;
-  }
-
-  @Override
-  public ValueType getHandledValueType() {
-    return transformer.config().valueType();
   }
 
   @Override
   public Class<AuditLogBatch> getEntityType() {
     return AuditLogBatch.class;
-  }
-
-  @Override
-  public boolean handlesRecord(final Record<R> record) {
-    if (!transformer.supports(record)) {
-      return false;
-    }
-
-    return configuration.isEnabled(AuditLogInfo.of(record));
-  }
-
-  @Override
-  public List<String> generateIds(final Record<R> record) {
-    return List.of(record.getPartitionId() + "-" + record.getPosition());
   }
 
   @Override
@@ -191,11 +165,6 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
         .setEntityDescription(log.getEntityDescription());
 
     return entity;
-  }
-
-  @VisibleForTesting
-  public AuditLogTransformer<?> getTransformer() {
-    return transformer;
   }
 
   private AuditLogEntityType mapEntityType(
