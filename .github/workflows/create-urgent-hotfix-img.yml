@@ -146,11 +146,11 @@ jobs:
         include: ${{ fromJson(needs.validate-inputs.outputs.components-matrix) }}
     steps:
       - name: Checkout workflow repository
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Checkout and resolve ref
         id: resolve
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           token: ${{ github.token }}
           ref: ${{ needs.validate-inputs.outputs.commit || needs.validate-inputs.outputs.branch }}
@@ -336,7 +336,7 @@ jobs:
     if: always()
     steps:
       - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Generate summary
         run: |

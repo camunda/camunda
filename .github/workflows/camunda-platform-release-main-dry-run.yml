@@ -32,7 +32,7 @@ jobs:
     outputs:
       branch: ${{ steps.resolve-branch.outputs.branch }}
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           ref: ${{ inputs.branch || 'main' }}
       - name: Create fake dry-run tags
@@ -95,7 +95,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Delete temporary release branch
         if: ${{ needs.dry-run-release.result == 'success' }}
         run: git push origin --delete "${{ needs.setup.outputs.branch }}" 2>/dev/null || true
@@ -162,7 +162,7 @@ jobs:
               ]
             }
       - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           sparse-checkout: .github
       - name: Observe build status

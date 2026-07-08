@@ -93,7 +93,7 @@ jobs:
           esac
 
       - name: Checkout main for workflow tooling
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 1
           # Intentionally NOT pinning to the target stable branch.
