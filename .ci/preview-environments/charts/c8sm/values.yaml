@@ -317,6 +317,11 @@ camunda-platform:
     env:
     - name: JAVA_OPTS
       value: "-Xms512m -Xmx512m"
+    # Optimize manages its own indices with a separate replica default (1); on the
+    # single-node preview Elasticsearch that keeps the cluster Yellow forever
+    # (orchestration indices are covered by orchestration.index.replicas above).
+    - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_NUMBER_OF_REPLICAS
+      value: "0"
     resources:
       limits:
         cpu: "1"
