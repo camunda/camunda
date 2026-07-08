@@ -20,6 +20,9 @@ import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.zeebe.qa.util.cluster.util.ContextOverrideInitializer;
 import io.camunda.zeebe.qa.util.cluster.util.ContextOverrideInitializer.Bean;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -84,6 +87,15 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     // randomize ports to allow multiple concurrent instances
     overridePropertyIfAbsent("server.port", SocketUtil.getNextAddress().getPort());
     overridePropertyIfAbsent("management.server.port", SocketUtil.getNextAddress().getPort());
+
+    // give each application a Tomcat base directory that survives until the JVM exits. Since
+    // Spring Boot 4.1, auto-generated base directories are deleted when the owning web server is
+    // destroyed, but Tomcat publishes the first server's base directory as the JVM-global
+    // catalina.home; once that directory is missing, concurrently starting web servers (e.g. a
+    // TestCluster restart) race to re-create it, and the losers fail startup with "Unable to
+    // create the directory [...] to use as the home directory" (see #56666). Configured base
+    // directories are not managed (and thus not deleted) by Spring Boot.
+    overridePropertyIfAbsent("server.tomcat.basedir", createJvmLifetimeTomcatBaseDir());
     overridePropertyIfAbsent("spring.lifecycle.timeout-per-shutdown-phase", "1s");
 
     overridePropertyIfAbsent("camunda.rest.response-validation.enabled", "true");
@@ -356,6 +368,15 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   private void overridePropertyIfAbsent(final String key, final Object value) {
     if (!propertyOverrides.containsKey(key)) {
       propertyOverrides.put(key, value);
+    }
+  }
+
+  private static String createJvmLifetimeTomcatBaseDir() {
+    try {
+      // intentionally never deleted; see the comment on the server.tomcat.basedir override
+      return Files.createTempDirectory("tomcat-basedir").toString();
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
     }
   }
 
