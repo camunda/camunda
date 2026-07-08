@@ -155,6 +155,14 @@ optimize:
     - name: CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE
       value: "1000" # default 200
 
+    # Disable object variable flattening: Optimize's own default (true) turns
+    # every object variable into multiple stored variables (one per property,
+    # plus the raw serialized value), causing outsized ES storage on top of
+    # Optimize's already-higher per-variable cost. SaaS already disables this
+    # in production; see camunda/camunda#57127 and camunda/camunda-docs#9326.
+    - name: CAMUNDA_OPTIMIZE_ZEEBE_INCLUDE_OBJECT_VARIABLE
+      value: "false" # default true
+
   nodeSelector:
     topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
 
