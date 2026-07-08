@@ -484,6 +484,9 @@ def _render_verify_query(entry: dict) -> list[str]:
     if not (package and class_name and method_name):
         return []
     fqn_class = f"{package}.{class_name}"
+    # All statuses are returned on purpose: the pass-vs-fail counts per day let
+    # the author gauge how rare the flake is (2/2 runs = real problem, 2/2000 =
+    # rare intermittent). Filtering to failures only would hide that ratio.
     query = (
         "SELECT DATE(report_time) AS day, build_trigger, test_status, COUNT(*) AS occurrences\n"
         f"FROM `{BQ_TEST_STATUS_TABLE}` ts\n"
@@ -493,23 +496,23 @@ def _render_verify_query(entry: dict) -> list[str]:
         f'  AND ts.ci_url = "{CI_URL}"\n'
         f'  AND test_class_name = "{fqn_class}"\n'
         f'  AND test_name = "{method_name}"\n'
-        "GROUP BY day, build_trigger, test_status\n"
+        "GROUP BY day, build_trigger, test_status  -- inspect the test_status column for flaky/failure/error rows\n"
         "ORDER BY day DESC, occurrences DESC"
     )
     lines = [
-        "",
+        "  ",
         "  <details><summary>Verify in BigQuery — is this a real new flake or a false alarm?</summary>",
-        "",
+        "  ",
         "  ```sql",
     ]
     lines.extend(f"  {q_line}" for q_line in query.split("\n"))
     lines.extend([
         "  ```",
-        "",
-        f"  Rows with `flaky`/`failure`/`error` status on `main`/`stable/*` (or "
-        f"other PRs) over the last {VERIFY_QUERY_DAYS} days indicate a "
-        "pre-existing intermittent flake — likely a false alarm. No prior rows "
-        "means this PR genuinely introduced it.",
+        "  ",
+        f"  In the `test_status` column, prior `flaky`/`failure`/`error` rows on "
+        f"`main`/`stable/*` (or other PRs) over the last {VERIFY_QUERY_DAYS} days "
+        "indicate a pre-existing intermittent flake — likely a false alarm. No "
+        "prior failing rows means this PR genuinely introduced it.",
         "  </details>",
     ])
     return lines
