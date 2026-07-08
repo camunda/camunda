@@ -11,6 +11,7 @@ import static io.camunda.optimize.service.db.DatabaseConstants.ALERT_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.COLLECTION_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.COMBINED_REPORT_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.DASHBOARD_INDEX_NAME;
+import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_OVERVIEW_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static io.camunda.optimize.service.db.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams;
@@ -40,7 +41,8 @@ public class UserIdMigrationRepositoryES implements UserIdMigrationRepository {
     SINGLE_DECISION_REPORT_INDEX_NAME,
     COMBINED_REPORT_INDEX_NAME,
     DASHBOARD_INDEX_NAME,
-    ALERT_INDEX_NAME
+    ALERT_INDEX_NAME,
+    PROCESS_OVERVIEW_INDEX_NAME
   };
 
   private static final String MIGRATE_COLLECTION_ROLES_SCRIPT =
@@ -104,7 +106,7 @@ public class UserIdMigrationRepositoryES implements UserIdMigrationRepository {
                 s.nested(
                     n ->
                         // data.roles is only mapped on the collection index; ignoreUnmapped keeps
-                        // this nested clause from failing the count on the other 5 indices
+                        // this nested clause from failing the count on the other 6 indices
                         n.path("data.roles")
                             .ignoreUnmapped(true)
                             .scoreMode(ChildScoreMode.None)
