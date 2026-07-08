@@ -220,7 +220,7 @@ public record AuditLogInfo(
   public static AuditLogInfo of(final Record<?> record) {
     return new AuditLogInfo(
         getOperationCategory(record.getValueType()),
-        getEntityType(record.getValueType()),
+        getEntityType(record),
         getOperationType(record),
         AuditLogActor.of(record),
         AuditLogTenant.of(record));
@@ -228,6 +228,10 @@ public record AuditLogInfo(
 
   private static AuditLogOperationCategory getOperationCategory(final ValueType valueType) {
     return OPERATION_CATEGORY_MAP.getOrDefault(valueType, AuditLogOperationCategory.UNKNOWN);
+  }
+
+  static AuditLogEntityType getEntityType(final Record<?> record) {
+    return getEntityType(record.getValueType());
   }
 
   private static AuditLogEntityType getEntityType(final ValueType valueType) {

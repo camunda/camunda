@@ -111,12 +111,13 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
     batch.setAuditLogEntity(mapToEntity(log, entity));
 
     // archiving of decision instances is done by the StandaloneDecisionArchiverJob
+    final io.camunda.search.entities.AuditLogEntity.AuditLogEntityType auditLogEntityType =
+        AuditLogEntry.getEntityType(record);
     final boolean decisionLog =
-        log.getEntityType()
-            == io.camunda.search.entities.AuditLogEntity.AuditLogEntityType.DECISION;
+        auditLogEntityType == io.camunda.search.entities.AuditLogEntity.AuditLogEntityType.DECISION;
     if (transformer.triggersCleanUp(record) && !decisionLog) {
       final var cleanupEntity = new AuditLogCleanupEntity().setId(batch.getId());
-      batch.setAuditLogCleanupEntity(mapToCleanupEntity(record, log, cleanupEntity));
+      batch.setAuditLogCleanupEntity(mapToCleanupEntity(record, auditLogEntityType, cleanupEntity));
     }
   }
 
@@ -135,11 +136,13 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
   }
 
   private AuditLogCleanupEntity mapToCleanupEntity(
-      final Record<R> record, final AuditLogEntry log, final AuditLogCleanupEntity cleanupEntity) {
+      final Record<R> record,
+      final io.camunda.search.entities.AuditLogEntity.AuditLogEntityType auditLogEntityType,
+      final AuditLogCleanupEntity cleanupEntity) {
     return cleanupEntity
-        .setKey(log.getEntityKey())
+        .setKey(AuditLogEntry.getEntityKey(record))
         .setKeyField(AuditLogTemplate.ENTITY_KEY)
-        .setEntityType(mapEntityType(log.getEntityType()))
+        .setEntityType(mapEntityType(auditLogEntityType))
         .setPartitionId(record.getPartitionId());
   }
 
