@@ -6,23 +6,22 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {expect, test} from '@playwright/test';
+import {test} from '@playwright/test';
 import {deploy} from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
   assertNotFoundRequest,
-  assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
   jsonHeaders,
 } from '../../../../utils/http';
 import {
-  batchOperationLifecycleOptions,
   createCancellationBatch,
   cancelBatchOperation,
+  createCanceledBatchOperation,
   createCompletedBatchOperation,
+  expectBatchState,
 } from '@requestHelpers';
-import {validateResponse} from 'json-body-assertions';
 
 /* eslint-disable playwright/expect-expect */
 
@@ -53,48 +52,19 @@ test.describe('Cancel Batch Operation Tests', () => {
     request,
   }) => {
     const key =
-      await test.step('Create cancelable batch operation', async () => {
-        // Use 30 instances so the batch takes long enough to process that the
-        // cancel command can arrive while the batch is still ACTIVE. With only
-        // 10 instances the engine finishes the batch before the cancel HTTP
-        // request arrives, causing a permanent NOT_FOUND (not an indexing lag).
-        return createCancellationBatch(request, 30);
+      await test.step('Create batch operation and cancel it while active', async () => {
+        // Same scheduler-phase race as the twice-fails test: a batch that is
+        // fully executed within one ~1s scheduler cycle reaches COMPLETED before
+        // the cancel is processed and is then permanently rejected with
+        // NOT_FOUND. createCanceledBatchOperation retries the whole
+        // create-then-cancel cycle until one batch is caught active and settles
+        // on CANCELED (the first cancel returns 204), instead of racing a single
+        // fast-completing batch.
+        return createCanceledBatchOperation(request);
       });
 
-    await test.step('Cancel batch operation', async () => {
-      // A batch that just started may also return 404 briefly if the cancel
-      // command races ahead of the batch-creation record on the engine
-      // partition. Retry with the shared lifecycle budget to absorb both
-      // scenarios (engine lag AND the narrow ACTIVE window).
-      await expect(async () => {
-        const res = await cancelBatchOperation(request, key);
-        await assertStatusCode(res, 204);
-      }).toPass(batchOperationLifecycleOptions);
-    });
-
-    await test.step('Poll batch status', async () => {
-      // Slower RDBMS backings (Postgres / MariaDB) can take longer than the
-      // default 30s to reflect the CANCELED state after the cancel is accepted,
-      // so use the more generous lifecycle budget instead of leaving it ACTIVE.
-      await expect(async () => {
-        const statusRes = await request.get(
-          buildUrl(`/batch-operations/${key}`),
-          {
-            headers: jsonHeaders(),
-          },
-        );
-        await assertStatusCode(statusRes, 200);
-        await validateResponse(
-          {
-            path: '/batch-operations/{batchOperationKey}',
-            method: 'GET',
-            status: '200',
-          },
-          statusRes,
-        );
-        const body = await statusRes.json();
-        expect(body.state).toBe('CANCELED');
-      }).toPass(batchOperationLifecycleOptions);
+    await test.step('Confirm batch operation is canceled', async () => {
+      await expectBatchState(request, key, 'CANCELED');
     });
   });
 
@@ -102,24 +72,17 @@ test.describe('Cancel Batch Operation Tests', () => {
     request,
   }) => {
     const key =
-      await test.step('Create cancelable batch operation', async () => {
-        // Use 30 instances so the batch stays ACTIVE long enough for the first
-        // cancel to land while it is still cancelable. With only 10 instances
-        // the engine can finish the batch before the cancel arrives (a problem
-        // amplified by slower RDBMS backings), turning the first cancel into a
-        // permanent NOT_FOUND instead of the expected 204.
-        return createCancellationBatch(request, 30);
+      await test.step('Create batch operation and cancel it while active', async () => {
+        // Catching the batch active for the first cancel is a scheduler-phase
+        // race that cannot be won by retrying a single batch: a batch of <=100
+        // items is initialized and fully executed within one ~1s scheduler
+        // cycle, so a batch created just before a tick reaches COMPLETED before
+        // the cancel is processed and is then permanently rejected with
+        // NOT_FOUND. createCanceledBatchOperation retries the whole
+        // create-then-cancel cycle until one batch is caught active and settles
+        // on CANCELED (the first cancel returns 204).
+        return createCanceledBatchOperation(request);
       });
-
-    await test.step('Send first cancel request', async () => {
-      // A freshly created batch may briefly return 404 if the cancel command
-      // races ahead of the batch-creation record on the engine partition.
-      // Retry with the shared lifecycle budget to absorb that engine lag.
-      await expect(async () => {
-        const firstRes = await cancelBatchOperation(request, key);
-        await assertStatusCode(firstRes, 204);
-      }).toPass(batchOperationLifecycleOptions);
-    });
 
     await test.step('Send second cancel request and assert failure', async () => {
       const secondRes = await cancelBatchOperation(request, key);

@@ -20,6 +20,7 @@ import {
 import {
   createCancellationBatch,
   createCompletedBatchOperation,
+  createSuspendedBatchOperation,
   expectBatchState,
   notFoundDetail,
   resumeBatchOperation,
@@ -36,21 +37,18 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
     request,
   }) => {
     const key =
-      await test.step('Create cancelable batch operation', async () => {
-        // Use 20 instances so the batch takes long enough to process that the
-        // suspend command can arrive while the batch is still ACTIVE. With only
-        // 3 instances the engine finishes the batch before the suspend HTTP
-        // request arrives, causing a permanent NOT_FOUND (same race as the
-        // cancel test — not an indexing lag).
-        return createCancellationBatch(request, 20, 'batch_suspension_process');
+      await test.step('Create batch operation and suspend it while active', async () => {
+        // Catching the batch in a non-terminal state is a scheduler-phase race
+        // that cannot be won by retrying a single batch: a batch of <=100 items
+        // is initialized and fully executed within one ~1s scheduler cycle, so a
+        // batch created just before a tick reaches COMPLETED before the suspend
+        // command is processed. createSuspendedBatchOperation retries the whole
+        // create-then-suspend cycle until one batch is caught active and settles
+        // on SUSPENDED (the first suspend returns 204).
+        return createSuspendedBatchOperation(request);
       });
 
-    await test.step('Send suspend request', async () => {
-      const res = await suspendBatchOperation(request, key);
-      await assertStatusCode(res, 204);
-    });
-
-    await test.step('Poll until batch operation is suspended', async () => {
+    await test.step('Confirm batch operation is suspended', async () => {
       await expectBatchState(request, key, 'SUSPENDED');
     });
 
@@ -64,22 +62,12 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
     request,
   }) => {
     const key =
-      await test.step('Create cancelable batch operation', async () => {
-        // Use 30 instances so the batch stays ACTIVE long enough for the
-        // suspend command to take effect before the engine finishes it.
-        // With 20 instances, the engine (warmed up by the preceding test in
-        // this serial describe) can finish cancelling every instance before
-        // the first suspend arrives, leaving the batch COMPLETED so suspend
-        // is permanently rejected with NOT_FOUND (404). 30 matches the proven
-        // cancel-active test's ACTIVE window for the same race — not an
-        // indexing lag.
-        return createCancellationBatch(request, 30, 'batch_suspension_process');
+      await test.step('Create batch operation and suspend it while active', async () => {
+        // Same scheduler-phase race as above: retry the whole create-then-suspend
+        // cycle until a batch is caught active and settles on SUSPENDED, instead
+        // of racing a single fast-completing batch.
+        return createSuspendedBatchOperation(request);
       });
-
-    await test.step('Suspend batch operation once', async () => {
-      const res = await suspendBatchOperation(request, key);
-      await assertStatusCode(res, 204);
-    });
 
     await test.step('Wait for suspended state', async () => {
       await expectBatchState(request, key, 'SUSPENDED');
