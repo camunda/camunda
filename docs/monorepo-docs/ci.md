@@ -143,6 +143,9 @@ Workflows that seek inclusion to the Unified CI (and thus GitHub required status
   * handle flaky tests gracefully, options:
     1. retry them 3-5 times while staying in the timeout and report them via [detailed test statistics API](https://github.com/camunda/camunda/pull/26715) to [CI health](#ci-health-metrics)
     2. disable them and create a ticket to fix them long-term
+  * new quality gates should be added **non-blocking first**:
+    1. measure its false-positive rate against real traffic and refine it
+    2. only make it blocking once the signal is trustworthy
 * use [Vault for secret management](#ci-secret-management)
 * follow the [GitHub Actions Cache strategy](#caching-strategy) for the monorepo
 * follow all [CI Security best practices](#ci-security) for the monorepo, including [SHA pinning of third-party actions](#usage-of-third-party-github-actions)
@@ -720,6 +723,9 @@ Tests are called "flaky" when they are not consistenly passing, while the circum
 GitHub Action workflows with Maven testing Java code should use the [flaky-test-extractor-maven-plugin](#flaky-test-extractor-maven-plugin) and report the resulting [detailed flaky test statistics](https://github.com/camunda/camunda/issues/26930) to our [CI health](#ci-health-metrics) database.
 
 Please use the [CI stress testing functionality](#stress-testing) to avoid introducing new flaky tests.
+
+When a flake cannot be reproduced locally, prefer adding diagnostics over guessing at a fix: capture
+container logs, thread dumps, or structured test output on failure so the next occurrence in CI is actionable.
 
 The [**Flaky Test Gate**](./flaky-test-gate.md) blocks PRs that introduce new flaky tests not already known on `main`/`stable/*`. Once a test is flagged on a PR the alert is **sticky** — it remains until either the method body is modified and 3 subsequent CI runs observe the test clean in the affected job, or the `ci:flaky-test-bypass` label is applied. A re-run that happens to pass does not silence the alert. See the [Flaky Test Gate reference](./flaky-test-gate.md) for the full rules, comment templates, and operational concerns.
 

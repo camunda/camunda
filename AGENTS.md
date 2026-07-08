@@ -248,6 +248,12 @@ Load extra context on demand — only when relevant, only if the files exist.
 - Prefer AssertJ for assertions. Avoid introducing new JUnit or Hamcrest assertions unless the
   surrounding test already uses them.
 - Use [Awaitility](http://www.awaitility.org/) for async waiting. Never use `Thread.sleep`.
+- Isolate tests with unique data (process/tenant/resource IDs) — never reuse fixed identifiers across
+  tests, as collisions cause flakiness.
+- Fix the root cause of a flaky race rather than masking it with retries or longer waits; if a stopgap
+  is unavoidable, mark it explicitly as temporary and track the root cause in an issue.
+- Always tear down resources you create (indices, containers, clients, clusters), even on failure, to
+  avoid cross-run flakiness.
 - Use JUnit 5. Migrate JUnit 4 tests when modifying them.
 - Detailed guide: `docs/testing.md` and `docs/testing/`.
 - Reference example: `qa/acceptance-tests/src/test/java/io/camunda/it/StandaloneCamundaTest.java`
