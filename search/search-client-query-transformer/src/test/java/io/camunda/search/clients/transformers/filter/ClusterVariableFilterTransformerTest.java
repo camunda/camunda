@@ -15,10 +15,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.search.clients.query.SearchBoolQuery;
+import io.camunda.search.clients.query.SearchExistsQuery;
 import io.camunda.search.clients.query.SearchNestedQuery;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
+import io.camunda.search.clients.query.SearchWildcardQuery;
 import io.camunda.search.filter.ClusterVariableFilter;
 import io.camunda.search.filter.MetadataValueFilter;
 import io.camunda.search.filter.UntypedOperation;
@@ -93,6 +95,9 @@ public final class ClusterVariableFilterTransformerTest extends AbstractTransfor
     final var inner = (SearchBoolQuery) nested.query().queryOption();
     assertThat(inner.must()).hasSize(2);
     assertIsTermQuery(inner.must().get(0), ClusterVariableIndex.METADATA_KEY, "schemaRef");
+    final var wildcardQuery = (SearchWildcardQuery) inner.must().get(1).queryOption();
+    assertThat(wildcardQuery.field()).isEqualTo(ClusterVariableIndex.METADATA_VALUE);
+    assertThat(wildcardQuery.value()).isEqualTo("io.camunda.connector*");
   }
 
   @Test
@@ -114,6 +119,17 @@ public final class ClusterVariableFilterTransformerTest extends AbstractTransfor
     assertThat(nested.path()).isEqualTo(ClusterVariableIndex.METADATA);
     final var inner = (SearchBoolQuery) nested.query().queryOption();
     assertThat(inner.must()).hasSize(2);
+    assertIsTermQuery(inner.must().get(0), ClusterVariableIndex.METADATA_KEY, "kind");
+    final var existsBool = (SearchBoolQuery) inner.must().get(1).queryOption();
+    final var existsFields =
+        existsBool.should().stream()
+            .map(SearchQuery::queryOption)
+            .map(SearchExistsQuery.class::cast)
+            .map(SearchExistsQuery::field)
+            .toList();
+    assertThat(existsFields)
+        .containsExactlyInAnyOrder(
+            ClusterVariableIndex.METADATA_VALUE, ClusterVariableIndex.METADATA_VALUE_NUMBER);
   }
 
   @Test

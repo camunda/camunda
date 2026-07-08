@@ -443,6 +443,7 @@ public class ClusterVariableIT {
 
   private void assertVariableDbModelEqualToEntity(
       final ClusterVariableDbModel dbModel, final ClusterVariableEntity entity) {
-    assertThat(entity).usingRecursiveComparison().isEqualTo(dbModel);
+    // metadata is not yet persisted in ClusterVariableDbModel, so it has no equivalent to compare
+    assertThat(entity).usingRecursiveComparison().ignoringFields("metadata").isEqualTo(dbModel);
   }
 }

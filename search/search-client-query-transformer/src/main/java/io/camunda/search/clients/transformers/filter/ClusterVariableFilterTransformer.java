@@ -140,6 +140,13 @@ public final class ClusterVariableFilterTransformer
   }
 
   private SearchQuery toMetadataValueQuery(final UntypedOperation operation) {
+    if (operation.operator() == Operator.EXISTS) {
+      // the value of a metadata entry is stored in exactly one of the two fields depending on
+      // its type, so presence must be checked across both
+      return or(
+          exists(ClusterVariableIndex.METADATA_VALUE),
+          exists(ClusterVariableIndex.METADATA_VALUE_NUMBER));
+    }
     final var numeric =
         operation.type() == ValueTypeEnum.LONG || operation.type() == ValueTypeEnum.DOUBLE;
     final var field =
@@ -147,7 +154,7 @@ public final class ClusterVariableFilterTransformer
     return switch (operation.operator()) {
       case EQUALS -> term(field, TypedValue.toTypedValue(operation.value()));
       case NOT_EQUALS -> not(term(field, TypedValue.toTypedValue(operation.value())));
-      case EXISTS -> exists(field);
+      case EXISTS -> throw new IllegalStateException("EXISTS is handled above");
       case IN -> objectTerms(field, operation.values());
       case NOT_IN -> not(objectTerms(field, operation.values()));
       case GREATER_THAN -> gt(field, operation.value());
