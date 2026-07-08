@@ -159,3 +159,28 @@ queries:
     decimals: 3
     unit: s
 
+  # TEMPORARY: quick-and-dirty counters from the load-tester's suspend/resume
+  # churn, added to verify track (c) of the process instance suspend/resume
+  # benchmark (#56552) actually exercised the feature. Remove once that
+  # investigation is done — not a permanent metric.
+  - name: suspend-resume-churn-suspended
+    description: Suspend/resume churn - suspends issued
+    query: |
+      sum(increase(suspend_resume_churn_suspended_total{namespace="$NAMESPACE"}[$DURATION_S]))
+    higher_is_better: true
+    format: integer
+
+  - name: suspend-resume-churn-resumed
+    description: Suspend/resume churn - resumes issued
+    query: |
+      sum(increase(suspend_resume_churn_resumed_total{namespace="$NAMESPACE"}[$DURATION_S]))
+    higher_is_better: true
+    format: integer
+
+  - name: suspend-resume-churn-errors
+    description: Suspend/resume churn - errors
+    query: |
+      sum(increase(suspend_resume_churn_errors_total{namespace="$NAMESPACE"}[$DURATION_S]))
+    higher_is_better: false
+    format: integer
+
