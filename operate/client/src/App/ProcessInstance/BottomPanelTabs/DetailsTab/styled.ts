@@ -33,4 +33,23 @@ const Callout = styled(BaseCallout)`
   min-width: 100%;
 `;
 
-export {EmptyMessageContainer, Container, Callout};
+const SectionContainer = styled.section`
+  display: flex;
+  flex-direction: column;
+  gap: var(--cds-spacing-03);
+`;
+
+const SectionHeading = styled.h5`
+  font-size: var(--cds-heading-compact-01-font-size);
+  font-weight: var(--cds-heading-compact-01-font-weight);
+  line-height: var(--cds-heading-compact-01-line-height);
+  margin: 0;
+`;
+
+export {
+  EmptyMessageContainer,
+  Container,
+  Callout,
+  SectionContainer,
+  SectionHeading,
+};
