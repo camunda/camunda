@@ -13,6 +13,7 @@ metadata:
     camunda.io/created-by: golden-test
     camunda.io/purpose: load-test
 
+    generate-golden-verification: scratch
     release: monitoring
 spec:
   selector:
