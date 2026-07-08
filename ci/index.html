@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.1">
 <title data-rh="true">CI &amp; Automation | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/ci/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="CI &amp; Automation | Camunda Platform"><meta data-rh="true" name="description" content="This page has information and answers questions around how the C8 monorepo CI and related tools like Renovate work. It should serve as a knowledge base including FAQ for Camunda and external contributors."><meta data-rh="true" property="og:description" content="This page has information and answers questions around how the C8 monorepo CI and related tools like Renovate work. It should serve as a knowledge base including FAQ for Camunda and external contributors."><link data-rh="true" rel="icon" href="/camunda/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/ci/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/ci/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/ci/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"CI","item":"https://camunda.github.io/camunda/ci"}]}</script><link rel="stylesheet" href="/camunda/assets/css/styles.44533d03.css">
-<script src="/camunda/assets/js/runtime~main.35ebcf8e.js" defer="defer"></script>
-<script src="/camunda/assets/js/main.dc792f3d.js" defer="defer"></script>
+<script src="/camunda/assets/js/runtime~main.370bc94f.js" defer="defer"></script>
+<script src="/camunda/assets/js/main.846ff301.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -167,6 +167,12 @@
 <ol>
 <li class="">retry them 3-5 times while staying in the timeout and report them via <a href="https://github.com/camunda/camunda/pull/26715" target="_blank" rel="noopener noreferrer" class="">detailed test statistics API</a> to <a href="#ci-health-metrics" class="">CI health</a></li>
 <li class="">disable them and create a ticket to fix them long-term</li>
+</ol>
+</li>
+<li class="">new quality gates should be added <strong>non-blocking first</strong>:<!-- -->
+<ol>
+<li class="">measure its false-positive rate against real traffic and refine it</li>
+<li class="">only make it blocking once the signal is trustworthy</li>
 </ol>
 </li>
 </ul>
@@ -572,6 +578,8 @@ wagoid/commitlint-github-action@</em>,<p></p></div></div></details>
 <p>Tests are called &quot;flaky&quot; when they are not consistenly passing, while the circumstances (source code, test code, execution environment) remain the same. Flaky tests are caused by some inherent unreliability in the system. This needs to be avoided by improving the source code or test code, to improve developer experience and allow smooth <a href="#renovate" class="">automated dependency updates</a>.</p>
 <p>GitHub Action workflows with Maven testing Java code should use the <a href="#flaky-test-extractor-maven-plugin" class="">flaky-test-extractor-maven-plugin</a> and report the resulting <a href="https://github.com/camunda/camunda/issues/26930" target="_blank" rel="noopener noreferrer" class="">detailed flaky test statistics</a> to our <a href="#ci-health-metrics" class="">CI health</a> database.</p>
 <p>Please use the <a href="#stress-testing" class="">CI stress testing functionality</a> to avoid introducing new flaky tests.</p>
+<p>When a flake cannot be reproduced locally, prefer adding diagnostics over guessing at a fix: capture
+container logs, thread dumps, or structured test output on failure so the next occurrence in CI is actionable.</p>
 <p>The <a class="" href="/camunda/flaky-test-gate/"><strong>Flaky Test Gate</strong></a> blocks PRs that introduce new flaky tests not already known on <code>main</code>/<code>stable/*</code>. Once a test is flagged on a PR the alert is <strong>sticky</strong> — it remains until either the method body is modified and 3 subsequent CI runs observe the test clean in the affected job, or the <code>ci:flaky-test-bypass</code> label is applied. A re-run that happens to pass does not silence the alert. See the <a class="" href="/camunda/flaky-test-gate/">Flaky Test Gate reference</a> for the full rules, comment templates, and operational concerns.</p>
 <p>Related resources:</p>
 <ul>
