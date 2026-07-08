@@ -516,27 +516,39 @@ test.describe('Process Instance History', () => {
 
     await test.step('Verify First Subprocess history reflects moved tokens accordingly', async () => {
       const nestedParentName = activityFirstSubprocess;
-      await operateProcessInstancePage.ensureElementExpandedInHistory(
-        nestedParentName,
-      );
-      const firstSubprocessLocator =
-        await operateProcessInstancePage.getNestedParentLocatorInHistory(
-          nestedParentName,
-        );
-      await expect(firstSubprocessLocator).toBeVisible();
+      // The applied token move is reprocessed asynchronously, so the first
+      // subprocess can still show as ACTIVE right after apply. Reload and
+      // re-check (re-expanding the node each time) until the terminal statuses
+      // appear.
+      await waitForAssertion({
+        assertion: async () => {
+          await operateProcessInstancePage.ensureElementExpandedInHistory(
+            nestedParentName,
+          );
+          const firstSubprocessLocator =
+            await operateProcessInstancePage.getNestedParentLocatorInHistory(
+              nestedParentName,
+            );
+          await expect(firstSubprocessLocator).toBeVisible();
 
-      await operateProcessInstancePage.verifyHistoryItemsStatus(
-        activityFirstSubprocess,
-        ['COMPLETED'],
-      );
-      await operateProcessInstancePage.verifyHistoryItemsStatus(
-        activityCollectMoney,
-        ['TERMINATED', 'TERMINATED'],
-      );
-      await operateProcessInstancePage.verifyHistoryItemsStatus(
-        eventEndFirstSubProcess,
-        ['COMPLETED', 'COMPLETED'],
-      );
+          await operateProcessInstancePage.verifyHistoryItemsStatus(
+            activityFirstSubprocess,
+            ['COMPLETED'],
+          );
+          await operateProcessInstancePage.verifyHistoryItemsStatus(
+            activityCollectMoney,
+            ['TERMINATED', 'TERMINATED'],
+          );
+          await operateProcessInstancePage.verifyHistoryItemsStatus(
+            eventEndFirstSubProcess,
+            ['COMPLETED', 'COMPLETED'],
+          );
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+        maxRetries: 5,
+      });
     });
 
     await test.step('Verify Second Subprocess history reflects moved tokens accordingly', async () => {
