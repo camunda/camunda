@@ -174,6 +174,7 @@ public class ProcessInstanceMigrationMigrateProcessor
             processInstanceRecord.getProcessDefinitionKey(), processInstanceRecord.getTenantId());
 
     requireNonNullTargetProcessDefinition(targetProcessDefinition, targetProcessDefinitionKey);
+    requireTargetProcessDefinitionNotDraining(targetProcessDefinition, targetProcessDefinitionKey);
     requireNoStartEventInstanceForTargetProcess(
         processInstance, targetProcessDefinition, messageState);
     requireReferredElementsExist(

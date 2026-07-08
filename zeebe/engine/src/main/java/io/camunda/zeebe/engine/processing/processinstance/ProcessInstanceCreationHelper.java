@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.processing.identity.authorization.request.Authori
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.processing.variable.VariableValidationException;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
+import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
 import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
@@ -54,6 +55,8 @@ public class ProcessInstanceCreationHelper {
       "Expected to find process definition with key '%d', but none found";
   private static final String ERROR_MESSAGE_NO_NONE_START_EVENT =
       "Expected to create instance of process with none start event, but there is no such event";
+  private static final String ERROR_MESSAGE_PROCESS_IS_DRAINING =
+      "Expected to create instance of process '%s', but it is being deleted";
   private static final String ERROR_MESSAGE_BUSINESS_ID_ALREADY_EXISTS =
       "Expected to create instance of process with business id '%s', but an instance with this business id already exists for process definition '%s'";
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
@@ -92,18 +95,36 @@ public class ProcessInstanceCreationHelper {
       final ProcessInstanceCreationRecord record) {
     final DirectBuffer bpmnProcessId = record.getBpmnProcessIdBuffer();
 
+    final Either<Rejection, DeployedProcess> process;
     if (bpmnProcessId.capacity() > 0) {
       if (record.getVersion() >= 0) {
-        return getProcess(bpmnProcessId, record.getVersion(), record.getTenantId());
+        process = getProcess(bpmnProcessId, record.getVersion(), record.getTenantId());
       } else {
-        return getProcess(bpmnProcessId, record.getTenantId());
+        process = getProcess(bpmnProcessId, record.getTenantId());
       }
     } else if (record.getProcessDefinitionKey() >= 0) {
-      return getProcess(record.getProcessDefinitionKey(), record.getTenantId());
+      process = getProcess(record.getProcessDefinitionKey(), record.getTenantId());
     } else {
       return Either.left(
           new Rejection(RejectionType.INVALID_ARGUMENT, ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED));
     }
+    return process.flatMap(this::rejectIfDraining);
+  }
+
+  /**
+   * A process definition that is being deleted is kept in state (as {@link
+   * PersistedProcessState#DRAINING}) so its already-running instances can finish, but no new
+   * instances may be created for it.
+   */
+  private Either<Rejection, DeployedProcess> rejectIfDraining(final DeployedProcess process) {
+    if (process.getState() == PersistedProcessState.DRAINING) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_STATE,
+              String.format(
+                  ERROR_MESSAGE_PROCESS_IS_DRAINING, bufferAsString(process.getBpmnProcessId()))));
+    }
+    return Either.right(process);
   }
 
   public ProcessInstanceRecord initProcessInstanceRecord(
