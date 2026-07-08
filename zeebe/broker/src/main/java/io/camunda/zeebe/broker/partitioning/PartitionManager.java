@@ -11,7 +11,6 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.cluster.PartitionId;
 import io.camunda.cluster.PhysicalTenantIds;
-import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
@@ -19,7 +18,6 @@ import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
@@ -80,8 +78,7 @@ public interface PartitionManager {
 
     // Combine global listeners with this tenant's error handler so each handler only ever
     // sees its own group's partitions, resolving the bare-int partition-id aliasing bug.
-    final List<PartitionListener> partitionListeners =
-        new ArrayList<>(brokerStartupContext.getPartitionListeners());
+    final var partitionListeners = new ArrayList<>(brokerStartupContext.getPartitionListeners());
     partitionListeners.add(jobStreamService.errorHandlerService());
 
     return new PartitionManagerImpl(
