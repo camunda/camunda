@@ -104,7 +104,7 @@ public class PingHubTask implements Runnable {
       String clusterId,
       String clusterName,
       String version,
-      List<String> profiles,
+      @JsonInclude(JsonInclude.Include.NON_EMPTY) List<String> profiles,
       Map<String, String> properties) {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record License(
