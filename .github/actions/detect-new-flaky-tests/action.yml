@@ -3,10 +3,11 @@ name: Detect New Flaky Tests
 
 description: >
   Compares flaky tests from the current PR run against known flaky tests from BigQuery
-  and a sticky per-PR state artifact. Once a test is flagged it stays flagged until
-  the method body is modified and 3 subsequent gate runs observe it clean, or until
-  the ci:flaky-test-bypass label is applied. Posts/updates a single PR comment that
-  renders the current state and writes the updated state JSON for upload.
+  and sticky per-PR state stored in the gate's PR comment. Once a test is flagged it
+  stays flagged until the method body is modified and 3 subsequent gate runs observe it
+  clean, or until the ci:flaky-test-bypass label is applied. Posts/updates a single PR
+  comment that renders the current state and embeds it as a hidden base64 marker for the
+  next run to read (durable across re-runs / force-push).
 
 inputs:
   pr-flaky-tests-data:
@@ -53,42 +54,43 @@ outputs:
 runs:
   using: composite
   steps:
-    # Discover the most recent non-expired state artifact for this PR across any
-    # prior CI run on this repo. The artifact name is per-PR-number, so this works
-    # across force-pushes and re-runs. Missing/failed download => fresh-state path.
-    - name: Download prior sticky-state artifact
-      id: download-state
+    # Sticky state lives in the gate's PR comment (a hidden base64 marker),
+    # read and written by the detector via the GitHub API.
+
+    # Method-fix detection uses `git log -L:<method>:<file>`, which needs git's
+    # language-aware funcname driver to locate Java methods. The repo has no
+    # `*.java diff=java` gitattributes, so without this the -L call fails with
+    # "no match" for every method, method_last_modified is never resolved, and the
+    # clean-run clearance counter can never advance (cleared_via_fix unreachable).
+    # Enable the built-in Java driver for this checkout only (.git/info/attributes
+    # is local and not committed), scoping the change to the gate rather than
+    # committing a repo-wide `.gitattributes` change.
+    #
+    # The whole clearance mechanism silently depends on this driver being active,
+    # so verify it took effect and fail loud otherwise. Without the check, a
+    # future change to the gate's checkout (a linked worktree or `path:` makes
+    # `.git` a file, not a dir) would skip the driver silently — and under
+    # blocking a genuinely-fixed test could then never clear, with no error to
+    # explain why.
+    - name: Enable Java funcname driver for method-fix detection
+      if: always()
       shell: bash
       env:
-        GH_TOKEN: ${{ github.token }}
-        REPO: ${{ github.repository }}
-        ARTIFACT_NAME: flaky-gate-state-pr-${{ inputs.pr-number }}
+        REPO_ROOT: ${{ inputs.repo-root != '' && inputs.repo-root || github.workspace }}
       run: |
-        set -euo pipefail
-        state_dir="${RUNNER_TEMP}/flaky-gate-state-in"
-        mkdir -p "$state_dir"
-        state_file="${state_dir}/state.json"
-        echo "state_file=${state_file}" >> "$GITHUB_OUTPUT"
-
-        if ! artifact_id=$(gh api -X GET "/repos/${REPO}/actions/artifacts" \
-            -f "name=${ARTIFACT_NAME}" -F per_page=100 \
-            --jq '.artifacts | map(select(.expired == false)) | sort_by(.created_at) | reverse | .[0].id // ""'); then
-          echo "Artifact list API call failed; continuing with no prior state."
-          exit 0
+        git_info="${REPO_ROOT}/.git/info"
+        mkdir -p "$git_info"
+        if ! grep -qxF '*.java diff=java' "${git_info}/attributes" 2>/dev/null; then
+          printf '*.java diff=java\n' >> "${git_info}/attributes"
+          echo "enabled Java funcname driver in ${git_info}/attributes"
         fi
-
-        if [[ -z "$artifact_id" ]]; then
-          echo "No prior sticky-state artifact found; first-run for this PR."
-          exit 0
+        # Verify git actually honors the driver (probe path need not exist).
+        if git -C "$REPO_ROOT" check-attr diff -- Probe.java | grep -q 'diff: java'; then
+          echo "Java funcname driver active"
+        else
+          echo "::error::Java funcname driver NOT active for *.java in ${REPO_ROOT} — flaky-gate method-fix detection would silently fail (a fixed test could never clear). Check the checkout topology / repo-root input."
+          exit 1
         fi
-        echo "Found prior artifact id: $artifact_id"
-
-        if ! gh api "/repos/${REPO}/actions/artifacts/${artifact_id}/zip" \
-                > "${RUNNER_TEMP}/prior-state.zip"; then
-          echo "Artifact download failed; continuing with no prior state."
-          exit 0
-        fi
-        unzip -q -o "${RUNNER_TEMP}/prior-state.zip" -d "$state_dir" || true
 
     - name: Detect new flaky tests
       id: detect
@@ -98,7 +100,7 @@ runs:
         KNOWN_FLAKY_TESTS_FILE: ${{ inputs.known-flaky-tests-file }}
         PR_NUMBER: ${{ inputs.pr-number }}
         BLOCKING: ${{ inputs.blocking }}
-        STATE_FILE_IN: ${{ steps.download-state.outputs.state_file }}
+        # STATE_FILE_OUT is a debug dump of the run's state — not uploaded, not read back.
         STATE_FILE_OUT: ${{ runner.temp }}/flaky-gate-state-out/state.json
         RAN_JOBS_JSON: ${{ inputs.ran-jobs-json }}
         BYPASS_LABEL_PRESENT: ${{ inputs.bypass-label-present }}
@@ -108,14 +110,5 @@ runs:
         REPO_ROOT: ${{ inputs.repo-root != '' && inputs.repo-root || github.workspace }}
         GITHUB_TOKEN: ${{ github.token }}
       run: python3 ${{ github.action_path }}/detect_new_flaky_tests.py
-
-    # Persist updated state for the next run. Skipped when the detector wrote
-    # nothing (no flakes + no prior state => no-op, no file to upload).
-    - name: Upload sticky-state artifact
-      if: always() && hashFiles(format('{0}/flaky-gate-state-out/state.json', runner.temp)) != ''
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-      with:
-        name: flaky-gate-state-pr-${{ inputs.pr-number }}
-        path: ${{ runner.temp }}/flaky-gate-state-out/state.json
-        retention-days: 30
-        overwrite: true
+    # Updated state is persisted by the detector into the PR comment's hidden
+    # marker (durable across re-runs / force-push).
