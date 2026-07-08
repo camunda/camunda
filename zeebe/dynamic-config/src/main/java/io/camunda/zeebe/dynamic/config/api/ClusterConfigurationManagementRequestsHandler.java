@@ -33,6 +33,7 @@ import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.Co
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.util.ClusterConfigurationRequestValidators.RequestValidatorSupplier;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Either;
@@ -49,14 +50,17 @@ public final class ClusterConfigurationManagementRequestsHandler
   private final ConfigurationChangeCoordinator coordinator;
   private final ConcurrencyControl executor;
   private final MemberId localMemberId;
+  private final RequestValidatorSupplier validatorSupplier;
 
   public ClusterConfigurationManagementRequestsHandler(
       final ConfigurationChangeCoordinator coordinator,
       final MemberId localMemberId,
-      final ConcurrencyControl executor) {
+      final ConcurrencyControl executor,
+      final RequestValidatorSupplier validatorSupplier) {
     this.coordinator = coordinator;
     this.executor = executor;
     this.localMemberId = localMemberId;
+    this.validatorSupplier = validatorSupplier;
   }
 
   @Override
@@ -240,7 +244,16 @@ public final class ClusterConfigurationManagementRequestsHandler
 
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> restore(final RestoreRequest request) {
-    return handleRequest(request.dryRun(), new RestoreRequestTransformer(request));
+    return handleRequest(request, new RestoreRequestTransformer(request));
+  }
+
+  // Validate the request before propagating to the transformer
+  private ActorFuture<ClusterConfigurationChangeResponse> handleRequest(
+      final ClusterConfigurationManagementRequest request,
+      final ConfigurationChangeRequest transformer) {
+    return validatorSupplier
+        .validate(request)
+        .andThen(ignored -> handleRequest(request.dryRun(), transformer), executor);
   }
 
   private ActorFuture<ClusterConfigurationChangeResponse> handleRequest(

@@ -22,6 +22,7 @@ import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.restore.RestoreBackupValidatorImpl;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -143,7 +144,10 @@ public final class RecoveryPartitionManager
     final var startFutures = new ArrayList<ActorFuture<RecoveryPartition>>();
     for (final var partitionMetadata : localPartitions) {
       LOG.info("Recovering partition {}", partitionMetadata.id());
-      final var partition = RecoveryPartition.recovering(startupContext(partitionMetadata));
+      final var context = startupContext(partitionMetadata);
+      final var partition = RecoveryPartition.recovering(context);
+      clusterConfigurationService.registerRequestValidator(
+          new RestoreBackupValidatorImpl(context.getBackupStore()));
       starting.add(partition);
       startFutures.add(partition.start());
     }

@@ -67,6 +67,7 @@
     <module>restore</module>
     <module>dynamic-config</module>
     <module>dynamic-node-id-provider</module>
+    <module>restore-standalone</module>
   </modules>
 
   <profiles>

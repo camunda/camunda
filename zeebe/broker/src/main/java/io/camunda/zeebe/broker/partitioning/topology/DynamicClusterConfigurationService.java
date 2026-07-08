@@ -12,6 +12,8 @@ import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestValidator;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
@@ -139,6 +141,17 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
     if (clusterConfigurationManagerService != null) {
       clusterConfigurationManagerService.removeTopologyChangedListener();
     }
+  }
+
+  @Override
+  public void registerRequestValidator(final ClusterConfigurationRequestValidator<?> validator) {
+    clusterConfigurationManagerService.registerRequestValidator(validator);
+  }
+
+  @Override
+  public void removeRequestValidator(
+      final Class<? extends ClusterConfigurationManagementRequest> validator) {
+    clusterConfigurationManagerService.removeRequestValidator(validator);
   }
 
   @Override
