@@ -75,7 +75,7 @@ jobs:
   verify-compose:
     name: Verify or remediate Docker Compose
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     permissions:
       contents: read
     steps:
@@ -251,15 +251,73 @@ jobs:
             --field "componentVersions=${component_versions}" \
             --field "reason=C8Run RC ${CAMUNDA_VERSION} preflight"
 
+          # Resolve the dispatched run: its run-name embeds the reason, which is unique per version.
+          # The run id names the bump PR branch (force-compose-bump/<minor>-<run_id>), letting the
+          # poll below track the PR itself instead of only the release body.
+          run_id=""
+          for _ in $(seq 1 12); do
+            run_id="$(gh run list --repo "${DISTRIBUTIONS_REPO}" --workflow docker-compose-force-bump.yaml \
+              --limit 10 --json databaseId,displayTitle \
+              --jq "[.[] | select(.displayTitle | contains(\"C8Run RC ${CAMUNDA_VERSION} preflight\"))][0].databaseId // empty")"
+            [ -n "${run_id}" ] && break
+            sleep 10
+          done
+          if [ -n "${run_id}" ]; then
+            echo "Force-bump run: https://github.com/${DISTRIBUTIONS_REPO}/actions/runs/${run_id}"
+          else
+            echo "::warning::Could not resolve the dispatched force-bump run; falling back to polling the release body only."
+          fi
+          pr_branch="force-compose-bump/${COMPOSE_TAG}-${run_id}"
+
           # Bounded wait for the autorelease to rebuild the rolling release at target across ALL checked
           # components. Poll the release body each round (no zip download); tolerate transient 404.
+          # Track the bump PR alongside: the force-bump's own merge can lose the race against the
+          # branch ruleset's required checks, so arm auto-merge on the PR as soon as it appears and
+          # fail fast only when the PR is closed unmerged. The PR, not the force-bump run's
+          # conclusion, is the source of truth for whether the bump is still in flight.
           echo "Waiting for docker-compose-${COMPOSE_TAG} to reach the target versions..."
+          pr_number=""; pr_url=""; automerge_armed=""
           attempt=1
-          max_attempts=40   # 40 x 30s = 20 min, within the job's 30 min timeout
+          max_attempts=52   # 52 x 30s = 26 min, within the job's 35 min timeout
           until ! compose_behind; do
             if [ "${attempt}" -ge "${max_attempts}" ]; then
-              echo "::error::Timed out after ${attempt} polls waiting for docker-compose-${COMPOSE_TAG} to reach target (still behind:${BEHIND_DETAIL}). The force-bump may have failed — check its run in ${DISTRIBUTIONS_REPO}."
+              echo "::error::Timed out after ${attempt} polls waiting for docker-compose-${COMPOSE_TAG} to reach target (still behind:${BEHIND_DETAIL}). Bump PR: ${pr_url:-not found}."
               exit 1
+            fi
+            if [ -n "${run_id}" ]; then
+              if [ -z "${pr_number}" ]; then
+                pr_json="$(gh pr list --repo "${DISTRIBUTIONS_REPO}" --head "${pr_branch}" --state all \
+                  --json number,url --jq '.[0] // empty' || true)"
+                if [ -n "${pr_json}" ]; then
+                  pr_number="$(jq -r '.number' <<<"${pr_json}")"
+                  pr_url="$(jq -r '.url' <<<"${pr_json}")"
+                  echo "Bump PR: ${pr_url}"
+                fi
+              fi
+              if [ -n "${pr_number}" ]; then
+                pr_state="$(gh pr view "${pr_number}" --repo "${DISTRIBUTIONS_REPO}" --json state --jq .state || true)"
+                case "${pr_state}" in
+                  CLOSED)
+                    echo "::error::Bump PR ${pr_url} was closed without merging; docker-compose-${COMPOSE_TAG} cannot reach target (still behind:${BEHIND_DETAIL}). Force-bump run: https://github.com/${DISTRIBUTIONS_REPO}/actions/runs/${run_id}"
+                    exit 1
+                    ;;
+                  OPEN)
+                    if [ -z "${automerge_armed}" ]; then
+                      # Same remediation an on-call would do by hand: the distro app already merges
+                      # these PRs, so arming auto-merge needs no extra permissions.
+                      if gh pr merge "${pr_number}" --repo "${DISTRIBUTIONS_REPO}" --auto --squash; then
+                        automerge_armed=1
+                        echo "Armed auto-merge on ${pr_url}; it merges as soon as required checks pass."
+                      else
+                        echo "::warning::Could not arm auto-merge on ${pr_url}; it may need a manual merge."
+                      fi
+                    fi
+                    if [ $((attempt % 10)) -eq 0 ]; then
+                      echo "::warning::Bump PR ${pr_url} is still open after ${attempt} polls; check its required checks."
+                    fi
+                    ;;
+                esac
+              fi
             fi
             echo "  attempt ${attempt}/${max_attempts}: still behind:${BEHIND_DETAIL}; waiting 30s..."
             attempt=$((attempt + 1))
