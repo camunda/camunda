@@ -60,6 +60,34 @@ public final class StreamProcessor<R> implements Task<R>, AutoCloseable {
     stages.forEach(Stage::checkpoint);
   }
 
+  /**
+   * Freezes every stage's checkpoint delta into one cut, provided all stages support it — otherwise
+   * {@code null}, and the runtime falls back to the synchronous {@link #checkpoint()}. The runtime
+   * persists the cut inside its shared transaction (this processor defers durability), so {@link
+   * CommitCut#persist()} just drains every stage's frozen delta.
+   */
+  @Override
+  public CommitCut freezeCut(final long offset) {
+    for (final Stage<R> stage : stages) {
+      if (!stage.supportsFrozenCheckpoint()) {
+        return null;
+      }
+    }
+    flush(); // converge buffered output first — the freeze captures its serialized form
+    stages.forEach(Stage::freezeCheckpoint);
+    return new CommitCut() {
+      @Override
+      public void persist() {
+        stages.forEach(Stage::persistCheckpoint);
+      }
+
+      @Override
+      public void complete(final boolean success) {
+        stages.forEach(stage -> stage.completeCheckpoint(success));
+      }
+    };
+  }
+
   /** Event-time progress: advance finalization/retention on every stage. */
   @Override
   public void advanceStreamTime(final long streamTimeMs) {

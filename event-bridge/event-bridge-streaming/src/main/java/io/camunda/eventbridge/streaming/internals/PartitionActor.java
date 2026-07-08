@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.streaming.internals;
 
+import io.camunda.eventbridge.streaming.CommitCut;
 import io.camunda.eventbridge.streaming.RecordExceptionHandler;
 import io.camunda.eventbridge.streaming.Task;
 import io.camunda.zeebe.scheduler.Actor;
@@ -35,12 +36,18 @@ import org.slf4j.LoggerFactory;
  * partition's {@link Task} and working state are touched by nothing else. This replaces the
  * lease/lock model with the framework's own guarantee.
  *
- * <p><b>Async commit.</b> The commit is the only step that blocks on a DB sink, so it is the only
- * thing offloaded: the blocking {@link PartitionCommitter#commit} runs on an IO executor while the
- * actor is <em>suspended</em> ({@code committing} is set, so no folding/punctuation/second commit
- * runs), giving the IO thread exclusive access to the task. The source offset advances only inside
- * that commit, after the sink write is durable — produce-before-commit intact, now off the
- * processing thread. When it completes, {@link #onCommitted} resumes folding on the actor thread.
+ * <p><b>Async commit, two modes.</b> The commit is the only step that blocks on a DB sink, so it
+ * runs on an IO executor either way; the modes differ in what the actor does meanwhile. <em>Frozen
+ * cut</em> (a task that supports {@link Task#freezeCut}): the actor freezes the cut at the barrier
+ * — pointer swaps detaching the delta from the live state — and <b>keeps folding</b> while the IO
+ * thread persists the frozen data it now exclusively owns ({@code flushing} gates only a second
+ * freeze; at most one cut is in flight). Folding stalls only if the task reports {@link
+ * Task#needsCheckpoint()} (its budget is exhausted by pinned dirty + frozen entries) while the
+ * flush is still running — the natural backpressure valve. <em>Legacy</em> (no frozen-cut support):
+ * the actor is <em>suspended</em> ({@code committing} is set, so no folding/punctuation/second
+ * commit runs), giving the IO thread exclusive access to the live task. In both modes the source
+ * offset advances only after the durable write — the produce-before-commit cut is at the freeze
+ * barrier's offset, and completion (retire or merge back) runs back on the actor thread.
  *
  * @param <R> the decoded record type
  */
@@ -69,6 +76,9 @@ public final class PartitionActor<R> {
   private ActorCondition workAvailable;
   private ActorCondition stopSignal;
   private boolean committing;
+  // A frozen cut is being persisted on the IO thread. Unlike committing, folding continues; the
+  // flag only enforces single-flight (no second freeze) and the budget-exhausted stall.
+  private boolean flushing;
   private boolean stopRequested;
   private boolean finalized;
 
@@ -209,8 +219,17 @@ public final class PartitionActor<R> {
         // unprocessed tail stays in the batch and resumes from batchNext
       }
       if (partition.task().needsCheckpoint()) {
+        if (flushing) {
+          // Budget exhausted (dirty + frozen entries are pinned) while a cut is still
+          // persisting: stall — the batch tail stays and onCutPersisted resumes it.
+          return;
+        }
         beginCommit();
-        return; // resumes via onCommitted, continuing this batch from batchNext
+        if (committing) {
+          return; // legacy synchronous cut suspended the fold; resumes via onCommitted
+        }
+        // Frozen cut: keep folding — the stall above kicks in only if the budget is still
+        // exhausted while the flush runs.
       }
     }
     maybeCommit();
@@ -281,7 +300,7 @@ public final class PartitionActor<R> {
   }
 
   private void maybeCommit() {
-    if (committing || finalized || !partition.hasPending()) {
+    if (committing || flushing || finalized || !partition.hasPending()) {
       return;
     }
     if (System.nanoTime() - partition.lastCommitNanos() >= commitIntervalNanos) {
@@ -289,13 +308,40 @@ public final class PartitionActor<R> {
     }
   }
 
-  /** Offloads the blocking commit to the IO executor; resumes on completion. Actor thread only. */
+  /**
+   * Starts a commit: freeze a cut at the current barrier and keep folding while the IO thread
+   * persists it, or — for a task without frozen-cut support — suspend for a legacy synchronous
+   * commit. Actor thread only.
+   */
   private void beginCommit() {
-    if (committing || !partition.hasPending()) {
+    if (committing || flushing || !partition.hasPending()) {
       return;
     }
-    committing = true;
     final long offset = partition.pending();
+    // The barrier: the freeze converges buffered output and detaches the cut — cheap actor-thread
+    // work; the durable write is what gets offloaded.
+    final CommitCut cut = partition.task().freezeCut(offset);
+    if (cut == null) {
+      beginLegacyCommit(offset);
+      return;
+    }
+    flushing = true;
+    final CompletableActorFuture<Void> persisted = new CompletableActorFuture<>();
+    sinkExecutor.execute(
+        () -> {
+          try {
+            committer.persistCut(partition, offset, cut);
+            persisted.complete(null);
+          } catch (final Throwable t) {
+            persisted.completeExceptionally(t);
+          }
+        });
+    control.runOnCompletion(persisted, (ignored, error) -> onCutPersisted(offset, cut, error));
+  }
+
+  /** Offloads the blocking commit to the IO executor; resumes on completion. Actor thread only. */
+  private void beginLegacyCommit(final long offset) {
+    committing = true;
     final CompletableActorFuture<Void> committed = new CompletableActorFuture<>();
     sinkExecutor.execute(
         () -> {
@@ -307,6 +353,35 @@ public final class PartitionActor<R> {
           }
         });
     control.runOnCompletion(committed, (ignored, error) -> onCommitted(offset, error));
+  }
+
+  /**
+   * A frozen cut finished persisting: retire it (or merge it back for retry), update the commit
+   * bookkeeping, and resume anything the flush stalled. Actor thread only.
+   */
+  private void onCutPersisted(final long offset, final CommitCut cut, final Throwable error) {
+    flushing = false;
+    cut.complete(error == null);
+    if (error != null) {
+      // Merged back: the next freeze re-includes this cut's delta. The commit clock was not
+      // reset, so maybeCommit retries on the next tick.
+      LOG.warn(
+          "Persisting the cut of partition {} at offset {} failed; will retry",
+          id(),
+          offset,
+          error);
+    } else {
+      if (partition.pending() == offset) {
+        partition.clearPending(); // nothing was folded past the barrier while persisting
+      }
+      partition.markCommitted(System.nanoTime());
+    }
+    if (stopRequested) {
+      finalizeStop();
+      return;
+    }
+    // Resume a budget-stalled batch tail (if any), then anything queued during the flush.
+    control.submit(this::onWork);
   }
 
   private void onCommitted(final long offset, final Throwable error) {
@@ -333,8 +408,8 @@ public final class PartitionActor<R> {
 
   /** Final synchronous commit + close, once no commit is in flight. Actor thread only. */
   private void finalizeStop() {
-    if (finalized || committing) {
-      return; // an in-flight commit finishes first; onCommitted re-enters finalizeStop
+    if (finalized || committing || flushing) {
+      return; // an in-flight commit/cut finishes first; its completion re-enters finalizeStop
     }
     finalized = true;
     if (partition.hasPending()) {

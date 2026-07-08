@@ -8,6 +8,7 @@
 package io.camunda.eventbridge.streaming.internals;
 
 import io.camunda.eventbridge.client.Consumer;
+import io.camunda.eventbridge.streaming.CommitCut;
 import io.camunda.eventbridge.streaming.OffsetStore;
 import io.camunda.eventbridge.streaming.Task;
 import io.camunda.eventbridge.streaming.TransactionRunner;
@@ -59,6 +60,35 @@ public final class PartitionCommitter<R> {
    * suspended (single-writer preserved by that suspension); the caller clears the pending offset
    * and resets the commit clock on the actor thread once this completes.
    */
+  /**
+   * Makes a frozen cut durable: publish its produced output, persist its state delta and {@code
+   * offset}, then advance the source offset. Runs on an IO thread while the partition's actor
+   * <em>keeps folding</em> — the cut is detached from the live working state at the freeze barrier,
+   * so the IO thread owns it exclusively and no suspension is needed. The completion (retire or
+   * merge back) happens afterwards on the actor thread, not here.
+   */
+  public void persistCut(final Partition<R> partition, final long offset, final CommitCut cut) {
+    if (partition.task().ownsDurability()) {
+      // Self-contained shard: the cut publishes and persists through the task's own sinks and
+      // transaction, fully in parallel with other partitions' cuts.
+      cut.publish();
+      cut.persist();
+    } else {
+      // Runtime-managed durability: shared resources are serialized, and the offset lands in the
+      // same transaction as the frozen state — one atomic cut at the frozen barrier's offset.
+      synchronized (sharedDurability) {
+        preCommitFlushes.forEach(Runnable::run);
+        cut.publish();
+        transactionRunner.runInTransaction(
+            () -> {
+              offsets.store(partition.id(), offset);
+              cut.persist();
+            });
+      }
+    }
+    consumer.commitOffset(sourceTopic, partition.id(), offset).join();
+  }
+
   public void commit(final Partition<R> partition, final long offset) {
     final Task<R> task = partition.task();
     task.flush();

@@ -65,6 +65,23 @@ public interface Task<R> {
    */
   default void commit(final long offset) {}
 
+  /**
+   * Freezes this partition's commit cut at {@code offset} so it can be made durable in the
+   * background while processing continues: capture the state delta, produced output and any
+   * admission snapshots as immutable data detached from the live working state, and return the
+   * {@link CommitCut} the runtime drives through persist and completion. Called on the processing
+   * thread at the commit barrier, with {@code offset} the highest processed offset — the frozen
+   * data must describe exactly the records up to it. Converging buffered output (typically {@link
+   * #flush()}) is part of the freeze, not the caller's job.
+   *
+   * <p>Returning {@code null} (the default) means the task does not support frozen cuts; the
+   * runtime falls back to suspending the partition for a synchronous {@link #commit(long)} / {@link
+   * #checkpoint()}. The runtime freezes at most one cut at a time per partition.
+   */
+  default CommitCut freezeCut(final long offset) {
+    return null;
+  }
+
   /** Emit buffered/produced output so latency stays bounded (called before {@link #checkpoint}). */
   default void flush() {}
 
