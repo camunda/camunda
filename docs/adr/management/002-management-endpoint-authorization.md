@@ -24,9 +24,9 @@ Three management surfaces exist or are being added:
 1. **Actuator endpoints** (management server, port 9600). Today they have
    *no* authentication at all: Spring Security auto-configuration is
    explicitly excluded for the management context
-   (`dist/src/main/resources/application.properties:81-83`), and
+   ([`dist/src/main/resources/application.properties:81-83`](https://github.com/camunda/camunda/blob/ddd2c002bdb38d8963c5eaa5162bbcad8b0d57b8/dist/src/main/resources/application.properties#L81-L83)), and
    `/actuator/**` is in the unprotected path list
-   (`authentication/.../spi/SecurityPathAdapter.java:43`). Access control
+   ([`authentication/.../spi/SecurityPathAdapter.java:43`](https://github.com/camunda/camunda/blob/7f03a1cbce653a56c7734c01a86f8dc8e9dd9bbe/authentication/src/main/java/io/camunda/authentication/config/spi/SecurityPathAdapter.java#L43)). Access control
    is purely network-level reachability of port 9600.
 2. **Per-tenant management REST endpoints** (new in 8.10: backup, exporting
    control — see ADR 003) under `/physical-tenants/{id}/v2/...` on the

@@ -28,26 +28,26 @@ assumption behind today's health surface in three places.
 
 - **Broker readiness** (`brokerReady`, included in both the readiness and
   liveness groups by
-  `dist/src/main/java/io/camunda/application/initializers/HealthConfigurationInitializer.java:120-175`)
+  [`dist/src/main/java/io/camunda/application/initializers/HealthConfigurationInitializer.java:120-175`](https://github.com/camunda/camunda/blob/bea0668e7ee772d6fd226cee09854fd2b228e879/dist/src/main/java/io/camunda/application/initializers/HealthConfigurationInitializer.java#L120-L175))
   is PT-aware: `BrokerHealthCheckService.isBrokerReady()` requires every
   expected physical tenant to have registered its partitions and every local
   bootstrap partition across all tenants to be installed
-  (`zeebe/broker/.../monitoring/BrokerHealthCheckService.java:146-156`).
+  ([`zeebe/broker/.../monitoring/BrokerHealthCheckService.java:146-156`](https://github.com/camunda/camunda/blob/50a6796b8004acfdeca4386a20d304d758e0824c/zeebe/broker/src/main/java/io/camunda/zeebe/broker/system/monitoring/BrokerHealthCheckService.java#L146-L156)).
   Partition install is a Raft-internal condition and does not depend on
   secondary storage.
 - **`GET /v2/status`** is already resolved per PT
-  (`zeebe/gateway-rest/.../controller/StatusController.java:32-35`): it
+  ([`zeebe/gateway-rest/.../controller/StatusController.java:32-35`](https://github.com/camunda/camunda/blob/8d0dc26f359973e6f92060c6f0ce806508fc2625/zeebe/gateway-rest/src/main/java/io/camunda/zeebe/gateway/rest/controller/StatusController.java#L32-L35)): it
   returns 204 when at least one partition of the resolved tenant's group has
   a healthy leader, else 503
-  (`service/.../TopologyServices.java:60-77`). It is deliberately
+  ([`service/.../TopologyServices.java:60-77`](https://github.com/camunda/camunda/blob/e656a524b23d05b19516cd7c1bae4bb0ad7f86b2/service/src/main/java/io/camunda/service/TopologyServices.java#L60-L77)). It is deliberately
   unauthenticated (`security: []` in
-  `zeebe/gateway-protocol/src/main/proto/v2/cluster.yaml:36-39`). The
+  [`zeebe/gateway-protocol/src/main/proto/v2/cluster.yaml:36-39`](https://github.com/camunda/camunda/blob/5940ebb2c9b86d6eb1b0a5c86e83294cbdaa4be5/zeebe/gateway-protocol/src/main/proto/v2/cluster.yaml#L36-L39)). The
   unprefixed path resolves to the default tenant; the
   `/physical-tenants/{physicalTenantId}/v2/status` form reaches any tenant.
 - **`GET /v2/topology`** (REST) and the gRPC `Topology` RPC are per-PT and
   include per-partition, per-broker role and health for the resolved group
-  (`TopologyController.java:32-36`, `EndpointManager.java:365-409`,
-  `BrokerTopologyManagerImpl.java:65-69`).
+  ([`TopologyController.java:32-36`](https://github.com/camunda/camunda/blob/6437d72d62a87dd4439c7e2e05c670c8be06ebae/zeebe/gateway-rest/src/main/java/io/camunda/zeebe/gateway/rest/controller/TopologyController.java#L32-L36), [`EndpointManager.java:365-409`](https://github.com/camunda/camunda/blob/756898902e228c0f30cb38adefe69bcbc5e962af/zeebe/gateway-grpc/src/main/java/io/camunda/zeebe/gateway/EndpointManager.java#L365-L409),
+  [`BrokerTopologyManagerImpl.java:65-69`](https://github.com/camunda/camunda/blob/50a6796b8004acfdeca4386a20d304d758e0824c/zeebe/broker-client/src/main/java/io/camunda/zeebe/broker/client/impl/BrokerTopologyManagerImpl.java#L65-L69)).
 
 ### What is not
 
@@ -55,21 +55,21 @@ assumption behind today's health surface in three places.
   `PartitionLeaderAwarenessHealthIndicator` and their delayed liveness
   variants) read the no-arg `BrokerTopologyManager::getTopology`, which is
   pinned to the default group
-  (`dist/.../GatewayModuleConfiguration.java:162-166`,
-  `zeebe/broker-client/.../BrokerTopologyManager.java:28-30`). Gateway
+  ([`dist/.../GatewayModuleConfiguration.java:162-166`](https://github.com/camunda/camunda/blob/756898902e228c0f30cb38adefe69bcbc5e962af/dist/src/main/java/io/camunda/zeebe/gateway/GatewayModuleConfiguration.java#L162-L166),
+  [`zeebe/broker-client/.../BrokerTopologyManager.java:28-30`](https://github.com/camunda/camunda/blob/756898902e228c0f30cb38adefe69bcbc5e962af/zeebe/broker-client/src/main/java/io/camunda/zeebe/broker/client/api/BrokerTopologyManager.java#L28-L30)). Gateway
   probes therefore reflect only the default tenant.
 - **Schema initialization is all-or-nothing.** For ES/OS,
   `SearchEngineSchemaInitializer.afterPropertiesSet()` initializes every
   tenant's schema and — whenever an HTTP gateway is enabled — does so
   synchronously, so an unreachable secondary storage of *one* tenant aborts
   the entire Spring context
-  (`dist/.../search/SearchEngineSchemaInitializer.java:56-106`,
-  `SearchEngineDatabaseConfiguration.java:67-83`). For RDBMS,
+  ([`dist/.../search/SearchEngineSchemaInitializer.java:56-106`](https://github.com/camunda/camunda/blob/8d0720b3cc34bfe61394cbcada9fb38754949066/dist/src/main/java/io/camunda/application/commons/search/SearchEngineSchemaInitializer.java#L56-L106),
+  [`SearchEngineDatabaseConfiguration.java:67-83`](https://github.com/camunda/camunda/blob/8d0720b3cc34bfe61394cbcada9fb38754949066/dist/src/main/java/io/camunda/application/commons/search/SearchEngineDatabaseConfiguration.java#L67-L83)). For RDBMS,
   `DefaultRdbmsSchemaManagerRegistry.afterPropertiesSet()` is deliberately
-  fail-fast per tenant (`db/rdbms/.../DefaultRdbmsSchemaManagerRegistry.java:60-68`);
+  fail-fast per tenant ([`db/rdbms/.../DefaultRdbmsSchemaManagerRegistry.java:60-68`](https://github.com/camunda/camunda/blob/21856d38c1cf7d7313214322bc55c6a4dfaf81b3/db/rdbms/src/main/java/io/camunda/db/rdbms/DefaultRdbmsSchemaManagerRegistry.java#L60-L68));
   camunda/camunda#54299 tracks isolating this.
 - **`schemaReadinessCheck` aggregates over all tenants**
-  (`SchemaReadinessCheck.java:23-26` delegates to
+  ([`SchemaReadinessCheck.java:23-26`](https://github.com/camunda/camunda/blob/bea0668e7ee772d6fd226cee09854fd2b228e879/dist/src/main/java/io/camunda/application/commons/search/SchemaReadinessCheck.java#L23-L26) delegates to
   `SearchEngineSchemaInitializer.isInitialized()`, which is "all tenants
   initialized"), so once startup survives, one tenant's uninitialized schema
   still marks the whole node not-ready.
@@ -105,7 +105,7 @@ node.**
 
 - **Liveness**: unchanged, node-scoped, never depends on secondary storage
   (this rule already exists —
-  `HealthConfigurationInitializer.java:108-119`).
+  [`HealthConfigurationInitializer.java:108-119`](https://github.com/camunda/camunda/blob/bea0668e7ee772d6fd226cee09854fd2b228e879/dist/src/main/java/io/camunda/application/initializers/HealthConfigurationInitializer.java#L108-L119)).
 - **Readiness**: remains node-scoped. The Raft-level condition (all expected
   tenants registered, all local partitions installed) is kept: it has no
   external dependency and guards rolling-restart safety. The

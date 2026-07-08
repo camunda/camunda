@@ -38,28 +38,28 @@ Relates to: physical tenants epic (camunda/camunda#50509), kickoff doc
 ### Current-behavior facts the table builds on
 
 - All custom actuators live in `dist/.../shared/management/` (Zeebe) and
-  `dist/.../webapps/controllers/BackupController.java` (history backup);
+  [`dist/.../webapps/controllers/BackupController.java`](https://github.com/camunda/camunda/blob/7a4156548b565eb63e4298f90688cdce6afcf7a5/dist/src/main/java/io/camunda/webapps/controllers/BackupController.java) (history backup);
   none is PT-aware today.
 - Runtime backup fans out one broker request per partition
-  (`BackupRequestHandler.java:121-175`) using the **no-arg** topology,
+  ([`BackupRequestHandler.java:121-175`](https://github.com/camunda/camunda/blob/00fbaf49f869a9a40963f3e0d78fdbb4d5f56e50/zeebe/backup/src/main/java/io/camunda/zeebe/backup/client/api/BackupRequestHandler.java#L121-L175)) using the **no-arg** topology,
   which post-M1 resolves to the *default* group only
-  (`BrokerTopologyManager.java:28-30`) — on a multi-PT cluster, today's
+  ([`BrokerTopologyManager.java:28-30`](https://github.com/camunda/camunda/blob/756898902e228c0f30cb38adefe69bcbc5e962af/zeebe/broker-client/src/main/java/io/camunda/zeebe/broker/client/api/BrokerTopologyManager.java#L28-L30)) — on a multi-PT cluster, today's
   `/actuator/backupRuntime` would silently back up only the default
   tenant. The same applies to exporting control
-  (`ExportingControlService.java:53-96`).
+  ([`ExportingControlService.java:53-96`](https://github.com/camunda/camunda/blob/00fbaf49f869a9a40963f3e0d78fdbb4d5f56e50/zeebe/gateway-grpc/src/main/java/io/camunda/zeebe/gateway/admin/exporting/ExportingControlService.java#L53-L96)).
 - Exporting pause/resume is already applied per partition, to all replicas
   (`ExporterDirector` is a per-partition actor;
-  `ExporterDirector.java:180,202`) — per-PT scoping means restricting the
+  [`ExporterDirector.java:180,202`](https://github.com/camunda/camunda/blob/50a6796b8004acfdeca4386a20d304d758e0824c/zeebe/broker/src/main/java/io/camunda/zeebe/broker/exporter/stream/ExporterDirector.java#L180)) — per-PT scoping means restricting the
   partition set to one group, not introducing new broker state.
 - Taking a runtime backup does **not** pause exporting; they are
   independent operations coordinated by the operator/backup procedure.
 - History backup uses singleton `BackupRepository`/`BackupRepositoryProps`
   beans and tenant-less snapshot names
   (`camunda_webapps_{backupId}_{version}_part_{i}_of_{n}`,
-  `WebappsSnapshotNameProvider.java:16-24`); the DL task makes these
+  [`WebappsSnapshotNameProvider.java:16-24`](https://github.com/camunda/camunda/blob/1f5ccf1b8828a5adaa5e3e1ff9db3ed625d1a026/webapps-backup/src/main/java/io/camunda/webapps/backup/repository/WebappsSnapshotNameProvider.java#L16-L24)); the DL task makes these
   per-tenant with tenant-prefixed snapshot names.
 - Purge's history deletion is hard-coded to the default tenant
-  (`ClusterChangeExecutorImpl.java:129`).
+  ([`ClusterChangeExecutorImpl.java:129`](https://github.com/camunda/camunda/blob/50a6796b8004acfdeca4386a20d304d758e0824c/zeebe/broker/src/main/java/io/camunda/zeebe/broker/partitioning/topology/ClusterChangeExecutorImpl.java#L129)).
 
 ## Decision
 
@@ -146,12 +146,12 @@ decision), not an atomic snapshot:
 
 |                                                Actuator                                                |                                               No `physicalTenant` param                                                |                       With `?physicalTenant={id}`                        |                                                                                                                                                                                     Notes                                                                                                                                                                                     |
 |--------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `backupRuntime` (`BackupEndpoint`)                                                                     | All tenants (D2 contract) — **behavior fix**: today it silently covers only the default group                          | That tenant only                                                         | Response entries gain an optional `physicalTenantId` field (additive to `backup-management-api.yaml`).                                                                                                                                                                                                                                                                        |
+| `backupRuntime` (`BackupEndpoint`)                                                                     | All tenants (D2 contract) — **behavior fix**: today it silently covers only the default group                          | That tenant only                                                         | Response entries gain an optional `physicalTenantId` field (additive to [`backup-management-api.yaml`](https://github.com/camunda/camunda/blob/0eca734b4a60816f7b4b8a651cb45110026e7fd1/dist/src/main/resources/api/backup-management-api.yaml)).                                                                                                                             |
 | `backupHistory` (`BackupController`)                                                                   | All tenants                                                                                                            | That tenant only                                                         | Per-tenant repositories from the DL task; fan-out owned here.                                                                                                                                                                                                                                                                                                                 |
 | `exporting` pause/resume                                                                               | All tenants (matches today's whole-cluster meaning)                                                                    | That tenant's partitions                                                 | Scoping = filter partition set by group.                                                                                                                                                                                                                                                                                                                                      |
 | `exporters` (list/enable/disable/delete)                                                               | List: grouped by tenant. Mutations: all tenants defining that exporter id                                              | That tenant only                                                         | Stays actuator-only in 8.10 (kickoff §8.3); REST exposure deferred.                                                                                                                                                                                                                                                                                                           |
 | `cluster` (GET/PATCH, scaling)                                                                         | GET: full topology, all groups. Broker add/remove: cluster-wide only (has no tenant dimension)                         | Partition scaling scoped to the tenant's group                           | **Blocked on the per-PT dynamic cluster configuration work** (Deepthi, in progress).                                                                                                                                                                                                                                                                                          |
-| `cluster/purge`                                                                                        | Whole cluster, all tenants                                                                                             | That tenant: leave/bootstrap its partitions, purge its exporters/history | Requires un-hard-coding the default tenant in `ClusterChangeExecutorImpl.java:129`; per-PT variant also depends on the dynamic-config work.                                                                                                                                                                                                                                   |
+| `cluster/purge`                                                                                        | Whole cluster, all tenants                                                                                             | That tenant: leave/bootstrap its partitions, purge its exporters/history | Requires un-hard-coding the default tenant in [`ClusterChangeExecutorImpl.java:129`](https://github.com/camunda/camunda/blob/50a6796b8004acfdeca4386a20d304d758e0824c/zeebe/broker/src/main/java/io/camunda/zeebe/broker/partitioning/topology/ClusterChangeExecutorImpl.java#L129); per-PT variant also depends on the dynamic-config work.                                  |
 | `rebalance`                                                                                            | All groups (extend from default-group-only)                                                                            | — (not offered)                                                          | Cluster-actuator only in 8.10 (kickoff §8.3).                                                                                                                                                                                                                                                                                                                                 |
 | `flowControl`                                                                                          | Unchanged (per-partition, cluster)                                                                                     | —                                                                        | Per-PT flow control is configuration-level, out of scope here.                                                                                                                                                                                                                                                                                                                |
 | `clock` (`ActorClockEndpoint`)                                                                         | Unchanged: mutates the node-global `ControlledActorClock` (all tenants + actor timers; requires controlled-clock mode) | — (not offered)                                                          | The actuator is legacy and stays as-is. Per-PT clock control is already served by the regular clock control commands (`/v2/clock`), which are per-PT like every v2 endpoint (prefix routing) and mutate the per-partition `ControllableStreamClock` overlays. No new work in this milestone; this satisfies the kickoff decision "the clock endpoint is per physical tenant". |
@@ -166,7 +166,7 @@ decision), not an atomic snapshot:
   `backupRuntime`/`exporting`: covering all tenants instead of silently
   only the default group (nobody runs multi-PT on 8.9).
 - Existing actuator request/response schemas
-  (`dist/src/main/resources/api/backup-management-api.yaml`) are extended
+  ([`dist/src/main/resources/api/backup-management-api.yaml`](https://github.com/camunda/camunda/blob/0eca734b4a60816f7b4b8a651cb45110026e7fd1/dist/src/main/resources/api/backup-management-api.yaml)) are extended
   additively (optional `physicalTenant` query param, optional
   `physicalTenantId` response fields).
 - `/v2/status`, `/v2/topology`, and the gRPC API are unchanged (ADR 001).
@@ -192,7 +192,7 @@ beyond `GET /cluster/v2/backups/runtime/{id}`.
 - Two OpenAPI surfaces to author: the `/v2` + `/cluster/v2` additions in
   `zeebe/gateway-protocol` (with `x-required-permissions` and the
   cluster-admin security scheme per ADR 002) and additive changes to
-  `backup-management-api.yaml`.
+  [`backup-management-api.yaml`](https://github.com/camunda/camunda/blob/0eca734b4a60816f7b4b8a651cb45110026e7fd1/dist/src/main/resources/api/backup-management-api.yaml).
 - QA matrix per the kickoff acceptance tests: backup/restore per tenant and
   cluster-wide, each with RDBMS, ES, and OS.
 - Scaling and per-PT purge items wait on the dynamic-cluster-config work;
