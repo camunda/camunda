@@ -4129,6 +4129,43 @@
                     "id": "custom.align"
                   }
                 ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "action"
+                },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-background",
+                      "mode": "basic",
+                      "applyToRow": true
+                    }
+                  },
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "transparent"
+                    }
+                  },
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "skipped": {
+                            "color": "orange",
+                            "index": 0
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
               }
             ]
           },
