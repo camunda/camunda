@@ -203,6 +203,64 @@ public class MigrateServiceTaskTest {
   }
 
   @Test
+  public void shouldRetainLeaseTokenWhenMigratingJob() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .serviceTask("A", a -> a.zeebeJobType("A"))
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .serviceTask("B", a -> a.zeebeJobType("B"))
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    final long jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getKey();
+
+    // lease the job so it carries a lease token
+    final var activationRecord = ENGINE.jobs().withType("A").withLease().activate().getValue();
+    final int jobIndex = activationRecord.getJobKeys().indexOf(jobKey);
+    final var leaseToken = activationRecord.getJobs().get(jobIndex).getLeaseToken();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .migrate();
+
+    // then
+    Assertions.assertThat(leaseToken).describedAs("job was leased on activation").isNotEmpty();
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the migrated job retains its lease token")
+        .hasLeaseToken(leaseToken);
+  }
+
+  @Test
   public void shouldContinueFlowInTargetProcessForMigratedJob() {
     // given
     final String processId = helper.getBpmnProcessId();

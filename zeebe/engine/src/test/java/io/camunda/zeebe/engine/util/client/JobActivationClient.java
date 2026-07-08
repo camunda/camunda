@@ -104,6 +104,11 @@ public final class JobActivationClient {
     return this;
   }
 
+  public JobActivationClient withLease() {
+    jobBatchRecord.setWithLease(true);
+    return this;
+  }
+
   public JobActivationClient expectRejection() {
     expectation = REJECTION_EXPECTATION_SUPPLIER;
     return this;
