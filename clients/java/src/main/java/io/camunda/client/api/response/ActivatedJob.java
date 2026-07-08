@@ -178,8 +178,8 @@ public interface ActivatedJob {
   String getBusinessId();
 
   /**
-   * The lease token identifying this activation, used to fence commands (complete, fail,
-   * throw-error) against superseded activations of the same job.
+   * The lease token identifying this activation. Pass it along to commands (e.g. complete, fail,
+   * throw-error) to fence them against superseded activations of the same job.
    *
    * @return the lease token, or {@code null} if the job was activated without a lease
    */
