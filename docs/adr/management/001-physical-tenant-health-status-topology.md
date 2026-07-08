@@ -130,7 +130,7 @@ tenants serviceable" coincide, and fail-fast-equivalent feedback comes from
 the tenant being visibly degraded rather than from a crash loop.
 *Whether ES/OS keeps blocking startup when the* only *configured tenant's
 storage is down (strict status quo) or converges on retry-in-background for
-consistency is left to implementation with Jose's input on DB
+consistency is left to implementation with Houssain's input on DB
 startup/liveness behavior.*
 
 **D3. `/v2/status` semantics are unchanged and per-PT.**
