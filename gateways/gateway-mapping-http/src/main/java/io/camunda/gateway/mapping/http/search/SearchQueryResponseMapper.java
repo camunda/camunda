@@ -129,6 +129,8 @@ import io.camunda.gateway.protocol.model.ProcessDefinitionMessageSubscriptionSta
 import io.camunda.gateway.protocol.model.ProcessDefinitionMessageSubscriptionStatisticsResult;
 import io.camunda.gateway.protocol.model.ProcessDefinitionResult;
 import io.camunda.gateway.protocol.model.ProcessDefinitionSearchQueryResult;
+import io.camunda.gateway.protocol.model.ProcessDefinitionVariableNameSearchQueryResult;
+import io.camunda.gateway.protocol.model.ProcessDefinitionVariableNameSearchResult;
 import io.camunda.gateway.protocol.model.ProcessElementStatisticsResult;
 import io.camunda.gateway.protocol.model.ProcessInstanceCallHierarchyEntry;
 import io.camunda.gateway.protocol.model.ProcessInstanceElementStatisticsQueryResult;
@@ -1576,6 +1578,24 @@ public final class SearchQueryResponseMapper {
         .isTruncated(truncateValues && variableEntity.isPreview())
         .value(!truncateValues ? getFullValueIfPresent(variableEntity) : variableEntity.value())
         .build();
+  }
+
+  public static ProcessDefinitionVariableNameSearchQueryResult toVariableNameSearchResponse(
+      final List<String> names) {
+    return ProcessDefinitionVariableNameSearchQueryResult.Builder.create()
+        .page(
+            SearchQueryPageResponse.Builder.create()
+                .totalItems((long) names.size())
+                .hasMoreTotalItems(false)
+                .startCursor(null)
+                .endCursor(null)
+                .build())
+        .items(names.stream().map(SearchQueryResponseMapper::toVariableNameResult).toList())
+        .build();
+  }
+
+  private static ProcessDefinitionVariableNameSearchResult toVariableNameResult(final String name) {
+    return ProcessDefinitionVariableNameSearchResult.Builder.create().name(name).build();
   }
 
   public static VariableResult toVariableItem(final VariableEntity variableEntity) {

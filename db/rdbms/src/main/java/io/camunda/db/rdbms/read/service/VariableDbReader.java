@@ -9,6 +9,7 @@ package io.camunda.db.rdbms.read.service;
 
 import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.VariableDbQuery;
+import io.camunda.db.rdbms.read.domain.VariableNameDbQuery;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.sql.columns.VariableSearchColumn;
 import io.camunda.search.clients.reader.VariableReader;
@@ -16,6 +17,7 @@ import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.filter.VariableFilter.Builder;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.VariableNameQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.search.sort.VariableSort;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
@@ -87,5 +89,25 @@ public class VariableDbReader extends AbstractEntityReader<VariableEntity>
 
   public List<String> findLookupVariableNames(final long processDefinitionKey) {
     return variableMapper.findLookupVariableNames(processDefinitionKey);
+  }
+
+  @Override
+  public List<String> searchVariableNames(
+      final VariableNameQuery query, final ResourceAccessChecks resourceAccessChecks) {
+    if (query.filter().processDefinitionKeyOperations().isEmpty()
+        || shouldReturnEmptyResult(resourceAccessChecks)) {
+      return List.of();
+    }
+
+    final var authorizedResourceIds =
+        resourceAccessChecks
+            .getAuthorizedResourceIdsByType()
+            .getOrDefault(AuthorizationResourceType.PROCESS_DEFINITION.name(), List.of());
+    return variableMapper.findVariableNamesByPrefix(
+        new VariableNameDbQuery(
+            query.filter(),
+            authorizedResourceIds,
+            resourceAccessChecks.getAuthorizedTenantIds(),
+            query.page().size()));
   }
 }

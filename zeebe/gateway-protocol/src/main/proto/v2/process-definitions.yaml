@@ -228,6 +228,52 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.8"
 
+  /process-definitions/{processDefinitionKey}/variable-names/search:
+    post:
+      x-eventually-consistent: true
+      tags:
+        - Process definition
+      operationId: searchProcessDefinitionVariableNames
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: READ_PROCESS_INSTANCE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Search process definition variable names
+      description: |-
+        Search for distinct variable names defined on a process definition, optionally narrowed
+        by a name prefix.
+      parameters:
+        - name: processDefinitionKey
+          in: path
+          required: true
+          description: The assigned key of the process definition, which acts as a unique identifier for this process definition.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcessDefinitionVariableNameSearchQuery'
+      responses:
+        "200":
+          description: The process definition variable name search result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessDefinitionVariableNameSearchQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.10"
+
   /process-definitions/statistics/message-subscriptions:
     post:
       x-eventually-consistent: true
@@ -531,6 +577,54 @@ components:
           description: The total number of completed instances of the element.
           type: integer
           format: int64
+
+    ProcessDefinitionVariableNameSearchQuery:
+      description: Process definition variable name search query request.
+      additionalProperties: false
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      properties:
+        filter:
+          description: The process definition variable name search filters.
+          allOf:
+            - $ref: '#/components/schemas/ProcessDefinitionVariableNameFilter'
+
+    ProcessDefinitionVariableNameFilter:
+      description: Process definition variable name filter request.
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          description: |
+            Prefix to narrow the returned variable names. Matching is case-sensitive and
+            left-anchored.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+
+    ProcessDefinitionVariableNameSearchQueryResult:
+      description: Process definition variable name search query response.
+      type: object
+      required:
+        - items
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching variable names.
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessDefinitionVariableNameSearchResult'
+
+    ProcessDefinitionVariableNameSearchResult:
+      description: Process definition variable name search response item.
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          description: The variable name.
+          type: string
 
     ProcessDefinitionMessageSubscriptionStatisticsQuery:
       type: object

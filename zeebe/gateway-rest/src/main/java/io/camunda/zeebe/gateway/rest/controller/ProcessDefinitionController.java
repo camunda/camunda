@@ -22,8 +22,11 @@ import io.camunda.gateway.protocol.model.ProcessDefinitionMessageSubscriptionSta
 import io.camunda.gateway.protocol.model.ProcessDefinitionMessageSubscriptionStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.ProcessDefinitionSearchQuery;
 import io.camunda.gateway.protocol.model.ProcessDefinitionSearchQueryResult;
+import io.camunda.gateway.protocol.model.ProcessDefinitionVariableNameSearchQuery;
+import io.camunda.gateway.protocol.model.ProcessDefinitionVariableNameSearchQueryResult;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionQuery;
+import io.camunda.search.query.VariableNameQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
@@ -149,6 +152,29 @@ public class ProcessDefinitionController {
         .fold(
             RestErrorMapper::mapProblemToResponse,
             filter -> elementStatistics(physicalTenantId, filter));
+  }
+
+  @RequiresSecondaryStorage
+  @CamundaPostMapping(path = "/{processDefinitionKey}/variable-names/search")
+  public ResponseEntity<ProcessDefinitionVariableNameSearchQueryResult> searchVariableNames(
+      @PhysicalTenantId final String physicalTenantId,
+      @PathVariable("processDefinitionKey") final long processDefinitionKey,
+      @RequestBody(required = false) final ProcessDefinitionVariableNameSearchQuery query) {
+    return SearchQueryRequestMapper.toVariableNameQuery(processDefinitionKey, query)
+        .fold(RestErrorMapper::mapProblemToResponse, q -> searchVariableNames(physicalTenantId, q));
+  }
+
+  private ResponseEntity<ProcessDefinitionVariableNameSearchQueryResult> searchVariableNames(
+      final String physicalTenantId, final VariableNameQuery query) {
+    final var variableServices = serviceRegistry.variableServices(physicalTenantId);
+    try {
+      final var result =
+          variableServices.searchVariableNames(
+              query, authenticationProvider.getCamundaAuthentication());
+      return ResponseEntity.ok(SearchQueryResponseMapper.toVariableNameSearchResponse(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
   }
 
   @RequiresSecondaryStorage
