@@ -11,9 +11,12 @@ import type {
 	GetSystemConfigurationResponseBody,
 	CurrentUser,
 	License,
+	Form,
 	UserTask,
 	QueryUserTasksRequestBody,
 	QueryUserTasksResponseBody,
+	QueryVariablesByUserTaskRequestBody,
+	QueryVariablesByUserTaskResponseBody,
 	QueryProcessDefinitionsRequestBody,
 	QueryProcessDefinitionsResponseBody,
 	GetProcessDefinitionInstanceStatisticsRequestBody,
@@ -35,6 +38,9 @@ const queryKeys = {
 	license: () => ['license'] as const,
 	userTasks: (body: QueryUserTasksRequestBody) => ['userTasks', body] as const,
 	userTask: (userTaskKey: string) => ['userTask', userTaskKey] as const,
+	userTaskForm: (userTaskKey: string) => ['userTaskForm', userTaskKey] as const,
+	userTaskVariables: (userTaskKey: string, body: QueryVariablesByUserTaskRequestBody, truncateValues?: boolean) =>
+		['userTaskVariables', userTaskKey, body, truncateValues] as const,
 	processDefinitionXml: (processDefinitionKey: string) => ['processDefinitionXml', processDefinitionKey] as const,
 	userTaskAuditLogs: (userTaskKey: string, body: QueryUserTaskAuditLogsRequestBody) =>
 		['userTaskAuditLogs', userTaskKey, body] as const,
@@ -144,6 +150,41 @@ const queries = {
 				if (error !== null) {
 					throw error;
 				}
+				return response.json();
+			},
+		}),
+
+	getUserTaskForm: (userTaskKey: string) =>
+		queryOptions({
+			queryKey: queryKeys.userTaskForm(userTaskKey),
+			queryFn: async (): Promise<Form> => {
+				const {response, error} = await request(endpoints.getUserTaskForm({userTaskKey}));
+				if (error !== null) {
+					throw error;
+				}
+				return response.json();
+			},
+		}),
+
+	queryVariablesByUserTask: (
+		userTaskKey: string,
+		body: QueryVariablesByUserTaskRequestBody,
+		options?: {truncateValues?: boolean},
+	) =>
+		queryOptions({
+			queryKey: queryKeys.userTaskVariables(userTaskKey, body, options?.truncateValues),
+			queryFn: async (): Promise<QueryVariablesByUserTaskResponseBody> => {
+				const {response, error} = await request(
+					endpoints.queryVariablesByUserTask({
+						userTaskKey,
+						truncateValues: options?.truncateValues,
+						...body,
+					}),
+				);
+				if (error !== null) {
+					throw error;
+				}
+
 				return response.json();
 			},
 		}),

@@ -31,4 +31,11 @@ class EmptyProcessXmlError extends Error {
 	}
 }
 
-export {ComponentNotAvailableError, EmptyProcessXmlError, ForbiddenError};
+class TruncatedVariableError extends Error {
+	constructor(message = 'Variables are truncated') {
+		super(message);
+		this.name = 'TruncatedVariableError';
+	}
+}
+
+export {ComponentNotAvailableError, EmptyProcessXmlError, ForbiddenError, TruncatedVariableError};

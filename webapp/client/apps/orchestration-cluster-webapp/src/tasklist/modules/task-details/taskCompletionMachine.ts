@@ -37,7 +37,8 @@ type MachineContext = Omit<MachineInput, 'initialTaskState' | 'initialAssignee'>
 };
 
 type TaskCompletionEvent =
-	{type: 'task.complete'} | {type: 'task.updated'; taskState: UserTask['state']; assignee: string | null};
+	| {type: 'task.complete'; variables?: Record<string, unknown>}
+	| {type: 'task.updated'; taskState: UserTask['state']; assignee: string | null};
 
 type TaskCompletionStatusTag = 'status:completing' | 'status:completion_successful' | 'status:completion_failed';
 
@@ -55,33 +56,35 @@ async function resolveFailureSubtitle(error: unknown): Promise<string | undefine
 	return error instanceof Error ? error.message : undefined;
 }
 
-const completeTaskLogic = fromPromise<'accepted', {userTaskKey: string}>(async ({input}) => {
-	const {error} = await request(
-		endpoints.completeTask({
-			userTaskKey: input.userTaskKey,
-			variables: {},
-		}),
-	);
+const completeTaskLogic = fromPromise<'accepted', {userTaskKey: string; variables: Record<string, unknown>}>(
+	async ({input}) => {
+		const {error} = await request(
+			endpoints.completeTask({
+				userTaskKey: input.userTaskKey,
+				variables: input.variables,
+			}),
+		);
 
-	if (error === null) {
-		return 'accepted' as const;
-	}
+		if (error === null) {
+			return 'accepted' as const;
+		}
 
-	const parsed = requestErrorSchema.safeParse(error);
+		const parsed = requestErrorSchema.safeParse(error);
 
-	if (
-		parsed.success &&
-		parsed.data.variant === 'failed-response' &&
-		isTaskTimeoutError(await parsed.data.response.clone().json())
-	) {
-		throw {reason: 'timeout'} satisfies CompletionFailure;
-	}
+		if (
+			parsed.success &&
+			parsed.data.variant === 'failed-response' &&
+			isTaskTimeoutError(await parsed.data.response.clone().json())
+		) {
+			throw {reason: 'timeout'} satisfies CompletionFailure;
+		}
 
-	throw {
-		reason: 'failed',
-		subtitle: await resolveFailureSubtitle(error),
-	} satisfies CompletionFailure;
-});
+		throw {
+			reason: 'failed',
+			subtitle: await resolveFailureSubtitle(error),
+		} satisfies CompletionFailure;
+	},
+);
 
 const fetchUserTaskLogic = fromPromise<UserTask, {queryClient: QueryClient; userTaskKey: string}>(async ({input}) =>
 	input.queryClient.fetchQuery(queries.getUserTask(input.userTaskKey)),
@@ -206,7 +209,10 @@ const taskCompletionMachine = setup({
 			tags: 'status:completing',
 			invoke: {
 				src: 'completeTask',
-				input: ({context}) => ({userTaskKey: context.userTaskKey}),
+				input: ({context, event}) => ({
+					userTaskKey: context.userTaskKey,
+					variables: event.type === 'task.complete' ? (event.variables ?? {}) : {},
+				}),
 				onDone: {target: 'PollingCompletion'},
 				onError: [
 					{

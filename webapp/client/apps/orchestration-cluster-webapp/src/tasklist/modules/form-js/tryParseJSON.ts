@@ -6,24 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-.container {
-	width: 100%;
-	min-height: 0;
-	flex: 1;
-	display: flex;
-	flex-direction: column;
+function tryParseJSON(value: string) {
+	try {
+		return JSON.parse(value);
+	} catch {
+		return value;
+	}
 }
 
-.content {
-	width: 100%;
-	min-height: 0;
-	flex: 1;
-	overflow-y: auto;
-}
-
-.footer {
-	padding: var(--cds-spacing-05);
-	border-top: 1px solid var(--cds-border-subtle);
-	display: flex;
-	justify-content: flex-end;
-}
+export {tryParseJSON};
