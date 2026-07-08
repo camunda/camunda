@@ -267,7 +267,7 @@ final class CachingKeyValueStoreTest {
 
   @Test
   void shouldResolveReadsMutableOverFrozenOverCleanOverDelegate() {
-    // given — the same key written in every layer: delegate, clean (read-through), frozen, mutable
+    // given — the same key written in every layer: delegate, clean (read-through), frozen, active
     final CountingDelegate delegate = new CountingDelegate();
     put(delegate, "a", 1L);
     put(delegate, "clean", 5L);
@@ -276,12 +276,12 @@ final class CachingKeyValueStoreTest {
     put(cache, "a", 2L);
     put(cache, "frozenOnly", 20L);
     cache.freeze(); // frozen layer holds a=2 and frozenOnly=20
-    put(cache, "a", 3L); // mutable layer holds a=3
+    put(cache, "a", 3L); // active layer holds a=3
     get(cache, "clean"); // clean layer holds clean=5
     final int getsAfterSetup = delegate.gets;
 
     // when / then — first hit wins top-down, without falling through to the delegate
-    assertThat(get(cache, "a")).isEqualTo(3L); // mutable over frozen over clean
+    assertThat(get(cache, "a")).isEqualTo(3L); // active over frozen over clean
     assertThat(get(cache, "frozenOnly")).isEqualTo(20L); // frozen
     assertThat(get(cache, "clean")).isEqualTo(5L); // clean
     assertThat(exists(cache, "a")).isTrue();
@@ -292,7 +292,8 @@ final class CachingKeyValueStoreTest {
 
   @Test
   void shouldHideLowerLayersWithATombstoneAtAnyOverlayLevel() {
-    // given — a frozen tombstone over a delegate value, and a mutable tombstone over a frozen put
+    // given — a frozen tombstone over a delegate value, and an active-overlay tombstone over a
+    // frozen put
     final CountingDelegate delegate = new CountingDelegate();
     put(delegate, "frozenDeleted", 1L);
     final CachingKeyValueStore<DbString, DbLong> cache = cacheOver(delegate, LARGE_BUDGET);
@@ -311,14 +312,14 @@ final class CachingKeyValueStoreTest {
     cache.persistFrozen();
     cache.completeFrozen(true);
 
-    // then — the mutable tombstone still hides the now delegate-backed value
+    // then — the active-overlay tombstone still hides the now delegate-backed value
     assertThat(get(delegate, "mutableDeleted")).isEqualTo(2L);
     assertThat(get(cache, "mutableDeleted")).isEqualTo(-1L);
   }
 
   @Test
   void shouldScanAcrossAllLayersWithMutableWinningOverFrozenOverDelegate() {
-    // given — delegate entries plus a frozen and a mutable generation of buffered writes
+    // given — delegate entries plus a frozen and an active generation of buffered writes
     final CountingDelegate delegate = new CountingDelegate();
     put(delegate, "a", 1L);
     put(delegate, "c", 3L);
@@ -328,9 +329,9 @@ final class CachingKeyValueStoreTest {
     put(cache, "c", 30L);
     delete(cache, "e"); // frozen tombstone hides the delegate's entry
     cache.freeze();
-    put(cache, "c", 300L); // mutable wins over frozen and delegate
+    put(cache, "c", 300L); // active wins over frozen and delegate
     put(cache, "d", 4L);
-    delete(cache, "a"); // mutable tombstone hides the delegate's entry
+    delete(cache, "a"); // active-overlay tombstone hides the delegate's entry
 
     // when
     final List<String> seen = new ArrayList<>();
@@ -342,7 +343,7 @@ final class CachingKeyValueStoreTest {
 
   @Test
   void shouldPrefixScanAcrossBothOverlaysAndDelegate() {
-    // given — matching entries in the delegate, the frozen overlay, and the mutable overlay
+    // given — matching entries in the delegate, the frozen overlay, and the active overlay
     final KeyValueStore<DbCompositeKey<DbLong, DbString>, DbLong> delegate =
         new InMemoryKeyValueStore<>(
             new DbCompositeKey<>(new DbLong(), new DbString()), new DbLong());
@@ -357,7 +358,7 @@ final class CachingKeyValueStoreTest {
     cache.put(compositeKey(1L, "b"), dbLong(2L));
     cache.put(compositeKey(1L, "d"), dbLong(40L)); // frozen overrides the delegate
     cache.freeze();
-    cache.put(compositeKey(1L, "b"), dbLong(20L)); // mutable wins over frozen
+    cache.put(compositeKey(1L, "b"), dbLong(20L)); // active wins over frozen
     cache.put(compositeKey(1L, "c"), dbLong(3L));
     cache.put(compositeKey(2L, "z"), dbLong(9L)); // outside the prefix
 
@@ -454,7 +455,7 @@ final class CachingKeyValueStoreTest {
 
   @Test
   void shouldPreferNewerMutableWritesWhenMergingBack() {
-    // given — frozen writes shadowed by newer mutable ones
+    // given — frozen writes shadowed by newer active ones
     final CountingDelegate delegate = new CountingDelegate();
     final CachingKeyValueStore<DbString, DbLong> cache = cacheOver(delegate, LARGE_BUDGET);
     put(cache, "a", 1L);
@@ -466,7 +467,7 @@ final class CachingKeyValueStoreTest {
     // when
     cache.completeFrozen(false);
 
-    // then — the newer mutable writes survive the merge-back
+    // then — the newer active writes survive the merge-back
     assertThat(get(cache, "a")).isEqualTo(10L);
     assertThat(get(cache, "b")).isEqualTo(-1L);
 
@@ -510,7 +511,7 @@ final class CachingKeyValueStoreTest {
     put(cache, "frozen", 1L);
     cache.freeze();
 
-    // when — a put+delete pair lives entirely in the mutable overlay
+    // when — a put+delete pair lives entirely in the active overlay
     put(cache, "ephemeral", 7L);
     delete(cache, "ephemeral");
     cache.persistFrozen();
@@ -536,7 +537,7 @@ final class CachingKeyValueStoreTest {
     // then — frozen entries alone keep the cache over capacity (pinned until completion)
     assertThat(cache.overCapacity()).isTrue();
 
-    // when — the mutable overlay fills up as well
+    // when — the active overlay fills up as well
     for (int i = 0; i < 20; i++) {
       put(cache, "mutable" + i, i);
     }

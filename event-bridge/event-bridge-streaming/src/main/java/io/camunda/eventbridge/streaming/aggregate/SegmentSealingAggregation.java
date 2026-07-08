@@ -300,10 +300,10 @@ public final class SegmentSealingAggregation<IN, K, ACC> implements Aggregation<
   }
 
   /**
-   * Flusher thread, inside the caller's commit transaction: deletes the stale rows, then writes
-   * every frozen cell's at-freeze bytes and the frozen meta. Touches only the frozen snapshot and
-   * the cell store (which the owner thread itself only uses on this path and at recovery), never
-   * the live buffer — the owner keeps folding, even sealing, concurrently. No-op under Model R.
+   * IO thread, inside the caller's commit transaction: deletes the stale rows, then persists every
+   * frozen cell's at-freeze bytes and the frozen meta. Touches only the frozen snapshot and the
+   * cell store (which the owner thread itself only uses on this path and at recovery), never the
+   * live buffer — the owner keeps folding, even sealing, concurrently. No-op under Model R.
    *
    * @throws IllegalStateException if nothing is frozen
    */

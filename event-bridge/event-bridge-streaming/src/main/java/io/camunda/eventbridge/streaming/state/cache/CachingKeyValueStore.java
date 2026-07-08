@@ -30,28 +30,30 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * A bytes-bounded, read-through write-back cache over a durable {@link KeyValueStore}, layered so
- * checkpoints can persist asynchronously. Reads resolve top-down, first hit wins:
+ * checkpoints can persist asynchronously. The overlay lifecycle mirrors RocksDB's active/immutable
+ * memtable pair: the active buffer is frozen at a switch point, persisted in the background, then
+ * retired. Reads resolve top-down, first hit wins:
  *
  * <ol>
- *   <li><em>Mutable overlay</em> — dirty writes buffered since the last {@link #freeze()}. Every
+ *   <li><em>Active overlay</em> — dirty writes buffered since the last {@link #freeze()}. Every
  *       {@link #put} and {@link #delete} lands here and only here.
  *   <li><em>Frozen overlay</em> — the immutable snapshot currently being persisted. Never mutated:
- *       a write to a key present here creates a new mutable-overlay entry instead, because a
- *       flusher thread may be reading the frozen entry concurrently.
+ *       a write to a key present here creates a new active-overlay entry instead, because an IO
+ *       thread may be reading the frozen entry concurrently.
  *   <li><em>Clean cache</em> — delegate-backed hot entries, access-ordered so the eldest is the
  *       eviction candidate, trimmed to the byte budget.
  *   <li>The durable delegate — a read miss falls through and populates the clean cache.
  * </ol>
  *
  * <p>Checkpointing splits into three steps so processing pauses only for the cheap one: {@link
- * #freeze()} swaps the mutable overlay into the frozen slot (pointer swaps only), {@link
+ * #freeze()} swaps the active overlay into the frozen slot (pointer swaps only), {@link
  * #persistFrozen()} drains the frozen entries to the delegate inside the commit transaction, and
  * {@link #completeFrozen(boolean)} retires them into the clean cache on success or merges them back
- * into the mutable overlay on failure so the next freeze re-includes them. {@link #checkpoint()}
+ * into the active overlay on failure so the next freeze re-includes them. {@link #checkpoint()}
  * remains the synchronous composition of the three, used by the final commit on shutdown.
  *
- * <p>Overlay entries — mutable and frozen alike — are pinned: flushing or evicting them outside the
- * checkpoint transaction would put durable state ahead of the committed offset and break replay
+ * <p>Overlay entries — active and frozen alike — are pinned: persisting or evicting them outside
+ * the checkpoint transaction would put durable state ahead of the committed offset and break replay
  * recovery. The byte budget is therefore a soft bound while overlay entries exist (only clean
  * entries evict) and a firm one after a successful checkpoint retires and trims the working set.
  * Recovery stays changelog-free: the delegate advances as one atomic cut with the offsets, and a
@@ -59,14 +61,14 @@ import org.agrona.concurrent.UnsafeBuffer;
  *
  * <p>Reads and scans see the buffered writes: {@link #get}/{@link #exists} serve overlay values and
  * hide tombstones, and {@link #forEach}/{@link #prefixScan} merge the delegate's sorted stream with
- * both sorted overlay indexes in key order — mutable wins over frozen wins over delegate, and a
+ * both sorted overlay indexes in key order — active wins over frozen wins over delegate, and a
  * tombstone at any overlay level hides everything below. Keys and values are serialized bytes in
  * unsigned-byte order, matching the delegate's scan semantics.
  *
  * <p><b>Threading:</b> single-writer with one exception. Every method except {@link
- * #persistFrozen()} must run on the owner thread. {@link #persistFrozen()} may run on a flusher
- * thread: it touches only the frozen overlay (immutable by then), its own dedicated flyweights, and
- * the delegate — never the mutable overlay or the clean cache, which the owner thread may be using
+ * #persistFrozen()} must run on the owner thread. {@link #persistFrozen()} may run on an IO thread:
+ * it touches only the frozen overlay (immutable by then), its own dedicated flyweights, and the
+ * delegate — never the active overlay or the clean cache, which the owner thread may be using
  * concurrently. The caller's executor handoff provides the happens-before edges around freeze and
  * completion; there is no internal locking.
  *
@@ -82,34 +84,34 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
   // Owner-thread flyweights, used by reads and scans.
   private final K keyFlyweight;
   private final V valueFlyweight;
-  // Dedicated flyweights for persistFrozen, which may run on a flusher thread while the owner
+  // Dedicated flyweights for persistFrozen, which may run on an IO thread while the owner
   // thread keeps wrapping the pair above — sharing them would race.
   private final K persistKeyFlyweight;
   private final V persistValueFlyweight;
   private final long maxBytes;
 
-  // Mutable overlay: a hash map for point lookups plus a sorted index (unsigned key order) sharing
+  // Active overlay: a hash map for point lookups plus a sorted index (unsigned key order) sharing
   // the same CacheEntry objects, so scans read their overlay from a subMap (O(matches), not
   // O(entries)). Hash keys are content-equal ByteBuffers, each wrapping a full, offset-0 byte[].
   // freeze() steals both structures wholesale and installs fresh empty ones.
-  private HashMap<ByteBuffer, CacheEntry> mutableMap = new HashMap<>();
-  private TreeMap<byte[], CacheEntry> mutableIndex = new TreeMap<>(Arrays::compareUnsigned);
+  private HashMap<ByteBuffer, CacheEntry> activeMap = new HashMap<>();
+  private TreeMap<byte[], CacheEntry> activeIndex = new TreeMap<>(Arrays::compareUnsigned);
 
   // Frozen overlay: non-null iff a snapshot is outstanding (between freeze and completeFrozen).
-  // Same shape as the mutable overlay; never mutated while outstanding.
+  // Same shape as the active overlay; never mutated while outstanding.
   private Map<ByteBuffer, CacheEntry> frozenMap;
   private NavigableMap<byte[], CacheEntry> frozenIndex;
 
   // Clean cache: delegate-backed entries only, access-ordered so the eldest entry is the LRU
   // eviction candidate. Disjoint from both overlays — a key lives in at most one of
-  // {mutable, clean}, plus possibly the frozen overlay (whose entry then shadows the layers below).
+  // {active, clean}, plus possibly the frozen overlay (whose entry then shadows the layers below).
   private final LinkedHashMap<ByteBuffer, CacheEntry> cleanCache =
       new LinkedHashMap<>(16, 0.75f, true);
 
-  // Approximate heap footprint of mutable + frozen + clean together.
+  // Approximate heap footprint of active + frozen + clean together.
   private long approxBytes;
 
-  // Opt-in: a delete of a never-flushed dirty put annihilates the pair in the mutable overlay —
+  // Opt-in: a delete of a never-flushed dirty put annihilates the pair in the active overlay —
   // neither the put nor a tombstone ever reaches the delegate. Sound ONLY under the caller's
   // guarantee that a deleted key is never read again (deletes are garbage collection of dead rows,
   // not semantics): if the delegate holds an older flushed value for the key, skipping the
@@ -153,17 +155,17 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
   public void put(final K key, final V value) {
     final byte[] keyBytes = toBytes(key);
     final byte[] valueBytes = toBytes(value);
-    final CacheEntry entry = mutableMap.get(ByteBuffer.wrap(keyBytes));
+    final CacheEntry entry = activeMap.get(ByteBuffer.wrap(keyBytes));
     if (entry != null) {
-      // In-place update of a mutable-overlay entry; flushed is a property of the key's presence in
+      // In-place update of an active-overlay entry; flushed is a property of the key's presence in
       // the delegate, so it carries over.
       approxBytes += valueBytes.length - footprintValue(entry);
       entry.value = valueBytes;
       entry.tombstone = false;
     } else {
       final CacheEntry created = new CacheEntry(valueBytes, false, shadowsFlushedKey(keyBytes));
-      mutableMap.put(ByteBuffer.wrap(keyBytes), created);
-      mutableIndex.put(keyBytes, created);
+      activeMap.put(ByteBuffer.wrap(keyBytes), created);
+      activeIndex.put(keyBytes, created);
       approxBytes += keyBytes.length + valueBytes.length;
     }
     evictIfNeeded();
@@ -172,13 +174,13 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
   @Override
   public void delete(final K key) {
     final byte[] keyBytes = toBytes(key);
-    final CacheEntry entry = mutableMap.get(ByteBuffer.wrap(keyBytes));
+    final CacheEntry entry = activeMap.get(ByteBuffer.wrap(keyBytes));
     if (entry != null) {
       if (absorbDeletes && !entry.tombstone && !entry.flushed) {
         // The put never reached the delegate (and no frozen put is headed there) — the pair
         // annihilates: no write, no tombstone.
-        mutableMap.remove(ByteBuffer.wrap(keyBytes));
-        mutableIndex.remove(keyBytes);
+        activeMap.remove(ByteBuffer.wrap(keyBytes));
+        activeIndex.remove(keyBytes);
         approxBytes -= keyBytes.length + footprintValue(entry);
       } else {
         approxBytes -= footprintValue(entry);
@@ -187,16 +189,16 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
       }
     } else {
       final CacheEntry created = new CacheEntry(null, true, shadowsFlushedKey(keyBytes));
-      mutableMap.put(ByteBuffer.wrap(keyBytes), created);
-      mutableIndex.put(keyBytes, created);
+      activeMap.put(ByteBuffer.wrap(keyBytes), created);
+      activeIndex.put(keyBytes, created);
       approxBytes += keyBytes.length;
     }
-    // A tombstone is pinned in the mutable overlay; it must outlive eviction so a read-through
+    // A tombstone is pinned in the active overlay; it must outlive eviction so a read-through
     // does not resurrect the delegate's value before the delete is checkpointed.
   }
 
   /**
-   * Whether a new mutable-overlay entry for {@code keyBytes} starts out flushed: the delegate
+   * Whether a new active-overlay entry for {@code keyBytes} starts out flushed: the delegate
    * already holds the key (it shadows a clean entry) or is about to (it shadows a frozen put headed
    * there). Evicts the shadowed clean entry — the overlay would hide it anyway, and dropping it
    * keeps the clean cache disjoint from the overlays.
@@ -256,13 +258,11 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
     return delegate.exists(key);
   }
 
-  /**
-   * The overlay entry shadowing {@code keyBytes}, mutable before frozen; null if neither has it.
-   */
+  /** The overlay entry shadowing {@code keyBytes}, active before frozen; null if neither has it. */
   private CacheEntry overlayEntry(final byte[] keyBytes) {
-    final CacheEntry mutable = mutableMap.get(ByteBuffer.wrap(keyBytes));
-    if (mutable != null) {
-      return mutable;
+    final CacheEntry active = activeMap.get(ByteBuffer.wrap(keyBytes));
+    if (active != null) {
+      return active;
     }
     return frozenMap == null ? null : frozenMap.get(ByteBuffer.wrap(keyBytes));
   }
@@ -284,7 +284,7 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
   }
 
   /**
-   * Steals the mutable overlay into the frozen slot and installs fresh empty structures — pointer
+   * Steals the active overlay into the frozen slot and installs fresh empty structures — pointer
    * swaps only, so processing can resume immediately. The frozen snapshot is immutable from here
    * until {@link #completeFrozen(boolean)} releases it.
    *
@@ -296,16 +296,16 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
       throw new IllegalStateException(
           "cannot freeze: a frozen snapshot is already outstanding and not yet completed");
     }
-    frozenMap = mutableMap;
-    frozenIndex = mutableIndex;
-    mutableMap = new HashMap<>();
-    mutableIndex = new TreeMap<>(Arrays::compareUnsigned);
+    frozenMap = activeMap;
+    frozenIndex = activeIndex;
+    activeMap = new HashMap<>();
+    activeIndex = new TreeMap<>(Arrays::compareUnsigned);
   }
 
   /**
    * Drains the frozen snapshot to the delegate — puts for values, deletes for tombstones. The only
    * method that may run off the owner thread: it reads the immutable frozen overlay through its own
-   * flyweights and never touches the mutable overlay or the clean cache. Failure leaves the frozen
+   * flyweights and never touches the active overlay or the clean cache. Failure leaves the frozen
    * snapshot outstanding; the caller decides between retrying and {@link #completeFrozen(boolean)}
    * with {@code success=false}.
    *
@@ -329,10 +329,10 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
 
   /**
    * Releases the frozen snapshot on the owner thread. On success the frozen entries reached the
-   * delegate: values retire into the clean cache (delegate-backed, evictable) unless a newer
-   * mutable write shadows them, tombstones drop, and the cache trims back to budget. On failure
-   * every frozen entry merges back into the mutable overlay — except where a newer mutable write
-   * exists for the key, which wins — so the next freeze re-includes it.
+   * delegate: values retire into the clean cache (delegate-backed, evictable) unless a newer active
+   * write shadows them, tombstones drop, and the cache trims back to budget. On failure every
+   * frozen entry merges back into the active overlay — except where a newer active write exists for
+   * the key, which wins — so the next freeze re-includes it.
    *
    * @throws IllegalStateException if no frozen snapshot is outstanding
    */
@@ -348,7 +348,7 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
     frozenMap = null;
     frozenIndex = null;
     if (success) {
-      // Everything left is clean or freshly mutable, so the retired working set can be trimmed.
+      // Everything left is clean or freshly active, so the retired working set can be trimmed.
       evictIfNeeded();
     }
   }
@@ -362,9 +362,9 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
         approxBytes -= keyBytes.length;
         continue;
       }
-      final CacheEntry shadow = mutableMap.get(ByteBuffer.wrap(keyBytes));
+      final CacheEntry shadow = activeMap.get(ByteBuffer.wrap(keyBytes));
       if (shadow != null) {
-        // A newer mutable write supersedes the retired value — drop it rather than cache a stale
+        // A newer active write supersedes the retired value — drop it rather than cache a stale
         // shadowed copy. The delegate now holds the key, so the shadowing write is flushed: its
         // delete must reach the delegate as a tombstone.
         approxBytes -= keyBytes.length + entry.value.length;
@@ -382,12 +382,12 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
     for (final Map.Entry<byte[], CacheEntry> frozen : frozenIndex.entrySet()) {
       final byte[] keyBytes = frozen.getKey();
       final CacheEntry entry = frozen.getValue();
-      if (mutableMap.containsKey(ByteBuffer.wrap(keyBytes))) {
-        // The key was re-written after the freeze — the newer mutable entry wins outright.
+      if (activeMap.containsKey(ByteBuffer.wrap(keyBytes))) {
+        // The key was re-written after the freeze — the newer active entry wins outright.
         approxBytes -= keyBytes.length + footprintValue(entry);
       } else {
-        mutableMap.put(ByteBuffer.wrap(keyBytes), entry);
-        mutableIndex.put(keyBytes, entry);
+        activeMap.put(ByteBuffer.wrap(keyBytes), entry);
+        activeIndex.put(keyBytes, entry);
       }
     }
   }
@@ -432,18 +432,18 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
   }
 
   /**
-   * The overlay entries whose key starts with {@code prefixBytes}, in unsigned key order, mutable
+   * The overlay entries whose key starts with {@code prefixBytes}, in unsigned key order, active
    * shadowing frozen on equal keys — a lazy merge of range selections on both sorted indexes, never
    * a walk of the caches.
    */
   private Iterator<Map.Entry<byte[], CacheEntry>> overlayInPrefix(final byte[] prefixBytes) {
-    final Iterator<Map.Entry<byte[], CacheEntry>> mutable =
-        inPrefix(mutableIndex, prefixBytes).entrySet().iterator();
+    final Iterator<Map.Entry<byte[], CacheEntry>> active =
+        inPrefix(activeIndex, prefixBytes).entrySet().iterator();
     if (frozenIndex == null) {
-      return mutable;
+      return active;
     }
     return new OverlayMergeIterator(
-        mutable, inPrefix(frozenIndex, prefixBytes).entrySet().iterator());
+        active, inPrefix(frozenIndex, prefixBytes).entrySet().iterator());
   }
 
   /**
@@ -576,7 +576,7 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
   }
 
   /**
-   * A cached entry: a present value or a tombstone. Which layer it lives in — mutable overlay,
+   * A cached entry: a present value or a tombstone. Which layer it lives in — active overlay,
    * frozen overlay, or clean cache — determines whether it is dirty, being persisted, or evictable.
    */
   private static final class CacheEntry {
@@ -597,29 +597,29 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
 
   /**
    * Lazily merges the two sorted overlay ranges into one key-ordered stream. On equal keys the
-   * mutable entry wins and the frozen one is skipped, so downstream merging sees at most one
-   * overlay entry per key.
+   * active entry wins and the frozen one is skipped, so downstream merging sees at most one overlay
+   * entry per key.
    */
   private static final class OverlayMergeIterator
       implements Iterator<Map.Entry<byte[], CacheEntry>> {
 
-    private final Iterator<Map.Entry<byte[], CacheEntry>> mutable;
+    private final Iterator<Map.Entry<byte[], CacheEntry>> active;
     private final Iterator<Map.Entry<byte[], CacheEntry>> frozen;
-    private Map.Entry<byte[], CacheEntry> nextMutable;
+    private Map.Entry<byte[], CacheEntry> nextActive;
     private Map.Entry<byte[], CacheEntry> nextFrozen;
 
     OverlayMergeIterator(
-        final Iterator<Map.Entry<byte[], CacheEntry>> mutable,
+        final Iterator<Map.Entry<byte[], CacheEntry>> active,
         final Iterator<Map.Entry<byte[], CacheEntry>> frozen) {
-      this.mutable = mutable;
+      this.active = active;
       this.frozen = frozen;
-      nextMutable = mutable.hasNext() ? mutable.next() : null;
+      nextActive = active.hasNext() ? active.next() : null;
       nextFrozen = frozen.hasNext() ? frozen.next() : null;
     }
 
     @Override
     public boolean hasNext() {
-      return nextMutable != null || nextFrozen != null;
+      return nextActive != null || nextFrozen != null;
     }
 
     @Override
@@ -628,20 +628,20 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
         throw new NoSuchElementException();
       }
       final int cmp =
-          nextMutable == null
+          nextActive == null
               ? 1
               : nextFrozen == null
                   ? -1
-                  : Arrays.compareUnsigned(nextMutable.getKey(), nextFrozen.getKey());
+                  : Arrays.compareUnsigned(nextActive.getKey(), nextFrozen.getKey());
       if (cmp > 0) {
         final Map.Entry<byte[], CacheEntry> emitted = nextFrozen;
         nextFrozen = frozen.hasNext() ? frozen.next() : null;
         return emitted;
       }
-      final Map.Entry<byte[], CacheEntry> emitted = nextMutable;
-      nextMutable = mutable.hasNext() ? mutable.next() : null;
+      final Map.Entry<byte[], CacheEntry> emitted = nextActive;
+      nextActive = active.hasNext() ? active.next() : null;
       if (cmp == 0) {
-        nextFrozen = frozen.hasNext() ? frozen.next() : null; // the mutable write shadows it
+        nextFrozen = frozen.hasNext() ? frozen.next() : null; // the active write shadows it
       }
       return emitted;
     }

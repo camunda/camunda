@@ -36,9 +36,9 @@ import java.util.function.BiConsumer;
  * feeds into {@link #index(Windowed, long)} and {@link #markChanged(Windowed)} — an owner that
  * needs neither (the sealing side) simply never calls them.
  *
- * <p>The checkpoint delta supports being <em>stolen</em>: {@link #stealCheckpointDelta()} hands the
- * changed/evicted sets over for an asynchronous persist and installs fresh empty ones, so folding
- * continues while the stolen cut is written; a failed persist {@link
+ * <p>The checkpoint delta supports being <em>detached</em>: {@link #detachCheckpointDelta()} hands
+ * the changed/evicted sets over for an asynchronous persist and installs fresh empty ones, so
+ * folding continues while the detached cut is written; a failed persist {@link
  * #mergeBackCheckpointDelta(CheckpointDelta) merges it back} so the next cut re-includes it.
  *
  * @param <K> the base grouping key type
@@ -52,7 +52,7 @@ final class WindowedCellState<K, ACC> {
   // candidates instead of walking every open cell.
   private final NavigableMap<Long, Set<Windowed<K>>> cellsByWindowEnd = new TreeMap<>();
   private final Set<Windowed<K>> changedSinceFlush = new HashSet<>();
-  // Non-final: stealCheckpointDelta hands the sets over and installs fresh replacements.
+  // Non-final: detachCheckpointDelta hands the sets over and installs fresh replacements.
   private Set<Windowed<K>> changedSinceCheckpoint = new HashSet<>();
   private Set<Windowed<K>> evictedSinceCheckpoint = new HashSet<>();
 
@@ -123,10 +123,10 @@ final class WindowedCellState<K, ACC> {
 
   /**
    * Hands over the changed/evicted-since-checkpoint sets as one frozen checkpoint cut and installs
-   * fresh empty trackers, so the owner keeps tracking new changes while the stolen cut persists.
+   * fresh empty trackers, so the owner keeps tracking new changes while the detached cut persists.
    * This state never touches the returned sets again.
    */
-  CheckpointDelta<K> stealCheckpointDelta() {
+  CheckpointDelta<K> detachCheckpointDelta() {
     final CheckpointDelta<K> delta =
         new CheckpointDelta<>(changedSinceCheckpoint, evictedSinceCheckpoint);
     changedSinceCheckpoint = new HashSet<>();
@@ -135,11 +135,11 @@ final class WindowedCellState<K, ACC> {
   }
 
   /**
-   * Re-adds a stolen (but never persisted) delta into the current tracking so the next cut
-   * re-includes it. Union semantics where the current state wins and the stolen delta only fills
-   * gaps: a stolen changed cell that was evicted after the steal stays evicted (it must not be
-   * resurrected into the changed set), and a stolen evicted cell that was re-created after the
-   * steal stays changed (its durable row must not be deleted). The two current sets therefore stay
+   * Re-adds a detached (but never persisted) delta into the current tracking so the next cut
+   * re-includes it. Union semantics where the current state wins and the detached delta only fills
+   * gaps: a detached changed cell that was evicted after the detach stays evicted (it must not be
+   * resurrected into the changed set), and a detached evicted cell that was re-created after the
+   * detach stays changed (its durable row must not be deleted). The two current sets therefore stay
    * disjoint.
    */
   void mergeBackCheckpointDelta(final CheckpointDelta<K> delta) {
@@ -196,8 +196,8 @@ final class WindowedCellState<K, ACC> {
   }
 
   /**
-   * The changed/evicted cell sets of one checkpoint cut, stolen by {@link #stealCheckpointDelta()}.
-   * The sets are disjoint and owned by the holder once stolen.
+   * The changed/evicted cell sets of one checkpoint cut, handed over by {@link
+   * #detachCheckpointDelta()}. The sets are disjoint and owned by the holder once detached.
    */
   record CheckpointDelta<K>(Set<Windowed<K>> changed, Set<Windowed<K>> evicted) {}
 }

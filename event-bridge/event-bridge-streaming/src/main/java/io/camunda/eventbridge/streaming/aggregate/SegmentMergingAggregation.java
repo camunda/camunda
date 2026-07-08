@@ -157,7 +157,7 @@ public final class SegmentMergingAggregation<K, ACC> {
   }
 
   /**
-   * Owner thread: finalizes closed windows, flushes, and steals the checkpoint delta — the
+   * Owner thread: finalizes closed windows, flushes, and detaches the checkpoint delta — the
    * changed/evicted cell sets plus the serialized bytes of every changed cell — into the frozen
    * slot, installing fresh empty trackers so folding resumes immediately. The frozen delta is
    * immutable data: later folds touch only the live accumulators and trackers, never the frozen
@@ -178,7 +178,7 @@ public final class SegmentMergingAggregation<K, ACC> {
     }
     finalizeClosedWindows();
     flush();
-    final CheckpointDelta<K> delta = open.stealCheckpointDelta();
+    final CheckpointDelta<K> delta = open.detachCheckpointDelta();
     final Map<Windowed<K>, byte[]> serialized = serializedSinceFlush;
     serializedSinceFlush = new HashMap<>();
     for (final Windowed<K> cell : delta.changed()) {
@@ -194,7 +194,7 @@ public final class SegmentMergingAggregation<K, ACC> {
   }
 
   /**
-   * Flusher thread, inside the caller's commit transaction: writes the frozen delta to the durable
+   * IO thread, inside the caller's commit transaction: persists the frozen delta to the durable
    * cells — the at-freeze bytes for every frozen changed cell, a delete for every frozen evicted
    * cell. Touches only the frozen slot and the cell store (which the owner thread itself only uses
    * on this path and at recovery), never the live working state — the owner keeps folding

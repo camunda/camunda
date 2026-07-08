@@ -33,7 +33,7 @@ import org.junit.jupiter.api.io.TempDir;
 /**
  * Stress-tests the async-checkpointing read path: one thread committing write transactions on the
  * provider's write context while another thread reads and scans the same column families through
- * the provider's dedicated read context — the exact shape of a background flusher committing a
+ * the provider's dedicated read context — the exact shape of a background persist committing a
  * checkpoint while the partition's processing thread serves cache misses from the store.
  *
  * <p>Every write transaction rewrites a fixed key set to one new version as a single atomic batch,

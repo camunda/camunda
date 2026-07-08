@@ -1,4 +1,4 @@
-# ADR 0005 — Asynchronous checkpointing: freeze on the processing thread, flush in the background
+# ADR 0005 — Asynchronous checkpointing: freeze on the processing thread, persist in the background
 
 - Status: Proposed (accepted design; implementation in progress)
 - Date: 2026-07-08
@@ -35,17 +35,18 @@ to the first one:
 3. **Complete** — back on the actor thread. On success the frozen snapshot is *retired* (it is
    now redundant with the durable store); on failure it is *merged back* underneath the
    current dirty set (newer writes win), so the next freeze re-includes it and the cut is
-   retried. Frozen state is never swapped back to mutable on success — that would re-persist
+   retried. Frozen state is never swapped back to active on success — that would re-persist
    already-durable entries on every future commit.
 
 ### Per-store representation
 
-- **Byte-valued write-back caches** (`CachingKeyValueStore`) become layered: a mutable overlay
-  (dirty writes since the last freeze), a frozen overlay (read-only, being persisted), the
-  clean LRU, then the delegate. Reads try the layers top-down; writes go only to the mutable
-  overlay — a write to a frozen key shadows it rather than mutating it, so the flusher always
-  persists exactly the values the frozen offset covers. On retirement, frozen values demote to
-  clean (delegate-backed, evictable) LRU entries, keeping hot keys warm.
+- **Byte-valued write-back caches** (`CachingKeyValueStore`) become layered like RocksDB's
+  active/immutable memtable pair: an active overlay (dirty writes since the last freeze), a
+  frozen overlay (read-only, being persisted), the clean LRU, then the delegate. Reads try the
+  layers top-down; writes go only to the active overlay — a write to a frozen key shadows it
+  rather than mutating it, so the IO thread always persists exactly the values the frozen
+  offset covers. On retirement, frozen values demote to clean (delegate-backed, evictable) LRU
+  entries, keeping hot keys warm.
 - **Heap-authoritative aggregations** (`SegmentMergingAggregation`) need no read-path change:
   reads never touch the durable store at runtime. Their freeze steals the already-serialized
   changed-cell bytes (`flush()` runs at every commit barrier and maintains that map) plus the
@@ -54,19 +55,19 @@ to the first one:
 
 ### Concurrency rules
 
-- **At most one flush in flight per partition.** A due commit while one is flushing waits.
+- **At most one persist in flight per partition.** A due commit while one is persisting waits.
   Two frozen generations could contain the same key and would require strictly ordered
   application; the complexity is not worth it.
-- **Backpressure**: dirty and frozen entries are both pinned (unevictable), so the byte budget
-  spans both. If the mutable overlay exceeds budget while a flush is still running, processing
-  stalls until the flush completes — the same role `overCapacity()` plays today, now triggered
-  only by a genuinely slow flush instead of by every commit.
+- **Backpressure**: active and frozen entries are both pinned (unevictable), so the byte budget
+  spans both. If the active overlay exceeds budget while a persist is still running, processing
+  enters a write stall until the persist completes — the same role `overCapacity()` plays
+  today, now triggered only by a genuinely slow persist instead of by every commit.
 - **Reads below the overlays must not share the write transaction context.** The actor
   thread's cache-miss reads fall through to the durable store while the IO thread holds the
   commit transaction open. Store reads therefore go through a dedicated read-only transaction
   context with committed-only visibility — which is exactly correct, because anything
   uncommitted lives in the heap overlays above the store.
-- Offset bookkeeping decouples: `pending` keeps advancing while a flush is in flight; the cut
+- Offset bookkeeping decouples: `pending` keeps advancing while a persist is in flight; the cut
   commits the *frozen* offset, and the partition records it as committed only when the
   transaction lands.
 
@@ -76,10 +77,10 @@ to the first one:
   swaps and O(delta) serialization.
 - Crash semantics are unchanged: the durable store always holds a consistent cut
   (state + dedup + offset frozen at one barrier), and replay from the committed offset rebuilds
-  everything after it. A crash mid-flush loses nothing that yesterday's design would have kept.
-- Memory ceiling roughly doubles worst-case: mutable and frozen generations can each approach
+  everything after it. A crash mid-persist loses nothing that yesterday's design would have kept.
+- Memory ceiling roughly doubles worst-case: active and frozen generations can each approach
   the budget.
-- A failed flush retries as part of the next, larger cut (merge-back), rather than blocking in
+- A failed persist retries as part of the next, larger cut (merge-back), rather than blocking in
   place.
 - Graceful shutdown still ends with one synchronous freeze-persist-complete cycle, so the
   `checkpoint()` composition remains as the final-commit and test-facing path.

@@ -54,13 +54,6 @@ public final class PartitionCommitter<R> {
   }
 
   /**
-   * Commits {@code partition}'s work up to {@code offset} as one atomic cut: emit output, make it
-   * durable, persist state and offset, then advance the source offset. Does only the durable work —
-   * no partition bookkeeping — so it can run on an IO thread while the partition's actor is
-   * suspended (single-writer preserved by that suspension); the caller clears the pending offset
-   * and resets the commit clock on the actor thread once this completes.
-   */
-  /**
    * Makes a frozen cut durable: publish its produced output, persist its state delta and {@code
    * offset}, then advance the source offset. Runs on an IO thread while the partition's actor
    * <em>keeps folding</em> — the cut is detached from the live working state at the freeze barrier,
@@ -89,6 +82,13 @@ public final class PartitionCommitter<R> {
     consumer.commitOffset(sourceTopic, partition.id(), offset).join();
   }
 
+  /**
+   * Commits {@code partition}'s work up to {@code offset} as one atomic cut: emit output, make it
+   * durable, persist state and offset, then advance the source offset. Does only the durable work —
+   * no partition bookkeeping — so it can run on an IO thread while the partition's actor is
+   * suspended (single-writer preserved by that suspension); the caller clears the pending offset
+   * and resets the commit clock on the actor thread once this completes.
+   */
   public void commit(final Partition<R> partition, final long offset) {
     final Task<R> task = partition.task();
     task.flush();
