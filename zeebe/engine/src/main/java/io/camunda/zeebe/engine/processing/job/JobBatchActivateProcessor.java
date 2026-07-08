@@ -74,7 +74,8 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     responseWriter = writers.response();
     authorizationCheckBehavior = authCheckBehavior;
     jobBatchCollector =
-        new JobBatchCollector(state, stateWriter::canWriteEventOfLength, authCheckBehavior, clock);
+        new JobBatchCollector(
+            state, stateWriter::canWriteEventOfLength, authCheckBehavior, clock, jobMetrics);
 
     this.keyGenerator = keyGenerator;
     this.jobMetrics = jobMetrics;

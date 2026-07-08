@@ -529,6 +529,7 @@ public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
   public enum JobAction {
     CREATED("created"),
     ACTIVATED("activated"),
+    SKIPPED("skipped"),
     TIMED_OUT("timed out"),
     COMPLETED("completed"),
     FAILED("failed"),
