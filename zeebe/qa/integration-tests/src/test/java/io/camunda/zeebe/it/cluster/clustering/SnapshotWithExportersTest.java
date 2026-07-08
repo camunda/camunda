@@ -46,11 +46,11 @@ final class SnapshotWithExportersTest {
     private final TestStandaloneBroker zeebe =
         new TestStandaloneBroker().withUnauthenticatedAccess();
 
-    private final PartitionsActuator partitions = PartitionsActuator.of(zeebe);
-
     @Test
     void shouldNotTakeNewSnapshotWhenAddingNewExporter() {
       // given -- snapshot taken by broker without exporters
+      // the broker binds OS-assigned ports, so the actuator can only be created once it is started
+      final var partitions = PartitionsActuator.of(zeebe);
       final FileBasedSnapshotId snapshotWithoutExporters;
       final FileBasedSnapshotId snapshotWithExporters;
 
@@ -75,14 +75,16 @@ final class SnapshotWithExportersTest {
       // when -- taking snapshot on broker with exporters configured
       zeebe.withRecordingExporter(true).start().awaitCompleteTopology();
 
-      partitions.takeSnapshot();
+      // the restarted broker binds fresh OS-assigned ports, so the old actuator is stale
+      final var restartedPartitions = PartitionsActuator.of(zeebe);
+      restartedPartitions.takeSnapshot();
       snapshotWithExporters =
           Awaitility.await("Snapshot is taken")
               .atMost(Duration.ofSeconds(60))
               .during(Duration.ofSeconds(5))
               .until(
                   () ->
-                      Optional.ofNullable(partitions.query().get(1).snapshotId())
+                      Optional.ofNullable(restartedPartitions.query().get(1).snapshotId())
                           .map(id -> FileBasedSnapshotId.ofFileName(id).getOrThrow()),
                   hasStableValue())
               .orElseThrow();
@@ -98,11 +100,11 @@ final class SnapshotWithExportersTest {
     private final TestStandaloneBroker zeebe =
         new TestStandaloneBroker().withRecordingExporter(true).withUnauthenticatedAccess();
 
-    private final PartitionsActuator partitions = PartitionsActuator.of(zeebe);
-
     @Test
     void shouldIncludeExportedPositionInSnapshot() {
       // given - a receiver who has "acknowledged" everything ever in history
+      // the broker binds OS-assigned ports, so the actuator can only be created once it is started
+      final var partitions = PartitionsActuator.of(zeebe);
       try (final var client = zeebe.newClientBuilder().build()) {
         publishMessages(client);
       }

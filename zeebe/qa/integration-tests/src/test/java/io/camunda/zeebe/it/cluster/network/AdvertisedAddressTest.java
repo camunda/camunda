@@ -18,6 +18,7 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.qa.util.testcontainers.ProxyRegistry;
 import io.camunda.zeebe.qa.util.testcontainers.ProxyRegistry.ContainerProxy;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
+import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -131,14 +132,18 @@ final class AdvertisedAddressTest {
   }
 
   private void configureBroker(final TestStandaloneBroker broker) {
-    final var commandApiProxy =
-        PROXY_REGISTRY.getOrCreateHostProxy(broker.mappedPort(TestZeebePort.COMMAND));
-    final var internalApiProxy =
-        PROXY_REGISTRY.getOrCreateHostProxy(broker.mappedPort(TestZeebePort.CLUSTER));
+    // the proxies must know their target ports before the broker binds them, so fixed ports must
+    // be assigned upfront instead of the OS-assigned ephemeral ports used by default
+    final var commandApiPort = SocketUtil.getNextAddress().getPort();
+    final var internalApiPort = SocketUtil.getNextAddress().getPort();
+    final var commandApiProxy = PROXY_REGISTRY.getOrCreateHostProxy(commandApiPort);
+    final var internalApiProxy = PROXY_REGISTRY.getOrCreateHostProxy(internalApiPort);
 
     broker.withUnifiedConfig(
         cfg -> {
           final var network = cfg.getCluster().getNetwork();
+          network.getCommandApi().setPort(commandApiPort);
+          network.getInternalApi().setPort(internalApiPort);
           network.getInternalApi().setAdvertisedHost(TOXIPROXY.getHost());
           network
               .getInternalApi()
@@ -155,12 +160,13 @@ final class AdvertisedAddressTest {
   }
 
   private void configureGateway(final TestGateway<?> gateway) {
-    final var gatewayClusterProxy =
-        PROXY_REGISTRY.getOrCreateHostProxy(gateway.mappedPort(TestZeebePort.CLUSTER));
+    final var gatewayClusterPort = SocketUtil.getNextAddress().getPort();
+    final var gatewayClusterProxy = PROXY_REGISTRY.getOrCreateHostProxy(gatewayClusterPort);
 
     gateway.withUnifiedConfig(
         cfg -> {
           final var internalApi = cfg.getCluster().getNetwork().getInternalApi();
+          internalApi.setPort(gatewayClusterPort);
           internalApi.setAdvertisedHost(TOXIPROXY.getHost());
           internalApi.setAdvertisedPort(
               TOXIPROXY.getMappedPort(gatewayClusterProxy.internalPort()));

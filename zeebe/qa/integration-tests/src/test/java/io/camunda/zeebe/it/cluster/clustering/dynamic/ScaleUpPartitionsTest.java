@@ -117,6 +117,15 @@ public class ScaleUpPartitionsTest {
     backupActuator = BackupActuator.of(cluster.availableGateway());
   }
 
+  /**
+   * Re-creates the client and actuators after a restart: restarted nodes bind fresh OS-assigned
+   * ports, so anything created before the restart may be stale.
+   */
+  private void recreateClientAndActuators() {
+    camundaClient.close();
+    createClient();
+  }
+
   private Camunda getRestoreConfig(final Camunda brokerCfg, final Path workingDirectory) {
     final var unifiedRestoreConfig = new Camunda();
     unifiedRestoreConfig.getCluster().setNodeId(brokerCfg.getCluster().getNodeId());
@@ -339,6 +348,7 @@ public class ScaleUpPartitionsTest {
           member0);
       cluster.leaderForPartition(1).stop().start();
       cluster.awaitCompleteTopology();
+      recreateClientAndActuators();
     }
     // when - start scaling up
     scaleToPartitions(targetPartitionCount);
@@ -350,6 +360,9 @@ public class ScaleUpPartitionsTest {
     brokerToRestart.stop().start();
     LOG.info("Restarted node {} ", brokerToRestart.nodeId());
     Awaitility.await("restarted broker is ready")
+        // rejoining the cluster after a restart takes a while, as the ports change on restart and
+        // the new addresses need to propagate first
+        .atMost(Duration.ofMinutes(1))
         .until(
             () -> {
               try {
@@ -359,6 +372,7 @@ public class ScaleUpPartitionsTest {
                 return false;
               }
             });
+    recreateClientAndActuators();
 
     // then - scale up should still complete successfully
     awaitScaleUpCompletion(targetPartitionCount);
@@ -573,6 +587,7 @@ public class ScaleUpPartitionsTest {
         desiredPartitionCount,
         cluster.replicationFactor(),
         Duration.ofMinutes(2));
+    recreateClientAndActuators();
   }
 
   private void restoreAllBrokers(final long backupId, final int desiredPartitionCount)

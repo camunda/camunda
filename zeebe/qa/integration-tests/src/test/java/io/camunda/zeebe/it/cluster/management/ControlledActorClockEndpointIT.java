@@ -34,6 +34,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
@@ -47,9 +48,15 @@ final class ControlledActorClockEndpointIT {
           .withRecordingExporter(true)
           .withProperty("zeebe.clock.controlled", true);
 
-  @AutoClose private final CamundaClient camundaClient = broker.newClientBuilder().build();
+  @AutoClose private CamundaClient camundaClient;
 
   @AutoClose private final HttpClient httpClient = HttpClient.newHttpClient();
+
+  @BeforeEach
+  void beforeEach() {
+    // the broker binds OS-assigned ports, so the client can only be created once it is started
+    camundaClient = broker.newClientBuilder().build();
+  }
 
   @Test
   void testPinningTime() throws IOException, InterruptedException {

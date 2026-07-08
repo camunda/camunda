@@ -786,21 +786,7 @@ public class CamundaMultiDBExtension
     }
 
     if (shouldSetupKeycloak) {
-      authenticatedClientFactory =
-          new OidcCamundaClientTestFactory(
-              applyPhysicalTenant(applicationUnderTest.application.newClientBuilder()),
-              tenantRestAddress(applicationUnderTest.application.restAddress()),
-              applicationUnderTest.application.grpcAddress(),
-              testPrefix,
-              keycloakContainer.getAuthServerUrl()
-                  + "/realms/camunda/protocol/openid-connect/token");
       injectStaticKeycloakContainerField(testClass, keycloakContainer);
-    } else {
-      authenticatedClientFactory =
-          new BasicAuthCamundaClientTestFactory(
-              applyPhysicalTenant(applicationUnderTest.application.newClientBuilder()),
-              tenantRestAddress(applicationUnderTest.application.restAddress()),
-              applicationUnderTest.application.grpcAddress());
     }
 
     final TestEntityCollection testEntities = new TestEntityCollector().collect(testClass);
@@ -844,26 +830,49 @@ public class CamundaMultiDBExtension
 
     if (applicationUnderTest.shouldBeManaged) {
       manageApplicationUnderTest();
+
+      // clients can only be created once the application is started, as its ports are OS-assigned
+      // on bind. Applications with an unmanaged lifecycle are started by the test itself, which
+      // then also creates its own clients.
+      if (shouldSetupKeycloak) {
+        authenticatedClientFactory =
+            new OidcCamundaClientTestFactory(
+                applyPhysicalTenant(applicationUnderTest.application.newClientBuilder()),
+                tenantRestAddress(applicationUnderTest.application.restAddress()),
+                applicationUnderTest.application.grpcAddress(),
+                testPrefix,
+                keycloakContainer.getAuthServerUrl()
+                    + "/realms/camunda/protocol/openid-connect/token");
+      } else {
+        authenticatedClientFactory =
+            new BasicAuthCamundaClientTestFactory(
+                applyPhysicalTenant(applicationUnderTest.application.newClientBuilder()),
+                tenantRestAddress(applicationUnderTest.application.restAddress()),
+                applicationUnderTest.application.grpcAddress());
+      }
+
+      awaitApplicationReadiness();
+
+      if (multiPhysicalTenantIds != null) {
+        multiPhysicalTenantClients = buildMultiPhysicalTenantClients(multiPhysicalTenantIds);
+        closeables.add(multiPhysicalTenantClients);
+        awaitMultiPhysicalTenantAdminsReady(multiPhysicalTenantClients);
+        injectStaticMultiPtClientsField(testClass, multiPhysicalTenantClients);
+      }
+
+      final EntityManager entityManager =
+          new EntityManager(authenticatedClientFactory.getAdminCamundaClient());
+
+      entityManager.await(configuredEntities);
+
+      createClientsForTestEntities(shouldSetupKeycloak, testEntities);
+
+      // we support only static fields for now - to make sure test setups are build in a way
+      // such they are reusable and tests methods are not relying on order, etc.
+      // We want to run tests in an efficient manner, and reduce setup time
+      injectStaticClientField(testClass);
     }
 
-    if (multiPhysicalTenantIds != null) {
-      multiPhysicalTenantClients = buildMultiPhysicalTenantClients(multiPhysicalTenantIds);
-      closeables.add(multiPhysicalTenantClients);
-      awaitMultiPhysicalTenantAdminsReady(multiPhysicalTenantClients);
-      injectStaticMultiPtClientsField(testClass, multiPhysicalTenantClients);
-    }
-
-    final EntityManager entityManager =
-        new EntityManager(authenticatedClientFactory.getAdminCamundaClient());
-
-    entityManager.await(configuredEntities);
-
-    createClientsForTestEntities(shouldSetupKeycloak, testEntities);
-
-    // we support only static fields for now - to make sure test setups are build in a way
-    // such they are reusable and tests methods are not relying on order, etc.
-    // We want to run tests in an efficient manner, and reduce setup time
-    injectStaticClientField(testClass);
     injectStaticDatabaseTypeField(testClass, context);
   }
 
@@ -977,6 +986,10 @@ public class CamundaMultiDBExtension
     final var application = applicationUnderTest.application;
     closeables.add(application);
     application.start();
+  }
+
+  private void awaitApplicationReadiness() {
+    final var application = applicationUnderTest.application;
     application.awaitCompleteTopology(
         application.unifiedConfig(), authenticatedClientFactory.getAdminCamundaClient());
 

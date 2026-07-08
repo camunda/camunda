@@ -11,7 +11,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.zeebe.gateway.GatewayModuleConfiguration;
-import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.camunda.zeebe.qa.util.cluster.util.RuntimePorts;
 import java.util.function.Consumer;
 
 /** Encapsulates an instance of the {@link GatewayModuleConfiguration} Spring application. */
@@ -24,12 +24,10 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
     withAdditionalProfile(Profile.CONSOLIDATED_AUTH);
 
     unifiedConfig.getApi().getGrpc().setAddress("0.0.0.0");
-    unifiedConfig.getApi().getGrpc().setPort(SocketUtil.getNextAddress().getPort());
-    unifiedConfig
-        .getCluster()
-        .getNetwork()
-        .getInternalApi()
-        .setPort(SocketUtil.getNextAddress().getPort());
+    // use OS-assigned ephemeral ports to allow multiple concurrent instances; the actual ports
+    // are resolved from the running application (see #mappedPort)
+    unifiedConfig.getApi().getGrpc().setPort(0);
+    unifiedConfig.getCluster().getNetwork().getInternalApi().setPort(0);
     withAdditionalProfile(Profile.GATEWAY);
 
     unifiedConfig.getSecurity().getAuthentication().setUnprotectedApi(true);
@@ -63,9 +61,16 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
 
   @Override
   public int mappedPort(final TestZeebePort port) {
+    final var network = unifiedConfig.getCluster().getNetwork();
     return switch (port) {
-      case GATEWAY -> unifiedConfig.getApi().getGrpc().getPort();
-      case CLUSTER -> unifiedConfig.getCluster().getNetwork().getInternalApi().getPort();
+      case GATEWAY ->
+          resolveEphemeralPort(
+              unifiedConfig.getApi().getGrpc().getPort(),
+              "gRPC",
+              () -> RuntimePorts.standaloneGatewayPort(this));
+      case CLUSTER ->
+          resolveEphemeralPort(
+              network.getInternalApi().getPort(), "cluster", () -> RuntimePorts.clusterPort(this));
       default -> super.mappedPort(port);
     };
   }

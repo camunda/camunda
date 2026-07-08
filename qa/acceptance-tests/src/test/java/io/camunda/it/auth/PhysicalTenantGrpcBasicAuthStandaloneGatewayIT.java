@@ -75,14 +75,11 @@ final class PhysicalTenantGrpcBasicAuthStandaloneGatewayIT {
               // Disable the embedded gateway
               .withGatewayEnabled(false));
 
-  // Standalone gateway wired to the broker's cluster port; shares the same RDBMS stores.
+  // Standalone gateway wired to the broker's cluster port (only known once the broker is started,
+  // see #start); shares the same RDBMS stores.
   @TestZeebe(autoStart = false, purgeAfterEach = false)
   private static final TestStandaloneGateway GATEWAY =
-      new TestStandaloneGateway()
-          .withAuthenticatedAccess()
-          .withBasicAuth()
-          .withClusterConfig(
-              c -> c.setInitialContactPoints(List.of(BROKER.address(TestZeebePort.CLUSTER))));
+      new TestStandaloneGateway().withAuthenticatedAccess().withBasicAuth();
 
   private static CamundaClient defaultAdmin;
   private static CamundaClient tenantAAdmin;
@@ -108,6 +105,8 @@ final class PhysicalTenantGrpcBasicAuthStandaloneGatewayIT {
     TENANTS.seedBasicAuthAdminUser(BROKER, TENANT_B, TENANT_B_PASSWORD);
 
     BROKER.start();
+    GATEWAY.withClusterConfig(
+        c -> c.setInitialContactPoints(List.of(BROKER.address(TestZeebePort.CLUSTER))));
     GATEWAY.start();
 
     // No physicalTenantId — the gateway must resolve the absent header to the default PT.

@@ -220,6 +220,10 @@ class BackupMultiPartitionTest {
     cluster.shutdown().brokers().values().forEach(broker -> deleteAndRestore(broker, backupId));
     cluster.start().awaitCompleteTopology();
 
+    // the cluster restarted on fresh OS-assigned ports, so the old client is stale
+    client.getClient().close();
+    client = new GrpcClientRule(cluster.newClientBuilder().build());
+
     // then
     final var jobHandler = new RecordingJobHandler();
     try (final var ignored =

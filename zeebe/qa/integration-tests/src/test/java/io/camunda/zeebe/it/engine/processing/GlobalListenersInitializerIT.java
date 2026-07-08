@@ -24,6 +24,7 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
@@ -49,7 +50,15 @@ final class GlobalListenersInitializerIT {
       new TestStandaloneBroker()
           .withRecordingExporter(true)
           .withUnauthenticatedAccess()
-          .withClusterConfig(cluster -> cluster.setPartitionCount(PARTITIONS_COUNT));
+          .withClusterConfig(cluster -> cluster.setPartitionCount(PARTITIONS_COUNT))
+          // the client is created before the broker first starts and must survive broker restarts
+          // (via the default retry policy), which requires the broker to come back on the same
+          // endpoints; pre-assign fixed ports instead of the default OS-assigned ones, which
+          // change on every start
+          .withUnifiedConfig(
+              cfg -> cfg.getApi().getGrpc().setPort(SocketUtil.getNextAddress().getPort()))
+          .withProperty("server.port", SocketUtil.getNextAddress().getPort())
+          .withProperty("management.server.port", SocketUtil.getNextAddress().getPort());
 
   @AutoClose private CamundaClient client;
 

@@ -167,7 +167,7 @@ final class TestClusterBuilderTest {
   }
 
   @Test
-  void shouldAssignAllBrokersAsInitialContactPoints() {
+  void shouldNotAssignInitialContactPointsAtBuildTime() {
     // given
     final var builder = new TestClusterBuilder();
 
@@ -175,21 +175,21 @@ final class TestClusterBuilderTest {
     builder.withEmbeddedGateway(false).withBrokersCount(2);
     final var cluster = builder.build();
 
-    // then
-    final var expectedValue =
-        cluster.brokers().values().stream().map(b -> b.address(TestZeebePort.CLUSTER)).toList();
+    // then -- with OS-assigned ports, broker addresses are only known at runtime, so the builder
+    // configures no contact points; they are resolved on every node start by the cluster instead
+    // (see TestCluster#currentContactPoints)
     assertThat(cluster.brokers())
         .allSatisfy(
             haveProperty(
                 "initial contact points",
                 b -> b.unifiedConfig().getCluster().getInitialContactPoints(),
-                expectedValue));
+                Collections.emptyList()));
     assertThat(cluster.gateways())
         .allSatisfy(
             haveProperty(
                 "initial contact points",
                 g -> g.unifiedConfig().getCluster().getInitialContactPoints(),
-                expectedValue));
+                Collections.emptyList()));
   }
 
   @Test

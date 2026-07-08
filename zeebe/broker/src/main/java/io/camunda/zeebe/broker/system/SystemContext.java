@@ -96,9 +96,10 @@ public final class SystemContext {
       "Snapshot period %s needs to be larger then or equals to one minute.";
   private static final String MAX_BATCH_SIZE_ERROR_MSG =
       "Expected to have an append batch size maximum which is non negative and smaller then '%d', but was '%s'.";
-  private static final String INITIAL_CONTACT_POINTS_ERROR_MSG =
-      "Initial contact points must be configured when cluster size is greater than 1. "
-          + "Please configure '"
+  private static final String INITIAL_CONTACT_POINTS_WARNING =
+      "No initial contact points are configured and the cluster size is greater than 1. This node "
+          + "will wait to be contacted by other cluster members. If it is not a seed node, "
+          + "configure '"
           + UNIFIED_INITIAL_CONTACT_POINTS_PROPERTY
           + "' or the legacy property '"
           + LEGACY_INITIAL_CONTACT_POINTS_PROPERTY
@@ -216,10 +217,12 @@ public final class SystemContext {
 
     final var errors = new ArrayList<String>(0);
 
+    // no initial contact points is a valid configuration: such a node waits to be contacted by
+    // the other members instead, e.g. a seed node whose peers are configured to contact it
     if (cluster.getClusterSize() > 1
         && (cluster.getInitialContactPoints() == null
             || cluster.getInitialContactPoints().isEmpty())) {
-      errors.add(INITIAL_CONTACT_POINTS_ERROR_MSG);
+      LOG.warn(INITIAL_CONTACT_POINTS_WARNING);
     }
 
     if (!gossiper.syncDelay().isPositive()) {

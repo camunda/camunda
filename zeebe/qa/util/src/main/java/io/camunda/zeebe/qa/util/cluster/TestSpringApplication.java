@@ -19,7 +19,6 @@ import io.camunda.container.ExtendedConfigurationBuilder;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.zeebe.qa.util.cluster.util.ContextOverrideInitializer;
 import io.camunda.zeebe.qa.util.cluster.util.ContextOverrideInitializer.Bean;
-import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -27,10 +26,14 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
+import org.awaitility.Awaitility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.Banner.Mode;
@@ -46,6 +49,9 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
 
   protected ConfigurableApplicationContext springContext;
   protected final Camunda unifiedConfig;
+  // the context as soon as it exists, i.e. before the (potentially long) refresh completes; used
+  // to look up already-created singletons while the application is still starting
+  private volatile ConfigurableApplicationContext startingContext;
 
   private final Class<?>[] springApplications;
   private final Map<String, Bean<?>> beans;
@@ -55,6 +61,7 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   private final ReactorResourceFactory reactorResourceFactory = new ReactorResourceFactory();
   private final Set<String> refreshableKeys = new HashSet<>();
   private final Map<String, Camunda> ptConfigs = new LinkedHashMap<>();
+  private Supplier<List<String>> initialContactPointsSupplier;
 
   public TestSpringApplication(final Class<?>... springApplications) {
     this(new Camunda(), springApplications);
@@ -78,12 +85,16 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     additionalInitializers = new ArrayList<>();
     additionalInitializers.add(new ContextOverrideInitializer(beans, propertyOverrides));
     additionalInitializers.add(new HealthConfigurationInitializer());
+    additionalInitializers.add(
+        (ApplicationContextInitializer<ConfigurableApplicationContext>)
+            context -> startingContext = context);
     this.additionalProfiles = new ArrayList<>(additionalProfiles);
     this.additionalProfiles.add(Profile.TEST.getId());
 
-    // randomize ports to allow multiple concurrent instances
-    overridePropertyIfAbsent("server.port", SocketUtil.getNextAddress().getPort());
-    overridePropertyIfAbsent("management.server.port", SocketUtil.getNextAddress().getPort());
+    // use OS-assigned ephemeral ports to allow multiple concurrent instances; the actual ports
+    // are read back from the running application (see #serverPort)
+    overridePropertyIfAbsent("server.port", 0);
+    overridePropertyIfAbsent("management.server.port", 0);
     overridePropertyIfAbsent("spring.lifecycle.timeout-per-shutdown-phase", "1s");
 
     overridePropertyIfAbsent("camunda.rest.response-validation.enabled", "true");
@@ -107,8 +118,8 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
       springContext = createSpringBuilder().run(commandLineArgs());
 
       LOGGER.info("Started TestSpringApplication ...");
-      LOGGER.info("-> Server / Rest Port: {}", restPort());
-      LOGGER.info("-> Monitoring Port: {}", monitoringPort());
+      LOGGER.info("-> Server / Rest Port: {}", describePort("server.port"));
+      LOGGER.info("-> Monitoring Port: {}", describePort("management.server.port"));
       LOGGER.info("-> Additional Profiles: {}", additionalProfiles);
       LOGGER.info("-> Secondary Database Type: {}", databaseType());
     }
@@ -118,12 +129,43 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
 
   @Override
   public T stop() {
-    if (springContext != null) {
-      springContext.close();
-      springContext = null;
+    // fall back to the starting context to also stop an application whose (blocking) startup is
+    // still in progress in another thread, e.g. a cluster seed whose peers never came up
+    final var context = springContext != null ? springContext : startingContext;
+    if (context != null) {
+      context.close();
     }
+    springContext = null;
+    startingContext = null;
 
     return self();
+  }
+
+  /**
+   * Returns an already-created singleton bean of the given type, or null if there is none (yet).
+   *
+   * <p>Unlike {@link #bean(Class)}, this also works while the application is still starting, e.g.
+   * when {@link #start()} is blocked on the broker bootstrap in another thread. It only looks up
+   * singletons which are fully created, without triggering bean creation.
+   */
+  public <V> V startedSingleton(final Class<V> type) {
+    final var context = springContext != null ? springContext : startingContext;
+    if (context == null) {
+      return null;
+    }
+
+    try {
+      final var beanFactory = context.getBeanFactory();
+      for (final var name : beanFactory.getSingletonNames()) {
+        final var singleton = beanFactory.getSingleton(name);
+        if (type.isInstance(singleton)) {
+          return type.cast(singleton);
+        }
+      }
+    } catch (final IllegalStateException e) {
+      // the context is not fully initialized or already closed
+    }
+    return null;
   }
 
   @Override
@@ -339,6 +381,7 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
             flatProperties.putAll(
                 ExtendedConfigurationBuilder.flatPropertiesFor(
                     ptConfig, "camunda.physical-tenants." + tenantId)));
+    resolveInitialContactPoints(flatProperties);
     withRefreshableProperties(flatProperties);
     return MainSupport.createDefaultApplicationBuilder()
         .bannerMode(Mode.OFF)
@@ -359,6 +402,70 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     }
   }
 
+  /**
+   * Sets a supplier for the initial contact points, evaluated on every {@link #start()}. Used by
+   * {@link TestCluster} so that a (re)started node always contacts the cluster members that are
+   * currently reachable: with OS-assigned ports, member addresses change on restart, so contact
+   * points cannot be configured statically.
+   *
+   * <p>Contact points explicitly configured on the unified configuration take precedence.
+   */
+  public T withInitialContactPointsSupplier(final Supplier<List<String>> supplier) {
+    initialContactPointsSupplier = supplier;
+    return self();
+  }
+
+  private void resolveInitialContactPoints(final Map<String, Object> flatProperties) {
+    if (initialContactPointsSupplier == null) {
+      return;
+    }
+
+    final var explicit = unifiedConfig.getCluster().getInitialContactPoints();
+    if (explicit != null && !explicit.isEmpty()) {
+      return;
+    }
+
+    final var contactPoints = initialContactPointsSupplier.get();
+    if (!contactPoints.isEmpty()) {
+      flatProperties.put("camunda.cluster.initial-contact-points", String.join(",", contactPoints));
+    }
+  }
+
+  /**
+   * Resolves a port which may be configured as ephemeral (0), in which case the OS assigns a free
+   * port on bind and the actual port must be read back from the running application. Each start
+   * binds fresh ports; nothing is cached across restarts.
+   *
+   * @param configuredPort the currently configured port; returned as is unless it is 0
+   * @param portName a human-readable name of the port, for error messages
+   * @param resolver resolves the actual port from the running application, empty while unbound
+   * @return the actual port
+   */
+  protected int resolveEphemeralPort(
+      final int configuredPort, final String portName, final Supplier<OptionalInt> resolver) {
+    if (configuredPort != 0) {
+      return configuredPort;
+    }
+
+    if (!isStarted()) {
+      throw new IllegalStateException(
+          ("The %s port of %s is OS-assigned and only known while the application is running; "
+                  + "start the application first, or configure a fixed port")
+              .formatted(portName, this));
+    }
+
+    // fast path: ports are usually bound by the time they are looked up
+    final var port = resolver.get();
+    if (port.isPresent()) {
+      return port.getAsInt();
+    }
+
+    return Awaitility.await("until the %s port of %s is bound".formatted(portName, this))
+        .atMost(Duration.ofMinutes(1))
+        .until(resolver::get, OptionalInt::isPresent)
+        .getAsInt();
+  }
+
   private String databaseType() {
     return property(UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE, String.class, "elasticsearch");
   }
@@ -374,6 +481,13 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   private int serverPort(final String property) {
     final Object portProperty;
     if (springContext != null) {
+      // prefer the port the server is actually bound to, which differs from the configured port
+      // when the configured port is 0 (OS-assigned)
+      final var localPort =
+          springContext.getEnvironment().getProperty(localPortProperty(property), Integer.class);
+      if (localPort != null) {
+        return localPort;
+      }
       portProperty = springContext.getEnvironment().getProperty(property);
     } else {
       portProperty = propertyOverrides.get(property);
@@ -384,10 +498,33 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
           "No property '%s' defined anywhere, cannot infer monitoring port".formatted(property));
     }
 
-    if (portProperty instanceof final Integer port) {
-      return port;
+    final int port =
+        portProperty instanceof final Integer intPort
+            ? intPort
+            : Integer.parseInt(portProperty.toString());
+    if (port == 0) {
+      throw new IllegalStateException(
+          ("The '%s' port of %s is OS-assigned and only known while the application is running; "
+                  + "start the application first, or configure a fixed port")
+              .formatted(property, this));
     }
+    return port;
+  }
 
-    return Integer.parseInt(portProperty.toString());
+  /** Describes a server port for logging; applications without a web server have none. */
+  private String describePort(final String property) {
+    try {
+      return String.valueOf(serverPort(property));
+    } catch (final IllegalStateException e) {
+      return "none";
+    }
+  }
+
+  private static String localPortProperty(final String property) {
+    return switch (property) {
+      case "server.port" -> "local.server.port";
+      case "management.server.port" -> "local.management.port";
+      default -> property;
+    };
   }
 }

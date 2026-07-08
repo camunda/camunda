@@ -45,6 +45,7 @@ public class MessagingConfig implements Config {
   private String keyStorePassword;
   private int socketSendBuffer = AUTO_SOCKET_SIZE;
   private int socketReceiveBuffer = AUTO_SOCKET_SIZE;
+  private boolean portReuseEnabled = false;
   private Duration heartbeatTimeout = Duration.ofSeconds(15);
   private Duration heartbeatInterval = Duration.ofSeconds(5);
 
@@ -272,6 +273,26 @@ public class MessagingConfig implements Config {
 
   public String getKeyStorePassword() {
     return keyStorePassword;
+  }
+
+  /**
+   * @return true if the server sockets should be bound with SO_REUSEPORT
+   */
+  public boolean isPortReuseEnabled() {
+    return portReuseEnabled;
+  }
+
+  /**
+   * Sets whether the server sockets are bound with SO_REUSEPORT. Used when the port was claimed
+   * upfront by another socket with SO_REUSEPORT, so that the port is never released between
+   * claiming it and binding the services; see {@link io.atomix.cluster.AtomixCluster}.
+   *
+   * @param portReuseEnabled whether to bind server sockets with SO_REUSEPORT
+   * @return this config for chaining
+   */
+  public MessagingConfig setPortReuseEnabled(final boolean portReuseEnabled) {
+    this.portReuseEnabled = portReuseEnabled;
+    return this;
   }
 
   /**

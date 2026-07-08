@@ -42,9 +42,17 @@ import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.net.Address;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.net.DatagramSocket;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.SocketException;
+import java.net.StandardSocketOptions;
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -103,6 +111,9 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
   protected volatile CompletableFuture<Void> closeFuture;
   protected final ThreadContext threadContext = new SingleThreadContext("atomix-cluster-%d");
   private final AtomicBoolean started = new AtomicBoolean();
+  // holds an ephemeral port resolved at construction until the services have bound it; null if
+  // the configured port is already concrete
+  private final ClaimedPort claimedPort;
 
   public AtomixCluster(
       final ClusterConfig config,
@@ -119,6 +130,7 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
       final ManagedUnicastService unicastService,
       final String actorSchedulerName,
       final MeterRegistry registry) {
+    claimedPort = resolveEphemeralPort(config);
     this.messagingService =
         messagingService != null
             ? messagingService
@@ -257,10 +269,50 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
     return messagingService
         .start()
         .thenComposeAsync(v -> unicastService.start(), threadContext)
+        // both services have bound the claimed port (with SO_REUSEPORT), so it can be released
+        // before the membership service starts advertising the address to other members
+        .thenRunAsync(this::releaseClaimedPort, threadContext)
         .thenComposeAsync(v -> membershipService.start(), threadContext)
         .thenComposeAsync(v -> communicationService.start(), threadContext)
         .thenComposeAsync(v -> eventService.start(), threadContext)
         .thenApply(v -> null);
+  }
+
+  /**
+   * Resolves an ephemeral node port (0) to a concrete free port before any service is built. The
+   * node's address is shared between the TCP messaging service and the UDP unicast service, and is
+   * advertised to other members as this node's single address, so a concrete port must be known
+   * upfront and free on both TCP and UDP.
+   *
+   * <p>The port is claimed by binding it on both protocols with SO_REUSEPORT and held until the
+   * services (which then also bind with SO_REUSEPORT) have bound it, so the port is never released
+   * in between; see {@link #startServices()}. Since the port cannot be known to anyone before the
+   * membership service advertises it, no traffic can arrive while the claim sockets share it.
+   *
+   * @return the claimed port, or null if the configured port is already concrete
+   */
+  private static ClaimedPort resolveEphemeralPort(final ClusterConfig config) {
+    final var nodeConfig = config.getNodeConfig();
+    if (nodeConfig.getPort() != 0) {
+      return null;
+    }
+
+    final var claimed = ClaimedPort.claim();
+    nodeConfig.setPort(claimed.port());
+
+    final var messagingConfig = config.getMessagingConfig();
+    final var messagingPort = messagingConfig.getPort();
+    if (messagingPort == null || messagingPort == 0) {
+      messagingConfig.setPort(claimed.port());
+      messagingConfig.setPortReuseEnabled(claimed.isHeld());
+    }
+    return claimed;
+  }
+
+  private void releaseClaimedPort() {
+    if (claimedPort != null) {
+      claimedPort.close();
+    }
   }
 
   protected CompletableFuture<Void> completeStartup() {
@@ -288,6 +340,8 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
   }
 
   protected CompletableFuture<Void> completeShutdown() {
+    // usually released during startup; make sure the sockets don't leak if startup failed early
+    releaseClaimedPort();
     threadContext.close();
     started.set(false);
     LOGGER.info("Stopped");
@@ -381,5 +435,93 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
   protected static ManagedClusterEventService buildClusterEventService(
       final ClusterMembershipService membershipService, final MessagingService messagingService) {
     return new DefaultClusterEventService(membershipService, messagingService);
+  }
+
+  /**
+   * A port claimed on both TCP and UDP. Where SO_REUSEPORT is supported, the claim sockets stay
+   * bound until {@link #close()}, so the port is never released before its final users (which must
+   * then also bind with SO_REUSEPORT) have bound it. On platforms without SO_REUSEPORT support, the
+   * sockets are closed right away instead, leaving a small window in which another process could
+   * grab the port; ports claimed this way come from the OS's ephemeral range though, which the OS
+   * hands out only when asked for a free port (i.e. another bind to port 0), making a collision
+   * very unlikely.
+   */
+  private static final class ClaimedPort implements AutoCloseable {
+    private final int port;
+    private final boolean held;
+    private final ServerSocket tcp;
+    private final DatagramSocket udp;
+
+    private ClaimedPort(
+        final int port, final boolean held, final ServerSocket tcp, final DatagramSocket udp) {
+      this.port = port;
+      this.held = held;
+      this.tcp = tcp;
+      this.udp = udp;
+    }
+
+    private static ClaimedPort claim() {
+      // an OS-assigned TCP port is almost always also free on UDP, but not guaranteed to be; a
+      // few attempts make a failure virtually impossible
+      final var attempts = 10;
+      for (int attempt = 0; attempt < attempts; attempt++) {
+        final var claimed = tryClaim();
+        if (claimed != null) {
+          return claimed;
+        }
+      }
+      throw new IllegalStateException(
+          "Failed to claim a port that is free on both TCP and UDP after %d attempts"
+              .formatted(attempts));
+    }
+
+    private static ClaimedPort tryClaim() {
+      ServerSocket tcp = null;
+      DatagramSocket udp = null;
+      try {
+        tcp = new ServerSocket();
+        final var reusePort = tcp.supportedOptions().contains(StandardSocketOptions.SO_REUSEPORT);
+        if (reusePort) {
+          tcp.setOption(StandardSocketOptions.SO_REUSEPORT, true);
+        }
+        tcp.bind(new InetSocketAddress(0));
+        final var port = tcp.getLocalPort();
+
+        udp = new DatagramSocket(null);
+        if (reusePort) {
+          udp.setOption(StandardSocketOptions.SO_REUSEPORT, true);
+        }
+        try {
+          udp.bind(new InetSocketAddress(port));
+        } catch (final SocketException e) {
+          LOGGER.debug("OS-assigned TCP port {} is already taken on UDP, retrying", port, e);
+          CloseHelper.quietCloseAll(udp, tcp);
+          return null;
+        }
+
+        if (!reusePort) {
+          // cannot hold the port while the services bind it; release it right away
+          CloseHelper.quietCloseAll(udp, tcp);
+          return new ClaimedPort(port, false, null, null);
+        }
+        return new ClaimedPort(port, true, tcp, udp);
+      } catch (final IOException e) {
+        CloseHelper.quietCloseAll(udp, tcp);
+        throw new UncheckedIOException("Failed to claim a free port on TCP and UDP", e);
+      }
+    }
+
+    private int port() {
+      return port;
+    }
+
+    private boolean isHeld() {
+      return held;
+    }
+
+    @Override
+    public void close() {
+      CloseHelper.quietCloseAll(udp, tcp);
+    }
   }
 }

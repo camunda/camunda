@@ -36,7 +36,7 @@ import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
-import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.camunda.zeebe.qa.util.cluster.util.RuntimePorts;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
@@ -70,17 +70,11 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
         BrokerModuleConfiguration.class,
         IndexTemplateDescriptorsConfigurator.class);
 
-    unifiedConfig
-        .getCluster()
-        .getNetwork()
-        .getCommandApi()
-        .setPort(SocketUtil.getNextAddress().getPort());
-    unifiedConfig
-        .getCluster()
-        .getNetwork()
-        .getInternalApi()
-        .setPort(SocketUtil.getNextAddress().getPort());
-    unifiedConfig.getApi().getGrpc().setPort(SocketUtil.getNextAddress().getPort());
+    // use OS-assigned ephemeral ports to allow multiple concurrent instances; the actual ports
+    // are resolved from the running application (see #mappedPort)
+    unifiedConfig.getCluster().getNetwork().getCommandApi().setPort(0);
+    unifiedConfig.getCluster().getNetwork().getInternalApi().setPort(0);
+    unifiedConfig.getApi().getGrpc().setPort(0);
 
     // set a smaller default log segment size since we pre-allocate, which might be a lot in tests
     // for local development; also lower the watermarks for local testing
@@ -154,10 +148,21 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
 
   @Override
   public int mappedPort(final TestZeebePort port) {
+    final var network = unifiedConfig.getCluster().getNetwork();
     return switch (port) {
-      case COMMAND -> unifiedConfig.getCluster().getNetwork().getCommandApi().getPort();
-      case GATEWAY -> unifiedConfig.getApi().getGrpc().getPort();
-      case CLUSTER -> unifiedConfig.getCluster().getNetwork().getInternalApi().getPort();
+      case COMMAND ->
+          resolveEphemeralPort(
+              network.getCommandApi().getPort(),
+              "command API",
+              () -> RuntimePorts.commandApiPort(this));
+      case GATEWAY ->
+          resolveEphemeralPort(
+              unifiedConfig.getApi().getGrpc().getPort(),
+              "gRPC",
+              () -> RuntimePorts.embeddedGatewayPort(this));
+      case CLUSTER ->
+          resolveEphemeralPort(
+              network.getInternalApi().getPort(), "cluster", () -> RuntimePorts.clusterPort(this));
       default -> super.mappedPort(port);
     };
   }

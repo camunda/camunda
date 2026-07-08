@@ -159,6 +159,22 @@ public final class Gateway implements CloseableSilently {
     return brokerClient;
   }
 
+  /**
+   * Returns the actual port the gRPC server is bound to. This may differ from the configured port
+   * when the configured port is 0, in which case the OS assigns a free port on bind.
+   *
+   * @return the actual gRPC server port
+   * @throws IllegalStateException if the server is not started yet
+   */
+  public int getServerPort() {
+    final var runningServer = server;
+    if (runningServer == null) {
+      throw new IllegalStateException(
+          "Expected to get the actual gRPC server port, but the server is not started yet");
+    }
+    return runningServer.getPort();
+  }
+
   public ActorFuture<Gateway> start() {
     final var resultFuture = new CompletableActorFuture<Gateway>();
     healthManager.setStatus(Status.STARTING);

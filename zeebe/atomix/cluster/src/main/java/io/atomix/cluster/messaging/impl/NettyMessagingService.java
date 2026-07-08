@@ -48,6 +48,7 @@ import io.netty.channel.ServerChannel;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.WriteBufferWaterMark;
 import io.netty.channel.epoll.Epoll;
+import io.netty.channel.epoll.EpollChannelOption;
 import io.netty.channel.epoll.EpollDatagramChannel;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollServerSocketChannel;
@@ -55,6 +56,7 @@ import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioChannelOption;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -77,6 +79,7 @@ import java.io.IOException;
 import java.net.BindException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
+import java.net.StandardSocketOptions;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -119,7 +122,9 @@ public final class NettyMessagingService implements ManagedMessagingService {
   private static final String MESSAGE_DISPATCHER_NAME = "handler";
 
   private final Logger log = LoggerFactory.getLogger(getClass());
-  private final Address advertisedAddress;
+  // may be re-assigned once after binding, when the configured port is 0 and the actual port is
+  // only known after the OS assigned one; never changes once the service is started
+  private volatile Address advertisedAddress;
   private final Collection<Address> bindingAddresses = new ArrayList<>();
   private final int preamble;
   private final ProtocolVersion protocolVersion;
@@ -136,6 +141,8 @@ public final class NettyMessagingService implements ManagedMessagingService {
   private Class<? extends SocketChannel> clientChannelClass;
   private Class<? extends DatagramChannel> clientDataGramChannelClass;
   private Channel serverChannel;
+  // the actual port of the first successful bind; used to resolve configured ephemeral ports (0)
+  private volatile int boundPort;
   // a single thread executor which silently rejects tasks being submitted when it's shutdown
   private ScheduledExecutorService timeoutExecutor;
   private volatile LocalClientConnection localConnection;
@@ -888,6 +895,13 @@ public final class NettyMessagingService implements ManagedMessagingService {
   private CompletableFuture<Void> bootstrapServer() {
     final ServerBootstrap b = new ServerBootstrap();
     b.option(ChannelOption.SO_REUSEADDR, true);
+    if (config.isPortReuseEnabled()) {
+      b.option(
+          serverChannelClass == EpollServerSocketChannel.class
+              ? EpollChannelOption.SO_REUSEPORT
+              : NioChannelOption.of(StandardSocketOptions.SO_REUSEPORT),
+          true);
+    }
     b.option(ChannelOption.SO_BACKLOG, 128);
     b.childOption(
         ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(8 * 1024, 32 * 1024));
@@ -934,13 +948,21 @@ public final class NettyMessagingService implements ManagedMessagingService {
       final CompletableFuture<Void> future) {
     if (addressIterator.hasNext()) {
       final Address address = addressIterator.next();
+      // once the OS assigned a port for the first ephemeral bind, all further interfaces must be
+      // bound to the same port so that a single advertised port reaches all of them
+      final int port = address.port() == 0 && boundPort != 0 ? boundPort : address.port();
       bootstrap
-          .bind(address.host(), address.port())
+          .bind(address.host(), port)
           .addListener(
               (ChannelFutureListener)
                   f -> {
                     if (f.isSuccess()) {
                       serverChannel = f.channel();
+                      if (boundPort == 0
+                          && serverChannel.localAddress()
+                              instanceof final InetSocketAddress boundAddress) {
+                        boundPort = boundAddress.getPort();
+                      }
                       bind(bootstrap, addressIterator, future);
                     } else {
                       final Throwable cause = f.cause();
@@ -958,8 +980,31 @@ public final class NettyMessagingService implements ManagedMessagingService {
                     }
                   });
     } else {
+      resolveEphemeralPorts();
       future.complete(null);
     }
+  }
+
+  /**
+   * Replaces the ephemeral port 0 in the advertised and binding addresses with the port that the OS
+   * actually assigned, so that the advertised address is routable by other cluster members. Must
+   * run after all interfaces are bound and before the service is considered started.
+   */
+  private void resolveEphemeralPorts() {
+    if (boundPort == 0) {
+      return;
+    }
+
+    if (advertisedAddress.port() == 0) {
+      advertisedAddress = Address.from(advertisedAddress.host(), boundPort);
+    }
+
+    final var resolved =
+        bindingAddresses.stream()
+            .map(address -> address.port() == 0 ? Address.from(address.host(), boundPort) : address)
+            .toList();
+    bindingAddresses.clear();
+    bindingAddresses.addAll(resolved);
   }
 
   @VisibleForTesting
