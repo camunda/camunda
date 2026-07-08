@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.util.HashMap;
 import org.junit.jupiter.api.Test;
 
-public class FileBasedSecretReferenceTest {
+class FileBasedSecretReferenceTest {
   @Test
   void shouldCreateWithName() {
     // given / when

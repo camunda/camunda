@@ -11,6 +11,10 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Implementations must be thread-safe: {@link #resolve} and {@link #list} may be called
+ * concurrently from multiple threads.
+ */
 public interface SecretStore<T extends SecretReference> extends AutoCloseable {
 
   /**
@@ -19,6 +23,8 @@ public interface SecretStore<T extends SecretReference> extends AutoCloseable {
    * <p>Returns a result for <em>every</em> ref in the input set. Per-secret failures (e.g. secret
    * not found, access denied) are reported as {@link SecretResolutionResult.Failed}.
    *
+   * <p>Implementations must be thread-safe.
+   *
    * @throws SecretStoreUnavailableException if the backing store cannot be accessed or its content
    *     is malformed
    */
@@ -26,6 +32,8 @@ public interface SecretStore<T extends SecretReference> extends AutoCloseable {
 
   /**
    * Lists all secret references known to this store.
+   *
+   * <p>Implementations must be thread-safe.
    *
    * @throws SecretStoreUnavailableException if the backing store cannot be accessed or its content
    *     is malformed

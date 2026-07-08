@@ -19,7 +19,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -38,6 +37,9 @@ public final class FileBasedSecretStore implements SecretStore<FileBasedSecretRe
   @Override
   public Map<FileBasedSecretReference, SecretResolutionResult> resolve(
       final Set<FileBasedSecretReference> refs) {
+    if (refs.isEmpty()) {
+      return Map.of();
+    }
     final var props = loadProperties();
     LOG.debug("Resolving {} secret refs from '{}'", refs.size(), filePath);
     return refs.stream()
@@ -72,13 +74,6 @@ public final class FileBasedSecretStore implements SecretStore<FileBasedSecretRe
     } catch (final IOException e) {
       throw new SecretStoreUnavailableException(
           "Failed to load secrets file '" + filePath + "': " + e.getMessage(), e);
-    } catch (final SecurityException e) {
-      throw new SecretStoreUnavailableException(
-          "Access denied to secrets file '"
-              + filePath
-              + "': "
-              + Objects.requireNonNullElse(e.getMessage(), "permission denied"),
-          e);
     } catch (final IllegalArgumentException e) {
       throw new SecretStoreUnavailableException(
           "Malformed secrets file '" + filePath + "': " + e.getMessage(), e);
