@@ -41,6 +41,7 @@ public class LocalizationService implements ConfigurationReloadable {
   private static final String MANAGEMENT_DASHBOARD_FIELD = "managementDashboard";
   private static final String INSTANT_DASHBOARD_FIELD = "instantDashboard";
   private static final String AGENTIC_CONTROL_FIELD = "agenticControl";
+  private static final String BUSINESS_VALUE_FIELD = "businessValue";
   private static final String JSON_FILE_EXTENSION = "json";
   private static final String REPORT_FIELD = "report";
   private static final String REPORT_GROUPING_FIELD = "groupBy";
@@ -110,6 +111,11 @@ public class LocalizationService implements ConfigurationReloadable {
   public String getLocalizationForAgenticControlReportCode(
       final String localeCode, final String reportCode) {
     return getNestedMessageForCode(localeCode, AGENTIC_CONTROL_FIELD, REPORT_FIELD, reportCode);
+  }
+
+  public String getLocalizationForBusinessValueReportCode(
+      final String localeCode, final String reportCode) {
+    return getNestedMessageForCode(localeCode, BUSINESS_VALUE_FIELD, REPORT_FIELD, reportCode);
   }
 
   public String getLocalizationForInstantPreviewReportCode(

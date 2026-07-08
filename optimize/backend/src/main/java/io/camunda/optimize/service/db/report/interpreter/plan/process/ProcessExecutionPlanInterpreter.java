@@ -52,6 +52,7 @@ public interface ProcessExecutionPlanInterpreter
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     final List<Class<? extends ProcessFilterDto<?>>> effectiveBaselineFilters =
         context.getReportData().isAgenticControlReport()
+                || context.getReportData().isBusinessValueReport()
             ? FILTERS_AFFECTING_AGENTIC_BASELINE
             : FILTERS_AFFECTING_BASELINE;
     return context.getReportData().groupFiltersByDefinitionIdentifier().entrySet().stream()

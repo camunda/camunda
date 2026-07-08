@@ -125,6 +125,8 @@ public class ReportRestMapper {
       return localizationService::getLocalizationForManagementReportCode;
     } else if (data.isAgenticControlReport()) {
       return localizationService::getLocalizationForAgenticControlReportCode;
+    } else if (data.isBusinessValueReport()) {
+      return localizationService::getLocalizationForBusinessValueReportCode;
     } else {
       return localizationService::getLocalizationForInstantPreviewReportCode;
     }

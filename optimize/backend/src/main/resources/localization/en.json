@@ -1582,6 +1582,16 @@
       }
     }
   },
+  "businessValue": {
+    "report": {
+      "businessValueCycleTimeName": "Cycle Time",
+      "businessValueCycleTimeDescription": "Average, median (P50) and tail (P95) cycle time of completed process instances in the selected period.",
+      "businessValueCompletedCount": "Completed Instances",
+      "businessValueCompletedWithUserTasks": "Completed Instances With User Tasks",
+      "businessValueCompletedNoIncident": "Completed Instances Without Incident",
+      "businessValueCompletedWithUserTasksNoIncident": "Completed Instances With User Tasks and Without Incident"
+    }
+  },
   "agenticControl": {
     "agenticControlPlaneDashboardName": "Agentic Control Dashboard",
     "report": {

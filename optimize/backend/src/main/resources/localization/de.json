@@ -1582,6 +1582,16 @@
       }
     }
   },
+  "businessValue": {
+    "report": {
+      "businessValueCycleTimeName": "Durchlaufzeit",
+      "businessValueCycleTimeDescription": "Durchschnittliche, mittlere (P50) und Tail-Durchlaufzeit (P95) abgeschlossener Prozessinstanzen im gewählten Zeitraum.",
+      "businessValueCompletedCount": "Abgeschlossene Instanzen",
+      "businessValueCompletedWithUserTasks": "Abgeschlossene Instanzen mit Benutzeraufgaben",
+      "businessValueCompletedNoIncident": "Abgeschlossene Instanzen ohne Vorfall",
+      "businessValueCompletedWithUserTasksNoIncident": "Abgeschlossene Instanzen mit Benutzeraufgaben und ohne Vorfall"
+    }
+  },
   "agenticControl": {
     "agenticControlPlaneDashboardName": "Agentic Control Dashboard",
     "report": {

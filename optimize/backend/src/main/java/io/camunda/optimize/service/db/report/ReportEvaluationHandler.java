@@ -165,7 +165,7 @@ public abstract class ReportEvaluationHandler {
     // from all tenants the given definition currently exists on
     if (reportEvaluationInfo.getReport().getData()
         instanceof final ProcessReportDataDto processReportData) {
-      if (processReportData.isAgenticControlReport()) {
+      if (processReportData.isAgenticControlReport() || processReportData.isBusinessValueReport()) {
         final List<ReportDataDefinitionDto> scopedDefinitions =
             Optional.ofNullable(reportEvaluationInfo.getAdditionalFilters())
                 .map(AdditionalProcessReportEvaluationFilterDto::getDefinitions)
