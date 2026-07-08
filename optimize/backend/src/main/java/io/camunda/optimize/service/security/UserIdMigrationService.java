@@ -10,10 +10,13 @@ package io.camunda.optimize.service.security;
 import io.camunda.optimize.service.db.repository.UserIdMigrationRepository;
 import io.camunda.optimize.service.exceptions.UserIdMigrationException;
 import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
+import jakarta.annotation.PreDestroy;
 import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.springframework.context.annotation.Conditional;
@@ -35,6 +38,18 @@ import org.springframework.stereotype.Service;
  * old ID that was already migrated before the restart, the only consequence is one extra (cheap)
  * {@code _count} query on that user's next login, which correctly finds no matching documents and
  * does no further work.
+ *
+ * <p>All blocking DB work runs on a dedicated virtual-thread-per-task {@link #executor} rather than
+ * the default {@code ForkJoinPool.commonPool()}: {@code _update_by_query} completion is awaited by
+ * polling in a loop with no overall deadline, so on a low-core pod (where the shared common pool
+ * may have as few as one worker thread) a single stuck task could otherwise starve every other
+ * feature in the JVM relying on the default pool. Virtual threads (as already used for similarly
+ * blocking, I/O-bound work in {@code SchemaManager} and {@code RestoreManager}) don't pin a scarce
+ * platform thread while parked in that poll loop, so there's no fixed budget to exhaust even under
+ * several simultaneous stuck migrations. {@link #ATTEMPT_TIMEOUT} additionally bounds each attempt
+ * so a stuck task is treated as a failure and retried on the next login instead of leaving the old
+ * ID permanently marked as in-progress; note this only frees the {@link CompletableFuture} chain,
+ * the underlying poll loop keeps its virtual thread parked until the stuck task actually resolves.
  */
 @Service
 @Conditional(CCSaaSCondition.class)
@@ -50,13 +65,29 @@ public class UserIdMigrationService {
 
   private static final Duration INITIAL_RETRY_BACKOFF = Duration.ofMillis(1000);
 
+  /**
+   * Bounds how long a single attempt (the _count check plus, if needed, the _update_by_query wait)
+   * may take before it's treated as failed. Generous on purpose: legitimate migrations across large
+   * indices can take a while, and the cost of a false-positive timeout is just an extra retry on
+   * the next login.
+   */
+  private static final Duration ATTEMPT_TIMEOUT = Duration.ofMinutes(10);
+
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(UserIdMigrationService.class);
 
   private final UserIdMigrationRepository repository;
   private final Set<String> handledOldUserIds = ConcurrentHashMap.newKeySet();
+  private final ExecutorService executor =
+      Executors.newThreadPerTaskExecutor(
+          Thread.ofVirtual().name("user-id-migration-", 0).factory());
 
   public UserIdMigrationService(final UserIdMigrationRepository repository) {
     this.repository = repository;
+  }
+
+  @PreDestroy
+  public void shutdown() {
+    executor.shutdownNow();
   }
 
   /**
@@ -69,7 +100,8 @@ public class UserIdMigrationService {
       LOG.debug("Old user ID [{}] already migrated or migration in progress, skipping", oldUserId);
       return;
     }
-    CompletableFuture.supplyAsync(() -> repository.hasDocumentsWithUserId(oldUserId))
+    CompletableFuture.supplyAsync(() -> repository.hasDocumentsWithUserId(oldUserId), executor)
+        .orTimeout(ATTEMPT_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)
         .thenCompose(
             hasDocuments -> {
               if (!hasDocuments) {
@@ -108,8 +140,13 @@ public class UserIdMigrationService {
         newUserId,
         attempt,
         MAX_ATTEMPTS);
-    repository.migrateUserId(oldUserId, newUserId);
-    return CompletableFuture.supplyAsync(() -> repository.hasDocumentsWithUserId(oldUserId))
+    return CompletableFuture.supplyAsync(
+            () -> {
+              repository.migrateUserId(oldUserId, newUserId);
+              return repository.hasDocumentsWithUserId(oldUserId);
+            },
+            executor)
+        .orTimeout(ATTEMPT_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)
         .thenCompose(
             stillHasDocuments -> {
               if (!stillHasDocuments) {
@@ -138,6 +175,7 @@ public class UserIdMigrationService {
   private CompletableFuture<Void> afterBackoff(final int attempt) {
     final long backoffMillis = INITIAL_RETRY_BACKOFF.toMillis() * (1L << (attempt - 1));
     return CompletableFuture.runAsync(
-        () -> {}, CompletableFuture.delayedExecutor(backoffMillis, TimeUnit.MILLISECONDS));
+        () -> {},
+        CompletableFuture.delayedExecutor(backoffMillis, TimeUnit.MILLISECONDS, executor));
   }
 }
