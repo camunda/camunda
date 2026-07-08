@@ -8,27 +8,32 @@
 
 import {useCallback} from 'react';
 import {useNavigate} from '@tanstack/react-router';
-import type {CurrentUser, UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {CurrentUser, UserTask, Variable} from '@camunda/camunda-api-zod-schemas/8.10';
 import {getStateLocally} from '#/shared/browser-storage/local-storage';
 import {tracking} from '#/shared/tracking';
 import type {TasklistIndexSearch} from '#/tasklist/modules/available-tasks/searchSchema';
 import {CompleteTaskButton} from '#/tasklist/modules/task-details/components/CompleteTaskButton';
 import {useTaskCompletion} from '#/tasklist/modules/task-details/useTaskCompletion';
+import {TaskDetailsForm} from '#/tasklist/modules/task-details-form/TaskDetailsForm';
 import styles from './TaskDetailsTaskPage.module.scss';
 
 type Props = {
 	task: UserTask;
 	currentUser: CurrentUser;
 	search: TasklistIndexSearch;
+	formSchema: string | null;
+	variables: Variable[];
 };
 
-const TaskDetailsTaskPage: React.FC<Props> = ({task, currentUser, search}) => {
+const TaskDetailsTaskPage: React.FC<Props> = ({task, currentUser, search, formSchema, variables}) => {
 	const navigate = useNavigate();
+	const isCamundaForm = formSchema !== null;
 	const customFilter = getStateLocally('tasklist.customFilters')?.[search.filter];
+
 	const onComplete = useCallback(() => {
 		tracking.track({
 			eventName: 'tasklist:task-completed',
-			isCamundaForm: false,
+			isCamundaForm,
 			hasRemainingTasks: false,
 			filter: search.filter,
 			customFilters: Object.keys(customFilter ?? {}),
@@ -43,7 +48,7 @@ const TaskDetailsTaskPage: React.FC<Props> = ({task, currentUser, search}) => {
 				tasklistAutoSelectSource: 'task-completion',
 			}),
 		});
-	}, [navigate, search, customFilter]);
+	}, [navigate, search, customFilter, isCamundaForm]);
 	const {status, isCompletionAllowed, isHidden, complete} = useTaskCompletion({
 		userTaskKey: task.userTaskKey,
 		currentUser: currentUser.username,
@@ -52,10 +57,31 @@ const TaskDetailsTaskPage: React.FC<Props> = ({task, currentUser, search}) => {
 		onComplete,
 	});
 
+	if (formSchema !== null) {
+		return (
+			<TaskDetailsForm
+				formSchema={formSchema}
+				variables={variables}
+				completionStatus={status}
+				isCompletionAllowed={isCompletionAllowed}
+				isHidden={isHidden}
+				onSubmit={complete}
+			/>
+		);
+	}
+
 	return (
 		<div className={styles.container} data-testid="task-tab-content">
+			<div className={styles.content} />
 			<div className={styles.footer}>
-				<CompleteTaskButton status={status} onClick={complete} isHidden={isHidden} isDisabled={!isCompletionAllowed} />
+				<CompleteTaskButton
+					status={status}
+					onClick={() => {
+						complete();
+					}}
+					isHidden={isHidden}
+					isDisabled={!isCompletionAllowed}
+				/>
 			</div>
 		</div>
 	);
