@@ -1,0 +1,63 @@
+---
+# ECK-managed Elasticsearch for the C8SM 8.10 preview environment.
+#
+# camunda-platform 15.0.0-alpha2 dropped the bundled Bitnami Elasticsearch subchart,
+# so secondary storage is now provided out-of-chart via an Elasticsearch custom
+# resource reconciled by the cluster-wide ECK operator on camunda-ci (it watches all
+# namespaces, so this CR is created in the preview namespace itself).
+#
+# ECK names the Service `<metadata.name>-es-http`, i.e. `elasticsearch-es-http`; the
+# camunda-platform values point `global.elasticsearch.url.host` at that name.
+#
+# Anonymous=superuser + TLS disabled mirrors the load-test setup
+# (load-tests/setup/charts/load-test-setup/templates/elasticsearch.yaml): fine for a
+# throwaway preview, never for production.
+apiVersion: elasticsearch.k8s.elastic.co/v1
+kind: Elasticsearch
+metadata:
+  name: elasticsearch
+  labels: {{ include "commonLabels" $ | nindent 4 }}
+  annotations: {{ include "commonAnnotations" $ | nindent 4 }}
+spec:
+  version: 8.17.3
+  nodeSets:
+  - name: default
+    count: 1
+    config:
+      node.store.allow_mmap: "false"
+      logger.org.elasticsearch.deprecation: "OFF"
+      # Authenticate unauthenticated requests as the "anonymous" superuser so
+      # Camunda can reach ES without credentials (preview-only convenience).
+      xpack.security.authc:
+        anonymous:
+          username: anonymous
+          roles: superuser
+    podTemplate:
+      spec:
+        containers:
+        - name: elasticsearch
+          resources:
+            requests:
+              cpu: 500m
+              memory: 2Gi
+            limits:
+              memory: 2Gi
+        nodeSelector:
+          cloud.google.com/gke-nodepool: previews
+        tolerations:
+        - key: previews
+          operator: Exists
+          effect: NoSchedule
+    volumeClaimTemplates:
+    - metadata:
+        name: elasticsearch-data
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources:
+          requests:
+            storage: 1Gi
+  http:
+    tls:
+      selfSignedCertificate:
+        # Plain HTTP on the ES API (preview-only; see load-test setup).
+        disabled: true

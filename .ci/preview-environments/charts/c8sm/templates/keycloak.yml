@@ -1,0 +1,117 @@
+---
+# Keycloak for the C8SM 8.10 preview environment.
+#
+# camunda-platform 15.0.0-alpha2 dropped the bundled Bitnami `identityKeycloak`
+# subchart. The Keycloak operator only watches its OWN namespace (unlike the
+# cluster-wide CNPG/ECK operators), so — unlike ES and the Web Modeler DB which
+# live in the preview namespace — this Keycloak CR, its co-located CNPG database
+# and secrets are created in the shared `keycloak-operator` namespace, uniquely
+# named per release ({{ .Release.Name }}-kc*) to avoid cross-preview collisions.
+# The camunda-previews ArgoCD AppProject allows this destination
+# (infra-core: camunda-int/kustomize/base/argocd/projects/preview-environments.yml).
+#
+# The preview's Camunda apps (in {{ .Release.Namespace }}) reach this Keycloak via
+# an in-cluster ExternalName Service that the camunda-platform chart renders when
+# global.identity.keycloak.internal=true (see values.yaml), so the HTTPRoute /auth
+# backend stays a local name and no cross-namespace backendRef/ReferenceGrant is needed.
+#
+# Preview-only throwaway credentials (fixed).
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .Release.Name }}-kc-db
+  namespace: keycloak-operator
+  labels: {{ include "commonLabels" $ | nindent 4 }}
+  annotations: {{ include "commonAnnotations" $ | nindent 4 }}
+type: kubernetes.io/basic-auth
+stringData:
+  username: keycloak
+  password: keycloak
+---
+# Initial admin for the operator-managed Keycloak, consumed by Identity (which
+# bootstraps the camunda-platform realm + OIDC clients via the Keycloak admin API).
+# The same password is mirrored into camunda-credentials in the preview namespace
+# (secrets.yml) under identity-keycloak-admin-password.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .Release.Name }}-kc-admin
+  namespace: keycloak-operator
+  labels: {{ include "commonLabels" $ | nindent 4 }}
+  annotations: {{ include "commonAnnotations" $ | nindent 4 }}
+type: kubernetes.io/basic-auth
+stringData:
+  username: admin
+  password: admin
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ .Release.Name }}-kc-db
+  namespace: keycloak-operator
+  labels: {{ include "commonLabels" $ | nindent 4 }}
+  annotations: {{ include "commonAnnotations" $ | nindent 4 }}
+spec:
+  instances: 1
+  imageName: europe-west1-docker.pkg.dev/ci-30-162810/ghcr/cloudnative-pg/postgresql:17
+  storage:
+    size: 1Gi
+  bootstrap:
+    initdb:
+      database: keycloak
+      owner: keycloak
+      secret:
+        name: {{ .Release.Name }}-kc-db
+  affinity:
+    nodeSelector:
+      cloud.google.com/gke-nodepool: previews
+    tolerations:
+    - key: previews
+      operator: Exists
+      effect: NoSchedule
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      memory: 512Mi
+---
+apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: {{ .Release.Name }}-kc
+  namespace: keycloak-operator
+  labels: {{ include "commonLabels" $ | nindent 4 }}
+  annotations: {{ include "commonAnnotations" $ | nindent 4 }}
+spec:
+  instances: 1
+  image: europe-west1-docker.pkg.dev/ci-30-162810/quay/keycloak/keycloak:26.6.3
+  # Fixed initial admin so Identity can bootstrap the realm; see the kc-admin secret.
+  bootstrapAdmin:
+    user:
+      secret: {{ .Release.Name }}-kc-admin
+  db:
+    vendor: postgres
+    host: {{ .Release.Name }}-kc-db-rw
+    database: keycloak
+    usernameSecret:
+      name: {{ .Release.Name }}-kc-db
+      key: username
+    passwordSecret:
+      name: {{ .Release.Name }}-kc-db
+      key: password
+  http:
+    httpEnabled: true
+  hostname:
+    # Hostname only (no scheme/path): the token issuer https://<domain>/auth/realms/...
+    # is composed from the forwarded proto (proxy-headers below) + this host +
+    # the http-relative-path.
+    hostname: {{ include "ingress.domain" $ }}
+    strict: false
+  additionalOptions:
+    # Serve under /auth to match global.identity.keycloak.contextPath.
+    - name: http-relative-path
+      value: /auth
+    # Trust the preview ingress's forwarded proto/host (TLS terminates at the Gateway).
+    - name: proxy-headers
+      value: xforwarded
