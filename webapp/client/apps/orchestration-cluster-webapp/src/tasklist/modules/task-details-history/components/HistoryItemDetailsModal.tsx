@@ -62,11 +62,13 @@ const HistoryItemDetailsModal: React.FC<Props> = ({onClose, auditLog}) => {
 							</StructuredListCell>
 							<StructuredListCell>{formatHistoryDate(auditLog.timestamp)}</StructuredListCell>
 						</StructuredListRow>
-						{auditLog.operationType === 'ASSIGN' ? (
-							<>
-								<StructuredListRow>
-									<h5 className={styles.titleListCell}>{t('tasklist.taskDetailsHistoryModalDetails')}:</h5>
-								</StructuredListRow>
+					</StructuredListBody>
+				</StructuredListWrapper>
+				{auditLog.operationType === 'ASSIGN' ? (
+					<section>
+						<h5 className={styles.sectionTitle}>{t('tasklist.taskDetailsHistoryModalDetails')}:</h5>
+						<StructuredListWrapper isCondensed isFlush>
+							<StructuredListBody>
 								<StructuredListRow className={styles.verticallyAlignedRow}>
 									<StructuredListCell noWrap className={styles.firstColumn}>
 										<div className={styles.iconText}>
@@ -76,10 +78,10 @@ const HistoryItemDetailsModal: React.FC<Props> = ({onClose, auditLog}) => {
 									</StructuredListCell>
 									<StructuredListCell>{auditLog.relatedEntityKey}</StructuredListCell>
 								</StructuredListRow>
-							</>
-						) : null}
-					</StructuredListBody>
-				</StructuredListWrapper>
+							</StructuredListBody>
+						</StructuredListWrapper>
+					</section>
+				) : null}
 			</ModalBody>
 		</ComposedModal>
 	);
