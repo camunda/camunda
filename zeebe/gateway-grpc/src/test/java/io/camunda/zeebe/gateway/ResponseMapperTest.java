@@ -202,6 +202,34 @@ class ResponseMapperTest {
       assertThat(result.getBusinessId()).isEqualTo("order-123");
     }
 
+    @Test
+    void shouldMapLeaseTokenToActivatedJob() {
+      // given
+      final JobRecord jobRecord = mockJobRecord(JobKind.BPMN_ELEMENT, Map.of());
+      when(jobRecord.getLeaseToken()).thenReturn("lease-token-123");
+      final var activatedJob = mockActivatedJob(jobRecord);
+
+      // when
+      final var result = ResponseMapper.toActivatedJob(activatedJob);
+
+      // then
+      assertThat(result.hasLeaseToken()).isTrue();
+      assertThat(result.getLeaseToken()).isEqualTo("lease-token-123");
+    }
+
+    @Test
+    void shouldNotSetLeaseTokenWhenNotLeased() {
+      // given
+      final JobRecord jobRecord = mockJobRecord(JobKind.BPMN_ELEMENT, Map.of());
+      final var activatedJob = mockActivatedJob(jobRecord);
+
+      // when
+      final var result = ResponseMapper.toActivatedJob(activatedJob);
+
+      // then
+      assertThat(result.hasLeaseToken()).isFalse();
+    }
+
     @ParameterizedTest
     @EnumSource(JobListenerEventType.class)
     void shouldMapActivatedJobWithListenerEventType(final JobListenerEventType listenerEventType) {
@@ -240,6 +268,7 @@ class ResponseMapperTest {
       when(jobRecord.getTenantId()).thenReturn(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
       when(jobRecord.getLength()).thenReturn(1);
       when(jobRecord.getBusinessId()).thenReturn("");
+      when(jobRecord.getLeaseToken()).thenReturn("");
       return jobRecord;
     }
 

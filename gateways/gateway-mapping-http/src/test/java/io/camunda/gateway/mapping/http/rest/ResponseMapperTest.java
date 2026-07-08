@@ -196,6 +196,79 @@ class ResponseMapperTest {
     }
 
     @Test
+    void shouldMapActivatedJobWithLeaseToken() {
+      // given
+      final JobRecord jobRecord =
+          new JobRecord()
+              .setJobKind(JobKind.BPMN_ELEMENT)
+              .setType("test-type")
+              .setBpmnProcessId("procId")
+              .setElementId("elementId")
+              .setProcessInstanceKey(456L)
+              .setProcessDefinitionVersion(1)
+              .setProcessDefinitionKey(123L)
+              .setElementInstanceKey(555L)
+              .setWorker("worker")
+              .setRetries(3)
+              .setDeadline(0L)
+              .setLeaseToken("lease-token-1")
+              .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+      final byte[] emptyVariables = MsgPackConverter.convertToMsgPack(Collections.emptyMap());
+      jobRecord.setVariables(new UnsafeBuffer(emptyVariables));
+
+      final JobBatchRecord batchRecord = buildJobBatchRecord(jobRecord);
+      final JobActivationResponse activationResponse =
+          new JobActivationResponse(123L, batchRecord, 1024 * 1024L);
+
+      // when
+      final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
+
+      // then
+      final var jobs = result.getActivateJobsResponse().getJobs();
+      assertThat(jobs)
+          .singleElement()
+          .satisfies(job -> assertThat(job.getLeaseToken()).isEqualTo("lease-token-1"));
+    }
+
+    @Test
+    void shouldNotSetLeaseTokenWhenNotLeasedForActivatedJob() {
+      // given - job activated without a lease (empty string on the record)
+      final JobRecord jobRecord =
+          new JobRecord()
+              .setJobKind(JobKind.BPMN_ELEMENT)
+              .setType("test-type")
+              .setBpmnProcessId("procId")
+              .setElementId("elementId")
+              .setProcessInstanceKey(456L)
+              .setProcessDefinitionVersion(1)
+              .setProcessDefinitionKey(123L)
+              .setElementInstanceKey(555L)
+              .setWorker("worker")
+              .setRetries(3)
+              .setDeadline(0L)
+              // leaseToken defaults to an empty string when not set
+              .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+      final byte[] emptyVariables = MsgPackConverter.convertToMsgPack(Collections.emptyMap());
+      jobRecord.setVariables(new UnsafeBuffer(emptyVariables));
+
+      final JobBatchRecord batchRecord = buildJobBatchRecord(jobRecord);
+      final JobActivationResponse activationResponse =
+          new JobActivationResponse(123L, batchRecord, 1024 * 1024L);
+
+      // when
+      final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
+
+      // then
+      final var jobs = result.getActivateJobsResponse().getJobs();
+      assertThat(jobs)
+          .singleElement()
+          // leaseToken should be null when the record carries an empty string
+          .satisfies(job -> assertThat(job.getLeaseToken()).isNull());
+    }
+
+    @Test
     void shouldMapPriorityToActivatedJobResult() {
       // given
       final JobRecord jobRecord =
@@ -394,7 +467,8 @@ class ResponseMapperTest {
           .setPriority(jobRecord.getPriority())
           .setDeadline(jobRecord.getDeadline())
           .setTenantId(jobRecord.getTenantId())
-          .setBusinessId(jobRecord.getBusinessId());
+          .setBusinessId(jobRecord.getBusinessId())
+          .setLeaseToken(jobRecord.getLeaseToken());
 
       // Set variables as empty MsgPack map
       final byte[] emptyVariables = MsgPackConverter.convertToMsgPack(Collections.emptyMap());

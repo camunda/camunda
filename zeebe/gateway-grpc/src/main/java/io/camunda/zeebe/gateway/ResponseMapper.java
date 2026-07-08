@@ -412,6 +412,10 @@ public final class ResponseMapper {
       builder.setUserTask(toUserTaskProperties(job.getCustomHeaders()));
     }
 
+    if (!job.getLeaseToken().isEmpty()) {
+      builder.setLeaseToken(job.getLeaseToken());
+    }
+
     return builder.build();
   }
 

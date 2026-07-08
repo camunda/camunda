@@ -138,7 +138,8 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
               "rootProcessInstanceKey": null,
               "businessId": null,
               "userTask": null,
-              "priority": 80
+              "priority": 80,
+              "leaseToken": null
             },
             {
               "jobKey": "%d",
@@ -167,7 +168,8 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
               "rootProcessInstanceKey": null,
               "businessId": null,
               "userTask": null,
-              "priority": 80
+              "priority": 80,
+              "leaseToken": null
             }
           ]
         }"""

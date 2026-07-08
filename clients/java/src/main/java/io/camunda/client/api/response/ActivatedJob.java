@@ -176,4 +176,12 @@ public interface ActivatedJob {
    *     version 8.10, or when the owning process instance has no business ID)
    */
   String getBusinessId();
+
+  /**
+   * The lease token identifying this activation. Pass it along to commands (e.g. complete, fail,
+   * throw-error) to fence them against superseded activations of the same job.
+   *
+   * @return the lease token, or {@code null} if the job was activated without a lease
+   */
+  String getLeaseToken();
 }
