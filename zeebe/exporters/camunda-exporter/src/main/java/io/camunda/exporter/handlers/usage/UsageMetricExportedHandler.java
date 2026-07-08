@@ -5,13 +5,14 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.handlers;
+package io.camunda.exporter.handlers.usage;
 
 import static io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType.EDI;
 import static io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType.RPI;
 import static io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType.TU;
 
-import io.camunda.exporter.handlers.UsageMetricExportedHandler.UsageMetricsBatch;
+import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.handlers.usage.UsageMetricExportedHandler.UsageMetricsBatch;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsEntity;

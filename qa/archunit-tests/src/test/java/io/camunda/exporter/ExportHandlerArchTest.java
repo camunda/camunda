@@ -20,7 +20,7 @@ import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
 import io.camunda.archunit.DoNotIncludeTestsOrTestJars;
 import io.camunda.exporter.handlers.AuditLogHandler;
 import io.camunda.exporter.handlers.ExportHandler;
-import io.camunda.exporter.handlers.UsageMetricExportedHandler;
+import io.camunda.exporter.handlers.usage.UsageMetricExportedHandler;
 import io.camunda.exporter.store.BatchRequest;
 import java.util.List;
 import java.util.stream.Collectors;
