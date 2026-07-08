@@ -13,6 +13,7 @@ import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.Optional;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -126,6 +127,31 @@ public abstract class SearchDBExtension implements BeforeAllCallback, AfterAllCa
 
   public boolean isAws() {
     return false;
+  }
+
+  /**
+   * Deletes all OpenSearch indices matching the given prefix, one index per request.
+   *
+   * <p>AWS Managed OpenSearch ships the closed-source {@code kraken-index-management-extension},
+   * which registers a custom-typed ISM metadata service. When a single cluster-state change deletes
+   * more than one index, the open-source {@code ManagedIndexCoordinator} delete sweep calls {@code
+   * getMultiTypeISMIndexMetadata} with all deleted index names and throws {@code
+   * IllegalArgumentException: Cannot get metadata for more than one index ... when using a custom
+   * index type}, aborting the sweep and failing concurrent searches. Deleting indices individually
+   * keeps each cluster event to a single index and avoids the throw. See camunda/camunda#52892.
+   *
+   * @param prefix the index name prefix; a trailing {@code *} wildcard is appended for lookup
+   */
+  public void deleteOpenSearchIndicesByPrefix(final String prefix) throws IOException {
+    final var matchingIndices =
+        osClient()
+            .indices()
+            .get(r -> r.index(prefix + "*").ignoreUnavailable(true).allowNoIndices(true))
+            .result()
+            .keySet();
+    for (final var index : matchingIndices) {
+      osClient().indices().delete(r -> r.index(index).ignoreUnavailable(true));
+    }
   }
 
   /**
