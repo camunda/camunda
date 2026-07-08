@@ -2,9 +2,6 @@
 ################################################### Global cluster configuration
 ########################################################################################
 global:
-  elasticsearch:
-    enabled: false
-
   opensearch:
     enabled: true
     url:
@@ -47,12 +44,6 @@ orchestration:
       # application-override.yml is listed second so it has higher priority and can override application.yml.
       # Marked optional so Spring does not fail if this file is not mounted in a given deployment configuration.
       value: "/usr/local/camunda/config/application.yml,optional:/usr/local/camunda/config/application-override.yml"
-
-#################################################################################################
-################################################### Disable Elasticsearch when using OpenSearch
-#################################################################################################
-elasticsearch:
-  enabled: false
 
 ###########################################################################
 #######

@@ -87,8 +87,8 @@ platform_values_stable := $(platform_values) -f values-stable.yaml
 
 ifeq ($(secondary_storage),elasticsearch)
 	install_es_prom_exporter := true
-	es_prom_exporter_es_uri := http://elastic:9200
-	_load_test_setup_flags += --set metricsExporter.database.url=http://elastic:9200
+	es_prom_exporter_es_uri := http://elasticsearch-es-http:9200
+	_load_test_setup_flags += --set metricsExporter.database.url=http://elasticsearch-es-http:9200
 else ifeq ($(secondary_storage),opensearch)
 	install_es_prom_exporter := true
 	es_prom_exporter_es_uri := http://opensearch:9200
@@ -97,8 +97,8 @@ else ifeq ($(enable_optimize),true)
 	# Here, the secondary storage is either none or a RDBMS database.
 	# Elasticsearch is always used in this case as the backend for Optimize.
 	install_es_prom_exporter := true
-	es_prom_exporter_es_uri := http://elastic:9200
-	_load_test_setup_flags += --set metricsExporter.database.url=http://elastic:9200
+	es_prom_exporter_es_uri := http://elasticsearch-es-http:9200
+	_load_test_setup_flags += --set metricsExporter.database.url=http://elasticsearch-es-http:9200
 else
 	install_es_prom_exporter := false
 endif
