@@ -50,6 +50,13 @@ STATE_MARKER_PREFIX = "<!-- flaky-gate-state: "
 SCHEMA_VERSION = 1
 MIN_CLEAN_RUNS = 3
 
+# BigQuery source for the per-test "is this a real flake?" verify query surfaced
+# in the PR comment. Mirrors the baseline pull in ci.yml (same tables/ci_url).
+BQ_TEST_STATUS_TABLE = "ci-30-162810.prod_ci_analytics.test_status_v1"
+BQ_BUILD_STATUS_TABLE = "ci-30-162810.prod_ci_analytics.build_status_v2"
+CI_URL = "https://github.com/camunda/camunda"
+VERIFY_QUERY_DAYS = 60
+
 
 # ---------------------------------------------------------------------------
 # Test-name parsing (kept compatible with parse_test_name in helpers.js)
@@ -467,6 +474,47 @@ def _render_state_block(entry: dict) -> list[str]:
     ]
 
 
+def _render_verify_query(entry: dict) -> list[str]:
+    """A collapsible per-test BigQuery snippet so the author can check whether
+    the flagged test is a genuinely new flake or a pre-existing intermittent
+    one (a false alarm). Requires package + class + method to build the FQN."""
+    package = entry.get("package")
+    class_name = entry.get("class_name")
+    method_name = entry.get("method_name")
+    if not (package and class_name and method_name):
+        return []
+    fqn_class = f"{package}.{class_name}"
+    query = (
+        "SELECT DATE(report_time) AS day, build_trigger, test_status, COUNT(*) AS occurrences\n"
+        f"FROM `{BQ_TEST_STATUS_TABLE}` ts\n"
+        f"LEFT OUTER JOIN `{BQ_BUILD_STATUS_TABLE}` bs\n"
+        "  ON ts.ci_url=bs.ci_url AND ts.build_id=bs.build_id AND ts.job_name=bs.job_name\n"
+        f"WHERE ts.report_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {VERIFY_QUERY_DAYS} DAY)\n"
+        f'  AND ts.ci_url = "{CI_URL}"\n'
+        f'  AND test_class_name = "{fqn_class}"\n'
+        f'  AND test_name = "{method_name}"\n'
+        "GROUP BY day, build_trigger, test_status\n"
+        "ORDER BY day DESC, occurrences DESC"
+    )
+    lines = [
+        "",
+        "  <details><summary>Verify in BigQuery — is this a real new flake or a false alarm?</summary>",
+        "",
+        "  ```sql",
+    ]
+    lines.extend(f"  {q_line}" for q_line in query.split("\n"))
+    lines.extend([
+        "  ```",
+        "",
+        f"  Rows with `flaky`/`failure`/`error` status on `main`/`stable/*` (or "
+        f"other PRs) over the last {VERIFY_QUERY_DAYS} days indicate a "
+        "pre-existing intermittent flake — likely a false alarm. No prior rows "
+        "means this PR genuinely introduced it.",
+        "  </details>",
+    ])
+    return lines
+
+
 def _render_active_test(entry: dict) -> list[str]:
     lines = [f"- **{entry['method_name']}**"]
     lines.append(f"  - Jobs: `{', '.join(entry.get('flagged_jobs', []))}`")
@@ -475,6 +523,7 @@ def _render_active_test(entry: dict) -> list[str]:
     if entry.get("class_name"):
         lines.append(f"  - Class: `{entry['class_name']}`")
     lines.extend(_render_state_block(entry))
+    lines.extend(_render_verify_query(entry))
     return lines
 
 
