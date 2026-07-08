@@ -5,6 +5,10 @@
 ---
 name: Check Licenses
 
+defaults:
+  run:
+    shell: bash
+
 on:
   push:
     branches:
@@ -23,6 +27,8 @@ env:
   TEST_OWNER: '@camunda/monorepo-devops-team'
   GHA_BEST_PRACTICES_LINTER: enabled
 
+permissions: {}
+
 jobs:
   analyze:
     name: "Analyze ${{ matrix.project.name }} dependencies"
@@ -30,7 +36,7 @@ jobs:
       # Needed for camunda/infra-global-github-actions/fossa/info
       actions: read
       contents: read
-    runs-on: ${{ matrix.project.runner }}
+    runs-on: ${{ fromJson(matrix.project.runner_definition) }}
     # Skip analysis on fork PRs as they cannot access FOSSA due to lack of credentials
     if: github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork
     # If you change the job timeout, update the timeout in camunda/infra-global-github-actions/fossa/pr-check accordingly.
@@ -43,18 +49,21 @@ jobs:
         project:
         - name: c8run
           path: ./c8run
-          runner: gcp-core-4-longrunning
+          runner_definition: '"github_linux_4_core_arm"'
+          fossa_cli_arch: linux_arm64
         - name: optimize
           path: ./optimize
-          runner: gcp-core-16-longrunning
+          runner_definition: '"github_linux_16_core_arm"'
           maven-config: |
             -DskipQaBuild=true
+          fossa_cli_arch: linux_arm64
         - name: single-app
           path: ./
-          runner: gcp-core-16-longrunning
+          runner_definition: '"github_linux_16_core_arm"'
           maven-config: |
             -Dquickly=true
             -DskipQaBuild=true
+          fossa_cli_arch: linux_arm64
     steps:
     - uses: camunda/infra-global-github-actions/start-build-monitor@7a9c6f3e477321400802c88290068f88a7ed5684 # main
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -92,11 +101,13 @@ jobs:
         echo "${MAVEN_CONFIG}" | tee ./.mvn/maven.config
 
     - name: Setup fossa-cli
-      uses: camunda/infra-global-github-actions/fossa/setup@fc4fa13813cbc1835129967f10a12f24aa7a393c
+      uses: camunda/infra-global-github-actions/fossa/setup@fossa-arm64
+      with:
+        arch: ${{ matrix.project.fossa_cli_arch }}
 
     - name: Get context info
       id: info
-      uses: camunda/infra-global-github-actions/fossa/info@fc4fa13813cbc1835129967f10a12f24aa7a393c
+      uses: camunda/infra-global-github-actions/fossa/info@fossa-arm64
 
     - name: Adjust pom.xml files for FOSSA
       if: contains(fromJson('["optimize", "single-app"]'), matrix.project.name)
@@ -109,7 +120,7 @@ jobs:
       id: analyze1
       continue-on-error: true
       timeout-minutes: 30
-      uses: camunda/infra-global-github-actions/fossa/analyze@fc4fa13813cbc1835129967f10a12f24aa7a393c
+      uses: camunda/infra-global-github-actions/fossa/analyze@fossa-arm64
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         branch: ${{  steps.info.outputs.head-ref }}
@@ -119,7 +130,7 @@ jobs:
     - name: Analyze project (attempt 2)
       if: steps.analyze1.outcome != 'success'
       timeout-minutes: 30
-      uses: camunda/infra-global-github-actions/fossa/analyze@fc4fa13813cbc1835129967f10a12f24aa7a393c
+      uses: camunda/infra-global-github-actions/fossa/analyze@fossa-arm64
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         branch: ${{  steps.info.outputs.head-ref }}
@@ -131,7 +142,7 @@ jobs:
     # It does not fail for pre-existing issues already present in the base branch.
     - name: Check Pull Request for new License Issues
       if: steps.info.outputs.is-pull-request == 'true'
-      uses: camunda/infra-global-github-actions/fossa/pr-check@fc4fa13813cbc1835129967f10a12f24aa7a393c
+      uses: camunda/infra-global-github-actions/fossa/pr-check@fossa-arm64
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         base-ref: ${{ steps.info.outputs.base-ref }}
