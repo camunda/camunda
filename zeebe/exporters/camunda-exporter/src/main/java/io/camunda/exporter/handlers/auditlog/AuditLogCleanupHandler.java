@@ -15,6 +15,7 @@ import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.util.VisibleForTesting;
 
 public class AuditLogCleanupHandler<R extends RecordValue>
     extends AbstractAuditLogHandler<AuditLogCleanupEntity, R> {
@@ -54,5 +55,10 @@ public class AuditLogCleanupHandler<R extends RecordValue>
       return auditLogEntityType != AuditLogEntityType.DECISION;
     }
     return false;
+  }
+
+  @VisibleForTesting
+  public AuditLogTransformer<?> getTransformer() {
+    return transformer;
   }
 }
