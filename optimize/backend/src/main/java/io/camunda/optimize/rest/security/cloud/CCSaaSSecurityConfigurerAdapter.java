@@ -312,8 +312,8 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
       final String sessionToken = sessionService.createAuthToken(userId);
 
       if (hasAccess(user)) {
-        final String originalUserId = user.getIdToken().getClaim(ORIGINAL_USER_ID_CLAIM);
-        if (originalUserId != null && !originalUserId.equals(userId)) {
+        if (user.getIdToken().getClaim(ORIGINAL_USER_ID_CLAIM) instanceof String originalUserId
+            && !originalUserId.equals(userId)) {
           userIdMigrationService.migrateUserIdIfNeeded(userId, originalUserId);
         }
 
