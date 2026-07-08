@@ -29,6 +29,12 @@ const ErrorHint = styled.span`
   color: var(--cds-text-secondary);
 `;
 
+const AgentHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: var(--cds-spacing-03);
+`;
+
 const AgentHeading = styled.h5`
   font-size: var(--cds-heading-compact-01-font-size);
   font-weight: var(--cds-heading-compact-01-font-weight);
@@ -56,6 +62,7 @@ const ModelInfoLabel = styled.strong`
 
 export {
   AgentDetailsContainer,
+  AgentHeader,
   AgentHeading,
   ErrorHint,
   MetricsRow,

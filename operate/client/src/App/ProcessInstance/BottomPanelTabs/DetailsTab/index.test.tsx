@@ -34,6 +34,7 @@ import type {
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {mockSearchAgentInstances} from 'modules/mocks/api/v2/agentInstances/searchAgentInstances';
 import {mockAgentInstance} from 'modules/mocks/mockAgentInstance';
+import {mockSearchAgentInstanceHistory} from 'modules/mocks/api/v2/agentInstances/searchAgentInstanceHistory';
 
 const PROCESS_INSTANCE_ID = '111222333';
 const PROCESS_DEFINITION_KEY = '444555666';
@@ -296,7 +297,7 @@ describe('<DetailsTab />', () => {
     mockSearchDecisionInstances().withSuccess(searchResult([]));
     mockSearchMessageSubscriptions().withSuccess(searchResult([]));
     mockSearchAgentInstances().withSuccess(searchResult([]));
-    mockSearchAgentInstances().withSuccess(searchResult([]));
+    mockSearchAgentInstanceHistory().withSuccess(searchResult([]));
     mockSearchElementInstanceInspection().withSuccess(searchResult([]));
   });
 
@@ -349,6 +350,31 @@ describe('<DetailsTab />', () => {
 
     expect(
       await screen.findByText(
+        'To view the details, select a single element instance in the instance history.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('should render agent-details and a multi-instance message when multiple element instances are activated', async () => {
+    mockSearchElementInstances().withSuccess(
+      searchResult([mockElementInstance, mockElementInstance], 2),
+    );
+    mockSearchAgentInstances().withSuccess(
+      searchResult([mockAgentInstance({elementId: 'Task_1'})]),
+    );
+
+    render(<DetailsTab />, {
+      wrapper: getWrapper('elementId=Task_1'),
+    });
+
+    expect(
+      await screen.findByRole('heading', {name: 'AI Agent', level: 5}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', {name: 'Element Instance', level: 5}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
         'To view the details, select a single element instance in the instance history.',
       ),
     ).toBeInTheDocument();
