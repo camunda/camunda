@@ -49,12 +49,42 @@ public class AgentHistoryCommitTest {
 
     final var committed = ENGINE.agentHistories().withJobKey(jobKey).commit();
 
-    // AgentHistoryCommitProcessor emits COMMITTED carrying the full stored record
+    // AgentHistoryCommitProcessor emits COMMITTED carrying only identity/routing fields
     assertThat(committed.getRecordType()).isEqualTo(RecordType.EVENT);
     assertThat(committed.getKey()).isEqualTo(itemKey);
     assertThat(committed.getValue().getJobKey()).isEqualTo(jobKey);
     assertThat(committed.getValue().getAgentInstanceKey()).isEqualTo(agentInstanceKey);
     assertThat(committed.getValue().getElementInstanceKey()).isEqualTo(elementInstanceKey);
+  }
+
+  @Test
+  public void shouldStripContentToolCallsAndMetricsFromCommittedEvent() {
+    final var serviceTaskInstance = deployAndCreateProcessInstance();
+    final var elementInstanceKey = serviceTaskInstance.getKey();
+    final var processInstanceKey = serviceTaskInstance.getValue().getProcessInstanceKey();
+    final var agentInstanceKey = createAgentInstance(elementInstanceKey).getKey();
+    final var jobKey = activateJobForProcessInstance(processInstanceKey);
+
+    ENGINE
+        .agentHistories()
+        .withAgentInstanceKey(agentInstanceKey)
+        .withJobKey(jobKey)
+        .withElementInstanceKey(elementInstanceKey)
+        .withRole(AgentHistoryRole.ASSISTANT)
+        .withTextContent("some large response text")
+        .withToolCall("call-1", "http-tool", "call-activity")
+        .withMetrics(100, 50, 1234)
+        .create();
+
+    final var committed = ENGINE.agentHistories().withJobKey(jobKey).commit();
+
+    // The item was created with content/toolCalls/metrics, but they are stripped at primary-storage
+    // insert — the emitted COMMITTED event must carry none of them.
+    assertThat(committed.getValue().getContent()).isEmpty();
+    assertThat(committed.getValue().getToolCalls()).isEmpty();
+    assertThat(committed.getValue().getMetrics().getInputTokens()).isZero();
+    assertThat(committed.getValue().getMetrics().getOutputTokens()).isZero();
+    assertThat(committed.getValue().getMetrics().getDurationMs()).isZero();
   }
 
   @Test

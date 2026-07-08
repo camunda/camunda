@@ -102,7 +102,7 @@ public class AgentHistoryDiscardTest {
   }
 
   @Test
-  public void shouldEmitDiscardedEventCarryingStoredRecord() {
+  public void shouldEmitDiscardedEventCarryingIdentityFieldsOnly() {
     final var serviceTaskInstance = deployAndCreateProcessInstance();
     final var elementInstanceKey = serviceTaskInstance.getKey();
     final var processInstanceKey = serviceTaskInstance.getValue().getProcessInstanceKey();
@@ -117,6 +117,36 @@ public class AgentHistoryDiscardTest {
     assertThat(discarded.getValue().getJobKey()).isEqualTo(jobKey);
     assertThat(discarded.getValue().getAgentInstanceKey()).isEqualTo(agentInstanceKey);
     assertThat(discarded.getValue().getElementInstanceKey()).isEqualTo(elementInstanceKey);
+  }
+
+  @Test
+  public void shouldStripContentToolCallsAndMetricsFromDiscardedEvent() {
+    final var serviceTaskInstance = deployAndCreateProcessInstance();
+    final var elementInstanceKey = serviceTaskInstance.getKey();
+    final var processInstanceKey = serviceTaskInstance.getValue().getProcessInstanceKey();
+    final var agentInstanceKey = createAgentInstance(elementInstanceKey).getKey();
+    final var jobKey = activateJobForProcessInstance(processInstanceKey);
+
+    ENGINE
+        .agentHistories()
+        .withAgentInstanceKey(agentInstanceKey)
+        .withJobKey(jobKey)
+        .withElementInstanceKey(elementInstanceKey)
+        .withRole(AgentHistoryRole.ASSISTANT)
+        .withTextContent("some large response text")
+        .withToolCall("call-1", "http-tool", "call-activity")
+        .withMetrics(100, 50, 1234)
+        .create();
+
+    final var discarded = ENGINE.agentHistories().withJobKey(jobKey).discard();
+
+    // The item was created with content/toolCalls/metrics, but they are stripped at primary-storage
+    // insert — the emitted DISCARDED event must carry none of them.
+    assertThat(discarded.getValue().getContent()).isEmpty();
+    assertThat(discarded.getValue().getToolCalls()).isEmpty();
+    assertThat(discarded.getValue().getMetrics().getInputTokens()).isZero();
+    assertThat(discarded.getValue().getMetrics().getOutputTokens()).isZero();
+    assertThat(discarded.getValue().getMetrics().getDurationMs()).isZero();
   }
 
   @Test
