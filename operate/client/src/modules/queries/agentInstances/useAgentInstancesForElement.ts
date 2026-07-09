@@ -26,7 +26,7 @@ const useAgentInstancesForElement = <T = QueryAgentInstancesResponseBody>(
     ...agentInstancesSearchOptions({
       payload: {
         sort: [{field: 'creationDate', order: 'desc'}],
-        page: {limit: 200},
+        page: {limit: 15},
         filter: {
           processInstanceKey: options.processInstanceKey,
           elementId: options.elementId,
