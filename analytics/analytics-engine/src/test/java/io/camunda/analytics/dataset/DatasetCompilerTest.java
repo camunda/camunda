@@ -10,7 +10,6 @@ package io.camunda.analytics.dataset;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
-import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.analytics.dimension.DimensionColumn;
 import io.camunda.analytics.dimension.DimensionKey;
@@ -81,20 +80,24 @@ final class DatasetCompilerTest {
   }
 
   @Test
-  void shouldMaterialiseOneMeterPerTierWithDistinctStableAggIds() {
+  void shouldCompileOneMeterSlotPerDeclaredMeterAndOneTierPerWindow() {
     // when
     final CompiledDataset compiled = compiler.compile(1L, declaration());
 
-    // then two meters x two tiers = four compiled meters, each with a distinct aggId
-    assertThat(compiled.meters()).hasSize(4);
-    assertThat(compiled.meters()).extracting(CompiledMeter::aggId).doesNotHaveDuplicates();
+    // then the meters are the composite's slots (declaration order) and the tiers are the cube's
+    // windows, finest first, each with a distinct durable cell group; the shuffle stream is one
+    // per cube (ADR 0009)
     assertThat(compiled.meters())
-        .extracting(CompiledMeter::meterName, CompiledMeter::windowMs)
-        .containsExactlyInAnyOrder(
-            tuple("duration", 60_000L),
-            tuple("duration", 3_600_000L),
-            tuple("count", 60_000L),
-            tuple("count", 3_600_000L));
+        .extracting(CompiledMeter::meterName)
+        .containsExactly("duration", "count");
+    assertThat(compiled.tiers())
+        .extracting(CompiledTier::windowMs)
+        .containsExactly(60_000L, 3_600_000L);
+    assertThat(compiled.tiers()).extracting(CompiledTier::cellGroup).doesNotHaveDuplicates();
+    assertThat(compiled.tiers())
+        .extracting(CompiledTier::cellGroup)
+        .doesNotContain(compiled.streamId());
+    assertThat(compiled.finestTier().windowMs()).isEqualTo(60_000L);
   }
 
   private static DatasetDeclaration withMeter(final Meter meter) {
@@ -275,7 +278,7 @@ final class DatasetCompilerTest {
   }
 
   @Test
-  void shouldAssignStableAggIdsAcrossRecompile() {
+  void shouldAssignStableStreamAndCellGroupIdsAcrossRecompile() {
     // given a registry shared across two compiler instances (a restart)
     final InMemoryMeterIdStore store = new InMemoryMeterIdStore();
     final CompiledDataset first =
@@ -287,9 +290,10 @@ final class DatasetCompilerTest {
         new DatasetCompiler(MeterCatalog.withDefaults(), new MeterIdRegistry(store))
             .compile(1L, declaration());
 
-    // then the aggIds are identical (stable), meter-for-meter
-    assertThat(second.meters())
-        .extracting(CompiledMeter::aggId)
-        .containsExactlyElementsOf(first.meters().stream().map(CompiledMeter::aggId).toList());
+    // then the stream and cell-group ids are identical (stable)
+    assertThat(second.streamId()).isEqualTo(first.streamId());
+    assertThat(second.tiers())
+        .extracting(CompiledTier::cellGroup)
+        .containsExactlyElementsOf(first.tiers().stream().map(CompiledTier::cellGroup).toList());
   }
 }

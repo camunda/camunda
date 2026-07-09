@@ -19,9 +19,10 @@ import java.util.regex.Pattern;
  * The single source of truth for a dataset: what facts to aggregate ({@code sourceFact} + {@code
  * filters}), how to group them ({@code dimensions}, in order — the cube's grain), what to compute
  * ({@code meters}), and over which windows ({@code windowSizesMs} — one per tier, e.g. 1m/1h/1d).
- * The compiler derives from this the fact binding, the dimension schema, the bound meters (with
- * their stable aggIds), and the physical serving schema; a new metric or grouping is a new
- * declaration, not new Java. Pure data — the "think backwards" declaration the deck describes.
+ * The compiler derives from this the fact binding, the dimension schema, the bound meters (the
+ * composite accumulator's slots), the cube's stream and tier ids, and the physical serving schema;
+ * a new metric or grouping is a new declaration, not new Java. Pure data — the "think backwards"
+ * declaration the deck describes.
  */
 public record DatasetDeclaration(
     String name,

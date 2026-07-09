@@ -439,20 +439,15 @@ public final class DocumentDatasetQueryClient implements DatasetQueryClient {
 
   private static Optional<PushdownSpec<?, ?>> specFor(
       final CompiledDataset dataset, final String meter, final long windowSize) {
-    CompiledMeter fallback = null;
+    // Tier-independent (ADR 0009): a meter's pushdown spec is the same at every tier; windowSize
+    // only selected which tier's documents were read.
     for (final CompiledMeter compiled : dataset.meters()) {
       if (compiled.meterName().equals(meter)) {
-        if (compiled.windowMs() == windowSize) {
-          return compiled.pushdown();
-        }
-        fallback = compiled;
+        return compiled.pushdown();
       }
     }
-    if (fallback == null) {
-      throw new IllegalStateException(
-          "no compiled meter '" + meter + "' in '" + dataset.name() + "'");
-    }
-    return fallback.pushdown();
+    throw new IllegalStateException(
+        "no compiled meter '" + meter + "' in '" + dataset.name() + "'");
   }
 
   @Override

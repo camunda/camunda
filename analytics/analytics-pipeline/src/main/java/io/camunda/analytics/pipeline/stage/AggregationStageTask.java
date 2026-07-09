@@ -11,10 +11,13 @@ import io.camunda.analytics.aggregation.CubeMergeProcessor;
 import io.camunda.analytics.aggregation.CubeMergeProcessor.CellApplier;
 import io.camunda.analytics.aggregation.CubeServingSink;
 import io.camunda.analytics.dataset.ActiveCube;
-import io.camunda.analytics.dataset.CompiledMeter;
+import io.camunda.analytics.dataset.CompiledDataset;
+import io.camunda.analytics.dataset.CompiledTier;
 import io.camunda.analytics.dimension.DimensionKey;
 import io.camunda.analytics.dimension.DimensionKeyValue;
 import io.camunda.analytics.meter.BoundMeter;
+import io.camunda.analytics.meter.CompositeAccumulatorValue;
+import io.camunda.analytics.meter.CompositeAggregateFunction;
 import io.camunda.analytics.projection.AnalyticsColumnFamilies;
 import io.camunda.analytics.serving.catalog.DatasetCatalog;
 import io.camunda.analytics.serving.spi.DatasetStore;
@@ -22,7 +25,6 @@ import io.camunda.analytics.serving.spi.DatasetWriter;
 import io.camunda.eventbridge.streaming.CommitCut;
 import io.camunda.eventbridge.streaming.Task;
 import io.camunda.eventbridge.streaming.TransactionRunner;
-import io.camunda.eventbridge.streaming.aggregate.RecordValue;
 import io.camunda.eventbridge.streaming.aggregate.SegmentDedup;
 import io.camunda.eventbridge.streaming.aggregate.SegmentDedup.StreamKey;
 import io.camunda.eventbridge.streaming.aggregate.SegmentMergingAggregation;
@@ -42,7 +44,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -52,10 +53,11 @@ import org.slf4j.LoggerFactory;
 /**
  * One facts-topic partition's Stage-2 owning {@link Task}: it owns a per-partition RocksDB and
  * drives a one-node {@link ProcessorTopology} whose source is a {@link CubeMergeProcessor} — dedup
- * each envelope, dispatch its cell deltas by {@code streamId} to the matching meter's {@link
- * SegmentMergingAggregation}, converge the idempotent serving sink. The merged cells and the facts
- * offset live in the one provider, so {@link #commit(long)} makes them one atomic cut: converge the
- * sinks and flush the serving rows (produce-before-commit), then persist the offset + merged cells.
+ * each envelope, dispatch its composite cell deltas by the cube's {@code streamId} to its per-tier
+ * {@link SegmentMergingAggregation}s, converge the idempotent serving sink. The merged cells and
+ * the facts offset live in the one provider, so {@link #commit(long)} makes them one atomic cut:
+ * converge the sinks and flush the serving rows (produce-before-commit), then persist the offset +
+ * merged cells.
  *
  * <p><b>Frozen cuts (streaming ADR 0005).</b> {@link #freezeCut(long)} detaches the same cut at the
  * barrier — every merger's frozen checkpoint delta (closed windows finalized, changed cells
@@ -68,10 +70,10 @@ import org.slf4j.LoggerFactory;
  * DatasetCatalog}. At each {@link #commit(long)} — after the durable cut, at most once per
  * reload-check interval — the task checks the catalog version and, when it moved, rebuilds the
  * merge node from the catalog's current cubes <em>over the same open RocksDB</em> so it has a
- * merger + {@code CellApplier} for a newly-declared cube's {@code aggId}s (otherwise the merge node
- * drops them). The rebuild is incremental: surviving cubes keep their existing mergers (and their
- * in-heap cells — no re-recover), only an added cube's mergers are constructed (recovering empty)
- * and only its serving DDL is ensured, and a removed cube's wiring is dropped.
+ * merger + {@code CellApplier} for a newly-declared cube's {@code streamId} (otherwise the merge
+ * node drops them). The rebuild is incremental: surviving cubes keep their existing mergers (and
+ * their in-heap cells — no re-recover), only an added cube's mergers are constructed (recovering
+ * empty) and only its serving DDL is ensured, and a removed cube's wiring is dropped.
  */
 public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCloseable {
 
@@ -105,14 +107,14 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
   private long appliedVersion;
   private long lastReloadCheckMs;
 
-  // Incremental-reload state (ADR 0005). A reload rebuilds only what changed: surviving meter
-  // groups keep their wiring — appliers, mergers and the mergers' in-heap cells — so adding one
+  // Incremental-reload state (ADR 0005). A reload rebuilds only what changed: surviving cubes
+  // keep their wiring — appliers, mergers and the mergers' in-heap cells — so adding one
   // dataset never re-recover()s (prefix-scans) every other aggregation's durable state; a removed
   // cube's wiring is dropped (its durable cells stay, so a re-added id recovers from them alone);
   // and the serving DDL runs only for newly-added cubes. The dedup lives here rather than in the
   // rebuilt merge node so its admission watermarks also survive a reload.
   private final SegmentDedup dedup = new SegmentDedup();
-  private final Map<Integer, MeterGroupWiring> wiringByStreamId = new HashMap<>();
+  private final Map<Integer, CubeWiring> wiringByStreamId = new HashMap<>();
   private Set<Long> appliedCubeIds = Set.of();
 
   AggregationStageTask(
@@ -196,24 +198,16 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
         // Serving DDL only for a newly-added dataset — not for every dataset on every reload.
         datasetStore.schemaManager().ensure(cube.compiled());
       }
-      // A meter's tiers share one shuffled (finest) stream; group them so the finest aggId's
-      // applier can roll a delta up into every tier.
-      final Map<String, List<CompiledMeter>> tiersByMeter = new LinkedHashMap<>();
-      for (final CompiledMeter meter : cube.compiled().meters()) {
-        tiersByMeter.computeIfAbsent(meter.meterName(), k -> new ArrayList<>()).add(meter);
-      }
-      for (final List<CompiledMeter> tiers : tiersByMeter.values()) {
-        // Reuse a surviving meter group's wiring (its mergers keep their just-checkpointed heap
-        // cells — no re-recover); construct (and recover) only a newly-added group's.
-        final MeterGroupWiring wiring =
-            wiringByStreamId.computeIfAbsent(
-                finestOf(tiers).aggId(),
-                streamId ->
-                    wireMeterGroup(
-                        cube, tiers, servingWriter, cellStore, provider::runInTransaction));
-        byStreamId.put(finestOf(tiers).aggId(), wiring.applier());
-        mergers.addAll(wiring.mergers());
-      }
+      // One stream per cube (ADR 0009): the composite delta carries every meter's slot, so one
+      // applier rolls it into every tier and one merger per tier owns the whole serving row.
+      // Reuse a surviving cube's wiring (its mergers keep their just-checkpointed heap cells — no
+      // re-recover); construct (and recover) only a newly-added cube's.
+      final CubeWiring wiring =
+          wiringByStreamId.computeIfAbsent(
+              cube.compiled().streamId(),
+              streamId -> wireCube(cube, servingWriter, cellStore, provider::runInTransaction));
+      byStreamId.put(cube.compiled().streamId(), wiring.applier());
+      mergers.addAll(wiring.mergers());
     }
     // Drop a removed cube's wiring: its heap state goes with it, while the durable cells remain —
     // a removed-then-readded id reconstructs above and recovers from durable state only.
@@ -226,79 +220,67 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
             .build();
   }
 
-  /** The finest tier of a meter group — its aggId is the stream Stage 1 shuffles. */
-  private static CompiledMeter finestOf(final List<CompiledMeter> tiers) {
-    CompiledMeter finest = tiers.get(0);
-    for (final CompiledMeter meter : tiers) {
-      if (meter.windowMs() < finest.windowMs()) {
-        finest = meter;
-      }
-    }
-    return finest;
-  }
-
-  /** One meter group's reusable wiring: the dispatch applier and its per-tier mergers. */
-  private record MeterGroupWiring(
-      CellApplier applier, List<SegmentMergingAggregation<?, ?>> mergers) {}
+  /** One cube's reusable wiring: the dispatch applier and its per-tier composite mergers. */
+  private record CubeWiring(CellApplier applier, List<SegmentMergingAggregation<?, ?>> mergers) {}
 
   /** A tier's merger paired with the window size a rolled-up delta aligns down to. */
-  private record TierMerger<ACC>(
-      long windowMs,
-      SegmentMergingAggregation<DimensionKey, ACC> merger,
-      BoundMeter<ACC, ?> bound) {}
+  private record TierMerger(
+      long windowMs, SegmentMergingAggregation<DimensionKey, Object[]> merger) {}
 
   /**
-   * Wires all tiers of one meter (capturing the acc type): a merger per tier writing its own
-   * window-size cells, and a single dispatch applier on the finest tier's aggId — the only stream
-   * Stage 1 shuffles — that folds each deduped delta into every tier, aligning its window start
-   * down to the tier's window. A coarser cell is thus the exact merge of the finer deltas within
-   * it.
+   * Wires all tiers of one cube: a composite merger per tier writing its own window-size cells, and
+   * a single dispatch applier on the cube's {@code streamId} — the only stream Stage 1 shuffles —
+   * that folds each deduped composite delta into every tier, aligning its window start down to the
+   * tier's window. A coarser cell is thus the exact slot-wise merge of the finer deltas within it,
+   * and each tier's serving row is written whole by its one merger.
    */
-  private static <ACC> MeterGroupWiring wireMeterGroup(
+  private static CubeWiring wireCube(
       final ActiveCube cube,
-      final List<CompiledMeter> tiers,
       final DatasetWriter writer,
       final KeyValueStore<DbBytes, DbBytes> cellStore,
       final TransactionRunner tx) {
-    final DimensionKeyValue keyCodec = new DimensionKeyValue(cube.compiled().grain());
+    final CompiledDataset compiled = cube.compiled();
+    final List<BoundMeter<?, ?>> bounds = compiled.meterBounds();
+    final CompositeAggregateFunction aggregate = new CompositeAggregateFunction(bounds);
+    final DimensionKeyValue keyCodec = new DimensionKeyValue(compiled.grain());
     final List<SegmentMergingAggregation<?, ?>> mergers = new ArrayList<>();
-    final List<TierMerger<ACC>> tierMergers = new ArrayList<>();
-    for (final CompiledMeter meter : tiers) {
-      @SuppressWarnings("unchecked")
-      final BoundMeter<ACC, ?> bound = (BoundMeter<ACC, ?>) meter.bound();
-      final SegmentMergingAggregation<DimensionKey, ACC> merger =
+    final List<TierMerger> tierMergers = new ArrayList<>();
+    for (final CompiledTier tier : compiled.tiers()) {
+      final SegmentMergingAggregation<DimensionKey, Object[]> merger =
           new SegmentMergingAggregation<>(
-              meter.aggId(),
-              bound.aggregate(),
-              meter.windows(),
-              new CubeServingSink<>(
-                  writer,
-                  cube.compiled(),
-                  meter.meterName(),
-                  meter.windowMs(),
-                  bound.accumulatorCodec()),
+              tier.cellGroup(),
+              aggregate,
+              tier.windows(),
+              new CubeServingSink(
+                  writer, compiled, tier.windowMs(), new CompositeAccumulatorValue(bounds)),
               cellStore,
-              new DimensionKeyValue(cube.compiled().grain()),
-              bound.accumulatorCodec(),
+              new DimensionKeyValue(compiled.grain()),
+              new CompositeAccumulatorValue(bounds),
               tx);
       mergers.add(merger);
-      tierMergers.add(new TierMerger<>(meter.windowMs(), merger, bound));
+      tierMergers.add(new TierMerger(tier.windowMs(), merger));
     }
-    // One codec flyweight for the whole meter group (the applier runs on the task's single
-    // thread), decoding each delta once through the merge-only path: the mergers fold a delta into
-    // an accumulator they own and never store it, so all tiers can share one read-only view.
-    @SuppressWarnings("unchecked")
-    final RecordValue<ACC> deltaCodec = (RecordValue<ACC>) tiers.get(0).bound().accumulatorCodec();
+    // One delta codec for the whole cube (the applier runs on the task's single thread), decoding
+    // each composite delta once through the merge-only path: the mergers fold a delta into an
+    // accumulator they own and never store it, so all tiers share one read-only decoded view.
+    final CompositeAccumulatorValue deltaCodec = new CompositeAccumulatorValue(bounds);
+    final long finestWindowMs = compiled.finestTier().windowMs();
     final CellApplier applier =
         (keyBytes, windowStart, accBytes) -> {
           final DimensionKey key = keyCodec.fromBytes(keyBytes);
-          final ACC delta = deltaCodec.fromBytesForMerge(accBytes);
-          for (final TierMerger<ACC> tier : tierMergers) {
+          final Object[] delta = deltaCodec.fromBytesForMerge(accBytes);
+          // The delta's windowStart is finest-aligned (Stage 1 ships only the finest tier), so
+          // the finest window's end bounds the delta's event times — the stream-time hint every
+          // tier's merger advances by. Advancing by the coarse window's own end instead would
+          // erode sibling cells' grace by up to a coarse window (early finalize → dropped late
+          // deltas → coarse tiers undercounting relative to the finest).
+          final long eventTimeHint = windowStart + finestWindowMs;
+          for (final TierMerger tier : tierMergers) {
             final long tierWindowStart = windowStart - Math.floorMod(windowStart, tier.windowMs());
-            tier.merger().merge(new Windowed<>(key, tierWindowStart), delta);
+            tier.merger().merge(new Windowed<>(key, tierWindowStart), delta, eventTimeHint);
           }
         };
-    return new MeterGroupWiring(applier, List.copyOf(mergers));
+    return new CubeWiring(applier, List.copyOf(mergers));
   }
 
   @Override

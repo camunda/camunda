@@ -635,11 +635,7 @@ public class DashboardRepository {
   }
 
   private static long finestTier(final CompiledDataset dataset) {
-    long finest = Long.MAX_VALUE;
-    for (final CompiledMeter meter : dataset.meters()) {
-      finest = Math.min(finest, meter.windowMs());
-    }
-    return finest;
+    return dataset.finestTier().windowMs();
   }
 
   /** A fresh single-call memo, so a per-widget endpoint reuses the same query paths. */

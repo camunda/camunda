@@ -259,20 +259,15 @@ public final class RdbmsDatasetQueryClient implements DatasetQueryClient {
 
   private static CompiledMeter compiledMeter(
       final CompiledDataset dataset, final String meter, final long windowSize) {
-    CompiledMeter fallback = null;
+    // Tier-independent (ADR 0009): a meter's bound aggregate/codec is the same at every tier;
+    // windowSize only selected which tier's cells were read.
     for (final CompiledMeter compiled : dataset.meters()) {
       if (compiled.meterName().equals(meter)) {
-        if (compiled.windowMs() == windowSize) {
-          return compiled;
-        }
-        fallback = compiled;
+        return compiled;
       }
     }
-    if (fallback == null) {
-      throw new IllegalStateException(
-          "no compiled meter '" + meter + "' in '" + dataset.name() + "'");
-    }
-    return fallback;
+    throw new IllegalStateException(
+        "no compiled meter '" + meter + "' in '" + dataset.name() + "'");
   }
 
   private static String sqlAgg(final Agg agg) {

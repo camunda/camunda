@@ -74,16 +74,22 @@ public final class CubeMergeProcessor implements Processor<ShuffleEnvelope, Void
     // a re-emit of that stream's batch is skipped, while a sibling stream's late segment is kept.
     admitted.clear();
     for (final CellDelta cell : envelope.cells()) {
+      final CellApplier applier = byStreamId.get(cell.streamId());
+      if (applier == null) {
+        // Unknown stream — e.g. a cube declared after this task's last catalog reload. Do NOT
+        // advance the dedup watermark for it: admitting without applying would permanently mark
+        // these (segment, chunk)s as merged, so nothing could ever replay them. (The envelope's
+        // offset still advances — closing that reload race needs a Stage-2-side replay, tracked
+        // separately — but at least the admission watermarks never lie about what was folded.)
+        continue;
+      }
       final boolean merge =
           admitted.computeIfAbsent(
               cell.streamId(), streamId -> dedup.admit(sourcePartition, streamId, segment, chunk));
       if (!merge) {
         continue; // this stream already merged this batch — a duplicate or producer re-emit
       }
-      final CellApplier applier = byStreamId.get(cell.streamId());
-      if (applier != null) {
-        applier.apply(cell.key(), cell.windowStart(), cell.payload());
-      }
+      applier.apply(cell.key(), cell.windowStart(), cell.payload());
     }
   }
 

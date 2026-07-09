@@ -11,24 +11,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.analytics.dataset.ActiveCube;
-import io.camunda.analytics.dataset.CompiledMeter;
+import io.camunda.analytics.dataset.CompiledDataset;
 import io.camunda.analytics.dataset.DatasetDeclaration;
 import io.camunda.analytics.dataset.DatasetRegistry;
 import io.camunda.analytics.dimension.DimensionKey;
 import io.camunda.analytics.dimension.DimensionKeyValue;
 import io.camunda.analytics.dimension.DimensionSchema;
 import io.camunda.analytics.dimension.DimensionType;
-import io.camunda.analytics.dimension.FactRow;
 import io.camunda.analytics.fact.Fact;
 import io.camunda.analytics.fact.FactType;
-import io.camunda.analytics.meter.BoundMeter;
+import io.camunda.analytics.meter.CompositeAccumulatorValue;
+import io.camunda.analytics.meter.CompositeAggregateFunction;
 import io.camunda.analytics.meter.Meter;
 import io.camunda.analytics.meter.MeterCatalog;
 import io.camunda.analytics.projection.AnalyticsColumnFamilies;
 import io.camunda.analytics.serving.catalog.DatasetCatalog;
 import io.camunda.analytics.store.rdbms.RdbmsDatasetStore;
 import io.camunda.eventbridge.streaming.CommitCut;
-import io.camunda.eventbridge.streaming.aggregate.AggregateFunction;
 import io.camunda.eventbridge.streaming.shuffle.CellDelta;
 import io.camunda.eventbridge.streaming.shuffle.ShuffleEnvelope;
 import io.camunda.eventbridge.streaming.shuffle.ShuffleOperation;
@@ -295,17 +294,32 @@ final class AggregationStageTaskFrozenCutTest {
   }
 
   /** Everything a test needs of the provisioned cube, resolved from the live catalog. */
-  private record CubeHandle(long cubeId, int aggId, CompiledMeter meter, DimensionSchema grain) {}
+  private record CubeHandle(CompiledDataset dataset) {
+
+    long cubeId() {
+      return dataset.cubeId();
+    }
+
+    int streamId() {
+      return dataset.streamId();
+    }
+
+    int cellGroup() {
+      return dataset.finestTier().cellGroup();
+    }
+
+    DimensionSchema grain() {
+      return dataset.grain();
+    }
+  }
 
   private CubeHandle resolve() {
     catalog.refresh();
     final List<ActiveCube> cubes = catalog.cubes();
     assertThat(cubes).hasSize(1);
     final ActiveCube cube = cubes.get(0);
-    final List<CompiledMeter> meters = cube.compiled().meters();
-    assertThat(meters).hasSize(1);
-    return new CubeHandle(
-        cube.registered().cubeId(), meters.get(0).aggId(), meters.get(0), cube.compiled().grain());
+    assertThat(cube.compiled().meters()).hasSize(1);
+    return new CubeHandle(cube.compiled());
   }
 
   /** One AGGREGATE_DELTA/MERGE envelope with a single one-fact cell delta for window 0. */
@@ -321,38 +335,39 @@ final class AggregationStageTaskFrozenCutTest {
         false,
         ShufflePayloadKind.AGGREGATE_DELTA,
         ShuffleOperation.MERGE,
-        List.of(new CellDelta(handle.aggId(), 0L, key, oneFact(handle.meter(), segment))));
+        List.of(new CellDelta(handle.streamId(), 0L, key, oneFact(handle.dataset(), segment))));
   }
 
-  /** A one-fact COUNT accumulator, encoded the way Stage 1 ships deltas. */
-  @SuppressWarnings("unchecked")
-  private byte[] oneFact(final CompiledMeter meter, final long position) {
-    final BoundMeter<Object, Object> bound = (BoundMeter<Object, Object>) meter.bound();
-    final AggregateFunction<FactRow, Object, Object> aggregate = bound.aggregate();
+  /** A one-fact composite COUNT accumulator, encoded the way Stage 1 ships deltas. */
+  private byte[] oneFact(final CompiledDataset dataset, final long position) {
+    final CompositeAggregateFunction aggregate =
+        new CompositeAggregateFunction(dataset.meterBounds());
     final Fact fact =
         Fact.builder(FactType.PROCESS_INSTANCE)
             .field("bpmnProcessId", PROCESS)
             .eventTime(0L)
             .source(1, position)
             .build();
-    final Object accumulator = aggregate.add(fact, aggregate.createAccumulator());
-    return bound.accumulatorCodec().toBytes(accumulator);
+    final Object[] accumulator = aggregate.add(fact, aggregate.createAccumulator());
+    return new CompositeAccumulatorValue(dataset.meterBounds()).toBytes(accumulator);
   }
 
-  /** The long result of the meter's single durable cell, or 0 when none is persisted yet. */
-  @SuppressWarnings("unchecked")
+  /** The long COUNT result of the cube's durable composite cells, or 0 when none is persisted. */
   private long durableTotal(final CubeHandle handle) {
-    final BoundMeter<Object, Object> bound = (BoundMeter<Object, Object>) handle.meter().bound();
+    final CompositeAggregateFunction aggregate =
+        new CompositeAggregateFunction(handle.dataset().meterBounds());
+    final CompositeAccumulatorValue codec =
+        new CompositeAccumulatorValue(handle.dataset().meterBounds());
     final KeyValueStore<DbBytes, DbBytes> cells =
         provider.keyValueStore(AnalyticsColumnFamilies.CUBE_CELLS, new DbBytes(), new DbBytes());
     final DbBytes prefix = new DbBytes();
-    prefix.wrapBytes(ByteBuffer.allocate(Integer.BYTES).putInt(handle.aggId()).array());
+    prefix.wrapBytes(ByteBuffer.allocate(Integer.BYTES).putInt(handle.cellGroup()).array());
     final List<Long> totals = new ArrayList<>();
     cells.prefixScan(
         prefix,
         (key, value) -> {
-          final Object accumulator = bound.accumulatorCodec().fromBytes(value.getBytes());
-          totals.add(((Number) bound.aggregate().getResult(accumulator)).longValue());
+          final Object[] accumulator = codec.fromBytes(value.getBytes());
+          totals.add(((Number) aggregate.getResult(accumulator)[0]).longValue());
         });
     return totals.stream().mapToLong(Long::longValue).sum();
   }
@@ -367,13 +382,14 @@ final class AggregationStageTaskFrozenCutTest {
     return offsets.get(key).map(DbLong::getValue);
   }
 
-  /** The durably persisted dedup watermark segment of the meter's shuffle stream, if any. */
+  /** The durably persisted dedup watermark segment of the cube's shuffle stream, if any. */
   private Optional<Long> durableDedupSegment(final CubeHandle handle) {
     final KeyValueStore<DbBytes, DbBytes> dedupStore =
         provider.keyValueStore(
             AnalyticsColumnFamilies.SHUFFLE_DEDUP_WATERMARK, new DbBytes(), new DbBytes());
     final DbBytes key = new DbBytes();
-    key.wrapBytes(ByteBuffer.allocate(2 * Integer.BYTES).putInt(1).putInt(handle.aggId()).array());
+    key.wrapBytes(
+        ByteBuffer.allocate(2 * Integer.BYTES).putInt(1).putInt(handle.streamId()).array());
     return dedupStore.get(key).map(value -> ByteBuffer.wrap(value.getBytes()).getLong());
   }
 

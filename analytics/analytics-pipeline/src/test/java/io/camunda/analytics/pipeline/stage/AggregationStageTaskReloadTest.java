@@ -10,23 +10,22 @@ package io.camunda.analytics.pipeline.stage;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.analytics.dataset.ActiveCube;
-import io.camunda.analytics.dataset.CompiledMeter;
+import io.camunda.analytics.dataset.CompiledDataset;
 import io.camunda.analytics.dataset.DatasetDeclaration;
 import io.camunda.analytics.dataset.DatasetRegistry;
 import io.camunda.analytics.dimension.DimensionKey;
 import io.camunda.analytics.dimension.DimensionKeyValue;
 import io.camunda.analytics.dimension.DimensionSchema;
 import io.camunda.analytics.dimension.DimensionType;
-import io.camunda.analytics.dimension.FactRow;
 import io.camunda.analytics.fact.Fact;
 import io.camunda.analytics.fact.FactType;
-import io.camunda.analytics.meter.BoundMeter;
+import io.camunda.analytics.meter.CompositeAccumulatorValue;
+import io.camunda.analytics.meter.CompositeAggregateFunction;
 import io.camunda.analytics.meter.Meter;
 import io.camunda.analytics.meter.MeterCatalog;
 import io.camunda.analytics.projection.AnalyticsColumnFamilies;
 import io.camunda.analytics.serving.catalog.DatasetCatalog;
 import io.camunda.analytics.store.rdbms.RdbmsDatasetStore;
-import io.camunda.eventbridge.streaming.aggregate.AggregateFunction;
 import io.camunda.eventbridge.streaming.shuffle.CellDelta;
 import io.camunda.eventbridge.streaming.shuffle.ShuffleEnvelope;
 import io.camunda.eventbridge.streaming.shuffle.ShuffleOperation;
@@ -103,7 +102,7 @@ final class AggregationStageTaskReloadTest {
     final CubeHandle cubeA = provision("cube-a");
     openTask();
     final CubeHandle handleA = resolve(cubeA);
-    assertThat(cellStore.scans(handleA.aggId())).isEqualTo(1); // recovered once at construction
+    assertThat(cellStore.scans(handleA.cellGroup())).isEqualTo(1); // recovered once at construction
     task.process(envelope(handleA));
     task.commit(0L);
 
@@ -114,8 +113,8 @@ final class AggregationStageTaskReloadTest {
     // then only the added cube's aggregation recovered and only its DDL ran — the existing one
     // kept its wiring and in-heap state untouched
     final CubeHandle handleB = resolve(cubeB);
-    assertThat(cellStore.scans(handleA.aggId())).isEqualTo(1);
-    assertThat(cellStore.scans(handleB.aggId())).isEqualTo(1);
+    assertThat(cellStore.scans(handleA.cellGroup())).isEqualTo(1);
+    assertThat(cellStore.scans(handleB.cellGroup())).isEqualTo(1);
     assertThat(datasetStore.ensures(handleA.cubeId())).isEqualTo(1);
     assertThat(datasetStore.ensures(handleB.cubeId())).isEqualTo(1);
 
@@ -150,7 +149,7 @@ final class AggregationStageTaskReloadTest {
 
     // then it recovered afresh from durable state only (a second recover scan, no leaked heap
     // state) and folds forward from the durable total
-    assertThat(cellStore.scans(handleA.aggId())).isEqualTo(2);
+    assertThat(cellStore.scans(handleA.cellGroup())).isEqualTo(2);
     task.process(envelope(handleA));
     task.commit(4L);
     assertThat(durableTotal(handleA)).isEqualTo(2L);
@@ -179,7 +178,20 @@ final class AggregationStageTaskReloadTest {
   }
 
   /** Everything a test needs of a cube, captured while it is visible in the catalog. */
-  private record CubeHandle(long cubeId, int aggId, CompiledMeter meter, DimensionSchema grain) {}
+  private record CubeHandle(long cubeId, CompiledDataset dataset) {
+
+    int streamId() {
+      return dataset.streamId();
+    }
+
+    int cellGroup() {
+      return dataset.finestTier().cellGroup();
+    }
+
+    DimensionSchema grain() {
+      return dataset.grain();
+    }
+  }
 
   /** Declares and stores a single-meter COUNT cube; returns a handle with just its id. */
   private CubeHandle provision(final String name) {
@@ -192,18 +204,16 @@ final class AggregationStageTaskReloadTest {
             .build();
     final long cubeId = registry.admit(declaration, Map.of(), 0L).cubeId();
     metadataStore.datasetSpecStore().create(registry.get(cubeId).orElseThrow());
-    return new CubeHandle(cubeId, -1, null, null);
+    return new CubeHandle(cubeId, null);
   }
 
-  /** Resolves the provisioned cube's compiled meter/grain from the live catalog. */
+  /** Resolves the provisioned cube's compiled dataset from the live catalog. */
   private CubeHandle resolve(final CubeHandle provisioned) {
     catalog.refresh();
     for (final ActiveCube cube : catalog.cubes()) {
       if (cube.registered().cubeId() == provisioned.cubeId()) {
-        final List<CompiledMeter> meters = cube.compiled().meters();
-        assertThat(meters).hasSize(1);
-        return new CubeHandle(
-            provisioned.cubeId(), meters.get(0).aggId(), meters.get(0), cube.compiled().grain());
+        assertThat(cube.compiled().meters()).hasSize(1);
+        return new CubeHandle(provisioned.cubeId(), cube.compiled());
       }
     }
     throw new IllegalStateException("cube " + provisioned.cubeId() + " not in the catalog");
@@ -222,36 +232,37 @@ final class AggregationStageTaskReloadTest {
         false,
         ShufflePayloadKind.AGGREGATE_DELTA,
         ShuffleOperation.MERGE,
-        List.of(new CellDelta(handle.aggId(), 0L, key, oneFact(handle.meter()))));
+        List.of(new CellDelta(handle.streamId(), 0L, key, oneFact(handle.dataset()))));
   }
 
-  /** A one-fact COUNT accumulator, encoded the way Stage 1 ships deltas. */
-  @SuppressWarnings("unchecked")
-  private byte[] oneFact(final CompiledMeter meter) {
-    final BoundMeter<Object, Object> bound = (BoundMeter<Object, Object>) meter.bound();
-    final AggregateFunction<FactRow, Object, Object> aggregate = bound.aggregate();
+  /** A one-fact composite COUNT accumulator, encoded the way Stage 1 ships deltas. */
+  private byte[] oneFact(final CompiledDataset dataset) {
+    final CompositeAggregateFunction aggregate =
+        new CompositeAggregateFunction(dataset.meterBounds());
     final Fact fact =
         Fact.builder(FactType.PROCESS_INSTANCE)
             .field("bpmnProcessId", PROCESS)
             .eventTime(0L)
             .source(1, segment)
             .build();
-    final Object accumulator = aggregate.add(fact, aggregate.createAccumulator());
-    return bound.accumulatorCodec().toBytes(accumulator);
+    final Object[] accumulator = aggregate.add(fact, aggregate.createAccumulator());
+    return new CompositeAccumulatorValue(dataset.meterBounds()).toBytes(accumulator);
   }
 
-  /** The long result of the meter's single durable cell, read through an uncounted handle. */
-  @SuppressWarnings("unchecked")
+  /** The long COUNT result of the cube's single durable cell, read through an uncounted handle. */
   private long durableTotal(final CubeHandle handle) {
-    final BoundMeter<Object, Object> bound = (BoundMeter<Object, Object>) handle.meter().bound();
+    final CompositeAggregateFunction aggregate =
+        new CompositeAggregateFunction(handle.dataset().meterBounds());
+    final CompositeAccumulatorValue codec =
+        new CompositeAccumulatorValue(handle.dataset().meterBounds());
     final DbBytes prefix = new DbBytes();
-    prefix.wrapBytes(ByteBuffer.allocate(Integer.BYTES).putInt(handle.aggId()).array());
+    prefix.wrapBytes(ByteBuffer.allocate(Integer.BYTES).putInt(handle.cellGroup()).array());
     final List<Long> totals = new ArrayList<>();
     rawCells.prefixScan(
         prefix,
         (key, value) -> {
-          final Object accumulator = bound.accumulatorCodec().fromBytes(value.getBytes());
-          totals.add(((Number) bound.aggregate().getResult(accumulator)).longValue());
+          final Object[] accumulator = codec.fromBytes(value.getBytes());
+          totals.add(((Number) aggregate.getResult(accumulator)[0]).longValue());
         });
     assertThat(totals).hasSize(1);
     return totals.get(0);

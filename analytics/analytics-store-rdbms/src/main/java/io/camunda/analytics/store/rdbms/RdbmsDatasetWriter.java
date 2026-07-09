@@ -14,6 +14,7 @@ import io.camunda.analytics.dimension.DimensionColumn;
 import io.camunda.analytics.dimension.DimensionKey;
 import io.camunda.analytics.dimension.DimensionType;
 import io.camunda.analytics.meter.BoundMeter;
+import io.camunda.analytics.meter.CompositeAccumulatorValue;
 import io.camunda.analytics.meter.PushdownColumn;
 import io.camunda.analytics.meter.PushdownSpec;
 import io.camunda.analytics.serving.spi.DatasetWriter;
@@ -36,10 +37,11 @@ import org.apache.ibatis.session.SqlSessionFactory;
 
 /**
  * The RDBMS {@link DatasetWriter}: idempotent, dialect-aware upserts. Cube cells use a keyed upsert
- * on the deterministic {@code cell_key}, setting only the one meter's own columns so meters of the
- * same cell coexist; projected rows upsert on {@code row_key}. Writes go through a single MyBatis
- * session held open for the batch, committed on {@link #flush()} — many upserts coalesce into one
- * transaction, and a re-emit or replay overwrites rather than duplicates.
+ * on the deterministic {@code cell_key}, writing every meter column of the row from the composite
+ * accumulator in one statement (ADR 0009 — one writer per row, never torn); projected rows upsert
+ * on {@code row_key}. Writes go through a single MyBatis session held open for the batch, committed
+ * on {@link #flush()} — many upserts coalesce into one transaction, and a re-emit or replay
+ * overwrites rather than duplicates.
  *
  * <p>Uses a {@link PreparedStatement} on the session's connection rather than a MyBatis mapper: the
  * accumulator is a {@code byte[]} blob and the column set is per-dataset dynamic, which bind far
@@ -88,8 +90,7 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
       final DimensionKey key,
       final long windowStart,
       final long windowSize,
-      final String meterName,
-      final byte[] accumulator) {
+      final byte[] compositeAccumulator) {
     ensurePartition(dataset, windowStart);
     final List<DimensionColumn> grain = dataset.grain().columns();
     final String dimCols =
@@ -98,31 +99,42 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
             .collect(Collectors.joining(", "));
     final String table = RdbmsNames.datasetTable(dataset.cubeId());
 
-    // A pushable (additive) meter decomposes into its native numeric columns (Layer B pushdown); a
-    // sketch/summary writes its app-mergeable blob (Layer A) plus a finalized scalar (the DIRECT
-    // fast path). Only the meter's own columns are in the upsert, so meters of the same cell
-    // coexist
-    // under the shared cell_key.
-    final CompiledMeter compiled = compiledMeter(dataset, meterName, windowSize);
-    final Optional<PushdownSpec<?, ?>> spec = compiled.pushdown();
+    // The composite carries every meter's slot in declared order (ADR 0009), so one statement
+    // writes the whole row. A pushable (additive) meter decomposes its slot into native numeric
+    // columns (Layer B pushdown); a sketch/summary writes its app-mergeable blob (Layer A) plus a
+    // finalized scalar (the DIRECT fast path). The SQL is identical for every cell of a dataset,
+    // so the whole commit batches onto one prepared statement.
+    final List<CompiledMeter> meters = dataset.meters();
+    final List<byte[]> slots =
+        CompositeAccumulatorValue.slotBytes(compositeAccumulator, meters.size());
 
     final List<String> meterCols = new ArrayList<>();
-    final List<Object> pushdownValues;
-    final double scalarValue;
-    if (spec.isPresent()) {
-      // Additive: native numeric columns only — no blob (read via PUSH_DOWN/DIRECT, never
-      // streamed).
-      pushdownValues = decompose(compiled.bound(), accumulator);
-      for (final PushdownColumn column : spec.get().columns()) {
-        meterCols.add(RdbmsNames.quotedPushdownColumn(meterName, column.suffix()));
+    final List<MeterBind> binds = new ArrayList<>();
+    for (int slot = 0; slot < meters.size(); slot++) {
+      final CompiledMeter meter = meters.get(slot);
+      final byte[] slotBytes = slots.get(slot);
+      final Optional<PushdownSpec<?, ?>> spec = meter.pushdown();
+      if (spec.isPresent()) {
+        // Additive: native numeric columns only — no blob (read via PUSH_DOWN/DIRECT, never
+        // streamed). An absent slot (older layout) writes the meter's empty accumulator.
+        final List<PushdownColumn> columns = spec.get().columns();
+        final List<Object> values = decompose(meter.bound(), slotBytes);
+        for (int i = 0; i < columns.size(); i++) {
+          meterCols.add(
+              RdbmsNames.quotedPushdownColumn(meter.meterName(), columns.get(i).suffix()));
+          final PushdownColumn column = columns.get(i);
+          final Object value = values.get(i);
+          binds.add((statement, index) -> bind(statement, index, column.type(), value));
+        }
+      } else {
+        // Sketch / summary: the app-mergeable blob + a finalized scalar for the DIRECT fast path.
+        meterCols.add(RdbmsNames.quotedBlobColumn(meter.meterName()));
+        meterCols.add(RdbmsNames.quotedValueColumn(meter.meterName()));
+        final byte[] blob = slotBytes == null ? emptySlot(meter.bound()) : slotBytes;
+        final double scalar = finalizedValue(meter.bound(), blob);
+        binds.add((statement, index) -> statement.setBytes(index, blob));
+        binds.add((statement, index) -> statement.setDouble(index, scalar));
       }
-      scalarValue = Double.NaN;
-    } else {
-      // Sketch / summary: the app-mergeable blob + a finalized scalar for the DIRECT fast path.
-      pushdownValues = List.of();
-      meterCols.add(RdbmsNames.quotedBlobColumn(meterName));
-      meterCols.add(RdbmsNames.quotedValueColumn(meterName));
-      scalarValue = finalizedValue(compiled.bound(), accumulator);
     }
 
     final String columns =
@@ -140,7 +152,6 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
         dialect.supportsPartitioning() ? "cell_key, window_start" : "cell_key";
     final String sql =
         upsertSql(dialect, table, columns, columnCount, "cell_key", conflictTarget, meterCols);
-    final List<PushdownColumn> pushdownColumns = spec.map(PushdownSpec::columns).orElse(List.of());
 
     execute(
         sql,
@@ -152,45 +163,35 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
           }
           statement.setLong(index++, windowStart);
           statement.setLong(index++, windowSize);
-          if (spec.isPresent()) {
-            for (int i = 0; i < pushdownColumns.size(); i++) {
-              bind(statement, index++, pushdownColumns.get(i).type(), pushdownValues.get(i));
-            }
-          } else {
-            statement.setBytes(index++, accumulator);
-            statement.setDouble(index, scalarValue);
+          for (final MeterBind meterBind : binds) {
+            meterBind.bind(statement, index++);
           }
         },
         "cube " + dataset.name());
   }
 
-  /**
-   * The compiled meter for {@code (name, windowSize)}, or any tier of the name (specs are shared).
-   */
-  private static CompiledMeter compiledMeter(
-      final CompiledDataset dataset, final String meterName, final long windowSize) {
-    CompiledMeter fallback = null;
-    for (final CompiledMeter meter : dataset.meters()) {
-      if (meter.meterName().equals(meterName)) {
-        if (meter.windowMs() == windowSize) {
-          return meter;
-        }
-        fallback = meter;
-      }
-    }
-    if (fallback == null) {
-      throw new IllegalStateException(
-          "no compiled meter '" + meterName + "' in cube '" + dataset.name() + "'");
-    }
-    return fallback;
+  /** Binds one meter-derived column value at its statement index. */
+  @FunctionalInterface
+  private interface MeterBind {
+    void bind(PreparedStatement statement, int index) throws SQLException;
   }
 
-  /** Decodes the accumulator and decomposes it into the pushdown columns' per-cell values. */
+  /** Decodes a meter's slot and decomposes it into the pushdown columns' per-cell values. */
   @SuppressWarnings("unchecked")
   private static List<Object> decompose(final BoundMeter<?, ?> boundRaw, final byte[] bytes) {
     final BoundMeter<Object, Object> bound = (BoundMeter<Object, Object>) boundRaw;
-    final Object accumulator = bound.accumulatorCodec().fromBytes(bytes);
+    final Object accumulator =
+        bytes == null
+            ? bound.aggregate().createAccumulator()
+            : bound.accumulatorCodec().fromBytes(bytes);
     return bound.pushdown().orElseThrow().decompose().apply(accumulator);
+  }
+
+  /** The encoded empty accumulator — an absent slot's blob value. */
+  @SuppressWarnings("unchecked")
+  private static byte[] emptySlot(final BoundMeter<?, ?> boundRaw) {
+    final BoundMeter<Object, Object> bound = (BoundMeter<Object, Object>) boundRaw;
+    return bound.accumulatorCodec().toBytes(bound.aggregate().createAccumulator());
   }
 
   /** The cell's finalized scalar for a non-pushable meter (the denormalized {@code _value}). */

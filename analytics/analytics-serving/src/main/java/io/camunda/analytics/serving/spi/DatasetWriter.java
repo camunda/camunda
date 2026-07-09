@@ -21,16 +21,18 @@ import java.util.List;
 public interface DatasetWriter extends AutoCloseable {
 
   /**
-   * Upserts one meter's merged accumulator for one cube cell, identified by {@code (dimensions,
-   * windowStart, windowSize)}. Meters of the same cell coexist; each call sets only its meter.
+   * Upserts one cube cell — identified by {@code (dimensions, windowStart, windowSize)} — from its
+   * <em>composite</em> accumulator: every meter's slot, encoded by {@link
+   * io.camunda.analytics.meter.CompositeAccumulatorValue} in the dataset's declared meter order
+   * (ADR 0009). A backend writes all meter columns in one idempotent write, so the cell has exactly
+   * one writer and is never torn between meters.
    */
   void upsertCell(
       CompiledDataset dataset,
       DimensionKey key,
       long windowStart,
       long windowSize,
-      String meterName,
-      byte[] accumulator);
+      byte[] compositeAccumulator);
 
   /**
    * Upserts one raw row of a projected dataset keyed by {@code rowKey}; {@code values} align to the

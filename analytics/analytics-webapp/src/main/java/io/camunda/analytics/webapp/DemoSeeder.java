@@ -8,17 +8,17 @@
 package io.camunda.analytics.webapp;
 
 import io.camunda.analytics.dataset.CompiledDataset;
-import io.camunda.analytics.dataset.CompiledMeter;
+import io.camunda.analytics.dataset.CompiledTier;
 import io.camunda.analytics.dimension.DimensionKey;
-import io.camunda.analytics.dimension.FactRow;
 import io.camunda.analytics.fact.Fact;
 import io.camunda.analytics.fact.FactType;
 import io.camunda.analytics.fact.Transition;
 import io.camunda.analytics.meter.BoundMeter;
+import io.camunda.analytics.meter.CompositeAccumulatorValue;
+import io.camunda.analytics.meter.CompositeAggregateFunction;
 import io.camunda.analytics.query.DatasetQueryExecutor;
 import io.camunda.analytics.query.ReportQuery;
 import io.camunda.analytics.serving.spi.DatasetStore;
-import io.camunda.eventbridge.streaming.aggregate.AggregateFunction;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
@@ -98,11 +98,11 @@ public class DemoSeeder implements CommandLineRunner {
   /** process-instances (lifecycle): activated/completed/terminated + completion durations. */
   private void seedProcessInstances() {
     final CompiledDataset dataset = catalog.require("process-instances");
-    for (final CompiledMeter meter : meters(dataset, "lifecycle")) {
+    for (final CompiledTier tier : dataset.tiers()) {
       for (final String process : PROCESSES) {
         final DimensionKey key = DimensionKey.of(dataset.grain(), process);
         for (int w = 0; w < WINDOWS; w++) {
-          final long ws = windowStart(meter.windowMs(), w);
+          final long ws = windowStart(tier.windowMs(), w);
           final long count = instanceCount(process, w);
           final long completed = Math.round(count * 0.9);
           final List<Fact> facts = new ArrayList<>();
@@ -115,7 +115,7 @@ public class DemoSeeder implements CommandLineRunner {
           for (long i = 0; i < count - completed; i++) {
             facts.add(processFact(Transition.TERMINATED, null));
           }
-          upsert(dataset, meter, key, ws, facts);
+          upsert(dataset, tier, key, ws, facts);
         }
       }
     }
@@ -124,11 +124,11 @@ public class DemoSeeder implements CommandLineRunner {
   /** process-duration (p95): completion-duration percentile distribution. */
   private void seedProcessDuration() {
     final CompiledDataset dataset = catalog.require("process-duration");
-    for (final CompiledMeter meter : meters(dataset, "p95")) {
+    for (final CompiledTier tier : dataset.tiers()) {
       for (final String process : PROCESSES) {
         final DimensionKey key = DimensionKey.of(dataset.grain(), process);
         for (int w = 0; w < WINDOWS; w++) {
-          upsert(dataset, meter, key, windowStart(meter.windowMs(), w), completedFacts(process, w));
+          upsert(dataset, tier, key, windowStart(tier.windowMs(), w), completedFacts(process, w));
         }
       }
     }
@@ -137,11 +137,11 @@ public class DemoSeeder implements CommandLineRunner {
   /** process-sla (sla_compliance): completed instances under the 300s SLA threshold. */
   private void seedProcessSla() {
     final CompiledDataset dataset = catalog.require("process-sla");
-    for (final CompiledMeter meter : meters(dataset, "sla_compliance")) {
+    for (final CompiledTier tier : dataset.tiers()) {
       for (final String process : PROCESSES) {
         final DimensionKey key = DimensionKey.of(dataset.grain(), process);
         for (int w = 0; w < WINDOWS; w++) {
-          upsert(dataset, meter, key, windowStart(meter.windowMs(), w), completedFacts(process, w));
+          upsert(dataset, tier, key, windowStart(tier.windowMs(), w), completedFacts(process, w));
         }
       }
     }
@@ -163,35 +163,35 @@ public class DemoSeeder implements CommandLineRunner {
           final long raised = (e == 1 || e == 2) ? 2L + (w % 3) : 0L;
           final long open = raised > 0 ? 1L : 0L;
 
-          for (final CompiledMeter meter : meters(throughput, "count")) {
+          for (final CompiledTier tier : throughput.tiers()) {
             upsert(
                 throughput,
-                meter,
+                tier,
                 DimensionKey.of(throughput.grain(), process, element),
-                windowStart(meter.windowMs(), w),
+                windowStart(tier.windowMs(), w),
                 countFacts(FactType.ELEMENT, executed));
           }
-          for (final CompiledMeter meter : meters(elementDuration, "duration")) {
+          for (final CompiledTier tier : elementDuration.tiers()) {
             final List<Fact> facts = new ArrayList<>();
             for (final long d : durations(elementP50, (int) Math.max(1, executed))) {
               facts.add(elementFact(Transition.COMPLETED, d));
             }
             upsert(
                 elementDuration,
-                meter,
+                tier,
                 DimensionKey.of(elementDuration.grain(), process, element),
-                windowStart(meter.windowMs(), w),
+                windowStart(tier.windowMs(), w),
                 facts);
           }
-          for (final CompiledMeter meter : meters(incidents, "count")) {
+          for (final CompiledTier tier : incidents.tiers()) {
             upsert(
                 incidents,
-                meter,
+                tier,
                 DimensionKey.of(incidents.grain(), process, element),
-                windowStart(meter.windowMs(), w),
+                windowStart(tier.windowMs(), w),
                 countFacts(FactType.INCIDENT, raised));
           }
-          for (final CompiledMeter meter : meters(incidentOpen, "open")) {
+          for (final CompiledTier tier : incidentOpen.tiers()) {
             final List<Fact> facts = new ArrayList<>();
             for (long i = 0; i < raised; i++) {
               facts.add(deltaFact(1L));
@@ -201,9 +201,9 @@ public class DemoSeeder implements CommandLineRunner {
             }
             upsert(
                 incidentOpen,
-                meter,
+                tier,
                 DimensionKey.of(incidentOpen.grain(), process, element),
-                windowStart(meter.windowMs(), w),
+                windowStart(tier.windowMs(), w),
                 facts);
           }
         }
@@ -214,7 +214,7 @@ public class DemoSeeder implements CommandLineRunner {
   /** process-distinct (HLL): distinct active process definitions per tenant. */
   private void seedDistinct() {
     final CompiledDataset dataset = catalog.require("process-distinct");
-    for (final CompiledMeter meter : meters(dataset, "distinct")) {
+    for (final CompiledTier tier : dataset.tiers()) {
       final DimensionKey key = DimensionKey.of(dataset.grain(), TENANT);
       for (int w = 0; w < WINDOWS; w++) {
         final List<Fact> facts = new ArrayList<>();
@@ -222,7 +222,7 @@ public class DemoSeeder implements CommandLineRunner {
           facts.add(
               Fact.builder(FactType.PROCESS_INSTANCE).field("bpmnProcessId", process).build());
         }
-        upsert(dataset, meter, key, windowStart(meter.windowMs(), w), facts);
+        upsert(dataset, tier, key, windowStart(tier.windowMs(), w), facts);
       }
     }
   }
@@ -230,7 +230,7 @@ public class DemoSeeder implements CommandLineRunner {
   /** top-processes (frequent items): heaviest process definitions per tenant. */
   private void seedTopProcesses() {
     final CompiledDataset dataset = catalog.require("top-processes");
-    for (final CompiledMeter meter : meters(dataset, "top")) {
+    for (final CompiledTier tier : dataset.tiers()) {
       final DimensionKey key = DimensionKey.of(dataset.grain(), TENANT);
       for (int w = 0; w < WINDOWS; w++) {
         final List<Fact> facts = new ArrayList<>();
@@ -242,7 +242,7 @@ public class DemoSeeder implements CommandLineRunner {
                     .build());
           }
         }
-        upsert(dataset, meter, key, windowStart(meter.windowMs(), w), facts);
+        upsert(dataset, tier, key, windowStart(tier.windowMs(), w), facts);
       }
     }
   }
@@ -312,41 +312,23 @@ public class DemoSeeder implements CommandLineRunner {
     return alignedBase + (long) w * tier;
   }
 
-  private static List<CompiledMeter> meters(final CompiledDataset dataset, final String meterName) {
-    final List<CompiledMeter> out = new ArrayList<>();
-    for (final CompiledMeter meter : dataset.meters()) {
-      if (meter.meterName().equals(meterName)) {
-        out.add(meter);
-      }
-    }
-    return out;
-  }
-
   private void upsert(
       final CompiledDataset dataset,
-      final CompiledMeter meter,
+      final CompiledTier tier,
       final DimensionKey key,
       final long windowStart,
       final List<Fact> facts) {
-    store
-        .writer()
-        .upsertCell(
-            dataset,
-            key,
-            windowStart,
-            meter.windowMs(),
-            meter.meterName(),
-            fold(meter.bound(), facts));
+    store.writer().upsertCell(dataset, key, windowStart, tier.windowMs(), fold(dataset, facts));
   }
 
-  @SuppressWarnings("unchecked")
-  private static byte[] fold(final BoundMeter<?, ?> bound, final List<Fact> facts) {
-    final BoundMeter<Object, Object> typed = (BoundMeter<Object, Object>) bound;
-    final AggregateFunction<FactRow, Object, Object> aggregate = typed.aggregate();
-    Object accumulator = aggregate.createAccumulator();
+  /** Folds the facts into the dataset's composite accumulator — every meter slot at once. */
+  private static byte[] fold(final CompiledDataset dataset, final List<Fact> facts) {
+    final List<BoundMeter<?, ?>> bounds = dataset.meterBounds();
+    final CompositeAggregateFunction aggregate = new CompositeAggregateFunction(bounds);
+    Object[] accumulator = aggregate.createAccumulator();
     for (final Fact fact : facts) {
       accumulator = aggregate.add(fact, accumulator);
     }
-    return typed.accumulatorCodec().toBytes(accumulator);
+    return new CompositeAccumulatorValue(bounds).toBytes(accumulator);
   }
 }

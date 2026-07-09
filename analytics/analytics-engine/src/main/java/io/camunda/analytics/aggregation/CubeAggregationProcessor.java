@@ -18,19 +18,21 @@ import io.camunda.eventbridge.streaming.shuffle.SegmentCell;
 import java.util.List;
 
 /**
- * One cube meter as a Stage-1 windowed-aggregate {@link Processor} node: it gates the shared fact
- * stream down to the facts this cube+meter should fold — the cube's {@link FactType}, at/after the
+ * One cube as a Stage-1 windowed-aggregate {@link Processor} node (ADR 0009): it gates the shared
+ * fact stream down to the facts this cube should fold — the cube's {@link FactType}, at/after the
  * cube's activation ({@link RegisteredDataset#admits}, the forward-only subscription rule),
- * matching every declared filter — then folds each into a {@link SegmentSealingAggregation} that
- * seals per-source-partition segment deltas. Each sealed delta is encoded by the {@link
- * ForwardingSegmentSink} and <em>forwarded</em> downstream as a {@link SegmentCell} to the shuffle
- * sink node — the aggregate emits its results; a separate node owns the transport.
+ * matching every declared filter — then folds each into the cube's <em>composite</em> {@link
+ * SegmentSealingAggregation} (one accumulator slot per meter), which seals per-source-partition
+ * segment deltas. The gate and the key extraction therefore run once per fact per dataset, not once
+ * per meter. Each sealed delta is encoded by the {@link ForwardingSegmentSink} and
+ * <em>forwarded</em> downstream as a {@link SegmentCell} to the shuffle sink node — the aggregate
+ * emits its results; a separate node owns the transport.
  *
  * <p>{@code checkpoint()} persists the aggregation's open segment (Model F), so committing the full
  * consumed offset never loses the in-flight partial; the sealed deltas reach the shuffle sink
  * synchronously as they are emitted, and that node publishes them on {@code flush()}.
  */
-public final class CubeMeterProcessor implements Processor<Fact, SegmentCell> {
+public final class CubeAggregationProcessor implements Processor<Fact, SegmentCell> {
 
   private final FactType factType;
   private final RegisteredDataset dataset;
@@ -38,7 +40,7 @@ public final class CubeMeterProcessor implements Processor<Fact, SegmentCell> {
   private final SegmentSealingAggregation<Fact, ?, ?> aggregation;
   private final ForwardingSegmentSink<?> sink;
 
-  public CubeMeterProcessor(
+  public CubeAggregationProcessor(
       final FactType factType,
       final RegisteredDataset dataset,
       final List<FilterPredicate> filters,
@@ -51,7 +53,7 @@ public final class CubeMeterProcessor implements Processor<Fact, SegmentCell> {
     this.sink = sink;
   }
 
-  /** The bound fact type this meter folds — the stage routes only matching facts here. */
+  /** The bound fact type this cube folds — the stage routes only matching facts here. */
   public FactType factType() {
     return factType;
   }

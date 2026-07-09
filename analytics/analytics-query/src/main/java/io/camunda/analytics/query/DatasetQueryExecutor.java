@@ -117,8 +117,10 @@ public final class DatasetQueryExecutor {
 
   private static BoundMeter<?, ?> boundOf(
       final CompiledDataset dataset, final String meter, final long windowSize) {
+    // The bound aggregate/codec is tier-independent (ADR 0009: tiers live on the cube, meters are
+    // slots); windowSize only selects which tier's cells the fetch read.
     for (final CompiledMeter compiled : dataset.meters()) {
-      if (compiled.meterName().equals(meter) && compiled.windowMs() == windowSize) {
+      if (compiled.meterName().equals(meter)) {
         return compiled.bound();
       }
     }

@@ -11,12 +11,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import io.camunda.analytics.dataset.ActiveCube;
-import io.camunda.analytics.dataset.CompiledMeter;
+import io.camunda.analytics.dataset.CompiledDataset;
 import io.camunda.analytics.dataset.DatasetDeclaration;
 import io.camunda.analytics.dataset.DatasetRegistry;
 import io.camunda.analytics.dimension.DimensionType;
 import io.camunda.analytics.fact.FactType;
-import io.camunda.analytics.meter.BoundMeter;
+import io.camunda.analytics.meter.CompositeAccumulatorValue;
+import io.camunda.analytics.meter.CompositeAggregateFunction;
 import io.camunda.analytics.meter.Meter;
 import io.camunda.analytics.meter.MeterCatalog;
 import io.camunda.analytics.projection.AnalyticsColumnFamilies;
@@ -206,17 +207,18 @@ final class ProjectionStageTaskDedupTest {
   }
 
   /**
-   * The summed COUNT of the single meter's checkpointed open-segment cells (skipping the bare-group
-   * meta entry) — the number of facts folded so far.
+   * The summed COUNT of the cube's checkpointed open-segment composite cells (skipping the
+   * bare-group meta entry) — the number of facts folded so far.
    */
   private long openSegmentTotal() {
-    final CompiledMeter meter = singleMeter();
-    @SuppressWarnings("unchecked")
-    final BoundMeter<Object, Object> bound = (BoundMeter<Object, Object>) meter.bound();
+    final CompiledDataset dataset = singleDataset();
+    final CompositeAggregateFunction aggregate =
+        new CompositeAggregateFunction(dataset.meterBounds());
+    final CompositeAccumulatorValue codec = new CompositeAccumulatorValue(dataset.meterBounds());
     final KeyValueStore<DbBytes, DbBytes> openSegments =
         provider.keyValueStore(AnalyticsColumnFamilies.OPEN_SEGMENT, new DbBytes(), new DbBytes());
     final DbBytes prefix = new DbBytes();
-    prefix.wrapBytes(ByteBuffer.allocate(Integer.BYTES).putInt(meter.aggId()).array());
+    prefix.wrapBytes(ByteBuffer.allocate(Integer.BYTES).putInt(dataset.streamId()).array());
     final List<Long> totals = new ArrayList<>();
     openSegments.prefixScan(
         prefix,
@@ -224,19 +226,19 @@ final class ProjectionStageTaskDedupTest {
           if (key.getBytes().length == Integer.BYTES) {
             return; // the per-group (openSegment, sourcePartition) meta entry
           }
-          final Object accumulator = bound.accumulatorCodec().fromBytes(value.getBytes());
-          totals.add(((Number) bound.aggregate().getResult(accumulator)).longValue());
+          final Object[] accumulator = codec.fromBytes(value.getBytes());
+          totals.add(((Number) aggregate.getResult(accumulator)[0]).longValue());
         });
     return totals.stream().mapToLong(Long::longValue).sum();
   }
 
-  /** The provisioned cube's single compiled meter, resolved from the live catalog. */
-  private CompiledMeter singleMeter() {
+  /** The provisioned cube's compiled dataset, resolved from the live catalog. */
+  private CompiledDataset singleDataset() {
     catalog.refresh();
     final List<ActiveCube> cubes = catalog.cubes();
     assertThat(cubes).hasSize(1);
-    final List<CompiledMeter> meters = cubes.get(0).compiled().meters();
-    assertThat(meters).hasSize(1);
-    return meters.get(0);
+    final CompiledDataset dataset = cubes.get(0).compiled();
+    assertThat(dataset.meters()).hasSize(1);
+    return dataset;
   }
 }

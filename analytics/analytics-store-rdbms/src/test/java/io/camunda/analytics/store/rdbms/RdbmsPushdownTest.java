@@ -10,17 +10,16 @@ package io.camunda.analytics.store.rdbms;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.analytics.dataset.CompiledDataset;
-import io.camunda.analytics.dataset.CompiledMeter;
 import io.camunda.analytics.dataset.DatasetCompiler;
 import io.camunda.analytics.dataset.DatasetDeclaration;
 import io.camunda.analytics.dataset.FilterPredicate;
 import io.camunda.analytics.dimension.DimensionKey;
 import io.camunda.analytics.dimension.DimensionType;
-import io.camunda.analytics.dimension.FactRow;
 import io.camunda.analytics.fact.Fact;
 import io.camunda.analytics.fact.FactType;
 import io.camunda.analytics.fact.Transition;
-import io.camunda.analytics.meter.BoundMeter;
+import io.camunda.analytics.meter.CompositeAccumulatorValue;
+import io.camunda.analytics.meter.CompositeAggregateFunction;
 import io.camunda.analytics.meter.InMemoryMeterIdStore;
 import io.camunda.analytics.meter.Meter;
 import io.camunda.analytics.meter.MeterCatalog;
@@ -30,7 +29,6 @@ import io.camunda.analytics.metric.RatioResult;
 import io.camunda.analytics.serving.spi.AggregatedFetch;
 import io.camunda.analytics.serving.spi.AggregatedRow;
 import io.camunda.analytics.serving.spi.ReadStrategy;
-import io.camunda.eventbridge.streaming.aggregate.AggregateFunction;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -226,31 +224,19 @@ final class RdbmsPushdownTest {
       final DimensionKey key,
       final long windowStart,
       final List<Fact> facts) {
-    final CompiledMeter meter = meter(cube, meterName);
     store
         .writer()
-        .upsertCell(
-            cube, key, windowStart, meter.windowMs(), meterName, fold(meter.bound(), facts));
+        .upsertCell(cube, key, windowStart, cube.finestTier().windowMs(), fold(cube, facts));
   }
 
-  private static CompiledMeter meter(final CompiledDataset cube, final String meterName) {
-    for (final CompiledMeter meter : cube.meters()) {
-      if (meter.meterName().equals(meterName)) {
-        return meter;
-      }
-    }
-    throw new IllegalArgumentException("no meter " + meterName);
-  }
-
-  @SuppressWarnings("unchecked")
-  private static byte[] fold(final BoundMeter<?, ?> boundRaw, final List<Fact> facts) {
-    final BoundMeter<Object, Object> bound = (BoundMeter<Object, Object>) boundRaw;
-    final AggregateFunction<FactRow, Object, Object> aggregate = bound.aggregate();
-    Object accumulator = aggregate.createAccumulator();
+  /** Folds the facts into the cube's composite accumulator — every meter slot at once. */
+  private static byte[] fold(final CompiledDataset cube, final List<Fact> facts) {
+    final CompositeAggregateFunction aggregate = new CompositeAggregateFunction(cube.meterBounds());
+    Object[] accumulator = aggregate.createAccumulator();
     for (final Fact fact : facts) {
       accumulator = aggregate.add(fact, accumulator);
     }
-    return bound.accumulatorCodec().toBytes(accumulator);
+    return new CompositeAccumulatorValue(cube.meterBounds()).toBytes(accumulator);
   }
 
   private static List<Fact> counts(final int n) {

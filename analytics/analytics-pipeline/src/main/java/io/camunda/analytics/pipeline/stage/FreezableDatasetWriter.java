@@ -50,9 +50,8 @@ final class FreezableDatasetWriter implements DatasetWriter {
       final DimensionKey key,
       final long windowStart,
       final long windowSize,
-      final String meterName,
-      final byte[] accumulator) {
-    outbox.stage(new CellUpsert(dataset, key, windowStart, windowSize, meterName, accumulator));
+      final byte[] compositeAccumulator) {
+    outbox.stage(new CellUpsert(dataset, key, windowStart, windowSize, compositeAccumulator));
   }
 
   @Override
@@ -121,13 +120,12 @@ final class FreezableDatasetWriter implements DatasetWriter {
       DimensionKey key,
       long windowStart,
       long windowSize,
-      String meterName,
-      byte[] accumulator)
+      byte[] compositeAccumulator)
       implements Op {
 
     @Override
     public void applyTo(final DatasetWriter writer) {
-      writer.upsertCell(dataset, key, windowStart, windowSize, meterName, accumulator);
+      writer.upsertCell(dataset, key, windowStart, windowSize, compositeAccumulator);
     }
   }
 

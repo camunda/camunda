@@ -86,8 +86,8 @@ final class ProjectionStageTaskReloadTest {
     final long cubeA = provision("cube-a");
     final long tableA = provisionTable("table-a");
     openTask();
-    final int aggA = aggIdOf(cubeA);
-    assertThat(openSegments.scans(aggA)).isEqualTo(1); // recovered once at construction
+    final int streamA = streamIdOf(cubeA);
+    assertThat(openSegments.scans(streamA)).isEqualTo(1); // recovered once at construction
     assertThat(datasetStore.ensures(cubeA)).isEqualTo(1);
     assertThat(datasetStore.tableEnsures(tableA)).isEqualTo(1);
     assertThat(datasetStore.tableEnsures(ProcessDefinitionSink.TABLE.cubeId())).isEqualTo(1);
@@ -98,9 +98,9 @@ final class ProjectionStageTaskReloadTest {
 
     // then only the added cube's aggregation recovered and only its DDL ran; the surviving cube,
     // the raw table, and the built-in definitions table were not re-provisioned
-    final int aggB = aggIdOf(cubeB);
-    assertThat(openSegments.scans(aggA)).isEqualTo(1);
-    assertThat(openSegments.scans(aggB)).isEqualTo(1);
+    final int streamB = streamIdOf(cubeB);
+    assertThat(openSegments.scans(streamA)).isEqualTo(1);
+    assertThat(openSegments.scans(streamB)).isEqualTo(1);
     assertThat(datasetStore.ensures(cubeA)).isEqualTo(1);
     assertThat(datasetStore.ensures(cubeB)).isEqualTo(1);
     assertThat(datasetStore.tableEnsures(tableA)).isEqualTo(1);
@@ -112,8 +112,8 @@ final class ProjectionStageTaskReloadTest {
     // given a running task over one cube
     final long cubeA = provision("cube-a");
     openTask();
-    final int aggA = aggIdOf(cubeA);
-    assertThat(openSegments.scans(aggA)).isEqualTo(1);
+    final int streamA = streamIdOf(cubeA);
+    assertThat(openSegments.scans(streamA)).isEqualTo(1);
 
     // when the cube is removed and the next commit reloads
     metadataStore.hide(cubeA);
@@ -125,7 +125,7 @@ final class ProjectionStageTaskReloadTest {
 
     // then its aggregation was reconstructed and recovered afresh from the durable open segment
     // (a second recover scan — the removed incarnation's heap state did not leak)
-    assertThat(openSegments.scans(aggA)).isEqualTo(2);
+    assertThat(openSegments.scans(streamA)).isEqualTo(2);
   }
 
   private void openTask() {
@@ -182,13 +182,13 @@ final class ProjectionStageTaskReloadTest {
     return cubeId;
   }
 
-  /** The single meter's aggId of the given cube, resolved from the live catalog. */
-  private int aggIdOf(final long cubeId) {
+  /** The given cube's shuffle streamId — its open-segment store group — from the live catalog. */
+  private int streamIdOf(final long cubeId) {
     catalog.refresh();
     for (final ActiveCube cube : catalog.cubes()) {
       if (cube.registered().cubeId() == cubeId) {
         assertThat(cube.compiled().meters()).hasSize(1);
-        return cube.compiled().meters().get(0).aggId();
+        return cube.compiled().streamId();
       }
     }
     throw new IllegalStateException("cube " + cubeId + " not in the catalog");

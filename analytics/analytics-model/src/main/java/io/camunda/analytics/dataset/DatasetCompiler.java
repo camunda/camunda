@@ -56,23 +56,28 @@ public final class DatasetCompiler {
     final FactBinding factBinding =
         new FactBinding(declaration.sourceFact(), declaration.filters(), enrichment);
 
+    // One compiled meter per declared meter — its index is its composite slot (ADR 0009) — and
+    // one tier per declared window size, finest first. The cube's shuffle stream and each tier's
+    // durable cell group get stable ids from the registry, keyed so retiring/re-adding never
+    // rebinds an id.
+    final int streamId = registry.aggIdFor(cubeId, "cube");
     final List<CompiledMeter> meters = new ArrayList<>();
     for (final Meter meter : declaration.meters()) {
-      for (final long windowMs : declaration.windowSizesMs()) {
-        final int aggId = registry.aggIdFor(cubeId, meter.name() + "@" + windowMs);
-        meters.add(
-            new CompiledMeter(
-                meter.name(),
-                windowMs,
-                aggId,
-                bind(declaration, meter),
-                TumblingWindows.ofSizeAndGrace(windowMs, declaration.latenessMs())));
-      }
+      meters.add(new CompiledMeter(meter.name(), bind(declaration, meter)));
+    }
+    final List<CompiledTier> tiers = new ArrayList<>();
+    for (final long windowMs : declaration.windowSizesMs().stream().sorted().toList()) {
+      tiers.add(
+          new CompiledTier(
+              windowMs,
+              registry.aggIdFor(cubeId, "cells@" + windowMs),
+              TumblingWindows.ofSizeAndGrace(windowMs, declaration.latenessMs())));
     }
 
     final DatasetSchema schema =
         new DatasetSchema(grain, declaration.meters().stream().map(Meter::name).toList());
-    return new CompiledDataset(cubeId, declaration.name(), factBinding, grain, meters, schema);
+    return new CompiledDataset(
+        cubeId, declaration.name(), factBinding, grain, streamId, meters, tiers, schema);
   }
 
   /**

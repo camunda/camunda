@@ -9,6 +9,7 @@ package io.camunda.analytics.query;
 
 import io.camunda.analytics.dataset.CompiledDataset;
 import io.camunda.analytics.dataset.CompiledMeter;
+import io.camunda.analytics.dataset.CompiledTier;
 import io.camunda.analytics.meter.PushdownSpec;
 import io.camunda.analytics.serving.spi.AggregatedFetch;
 import io.camunda.analytics.serving.spi.DatasetFetch;
@@ -104,25 +105,27 @@ public final class DatasetQueryPlanner {
 
   private static long chooseTier(
       final String meter, final CompiledDataset dataset, final long granularityMs) {
+    requireMeter(meter, dataset);
+    // Tiers are a property of the cube (ADR 0009): every meter materialises at every tier, so the
+    // choice is per dataset — the coarsest tier that divides the query granularity, else finest.
     long coarsestDividing = -1L;
-    long finest = Long.MAX_VALUE;
-    boolean found = false;
-    for (final CompiledMeter compiled : dataset.meters()) {
-      if (!compiled.meterName().equals(meter)) {
-        continue;
-      }
-      found = true;
-      final long windowMs = compiled.windowMs();
-      finest = Math.min(finest, windowMs);
+    for (final CompiledTier tier : dataset.tiers()) {
+      final long windowMs = tier.windowMs();
       if (windowMs <= granularityMs && granularityMs % windowMs == 0) {
         coarsestDividing = Math.max(coarsestDividing, windowMs);
       }
     }
-    if (!found) {
-      throw new IllegalArgumentException(
-          "dataset '" + dataset.name() + "' has no meter '" + meter + "'");
+    return coarsestDividing > 0 ? coarsestDividing : dataset.finestTier().windowMs();
+  }
+
+  private static void requireMeter(final String meter, final CompiledDataset dataset) {
+    for (final CompiledMeter compiled : dataset.meters()) {
+      if (compiled.meterName().equals(meter)) {
+        return;
+      }
     }
-    return coarsestDividing > 0 ? coarsestDividing : finest;
+    throw new IllegalArgumentException(
+        "dataset '" + dataset.name() + "' has no meter '" + meter + "'");
   }
 
   private static void validateGroupBy(final ReportQuery query, final CompiledDataset dataset) {

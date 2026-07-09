@@ -7,20 +7,22 @@
  */
 package io.camunda.analytics.pipeline.stage;
 
-import io.camunda.analytics.aggregation.CubeMeterProcessor;
+import io.camunda.analytics.aggregation.CubeAggregationProcessor;
 import io.camunda.analytics.aggregation.EnvelopePublisher;
 import io.camunda.analytics.aggregation.FactTypeDispatcher;
 import io.camunda.analytics.aggregation.ForwardingSegmentSink;
 import io.camunda.analytics.aggregation.ShuffleSinkProcessor;
 import io.camunda.analytics.dataset.ActiveCube;
 import io.camunda.analytics.dataset.ActiveTable;
-import io.camunda.analytics.dataset.CompiledMeter;
+import io.camunda.analytics.dataset.CompiledDataset;
 import io.camunda.analytics.dataset.DimensionSpec;
 import io.camunda.analytics.dimension.DimensionKey;
 import io.camunda.analytics.dimension.DimensionKeySelector;
 import io.camunda.analytics.dimension.DimensionKeyValue;
 import io.camunda.analytics.fact.Fact;
 import io.camunda.analytics.meter.BoundMeter;
+import io.camunda.analytics.meter.CompositeAccumulatorValue;
+import io.camunda.analytics.meter.CompositeAggregateFunction;
 import io.camunda.analytics.projection.AnalyticsBaseProjection;
 import io.camunda.analytics.projection.AnalyticsColumnFamilies;
 import io.camunda.analytics.projection.SourceRecord;
@@ -49,7 +51,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -60,7 +61,7 @@ import org.slf4j.LoggerFactory;
  * One source partition's Stage-1 owning {@link Task}: it owns a per-partition RocksDB and drives a
  * declared {@link ProcessorTopology} — the base-projection {@link AnalyticsBaseProjection} ({@code
  * source}) fans facts through a {@link FactTypeDispatcher} (routing each fact only to the nodes
- * whose bound fact type matches) to a {@link CubeMeterProcessor} per active cube-meter, each of
+ * whose bound fact type matches) to a {@link CubeAggregationProcessor} per active cube, each of
  * which seals and forwards {@code SegmentCell}s to a single shared {@link ShuffleSinkProcessor}
  * node (the transport), plus a {@link TableRowProcessor} per raw table. The base projection, every
  * meter's open segment and the consumed offset all live in the one provider, so {@link
@@ -151,7 +152,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
   // is ensured; a removed cube's wiring is dropped so a re-added id reconstructs and recovers from
   // its durable open segment alone. Tables hold no state and are rebuilt, but their DDL is scoped
   // the same way.
-  private final Map<Integer, MeterWiring> wiringByAggId = new HashMap<>();
+  private final Map<Integer, CubeWiring> wiringByStreamId = new HashMap<>();
   private Set<Long> appliedCubeIds = Set.of();
   private Set<Long> appliedTableIds = Set.of();
   private boolean definitionsTableEnsured;
@@ -303,34 +304,32 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
     final List<String> meterNodes = new ArrayList<>();
     final List<SegmentSealingAggregation<Fact, ?, ?>> aggregations = new ArrayList<>();
     final Set<Long> cubeIds = new HashSet<>();
-    final Set<Integer> activeAggIds = new HashSet<>();
+    final Set<Integer> activeStreamIds = new HashSet<>();
     for (final ActiveCube cube : cubes) {
       cubeIds.add(cube.registered().cubeId());
       if (!appliedCubeIds.contains(cube.registered().cubeId())) {
         // Serving DDL only for a newly-added dataset — not for every dataset on every reload.
         datasetStore.schemaManager().ensure(cube.compiled());
       }
-      // Aggregate + shuffle only the finest tier of each meter; Stage 2 rolls it up into the
-      // coarser tiers (a coarser cell is the exact merge of its finer cells, for mergeable
-      // aggregates). This keeps Stage 1's work and the shuffle to one stream per meter.
-      for (final CompiledMeter meter : finestTierPerMeter(cube.compiled().meters())) {
-        final String node = "meter-" + meter.aggId();
-        // Reuse a surviving meter's wiring (its aggregation keeps the just-checkpointed open
-        // segment on the heap — no re-recover prefix scan); construct only a newly-added one's.
-        final MeterWiring wiring =
-            wiringByAggId.computeIfAbsent(
-                meter.aggId(),
-                aggId -> meterWiring(cube, meter, segmentStride, openSegments, provider));
-        activeAggIds.add(meter.aggId());
-        aggregations.add(wiring.aggregation());
-        builder.processor(node, wiring.processor(), "dispatch");
-        dispatcher.route(node, wiring.processor().factType());
-        meterNodes.add(node);
-      }
+      // One composite fold per cube (ADR 0009): every meter is a slot of the one accumulator, so
+      // the gate and the key extraction run once per fact per dataset, and the shuffle carries
+      // one stream per cube. Only the finest tier is aggregated and shipped; Stage 2 rolls it up.
+      final int streamId = cube.compiled().streamId();
+      final String node = "cube-" + streamId;
+      // Reuse a surviving cube's wiring (its aggregation keeps the just-checkpointed open
+      // segment on the heap — no re-recover prefix scan); construct only a newly-added one's.
+      final CubeWiring wiring =
+          wiringByStreamId.computeIfAbsent(
+              streamId, id -> cubeWiring(cube, segmentStride, openSegments, provider));
+      activeStreamIds.add(streamId);
+      aggregations.add(wiring.aggregation());
+      builder.processor(node, wiring.processor(), "dispatch");
+      dispatcher.route(node, wiring.processor().factType());
+      meterNodes.add(node);
     }
     // Drop a removed cube's wiring: its heap state goes with it, while the durable open segment
     // remains — a removed-then-readded id reconstructs above and recovers from durable state only.
-    wiringByAggId.keySet().retainAll(activeAggIds);
+    wiringByStreamId.keySet().retainAll(activeStreamIds);
     if (!meterNodes.isEmpty()) {
       builder.processor(
           "shuffle",
@@ -366,60 +365,47 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
     sealingAggregations = List.copyOf(aggregations);
   }
 
-  /**
-   * The finest-tier {@link CompiledMeter} per meter name: only this tier is aggregated and shuffled
-   * here; Stage 2 derives the coarser tiers by rolling it up.
-   */
-  private static List<CompiledMeter> finestTierPerMeter(final List<CompiledMeter> meters) {
-    final Map<String, CompiledMeter> finest = new LinkedHashMap<>();
-    for (final CompiledMeter meter : meters) {
-      finest.merge(meter.meterName(), meter, (a, b) -> a.windowMs() <= b.windowMs() ? a : b);
-    }
-    return new ArrayList<>(finest.values());
-  }
-
-  /** One cube meter's reusable wiring: its gate/fold node and its sealing aggregation. */
-  private record MeterWiring(
-      CubeMeterProcessor processor, SegmentSealingAggregation<Fact, ?, ?> aggregation) {}
+  /** One cube's reusable wiring: its gate/fold node and its composite sealing aggregation. */
+  private record CubeWiring(
+      CubeAggregationProcessor processor, SegmentSealingAggregation<Fact, ?, ?> aggregation) {}
 
   /**
-   * Builds one cube meter's Model-F sealing aggregation and its {@link ForwardingSegmentSink}
-   * (capturing the acc type), then the node that gates + folds facts and forwards sealed cells. The
-   * aggregation is also part of the wiring so the task can watermark-seal completed segments as it
-   * commits.
+   * Builds one cube's Model-F composite sealing aggregation and its {@link ForwardingSegmentSink},
+   * then the node that gates + folds facts and forwards sealed cells (ADR 0009: one fold, one
+   * stream per cube — every meter is a slot of the composite accumulator). The aggregation is also
+   * part of the wiring so the task can watermark-seal completed segments as it commits.
    */
-  private static <ACC> MeterWiring meterWiring(
+  private static CubeWiring cubeWiring(
       final ActiveCube cube,
-      final CompiledMeter meter,
       final int segmentStride,
       final KeyValueStore<DbBytes, DbBytes> openSegments,
       final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider) {
-    @SuppressWarnings("unchecked")
-    final BoundMeter<ACC, ?> bound = (BoundMeter<ACC, ?>) meter.bound();
-    final ForwardingSegmentSink<ACC> sink =
+    final CompiledDataset compiled = cube.compiled();
+    final List<BoundMeter<?, ?>> bounds = compiled.meterBounds();
+    final ForwardingSegmentSink<Object[]> sink =
         new ForwardingSegmentSink<>(
-            meter.aggId(),
-            new DimensionKeyValue(cube.compiled().grain()),
-            bound.accumulatorCodec());
-    final SegmentSealingAggregation<Fact, DimensionKey, ACC> sealing =
+            compiled.streamId(),
+            new DimensionKeyValue(compiled.grain()),
+            new CompositeAccumulatorValue(bounds));
+    final SegmentSealingAggregation<Fact, DimensionKey, Object[]> sealing =
         new SegmentSealingAggregation<>(
-            meter.aggId(),
-            bound.aggregate(),
-            new DimensionKeySelector(cube.compiled().grain()),
+            compiled.streamId(),
+            new CompositeAggregateFunction(bounds),
+            new DimensionKeySelector(compiled.grain()),
             COORDINATE,
             Fact::eventTime,
-            meter.windows(),
+            compiled.finestTier().windows(),
             Segments.ofStride(segmentStride),
             sink,
             openSegments,
-            new DimensionKeyValue(cube.compiled().grain()),
-            bound.accumulatorCodec(),
+            new DimensionKeyValue(compiled.grain()),
+            new CompositeAccumulatorValue(bounds),
             provider::runInTransaction);
-    return new MeterWiring(
-        new CubeMeterProcessor(
-            cube.compiled().factBinding().factType(),
+    return new CubeWiring(
+        new CubeAggregationProcessor(
+            compiled.factBinding().factType(),
             cube.registered(),
-            cube.compiled().factBinding().filters(),
+            compiled.factBinding().filters(),
             sealing,
             sink),
         sealing);

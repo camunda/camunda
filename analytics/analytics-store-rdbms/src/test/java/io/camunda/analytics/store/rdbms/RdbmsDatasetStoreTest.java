@@ -10,7 +10,6 @@ package io.camunda.analytics.store.rdbms;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.analytics.dataset.CompiledDataset;
-import io.camunda.analytics.dataset.CompiledMeter;
 import io.camunda.analytics.dataset.CompiledTable;
 import io.camunda.analytics.dataset.DatasetCompiler;
 import io.camunda.analytics.dataset.DatasetDeclaration;
@@ -18,7 +17,7 @@ import io.camunda.analytics.dataset.FilterPredicate;
 import io.camunda.analytics.dimension.DimensionKey;
 import io.camunda.analytics.dimension.DimensionType;
 import io.camunda.analytics.fact.FactType;
-import io.camunda.analytics.meter.BoundMeter;
+import io.camunda.analytics.meter.CompositeAccumulatorValue;
 import io.camunda.analytics.meter.InMemoryMeterIdStore;
 import io.camunda.analytics.meter.Meter;
 import io.camunda.analytics.meter.MeterCatalog;
@@ -95,10 +94,10 @@ final class RdbmsDatasetStoreTest {
   void shouldWriteCellsAndServeThemThroughTheExecutor() {
     // given a provisioned cube with per-window counts written idempotently
     store.schemaManager().ensure(dataset);
-    store.writer().upsertCell(dataset, key("orders"), 0L, MINUTE, "count", count(3L));
-    store.writer().upsertCell(dataset, key("orders"), MINUTE, MINUTE, "count", count(2L));
-    store.writer().upsertCell(dataset, key("ship"), 0L, MINUTE, "count", count(4L));
-    store.writer().upsertCell(dataset, key("orders"), 0L, MINUTE, "count", count(3L)); // replay
+    store.writer().upsertCell(dataset, key("orders"), 0L, MINUTE, count(3L));
+    store.writer().upsertCell(dataset, key("orders"), MINUTE, MINUTE, count(2L));
+    store.writer().upsertCell(dataset, key("ship"), 0L, MINUTE, count(4L));
+    store.writer().upsertCell(dataset, key("orders"), 0L, MINUTE, count(3L)); // replay
     store.writer().flush();
 
     // when read back through the neutral planner + executor over the whole range in one bucket
@@ -120,8 +119,8 @@ final class RdbmsDatasetStoreTest {
   void shouldStreamRawCellsThroughACursor() {
     // given cells across two windows
     store.schemaManager().ensure(dataset);
-    store.writer().upsertCell(dataset, key("orders"), 0L, MINUTE, "count", count(3L));
-    store.writer().upsertCell(dataset, key("orders"), MINUTE, MINUTE, "count", count(2L));
+    store.writer().upsertCell(dataset, key("orders"), 0L, MINUTE, count(3L));
+    store.writer().upsertCell(dataset, key("orders"), MINUTE, MINUTE, count(2L));
     store.writer().flush();
 
     // when streamed through the forward cursor (never materialized as a List)
@@ -227,10 +226,8 @@ final class RdbmsDatasetStoreTest {
     return DimensionKey.of(dataset.grain(), process);
   }
 
-  @SuppressWarnings("unchecked")
   private byte[] count(final long value) {
-    final CompiledMeter meter = dataset.meters().get(0);
-    return ((BoundMeter<Object, Object>) meter.bound()).accumulatorCodec().toBytes(value);
+    return new CompositeAccumulatorValue(dataset.meterBounds()).toBytes(new Object[] {value});
   }
 
   private int tableRowCount() {

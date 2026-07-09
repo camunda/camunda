@@ -29,11 +29,11 @@ final class CubeServingSinkTest {
     // given a sink whose codec counts encodings, and an already-serialized accumulator
     final RecordingWriter writer = new RecordingWriter();
     final CountingCodec codec = new CountingCodec();
-    final CubeServingSink<Long> sink = new CubeServingSink<>(writer, null, "m", 60_000L, codec);
+    final CubeServingSink sink = new CubeServingSink(writer, null, 60_000L, codec);
     final byte[] serialized = new LongRecordValue().toBytes(7L);
 
     // when the aggregation hands over the bytes it already produced for its checkpoint
-    sink.upsert(new Windowed<>(null, 0L), 7L, serialized);
+    sink.upsert(new Windowed<>(null, 0L), new Object[] {7L}, serialized);
 
     // then those bytes pass through untouched and the sink's codec is never asked
     assertThat(writer.accumulators).singleElement().isSameAs(serialized);
@@ -45,10 +45,10 @@ final class CubeServingSinkTest {
     // given
     final RecordingWriter writer = new RecordingWriter();
     final CountingCodec codec = new CountingCodec();
-    final CubeServingSink<Long> sink = new CubeServingSink<>(writer, null, "m", 60_000L, codec);
+    final CubeServingSink sink = new CubeServingSink(writer, null, 60_000L, codec);
 
     // when the plain upsert runs (e.g. a sink used outside the serialize-once commit path)
-    sink.upsert(new Windowed<>(null, 0L), 7L);
+    sink.upsert(new Windowed<>(null, 0L), new Object[] {7L});
 
     // then the sink encodes the value with its own codec
     assertThat(codec.serializations).isEqualTo(1);
@@ -64,9 +64,8 @@ final class CubeServingSinkTest {
         final DimensionKey key,
         final long windowStart,
         final long windowSize,
-        final String meterName,
-        final byte[] accumulator) {
-      accumulators.add(accumulator);
+        final byte[] compositeAccumulator) {
+      accumulators.add(compositeAccumulator);
     }
 
     @Override
@@ -80,34 +79,34 @@ final class CubeServingSinkTest {
     public void close() {}
   }
 
-  private static final class CountingCodec extends LongRecordValueDelegate {
-    private int serializations;
-
-    @Override
-    public byte[] toBytes(final Long value) {
-      serializations++;
-      return super.toBytes(value);
-    }
-  }
-
-  /** Opens {@link LongRecordValue}'s behavior for extension (the production class is final). */
-  private static class LongRecordValueDelegate implements RecordValue<Long> {
+  /** A single-long-slot composite codec that counts encodings. */
+  private static final class CountingCodec implements RecordValue<Object[]> {
     private final LongRecordValue delegate = new LongRecordValue();
+    private int serializations;
+    private Object[] value;
 
     @Override
-    public RecordValue<Long> wrapValue(final Long value) {
-      delegate.wrapValue(value);
+    public byte[] toBytes(final Object[] composite) {
+      serializations++;
+      return delegate.toBytes((Long) composite[0]);
+    }
+
+    @Override
+    public RecordValue<Object[]> wrapValue(final Object[] composite) {
+      value = composite;
+      delegate.wrapValue((Long) composite[0]);
       return this;
     }
 
     @Override
-    public Long value() {
-      return delegate.value();
+    public Object[] value() {
+      return value;
     }
 
     @Override
     public void wrap(final DirectBuffer buffer, final int offset, final int length) {
       delegate.wrap(buffer, offset, length);
+      value = new Object[] {delegate.value()};
     }
 
     @Override

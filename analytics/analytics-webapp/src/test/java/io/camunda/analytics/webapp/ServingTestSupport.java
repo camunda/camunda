@@ -10,12 +10,11 @@ package io.camunda.analytics.webapp;
 import io.camunda.analytics.dataset.ActiveCube;
 import io.camunda.analytics.dataset.ActiveTable;
 import io.camunda.analytics.dataset.CompiledDataset;
-import io.camunda.analytics.dataset.CompiledMeter;
 import io.camunda.analytics.dataset.CompiledTable;
 import io.camunda.analytics.dimension.DimensionKey;
-import io.camunda.analytics.dimension.FactRow;
 import io.camunda.analytics.fact.Fact;
-import io.camunda.analytics.meter.BoundMeter;
+import io.camunda.analytics.meter.CompositeAccumulatorValue;
+import io.camunda.analytics.meter.CompositeAggregateFunction;
 import io.camunda.analytics.query.DatasetQueryExecutor;
 import io.camunda.analytics.query.DatasetQueryPlanner;
 import io.camunda.analytics.query.TableQueryExecutor;
@@ -24,7 +23,6 @@ import io.camunda.analytics.serving.spi.DatasetStore;
 import io.camunda.analytics.serving.spi.MetadataStore;
 import io.camunda.analytics.store.rdbms.RdbmsDatasetStore;
 import io.camunda.analytics.store.rdbms.metadata.RdbmsMetadataStore;
-import io.camunda.eventbridge.streaming.aggregate.AggregateFunction;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -93,31 +91,15 @@ final class ServingTestSupport {
     return BASE_MS - Math.floorMod(BASE_MS, tier);
   }
 
-  /** The finest-tier compiled meter for {@code meterName} in {@code dataset}. */
-  static CompiledMeter finestMeter(final CompiledDataset dataset, final String meterName) {
-    CompiledMeter best = null;
-    for (final CompiledMeter meter : dataset.meters()) {
-      if (meter.meterName().equals(meterName)
-          && (best == null || meter.windowMs() < best.windowMs())) {
-        best = meter;
-      }
-    }
-    if (best == null) {
-      throw new IllegalArgumentException(
-          "no meter '" + meterName + "' in '" + dataset.name() + "'");
-    }
-    return best;
-  }
-
-  @SuppressWarnings("unchecked")
-  static byte[] fold(final BoundMeter<?, ?> bound, final List<Fact> facts) {
-    final BoundMeter<Object, Object> typed = (BoundMeter<Object, Object>) bound;
-    final AggregateFunction<FactRow, Object, Object> aggregate = typed.aggregate();
-    Object accumulator = aggregate.createAccumulator();
+  /** Folds the facts into the dataset's composite accumulator — every meter slot at once. */
+  static byte[] fold(final CompiledDataset dataset, final List<Fact> facts) {
+    final CompositeAggregateFunction aggregate =
+        new CompositeAggregateFunction(dataset.meterBounds());
+    Object[] accumulator = aggregate.createAccumulator();
     for (final Fact fact : facts) {
       accumulator = aggregate.add(fact, accumulator);
     }
-    return typed.accumulatorCodec().toBytes(accumulator);
+    return new CompositeAccumulatorValue(dataset.meterBounds()).toBytes(accumulator);
   }
 
   /** Seeds one cube cell (finest tier, single aligned window) and returns its window start. */
@@ -128,14 +110,13 @@ final class ServingTestSupport {
       final List<Fact> facts,
       final Object... keyValues) {
     final CompiledDataset dataset = fixture.catalog().require(cubeName);
-    final CompiledMeter meter = finestMeter(dataset, meterName);
-    final long windowStart = window(meter.windowMs());
+    final long windowMs = dataset.finestTier().windowMs();
+    final long windowStart = window(windowMs);
     final DimensionKey key = DimensionKey.of(dataset.grain(), keyValues);
     fixture
         .datasetStore()
         .writer()
-        .upsertCell(
-            dataset, key, windowStart, meter.windowMs(), meterName, fold(meter.bound(), facts));
+        .upsertCell(dataset, key, windowStart, windowMs, fold(dataset, facts));
     fixture.datasetStore().writer().flush();
     return windowStart;
   }

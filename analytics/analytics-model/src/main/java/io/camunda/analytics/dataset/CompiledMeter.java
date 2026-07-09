@@ -9,18 +9,16 @@ package io.camunda.analytics.dataset;
 
 import io.camunda.analytics.meter.BoundMeter;
 import io.camunda.analytics.meter.PushdownSpec;
-import io.camunda.eventbridge.streaming.window.Windows;
 import java.util.Optional;
 
 /**
- * One meter of a cube materialised for one window tier: the runtime unit the two stages
- * instantiate. The {@code aggId} is stable per {@code (cube, meter, tier)} — its shuffle
- * routing/dispatch key — so different tiers of the same meter are independent rollups. {@code
- * bound} is the mergeable aggregate + accumulator codec; {@code windows} the tier's tumbling
- * windows; {@code meterName} the serving column it writes.
+ * One meter of a cube: the arithmetic inside a cell and the serving column(s) it writes — nothing
+ * more (ADR 0009). A meter is <em>not</em> a pipeline identity: it has no stream, no routing key,
+ * and no per-tier materialisation of its own. Its slot position in the cube's composite accumulator
+ * is its index in {@link CompiledDataset#meters()} (declaration order); the cube's tiers live on
+ * the dataset ({@link CompiledDataset#tiers()}).
  */
-public record CompiledMeter(
-    String meterName, long windowMs, int aggId, BoundMeter<?, ?> bound, Windows windows) {
+public record CompiledMeter(String meterName, BoundMeter<?, ?> bound) {
 
   /**
    * The meter's pushdown capability (carried from its {@link BoundMeter}): present when the store
