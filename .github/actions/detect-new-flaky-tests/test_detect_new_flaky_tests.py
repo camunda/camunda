@@ -406,6 +406,21 @@ class TestRenderComment(unittest.TestCase):
         self.assertIn("Method last modified at: `abcdef0`", body)
         self.assertIn(d.STATE_MARKER_PREFIX, body)
 
+    def test_active_comment_contains_verify_query(self):
+        state = _make_state(_make_entry(
+            package="io.camunda.foo", class_name="BarTest", method_name="shouldBaz",
+        ))
+        body = d.render_comment(state)
+        self.assertIn("Verify in BigQuery", body)
+        self.assertIn(d.BQ_TEST_STATUS_TABLE, body)
+        self.assertIn('test_class_name = "io.camunda.foo.BarTest"', body)
+        self.assertIn('test_name = "shouldBaz"', body)
+
+    def test_verify_query_omitted_when_fqn_incomplete(self):
+        state = _make_state(_make_entry(package="", class_name="", method_name="m"))
+        body = d.render_comment(state)
+        self.assertNotIn("Verify in BigQuery", body)
+
     def test_all_clear_template(self):
         state = _make_state(_make_entry(
             status="cleared_via_fix",
