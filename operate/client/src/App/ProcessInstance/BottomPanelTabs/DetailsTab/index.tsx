@@ -520,7 +520,7 @@ const DetailsTab: React.FC = () => {
     return <StructuredListSkeleton rowCount={5} />;
   }
 
-  const isMultiInstance =
+  const hasMultipleInstances =
     selectedInstancesCount !== null && selectedInstancesCount > 1;
 
   if (resolvedElementInstance === null && !showAgentInstance) {
@@ -528,7 +528,7 @@ const DetailsTab: React.FC = () => {
       <EmptyMessageContainer>
         <EmptyMessage
           message={
-            isMultiInstance
+            hasMultipleInstances
               ? 'To view the details, select a single element instance in the instance history.'
               : 'There is no element selected.'
           }
@@ -567,7 +567,7 @@ const DetailsTab: React.FC = () => {
         <SectionHeading>Element Instance</SectionHeading>
         {resolvedElementInstance === null ? (
           <ElementInstanceHint>
-            {isMultiInstance
+            {hasMultipleInstances
               ? 'To view the details, select a single element instance in the instance history.'
               : 'There is no element instance selected.'}
           </ElementInstanceHint>
