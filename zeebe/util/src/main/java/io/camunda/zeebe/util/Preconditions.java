@@ -35,4 +35,10 @@ public final class Preconditions {
   public static Consumer<String> assertNonEmpty(final String fieldName) {
     return s -> assertNonEmpty(s, fieldName);
   }
+
+  public static void test(final boolean condition, final String errorMessage) {
+    if (condition) {
+      throw new IllegalArgumentException(errorMessage);
+    }
+  }
 }

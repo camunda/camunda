@@ -8,10 +8,10 @@
 package io.camunda.zeebe.dynamic.config.api;
 
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
+import io.camunda.zeebe.util.Preconditions;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
-import java.util.Locale;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -33,28 +33,27 @@ public final class RestoreParameterValidator {
     final var instantTo = parseTimestamp(request.to(), "to");
     final var hasTimeRange = hasTimeRange(instantFrom, instantTo);
     final var hasBackupIds = !request.backupIds().isEmpty();
-    illegalArgument(
+    Preconditions.test(
         hasBackupIds && hasTimeRange,
         "Cannot specify both backupId and from/to parameters. Choose one approach.");
 
-    final var databaseType =
-        request.databaseType() == null ? "" : request.databaseType().toLowerCase(Locale.ROOT);
+    final var databaseType = request.databaseType().toLowerCase();
     switch (databaseType) {
       case "rdbms", "none" -> {
-        illegalArgument(
+        Preconditions.test(
             hasTimeRange && !request.continuousBackups(),
             "Time range restore (from/to) is only supported for continuous backups.");
 
-        illegalArgument(
+        Preconditions.test(
             instantFrom != null && instantTo != null && instantFrom.isAfter(instantTo),
             "Invalid time range: from (%s) must be before to (%s)"
                 .formatted(instantFrom, instantTo));
       }
       case "elasticsearch", "opensearch" -> {
-        illegalArgument(
+        Preconditions.test(
             hasTimeRange,
             "Time range restore (from/to) is not supported for %s.".formatted(databaseType));
-        illegalArgument(!hasBackupIds, "No backupId specified");
+        Preconditions.test(!hasBackupIds, "No backupId specified");
       }
       default ->
           throw new IllegalArgumentException("Invalid database type: " + request.databaseType());
@@ -75,12 +74,6 @@ public final class RestoreParameterValidator {
     } catch (final DateTimeParseException e) {
       throw new IllegalArgumentException(
           "Invalid %s timestamp '%s': must be an ISO 8601 date-time.".formatted(field, value));
-    }
-  }
-
-  private static void illegalArgument(final boolean condition, final String s) {
-    if (condition) {
-      throw new IllegalArgumentException(s);
     }
   }
 }
