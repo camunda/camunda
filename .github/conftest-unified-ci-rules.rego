@@ -144,6 +144,7 @@ get_jobs_without_cihealth(jobInput) = jobs_without_cihealth {
         job_id != "test-summary"
         job_id != "get-concurrency-group-dynamically"
         job_id != "get-snapshot-docker-version-tag"
+        job_id != "observe-aborted-jobs"
         job_id != "setup-tests"
         job_id != "detect-new-flaky-tests"
         # temporary for docker-build-helm-integration.yml workflow from alwaysgreen
