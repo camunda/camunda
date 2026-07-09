@@ -1,3 +1,7 @@
+---
+title: Working with Secondary Storage
+---
+
 # Working with Secondary Storage: Best Practices & Common Pitfalls
 
 This guide targets contributing engineers who work on the data/search layer of Camunda - covering
@@ -5,24 +9,12 @@ Elasticsearch (ES), OpenSearch (OS), and relational databases (RDBMS). It makes 
 characteristics and common failure modes explicit so they are considered during design and
 implementation.
 
-> **Scope**
-> This document covers the secondary storage layer: ES/OS indices and templates,
-> RDBMS tables managed by the RDBMS module, exporters, and the query/aggregation logic that
-> reads from them. For the primary (command-side) Zeebe RocksDB layer, refer to the engine
-> documentation.
-
----
-
-## Table of Contents
-
-1. [Performance Considerations & PDP Integration](#1-performance-considerations--pdp-integration)
-2. [Schema & Field Type Guidance](#2-schema--field-type-guidance)
-3. [Query & Aggregation Best Practices](#3-query--aggregation-best-practices)
-4. [Common Pitfalls & Examples](#4-common-pitfalls--examples)
-5. [Camunda ES/OS Exporter Flushing Behavior](#5-camunda-esos-exporter-flushing-behavior)
-6. [References](#6-references)
-
----
+:::info[Scope]
+This document covers the secondary storage layer: ES/OS indices and templates,
+RDBMS tables managed by the RDBMS module, exporters, and the query/aggregation logic that
+reads from them. For the primary (command-side) Zeebe RocksDB layer, refer to the engine
+documentation.
+:::
 
 ## 1. Performance Considerations & PDP Integration
 
@@ -62,11 +54,10 @@ Reach out to `#team-data-layer` for review if your answers indicate:
 - [ ] Schema changes have been reviewed against §2 (field type guidance).
 - [ ] New queries / aggregations have been reviewed against §3 (query best practices).
 
-> **Note**
-> The Data Layer team (`#team-data-layer`) is available to help answer the questions above or
-> provide feedback on proposed solutions.
-
----
+:::tip
+The Data Layer team (`#team-data-layer`) is available to help answer the questions above or
+provide feedback on proposed solutions.
+:::
 
 ## 1.3 Automated Enforcement
 
@@ -86,8 +77,6 @@ these tests, it means the change requires explicit Data Layer sign-off before it
 3. Get sign-off from the Data Layer team (`#team-data-layer` on Slack).
 4. Add `@camunda/data-layer` as a required reviewer on the PR (CODEOWNERS will do this
    automatically when you modify those files).
-
----
 
 ## 2. Schema & Field Type Guidance
 
@@ -277,8 +266,6 @@ Both the Elasticsearch exporter (`zeebe/exporters/elasticsearch-exporter/.../Bul
 and the OpenSearch exporter (`zeebe/exporters/opensearch-exporter/.../BulkIndexRequest.java`) define
 their own mixin sets; keep them in sync when adding a new mixin.
 
----
-
 ## 3. Query & Aggregation Best Practices
 
 ### 3.1 Prefer Filters Over Full-Text Queries
@@ -459,8 +446,6 @@ one of the most expensive operations in ES/OS.
 3. **Composite pagination**: Use `composite` aggregation to page through buckets without loading
    full documents.
 
----
-
 ## 4. Common Pitfalls & Examples
 
 ### 4.1 New Aggregation on a High-Cardinality Field
@@ -513,8 +498,6 @@ pagination, or re-think whether the aggregation is necessary at all.
 **Rule:** Any new aggregation on a high-cardinality field requires careful consideration and
 performance testing before merging.
 
----
-
 ### 4.2 Using `top_hits` Where Only Counts Are Needed
 
 **Problem:** `top_hits` is used to retrieve documents when the caller only needs a count or a
@@ -566,8 +549,6 @@ fields.
 }
 ```
 
----
-
 ### 4.3 Wildcard or Regex Queries on User-Controlled Input
 
 **Problem:** A user-provided search string is passed directly to a `wildcard` or `regexp` query
@@ -590,8 +571,6 @@ if (userInput == null || userInput.length() < 3){
 }
 QueryBuilders.prefixQuery("processName",userInput);
 ```
-
----
 
 ### 4.4 Aggregating or Sorting on a `text` Field
 
@@ -637,8 +616,6 @@ values.
 {"sort": [{"errorMessage.keyword": "asc"}]}
 ```
 
----
-
 ### 4.5 Over-Fetching Large Documents
 
 **Problem:** A query fetches the full `_source` when only a few fields are needed. For documents
@@ -663,8 +640,6 @@ SearchRequest request = new SearchRequest.Builder()
     .build();
 ```
 
----
-
 ### 4.6 Breaking Mapping Compatibility
 
 **Problem:** A developer changes the type of existing field (e.g. from `keyword` to `integer`) and
@@ -688,8 +663,6 @@ causing indexing failures or silent data loss.
    on the schema-manager to update existing templates/mappings in place via `putMapping` on the
    descriptor alias, so existing indices receive the new fields without creating empty generations.
 
----
-
 ### 4.7 Missing Index on a New Filter or Sort Column (RDBMS)
 
 **Problem:** A new filter parameter is added to an RDBMS query, but no index covers the
@@ -712,8 +685,6 @@ ORDER BY history_cleanup_date LIMIT 1000;
   <column name="history_cleanup_date"/>
 </createIndex>
 ```
-
----
 
 ## 5. Camunda ES/OS Exporter Flushing Behavior
 
@@ -850,13 +821,11 @@ You do not need to add a test for:
 - Create/delete pairs on independent documents — deletes replace the document entirely.
 - Write-once entities (e.g. identity records, deployment artifacts) — no subsequent update handler.
 
----
-
 ## 6. References
 
 |             Resource              |                                      Location                                       |
 |-----------------------------------|-------------------------------------------------------------------------------------|
-| RDBMS module documentation        | `docs/monorepo-docs/architecture/components/rdbms/rdbms_architecture_docs.md`       |
+| RDBMS module documentation        | [rdbms_architecture_docs.md](./rdbms/rdbms_architecture_docs.md)                    |
 | Testing strategy                  | `docs/testing.md`                                                                   |
 | Reliability testing (load tests)  | `docs/testing/reliability-testing.md`                                               |
 | ES/OS index templates (source)    | `webapps-schema/src/main/resources/schema/`                                         |
