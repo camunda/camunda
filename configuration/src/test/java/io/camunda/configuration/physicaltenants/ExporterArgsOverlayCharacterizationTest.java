@@ -23,30 +23,22 @@ import org.springframework.core.env.MapPropertySource;
 import org.springframework.mock.env.MockEnvironment;
 
 /**
- * Pinned characterization test for the collection merge policy of per-tenant configuration.
+ * Pinned characterization test for the resolved per-tenant exporter entry of a class
+ * <em>without</em> an {@code ExporterConfigMerger} — the whole-map-replace row of the ADR-0008 §2
+ * decision table.
  *
- * <p>The resolver binds {@code camunda.*} then {@code camunda.physical-tenants.<id>.*} into the
- * same {@link Camunda} instance. For a {@code Map}-typed property such as an exporter's {@code
- * args} ({@code Map<String, Object>}), it is not obvious whether Spring's Binder deep-merges the
- * tenant override onto the root entry (preserving sibling keys) or replaces the whole value.
+ * <p>Spring's native Binder constructs a <em>fresh</em> {@link Exporter} when the tenant touches
+ * any key under {@code data.exporters.<id>.*}: sibling args and the root's {@code className} are
+ * discarded (the historic behavior this test originally pinned). Since {@link
+ * PhysicalTenantExporterConfigurations} recomputes the entry, the {@code className} is inherited
+ * from the root entry again — but the <b>args replacement stands</b>: for an exporter class without
+ * a discoverable merger (custom exporters), partial args inheritance is not offered, and the
+ * tenant's args are taken exactly as declared. The seed: root {@code myexp} with {@code
+ * className=X}, {@code args.a=1}, {@code args.b=2}; tenant {@code tenanta} overrides only {@code
+ * args.b=99}.
  *
- * <p>This test pins the observed behavior so the merge policy can be decided from evidence rather
- * than intuition. The seed: root {@code myexp} with {@code className=X}, {@code args.a=1}, {@code
- * args.b=2}; tenant {@code tenanta} overrides only {@code args.b=99}.
- *
- * <p><b>Observed outcome: REPLACE, not deep-merge.</b> When the tenant sets any key under {@code
- * data.exporters.myexp.args}, Spring's Binder constructs a <em>fresh</em> {@link Exporter} for the
- * {@code myexp} map key instead of binding into the root's existing instance. The result is an
- * exporter with {@code args == {b=99}} only: the sibling {@code args.a=1} and the root {@code
- * className=X} are both discarded. (This differs from a nested non-map bean such as {@code
- * cluster}, whose sibling fields survive — see {@code PhysicalTenantBinderTest} — because a {@code
- * Map} <em>value</em> is not seeded from the existing entry during the second bind.)
- *
- * <p><b>Consequence for the merge policy:</b> native Spring overlay does NOT satisfy the issue's
- * deep-merge requirement for {@code Map<String, Object>} exporter args. A custom overlay is
- * therefore required — but that is a separate deliverable to be agreed with the user before
- * building; this test only locks in the native behavior so a future merge implementation has a
- * baseline to change.
+ * <p>The merge path (a class <em>with</em> a merger) and the remaining decision-table rows are
+ * covered by {@link PhysicalTenantExporterConfigurationsTest}.
  */
 class ExporterArgsOverlayCharacterizationTest {
 
@@ -89,19 +81,21 @@ class ExporterArgsOverlayCharacterizationTest {
     final Camunda tenantA =
         PhysicalTenantResolver.of(environment, camunda).forPhysicalTenant("tenanta");
 
-    // then the tenant's exporter entry has been REPLACED, not merged onto the root entry
+    // then the tenant's args have been REPLACED (class X has no merger), not merged
     final Exporter myexp = tenantA.getData().getExporters().get("myexp");
     assertThat(myexp).as("the exporter entry itself survives the overlay").isNotNull();
     // the overriding key is present with the tenant value
     assertThat(myexp.getArgs())
         .as("overridden args.b takes the tenant value")
         .containsEntry("b", 99);
-    // and everything not restated by the tenant is lost: a fresh Exporter was constructed
+    // and args the tenant did not restate are lost: no partial args inheritance without a merger
     assertThat(myexp.getArgs())
         .as("args is replaced wholesale — sibling args.a from the root is discarded")
         .containsOnlyKeys("b");
     assertThat(myexp.getClassName())
-        .as("className from the root is discarded by the replace overlay")
-        .isNull();
+        .as(
+            "className is inherited from the root entry by the exporter resolution step "
+                + "(diverging from it is a boot error)")
+        .isEqualTo("X");
   }
 }

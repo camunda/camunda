@@ -91,9 +91,11 @@ import org.springframework.context.annotation.Profile;
 public class BrokerBasedPropertiesOverride {
 
   public static final String RDBMS_EXPORTER_NAME = "rdbms";
+  // also referenced by the per-physical-tenant exporter resolution, which must treat the
+  // autoconfigured exporter ids as outside the generic-exporter catalog (ADR-0008 §1)
+  public static final String CAMUNDA_EXPORTER_NAME = "camundaexporter";
   private static final Logger LOGGER = LoggerFactory.getLogger(BrokerBasedPropertiesOverride.class);
   private static final String CAMUNDA_EXPORTER_CLASS_NAME = "io.camunda.exporter.CamundaExporter";
-  private static final String CAMUNDA_EXPORTER_NAME = "camundaexporter";
   private static final String RDBMS_EXPORTER_CLASS_NAME = "io.camunda.exporter.rdbms.RdbmsExporter";
   private final UnifiedConfiguration unifiedConfiguration;
   private final LegacyBrokerBasedProperties legacyBrokerBasedProperties;

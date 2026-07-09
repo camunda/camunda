@@ -56,9 +56,10 @@ final class MapOverlaySurface {
    * reached <em>through</em> another map's value type).
    *
    * <ul>
-   *   <li>{@code camunda.data.exporters} — the exporter entry is default-merged; deep-merging its
-   *       {@code args} is a separate, opt-in mechanism (see {@link
-   *       ExporterArgsOverlayCharacterizationTest}), not this overlay engine.
+   *   <li>{@code camunda.data.exporters} — recomputed by the dedicated {@link
+   *       PhysicalTenantExporterConfigurations} resolver step (ADR-0008), not this overlay engine:
+   *       its raw {@code Map<String, Object>} args cannot be field-enumerated, and deep-merging
+   *       them is opt-in per exporter class via {@code ExporterConfigMerger}.
    *   <li>the OIDC {@code authorize-request-configuration.additional-parameters} maps ({@code
    *       Map<String, Object>} of opaque request parameters) — a touched entry has no bindable
    *       sub-fields to lose, so wholesale replacement is harmless. Reachable both via the flat

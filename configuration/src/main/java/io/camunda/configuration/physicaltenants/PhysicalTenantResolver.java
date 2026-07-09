@@ -101,6 +101,10 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
       // MapBinder defect: a partial PT override drops the entry's root fields. Recompute every
       // registered map config with the merge-aware overlay engine.
       PhysicalTenantMapOverlays.apply(physicalTenant, physicalTenantId, environment);
+      // Exporter entries have the same defect but raw Map<String, Object> args that the typed
+      // overlay engine cannot merge — recompute them with the dedicated exporter step (ADR-0008).
+      PhysicalTenantExporterConfigurations.apply(
+          camunda, physicalTenant, physicalTenantId, environment);
       resolvedPhysicalTenants.put(physicalTenantId, physicalTenant);
     }
     if (!resolvedPhysicalTenants.containsKey(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)) {
