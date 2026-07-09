@@ -69,6 +69,10 @@ above; any anomaly with its onset time.
 
 - A machine suspend mid-run invalidates throughput data (and previously triggered a rejoin
   storm — fixed, but rerun anyway).
+- NO other Claude/IDE session may be actively working on this machine during the measurement
+  window — not just Maven builds; repo-wide exploration alone measurably widens the backlog
+  envelope (observed 2026-07-08: reference 0–20k stretched to 0–33k while a second session
+  was writing an ADR mid-window).
 - `run-stack-demo.sh start` WIPES `/tmp/eb-cluster` and `/tmp/eb-demo` data — copy evidence
   out first if a previous run is under investigation.
 - The load generator, not analytics, is the first bottleneck above ~1.5 instance/s on a laptop:
