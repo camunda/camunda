@@ -8,14 +8,18 @@
 package io.camunda.optimize.service.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.Mockito.*;
 
+import com.auth0.jwt.interfaces.Claim;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import com.google.common.collect.ImmutableList;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.AccessToken;
 import io.camunda.identity.sdk.authentication.Authentication;
 import io.camunda.identity.sdk.authentication.UserDetails;
+import io.camunda.identity.sdk.authentication.exception.TokenDecodeException;
 import io.camunda.optimize.dto.optimize.UserDto;
 import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -43,14 +47,19 @@ public class CCSMTokenServiceTest {
   @Mock private Authentication authentication;
   @Mock private AccessToken accessToken;
   @Mock private UserDetails userDetails;
+  @Mock private DecodedJWT decodedJWT;
+  @Mock private Claim verClaim;
 
   private CCSMTokenService ccsmTokenService;
 
   @BeforeEach
   void setUp() {
-    when(identity.authentication()).thenReturn(authentication);
-    when(authentication.verifyToken(ACCESS_TOKEN_VALUE)).thenReturn(accessToken);
-    when(accessToken.getPermissions()).thenReturn(ImmutableList.of(OPTIMIZE_PERMISSION));
+    // Baseline stubs used by most tests; lenient because static-method tests bypass the service
+    lenient().when(identity.authentication()).thenReturn(authentication);
+    lenient().when(authentication.verifyToken(ACCESS_TOKEN_VALUE)).thenReturn(accessToken);
+    lenient().when(accessToken.getPermissions()).thenReturn(ImmutableList.of(OPTIMIZE_PERMISSION));
+    lenient().when(authentication.decodeJWT(ACCESS_TOKEN_VALUE)).thenReturn(decodedJWT);
+    lenient().when(decodedJWT.getIssuer()).thenReturn("https://idp.example.com");
 
     ccsmTokenService = new CCSMTokenService(authCookieService, configurationService, identity);
   }
@@ -123,5 +132,93 @@ public class CCSMTokenServiceTest {
 
     assertThatExceptionOfType(NotAuthorizedException.class)
         .isThrownBy(() -> ccsmTokenService.getUserInfoFromToken(ID, ACCESS_TOKEN_VALUE));
+  }
+
+  // --- isMicrosoftEntraIssuer ---
+
+  @Test
+  void shouldRecognizeStsWindowsNetIssuer() {
+    assertThat(CCSMTokenService.isMicrosoftEntraIssuer("https://sts.windows.net/tenant-id/"))
+        .isTrue();
+  }
+
+  @Test
+  void shouldRecognizeLoginMicrosoftonlineComIssuer() {
+    assertThat(
+            CCSMTokenService.isMicrosoftEntraIssuer(
+                "https://login.microsoftonline.com/tenant-id/v2.0"))
+        .isTrue();
+  }
+
+  @Test
+  void shouldRejectNonMicrosoftIssuer() {
+    assertThat(CCSMTokenService.isMicrosoftEntraIssuer("https://idp.example.com")).isFalse();
+  }
+
+  // --- verifyToken Entra version guard ---
+
+  @Test
+  void shouldRejectMicrosoftV1TokenOnVerifyToken() {
+    // given — token from sts.windows.net with ver=1.0
+    when(decodedJWT.getIssuer()).thenReturn("https://sts.windows.net/tenant-id/");
+    when(decodedJWT.getClaim("ver")).thenReturn(verClaim);
+    when(verClaim.asString()).thenReturn("1.0");
+
+    // when / then
+    assertThatThrownBy(() -> ccsmTokenService.verifyToken(ACCESS_TOKEN_VALUE))
+        .isInstanceOf(NotAuthorizedException.class)
+        .hasMessageContaining("ver")
+        .hasMessageContaining("2.0")
+        .hasMessageContaining("api.requestedAccessTokenVersion");
+  }
+
+  @Test
+  void shouldAcceptMicrosoftV2TokenOnVerifyToken() {
+    // given — valid v2.0 Entra token
+    when(decodedJWT.getIssuer()).thenReturn("https://login.microsoftonline.com/tenant/v2.0");
+    when(decodedJWT.getClaim("ver")).thenReturn(verClaim);
+    when(verClaim.asString()).thenReturn("2.0");
+
+    // when
+    final AccessToken result = ccsmTokenService.verifyToken(ACCESS_TOKEN_VALUE);
+
+    // then — no exception; returns the verified token
+    assertThat(result).isSameAs(accessToken);
+  }
+
+  @Test
+  void shouldPassNonMicrosoftTokenWithoutVerCheck() {
+    // given — Keycloak issuer, no ver claim expected
+    when(decodedJWT.getIssuer()).thenReturn("https://keycloak.example.com/realms/camunda");
+
+    // when / then — no exception
+    final AccessToken result = ccsmTokenService.verifyToken(ACCESS_TOKEN_VALUE);
+    assertThat(result).isSameAs(accessToken);
+  }
+
+  @Test
+  void shouldHandleTokenDecodeExceptionGracefully() {
+    // given — decodeJWT throws (e.g. opaque token, not a JWT)
+    when(authentication.decodeJWT(ACCESS_TOKEN_VALUE))
+        .thenThrow(new TokenDecodeException(new RuntimeException("not a jwt")));
+
+    // when / then — no exception from the Entra check; normal verification succeeds
+    final AccessToken result = ccsmTokenService.verifyToken(ACCESS_TOKEN_VALUE);
+    assertThat(result).isSameAs(accessToken);
+  }
+
+  // --- verifyAccessToken Entra version guard ---
+
+  @Test
+  void shouldRejectMicrosoftV1TokenOnVerifyAccessToken() {
+    // given
+    when(decodedJWT.getIssuer()).thenReturn("https://sts.windows.net/tenant-id/");
+    when(decodedJWT.getClaim("ver")).thenReturn(verClaim);
+    when(verClaim.asString()).thenReturn("1.0");
+
+    // when / then
+    assertThatThrownBy(() -> ccsmTokenService.verifyAccessToken(ACCESS_TOKEN_VALUE))
+        .isInstanceOf(NotAuthorizedException.class)
+        .hasMessageContaining("api.requestedAccessTokenVersion");
   }
 }

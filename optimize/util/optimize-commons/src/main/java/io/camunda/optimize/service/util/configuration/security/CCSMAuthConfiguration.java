@@ -24,6 +24,10 @@ public class CCSMAuthConfiguration {
   // Identity audience
   private String audience;
   private String baseUrl;
+  // When true, enables detailed DEBUG/WARN logging for OIDC redirect flows to diagnose
+  // reverse-proxy misconfigurations (forwarded-header mismatches, session-cookie issues).
+  // Defaults to false — only enable temporarily during troubleshooting.
+  private boolean diagnosticsEnabled = false;
 
   public CCSMAuthConfiguration() {}
 
@@ -83,6 +87,14 @@ public class CCSMAuthConfiguration {
     this.baseUrl = baseUrl;
   }
 
+  public boolean isDiagnosticsEnabled() {
+    return diagnosticsEnabled;
+  }
+
+  public void setDiagnosticsEnabled(final boolean diagnosticsEnabled) {
+    this.diagnosticsEnabled = diagnosticsEnabled;
+  }
+
   protected boolean canEqual(final Object other) {
     return other instanceof CCSMAuthConfiguration;
   }
@@ -99,13 +111,21 @@ public class CCSMAuthConfiguration {
         && Objects.equals(clientId, that.clientId)
         && Objects.equals(clientSecret, that.clientSecret)
         && Objects.equals(audience, that.audience)
-        && Objects.equals(baseUrl, that.baseUrl);
+        && Objects.equals(baseUrl, that.baseUrl)
+        && diagnosticsEnabled == that.diagnosticsEnabled;
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(
-        issuerUrl, issuerBackendUrl, redirectRootUrl, clientId, clientSecret, audience, baseUrl);
+        issuerUrl,
+        issuerBackendUrl,
+        redirectRootUrl,
+        clientId,
+        clientSecret,
+        audience,
+        baseUrl,
+        diagnosticsEnabled);
   }
 
   @Override
@@ -124,6 +144,8 @@ public class CCSMAuthConfiguration {
         + getAudience()
         + ", baseUrl="
         + getBaseUrl()
+        + ", diagnosticsEnabled="
+        + isDiagnosticsEnabled()
         + ")";
   }
 }
