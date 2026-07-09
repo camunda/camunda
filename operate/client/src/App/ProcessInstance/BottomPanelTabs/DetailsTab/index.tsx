@@ -57,12 +57,16 @@ const DetailsTab: React.FC = () => {
   const clientConfig = getClientConfig();
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const {
+    hasSelection,
     resolvedElementInstance,
     selectedElementId,
     selectedAnchorElementId,
     selectedInstancesCount,
     isFetchingElement,
   } = useProcessInstanceElementSelection();
+
+  // No element selected means the process scope (the PROCESS root row).
+  const isProcessScope = !hasSelection;
 
   const {data: processInstance} = useProcessInstance();
   const {data: xmlData} = useProcessInstanceXml({
@@ -78,23 +82,29 @@ const DetailsTab: React.FC = () => {
     resolvedElementInstance?.elementInstanceKey ?? null;
   const resolvedElementType = resolvedElementInstance?.type;
 
+  // For the process scope the wait state is anchored on the PROCESS container,
+  // whose element instance key equals the process instance key.
+  const inspectionElementInstanceKey = isProcessScope
+    ? processInstanceId
+    : (elementInstanceKey ?? undefined);
+
   const {data: inspectionData} = useElementInstanceInspection({
     processInstanceKey: processInstanceId,
-    elementInstanceKey: elementInstanceKey ?? undefined,
+    elementInstanceKey: inspectionElementInstanceKey,
     enabled:
       clientConfig.waitStatesEnabled &&
-      !!elementInstanceKey &&
+      !!inspectionElementInstanceKey &&
       processInstance?.state === 'ACTIVE' &&
-      resolvedElementInstance?.state === 'ACTIVE',
+      (isProcessScope || resolvedElementInstance?.state === 'ACTIVE'),
   });
 
-  const elementWaitStates = useMemo(() => {
+  const waitStates = useMemo(() => {
     return (
       inspectionData?.items?.filter(
-        (item) => item.elementInstanceKey === elementInstanceKey,
+        (item) => item.elementInstanceKey === inspectionElementInstanceKey,
       ) ?? []
     );
-  }, [inspectionData, elementInstanceKey]);
+  }, [inspectionData, inspectionElementInstanceKey]);
 
   const {data: calledProcessInstancesSearchResult} = useProcessInstancesSearch(
     {
@@ -485,6 +495,16 @@ const DetailsTab: React.FC = () => {
     messageSubscription,
   ]);
 
+  if (isProcessScope) {
+    // The process scope only surfaces the process-level wait state status
+    // (the Details tab is only shown when such a wait state exists).
+    return (
+      <Container data-testid="details-tab">
+        <WaitingStatus waitStates={waitStates} />
+      </Container>
+    );
+  }
+
   if (isFetchingElement) {
     return <StructuredListSkeleton rowCount={5} />;
   }
@@ -529,7 +549,7 @@ const DetailsTab: React.FC = () => {
         />
       )}
       {!showAgentInstance && clientConfig.waitStatesEnabled && (
-        <WaitingStatus waitStates={elementWaitStates} />
+        <WaitingStatus waitStates={waitStates} />
       )}
       <SectionContainer>
         <SectionHeading>Element Instance</SectionHeading>

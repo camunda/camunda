@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen} from 'modules/testing-library';
+import {render, screen, waitFor} from 'modules/testing-library';
 import {
   createMemoryRouter,
   Navigate,
@@ -18,6 +18,7 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {Paths} from 'modules/Routes';
 import {BottomPanelTabs} from './index';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {mockFetchProcessInstanceWaitStateStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstanceWaitStateStatistics';
 import {createProcessInstance, searchResult} from 'modules/testUtils';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
@@ -101,6 +102,10 @@ function getWrapper(initialPath?: string) {
 const SELECTED_PATH = `${Paths.processInstance(PROCESS_INSTANCE_ID)}?elementId=someElement`;
 
 describe('<BottomPanelTabs />', () => {
+  beforeEach(() => {
+    mockFetchProcessInstanceWaitStateStatistics().withSuccess({items: []});
+  });
+
   it('should render always visible tabs', async () => {
     mockFetchProcessInstance().withSuccess(
       createProcessInstance({
@@ -135,6 +140,25 @@ describe('<BottomPanelTabs />', () => {
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('link', {name: /^Output Mappings$/i}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should show Details for the process scope when a process-level wait state exists', async () => {
+    const instance = createProcessInstance({
+      processInstanceKey: PROCESS_INSTANCE_ID,
+      hasIncident: false,
+    });
+    mockFetchProcessInstance().withSuccess(instance);
+    mockFetchProcessInstanceWaitStateStatistics().withSuccess({
+      items: [{elementId: instance.processDefinitionId, waitingCount: 1}],
+    });
+
+    render(<BottomPanelTabs isHistoryTabVisible />, {wrapper: getWrapper()});
+
+    expect(await screen.findByRole('link', {name: /^Details$/i})).toBeVisible();
+    // Still an element-only tab set otherwise.
+    expect(
+      screen.queryByRole('link', {name: /^Input Mappings$/i}),
     ).not.toBeInTheDocument();
   });
 
@@ -717,7 +741,7 @@ describe('<BottomPanelTabs />', () => {
     );
   });
 
-  it('should redirect details tab when no element is selected', async () => {
+  it('should redirect details tab when no element is selected and no process-level wait state', async () => {
     mockFetchProcessInstance().withSuccess(
       createProcessInstance({
         processInstanceKey: PROCESS_INSTANCE_ID,
@@ -732,10 +756,34 @@ describe('<BottomPanelTabs />', () => {
       wrapper: getWrapper(path),
     });
 
-    expect(await screen.findByTestId('pathname')).toHaveTextContent(
-      Paths.processInstanceVariables({
-        processInstanceId: PROCESS_INSTANCE_ID,
-      }),
+    // The redirect happens once the wait-state query resolves (no process-level
+    // wait state), so wait for the location to settle on Variables.
+    await waitFor(() =>
+      expect(screen.getByTestId('pathname')).toHaveTextContent(
+        Paths.processInstanceVariables({
+          processInstanceId: PROCESS_INSTANCE_ID,
+        }),
+      ),
     );
+  });
+
+  it('should not redirect details tab for the process scope when a process-level wait state exists', async () => {
+    const instance = createProcessInstance({
+      processInstanceKey: PROCESS_INSTANCE_ID,
+      hasIncident: false,
+    });
+    mockFetchProcessInstance().withSuccess(instance);
+    mockFetchProcessInstanceWaitStateStatistics().withSuccess({
+      items: [{elementId: instance.processDefinitionId, waitingCount: 1}],
+    });
+
+    const path = Paths.processInstanceDetails({
+      processInstanceId: PROCESS_INSTANCE_ID,
+    });
+    render(<BottomPanelTabs isHistoryTabVisible />, {
+      wrapper: getWrapper(path),
+    });
+
+    expect(await screen.findByTestId('pathname')).toHaveTextContent(path);
   });
 });

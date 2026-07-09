@@ -542,4 +542,39 @@ describe('TopPanel', () => {
     expect(await screen.findByText('5 waiting')).toBeInTheDocument();
     expect(screen.getByText('Waiting')).toBeInTheDocument();
   });
+
+  it('should not render a waiting overlay for the process-level wait state', async () => {
+    // The process-level wait state targets the PROCESS container
+    // (elementId === processDefinitionId), which has no diagram shape. Its
+    // label is surfaced in the header, not on the diagram.
+    mockFetchProcessInstanceWaitStateStatistics().withSuccess({
+      items: [
+        {elementId: mockProcessInstance.processDefinitionId, waitingCount: 1},
+        {elementId: 'service-task-1', waitingCount: 1},
+      ],
+    });
+
+    render(<TopPanel />, {wrapper: getWrapper()});
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('diagram-spinner'),
+    );
+
+    await waitFor(() => {
+      expect(
+        diagramOverlaysStore.state.overlays.some(
+          ({elementId, type}) =>
+            elementId === 'service-task-1' && type === 'waitingState',
+        ),
+      ).toBe(true);
+    });
+
+    expect(
+      diagramOverlaysStore.state.overlays.some(
+        ({elementId, type}) =>
+          elementId === mockProcessInstance.processDefinitionId &&
+          type === 'waitingState',
+      ),
+    ).toBe(false);
+  });
 });

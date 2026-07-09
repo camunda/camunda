@@ -6,8 +6,23 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {ElementInstanceInspection} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {
+  ElementInstanceInspection,
+  WaitStateStatistic,
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {formatDate} from 'modules/utils/date';
+
+function hasProcessLevelWaitState(
+  waitStateStatistics: WaitStateStatistic[] | undefined,
+  processDefinitionId: string | undefined,
+): boolean {
+  if (!waitStateStatistics || processDefinitionId === undefined) {
+    return false;
+  }
+  return waitStateStatistics.some(
+    ({elementId}) => elementId === processDefinitionId,
+  );
+}
 
 function getWaitStateLabel(waitingCount: number): string | null {
   if (waitingCount <= 0) {
@@ -116,4 +131,9 @@ function getEarliestTimerDueDate(
   return earliestDueDate;
 }
 
-export {getWaitStateLabel, getWaitStateStatusItems, getEarliestTimerDueDate};
+export {
+  hasProcessLevelWaitState,
+  getWaitStateLabel,
+  getWaitStateStatusItems,
+  getEarliestTimerDueDate,
+};

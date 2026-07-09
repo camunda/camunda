@@ -12,6 +12,7 @@ import {
   SkeletonText as BaseSkeletonText,
   SkeletonIcon as BaseSkeletonIcon,
 } from '@carbon/react';
+import {WAITING_BADGE_BORDER_RADIUS} from 'modules/constants';
 
 const Table = styled.table`
   table-layout: fixed;
@@ -98,9 +99,16 @@ const InstanceName = styled.span`
   white-space: nowrap;
   color: var(--cds-text-secondary);
 
-  &:has(+ span) {
+  &:has(+ *) {
     ${styles.label01};
   }
+`;
+
+const SubtitleRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: var(--cds-spacing-03);
+  min-width: 0;
 `;
 
 const IncidentCount = styled.span`
@@ -109,6 +117,20 @@ const IncidentCount = styled.span`
   overflow: hidden;
   white-space: nowrap;
   color: var(--cds-support-error);
+`;
+
+const NameSubtitle = styled.span`
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--cds-label-01-font-size);
+  font-weight: var(--cds-heading-compact-01-font-weight);
+  letter-spacing: var(--cds-label-01-letter-spacing);
+  border-radius: ${WAITING_BADGE_BORDER_RADIUS};
+  background-color: var(--cds-support-warning);
+  color: #000000;
+  padding: var(--cds-spacing-02) var(--cds-spacing-04);
+  white-space: nowrap;
 `;
 
 const SkeletonText = styled(BaseSkeletonText)`
@@ -131,4 +153,6 @@ export {
   NameContainer,
   InstanceName,
   IncidentCount,
+  NameSubtitle,
+  SubtitleRow,
 };

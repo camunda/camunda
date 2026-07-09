@@ -300,6 +300,44 @@ describe('<DetailsTab />', () => {
     mockSearchElementInstanceInspection().withSuccess(searchResult([]));
   });
 
+  it('should show the process-level wait state status for the process scope', async () => {
+    mockSearchElementInstanceInspection().withSuccess(
+      searchResult([
+        {
+          rootProcessInstanceKey: PROCESS_INSTANCE_ID,
+          processInstanceKey: PROCESS_INSTANCE_ID,
+          elementInstanceKey: PROCESS_INSTANCE_ID,
+          elementId: 'process-def-1',
+          elementType: 'PROCESS',
+          tenantId: '<default>',
+          bpmnProcessId: 'process-def-1',
+          details: {
+            waitStateType: 'JOB',
+            jobKey: '555666777',
+            jobType: 'process-start-listener',
+            jobKind: 'EXECUTION_LISTENER',
+            listenerEventType: 'START',
+            retries: 3,
+          },
+        },
+      ]),
+    );
+
+    render(<DetailsTab />, {
+      wrapper: getWrapper(),
+    });
+
+    expect(await screen.findByTestId('details-tab')).toBeInTheDocument();
+    expect(await screen.findByTestId('waiting-status')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Waiting for execution listener: process-start-listener',
+      ),
+    ).toBeInTheDocument();
+    // No process property rows are shown for the process scope.
+    expect(screen.queryByText('Process ID')).not.toBeInTheDocument();
+  });
+
   it('should show multi-instance message when multiple instances exist', async () => {
     mockSearchElementInstances().withSuccess(
       searchResult([mockElementInstance, mockElementInstance], 2),
