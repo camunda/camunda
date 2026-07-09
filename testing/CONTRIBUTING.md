@@ -1,13 +1,66 @@
-# Contributing to the Camunda Process Test
+# Contributing to Camunda Process Test (CPT)
 
-> [!NOTE]
-> Please make sure to read the general [Camunda Contribution Guidelines](../CONTRIBUTING.md) before
-> contributing. This document focuses specifically on contributing to the Camunda Process Test (CPT)
-> projects.
+**Owner:** `@camunda/c8-testing` · **Docs:** https://docs.camunda.io/docs/apis-tools/testing/getting-started/
 
-## Architecture Overview
+---
 
-The following diagram shows an overview of the different components:
+## 1. Modules
+
+The `testing/` parent (`pom.xml`, `artifactId: camunda-testing`, packaging `pom`) aggregates the
+following modules. Only the modules listed in `testing/pom.xml` are part of the build — untracked
+work-in-progress folders in your local checkout are not.
+
+|                   Module                   |    Packaging     |                                                                                                                             Purpose                                                                                                                              |
+|--------------------------------------------|------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **`camunda-process-test-java`**            | jar              | Core library: JUnit 5 extension, runtime management, assertions, utilities, AI assertions, JSON test-case runner. The heart of CPT.                                                                                                                              |
+| **`camunda-process-test-json-test-cases`** | jar              | JSON test-case model (schema + Immutables/Jackson POJOs). No runtime logic — pure data model.                                                                                                                                                                    |
+| **`camunda-process-test-coverage`**        | jar              | Process coverage: Java backend (report generation) **and** a webpack-bundled frontend (BPMN visualisation) packaged into the JAR. Has its own [README](camunda-process-test-coverage/README.md) / [CONTRIBUTING](camunda-process-test-coverage/CONTRIBUTING.md). |
+| **`camunda-process-test-langchain4j`**     | jar              | LangChain4j bridge providing `ChatModelAdapter` (LLM-as-a-judge) and `EmbeddingModelAdapter` (semantic similarity) implementations, discovered via `ServiceLoader` SPI.                                                                                          |
+| **`camunda-process-test-spring`**          | jar              | Canonical Spring integration (Spring 6 / Spring Boot 4, Java 17). Uses `CamundaProcessTestExecutionListener` instead of the JUnit extension.                                                                                                                     |
+| **`camunda-process-test-spring-boot-3`**   | jar              | Repackages `camunda-process-test-spring` (shaded) built against Spring Boot 3.5.x. Has no own sources.                                                                                                                                                           |
+| **`camunda-process-test-spring-boot-4`**   | pom (relocation) | Empty relocation stub → `camunda-process-test-spring`. Migration path for 8.7/8.8 users of the old artifact.                                                                                                                                                     |
+| **`camunda-process-test-example`**         | jar              | Example project for demos and documentation snippets. Also used to generate a real coverage report for local previewing.                                                                                                                                         |
+
+### Dependency graph
+
+```mermaid
+flowchart TD
+    json[camunda-process-test-json-test-cases]
+    coverage[camunda-process-test-coverage]
+    java[camunda-process-test-java]
+    lc4j[camunda-process-test-langchain4j]
+    spring[camunda-process-test-spring]
+    sb3[camunda-process-test-spring-boot-3]
+    sb4[camunda-process-test-spring-boot-4 relocated]
+    example[camunda-process-test-example]
+
+    java --> json
+    java --> coverage
+    lc4j --> java
+    spring --> java
+    spring --> json
+    spring --> coverage
+    spring --> lc4j
+    sb3 -.shades.-> spring
+    sb4 -.relocates.-> spring
+    example --> java
+    example --> spring
+    example --> json
+```
+
+**Rules of thumb**
+
+- `camunda-process-test-java` depends on `json-test-cases` and `coverage`, but **not** on
+  `langchain4j` (the LangChain4j bridge is an optional add-on the user pulls in).
+- `camunda-process-test-spring` is the single source of truth for Spring support; `spring-boot-3`
+  and `spring-boot-4` exist only for packaging/compatibility. Add Spring features to
+  `camunda-process-test-spring`.
+- Keep `json-test-cases` free of runtime logic — it is a shared model consumed by the runner in
+  `camunda-process-test-java`.
+
+---
+
+## 2. Architecture (`camunda-process-test-java`)
 
 ```mermaid
 flowchart TD
@@ -40,137 +93,167 @@ flowchart TD
     click CamundaProcessTestRemoteRuntime "https://github.com/camunda/camunda/blob/main/testing/camunda-process-test-java/src/main/java/io/camunda/process/test/impl/runtime/CamundaProcessTestRemoteRuntime.java" _blank;
 ```
 
-- CamundaProcessTestExtension: The JUnit 5 extension builds the runtime and manages the test
-  lifecycle.
-- CamundaProcessTestContext: The context builds the CamundaClient and provides utilities.
-- CamundaAssert: The entry point for all assertions.
-- CamundaProcessTestRuntime: The interface for all runtime implementations.
-- CamundaProcessTestContainerRuntime: The default runtime based on Testcontainers.
-- CamundaProcessTestRemoteRuntime: The runtime connecting to a remote Camunda engine.
+**Public API** lives in `io.camunda.process.test.api`; implementation details in
+`io.camunda.process.test.impl`. Keep the split — never expose `impl` types through the public API.
 
-The Spring module has a similar architecture, but uses the `CamundaProcessTestExecutionListener`
-instead of the JUnit extension.
+|                                                             Public entry point                                                             |                                                                           Role                                                                            |
+|--------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`@CamundaProcessTest`](camunda-process-test-java/src/main/java/io/camunda/process/test/api/CamundaProcessTest.java)                       | Meta-annotation that registers the extension.                                                                                                             |
+| [`CamundaProcessTestExtension`](camunda-process-test-java/src/main/java/io/camunda/process/test/api/CamundaProcessTestExtension.java)      | JUnit 5 extension: builds the runtime, manages the test lifecycle.                                                                                        |
+| [`CamundaProcessTestContext`](camunda-process-test-java/src/main/java/io/camunda/process/test/api/CamundaProcessTestContext.java)          | Builds the `CamundaClient` and exposes utilities (clock control, time travel, mocks).                                                                     |
+| [`CamundaAssert`](camunda-process-test-java/src/main/java/io/camunda/process/test/api/CamundaAssert.java)                                  | Entry point for all assertions, grouped by entity (process instance, user task, …).                                                                       |
+| [`CamundaProcessTestRuntime`](camunda-process-test-java/src/main/java/io/camunda/process/test/impl/runtime/CamundaProcessTestRuntime.java) | Runtime interface. Implementations: `CamundaProcessTestContainerRuntime` (default, Testcontainers) and `CamundaProcessTestRemoteRuntime` (remote engine). |
 
-### Design Principles
+Spring uses the same core but swaps the JUnit extension for
+[`CamundaProcessTestExecutionListener`](camunda-process-test-spring/src/main/java/io/camunda/process/test/api/CamundaProcessTestExecutionListener.java)
+(annotation `@CamundaSpringProcessTest`).
 
-* Open for extension: The library is designed to be easily extensible, allowing developers to add
-  new features and capabilities as needed.
-* Consistent with APIs and SDKs: The library closely follows the design and conventions of the
-  Camunda
-  API and SDK, ensuring a consistent experience for developers.
-* Simplicity: The library is designed to be easy to use and understand, with a focus on simplicity
-  and clarity.
+### Design principles
 
-### Client Interaction
+- **Open for extension** — easy to add new assertions, instructions, and model providers.
+- **Consistent with the Camunda API & SDK** — mirror the conventions of the `CamundaClient`.
+- **Simplicity (KISS / YAGNI)** — keep the API small and obvious; don't overengineer.
 
-The assertions and utilities use the `CamundaClient` to send search requests and commands to the
-runtime.
-The [CamundaDataSource](camunda-process-test-java/src/main/java/io/camunda/process/test/impl/assertions/CamundaDataSource.java)
-is a facade over the CamundaClient that provides convenient methods for querying data. Prefer using
-the `CamundaDataSource` instead of directly using the `CamundaClient`.
+### Key design choices
 
-### Awaiting Behavior
-
-The assertions and utilities
-use [CamundaAssertAwaitBehavior](camunda-process-test-java/src/main/java/io/camunda/process/test/api/CamundaAssertAwaitBehavior.java)
-to wait for something to happen, for example, to assert that a process instance is in a given state.
-The default implementation
-is [AwaitilityBehavior](camunda-process-test-java/src/main/java/io/camunda/process/test/impl/assertions/util/AwaitilityBehavior.java),
-which uses [Awaitility](http://www.awaitility.org/).
-
-For tests, we can
-use [DevAwaitBehavior](camunda-process-test-java/src/test/java/io/camunda/process/test/utils/DevAwaitBehavior.java)
-to verify assertion messages without waiting for the timeout.
+- **Client interaction** — assertions and utilities talk to the runtime through the `CamundaClient`.
+  Prefer the
+  [`CamundaDataSource`](camunda-process-test-java/src/main/java/io/camunda/process/test/impl/assertions/CamundaDataSource.java)
+  facade over the raw client when querying data.
+- **Awaiting behavior** — assertions wait via
+  [`CamundaAssertAwaitBehavior`](camunda-process-test-java/src/main/java/io/camunda/process/test/api/CamundaAssertAwaitBehavior.java);
+  the default
+  [`AwaitilityBehavior`](camunda-process-test-java/src/main/java/io/camunda/process/test/impl/assertions/util/AwaitilityBehavior.java)
+  uses [Awaitility](http://www.awaitility.org/). Tests can use
+  [`DevAwaitBehavior`](camunda-process-test-java/src/test/java/io/camunda/process/test/utils/DevAwaitBehavior.java)
+  to verify assertion messages without waiting for the timeout.
+- **AI assertions** — two optional features, defined by SPIs in `camunda-process-test-java` and
+  implemented in `camunda-process-test-langchain4j`:
+  - **Judge (LLM-as-a-judge)** — `io.camunda.process.test.api.judge` (`ChatModelAdapter`,
+    `ChatModelAdapterProvider`). Used by `satisfiesJudge(...)` assertions.
+  - **Semantic similarity** — `io.camunda.process.test.api.similarity` (`EmbeddingModelAdapter`,
+    `EmbeddingModelAdapterProvider`).
+    Providers are discovered via `ServiceLoader` from
+    `META-INF/services/...` files in the LangChain4j module. Supported providers: OpenAI, Azure
+    OpenAI, Anthropic, Amazon Bedrock, and OpenAI-compatible endpoints.
+- **Mocks** — `io.camunda.process.test.api.mock` (e.g. `JobWorkerMockBuilder`) lets tests stub job
+  workers.
+- **JSON test cases** — see below.
 
 ### JSON test cases
 
-The JSON format is defined in
-the [JSON schema](camunda-process-test-json-test-cases/src/main/resources/schema/cpt-test-cases/schema.json).
-We use [Immutables](https://immutables.github.io/)
-and [Jackson](https://github.com/FasterXML/jackson) to deserialize a JSON file into a Java object of
-the
-type [TestCases](camunda-process-test-json-test-cases/src/main/java/io/camunda/process/test/api/testCases/TestCases.java).
+- The format is defined in the
+  [JSON schema](camunda-process-test-json-test-cases/src/main/resources/schema/cpt-test-cases/schema.json)
+  (current `$id` version `8.10`).
+- We use [Immutables](https://immutables.github.io/) and
+  [Jackson](https://github.com/FasterXML/jackson) to deserialize a JSON file into a
+  [`TestCases`](camunda-process-test-json-test-cases/src/main/java/io/camunda/process/test/api/testCases/TestCases.java)
+  object.
+- Java classes are **not** generated from the schema (tooling limitations). We keep the schema and
+  the interfaces in sync **manually**;
+  [`PojoCompatibilityTest`](camunda-process-test-json-test-cases/src/test/java/io/camunda/process/test/testCases/PojoCompatibilityTest.java)
+  verifies compatibility.
+- A process test runs a JSON test case via
+  [`TestCaseRunner`](camunda-process-test-java/src/main/java/io/camunda/process/test/api/testCases/TestCaseRunner.java).
 
-We don't generate the Java classes directly from the JSON schema because of limitations in the
-existing tools. We manually keep the JSON schema and the Java interfaces in sync. The test
-[PojoCompatibilityTest](camunda-process-test-json-test-cases/src/test/java/io/camunda/process/test/testCases/PojoCompatibilityTest.java)
-verifies the compatibility between both.
+### Coverage
 
-A process test can use
-the [TestCaseRunner](camunda-process-test-java/src/main/java/io/camunda/process/test/api/testCases/TestCaseRunner.java)
-to execute a JSON test case.
+The coverage module combines a **Java backend** (report generation, `io.camunda.process.test.*.coverage`)
+with a **webpack-bundled frontend** (BPMN visualisation using `camunda-bpmn-js`). Maven runs webpack
+via `frontend-maven-plugin` during `generate-sources`, and the resulting `coverage/index.html` +
+`coverage/static/…` are packaged into the JAR and read from the classpath by `CoverageReportUtil`.
+See the module's [README](camunda-process-test-coverage/README.md) and
+[CONTRIBUTING](camunda-process-test-coverage/CONTRIBUTING.md) before touching it.
 
-### Tests
+---
 
-We prefer using unit tests over integration tests where possible. We don't need to test the runtime
-or the SDK itself, but rather the logic in the assertions and utilities.
+## 3. Testing conventions
 
-We annotate unit tests with `@CamundaAssertExpectFailure` when we expect an assertion to fail and
-want to verify the failure message. This avoids waiting for the timeout in such cases.
+- Prefer **unit tests over integration tests**. We don't test the runtime or the SDK itself — test
+  the logic in the assertions, utilities, and instruction handlers.
+- Annotate a unit test with `@CamundaAssertExpectFailure` when you expect an assertion to fail and
+  want to verify its message — this avoids waiting for the timeout.
+- Name integration tests with the `*IT` suffix so the build can distinguish them from unit tests.
+- Follow the repo-wide conventions: `should…` method names, `// given / // when / // then`, AssertJ,
+  Awaitility (never `Thread.sleep`), and unique per-test IDs to avoid flakiness.
 
-We name all integration tests with the `*IT` suffix to distinguish them from unit tests during the
-build process.
+---
 
-## Local Development
+## 4. Local development
 
-Make sure to build the project with Maven before running tests for the first time:
+Build the testing modules (and their dependencies) with the Maven wrapper from the repo root — scope
+to the module you are working on rather than building the whole repo:
 
-```shell
-mvn clean build
+```bash
+# Build the core module and its dependencies
+./mvnw install -pl testing/camunda-process-test-java -am -Dquickly -T1C
+
+# Run a single unit test class (skips ITs)
+./mvnw verify -pl testing/camunda-process-test-java -Dtest=<TestClassName> -DskipTests=false -DskipITs -Dquickly
+
+# Run a single integration test class (skips UTs)
+./mvnw verify -pl testing/camunda-process-test-java -Dit.test=<ITClassName> -DskipTests=false -DskipUTs -Dquickly
 ```
 
-The integration tests require a Docker environment to run the Testcontainers. The runtime uses the
-configured Docker image versions and resolves snapshot image versions to `SNAPSHOT`.
+Integration tests require a **Docker environment** (Testcontainers). By default the container runtime
+uses the image versions configured in
+[`CamundaProcessTestRuntimeDefaults`](camunda-process-test-java/src/main/java/io/camunda/process/test/impl/runtime/CamundaProcessTestRuntimeDefaults.java)
+(`SNAPSHOT` on `main`).
 
-## CI Pipeline
+Before committing (mandatory — skipping formatting breaks the `Java checks` CI job):
 
-We run the integration tests in an extra CI job that builds a Camunda Docker image based on the
-current code and uses that image to run the tests.
+```bash
+./mvnw license:format spotless:apply -T1C
+./mvnw verify -pl testing/camunda-process-test-java -DskipTests=false -Dquickly
+```
 
-We select the Docker image using the Maven properties
-`io.camunda.process.test.camundaDockerImageName` and
-`io.camunda.process.test.camundaDockerImageVersion` in the properties file
-`camunda-container-runtime-version.properties`.
+For the coverage **frontend**, see [its CONTRIBUTING guide](camunda-process-test-coverage/CONTRIBUTING.md)
+(`npm install`, `npm run build`, `npm run dev`).
 
-## CI compatibility tests
+---
 
-We run CPT compatibility test in CI to ensure forward-compatibility between Camunda runtime images
-and CPT.
+## 5. CI pipeline
 
-Workflow resources:
+- **Unit tests** run as part of the standard `ci.yml` unit-test matrix.
+- **Integration tests** run in the `qa-camunda-process-test` group of `ci.yml` (name *"Camunda
+  Process"*, owner `@camunda/c8-testing`), covering
+  `testing/camunda-process-test-java`, `testing/camunda-process-test-spring`, and
+  `testing/camunda-process-test-example`. This job **builds a Camunda Docker image from the current
+  code** and runs the ITs against it.
+- The image is selected via the Maven properties
+  `io.camunda.process.test.camundaDockerImageName` /
+  `io.camunda.process.test.camundaDockerImageVersion`, wired through
+  [`camunda-container-runtime-version.properties`](camunda-process-test-java/src/main/resources/camunda-container-runtime-version.properties).
+
+### Compatibility tests
+
+We run CPT compatibility tests to ensure forward-compatibility between Camunda runtime images and
+CPT:
 
 - Main workflow: `.github/workflows/camunda-process-test-compatibility.yml`
-- Daily trigger workflow: `.github/workflows/camunda-process-test-compatibility-trigger.yml`
+- Daily trigger: `.github/workflows/camunda-process-test-compatibility-trigger.yml`
 
-Parameters:
+Parameters: `branch` (e.g. `stable/8.8`), `camunda_image_version` (e.g. `8.9-SNAPSHOT`),
+`connectors_image_version` (e.g. `8.9-SNAPSHOT`). The trigger workflow runs daily for the stable
+branches and reports failures to Slack.
 
-- `branch` (for example: `stable/8.8`)
-- `camunda_image_version` (for example: `8.9-SNAPSHOT`)
-- `connectors_image_version` (for example: `8.9-SNAPSHOT`)
+---
 
-We trigger the workflow daily for the stable branches and report test failures to a Slack channel.
+## 6. Release management
 
-## Release steps
+After releasing a new minor version of CPT, apply the following:
 
-After we release a new minor version of CPT, we need to apply the following steps:
+### Update the default Docker image versions
 
-- Update the default Camunda and Connectors Docker image versions
-- Add a new entry for the CI compatibility tests
-- Publish the JSON schema on the Camunda website
+On the new stable branch, update `DEFAULT_CAMUNDA_DOCKER_IMAGE_VERSION` and
+`DEFAULT_CONNECTORS_DOCKER_IMAGE_VERSION` in
+[`CamundaProcessTestRuntimeDefaults`](camunda-process-test-java/src/main/java/io/camunda/process/test/impl/runtime/CamundaProcessTestRuntimeDefaults.java)
+to match the released minor version (e.g. `8.9-SNAPSHOT` for the `8.9.0` release).
 
-### Update the default Camunda and Connectors Docker image versions
+### Add a compatibility-test entry
 
-On the new stable branch of the released minor version, update the image versions in
-`io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults`:
-`DEFAULT_CAMUNDA_DOCKER_IMAGE_VERSION` and `DEFAULT_CONNECTORS_DOCKER_IMAGE_VERSION`. The versions
-should match the released minor version, for example, `8.9-SNAPSHOT` for the release of
-`8.9.0`.
-
-### Add a new entry for the CI compatibility tests
-
-Go to the workflow `.github/workflows/camunda-process-test-compatibility-trigger.yml` and add a new
-entry for the released minor version in the `matrix` section. For example, add the following entry
-for the release of `8.9.0`:
+In `.github/workflows/camunda-process-test-compatibility-trigger.yml`, add a `matrix` entry for the
+released minor. For example, for `8.9.0`:
 
 ```yaml
 - branch: stable/8.9
@@ -178,104 +261,100 @@ for the release of `8.9.0`:
   connectors_image_version: 8.10-SNAPSHOT
 ```
 
-### Publish the JSON schema on the Camunda website
+### Publish the JSON schema
 
-We publish the JSON schema on the Camunda website under its minor
-version `https://camunda.com/json-schema/cpt-test-cases/MAJOR_MINOR_VERSION/schema.json`. Contact
-the Camunda Web Marketing team via Slack `#ask-web-marketing` to request the publication of a new
-schema version. Provide the GitHub link to the schema file and the expected URL for the published
-schema.
+The schema is published per minor at
+`https://camunda.com/json-schema/cpt-test-cases/MAJOR_MINOR/schema.json`. Ask the Web Marketing team
+via Slack `#ask-web-marketing` to publish the new version (provide the GitHub link to the schema file
+and the target URL). On `main`, bump the `$id` in
+[`schema.json`](camunda-process-test-json-test-cases/src/main/resources/schema/cpt-test-cases/schema.json)
+to the next minor (e.g. `.../8.10/schema.json` when releasing `8.9.0`).
 
-On the main branch, update the JSON schema `$id` in
-`testing/camunda-process-test-json-test-cases/src/main/resources/schema/cpt-test-cases/schema.json`
-to the new minor version. For example, for the release of `8.9.0`, update the `$id` to:
-`https://camunda.com/json-schema/cpt-test-cases/8.10/schema.json`.
+---
 
-## Guide for common contributions
+## 7. Common contributions (how-to)
 
-If you're new and want to contribute to the project, check out the following step-by-step guides for
-common contributions.
+### Add a new assertion
 
-### Adding a new assertion
+Example: `assertThatProcessInstance(..).isAwesome(true)`.
 
-Example: Add a new assertion method `assertProcessInstance(..).isAwesome(true)`.
+1. `CamundaAssert` is the entry point — assertions are grouped by entity.
+2. Add the method to the relevant interface, e.g.
+   [`ProcessInstanceAssert`](camunda-process-test-java/src/main/java/io/camunda/process/test/api/assertions/ProcessInstanceAssert.java).
+3. Implement it in
+   [`ProcessInstanceAssertj`](camunda-process-test-java/src/main/java/io/camunda/process/test/impl/assertions/ProcessInstanceAssertj.java).
+4. Add unit tests in
+   [`ProcessInstanceAssertTest`](camunda-process-test-java/src/test/java/io/camunda/process/test/api/ProcessInstanceAssertTest.java),
+   grouped in a nested class, mocking the data source with Mockito.
+5. Optionally verify it in an integration test (e.g.
+   [`CamundaProcessTestExtensionIT`](camunda-process-test-java/src/test/java/io/camunda/process/test/api/CamundaProcessTestExtensionIT.java))
+   and/or the [example project](camunda-process-test-example/src/test/java/io/camunda).
+6. Document it in the [Camunda docs](https://docs.camunda.io/docs/next/apis-tools/testing/assertions/).
 
-- [CamundaAssert](camunda-process-test-java/src/main/java/io/camunda/process/test/api/CamundaAssert.java)
-  is the entry point for all assertions. The assertions are grouped by their entities, such as
-  process instances and user tasks.
-- Add the new assertion method `isAwesome(boolean)` to
-  [ProcessInstanceAssert](camunda-process-test-java/src/main/java/io/camunda/process/test/api/assertions/ProcessInstanceAssert.java).
-- Implement the assertion method in
-  [ProcessInstanceAssertj](camunda-process-test-java/src/main/java/io/camunda/process/test/impl/assertions/ProcessInstanceAssertj.java).
-- Add unit tests for the assertion method in
-  [ProcessInstanceAssertTest](camunda-process-test-java/src/test/java/io/camunda/process/test/api/ProcessInstanceAssertTest.java)
-  , group them in a nested class, and use Mockito to mock the data source.
-- Verify the assertion manually in an integration test, for example in
-  [CamundaProcessTestExtensionIT](camunda-process-test-java/src/test/java/io/camunda/process/test/api/CamundaProcessTestExtensionIT.java),
-  and add it optionally to integration tests or
-  the [example project](camunda-process-test-example/src/test/java/io/camunda).
-- Add documentation for the new assertion method in the
-  [Camunda docs](https://docs.camunda.io/docs/next/apis-tools/testing/assertions/).
+### Add a new JSON test-case instruction
 
-### Add a new JSON test case instruction
+Example: add a `HAVE_FUN` instruction.
 
-Example: Add a new instruction `HAVE_FUN` to the JSON test case.
+1. Add it to the
+   [JSON schema](camunda-process-test-json-test-cases/src/main/resources/schema/cpt-test-cases/schema.json)
+   under `TestCaseInstruction`, with required/optional properties and descriptions.
+2. Add a Java interface `HaveFunInstruction extends`
+   [`TestCaseInstruction`](camunda-process-test-json-test-cases/src/main/java/io/camunda/process/test/api/testCases/TestCaseInstruction.java)
+   with getters matching the schema, annotated `@Value.Immutable` and `@JsonDeserialize`.
+3. Add the type to
+   [`TestCaseInstructionType`](camunda-process-test-json-test-cases/src/main/java/io/camunda/process/test/api/testCases/TestCaseInstructionType.java),
+   register the Jackson sub-type on `TestCaseInstruction`, and override `getType()` in the interface.
+4. Extend
+   [`PojoCompatibilityTest`](camunda-process-test-json-test-cases/src/test/java/io/camunda/process/test/testCases/PojoCompatibilityTest.java)
+   with parameterized arguments for the new instruction.
+5. Add a handler `HaveFunInstructionHandler implements`
+   [`TestCaseInstructionHandler`](camunda-process-test-java/src/main/java/io/camunda/process/test/impl/testCases/TestCaseInstructionHandler.java)
+   and register it in
+   [`CamundaTestCaseRunner`](camunda-process-test-java/src/main/java/io/camunda/process/test/impl/testCases/CamundaTestCaseRunner.java).
+6. Add unit tests for the handler; optionally extend
+   [`TestCasesIT`](camunda-process-test-java/src/test/java/io/camunda/process/test/api/TestCasesIT.java)
+   with a JSON test-case file.
 
-- Add the new instruction `HAVE_FUN` to the
-  [JSON schema](camunda-process-test-json-test-cases/src/main/resources/schema/cpt-test-cases/schema.json)
-  under the `TestCaseInstruction`
-  definition. Define its
-  required and optional properties. Add descriptions for the instruction and its properties.
-- Add the new Java interface `HaveFunInstruction` that extends
-  [TestCaseInstruction](camunda-process-test-json-test-cases/src/main/java/io/camunda/process/test/api/testCases/TestCaseInstruction.java).
-  Add getter methods for all properties defined in the JSON schema with their descriptions. Add the
-  Immutable's annotation `@Value.Immutable` and the Jackson annotation `@JsonDeserialize` to the
-  interface.
-- Add the new instruction type `HAVE_FUN`
-  to [TestCaseInstructionType](camunda-process-test-json-test-cases/src/main/java/io/camunda/process/test/api/testCases/TestCaseInstructionType.java).
-  Add the Jackson sub-type mapping for the new instruction
-  to [TestCaseInstruction](camunda-process-test-json-test-cases/src/main/java/io/camunda/process/test/api/testCases/TestCaseInstruction.java).
-  Override the `getType()` method in the interface `HaveFunInstruction` to return the type
-  `HAVE_FUN`.
-- Extend
-  the [PojoCompatibilityTest](camunda-process-test-json-test-cases/src/test/java/io/camunda/process/test/testCases/PojoCompatibilityTest.java)
-  by adding new arguments for
-  the parameterized tests to verify the new instruction `HAVE_FUN`.
-- Add the new instruction handler `HaveFunInstructionHandler` that implements
-  [TestCaseInstructionHandler](camunda-process-test-java/src/main/java/io/camunda/process/test/impl/testCases/TestCaseInstructionHandler.java).
-  Use the client, the context, or the assertions to execute the instruction behavior.
-- Register the new instruction handler in
-  [CamundaTestCaseRunner](camunda-process-test-java/src/main/java/io/camunda/process/test/impl/testCases/CamundaTestCaseRunner.java).
-- Add unit tests for the new instruction handler.
-- Optionally, extend the integration
-  test [TestCasesIT](camunda-process-test-java/src/test/java/io/camunda/process/test/api/TestCasesIT.java)
-  by adding the new instruction in a test case JSON file.
+### Add a new AI model provider
 
-## FAQ
+Example: support a new chat-model provider for LLM-as-a-judge.
 
-### The integration tests are failing locally but work in CI
+1. Add a builder + `ChatModelAdapterProvider` implementation under
+   `camunda-process-test-langchain4j` (`io.camunda.process.test.impl.judge`), mirroring the existing
+   OpenAI/Anthropic/Bedrock providers.
+2. Register the provider class in
+   `camunda-process-test-langchain4j/src/main/resources/META-INF/services/io.camunda.process.test.api.judge.ChatModelAdapterProvider`.
+3. For semantic similarity, do the same under `io.camunda.process.test.impl.similarity` and register
+   in the `...similarity.EmbeddingModelAdapterProvider` service file.
+4. Add unit tests and document the provider config keys (see the module
+   [README](camunda-process-test-langchain4j/README.md)).
 
-Most likely, your Docker images are out of date. The CI runs the tests with a Docker image from the
-current code base.
+---
 
-You can update your Docker images, for example, using the following commands:
+## 8. FAQ
 
-```shell
+### The integration tests fail locally but pass in CI
+
+Your Docker images are probably out of date — CI builds an image from the current code. Refresh them:
+
+```bash
 docker pull camunda/camunda:SNAPSHOT
-
 docker pull camunda/connectors-bundle:SNAPSHOT
 ```
 
 ### The process test coverage HTML report is empty/broken
 
-The HTML report requires generated code
-from [camunda-process-test-coverage](camunda-process-test-coverage). Maven
-generates the code during the `generate-sources` phase, unless you disabled it via the profile
-`skipFrontendBuild` or the property `skip.fe.build`.
+The report needs the frontend generated by
+[`camunda-process-test-coverage`](camunda-process-test-coverage). Maven builds it during
+`generate-sources` unless you disabled it via the `skipFrontendBuild` profile or the
+`skip.fe.build` property. Build without them:
 
-Make sure to run the Maven build without the profile or property.
-
-```shell
-mvn clean compile -Dskip.fe.build=false -pl camunda-process-test-java
+```bash
+./mvnw clean compile -Dskip.fe.build=false -pl testing/camunda-process-test-java
 ```
 
+### Which Spring artifact should a user depend on?
+
+`camunda-process-test-spring` (Spring Boot 4 / Spring 6). Spring Boot 3.5.x users depend on
+`camunda-process-test-spring-boot-3`. `camunda-process-test-spring-boot-4` is a relocation stub kept
+only for users migrating from 8.7/8.8 — do not add code there.

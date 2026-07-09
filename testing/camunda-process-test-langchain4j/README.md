@@ -248,3 +248,8 @@ void shouldProcessOrder() {
 }
 ```
 
+## Contributing
+
+See the [testing contribution guide](../CONTRIBUTING.md), which includes a step-by-step guide for
+adding a new AI model provider.
+
