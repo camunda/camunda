@@ -273,12 +273,37 @@ public final class PhysicalTenantsITHelper {
     }
   }
 
+  private record ElasticsearchStorage(String url, String indexPrefix) implements Storage {
+
+    @Override
+    public void applyTo(final TestStandaloneBroker broker, final String tenantId) {
+      if (DEFAULT_TENANT_ID.equals(tenantId)) {
+        broker.withSecondaryStorageType(SecondaryStorageType.elasticsearch);
+        broker.withDataConfig(data -> applyElasticsearch(data.getSecondaryStorage()));
+      } else {
+        broker.withPtConfig(
+            tenantId, camunda -> applyElasticsearch(camunda.getData().getSecondaryStorage()));
+      }
+    }
+
+    private void applyElasticsearch(final SecondaryStorage secondaryStorage) {
+      secondaryStorage.setType(SecondaryStorageType.elasticsearch);
+      final var elasticsearch = secondaryStorage.getElasticsearch();
+      elasticsearch.setUrl(url);
+      elasticsearch.setIndexPrefix(indexPrefix);
+    }
+  }
+
   public interface Storage {
 
     void applyTo(TestStandaloneBroker broker, String tenantId);
 
     static Storage none() {
       return new NoneStorage();
+    }
+
+    static Storage elasticsearch(final String url, final String indexPrefix) {
+      return new ElasticsearchStorage(url, indexPrefix);
     }
 
     static Storage rdbms(final String url, final String username, final String password) {
