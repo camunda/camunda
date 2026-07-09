@@ -27,7 +27,6 @@ import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,7 +78,7 @@ public final class RecoveryController {
       @RequestBody(required = false)
           final io.camunda.gateway.protocol.model.RestoreRequest restoreRequest,
       @RequestParam(name = "dryRun", defaultValue = "false") final boolean dryRun) {
-    LOG.debug("Requested restore for physical tenant {}: {}", physicalTenantId, restoreRequest);
+    LOG.info("Requested restore for physical tenant {}: {}", physicalTenantId, restoreRequest);
     return RequestExecutor.executeServiceMethod(
         () ->
             clusterConfigurationRequestSender
@@ -93,8 +92,7 @@ public final class RecoveryController {
       final io.camunda.gateway.protocol.model.RestoreRequest restoreRequest, final boolean dryRun) {
     final String databaseType = DatabaseTypeUtils.getDatabaseTypeOrDefault(environment);
     final boolean continuousBackups =
-        Optional.ofNullable(environment.getProperty(CONTINUOUS_BACKUPS_PROPERTY, Boolean.class))
-            .orElse(false);
+        environment.getProperty(CONTINUOUS_BACKUPS_PROPERTY, Boolean.class, false);
     if (restoreRequest == null) {
       return new RestoreRequest(List.of(), null, null, databaseType, continuousBackups, dryRun);
     }
