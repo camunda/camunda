@@ -15,6 +15,12 @@ import org.slf4j.Logger;
  * like {@link ClassCircularityError}. It can also be used as a {@link UncaughtExceptionHandler
  * uncaught exception handler}, for example as the {@link Thread#setDefaultUncaughtExceptionHandler
  * default uncaught exception handler}
+ *
+ * <p>One deliberate, narrow exception to this policy exists: {@code DmnScalaDecisionEngine} catches
+ * {@link StackOverflowError} directly at its two dmn-scala library call sites and converts it to a
+ * graceful failure instead of letting it reach this handler, because that specific error is a
+ * deterministic poison-pill on command replay rather than a transient VM condition (see
+ * camunda/camunda#43232).
  */
 public final class VirtualMachineErrorHandler
     implements FatalErrorHandler, UncaughtExceptionHandler {
