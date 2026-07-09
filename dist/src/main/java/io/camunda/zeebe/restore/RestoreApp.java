@@ -22,12 +22,15 @@ import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
+import io.camunda.zeebe.dynamic.config.api.RestoreParameterValidator;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.dynamic.nodeid.fs.DataDirectoryProvider;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
@@ -81,6 +84,7 @@ public class RestoreApp implements ApplicationRunner {
   private final MeterRegistry meterRegistry;
   private final PostRestoreAction postRestoreAction;
   private final PreRestoreAction preRestoreAction;
+  private final Camunda camunda;
 
   @Autowired
   public RestoreApp(
@@ -97,6 +101,7 @@ public class RestoreApp implements ApplicationRunner {
       final DataDirectoryProvider dataDirectoryProvider,
       final PostRestoreAction postRestoreAction,
       final PreRestoreAction preRestoreAction) {
+    this.camunda = camunda;
     this.configuration = configuration;
     this.backupStore = backupStore;
     if (camunda.getData().getSecondaryStorage().getType() == SecondaryStorageType.rdbms) {
@@ -220,18 +225,15 @@ public class RestoreApp implements ApplicationRunner {
   }
 
   private void validateParameters() {
-    final boolean hasBackupId = hasBackupId();
-    final boolean hasTimeRange = hasTimeRange();
-
-    if (hasBackupId && hasTimeRange) {
-      throw new IllegalArgumentException(
-          "Cannot specify both --backupId and --from/--to parameters. Choose one approach.");
-    }
-
-    if (hasTimeRange && from != null && to != null && from.isAfter(to)) {
-      throw new IllegalArgumentException(
-          "Invalid time range: --from (%s) must be before --to (%s)".formatted(from, to));
-    }
+    final List<Long> backupIds =
+        hasBackupId() ? Arrays.stream(backupId).boxed().toList() : List.of();
+    final var databaseType = camunda.getData().getSecondaryStorage().getType().toString();
+    final var continuousBackups = camunda.getData().getPrimaryStorage().getBackup().isContinuous();
+    final var fromStr = from != null ? from.toString() : null;
+    final var toStr = to != null ? to.toString() : null;
+    final var restoreRequest =
+        new RestoreRequest(backupIds, fromStr, toStr, databaseType, continuousBackups, false);
+    RestoreParameterValidator.validate(restoreRequest);
   }
 
   private boolean hasTimeRange() {

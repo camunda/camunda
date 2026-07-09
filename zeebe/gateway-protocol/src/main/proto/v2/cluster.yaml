@@ -98,6 +98,45 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
       x-added-in-version: "8.10"
 
+  /restore:
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Recovery
+      operationId: restore
+      x-required-permissions: []
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Restore from a backup
+      description: >-
+        Restores the cluster from a backup. The restore is described either by a single backup ID
+        or by a time range (`from`/`to`) that selects the backups to restore. This endpoint is only
+        accessible while the cluster is in recovery mode; requests are rejected otherwise. The
+        request is validated and acknowledged, but the restore itself is performed asynchronously.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RestoreRequest'
+        required: true
+      responses:
+        "202":
+          description: The restore request was accepted; returns the planned cluster changes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterModeChangeResponse'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "409":
+          description: The cluster is not in recovery mode, so the restore cannot be accepted.
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+      x-added-in-version: "8.10"
+
 ## Schema definitions
 
 components:
@@ -259,3 +298,30 @@ components:
           type: string
           nullable: true
           example: RECOVERING
+
+    RestoreRequest:
+      description: >-
+        Describes a restore request. Provide either a list of backup IDs or a time range
+        (`from`/`to`) that selects the backups to restore; the two are mutually exclusive.
+      type: object
+      properties:
+        from:
+          description: The start of the time range to restore from, as an ISO 8601 timestamp.
+          type: string
+          format: date-time
+          nullable: true
+          example: "2024-01-01T10:00:00Z"
+        to:
+          description: The end of the time range to restore from, as an ISO 8601 timestamp.
+          type: string
+          format: date-time
+          nullable: true
+          example: "2024-01-01T12:00:00Z"
+        backupIds:
+          description: The IDs of the backups to restore from, one per partition.
+          type: array
+          nullable: true
+          items:
+            type: integer
+            format: int64
+          example: [100, 101]

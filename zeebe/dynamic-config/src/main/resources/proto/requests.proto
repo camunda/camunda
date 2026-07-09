@@ -106,6 +106,15 @@ message CancelTopologyChangeRequest {
   int64 changeId = 1;
 }
 
+message RestoreRequest {
+  repeated int64 backupIds = 1;
+  optional string from = 2;
+  optional string to = 3;
+  string databaseType = 4;
+  bool continuousBackups = 5;
+  bool dryRun = 6;
+}
+
 message TopologyChangeResponse {
   int64 changeId = 1;
   map<string, topology_protocol.MemberState> currentTopology = 2;
