@@ -566,8 +566,12 @@ final class ClusterConfigurationManagementApiTest {
     EitherAssert.assertThat(result)
         .isLeft()
         .left()
-        .extracting(ErrorResponse::code)
-        .isEqualTo(ErrorCode.CONCURRENT_MODIFICATION);
+        .satisfies(
+            error -> {
+              assertThat(error.code()).isEqualTo(ErrorCode.CONCURRENT_MODIFICATION);
+              assertThat(error.message())
+                  .isEqualTo("Restore is only allowed while the cluster is in recovery mode.");
+            });
   }
 
   @Test
@@ -586,8 +590,13 @@ final class ClusterConfigurationManagementApiTest {
     EitherAssert.assertThat(result)
         .isLeft()
         .left()
-        .extracting(ErrorResponse::code)
-        .isEqualTo(ErrorCode.INVALID_REQUEST);
+        .satisfies(
+            error -> {
+              assertThat(error.code()).isEqualTo(ErrorCode.INVALID_REQUEST);
+              assertThat(error.message())
+                  .isEqualTo(
+                      "Cannot specify both backupId and from/to parameters. Choose one approach.");
+            });
   }
 
   @Test
@@ -607,8 +616,11 @@ final class ClusterConfigurationManagementApiTest {
     EitherAssert.assertThat(result)
         .isLeft()
         .left()
-        .extracting(ErrorResponse::code)
-        .isEqualTo(ErrorCode.INVALID_REQUEST);
+        .satisfies(
+            error -> {
+              assertThat(error.code()).isEqualTo(ErrorCode.INVALID_REQUEST);
+              assertThat(error.message()).contains("Invalid time range: from", "must be before to");
+            });
   }
 
   @Test
@@ -628,8 +640,13 @@ final class ClusterConfigurationManagementApiTest {
     EitherAssert.assertThat(result)
         .isLeft()
         .left()
-        .extracting(ErrorResponse::code)
-        .isEqualTo(ErrorCode.INVALID_REQUEST);
+        .satisfies(
+            error -> {
+              assertThat(error.code()).isEqualTo(ErrorCode.INVALID_REQUEST);
+              assertThat(error.message())
+                  .isEqualTo(
+                      "Time range restore (from/to) is only supported for continuous backups.");
+            });
   }
 
   @Test
@@ -647,8 +664,13 @@ final class ClusterConfigurationManagementApiTest {
     EitherAssert.assertThat(result)
         .isLeft()
         .left()
-        .extracting(ErrorResponse::code)
-        .isEqualTo(ErrorCode.INVALID_REQUEST);
+        .satisfies(
+            error -> {
+              assertThat(error.code()).isEqualTo(ErrorCode.INVALID_REQUEST);
+              assertThat(error.message())
+                  .isEqualTo(
+                      "Invalid from timestamp 'not-a-date': must be an ISO 8601 date-time.");
+            });
   }
 
   @Test
