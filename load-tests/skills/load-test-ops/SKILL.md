@@ -11,8 +11,8 @@ definitions, SLO targets, and Prometheus queries, see
 [`load-tests/docs/metrics.md`](https://github.com/camunda/camunda/blob/main/load-tests/docs/metrics.md). For the canonical schema of every
 available chart value (beyond what `load-tests/setup/main/values/camunda-platform-values-defaults.yaml` overrides), see
 the upstream chart at [`camunda/camunda-platform-helm`](https://github.com/camunda/camunda-platform-helm/tree/main/charts/camunda-platform).
-For known load-test tribal knowledge (recurring gotchas, prior incidents, tooling patterns), see
-[`knowledge/load-tests.md`](https://github.com/camunda/team-reliability-testing/blob/main/knowledge/load-tests.md)
+For known load-test and incident tribal knowledge (recurring gotchas, prior incidents, tooling patterns), see
+[`knowledge base`](https://github.com/camunda/team-reliability-testing/blob/main/knowledge/)
 in `camunda/team-reliability-testing` — check it before an investigation, and add durable findings
 back to it afterward.
 
