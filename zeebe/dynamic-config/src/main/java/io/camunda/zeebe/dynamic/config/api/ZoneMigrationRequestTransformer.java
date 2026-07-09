@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dynamic.config.api;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.cluster.ZoneLayout;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -78,7 +79,10 @@ public final class ZoneMigrationRequestTransformer implements ConfigurationChang
     for (final var memberId :
         currentConfiguration.members().keySet().stream()
             .filter(candidate -> candidate.zone() == null)
-            .filter(candidate -> candidate.nodeIdx() % zones.size() == zoneIndex)
+            .filter(
+                candidate ->
+                    ZoneLayout.zoneRankForBareNodeIdx(candidate.nodeIdx(), zones.size())
+                        == zoneIndex)
             .sorted(Comparator.comparingInt(MemberId::nodeIdx))
             .toList()) {
       stageReplacements.put(memberId, MemberId.from(zoneName, localNodeIndex++));
@@ -221,60 +225,44 @@ public final class ZoneMigrationRequestTransformer implements ConfigurationChang
       final ClusterConfiguration currentConfiguration, final List<ZoneSpec> zones) {
     final var brokerCount = currentConfiguration.members().size();
     final var effectiveSlots = new HashSet<Integer>(brokerCount);
+    final var zoneNames = zones.stream().map(ZoneSpec::name).toList();
 
     for (final var memberId : currentConfiguration.members().keySet()) {
-      final var effectiveSlot = effectiveSlot(memberId, zones);
-      if (effectiveSlot.isLeft()) {
-        return Either.left(effectiveSlot.getLeft());
+      final var slot = ZoneLayout.effectiveSlot(memberId.zone(), memberId.nodeIdx(), zoneNames);
+      if (slot.isEmpty()) {
+        return Either.left(
+            new InvalidRequest(
+                "Current topology is incompatible with the persisted zone migration plan: member '"
+                    + memberId
+                    + "' belongs to zone '"
+                    + memberId.zone()
+                    + "' which is not part of the persisted config."));
       }
 
-      final var slot = effectiveSlot.get();
-      if (slot >= brokerCount) {
+      final var slotValue = slot.getAsInt();
+      if (slotValue >= brokerCount) {
         return Either.left(
             new InvalidRequest(
                 "Current topology is incompatible with the persisted zone migration plan: member '"
                     + memberId
                     + "' maps to slot "
-                    + slot
+                    + slotValue
                     + " but the cluster has only "
                     + brokerCount
                     + " broker slots."));
       }
 
-      if (!effectiveSlots.add(slot)) {
+      if (!effectiveSlots.add(slotValue)) {
         return Either.left(
             new InvalidRequest(
                 "Current topology is incompatible with the persisted zone migration plan: multiple"
                     + " members map to slot "
-                    + slot
+                    + slotValue
                     + ". Check the persisted zone order."));
       }
     }
 
     return Either.right(null);
-  }
-
-  private Either<Exception, Integer> effectiveSlot(
-      final MemberId memberId, final List<ZoneSpec> zones) {
-    if (memberId.zone() == null) {
-      return Either.right(memberId.nodeIdx());
-    }
-
-    final var zoneRank =
-        IntStream.range(0, zones.size())
-            .filter(index -> zones.get(index).name().equals(memberId.zone()))
-            .findFirst();
-    if (zoneRank.isEmpty()) {
-      return Either.left(
-          new InvalidRequest(
-              "Current topology is incompatible with the persisted zone migration plan: member '"
-                  + memberId
-                  + "' belongs to zone '"
-                  + memberId.zone()
-                  + "' which is not part of the persisted config."));
-    }
-
-    return Either.right((memberId.nodeIdx() * zones.size()) + zoneRank.getAsInt());
   }
 
   private int expectedNextZoneIndex(

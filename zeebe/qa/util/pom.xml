@@ -18,6 +18,11 @@
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-cluster</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>configuration</artifactId>
       <version>${project.version}</version>
     </dependency>

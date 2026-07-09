@@ -11,6 +11,7 @@ import com.google.common.collect.Sets;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.ZoneLayout;
 import io.camunda.zeebe.dynamic.config.PartitionDistributor;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -103,12 +104,8 @@ public final class RoundRobinPartitionDistributor implements PartitionDistributo
 
   /** Translate zoned ids into "bare" ids so they can be sorted as before they were zoned. */
   private int effectiveSlot(final MemberId memberId) {
-    if (memberId.zone() == null) {
-      return memberId.nodeIdx();
-    }
-
-    final var rank = zoneOrder.indexOf(memberId.zone());
-    return rank < 0 ? Integer.MAX_VALUE : (memberId.nodeIdx() * zoneOrder.size()) + rank;
+    return ZoneLayout.effectiveSlot(memberId.zone(), memberId.nodeIdx(), zoneOrder)
+        .orElse(Integer.MAX_VALUE);
   }
 
   private Map<MemberId, Integer> getPriorities(

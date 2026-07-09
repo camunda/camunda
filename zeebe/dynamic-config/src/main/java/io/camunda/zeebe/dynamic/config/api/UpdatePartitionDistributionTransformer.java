@@ -54,8 +54,7 @@ public class UpdatePartitionDistributionTransformer implements ConfigurationChan
     final var zoneNames = zoneAwareConfig.zones().stream().map(z -> z.name()).toList();
     if (zoneNames.stream().distinct().count() != zoneNames.size()) {
       return Either.left(
-          new InvalidRequest(
-              "Expected zone names to be unique, but got duplicates: " + zoneNames));
+          new InvalidRequest("Expected zone names to be unique, but got duplicates: " + zoneNames));
     }
 
     final int targetReplicationFactor = zoneAwareConfig.replicationFactor();

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.cluster.ZoneLayout;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Partitioning.Scheme;
 import io.camunda.configuration.Zone;
@@ -381,10 +382,10 @@ public final class TestClusterBuilder {
       return;
     }
 
-    final var zoneIndex = brokerIndex % zoneCount;
+    final var zoneIndex = ZoneLayout.zoneRankForBareNodeIdx(brokerIndex, zoneCount);
     final var cluster = config.getCluster();
     cluster.setZone(multiZoneConfigs.get(zoneIndex).name());
-    cluster.setNodeId(brokerIndex / zoneCount);
+    cluster.setNodeId(ZoneLayout.localNodeIdxForBareNodeIdx(brokerIndex, zoneCount));
     cluster.getPartitioning().setScheme(Scheme.ZONE_AWARE);
     cluster
         .getPartitioning()
