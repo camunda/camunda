@@ -431,6 +431,115 @@ public final class FailJobTest {
   }
 
   @Test
+  public void shouldFailLeasedJobWithMatchingLease() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).withLease().activate(username);
+    final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+    final String leaseToken = job.getLeaseToken();
+    assertThat(leaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
+
+    // when
+    final Record<JobRecordValue> failRecord =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .ofInstance(job.getProcessInstanceKey())
+            .withLeaseToken(leaseToken)
+            .withRetries(3)
+            .fail();
+
+    // then
+    Assertions.assertThat(failRecord)
+        .describedAs("expect fail to be accepted when the lease token matches")
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(FAILED);
+  }
+
+  @Test
+  public void shouldRejectFailOnLeasedJobWithoutLease() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).withLease().activate(username);
+    final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+    final String leaseToken = job.getLeaseToken();
+    assertThat(leaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
+
+    // when
+    final Record<JobRecordValue> jobRecord =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .ofInstance(job.getProcessInstanceKey())
+            .withRetries(3)
+            .expectRejection()
+            .fail();
+
+    // then
+    Assertions.assertThat(jobRecord)
+        .describedAs("expect fail without a lease token to be rejected")
+        .hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(jobRecord.getRejectionReason())
+        .contains("must be provided")
+        .doesNotContain(leaseToken);
+  }
+
+  @Test
+  public void shouldRejectFailOnLeasedJobWithWrongLease() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).withLease().activate(username);
+    final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+    final String leaseToken = job.getLeaseToken();
+    assertThat(leaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
+
+    // when
+    final Record<JobRecordValue> jobRecord =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .ofInstance(job.getProcessInstanceKey())
+            .withLeaseToken("stale-lease-token")
+            .withRetries(3)
+            .expectRejection()
+            .fail();
+
+    // then
+    Assertions.assertThat(jobRecord)
+        .describedAs("expect fail with a mismatching lease token to be rejected")
+        .hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(jobRecord.getRejectionReason())
+        .contains("does not match")
+        .doesNotContain(leaseToken);
+  }
+
+  @Test
+  public void shouldFailNonLeasedJobWithoutLease() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).activate(username);
+    final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+
+    // when
+    final Record<JobRecordValue> failRecord =
+        ENGINE.job().withKey(jobKey).ofInstance(job.getProcessInstanceKey()).withRetries(3).fail();
+
+    // then
+    Assertions.assertThat(failRecord)
+        .describedAs("expect fail to be accepted for a non-leased job without a lease token")
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(FAILED);
+  }
+
+  @Test
   public void shouldRejectJobFailForBannedProcessInstance() {
     // given
     final Record<JobRecordValue> jobCreated = ENGINE.createJob(jobType, PROCESS_ID);
