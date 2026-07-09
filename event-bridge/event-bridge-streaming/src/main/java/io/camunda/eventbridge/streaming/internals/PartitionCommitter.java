@@ -24,9 +24,11 @@ import java.util.concurrent.CompletableFuture;
  * durability} (its own state backend, offset store and output sink) makes its own cut via {@link
  * Task#commit} and shares nothing — so partitions commit fully in parallel. A task that defers to
  * the runtime-managed durability shares the {@link TransactionRunner}, {@link OffsetStore}, and the
- * pre-commit flushes; those shared writes are serialized under one monitor so concurrent
- * per-partition commits stay correct. Advancing the source offset uses the thread-safe consumer and
- * needs no monitor.
+ * pre-commit flushes; its frozen cuts are handed to the {@link CutPersister} — one dedicated writer
+ * thread that coalesces queued cuts into one shared transaction — while the synchronous paths
+ * ({@link #commit}, used by the legacy suspended commit and the final stop commit) still write the
+ * shared resources directly, serialized under one monitor the persister also takes. Advancing the
+ * source offset uses the thread-safe consumer and needs no monitor.
  *
  * @param <R> the decoded record type
  */
@@ -41,6 +43,8 @@ public final class PartitionCommitter<R> {
   /** Serializes writes to the shared runtime-managed durability resources (see class javadoc). */
   private final Object sharedDurability = new Object();
 
+  private final CutPersister cutPersister;
+
   public PartitionCommitter(
       final Consumer consumer,
       final String sourceTopic,
@@ -52,44 +56,52 @@ public final class PartitionCommitter<R> {
     this.transactionRunner = transactionRunner;
     this.offsets = offsets;
     this.preCommitFlushes = preCommitFlushes;
+    cutPersister =
+        new CutPersister(
+            consumer, sourceTopic, transactionRunner, offsets, preCommitFlushes, sharedDurability);
   }
 
   /**
    * Makes a frozen cut durable: publish its produced output, persist its state delta and {@code
-   * offset}, then send the source-offset advance and return its future <em>without joining on
+   * offset}, then send the source-offset advance and return a future <em>without joining on
    * it</em>. Runs on an IO thread while the partition's actor <em>keeps folding</em> — the cut is
-   * detached from the live working state at the freeze barrier, so the IO thread owns it
-   * exclusively and no suspension is needed. The completion (retire or merge back) happens
-   * afterwards on the actor thread, chained onto the returned future, not here.
+   * detached from the live working state at the freeze barrier, so no suspension is needed. The
+   * completion (retire or merge back) happens afterwards on the actor thread, chained onto the
+   * returned future, not here.
    *
-   * @return the source-offset commit's future; the cut is fully complete only when it is done
+   * @return a future done only when the cut is fully complete — its transaction committed and its
+   *     source-offset ack arrived
    */
   public CompletableFuture<Void> persistCut(
-      final Partition<R> partition, final long offset, final CommitCut cut) {
+      final Partition<R> partition,
+      final long offset,
+      final CommitCut cut,
+      final CutMetrics metrics) {
     if (partition.task().ownsDurability()) {
       // Self-contained shard: the cut publishes and persists through the task's own sinks and
-      // transaction, fully in parallel with other partitions' cuts.
+      // transaction on this IO thread, fully in parallel with other partitions' cuts.
       cut.publish();
       cut.persist();
-    } else {
-      // Runtime-managed durability: shared resources are serialized, and the offset lands in the
-      // same transaction as the frozen state — one atomic cut at the frozen barrier's offset.
-      synchronized (sharedDurability) {
-        preCommitFlushes.forEach(Runnable::run);
-        cut.publish();
-        transactionRunner.runInTransaction(
-            () -> {
-              offsets.store(partition.id(), offset);
-              cut.persist();
-            });
-      }
+      // The source-offset commit is advisory — the authoritative resume bookmark was just
+      // persisted inside the transaction — so it is sent after the transaction but not awaited:
+      // the IO thread's occupancy ends here, and the caller chains the cut's completion onto the
+      // returned future. The one hard ordering rule holds by construction: the commit is never
+      // sent before the transaction committed.
+      return consumer.commitOffset(sourceTopic, partition.id(), offset);
     }
-    // The source-offset commit is advisory — the authoritative resume bookmark was just persisted
-    // inside the transaction — so it is sent after the transaction but not awaited: the IO
-    // thread's occupancy ends here, and the caller chains the cut's completion onto the returned
-    // future. The one hard ordering rule holds by construction: the commit is never sent before
-    // the transaction committed.
-    return consumer.commitOffset(sourceTopic, partition.id(), offset);
+    // Runtime-managed durability: hand the cut to the single persister thread, which coalesces
+    // queued cuts into one shared transaction (offset and frozen state land atomically at the
+    // barrier's offset) and chains each cut's source-offset commit the same non-joining way.
+    return cutPersister.enqueue(partition.id(), offset, cut, metrics);
+  }
+
+  /**
+   * Stops the runtime-managed cut persister, draining any still-queued cuts first. Called on
+   * runtime shutdown after every partition actor has stopped — their final synchronous stop commits
+   * go through {@link #commit} and never touch the persister.
+   */
+  public void close() {
+    cutPersister.close();
   }
 
   /**

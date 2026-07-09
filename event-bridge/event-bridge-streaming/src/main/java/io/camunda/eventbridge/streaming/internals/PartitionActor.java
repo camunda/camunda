@@ -352,7 +352,7 @@ public final class PartitionActor<R> {
           final long persistStart = System.nanoTime();
           try {
             committer
-                .persistCut(partition, offset, cut)
+                .persistCut(partition, offset, cut, metrics)
                 .whenComplete(
                     (ignored, error) -> {
                       // Possibly on the client's network thread; runOnCompletion below marshals

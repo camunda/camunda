@@ -260,6 +260,7 @@ public final class StreamRuntime<R> implements AutoCloseable {
 
     shutdown(
         source.partitionActors(),
+        committer,
         ownsScheduler ? scheduler : null,
         ownsSinkExecutor ? sinkExecutor : null);
     LOG.info("Stream runtime '{}' stopped", instanceId);
@@ -267,6 +268,7 @@ public final class StreamRuntime<R> implements AutoCloseable {
 
   private void shutdown(
       final Collection<PartitionActor<R>> partitionActors,
+      final PartitionCommitter<R> committer,
       final ActorScheduler ownedScheduler,
       final ExecutorService ownedSinkExecutor) {
     // Ask each actor to make its final commit and close, then wait — the actors need the scheduler
@@ -283,6 +285,9 @@ public final class StreamRuntime<R> implements AutoCloseable {
         break;
       }
     }
+    // Every actor finished its in-flight cut before its final synchronous stop commit (which goes
+    // through the direct path), so the cut persister's queue is drained; stop its writer thread.
+    committer.close();
     if (ownedScheduler != null) {
       try {
         ownedScheduler.close();
