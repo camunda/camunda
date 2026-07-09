@@ -12,11 +12,6 @@ import type {
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {formatDate} from 'modules/utils/date';
 
-/**
- * A process-level wait state (e.g. a process-level start execution listener)
- * is anchored on the PROCESS container, whose element id equals the process
- * definition id.
- */
 function hasProcessLevelWaitState(
   waitStateStatistics: WaitStateStatistic[] | undefined,
   processDefinitionId: string | undefined,

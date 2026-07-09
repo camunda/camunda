@@ -12,6 +12,7 @@ import {
   SkeletonText as BaseSkeletonText,
   SkeletonIcon as BaseSkeletonIcon,
 } from '@carbon/react';
+import {WAITING_BADGE_BORDER_RADIUS} from 'modules/constants';
 
 const Table = styled.table`
   table-layout: fixed;
@@ -125,7 +126,7 @@ const NameSubtitle = styled.span`
   font-size: var(--cds-label-01-font-size);
   font-weight: var(--cds-heading-compact-01-font-weight);
   letter-spacing: var(--cds-label-01-letter-spacing);
-  border-radius: 11px;
+  border-radius: ${WAITING_BADGE_BORDER_RADIUS};
   background-color: var(--cds-support-warning);
   color: #000000;
   padding: var(--cds-spacing-02) var(--cds-spacing-04);

@@ -7,6 +7,7 @@
  */
 
 import styled from 'styled-components';
+import {WAITING_BADGE_BORDER_RADIUS} from 'modules/constants';
 
 const Container = styled.div<{$centered?: boolean}>`
   display: inline-flex;
@@ -20,7 +21,7 @@ const Container = styled.div<{$centered?: boolean}>`
   font-variant-numeric: tabular-nums;
   line-height: var(--cds-label-01-line-height);
   letter-spacing: var(--cds-label-01-letter-spacing);
-  border-radius: 11px;
+  border-radius: ${WAITING_BADGE_BORDER_RADIUS};
   background-color: var(--cds-support-warning);
   color: #000000;
   padding: var(--cds-spacing-02) var(--cds-spacing-04);
