@@ -1411,20 +1411,16 @@ public class ProtoBufSerializer
   @Override
   public byte[] encodeRestoreRequest(final RestoreRequest request) {
     final var builder = Requests.RestoreRequest.newBuilder();
-    if (request.backupIds() != null) {
-      builder.addAllBackupIds(request.backupIds());
-    }
+    builder.addAllBackupIds(request.backupIds());
+    builder.setDatabaseType(request.databaseType());
+    builder.setContinuousBackups(request.continuousBackups());
+    builder.setDryRun(request.dryRun());
     if (request.from() != null) {
       builder.setFrom(request.from());
     }
     if (request.to() != null) {
       builder.setTo(request.to());
     }
-    if (request.databaseType() != null) {
-      builder.setDatabaseType(request.databaseType());
-    }
-    builder.setContinuousBackups(request.continuousBackups());
-    builder.setDryRun(request.dryRun());
 
     return builder.build().toByteArray();
   }

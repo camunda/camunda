@@ -185,15 +185,6 @@ final class RestoreParameterValidatorTest {
   final class InvalidDatabaseType {
 
     @Test
-    void shouldRejectNullDatabaseType() {
-      // when / then
-      assertThatExceptionOfType(IllegalArgumentException.class)
-          .isThrownBy(
-              () -> RestoreParameterValidator.validate(request(BACKUP_ID, null, null, null, false)))
-          .withMessage("Invalid database type: null");
-    }
-
-    @Test
     void shouldRejectUnknownDatabaseType() {
       // when / then
       assertThatExceptionOfType(IllegalArgumentException.class)

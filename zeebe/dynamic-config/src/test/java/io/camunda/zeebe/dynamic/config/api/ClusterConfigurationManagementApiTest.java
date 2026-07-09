@@ -668,8 +668,7 @@ final class ClusterConfigurationManagementApiTest {
             error -> {
               assertThat(error.code()).isEqualTo(ErrorCode.INVALID_REQUEST);
               assertThat(error.message())
-                  .isEqualTo(
-                      "Invalid from timestamp 'not-a-date': must be an ISO 8601 date-time.");
+                  .isEqualTo("Invalid from timestamp 'not-a-date': must be an ISO 8601 date-time.");
             });
   }
 
