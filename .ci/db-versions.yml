@@ -45,6 +45,7 @@ postgresql:
 
 mysql:
   - "8.4"
+  - "9.7"
 
 mariadb:
   - "10.11"

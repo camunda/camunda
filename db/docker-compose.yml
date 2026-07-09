@@ -55,7 +55,7 @@ services:
       - ./docker-compose-init/02-grant-camunda-create-mysql.sql:/docker-entrypoint-initdb.d/02-grant-camunda-create-mysql.sql:ro
 
   mysql:
-    image: mysql:${IMAGE_VERSION:-9.6}
+    image: mysql:${IMAGE_VERSION:-9.7}
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: example
