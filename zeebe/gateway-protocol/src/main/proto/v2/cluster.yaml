@@ -100,7 +100,6 @@ paths:
 
   /restore:
     post:
-      x-added-in-version: "8.10"
       x-eventually-consistent: false
       tags:
         - Recovery
