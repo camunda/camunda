@@ -62,6 +62,68 @@ public final class ExporterConfigMergeSupport {
     return normalizeKeys(args, INTROSPECTION_MAPPER.constructType(configClass));
   }
 
+  /**
+   * Deep-merges a tenant's partial exporter {@code args} over the root-declared {@code args},
+   * type-aware against {@code configClass} (ADR-0008 §4). Both maps are first normalized exactly
+   * like {@link #normalize(Class, Map)} so differently spelled property keys collapse before
+   * merging; consequently the returned map carries normalized property keys.
+   *
+   * <p>Merge semantics per key: nested POJO properties recurse; scalars and lists replace; {@code
+   * Map}-typed properties replace wholesale (their content is user data the merge does not
+   * interpret); keys not matching any property of {@code configClass} replace. The tenant wins
+   * wherever both maps set the same key. Neither input is mutated.
+   *
+   * @param configClass the exporter's configuration class both args maps bind into
+   * @param rootArgs the root entry's args (may be empty, not {@code null})
+   * @param tenantArgs the tenant's overriding args (may be empty, not {@code null})
+   * @return the merged args map
+   */
+  public static Map<String, Object> merge(
+      final Class<?> configClass,
+      final Map<String, Object> rootArgs,
+      final Map<String, Object> tenantArgs) {
+    final JavaType targetType = INTROSPECTION_MAPPER.constructType(configClass);
+    return mergeMaps(
+        normalizeKeys(rootArgs, targetType), normalizeKeys(tenantArgs, targetType), targetType);
+  }
+
+  private static Map<String, Object> mergeMaps(
+      final Map<String, Object> root, final Map<String, Object> tenant, final JavaType targetType) {
+    final var result = new LinkedHashMap<>(root);
+    final var propertyTypesByKey = propertyTypesByNormalizedKey(targetType);
+    for (final var entry : tenant.entrySet()) {
+      final var key = entry.getKey();
+      final var tenantValue = entry.getValue();
+      final var rootValue = result.get(key);
+      final var propertyType = propertyTypesByKey.get(key);
+      if (isPojoProperty(propertyType)
+          && rootValue instanceof final Map<?, ?> rootMap
+          && tenantValue instanceof final Map<?, ?> tenantMap) {
+        @SuppressWarnings("unchecked")
+        final var typedRoot = (Map<String, Object>) rootMap;
+        @SuppressWarnings("unchecked")
+        final var typedTenant = (Map<String, Object>) tenantMap;
+        result.put(key, mergeMaps(typedRoot, typedTenant, propertyType));
+      } else {
+        result.put(key, tenantValue);
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Only a known, non-{@code Object}, non-container property is a POJO the merge may recurse into.
+   * A {@code Map}-typed property holds user data (replace wholesale), a collection/array replaces
+   * by definition, and an unknown or {@code Object}-typed value cannot be introspected — the same
+   * reasoning that keeps custom exporters out of merge scope keeps the merge from guessing here.
+   */
+  private static boolean isPojoProperty(final JavaType propertyType) {
+    return propertyType != null
+        && !propertyType.hasRawClass(Object.class)
+        && !propertyType.isMapLikeType()
+        && !propertyType.isContainerType();
+  }
+
   private static Map<String, Object> normalizeKeys(
       final Map<String, Object> map, final JavaType targetType) {
     final var result = new LinkedHashMap<String, Object>(map.size());
