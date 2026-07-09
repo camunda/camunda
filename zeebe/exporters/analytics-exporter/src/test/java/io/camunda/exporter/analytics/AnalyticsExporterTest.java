@@ -57,7 +57,7 @@ class AnalyticsExporterTest {
     // when / then
     assertThatThrownBy(() -> new AnalyticsExporter().configure(context))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("CAMUNDA_LICENSE_KEY");
+        .hasMessageContaining("camunda.license.key");
   }
 
   @Test
