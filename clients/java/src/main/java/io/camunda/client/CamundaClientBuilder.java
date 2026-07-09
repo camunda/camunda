@@ -92,9 +92,9 @@ public interface CamundaClientBuilder {
    * custom path layout already routes to the physical tenant. Has no effect on the gRPC {@code
    * Camunda-Physical-Tenant} header, which is always sent when a physical tenant id is set.
    *
-   * @param appendPhysicalTenantPath whether to auto-prefix the REST base path per physical tenant
+   * @param prefixPhysicalTenantPath whether to auto-prefix the REST base path per physical tenant
    */
-  CamundaClientBuilder appendPhysicalTenantPath(boolean appendPhysicalTenantPath);
+  CamundaClientBuilder prefixPhysicalTenantPath(boolean prefixPhysicalTenantPath);
 
   /**
    * @param tenantIds the tenant identifiers which are used for job-activation commands when no

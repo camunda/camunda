@@ -49,9 +49,9 @@ public interface CamundaClientConfiguration {
   String getPhysicalTenantId();
 
   /**
-   * @see CamundaClientBuilder#appendPhysicalTenantPath(boolean)
+   * @see CamundaClientBuilder#prefixPhysicalTenantPath(boolean)
    */
-  boolean appendPhysicalTenantPath();
+  boolean prefixPhysicalTenantPath();
 
   /**
    * @see CamundaClientBuilder#defaultJobWorkerTenantIds(List)

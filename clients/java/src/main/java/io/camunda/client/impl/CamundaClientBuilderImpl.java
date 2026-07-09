@@ -15,7 +15,6 @@
  */
 package io.camunda.client.impl;
 
-import static io.camunda.client.ClientProperties.APPEND_PHYSICAL_TENANT_PATH;
 import static io.camunda.client.ClientProperties.APPLY_ENVIRONMENT_VARIABLES_OVERRIDES;
 import static io.camunda.client.ClientProperties.CA_CERTIFICATE_PATH;
 import static io.camunda.client.ClientProperties.DEFAULT_JOB_WORKER_NAME;
@@ -30,12 +29,12 @@ import static io.camunda.client.ClientProperties.MAX_METADATA_SIZE;
 import static io.camunda.client.ClientProperties.OVERRIDE_AUTHORITY;
 import static io.camunda.client.ClientProperties.PHYSICAL_TENANT_ID;
 import static io.camunda.client.ClientProperties.PREFER_REST_OVER_GRPC;
+import static io.camunda.client.ClientProperties.PREFIX_PHYSICAL_TENANT_PATH;
 import static io.camunda.client.ClientProperties.REST_ADDRESS;
 import static io.camunda.client.ClientProperties.STREAM_ENABLED;
 import static io.camunda.client.ClientProperties.USE_CLIENT_SIDE_LOAD_BALANCING;
 import static io.camunda.client.ClientProperties.USE_DEFAULT_RETRY_POLICY;
 import static io.camunda.client.impl.BuilderUtils.applyEnvironmentValueIfNotNull;
-import static io.camunda.client.impl.CamundaClientEnvironmentVariables.APPEND_PHYSICAL_TENANT_PATH_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.BASIC_AUTH_ENV_PASSWORD;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.BASIC_AUTH_ENV_USERNAME;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.CAMUNDA_CLIENT_WORKER_STREAM_ENABLED;
@@ -51,6 +50,7 @@ import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OVERRIDE_AUTHORITY_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.PHYSICAL_TENANT_ID_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.PREFER_REST_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.PREFIX_PHYSICAL_TENANT_PATH_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.REST_ADDRESS_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.USE_CLIENT_SIDE_LOAD_BALANCING_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.USE_DEFAULT_RETRY_POLICY_VAR;
@@ -93,7 +93,7 @@ public final class CamundaClientBuilderImpl
   public static final String DEFAULT_JOB_WORKER_NAME_VAR = "default";
   public static final Duration DEFAULT_MESSAGE_TTL = Duration.ofHours(1);
   public static final boolean DEFAULT_PREFER_REST_OVER_GRPC = true;
-  public static final boolean DEFAULT_APPEND_PHYSICAL_TENANT_PATH = true;
+  public static final boolean DEFAULT_PREFIX_PHYSICAL_TENANT_PATH = true;
   public static final int DEFAULT_NUM_JOB_WORKER_EXECUTION_THREADS = 1;
   public static final int DEFAULT_MAX_MESSAGE_SIZE = 5 * ONE_MB;
   public static final int DEFAULT_MAX_METADATA_SIZE = 16 * ONE_KB;
@@ -121,7 +121,7 @@ public final class CamundaClientBuilderImpl
   private boolean preferRestOverGrpc = DEFAULT_PREFER_REST_OVER_GRPC;
   private String defaultTenantId = CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
   private String physicalTenantId;
-  private boolean appendPhysicalTenantPath = DEFAULT_APPEND_PHYSICAL_TENANT_PATH;
+  private boolean prefixPhysicalTenantPath = DEFAULT_PREFIX_PHYSICAL_TENANT_PATH;
   private List<String> defaultJobWorkerTenantIds =
       Collections.singletonList(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
   private TenantFilter defaultJobWorkerTenantFilter = DEFAULT_JOB_WORKER_TENANT_FILTER;
@@ -171,8 +171,8 @@ public final class CamundaClientBuilderImpl
   }
 
   @Override
-  public boolean appendPhysicalTenantPath() {
-    return appendPhysicalTenantPath;
+  public boolean prefixPhysicalTenantPath() {
+    return prefixPhysicalTenantPath;
   }
 
   @Override
@@ -359,8 +359,8 @@ public final class CamundaClientBuilderImpl
 
     BuilderUtils.applyPropertyValueIfNotNull(
         properties,
-        value -> appendPhysicalTenantPath(Boolean.parseBoolean(value)),
-        APPEND_PHYSICAL_TENANT_PATH);
+        value -> prefixPhysicalTenantPath(Boolean.parseBoolean(value)),
+        PREFIX_PHYSICAL_TENANT_PATH);
 
     BuilderUtils.applyPropertyValueIfNotNull(
         properties,
@@ -514,8 +514,8 @@ public final class CamundaClientBuilderImpl
   }
 
   @Override
-  public CamundaClientBuilder appendPhysicalTenantPath(final boolean appendPhysicalTenantPath) {
-    this.appendPhysicalTenantPath = appendPhysicalTenantPath;
+  public CamundaClientBuilder prefixPhysicalTenantPath(final boolean prefixPhysicalTenantPath) {
+    this.prefixPhysicalTenantPath = prefixPhysicalTenantPath;
     return this;
   }
 
@@ -729,8 +729,8 @@ public final class CamundaClientBuilderImpl
     applyEnvironmentValueIfNotNull(this::defaultTenantId, DEFAULT_TENANT_ID_VAR);
     applyEnvironmentValueIfNotNull(this::physicalTenantId, PHYSICAL_TENANT_ID_VAR);
     applyEnvironmentValueIfNotNull(
-        value -> appendPhysicalTenantPath(Boolean.parseBoolean(value)),
-        APPEND_PHYSICAL_TENANT_PATH_VAR);
+        value -> prefixPhysicalTenantPath(Boolean.parseBoolean(value)),
+        PREFIX_PHYSICAL_TENANT_PATH_VAR);
     applyEnvironmentValueIfNotNull(
         value ->
             defaultJobWorkerTenantIds(
@@ -759,7 +759,7 @@ public final class CamundaClientBuilderImpl
     BuilderUtils.appendProperty(sb, "restAddress", restAddress);
     BuilderUtils.appendProperty(sb, "defaultTenantId", defaultTenantId);
     BuilderUtils.appendProperty(sb, "physicalTenantId", physicalTenantId);
-    BuilderUtils.appendProperty(sb, "appendPhysicalTenantPath", appendPhysicalTenantPath);
+    BuilderUtils.appendProperty(sb, "prefixPhysicalTenantPath", prefixPhysicalTenantPath);
     BuilderUtils.appendProperty(sb, "jobWorkerMaxJobsActive", jobWorkerMaxJobsActive);
     BuilderUtils.appendProperty(sb, "numJobWorkerExecutionThreads", numJobWorkerExecutionThreads);
     BuilderUtils.appendProperty(sb, "defaultJobWorkerName", defaultJobWorkerName);
@@ -813,7 +813,7 @@ public final class CamundaClientBuilderImpl
     setIfNotNull(properties, DEFAULT_TENANT_ID, configuration.getDefaultTenantId());
     setIfNotNull(properties, PHYSICAL_TENANT_ID, configuration.getPhysicalTenantId());
     properties.setProperty(
-        APPEND_PHYSICAL_TENANT_PATH, String.valueOf(configuration.appendPhysicalTenantPath()));
+        PREFIX_PHYSICAL_TENANT_PATH, String.valueOf(configuration.prefixPhysicalTenantPath()));
     if (configuration.getDefaultJobWorkerTenantIds() != null) {
       properties.setProperty(
           ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS,

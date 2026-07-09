@@ -83,8 +83,8 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
   }
 
   @Override
-  public boolean appendPhysicalTenantPath() {
-    return camundaClientProperties.getAppendPhysicalTenantPath();
+  public boolean prefixPhysicalTenantPath() {
+    return camundaClientProperties.getPrefixPhysicalTenantPath();
   }
 
   @Override

@@ -40,7 +40,7 @@ final class PhysicalTenantRestPathTest {
             .restAddress(URI.create(mockInfo.getHttpBaseUrl()))
             .physicalTenantId("riskproduction");
     if (!append) {
-      builder.appendPhysicalTenantPath(false);
+      builder.prefixPhysicalTenantPath(false);
     }
     return builder.build();
   }

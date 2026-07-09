@@ -167,8 +167,8 @@ public class CamundaClientCloudBuilderImpl
   }
 
   @Override
-  public CamundaClientBuilder appendPhysicalTenantPath(final boolean appendPhysicalTenantPath) {
-    innerBuilder.appendPhysicalTenantPath(appendPhysicalTenantPath);
+  public CamundaClientBuilder prefixPhysicalTenantPath(final boolean prefixPhysicalTenantPath) {
+    innerBuilder.prefixPhysicalTenantPath(prefixPhysicalTenantPath);
     return this;
   }
 

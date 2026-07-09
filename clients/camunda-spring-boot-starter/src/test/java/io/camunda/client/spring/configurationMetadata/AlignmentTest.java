@@ -245,8 +245,8 @@ public class AlignmentTest {
               "camunda.client.physical-tenant-id",
               new Getter(CamundaClientProperties::getPhysicalTenantId)),
           entry(
-              "camunda.client.append-physical-tenant-path",
-              new Getter(CamundaClientProperties::getAppendPhysicalTenantPath)));
+              "camunda.client.prefix-physical-tenant-path",
+              new Getter(CamundaClientProperties::getPrefixPhysicalTenantPath)));
 
   @Autowired CamundaClientProperties camundaClientProperties;
 
