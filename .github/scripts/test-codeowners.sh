@@ -284,23 +284,32 @@ assert_owner \
   "qa/acceptance-tests/src/test/java/io/camunda/it/document/ESClient.java" \
   "@camunda/core-features"
 
+assert_owner \
+  "acceptance-tests waitstate/ → core-features (not qa-engineering)" \
+  "qa/acceptance-tests/src/test/java/io/camunda/it/waitstate/WaitStateJobIT.java" \
+  "@camunda/core-features"
+
 # ── /zeebe/qa/integration-tests ordering bug ─────────────────────────────────
 echo ""
 echo "── /zeebe/qa/integration-tests ownership ──"
-echo "   (cluster/shared/util → zeebe-distributed-platform pending https://github.com/multimediallc/codeowners-plus/issues/154)"
 
-assert_owner_bug \
-  "zeebe IT cluster/ → zeebe-distributed-platform (pending codeowners-plus sort fix)" \
+assert_owner \
+  "zeebe IT cluster/ → zeebe-distributed-platform (direct)" \
   "zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/cluster/config/IdleStrategyConfigIT.java" \
   "@camunda/zeebe-distributed-platform"
 
-assert_owner_bug \
-  "zeebe IT shared/ → zeebe-distributed-platform (pending codeowners-plus sort fix)" \
+assert_owner \
+  "zeebe IT cluster/clustering/dynamic/ → zeebe-distributed-platform (3-level deep, ScaleUpPartitionsTest)" \
+  "zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/cluster/clustering/dynamic/ScaleUpPartitionsTest.java" \
+  "@camunda/zeebe-distributed-platform"
+
+assert_owner \
+  "zeebe IT shared/ → zeebe-distributed-platform" \
   "zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/shared/smoke/NoSecondaryStorageSmokeIT.java" \
   "@camunda/zeebe-distributed-platform"
 
-assert_owner_bug \
-  "zeebe IT util/ → zeebe-distributed-platform (pending codeowners-plus sort fix)" \
+assert_owner \
+  "zeebe IT util/ → zeebe-distributed-platform" \
   "zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/util/ZeebeContainerUtil.java" \
   "@camunda/zeebe-distributed-platform"
 

@@ -297,6 +297,7 @@ optimize.Dockerfile         @camunda/core-features
 /qa/acceptance-tests/src/test/java/io/camunda/it/mcp/        @camunda/core-features
 /qa/acceptance-tests/src/test/java/io/camunda/it/orchestration/ @camunda/core-features
 /qa/acceptance-tests/src/test/java/io/camunda/it/tenancy/    @camunda/core-features
+/qa/acceptance-tests/src/test/java/io/camunda/it/waitstate/*  @camunda/core-features
 
 # CI/CD Workflows
 /.ci/scripts/distribution/qa-testbench.sh @camunda/core-features
@@ -442,10 +443,13 @@ optimize.Dockerfile         @camunda/core-features
 
 # Zeebe integration tests: zeebe-distributed-platform owns cluster/shared/util;
 # core-features owns everything else via /zeebe/qa/integration-tests/ above.
-# These must be last to override that broad rule (last-match-wins).
-# Tracking: https://github.com/multimediallc/codeowners-plus/issues/154
-/zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/cluster/ @camunda/zeebe-distributed-platform
-/zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/shared/ @camunda/core-features @camunda/zeebe-distributed-platform
-/zeebe/qa/integration-tests/src/main/java/io/camunda/zeebe/it/shared/ @camunda/core-features @camunda/zeebe-distributed-platform
-/zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/util/ @camunda/core-features @camunda/zeebe-distributed-platform
-/zeebe/qa/integration-tests/src/main/java/io/camunda/zeebe/it/util/ @camunda/core-features @camunda/zeebe-distributed-platform
+# Uses /* (wildcard priority) instead of / (globstar) so these reliably override
+# the broad rule regardless of codeowners-plus sort order (see issue #154).
+# Add new subdir levels explicitly when the directory tree deepens.
+/zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/cluster/*      @camunda/zeebe-distributed-platform
+/zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/cluster/*/*    @camunda/zeebe-distributed-platform
+/zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/cluster/*/*/*  @camunda/zeebe-distributed-platform
+/zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/shared/*       @camunda/core-features @camunda/zeebe-distributed-platform
+/zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/shared/*/*     @camunda/core-features @camunda/zeebe-distributed-platform
+/zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/shared/*/*/*   @camunda/core-features @camunda/zeebe-distributed-platform
+/zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/util/*         @camunda/core-features @camunda/zeebe-distributed-platform
