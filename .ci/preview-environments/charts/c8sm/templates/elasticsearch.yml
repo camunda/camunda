@@ -19,7 +19,9 @@ metadata:
   labels: {{ include "commonLabels" $ | nindent 4 }}
   annotations: {{ include "commonAnnotations" $ | nindent 4 }}
 spec:
-  version: 8.17.3
+  # Keep in sync with the ES 8 version in .ci/db-versions.yml (single source of
+  # truth for DB versions tested in CI / deployed to SaaS; renovate-managed there).
+  version: 8.19.16
   nodeSets:
   - name: default
     count: 1
