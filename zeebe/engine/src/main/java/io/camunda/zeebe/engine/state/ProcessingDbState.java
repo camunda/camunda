@@ -13,6 +13,8 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
+import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
 import io.camunda.zeebe.engine.state.agenthistory.DbAgentHistoryState;
 import io.camunda.zeebe.engine.state.agentinstance.DbAgentInstanceState;
 import io.camunda.zeebe.engine.state.asyncrequest.DbAsyncRequestState;
@@ -108,6 +110,7 @@ import io.camunda.zeebe.engine.state.variable.DbVariableState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.time.Instant;
 import java.time.InstantSource;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -180,8 +183,13 @@ public class ProcessingDbState implements MutableProcessingState {
     clusterVariableState = new DbClusterVariableState(zeebeDb, transactionContext);
     agentHistoryState = new DbAgentHistoryState(zeebeDb, transactionContext);
     agentInstanceState = new DbAgentInstanceState(zeebeDb, transactionContext);
-    processState =
-        new DbProcessState(zeebeDb, transactionContext, config, clock, expressionLanguageMetrics);
+    // Transformation only parses expressions — the clock is never consulted. A fixed epoch
+    // clock satisfies the ExpressionLanguage constructor contract while keeping cache-miss
+    // rebuilds deterministic during replay.
+    final BpmnTransformer stateTransformer =
+        BpmnFactory.createTransformer(
+            InstantSource.fixed(Instant.EPOCH), expressionLanguageMetrics, Integer.MAX_VALUE);
+    processState = new DbProcessState(zeebeDb, transactionContext, config, stateTransformer);
     timerInstanceState = new DbTimerInstanceState(zeebeDb, transactionContext);
     elementInstanceState = new DbElementInstanceState(zeebeDb, transactionContext, variableState);
     eventScopeInstanceState = new DbEventScopeInstanceState(zeebeDb, transactionContext);

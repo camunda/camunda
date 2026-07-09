@@ -21,10 +21,7 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
-import io.camunda.zeebe.el.ExpressionLanguageFactory;
-import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
-import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
@@ -38,8 +35,6 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.time.Instant;
-import java.time.InstantSource;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,7 +48,6 @@ import org.agrona.io.DirectBufferInputStream;
 public final class DbProcessState implements MutableProcessState {
 
   private static final int DEFAULT_VERSION_VALUE = 0;
-  private static final int TRANSFORMER_MAX_NAME_FIELD_LENGTH = Integer.MAX_VALUE;
 
   private final BpmnTransformer transformer;
   private final ProcessRecord processRecordForDeployments = new ProcessRecord();
@@ -119,20 +113,8 @@ public final class DbProcessState implements MutableProcessState {
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
       final EngineConfiguration config,
-      final InstantSource clock,
-      final ExpressionLanguageMetrics expressionLanguageMetrics) {
-    // Since this transformer is used for processes from the engine state, we set the max length to
-    // Integer.MAX_VALUE, because validation has already happened during deployment and we want to
-    // be able to transform processes even if the max length has been changes in the meantime.
-    // Use a fixed epoch clock — BPMN model rebuilding on cache miss must be deterministic
-    // regardless of when it runs (including during engine replay). Transformation only parses
-    // expressions; evaluation happens later at runtime with the live engine clock.
-    transformer =
-        new BpmnTransformer(
-            ExpressionLanguageFactory.createExpressionLanguage(
-                new ZeebeFeelEngineClock(InstantSource.fixed(Instant.EPOCH)),
-                expressionLanguageMetrics),
-            TRANSFORMER_MAX_NAME_FIELD_LENGTH);
+      final BpmnTransformer transformer) {
+    this.transformer = transformer;
     processDefinitionKey = new DbLong();
     persistedProcess = new PersistedProcess();
     tenantIdKey = new DbString();

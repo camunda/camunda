@@ -21,6 +21,7 @@ import io.camunda.zeebe.db.impl.DbTenantAwareKey;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
 import io.camunda.zeebe.engine.state.deployment.DbDecisionState;
 import io.camunda.zeebe.engine.state.deployment.DbProcessState;
 import io.camunda.zeebe.engine.state.deployment.DeployedDrg;
@@ -63,6 +64,7 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.impl.ClusterContextImpl;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.Instant;
 import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -97,8 +99,8 @@ public class MultiTenancyMigrationTest {
               zeebeDb,
               transactionContext,
               new EngineConfiguration(),
-              InstantSource.system(),
-              ExpressionLanguageMetrics.noop());
+              BpmnFactory.createTransformer(
+                  InstantSource.fixed(Instant.EPOCH), ExpressionLanguageMetrics.noop()));
     }
 
     @Test
