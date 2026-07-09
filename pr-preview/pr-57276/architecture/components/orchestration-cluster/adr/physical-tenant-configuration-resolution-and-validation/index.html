@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en" dir="ltr" class="docs-wrapper plugin-docs plugin-id-default docs-version-current docs-doc-page docs-doc-id-architecture/components/orchestration-cluster/adr/physical-tenant-configuration-resolution-and-validation" data-has-hydrated="false">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="Docusaurus v3.10.1">
+<title data-rh="true">ADR-0007: Physical-Tenant Configuration Resolution — Shared-Config-with-Override Model and the Per-PT / Cross-PT Validation Split | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-57276/architecture/components/orchestration-cluster/adr/physical-tenant-configuration-resolution-and-validation/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="ADR-0007: Physical-Tenant Configuration Resolution — Shared-Config-with-Override Model and the Per-PT / Cross-PT Validation Split | Camunda Platform"><meta data-rh="true" name="description" content="Status"><meta data-rh="true" property="og:description" content="Status"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-57276/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-57276/architecture/components/orchestration-cluster/adr/physical-tenant-configuration-resolution-and-validation/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-57276/architecture/components/orchestration-cluster/adr/physical-tenant-configuration-resolution-and-validation/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-57276/architecture/components/orchestration-cluster/adr/physical-tenant-configuration-resolution-and-validation/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-57276/assets/css/styles.44533d03.css">
+<script src="/camunda/pr-preview/pr-57276/assets/js/runtime~main.71338d31.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-57276/assets/js/main.06c6a23c.js" defer="defer"></script>
+</head>
+<body>
+<svg style="display: none;"><defs>
+<symbol id="theme-svg-external-link" viewBox="0 0 24 24"><path fill="currentColor" d="M21 13v10h-21v-19h12v2h-10v15h17v-8h2zm3-12h-10.988l4.035 4-6.977 7.07 2.828 2.828 6.977-7.07 4.125 4.172v-11z"/></symbol>
+</defs></svg>
+<script>!function(){var t=function(){try{return new URLSearchParams(window.location.search).get("docusaurus-theme")}catch(t){}}()||function(){try{return window.localStorage.getItem("theme")}catch(t){}}();document.documentElement.setAttribute("data-theme",t||"light"),document.documentElement.setAttribute("data-theme-choice",t||"light")}(),function(){try{const c=new URLSearchParams(window.location.search).entries();for(var[t,e]of c)if(t.startsWith("docusaurus-data-")){var a=t.replace("docusaurus-data-","data-");document.documentElement.setAttribute(a,e)}}catch(t){}}()</script><div id="__docusaurus"><link rel="preload" as="image" href="/camunda/pr-preview/pr-57276/img/black-C.png"><div role="region" aria-label="Skip to main content"><a class="skipToContent_fXgn" href="#__docusaurus_skipToContent_fallback">Skip to main content</a></div><nav aria-label="Main" class="theme-layout-navbar navbar navbar--fixed-top"><div class="navbar__inner"><div class="theme-layout-navbar-left navbar__items"><button aria-label="Toggle navigation bar" aria-expanded="false" class="navbar__toggle clean-btn" type="button"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10" stroke-width="2" d="M4 7h22M4 15h22M4 23h22"></path></svg></button><a class="navbar__brand" href="/camunda/pr-preview/pr-57276/"><div class="navbar__logo"><img src="/camunda/pr-preview/pr-57276/img/black-C.png" alt="Camunda Logo" class="themedComponent_mlkZ themedComponent--light_NVdE"><img src="/camunda/pr-preview/pr-57276/img/black-C.png" alt="Camunda Logo" class="themedComponent_mlkZ themedComponent--dark_xIcU"></div><b class="navbar__title text--truncate">Camunda Platform</b></a></div><div class="theme-layout-navbar-right navbar__items navbar__items--right"><a href="https://github.com/camunda/camunda" target="_blank" rel="noopener noreferrer" class="navbar__item navbar__link">GitHub<svg width="13.5" height="13.5" aria-label="(opens in new tab)" class="iconExternalLink_nPIU"><use href="#theme-svg-external-link"></use></svg></a><div class="toggle_vylO colorModeToggle_DEke"><button class="clean-btn toggleButton_gllP toggleButtonDisabled_aARS" type="button" disabled="" title="system mode" aria-label="Switch between dark and light mode (currently system mode)"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP lightToggleIcon_pyhR"><path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP darkToggleIcon_wfgR"><path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path></svg><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" class="toggleIcon_g3eP systemToggleIcon_QzmC"><path fill="currentColor" d="m12 21c4.971 0 9-4.029 9-9s-4.029-9-9-9-9 4.029-9 9 4.029 9 9 9zm4.95-13.95c1.313 1.313 2.05 3.093 2.05 4.95s-0.738 3.637-2.05 4.95c-1.313 1.313-3.093 2.05-4.95 2.05v-14c1.857 0 3.637 0.737 4.95 2.05z"></path></svg></button></div><div class="navbarSearchContainer_Bca1"><div class="navbar__search"><span aria-label="expand searchbar" role="button" class="search-icon" tabindex="0"></span><input id="search_input_react" type="search" placeholder="Loading..." aria-label="Search" class="navbar__search-input search-bar" disabled=""></div></div></div></div><div role="presentation" class="navbar-sidebar__backdrop"></div></nav><div id="__docusaurus_skipToContent_fallback" class="theme-layout-main main-wrapper mainWrapper_z2l0"><div class="docsWrapper_hBAB"><button aria-label="Scroll back to top" class="clean-btn theme-back-to-top-button backToTopButton_sjWU" type="button"></button><div class="docRoot_UBD9"><main class="docMainContainer_TBSr docMainContainerEnhanced_lQrH"><div class="container padding-top--md padding-bottom--lg"><div class="row"><div class="col docItemCol_VOVn"><div class="docItemContainer_Djhp"><article><div class="tocCollapsible_ETCw theme-doc-toc-mobile tocMobile_ITEo"><button type="button" class="clean-btn tocCollapsibleButton_TO0P">On this page</button></div><div class="theme-doc-markdown markdown"><header><h1>ADR-0007: Physical-Tenant Configuration Resolution — Shared-Config-with-Override Model and the Per-PT / Cross-PT Validation Split</h1></header>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="status">Status<a href="#status" class="hash-link" aria-label="Direct link to Status" title="Direct link to Status" translate="no">​</a></h2>
+<p>Accepted</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="deciders">Deciders<a href="#deciders" class="hash-link" aria-label="Direct link to Deciders" title="Direct link to Deciders" translate="no">​</a></h2>
+<ul>
+<li class="">Proposed by: Houssain Barouni (<a href="https://github.com/houssain-barouni" target="_blank" rel="noopener noreferrer" class="">@houssain-barouni</a>)</li>
+<li class="">Deepthi Akkoorath (<a href="https://github.com/deepthidevaki" target="_blank" rel="noopener noreferrer" class="">@deepthidevaki</a>)</li>
+</ul>
+<p><em>Additional deciders may be recorded as more of the team reviews.</em></p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="context">Context<a href="#context" class="hash-link" aria-label="Direct link to Context" title="Direct link to Context" translate="no">​</a></h2>
+<p>Issue <a href="https://github.com/camunda/camunda/issues/52680" target="_blank" rel="noopener noreferrer" class="">#52680</a> (epic
+<a href="https://github.com/camunda/camunda/issues/52027" target="_blank" rel="noopener noreferrer" class="">#52027</a>, Physical Tenants) introduces
+per-physical-tenant (PT) configuration for the Orchestration Cluster. Operators declare global
+defaults once under <code>camunda.*</code> and override selected properties per tenant under
+<code>camunda.physical-tenants.&lt;id&gt;.*</code>. Each tenant must resolve to a <em>fully-resolved</em> <code>Camunda</code>
+configuration that consumers (secondary-storage clients, document services, per-tenant security
+chains) can read exactly as they read the root configuration today.</p>
+<p>This ADR records the decisions taken for the <strong>configuration-resolution layer</strong> — everything that
+lives in the <code>configuration/</code> module around <code>PhysicalTenantResolver</code>. It is the counterpart of the
+runtime/security decisions already captured in the sibling ADRs in this folder:
+<a class="" href="/camunda/pr-preview/pr-57276/architecture/components/orchestration-cluster/adr/physical-tenant-request-scoping-via-pre-security-filter/">ADR-0003</a> (request scoping),
+<a class="" href="/camunda/pr-preview/pr-57276/architecture/components/orchestration-cluster/adr/per-physical-tenant-provider-selection-via-assigned/">ADR-0004</a> (provider selection),
+<a class="" href="/camunda/pr-preview/pr-57276/architecture/components/orchestration-cluster/adr/physical-tenant-routing-of-authorization-reads/">ADR-0005</a> (authorization-read routing) and
+ADR-0006 (gRPC authentication). Those consume the resolved per-tenant <code>Camunda</code>; this ADR is about
+how that <code>Camunda</code> is produced and validated.</p>
+<p>The problem breaks into three parts:</p>
+<ol>
+<li class=""><strong>A resolution model</strong> — how a per-tenant <code>Camunda</code> is built from the root config plus the tenant
+overlay, and what &quot;override&quot; means (which properties inherit, which replace, which deep-merge).</li>
+<li class=""><strong>A validation architecture</strong> — the physical-tenant model is unsafe by default in specific ways
+(two tenants silently writing into the same secondary storage or document store; a tenant
+overriding a cluster-wide property that must be uniform; a tenant silently inheriting the root&#x27;s
+identity seed and so accepting foreign tokens). These must fail fast at boot.</li>
+<li class=""><strong>A pitfall in Spring Boot&#x27;s <code>MapBinder</code></strong> — for a <code>Map</code>-typed property, a partial per-tenant
+override of a map <em>entry</em> silently drops the root entry&#x27;s untouched fields.</li>
+</ol>
+<p>Two facts about the runtime shape the decisions. First, all validation runs <em>inside</em> <code>configuration/</code>
+where the resolved <code>Camunda</code> objects and all their getters are already available. Second, detection
+of storage collisions can only ever be <strong>best-effort and static</strong>: the config layer compares declared
+coordinates, not live connections, so DNS aliases and distinct URLs resolving to the same cluster are
+out of reach.</p>
+<p>Related work: PR <a href="https://github.com/camunda/camunda/pull/52529" target="_blank" rel="noopener noreferrer" class="">#52529</a> (resolver),
+PR <a href="https://github.com/camunda/camunda/pull/54700" target="_blank" rel="noopener noreferrer" class="">#54700</a> (cross-tenant validation),
+PR <a href="https://github.com/camunda/camunda/pull/55132" target="_blank" rel="noopener noreferrer" class="">#55132</a> (tenant-id length); sub-issues
+<a href="https://github.com/camunda/camunda/issues/54366" target="_blank" rel="noopener noreferrer" class="">#54366</a> (document-store isolation),
+<a href="https://github.com/camunda/camunda/issues/54730" target="_blank" rel="noopener noreferrer" class="">#54730</a> (OIDC <code>assigned</code>),
+<a href="https://github.com/camunda/camunda/issues/55155" target="_blank" rel="noopener noreferrer" class="">#55155</a> (per-tenant exporters).</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="decision">Decision<a href="#decision" class="hash-link" aria-label="Direct link to Decision" title="Direct link to Decision" translate="no">​</a></h2>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="1-resolution-model-shared-config--per-tenant-override-via-a-two-bind">1. Resolution model: shared config + per-tenant override via a two-bind<a href="#1-resolution-model-shared-config--per-tenant-override-via-a-two-bind" class="hash-link" aria-label="Direct link to 1. Resolution model: shared config + per-tenant override via a two-bind" title="Direct link to 1. Resolution model: shared config + per-tenant override via a two-bind" translate="no">​</a></h3>
+<p><code>PhysicalTenantResolver.of(Environment, Camunda)</code> eagerly resolves one <code>Camunda</code> per discovered
+physical tenant. Each tenant <code>Camunda</code> is produced by:</p>
+<ol>
+<li class="">creating a fresh <code>Camunda</code> instance;</li>
+<li class="">binding <code>camunda.*</code> into it (so every non-overridden value matches the root resolution, and the
+legacy-property fallback in the getters — via <code>UnifiedConfigurationHelper</code> — keeps working
+unchanged);</li>
+<li class="">binding <code>camunda.physical-tenants.&lt;id&gt;.*</code> on top (so tenant-specific keys override the seeded
+values).</li>
+</ol>
+<p>This &quot;shared defaults, override per tenant&quot; model is the general rule for <strong>every</strong> property. Spring
+Binder&#x27;s overlay semantics govern the merge for scalars and nested non-map beans (e.g. <code>cluster</code>,
+whose sibling fields survive a partial override). The resolver is the single place per-tenant config
+is computed; consumers only ever read an already-resolved <code>Camunda</code> through
+<code>PhysicalTenantResolver.mapValues(...)</code> / <code>forPhysicalTenant(...)</code> and never re-merge.</p>
+<p><strong>Default-tenant synthesis.</strong> If no <code>default</code> tenant is declared under <code>camunda.physical-tenants.*</code>,
+the resolver synthesizes one whose value <strong>is the root <code>Camunda</code></strong> — so consumers can always address
+the root configuration as a tenant, and the synthesized <code>default</code> participates in cross-PT validation
+like any other tenant. An explicit <code>default</code> declaration is honored as-is.</p>
+<p><strong>Tenant-id constraints.</strong> Ids are discovered by pure key inspection and must be lowercase
+alphanumeric (<code>[a-z0-9]+</code>, no dashes) and at most 64 characters. Forbidding dashes keeps YAML
+(<code>tenant-a</code>) and environment-variable (<code>CAMUNDA_PHYSICALTENANTS_TENANTA_*</code>) forms from resolving to
+two different ids.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-the-mapbinder-defect-and-the-generic-overlay-engine-typed-pojo-maps">2. The <code>MapBinder</code> defect and the generic overlay engine (typed-POJO maps)<a href="#2-the-mapbinder-defect-and-the-generic-overlay-engine-typed-pojo-maps" class="hash-link" aria-label="Direct link to 2-the-mapbinder-defect-and-the-generic-overlay-engine-typed-pojo-maps" title="Direct link to 2-the-mapbinder-defect-and-the-generic-overlay-engine-typed-pojo-maps" translate="no">​</a></h3>
+<p>Spring Boot&#x27;s <code>MapBinder</code> merges <code>Map</code>-typed properties at the <strong>entry level</strong> (disjoint keys
+survive), but for a key the tenant overlay <em>touches</em>, it constructs a <strong>fresh</strong> value POJO from only
+the tenant&#x27;s sub-keys instead of seeding from the existing root entry. A tenant overriding one field
+of a shared map entry therefore silently loses every root field it did not restate.</p>
+<p>This bites named OIDC providers (<code>Map&lt;String, OidcConfiguration&gt;</code>) and document stores
+(<code>Map&lt;String, AwsStore&gt;</code> and its sibling provider maps). It is repaired by <strong>one generic,
+registry-driven overlay engine</strong> (<code>PhysicalTenantMapOverlay</code> + <code>MapOverlaySpec</code> +
+<code>PhysicalTenantMapOverlays</code>) that runs after the two-bind and recomputes each registered map with a
+<strong>snapshot-then-rebind</strong> algorithm: snapshot the original root entries, then for every id present on
+both root and tenant, re-bind the tenant overlay onto the original root POJO so omitted fields
+inherit root. Adding a per-tenant typed-POJO map means adding one <code>MapOverlaySpec</code> to the registry —
+not new merge code. The registry (currently: document stores, OIDC providers) is also the single
+source of truth the override golden test reads to guard the per-field surface.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="3-exporter-args-mapstring-object--deferred-to-55155">3. Exporter args (<code>Map&lt;String, Object&gt;</code>) — deferred to #55155<a href="#3-exporter-args-mapstring-object--deferred-to-55155" class="hash-link" aria-label="Direct link to 3-exporter-args-mapstring-object--deferred-to-55155" title="Direct link to 3-exporter-args-mapstring-object--deferred-to-55155" translate="no">​</a></h3>
+<p>Exporter <code>args</code> at <code>camunda.data.exporters.&lt;id&gt;.args</code> is a raw <code>Map&lt;String, Object&gt;</code> whose value
+type cannot be field-enumerated, so it stays <strong>out</strong> of the typed-POJO overlay engine. Per-tenant
+exporter handling is <strong>deferred to <a href="https://github.com/camunda/camunda/issues/55155" target="_blank" rel="noopener noreferrer" class="">#55155</a> and not
+sorted out yet</strong>. Current state: a partial tenant override <strong>replaces</strong> the whole <code>args</code> map (root
+<code>className</code> and sibling args are dropped), and no per-tenant exporter consumer exists, so per-tenant
+resolved exporter args are effectively not consumed.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="4-validation-architecture-per-pt-vs-cross-pt">4. Validation architecture: per-PT vs cross-PT<a href="#4-validation-architecture-per-pt-vs-cross-pt" class="hash-link" aria-label="Direct link to 4. Validation architecture: per-PT vs cross-PT" title="Direct link to 4. Validation architecture: per-PT vs cross-PT" translate="no">​</a></h3>
+<p>Validations are split by <strong>what they read</strong>, and run in a fixed order inside
+<code>PhysicalTenantResolver.of()</code>: first the per-PT key-inspection checks (before/independent of
+binding), then the per-tenant two-bind + overlay, then the cross-PT checks over the resolved map.</p>
+<p><strong>Per-PT validations</strong> — operate on a single tenant&#x27;s <em>declared</em> keys (pure key inspection over the
+<code>Environment</code>, with a targeted <code>Binder</code> read only where a value genuinely decides applicability).
+They fail fast before or independently of the full resolution:</p>
+<ul>
+<li class=""><strong>Override policy</strong> (<code>PhysicalTenantOverridePolicyValidation</code>) — a <strong>deny-list</strong> of cluster-wide
+and identity-security properties that may <strong>not</strong> be overridden per tenant (see §5).</li>
+<li class=""><strong>Required override</strong> (<code>PhysicalTenantRequiredOverrideValidation</code>) — every explicitly-declared
+non-<code>default</code> tenant <strong>must</strong> declare its own <code>security.initialization.*</code> block (unless
+authorization is disabled for it). The identity seed must not be inherited from the root, or every
+tenant would get the same admin user/authorizations, defeating isolation.</li>
+<li class=""><strong>OIDC provider selection</strong> (<code>PhysicalTenantAssignedProvidersValidation</code>) — under the OIDC
+method, every non-<code>default</code> tenant must declare a non-empty <code>security.authentication.providers.assigned</code>
+of known provider ids; the <code>default</code> tenant may omit it (implicit full set). Configuration-layer
+counterpart of the <code>authentication</code>-module narrowing (see
+<a class="" href="/camunda/pr-preview/pr-57276/architecture/components/orchestration-cluster/adr/per-physical-tenant-provider-selection-via-assigned/">ADR-0004</a>, #54730).</li>
+<li class=""><strong>Document store selection</strong> (<code>PhysicalTenantDocumentAssignedValidation</code>) — every non-<code>default</code>
+tenant with a non-empty store catalog must declare a non-empty <code>document.assigned</code> of known store
+ids; and <code>camunda.document.assigned</code> is rejected at the <strong>root</strong> level (it is meaningful only per
+tenant).</li>
+<li class=""><strong>Tenant-id format/length</strong> — as in §1.</li>
+</ul>
+<p><strong>Cross-PT validations</strong> — operate on the <em>resolved</em> <code>Map&lt;String, Camunda&gt;</code> (the synthesized
+<code>default</code> included) after all tenants are bound. They express relational, uniqueness/group-by rules
+via a single SPI, <code>CrossTenantValidation.validate(Map&lt;String, Camunda&gt;)</code> (a collection signature,
+not pairwise, so it can group collisions into one message and name the tenants). There is
+<strong>no opt-out toggle</strong> — hard isolation is the point. The registered rules:</p>
+<ul>
+<li class=""><strong>Secondary-storage isolation</strong> (<code>SecondaryStorageIsolationValidation</code>) — group tenants by
+<code>StorageIdentity</code> <code>(type, normalized-connection, namespace)</code> and reject any group with more than
+one tenant. This closes the headline risk: two tenants left at the shared default storage
+(both with the default empty index prefix / null table prefix) resolve to the same identity and
+fail at boot. The identity is deliberately <strong>minimal and location-only</strong> — adding cluster name or
+credentials would let an incidental difference mask a real collision. Same URL + different
+index/table prefix is the explicitly-allowed &quot;shared cluster, distinct namespace&quot; setup.</li>
+<li class=""><strong>Secondary-storage type homogeneity</strong> (<code>SecondaryStorageTypeHomogeneityValidation</code>) — all tenants
+must resolve to the same <em>category</em> of secondary storage. Elasticsearch and OpenSearch are one
+category and may be mixed with each other; <code>rdbms</code> is its own category and <code>none</code> (no secondary
+storage) is its own — neither may be combined with any other type. So a deployment cannot have one
+tenant on Elasticsearch and another on RDBMS, or one tenant with <code>none</code> and another with a
+configured store.</li>
+<li class=""><strong>Document-store isolation</strong> (<code>DocumentStoreIsolationValidation</code>) — reject two tenants resolving to
+the same <code>DocumentStoreLocation</code> (provider-dependent, location-only coordinates: AWS
+<code>bucketName + bucketPath</code>; GCP <code>bucketName + prefix</code>; Azure <code>containerName + containerPath + endpoint</code>; <code>local</code> <code>path</code>; in-memory excluded — ephemeral, cannot collide). Same philosophy as
+<code>StorageIdentity</code>; per #54366, hard-fail with no opt-out.</li>
+</ul>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="5-override-policy-deny-list-not-allow-list">5. Override policy: deny-list, not allow-list<a href="#5-override-policy-deny-list-not-allow-list" class="hash-link" aria-label="Direct link to 5. Override policy: deny-list, not allow-list" title="Direct link to 5. Override policy: deny-list, not allow-list" translate="no">​</a></h3>
+<p>The physical-tenant model is &quot;override anything except cluster identity and uniform security policy&quot;,
+so an allow-list would be enormous and perpetually out of date. The policy is therefore a <strong>deny-list</strong>
+of non-overridable properties, enforced by pure key inspection (ancestor matching, no value
+comparison). It covers the cluster-topology/identity subtrees (<code>cluster.*</code> minus the carve-outs
+<code>partition-count</code> / <code>replication-factor</code>), process-wide <code>system.*</code> (minus <code>clock-controlled</code>), the
+single-per-installation <code>license.key</code>, and the <strong>identity-security</strong> subtrees of <code>security.*</code> that
+must apply uniformly (authentication method, unprotected-api, CSRF, HTTP headers, session,
+multi-tenancy, cluster TLS, and the forward-declared <code>cluster-admin</code> from #54898). Notably,
+identity-security <em>policy</em> is denied, but provider <em>content</em> (<code>security.authentication.oidc</code> /
+<code>providers.oidc</code>) and the per-tenant <code>security.initialization</code> block remain overridable — indeed the
+latter is <em>required</em> per tenant (§4).</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="considered-alternatives">Considered alternatives<a href="#considered-alternatives" class="hash-link" aria-label="Direct link to Considered alternatives" title="Direct link to Considered alternatives" translate="no">​</a></h2>
+<ul>
+<li class=""><strong>Generic declarative validation engine</strong> — express cross-PT rules by annotating individual config
+fields (e.g. <code>@CrossTenantUnique</code> on a field) and have a framework walk the config tree
+reflectively to enforce them. Rejected: cross-PT rules are <em>relational</em> — they constrain a set of
+tenants together (&quot;these N tenants&#x27; storage locations must all be distinct&quot;), not one field in
+isolation. A per-field annotation cannot express &quot;distinct across the whole set&quot;, and building the
+framework is a large upfront cost for the handful of rules that exist. Hand-written validators over
+the resolved map express the relational rules directly.</li>
+<li class=""><strong>Pairwise cross-PT SPI</strong> — a validator signature <code>validate(Camunda a, Camunda b)</code> invoked on every
+pair of tenants. Rejected: the rules are uniqueness / group-by, so a pairwise callback produces
+O(n²) redundant collision reports (every pair in a colliding group reported separately) and cannot
+name the whole colliding group in one message. The chosen collection signature
+<code>validate(Map&lt;String, Camunda&gt;)</code> can still express pairwise checks internally, so it is the strict
+superset.</li>
+<li class=""><strong>Storage identity that is connection-only, or broad (with credentials).</strong> The storage identity
+decides when two tenants &quot;point at the same place&quot;. A connection-<em>only</em> identity (URL, ignoring the
+index/table prefix) would reject the legitimate &quot;shared cluster, distinct prefix per tenant&quot; setup.
+A <em>broad</em> identity (adding cluster name or credentials) makes real collisions <em>harder</em> to detect,
+because an incidental difference in a non-location field would hide two tenants that actually write
+to the same place. The chosen minimal location-only tuple <code>(type, connection, namespace)</code> is the
+balance between the two.</li>
+<li class=""><strong>Allow-list of overridable properties.</strong> Rejected — enormous and perpetually stale versus the
+deny-list.</li>
+<li class=""><strong>Pluggable <code>MapBinder</code> / generic <code>BindHandler</code> to fix the map-override behavior.</strong> The custom
+<code>MapBinder</code> is impossible (package-private in Spring Boot 4.0.7). A <code>BindHandler</code> was spiked and
+proven correct via <code>onStart</code>-replace, but rejected on cost/risk: ~20% more code, reliance on
+undocumented per-entry bind semantics, and version-pinned characterization tests.
+Snapshot-then-rebind is a verbatim extraction of shipping code using only the public <code>Binder</code> API.</li>
+<li class=""><strong>Raw <code>deepMerge</code> for typed-POJO maps as well</strong> — convert each typed config (OIDC provider,
+document store) to a <code>Map&lt;String,Object&gt;</code>, deep-merge root and tenant, then rebind via Spring
+<code>Binder</code>. Rejected: the round-trip silently discards Spring&#x27;s type-safe binding and
+<code>@ConfigurationProperties</code> validation. Exporter args use raw <code>deepMerge</code> without this penalty
+because their value type is <em>already</em> <code>Map&lt;String,Object&gt;</code> — there is no typed POJO to lose.</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="consequences">Consequences<a href="#consequences" class="hash-link" aria-label="Direct link to Consequences" title="Direct link to Consequences" translate="no">​</a></h2>
+<ul>
+<li class="">The two headline isolation risks are closed at boot: two tenants sharing a secondary storage or a
+document store fail fast with a message naming the tenants and the shared identity.</li>
+<li class="">Every non-<code>default</code> tenant must <strong>spell out</strong> its storage namespace, its <code>document.assigned</code> (when a
+catalog exists), its OIDC <code>providers.assigned</code> (under OIDC), and its own <code>security.initialization</code>
+block. This raises the configuration bar for operators adopting physical tenants — intended, and to
+be documented.</li>
+<li class="">Collision detection is <strong>best-effort static</strong>: DNS aliases, distinct URLs resolving to one cluster,
+partially-overlapping multi-URL lists, and (for Azure) same-container-different-account are <strong>not</strong>
+flagged. Accepted limitations, not bugs.</li>
+<li class="">Adding a per-tenant typed-POJO map is one registry entry; adding a cross-PT rule is one
+<code>CrossTenantValidation</code> class — the SPI does not grow. Adding a document provider forces a
+<code>DocumentStoreLocation</code> factory (a compile-time obligation).</li>
+<li class="">Per-tenant <strong>exporter</strong> args are resolved but effectively unconsumed and still use native REPLACE;
+the deep-merge and a per-tenant exporter consumer are deferred to
+<a href="https://github.com/camunda/camunda/issues/55155" target="_blank" rel="noopener noreferrer" class="">#55155</a>.</li>
+<li class="">The merge itself never deletes: a tenant can override or add entries, not remove one the root
+declares (the <code>assigned</code> lists narrow the <em>visible</em> set, but do not delete from the merge). Whether
+per-tenant disable of an inherited entry is needed is <strong>not decided yet</strong>; it would be a separate
+follow-up if it becomes a requirement.</li>
+</ul></div><footer class="theme-doc-footer docusaurus-mt-lg"><div class="row margin-top--sm theme-doc-footer-edit-meta-row"><div class="col noPrint_WFHX"><a href="https://github.com/camunda/camunda/edit/main/docs/monorepo-docs/architecture/components/orchestration-cluster/adr/0007-physical-tenant-configuration-resolution-and-validation.md" target="_blank" rel="noopener noreferrer" class="theme-edit-this-page"><svg fill="currentColor" height="20" width="20" viewBox="0 0 40 40" class="iconEdit_Z9Sw" aria-hidden="true"><g><path d="m34.5 11.7l-3 3.1-6.3-6.3 3.1-3q0.5-0.5 1.2-0.5t1.1 0.5l3.9 3.9q0.5 0.4 0.5 1.1t-0.5 1.2z m-29.5 17.1l18.4-18.5 6.3 6.3-18.4 18.4h-6.3v-6.2z"></path></g></svg>Edit this page</a></div><div class="col lastUpdated_JAkA"></div></div></footer></article><nav class="docusaurus-mt-lg pagination-nav" aria-label="Docs pages"></nav></div></div><div class="col col--3"><div class="tableOfContents_bqdL thin-scrollbar theme-doc-toc-desktop"><ul class="table-of-contents table-of-contents__left-border"><li><a href="#status" class="table-of-contents__link toc-highlight">Status</a></li><li><a href="#deciders" class="table-of-contents__link toc-highlight">Deciders</a></li><li><a href="#context" class="table-of-contents__link toc-highlight">Context</a></li><li><a href="#decision" class="table-of-contents__link toc-highlight">Decision</a><ul><li><a href="#1-resolution-model-shared-config--per-tenant-override-via-a-two-bind" class="table-of-contents__link toc-highlight">1. Resolution model: shared config + per-tenant override via a two-bind</a></li><li><a href="#2-the-mapbinder-defect-and-the-generic-overlay-engine-typed-pojo-maps" class="table-of-contents__link toc-highlight">2. The <code>MapBinder</code> defect and the generic overlay engine (typed-POJO maps)</a></li><li><a href="#3-exporter-args-mapstring-object--deferred-to-55155" class="table-of-contents__link toc-highlight">3. Exporter args (<code>Map&lt;String, Object&gt;</code>) — deferred to #55155</a></li><li><a href="#4-validation-architecture-per-pt-vs-cross-pt" class="table-of-contents__link toc-highlight">4. Validation architecture: per-PT vs cross-PT</a></li><li><a href="#5-override-policy-deny-list-not-allow-list" class="table-of-contents__link toc-highlight">5. Override policy: deny-list, not allow-list</a></li></ul></li><li><a href="#considered-alternatives" class="table-of-contents__link toc-highlight">Considered alternatives</a></li><li><a href="#consequences" class="table-of-contents__link toc-highlight">Consequences</a></li></ul></div></div></div></div></main></div></div></div><footer class="theme-layout-footer footer footer--dark"><div class="container container-fluid"><div class="footer__bottom text--center"><div class="footer__copyright">Copyright © 2026 Camunda.</div></div></div></footer></div>
+</body>
+</html>
