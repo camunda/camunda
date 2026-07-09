@@ -51,12 +51,6 @@ public interface CutMetrics {
   default void countRetry() {}
 
   /**
-   * The partition's cut was made durable as part of a coalesced batch (more than one cut in one
-   * shared transaction) by the runtime-managed cut persister.
-   */
-  default void countCoalesced() {}
-
-  /**
    * Folding entered a write stall: the budget was exhausted (active + frozen entries pinned) while
    * a cut was still in flight. Counts stall entries, not per-record re-checks.
    */
@@ -70,7 +64,6 @@ public interface CutMetrics {
     private final Timer freezeDuration;
     private final Timer persistDuration;
     private final Counter retries;
-    private final Counter coalesced;
     private final Counter writeStalls;
 
     private MicrometerCutMetrics(final MeterRegistry registry, final int partitionId) {
@@ -88,11 +81,6 @@ public interface CutMetrics {
       retries =
           Counter.builder("eb.streaming.cut.retries")
               .description("Failed cut persists that merged back for retry")
-              .tag("partition", partition)
-              .register(registry);
-      coalesced =
-          Counter.builder("eb.streaming.cut.coalesced")
-              .description("Cuts made durable as part of a coalesced multi-cut transaction")
               .tag("partition", partition)
               .register(registry);
       writeStalls =
@@ -116,11 +104,6 @@ public interface CutMetrics {
     @Override
     public void countRetry() {
       retries.increment();
-    }
-
-    @Override
-    public void countCoalesced() {
-      coalesced.increment();
     }
 
     @Override

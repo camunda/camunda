@@ -36,10 +36,10 @@ public interface Processor<In, Out> {
   default void flush() {}
 
   /**
-   * Commit-interval tick: make this processor's working state durable, inside the runtime's one
-   * checkpoint transaction, so it lands in the same atomic cut as the consumed offset. A processor
-   * backed only by in-memory or write-through state may leave this a no-op; a write-back-cached
-   * store flushes here. Default: no-op.
+   * Commit-interval tick: make this processor's working state durable, inside the task's one commit
+   * transaction, so it lands in the same atomic cut as the consumed offset. A processor backed only
+   * by in-memory or write-through state may leave this a no-op; a write-back-cached store flushes
+   * here. Default: no-op.
    */
   default void checkpoint() {}
 

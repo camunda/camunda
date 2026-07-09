@@ -55,16 +55,24 @@ final class StreamRuntimeParallelismTest {
     final CountDownLatch bothDone = new CountDownLatch(2);
     final AtomicBoolean ranConcurrently = new AtomicBoolean(false);
     final Task<String> task =
-        record -> {
-          bothInProcess.countDown();
-          try {
-            if (bothInProcess.await(5, TimeUnit.SECONDS)) {
-              ranConcurrently.set(true);
+        new Task<>() {
+          @Override
+          public void process(final String record) {
+            bothInProcess.countDown();
+            try {
+              if (bothInProcess.await(5, TimeUnit.SECONDS)) {
+                ranConcurrently.set(true);
+              }
+            } catch (final InterruptedException e) {
+              Thread.currentThread().interrupt();
             }
-          } catch (final InterruptedException e) {
-            Thread.currentThread().interrupt();
+            bothDone.countDown();
           }
-          bothDone.countDown();
+
+          @Override
+          public long restore() {
+            return 0L; // a real baseline, so materialization resumes rather than rebuilds
+          }
         };
 
     final StreamRuntime<String> runtime =
@@ -76,7 +84,6 @@ final class StreamRuntimeParallelismTest {
             .deserializer(
                 (payload, partition, offset) -> new String(payload, StandardCharsets.UTF_8))
             .taskFactory(partition -> task)
-            .transactionRunner(Runnable::run)
             .processorThreads(2)
             .commitInterval(Duration.ZERO)
             .build();
@@ -112,14 +119,9 @@ final class StreamRuntimeParallelismTest {
     final CountDownLatch releaseP1Commit = new CountDownLatch(1);
     final CountDownLatch p2Processed = new CountDownLatch(1);
 
-    // Partition 1 owns durability and blocks inside its commit; partition 2 just folds a record.
+    // Partition 1 blocks inside its shard's commit; partition 2 just folds a record.
     final Task<String> p1 =
         new Task<>() {
-          @Override
-          public boolean ownsDurability() {
-            return true;
-          }
-
           @Override
           public long restore() {
             return 0L; // a real baseline (not NO_OFFSET), so it resumes rather than rebuilds
@@ -140,11 +142,6 @@ final class StreamRuntimeParallelismTest {
         };
     final Task<String> p2 =
         new Task<>() {
-          @Override
-          public boolean ownsDurability() {
-            return true;
-          }
-
           @Override
           public long restore() {
             return 0L;
@@ -177,8 +174,9 @@ final class StreamRuntimeParallelismTest {
     final Thread loop = new Thread(runtime::run, "runtime-under-test");
     loop.start();
 
-    // then — partition 1 is stuck in its commit (on the sink executor), yet the single actor thread
-    // is free to fold partition 2. A synchronous commit would have wedged the only actor thread.
+    // then — partition 1 is stuck in its shard's commit (on the sink executor), yet the single
+    // actor thread is free to fold partition 2. A synchronous commit would have wedged the only
+    // actor thread.
     assertThat(p1CommitBlocked.await(5, TimeUnit.SECONDS)).isTrue();
     assertThat(p2Processed.await(5, TimeUnit.SECONDS)).isTrue();
 

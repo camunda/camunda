@@ -9,6 +9,7 @@ package io.camunda.eventbridge.streaming;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.IntFunction;
 
 /**
@@ -19,11 +20,9 @@ import java.util.function.IntFunction;
  *
  * <p>Wire it straight into the runtime as its task factory — {@code
  * StreamRuntime.builder().taskFactory(topology::processorFor)} — since {@link #processorFor(int)}
- * returns a {@link StreamProcessor}, which is a {@link Task}. This is the
- * runtime-managed-durability path: the runtime owns offsets and the commit transaction, and each
- * partition gets a fresh partition-local {@link StreamProcessor}. (When a task must own its own
- * durability — its own state backend, offset store and output sink — build an owning {@link Task}
- * instead; see {@link Task#ownsDurability()}.)
+ * returns a {@link StreamProcessor}, which is a {@link Task}. Each partition gets a fresh
+ * partition-local {@link StreamProcessor} that owns its shard through the {@link ShardDurability}
+ * the durability factory provisions for it.
  *
  * <p>A stage factory may build any {@link Stage}, including a {@code ProcessorTopology} graph
  * (branch/merge/fan-out) per partition — so this composes with the processor DAG rather than
@@ -35,7 +34,15 @@ import java.util.function.IntFunction;
  */
 public final class StreamTopology<R> {
 
+  private final IntFunction<ShardDurability> durabilityFactory;
   private final List<IntFunction<Stage<R>>> stageFactories = new ArrayList<>();
+
+  /**
+   * @param durabilityFactory provisions each partition's {@link ShardDurability}
+   */
+  public StreamTopology(final IntFunction<ShardDurability> durabilityFactory) {
+    this.durabilityFactory = Objects.requireNonNull(durabilityFactory, "durabilityFactory");
+  }
 
   /** Adds any stage factory — the agnostic entry point. */
   public StreamTopology<R> add(final IntFunction<Stage<R>> stageFactory) {
@@ -43,9 +50,10 @@ public final class StreamTopology<R> {
     return this;
   }
 
-  /** Builds the processor for one partition — fresh, partition-local stages. */
+  /** Builds the processor for one partition — fresh, partition-local stages and shard. */
   public StreamProcessor<R> processorFor(final int partitionId) {
-    final StreamProcessor<R> processor = new StreamProcessor<>();
+    final StreamProcessor<R> processor =
+        new StreamProcessor<>(durabilityFactory.apply(partitionId));
     for (final IntFunction<Stage<R>> factory : stageFactories) {
       processor.add(factory.apply(partitionId));
     }

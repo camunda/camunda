@@ -35,10 +35,8 @@ public interface CommitCut {
   default void publish() {}
 
   /**
-   * Persists the frozen state delta. For a task that defers durability to the runtime, this runs
-   * inside the runtime's shared transaction (alongside the offset write) and must not open its own.
-   * For a task that {@link Task#ownsDurability() owns its durability}, this is the self-contained
-   * durable write: state and offset in one atomic cut, transaction included.
+   * The self-contained durable write of the cut: the frozen state delta and the barrier's offset in
+   * one atomic transaction the task owns.
    */
   void persist();
 

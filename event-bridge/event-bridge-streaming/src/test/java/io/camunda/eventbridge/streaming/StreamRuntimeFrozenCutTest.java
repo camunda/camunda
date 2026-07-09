@@ -92,24 +92,6 @@ final class StreamRuntimeFrozenCutTest {
         .sourceTopic(TOPIC)
         .deserializer((payload, partition, offset) -> new String(payload, StandardCharsets.UTF_8))
         .taskFactory(partition -> task)
-        .transactionRunner(
-            operations -> {
-              journal.add("tx-begin");
-              operations.run();
-              journal.add("tx-end");
-            })
-        .offsetStore(
-            new OffsetStore() {
-              @Override
-              public Map<Integer, Long> restore() {
-                return Map.of();
-              }
-
-              @Override
-              public void store(final int partition, final long offset) {
-                journal.add("offset:" + offset);
-              }
-            })
         .sinkIoThreads(1)
         .commitInterval(commitInterval)
         .meterRegistry(meterRegistry)
@@ -566,9 +548,10 @@ final class StreamRuntimeFrozenCutTest {
   }
 
   /**
-   * A task with frozen-cut support: {@code live} is the actor-thread working set (records since the
-   * last freeze), a freeze steals it into an immutable cut, persist optionally blocks or fails, and
-   * a failed cut merges back underneath newer records.
+   * A self-contained shard with frozen-cut support: {@code live} is the actor-thread working set
+   * (records since the last freeze), a freeze steals it into an immutable cut whose persist writes
+   * state and the barrier's offset in the task's own journaled transaction (optionally blocking or
+   * failing first), and a failed cut merges back underneath newer records.
    */
   private static final class FrozenCutTask implements Task<String> {
 
@@ -590,6 +573,11 @@ final class StreamRuntimeFrozenCutTest {
       live.add(record);
       processed.add(record);
       gateOpenWhenProcessed.put(record, gateOpened.get());
+    }
+
+    @Override
+    public long restore() {
+      return 0L; // a real baseline, so materialization resumes rather than rebuilds
     }
 
     @Override
@@ -620,7 +608,12 @@ final class StreamRuntimeFrozenCutTest {
             persistFailures--;
             throw new IllegalStateException("injected persist failure");
           }
+          // The shard's own atomic cut: the frozen delta and the barrier's offset in one
+          // transaction the task owns.
+          journal.add("tx-begin");
+          journal.add("offset:" + offset);
           journal.add("persist");
+          journal.add("tx-end");
           persisted.add(cut);
         }
 
@@ -635,12 +628,16 @@ final class StreamRuntimeFrozenCutTest {
     }
 
     @Override
-    public void checkpoint() {
-      // The legacy synchronous path (the final stop commit): persist the live working set.
+    public void commit(final long offset) {
+      // The synchronous path (the final stop commit): persist the live working set and the
+      // offset in the shard's own transaction.
+      journal.add("tx-begin");
+      journal.add("offset:" + offset);
       if (!live.isEmpty()) {
         persisted.add(List.copyOf(live));
         live.clear();
       }
+      journal.add("tx-end");
     }
 
     @Override

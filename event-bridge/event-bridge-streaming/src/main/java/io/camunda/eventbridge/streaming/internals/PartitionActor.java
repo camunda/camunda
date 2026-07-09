@@ -37,21 +37,21 @@ import org.slf4j.LoggerFactory;
  * lease/lock model with the framework's own guarantee.
  *
  * <p><b>Async commit, two modes.</b> The commit is the only step that blocks on a DB sink, so it
- * runs on an IO executor either way; the modes differ in what the actor does meanwhile. <em>Frozen
- * cut</em> (a task that supports {@link Task#freezeCut}): the actor freezes the cut at the barrier
- * — pointer swaps detaching the delta from the live state — and <b>keeps folding</b> while the IO
- * thread persists the frozen data it now exclusively owns ({@code cutInFlight} gates only a second
- * freeze; at most one cut is in flight). Folding pauses only in a <em>write stall</em> (the RocksDB
- * term): the task reports {@link Task#needsCheckpoint()} — its budget is exhausted because both the
- * active and the frozen entries are pinned — while the persist is still running, the natural
- * backpressure valve. <em>Legacy</em> (no frozen-cut support): the actor is <em>suspended</em>
- * ({@code committing} is set, so no folding/punctuation/second commit runs), giving the committing
- * thread — an IO thread for a task that owns its durability, the cut persister's writer thread for
- * a runtime-managed one — exclusive access to the live task. In both modes the source offset
- * advances only after the durable write — the produce-before-commit cut is at the freeze barrier's
- * offset, and completion (retire or merge back) runs back on the actor thread. A frozen cut
- * completes only once both the transaction and the chained source-offset ack are done, so
- * single-flight covers the full cut.
+ * runs on the sink IO executor either way; the modes differ in what the actor does meanwhile.
+ * <em>Frozen cut</em> (a task that supports {@link Task#freezeCut}): the actor freezes the cut at
+ * the barrier — pointer swaps detaching the delta from the live state — and <b>keeps folding</b>
+ * while the IO thread persists the frozen data it now exclusively owns ({@code cutInFlight} gates
+ * only a second freeze; at most one cut is in flight). Folding pauses only in a <em>write
+ * stall</em> (the RocksDB term): the task reports {@link Task#needsCheckpoint()} — its budget is
+ * exhausted because both the active and the frozen entries are pinned — while the persist is still
+ * running, the natural backpressure valve. <em>Legacy</em> (no frozen-cut support): the actor is
+ * <em>suspended</em> ({@code committing} is set, so no folding/punctuation/second commit runs),
+ * giving the IO thread exclusive access to the live task for the synchronous {@link Task#commit}.
+ * In both modes the source offset advances only after the durable write — the produce-before-commit
+ * cut is at the freeze barrier's offset, and completion (retire or merge back) runs back on the
+ * actor thread. A frozen cut completes only once both the transaction and the chained source-offset
+ * ack are done, so single-flight covers the full cut. Every task is a self-contained shard, so
+ * commits of different partitions never contend on anything durable.
  *
  * @param <R> the decoded record type
  */
@@ -354,7 +354,7 @@ public final class PartitionActor<R> {
           final long persistStart = System.nanoTime();
           try {
             committer
-                .persistCut(partition, offset, cut, metrics)
+                .persistCut(partition, offset, cut)
                 .whenComplete(
                     (ignored, error) -> {
                       // Possibly on the client's network thread; runOnCompletion below marshals
@@ -374,40 +374,23 @@ public final class PartitionActor<R> {
   }
 
   /**
-   * Offloads the blocking suspended commit — to the IO executor for a task that owns its
-   * durability, or to the cut persister's writer thread for a runtime-managed one — and resumes on
-   * completion. Actor thread only.
+   * Offloads the blocking suspended commit to the sink IO executor and resumes on completion. The
+   * shard shares nothing, so the commit runs in parallel with other partitions'; touching the live
+   * task on the IO thread is safe because this actor stays suspended ({@code committing}) until the
+   * future settles. Actor thread only.
    */
   private void beginLegacyCommit(final long offset) {
     committing = true;
     final CompletableActorFuture<Void> committed = new CompletableActorFuture<>();
-    if (partition.task().ownsDurability()) {
-      // Self-contained shard: nothing shared, so the commit runs on any IO thread in parallel.
-      sinkExecutor.execute(
-          () -> {
-            try {
-              committer.commit(partition, offset);
-              committed.complete(null);
-            } catch (final Throwable t) {
-              committed.completeExceptionally(t);
-            }
-          });
-    } else {
-      // Runtime-managed durability: the whole legacy sequence runs on the persister thread — the
-      // only writer of the shared durable resources. Touching the live task there is safe because
-      // this actor stays suspended (committing) until the future settles, so any single thread may
-      // access the task, and the persister thread is that thread.
-      committer
-          .commitSuspended(partition, offset)
-          .whenComplete(
-              (ignored, error) -> {
-                if (error != null) {
-                  committed.completeExceptionally(error);
-                } else {
-                  committed.complete(null);
-                }
-              });
-    }
+    sinkExecutor.execute(
+        () -> {
+          try {
+            committer.commit(partition, offset);
+            committed.complete(null);
+          } catch (final Throwable t) {
+            committed.completeExceptionally(t);
+          }
+        });
     control.runOnCompletion(committed, (ignored, error) -> onCommitted(offset, error));
   }
 
@@ -475,18 +458,8 @@ public final class PartitionActor<R> {
     finalized = true;
     if (partition.hasPending()) {
       try {
-        if (partition.task().ownsDurability()) {
-          // Self-contained shard: commits directly on this thread, shares nothing.
-          committer.commit(partition, partition.pending());
-        } else {
-          // Runtime-managed durability: the stop commit runs as a job on the persister thread —
-          // the only writer of the shared durable resources — and this actor joins it here.
-          // Joining is deadlock-free: the persister is a separate thread, and StreamRuntime's
-          // shutdown closes it only after every actor has stopped (this stop included). Should a
-          // late stop still find it closed, the persister runs the job inline on this thread —
-          // trivially exclusive, because its writer thread has already ended — so nothing hangs.
-          committer.commitSuspended(partition, partition.pending()).join();
-        }
+        // Self-contained shard: commits directly on this thread, shares nothing.
+        committer.commit(partition, partition.pending());
         partition.clearPending();
       } catch (final RuntimeException e) {
         LOG.warn("Final commit of partition {} failed", id(), e);

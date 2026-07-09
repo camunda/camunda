@@ -28,7 +28,10 @@ public interface Stage<R> {
   /** Wall-clock tick: flush buffered work so latency stays bounded. */
   default void flush() {}
 
-  /** Commit-interval tick: make the working state durable (state + offsets) in one cut. */
+  /**
+   * Commit-interval tick: make the working state durable. Runs inside the processor's shard
+   * transaction, so it lands in the same atomic cut as the consumed offset.
+   */
   default void checkpoint() {}
 
   /**
@@ -50,8 +53,8 @@ public interface Stage<R> {
   default void freezeCheckpoint() {}
 
   /**
-   * Persists the frozen delta to the durable store. Runs on an IO thread inside the runtime's
-   * commit transaction — must not open its own transaction and must not touch any live (non-frozen)
+   * Persists the frozen delta to the durable store. Runs on an IO thread inside the processor's
+   * shard transaction — must not open its own transaction and must not touch any live (non-frozen)
    * state, which the processing thread keeps mutating concurrently.
    */
   default void persistCheckpoint() {}

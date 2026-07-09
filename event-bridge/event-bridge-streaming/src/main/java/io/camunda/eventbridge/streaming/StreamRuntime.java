@@ -9,7 +9,6 @@ package io.camunda.eventbridge.streaming;
 
 import io.camunda.eventbridge.client.Consumer;
 import io.camunda.eventbridge.client.EventBridgeClient;
-import io.camunda.eventbridge.client.TopicPartition;
 import io.camunda.eventbridge.streaming.internals.CutMetrics;
 import io.camunda.eventbridge.streaming.internals.Partition;
 import io.camunda.eventbridge.streaming.internals.PartitionActor;
@@ -19,11 +18,8 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletionException;
@@ -82,9 +78,6 @@ public final class StreamRuntime<R> implements AutoCloseable {
   private final RecordFilter recordFilter;
   private final ToLongFunction<byte[]> payloadTimestamps;
   private final IntFunction<Task<R>> taskFactory;
-  private final TransactionRunner transactionRunner;
-  private final OffsetStore offsets;
-  private final List<Runnable> preCommitFlushes;
   private final RecordExceptionHandler recordExceptionHandler;
   private final ToLongFunction<R> timestampExtractor;
   private final int maxPoll;
@@ -113,9 +106,6 @@ public final class StreamRuntime<R> implements AutoCloseable {
     recordFilter = builder.recordFilter;
     payloadTimestamps = builder.payloadTimestamps;
     taskFactory = builder.taskFactory;
-    transactionRunner = builder.transactionRunner;
-    offsets = builder.offsets;
-    preCommitFlushes = List.copyOf(builder.preCommitFlushes);
     recordExceptionHandler = builder.recordExceptionHandler;
     timestampExtractor = builder.timestampExtractor;
     maxPoll = builder.maxPoll;
@@ -140,11 +130,6 @@ public final class StreamRuntime<R> implements AutoCloseable {
     return new Builder<>();
   }
 
-  /**
-   * Subscribes, restores committed offsets, and runs the source stage on the calling thread until
-   * {@link #stop()}. On exit it asks every partition actor to make a final commit and close, then
-   * tears down any owned actor scheduler / sink executor and the consumer.
-   */
   /**
    * Subscribes at startup, retrying on failure with the configured error backoff. A freshly created
    * source topic — or one whose partition is mid-election — can reject the initial JoinGroup until
@@ -186,6 +171,12 @@ public final class StreamRuntime<R> implements AutoCloseable {
         last);
   }
 
+  /**
+   * Subscribes and runs the source stage on the calling thread until {@link #stop()}. Each
+   * partition restores its own baseline offset (from its task's {@link Task#restore()}) when it is
+   * materialized. On exit it asks every partition actor to make a final commit and close, then
+   * tears down any owned actor scheduler / sink executor and the consumer.
+   */
   public void run() {
     running = true;
     consumer = subscribeWithRetry();
@@ -201,10 +192,7 @@ public final class StreamRuntime<R> implements AutoCloseable {
             ? Executors.newFixedThreadPool(sinkIoThreads, sinkThreadFactory)
             : injectedSinkExecutor;
 
-    final PartitionCommitter<R> committer =
-        new PartitionCommitter<>(
-            consumer, sourceTopic, transactionRunner, offsets, preCommitFlushes);
-    final Map<Integer, Long> restoredBaselines = new HashMap<>();
+    final PartitionCommitter<R> committer = new PartitionCommitter<>(consumer, sourceTopic);
     final Function<Partition<R>, PartitionActor<R>> partitionActorFactory =
         partition -> {
           final PartitionActor<R> partitionActor =
@@ -241,7 +229,6 @@ public final class StreamRuntime<R> implements AutoCloseable {
             payloadTimestamps,
             taskFactory,
             partitionActorFactory,
-            restoredBaselines,
             partitionQueueCapacity,
             maxPoll,
             pollTimeout,
@@ -253,14 +240,12 @@ public final class StreamRuntime<R> implements AutoCloseable {
     source.registerRebalanceListener();
     // Trigger the initial assignment now rather than waiting for the first scheduled heartbeat.
     consumer.sendHeartbeat().join();
-    restore(restoredBaselines);
     LOG.info("Stream runtime '{}' started on topic '{}'", instanceId, sourceTopic);
 
     source.run();
 
     shutdown(
         source.partitionActors(),
-        committer,
         ownsScheduler ? scheduler : null,
         ownsSinkExecutor ? sinkExecutor : null);
     LOG.info("Stream runtime '{}' stopped", instanceId);
@@ -268,7 +253,6 @@ public final class StreamRuntime<R> implements AutoCloseable {
 
   private void shutdown(
       final Collection<PartitionActor<R>> partitionActors,
-      final PartitionCommitter<R> committer,
       final ActorScheduler ownedScheduler,
       final ExecutorService ownedSinkExecutor) {
     // Ask each actor to make its final commit and close, then wait — the actors need the scheduler
@@ -285,12 +269,6 @@ public final class StreamRuntime<R> implements AutoCloseable {
         break;
       }
     }
-    // Close the cut persister strictly AFTER every actor stopped: the final stop commits of
-    // runtime-managed tasks run as joined jobs on the persister thread, so this ordering is what
-    // keeps those joins deadlock-free. An actor that outlived the shutdown wait above is the only
-    // way a stop commit can arrive after this close; the persister then runs it inline on the
-    // actor's thread (trivially exclusive — the writer thread has ended) rather than hanging.
-    committer.close();
     if (ownedScheduler != null) {
       try {
         ownedScheduler.close();
@@ -310,23 +288,6 @@ public final class StreamRuntime<R> implements AutoCloseable {
         .setCpuBoundActorThreadCount(processorThreads)
         .setIoBoundActorThreadCount(1)
         .build();
-  }
-
-  /**
-   * Seeds the restored baselines and seeks each managed partition to just after its committed
-   * offset. A task that owns its durability restores its own baseline when it is materialized.
-   */
-  private void restore(final Map<Integer, Long> restoredBaselines) {
-    final Map<Integer, Long> committed = offsets.restore();
-    restoredBaselines.putAll(committed);
-    if (committed.isEmpty()) {
-      return;
-    }
-    final Map<TopicPartition, Long> resume = new HashMap<>();
-    committed.forEach(
-        (partition, offset) -> resume.put(new TopicPartition(sourceTopic, partition), offset + 1));
-    consumer.seek(resume);
-    LOG.info("Stream runtime '{}' resuming from {}", instanceId, committed);
   }
 
   /** Requests a graceful stop; the source loop observes it within one poll timeout. */
@@ -360,20 +321,6 @@ public final class StreamRuntime<R> implements AutoCloseable {
     private RecordFilter recordFilter = RecordFilter.ACCEPT_ALL;
     private ToLongFunction<byte[]> payloadTimestamps;
     private IntFunction<Task<R>> taskFactory;
-    // Runtime-managed durability. Optional: a task that owns its durability (ownsDurability()) uses
-    // its own transaction and offset store instead, so these stay at their no-op defaults.
-    private TransactionRunner transactionRunner = Runnable::run;
-    private OffsetStore offsets =
-        new OffsetStore() {
-          @Override
-          public Map<Integer, Long> restore() {
-            return Map.of();
-          }
-
-          @Override
-          public void store(final int partition, final long offset) {}
-        };
-    private final List<Runnable> preCommitFlushes = new ArrayList<>();
     private RecordExceptionHandler recordExceptionHandler = RecordExceptionHandler.FAIL_FAST;
     private ToLongFunction<R> timestampExtractor;
     private int maxPoll = 5000;
@@ -440,27 +387,6 @@ public final class StreamRuntime<R> implements AutoCloseable {
     /** One {@link Task} per source partition. {@code partitionId -> task}. */
     public Builder<R> taskFactory(final IntFunction<Task<R>> taskFactory) {
       this.taskFactory = taskFactory;
-      return this;
-    }
-
-    public Builder<R> transactionRunner(final TransactionRunner transactionRunner) {
-      this.transactionRunner = transactionRunner;
-      return this;
-    }
-
-    public Builder<R> offsetStore(final OffsetStore offsets) {
-      this.offsets = offsets;
-      return this;
-    }
-
-    /**
-     * A producer flush to run before offsets advance (produce-before-commit), for the
-     * runtime-managed durability path where partitions share an output sink. May be added zero+
-     * times. A task that owns its durability flushes its own sink via {@link Task#preCommitFlush}
-     * instead.
-     */
-    public Builder<R> preCommitFlush(final Runnable flush) {
-      preCommitFlushes.add(flush);
       return this;
     }
 

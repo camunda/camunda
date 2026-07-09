@@ -35,7 +35,7 @@ import java.util.function.Predicate;
  *
  * <p>Checkpointing is split so the durable write can run off the owner thread: {@link #freeze()}
  * captures the delta-to-persist as immutable, already-serialized bytes and processing resumes
- * immediately; {@link #persistFrozen()} writes the frozen delta inside the transaction the runtime
+ * immediately; {@link #persistFrozen()} writes the frozen delta inside the transaction the task
  * supplies; {@link #completeFrozen(boolean)} drops it on success or merges it back on failure.
  * {@link #checkpoint()} composes the three synchronously for callers without an asynchronous
  * commit.
@@ -143,7 +143,7 @@ public final class SegmentMergingAggregation<K, ACC> {
    * Commit-interval tick as one synchronous cut: {@link #freeze()} the delta, persist it inside one
    * transaction, {@link #completeFrozen(boolean) complete}. Callers that overlap the persist with
    * processing drive the three steps themselves instead — freeze and complete on the owner thread,
-   * {@link #persistFrozen()} inside the transaction the runtime supplies.
+   * {@link #persistFrozen()} inside the transaction the task supplies.
    */
   public void checkpoint() {
     freeze();

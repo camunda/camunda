@@ -54,8 +54,8 @@ import org.slf4j.LoggerFactory;
  * <p>Rebalance callbacks fire on the client's heartbeat thread and only record the assignment
  * delta; this loop applies it — materialize a partition and submit its {@link PartitionActor}, or
  * request a revoked partition to stop and reap it once it has committed and closed. Materializing a
- * task that owns its durability but has no local state rebuilds it from the source start
- * (change-log-free handoff), skipping the stale pre-seek records of the current poll batch.
+ * task whose shard restored no local state rebuilds it from the source start (change-log-free
+ * handoff), skipping the stale pre-seek records of the current poll batch.
  *
  * @param <R> the decoded record type
  */
@@ -78,7 +78,6 @@ public final class SourceLoop<R> {
   private final ToLongFunction<byte[]> payloadTimestamps;
   private final IntFunction<Task<R>> taskFactory;
   private final Function<Partition<R>, PartitionActor<R>> partitionActorFactory;
-  private final Map<Integer, Long> restoredBaselines;
   private final int queueCapacity;
   private final int maxPoll;
   private final Duration pollTimeout;
@@ -116,7 +115,6 @@ public final class SourceLoop<R> {
       final ToLongFunction<byte[]> payloadTimestamps,
       final IntFunction<Task<R>> taskFactory,
       final Function<Partition<R>, PartitionActor<R>> partitionActorFactory,
-      final Map<Integer, Long> restoredBaselines,
       final int queueCapacity,
       final int maxPoll,
       final Duration pollTimeout,
@@ -130,7 +128,6 @@ public final class SourceLoop<R> {
     this.payloadTimestamps = payloadTimestamps;
     this.taskFactory = taskFactory;
     this.partitionActorFactory = partitionActorFactory;
-    this.restoredBaselines = restoredBaselines;
     this.queueCapacity = queueCapacity;
     this.maxPoll = maxPoll;
     this.pollTimeout = pollTimeout;
@@ -347,9 +344,9 @@ public final class SourceLoop<R> {
   }
 
   /**
-   * Materializes a partition's task, submits its actor, and registers it. A task that owns its
-   * durability but restored no local state is rebuilt from the source start (seek + queue reset),
-   * and the partition is noted so this poll's stale pre-seek records for it are skipped.
+   * Materializes a partition's task, submits its actor, and registers it. A task whose shard
+   * restored no local state is rebuilt from the source start (seek + queue reset), and the
+   * partition is noted so this poll's stale pre-seek records for it are skipped.
    */
   private PartitionActor<R> materialize(final int partitionId) {
     // A fresh materialization must not inherit pause state from a previous incarnation (the
@@ -360,12 +357,9 @@ public final class SourceLoop<R> {
     }
     final Task<R> task = taskFactory.apply(partitionId);
     task.init();
-    final long baseline =
-        task.ownsDurability()
-            ? task.restore()
-            : restoredBaselines.getOrDefault(partitionId, Task.NO_OFFSET);
+    final long baseline = task.restore();
     final PartitionQueue<R> queue = new PartitionQueue<>(queueCapacity);
-    if (task.ownsDurability() && baseline == Task.NO_OFFSET) {
+    if (baseline == Task.NO_OFFSET) {
       // Reassigned to a member with no local state for it: replay from the source start to rebuild
       // (change-log-free handoff). Discard any buffered/pre-seek records so none is processed.
       consumer.seekToBeginning(List.of(new TopicPartition(sourceTopic, partitionId)));

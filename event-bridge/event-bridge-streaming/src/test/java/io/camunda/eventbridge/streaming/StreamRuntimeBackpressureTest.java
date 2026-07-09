@@ -104,16 +104,17 @@ final class StreamRuntimeBackpressureTest {
         .resume(any());
 
     final Task<String> blockingTask =
-        record -> {
-          p1Processed.add(record);
-          try {
-            p1Unblocked.await();
-          } catch (final InterruptedException e) {
-            Thread.currentThread().interrupt();
-          }
-        };
+        task(
+            record -> {
+              p1Processed.add(record);
+              try {
+                p1Unblocked.await();
+              } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+              }
+            });
     final List<String> p2Processed = Collections.synchronizedList(new ArrayList<>());
-    final Task<String> fastTask = p2Processed::add;
+    final Task<String> fastTask = task(p2Processed::add);
 
     final StreamRuntime<String> runtime =
         StreamRuntime.<String>builder()
@@ -124,8 +125,6 @@ final class StreamRuntimeBackpressureTest {
             .deserializer(
                 (payload, partition, offset) -> new String(payload, StandardCharsets.UTF_8))
             .taskFactory(partition -> partition == 1 ? blockingTask : fastTask)
-            .transactionRunner(Runnable::run)
-            .offsetStore(noOpOffsets())
             .partitionQueueCapacity(2)
             .commitInterval(Duration.ZERO)
             .build();
@@ -195,9 +194,7 @@ final class StreamRuntimeBackpressureTest {
             .deserializer(
                 (payload, partition, offset) -> new String(payload, StandardCharsets.UTF_8))
             .recordFilter(payload -> new String(payload, StandardCharsets.UTF_8).startsWith("keep"))
-            .taskFactory(partition -> processed::add)
-            .transactionRunner(Runnable::run)
-            .offsetStore(noOpOffsets())
+            .taskFactory(partition -> task(processed::add))
             .partitionQueueCapacity(2)
             .commitInterval(Duration.ZERO)
             .build();
@@ -284,6 +281,11 @@ final class StreamRuntimeBackpressureTest {
           }
 
           @Override
+          public long restore() {
+            return 0L; // a real baseline, so materialization resumes rather than rebuilds
+          }
+
+          @Override
           public void close() {
             taskClosed.countDown();
           }
@@ -298,8 +300,6 @@ final class StreamRuntimeBackpressureTest {
             .deserializer(
                 (payload, partition, offset) -> new String(payload, StandardCharsets.UTF_8))
             .taskFactory(partition -> task)
-            .transactionRunner(Runnable::run)
-            .offsetStore(noOpOffsets())
             .partitionQueueCapacity(2)
             .commitInterval(Duration.ZERO)
             .build();
@@ -355,15 +355,18 @@ final class StreamRuntimeBackpressureTest {
     return new Event(offset, TOPIC, partition, value.getBytes(StandardCharsets.UTF_8));
   }
 
-  private static OffsetStore noOpOffsets() {
-    return new OffsetStore() {
+  /** A shard with a restored baseline of 0, so materialization resumes rather than rebuilds. */
+  private static Task<String> task(final Task<String> delegate) {
+    return new Task<>() {
       @Override
-      public Map<Integer, Long> restore() {
-        return Map.of();
+      public void process(final String record) {
+        delegate.process(record);
       }
 
       @Override
-      public void store(final int partition, final long offset) {}
+      public long restore() {
+        return 0L;
+      }
     };
   }
 }

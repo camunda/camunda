@@ -302,11 +302,6 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
   }
 
   @Override
-  public boolean ownsDurability() {
-    return true;
-  }
-
-  @Override
   public void init() {
     topology.init();
   }

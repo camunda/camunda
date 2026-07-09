@@ -11,14 +11,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.eventbridge.client.Consumer;
 import io.camunda.eventbridge.client.Event;
 import io.camunda.eventbridge.client.EventBridgeClient;
-import io.camunda.eventbridge.client.TopicPartition;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -31,9 +29,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.IntFunction;
 import org.junit.jupiter.api.Test;
 
 final class StreamRuntimeTest {
@@ -41,9 +39,9 @@ final class StreamRuntimeTest {
   private static final String TOPIC = "facts";
 
   @Test
-  void shouldRunOwnedBlockingCommitsOnTheConfiguredSinkExecutor() throws Exception {
-    // given — a runtime with a custom sink thread factory and one record for a task that owns its
-    // durability (nothing shared, so its blocking commit runs on the sink IO executor)
+  void shouldRunBlockingCommitsOnTheConfiguredSinkExecutor() throws Exception {
+    // given — a runtime with a custom sink thread factory and one record; the shard's blocking
+    // commit runs on the sink IO executor, never on the actor/source thread
     final Consumer consumer = mock(Consumer.class);
     final EventBridgeClient client = mock(EventBridgeClient.class);
     when(client.subscribe(any(), any(), any()))
@@ -63,15 +61,10 @@ final class StreamRuntimeTest {
           thread.setDaemon(true);
           return thread;
         };
-    final Task<String> owningTask =
+    final Task<String> task =
         new Task<>() {
           @Override
           public void process(final String record) {}
-
-          @Override
-          public boolean ownsDurability() {
-            return true;
-          }
 
           @Override
           public long restore() {
@@ -96,7 +89,7 @@ final class StreamRuntimeTest {
             .sourceTopic(TOPIC)
             .deserializer(
                 (payload, partition, offset) -> new String(payload, StandardCharsets.UTF_8))
-            .taskFactory(partition -> owningTask)
+            .taskFactory(partition -> task)
             .sinkIoThreads(1)
             .sinkThreadFactory(sinkFactory)
             .commitInterval(Duration.ZERO)
@@ -115,67 +108,10 @@ final class StreamRuntimeTest {
   }
 
   @Test
-  void shouldRunManagedBlockingCommitsOnThePersisterThread() throws Exception {
-    // given — one record for a task deferring durability to the runtime: every write of the shared
-    // offset store must happen on the cut persister's writer thread (the single shared-durability
-    // writer), never on a sink IO thread or the actor/source thread
-    final Consumer consumer = mock(Consumer.class);
-    final EventBridgeClient client = mock(EventBridgeClient.class);
-    when(client.subscribe(any(), any(), any()))
-        .thenReturn(CompletableFuture.completedFuture(consumer));
-    when(consumer.sendHeartbeat()).thenReturn(CompletableFuture.completedFuture(null));
-    when(consumer.poll(anyInt(), any()))
-        .thenReturn(List.of(new Event(5L, TOPIC, 1, "a".getBytes(StandardCharsets.UTF_8))))
-        .thenReturn(List.of());
-    when(consumer.commitOffset(any(), anyInt(), anyLong()))
-        .thenReturn(CompletableFuture.completedFuture(null));
-
-    final AtomicReference<String> commitThreadName = new AtomicReference<>();
-    final CountDownLatch committed = new CountDownLatch(1);
-
-    final StreamRuntime<String> runtime =
-        StreamRuntime.<String>builder()
-            .client(client)
-            .group("g")
-            .instanceId("i")
-            .sourceTopic(TOPIC)
-            .deserializer(
-                (payload, partition, offset) -> new String(payload, StandardCharsets.UTF_8))
-            .taskFactory(partition -> record -> {})
-            .transactionRunner(Runnable::run)
-            .offsetStore(
-                new OffsetStore() {
-                  @Override
-                  public Map<Integer, Long> restore() {
-                    return Map.of();
-                  }
-
-                  @Override
-                  public void store(final int partition, final long offset) {
-                    commitThreadName.set(Thread.currentThread().getName());
-                    committed.countDown();
-                  }
-                })
-            .commitInterval(Duration.ZERO)
-            .build();
-
-    // when
-    final Thread loop = new Thread(runtime::run, "runtime-under-test");
-    loop.start();
-
-    // then — the shared durable write ran on the persister thread (structural exclusion)
-    assertThat(committed.await(5, TimeUnit.SECONDS)).isTrue();
-    assertThat(commitThreadName.get()).isEqualTo("eb-cut-persister-" + TOPIC);
-
-    runtime.stop();
-    loop.join(TimeUnit.SECONDS.toMillis(5));
-  }
-
-  @Test
   void shouldProduceBeforeCommitAndPersistStateWithOffsetAtomically() throws Exception {
-    // given — a runtime whose collaborators record the exact order of the commit barrier
-    final List<String> order = new ArrayList<>();
-    final Map<Integer, Long> committedOffsets = new HashMap<>();
+    // given — a task journaling the exact order of its commit barrier
+    final List<String> order = Collections.synchronizedList(new ArrayList<>());
+    final Map<Integer, Long> committedOffsets = new ConcurrentHashMap<>();
     final CountDownLatch offsetCommitted = new CountDownLatch(1);
 
     final Consumer consumer = mock(Consumer.class);
@@ -203,27 +139,23 @@ final class StreamRuntimeTest {
           }
 
           @Override
+          public long restore() {
+            return 0L; // a real baseline, so materialization resumes rather than rebuilds
+          }
+
+          @Override
           public void flush() {
             order.add("task.flush");
           }
 
           @Override
-          public void checkpoint() {
-            order.add("task.checkpoint");
-          }
-        };
-
-    final OffsetStore offsets =
-        new OffsetStore() {
-          @Override
-          public Map<Integer, Long> restore() {
-            return Map.of();
-          }
-
-          @Override
-          public void store(final int partition, final long offset) {
+          public void commit(final long offset) {
+            // The shard's own atomic cut: state and offset in one transaction the task owns.
+            order.add("txn.begin");
             order.add("offset.store");
-            committedOffsets.put(partition, offset);
+            committedOffsets.put(1, offset);
+            order.add("task.checkpoint");
+            order.add("txn.end");
           }
         };
 
@@ -236,14 +168,6 @@ final class StreamRuntimeTest {
             .deserializer(
                 (payload, partition, offset) -> new String(payload, StandardCharsets.UTF_8))
             .taskFactory(partition -> task)
-            .transactionRunner(
-                operations -> {
-                  order.add("txn.begin");
-                  operations.run();
-                  order.add("txn.end");
-                })
-            .offsetStore(offsets)
-            .preCommitFlush(() -> order.add("preCommitFlush"))
             .commitInterval(Duration.ZERO)
             .build();
 
@@ -255,66 +179,17 @@ final class StreamRuntimeTest {
     loop.join(TimeUnit.SECONDS.toMillis(5));
 
     // then — the record was processed, and the barrier ran produce-before-commit with the offset
-    // and
-    // the checkpoint inside one transaction, before the source offset was committed.
+    // and the state inside the task's one transaction, before the source offset was committed.
     assertThat(processed).containsExactly("a");
     assertThat(committedOffsets).containsEntry(1, 5L);
     assertThat(order)
         .containsSubsequence(
             "task.flush",
-            "preCommitFlush",
             "txn.begin",
             "offset.store",
             "task.checkpoint",
             "txn.end",
             "commitOffset");
-  }
-
-  @Test
-  void shouldSeekToRestoredOffsetPlusOne() throws Exception {
-    // given — a durable offset of 10 for partition 1
-    final Consumer consumer = mock(Consumer.class);
-    final EventBridgeClient client = mock(EventBridgeClient.class);
-    when(client.subscribe(any(), any(), any()))
-        .thenReturn(CompletableFuture.completedFuture(consumer));
-    when(consumer.sendHeartbeat()).thenReturn(CompletableFuture.completedFuture(null));
-    lenient().when(consumer.poll(anyInt(), any())).thenReturn(List.of());
-
-    final CountDownLatch sought = new CountDownLatch(1);
-    final Map<TopicPartition, Long> seekArg = new HashMap<>();
-    doAnswerSeek(consumer, seekArg, sought);
-
-    final StreamRuntime<String> runtime =
-        StreamRuntime.<String>builder()
-            .client(client)
-            .group("g")
-            .instanceId("i")
-            .sourceTopic(TOPIC)
-            .deserializer(
-                (payload, partition, offset) -> new String(payload, StandardCharsets.UTF_8))
-            .taskFactory(partition -> mock(Task.class))
-            .transactionRunner(Runnable::run)
-            .offsetStore(
-                new OffsetStore() {
-                  @Override
-                  public Map<Integer, Long> restore() {
-                    return Map.of(1, 10L);
-                  }
-
-                  @Override
-                  public void store(final int partition, final long offset) {}
-                })
-            .build();
-
-    // when
-    final Thread loop = new Thread(runtime::run, "runtime-under-test");
-    loop.start();
-
-    // then — the consumer is sought to lastProcessed + 1
-    assertThat(sought.await(5, TimeUnit.SECONDS)).isTrue();
-    assertThat(seekArg).containsEntry(new TopicPartition(TOPIC, 1), 11L);
-    runtime.stop();
-    loop.join(TimeUnit.SECONDS.toMillis(5));
   }
 
   @Test
@@ -365,18 +240,12 @@ final class StreamRuntimeTest {
                       public void process(final String record) {
                         processed.add(record);
                       }
-                    })
-            .transactionRunner(Runnable::run)
-            .offsetStore(
-                new OffsetStore() {
-                  @Override
-                  public Map<Integer, Long> restore() {
-                    return Map.of();
-                  }
 
-                  @Override
-                  public void store(final int partition, final long offset) {}
-                })
+                      @Override
+                      public long restore() {
+                        return 0L; // a real baseline, so materialization resumes, not rebuilds
+                      }
+                    })
             .recordExceptionHandler(
                 (partition, offset, error) -> RecordExceptionHandler.Decision.SKIP)
             .commitInterval(Duration.ZERO)
@@ -445,23 +314,17 @@ final class StreamRuntimeTest {
                       }
 
                       @Override
+                      public long restore() {
+                        return 0L; // a real baseline, so materialization resumes, not rebuilds
+                      }
+
+                      @Override
                       public void advanceStreamTime(final long streamTimeMs) {
                         if (streamTimeMs >= 300L) {
                           tailTimeSeen.countDown();
                         }
                       }
                     })
-            .transactionRunner(Runnable::run)
-            .offsetStore(
-                new OffsetStore() {
-                  @Override
-                  public Map<Integer, Long> restore() {
-                    return Map.of();
-                  }
-
-                  @Override
-                  public void store(final int partition, final long offset) {}
-                })
             .commitInterval(Duration.ZERO)
             .punctuationInterval(Duration.ofMillis(10))
             .build();
@@ -527,22 +390,16 @@ final class StreamRuntimeTest {
                       }
 
                       @Override
+                      public long restore() {
+                        return 0L; // a real baseline, so materialization resumes, not rebuilds
+                      }
+
+                      @Override
                       public boolean needsCheckpoint() {
                         // Memory pressure exactly once: after the first record of the batch.
                         return processed.size() == 1;
                       }
                     })
-            .transactionRunner(Runnable::run)
-            .offsetStore(
-                new OffsetStore() {
-                  @Override
-                  public Map<Integer, Long> restore() {
-                    return Map.of();
-                  }
-
-                  @Override
-                  public void store(final int partition, final long offset) {}
-                })
             .commitInterval(Duration.ZERO)
             .build();
 
@@ -586,6 +443,11 @@ final class StreamRuntimeTest {
           public void process(final String record) {}
 
           @Override
+          public long restore() {
+            return 0L; // a real baseline, so materialization resumes rather than rebuilds
+          }
+
+          @Override
           public boolean needsCheckpoint() {
             return true;
           }
@@ -600,17 +462,6 @@ final class StreamRuntimeTest {
             .deserializer(
                 (payload, partition, offset) -> new String(payload, StandardCharsets.UTF_8))
             .taskFactory(partition -> alwaysFull)
-            .transactionRunner(Runnable::run)
-            .offsetStore(
-                new OffsetStore() {
-                  @Override
-                  public Map<Integer, Long> restore() {
-                    return Map.of();
-                  }
-
-                  @Override
-                  public void store(final int partition, final long offset) {}
-                })
             .commitInterval(Duration.ofHours(1))
             .build();
 
@@ -646,6 +497,11 @@ final class StreamRuntimeTest {
           public void process(final String record) {}
 
           @Override
+          public long restore() {
+            return 0L; // a real baseline, so materialization resumes rather than rebuilds
+          }
+
+          @Override
           public void punctuateWallClock(final long wallClockMs) {
             wallClockTicks.countDown();
           }
@@ -660,17 +516,6 @@ final class StreamRuntimeTest {
             .deserializer(
                 (payload, partition, offset) -> new String(payload, StandardCharsets.UTF_8))
             .taskFactory(partition -> task)
-            .transactionRunner(Runnable::run)
-            .offsetStore(
-                new OffsetStore() {
-                  @Override
-                  public Map<Integer, Long> restore() {
-                    return Map.of();
-                  }
-
-                  @Override
-                  public void store(final int partition, final long offset) {}
-                })
             .punctuationInterval(Duration.ofMillis(20))
             .commitInterval(Duration.ofHours(1))
             .build();
@@ -687,10 +532,10 @@ final class StreamRuntimeTest {
 
   @Test
   void shouldCommitEachPartitionInItsOwnTransaction() throws Exception {
-    // given — a poll batch spanning two partitions (committed concurrently by two processors)
+    // given — a poll batch spanning two partitions (committed concurrently by two shards)
     final Map<Integer, Long> committedOffsets = new ConcurrentHashMap<>();
+    final Map<Integer, Long> committedByTask = new ConcurrentHashMap<>();
     final AtomicInteger transactions = new AtomicInteger();
-    final AtomicInteger preCommitFlushes = new AtomicInteger();
     final CountDownLatch bothCommitted = new CountDownLatch(2);
 
     final Consumer consumer = mock(Consumer.class);
@@ -709,16 +554,24 @@ final class StreamRuntimeTest {
               return CompletableFuture.completedFuture(null);
             });
 
-    final Task<String> task =
-        new Task<>() {
-          @Override
-          public void process(final String record) {}
+    // One task instance per partition, each committing its own shard's transaction.
+    final IntFunction<Task<String>> taskFactory =
+        partitionId ->
+            new Task<>() {
+              @Override
+              public void process(final String record) {}
 
-          @Override
-          public void preCommitFlush() {
-            preCommitFlushes.incrementAndGet();
-          }
-        };
+              @Override
+              public long restore() {
+                return 0L; // a real baseline, so materialization resumes rather than rebuilds
+              }
+
+              @Override
+              public void commit(final long offset) {
+                transactions.incrementAndGet();
+                committedByTask.put(partitionId, offset);
+              }
+            };
 
     final StreamRuntime<String> runtime =
         StreamRuntime.<String>builder()
@@ -728,22 +581,7 @@ final class StreamRuntimeTest {
             .sourceTopic(TOPIC)
             .deserializer(
                 (payload, partition, offset) -> new String(payload, StandardCharsets.UTF_8))
-            .taskFactory(partition -> task)
-            .transactionRunner(
-                operations -> {
-                  transactions.incrementAndGet();
-                  operations.run();
-                })
-            .offsetStore(
-                new OffsetStore() {
-                  @Override
-                  public Map<Integer, Long> restore() {
-                    return Map.of();
-                  }
-
-                  @Override
-                  public void store(final int partition, final long offset) {}
-                })
+            .taskFactory(taskFactory)
             .commitInterval(Duration.ZERO)
             .build();
 
@@ -754,15 +592,15 @@ final class StreamRuntimeTest {
     runtime.stop();
     loop.join(TimeUnit.SECONDS.toMillis(5));
 
-    // then — each partition advanced independently, in its own transaction and pre-commit flush
+    // then — each partition advanced independently, its own shard cutting its own transaction
     assertThat(committedOffsets).containsEntry(1, 5L).containsEntry(2, 7L);
+    assertThat(committedByTask).containsEntry(1, 5L).containsEntry(2, 7L);
     assertThat(transactions.get()).isEqualTo(2);
-    assertThat(preCommitFlushes.get()).isEqualTo(2);
   }
 
   @Test
-  void shouldDelegateDurabilityToAnOwningTaskAndDedupTheResumeGap() throws Exception {
-    // given — a self-owning task restored at offset 4; the batch replays 3,4 and adds 5
+  void shouldRestoreTheBaselineFromTheTaskAndDedupTheResumeGap() throws Exception {
+    // given — a task restored at offset 4; the batch replays 3,4 and adds 5
     final List<String> processed = new ArrayList<>();
     final List<Long> committedByTask = new ArrayList<>();
     final CountDownLatch committed = new CountDownLatch(1);
@@ -781,13 +619,8 @@ final class StreamRuntimeTest {
     when(consumer.commitOffset(any(), anyInt(), anyLong()))
         .thenReturn(CompletableFuture.completedFuture(null));
 
-    final Task<String> owningTask =
+    final Task<String> task =
         new Task<>() {
-          @Override
-          public boolean ownsDurability() {
-            return true;
-          }
-
           @Override
           public long restore() {
             return 4L;
@@ -805,7 +638,6 @@ final class StreamRuntimeTest {
           }
         };
 
-    // no transactionRunner / offsetStore supplied — an owning task provides its own
     final StreamRuntime<String> runtime =
         StreamRuntime.<String>builder()
             .client(client)
@@ -814,7 +646,7 @@ final class StreamRuntimeTest {
             .sourceTopic(TOPIC)
             .deserializer(
                 (payload, partition, offset) -> new String(payload, StandardCharsets.UTF_8))
-            .taskFactory(partition -> owningTask)
+            .taskFactory(partition -> task)
             .commitInterval(Duration.ZERO)
             .build();
 
@@ -859,6 +691,11 @@ final class StreamRuntimeTest {
             processed.add(record);
             allProcessed.countDown();
           }
+
+          @Override
+          public long restore() {
+            return 0L; // a real baseline, so materialization resumes rather than rebuilds
+          }
         };
 
     final StreamRuntime<String> runtime =
@@ -870,17 +707,6 @@ final class StreamRuntimeTest {
             .deserializer(
                 (payload, partition, offset) -> new String(payload, StandardCharsets.UTF_8))
             .taskFactory(partition -> task)
-            .transactionRunner(Runnable::run)
-            .offsetStore(
-                new OffsetStore() {
-                  @Override
-                  public Map<Integer, Long> restore() {
-                    return Map.of();
-                  }
-
-                  @Override
-                  public void store(final int partition, final long offset) {}
-                })
             .build();
 
     // when
@@ -895,23 +721,5 @@ final class StreamRuntimeTest {
     assertThat(processed).containsExactlyInAnyOrder("a", "b", "x", "y");
     assertThat(processed).containsSubsequence("a", "b");
     assertThat(processed).containsSubsequence("x", "y");
-  }
-
-  @SuppressWarnings("unchecked")
-  private static void doAnswerSeek(
-      final Consumer consumer,
-      final Map<TopicPartition, Long> captured,
-      final CountDownLatch sought) {
-    final AtomicBoolean once = new AtomicBoolean();
-    org.mockito.Mockito.doAnswer(
-            invocation -> {
-              if (once.compareAndSet(false, true)) {
-                captured.putAll((Map<TopicPartition, Long>) invocation.getArgument(0));
-                sought.countDown();
-              }
-              return null;
-            })
-        .when(consumer)
-        .seek(any());
   }
 }

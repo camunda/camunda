@@ -19,7 +19,6 @@ import io.camunda.eventbridge.client.EventBridgeClient;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -207,17 +206,6 @@ final class StreamRuntimeGroupTest {
         .sourceTopic(TOPIC)
         .deserializer((payload, partition, offset) -> new String(payload, StandardCharsets.UTF_8))
         .taskFactory(partition -> mockTask())
-        .transactionRunner(Runnable::run)
-        .offsetStore(
-            new OffsetStore() {
-              @Override
-              public Map<Integer, Long> restore() {
-                return Map.of();
-              }
-
-              @Override
-              public void store(final int partition, final long offset) {}
-            })
         .build();
   }
 

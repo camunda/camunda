@@ -426,11 +426,6 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
   }
 
   @Override
-  public boolean ownsDurability() {
-    return true;
-  }
-
-  @Override
   public void init() {
     topology.init();
   }

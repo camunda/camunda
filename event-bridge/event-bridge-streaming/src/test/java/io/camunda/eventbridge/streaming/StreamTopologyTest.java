@@ -36,7 +36,7 @@ final class StreamTopologyTest {
     // given — a stage factory whose state (a counter) is created per partition
     final Map<Integer, long[]> counters = new HashMap<>();
     final StreamTopology<String> topology =
-        new StreamTopology<String>()
+        new StreamTopology<String>(partition -> inMemoryShard())
             .add(
                 partitionId -> {
                   final long[] count = counters.computeIfAbsent(partitionId, p -> new long[1]);
@@ -61,7 +61,7 @@ final class StreamTopologyTest {
     final Map<Integer, long[]> counters = new HashMap<>();
     final CountDownLatch processed = new CountDownLatch(3);
     final StreamTopology<String> topology =
-        new StreamTopology<String>()
+        new StreamTopology<String>(partition -> inMemoryShard())
             .add(
                 partitionId -> {
                   final long[] count = counters.computeIfAbsent(partitionId, p -> new long[1]);
@@ -107,5 +107,27 @@ final class StreamTopologyTest {
     // then — each partition ran its own processor with partition-local state
     assertThat(counters.get(1)[0]).isEqualTo(2L);
     assertThat(counters.get(2)[0]).isEqualTo(1L);
+  }
+
+  /** A heap shard with a restored baseline of 0, so materialization resumes, not rebuilds. */
+  private static ShardDurability inMemoryShard() {
+    return new ShardDurability() {
+      private long offset;
+
+      @Override
+      public void runInTransaction(final Runnable operations) {
+        operations.run();
+      }
+
+      @Override
+      public long readOffset() {
+        return offset;
+      }
+
+      @Override
+      public void persistOffset(final long committed) {
+        offset = committed;
+      }
+    };
   }
 }
