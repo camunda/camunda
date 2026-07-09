@@ -25,6 +25,23 @@ on:
         required: false
         type: boolean
         default: false
+      existing-host:
+        description: |
+          Iteration shortcut (8.10 only): reuse an already-deployed preview env
+          (host FQDN, e.g. smoke810-123.camunda.camunda.cloud) instead of
+          building images and deploying. Chart changes reach the existing env
+          via ArgoCD branch tracking, so a push + this input skips ~20min of
+          build/deploy per iteration.
+        required: false
+        type: string
+        default: ''
+      fast-feedback:
+        description: |
+          Iteration shortcut: run Playwright with --retries=0 so a red result
+          arrives in minutes instead of retry-multiplied timeouts.
+        required: false
+        type: boolean
+        default: false
 
 env:
   TEST_OWNER: '@camunda/monorepo-devops-team'
@@ -63,7 +80,7 @@ jobs:
 
   deploy-8-10:
     name: Deploy 8.10 Preview Environment
-    if: contains(fromJSON('["all", "8.10", ""]'), inputs.version)
+    if: contains(fromJSON('["all", "8.10", ""]'), inputs.version) && inputs.existing-host == ''
     uses: ./.github/workflows/preview-env-build-and-deploy.yml
     secrets: inherit
     with:
@@ -81,8 +98,8 @@ jobs:
     - deploy-8-8
     - deploy-8-9
     - deploy-8-10
-    # Run if at least one deploy succeeded
-    if: always() && (needs.deploy-8-10.result == 'success' || needs.deploy-8-9.result == 'success' || needs.deploy-8-8.result == 'success')
+    # Run if at least one deploy succeeded (or an existing preview is reused)
+    if: always() && (needs.deploy-8-10.result == 'success' || needs.deploy-8-9.result == 'success' || needs.deploy-8-8.result == 'success' || inputs.existing-host != '')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -100,8 +117,8 @@ jobs:
           host: ${{ needs.deploy-8-9.outputs.host-name }}
           run: ${{ needs.deploy-8-9.result == 'success' }}
         - version: '8.10'
-          host: ${{ needs.deploy-8-10.outputs.host-name }}
-          run: ${{ needs.deploy-8-10.result == 'success' }}
+          host: ${{ inputs.existing-host || needs.deploy-8-10.outputs.host-name }}
+          run: ${{ inputs.existing-host != '' || needs.deploy-8-10.result == 'success' }}
         exclude:
         - deployment:
             run: false
@@ -144,6 +161,27 @@ jobs:
           # Map preview hostname to localhost
           echo "127.0.0.1 ${PREVIEW_HOST}" | sudo tee -a /etc/hosts
           echo "✅ Added ${PREVIEW_HOST} to /etc/hosts"
+
+          # Backends behind Traefik emit absolute http:// Locations for their
+          # trailing-slash redirects (they ignore X-Forwarded-Proto). In production
+          # Traefik's :80 entrypoint bounces those back to https; the tsh tunnel
+          # only serves :443, so mirror that bounce with a tiny redirector on :80.
+          sudo python3 -c '
+          import http.server, socketserver
+          class R(http.server.BaseHTTPRequestHandler):
+              def _r(self):
+                  self.send_response(308)
+                  self.send_header("Location", "https://" + (self.headers.get("Host") or "") + self.path)
+                  self.end_headers()
+              do_GET = do_POST = do_HEAD = do_PUT = do_DELETE = do_PATCH = _r
+              def log_message(self, *a): pass
+          socketserver.TCPServer(("127.0.0.1", 80), R).serve_forever()' &
+          sleep 2
+          if ! nc -z 127.0.0.1 80; then
+            echo "::error::Failed to start http->https redirector on port 80"
+            exit 1
+          fi
+          echo "✅ http->https redirector running on port 80"
 
       - name: Generate GitHub Token
         id: github-token
@@ -199,6 +237,11 @@ jobs:
           PLAYWRIGHT_BASE_URL: https://${{ matrix.deployment.host }}
           PROJECT: chromium
           CI: true
+          # Preview envs are deployed with internalAuthBypass.enabled=true: the
+          # client tunnels in from the internal (10/8) network via Teleport, and
+          # internal source IPs skip Vouch at the gateway (see c8sm chart
+          # global.preview.ingress.internalAuthBypass). No client-side header is
+          # required.
           DISTRO_QA_E2E_TESTS_IDENTITY_FIRSTUSER_PASSWORD: demo
           DISTRO_QA_E2E_TESTS_KEYCLOAK_CLIENTS_SECRET: admin
           DISTRO_QA_E2E_TESTS_KEYCLOAK_PASSWORD: admin
@@ -207,7 +250,7 @@ jobs:
           npx playwright test "tests/${MINOR_VERSION}/smoke-tests.spec.ts" \
             --project=chromium \
             --reporter=list,html \
-            --retries=2
+            --retries=${{ inputs.fast-feedback && '0' || '2' }}
 
       - name: Upload Test Artifacts
         if: failure()
