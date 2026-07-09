@@ -18,10 +18,12 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -69,6 +71,35 @@ public final class JobTimeOutTest {
     assertThat(jobEvents)
         .extracting(Record::getIntent)
         .containsExactly(JobIntent.CREATED, JobIntent.TIMED_OUT);
+  }
+
+  @Test
+  public void shouldTimeOutLeasedJobWithoutLease() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final long timeout = 10L;
+    final Record<JobBatchRecordValue> batch =
+        ENGINE.jobs().withType(jobType).withTimeout(timeout).withLease().activate();
+    final long jobKey = batch.getValue().getJobKeys().get(0);
+    final String leaseToken = batch.getValue().getJobs().get(0).getLeaseToken();
+    assertThat(leaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
+
+    // when
+    ENGINE.increaseTime(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL);
+
+    // then
+    final Record<JobRecordValue> timedOutRecord =
+        jobRecords(TIMED_OUT).withRecordKey(jobKey).getFirst();
+    Assertions.assertThat(timedOutRecord)
+        .describedAs("time-out is engine-internal and must never be fenced by a lease token")
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(TIMED_OUT);
+
+    // and
+    final Record<JobBatchRecordValue> reactivatedBatch = ENGINE.jobs().withType(jobType).activate();
+    assertThat(reactivatedBatch.getValue().getJobKeys())
+        .describedAs("the timed-out job became activatable again")
+        .containsExactly(jobKey);
   }
 
   @Test

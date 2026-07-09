@@ -540,6 +540,46 @@ public final class FailJobTest {
   }
 
   @Test
+  public void shouldRecurAfterBackoffWithoutLeaseWhenFailedWithMatchingLease() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).withLease().activate(username);
+    final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
+    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
+    final String leaseToken = job.getLeaseToken();
+    assertThat(leaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
+
+    final Duration backOff = Duration.ofDays(1);
+    final Record<JobRecordValue> failRecord =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .ofInstance(job.getProcessInstanceKey())
+            .withLeaseToken(leaseToken)
+            .withRetries(3)
+            .withBackOff(backOff)
+            .fail();
+    Assertions.assertThat(failRecord)
+        .describedAs("fail is fenced, so it needs the matching lease token to be accepted")
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(FAILED);
+
+    // when the backoff elapses
+    ENGINE.increaseTime(
+        backOff.plus(Duration.ofMillis(JobBackoffCheckScheduler.BACKOFF_RESOLUTION)));
+
+    // then
+    final Record<JobRecordValue> recurredRecord =
+        jobRecords(JobIntent.RECURRED_AFTER_BACKOFF).withType(jobType).getFirst();
+    Assertions.assertThat(recurredRecord)
+        .describedAs("recur-after-backoff is engine-internal and must never be fenced")
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(JobIntent.RECURRED_AFTER_BACKOFF)
+        .hasKey(jobKey);
+  }
+
+  @Test
   public void shouldRejectJobFailForBannedProcessInstance() {
     // given
     final Record<JobRecordValue> jobCreated = ENGINE.createJob(jobType, PROCESS_ID);
