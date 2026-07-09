@@ -415,6 +415,18 @@ class ClientStreamManagerTest {
     assertThat(stream.isConnected(server)).isTrue();
   }
 
+  @Test
+  void shouldHandleRestartFromUnknownServerGracefully() {
+    // given — a stream exists but this server never joined any group
+    clientStreamManager.add(streamType, metadata, NOOP_CONSUMER, DEFAULT_PHYSICAL_TENANT_ID);
+    final MemberId unknownServer = MemberId.from("never-joined");
+
+    // when / then — no exception, stream stays unregistered with unknown server
+    clientStreamManager.onServerRestarted(unknownServer);
+    final var stream = registry.list().stream().findFirst().orElseThrow();
+    assertThat(stream.isConnected(unknownServer)).isFalse();
+  }
+
   private UUID getServerStreamId(final ClientStreamId clientStreamId) {
     return registry.getClient(clientStreamId).orElseThrow().serverStream().streamId();
   }
