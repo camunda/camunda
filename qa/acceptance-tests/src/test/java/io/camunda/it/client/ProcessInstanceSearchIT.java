@@ -1506,6 +1506,99 @@ public class ProcessInstanceSearchIT {
   }
 
   @Test
+  void shouldFilterByTenantIdAloneReturnsAllInstances() {
+    // given - all seeded instances belong to the default tenant
+    final int expectedTotal = PROCESS_INSTANCES.size() + 1; // +1 for spawned child_process_v1
+
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(f -> f.tenantId("<default>"))
+            .page(p -> p.limit(100))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.page().totalItems()).isEqualTo(expectedTotal);
+    assertThat(result.items()).allMatch(pi -> "<default>".equals(pi.getTenantId()));
+  }
+
+  @Test
+  void shouldReturnEmptyForNonExistentProcessDefinitionId() {
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(f -> f.processDefinitionId(b -> b.eq("non-existent-process-id")))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).isEmpty();
+  }
+
+  @Test
+  void shouldCombineStateAndProcessDefinitionIdFilterToNarrowResults() {
+    // given
+    final long expectedKey =
+        PROCESS_INSTANCES.stream()
+            .filter(p -> Objects.equals("service_tasks_v2", p.getBpmnProcessId()))
+            .findFirst()
+            .orElseThrow()
+            .getProcessInstanceKey();
+
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(f -> f.state(ACTIVE).processDefinitionId(b -> b.eq("service_tasks_v2")))
+            .send()
+            .join();
+
+    // then - AND semantics: both predicates must match simultaneously
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getProcessInstanceKey()).isEqualTo(expectedKey);
+    assertThat(result.items().getFirst().getState()).isEqualTo(ACTIVE);
+  }
+
+  @Test
+  void shouldReturnEmptyWhenStateAndProcessDefinitionIdAreContradictory() {
+    // service_tasks_v2 has only ACTIVE instances; COMPLETED + service_tasks_v2 is impossible
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(f -> f.state(COMPLETED).processDefinitionId(b -> b.eq("service_tasks_v2")))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).isEmpty();
+  }
+
+  @Test
+  void shouldSortByStartDateAscProducesChronologicalOrder() {
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .sort(s -> s.startDate().asc())
+            .page(p -> p.limit(100))
+            .send()
+            .join();
+
+    // then - each startDate must not be after the next
+    final var startDates = result.items().stream().map(ProcessInstance::getStartDate).toList();
+    assertThat(startDates).hasSizeGreaterThanOrEqualTo(2);
+    for (int i = 0; i < startDates.size() - 1; i++) {
+      assertThat(startDates.get(i))
+          .as("startDate at index %d should not be after index %d", i, i + 1)
+          .isBeforeOrEqualTo(startDates.get(i + 1));
+    }
+  }
+
+  @Test
   void shouldReturnEmptyResultForIncorrectIncidentErrorHashCode() {
     final var result =
         camundaClient
