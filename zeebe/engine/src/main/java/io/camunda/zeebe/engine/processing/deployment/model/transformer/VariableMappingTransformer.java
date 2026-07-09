@@ -99,61 +99,58 @@ public final class VariableMappingTransformer {
   }
 
   /**
-   * Detects the secret references used in the given input mappings, keyed by the JSON pointer (RFC
-   * 6901) of the leaf the secret value belongs to, e.g. {@code /tokens/token}. The pointer is the
-   * mapping's dotted target path followed by the context path of the reference within the source
-   * (see {@link SecretReference.Located}); for a scalar source the context path is empty and the
-   * pointer is just the target, while a reference nested in a FEEL context (e.g. {@code foo -> {x2:
-   * camunda.secrets.x}}) is keyed by {@code /foo/x2}.
+   * Detects the secrets referenced by the given input mappings, keyed by the JSON pointer (RFC
+   * 6901) of the leaf each secret belongs to — the mapping's dotted target plus the reference's
+   * FEEL context path. Examples: {@code "Bearer " + camunda.secrets.token -> tokens.t} gives {@code
+   * /tokens/t}; {@code {x2: camunda.secrets.x} -> foo} gives {@code /foo/x2}. The pointer lets job
+   * activation replace the reference in the job variables via a Jackson {@code JsonPointer}; the
+   * conversion happens once, here at deploy time.
    *
-   * <p>The pointer is stored so the job-activation path can replace the reference in the job
-   * variables (a Jackson document) natively via a Jackson {@code JsonPointer}, without converting
-   * the path on the hot path; the dotted-to-pointer conversion happens once, here at deploy time.
-   *
-   * <p>Only references used as expressions are detected; references inside string literals or in
-   * static (non-expression) values are ignored (see {@link SecretReference}). Mappings without any
-   * reference are omitted from the result.
+   * <p>Mappings with no reference are omitted (see {@link SecretReference} for what counts).
    */
   public Map<String, Set<SecretReference>> detectSecretReferences(
       final Collection<? extends ZeebeMapping> inputMappings,
       final ExpressionLanguage expressionLanguage) {
-    final var secretReferences = new LinkedHashMap<String, Set<SecretReference>>();
+    final var secretsByPointer = new LinkedHashMap<String, Set<SecretReference>>();
     for (final ZeebeMapping mapping : inputMappings) {
       final var source = mapping.getSource();
       if (source == null) {
         continue;
       }
-      final var expression = expressionLanguage.parseExpression(source);
-      for (final var located : SecretReference.parse(expression)) {
-        final var pointer = toJsonPointer(mapping.getTarget(), located.path());
-        secretReferences
-            .computeIfAbsent(pointer, key -> new LinkedHashSet<>())
-            .add(located.reference());
+      final var target = mapping.getTarget();
+      for (final var detected : SecretReference.parse(expressionLanguage.parseExpression(source))) {
+        secretsByPointer
+            .computeIfAbsent(toJsonPointer(target, detected.path()), key -> new LinkedHashSet<>())
+            .add(detected.secret());
       }
     }
-    return secretReferences;
+    return secretsByPointer;
   }
 
   /**
-   * Builds the JSON pointer (RFC 6901) of a secret's leaf from the dotted variable-mapping target
-   * path (e.g. {@code tokens.token}) and the context path of the reference within the source (e.g.
-   * {@code [x2]}). Dots are the nesting separators used by input mappings, so each target segment
-   * becomes a pointer segment, followed by each context-path segment; {@code ~} and {@code /}
-   * inside a segment are escaped per RFC 6901 ({@code ~} -> {@code ~0}, {@code /} -> {@code ~1}).
+   * Builds the RFC 6901 JSON pointer of a secret's leaf, so job activation can address it directly
+   * in the job-variables document with JSON parser. Examples:
+   *
+   * <ul>
+   *   <li>direct: {@code tokens.token -> camunda.secrets.token } (empty context path) → {@code
+   *       /tokens/token};
+   *   <li>nested: {@code foo -> {x2: camunda.secrets.x}} (context path {@code [x2]}) → {@code
+   *       /foo/x2}.
+   * </ul>
+   *
+   * <p>{@code ~} and {@code /} are escaped ({@code ~} → {@code ~0}, {@code /} → {@code ~1}) because
+   * both are reserved in a pointer: an unescaped {@code /} inside a segment (e.g. a backtick FEEL
+   * name like {@code `a/b`}) would be read as a separator and wrongly split the segment. {@code ~}
+   * is replaced first, otherwise the {@code ~1} produced for {@code /} would be escaped again.
    */
   private static String toJsonPointer(final String targetPath, final List<String> contextPath) {
+    final var segments = new ArrayList<>(Arrays.asList(targetPath.split("\\.")));
+    segments.addAll(contextPath);
     final var pointer = new StringBuilder();
-    for (final String segment : targetPath.split("\\.")) {
-      appendPointerSegment(pointer, segment);
-    }
-    for (final String segment : contextPath) {
-      appendPointerSegment(pointer, segment);
+    for (final String segment : segments) {
+      pointer.append('/').append(segment.replace("~", "~0").replace("/", "~1"));
     }
     return pointer.toString();
-  }
-
-  private static void appendPointerSegment(final StringBuilder pointer, final String segment) {
-    pointer.append('/').append(segment.replace("~", "~0").replace("/", "~1"));
   }
 
   private List<Mapping> toMappings(

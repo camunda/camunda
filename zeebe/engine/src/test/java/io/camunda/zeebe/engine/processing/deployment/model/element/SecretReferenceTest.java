@@ -14,7 +14,7 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
-import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference.Located;
+import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference.DetectedSecret;
 import java.time.InstantSource;
 import java.util.Arrays;
 import java.util.List;
@@ -132,7 +132,7 @@ class SecretReferenceTest {
 
     // then - the literal 'y' is ignored; each reference carries the keys of its enclosing context
     assertThat(located)
-        .extracting(l -> l.path(), l -> l.reference())
+        .extracting(DetectedSecret::path, DetectedSecret::secret)
         .containsExactlyInAnyOrder(
             tuple(List.of("a"), new SecretReference("x")),
             tuple(List.of("c", "d"), new SecretReference("z")));
@@ -147,7 +147,7 @@ class SecretReferenceTest {
     final var located = SecretReference.parse(expressionLanguage.parseExpression(source));
 
     // then
-    assertThat(located).extracting(Located::path).containsExactly(List.of());
+    assertThat(located).extracting(DetectedSecret::path).containsExactly(List.of());
   }
 
   @Test
@@ -189,7 +189,7 @@ class SecretReferenceTest {
 
   private Set<SecretReference> referencesIn(final String source) {
     return SecretReference.parse(expressionLanguage.parseExpression(source)).stream()
-        .map(Located::reference)
+        .map(DetectedSecret::secret)
         .collect(Collectors.toSet());
   }
 

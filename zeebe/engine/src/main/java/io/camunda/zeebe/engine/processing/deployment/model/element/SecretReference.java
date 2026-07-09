@@ -22,99 +22,73 @@ import scala.Tuple2;
 import scala.jdk.javaapi.CollectionConverters;
 
 /**
- * A reference to a secret using the {@code camunda.secrets.<name>} format.
+ * A reference to a secret in the {@code camunda.secrets.<name>} format, used in an input mapping.
  *
- * <p>References are detected from the parsed FEEL abstract syntax tree, not by matching the raw
- * source text, so detection follows the exact grammar the engine evaluates. The variable references
- * within an expression are extracted by feel-scala ({@link
- * ParsedExpression#getVariableReferences()} — the same mechanism used for variable-dependency
- * tracking); a reference is a secret when its fully-qualified name starts with {@code
- * camunda.secrets}. This means:
+ * <p>Detection works on the parsed FEEL AST (feel-scala's variable references), not the raw text,
+ * so it follows the grammar the engine evaluates. What this implies:
  *
  * <ul>
- *   <li>only FEEL <em>expressions</em> are scanned; a static value (a source that does not start
- *       with the {@code =} marker) is parsed as a plain string and never contains references;
- *   <li>a reference inside a FEEL string literal (e.g. {@code ="camunda.secrets.token"}) is a
- *       string constant, not a variable reference, so it stays literal &mdash; this prevents secret
- *       injection where a runtime value that looks like a reference would be resolved;
- *   <li>whitespace and line breaks around the dots ({@code camunda . secrets . token}), unicode
- *       names ({@code camunda.secrets.tokén}), backtick-escaped names ({@code
- *       camunda.secrets.`my-secret`}), trailing path access ({@code camunda.secrets.token.length})
- *       and FEEL comments are all handled by feel-scala.
- * </ul>
- *
- * <p>To know <em>where</em> a reference sits (for the JSON pointer of the value it produces), the
- * enclosing FEEL context is walked here: each context entry is descended and its key recorded as a
- * path segment. Known limitations &mdash; a reference that is not detected is simply not resolved,
- * so nothing leaks:
- *
- * <ul>
- *   <li>root shadowing is not accounted for: a bound name equal to {@code camunda} (a {@code for},
- *       {@code some} or {@code every} iterator, a function parameter, or a context key, e.g. {@code
- *       for camunda in [...] return camunda.secrets.token}) does not suppress the reference, so it
- *       is still reported &mdash; feel-scala only suppresses whole-name matches, not qualified
- *       paths rooted at the bound name;
- *   <li>a context nested inside a non-context expression (e.g. {@code =if c then {x:
- *       camunda.secrets.token} else null}) is detected but reported at the enclosing path, not at
- *       {@code x};
- *   <li>forms that do not parse to a plain {@code camunda.secrets.<name>} path, e.g. {@code
- *       (camunda).secrets.token} or {@code get value(camunda.secrets, "token")}, are not detected.
+ *   <li>only expressions are scanned; a static value (no leading {@code =}) is a plain string;
+ *   <li>a reference inside a string literal (e.g. {@code ="camunda.secrets.token"}) stays literal,
+ *       so a runtime value that merely looks like a reference is never resolved (injection-safe);
+ *   <li>FEEL variants — whitespace, unicode, backtick names, trailing access, comments — are
+ *       handled by feel-scala.
  * </ul>
  */
 @NullMarked
 public record SecretReference(String name) {
 
-  /** The root variable a reference must be anchored to. */
   private static final String ROOT = "camunda";
-
-  /** The namespace segment that follows the root. */
   private static final String NAMESPACE = "secrets";
 
-  /** The number of leading path segments a {@code camunda.secrets.<name>} reference needs. */
+  /** Segments a {@code camunda.secrets.<name>} reference needs: root, namespace and name. */
   private static final int MINIMUM_SEGMENTS = 3;
 
   /**
-   * Parses all secret references used as expressions in a variable-mapping source.
-   *
-   * @param expression the parsed source of an input mapping, e.g. {@code ="Bearer " +
-   *     camunda.secrets.token}
-   * @return each detected reference together with the context path (the keys of any enclosing FEEL
-   *     context) at which it occurs; empty when the source is not a FEEL expression or contains no
-   *     references
+   * Parses the secret references used as expressions in a mapping source, each with the FEEL
+   * context path where it occurs ({@code ="Bearer " + camunda.secrets.token} → one reference at the
+   * empty path). Empty when the source is not a FEEL expression or holds no reference.
    */
-  public static List<Located> parse(@Nullable final Expression expression) {
+  public static List<DetectedSecret> parse(@Nullable final Expression expression) {
     if (!(expression instanceof final FeelExpression feelExpression)) {
       // static values, null sources, and invalid expressions never contain references
       return List.of();
     }
-    final var located = new ArrayList<Located>();
-    collect(feelExpression.getParsedExpression().expression(), new ArrayDeque<>(), located);
-    return located;
+    final var secrets = new ArrayList<DetectedSecret>();
+    collect(feelExpression.getParsedExpression().expression(), new ArrayDeque<>(), secrets);
+    return secrets;
   }
 
   /**
-   * Collects secret references from a FEEL AST node. A context is descended key by key so each
-   * reference keeps the path where it occurs; any other expression is handed to feel-scala, which
-   * extracts its variable references (excluding literals, comments and shadowed names).
+   * Walks a FEEL AST node, recording each secret reference with its enclosing context path. A
+   * context is descended key by key; any other node is handed to feel-scala for its variable
+   * references (which already exclude literals, comments and bound names).
    */
   private static void collect(
-      final Exp node, final Deque<String> contextPath, final List<Located> out) {
+      final Exp node, final Deque<String> path, final List<DetectedSecret> secrets) {
     if (node instanceof final ConstContext context) {
+      // keep track of nested paths
+      // foo -> {x: camunda.secrets.x} will have path ["foo", "x"]
       for (final Tuple2<String, Exp> entry : CollectionConverters.asJava(context.entries())) {
-        contextPath.addLast(entry._1());
-        collect(entry._2(), contextPath, out);
-        contextPath.removeLast();
+        path.addLast(entry._1());
+        collect(entry._2(), path, secrets);
+        path.removeLast();
       }
       return;
     }
     for (final var reference : new ParsedExpression(node, "").getVariableReferences()) {
       final var qualifiedName = reference.getFullQualifiedName();
-      if (qualifiedName.size() >= MINIMUM_SEGMENTS
-          && ROOT.equals(qualifiedName.get(0))
-          && NAMESPACE.equals(qualifiedName.get(1))) {
-        out.add(new Located(List.copyOf(contextPath), new SecretReference(qualifiedName.get(2))));
+      if (isSecretReference(qualifiedName)) {
+        final var secret = new SecretReference(qualifiedName.get(2));
+        secrets.add(new DetectedSecret(List.copyOf(path), secret));
       }
     }
+  }
+
+  private static boolean isSecretReference(final List<String> qualifiedName) {
+    return qualifiedName.size() >= MINIMUM_SEGMENTS
+        && ROOT.equals(qualifiedName.get(0))
+        && NAMESPACE.equals(qualifiedName.get(1));
   }
 
   /** The full reference as it appears in an expression, e.g. {@code camunda.secrets.token}. */
@@ -123,11 +97,9 @@ public record SecretReference(String name) {
   }
 
   /**
-   * A secret reference together with the context path where it occurs within a mapping source. The
-   * path holds the keys of any enclosing FEEL context, so it is empty for a scalar source (e.g.
-   * {@code ="Bearer " + camunda.secrets.token}) and {@code [x2]} for a reference nested in a
-   * context (e.g. {@code ={x2: camunda.secrets.token}}). It is later appended to the mapping target
-   * to form the JSON pointer of the leaf the secret value belongs to.
+   * A secret reference with the FEEL context path where it occurs: empty for a scalar source,
+   * {@code [x]} for {@code ={x: camunda.secrets.token}}. The path is appended to the mapping target
+   * to form the secret leaf's JSON pointer.
    */
-  public record Located(List<String> path, SecretReference reference) {}
+  public record DetectedSecret(List<String> path, SecretReference secret) {}
 }
