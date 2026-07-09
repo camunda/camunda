@@ -103,6 +103,21 @@ public final class SegmentMergingAggregation<K, ACC> {
 
   /** Folds one (deduped) segment delta into {@code cell}'s running total and marks it changed. */
   public void merge(final Windowed<K> cell, final ACC delta) {
+    merge(cell, delta, windowEnd(cell));
+  }
+
+  /**
+   * Folds one (deduped) segment delta into {@code cell}'s running total and marks it changed.
+   *
+   * <p>{@code eventTimeHint} is an upper bound on the event times the delta covers, driving this
+   * operator's stream-time clock. For a finest-granularity cell that is its own window end (the
+   * two-arg overload). A caller rolling finer deltas up into a <em>coarser</em> window must pass
+   * the finer window's end instead: using the coarse window's end would leap stream time a whole
+   * coarse window ahead on the tier's first delta, eroding every sibling cell's grace by up to one
+   * window size and finalizing them early — late finer deltas would then be dropped and the coarse
+   * tier would undercount relative to the finest.
+   */
+  public void merge(final Windowed<K> cell, final ACC delta, final long eventTimeHint) {
     // Drop deltas for a window that already closed and was evicted: folding one would resurrect the
     // cell and the idempotent sink would overwrite its finalized value.
     if (maxEventTime != Long.MIN_VALUE && windowEnd(cell) + windows.graceMs() <= maxEventTime) {
@@ -123,7 +138,7 @@ public final class SegmentMergingAggregation<K, ACC> {
     }
     open.markChanged(cell);
     serializedSinceFlush.remove(cell); // the cached serialized form (if any) is stale now
-    maxEventTime = Math.max(maxEventTime, windowEnd(cell));
+    maxEventTime = Math.max(maxEventTime, eventTimeHint);
   }
 
   /** Wall-clock tick: converge the serving view for the cells changed since the last flush. */
