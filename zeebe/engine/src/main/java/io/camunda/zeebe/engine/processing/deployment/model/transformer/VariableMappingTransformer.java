@@ -11,6 +11,7 @@ import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.impl.NullExpression;
 import io.camunda.zeebe.el.impl.StaticExpression;
+import io.camunda.zeebe.engine.processing.deployment.model.element.InputMappings;
 import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeMapping;
 import java.util.ArrayList;
@@ -77,7 +78,11 @@ public final class VariableMappingTransformer {
 
   private static final String EXPRESSION_MARKER = "=";
 
-  public Expression transformInputMappings(
+  /**
+   * Transforms the input mappings into the FEEL expression that produces the local variables and,
+   * in the same pass, detects the secret references they use (see {@link #detectSecretReferences}).
+   */
+  public InputMappings transformInputMappings(
       final Collection<? extends ZeebeMapping> inputMappings,
       final ExpressionLanguage expressionLanguage) {
 
@@ -85,7 +90,8 @@ public final class VariableMappingTransformer {
     final var context = asContext(mappings);
     final var contextExpression =
         asFeelContextExpression(context, (contextValue, contextPath) -> contextValue);
-    return parseExpression(contextExpression, expressionLanguage);
+    final var expression = parseExpression(contextExpression, expressionLanguage);
+    return new InputMappings(expression, detectSecretReferences(mappings));
   }
 
   public Expression transformOutputMappings(
@@ -99,28 +105,24 @@ public final class VariableMappingTransformer {
   }
 
   /**
-   * Detects the secrets referenced by the given input mappings, keyed by the JSON pointer (RFC
-   * 6901) of the leaf each secret belongs to — the mapping's dotted target plus the reference's
-   * FEEL context path. Examples: {@code "Bearer " + camunda.secrets.token -> tokens.t} gives {@code
-   * /tokens/t}; {@code {x2: camunda.secrets.x} -> foo} gives {@code /foo/x2}. The pointer lets job
-   * activation replace the reference in the job variables via a Jackson {@code JsonPointer}; the
-   * conversion happens once, here at deploy time.
+   * Detects the secrets referenced by the already-parsed input mappings, keyed by the JSON pointer
+   * (RFC 6901) of the leaf each secret belongs to — the mapping's dotted target plus the
+   * reference's FEEL context path. Examples: {@code "Bearer " + camunda.secrets.token -> tokens.t}
+   * gives {@code /tokens/t}; {@code {x2: camunda.secrets.x} -> foo} gives {@code /foo/x2}. The
+   * pointer lets job activation replace the reference in the job variables via a Jackson {@code
+   * JsonPointer}; the conversion happens once, here at deploy time.
    *
-   * <p>Mappings with no reference are omitted (see {@link SecretReference} for what counts).
+   * <p>Reuses the sources parsed by {@link #toMappings}, so each source is parsed once. Mappings
+   * with no reference are omitted (see {@link SecretReference} for what counts).
    */
-  public Map<String, Set<SecretReference>> detectSecretReferences(
-      final Collection<? extends ZeebeMapping> inputMappings,
-      final ExpressionLanguage expressionLanguage) {
+  private static Map<String, Set<SecretReference>> detectSecretReferences(
+      final List<Mapping> mappings) {
     final var secretsByPointer = new LinkedHashMap<String, Set<SecretReference>>();
-    for (final ZeebeMapping mapping : inputMappings) {
-      final var source = mapping.getSource();
-      if (source == null) {
-        continue;
-      }
-      final var target = mapping.getTarget();
-      for (final var detected : SecretReference.parse(expressionLanguage.parseExpression(source))) {
+    for (final Mapping mapping : mappings) {
+      for (final var detected : SecretReference.parse(mapping.source)) {
         secretsByPointer
-            .computeIfAbsent(toJsonPointer(target, detected.path()), key -> new LinkedHashSet<>())
+            .computeIfAbsent(
+                toJsonPointer(mapping.target, detected.path()), key -> new LinkedHashSet<>())
             .add(detected.secret());
       }
     }

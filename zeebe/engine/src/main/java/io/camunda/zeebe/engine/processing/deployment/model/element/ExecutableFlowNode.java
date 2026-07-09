@@ -20,16 +20,8 @@ public class ExecutableFlowNode extends AbstractFlowElement {
   private final List<ExecutableSequenceFlow> incoming = new ArrayList<>();
   private final List<ExecutableSequenceFlow> outgoing = new ArrayList<>();
 
-  private Optional<Expression> inputMappings = Optional.empty();
+  private Optional<InputMappings> inputMappings = Optional.empty();
   private Optional<Expression> outputMappings = Optional.empty();
-
-  /**
-   * Secret references detected in the input mappings of this flow node, keyed by the JSON pointer
-   * (RFC 6901) of the input mapping's target path (e.g. {@code /tokens/token}). Only references
-   * used as expressions are stored (see {@link SecretReference}). Empty when no input mapping
-   * references a secret.
-   */
-  private Map<String, Set<SecretReference>> secretReferences = Map.of();
 
   private final List<ExecutionListener> executionListeners = new ArrayList<>();
 
@@ -53,11 +45,11 @@ public class ExecutableFlowNode extends AbstractFlowElement {
     incoming.add(flow);
   }
 
-  public Optional<Expression> getInputMappings() {
+  public Optional<InputMappings> getInputMappings() {
     return inputMappings;
   }
 
-  public void setInputMappings(final Expression inputMappings) {
+  public void setInputMappings(final InputMappings inputMappings) {
     this.inputMappings = Optional.of(inputMappings);
   }
 
@@ -69,12 +61,13 @@ public class ExecutableFlowNode extends AbstractFlowElement {
     this.outputMappings = Optional.of(outputMappings);
   }
 
+  /**
+   * Secret references detected in this flow node's input mappings, keyed by the JSON pointer (RFC
+   * 6901) of the leaf each secret belongs to (e.g. {@code /tokens/token}). Empty when no input
+   * mapping references a secret.
+   */
   public Map<String, Set<SecretReference>> getSecretReferences() {
-    return secretReferences;
-  }
-
-  public void setSecretReferences(final Map<String, Set<SecretReference>> secretReferences) {
-    this.secretReferences = secretReferences;
+    return inputMappings.map(InputMappings::secretReferences).orElse(Map.of());
   }
 
   public List<ExecutionListener> getBeforeAllExecutionListeners() {

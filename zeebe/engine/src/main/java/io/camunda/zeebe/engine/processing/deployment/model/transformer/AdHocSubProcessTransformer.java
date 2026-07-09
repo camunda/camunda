@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdH
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
+import io.camunda.zeebe.engine.processing.deployment.model.element.InputMappings;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.TaskDefinitionTransformer;
@@ -173,9 +174,10 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
     try {
       return adHocActivity
           .getInputMappings()
+          .map(InputMappings::expression)
           .map(
-              inputMappings -> {
-                if (inputMappings instanceof final FeelExpression feelExpression) {
+              expression -> {
+                if (expression instanceof final FeelExpression feelExpression) {
                   return taggedParameterExtractor
                       .extractParameters(feelExpression.getParsedExpression())
                       .stream()
