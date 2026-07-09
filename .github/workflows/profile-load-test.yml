@@ -74,7 +74,14 @@ jobs:
   profile-all-pods:
     name: Profile ${{ matrix.event }} on ${{ matrix.pod }}
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # INVARIANT: timeout-minutes * 60 must stay > duration-seconds (plus a buffer for the
+    # checkout/teleport-auth/kubectl-context/upload-artifact/summary steps), otherwise the
+    # job may time out mid-profile. GitHub Actions does not support arithmetic in
+    # `timeout-minutes` expressions (no +/-/*// operators), so this can't be computed from
+    # `inputs.duration-seconds` automatically -- bump it manually if a caller raises
+    # duration-seconds. Largest known caller today: camunda-daily-load-tests.yml's
+    # profile-grpc/profile-rest jobs pass duration-seconds: '1800' (30 min).
+    timeout-minutes: 60
     if: ${{ inputs.pod == '' }}
     permissions:
       contents: 'read'
@@ -143,7 +150,14 @@ jobs:
   profile-single-pod:
     name: Profile CPU on single pod ${{ inputs.pod }}
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # INVARIANT: timeout-minutes * 60 must stay > duration-seconds (plus a buffer for the
+    # checkout/teleport-auth/kubectl-context/upload-artifact/summary steps), otherwise the
+    # job may time out mid-profile. GitHub Actions does not support arithmetic in
+    # `timeout-minutes` expressions (no +/-/*// operators), so this can't be computed from
+    # `inputs.duration-seconds` automatically -- bump it manually if a caller raises
+    # duration-seconds. Largest known caller today: camunda-daily-load-tests.yml's
+    # profile-grpc/profile-rest jobs pass duration-seconds: '1800' (30 min).
+    timeout-minutes: 60
     if: ${{ inputs.pod != '' }}
     permissions:
       contents: 'read'
