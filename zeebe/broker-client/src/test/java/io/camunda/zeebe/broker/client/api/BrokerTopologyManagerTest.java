@@ -574,6 +574,57 @@ final class BrokerTopologyManagerTest {
   }
 
   @Test
+  void shouldNotifyListenerWithGroupWhenBrokerJoins() {
+    // given
+    final var capturedGroups = new CopyOnWriteArrayList<String>();
+    final var capturedMembers = new CopyOnWriteArrayList<BrokerMemberId>();
+    addTopologyListener(
+        new BrokerTopologyListener() {
+          @Override
+          public void brokerAddedToGroup(
+              final BrokerMemberId memberId, final String physicalTenantId) {
+            capturedMembers.add(memberId);
+            capturedGroups.add(physicalTenantId);
+          }
+        });
+
+    final var brokerId = BrokerMemberId.from(0);
+    final BrokerInfo broker = createBrokerWithGroup(brokerId, "tenant1");
+
+    // when
+    notifyEvent(createMemberAddedEvent(broker));
+
+    // then
+    assertThat(capturedMembers).containsExactly(brokerId);
+    assertThat(capturedGroups).containsExactly("tenant1");
+  }
+
+  @Test
+  void shouldBackfillNewListenerWithGroupInfo() {
+    // given — broker 0 already joined with group "tenant1"
+    final var brokerId = BrokerMemberId.from(0);
+    final BrokerInfo broker = createBrokerWithGroup(brokerId, "tenant1");
+    notifyEvent(createMemberAddedEvent(broker));
+
+    // when — a new listener is registered after the broker is already known
+    final var capturedGroups = new CopyOnWriteArrayList<String>();
+    final var capturedMembers = new CopyOnWriteArrayList<BrokerMemberId>();
+    addTopologyListener(
+        new BrokerTopologyListener() {
+          @Override
+          public void brokerAddedToGroup(
+              final BrokerMemberId memberId, final String physicalTenantId) {
+            capturedMembers.add(memberId);
+            capturedGroups.add(physicalTenantId);
+          }
+        });
+
+    // then — backfill fires brokerAddedToGroup with the known group
+    assertThat(capturedMembers).containsExactly(brokerId);
+    assertThat(capturedGroups).containsExactly("tenant1");
+  }
+
+  @Test
   void shouldAggregateTopologyPerPartitionGroup() {
     // given — broker 0 publishes both a default-group and a tenant1-group BrokerInfo
     final var brokerId = BrokerMemberId.from(0);
