@@ -110,6 +110,7 @@ const config = {
       prism: {
         theme: lightCodeTheme,
         darkTheme: darkCodeTheme,
+        additionalLanguages: ['java', 'sql', 'markup'],
       },
       codeblock: {
         showGithubLink: true,
