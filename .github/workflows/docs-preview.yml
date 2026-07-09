@@ -6,6 +6,12 @@ name: Docs PR Preview
 
 on:
   pull_request:
+    # The docs site is only ever deployed from main (see docs-build-deploy.yml),
+    # so only build/preview docs for PRs targeting main. Stable branches carry a
+    # copy of this workflow but must not run it — their monorepo-docs content is a
+    # backport subset and would otherwise fail the Docusaurus build on every
+    # docs-touching PR.
+    branches: [main]
     types: [opened, synchronize, closed]
   workflow_dispatch: {}
 
