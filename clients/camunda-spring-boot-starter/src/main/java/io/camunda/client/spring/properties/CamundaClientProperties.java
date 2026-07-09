@@ -112,6 +112,11 @@ public class CamundaClientProperties {
    */
   private String physicalTenantId;
 
+  /**
+   * If true, prefixes the REST base path with the physical tenant path when a physical tenant ID is
+   * set. Set to false to use the configured REST address as is, for example behind a reverse proxy
+   * that already routes to the physical tenant.
+   */
   private boolean appendPhysicalTenantPath = DEFAULT_APPEND_PHYSICAL_TENANT_PATH;
 
   /** The request timeout to use when not overridden by a specific command. */
