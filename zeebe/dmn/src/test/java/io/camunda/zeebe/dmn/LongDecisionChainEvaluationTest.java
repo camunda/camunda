@@ -90,7 +90,8 @@ final class LongDecisionChainEvaluationTest {
 
     // then
     assertThat(result.isFailure())
-        .describedAs("Expect the evaluation to fail gracefully rather than throw StackOverflowError")
+        .describedAs(
+            "Expect the evaluation to fail gracefully rather than throw StackOverflowError")
         .isTrue();
 
     assertThat(result.getFailureMessage())
