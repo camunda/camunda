@@ -596,9 +596,7 @@ components:
       additionalProperties: false
       properties:
         name:
-          description: |
-            Prefix to narrow the returned variable names. Matching is case-sensitive and
-            left-anchored.
+          description: The variable name search filter.
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
 
