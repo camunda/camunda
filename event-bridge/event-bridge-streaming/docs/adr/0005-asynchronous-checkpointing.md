@@ -1,6 +1,9 @@
 # ADR 0005 — Asynchronous checkpointing: freeze on the processing thread, persist in the background
 
-- Status: Proposed (accepted design; implementation in progress)
+- Status: Proposed (accepted design; implementation in progress). Where this ADR describes
+  persisting a cut in the runtime's shared transaction alongside a runtime-owned offset store,
+  that path is superseded by [ADR 0007](0007-single-durability-concept.md): every cut persists
+  through its own task's transaction. The freeze/persist/complete protocol itself is unchanged.
 - Date: 2026-07-08
 - Scope: `event-bridge-streaming` runtime (commit protocol, state stores, aggregation operators)
 
@@ -83,7 +86,9 @@ to the first one:
 - A failed persist retries as part of the next, larger cut (merge-back), rather than blocking in
   place.
 - Graceful shutdown still ends with one synchronous freeze-persist-complete cycle, so the
-  `checkpoint()` composition remains as the final-commit and test-facing path.
+  `checkpoint()` composition remains as the final-commit and test-facing path. (Since
+  [ADR 0007](0007-single-durability-concept.md) that synchronous composition is the task's own
+  `commit(long)`; the runtime-side `checkpoint()`/offset-store variant no longer exists.)
 
 ## Alternatives considered
 
