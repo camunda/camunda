@@ -389,7 +389,7 @@ describe('<AgentDetails />', () => {
     expect(historySpy).toHaveBeenCalledTimes(1);
   });
 
-  it('should not render the agent selector when only one agent exists', () => {
+  it('should display the agent instance key and not render a selector when only one agent exists', () => {
     render(
       <AgentDetails
         agentInstances={[agentInstance]}
@@ -405,6 +405,9 @@ describe('<AgentDetails />', () => {
     expect(
       screen.queryByRole('combobox', {name: 'Current AI agent'}),
     ).not.toBeInTheDocument();
+    expect(
+      screen.getByText(agentInstance.agentInstanceKey),
+    ).toBeInTheDocument();
   });
 
   it('should default the agent selector to the first agent and switch on selection change', async () => {

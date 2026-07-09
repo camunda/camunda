@@ -42,6 +42,13 @@ const AgentHeading = styled.h5`
   margin: 0;
 `;
 
+const AgentInstanceKey = styled.span`
+  font-size: var(--cds-body-compact-01-font-size);
+  line-height: var(--cds-body-compact-01-line-height);
+  letter-spacing: var(--cds-body-compact-01-letter-spacing);
+  color: var(--cds-text-secondary);
+`;
+
 const MetricsRow = styled.div`
   display: flex;
   gap: var(--cds-spacing-05);
@@ -64,6 +71,7 @@ export {
   AgentDetailsContainer,
   AgentHeader,
   AgentHeading,
+  AgentInstanceKey,
   ErrorHint,
   MetricsRow,
   ModelInfo,

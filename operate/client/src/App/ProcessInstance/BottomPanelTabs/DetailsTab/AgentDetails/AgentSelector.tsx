@@ -6,8 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Dropdown, type OnChangeData} from '@carbon/react';
+import {Dropdown as CarbonDropdown, type OnChangeData} from '@carbon/react';
 import {useCallback, useMemo} from 'react';
+import styled from 'styled-components';
+
+const Dropdown = styled(CarbonDropdown)`
+  & [role='listbox'] {
+    max-inline-size: unset;
+    inline-size: fit-content;
+  }
+`;
 
 type SelectableAgentInstance = {
   agentInstanceKey: string;

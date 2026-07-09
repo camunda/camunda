@@ -27,6 +27,7 @@ import {
   AgentDetailsContainer,
   AgentHeader,
   AgentHeading,
+  AgentInstanceKey,
   ErrorHint,
   MetricsRow,
   ModelInfo,
@@ -105,11 +106,11 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
 
   const selectableAgentInstances = useMemo(
     () =>
-      agentInstances.map<SelectableAgentInstance>((agent, index) => {
+      agentInstances.map<SelectableAgentInstance>((agent) => {
         const statusLabel = STATUS_LABELS[agent.status] ?? agent.status;
         return {
           agentInstanceKey: agent.agentInstanceKey,
-          label: `Agent ${index + 1} - ${statusLabel}`,
+          label: `${agent.agentInstanceKey} - ${statusLabel}`,
         };
       }),
     [agentInstances],
@@ -162,13 +163,15 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
     >
       <AgentHeader>
         <AgentHeading>AI Agent</AgentHeading>
-        {selectableAgentInstances.length > 1 && (
+        {selectableAgentInstances.length > 1 ? (
           <AgentSelector
             agents={selectableAgentInstances}
             remainingAgentsCount={remainingAgentsCount}
             selectedAgentInstanceKey={agentInstance.agentInstanceKey}
             onChange={setSelectedAgentInstanceKey}
           />
+        ) : (
+          <AgentInstanceKey>{agentInstance.agentInstanceKey}</AgentInstanceKey>
         )}
       </AgentHeader>
       <Accordion align="start">
