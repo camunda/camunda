@@ -173,6 +173,16 @@ test.describe('process page', () => {
     await expect(page.getByText('EUR 231')).toBeVisible();
     await expect(page.getByText('EUR 264')).toBeVisible();
     await expect(page.getByText('Total: EUR 544.5')).toBeVisible();
+
+    // Guard against form-js reverting a dynamic-list value on a delayed
+    // re-render: re-assert (and re-fill) every item row now that the form is
+    // idle, so no required field is left empty when the process is started.
+    await taskDetailsPageV1.verifyDynamicListValues([
+      {label: 'Item Name*', value: 'Laptop'},
+      {label: 'Unit Price*', value: '1'},
+      {label: 'Quantity*', value: '2'},
+    ]);
+
     await tasklistProcessesPageV1.clickStartProcessSubButton();
 
     await tasklistHeaderV1.clickTasksTab();
