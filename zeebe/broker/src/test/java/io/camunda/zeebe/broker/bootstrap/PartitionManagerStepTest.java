@@ -228,7 +228,6 @@ class PartitionManagerStepTest {
 
       final var secCfg = EngineSecurityConfigurations.unauthenticatedAndUnauthorized();
       final var conv = new BrokerRequestAuthorizationConverter(secCfg);
-      testBrokerStartupContext.addJobStreamService(secondTenantId, mock(JobStreamService.class));
       testBrokerStartupContext.setPhysicalTenantEngineContext(
           PHYSICAL_TENANT_ID,
           new PhysicalTenantContext(
@@ -237,11 +236,7 @@ class PartitionManagerStepTest {
               flagsA,
               testBrokerStartupContext.getBrokerConfiguration(),
               new ExporterRepository()));
-          PHYSICAL_TENANT_ID,
-          new PhysicalTenantContext(secCfg, conv, flagsA, mockJobStreamService));
       testBrokerStartupContext.setPhysicalTenantEngineContext(
-          secondTenantId,
-          new PhysicalTenantContext(secCfg, conv, flagsB, mockJobStreamService));
           secondTenantId,
           new PhysicalTenantContext(
               secCfg,
@@ -304,7 +299,12 @@ class PartitionManagerStepTest {
       final var conv = new BrokerRequestAuthorizationConverter(secCfg);
       testBrokerStartupContext.setPhysicalTenantEngineContext(
           PHYSICAL_TENANT_ID,
-          new PhysicalTenantEngineContext(secCfg, conv, FeatureFlags.createDefaultForTests()));
+          new PhysicalTenantContext(
+              secCfg,
+              conv,
+              FeatureFlags.createDefaultForTests(),
+              testBrokerStartupContext.getBrokerConfiguration(),
+              new ExporterRepository()));
       testBrokerStartupContext.addJobStreamService(PHYSICAL_TENANT_ID, jobStreamService);
 
       // when

@@ -12,7 +12,6 @@ import io.atomix.raft.partition.RaftPartition;
 import io.camunda.cluster.PartitionId;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
-import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.scheduler.future.ActorFuture;

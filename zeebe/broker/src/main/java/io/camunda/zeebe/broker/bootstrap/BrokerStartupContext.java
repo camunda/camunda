@@ -18,7 +18,6 @@ import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
-import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
@@ -108,6 +107,12 @@ public interface BrokerStartupContext {
 
   void setDiskSpaceUsageMonitor(DiskSpaceUsageMonitor diskSpaceUsageMonitor);
 
+  JobStreamService getJobStreamService(String physicalTenantId);
+
+  void addJobStreamService(String physicalTenantId, JobStreamService service);
+
+  void removeJobStreamService(String physicalTenantId);
+
   /** Returns all currently registered partition managers, keyed by physical tenant ID. */
   Map<String, PartitionManager> getPartitionManagers();
 
@@ -128,13 +133,6 @@ public interface BrokerStartupContext {
   BrokerAdminServiceImpl getBrokerAdminService();
 
   void setBrokerAdminService(final BrokerAdminServiceImpl brokerAdminService);
-
-  /**
-   * Replaces the {@link PhysicalTenantContext} for the given physical tenant. Throws if the
-   * tenant id is not already registered.
-   */
-  void updatePhysicalTenantEngineContext(
-      String physicalTenantId, PhysicalTenantEngineContext context);
 
   ClusterConfigurationService getClusterConfigurationService();
 

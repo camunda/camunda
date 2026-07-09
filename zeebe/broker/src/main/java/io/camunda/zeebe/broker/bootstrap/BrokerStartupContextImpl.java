@@ -65,8 +65,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final List<PartitionRaftListener> partitionRaftListeners = new ArrayList<>();
   private final Duration shutdownTimeout;
   private final MeterRegistry meterRegistry;
-  private final Map<String, PhysicalTenantContext> physicalTenantEngineContexts =
-      new LinkedHashMap<>();
+  private final Map<String, PhysicalTenantContext> physicalTenantEngineContexts;
   private final Function<String, UserServices> userServicesForTenant;
   private final PasswordEncoder passwordEncoder;
   private final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory;
@@ -119,7 +118,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.brokerClient = brokerClient;
     this.shutdownTimeout = shutdownTimeout;
     this.meterRegistry = requireNonNull(meterRegistry);
-    this.physicalTenantEngineContexts.putAll(physicalTenantEngineContexts);
+    this.physicalTenantEngineContexts = Map.copyOf(physicalTenantEngineContexts);
     this.userServicesForTenant = userServicesForTenant;
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoderFactory = jwtDecoderFactory;

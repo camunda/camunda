@@ -367,21 +367,6 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   }
 
   @Override
-  public void updatePhysicalTenantEngineContext(
-      final String physicalTenantId, final PhysicalTenantContext context) {
-    physicalTenantEngineContexts.put(physicalTenantId, context);
-  }
-
-  public void setPhysicalTenantEngineContext(
-      final String physicalTenantId, final PhysicalTenantContext context) {
-    physicalTenantEngineContexts.put(physicalTenantId, context);
-  }
-
-  public void setSecurityConfiguration(final EngineSecurityConfig securityConfiguration) {
-    this.securityConfiguration = securityConfiguration;
-  }
-
-  @Override
   public Function<String, UserServices> getUserServicesForTenant() {
     return tenantId -> userServices;
   }
