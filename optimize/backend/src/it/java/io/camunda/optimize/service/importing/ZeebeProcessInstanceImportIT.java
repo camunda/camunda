@@ -181,7 +181,6 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
             });
 
     // when
-    importAllZeebeEntitiesFromLastIndex(); // fetch process activated event - not imported
     importAllZeebeEntitiesFromLastIndex(); // fetch and import flownode activating event
 
     // then
