@@ -67,6 +67,8 @@ class PhysicalTenantRequestMappingHandlerMappingTest {
         Arguments.of("/v2", EXPECTED_PREFIX + "/v2"),
         Arguments.of("/v2/widgets", EXPECTED_PREFIX + "/v2/widgets"),
         Arguments.of("/v2/widgets/{id}", EXPECTED_PREFIX + "/v2/widgets/{id}"),
+        // OpenAPI docs: springdoc's /v3/api-docs spec endpoint gets a PT-prefixed sibling
+        Arguments.of("/v3/api-docs", EXPECTED_PREFIX + "/v3/api-docs"),
         // webapp routes
         Arguments.of("/operate", EXPECTED_PREFIX + "/operate"),
         Arguments.of("/operate/processes", EXPECTED_PREFIX + "/operate/processes"),
