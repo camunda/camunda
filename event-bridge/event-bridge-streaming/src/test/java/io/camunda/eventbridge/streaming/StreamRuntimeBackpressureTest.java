@@ -316,16 +316,38 @@ final class StreamRuntimeBackpressureTest {
     verify(consumer, atLeastOnce()).resume(List.of(new TopicPartition(TOPIC, 1)));
     unblocked.countDown();
 
-    // then — the task is released; the still-parked tail ("e") was dropped with the revoke and is
-    // never folded, nothing folds twice, and the committed offset covers exactly what was folded
-    // (entries already flushed into the queue before the revoke may legitimately still fold)
+    // then — the task is released and closed, whatever was still parked when the revoke was
+    // applied was dropped, and the fold ends on a legal cut. The exact cut is a race, but the set
+    // of legal outcomes is derivable from the pause/park mechanics:
+    //
+    //   * "a" and "b" were queued before the overflow paused the partition, so the actor's first
+    //     drain always contains them and a drained batch always folds whole — every outcome starts
+    //     with ["a", "b"].
+    //   * Everything else was parked. An entry folds only if a parked-backlog flush moved it into
+    //     the queue BEFORE the loop applied the revoke (the revoke drops what is still parked, and
+    //     a revoked partition is never flushed again). The flush races both the revoke and the
+    //     actor's element-wise drain of the 2-slot queue: depending on how many slots the drain
+    //     had freed when each flush pass ran, any prefix of ["c", "d", "e"] may have been flushed
+    //     pre-revoke — including none of it, and including all of it (each flushed entry the drain
+    //     consumes frees a slot for the next).
+    //   * A flushed entry still folds only if the actor gets a fold cycle for it before its stop
+    //     lands, so any flushed suffix may also remain unfolded.
+    //   * Order and integrity are not up to the race: the queue, the parked deque and the fold
+    //     batch all preserve offset order, and a dropped entry is gone for good — so the outcome
+    //     is always a gapless, duplicate-free prefix, never a skip, a repeat, or a resurrected
+    //     parked entry.
+    //
+    // Legal outcomes are therefore exactly the prefixes of [a, b, c, d, e] of length >= 2, each
+    // committed exactly up to its last folded entry.
     assertThat(taskClosed.await(5, TimeUnit.SECONDS)).isTrue();
     runtime.stop();
     loop.join(TimeUnit.SECONDS.toMillis(5));
     assertThat(processed)
-        .isIn(List.of("a", "b"), List.of("a", "b", "c", "d"))
-        .doesNotContain("e")
-        .doesNotHaveDuplicates();
+        .isIn(
+            List.of("a", "b"),
+            List.of("a", "b", "c"),
+            List.of("a", "b", "c", "d"),
+            List.of("a", "b", "c", "d", "e"));
     assertThat(committedOffsets).containsEntry(1, (long) processed.size());
   }
 
