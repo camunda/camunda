@@ -66,7 +66,11 @@ class SecretReferenceTest {
         // static value (no '='): the whole thing is a literal
         "\"Bearer \" + camunda.secrets.X",
         // reference inside a concatenated string literal stays literal
-        "=\"Bearer \" + \"camunda.secrets.X\""
+        "=\"Bearer \" + \"camunda.secrets.X\"",
+        // a FEEL context holds no reference: a string-literal entry, plain-variable entries, empty
+        "={x: \"camunda.secrets.token\"}",
+        "={x: userId, y: orderId}",
+        "={}"
       })
   void shouldReturnEmptyWhenNoSecretReferenceUsedAsExpression(final String source) {
     // when / then
@@ -176,6 +180,8 @@ class SecretReferenceTest {
         arguments("=camunda.secrets.token.length", refs("token")),
         // a reference used inside a comment is not part of the expression
         arguments("=camunda.secrets.token // camunda.secrets.other", refs("token")),
+        // a literal reference is ignored
+        arguments("=\"camunda.secrets.literal\"", Set.of()),
         // a literal reference is ignored, but the expression reference in the same source is parsed
         arguments("=\"camunda.secrets.literal\" + camunda.secrets.real", refs("real")),
         // reference nested inside a FEEL context value
