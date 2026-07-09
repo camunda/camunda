@@ -9,6 +9,7 @@ package io.camunda.zeebe.restore;
 
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator;
+import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator.BackupNotValidException;
 
 /** Validates that a backup was taken for the expected number of partitions. */
 public final class ValidatePartitionCount implements BackupValidator {
