@@ -222,8 +222,10 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
   }
 
   /**
-   * Sets the per-slot transformer versions frozen at deploy time. Only slots whose version is
-   * greater than the default (1) are stored; callers must filter before passing this map.
+   * Sets the per-slot transformer versions frozen at deploy time. Version-1 entries are stored but
+   * redundant — {@link
+   * io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer#currentVersionsById()}
+   * omits them automatically, so callers using that method need not filter.
    */
   public ProcessRecord setTransformerVersions(final Map<Integer, Integer> versions) {
     transformerVersionsProp.reset();

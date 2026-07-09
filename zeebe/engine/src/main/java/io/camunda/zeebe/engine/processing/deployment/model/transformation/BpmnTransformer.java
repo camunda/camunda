@@ -181,7 +181,7 @@ public final class BpmnTransformer {
             result.put(slot.id(), highest);
           }
         });
-    return result;
+    return Map.copyOf(result);
   }
 
   /**
@@ -243,8 +243,17 @@ public final class BpmnTransformer {
     for (final StepRegistration registration : stepRegistrations) {
       final int version =
           slotVersions.getOrDefault(registration.slot(), TransformerSlot.DEFAULT_VERSION);
-      visitors[registration.step() - 1].registerHandler(
-          factoryFor(registration.slot(), version).get());
+      final var factory = factoryFor(registration.slot(), version);
+      if (factory == null) {
+        throw new IllegalStateException(
+            "No handler registered for slot "
+                + registration.slot()
+                + " at version "
+                + version
+                + ". This is a programming error — ensure every slot in stepRegistrations has"
+                + " a v1 factory registered via register().");
+      }
+      visitors[registration.step() - 1].registerHandler(factory.get());
     }
     return visitors;
   }

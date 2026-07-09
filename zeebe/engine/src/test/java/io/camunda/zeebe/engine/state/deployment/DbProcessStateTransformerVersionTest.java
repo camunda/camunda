@@ -11,20 +11,35 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.el.ExpressionLanguageMetrics;
+import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
+import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
+import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformerSlot;
+import io.camunda.zeebe.engine.processing.deployment.model.transformer.SignalTransformer;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.instance.Signal;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import java.time.Instant;
+import java.time.InstantSource;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(ProcessingStateExtension.class)
 class DbProcessStateTransformerVersionTest {
 
+  private ZeebeDb<ZbColumnFamilies> zeebeDb;
+  private TransactionContext transactionContext;
   private MutableProcessingState processingState;
 
   @Test
@@ -112,5 +127,74 @@ class DbProcessStateTransformerVersionTest {
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("END_EVENT")
         .hasMessageContaining("version 2");
+  }
+
+  @Test
+  void shouldSelectPinnedV2HandlerOnCacheMissRoundTrip() {
+    // given — a DbProcessState backed by a custom transformer that has a v2 SIGNAL handler
+    final var v2Ran = new AtomicBoolean(false);
+    final var customTransformer =
+        BpmnFactory.createTransformer(
+            InstantSource.fixed(Instant.EPOCH),
+            ExpressionLanguageMetrics.noop(),
+            Integer.MAX_VALUE);
+    customTransformer.registerHandlerVersion(
+        TransformerSlot.SIGNAL, 2, () -> new RecordingSignalTransformer(v2Ran));
+
+    final var processState =
+        new DbProcessState(
+            zeebeDb, transactionContext, new EngineConfiguration(), customTransformer);
+
+    final var model =
+        Bpmn.createExecutableProcess("signal-proc")
+            .startEvent()
+            .intermediateCatchEvent("catch")
+            .signal("sig")
+            .endEvent("end")
+            .done();
+    final var record =
+        new ProcessRecord()
+            .setResourceName("signal.bpmn")
+            .setResource(wrapString(Bpmn.convertToString(model)))
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+            .setBpmnProcessId(wrapString("signal-proc"))
+            .setVersion(1)
+            .setChecksum(wrapString("checksum"))
+            .setTransformerVersions(Map.of(TransformerSlot.SIGNAL.id(), 2));
+    processState.putProcess(10L, record);
+
+    // when — putProcess does not populate the in-memory cache; the first getFlowElement forces
+    // a round-trip through PersistedProcess, which must deserialize the slot version and select v2
+    final var element =
+        processState.getFlowElement(
+            10L,
+            TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+            wrapString("catch"),
+            ExecutableFlowElement.class);
+
+    // then
+    assertThat(element).isNotNull();
+    assertThat(v2Ran).isTrue();
+  }
+
+  /** Delegating SIGNAL handler — records when it runs, delegates to v1 for correctness. */
+  private static final class RecordingSignalTransformer implements ModelElementTransformer<Signal> {
+    private final SignalTransformer delegate = new SignalTransformer();
+    private final AtomicBoolean ran;
+
+    RecordingSignalTransformer(final AtomicBoolean ran) {
+      this.ran = ran;
+    }
+
+    @Override
+    public Class<Signal> getType() {
+      return Signal.class;
+    }
+
+    @Override
+    public void transform(final Signal element, final TransformContext context) {
+      ran.set(true);
+      delegate.transform(element, context);
+    }
   }
 }
