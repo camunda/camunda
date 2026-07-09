@@ -142,6 +142,44 @@ final class SecretReferenceEvaluationContextTest {
     assertThat(result.getString()).isEqualTo("from-process-var");
   }
 
+  @Test
+  void shouldNotResolveSecretWhenCamundaVariablePresent() {
+    // given - a variable named `camunda` takes precedence, so the secret context does not intercept
+    final var context =
+        new SecretReferenceEvaluationContext(
+            new InMemoryVariableEvaluationContext(
+                Map.of("camunda", Map.of("vars", Map.of("env", Map.of("KEY", "v"))))));
+
+    // when - the reference resolves against the variable (which has no secrets), not a placeholder
+    final var result =
+        expressionLanguage.evaluateExpression(
+            expressionLanguage.parseExpression("=camunda.secrets.token"), context);
+
+    // then
+    assertThat(result.getType()).isEqualTo(ResultType.NULL);
+  }
+
+  @Test
+  void shouldPreserveSecretAwarenessAfterScoping() {
+    // given - scoping re-wraps the delegate; both secret and cluster resolution must survive it
+    final var scoped =
+        new SecretReferenceEvaluationContext(delegate).processScoped(123L).tenantScoped("tenant");
+
+    // then
+    assertThat(
+            expressionLanguage
+                .evaluateExpression(
+                    expressionLanguage.parseExpression("=camunda.secrets.token"), scoped)
+                .getString())
+        .isEqualTo("camunda.secrets.token");
+    assertThat(
+            expressionLanguage
+                .evaluateExpression(
+                    expressionLanguage.parseExpression("=camunda.vars.env.REGION"), scoped)
+                .getString())
+        .isEqualTo("eu-1");
+  }
+
   private EvaluationResult evaluate(final String expression) {
     return expressionLanguage.evaluateExpression(
         expressionLanguage.parseExpression(expression), secretAware);
