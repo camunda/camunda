@@ -567,6 +567,61 @@ class IncidentSearchTest {
   }
 
   @Test
+  void shouldReturnEmptyForNonExistentIncidentKey() {
+    // when
+    final var result =
+        camundaClient
+            .newIncidentSearchRequest()
+            .filter(f -> f.incidentKey(Long.MAX_VALUE))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).isEmpty();
+  }
+
+  @Test
+  void shouldReturnEmptyWhenFiltersAreContradictory() {
+    // incident_process_v1 incidents have EXTRACT_VALUE_ERROR type, not JOB_NO_RETRIES;
+    // combining both predicates is impossible, so AND semantics must yield no results
+    // when
+    final var result =
+        camundaClient
+            .newIncidentSearchRequest()
+            .filter(
+                f ->
+                    f.processDefinitionId(incident.getProcessDefinitionId())
+                        .errorType(IncidentErrorType.JOB_NO_RETRIES))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).isEmpty();
+  }
+
+  @Test
+  void shouldNarrowResultsWhenCombiningFilters() {
+    // state=ACTIVE alone returns 4 incidents; processDefinitionId=incident_process_v1 returns 3;
+    // AND of both must return 3 (the incident_process_v1 subset, which are all ACTIVE)
+    // when
+    final var result =
+        camundaClient
+            .newIncidentSearchRequest()
+            .filter(
+                f ->
+                    f.state(IncidentState.ACTIVE)
+                        .processDefinitionId(incident.getProcessDefinitionId()))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(3);
+    assertThat(result.items())
+        .allMatch(i -> i.getProcessDefinitionId().equals(incident.getProcessDefinitionId()));
+    assertThat(result.items()).extracting(Incident::getState).containsOnly(ACTIVE);
+  }
+
+  @Test
   void shouldSearchByFromWithLimit() {
     // when
     final var resultAll = camundaClient.newIncidentSearchRequest().send().join();

@@ -372,6 +372,35 @@ class VariableSearchTest {
         .isEqualTo(thirdKey);
   }
 
+  @Test
+  void shouldReturnEmptyForNonExistentVariableKey() {
+    // when
+    final var result =
+        camundaClient
+            .newVariableSearchRequest()
+            .filter(f -> f.variableKey(Long.MAX_VALUE))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).isEmpty();
+  }
+
+  @Test
+  void shouldSortByNameDescProducesReverseAlphabeticalOrder() {
+    // when
+    final var resultAsc =
+        camundaClient.newVariableSearchRequest().sort(s -> s.name().asc()).send().join();
+    final var resultDesc =
+        camundaClient.newVariableSearchRequest().sort(s -> s.name().desc()).send().join();
+
+    // then - desc must be exact reverse of asc
+    final var namesAsc = resultAsc.items().stream().map(Variable::getName).toList();
+    final var namesDesc = resultDesc.items().stream().map(Variable::getName).toList();
+    assertThat(namesAsc).isSorted();
+    assertThat(namesDesc).isEqualTo(namesAsc.reversed());
+  }
+
   private static void waitForTasksBeingExported() {
     Awaitility.await("should receive data from ES")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
