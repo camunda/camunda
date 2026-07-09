@@ -190,7 +190,7 @@ public class TestContainerUtil {
   public void startKeyCloak(final TestContext testContext) {
     LOGGER.info("************ Starting Keycloak ************");
     keycloakContainer =
-        new GenericContainer<>(DockerImageName.parse("bitnami/keycloak:22.0.1"))
+        new GenericContainer<>(DockerImageName.parse("bitnamilegacy/keycloak:22.0.1"))
             .withExposedPorts(KEYCLOAK_PORT)
             .withEnv(
                 Map.of(
