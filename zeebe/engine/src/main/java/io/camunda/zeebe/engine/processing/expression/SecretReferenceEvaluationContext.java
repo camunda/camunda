@@ -23,6 +23,10 @@ import org.jspecify.annotations.NullMarked;
  * <p>It wraps the delegate and intercepts only the {@code camunda.secrets.*} path — process
  * variables, cluster variables ({@code camunda.vars.*}) and every other lookup are forwarded
  * unchanged, so nothing is shadowed. The transformation is pure, hence replication/replay-safe.
+ *
+ * <p>A delegate value literally named {@code camunda} (e.g. a process variable) keeps precedence,
+ * so for that instance {@code camunda.secrets.*} resolves against it rather than to a placeholder —
+ * consistent with how such a variable already shadows {@code camunda.vars.*}.
  */
 @NullMarked
 public final class SecretReferenceEvaluationContext implements ScopedEvaluationContext {
