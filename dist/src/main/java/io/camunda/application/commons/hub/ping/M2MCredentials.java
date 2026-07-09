@@ -9,4 +9,13 @@ package io.camunda.application.commons.hub.ping;
 
 import java.net.URI;
 
-public record M2MCredentials(URI tokenEndpoint, String clientId, String clientSecret) {}
+public record M2MCredentials(URI tokenEndpoint, String clientId, String clientSecret) {
+  @Override
+  public String toString() {
+    return "M2MCredentials[tokenEndpoint="
+        + tokenEndpoint
+        + ", clientId="
+        + clientId
+        + ", clientSecret=***]";
+  }
+}
