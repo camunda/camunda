@@ -81,7 +81,7 @@ public final class DmnScalaDecisionEngine implements DecisionEngine {
       // policy (see VirtualMachineErrorHandler): this specific error is a
       // deterministic poison-pill on replay, and this catch sits before any
       // state mutation, so failing the parse gracefully is safer than
-      // looping a crash forever. See the design doc for full rationale.
+      // looping a crash forever.
       LOGGER.warn(
           "DMN parsing failed with a StackOverflowError; this can happen when the decision "
               + "requirements graph contains a very long chain of dependent decisions or "
@@ -121,7 +121,7 @@ public final class DmnScalaDecisionEngine implements DecisionEngine {
       // policy (see VirtualMachineErrorHandler): this specific error is a
       // deterministic poison-pill on replay, and this catch sits before any
       // state mutation, so failing the evaluation gracefully is safer than
-      // looping a crash forever. See the design doc for full rationale.
+      // looping a crash forever.
       LOGGER.warn(
           "DMN evaluation of decision '{}' failed with a StackOverflowError; this can happen "
               + "when the decision requirements graph contains a very long chain of dependent "
