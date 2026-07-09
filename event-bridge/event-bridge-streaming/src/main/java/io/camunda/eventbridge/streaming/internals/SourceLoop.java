@@ -14,6 +14,7 @@ import io.camunda.eventbridge.client.TopicPartition;
 import io.camunda.eventbridge.streaming.MessageDeserializer;
 import io.camunda.eventbridge.streaming.RecordFilter;
 import io.camunda.eventbridge.streaming.Task;
+import io.camunda.eventbridge.streaming.TaskFactory;
 import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -29,7 +30,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
-import java.util.function.IntFunction;
 import java.util.function.ToLongFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,7 +76,7 @@ public final class SourceLoop<R> {
   private final MessageDeserializer<R> deserializer;
   private final RecordFilter recordFilter;
   private final ToLongFunction<byte[]> payloadTimestamps;
-  private final IntFunction<Task<R>> taskFactory;
+  private final TaskFactory<R> taskFactory;
   private final Function<Partition<R>, PartitionActor<R>> partitionActorFactory;
   private final Map<Integer, Long> restoredBaselines;
   private final int queueCapacity;
@@ -114,7 +114,7 @@ public final class SourceLoop<R> {
       final MessageDeserializer<R> deserializer,
       final RecordFilter recordFilter,
       final ToLongFunction<byte[]> payloadTimestamps,
-      final IntFunction<Task<R>> taskFactory,
+      final TaskFactory<R> taskFactory,
       final Function<Partition<R>, PartitionActor<R>> partitionActorFactory,
       final Map<Integer, Long> restoredBaselines,
       final int queueCapacity,
@@ -358,7 +358,9 @@ public final class SourceLoop<R> {
     if (paused.remove(partitionId)) {
       consumer.resume(List.of(new TopicPartition(sourceTopic, partitionId)));
     }
-    final Task<R> task = taskFactory.apply(partitionId);
+    // The ownership epoch reads through to the consumer's live membership: a task samples it at
+    // each commit barrier, so a fenced-and-rejoined member stamps its new epoch from then on.
+    final Task<R> task = taskFactory.create(partitionId, consumer::memberEpoch);
     task.init();
     final long baseline =
         task.ownsDurability()

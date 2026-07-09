@@ -17,6 +17,8 @@ import io.camunda.analytics.meter.CompositeAccumulatorValue;
 import io.camunda.analytics.meter.PushdownColumn;
 import io.camunda.analytics.meter.PushdownSpec;
 import io.camunda.analytics.serving.spi.DatasetWriter;
+import io.camunda.analytics.serving.spi.VersionedDatasetWriter;
+import io.camunda.analytics.serving.spi.WriteVersion;
 import io.camunda.analytics.serving.support.SketchScalar;
 import io.camunda.search.clients.DocumentBasedWriteClient;
 import io.camunda.search.clients.core.RequestBuilders;
@@ -33,7 +35,7 @@ import java.util.Optional;
  * one document keyed by its row key. Meters of the same cell are independent documents, so setting
  * one never clobbers another.
  */
-public final class DocumentDatasetWriter implements DatasetWriter {
+public final class DocumentDatasetWriter implements VersionedDatasetWriter {
 
   private final DocumentBasedWriteClient writeClient;
 
@@ -47,7 +49,8 @@ public final class DocumentDatasetWriter implements DatasetWriter {
       final DimensionKey key,
       final long windowStart,
       final long windowSize,
-      final byte[] compositeAccumulator) {
+      final byte[] compositeAccumulator,
+      final WriteVersion version) {
     // The composite carries every meter's slot (ADR 0009). The document layout stays one document
     // per meter for now — the writer fans the composite out — so the read path (which regroups
     // meter documents into cells) is untouched; collapsing to one document per cell (and a native
@@ -56,7 +59,8 @@ public final class DocumentDatasetWriter implements DatasetWriter {
     final List<byte[]> slots =
         CompositeAccumulatorValue.slotBytes(compositeAccumulator, meters.size());
     for (int slot = 0; slot < meters.size(); slot++) {
-      upsertMeterDocument(dataset, key, windowStart, windowSize, meters.get(slot), slots.get(slot));
+      upsertMeterDocument(
+          dataset, key, windowStart, windowSize, meters.get(slot), slots.get(slot), version);
     }
   }
 
@@ -66,7 +70,8 @@ public final class DocumentDatasetWriter implements DatasetWriter {
       final long windowStart,
       final long windowSize,
       final CompiledMeter meter,
-      final byte[] slotBytes) {
+      final byte[] slotBytes,
+      final WriteVersion version) {
     final Map<String, Object> doc = new LinkedHashMap<>();
     final List<DimensionColumn> grain = dataset.grain().columns();
     for (int i = 0; i < grain.size(); i++) {
@@ -94,6 +99,13 @@ public final class DocumentDatasetWriter implements DatasetWriter {
 
     final String id = DocumentCubeNames.cellDocId(key, windowStart, windowSize, meter.meterName());
     doc.put(DocumentCubeNames.DOC_KEY, id); // sortable copy of the id, for search_after streaming
+    // The write fence is carried as fields for now: the shared search-client index request has no
+    // external-version support yet, so a stale write is not REJECTED here — enforcement needs
+    // either that API (version_type=external_gte with the pair packed into ES's single long) or
+    // the one-document-per-cell layout follow-up. Recording the version keeps documents
+    // diagnosable and the layout forward-compatible in the meantime.
+    doc.put(DocumentCubeNames.VER_EPOCH, version.epoch());
+    doc.put(DocumentCubeNames.VER_OFFSET, version.offset());
     writeClient.index(
         RequestBuilders.<Map<String, Object>>indexRequest(
             r -> r.index(DocumentCubeNames.datasetIndex(dataset.cubeId())).id(id).document(doc)));
@@ -123,12 +135,18 @@ public final class DocumentDatasetWriter implements DatasetWriter {
   }
 
   @Override
-  public void upsertRow(final CompiledTable table, final String rowKey, final List<Object> values) {
+  public void upsertRow(
+      final CompiledTable table,
+      final String rowKey,
+      final List<Object> values,
+      final WriteVersion version) {
     final Map<String, Object> doc = new LinkedHashMap<>();
     final List<DimensionColumn> columns = table.columns();
     for (int i = 0; i < columns.size(); i++) {
       doc.put(DocumentCubeNames.field(columns.get(i).name()), values.get(i));
     }
+    doc.put(DocumentCubeNames.VER_EPOCH, version.epoch());
+    doc.put(DocumentCubeNames.VER_OFFSET, version.offset());
     writeClient.index(
         RequestBuilders.<Map<String, Object>>indexRequest(
             r -> r.index(DocumentCubeNames.rowIndex(table.cubeId())).id(rowKey).document(doc)));

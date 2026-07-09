@@ -20,6 +20,7 @@ import io.camunda.analytics.meter.InMemoryMeterIdStore;
 import io.camunda.analytics.meter.Meter;
 import io.camunda.analytics.meter.MeterCatalog;
 import io.camunda.analytics.meter.MeterIdRegistry;
+import io.camunda.analytics.serving.spi.WriteVersion;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -70,8 +71,8 @@ final class RdbmsServingRowShapeTest {
     store.schemaManager().ensure(dataset);
     final DimensionKey key = DimensionKey.of(dataset.grain(), "orders", 3);
     final DimensionKey nullKey = DimensionKey.of(dataset.grain(), null, null);
-    store.writer().upsertCell(dataset, key, 0L, MINUTE, count(5L));
-    store.writer().upsertCell(dataset, nullKey, 0L, MINUTE, count(2L));
+    store.writer().upsertCell(dataset, key, 0L, MINUTE, count(5L), WriteVersion.SEED);
+    store.writer().upsertCell(dataset, nullKey, 0L, MINUTE, count(2L), WriteVersion.SEED);
     store.writer().flush();
 
     // when the rows are read back over raw JDBC by their FROZEN physical identifiers: the table
@@ -114,8 +115,8 @@ final class RdbmsServingRowShapeTest {
     // for)
     store.schemaManager().ensure(dataset);
     final DimensionKey key = DimensionKey.of(dataset.grain(), "orders", 3);
-    store.writer().upsertCell(dataset, key, 0L, MINUTE, count(5L));
-    store.writer().upsertCell(dataset, key, 0L, MINUTE, count(7L));
+    store.writer().upsertCell(dataset, key, 0L, MINUTE, count(5L), WriteVersion.SEED);
+    store.writer().upsertCell(dataset, key, 0L, MINUTE, count(7L), WriteVersion.SEED);
     store.writer().flush();
 
     // when counted over raw JDBC

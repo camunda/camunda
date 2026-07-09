@@ -122,38 +122,45 @@ final class RdbmsPartitioningTest {
     // given the composite conflict target the writer derives for a partitioned (Postgres) cube
     final String conflictTarget = "cell_key, window_start";
 
-    // when the upsert SQL is built for the partitioning dialect
+    // when the fenced upsert SQL is built for the partitioning dialect
     final String sql =
-        RdbmsDatasetWriter.upsertSql(
+        RdbmsDatasetWriter.fencedUpsertSql(
             RdbmsDialect.POSTGRESQL,
             "dataset_1",
-            "cell_key, window_start, window_size, \"count_\"",
-            4,
+            List.of(
+                "cell_key", "window_start", "window_size", "\"count_\"", "ver_epoch", "ver_offset"),
+            List.of("VARCHAR", "BIGINT", "BIGINT", "BIGINT", "BIGINT", "BIGINT"),
             "cell_key",
             conflictTarget,
-            List.of("\"count_\""));
+            List.of("\"count_\"", "ver_epoch", "ver_offset"));
 
-    // then the ON CONFLICT clause targets the composite primary key
+    // then the ON CONFLICT clause targets the composite primary key, guarded by the write fence
     assertThat(sql)
         .contains(
-            "ON CONFLICT (cell_key, window_start) DO UPDATE SET \"count_\" = EXCLUDED.\"count_\"");
+            "ON CONFLICT (cell_key, window_start) DO UPDATE SET \"count_\" = EXCLUDED.\"count_\"")
+        .contains("WHERE EXCLUDED.ver_epoch > dataset_1.ver_epoch");
   }
 
   @Test
-  void shouldKeepSingleColumnMergeKeyForH2Upsert() {
-    // when the upsert SQL is built for H2
+  void shouldMatchOnSingleKeyColumnForH2Upsert() {
+    // when the fenced upsert SQL is built for H2
     final String sql =
-        RdbmsDatasetWriter.upsertSql(
+        RdbmsDatasetWriter.fencedUpsertSql(
             RdbmsDialect.H2,
             "dataset_1",
-            "cell_key, window_start, window_size, \"count_\"",
-            4,
+            List.of(
+                "cell_key", "window_start", "window_size", "\"count_\"", "ver_epoch", "ver_offset"),
+            List.of("VARCHAR", "BIGINT", "BIGINT", "BIGINT", "BIGINT", "BIGINT"),
             "cell_key",
             "cell_key",
-            List.of("\"count_\""));
+            List.of("\"count_\"", "ver_epoch", "ver_offset"));
 
-    // then it stays the single-column MERGE … KEY (cell_key), unchanged from before Layer C
-    assertThat(sql).startsWith("MERGE INTO dataset_1").contains("KEY (cell_key)");
+    // then it merges on cell_key alone, updating only when the write passes the version fence
+    assertThat(sql)
+        .startsWith("MERGE INTO dataset_1 USING")
+        .contains("ON dataset_1.cell_key = src.cell_key")
+        .contains("WHEN MATCHED AND (src.ver_epoch > dataset_1.ver_epoch")
+        .contains("WHEN NOT MATCHED THEN INSERT");
   }
 
   @Test

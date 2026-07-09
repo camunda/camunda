@@ -31,6 +31,7 @@ import io.camunda.analytics.query.TableQueryExecutor;
 import io.camunda.analytics.serving.spi.Cell;
 import io.camunda.analytics.serving.spi.DatasetFetch;
 import io.camunda.analytics.serving.spi.TableRow;
+import io.camunda.analytics.serving.spi.WriteVersion;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -94,10 +95,12 @@ final class RdbmsDatasetStoreTest {
   void shouldWriteCellsAndServeThemThroughTheExecutor() {
     // given a provisioned cube with per-window counts written idempotently
     store.schemaManager().ensure(dataset);
-    store.writer().upsertCell(dataset, key("orders"), 0L, MINUTE, count(3L));
-    store.writer().upsertCell(dataset, key("orders"), MINUTE, MINUTE, count(2L));
-    store.writer().upsertCell(dataset, key("ship"), 0L, MINUTE, count(4L));
-    store.writer().upsertCell(dataset, key("orders"), 0L, MINUTE, count(3L)); // replay
+    store.writer().upsertCell(dataset, key("orders"), 0L, MINUTE, count(3L), WriteVersion.SEED);
+    store.writer().upsertCell(dataset, key("orders"), MINUTE, MINUTE, count(2L), WriteVersion.SEED);
+    store.writer().upsertCell(dataset, key("ship"), 0L, MINUTE, count(4L), WriteVersion.SEED);
+    store
+        .writer()
+        .upsertCell(dataset, key("orders"), 0L, MINUTE, count(3L), WriteVersion.SEED); // replay
     store.writer().flush();
 
     // when read back through the neutral planner + executor over the whole range in one bucket
@@ -119,8 +122,8 @@ final class RdbmsDatasetStoreTest {
   void shouldStreamRawCellsThroughACursor() {
     // given cells across two windows
     store.schemaManager().ensure(dataset);
-    store.writer().upsertCell(dataset, key("orders"), 0L, MINUTE, count(3L));
-    store.writer().upsertCell(dataset, key("orders"), MINUTE, MINUTE, count(2L));
+    store.writer().upsertCell(dataset, key("orders"), 0L, MINUTE, count(3L), WriteVersion.SEED);
+    store.writer().upsertCell(dataset, key("orders"), MINUTE, MINUTE, count(2L), WriteVersion.SEED);
     store.writer().flush();
 
     // when streamed through the forward cursor (never materialized as a List)
@@ -144,9 +147,9 @@ final class RdbmsDatasetStoreTest {
     store.schemaManager().ensureTable(table);
 
     // when two rows are written and one is replayed
-    store.writer().upsertRow(table, "1001", List.of("order", 1_500L));
-    store.writer().upsertRow(table, "1002", List.of("ship", 42_000L));
-    store.writer().upsertRow(table, "1001", List.of("order", 1_500L));
+    store.writer().upsertRow(table, "1001", List.of("order", 1_500L), WriteVersion.SEED);
+    store.writer().upsertRow(table, "1002", List.of("ship", 42_000L), WriteVersion.SEED);
+    store.writer().upsertRow(table, "1001", List.of("order", 1_500L), WriteVersion.SEED);
     store.writer().flush();
 
     // then there are two distinct rows
@@ -158,8 +161,8 @@ final class RdbmsDatasetStoreTest {
     // given a table with two written rows
     final CompiledTable table = rawInstancesTable();
     store.schemaManager().ensureTable(table);
-    store.writer().upsertRow(table, "1001", List.of("order", 1_500L));
-    store.writer().upsertRow(table, "1002", List.of("ship", 42_000L));
+    store.writer().upsertRow(table, "1001", List.of("order", 1_500L), WriteVersion.SEED);
+    store.writer().upsertRow(table, "1002", List.of("ship", 42_000L), WriteVersion.SEED);
     store.writer().flush();
     final TableQueryExecutor executor = new TableQueryExecutor(store.queryClient());
 
@@ -199,7 +202,7 @@ final class RdbmsDatasetStoreTest {
     final String bigXml = "<x>" + "a".repeat(6000) + "</x>"; // > the STRING VARCHAR(4000) bound
 
     // when a row far larger than the VARCHAR bound is written and read back
-    store.writer().upsertRow(table, "1", List.of("1", bigXml));
+    store.writer().upsertRow(table, "1", List.of("1", bigXml), WriteVersion.SEED);
     store.writer().flush();
     final List<TableRow> rows =
         new TableQueryExecutor(store.queryClient()).execute(new TableQuery(List.of(), 10), table);

@@ -11,6 +11,8 @@ import io.camunda.analytics.dataset.CompiledDataset;
 import io.camunda.analytics.dataset.CompiledTable;
 import io.camunda.analytics.dimension.DimensionKey;
 import io.camunda.analytics.serving.spi.DatasetWriter;
+import io.camunda.analytics.serving.spi.VersionedDatasetWriter;
+import io.camunda.analytics.serving.spi.WriteVersion;
 import io.camunda.eventbridge.streaming.sink.FrozenOutbox;
 import java.util.List;
 
@@ -37,11 +39,18 @@ import java.util.List;
  */
 final class FreezableDatasetWriter implements DatasetWriter {
 
-  private final DatasetWriter delegate;
+  private final VersionedDatasetWriter delegate;
   private final FrozenOutbox<Op> outbox = new FrozenOutbox<>();
 
-  FreezableDatasetWriter(final DatasetWriter delegate) {
+  // The version the current frozen batch is sealed with, and the last version sealed — every op
+  // of one cut carries the cut's (epoch, offset); a between-cuts drain (close) stamps the next
+  // version within the same ownership, which a later owner's higher epoch always supersedes.
+  private WriteVersion frozenVersion;
+  private WriteVersion lastVersion;
+
+  FreezableDatasetWriter(final VersionedDatasetWriter delegate, final WriteVersion initialVersion) {
     this.delegate = delegate;
+    lastVersion = initialVersion;
   }
 
   @Override
@@ -59,25 +68,35 @@ final class FreezableDatasetWriter implements DatasetWriter {
     outbox.stage(new RowUpsert(table, rowKey, values));
   }
 
-  /** Synchronous batch boundary: drains every retained and staged row and flushes durably. */
+  /**
+   * Synchronous batch boundary (close-time drain): applies every retained and staged row with the
+   * next version within the current ownership — newer than the last sealed cut (these rows reflect
+   * folds past it), and always superseded by a later owner's higher epoch.
+   */
   @Override
   public void flush() {
     if (outbox.hasFrozen()) {
       throw new IllegalStateException(
           "cannot flush synchronously: a frozen serving batch is outstanding");
     }
-    outbox.drainPending(op -> op.applyTo(delegate));
+    final WriteVersion version = lastVersion.next();
+    outbox.drainPending(op -> op.applyTo(delegate, version));
     delegate.flush();
   }
 
   /**
    * Owner thread, at the commit barrier: detaches the staged rows (behind any retained rows of a
-   * failed cut) into the outstanding frozen batch. Rows upserted afterwards belong to the next cut.
+   * failed cut) into the outstanding frozen batch, sealed with the cut's {@code version} — one
+   * {@code (epoch, offset)} pair describes every row the barrier covers. A failed cut's retained
+   * rows are re-frozen under the next cut's (newer) version; applied older-before-newer, so
+   * last-write-wins per key is preserved within one writer.
    *
    * @throws IllegalStateException if a frozen batch is already outstanding
    */
-  void freeze() {
+  void freeze(final WriteVersion version) {
     outbox.freeze();
+    frozenVersion = version;
+    lastVersion = version;
   }
 
   /**
@@ -89,7 +108,8 @@ final class FreezableDatasetWriter implements DatasetWriter {
    * @throws IllegalStateException if nothing is frozen
    */
   void publishFrozen() {
-    if (outbox.drainFrozen(op -> op.applyTo(delegate)) > 0) {
+    final WriteVersion version = frozenVersion;
+    if (outbox.drainFrozen(op -> op.applyTo(delegate, version)) > 0) {
       delegate.flush();
     }
   }
@@ -110,9 +130,12 @@ final class FreezableDatasetWriter implements DatasetWriter {
     delegate.close();
   }
 
-  /** One buffered serving write, replayed against the backend at drain time. */
+  /**
+   * One buffered serving write, replayed against the backend at drain time with its batch's
+   * version.
+   */
   private sealed interface Op permits CellUpsert, RowUpsert {
-    void applyTo(DatasetWriter writer);
+    void applyTo(VersionedDatasetWriter writer, WriteVersion version);
   }
 
   private record CellUpsert(
@@ -124,16 +147,16 @@ final class FreezableDatasetWriter implements DatasetWriter {
       implements Op {
 
     @Override
-    public void applyTo(final DatasetWriter writer) {
-      writer.upsertCell(dataset, key, windowStart, windowSize, compositeAccumulator);
+    public void applyTo(final VersionedDatasetWriter writer, final WriteVersion version) {
+      writer.upsertCell(dataset, key, windowStart, windowSize, compositeAccumulator, version);
     }
   }
 
   private record RowUpsert(CompiledTable table, String rowKey, List<Object> values) implements Op {
 
     @Override
-    public void applyTo(final DatasetWriter writer) {
-      writer.upsertRow(table, rowKey, values);
+    public void applyTo(final VersionedDatasetWriter writer, final WriteVersion version) {
+      writer.upsertRow(table, rowKey, values, version);
     }
   }
 }

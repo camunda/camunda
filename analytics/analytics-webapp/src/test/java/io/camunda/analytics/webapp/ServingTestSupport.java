@@ -21,6 +21,7 @@ import io.camunda.analytics.query.TableQueryExecutor;
 import io.camunda.analytics.serving.catalog.StandardDatasets;
 import io.camunda.analytics.serving.spi.DatasetStore;
 import io.camunda.analytics.serving.spi.MetadataStore;
+import io.camunda.analytics.serving.spi.WriteVersion;
 import io.camunda.analytics.store.rdbms.RdbmsDatasetStore;
 import io.camunda.analytics.store.rdbms.metadata.RdbmsMetadataStore;
 import java.util.LinkedHashMap;
@@ -82,7 +83,7 @@ final class ServingTestSupport {
       final String rowKey,
       final List<Object> values) {
     final CompiledTable table = fixture.tableCatalog().require(tableName);
-    fixture.datasetStore().writer().upsertRow(table, rowKey, values);
+    fixture.datasetStore().writer().upsertRow(table, rowKey, values, WriteVersion.SEED);
     fixture.datasetStore().writer().flush();
   }
 
@@ -116,7 +117,7 @@ final class ServingTestSupport {
     fixture
         .datasetStore()
         .writer()
-        .upsertCell(dataset, key, windowStart, windowMs, fold(dataset, facts));
+        .upsertCell(dataset, key, windowStart, windowMs, fold(dataset, facts), WriteVersion.SEED);
     fixture.datasetStore().writer().flush();
     return windowStart;
   }

@@ -81,7 +81,7 @@ public final class StreamRuntime<R> implements AutoCloseable {
   private final MessageDeserializer<R> deserializer;
   private final RecordFilter recordFilter;
   private final ToLongFunction<byte[]> payloadTimestamps;
-  private final IntFunction<Task<R>> taskFactory;
+  private final TaskFactory<R> taskFactory;
   private final TransactionRunner transactionRunner;
   private final OffsetStore offsets;
   private final List<Runnable> preCommitFlushes;
@@ -359,7 +359,7 @@ public final class StreamRuntime<R> implements AutoCloseable {
     private MessageDeserializer<R> deserializer;
     private RecordFilter recordFilter = RecordFilter.ACCEPT_ALL;
     private ToLongFunction<byte[]> payloadTimestamps;
-    private IntFunction<Task<R>> taskFactory;
+    private TaskFactory<R> taskFactory;
     // Runtime-managed durability. Optional: a task that owns its durability (ownsDurability()) uses
     // its own transaction and offset store instead, so these stay at their no-op defaults.
     private TransactionRunner transactionRunner = Runnable::run;
@@ -439,6 +439,15 @@ public final class StreamRuntime<R> implements AutoCloseable {
 
     /** One {@link Task} per source partition. {@code partitionId -> task}. */
     public Builder<R> taskFactory(final IntFunction<Task<R>> taskFactory) {
+      this.taskFactory = (partition, epoch) -> taskFactory.apply(partition);
+      return this;
+    }
+
+    /**
+     * One {@link Task} per source partition, additionally handed the runtime's {@link
+     * OwnershipEpoch} — the coordinator fencing token to stamp onto external data writes.
+     */
+    public Builder<R> taskFactory(final TaskFactory<R> taskFactory) {
       this.taskFactory = taskFactory;
       return this;
     }

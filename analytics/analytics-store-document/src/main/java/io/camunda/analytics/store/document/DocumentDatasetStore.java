@@ -10,7 +10,7 @@ package io.camunda.analytics.store.document;
 import io.camunda.analytics.serving.spi.DatasetQueryClient;
 import io.camunda.analytics.serving.spi.DatasetSchemaManager;
 import io.camunda.analytics.serving.spi.DatasetStore;
-import io.camunda.analytics.serving.spi.DatasetWriter;
+import io.camunda.analytics.serving.spi.VersionedDatasetWriter;
 import io.camunda.search.clients.DocumentBasedSchemaClient;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.DocumentBasedWriteClient;
@@ -43,7 +43,7 @@ public final class DocumentDatasetStore implements DatasetStore {
   }
 
   @Override
-  public DatasetWriter writer() {
+  public VersionedDatasetWriter writer() {
     return new DocumentDatasetWriter(writeClient);
   }
 

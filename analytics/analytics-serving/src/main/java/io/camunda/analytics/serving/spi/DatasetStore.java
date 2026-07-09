@@ -18,7 +18,7 @@ public interface DatasetStore extends AutoCloseable {
 
   DatasetSchemaManager schemaManager();
 
-  DatasetWriter writer();
+  VersionedDatasetWriter writer();
 
   DatasetQueryClient queryClient();
 

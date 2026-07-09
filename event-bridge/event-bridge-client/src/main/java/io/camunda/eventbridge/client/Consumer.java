@@ -27,6 +27,17 @@ import java.util.concurrent.CompletableFuture;
  */
 public interface Consumer extends AutoCloseable {
 
+  /**
+   * The coordinator fencing token of this consumer's current membership — the same epoch the
+   * coordinator validates offset commits against. It is derived from the <em>group</em> epoch (set
+   * to it at join and on each reconciled assignment), so it is comparable across members and
+   * strictly higher for any later owner of a partition: a caller that stamps it onto external
+   * writes can let the target store reject a fenced member's stale data (the write-side counterpart
+   * of the offset-commit fence). {@code 0} before the first join; {@code -1} after this member has
+   * been fenced.
+   */
+  long memberEpoch();
+
   /** Registers this consumer with the coordinator and starts the heartbeat loop. */
   CompletableFuture<Void> joinGroup();
 

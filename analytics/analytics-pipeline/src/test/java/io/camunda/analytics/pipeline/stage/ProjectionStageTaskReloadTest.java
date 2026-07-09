@@ -139,6 +139,7 @@ final class ProjectionStageTaskReloadTest {
     task =
         new ProjectionStageTask(
             1,
+            () -> 1L,
             mock(EventBridgeClient.class), // never used: no records flow in these tests
             "facts",
             1,

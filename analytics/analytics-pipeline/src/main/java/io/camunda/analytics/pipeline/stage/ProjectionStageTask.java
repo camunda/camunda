@@ -28,13 +28,15 @@ import io.camunda.analytics.projection.AnalyticsColumnFamilies;
 import io.camunda.analytics.projection.SourceRecord;
 import io.camunda.analytics.serving.catalog.DatasetCatalog;
 import io.camunda.analytics.serving.spi.DatasetStore;
-import io.camunda.analytics.serving.spi.DatasetWriter;
+import io.camunda.analytics.serving.spi.VersionedDatasetWriter;
+import io.camunda.analytics.serving.spi.WriteVersion;
 import io.camunda.analytics.state.StateBackedProjectionState;
 import io.camunda.analytics.state.VariableNames;
 import io.camunda.analytics.table.ProcessDefinitionSink;
 import io.camunda.analytics.table.TableRowProcessor;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.streaming.CommitCut;
+import io.camunda.eventbridge.streaming.OwnershipEpoch;
 import io.camunda.eventbridge.streaming.Task;
 import io.camunda.eventbridge.streaming.aggregate.SegmentSealingAggregation;
 import io.camunda.eventbridge.streaming.aggregate.Segments;
@@ -104,6 +106,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
       };
 
   private final int partition;
+  private final OwnershipEpoch epoch;
   private final EventBridgeClient client;
   private final String factsTopic;
   private final int factsPartitions;
@@ -159,13 +162,14 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
 
   ProjectionStageTask(
       final int partition,
+      final OwnershipEpoch epoch,
       final EventBridgeClient client,
       final String factsTopic,
       final int factsPartitions,
       final int segmentStride,
       final int schemaVersion,
       final DatasetStore datasetStore,
-      final DatasetWriter servingWriter,
+      final VersionedDatasetWriter servingWriter,
       final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider,
       final KeyValueStore<DbBytes, DbBytes> openSegments,
       final KeyValueStore<DbInt, DbLong> offsets,
@@ -175,6 +179,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
       final boolean eagerShufflePublish,
       final long nowMs) {
     this.partition = partition;
+    this.epoch = epoch;
     this.client = client;
     this.factsTopic = factsTopic;
     this.factsPartitions = factsPartitions;
@@ -183,8 +188,10 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
     this.schemaVersion = schemaVersion;
     this.datasetStore = datasetStore;
     // Stage the serving writes on the heap so a frozen cut flushes exactly the rows its barrier
-    // covers while the actor keeps folding (and writing) past it.
-    this.servingWriter = new FreezableDatasetWriter(servingWriter);
+    // covers while the actor keeps folding (and writing) past it. Each cut seals its batch with
+    // (ownership epoch, cut offset) — the write fence the backend enforces.
+    this.servingWriter =
+        new FreezableDatasetWriter(servingWriter, new WriteVersion(epoch.current(), 0));
     this.provider = provider;
     this.openSegments = openSegments;
     this.offsets = offsets;
@@ -202,6 +209,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
 
   public static ProjectionStageTask open(
       final int partition,
+      final OwnershipEpoch epoch,
       final EventBridgeClient client,
       final String baseDir,
       final String factsTopic,
@@ -227,6 +235,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
             AnalyticsColumnFamilies.ZEEBE_APPLIED_POSITION, new DbInt(), new DbLong());
     return new ProjectionStageTask(
         partition,
+        epoch,
         client,
         factsTopic,
         factsPartitions,
@@ -505,7 +514,9 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
     // them to keep the publisher's per-segment chunk map bounded.
     publisher.pruneChunkCountersBelow(segments.index(offset));
     final FreezableDatasetWriter servingWriter = this.servingWriter;
-    servingWriter.freeze();
+    // The barrier's write fence: this cut's rows carry (current ownership epoch, cut offset), so
+    // the serving store rejects them if a newer owner has already written past us.
+    servingWriter.freeze(new WriteVersion(epoch.current(), offset));
     // The pre-fold dedup watermarks are snapshotted AT THE BARRIER: the persisted watermarks must
     // describe exactly the folds in the frozen state. A snapshot taken at persist time would cover
     // positions folded after the freeze — folds the frozen cut does not contain — and a

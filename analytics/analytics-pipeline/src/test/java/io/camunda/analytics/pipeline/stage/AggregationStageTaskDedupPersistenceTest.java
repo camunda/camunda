@@ -129,6 +129,7 @@ final class AggregationStageTaskDedupPersistenceTest {
     task =
         new AggregationStageTask(
             1,
+            () -> 1L,
             datasetStore,
             datasetStore.writer(),
             provider,

@@ -12,7 +12,7 @@ import io.camunda.analytics.dataset.CompiledTable;
 import io.camunda.analytics.serving.spi.DatasetQueryClient;
 import io.camunda.analytics.serving.spi.DatasetSchemaManager;
 import io.camunda.analytics.serving.spi.DatasetStore;
-import io.camunda.analytics.serving.spi.DatasetWriter;
+import io.camunda.analytics.serving.spi.VersionedDatasetWriter;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -57,7 +57,7 @@ final class CountingDatasetStore implements DatasetStore {
   }
 
   @Override
-  public DatasetWriter writer() {
+  public VersionedDatasetWriter writer() {
     return delegate.writer();
   }
 

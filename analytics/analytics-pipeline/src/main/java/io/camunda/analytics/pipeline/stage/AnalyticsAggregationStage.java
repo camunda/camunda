@@ -88,9 +88,10 @@ public final class AnalyticsAggregationStage {
             // One self-contained task per facts partition: its own RocksDB cells + offset and the
             // per-aggId mergers, owning its durability (restore/commit).
             .taskFactory(
-                partition ->
+                (partition, epoch) ->
                     AggregationStageTask.open(
                         partition,
+                        epoch,
                         config.stateDir(),
                         backend.newDatasetStore(),
                         catalog,

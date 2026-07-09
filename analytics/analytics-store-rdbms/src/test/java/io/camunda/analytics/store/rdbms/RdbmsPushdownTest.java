@@ -29,6 +29,7 @@ import io.camunda.analytics.metric.RatioResult;
 import io.camunda.analytics.serving.spi.AggregatedFetch;
 import io.camunda.analytics.serving.spi.AggregatedRow;
 import io.camunda.analytics.serving.spi.ReadStrategy;
+import io.camunda.analytics.serving.spi.WriteVersion;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -226,7 +227,13 @@ final class RdbmsPushdownTest {
       final List<Fact> facts) {
     store
         .writer()
-        .upsertCell(cube, key, windowStart, cube.finestTier().windowMs(), fold(cube, facts));
+        .upsertCell(
+            cube,
+            key,
+            windowStart,
+            cube.finestTier().windowMs(),
+            fold(cube, facts),
+            WriteVersion.SEED);
   }
 
   /** Folds the facts into the cube's composite accumulator — every meter slot at once. */

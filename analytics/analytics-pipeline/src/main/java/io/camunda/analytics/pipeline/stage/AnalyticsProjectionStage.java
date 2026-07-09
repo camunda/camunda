@@ -114,9 +114,10 @@ public final class AnalyticsProjectionStage {
             // sealing aggregations and publisher, owning its durability (restore/commit) — the
             // runtime dedups its resume gap and drives its per-partition atomic commit.
             .taskFactory(
-                partition ->
+                (partition, epoch) ->
                     ProjectionStageTask.open(
                         partition,
+                        epoch,
                         client,
                         config.stateDir(),
                         config.factsTopic(),

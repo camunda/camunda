@@ -24,6 +24,8 @@ final class DocumentCubeNames {
   static final String WINDOW_START = "window_start";
   static final String WINDOW_SIZE = "window_size";
   static final String METER_NAME = "meter_name";
+  static final String VER_EPOCH = "ver_epoch";
+  static final String VER_OFFSET = "ver_offset";
   static final String ACCUMULATOR = "accumulator";
 
   /**

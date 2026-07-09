@@ -10,7 +10,7 @@ package io.camunda.analytics.store.rdbms;
 import io.camunda.analytics.serving.spi.DatasetQueryClient;
 import io.camunda.analytics.serving.spi.DatasetSchemaManager;
 import io.camunda.analytics.serving.spi.DatasetStore;
-import io.camunda.analytics.serving.spi.DatasetWriter;
+import io.camunda.analytics.serving.spi.VersionedDatasetWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
 import javax.sql.DataSource;
@@ -52,7 +52,7 @@ public final class RdbmsDatasetStore implements DatasetStore {
   }
 
   @Override
-  public DatasetWriter writer() {
+  public VersionedDatasetWriter writer() {
     return writer;
   }
 

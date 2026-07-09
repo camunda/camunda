@@ -18,6 +18,8 @@ import io.camunda.analytics.meter.CompositeAccumulatorValue;
 import io.camunda.analytics.meter.PushdownColumn;
 import io.camunda.analytics.meter.PushdownSpec;
 import io.camunda.analytics.serving.spi.DatasetWriter;
+import io.camunda.analytics.serving.spi.VersionedDatasetWriter;
+import io.camunda.analytics.serving.spi.WriteVersion;
 import io.camunda.analytics.serving.support.SketchScalar;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -30,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ibatis.session.SqlSession;
@@ -55,7 +58,7 @@ import org.apache.ibatis.session.SqlSessionFactory;
  * executeUpdate()} per cell — the win is large over a network (Postgres) and still real in-process
  * (H2).
  */
-public final class RdbmsDatasetWriter implements DatasetWriter {
+public final class RdbmsDatasetWriter implements VersionedDatasetWriter {
 
   private final SqlSessionFactory sessionFactory;
   private final RdbmsDialect dialect;
@@ -90,7 +93,8 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
       final DimensionKey key,
       final long windowStart,
       final long windowSize,
-      final byte[] compositeAccumulator) {
+      final byte[] compositeAccumulator,
+      final WriteVersion version) {
     ensurePartition(dataset, windowStart);
     final List<DimensionColumn> grain = dataset.grain().columns();
     final String dimCols =
@@ -109,6 +113,7 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
         CompositeAccumulatorValue.slotBytes(compositeAccumulator, meters.size());
 
     final List<String> meterCols = new ArrayList<>();
+    final List<String> meterColTypes = new ArrayList<>();
     final List<MeterBind> binds = new ArrayList<>();
     for (int slot = 0; slot < meters.size(); slot++) {
       final CompiledMeter meter = meters.get(slot);
@@ -123,13 +128,16 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
           meterCols.add(
               RdbmsNames.quotedPushdownColumn(meter.meterName(), columns.get(i).suffix()));
           final PushdownColumn column = columns.get(i);
+          meterColTypes.add(dialect.columnType(column.type()));
           final Object value = values.get(i);
           binds.add((statement, index) -> bind(statement, index, column.type(), value));
         }
       } else {
         // Sketch / summary: the app-mergeable blob + a finalized scalar for the DIRECT fast path.
         meterCols.add(RdbmsNames.quotedBlobColumn(meter.meterName()));
+        meterColTypes.add(dialect.blobType());
         meterCols.add(RdbmsNames.quotedValueColumn(meter.meterName()));
+        meterColTypes.add(dialect.doubleType());
         final byte[] blob = slotBytes == null ? emptySlot(meter.bound()) : slotBytes;
         final double scalar = finalizedValue(meter.bound(), blob);
         binds.add((statement, index) -> statement.setBytes(index, blob));
@@ -137,21 +145,36 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
       }
     }
 
-    final String columns =
-        "cell_key, "
-            + (dimCols.isEmpty() ? "" : dimCols + ", ")
-            + "window_start, window_size, "
-            + String.join(", ", meterCols);
-    final int columnCount = 1 + grain.size() + 2 + meterCols.size();
+    final List<String> insertColumns = new ArrayList<>();
+    final List<String> columnTypes = new ArrayList<>();
+    insertColumns.add("cell_key");
+    columnTypes.add("VARCHAR");
+    for (final DimensionColumn dim : grain) {
+      insertColumns.add(RdbmsNames.quotedColumn(dim.name()));
+      columnTypes.add(dialect.columnType(dim.type()));
+    }
+    insertColumns.add("window_start");
+    columnTypes.add("BIGINT");
+    insertColumns.add("window_size");
+    columnTypes.add("BIGINT");
+    insertColumns.addAll(meterCols);
+    columnTypes.addAll(meterColTypes);
+    insertColumns.add("ver_epoch");
+    columnTypes.add("BIGINT");
+    insertColumns.add("ver_offset");
+    columnTypes.add("BIGINT");
+    final List<String> updateColumns = new ArrayList<>(meterCols);
+    updateColumns.add("ver_epoch");
+    updateColumns.add("ver_offset");
     // On a Postgres partitioned parent the primary key is the composite (cell_key, window_start) —
     // the partition key must be in the PK — so the upsert conflict target is composite too;
     // window_start is functionally implied by cell_key, so this stays effectively keyed by
-    // cell_key.
-    // H2 keeps the single-column MERGE … KEY (cell_key).
+    // cell_key. H2 matches on cell_key via MERGE … USING.
     final String conflictTarget =
         dialect.supportsPartitioning() ? "cell_key, window_start" : "cell_key";
     final String sql =
-        upsertSql(dialect, table, columns, columnCount, "cell_key", conflictTarget, meterCols);
+        fencedUpsertSql(
+            dialect, table, insertColumns, columnTypes, "cell_key", conflictTarget, updateColumns);
 
     execute(
         sql,
@@ -166,6 +189,8 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
           for (final MeterBind meterBind : binds) {
             meterBind.bind(statement, index++);
           }
+          statement.setLong(index++, version.epoch());
+          statement.setLong(index, version.offset());
         },
         "cube " + dataset.name());
   }
@@ -203,23 +228,37 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
   }
 
   @Override
-  public void upsertRow(final CompiledTable table, final String rowKey, final List<Object> values) {
+  public void upsertRow(
+      final CompiledTable table,
+      final String rowKey,
+      final List<Object> values,
+      final WriteVersion version) {
     final List<DimensionColumn> cols = table.columns();
-    final String colNames =
-        cols.stream().map(c -> RdbmsNames.quotedColumn(c.name())).collect(Collectors.joining(", "));
-    final String columns = "row_key" + (colNames.isEmpty() ? "" : ", " + colNames);
-    final int columnCount = 1 + cols.size();
+    final List<String> insertColumns = new ArrayList<>();
+    final List<String> columnTypes = new ArrayList<>();
+    insertColumns.add("row_key");
+    columnTypes.add("VARCHAR");
+    for (final DimensionColumn col : cols) {
+      insertColumns.add(RdbmsNames.quotedColumn(col.name()));
+      columnTypes.add(dialect.columnType(col.type()));
+    }
+    insertColumns.add("ver_epoch");
+    columnTypes.add("BIGINT");
+    insertColumns.add("ver_offset");
+    columnTypes.add("BIGINT");
     final List<String> updateColumns =
         cols.stream().map(c -> RdbmsNames.quotedColumn(c.name())).collect(Collectors.toList());
+    updateColumns.add("ver_epoch");
+    updateColumns.add("ver_offset");
     final String sql =
-        upsertSql(
+        fencedUpsertSql(
             dialect,
             RdbmsNames.rowTable(table.cubeId()),
-            columns,
-            columnCount,
+            insertColumns,
+            columnTypes,
             "row_key",
             "row_key",
-            updateColumns.isEmpty() ? List.of("row_key") : updateColumns);
+            updateColumns);
 
     execute(
         sql,
@@ -229,6 +268,8 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
           for (int i = 0; i < cols.size(); i++) {
             bind(statement, index++, cols.get(i).type(), values.get(i));
           }
+          statement.setLong(index++, version.epoch());
+          statement.setLong(index, version.offset());
         },
         "table " + table.name());
   }
@@ -263,11 +304,25 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
     session = null;
   }
 
+  /** Writes rejected by the version fence — stale by the time they reached the database. */
+  private final LongAdder fencedWrites = new LongAdder();
+
+  /** Writes rejected by the version fence since this writer opened (zero outside rebalances). */
+  public long fencedWrites() {
+    return fencedWrites.sum();
+  }
+
   /** Runs the accumulated batch on every open statement (an empty batch is a harmless no-op). */
   private void executeBatches() {
     for (final PreparedStatement statement : statements.values()) {
       try {
-        statement.executeBatch();
+        // A fenced write matches an existing row but fails the version predicate: it affects
+        // zero rows. That is the fence working, not an error — count it as the signal it is.
+        for (final int updated : statement.executeBatch()) {
+          if (updated == 0) {
+            fencedWrites.increment();
+          }
+        }
       } catch (final SQLException e) {
         throw new IllegalStateException("failed to execute upsert batch", e);
       }
@@ -291,21 +346,32 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
   }
 
   /**
-   * Builds the upsert idiom for the dialect: H2 {@code MERGE … KEY (keyColumn)}, Postgres {@code ON
-   * CONFLICT (conflictTarget)}. The two can differ: a Postgres partitioned table's unique
-   * constraint (hence the conflict target) is the composite PK, while H2's single-column {@code
-   * MERGE … KEY} stays keyed on {@code keyColumn}.
+   * Builds the <em>fenced</em> upsert for the dialect: the insert happens unconditionally for a new
+   * key, but an existing row is updated only when the write's {@code (ver_epoch, ver_offset)} is
+   * at-or-above the row's stored pair — a fenced zombie's stale overwrite affects zero rows (which
+   * {@link #executeBatches()} counts). Postgres: {@code ON CONFLICT (conflictTarget) DO UPDATE …
+   * WHERE}; H2 has no conditional {@code MERGE … KEY}, so it uses the standard {@code MERGE … USING
+   * … WHEN MATCHED AND … / WHEN NOT MATCHED}. The two key shapes differ: a Postgres partitioned
+   * table's unique constraint (hence the conflict target) is the composite PK, while H2 matches on
+   * {@code keyColumn} alone.
+   *
+   * <p>{@code insertColumns} must end with {@code ver_epoch, ver_offset}; {@code updateColumns} are
+   * the value + version columns an existing row receives (never the key/dims — they are identical
+   * by keying).
    */
-  static String upsertSql(
+  static String fencedUpsertSql(
       final RdbmsDialect dialect,
       final String table,
-      final String columns,
-      final int columnCount,
+      final List<String> insertColumns,
+      final List<String> columnTypes,
       final String keyColumn,
       final String conflictTarget,
       final List<String> updateColumns) {
+    final String columns = String.join(", ", insertColumns);
     final String placeholders =
-        IntStream.range(0, columnCount).mapToObj(i -> "?").collect(Collectors.joining(", "));
+        IntStream.range(0, insertColumns.size())
+            .mapToObj(i -> "?")
+            .collect(Collectors.joining(", "));
     if (dialect == RdbmsDialect.POSTGRESQL) {
       final String setClause =
           updateColumns.stream().map(c -> c + " = EXCLUDED." + c).collect(Collectors.joining(", "));
@@ -318,16 +384,49 @@ public final class RdbmsDatasetWriter implements DatasetWriter {
           + ") ON CONFLICT ("
           + conflictTarget
           + ") DO UPDATE SET "
-          + setClause;
+          + setClause
+          + " WHERE EXCLUDED.ver_epoch > "
+          + table
+          + ".ver_epoch OR (EXCLUDED.ver_epoch = "
+          + table
+          + ".ver_epoch AND EXCLUDED.ver_offset >= "
+          + table
+          + ".ver_offset)";
     }
+    final String setClause =
+        updateColumns.stream().map(c -> c + " = src." + c).collect(Collectors.joining(", "));
+    final String srcColumns =
+        insertColumns.stream().map(c -> "src." + c).collect(Collectors.joining(", "));
+    // H2 cannot infer a bare ?'s type inside MERGE … USING (VALUES …) — an untyped binary
+    // parameter round-trips corrupted — so every source value is cast to its target column type.
+    final String typedPlaceholders =
+        IntStream.range(0, insertColumns.size())
+            .mapToObj(i -> "CAST(? AS " + columnTypes.get(i) + ")")
+            .collect(Collectors.joining(", "));
     return "MERGE INTO "
         + table
-        + " ("
+        + " USING (VALUES ("
+        + typedPlaceholders
+        + ")) AS src ("
         + columns
-        + ") KEY ("
+        + ") ON "
+        + table
+        + "."
         + keyColumn
+        + " = src."
+        + keyColumn
+        + " WHEN MATCHED AND (src.ver_epoch > "
+        + table
+        + ".ver_epoch OR (src.ver_epoch = "
+        + table
+        + ".ver_epoch AND src.ver_offset >= "
+        + table
+        + ".ver_offset)) THEN UPDATE SET "
+        + setClause
+        + " WHEN NOT MATCHED THEN INSERT ("
+        + columns
         + ") VALUES ("
-        + placeholders
+        + srcColumns
         + ")";
   }
 

@@ -22,7 +22,10 @@ import io.camunda.analytics.projection.AnalyticsColumnFamilies;
 import io.camunda.analytics.serving.catalog.DatasetCatalog;
 import io.camunda.analytics.serving.spi.DatasetStore;
 import io.camunda.analytics.serving.spi.DatasetWriter;
+import io.camunda.analytics.serving.spi.VersionedDatasetWriter;
+import io.camunda.analytics.serving.spi.WriteVersion;
 import io.camunda.eventbridge.streaming.CommitCut;
+import io.camunda.eventbridge.streaming.OwnershipEpoch;
 import io.camunda.eventbridge.streaming.Task;
 import io.camunda.eventbridge.streaming.TransactionRunner;
 import io.camunda.eventbridge.streaming.aggregate.SegmentDedup;
@@ -80,6 +83,7 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
   private static final Logger LOG = LoggerFactory.getLogger(AggregationStageTask.class);
 
   private final int partition;
+  private final OwnershipEpoch epoch;
   private final DatasetStore datasetStore;
   private final FreezableDatasetWriter servingWriter;
   private final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider;
@@ -119,8 +123,9 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
 
   AggregationStageTask(
       final int partition,
+      final OwnershipEpoch epoch,
       final DatasetStore datasetStore,
-      final DatasetWriter servingWriter,
+      final VersionedDatasetWriter servingWriter,
       final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider,
       final KeyValueStore<DbBytes, DbBytes> cellStore,
       final KeyValueStore<DbInt, DbLong> offsets,
@@ -129,10 +134,13 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
       final long reloadCheckIntervalMs,
       final long nowMs) {
     this.partition = partition;
+    this.epoch = epoch;
     this.datasetStore = datasetStore;
     // Stage the serving writes on the heap so a frozen cut flushes exactly the rows its barrier
-    // covers while the actor keeps merging (and converging) past it.
-    this.servingWriter = new FreezableDatasetWriter(servingWriter);
+    // covers while the actor keeps merging (and converging) past it. Each cut seals its batch
+    // with (ownership epoch, cut offset) — the write fence the backend enforces.
+    this.servingWriter =
+        new FreezableDatasetWriter(servingWriter, new WriteVersion(epoch.current(), 0));
     this.provider = provider;
     this.cellStore = cellStore;
     this.offsets = offsets;
@@ -152,6 +160,7 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
 
   public static AggregationStageTask open(
       final int partition,
+      final OwnershipEpoch epoch,
       final String baseDir,
       final DatasetStore datasetStore,
       final DatasetCatalog catalog,
@@ -171,6 +180,7 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
             AnalyticsColumnFamilies.SHUFFLE_DEDUP_WATERMARK, new DbBytes(), new DbBytes());
     return new AggregationStageTask(
         partition,
+        epoch,
         datasetStore,
         datasetStore.writer(),
         provider,
@@ -333,7 +343,9 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
     final List<SegmentMergingAggregation<?, ?>> mergers = activeMergers;
     mergers.forEach(SegmentMergingAggregation::freeze);
     final FreezableDatasetWriter servingWriter = this.servingWriter;
-    servingWriter.freeze();
+    // The barrier's write fence: this cut's rows carry (current ownership epoch, cut offset), so
+    // the serving store rejects them if a newer owner has already written past us.
+    servingWriter.freeze(new WriteVersion(epoch.current(), offset));
     // The dedup admission watermarks are snapshotted AT THE BARRIER: the persisted watermarks must
     // describe exactly the admissions folded into the frozen cells. A snapshot taken at persist
     // time would cover batches admitted after the freeze — merges the frozen cut does not contain

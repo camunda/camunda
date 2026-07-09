@@ -145,6 +145,7 @@ final class ProjectionStageTaskDedupTest {
     task =
         new ProjectionStageTask(
             EB_PARTITION,
+            () -> 1L,
             mock(EventBridgeClient.class), // never used: nothing seals below the segment stride
             "facts",
             1,

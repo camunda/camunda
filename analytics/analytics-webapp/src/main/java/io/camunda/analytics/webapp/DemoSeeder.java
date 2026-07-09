@@ -19,6 +19,7 @@ import io.camunda.analytics.meter.CompositeAggregateFunction;
 import io.camunda.analytics.query.DatasetQueryExecutor;
 import io.camunda.analytics.query.ReportQuery;
 import io.camunda.analytics.serving.spi.DatasetStore;
+import io.camunda.analytics.serving.spi.WriteVersion;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
@@ -318,7 +319,10 @@ public class DemoSeeder implements CommandLineRunner {
       final DimensionKey key,
       final long windowStart,
       final List<Fact> facts) {
-    store.writer().upsertCell(dataset, key, windowStart, tier.windowMs(), fold(dataset, facts));
+    store
+        .writer()
+        .upsertCell(
+            dataset, key, windowStart, tier.windowMs(), fold(dataset, facts), WriteVersion.SEED);
   }
 
   /** Folds the facts into the dataset's composite accumulator — every meter slot at once. */

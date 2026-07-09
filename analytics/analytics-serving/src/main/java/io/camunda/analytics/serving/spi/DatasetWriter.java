@@ -13,10 +13,12 @@ import io.camunda.analytics.dimension.DimensionKey;
 import java.util.List;
 
 /**
- * The backend-neutral <b>write</b> seam of the serving store (mirroring OC's {@code
- * DocumentBasedWriteClient}): the pipeline's result sinks delegate here. Every write is an
- * idempotent full-value upsert keyed by identity, so a re-emit or replay overwrites rather than
- * duplicates — the property the segment-delta reduce and the projected row path both rely on.
+ * The <b>producer-facing</b> write seam of the serving store: the pipeline's result sinks delegate
+ * here, version-unaware — every write is an idempotent full-value upsert keyed by identity, so a
+ * re-emit or replay overwrites rather than duplicates. The stage task's staging writer collects
+ * these, seals each commit cut's batch with one {@link WriteVersion}, and drains it to the fenced
+ * backend seam ({@link VersionedDatasetWriter}) — the version belongs to the cut, not to the
+ * individual write, which is why the sinks never see it.
  */
 public interface DatasetWriter extends AutoCloseable {
 

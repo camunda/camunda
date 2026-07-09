@@ -103,6 +103,9 @@ public final class RdbmsDatasetSchemaManager implements DatasetSchemaManager {
         + (dims.isEmpty() ? "" : ", ")
         + "window_start BIGINT NOT NULL, window_size BIGINT NOT NULL, "
         + meters
+        // The write fence (one per row — the whole row has one writer, ADR 0009): a backend
+        // applies an upsert only when its (epoch, offset) is at-or-above the stored pair.
+        + ", ver_epoch BIGINT NOT NULL DEFAULT 0, ver_offset BIGINT NOT NULL DEFAULT 0"
         + (partitioned ? ", " + primaryKey : "")
         + ")"
         + (partitioned ? " PARTITION BY RANGE (window_start)" : "");
@@ -197,7 +200,7 @@ public final class RdbmsDatasetSchemaManager implements DatasetSchemaManager {
             + RdbmsNames.rowTable(table.cubeId())
             + " (row_key VARCHAR(4000) PRIMARY KEY"
             + (columns.isEmpty() ? "" : ", " + columns)
-            + ")";
+            + ", ver_epoch BIGINT NOT NULL DEFAULT 0, ver_offset BIGINT NOT NULL DEFAULT 0)";
     execute(ddl, "table " + table.name());
   }
 

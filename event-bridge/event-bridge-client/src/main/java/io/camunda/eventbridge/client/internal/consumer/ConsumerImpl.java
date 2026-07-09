@@ -139,6 +139,11 @@ public final class ConsumerImpl implements Consumer {
   }
 
   @Override
+  public long memberEpoch() {
+    return coordinator.memberEpoch();
+  }
+
+  @Override
   public CompletableFuture<Void> joinGroup() {
     return coordinator.joinGroup();
   }

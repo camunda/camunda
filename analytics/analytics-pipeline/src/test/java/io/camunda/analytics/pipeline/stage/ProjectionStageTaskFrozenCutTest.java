@@ -255,6 +255,7 @@ final class ProjectionStageTaskFrozenCutTest {
     task =
         new ProjectionStageTask(
             EB_PARTITION,
+            () -> 1L,
             client,
             "facts",
             1,
