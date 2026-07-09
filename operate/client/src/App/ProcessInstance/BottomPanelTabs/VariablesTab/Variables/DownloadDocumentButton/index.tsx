@@ -59,7 +59,12 @@ const DownloadDocumentButton: React.FC<Props> = ({document, variableName}) => {
   }
 
   return (
-    <Tooltip label={getDisabledTooltipText(document)} align="top">
+    <Tooltip
+      label={getDisabledTooltipText(document)}
+      align="top-end"
+      autoAlign
+      className="cds--icon-tooltip"
+    >
       <TooltipTrigger tabIndex={0}>{button}</TooltipTrigger>
     </Tooltip>
   );

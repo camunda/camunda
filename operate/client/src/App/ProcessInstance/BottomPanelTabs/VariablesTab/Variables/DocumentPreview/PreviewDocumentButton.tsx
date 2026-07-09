@@ -66,7 +66,12 @@ const PreviewDocumentButton: React.FC<Props> = ({document, variableName}) => {
         }
 
         return (
-          <Tooltip label={getDisabledTooltipText(document)} align="top">
+          <Tooltip
+            label={getDisabledTooltipText(document)}
+            align="top"
+            autoAlign
+            className="cds--icon-tooltip"
+          >
             <TooltipTrigger tabIndex={0}>{button}</TooltipTrigger>
           </Tooltip>
         );
