@@ -16,6 +16,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.CancelChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterZoneMigrationRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDeleteRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
@@ -1071,6 +1072,15 @@ public class ProtoBufSerializer
   }
 
   @Override
+  public byte[] encodeClusterZoneMigrationRequest(final ClusterZoneMigrationRequest request) {
+    return Requests.ClusterZoneMigrationRequest.newBuilder()
+        .setZone(request.zone())
+        .setDryRun(request.dryRun())
+        .build()
+        .toByteArray();
+  }
+
+  @Override
   public AddMembersRequest decodeAddMembersRequest(final byte[] encodedState) {
     try {
       final var addMemberRequest = Requests.AddMembersRequest.parseFrom(encodedState);
@@ -1387,6 +1397,17 @@ public class ProtoBufSerializer
                         new IllegalArgumentException(
                             "UpdatePartitionDistributorConfigRequest has empty config")));
     return new UpdatePartitionDistributorConfigRequest(config, proto.getDryRun());
+  }
+
+  @Override
+  public ClusterZoneMigrationRequest decodeClusterZoneMigrationRequest(final byte[] bytes) {
+    final Requests.ClusterZoneMigrationRequest proto;
+    try {
+      proto = Requests.ClusterZoneMigrationRequest.parseFrom(bytes);
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
+    return new ClusterZoneMigrationRequest(proto.getZone(), proto.getDryRun());
   }
 
   @Override

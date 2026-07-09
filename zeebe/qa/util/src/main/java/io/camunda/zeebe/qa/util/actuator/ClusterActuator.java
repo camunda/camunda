@@ -22,6 +22,7 @@ import feign.jackson.JacksonEncoder;
 import io.camunda.container.cluster.BrokerNode;
 import io.camunda.zeebe.management.cluster.BrokerId;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
+import io.camunda.zeebe.management.cluster.ClusterZoneMigrationRequest;
 import io.camunda.zeebe.management.cluster.GetTopologyResponse;
 import io.camunda.zeebe.management.cluster.PartitionDistributionConfig;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
@@ -358,6 +359,11 @@ public interface ClusterActuator {
   @Headers({"Content-Type: application/json", "accept: application/json"})
   PlannedOperationsResponse patchPartitionDistribution(
       @RequestBody final PartitionDistributionConfig config, @Param boolean dryRun);
+
+  @RequestLine("PUT /zones?dryRun={dryRun}")
+  @Headers({"Content-Type: application/json", "accept: application/json"})
+  PlannedOperationsResponse migrateZone(
+      @RequestBody final ClusterZoneMigrationRequest request, @Param boolean dryRun);
 
   /**
    * Requests a cluster mode change.

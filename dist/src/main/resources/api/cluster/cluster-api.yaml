@@ -187,10 +187,12 @@ paths:
   /partition-distribution:
     put:
       summary:
-        Update the partition distribution configuration for a zone-aware cluster. The
-        new configuration is applied immediately by computing and executing the necessary
-        partition join, leave, and priority-reconfiguration operations. Only ZONE_AWARE
-        clusters and ZONE_AWARE config bodies are accepted.
+        Update the partition distribution configuration. The new configuration is persisted and applied immediately
+        by computing the necessary partition join, leave, and priority-reconfiguration operations. When migrating
+        a bare or partially zoned cluster to zone-aware (see `PUT /cluster/zones`), list zones in the order they
+        should receive the existing (bare) nodes — the first zone in the list receives node 0, the second zone
+        node 1, and so on, wrapping around by zone count. This order only matters for that one-time migration;
+        once all zones are migrated, every other API addresses zones by name.
       requestBody:
         required: true
         content:
@@ -216,6 +218,41 @@ paths:
           $ref: 'components.yaml#/responses/GatewayError'
         '504':
           $ref: 'components.yaml#/responses/TimeoutError'
+
+  /zones:
+    put:
+      summary:
+        Migrate one zone of a bare or partially zoned cluster to a zone-aware topology. The request
+        contains only the zone name. Before migrating a zone, update the persisted partition
+        distribution with `PUT /cluster/partition-distribution` with a zone aware partition distribution.
+        For dual-region clusters, migrate the secondary zone first (odd-numbered nodes) and then the primary zone.
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "components.yaml#/schemas/ClusterZoneMigrationRequest"
+      parameters:
+        - $ref: '#/components/parameters/DryRunParameter'
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "components.yaml#/schemas/PlannedOperationsResponse"
+        '400':
+          $ref: 'components.yaml#/responses/InvalidRequest'
+        '409':
+          $ref: 'components.yaml#/responses/ConcurrentChangeError'
+        '500':
+          $ref: 'components.yaml#/responses/InternalError'
+        '502':
+          $ref: 'components.yaml#/responses/GatewayError'
+        '504':
+          $ref: 'components.yaml#/responses/TimeoutError'
+      x-added-in-version: "8.10.0"
 
 components:
   parameters:

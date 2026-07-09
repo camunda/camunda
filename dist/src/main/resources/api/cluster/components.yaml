@@ -164,7 +164,12 @@ schemas:
           defined in each broker's local configuration.
       zones:
         type: array
-        description: Zone specifications; present only when type is ZONE_AWARE.
+        description: >
+          Zone specifications; present only when type is ZONE_AWARE. While migrating a bare or
+          partially zoned cluster to zone-aware, the order of this array matters: it determines
+          which existing (bare) nodes get migrated into which zone. Outside of migration, order is
+          irrelevant — every operation addresses a zone by its `name`, never by its position in
+          this array.
         items:
           $ref: "components.yaml#/schemas/ZoneSpec"
 
@@ -190,6 +195,24 @@ schemas:
         format: int32
         description: Preferred-leader ranking; higher value wins
         example: 1000
+
+  ClusterZoneMigrationRequest:
+    description: >
+      Request to migrate one zone from a bare or partially zoned cluster. The complete zone order,
+      priorities, and replica counts must already be persisted through the partition-distribution
+      configuration — that persisted order is what determines which existing (bare) nodes are
+      migrated into this zone. When all configured zones have been migrated, the cluster becomes
+      fully zoned and subsequent operations address zones by name.
+    type: object
+    required:
+      - zone
+    properties:
+      zone:
+        type: string
+        description: >
+          Name of the zone to migrate. The zone must already exist in the persisted
+          partition-distribution configuration.
+        example: eu-west-1
 
   RoutingState:
     description: The routing state, i.e. where requests are sent to and how messages are correlated
