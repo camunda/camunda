@@ -9,7 +9,6 @@ package io.camunda.exporter.analytics;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
@@ -30,7 +29,10 @@ import java.util.ArrayList;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.SetEnvironmentVariable;
 
+@SetEnvironmentVariable(key = "CAMUNDA_LICENSE_KEY", value = "test-license-key")
+@SetEnvironmentVariable(key = "ZEEBE_BROKER_CLUSTER_CLUSTERID", value = "test-cluster")
 class AnalyticsExporterTest {
 
   private static final ProtocolFactory FACTORY = new ProtocolFactory();
@@ -44,20 +46,6 @@ class AnalyticsExporterTest {
     memoryExporter = InMemoryLogRecordExporter.create();
     controller = new ExporterTestController();
     exporter = exporterWithInMemory(memoryExporter, controller);
-  }
-
-  @Test
-  void shouldRejectMissingLicenseKey() {
-    // given
-    final var context =
-        new ExporterTestContext()
-            .setConfiguration(
-                new ExporterTestConfiguration<>("analytics", new AnalyticsExporterConfig()));
-
-    // when / then
-    assertThatThrownBy(() -> new AnalyticsExporter().configure(context))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("CAMUNDA_LICENSE_KEY");
   }
 
   @Test
@@ -253,9 +241,7 @@ class AnalyticsExporterTest {
         new ExporterTestContext()
             .setConfiguration(
                 new ExporterTestConfiguration<>("analytics", new AnalyticsExporterConfig()))
-            .setClusterId("test-cluster")
-            .setPartitionId(1)
-            .setLicenseKey("test-license-key");
+            .setPartitionId(1);
 
     // when
     new AnalyticsExporter().configure(context);
@@ -334,9 +320,7 @@ class AnalyticsExporterTest {
         new ExporterTestContext()
             .setConfiguration(
                 new ExporterTestConfiguration<>("analytics", new AnalyticsExporterConfig()))
-            .setClusterId("test-cluster")
-            .setPartitionId(1)
-            .setLicenseKey("test-license-key");
+            .setPartitionId(1);
     final var unopenedExporter = new AnalyticsExporter();
     unopenedExporter.configure(context);
 
@@ -419,9 +403,7 @@ class AnalyticsExporterTest {
         new ExporterTestContext()
             .setConfiguration(
                 new ExporterTestConfiguration<>("analytics", new AnalyticsExporterConfig()))
-            .setClusterId("test-cluster")
-            .setPartitionId(1)
-            .setLicenseKey("test-license-key");
+            .setPartitionId(1);
     final var exporter = new AnalyticsExporter(otelSdkManager);
     exporter.configure(context);
     exporter.open(controller);

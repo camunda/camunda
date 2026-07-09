@@ -21,6 +21,8 @@ import org.slf4j.LoggerFactory;
 /** Exporter that ships Camunda process analytics to the Camunda Analytics backend. */
 public class AnalyticsExporter implements Exporter {
 
+  private static final String LICENSE_KEY_ENV_VAR = "CAMUNDA_LICENSE_KEY";
+  private static final String CLUSTER_ID_ENV_VAR = "ZEEBE_BROKER_CLUSTER_CLUSTERID";
   private static final Logger LOG =
       LoggerFactory.getLogger(AnalyticsExporter.class.getPackageName());
   private static final ThrottledLogger SAMPLED_WARN_LOG =
@@ -53,8 +55,8 @@ public class AnalyticsExporter implements Exporter {
 
     analyticsContext =
         AnalyticsExporterContext.create(
-            resolveLicenseKey(context),
-            resolveClusterId(context),
+            resolveLicenseKey(),
+            resolveClusterId(),
             context.getPartitionId(),
             resolveDigest(handlers, config));
 
@@ -145,17 +147,20 @@ public class AnalyticsExporter implements Exporter {
     }
   }
 
-  private static String resolveLicenseKey(final Context context) {
-    final String licenseKey = context.getLicenseKey();
+  private static String resolveLicenseKey() {
+    final String licenseKey = System.getenv(LICENSE_KEY_ENV_VAR);
     if (licenseKey == null || licenseKey.isBlank()) {
       throw new IllegalStateException(
-          "Analytics exporter requires a license key. Set camunda.license.key in configuration.");
+          "Analytics exporter requires a license key. Set the "
+              + LICENSE_KEY_ENV_VAR
+              + " environment variable.");
     }
     return licenseKey;
   }
 
-  private static String resolveClusterId(final Context context) {
-    return context.getClusterId();
+  private static String resolveClusterId() {
+    final var clusterId = System.getenv(CLUSTER_ID_ENV_VAR);
+    return clusterId != null ? clusterId : "";
   }
 
   private String resolveDigest(
