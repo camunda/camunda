@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -99,37 +100,60 @@ public final class VariableMappingTransformer {
 
   /**
    * Detects the secret references used in the given input mappings, keyed by the JSON pointer (RFC
-   * 6901) of the mapping's target path, e.g. {@code /tokens/token}. The pointer is stored so the
-   * job-activation path can replace the reference in the job variables (a Jackson document)
-   * natively via a Jackson {@code JsonPointer}, without converting the path on the hot path. Only
-   * references used as expressions are detected; references inside string literals or in static
-   * (non-expression) values are ignored (see {@link SecretReference}). Mappings without any
+   * 6901) of the leaf the secret value belongs to, e.g. {@code /tokens/token}. The pointer is the
+   * mapping's dotted target path followed by the context path of the reference within the source
+   * (see {@link SecretReference.Located}); for a scalar source the context path is empty and the
+   * pointer is just the target, while a reference nested in a FEEL context (e.g. {@code foo -> {x2:
+   * camunda.secrets.x}}) is keyed by {@code /foo/x2}.
+   *
+   * <p>The pointer is stored so the job-activation path can replace the reference in the job
+   * variables (a Jackson document) natively via a Jackson {@code JsonPointer}, without converting
+   * the path on the hot path; the dotted-to-pointer conversion happens once, here at deploy time.
+   *
+   * <p>Only references used as expressions are detected; references inside string literals or in
+   * static (non-expression) values are ignored (see {@link SecretReference}). Mappings without any
    * reference are omitted from the result.
    */
   public Map<String, Set<SecretReference>> detectSecretReferences(
-      final Collection<? extends ZeebeMapping> inputMappings) {
+      final Collection<? extends ZeebeMapping> inputMappings,
+      final ExpressionLanguage expressionLanguage) {
     final var secretReferences = new LinkedHashMap<String, Set<SecretReference>>();
     for (final ZeebeMapping mapping : inputMappings) {
-      final var references = SecretReference.parse(mapping.getSource());
-      if (!references.isEmpty()) {
-        secretReferences.put(toJsonPointer(mapping.getTarget()), references);
+      final var source = mapping.getSource();
+      if (source == null) {
+        continue;
+      }
+      final var expression = expressionLanguage.parseExpression(source);
+      for (final var located : SecretReference.parse(expression)) {
+        final var pointer = toJsonPointer(mapping.getTarget(), located.path());
+        secretReferences
+            .computeIfAbsent(pointer, key -> new LinkedHashSet<>())
+            .add(located.reference());
       }
     }
     return secretReferences;
   }
 
   /**
-   * Converts a dotted variable-mapping target path (e.g. {@code tokens.token}) into a JSON pointer
-   * (e.g. {@code /tokens/token}). Dots are the nesting separators used by input mappings, so each
-   * becomes a pointer segment; {@code ~} and {@code /} inside a segment are escaped per RFC 6901
-   * ({@code ~} -> {@code ~0}, {@code /} -> {@code ~1}).
+   * Builds the JSON pointer (RFC 6901) of a secret's leaf from the dotted variable-mapping target
+   * path (e.g. {@code tokens.token}) and the context path of the reference within the source (e.g.
+   * {@code [x2]}). Dots are the nesting separators used by input mappings, so each target segment
+   * becomes a pointer segment, followed by each context-path segment; {@code ~} and {@code /}
+   * inside a segment are escaped per RFC 6901 ({@code ~} -> {@code ~0}, {@code /} -> {@code ~1}).
    */
-  private static String toJsonPointer(final String targetPath) {
+  private static String toJsonPointer(final String targetPath, final List<String> contextPath) {
     final var pointer = new StringBuilder();
     for (final String segment : targetPath.split("\\.")) {
-      pointer.append('/').append(segment.replace("~", "~0").replace("/", "~1"));
+      appendPointerSegment(pointer, segment);
+    }
+    for (final String segment : contextPath) {
+      appendPointerSegment(pointer, segment);
     }
     return pointer.toString();
+  }
+
+  private static void appendPointerSegment(final StringBuilder pointer, final String segment) {
+    pointer.append('/').append(segment.replace("~", "~0").replace("/", "~1"));
   }
 
   private List<Mapping> toMappings(
