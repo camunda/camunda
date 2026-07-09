@@ -56,10 +56,16 @@ public class SearchEngineDatabaseConfiguration {
       @Autowired(required = false)
           final Broker broker // if present, then it will ensure that the broker is started first
       ) {
+    final boolean healthCheckEnabled =
+        searchEngineConfigurationsByTenant
+            .get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+            .schemaManager()
+            .isHealthCheckEnabled();
     return new SearchEngineSchemaInitializer(
         searchEngineConfigurationsByTenant,
         physicalTenantScopedIndexDescriptors,
         meterRegistry,
-        isAnyHttpGatewayEnabled(environment));
+        isAnyHttpGatewayEnabled(environment),
+        healthCheckEnabled);
   }
 }

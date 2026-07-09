@@ -28,6 +28,7 @@ import io.camunda.configuration.beans.SearchEngineSchemaManagerProperties;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.search.connect.configuration.DatabaseType;
+import io.camunda.search.schema.SearchEngineHealthCheckPermissionException;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.search.schema.exceptions.IncompatibleVersionException;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
@@ -214,6 +215,12 @@ class SearchEngineSchemaInitializerTest {
             SearchEngineSchemaInitializer.isTerminal(
                 new TerminalSchemaInitializationException("no client", new RuntimeException())))
         .isTrue();
+    assertThat(
+            SearchEngineSchemaInitializer.isTerminal(
+                new SearchEngineHealthCheckPermissionException(
+                    "missing 'monitor' privilege", new RuntimeException())))
+        .as("a missing cluster:monitor privilege will not be granted by retrying")
+        .isTrue();
   }
 
   @Test
@@ -224,6 +231,12 @@ class SearchEngineSchemaInitializerTest {
         .isFalse();
     assertThat(
             SearchEngineSchemaInitializer.isTerminal(new IllegalStateException("strict mapping")))
+        .isFalse();
+    assertThat(
+            SearchEngineSchemaInitializer.isTerminal(
+                new SearchEngineSchemaInitializer.SchemaNotReadyException(
+                    "cluster health check failed")))
+        .as("a cluster still red/yellow right after schema creation may recover shortly after")
         .isFalse();
   }
 
@@ -253,7 +266,11 @@ class SearchEngineSchemaInitializerTest {
   private SearchEngineSchemaInitializer initializerFor(
       final PhysicalTenantResolver resolver, final boolean holdsStartup) {
     return new SearchEngineSchemaInitializer(
-        configsFor(resolver), descriptorsFor(resolver), new SimpleMeterRegistry(), holdsStartup);
+        configsFor(resolver),
+        descriptorsFor(resolver),
+        new SimpleMeterRegistry(),
+        holdsStartup,
+        true);
   }
 
   /**
@@ -267,7 +284,7 @@ class SearchEngineSchemaInitializerTest {
     final Map<String, SearchEngineConfiguration> configs = configsFor(resolver);
     configs.get(DEFAULT_TENANT).connect().setType(DatabaseType.RDBMS.toString());
     return new SearchEngineSchemaInitializer(
-        configs, descriptorsFor(resolver), new SimpleMeterRegistry(), holdsStartup);
+        configs, descriptorsFor(resolver), new SimpleMeterRegistry(), holdsStartup, true);
   }
 
   /**
