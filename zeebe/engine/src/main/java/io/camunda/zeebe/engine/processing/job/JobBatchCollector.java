@@ -8,6 +8,8 @@
 package io.camunda.zeebe.engine.processing.job;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
+import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.state.immutable.JobState;
@@ -51,6 +53,7 @@ final class JobBatchCollector {
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final Predicate<Integer> canWriteEventOfLength;
   private final InstantSource clock;
+  private final JobProcessingMetrics jobMetrics;
 
   /**
    * @param canWriteEventOfLength a predicate which should return whether the resulting {@link
@@ -62,12 +65,14 @@ final class JobBatchCollector {
       final ProcessingState state,
       final Predicate<Integer> canWriteEventOfLength,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final JobProcessingMetrics jobMetrics) {
     jobState = state.getJobState();
     this.canWriteEventOfLength = canWriteEventOfLength;
     jobVariablesCollector = new JobVariablesCollector(state);
     this.authCheckBehavior = authCheckBehavior;
     this.clock = clock;
+    this.jobMetrics = jobMetrics;
   }
 
   /**
@@ -110,6 +115,12 @@ final class JobBatchCollector {
         (key, jobRecord) -> {
           if (!isAuthorizedForJob(jobRecord, authorizedProcessIds)) {
             // Skip Jobs the user is not authorized for
+            return true;
+          }
+
+          if (!value.isWithLease() && !jobRecord.getLeaseToken().isEmpty()) {
+            // Skip leased jobs so an unleased activation cannot break the lease's exclusivity
+            jobMetrics.countJobEvent(JobAction.SKIPPED, jobRecord.getJobKind(), value.getType());
             return true;
           }
 
