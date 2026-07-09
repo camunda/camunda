@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 env:
-  TEST_OWNER: '@camunda/qa-engineering'
+  TEST_OWNER: '@camunda/core-features'
 
 jobs:
   request-validation-tests:
