@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 /**
@@ -42,12 +43,26 @@ import java.util.function.Consumer;
  * transport, so {@link #flush()} defers (the buffered deltas stay staged for the next flush or
  * freeze). {@link #flush()} remains the synchronous path: it publishes any retained frames of a
  * failed cut first, then the buffer.
+ *
+ * <p><b>Eager mode (opt-in).</b> With {@code eagerPublish} enabled, {@link #publishSealedEagerly()}
+ * hands the buffered deltas to the transport the moment their segments seal — encoded, staged and
+ * dispatched on the owner thread, non-blocking — so the cut's publish step reduces to awaiting the
+ * acknowledgments still outstanding at the barrier instead of bursting every frame there. The
+ * barrier partitions the outstanding set exactly: {@link #freeze()} detaches the acknowledgments of
+ * everything dispatched before it, and frames sealing afterwards stay buffered for the next cut.
+ * Eager dispatches are <em>suppressed</em> while a frozen cut is outstanding (the IO thread owns
+ * the transport then — the ownership rule is kept by not sending, rather than by a second handoff)
+ * and while a failed cut's retained frames are pending (they must re-emit first to keep the
+ * per-stream monotonic sequence). Eagerly-dispatched frames still ride the outbox, so a failed cut
+ * retains them for retry like any other frame, and a crash before the cut completes simply
+ * re-publishes them on replay — duplicates the reducer's {@code (segment, chunk)} dedup absorbs.
  */
 public final class EnvelopePublisher {
 
   private final EnvelopeTransport transport;
   private final int schemaVersion;
   private final long producedAt;
+  private final boolean eagerPublish;
 
   private static final Comparator<Entry<BufferKey, List<CellDelta>>> FLUSH_ORDER =
       Comparator.<Entry<BufferKey, List<CellDelta>>>comparingLong(e -> e.getKey().segment())
@@ -84,11 +99,45 @@ public final class EnvelopePublisher {
    */
   private final FrozenOutbox<PreparedEnvelope> outbox = new FrozenOutbox<>();
 
+  // Eager-mode bookkeeping (owner thread unless noted). The eagerly-dispatched frames are always
+  // a prefix of the outbox's staged pile: eager dispatch covers the whole buffer whenever it runs,
+  // and it never runs while a failed cut's retained frames are pending — so whenever the prefix is
+  // non-empty, the retained pile is empty and the prefix is also the prefix of the frozen pile.
+  /** Acknowledgments of eager dispatches since the last freeze. */
+  private final List<CompletableFuture<Void>> eagerAcks = new ArrayList<>();
+
+  /** Detached at the freeze barrier: the acknowledgments the outstanding cut must await. */
+  private List<CompletableFuture<Void>> frozenEagerAcks = List.of();
+
+  /** How many staged frames were already dispatched eagerly (the staged pile's prefix). */
+  private int eagerlySentStaged;
+
+  /** The already-dispatched prefix of the frozen pile, skipped by {@link #publishFrozen()}. */
+  private int frozenEagerlySent;
+
+  /** IO-thread scratch: the drain position while {@link #publishFrozen()} skips the prefix. */
+  private int drainCursor;
+
+  /**
+   * A failed cut's frames are retained for retry-first re-emission; eager dispatch suspends until
+   * the next freeze (or synchronous flush) has taken them, so no newer frame can overtake them.
+   */
+  private boolean retainedPending;
+
   public EnvelopePublisher(
       final EnvelopeTransport transport, final int schemaVersion, final long producedAt) {
+    this(transport, schemaVersion, producedAt, false);
+  }
+
+  public EnvelopePublisher(
+      final EnvelopeTransport transport,
+      final int schemaVersion,
+      final long producedAt,
+      final boolean eagerPublish) {
     this.transport = transport;
     this.schemaVersion = schemaVersion;
     this.producedAt = producedAt;
+    this.eagerPublish = eagerPublish;
   }
 
   /** Buffers one cell delta for its target facts partition. */
@@ -115,13 +164,46 @@ public final class EnvelopePublisher {
       // the buffered deltas stay staged and the next flush or freeze delivers them.
       return;
     }
+    if (eagerPublish && !retainedPending) {
+      // Eager mode: frames go out the moment their segments seal, so freshness needs no blocking
+      // drain here — just nudge anything still buffered on its way; the next cut awaits the acks.
+      publishSealedEagerly();
+      return;
+    }
     if (buffer.isEmpty() && !outbox.hasStaged()) {
       return;
     }
-    // Any retained frames of a failed cut go out first, then the freshly encoded buffer.
+    // Any retained frames of a failed cut go out first, then the freshly encoded buffer. (In eager
+    // mode this is also the retry path: while frames are retained no eager frame was dispatched —
+    // eager dispatch suspends after a failure — so this drain re-sends them in staging order.)
     outbox.drainPending(prepared -> transport.send(prepared.factsPartition(), prepared.frame()));
     encodeBuffered(prepared -> transport.send(prepared.factsPartition(), prepared.frame()));
     transport.flush();
+    retainedPending = false;
+  }
+
+  /**
+   * Owner thread, eager mode only: hands every buffered delta to the transport right away — encoded
+   * with exactly the chunking a flush at this moment would assign, staged into the outbox (so a
+   * failed or never-completed cut still retains/replays them), and dispatched without blocking. The
+   * acknowledgment joins the set the next cut's {@link #publishFrozen()} awaits.
+   *
+   * <p>A no-op when eager mode is off, when nothing is buffered, while a frozen cut is outstanding
+   * (the IO thread owns the transport — the deltas stay buffered for the next cut), or while a
+   * failed cut's retained frames are pending (they must re-emit first, at the next freeze or
+   * synchronous flush, to keep the per-stream monotonic sequence).
+   */
+  public void publishSealedEagerly() {
+    if (!eagerPublish || buffer.isEmpty() || outbox.hasFrozen() || retainedPending) {
+      return;
+    }
+    encodeBuffered(
+        prepared -> {
+          outbox.stage(prepared);
+          transport.send(prepared.factsPartition(), prepared.frame());
+          eagerlySentStaged++;
+        });
+    eagerAcks.add(transport.dispatch());
   }
 
   /**
@@ -140,6 +222,18 @@ public final class EnvelopePublisher {
     }
     encodeBuffered(outbox::stage);
     outbox.freeze();
+    // The barrier partitions the eager-mode outstanding set: the cut owns exactly the frames and
+    // acknowledgments dispatched before this point (the frozen pile's already-sent prefix and the
+    // detached acks); frames sealing from here on buffer for the next cut — eager dispatch stays
+    // suppressed while this cut is outstanding. Any retained frames of a failed cut are inside the
+    // frozen pile now, so eager dispatch may resume once this cut completes.
+    frozenEagerlySent = eagerlySentStaged;
+    eagerlySentStaged = 0;
+    retainedPending = false;
+    if (!eagerAcks.isEmpty()) {
+      frozenEagerAcks = new ArrayList<>(eagerAcks);
+      eagerAcks.clear();
+    }
   }
 
   /**
@@ -158,10 +252,37 @@ public final class EnvelopePublisher {
    * @throws IllegalStateException if nothing is frozen
    */
   public void publishFrozen() {
-    if (outbox.drainFrozen(prepared -> transport.send(prepared.factsPartition(), prepared.frame()))
-        > 0) {
-      transport.dispatch().join();
+    // In eager mode the frozen pile's prefix was already dispatched before the barrier — send only
+    // the remainder; with eager mode off the prefix is empty and every frame is sent here.
+    drainCursor = 0;
+    final int drained = outbox.drainFrozen(this::sendUnlessDispatchedEagerly);
+    final boolean remainderSent = drained > frozenEagerlySent;
+    if (frozenEagerAcks.isEmpty()) {
+      if (remainderSent) {
+        transport.dispatch().join();
+      }
+      return;
     }
+    // One await for the whole cut: every eager acknowledgment outstanding at the barrier plus the
+    // remainder's dispatch. Any failure fails the cut here at the latest — an eager send that
+    // failed long before the barrier surfaces through its retained acknowledgment.
+    final CompletableFuture<?>[] acks =
+        new CompletableFuture<?>[frozenEagerAcks.size() + (remainderSent ? 1 : 0)];
+    for (int i = 0; i < frozenEagerAcks.size(); i++) {
+      acks[i] = frozenEagerAcks.get(i);
+    }
+    if (remainderSent) {
+      acks[acks.length - 1] = transport.dispatch();
+    }
+    CompletableFuture.allOf(acks).join();
+  }
+
+  /** Sends a drained frozen frame unless it belongs to the eagerly-dispatched prefix. */
+  private void sendUnlessDispatchedEagerly(final PreparedEnvelope prepared) {
+    if (drainCursor++ < frozenEagerlySent) {
+      return;
+    }
+    transport.send(prepared.factsPartition(), prepared.frame());
   }
 
   /**
@@ -174,6 +295,15 @@ public final class EnvelopePublisher {
    */
   public void completeFrozen(final boolean success) {
     outbox.completeFrozen(success);
+    frozenEagerlySent = 0;
+    frozenEagerAcks = List.of();
+    if (!success) {
+      // The outbox retained the whole frozen pile — the eagerly-dispatched prefix included. The
+      // retry re-sends that prefix even though parts of it may already be durable downstream:
+      // duplicates the reducer's (segment, chunk) dedup absorbs. Eager dispatch suspends until
+      // the retained frames re-emit, so nothing newer can overtake them.
+      retainedPending = true;
+    }
   }
 
   /**

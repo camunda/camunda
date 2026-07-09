@@ -200,6 +200,30 @@ final class AggregationStageTaskFrozenCutTest {
   }
 
   @Test
+  void shouldFoldAReDeliveredEagerlyPublishedSegmentExactlyOnce() {
+    // given a segment delta that Stage 1 published eagerly at its seal and that this task folded
+    // and committed — then Stage 1 crashed before its (never-completed) cut persisted, so its
+    // replay re-publishes the same segment at a later facts offset
+    openTask();
+    final CubeHandle handle = resolve();
+    task.process(envelope(handle, 1L, 0));
+    task.commit(0L);
+
+    // when this task restarts over its cut and the runtime delivers the republished duplicate
+    task.close();
+    task = null;
+    openTask();
+    final CubeHandle reopened = resolve();
+    assertThat(task.restore()).isEqualTo(0L);
+    task.process(envelope(reopened, 1L, 0));
+    task.commit(1L);
+
+    // then the segment folded exactly once: the persisted dedup watermark absorbs the re-delivery
+    assertThat(durableTotal(reopened)).isEqualTo(1L);
+    assertThat(durableOffset()).hasValue(1L);
+  }
+
+  @Test
   void shouldFlushFrozenServingRowsBeforeTheOffsetPersists() {
     // given one merged delta frozen into a cut
     openTask();

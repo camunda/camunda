@@ -125,6 +125,7 @@ public final class AnalyticsProjectionStage {
                         config.shuffleSchemaVersion(),
                         catalog,
                         config.reloadCheckIntervalMs(),
+                        config.eagerShufflePublish(),
                         backend.newDatasetStore(),
                         meterRegistry,
                         config.storeTuning()))

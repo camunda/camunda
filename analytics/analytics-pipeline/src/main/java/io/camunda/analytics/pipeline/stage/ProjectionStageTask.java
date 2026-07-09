@@ -117,6 +117,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
   private final KeyValueStore<DbInt, DbLong> appliedPositions;
   private final DatasetCatalog catalog;
   private final long reloadCheckIntervalMs;
+  private final boolean eagerShufflePublish;
 
   private final DbInt offsetKey = new DbInt();
   private final DbLong offsetValue = new DbLong();
@@ -170,6 +171,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
       final KeyValueStore<DbInt, DbLong> appliedPositions,
       final DatasetCatalog catalog,
       final long reloadCheckIntervalMs,
+      final boolean eagerShufflePublish,
       final long nowMs) {
     this.partition = partition;
     this.client = client;
@@ -190,6 +192,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
         (key, value) -> appliedWatermarks.put(key.getValue(), value.getValue()));
     this.catalog = catalog;
     this.reloadCheckIntervalMs = reloadCheckIntervalMs;
+    this.eagerShufflePublish = eagerShufflePublish;
     this.lastReloadCheckMs = nowMs;
     final DatasetCatalog.Snapshot snapshot = catalog.snapshot();
     installTopology(snapshot.cubes(), snapshot.tables());
@@ -206,6 +209,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
       final int schemaVersion,
       final DatasetCatalog catalog,
       final long reloadCheckIntervalMs,
+      final boolean eagerShufflePublish,
       final DatasetStore datasetStore,
       final MeterRegistry meterRegistry,
       final StoreTuning storeTuning) {
@@ -235,6 +239,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
         appliedPositions,
         catalog,
         reloadCheckIntervalMs,
+        eagerShufflePublish,
         System.currentTimeMillis());
   }
 
@@ -276,7 +281,8 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
         new EnvelopePublisher(
             new EventBridgeEnvelopeTransport(client, factsTopic),
             schemaVersion,
-            System.currentTimeMillis());
+            System.currentTimeMillis(),
+            eagerShufflePublish);
     this.publisher = publisher;
 
     // source → base projection → fact-type dispatch; each cube-meter aggregate node seals and
@@ -449,6 +455,10 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
     }
     topology.process(record);
     appliedWatermarks.put(zeebePartition, zeebePosition);
+    // Eager shuffle publish (opt-in, no-op otherwise): any segment this fold sealed forwarded its
+    // cells into the publisher synchronously above, so they can leave for the facts topic now —
+    // non-blocking — instead of waiting for the commit barrier's publish burst.
+    publisher.publishSealedEagerly();
   }
 
   @Override
@@ -459,11 +469,13 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
   @Override
   public void advanceStreamTime(final long streamTimeMs) {
     topology.advanceStreamTime(streamTimeMs);
+    publisher.publishSealedEagerly();
   }
 
   @Override
   public void punctuateWallClock(final long wallClockMs) {
     topology.punctuateWallClock(wallClockMs);
+    publisher.publishSealedEagerly();
   }
 
   @Override

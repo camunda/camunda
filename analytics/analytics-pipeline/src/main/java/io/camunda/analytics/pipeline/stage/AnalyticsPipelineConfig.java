@@ -29,6 +29,10 @@ import java.time.Duration;
  * @param segmentStride the shuffle segment stride in source offsets ({@code segmentStride})
  * @param shuffleSchemaVersion the shuffle envelope schema version Stage 1 stamps ({@code
  *     shuffleSchemaVersion})
+ * @param eagerShufflePublish whether Stage 1 hands a sealed shuffle frame to the transport the
+ *     moment its segment seals, so the commit cut only awaits the acknowledgments still outstanding
+ *     at the barrier instead of publishing everything there ({@code analytics.eagerShufflePublish},
+ *     default {@code false}: sealed frames wait in the outbox until the commit barrier)
  * @param checkpointInterval how often a task commits its atomic cut ({@code
  *     analytics.checkpointIntervalMs})
  * @param reloadCheckIntervalMs how often, at a commit boundary, a task checks the dataset catalog
@@ -51,6 +55,7 @@ public record AnalyticsPipelineConfig(
     int factsPartitions,
     int segmentStride,
     int shuffleSchemaVersion,
+    boolean eagerShufflePublish,
     Duration checkpointInterval,
     long reloadCheckIntervalMs,
     boolean stateConsistencyChecks,
@@ -67,6 +72,7 @@ public record AnalyticsPipelineConfig(
         Integer.getInteger("factsPartitions", 1),
         Integer.getInteger("segmentStride", 1000),
         Integer.getInteger("shuffleSchemaVersion", 1),
+        Boolean.parseBoolean(System.getProperty("analytics.eagerShufflePublish", "false")),
         Duration.ofMillis(Long.getLong("analytics.checkpointIntervalMs", 1000L)),
         Long.getLong("analytics.reloadCheckIntervalMs", 10_000L),
         Boolean.parseBoolean(System.getProperty("analytics.state.consistencyChecks", "false")),

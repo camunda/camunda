@@ -19,6 +19,28 @@ final class AnalyticsPipelineConfigTest {
   void tearDown() {
     System.clearProperty("analytics.state.consistencyChecks");
     System.clearProperty("analytics.state.deleteAwareCompaction");
+    System.clearProperty("analytics.eagerShufflePublish");
+  }
+
+  @Test
+  void shouldDefaultToPublishingSealedShuffleFramesAtTheBarrier() {
+    // when - no analytics.eagerShufflePublish property set
+    final AnalyticsPipelineConfig config = AnalyticsPipelineConfig.fromSystemProperties("stage1");
+
+    // then - sealed frames wait in the outbox until the commit barrier (eager mode is opt-in)
+    assertThat(config.eagerShufflePublish()).isFalse();
+  }
+
+  @Test
+  void shouldHonourExplicitEagerShufflePublishProperty() {
+    // given
+    System.setProperty("analytics.eagerShufflePublish", "true");
+
+    // when
+    final AnalyticsPipelineConfig config = AnalyticsPipelineConfig.fromSystemProperties("stage1");
+
+    // then
+    assertThat(config.eagerShufflePublish()).isTrue();
   }
 
   @Test

@@ -157,6 +157,7 @@ final class ProjectionStageTaskDedupTest {
             appliedPositions,
             catalog,
             Long.MAX_VALUE, // no reload in these tests
+            false,
             0L);
     task.init();
   }

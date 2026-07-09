@@ -152,6 +152,7 @@ final class ProjectionStageTaskReloadTest {
             appliedPositions,
             catalog,
             0L, // check the catalog at every commit
+            false,
             0L);
   }
 

@@ -199,7 +199,42 @@ final class ProjectionStageTaskFrozenCutTest {
     assertThat(durableOffset()).hasValue(2L);
   }
 
+  @Test
+  void shouldPublishSealedDeltasEagerlyBeforeTheBarrierWhenEnabled() {
+    // given eager shuffle publish and a sealed segment: two folds in segment 0, then a record in
+    // segment 1 whose accept seals segment 0 into the publisher
+    openTask(2, recordingClient(), true);
+    task.process(process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1000L, 10L, 0L));
+    task.process(process(ProcessInstanceIntent.ELEMENT_COMPLETED, 1500L, 11L, 1L));
+    task.process(process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 2000L, 12L, 2L));
+
+    // then the sealed segment-0 delta left for the facts topic the moment it sealed — before any
+    // commit barrier exists
+    assertThat(publishedFrames).hasSize(1);
+    final ShuffleEnvelope eager = ShuffleEnvelopeCodec.decode(publishedFrames.get(0));
+    assertThat(eager.segment()).isZero();
+    assertThat(eager.chunk()).isZero();
+
+    // when the cut freezes at the barrier and publishes on the IO thread
+    final CommitCut cut = task.freezeCut(2L);
+    cut.publish();
+
+    // then the eagerly-published frame is not re-sent — the cut only awaited its acknowledgment
+    assertThat(publishedFrames).hasSize(1);
+    assertThat(durableOffset()).isEmpty();
+
+    // and only the persist advances the offset
+    cut.persist();
+    cut.complete(true);
+    assertThat(durableOffset()).hasValue(2L);
+  }
+
   private void openTask(final int segmentStride, final EventBridgeClient client) {
+    openTask(segmentStride, client, false);
+  }
+
+  private void openTask(
+      final int segmentStride, final EventBridgeClient client, final boolean eagerShufflePublish) {
     catalog = new DatasetCatalog(metadataStore);
     final JdbcDataSource dataSource = new JdbcDataSource();
     dataSource.setURL("jdbc:h2:mem:frozencut-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1");
@@ -232,6 +267,7 @@ final class ProjectionStageTaskFrozenCutTest {
             appliedPositions,
             catalog,
             Long.MAX_VALUE, // no reload in these tests
+            eagerShufflePublish,
             0L);
     task.init();
   }
