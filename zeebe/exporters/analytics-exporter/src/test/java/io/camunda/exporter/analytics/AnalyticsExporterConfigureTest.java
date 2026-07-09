@@ -36,4 +36,3 @@ class AnalyticsExporterConfigureTest {
         .hasMessageContaining("CAMUNDA_LICENSE_KEY");
   }
 }
-
