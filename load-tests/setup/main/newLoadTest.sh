@@ -152,10 +152,13 @@ case "$secondaryStorage" in
     fi
     ;;
   postgresql|mysql|mariadb)
-    cp -v "values/camunda-platform-values-rdbms.yaml"            "$TARGET_DIRECTORY/"
+    cp -v "values/camunda-platform-values-rdbms.yaml"                       "$TARGET_DIRECTORY/"
+    # Variant selected by `make install physical_tenants=true` (adds a second physical tenant).
+    cp -v "values/camunda-platform-two-physical-tenants-shared-rdbms.yaml"  "$TARGET_DIRECTORY/"
     ;;
   mssql|oracle)
-    cp -v "values/camunda-platform-values-rdbms.yaml"            "$TARGET_DIRECTORY/"
+    cp -v "values/camunda-platform-values-rdbms.yaml"                       "$TARGET_DIRECTORY/"
+    cp -v "values/camunda-platform-two-physical-tenants-shared-rdbms.yaml"  "$TARGET_DIRECTORY/"
     mkdir -p "$TARGET_DIRECTORY/databases"
     cp -v "databases/${secondaryStorage}.yaml"                   "$TARGET_DIRECTORY/databases/"
     ;;
