@@ -18,7 +18,10 @@ import io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.SetEnvironmentVariable;
 
+@SetEnvironmentVariable(key = "CAMUNDA_LICENSE_KEY", value = "test-license-key")
+@SetEnvironmentVariable(key = "ZEEBE_BROKER_CLUSTER_CLUSTERID", value = "test-cluster")
 class AnalyticsExporterHeartbeatTest {
 
   private InMemoryLogRecordExporter memoryExporter;
@@ -101,9 +104,7 @@ class AnalyticsExporterHeartbeatTest {
     final var context =
         new ExporterTestContext()
             .setConfiguration(new ExporterTestConfiguration<>("analytics", config))
-            .setClusterId("test-cluster")
-            .setPartitionId(1)
-            .setLicenseKey("test-license-key");
+            .setPartitionId(1);
     final var exporter = new AnalyticsExporter(TestOtelSdkManager.inMemory(memoryExporter));
     exporter.configure(context);
     exporter.open(controller);

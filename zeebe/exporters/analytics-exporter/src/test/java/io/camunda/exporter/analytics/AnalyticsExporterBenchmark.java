@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
+import org.junitpioneer.jupiter.SetEnvironmentVariable;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -59,6 +60,8 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @Warmup(iterations = 5, time = 1)
 @Measurement(iterations = 10, time = 1)
 @Fork(1)
+@SetEnvironmentVariable(key = "CAMUNDA_LICENSE_KEY", value = "bench-license-key")
+@SetEnvironmentVariable(key = "ZEEBE_BROKER_CLUSTER_CLUSTERID", value = "bench-cluster")
 public class AnalyticsExporterBenchmark {
 
   /** No-op exporter that discards all records — safe for unbounded benchmark loops. */
@@ -153,9 +156,7 @@ public class AnalyticsExporterBenchmark {
     final var context =
         new ExporterTestContext()
             .setConfiguration(new ExporterTestConfiguration<>("analytics-bench", config))
-            .setClusterId("bench-cluster")
-            .setPartitionId(1)
-            .setLicenseKey("bench-license-key");
+            .setPartitionId(1);
     final var exporter = new AnalyticsExporter(noopManager);
     exporter.configure(context);
     exporter.open(controller);

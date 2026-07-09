@@ -24,6 +24,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.SetEnvironmentVariable;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -35,6 +36,8 @@ import org.testcontainers.utility.DockerImageName;
  * Collector. No mocks, no overrides — production code path.
  */
 @Testcontainers
+@SetEnvironmentVariable(key = "CAMUNDA_LICENSE_KEY", value = "it-test-license-key")
+@SetEnvironmentVariable(key = "ZEEBE_BROKER_CLUSTER_CLUSTERID", value = "test-cluster")
 class AnalyticsExporterOtelIT {
 
   private static final int OTLP_PORT = 4318;
@@ -164,9 +167,7 @@ class AnalyticsExporterOtelIT {
     final var context =
         new ExporterTestContext()
             .setConfiguration(new ExporterTestConfiguration<>("analytics-it", config))
-            .setClusterId("test-cluster")
-            .setPartitionId(1)
-            .setLicenseKey("it-test-license-key");
+            .setPartitionId(1);
     final var exporter = new AnalyticsExporter();
     exporter.configure(context);
     exporter.open(controller);
