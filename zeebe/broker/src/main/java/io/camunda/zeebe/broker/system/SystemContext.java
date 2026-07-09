@@ -11,7 +11,6 @@ import static io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirect
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.cluster.PhysicalTenantIds;
-import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
@@ -36,7 +35,6 @@ import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.broker.system.configuration.DiskCfg.FreeSpaceCfg;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
-import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.SecurityCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
@@ -74,7 +72,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -127,13 +124,12 @@ public final class SystemContext {
 
   private final Duration shutdownTimeout;
   private final BrokerCfg brokerCfg;
-  private final IdentityConfiguration identityConfiguration;
   private Map<String, String> diagnosticContext;
   private final ActorScheduler scheduler;
   private final AtomixCluster cluster;
   private final BrokerClient brokerClient;
   private final MeterRegistry meterRegistry;
-  private final Map<String, PhysicalTenantEngineContext> physicalTenantEngineContexts;
+  private final Map<String, PhysicalTenantContext> physicalTenantEngineContexts;
   private final Function<String, UserServices> userServicesForTenant;
   private final PasswordEncoder passwordEncoder;
   private final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory;
@@ -150,12 +146,11 @@ public final class SystemContext {
   public SystemContext(
       final Duration shutdownTimeout,
       final BrokerCfg brokerCfg,
-      final IdentityConfiguration identityConfiguration,
       final ActorScheduler scheduler,
       final AtomixCluster cluster,
       final BrokerClient brokerClient,
       final MeterRegistry meterRegistry,
-      final Map<String, PhysicalTenantEngineContext> physicalTenantEngineContexts,
+      final Map<String, PhysicalTenantContext> physicalTenantEngineContexts,
       final Function<String, UserServices> userServicesForTenant,
       final PasswordEncoder passwordEncoder,
       final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory,
@@ -165,7 +160,6 @@ public final class SystemContext {
       final PhysicalTenantIds physicalTenantIds) {
     this.shutdownTimeout = shutdownTimeout;
     this.brokerCfg = brokerCfg;
-    this.identityConfiguration = identityConfiguration;
     this.scheduler = scheduler;
     this.cluster = cluster;
     this.brokerClient = brokerClient;
@@ -201,7 +195,8 @@ public final class SystemContext {
     validClusterConfigs(cluster);
     validateExperimentalConfigs(cluster, brokerCfg.getExperimental());
 
-    validateExporters(brokerCfg.getExporters());
+    // Exporter configuration is validated by SystemContextLoader before the SystemContext is
+    // constructed, so that per-physical-tenant exporter configs are checked as they are loaded.
 
     final var security = brokerCfg.getNetwork().getSecurity();
     if (security.isEnabled()) {
@@ -244,21 +239,6 @@ public final class SystemContext {
     if (!errors.isEmpty()) {
       throw new InvalidConfigurationException(
           "Invalid ConfigManager configuration: " + String.join(", ", errors), null);
-    }
-  }
-
-  private void validateExporters(final Map<String, ExporterCfg> exporters) {
-    final Set<Entry<String, ExporterCfg>> entries = exporters.entrySet();
-    final var badExportersNames =
-        entries.stream()
-            .filter(entry -> entry.getValue().getClassName() == null)
-            .map(Entry::getKey)
-            .toList();
-
-    if (!badExportersNames.isEmpty()) {
-      throw new IllegalArgumentException(
-          "Expected to find a 'className' configured for the exporter. Couldn't find a valid one for the following exporters "
-              + badExportersNames);
     }
   }
 
@@ -696,10 +676,6 @@ public final class SystemContext {
     return brokerCfg;
   }
 
-  public IdentityConfiguration getIdentityConfiguration() {
-    return identityConfiguration;
-  }
-
   public AtomixCluster getCluster() {
     return cluster;
   }
@@ -721,7 +697,7 @@ public final class SystemContext {
   }
 
   /** Returns the per-physical-tenant engine context map (unmodifiable). */
-  public Map<String, PhysicalTenantEngineContext> getPhysicalTenantEngineContexts() {
+  public Map<String, PhysicalTenantContext> getPhysicalTenantEngineContexts() {
     return physicalTenantEngineContexts;
   }
 
@@ -730,7 +706,7 @@ public final class SystemContext {
    *
    * @throws IllegalArgumentException if the physical tenant id is unknown
    */
-  public PhysicalTenantEngineContext getPhysicalTenantEngineContext(final String physicalTenantId) {
+  public PhysicalTenantContext getPhysicalTenantEngineContext(final String physicalTenantId) {
     if (!physicalTenantEngineContexts.containsKey(physicalTenantId)) {
       throw new IllegalArgumentException("Unknown physical tenant id '" + physicalTenantId + "'");
     }

@@ -67,12 +67,16 @@ public interface PartitionManager {
       final BrokerStartupContext brokerStartupContext,
       final String physicalTenantId,
       final TopologyManagerImpl topologyManager) {
-    final var engineContext = brokerStartupContext.getPhysicalTenantEngineContext(physicalTenantId);
+    final var physicalTenantContext =
+        brokerStartupContext.getPhysicalTenantEngineContext(physicalTenantId);
+
     return new PartitionManagerImpl(
         physicalTenantId,
         brokerStartupContext.getConcurrencyControl(),
         brokerStartupContext.getActorSchedulingService(),
-        brokerStartupContext.getBrokerConfiguration(),
+        // Use the physicalTenantConfig which contains both the shared broker-wide properties and
+        // the properties overridden for the physical tenant.
+        physicalTenantContext.config(),
         brokerStartupContext.getBrokerInfo(),
         brokerStartupContext.getClusterServices(),
         brokerStartupContext.getHealthCheckService(),
@@ -80,17 +84,17 @@ public interface PartitionManager {
         brokerStartupContext.getPartitionListeners(),
         brokerStartupContext.getPartitionRaftListeners(),
         brokerStartupContext.getSnapshotApiRequestHandler(),
-        brokerStartupContext.getExporterRepository(),
+        physicalTenantContext.exporterRepository(),
         brokerStartupContext.getGatewayBrokerTransport(),
         brokerStartupContext.getJobStreamService().jobStreamer(),
         brokerStartupContext.getClusterConfigurationService(),
         brokerStartupContext.getMeterRegistry(),
         brokerStartupContext.getBrokerClient(),
         brokerStartupContext.getRocksDbResources(),
-        engineContext.securityConfig(),
+        physicalTenantContext.securityConfig(),
         brokerStartupContext.getSearchClientsProxy(),
-        engineContext.authorizationConverter(),
-        engineContext.featureFlags(),
+        physicalTenantContext.authorizationConverter(),
+        physicalTenantContext.featureFlags(),
         topologyManager);
   }
 
@@ -101,7 +105,7 @@ public interface PartitionManager {
 
     return new RecoveryPartitionManager(
         physicalTenantId,
-        brokerStartupContext.getBrokerConfiguration(),
+        brokerStartupContext.getPhysicalTenantEngineContext(physicalTenantId).config(),
         brokerStartupContext.getBrokerInfo(),
         brokerStartupContext.getConcurrencyControl(),
         brokerStartupContext.getClusterConfigurationService(),

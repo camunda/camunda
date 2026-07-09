@@ -16,6 +16,7 @@ import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -97,18 +98,33 @@ public final class SystemContextTestFactory {
       final FeatureFlags featureFlags,
       final NodeIdProvider nodeIdProvider,
       final PhysicalTenantIds physicalTenantIds) {
+    final var exporterRepository = new ExporterRepository();
+    brokerCfg
+        .getExporters()
+        .forEach(
+            (id, cfg) -> {
+              try {
+                exporterRepository.load(id, cfg);
+              } catch (final Exception e) {
+                throw new RuntimeException(e);
+              }
+            });
+
     return new SystemContext(
         shutdownTimeout,
         brokerCfg,
-        identityConfiguration,
         scheduler,
         cluster,
         brokerClient,
         meterRegistry,
         singleValueMap(
             physicalTenantIds,
-            new PhysicalTenantEngineContext(
-                securityConfiguration, brokerRequestAuthorizationConverter, featureFlags)),
+            new PhysicalTenantContext(
+                securityConfiguration,
+                brokerRequestAuthorizationConverter,
+                featureFlags,
+                brokerCfg,
+                exporterRepository)),
         tenantId -> userServices,
         passwordEncoder,
         authConfig -> jwtDecoder,

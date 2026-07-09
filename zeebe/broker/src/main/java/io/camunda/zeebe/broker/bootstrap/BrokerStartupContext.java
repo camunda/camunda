@@ -9,23 +9,20 @@ package io.camunda.zeebe.broker.bootstrap;
 
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.cluster.PhysicalTenantIds;
-import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
-import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
-import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
-import io.camunda.zeebe.broker.system.PhysicalTenantEngineContext;
+import io.camunda.zeebe.broker.system.PhysicalTenantContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.camunda.zeebe.broker.system.management.CheckpointSchedulingService;
@@ -57,9 +54,14 @@ public interface BrokerStartupContext {
 
   BrokerInfo getBrokerInfo();
 
+  /**
+   * Return the broker configuration shared across all physical tenants. This should be used only
+   * for broker-wide configuration. The components that run per physical tenant must use the
+   * configuration from #getPhysicalTenantEngineContext(String physicalTenantId) instead.
+   *
+   * @return the broker-wide configuration shared across all physical tenants
+   */
   BrokerCfg getBrokerConfiguration();
-
-  IdentityConfiguration getIdentityConfiguration();
 
   SpringBrokerBridge getSpringBrokerBridge();
 
@@ -105,8 +107,6 @@ public interface BrokerStartupContext {
 
   void setDiskSpaceUsageMonitor(DiskSpaceUsageMonitor diskSpaceUsageMonitor);
 
-  ExporterRepository getExporterRepository();
-
   /** Returns all currently registered partition managers, keyed by physical tenant ID. */
   Map<String, PartitionManager> getPartitionManagers();
 
@@ -146,15 +146,12 @@ public interface BrokerStartupContext {
 
   MeterRegistry getMeterRegistry();
 
-  /** Returns the security configuration for the {@code default} physical tenant. */
-  EngineSecurityConfig getSecurityConfiguration();
-
   /**
-   * Returns the engine context for the given physical tenant.
+   * Returns the context for the given physical tenant.
    *
    * @throws IllegalArgumentException if the physical tenant id is unknown
    */
-  PhysicalTenantEngineContext getPhysicalTenantEngineContext(String physicalTenantId);
+  PhysicalTenantContext getPhysicalTenantEngineContext(String physicalTenantId);
 
   Function<String, UserServices> getUserServicesForTenant();
 
