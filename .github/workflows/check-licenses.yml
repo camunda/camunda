@@ -163,6 +163,7 @@ jobs:
     - analyze
     if: failure()
     permissions:
+      actions: read # required to read raw job logs for runner-abort detection
       checks: read
     runs-on: ubuntu-latest
     timeout-minutes: 3
