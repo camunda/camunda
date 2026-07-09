@@ -34,6 +34,16 @@ test.beforeAll(async ({request}) => {
   ]);
 
   const singleInstance = await createSingleInstance('operationsProcessA', 1);
+  // The demo operations only exist to populate the Operations panel (used by the
+  // "Infinite scrolling" test). Keep them on a dedicated instance so they do not
+  // contend with the single instance that the retry/cancel test operates on:
+  // 50 queued operations on that same instance otherwise saturate operation
+  // processing and the importer, delaying the cancel operation's success count
+  // and the instance's canceled state past the retry budget and causing flakes.
+  const demoOperationsInstance = await createSingleInstance(
+    'operationsProcessA',
+    1,
+  );
   const batchInstances = await createInstances('operationsProcessB', 1, 10);
 
   initialData = {
@@ -47,9 +57,10 @@ test.beforeAll(async ({request}) => {
     })),
   };
   await sleep(2500);
+  await waitForIncidents(request, demoOperationsInstance.processInstanceKey);
   await createDemoOperations(
     request,
-    initialData.singleOperationInstance.processInstanceKey,
+    demoOperationsInstance.processInstanceKey,
     50,
   );
   await sleep(1000);
