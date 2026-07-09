@@ -1,9 +1,11 @@
 # description: Runs a daily max-load stress test against main.
+#              Profiles the first 30 minutes of both runs via async-profiler.
 #              After a 3-hour soak: snapshots metrics as a GitHub artifact,
 #              posts a side-by-side summary table to Slack, then immediately
 #              deletes both namespaces to reduce cost.
 #              Naming pattern: medic-daily-YYYY-MM-DD-<sha>
 # calls: camunda-load-test.yml (scenario: max),
+#        profile-load-test.yml,
 #        camunda-load-test-metrics.yaml,
 #        camunda-delete-load-test.yml
 # type: CI
@@ -94,6 +96,38 @@ jobs:
       scenario: max
       build-frontend: true
       load-test-load: --set global.preferRest.enabled=true
+
+  # Profile the first 30 minutes of each run via async-profiler. Runs concurrently
+  # with soak (not on its critical path) so profiling covers the start of the run.
+  profile-grpc:
+    name: Profile gRPC pods
+    needs: [ benchmark-data, setup-max-load-test ]
+    if: needs.setup-max-load-test.result == 'success'
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/profile-load-test.yml
+    secrets: inherit
+    with:
+      name: c8-${{ needs.benchmark-data.outputs.benchmark }}
+      pod: ''
+      database: elasticsearch
+      duration-seconds: '1800'
+
+  profile-rest:
+    name: Profile REST pods
+    needs: [ benchmark-data, setup-max-rest-load-test ]
+    if: needs.setup-max-rest-load-test.result == 'success'
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/profile-load-test.yml
+    secrets: inherit
+    with:
+      name: c8-${{ needs.benchmark-data.outputs.benchmark }}-rest
+      pod: ''
+      database: elasticsearch
+      duration-seconds: '1800'
 
   # Wait 3 hours to let both load tests reach a stable operating state before
   # taking the metrics snapshot. Skipped if both setup jobs failed (no tests running).

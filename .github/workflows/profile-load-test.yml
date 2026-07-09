@@ -2,7 +2,7 @@
 #              When no pod is specified, profiles all 3 pods in parallel (cpu, wall, alloc events).
 #              When a specific pod is given, profiles that pod with cpu event only.
 #              Uploads flamegraph artifacts named flamegraph-{database}-{event}-{pod}.
-# called-by: camunda-pr-load-test.yml
+# called-by: camunda-pr-load-test.yml, camunda-daily-load-tests.yml
 # type: CI
 # owner: @camunda/zeebe-distributed-platform
 name: Profile running load test
@@ -24,6 +24,10 @@ on:
         description: 'Database variant'
         required: true
         type: string
+      duration-seconds:
+        description: 'Profiling duration in seconds'
+        default: '100'
+        required: false
   workflow_call:
     inputs:
       name:
@@ -44,6 +48,11 @@ on:
         description: 'Database variant'
         required: true
         type: string
+      duration-seconds:
+        description: 'Profiling duration in seconds'
+        default: '100'
+        required: false
+        type: string
 
 defaults:
   run:
@@ -59,12 +68,13 @@ env:
   NAME: ${{ inputs.name }}
   POD: ${{ inputs.pod }}
   PROFILER_OPTIONS: ${{ inputs.profiler_options }}
+  PROFILING_DURATION: ${{ inputs.duration-seconds }}
 
 jobs:
   profile-all-pods:
     name: Profile ${{ matrix.event }} on ${{ matrix.pod }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     if: ${{ inputs.pod == '' }}
     permissions:
       contents: 'read'
@@ -133,7 +143,7 @@ jobs:
   profile-single-pod:
     name: Profile CPU on single pod ${{ inputs.pod }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     if: ${{ inputs.pod != '' }}
     permissions:
       contents: 'read'
