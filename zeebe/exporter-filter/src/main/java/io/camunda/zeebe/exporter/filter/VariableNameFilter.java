@@ -35,8 +35,8 @@ public final class VariableNameFilter implements ExporterRecordFilter, RecordVer
     }
 
     final boolean accepted = nameFilter.accept(variableRecordValue.getName());
-    if (!accepted && LOG.isDebugEnabled()) {
-      LOG.debug(
+    if (!accepted && LOG.isTraceEnabled()) {
+      LOG.trace(
           "VariableNameFilter rejected record {}: variable name '{}' did not match name rules",
           record.getKey(),
           variableRecordValue.getName());

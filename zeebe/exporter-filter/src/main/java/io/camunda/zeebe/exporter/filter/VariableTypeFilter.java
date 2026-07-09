@@ -56,8 +56,8 @@ public final class VariableTypeFilter implements ExporterRecordFilter, RecordVer
         VariableValueType.infer(objectMapper, variableRecordValue.getValue());
 
     final boolean accepted = allowedTypes.contains(inferredType);
-    if (!accepted && LOG.isDebugEnabled()) {
-      LOG.debug(
+    if (!accepted && LOG.isTraceEnabled()) {
+      LOG.trace(
           "VariableTypeFilter rejected record {}: inferred type {} is not in allowed types {}",
           record.getKey(),
           inferredType,
