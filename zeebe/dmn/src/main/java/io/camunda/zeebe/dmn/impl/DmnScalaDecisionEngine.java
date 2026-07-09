@@ -82,11 +82,14 @@ public final class DmnScalaDecisionEngine implements DecisionEngine {
       // deterministic poison-pill on replay, and this catch sits before any
       // state mutation, so failing the parse gracefully is safer than
       // looping a crash forever.
+      // Deliberately not logging `e` itself: a StackOverflowError's stack
+      // trace has one frame per level of the pathological recursion (can be
+      // thousands), so printing it is expensive and adds no diagnostic value
+      // beyond what this message already states.
       LOGGER.warn(
           "DMN parsing failed with a StackOverflowError; this can happen when the decision "
               + "requirements graph contains a very long chain of dependent decisions or "
-              + "business knowledge models",
-          e);
+              + "business knowledge models");
       return new ParseFailureMessage(
           "Failed to parse DMN: the parser failed with a StackOverflowError. This can happen "
               + "when the decision requirements graph contains a very long chain of dependent "
@@ -122,12 +125,15 @@ public final class DmnScalaDecisionEngine implements DecisionEngine {
       // deterministic poison-pill on replay, and this catch sits before any
       // state mutation, so failing the evaluation gracefully is safer than
       // looping a crash forever.
+      // Deliberately not logging `e` itself: a StackOverflowError's stack
+      // trace has one frame per level of the pathological recursion (can be
+      // thousands), so printing it is expensive and adds no diagnostic value
+      // beyond what this message already states.
       LOGGER.warn(
           "DMN evaluation of decision '{}' failed with a StackOverflowError; this can happen "
               + "when the decision requirements graph contains a very long chain of dependent "
               + "decisions",
-          decisionId,
-          e);
+          decisionId);
       return new EvaluationFailure(
           """
           Expected to evaluate decision '%s', but the evaluation failed with a \

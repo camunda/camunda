@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.dmn.impl.VariablesContext;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReference;
@@ -121,7 +122,13 @@ final class LongDecisionChainEvaluationTest {
             stackSizeBytes);
 
     thread.start();
-    thread.join();
+    thread.join(Duration.ofSeconds(30).toMillis());
+
+    if (thread.isAlive()) {
+      throw new AssertionError(
+          "stack-size-test-thread did not terminate within 30 seconds; assuming it hung "
+              + "rather than waiting indefinitely");
+    }
 
     if (error.get() != null) {
       throw error.get();
