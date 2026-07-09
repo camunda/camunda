@@ -98,8 +98,9 @@ jobs:
     - deploy-8-8
     - deploy-8-9
     - deploy-8-10
-    # Run if at least one deploy succeeded (or an existing preview is reused)
-    if: always() && (needs.deploy-8-10.result == 'success' || needs.deploy-8-9.result == 'success' || needs.deploy-8-8.result == 'success' || inputs.existing-host != '')
+    # Run if at least one deploy succeeded (or an existing 8.10 preview is
+    # reused; existing-host only applies when the version selection includes 8.10)
+    if: always() && (needs.deploy-8-10.result == 'success' || needs.deploy-8-9.result == 'success' || needs.deploy-8-8.result == 'success' || (inputs.existing-host != '' && contains(fromJSON('["all", "8.10", ""]'), inputs.version)))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -118,7 +119,7 @@ jobs:
           run: ${{ needs.deploy-8-9.result == 'success' }}
         - version: '8.10'
           host: ${{ inputs.existing-host || needs.deploy-8-10.outputs.host-name }}
-          run: ${{ inputs.existing-host != '' || needs.deploy-8-10.result == 'success' }}
+          run: ${{ needs.deploy-8-10.result == 'success' || (inputs.existing-host != '' && contains(fromJSON('["all", "8.10", ""]'), inputs.version)) }}
         exclude:
         - deployment:
             run: false
@@ -158,7 +159,13 @@ jobs:
           fi
           echo "✅ Teleport TCP tunnel running on port 443"
 
-          # Map preview hostname to localhost
+          # Map preview hostname to localhost. PREVIEW_HOST may come from the
+          # user-provided existing-host dispatch input, so allow only hostname
+          # characters before writing it to /etc/hosts.
+          if [[ ! "${PREVIEW_HOST}" =~ ^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$ ]]; then
+            echo "::error::Invalid preview host: ${PREVIEW_HOST}"
+            exit 1
+          fi
           echo "127.0.0.1 ${PREVIEW_HOST}" | sudo tee -a /etc/hosts
           echo "✅ Added ${PREVIEW_HOST} to /etc/hosts"
 
