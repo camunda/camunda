@@ -24,6 +24,8 @@ import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCh
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationHelper;
+import io.camunda.zeebe.engine.processing.resource.ResourceDeletionAuthorizationBehavior;
+import io.camunda.zeebe.engine.processing.resource.TenantAwareDeletionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCommandProcessor;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
@@ -31,6 +33,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.util.function.Function;
 
 @AnalyzeClasses(
     packages = "io.camunda.zeebe.engine.processing..",
@@ -134,6 +137,17 @@ public class AuthorizationArchTest {
                     "isAuthorized",
                     TypedRecord.class,
                     DeployedProcess.class))
+            .or(
+                ArchConditions.callMethod(
+                    TenantAwareDeletionBehavior.class,
+                    "forEachAuthorizedTenantUntilDeleted",
+                    TypedRecord.class,
+                    Function.class))
+            .or(
+                ArchConditions.callMethod(
+                    ResourceDeletionAuthorizationBehavior.class,
+                    "checkAuthorizationForHistoryDeletion",
+                    TypedRecord.class))
             .check(item, events);
       }
     };
