@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"runtime/debug"
 	"strings"
+	"time"
 
 	"github.com/rs/zerolog/log"
 )
@@ -20,6 +21,10 @@ const (
 	OpenFlagsForWriting = os.O_RDWR | os.O_CREATE | os.O_TRUNC
 	ReadWriteMode       = 0755
 )
+
+// downloadRetryDelays gates the wait before each retry of a transient download
+// failure; the attempt count is len(downloadRetryDelays)+1. Overridable in tests.
+var downloadRetryDelays = []time.Duration{5 * time.Second, 15 * time.Second}
 
 func DownloadFile(filepath string, url string, authToken string) error {
 	info, err := os.Stat(filepath)
@@ -35,20 +40,49 @@ func DownloadFile(filepath string, url string, authToken string) error {
 		return fmt.Errorf("DownloadFile: failed to stat file: %s\n%w\n%s", filepath, err, debug.Stack())
 	}
 
-	out, err := os.Create(filepath)
+	// Download to a .partial file and rename into place on success, so an interrupted
+	// attempt can never leave a truncated file that a later run mistakes for a complete one.
+	partialPath := filepath + ".partial"
+	var lastErr error
+	for attempt := 0; ; attempt++ {
+		retryable, err := downloadToFile(partialPath, url, authToken)
+		if err == nil {
+			if renameErr := os.Rename(partialPath, filepath); renameErr != nil {
+				return fmt.Errorf("DownloadFile: failed to move download into place: %s\n%w\n%s", filepath, renameErr, debug.Stack())
+			}
+			fmt.Println("File downloaded successfully to " + filepath)
+			return nil
+		}
+		lastErr = err
+		if !retryable || attempt >= len(downloadRetryDelays) {
+			break
+		}
+		log.Warn().Err(err).Str("url", url).Int("attempt", attempt+1).Msg("download failed; retrying")
+		time.Sleep(downloadRetryDelays[attempt])
+	}
+	if removeErr := os.Remove(partialPath); removeErr != nil && !errors.Is(removeErr, os.ErrNotExist) {
+		log.Error().Err(removeErr).Str("path", partialPath).Msg("failed to remove partial download")
+	}
+	return lastErr
+}
+
+// downloadToFile performs one download attempt into path (truncating it) and reports
+// whether a failure is transient (network error, 5xx) and worth retrying.
+func downloadToFile(path string, url string, authToken string) (retryable bool, err error) {
+	out, err := os.Create(path)
 	if err != nil {
-		return fmt.Errorf("DownloadFile: failed to open file: %s\n%w\n%s", filepath, err, debug.Stack())
+		return false, fmt.Errorf("DownloadFile: failed to open file: %s\n%w\n%s", path, err, debug.Stack())
 	}
 	defer func() {
-		if err := out.Close(); err != nil {
-			log.Error().Err(err).Msg("failed to close file")
+		if closeErr := out.Close(); closeErr != nil && err == nil {
+			retryable, err = true, fmt.Errorf("DownloadFile: failed to close partial file: %s\n%w\n%s", path, closeErr, debug.Stack())
 		}
 	}()
 
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return fmt.Errorf("DownloadFile: failed to create request for url: %s\n%w\n%s", url, err, debug.Stack())
+		return false, fmt.Errorf("DownloadFile: failed to create request for url: %s\n%w\n%s", url, err, debug.Stack())
 	}
 
 	if strings.HasPrefix(authToken, "Basic ") {
@@ -59,7 +93,7 @@ func DownloadFile(filepath string, url string, authToken string) error {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("DownloadFile: failed to download from url: %s\n%w\n%s", url, err, debug.Stack())
+		return true, fmt.Errorf("DownloadFile: failed to download from url: %s\n%w\n%s", url, err, debug.Stack())
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
@@ -68,16 +102,13 @@ func DownloadFile(filepath string, url string, authToken string) error {
 	}()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("DownloadFile: bad http status: %s", resp.Status)
+		return resp.StatusCode >= http.StatusInternalServerError, fmt.Errorf("DownloadFile: bad http status: %s", resp.Status)
 	}
 
-	_, err = io.Copy(out, resp.Body)
-	if err != nil {
-		return fmt.Errorf("DownloadFile: failed to write to file %s\n%w\n%s", filepath, err, debug.Stack())
+	if _, err := io.Copy(out, resp.Body); err != nil {
+		return true, fmt.Errorf("DownloadFile: failed to write to file %s\n%w\n%s", path, err, debug.Stack())
 	}
-
-	fmt.Println("File downloaded successfully to " + filepath)
-	return nil
+	return false, nil
 }
 
 func CreateTarGzArchive(files []string, buf io.Writer, sourceRoot, targetRoot string) error {
