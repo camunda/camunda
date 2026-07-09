@@ -249,6 +249,7 @@ Load extra context on demand — only when relevant, only if the files exist.
 - MCP gateway (`gateways/gateway-mcp/`) → `gateways/gateway-mcp/AGENTS.md`
 - Load tests (`load-tests/`, load test workflows) →
   `.github/instructions/load-tests.instructions.md`
+- Testing libraries / Camunda Process Test (`testing/`) → `testing/AGENTS.md`
 
 **When working inside a specific module**:
 
