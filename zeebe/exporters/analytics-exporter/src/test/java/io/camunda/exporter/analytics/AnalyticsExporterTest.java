@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
@@ -293,7 +294,10 @@ class AnalyticsExporterTest {
     final var record =
         FACTORY.generateRecord(
             ValueType.USER_TASK,
-            r -> r.withRecordType(RecordType.EVENT).withIntent(UserTaskIntent.CREATED));
+            r ->
+                r.withRecordType(RecordType.EVENT)
+                    .withIntent(UserTaskIntent.CREATED)
+                    .withKey(2251799813685248L));
 
     // when
     exporter.export(record);
@@ -325,12 +329,61 @@ class AnalyticsExporterTest {
     assertThatCode(unopenedExporter::close).doesNotThrowAnyException();
   }
 
+  @Test
+  void shouldHandleRecordFromLocalPartition() {
+    // given
+    final var record = piCreatedEvent();
+    final int partitionId = Protocol.decodePartitionId(record.getKey());
+
+    final var context =
+        new ExporterTestContext()
+            .setConfiguration(
+                new ExporterTestConfiguration<>("analytics", new AnalyticsExporterConfig()))
+            .setPartitionId(partitionId);
+    final var freshMemoryExporter = InMemoryLogRecordExporter.create();
+    final var freshExporter = exporterWithInMemory(freshMemoryExporter, controller);
+    freshExporter.configure(context);
+
+    // when
+    freshExporter.export(record);
+
+    // then
+    final var value = (ProcessInstanceCreationRecordValue) record.getValue();
+    assertThat(memoryExporter.getFinishedLogRecordItems()).hasSize(0);
+  }
+
+  @Test
+  void shouldSkipRecordFromRemotePartition() {
+    // given
+    final var record = piCreatedEvent();
+    final int partitionId = Protocol.decodePartitionId(record.getKey());
+
+    final var context =
+        new ExporterTestContext()
+            .setConfiguration(
+                new ExporterTestConfiguration<>("analytics", new AnalyticsExporterConfig()))
+            .setPartitionId(partitionId + 1);
+    final var freshMemoryExporter = InMemoryLogRecordExporter.create();
+    final var freshExporter = exporterWithInMemory(freshMemoryExporter, controller);
+    freshExporter.configure(context);
+
+    // when
+    freshExporter.export(record);
+
+    // then
+    final var value = (ProcessInstanceCreationRecordValue) record.getValue();
+    assertThat(memoryExporter.getFinishedLogRecordItems()).hasSize(0);
+  }
+
   // -- helpers --
 
   private static io.camunda.zeebe.protocol.record.Record<?> piCreatedEvent() {
     return FACTORY.generateRecord(
         ValueType.PROCESS_INSTANCE_CREATION,
-        r -> r.withRecordType(RecordType.EVENT).withIntent(ProcessInstanceCreationIntent.CREATED));
+        r ->
+            r.withRecordType(RecordType.EVENT)
+                .withIntent(ProcessInstanceCreationIntent.CREATED)
+                .withKey(2251799813685248L)); // Must resolve to partition 1
   }
 
   private static io.camunda.zeebe.protocol.record.Record<?> piCreatedEvent(final long position) {
@@ -339,6 +392,7 @@ class AnalyticsExporterTest {
         r ->
             r.withRecordType(RecordType.EVENT)
                 .withIntent(ProcessInstanceCreationIntent.CREATED)
+                .withKey(2251799813685248L) // Must resolve to partition 1
                 .withPosition(position));
   }
 

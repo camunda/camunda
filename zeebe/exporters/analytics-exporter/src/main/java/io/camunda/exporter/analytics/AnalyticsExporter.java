@@ -11,6 +11,7 @@ import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -37,6 +38,7 @@ public class AnalyticsExporter implements Exporter {
   private MeterRegistry meterRegistry;
   private ScheduledTask metricFlushTask;
   private ScheduledTask heartbeatTask;
+  private int partitionId;
 
   public AnalyticsExporter() {
     this(new OtelSdkManager());
@@ -52,6 +54,7 @@ public class AnalyticsExporter implements Exporter {
 
     handlers = AnalyticsHandlerCatalog.build(otelSdkManager).apply(context);
     meterRegistry = context.getMeterRegistry();
+    partitionId = context.getPartitionId();
 
     analyticsContext =
         AnalyticsExporterContext.create(
@@ -103,7 +106,9 @@ public class AnalyticsExporter implements Exporter {
   @Override
   public void export(final Record<?> record) {
     try {
-      handlers.handle(record);
+      if (Protocol.decodePartitionId(record.getKey()) == partitionId) {
+        handlers.handle(record);
+      }
     } catch (final Exception e) {
       SAMPLED_WARN_LOG.warn("Failed to handle record at position {}", record.getPosition(), e);
     }

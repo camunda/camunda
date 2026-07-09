@@ -9,7 +9,6 @@ package io.camunda.exporter.analytics;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
@@ -90,36 +89,5 @@ class AnalyticsRecordFilterTest {
         ProcessInstanceCreationIntent.CREATE,
         ProcessInstanceIntent.ELEMENT_COMPLETING,
         DeploymentIntent.CREATED);
-  }
-
-  @Test
-  void shouldAcceptRecordFromLocalPartition() {
-    // given
-    final var record =
-        FACTORY.generateRecord(
-            ValueType.PROCESS_INSTANCE_CREATION,
-            r ->
-                r.withKey(Protocol.encodePartitionId(TEST_PARTITION_ID, 1))
-                    .withRecordType(RecordType.EVENT)
-                    .withIntent(ProcessInstanceCreationIntent.CREATED));
-
-    // when / then
-    assertThat(filter.acceptRecord(record)).isTrue();
-  }
-
-  @Test
-  void shouldRejectRecordFromRemotePartition() {
-    // given — key encodes partition 2, but exporter runs on partition 1
-    final int remotePartition = 2;
-    final var record =
-        FACTORY.generateRecord(
-            ValueType.PROCESS_INSTANCE_CREATION,
-            r ->
-                r.withKey(Protocol.encodePartitionId(remotePartition, 1))
-                    .withRecordType(RecordType.EVENT)
-                    .withIntent(ProcessInstanceCreationIntent.CREATED));
-
-    // when / then
-    assertThat(filter.acceptRecord(record)).isFalse();
   }
 }

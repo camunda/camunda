@@ -9,7 +9,6 @@ package io.camunda.exporter.analytics;
 
 import io.camunda.zeebe.exporter.api.context.Context.RecordFilter;
 import io.camunda.zeebe.protocol.Protocol;
-import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -71,10 +70,5 @@ record AnalyticsRecordFilter(
   @Override
   public boolean acceptIntent(final Intent intent) {
     return acceptedIntents.contains(intent);
-  }
-
-  @Override
-  public boolean acceptRecord(final Record<?> record) {
-    return Protocol.decodePartitionId(record.getKey()) == partitionId;
   }
 }
