@@ -32,6 +32,9 @@ import org.jspecify.annotations.NonNull;
 
 public final class BpmnVariableMappingBehavior {
   private final ExpressionProcessor expressionProcessor;
+  // secret-aware variant used only for input mappings; stateless over a fixed delegate, so it is
+  // built once instead of per activation
+  private final ExpressionProcessor inputMappingExpressionProcessor;
   private final VariableState variablesState;
   private final ElementInstanceState elementInstanceState;
   private final VariableBehavior variableBehavior;
@@ -45,6 +48,7 @@ public final class BpmnVariableMappingBehavior {
       final VariableBehavior variableBehavior,
       final EventTriggerBehavior eventTriggerBehavior) {
     this.expressionProcessor = expressionProcessor;
+    inputMappingExpressionProcessor = expressionProcessor.withSecretReferenceContext();
     elementInstanceState = processingState.getElementInstanceState();
     variablesState = processingState.getVariableState();
     this.variableBehavior = variableBehavior;
@@ -69,8 +73,7 @@ public final class BpmnVariableMappingBehavior {
     if (inputMappingExpression.isPresent()) {
       // secret references (camunda.secrets.<name>) are resolved to their placeholder string only
       // for input mappings, so a modeled reference survives evaluation instead of nulling
-      return expressionProcessor
-          .withSecretReferenceContext()
+      return inputMappingExpressionProcessor
           .evaluateVariableMappingExpression(inputMappingExpression.get(), scopeKey, tenantId)
           .flatMap(result -> mapLocalVariables(context, element, result));
     }
