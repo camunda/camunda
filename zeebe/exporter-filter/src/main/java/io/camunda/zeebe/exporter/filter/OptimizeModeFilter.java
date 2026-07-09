@@ -85,8 +85,8 @@ public final class OptimizeModeFilter implements ExporterRecordFilter, RecordVer
           case AGENT_INSTANCE -> isAcceptedAgentInstance(record);
           default -> false;
         };
-    if (!accepted && LOG.isDebugEnabled()) {
-      LOG.debug(
+    if (!accepted && LOG.isTraceEnabled()) {
+      LOG.trace(
           "OptimizeModeFilter rejected record {} (valueType={}, intent={}): not relevant for Optimize",
           record.getKey(),
           record.getValueType(),
