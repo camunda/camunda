@@ -146,7 +146,7 @@ public class HttpClientFactory {
       if (config.prefixPhysicalTenantPath()
           && physicalTenantId != null
           && !physicalTenantId.trim().isEmpty()) {
-        builder.appendPath("/physical-tenants/" + physicalTenantId);
+        builder.appendPath("/physical-tenants/" + physicalTenantId.trim());
       }
       builder.appendPath(REST_API_PATH);
 

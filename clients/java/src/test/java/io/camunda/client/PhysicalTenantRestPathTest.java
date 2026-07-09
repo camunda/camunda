@@ -78,6 +78,23 @@ final class PhysicalTenantRestPathTest {
   }
 
   @Test
+  void shouldTrimPhysicalTenantWhenFormingRestBasePath(final WireMockRuntimeInfo mockInfo) {
+    // given a physical tenant id padded with whitespace
+    try (final CamundaClient client =
+        CamundaClient.newClientBuilder()
+            .preferRestOverGrpc(true)
+            .restAddress(URI.create(mockInfo.getHttpBaseUrl()))
+            .physicalTenantId("  riskproduction  ")
+            .build()) {
+      // when
+      sendTopologyRequest(client);
+    }
+
+    // then the trimmed id is used to form the path
+    verify(getRequestedFor(urlEqualTo("/physical-tenants/riskproduction/v2/topology")));
+  }
+
+  @Test
   void shouldUseVerbatimRestBasePathWhenPhysicalTenantBlank(final WireMockRuntimeInfo mockInfo) {
     // given a blank physical tenant id, which must not produce a malformed /physical-tenants//v2
     try (final CamundaClient client =
