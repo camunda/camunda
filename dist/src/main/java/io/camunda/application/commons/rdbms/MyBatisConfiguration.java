@@ -7,14 +7,11 @@
  */
 package io.camunda.application.commons.rdbms;
 
-import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
-
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.db.rdbms.DefaultRdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.PerTenantSchemaConfig;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
-import io.camunda.db.rdbms.sql.TableMetricsMapper;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
@@ -142,13 +139,5 @@ public class MyBatisConfiguration {
     p.putAll(databaseProperties.properties());
     factoryBean.setConfigurationProperties(p);
     return factoryBean.getObject();
-  }
-
-  // TODO: TableMetricsMapper is the last remaining default-tenant-only mapper. It should be
-  // refactored to support multi-tenancy, and then can be removed.
-  @Bean
-  TableMetricsMapper tableMetricsMapper(
-      final Map<String, RdbmsMapperBundle> allRdbmsMapperBundles) {
-    return allRdbmsMapperBundles.get(DEFAULT_PHYSICAL_TENANT_ID).tableMetricsMapper();
   }
 }

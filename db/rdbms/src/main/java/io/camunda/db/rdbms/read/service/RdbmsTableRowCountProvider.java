@@ -11,40 +11,31 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.camunda.db.rdbms.RdbmsTableNames;
 import io.camunda.db.rdbms.sql.TableMetricsMapper;
-import io.micrometer.core.instrument.Gauge;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.binder.MeterBinder;
 import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Provides metrics for the number of rows in each RDBMS table. The row counts are cached to avoid
- * performance impact on the database.
+ * Provides cached row counts for the RDBMS tables of a single physical tenant. Each physical tenant
+ * has its own database (backed by its own {@link TableMetricsMapper}) and its own cache duration,
+ * so one provider is created per physical tenant. Row counts are cached to avoid performance impact
+ * on the database.
  */
-public class RdbmsTableRowCountMetrics implements MeterBinder {
+public class RdbmsTableRowCountProvider {
 
-  private static final Logger LOG = LoggerFactory.getLogger(RdbmsTableRowCountMetrics.class);
-  private static final String NAMESPACE = "zeebe.rdbms";
-  private static final String METRIC_NAME = NAMESPACE + ".table.row.count";
+  private static final Logger LOG = LoggerFactory.getLogger(RdbmsTableRowCountProvider.class);
 
   private final TableMetricsMapper tableMetricsMapper;
   private final Cache<String, Long> rowCountCache;
 
-  public RdbmsTableRowCountMetrics(
+  /**
+   * @param tableMetricsMapper the mapper backing the physical tenant's database
+   * @param cacheDuration how long row counts are cached before being fetched again
+   */
+  public RdbmsTableRowCountProvider(
       final TableMetricsMapper tableMetricsMapper, final Duration cacheDuration) {
     this.tableMetricsMapper = tableMetricsMapper;
-    this.rowCountCache = Caffeine.newBuilder().expireAfterWrite(cacheDuration).build();
-  }
-
-  @Override
-  public void bindTo(final MeterRegistry registry) {
-    for (final String tableName : RdbmsTableNames.TABLE_NAMES) {
-      Gauge.builder(METRIC_NAME, () -> getRowCount(tableName))
-          .description("Number of rows in the RDBMS table")
-          .tag("table", tableName)
-          .register(registry);
-    }
+    rowCountCache = Caffeine.newBuilder().expireAfterWrite(cacheDuration).build();
   }
 
   /**
