@@ -38,6 +38,13 @@ One generic facts topic, **routed by the grouping-key value** (not one topic per
 facts carry an `aggId` tag so Stage 2 routes each to the right aggregator. Different grouping keys
 coexist on the topic — single-writer holds because a cell's partials all hash to one partition.
 
+> **Superseded in part by [ADR 0009](adr/0009-single-writer-composite-cells.md):** the shuffle
+> stream is now the **cube**, not the meter — one composite delta (all meters' accumulators) per
+> `(cube, segment, cell)`, routed by `hash(cubeStreamId, groupingKey)`, so one Stage-2 task is the
+> single writer of the entire serving row. The per-writer-slots model described below was replaced
+> by segment deltas + `SegmentDedup` before this document was last revised; see the ADR for the
+> current identity model.
+
 ## Exactly-once for partials — per-writer full-value slots (the model we build now)
 
 The reduce is a **merge** of accumulators; merge is associative+commutative but **not idempotent**
