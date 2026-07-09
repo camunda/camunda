@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
 import io.atomix.cluster.AtomixCluster;
@@ -357,6 +358,8 @@ final class SystemContextTest {
     assertThatCode(() -> initSystemContext(brokerCfg))
         .isInstanceOf(InvalidConfigurationException.class)
         .hasMessageContaining("Failed configuring backup store S3");
+
+    fail("Force fail");
   }
 
   // --- per-PT security config tests ---
