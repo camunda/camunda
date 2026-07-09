@@ -141,7 +141,8 @@ export class OperateOperationPanelPage {
   getCancelOperationEntry(successCount: number): Locator {
     return this.getAllOperationEntries()
       .filter({hasText: 'Cancel'})
-      .filter({hasText: `${successCount} success`});
+      .filter({hasText: `${successCount} success`})
+      .first();
   }
 
   async clickOperationLink(operationEntry: Locator): Promise<void> {
