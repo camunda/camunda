@@ -18,7 +18,7 @@ permissions:
   contents: read
 
 env:
-  TEST_OWNER: '@camunda/core-features'
+  TEST_OWNER: '@camunda/hub-frontend'
 
 jobs:
   identity-fe-sbom-snyk:
