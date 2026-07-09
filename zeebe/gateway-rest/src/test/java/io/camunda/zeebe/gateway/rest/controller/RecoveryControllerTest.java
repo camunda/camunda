@@ -165,98 +165,41 @@ public class RecoveryControllerTest extends RestControllerTest {
 
   @Nested
   @TestPropertySource(properties = {"camunda.data.secondary-storage.type=elasticsearch"})
-  class Elasticsearch {
+  class Elasticsearch extends DocumentSecondaryStorage {
 
-    @ParameterizedTest
-    @ValueSource(strings = {"/v2/restore", "/physical-tenants/default/v2/restore"})
-    void shouldForwardBackupIdsWithElasticsearchType(final String baseUrl) {
-      // given
-      stubValidationSuccess();
-
-      // when / then
-      webClient
-          .post()
-          .uri(baseUrl)
-          .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue("{\"backupIds\": [100, 101]}")
-          .exchange()
-          .expectStatus()
-          .isAccepted()
-          .expectBody()
-          .json("{\"changeId\": \"0\", \"plannedChanges\": []}", JsonCompareMode.STRICT);
-
-      // then
-      Mockito.verify(clusterConfigurationRequestSender)
-          .restore(
-              new RestoreRequest(List.of(100L, 101L), null, null, "elasticsearch", false, false));
+    @Override
+    String expectedDatabaseType() {
+      return "elasticsearch";
     }
+  }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"/v2/restore", "/physical-tenants/default/v2/restore"})
-    void shouldForwardNoParameterWithElasticsearchType(final String baseUrl) {
-      // given
-      stubValidationSuccess();
+  @Nested
+  @TestPropertySource(properties = {"camunda.data.secondary-storage.type=opensearch"})
+  class OpenSearch extends DocumentSecondaryStorage {
 
-      // when / then
-      webClient
-          .post()
-          .uri(baseUrl)
-          .contentType(MediaType.APPLICATION_JSON)
-          .exchange()
-          .expectStatus()
-          .isAccepted();
-
-      // then
-      Mockito.verify(clusterConfigurationRequestSender)
-          .restore(new RestoreRequest(List.of(), null, null, "elasticsearch", false, false));
+    @Override
+    String expectedDatabaseType() {
+      return "opensearch";
     }
   }
 
   @Nested
   @TestPropertySource(properties = {"camunda.data.secondary-storage.type=rdbms"})
-  class Rdbms {
+  class Rdbms extends RdbmsSecondaryStorage {
 
-    @ParameterizedTest
-    @ValueSource(strings = {"/v2/restore", "/physical-tenants/default/v2/restore"})
-    void shouldForwardBackupIdsWithRdbmsType(final String baseUrl) {
-      // given
-      stubValidationSuccess();
-
-      // when / then
-      webClient
-          .post()
-          .uri(baseUrl)
-          .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue("{\"backupIds\": [100, 101]}")
-          .exchange()
-          .expectStatus()
-          .isAccepted()
-          .expectBody()
-          .json("{\"changeId\": \"0\", \"plannedChanges\": []}", JsonCompareMode.STRICT);
-
-      // then
-      Mockito.verify(clusterConfigurationRequestSender)
-          .restore(new RestoreRequest(List.of(100L, 101L), null, null, "rdbms", false, false));
+    @Override
+    String expectedDatabaseType() {
+      return "rdbms";
     }
+  }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"/v2/restore", "/physical-tenants/default/v2/restore"})
-    void shouldForwardNoParameterWithRdbmsType(final String baseUrl) {
-      // given
-      stubValidationSuccess();
+  @Nested
+  @TestPropertySource(properties = {"camunda.data.secondary-storage.type=none"})
+  class None extends RdbmsSecondaryStorage {
 
-      // when / then
-      webClient
-          .post()
-          .uri(baseUrl)
-          .contentType(MediaType.APPLICATION_JSON)
-          .exchange()
-          .expectStatus()
-          .isAccepted();
-
-      // then
-      Mockito.verify(clusterConfigurationRequestSender)
-          .restore(new RestoreRequest(List.of(), null, null, "rdbms", false, false));
+    @Override
+    String expectedDatabaseType() {
+      return "none";
     }
   }
 
@@ -266,7 +209,79 @@ public class RecoveryControllerTest extends RestControllerTest {
         "camunda.data.secondary-storage.type=rdbms",
         "camunda.data.primary-storage.backup.continuous=true"
       })
-  class RdbmsWithContinuousBackups {
+  class RdbmsWithContinuousBackups extends RdbmsSecondaryStorageWithContinuousBackups {
+
+    @Override
+    String expectedDatabaseType() {
+      return "rdbms";
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.secondary-storage.type=none",
+        "camunda.data.primary-storage.backup.continuous=true"
+      })
+  class NoneWithContinuousBackups extends RdbmsSecondaryStorageWithContinuousBackups {
+
+    @Override
+    String expectedDatabaseType() {
+      return "none";
+    }
+  }
+
+  abstract class RdbmsSecondaryStorage {
+
+    abstract String expectedDatabaseType();
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/v2/restore", "/physical-tenants/default/v2/restore"})
+    void shouldForwardBackupIds(final String baseUrl) {
+      // given
+      stubValidationSuccess();
+
+      // when / then
+      webClient
+          .post()
+          .uri(baseUrl)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue("{\"backupIds\": [100, 101]}")
+          .exchange()
+          .expectStatus()
+          .isAccepted()
+          .expectBody()
+          .json("{\"changeId\": \"0\", \"plannedChanges\": []}", JsonCompareMode.STRICT);
+
+      Mockito.verify(clusterConfigurationRequestSender)
+          .restore(
+              new RestoreRequest(
+                  List.of(100L, 101L), null, null, expectedDatabaseType(), false, false));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/v2/restore", "/physical-tenants/default/v2/restore"})
+    void shouldForwardNoParameters(final String baseUrl) {
+      // given
+      stubValidationSuccess();
+
+      // when / then
+      webClient
+          .post()
+          .uri(baseUrl)
+          .contentType(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus()
+          .isAccepted();
+
+      Mockito.verify(clusterConfigurationRequestSender)
+          .restore(new RestoreRequest(List.of(), null, null, expectedDatabaseType(), false, false));
+    }
+  }
+
+  abstract class RdbmsSecondaryStorageWithContinuousBackups {
+
+    abstract String expectedDatabaseType();
 
     @ParameterizedTest
     @ValueSource(strings = {"/v2/restore", "/physical-tenants/default/v2/restore"})
@@ -284,9 +299,10 @@ public class RecoveryControllerTest extends RestControllerTest {
           .expectStatus()
           .isAccepted();
 
-      // then
       Mockito.verify(clusterConfigurationRequestSender)
-          .restore(new RestoreRequest(List.of(100L, 101L), null, null, "rdbms", true, false));
+          .restore(
+              new RestoreRequest(
+                  List.of(100L, 101L), null, null, expectedDatabaseType(), true, false));
     }
 
     @ParameterizedTest
@@ -305,11 +321,63 @@ public class RecoveryControllerTest extends RestControllerTest {
           .expectStatus()
           .isAccepted();
 
-      // then
       Mockito.verify(clusterConfigurationRequestSender)
           .restore(
               new RestoreRequest(
-                  List.of(), "2024-01-01T10:00:00Z", "2024-01-01T12:00:00Z", "rdbms", true, false));
+                  List.of(),
+                  "2024-01-01T10:00:00Z",
+                  "2024-01-01T12:00:00Z",
+                  expectedDatabaseType(),
+                  true,
+                  false));
+    }
+  }
+
+  abstract class DocumentSecondaryStorage {
+
+    abstract String expectedDatabaseType();
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/v2/restore", "/physical-tenants/default/v2/restore"})
+    void shouldForwardBackupIds(final String baseUrl) {
+      // given
+      stubValidationSuccess();
+
+      // when / then
+      webClient
+          .post()
+          .uri(baseUrl)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue("{\"backupIds\": [100, 101]}")
+          .exchange()
+          .expectStatus()
+          .isAccepted()
+          .expectBody()
+          .json("{\"changeId\": \"0\", \"plannedChanges\": []}", JsonCompareMode.STRICT);
+
+      Mockito.verify(clusterConfigurationRequestSender)
+          .restore(
+              new RestoreRequest(
+                  List.of(100L, 101L), null, null, expectedDatabaseType(), false, false));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/v2/restore", "/physical-tenants/default/v2/restore"})
+    void shouldForwardNoParameters(final String baseUrl) {
+      // given
+      stubValidationSuccess();
+
+      // when / then
+      webClient
+          .post()
+          .uri(baseUrl)
+          .contentType(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus()
+          .isAccepted();
+
+      Mockito.verify(clusterConfigurationRequestSender)
+          .restore(new RestoreRequest(List.of(), null, null, expectedDatabaseType(), false, false));
     }
   }
 }
