@@ -647,7 +647,7 @@ jobs:
       ZEEBE_BACKUP_MODULES: ${{ steps.set-constants.outputs.backup }}
       # Zeebe modules owned by the @camunda/zeebe-distributed-platform team
       ZEEBE_DISTRIBUTED_MODULES: ${{ steps.set-constants.outputs.distributed }}
-      # Zeebe modules owned by the @camunda/camundaex team
+      # Zeebe modules owned by the @camunda/core-features team
       ZEEBE_CLIENT_MODULES: ${{ steps.set-constants.outputs.client }}
       # Extra modules for skipping in general-unit-tests, these modules are used in ZEEBE_EXPORTER_MODULES instead
       GENERAL_UT_EXTRA_SKIP_MODULES: ${{ steps.set-constants.outputs.general_ut_extra_skip }}
@@ -683,7 +683,7 @@ jobs:
           # Zeebe modules owned by @camunda/zeebe-distributed-platform
           DISTRIBUTED="':zeebe-atomix-cluster',':zeebe-atomix-utils',':zeebe-broker',':zeebe-broker-client',':zeebe-cluster-config',':dynamic-node-id-provider',':zeebe-journal',':zeebe-logstreams',':zeebe-restore',':zeebe-scheduler',':zeebe-snapshots',':zeebe-stream-platform',':zeebe-transport'"
 
-          # Zeebe modules owned by @camunda/camundaex
+          # Zeebe modules owned by @camunda/core-features
           CLIENT="':camunda-client-java'"
 
           # General UT configuration
@@ -881,7 +881,7 @@ jobs:
               "runs-on": "gcp-perf-core-8-default",
               "docker-repository": "localhost:5000/camunda/camunda",
               "docker-file": "camunda.Dockerfile",
-              "owner": "@camunda/camundaex",
+              "owner": "@camunda/c8-testing",
               "module": "Testing",
               "stressRun": 1
             },
@@ -892,7 +892,7 @@ jobs:
               "maven-build-threads": 1,
               "maven-test-fork-count": 1,
               "runs-on": "gcp-perf-core-8-default",
-              "owner": "@camunda/camundaex",
+              "owner": "@camunda/core-features",
               "module": "Clients",
               "stressRun": 1
             },
@@ -1046,7 +1046,7 @@ jobs:
             maven-modules: ${{ needs.setup-tests.outputs.ZEEBE_DISTRIBUTED_MODULES }}
           - component: Client
             suite: CamundaEx
-            owner: '@camunda/camundaex'
+            owner: '@camunda/core-features'
             maven-modules: ${{ needs.setup-tests.outputs.ZEEBE_CLIENT_MODULES }}
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@92af67132b5592ee29838ae6b4615a93acd2992b # main
