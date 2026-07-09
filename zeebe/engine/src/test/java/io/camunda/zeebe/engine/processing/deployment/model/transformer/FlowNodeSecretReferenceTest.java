@@ -96,6 +96,35 @@ class FlowNodeSecretReferenceTest {
   }
 
   @Test
+  void shouldScopeJsonPointerToContextEntryOfReference() {
+    // given - the source is a FEEL context; only one entry holds a secret reference
+    final var task =
+        transform(
+            t ->
+                t.zeebeInputExpression(
+                    "{x1: \"camunda.secrets.x\", x2: camunda.secrets.x}", "foo"));
+
+    // when
+    final var secretReferences = task.getSecretReferences();
+
+    // then - the pointer targets the entry that references the secret, not the whole target
+    assertThat(secretReferences)
+        .containsExactly(entry("/foo/x2", Set.of(new SecretReference("x"))));
+  }
+
+  @Test
+  void shouldNotStoreSecretReferenceUsedAsTarget() {
+    // given - the reference-looking path is the target, the source holds no reference
+    final var task = transform(t -> t.zeebeInputExpression("someVariable", "camunda.secrets.x"));
+
+    // when
+    final var secretReferences = task.getSecretReferences();
+
+    // then
+    assertThat(secretReferences).isEmpty();
+  }
+
+  @Test
   void shouldStoreSecretReferencesByJsonPointerForNestedTargetPath() {
     // given - a nested (multi-segment) target path
     final var task =
