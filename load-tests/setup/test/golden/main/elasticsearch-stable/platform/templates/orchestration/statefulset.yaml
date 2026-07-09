@@ -101,7 +101,7 @@ spec:
             - name: ATOMIX_LOG_LEVEL
               value: INFO
             - name: ZEEBE_LOG_LEVEL
-              value: DEBUG
+              value: INFO
             - name: SPRING_CONFIG_ADDITIONALLOCATION
               value: /usr/local/camunda/config/application.yml,optional:/usr/local/camunda/config/application-override.yml
             
