@@ -15,6 +15,7 @@ import io.camunda.zeebe.el.ResultType;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.expression.CombinedEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.ScopedEvaluationContext;
+import io.camunda.zeebe.engine.processing.expression.SecretReferenceEvaluationContext;
 import io.camunda.zeebe.model.bpmn.util.time.Interval;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
@@ -86,6 +87,23 @@ public final class ExpressionProcessor {
         expressionLanguage,
         CombinedEvaluationContext.withContexts(
             scopedEvaluationContext, this.scopedEvaluationContext),
+        expressionEvaluationTimeout);
+  }
+
+  /**
+   * Returns a copy of this processor that resolves {@code camunda.secrets.<name>} references used
+   * as expressions to their own string literal (so {@code camunda.secrets.token} evaluates to
+   * {@code "camunda.secrets.token"} instead of {@code null}). Only that path is affected; process
+   * and cluster variables ({@code camunda.vars.*}) resolve unchanged. Intended for input-mapping
+   * evaluation.
+   *
+   * @return a new secret-aware processor; this one is left unchanged
+   * @see SecretReferenceEvaluationContext
+   */
+  public ExpressionProcessor withSecretReferenceContext() {
+    return new ExpressionProcessor(
+        expressionLanguage,
+        new SecretReferenceEvaluationContext(scopedEvaluationContext),
         expressionEvaluationTimeout);
   }
 

@@ -67,7 +67,10 @@ public final class BpmnVariableMappingBehavior {
         element.getInputMappings().map(InputMappings::expression);
 
     if (inputMappingExpression.isPresent()) {
+      // secret references (camunda.secrets.<name>) are resolved to their placeholder string only
+      // for input mappings, so a modeled reference survives evaluation instead of nulling
       return expressionProcessor
+          .withSecretReferenceContext()
           .evaluateVariableMappingExpression(inputMappingExpression.get(), scopeKey, tenantId)
           .flatMap(result -> mapLocalVariables(context, element, result));
     }
