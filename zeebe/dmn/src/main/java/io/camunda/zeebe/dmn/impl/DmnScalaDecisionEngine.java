@@ -29,6 +29,8 @@ import org.camunda.dmn.DmnEngine;
 import org.camunda.dmn.DmnEngine.EvalFailure;
 import org.camunda.dmn.DmnEngine.EvalResult;
 import org.camunda.feel.syntaxtree.Val;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import scala.util.Either;
 
 /**
@@ -40,6 +42,7 @@ import scala.util.Either;
  */
 public final class DmnScalaDecisionEngine implements DecisionEngine {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(DmnScalaDecisionEngine.class);
   private static final DirectBuffer NIL_OUTPUT = BufferUtil.wrapArray(MsgPackHelper.NIL);
 
   private final DmnEngine dmnEngine;
@@ -79,6 +82,11 @@ public final class DmnScalaDecisionEngine implements DecisionEngine {
       // deterministic poison-pill on replay, and this catch sits before any
       // state mutation, so failing the parse gracefully is safer than
       // looping a crash forever. See the design doc for full rationale.
+      LOGGER.warn(
+          "DMN parsing failed with a StackOverflowError; this can happen when the decision "
+              + "requirements graph contains a very long chain of dependent decisions or "
+              + "business knowledge models",
+          e);
       return new ParseFailureMessage(
           "Failed to parse DMN: the parser failed with a StackOverflowError. This can happen "
               + "when the decision requirements graph contains a very long chain of dependent "
@@ -114,6 +122,12 @@ public final class DmnScalaDecisionEngine implements DecisionEngine {
       // deterministic poison-pill on replay, and this catch sits before any
       // state mutation, so failing the evaluation gracefully is safer than
       // looping a crash forever. See the design doc for full rationale.
+      LOGGER.warn(
+          "DMN evaluation of decision '{}' failed with a StackOverflowError; this can happen "
+              + "when the decision requirements graph contains a very long chain of dependent "
+              + "decisions",
+          decisionId,
+          e);
       return new EvaluationFailure(
           """
           Expected to evaluate decision '%s', but the evaluation failed with a \
