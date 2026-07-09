@@ -339,10 +339,9 @@ public class OpensearchBackupRepository implements BackupRepository {
               } else if (isErrorType(e, SNAPSHOT_NAME_ALREADY_IN_USE_EXCEPTION_TYPE)) {
                 LOGGER.warn(
                     "Snapshot [{}] for backup id [{}] already exists in OpenSearch. "
-                        + "This can happen when retrying a failed backup before deletion of the previous "
-                        + "attempt has fully completed. Use a different backup ID, or wait for the existing "
-                        + "snapshot to be fully deleted before retrying with the same ID. "
-                        + "The underlying race condition is tracked in https://github.com/camunda/camunda/issues/20443.",
+                        + "A previous backup attempt with the same ID may still be in the process of being deleted. "
+                        + "To retry with the same backup ID, wait for the deletion to complete first. "
+                        + "To proceed immediately, use a different backup ID.",
                     snapshotRequest.snapshotName(),
                     backupId);
                 onFailure.run();

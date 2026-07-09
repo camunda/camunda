@@ -56,9 +56,9 @@ import org.slf4j.LoggerFactory;
 
 public class ElasticsearchBackupRepository implements BackupRepository {
   public static final String SNAPSHOT_MISSING_EXCEPTION_TYPE = "snapshot_missing_exception";
-  private static final String REPOSITORY_MISSING_EXCEPTION_TYPE = "repository_missing_exception";
   public static final String SNAPSHOT_NAME_ALREADY_IN_USE_EXCEPTION_TYPE =
       "snapshot_name_already_in_use_exception";
+  private static final String REPOSITORY_MISSING_EXCEPTION_TYPE = "repository_missing_exception";
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchBackupRepository.class);
   private final ElasticsearchClient esClient;
   private final BackupRepositoryProps backupProps;
@@ -586,10 +586,9 @@ public class ElasticsearchBackupRepository implements BackupRepository {
       } else if (isSnapshotNameAlreadyInUseException(ex)) {
         LOGGER.warn(
             "Snapshot [{}] for backup id [{}] already exists in Elasticsearch. "
-                + "This can happen when retrying a failed backup before deletion of the previous "
-                + "attempt has fully completed. Use a different backup ID, or wait for the existing "
-                + "snapshot to be fully deleted before retrying with the same ID. "
-                + "The underlying race condition is tracked in https://github.com/camunda/camunda/issues/20443.",
+                + "A previous backup attempt with the same ID may still be in the process of being deleted. "
+                + "To retry with the same backup ID, wait for the deletion to complete first. "
+                + "To proceed immediately, use a different backup ID.",
             snapshotRequest.snapshotName(),
             backupId);
         onFailure.run();
