@@ -85,6 +85,33 @@ final class SecretReferenceLiteralValidatorTest {
   }
 
   @Test
+  void shouldRejectSecretReferenceInsideObjectLiteral() {
+    // when - the reference is a string literal nested in a constant object
+    final var collector = validate("={\"auth\": \"camunda.secrets.token\"}");
+
+    // then
+    verify(collector).addError(eq(0), contains("camunda.secrets.token"));
+  }
+
+  @Test
+  void shouldRejectSecretReferenceInsideListLiteral() {
+    // when - the reference is a string literal nested in a constant list
+    final var collector = validate("=[\"camunda.secrets.token\"]");
+
+    // then
+    verify(collector).addError(eq(0), contains("camunda.secrets.token"));
+  }
+
+  @Test
+  void shouldAllowSecretReferenceExpressionInsideObjectLiteral() {
+    // when - the reference is an expression path inside the object, not a literal
+    final var collector = validate("={\"auth\": camunda.secrets.token}");
+
+    // then
+    verifyNoInteractions(collector);
+  }
+
+  @Test
   void shouldAllowClusterVariableExpression() {
     // when
     final var collector = validate("=camunda.vars.env.REGION");
