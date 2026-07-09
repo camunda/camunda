@@ -73,9 +73,6 @@ class AnalyticsExporterTest {
                   .containsEntry(
                       AnalyticsAttributes.Process.DEFINITION_KEY, value.getProcessDefinitionKey())
                   .containsEntry(AnalyticsAttributes.Process.INSTANCE_KEY, record.getKey())
-                  .containsEntry(
-                      AnalyticsAttributes.Process.ROOT_INSTANCE_KEY,
-                      value.getRootProcessInstanceKey())
                   .containsEntry(AnalyticsAttributes.Tenant.ID, value.getTenantId())
                   .containsEntry(AnalyticsAttributes.Log.POSITION, record.getPosition())
                   .containsEntry(AnalyticsAttributes.Event.SEQUENCE_NUMBER, 1L);

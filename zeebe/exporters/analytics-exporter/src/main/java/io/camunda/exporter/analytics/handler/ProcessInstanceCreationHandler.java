@@ -44,9 +44,6 @@ public final class ProcessInstanceCreationHandler
                 .setAttribute(VERSION, (long) value.getVersion())
                 .setAttribute(DEFINITION_KEY, value.getProcessDefinitionKey())
                 .setAttribute(INSTANCE_KEY, record.getKey())
-                .setAttribute(
-                    AnalyticsAttributes.Process.ROOT_INSTANCE_KEY,
-                    value.getRootProcessInstanceKey())
                 .setAttribute(ID, value.getTenantId())
                 .setTimestamp(record.getTimestamp(), TimeUnit.MILLISECONDS));
 

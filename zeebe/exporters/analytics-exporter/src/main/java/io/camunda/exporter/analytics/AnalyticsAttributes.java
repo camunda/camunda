@@ -74,8 +74,6 @@ public final class AnalyticsAttributes {
         AttributeKey.longKey("camunda.process.definition_key");
     public static final AttributeKey<Long> INSTANCE_KEY =
         AttributeKey.longKey("camunda.process.instance_key");
-    public static final AttributeKey<Long> ROOT_INSTANCE_KEY =
-        AttributeKey.longKey("camunda.process.root_instance_key");
 
     private Process() {}
   }
