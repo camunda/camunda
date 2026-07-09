@@ -18,7 +18,6 @@ import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.FeatureFlags;
@@ -26,7 +25,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 
@@ -101,15 +99,17 @@ public final class SystemContextTestFactory {
       final NodeIdProvider nodeIdProvider,
       final PhysicalTenantIds physicalTenantIds) {
     final var exporterRepository = new ExporterRepository();
-    for (final Entry<String, ExporterCfg> entry : brokerCfg.getExporters().entrySet()) {
-      final String key = entry.getKey();
-      final ExporterCfg value = entry.getValue();
-      try {
-        exporterRepository.load(key, value);
-      } catch (final Exception e) {
-        throw new RuntimeException(e);
-      }
-    }
+    brokerCfg
+        .getExporters()
+        .forEach(
+            (id, cfg) -> {
+              try {
+                exporterRepository.load(id, cfg);
+              } catch (final Exception e) {
+                throw new RuntimeException(e);
+              }
+            });
+
     return new SystemContext(
         shutdownTimeout,
         brokerCfg,
