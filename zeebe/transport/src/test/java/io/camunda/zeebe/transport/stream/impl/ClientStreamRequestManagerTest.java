@@ -623,6 +623,71 @@ final class ClientStreamRequestManagerTest {
             anyBoolean());
   }
 
+  @Test
+  void shouldUseGroupScopedTopicForNonDefaultPhysicalTenant() {
+    // given — stream owned by a non-default partition group
+    final String physicalTenantId = "tenant1";
+    final var tenantStream =
+        new AggregatedClientStream<>(
+            UUID.randomUUID(),
+            new LogicalId<>(
+                new UnsafeBuffer(BufferUtil.wrapString("tenant-foo")), new TestMetadata()),
+            physicalTenantId);
+    tenantStream.open(requestManager, Collections.emptySet());
+
+    final var serverId = MemberId.anonymous();
+    when(mockTransport.send(
+            eq(StreamTopics.ADD.topic(physicalTenantId)), any(), any(), any(), eq(serverId), any()))
+        .thenReturn(CompletableFuture.completedFuture(addStreamSuccess));
+    when(mockTransport.send(
+            eq(StreamTopics.REMOVE.topic(physicalTenantId)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any()))
+        .thenReturn(CompletableFuture.completedFuture(removeStreamSuccess));
+
+    // when
+    requestManager.add(tenantStream, serverId);
+
+    // then — ADD uses prefixed topic "tenant1-stream-add", not legacy "stream-add"
+    verify(mockTransport)
+        .send(
+            eq(StreamTopics.ADD.topic(physicalTenantId)), any(), any(), any(), eq(serverId), any());
+    verify(mockTransport, never())
+        .send(
+            eq(StreamTopics.ADD.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
+    assertThat(tenantStream.isConnected(serverId)).isTrue();
+
+    // when
+    requestManager.remove(tenantStream, serverId);
+
+    // then — REMOVE also uses prefixed topic
+    verify(mockTransport)
+        .send(
+            eq(StreamTopics.REMOVE.topic(physicalTenantId)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
+    verify(mockTransport, never())
+        .send(
+            eq(StreamTopics.REMOVE.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
+    assertThat(tenantStream.isConnected(serverId)).isFalse();
+  }
+
   private static Stream<MessagingException> provideMessagingFailures() {
     return Stream.of(
         new NoSuchMemberException("failed"),
