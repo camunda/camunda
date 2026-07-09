@@ -174,6 +174,18 @@ WHERE  ts.report_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 20 DAY)
   AND  bs.ci_url IS NOT NULL
 ```
 
+## Per-test verify query in the comment
+
+Each active alert in the PR comment carries a collapsible `Verify in
+BigQuery` block with a ready-to-run query scoped to that one test
+(`test_class_name` + `test_name`, last 60 days). The author runs it to see
+whether the test already produced `flaky`/`failure`/`error` rows on
+`main`/`stable/*` or other PRs — prior failing rows mean a pre-existing
+intermittent flake (likely a false alarm); no prior failing rows mean this PR
+genuinely introduced it. All statuses are returned (not just failures) so the
+pass-vs-fail counts reveal how rare the flake is. The FQN is read from the
+sticky state entry, so the block survives re-runs.
+
 ## False-positive suppression
 
 A post-merge pilot audit (618 PRs, 2026-06-04 → 2026-06-15) found a 56%
