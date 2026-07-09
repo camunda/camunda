@@ -38,11 +38,18 @@ public final class SecretReferenceEvaluationContext implements ScopedEvaluationC
 
   @Override
   public Either<DirectBuffer, EvaluationContext> getVariable(final String variableName) {
-    if (ROOT.equals(variableName)) {
-      // own the `camunda` segment while keeping the delegate's `camunda` content reachable
-      return Either.right(new CamundaNamespaceContext(delegate.getVariable(ROOT)));
+    if (!ROOT.equals(variableName)) {
+      return delegate.getVariable(variableName);
     }
-    return delegate.getVariable(variableName);
+    final var camunda = delegate.getVariable(ROOT);
+    if (camunda.isLeft() && camunda.getLeft() != null) {
+      // a real `camunda` variable value (e.g. a process variable) exists; keep it intact rather
+      // than shadowing it, so its members stay reachable and existing semantics are preserved
+      return camunda;
+    }
+    // wrap the delegate's `camunda` context (or absence) so `secrets` resolves while every other
+    // key — e.g. cluster variables under `vars` — keeps forwarding to the delegate
+    return Either.right(new CamundaNamespaceContext(camunda));
   }
 
   @Override

@@ -107,6 +107,41 @@ final class SecretReferenceEvaluationContextTest {
     assertThat(result.getType()).isEqualTo(ResultType.NULL);
   }
 
+  @Test
+  void shouldTreatVariableValueEqualToReferenceAsPlainString() {
+    // given - a variable whose VALUE looks like a reference (the accepted, benign edge case)
+    final var context =
+        new SecretReferenceEvaluationContext(
+            new InMemoryVariableEvaluationContext(Map.of("token", "camunda.secrets.token")));
+
+    // when - the value is read as a variable, not as a camunda.secrets.* path
+    final var result =
+        expressionLanguage.evaluateExpression(
+            expressionLanguage.parseExpression("=token"), context);
+
+    // then - it stays a plain string, it is not resolved as a reference here
+    assertThat(result.getType()).isEqualTo(ResultType.STRING);
+    assertThat(result.getString()).isEqualTo("camunda.secrets.token");
+  }
+
+  @Test
+  void shouldNotShadowProcessVariableNamedCamunda() {
+    // given - a process variable named `camunda` (an object) must stay reachable, not be replaced
+    final var context =
+        new SecretReferenceEvaluationContext(
+            new InMemoryVariableEvaluationContext(
+                Map.of(
+                    "camunda", Map.of("vars", Map.of("env", Map.of("KEY", "from-process-var"))))));
+
+    // when
+    final var result =
+        expressionLanguage.evaluateExpression(
+            expressionLanguage.parseExpression("=camunda.vars.env.KEY"), context);
+
+    // then
+    assertThat(result.getString()).isEqualTo("from-process-var");
+  }
+
   private EvaluationResult evaluate(final String expression) {
     return expressionLanguage.evaluateExpression(
         expressionLanguage.parseExpression(expression), secretAware);
