@@ -116,7 +116,7 @@ final class AggregationStageTaskFrozenCutTest {
     assertThat(durableOffset()).hasValue(0L);
 
     // and the next commit covers the post-barrier merge
-    task.commit(1L);
+    Cuts.commit(task, 1L);
     assertThat(durableTotal(handle)).isEqualTo(2L);
     assertThat(durableOffset()).hasValue(1L);
   }
@@ -140,7 +140,7 @@ final class AggregationStageTaskFrozenCutTest {
     assertThat(durableDedupSegment(handle)).hasValue(1L);
 
     // and the next commit persists the segment-2 admission together with its fold
-    task.commit(1L);
+    Cuts.commit(task, 1L);
     assertThat(durableDedupSegment(handle)).hasValue(2L);
   }
 
@@ -165,7 +165,7 @@ final class AggregationStageTaskFrozenCutTest {
 
     // and the runtime replays the record after the cut's offset — the same segment-2 delta
     task.process(envelope(reopened, 2L, 0));
-    task.commit(1L);
+    Cuts.commit(task, 1L);
 
     // then the replayed delta folds exactly once: the freeze-time watermark did not cover it (a
     // live-at-persist-time snapshot would have, silently losing this fold)
@@ -193,7 +193,7 @@ final class AggregationStageTaskFrozenCutTest {
     assertThat(durableDedupSegment(handle)).isEmpty();
 
     // and the next commit covers both merges and both admissions exactly once
-    task.commit(1L);
+    Cuts.commit(task, 1L);
     assertThat(durableTotal(handle)).isEqualTo(2L);
     assertThat(durableOffset()).hasValue(1L);
     assertThat(durableDedupSegment(handle)).hasValue(2L);
@@ -207,7 +207,7 @@ final class AggregationStageTaskFrozenCutTest {
     openTask();
     final CubeHandle handle = resolve();
     task.process(envelope(handle, 1L, 0));
-    task.commit(0L);
+    Cuts.commit(task, 0L);
 
     // when this task restarts over its cut and the runtime delivers the republished duplicate
     task.close();
@@ -216,7 +216,7 @@ final class AggregationStageTaskFrozenCutTest {
     final CubeHandle reopened = resolve();
     assertThat(task.restore()).isEqualTo(0L);
     task.process(envelope(reopened, 1L, 0));
-    task.commit(1L);
+    Cuts.commit(task, 1L);
 
     // then the segment folded exactly once: the persisted dedup watermark absorbs the re-delivery
     assertThat(durableTotal(reopened)).isEqualTo(1L);

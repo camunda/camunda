@@ -16,8 +16,8 @@ import org.junit.jupiter.api.Test;
 /**
  * The stream processor drives any {@link Stage}'s lifecycle agnostically, per source partition, and
  * owns its shard through the injected {@link ShardDurability}: it restores its offset from it and
- * commits every stage's state atomically with the consumed offset — synchronously via {@link
- * StreamProcessor#commit(long)} or as a frozen cut via {@link StreamProcessor#freezeCut(long)}.
+ * commits every stage's frozen delta atomically with the consumed offset as one {@link
+ * StreamProcessor#freezeCut(long) commit cut}.
  */
 final class StreamProcessorTest {
 
@@ -74,33 +74,12 @@ final class StreamProcessorTest {
   }
 
   @Test
-  void shouldCommitStagesAndOffsetInOneShardTransaction() {
-    // given — two journaling stages behind one shard
-    final List<String> journal = new ArrayList<>();
-    final JournalingShard shard = new JournalingShard(journal);
-    final StreamProcessor<Order> processor =
-        new StreamProcessor<Order>(shard)
-            .add(new JournalingStage(journal, "a"))
-            .add(new JournalingStage(journal, "b"));
-
-    // when
-    processor.commit(7L);
-
-    // then — the offset and every stage's checkpoint landed inside the shard's one transaction
-    assertThat(journal)
-        .containsExactly("tx-begin", "offset:7", "checkpoint:a", "checkpoint:b", "tx-end");
-    assertThat(shard.offset).isEqualTo(7L);
-  }
-
-  @Test
   void shouldFreezeACutThatPersistsStagesAndOffsetInOneShardTransaction() {
-    // given — two freezable stages behind one shard
+    // given — two journaling stages behind one shard
     final List<String> journal = new ArrayList<>();
     final JournalingShard shard = new JournalingShard(journal);
     final JournalingStage first = new JournalingStage(journal, "a");
     final JournalingStage second = new JournalingStage(journal, "b");
-    first.freezable = true;
-    second.freezable = true;
     final StreamProcessor<Order> processor =
         new StreamProcessor<Order>(shard).add(first).add(second);
 
@@ -129,10 +108,9 @@ final class StreamProcessorTest {
 
   @Test
   void shouldMergeAFailedCutBackOnEveryStage() {
-    // given — a freezable stage whose cut fails to persist
+    // given — a stage whose cut fails to persist
     final List<String> journal = new ArrayList<>();
     final JournalingStage stage = new JournalingStage(journal, "a");
-    stage.freezable = true;
     final StreamProcessor<Order> processor =
         new StreamProcessor<Order>(new JournalingShard(journal)).add(stage);
 
@@ -145,18 +123,22 @@ final class StreamProcessorTest {
   }
 
   @Test
-  void shouldRefuseToFreezeWhenAnyStageLacksFrozenCheckpointSupport() {
-    // given — one freezable and one non-freezable stage
+  void shouldFreezeAnOffsetOnlyCutForStagesWithTheDefaultCheckpointTrio() {
+    // given — a stateless stage that leaves the whole checkpoint trio at its defaults
     final List<String> journal = new ArrayList<>();
-    final JournalingStage freezable = new JournalingStage(journal, "a");
-    freezable.freezable = true;
-    final JournalingStage synchronous = new JournalingStage(journal, "b");
-    final StreamProcessor<Order> processor =
-        new StreamProcessor<Order>(new JournalingShard(journal)).add(freezable).add(synchronous);
+    final JournalingShard shard = new JournalingShard(journal);
+    final Stage<Order> stateless = record -> {};
+    final StreamProcessor<Order> processor = new StreamProcessor<Order>(shard).add(stateless);
 
-    // when / then — no cut: the runtime falls back to the synchronous commit, and no stage froze
-    assertThat(processor.freezeCut(5L)).isNull();
-    assertThat(journal).isEmpty();
+    // when — the cut is frozen and driven through its lifecycle
+    final CommitCut cut = processor.freezeCut(5L);
+    cut.persist();
+    cut.complete(true);
+
+    // then — the cut still lands the consumed offset in the shard's transaction, so a stateless
+    // stage advances its resume position with nothing else to persist
+    assertThat(journal).containsExactly("tx-begin", "offset:5", "tx-end");
+    assertThat(shard.offset).isEqualTo(5L);
   }
 
   /** A heap shard journaling its transaction boundary and offset writes. */
@@ -188,12 +170,11 @@ final class StreamProcessorTest {
     }
   }
 
-  /** A stage journaling its lifecycle, optionally supporting the frozen-checkpoint trio. */
+  /** A stage journaling its lifecycle, including the frozen-checkpoint trio. */
   private static final class JournalingStage implements Stage<Order> {
 
     private final List<String> journal;
     private final String name;
-    private boolean freezable;
 
     private JournalingStage(final List<String> journal, final String name) {
       this.journal = journal;
@@ -206,16 +187,6 @@ final class StreamProcessorTest {
     @Override
     public void flush() {
       journal.add("flush:" + name);
-    }
-
-    @Override
-    public void checkpoint() {
-      journal.add("checkpoint:" + name);
-    }
-
-    @Override
-    public boolean supportsFrozenCheckpoint() {
-      return freezable;
     }
 
     @Override

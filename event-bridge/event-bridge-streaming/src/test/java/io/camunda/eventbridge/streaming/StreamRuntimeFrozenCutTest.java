@@ -36,10 +36,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
 /**
- * The frozen-cut commit path: a task that supports {@link Task#freezeCut} keeps folding while its
- * cut persists on the IO thread, commits the barrier's offset atomically with the frozen state,
- * runs at most one cut at a time, stalls only on budget exhaustion, merges a failed cut back for
- * retry, and finishes an in-flight cut before the final stop commit.
+ * The commit-cut path: a task keeps folding while its cut ({@link Task#freezeCut}) persists on the
+ * IO thread, commits the barrier's offset atomically with the frozen state, runs at most one cut at
+ * a time, stalls only on budget exhaustion, merges a failed cut back for retry, and finishes an
+ * in-flight cut before the final stop cut, which runs inline on the actor thread.
  */
 final class StreamRuntimeFrozenCutTest {
 
@@ -261,7 +261,7 @@ final class StreamRuntimeFrozenCutTest {
     task.persistGate.countDown();
 
     // then — the runtime waits for the cut, retires it, and shuts down cleanly; depending on how
-    // the queue drained, the tail may land in the final synchronous stop commit
+    // the queue drained, the tail may land in the final inline stop cut
     loop.join(TimeUnit.SECONDS.toMillis(10));
     assertThat(loop.isAlive()).isFalse();
     assertThat(committed).isSorted().last().isEqualTo(2L);
@@ -535,6 +535,69 @@ final class StreamRuntimeFrozenCutTest {
     assertThat(task.closed).isTrue();
   }
 
+  @Test
+  void shouldExecuteTheFinalStopCutInlineOnTheActorThread() throws Exception {
+    // given — no periodic cut (huge interval); the only commit is the final stop cut
+    stubClient();
+    final FrozenCutTask task = new FrozenCutTask();
+    final List<String> journal = new CopyOnWriteArrayList<>();
+    final List<Long> committed = stubCommittedOffsets(journal);
+    final AtomicBoolean delivered = new AtomicBoolean();
+    when(consumer.poll(anyInt(), any()))
+        .thenAnswer(
+            invocation -> delivered.getAndSet(true) ? List.of() : List.of(event(1), event(2)));
+    final StreamRuntime<String> runtime = runtime(task, journal, Duration.ofHours(1));
+    final Thread loop = new Thread(runtime::run, "runtime-under-test");
+    loop.start();
+    await().until(() -> task.processed.contains("e2"));
+
+    // when — stopping
+    runtime.stop();
+    loop.join(TimeUnit.SECONDS.toMillis(10));
+
+    // then — exactly one cut ran (the stop cut), frozen and persisted on the SAME thread — the
+    // partition's actor thread, never the sink IO pool — and it committed the offset before close
+    assertThat(loop.isAlive()).isFalse();
+    assertThat(task.freezes).hasValue(1);
+    assertThat(task.persistThreads).hasSize(1);
+    assertThat(task.persistThreads.get(0)).isSameAs(task.freezeThreads.get(0));
+    assertThat(task.persistThreads.get(0).getName()).doesNotStartWith("eb-sink-");
+    assertThat(committed).containsExactly(2L);
+    assertThat(task.persisted.stream().flatMap(List::stream)).containsExactly("e1", "e2");
+    assertThat(task.completions).containsExactly(true);
+    assertThat(task.closed).isTrue();
+  }
+
+  @Test
+  void shouldCloseCleanlyWhenTheFinalStopCutFails() throws Exception {
+    // given — the only cut is the final stop cut, and its persist fails
+    stubClient();
+    final FrozenCutTask task = new FrozenCutTask();
+    task.persistFailures = 1;
+    final List<String> journal = new CopyOnWriteArrayList<>();
+    final List<Long> committed = stubCommittedOffsets(journal);
+    final AtomicBoolean delivered = new AtomicBoolean();
+    when(consumer.poll(anyInt(), any()))
+        .thenAnswer(
+            invocation -> delivered.getAndSet(true) ? List.of() : List.of(event(1), event(2)));
+    final StreamRuntime<String> runtime = runtime(task, journal, Duration.ofHours(1));
+    final Thread loop = new Thread(runtime::run, "runtime-under-test");
+    loop.start();
+    await().until(() -> task.processed.contains("e2"));
+
+    // when — stopping while the final cut is doomed to fail
+    runtime.stop();
+    loop.join(TimeUnit.SECONDS.toMillis(10));
+
+    // then — the cut completed unsuccessfully (merged back) and the shard still closed cleanly;
+    // nothing became durable, so a restart replays from the last durable cut
+    assertThat(loop.isAlive()).isFalse();
+    assertThat(task.completions).containsExactly(false);
+    assertThat(task.closed).isTrue();
+    assertThat(committed).isEmpty();
+    assertThat(task.persisted).isEmpty();
+  }
+
   private static long persistTimerCount(final SimpleMeterRegistry registry) {
     return registry.get("eb.streaming.cut.persist.duration").tag("partition", "1").timer().count();
   }
@@ -548,10 +611,10 @@ final class StreamRuntimeFrozenCutTest {
   }
 
   /**
-   * A self-contained shard with frozen-cut support: {@code live} is the actor-thread working set
-   * (records since the last freeze), a freeze steals it into an immutable cut whose persist writes
-   * state and the barrier's offset in the task's own journaled transaction (optionally blocking or
-   * failing first), and a failed cut merges back underneath newer records.
+   * A self-contained shard: {@code live} is the actor-thread working set (records since the last
+   * freeze), a freeze steals it into an immutable cut whose persist writes state and the barrier's
+   * offset in the task's own journaled transaction (optionally blocking or failing first), and a
+   * failed cut merges back underneath newer records.
    */
   private static final class FrozenCutTask implements Task<String> {
 
@@ -562,6 +625,8 @@ final class StreamRuntimeFrozenCutTest {
     private final Map<String, Boolean> gateOpenWhenProcessed = new ConcurrentHashMap<>();
     private final AtomicInteger freezes = new AtomicInteger();
     private final AtomicBoolean gateOpened = new AtomicBoolean();
+    private final List<Thread> freezeThreads = new CopyOnWriteArrayList<>();
+    private final List<Thread> persistThreads = new CopyOnWriteArrayList<>();
     private volatile List<String> journal = new CopyOnWriteArrayList<>();
     private volatile CountDownLatch persistGate;
     private volatile int persistFailures;
@@ -588,11 +653,13 @@ final class StreamRuntimeFrozenCutTest {
     @Override
     public CommitCut freezeCut(final long offset) {
       freezes.incrementAndGet();
+      freezeThreads.add(Thread.currentThread());
       final List<String> cut = List.copyOf(live);
       live.clear();
       return new CommitCut() {
         @Override
         public void persist() {
+          persistThreads.add(Thread.currentThread());
           final CountDownLatch gate = persistGate;
           if (gate != null) {
             try {
@@ -625,19 +692,6 @@ final class StreamRuntimeFrozenCutTest {
           }
         }
       };
-    }
-
-    @Override
-    public void commit(final long offset) {
-      // The synchronous path (the final stop commit): persist the live working set and the
-      // offset in the shard's own transaction.
-      journal.add("tx-begin");
-      journal.add("offset:" + offset);
-      if (!live.isEmpty()) {
-        persisted.add(List.copyOf(live));
-        live.clear();
-      }
-      journal.add("tx-end");
     }
 
     @Override

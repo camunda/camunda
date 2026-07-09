@@ -94,7 +94,7 @@ final class ProjectionStageTaskReloadTest {
 
     // when a second cube is provisioned and the next commit reloads the topology
     final long cubeB = provision("cube-b");
-    task.commit(0L);
+    Cuts.commit(task, 0L);
 
     // then only the added cube's aggregation recovered and only its DDL ran; the surviving cube,
     // the raw table, and the built-in definitions table were not re-provisioned
@@ -117,11 +117,11 @@ final class ProjectionStageTaskReloadTest {
 
     // when the cube is removed and the next commit reloads
     metadataStore.hide(cubeA);
-    task.commit(0L);
+    Cuts.commit(task, 0L);
 
     // and the same id is re-added on a later commit
     metadataStore.unhide(cubeA);
-    task.commit(1L);
+    Cuts.commit(task, 1L);
 
     // then its aggregation was reconstructed and recovered afresh from the durable open segment
     // (a second recover scan — the removed incarnation's heap state did not leak)

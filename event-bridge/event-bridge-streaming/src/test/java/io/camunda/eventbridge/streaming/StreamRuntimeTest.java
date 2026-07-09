@@ -39,9 +39,9 @@ final class StreamRuntimeTest {
   private static final String TOPIC = "facts";
 
   @Test
-  void shouldRunBlockingCommitsOnTheConfiguredSinkExecutor() throws Exception {
-    // given — a runtime with a custom sink thread factory and one record; the shard's blocking
-    // commit runs on the sink IO executor, never on the actor/source thread
+  void shouldPersistCutsOnTheConfiguredSinkExecutor() throws Exception {
+    // given — a runtime with a custom sink thread factory and one record; the cut's blocking
+    // persist runs on the sink IO executor, never on the actor/source thread
     final Consumer consumer = mock(Consumer.class);
     final EventBridgeClient client = mock(EventBridgeClient.class);
     when(client.subscribe(any(), any(), any()))
@@ -53,7 +53,7 @@ final class StreamRuntimeTest {
     when(consumer.commitOffset(any(), anyInt(), anyLong()))
         .thenReturn(CompletableFuture.completedFuture(null));
 
-    final AtomicReference<String> commitThreadName = new AtomicReference<>();
+    final AtomicReference<String> persistThreadName = new AtomicReference<>();
     final CountDownLatch committed = new CountDownLatch(1);
     final ThreadFactory sinkFactory =
         runnable -> {
@@ -74,10 +74,18 @@ final class StreamRuntimeTest {
           }
 
           @Override
-          public void commit(final long offset) {
-            // The commit runs on the sink IO executor — capture the thread it ran on.
-            commitThreadName.set(Thread.currentThread().getName());
-            committed.countDown();
+          public CommitCut freezeCut(final long offset) {
+            return new CommitCut() {
+              @Override
+              public void persist() {
+                // The persist runs on the sink IO executor — capture the thread it ran on.
+                persistThreadName.set(Thread.currentThread().getName());
+                committed.countDown();
+              }
+
+              @Override
+              public void complete(final boolean success) {}
+            };
           }
         };
 
@@ -99,9 +107,9 @@ final class StreamRuntimeTest {
     final Thread loop = new Thread(runtime::run, "runtime-under-test");
     loop.start();
 
-    // then — the blocking commit ran on the configured sink executor, not the actor/source thread
+    // then — the cut persisted on the configured sink executor, not the actor/source thread
     assertThat(committed.await(5, TimeUnit.SECONDS)).isTrue();
-    assertThat(commitThreadName.get()).isEqualTo("custom-sink");
+    assertThat(persistThreadName.get()).isEqualTo("custom-sink");
 
     runtime.stop();
     loop.join(TimeUnit.SECONDS.toMillis(5));
@@ -144,18 +152,31 @@ final class StreamRuntimeTest {
           }
 
           @Override
-          public void flush() {
-            order.add("task.flush");
-          }
+          public CommitCut freezeCut(final long offset) {
+            // The barrier: converging buffered output is part of the freeze.
+            order.add("freeze");
+            return new CommitCut() {
+              @Override
+              public void publish() {
+                // Produce-before-commit: output becomes durable before the offset advances.
+                order.add("publish");
+              }
 
-          @Override
-          public void commit(final long offset) {
-            // The shard's own atomic cut: state and offset in one transaction the task owns.
-            order.add("txn.begin");
-            order.add("offset.store");
-            committedOffsets.put(1, offset);
-            order.add("task.checkpoint");
-            order.add("txn.end");
+              @Override
+              public void persist() {
+                // The shard's own atomic cut: state and offset in one transaction the task owns.
+                order.add("txn.begin");
+                order.add("offset.store");
+                committedOffsets.put(1, offset);
+                order.add("state.persist");
+                order.add("txn.end");
+              }
+
+              @Override
+              public void complete(final boolean success) {
+                order.add("complete:" + success);
+              }
+            };
           }
         };
 
@@ -178,18 +199,21 @@ final class StreamRuntimeTest {
     runtime.stop();
     loop.join(TimeUnit.SECONDS.toMillis(5));
 
-    // then — the record was processed, and the barrier ran produce-before-commit with the offset
-    // and the state inside the task's one transaction, before the source offset was committed.
+    // then — the record was processed, and the cut ran produce-before-commit: publish first, then
+    // the offset and the state inside the task's one transaction, then the source offset commit,
+    // then completion.
     assertThat(processed).containsExactly("a");
     assertThat(committedOffsets).containsEntry(1, 5L);
     assertThat(order)
         .containsSubsequence(
-            "task.flush",
+            "freeze",
+            "publish",
             "txn.begin",
             "offset.store",
-            "task.checkpoint",
+            "state.persist",
             "txn.end",
-            "commitOffset");
+            "commitOffset",
+            "complete:true");
   }
 
   @Test
@@ -554,7 +578,7 @@ final class StreamRuntimeTest {
               return CompletableFuture.completedFuture(null);
             });
 
-    // One task instance per partition, each committing its own shard's transaction.
+    // One task instance per partition, each cutting its own shard's transaction.
     final IntFunction<Task<String>> taskFactory =
         partitionId ->
             new Task<>() {
@@ -567,9 +591,17 @@ final class StreamRuntimeTest {
               }
 
               @Override
-              public void commit(final long offset) {
-                transactions.incrementAndGet();
-                committedByTask.put(partitionId, offset);
+              public CommitCut freezeCut(final long offset) {
+                return new CommitCut() {
+                  @Override
+                  public void persist() {
+                    transactions.incrementAndGet();
+                    committedByTask.put(partitionId, offset);
+                  }
+
+                  @Override
+                  public void complete(final boolean success) {}
+                };
               }
             };
 
@@ -632,9 +664,17 @@ final class StreamRuntimeTest {
           }
 
           @Override
-          public void commit(final long offset) {
-            committedByTask.add(offset);
-            committed.countDown();
+          public CommitCut freezeCut(final long offset) {
+            return new CommitCut() {
+              @Override
+              public void persist() {
+                committedByTask.add(offset);
+                committed.countDown();
+              }
+
+              @Override
+              public void complete(final boolean success) {}
+            };
           }
         };
 
@@ -660,6 +700,63 @@ final class StreamRuntimeTest {
     // then — offsets 3 and 4 were deduped, only 5 processed, and the task made its own commit
     assertThat(processed).containsExactly("e");
     assertThat(committedByTask).contains(5L);
+  }
+
+  @Test
+  void shouldAdvanceTheSourceOffsetForAStatelessTaskWithTheDefaultEmptyCut() throws Exception {
+    // given — a task with nothing durable: freezeCut stays at its default (the empty cut), so the
+    // only durable effect of its commits is the source-offset advance
+    final Map<Integer, Long> committedOffsets = new ConcurrentHashMap<>();
+    final CountDownLatch offsetCommitted = new CountDownLatch(1);
+
+    final Consumer consumer = mock(Consumer.class);
+    final EventBridgeClient client = mock(EventBridgeClient.class);
+    when(client.subscribe(any(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(consumer));
+    when(consumer.sendHeartbeat()).thenReturn(CompletableFuture.completedFuture(null));
+    final Event event = new Event(5L, TOPIC, 1, "a".getBytes(StandardCharsets.UTF_8));
+    when(consumer.poll(anyInt(), any())).thenReturn(List.of(event)).thenReturn(List.of());
+    when(consumer.commitOffset(any(), anyInt(), anyLong()))
+        .thenAnswer(
+            invocation -> {
+              committedOffsets.put(invocation.getArgument(1), invocation.getArgument(2));
+              offsetCommitted.countDown();
+              return CompletableFuture.completedFuture(null);
+            });
+
+    final Task<String> stateless =
+        new Task<>() {
+          @Override
+          public void process(final String record) {}
+
+          @Override
+          public long restore() {
+            return 0L; // a real baseline, so materialization resumes rather than rebuilds
+          }
+        };
+
+    final StreamRuntime<String> runtime =
+        StreamRuntime.<String>builder()
+            .client(client)
+            .group("g")
+            .instanceId("i")
+            .sourceTopic(TOPIC)
+            .deserializer(
+                (payload, partition, offset) -> new String(payload, StandardCharsets.UTF_8))
+            .taskFactory(partition -> stateless)
+            .commitInterval(Duration.ZERO)
+            .build();
+
+    // when
+    final Thread loop = new Thread(runtime::run, "runtime-under-test");
+    loop.start();
+
+    // then — the runtime drove the empty cut through the normal lifecycle and the source offset
+    // still advanced past the barrier
+    assertThat(offsetCommitted.await(5, TimeUnit.SECONDS)).isTrue();
+    assertThat(committedOffsets).containsEntry(1, 5L);
+    runtime.stop();
+    loop.join(TimeUnit.SECONDS.toMillis(5));
   }
 
   @Test

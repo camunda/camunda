@@ -50,7 +50,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  * #persistFrozen()} drains the frozen entries to the delegate inside the commit transaction, and
  * {@link #completeFrozen(boolean)} retires them into the clean cache on success or merges them back
  * into the active overlay on failure so the next freeze re-includes them. {@link #checkpoint()}
- * remains the synchronous composition of the three, used by the final commit on shutdown.
+ * remains the synchronous composition of the three — an inline cut on the owner thread.
  *
  * <p>Overlay entries — active and frozen alike — are pinned: persisting or evicting them outside
  * the checkpoint transaction would put durable state ahead of the committed offset and break replay
@@ -394,7 +394,7 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
 
   /**
    * The synchronous composition of {@link #freeze()}, {@link #persistFrozen()} and {@link
-   * #completeFrozen(boolean)}, used by the final commit on shutdown. A persist failure merges the
+   * #completeFrozen(boolean)} — an inline cut on the owner thread. A persist failure merges the
    * snapshot back before rethrowing, so every entry is dirty again for the retried checkpoint.
    */
   @Override

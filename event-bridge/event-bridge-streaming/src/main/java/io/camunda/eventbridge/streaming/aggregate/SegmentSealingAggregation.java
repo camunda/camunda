@@ -249,10 +249,10 @@ public final class SegmentSealingAggregation<IN, K, ACC> implements Aggregation<
   }
 
   /**
-   * Commit-interval tick as one synchronous cut: {@link #freeze()} the open buffer, persist it
-   * inside one transaction, {@link #completeFrozen(boolean) complete}. Callers that overlap the
-   * persist with processing drive the three steps themselves instead — freeze and complete on the
-   * owner thread, {@link #persistFrozen()} inside the transaction the task supplies.
+   * An inline cut on the owner thread: {@link #freeze()} the open buffer, persist it inside one
+   * transaction, {@link #completeFrozen(boolean) complete}. Callers that overlap the persist with
+   * processing drive the three steps themselves instead — freeze and complete on the owner thread,
+   * {@link #persistFrozen()} inside the transaction the task supplies.
    */
   @Override
   public void checkpoint() {

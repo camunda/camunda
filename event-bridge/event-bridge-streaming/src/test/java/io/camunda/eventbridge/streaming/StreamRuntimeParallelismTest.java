@@ -101,7 +101,7 @@ final class StreamRuntimeParallelismTest {
   }
 
   @Test
-  void shouldKeepFoldingWhileAPartitionsCommitBlocksOnASlowSink() throws Exception {
+  void shouldKeepFoldingWhileAPartitionsCutPersistBlocksOnASlowSink() throws Exception {
     // given — a single actor thread, and two partitions delivered one poll apart
     final Consumer consumer = mock(Consumer.class);
     final EventBridgeClient client = mock(EventBridgeClient.class);
@@ -115,11 +115,11 @@ final class StreamRuntimeParallelismTest {
     when(consumer.commitOffset(any(), anyInt(), anyLong()))
         .thenReturn(CompletableFuture.completedFuture(null));
 
-    final CountDownLatch p1CommitBlocked = new CountDownLatch(1);
-    final CountDownLatch releaseP1Commit = new CountDownLatch(1);
+    final CountDownLatch p1PersistBlocked = new CountDownLatch(1);
+    final CountDownLatch releaseP1Persist = new CountDownLatch(1);
     final CountDownLatch p2Processed = new CountDownLatch(1);
 
-    // Partition 1 blocks inside its shard's commit; partition 2 just folds a record.
+    // Partition 1's cut blocks inside its persist; partition 2 just folds a record.
     final Task<String> p1 =
         new Task<>() {
           @Override
@@ -131,13 +131,21 @@ final class StreamRuntimeParallelismTest {
           public void process(final String record) {}
 
           @Override
-          public void commit(final long offset) {
-            p1CommitBlocked.countDown();
-            try {
-              releaseP1Commit.await(10, TimeUnit.SECONDS);
-            } catch (final InterruptedException e) {
-              Thread.currentThread().interrupt();
-            }
+          public CommitCut freezeCut(final long offset) {
+            return new CommitCut() {
+              @Override
+              public void persist() {
+                p1PersistBlocked.countDown();
+                try {
+                  releaseP1Persist.await(10, TimeUnit.SECONDS);
+                } catch (final InterruptedException e) {
+                  Thread.currentThread().interrupt();
+                }
+              }
+
+              @Override
+              public void complete(final boolean success) {}
+            };
           }
         };
     final Task<String> p2 =
@@ -151,9 +159,6 @@ final class StreamRuntimeParallelismTest {
           public void process(final String record) {
             p2Processed.countDown();
           }
-
-          @Override
-          public void commit(final long offset) {}
         };
 
     final StreamRuntime<String> runtime =
@@ -165,7 +170,7 @@ final class StreamRuntimeParallelismTest {
             .deserializer(
                 (payload, partition, offset) -> new String(payload, StandardCharsets.UTF_8))
             .taskFactory(partition -> partition == 1 ? p1 : p2)
-            .processorThreads(1) // ONE actor thread: proves the blocking commit is off it
+            .processorThreads(1) // ONE actor thread: proves the blocking persist is off it
             .sinkIoThreads(2)
             .commitInterval(Duration.ZERO)
             .build();
@@ -174,13 +179,13 @@ final class StreamRuntimeParallelismTest {
     final Thread loop = new Thread(runtime::run, "runtime-under-test");
     loop.start();
 
-    // then — partition 1 is stuck in its shard's commit (on the sink executor), yet the single
-    // actor thread is free to fold partition 2. A synchronous commit would have wedged the only
-    // actor thread.
-    assertThat(p1CommitBlocked.await(5, TimeUnit.SECONDS)).isTrue();
+    // then — partition 1's cut is stuck in its persist (on the sink executor), yet the single
+    // actor thread is free to fold partition 2. Persisting on the actor thread would have wedged
+    // it.
+    assertThat(p1PersistBlocked.await(5, TimeUnit.SECONDS)).isTrue();
     assertThat(p2Processed.await(5, TimeUnit.SECONDS)).isTrue();
 
-    releaseP1Commit.countDown();
+    releaseP1Persist.countDown();
     runtime.stop();
     loop.join(TimeUnit.SECONDS.toMillis(5));
   }

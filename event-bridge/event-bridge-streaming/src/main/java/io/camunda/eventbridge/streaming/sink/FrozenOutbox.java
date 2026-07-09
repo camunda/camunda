@@ -115,10 +115,10 @@ public final class FrozenOutbox<T> {
   }
 
   /**
-   * Owner thread, the synchronous boundary (the final stop commit or a fallback path without a
-   * background cut): feeds any retained items of a failed cut, then the staged items, to {@code
-   * sink} in order, clearing both. Only legal while no frozen pile is outstanding — with a cut in
-   * flight the IO thread owns the destination.
+   * Owner thread, a synchronous boundary outside the cut protocol (e.g. a close-time or freshness
+   * flush): feeds any retained items of a failed cut, then the staged items, to {@code sink} in
+   * order, clearing both. Only legal while no frozen pile is outstanding — with a cut in flight the
+   * IO thread owns the destination.
    *
    * @throws IllegalStateException if a frozen pile is outstanding
    */

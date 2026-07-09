@@ -140,7 +140,7 @@ public final class SegmentMergingAggregation<K, ACC> {
   }
 
   /**
-   * Commit-interval tick as one synchronous cut: {@link #freeze()} the delta, persist it inside one
+   * An inline cut on the owner thread: {@link #freeze()} the delta, persist it inside one
    * transaction, {@link #completeFrozen(boolean) complete}. Callers that overlap the persist with
    * processing drive the three steps themselves instead — freeze and complete on the owner thread,
    * {@link #persistFrozen()} inside the transaction the task supplies.

@@ -14,9 +14,9 @@ import java.util.Objects;
 /**
  * Drives a record through a list of {@link Stage}s and owns the per-partition lifecycle: {@link
  * #init()} then {@link #restore()} once when the partition is materialized, {@link
- * #process(Object)} per record, {@link #flush()} (emit) then {@link #commit(long)} or {@link
- * #freezeCut(long)} at the commit barrier, {@link #advanceStreamTime(long)} on event-time progress
- * (window finalization/retention), and {@link #close()} once on shutdown.
+ * #process(Object)} per record, {@link #freezeCut(long)} at the commit barrier, {@link
+ * #advanceStreamTime(long)} on event-time progress (window finalization/retention), and {@link
+ * #close()} once on shutdown.
  *
  * <p>It is the generic execution model of the streaming framework and implements {@link Task}, so a
  * {@link StreamRuntime} drives it directly. What the stages <em>do</em> (fold-then-aggregate,
@@ -24,8 +24,8 @@ import java.util.Objects;
  * (e.g. a {@link io.camunda.eventbridge.streaming.processor.ProcessorTopology} operator graph).
  *
  * <p>Like every task, the processor is a self-contained shard: the {@link ShardDurability} injected
- * at construction supplies its transaction scope and offset bookmark, and every cut — synchronous
- * or frozen — persists the stages' state and the consumed offset atomically through it.
+ * at construction supplies its transaction scope and offset bookmark, and every cut persists the
+ * stages' frozen deltas and the consumed offset atomically through it.
  *
  * <p>Single-writer: not thread-safe; one processor per source partition.
  *
@@ -70,30 +70,12 @@ public final class StreamProcessor<R> implements Task<R>, AutoCloseable {
   }
 
   /**
-   * The synchronous cut: every stage's checkpoint and the consumed offset in one shard transaction.
-   */
-  @Override
-  public void commit(final long offset) {
-    durability.runInTransaction(
-        () -> {
-          durability.persistOffset(offset);
-          stages.forEach(Stage::checkpoint);
-        });
-  }
-
-  /**
-   * Freezes every stage's checkpoint delta into one cut, provided all stages support it — otherwise
-   * {@code null}, and the runtime falls back to the synchronous {@link #commit(long)}. {@link
-   * CommitCut#persist()} drains every stage's frozen delta and the barrier's offset in one shard
-   * transaction.
+   * Freezes every stage's checkpoint delta into one cut. {@link CommitCut#persist()} drains every
+   * stage's frozen delta and the barrier's offset in one shard transaction; completion retires the
+   * deltas (or merges them back for retry) on every stage.
    */
   @Override
   public CommitCut freezeCut(final long offset) {
-    for (final Stage<R> stage : stages) {
-      if (!stage.supportsFrozenCheckpoint()) {
-        return null;
-      }
-    }
     flush(); // converge buffered output first — the freeze captures its serialized form
     stages.forEach(Stage::freezeCheckpoint);
     return new CommitCut() {

@@ -10,8 +10,8 @@ package io.camunda.eventbridge.streaming;
 /**
  * A single-threaded unit of stream processing the {@link StreamRuntime} drives for one source
  * partition. The runtime calls {@link #init()} then {@link #restore()} once when the partition is
- * materialized, {@link #process(Object)} per record, {@link #flush()} then {@link #commit(long)} or
- * {@link #freezeCut(long)} at the commit barrier, and {@link #close()} on shutdown.
+ * materialized, {@link #process(Object)} per record, {@link #freezeCut(long)} at the commit
+ * barrier, and {@link #close()} on shutdown.
  *
  * <p>There is exactly one Task per source partition and the runtime drives it from a single thread,
  * so a Task never needs synchronization and is guaranteed per-partition single-writer semantics.
@@ -19,10 +19,12 @@ package io.camunda.eventbridge.streaming;
  * <p><b>Durability model.</b> Every task is a self-contained shard: it owns its partition's state
  * backend, stored offset and output sink. The runtime never persists anything on a task's behalf —
  * it calls {@link #restore()} to recover the shard's state and last offset, and drives one atomic
- * per-partition cut through {@link #commit(long)} (synchronous) or {@link #freezeCut(long)}
- * (asynchronous). Shards share nothing, so partitions commit fully in parallel, and a shard with no
- * local state is rebuilt from the source start — which is what lets partitions move freely between
- * members.
+ * per-partition cut through {@link #freezeCut(long)}: the task freezes the cut on the processing
+ * thread, the runtime publishes and persists it on an IO thread while the partition keeps folding
+ * (or inline on the processing thread for the final cut at shutdown), and completes it back on the
+ * processing thread. Shards share nothing, so partitions commit fully in parallel, and a shard with
+ * no local state is rebuilt from the source start — which is what lets partitions move freely
+ * between members.
  *
  * @param <R> the decoded record type the task consumes
  */
@@ -49,29 +51,25 @@ public interface Task<R> {
   }
 
   /**
-   * The synchronous commit cut: make produced output durable, then persist state and {@code offset}
-   * in one atomic transaction the task owns. This is the produce-before-commit barrier the stop
-   * path always ends on, and the whole commit for a task without {@link #freezeCut(long) frozen-cut
-   * support} — the partition is suspended for its duration. Default no-op for a task with nothing
-   * durable.
-   */
-  default void commit(final long offset) {}
-
-  /**
-   * The asynchronous commit cut: freeze this partition's cut at {@code offset} so it can be made
-   * durable in the background while processing continues — capture the state delta, produced output
-   * and any admission snapshots as immutable data detached from the live working state, and return
-   * the {@link CommitCut} the runtime drives through persist and completion. Called on the
-   * processing thread at the commit barrier, with {@code offset} the highest processed offset — the
-   * frozen data must describe exactly the records up to it. Converging buffered output (typically
-   * {@link #flush()}) is part of the freeze, not the caller's job.
+   * The commit cut — the runtime's one commit concept: freeze this partition's cut at {@code
+   * offset} as immutable data detached from the live working state — the state delta, produced
+   * output and any admission snapshots — and return the {@link CommitCut} the runtime drives
+   * through publish, persist and completion. Called on the processing thread at the commit barrier,
+   * with {@code offset} the highest processed offset — the frozen data must describe exactly the
+   * records up to it. Converging buffered output (typically {@link #flush()}) is part of the
+   * freeze, not the caller's job.
    *
-   * <p>Returning {@code null} (the default) means the task does not support frozen cuts; the
-   * runtime falls back to suspending the partition for a synchronous {@link #commit(long)}. The
-   * runtime freezes at most one cut at a time per partition.
+   * <p>The runtime owns the composition: publish and persist run on an IO thread while the
+   * partition keeps folding — or inline on the processing thread for the final cut at shutdown —
+   * and completion always runs on the processing thread. The runtime freezes at most one cut at a
+   * time per partition.
+   *
+   * <p>Never returns {@code null}. The default returns {@link CommitCut#NONE}, the empty cut of a
+   * task with nothing durable — the runtime still advances the partition's source offset past the
+   * barrier.
    */
   default CommitCut freezeCut(final long offset) {
-    return null;
+    return CommitCut.NONE;
   }
 
   /** Emit buffered/produced output so latency stays bounded (called before every commit cut). */

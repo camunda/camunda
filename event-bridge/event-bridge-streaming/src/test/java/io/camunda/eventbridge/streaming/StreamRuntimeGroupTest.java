@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -211,6 +212,10 @@ final class StreamRuntimeGroupTest {
 
   @SuppressWarnings("unchecked")
   private static Task<String> mockTask() {
-    return mock(Task.class);
+    final Task<String> task = mock(Task.class);
+    // A Mockito mock returns null for object-typed methods, but freezeCut must never return null
+    // under the single commit contract — stub the empty cut, as a stateless task's default would.
+    when(task.freezeCut(anyLong())).thenReturn(CommitCut.NONE);
+    return task;
   }
 }

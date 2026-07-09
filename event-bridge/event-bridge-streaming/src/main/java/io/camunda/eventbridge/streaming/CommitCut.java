@@ -17,7 +17,9 @@ package io.camunda.eventbridge.streaming;
  * the frozen data), then {@link #complete(boolean)} back on the partition's processing thread. The
  * processing thread never touches the frozen data between freeze and completion, and the IO thread
  * never touches the live working state — that separation, not locking, is what makes the
- * concurrency safe.
+ * concurrency safe. The final cut at shutdown runs all phases inline on the processing thread,
+ * which satisfies the same rules trivially: the freezing thread and the persisting thread are one
+ * and the same, and nothing folds concurrently.
  *
  * <p><b>Consistency.</b> Everything in the cut was captured at the same barrier as the offset
  * passed to {@link Task#freezeCut(long)}: the persisted state describes exactly the records up to
@@ -25,6 +27,20 @@ package io.camunda.eventbridge.streaming;
  * crash they are replayed from this cut's offset.
  */
 public interface CommitCut {
+
+  /**
+   * The empty cut of a task with nothing durable: publish, persist and completion are all no-ops.
+   * The runtime still drives it through the normal cut lifecycle, so the partition's source offset
+   * advances past the barrier even though the shard persisted nothing.
+   */
+  CommitCut NONE =
+      new CommitCut() {
+        @Override
+        public void persist() {}
+
+        @Override
+        public void complete(final boolean success) {}
+      };
 
   /**
    * Produce-before-commit: make the cut's produced output durable at its destination (e.g. publish

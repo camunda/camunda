@@ -64,20 +64,20 @@ import org.slf4j.LoggerFactory;
  * which seals and forwards {@code SegmentCell}s to a single shared {@link ShuffleSinkProcessor}
  * node (the transport), plus a {@link TableRowProcessor} per raw table. The base projection, every
  * meter's open segment and the consumed offset all live in the one provider, so {@link
- * #commit(long)} makes them one atomic cut (Model F): publish the sealed deltas
+ * #freezeCut(long)} makes them one atomic cut (Model F): publish the sealed deltas
  * (produce-before-commit), then persist the <em>full</em> processed offset together with the
- * topology's checkpoint. No {@code safeOffset} — a crash resumes exactly from the committed offset
- * onto the checkpointed open segments.
+ * topology's state. No {@code safeOffset} — a crash resumes exactly from the committed offset onto
+ * the checkpointed open segments.
  *
- * <p><b>Frozen cuts (streaming ADR 0005).</b> {@link #freezeCut(long)} detaches the same cut at the
- * barrier — the watermark seal, the encoded shuffle frames, the staged serving rows, the at-barrier
- * pre-fold dedup watermarks and every store's frozen overlay — so the partition keeps folding while
- * the IO thread publishes and persists it; {@link #commit(long)} remains the synchronous
- * composition of that cut (the final stop commit and the fallback path).
+ * <p><b>Frozen cuts (streaming ADR 0005, 0008).</b> {@link #freezeCut(long)} detaches the cut at
+ * the barrier — the watermark seal, the encoded shuffle frames, the staged serving rows, the
+ * at-barrier pre-fold dedup watermarks and every store's frozen overlay — and the runtime drives
+ * publish → persist → complete: on an IO thread while the partition keeps folding, or inline on the
+ * actor thread for the final cut at shutdown.
  *
  * <p><b>Live reload (ADR 0005).</b> The topology is built from the shared versioned {@link
- * DatasetCatalog}, not a frozen list. At each {@link #commit(long)} — after the durable cut, at
- * most once per reload-check interval — the task checks the catalog version; when it moved it
+ * DatasetCatalog}, not a frozen list. On each successful cut's completion — after the durable cut,
+ * at most once per reload-check interval — the task checks the catalog version; when it moved it
  * rebuilds its topology from the catalog's current cubes/tables <em>over the same open RocksDB</em>
  * — incrementally: surviving cubes keep their nodes and sealing aggregations (with their in-heap
  * open segments — no re-recover), only a newly-declared cube's meters are constructed (starting
@@ -476,21 +476,6 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
   @Override
   public boolean needsCheckpoint() {
     return topology.needsCheckpoint();
-  }
-
-  @Override
-  public void commit(final long offset) {
-    // The synchronous composition of the frozen cut — the final stop commit and the fallback path.
-    // Same barrier, same produce-before-commit ordering, just with no folding in between.
-    final CommitCut cut = freezeCut(offset);
-    try {
-      cut.publish();
-      cut.persist();
-    } catch (final RuntimeException e) {
-      cut.complete(false);
-      throw e;
-    }
-    cut.complete(true);
   }
 
   @Override

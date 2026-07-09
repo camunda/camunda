@@ -26,9 +26,9 @@ import java.util.List;
  * retained rows first — older-before-newer keeps last-write-wins per key), {@link #publishFrozen()}
  * replays that batch onto the backend and flushes it durably on the IO thread, {@link
  * #completeFrozen(boolean)} drops or retains it — re-applying is safe because every serving write
- * is an idempotent full-value upsert. {@link #flush()} remains the synchronous batch boundary (the
- * final stop commit and the fallback path): it drains retained and staged rows and flushes the
- * backend in place.
+ * is an idempotent full-value upsert. {@link #flush()} remains the synchronous batch boundary
+ * outside the cut protocol (the close-time drain): it drains retained and staged rows and flushes
+ * the backend in place.
  *
  * <p><b>Threading:</b> everything except {@link #publishFrozen()} runs on the task's actor thread;
  * {@link #publishFrozen()} runs on the IO thread and touches only the frozen batch and the backend.

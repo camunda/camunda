@@ -50,16 +50,17 @@ import org.slf4j.LoggerFactory;
  * overlaps its decode with its processing. Horizontal scale beyond one consumer comes from running
  * several runtimes via {@link StreamRuntimeGroup}, optionally sharing one actor scheduler.
  *
- * <p><b>Commit barrier — produce-before-commit, async.</b> A partition is committed as an
- * independent atomic cut: its output is flushed and made durable, then its state and offset are
- * persisted, then only that partition's source offset advances (see {@link PartitionCommitter}).
- * The blocking commit runs on a bounded IO executor while the partition's actor is suspended, so a
- * DB sink round-trip never blocks folding on other partitions; the offset advances only after the
- * sink write is durable.
+ * <p><b>Commit barrier — every commit is a cut.</b> A partition is committed as an independent
+ * atomic cut: the actor freezes the cut at the barrier ({@link Task#freezeCut}), then the cut's
+ * output is published, its state and offset persisted, and only then does that partition's source
+ * offset advance (see {@link PartitionCommitter}). The publish and persist run on a bounded IO
+ * executor while the partition's actor keeps folding, so a DB sink round-trip never blocks folding
+ * on any partition; on shutdown the final cut runs inline on the actor thread with the offset
+ * commit joined.
  *
  * <p><b>Threading.</b> {@link #run()} drives the source stage on the calling thread (so the
  * caller's thread is the one blocked in poll and interruptible on shutdown). Partition actors run
- * on the actor scheduler; the blocking commits run on the sink IO executor. Rebalance callbacks
+ * on the actor scheduler; the cuts publish and persist on the sink IO executor. Rebalance callbacks
  * fire on the client's heartbeat thread but only record the assignment delta; the source stage
  * applies it. Call {@link #run()} from a single thread and {@link #stop()} from any thread.
  *
@@ -174,8 +175,8 @@ public final class StreamRuntime<R> implements AutoCloseable {
   /**
    * Subscribes and runs the source stage on the calling thread until {@link #stop()}. Each
    * partition restores its own baseline offset (from its task's {@link Task#restore()}) when it is
-   * materialized. On exit it asks every partition actor to make a final commit and close, then
-   * tears down any owned actor scheduler / sink executor and the consumer.
+   * materialized. On exit it asks every partition actor to make its final cut and close, then tears
+   * down any owned actor scheduler / sink executor and the consumer.
    */
   public void run() {
     running = true;
@@ -255,7 +256,7 @@ public final class StreamRuntime<R> implements AutoCloseable {
       final Collection<PartitionActor<R>> partitionActors,
       final ActorScheduler ownedScheduler,
       final ExecutorService ownedSinkExecutor) {
-    // Ask each actor to make its final commit and close, then wait — the actors need the scheduler
+    // Ask each actor to make its final cut and close, then wait — the actors need the scheduler
     // and sink executor alive to do it, so tear those down only afterwards.
     partitionActors.forEach(PartitionActor::requestStop);
     for (final PartitionActor<R> partitionActor : partitionActors) {
@@ -461,10 +462,10 @@ public final class StreamRuntime<R> implements AutoCloseable {
     }
 
     /**
-     * The executor that runs the blocking per-partition commits (the DB sink write + offset
-     * commit), kept off the actor threads. Optional: when omitted, the runtime creates and owns a
-     * bounded pool of {@link #sinkIoThreads} threads (named via {@link #sinkThreadFactory}) and
-     * shuts it down on stop.
+     * The executor that publishes and persists the per-partition commit cuts (the DB sink write +
+     * offset commit), kept off the actor threads. Optional: when omitted, the runtime creates and
+     * owns a bounded pool of {@link #sinkIoThreads} threads (named via {@link #sinkThreadFactory})
+     * and shuts it down on stop.
      */
     public Builder<R> sinkExecutor(final ExecutorService sinkExecutor) {
       this.sinkExecutor = sinkExecutor;
@@ -482,7 +483,7 @@ public final class StreamRuntime<R> implements AutoCloseable {
       return this;
     }
 
-    /** Size of the owned sink IO executor — the cap on concurrent blocking commits. Default 4. */
+    /** Size of the owned sink IO executor — the cap on concurrently persisting cuts. Default 4. */
     public Builder<R> sinkIoThreads(final int sinkIoThreads) {
       if (sinkIoThreads < 1) {
         throw new IllegalArgumentException("sinkIoThreads must be >= 1, was " + sinkIoThreads);
