@@ -443,10 +443,10 @@ describe('<AgentDetails />', () => {
 
     await user.click(screen.getByRole('combobox', {name: 'Current AI agent'}));
     const firstOption = screen.getByRole('option', {
-      name: 'Agent 1 - Thinking',
+      name: '1 - Thinking',
     });
     const secondOption = screen.getByRole('option', {
-      name: 'Agent 2 - Completed',
+      name: '2 - Completed',
     });
     expect(firstOption).toBeVisible();
     expect(secondOption).toBeVisible();
@@ -481,10 +481,10 @@ describe('<AgentDetails />', () => {
 
     await user.click(screen.getByRole('combobox', {name: 'Current AI agent'}));
     const firstOption = screen.getByRole('option', {
-      name: 'Agent 1 - Thinking',
+      name: '1 - Thinking',
     });
     const secondOption = screen.getByRole('option', {
-      name: 'Agent 2 - Completed',
+      name: '2 - Completed',
     });
     const moreAgentsHint = screen.getByRole('option', {
       name: '8+ AI agents not shown',
