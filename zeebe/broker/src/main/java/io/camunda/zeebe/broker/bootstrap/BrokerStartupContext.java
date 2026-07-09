@@ -59,7 +59,7 @@ public interface BrokerStartupContext {
    * for broker-wide configuration. The components that run per physical tenant must use the
    * configuration from #getPhysicalTenantEngineContext(String physicalTenantId) instead.
    *
-   * @return
+   * @return the broker-wide configuration shared across all physical tenants
    */
   BrokerCfg getBrokerConfiguration();
 
@@ -147,7 +147,7 @@ public interface BrokerStartupContext {
   MeterRegistry getMeterRegistry();
 
   /**
-   * Returns the engine context for the given physical tenant.
+   * Returns the context for the given physical tenant.
    *
    * @throws IllegalArgumentException if the physical tenant id is unknown
    */
