@@ -7,6 +7,8 @@
  */
 package io.camunda.db.rdbms.read.mapper;
 
+import static io.camunda.db.rdbms.read.NullSafeStrings.nullToEmpty;
+
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
 import io.camunda.search.entities.AuditLogEntity;
 
@@ -14,8 +16,8 @@ public class AuditLogEntityMapper {
 
   public static AuditLogEntity toEntity(final AuditLogDbModel auditLogDbModel) {
     return new AuditLogEntity.Builder()
-        .auditLogKey(auditLogDbModel.auditLogKey())
-        .entityKey(auditLogDbModel.entityKey())
+        .auditLogKey(nullToEmpty(auditLogDbModel.auditLogKey()))
+        .entityKey(nullToEmpty(auditLogDbModel.entityKey()))
         .entityType(auditLogDbModel.entityType())
         .operationType(auditLogDbModel.operationType())
         .batchOperationKey(auditLogDbModel.batchOperationKey())

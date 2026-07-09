@@ -7,6 +7,8 @@
  */
 package io.camunda.db.rdbms.read.mapper;
 
+import static io.camunda.db.rdbms.read.NullSafeStrings.nullToEmpty;
+
 import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.AgentInstanceDbModel.AgentInstanceToolDbValue;
 import io.camunda.search.entities.AgentInstanceEntity;
@@ -27,7 +29,10 @@ public class AgentInstanceEntityMapper {
         dbModel.agentInstanceKey(),
         dbModel.elementInstanceKeys() != null ? dbModel.elementInstanceKeys() : List.of(),
         dbModel.status(),
-        new AgentInstanceDefinition(dbModel.model(), dbModel.provider(), dbModel.systemPrompt()),
+        new AgentInstanceDefinition(
+            nullToEmpty(dbModel.model()),
+            nullToEmpty(dbModel.provider()),
+            nullToEmpty(dbModel.systemPrompt())),
         new AgentInstanceMetrics(
             dbModel.inputTokens(),
             dbModel.outputTokens(),
@@ -36,14 +41,14 @@ public class AgentInstanceEntityMapper {
         new AgentInstanceLimits(
             dbModel.maxTokens(), dbModel.maxModelCalls(), dbModel.maxToolCalls()),
         toTools(dbModel.toolValues()),
-        dbModel.elementId(),
+        nullToEmpty(dbModel.elementId()),
         dbModel.processInstanceKey(),
         dbModel.rootProcessInstanceKey(),
         dbModel.processDefinitionKey(),
-        dbModel.processDefinitionId(),
+        nullToEmpty(dbModel.processDefinitionId()),
         dbModel.processDefinitionVersion(),
         dbModel.versionTag(),
-        dbModel.tenantId(),
+        nullToEmpty(dbModel.tenantId()),
         dbModel.creationDate(),
         dbModel.lastUpdatedDate(),
         dbModel.completionDate());
@@ -54,7 +59,7 @@ public class AgentInstanceEntityMapper {
       return Collections.emptyList();
     }
     return tools.stream()
-        .map(t -> new AgentInstanceTool(t.name(), t.description(), t.elementId()))
+        .map(t -> new AgentInstanceTool(nullToEmpty(t.name()), t.description(), t.elementId()))
         .toList();
   }
 }

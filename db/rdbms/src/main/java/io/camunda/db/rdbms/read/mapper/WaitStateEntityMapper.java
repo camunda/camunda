@@ -7,6 +7,8 @@
  */
 package io.camunda.db.rdbms.read.mapper;
 
+import static io.camunda.db.rdbms.read.NullSafeStrings.nullToEmpty;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.db.rdbms.write.domain.WaitStateDbModel;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
@@ -32,12 +34,12 @@ public class WaitStateEntityMapper {
         dbModel.waitStateKey(),
         dbModel.processInstanceKey(),
         dbModel.elementInstanceKey(),
-        dbModel.elementId(),
+        nullToEmpty(dbModel.elementId()),
         toFlowNodeType(dbModel.elementType()),
         dbModel.rootProcessInstanceKey(),
-        dbModel.processDefinitionId(),
+        nullToEmpty(dbModel.processDefinitionId()),
         parseDetails(dbModel.waitStateType(), dbModel.details()),
-        dbModel.tenantId());
+        nullToEmpty(dbModel.tenantId()));
   }
 
   private static FlowNodeType toFlowNodeType(final String elementType) {
