@@ -273,6 +273,5 @@ This keeps the sticky logic and comments but stops the gate from failing `check-
 
 - [Action README](https://github.com/camunda/camunda/blob/main/.github/actions/detect-new-flaky-tests/README.md) — implementation deep-dive, all inputs/outputs, local-run instructions.
 - [CI & Automation › Flaky tests](./ci.md#flaky-tests) — broader context on how Maven test reruns and flaky-test-extractor classify results.
-- [CI Runbooks](./ci-runbooks.md) — what to do when CI alerts fire.
 - [CI Health metrics](./ci.md#ci-health-metrics) — the BigQuery analytics layer the gate queries.
 
