@@ -7,12 +7,16 @@
  */
 package io.camunda.configuration.beanoverrides;
 
+import static io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED;
+
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties;
 import io.camunda.configuration.beans.SearchEngineSchemaManagerProperties;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import java.util.Set;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -29,6 +33,15 @@ import org.springframework.context.annotation.Primary;
   SecondaryStorageType.opensearch
 })
 public class SearchEngineSchemaManagerPropertiesOverride {
+
+  private static final String HEALTH_CHECK_ENABLED_PROPERTY =
+      "camunda.database.schema-manager.healthCheckEnabled";
+  private static final Set<String> LEGACY_HEALTH_CHECK_ENABLED_PROPERTIES =
+      Set.of(
+          "camunda.operate.elasticsearch.healthCheckEnabled",
+          "camunda.operate.opensearch.healthCheckEnabled",
+          "camunda.tasklist.elasticsearch.healthCheckEnabled",
+          "camunda.tasklist.openSearch.healthCheckEnabled");
 
   private final UnifiedConfiguration unifiedConfiguration;
   private final LegacySearchEngineSchemaManagerProperties legacySearchEngineSchemaManagerProperties;
@@ -65,5 +78,13 @@ public class SearchEngineSchemaManagerPropertiesOverride {
               override.setPerformCleanup(secondaryStorage.isPerformCleanup());
               override.setCreateSchema(secondaryStorage.isCreateSchema());
             });
+
+    override.setHealthCheckEnabled(
+        UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+            HEALTH_CHECK_ENABLED_PROPERTY,
+            override.isHealthCheckEnabled(),
+            Boolean.class,
+            SUPPORTED,
+            LEGACY_HEALTH_CHECK_ENABLED_PROPERTIES));
   }
 }
