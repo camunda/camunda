@@ -7,14 +7,11 @@
  */
 package io.camunda.authentication.config.spi;
 
-import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.search.clients.PersistentWebSessionClient;
-import io.camunda.search.clients.tenant.PhysicalTenantScoped;
 import io.camunda.search.entities.PersistentWebSessionEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.security.api.model.session.PersistentSession;
 import io.camunda.security.core.port.out.SessionStorePort;
-import io.camunda.spring.utils.PhysicalTenantContext;
 import io.github.resilience4j.core.IntervalFunction;
 import io.github.resilience4j.retry.Retry;
 import io.github.resilience4j.retry.RetryConfig;
@@ -24,24 +21,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Host-supplied {@link SessionStorePort} that backs the library's web-session lifecycle with OC's
- * persistent web-session storage (Elasticsearch/OpenSearch or RDBMS via {@link
- * PersistentWebSessionClient}). Maps the library's {@link PersistentSession} boundary record to and
- * from OC's {@link PersistentWebSessionEntity}.
+ * {@link SessionStorePort} bound to a <b>single</b> physical tenant's {@link
+ * PersistentWebSessionClient}. Every operation reads and writes exactly that tenant's secondary
+ * storage — there is no request-context routing and no cross-tenant fan-out.
+ *
+ * <p>Scoped security chains use one instance per scope (via {@code ScopedSessionStorePortProvider},
+ * ADR-0029), so a persistent session read/write routes to the correct store <em>structurally</em> —
+ * decided by which scoped {@code SessionRepositoryFilter} handles the request — even during Spring
+ * Session's commit phase, which runs after the request scope is torn down.
  *
  * <p>Upserts are retried on transient storage failures with exponential backoff; once retries are
  * exhausted the failure is logged and swallowed so a storage blip never propagates into the session
  * save path. This resilience policy lives here (rather than in the library) because it inspects the
  * search-specific {@link CamundaSearchException} reasons to decide what is transient.
- *
- * <p>Read and write operations ({@link #get} and {@link #upsert}) are routed to the physical tenant
- * resolved from the current request context; when no request scope is bound (e.g. Spring Session's
- * commit phase, which runs after the request scope is torn down), they fall back to the default
- * physical tenant, matching the behaviour of {@link #delete} and {@link #getAll}.
  */
-public class SessionStoreAdapter implements SessionStorePort {
+public final class PhysicalTenantSessionStoreAdapter implements SessionStorePort {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(SessionStoreAdapter.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(PhysicalTenantSessionStoreAdapter.class);
   private static final int MAX_RETRY_ATTEMPTS = 3;
   private static final long INITIAL_RETRY_DELAY_MS = 100;
 
@@ -51,45 +48,22 @@ public class SessionStoreAdapter implements SessionStorePort {
           RetryConfig.custom()
               .maxAttempts(MAX_RETRY_ATTEMPTS)
               .intervalFunction(IntervalFunction.ofExponentialBackoff(INITIAL_RETRY_DELAY_MS, 2))
-              .retryOnException(SessionStoreAdapter::isTransientFailure)
+              .retryOnException(PhysicalTenantSessionStoreAdapter::isTransientFailure)
               .build());
 
-  private final PhysicalTenantScoped<PersistentWebSessionClient> sessionClients;
-  private final PhysicalTenantIds physicalTenants;
+  private final PersistentWebSessionClient client;
 
-  public SessionStoreAdapter(
-      final PhysicalTenantScoped<PersistentWebSessionClient> sessionClients,
-      final PhysicalTenantIds physicalTenants) {
-    this.sessionClients = sessionClients;
-    this.physicalTenants = physicalTenants;
-  }
-
-  private static boolean isTransientFailure(final Throwable throwable) {
-    if (throwable instanceof final CamundaSearchException cse) {
-      return switch (cse.getReason()) {
-        case CONNECTION_FAILED, SEARCH_CLIENT_FAILED, SEARCH_SERVER_FAILED, UNKNOWN -> true;
-        default -> false;
-      };
-    }
-    return throwable instanceof RuntimeException;
-  }
-
-  private String currentPhysicalTenantOrDefault() {
-    final String currentTenant = PhysicalTenantContext.currentOrNull();
-    return currentTenant != null ? currentTenant : PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+  public PhysicalTenantSessionStoreAdapter(final PersistentWebSessionClient client) {
+    this.client = client;
   }
 
   @Override
   public PersistentSession get(final String sessionId) {
-    return toPersistentSession(
-        sessionClients
-            .withPhysicalTenant(currentPhysicalTenantOrDefault())
-            .getPersistentWebSession(sessionId));
+    return toPersistentSession(client.getPersistentWebSession(sessionId));
   }
 
   @Override
   public void upsert(final PersistentSession session) {
-    final var client = sessionClients.withPhysicalTenant(currentPhysicalTenantOrDefault());
     final var entity = toEntity(session);
     try {
       Retry.decorateRunnable(UPSERT_RETRY, () -> client.upsertPersistentWebSession(entity)).run();
@@ -111,30 +85,32 @@ public class SessionStoreAdapter implements SessionStorePort {
 
   @Override
   public void delete(final String sessionId) {
-    final String currentTenant = PhysicalTenantContext.currentOrNull();
-    if (currentTenant != null) {
-      sessionClients.withPhysicalTenant(currentTenant).deletePersistentWebSession(sessionId);
-    } else {
-      for (final String physicalTenantId : physicalTenants.known()) {
-        sessionClients.withPhysicalTenant(physicalTenantId).deletePersistentWebSession(sessionId);
-      }
-    }
+    client.deletePersistentWebSession(sessionId);
   }
 
   @Override
   public List<PersistentSession> getAll() {
     final var result = new ArrayList<PersistentSession>();
-    for (final String physicalTenantId : physicalTenants.known()) {
-      final var items =
-          sessionClients.withPhysicalTenant(physicalTenantId).getAllPersistentWebSessions().items();
-      if (items != null) {
-        items.stream().map(SessionStoreAdapter::toPersistentSession).forEach(result::add);
-      }
+    final var items = client.getAllPersistentWebSessions().items();
+    if (items != null) {
+      items.stream()
+          .map(PhysicalTenantSessionStoreAdapter::toPersistentSession)
+          .forEach(result::add);
     }
     return result;
   }
 
-  private static PersistentSession toPersistentSession(final PersistentWebSessionEntity entity) {
+  static boolean isTransientFailure(final Throwable throwable) {
+    if (throwable instanceof final CamundaSearchException cse) {
+      return switch (cse.getReason()) {
+        case CONNECTION_FAILED, SEARCH_CLIENT_FAILED, SEARCH_SERVER_FAILED, UNKNOWN -> true;
+        default -> false;
+      };
+    }
+    return throwable instanceof RuntimeException;
+  }
+
+  static PersistentSession toPersistentSession(final PersistentWebSessionEntity entity) {
     if (entity == null) {
       return null;
     }
@@ -146,7 +122,7 @@ public class SessionStoreAdapter implements SessionStorePort {
         entity.attributes());
   }
 
-  private static PersistentWebSessionEntity toEntity(final PersistentSession session) {
+  static PersistentWebSessionEntity toEntity(final PersistentSession session) {
     return new PersistentWebSessionEntity(
         session.id(),
         session.creationTime(),

@@ -331,7 +331,8 @@ public final class EngineProcessors {
             authorizationChecker,
             propertyEvaluatorRegistry,
             securityConfig.isAuthorizationsEnabled(),
-            securityConfig.isMultiTenancyChecksEnabled());
+            securityConfig.isMultiTenancyChecksEnabled(),
+            claimsConverter);
     final var permissionsBehavior =
         new PermissionsBehavior(processingState, authzService, claimsConverter, securityConfig);
 
