@@ -88,15 +88,20 @@ spec:
     backendRefs:
     - name: {{ template "orchestration.fullname" $camundaPlatform }}-gateway
       port: {{ .Values.camundaPlatform.orchestration.service.httpPort }}
-  # Keycloak (Identity auth realm)
+  # Keycloak (Identity auth realm). The operator-managed Keycloak lives in the
+  # shared keycloak-operator namespace (templates/keycloak.yml), so this is a
+  # cross-namespace backendRef — Traefik's Gateway API provider rejects
+  # ExternalName backends — permitted by the ReferenceGrant that keycloak.yml
+  # creates in that namespace. The anchor is reused by the OIDC rule below.
   - matches:
     - path:
         type: PathPrefix
         value: {{ include "identity.keycloak.contextPath" $camundaPlatform | quote }}
     filters: *authFilters
-    backendRefs:
-    - name: {{ include "identity.keycloak.service" $camundaPlatform }}
-      port: {{ include "identity.keycloak.port" $camundaPlatform }}
+    backendRefs: &keycloakBackend
+    - name: {{ .Release.Name }}-kc-service
+      namespace: keycloak-operator
+      port: 8080
   # OIDC discovery / token endpoints, served WITHOUT Vouch authentication (no
   # ExtensionRef filter). These are Exact matches, which take precedence over
   # the `/auth` PathPrefix rule above, so they correctly bypass Vouch while the
@@ -126,9 +131,7 @@ spec:
         kind: Middleware
         name: {{ $errorsMiddleware }}
     {{- end }}
-    backendRefs:
-    - name: {{ include "identity.keycloak.service" $camundaPlatform }}
-      port: {{ include "identity.keycloak.port" $camundaPlatform }}
+    backendRefs: *keycloakBackend
   # Identity
   - matches:
     - path:

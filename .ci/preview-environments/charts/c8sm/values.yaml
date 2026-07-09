@@ -48,9 +48,10 @@ global:
     # block (url, credentials, etc.). Without this, embedded Operate/Tasklist may fall back
     # to their defaults (e.g. `http://localhost:9200`).
     enabled: true
-    # necessary due to name override bugs
     url:
-      host: elasticsearch
+      # Secondary storage is an ECK-managed Elasticsearch CR (templates/elasticsearch.yml);
+      # the ECK operator names the Service <cr-name>-es-http.
+      host: elasticsearch-es-http
 
   identity:
     auth:
@@ -77,6 +78,16 @@ global:
         redirectUrl: https://{{ include "ingress.domain" . }}/modeler
     keycloak:
       contextPath: /auth
+      # Keycloak is operator-managed in the shared keycloak-operator namespace
+      # (templates/keycloak.yml). internal=true makes the chart render an in-cluster
+      # ExternalName Service in the preview namespace pointing at it, so the /auth
+      # HTTPRoute backend stays a local name (no cross-namespace backendRef needed).
+      # host is tpl-rendered by the chart; the operator Service is <cr-name>-service.
+      internal: true
+      url:
+        protocol: http
+        host: '{{ .Release.Name }}-kc-service.keycloak-operator'
+        port: "8080"
       auth:
         adminUser: admin
         secret:
@@ -109,10 +120,10 @@ camunda-platform:
       value: "-Xms512m -Xmx512m"
     resources:
       limits:
-        cpu: 1
+        cpu: "1"
         memory: 1Gi
       requests:
-        cpu: 0.5
+        cpu: "0.5"
         memory: 512Mi
     nodeSelector:
       cloud.google.com/gke-nodepool: previews
@@ -185,10 +196,10 @@ camunda-platform:
       value: "-Xms512m -Xmx512m"
     resources:
       limits:
-        cpu: 1
+        cpu: "1"
         memory: 1Gi
       requests:
-        cpu: 0.5
+        cpu: "0.5"
         memory: 512Mi
     nodeSelector:
       cloud.google.com/gke-nodepool: previews
@@ -207,6 +218,11 @@ camunda-platform:
     clusterSize: "1"
     partitionCount: "1"
     replicationFactor: "1"
+    # Single-node ECK Elasticsearch (templates/elasticsearch.yml): index replicas
+    # would stay unassigned and keep the ES cluster status Yellow forever, which
+    # blocks the ArgoCD app from ever reporting Healthy.
+    index:
+      replicas: 0
     persistenceType: disk
     pvcSize: 1Gi
     javaOpts: >-
@@ -232,7 +248,8 @@ camunda-platform:
       secondaryStorage:
         type: elasticsearch
         elasticsearch:
-          url: http://elasticsearch:9200
+          # ECK Service name (templates/elasticsearch.yml), not the old Bitnami "elasticsearch".
+          url: http://elasticsearch-es-http:9200
     resources:
       limits:
         cpu: "1"
@@ -247,32 +264,10 @@ camunda-platform:
       operator: "Exists"
       effect: "NoSchedule"
 
-  elasticsearch:
-    enabled: true
-    fullnameOverride: elasticsearch
-    # image:
-    #   repository: bitnami/elasticsearch
-    #   tag: latest
-    master:
-      fullnameOverride: elasticsearch-master
-      replicaCount: 1
-      heapSize: 512m
-      persistence:
-        enabled: true
-        size: 1Gi
-      resources:
-        limits:
-          cpu: 1
-          memory: 1Gi
-        requests:
-          cpu: 0.5
-          memory: 512Mi
-      nodeSelector:
-        cloud.google.com/gke-nodepool: previews
-      tolerations:
-      - key: "previews"
-        operator: "Exists"
-        effect: "NoSchedule"
+  # NOTE: Elasticsearch, identityKeycloak and webModelerPostgresql Bitnami subcharts
+  # were removed in camunda-platform 15.0.0-alpha2. Secondary storage, Keycloak and
+  # the databases are now provided out-of-chart via operator CRs — see
+  # templates/{elasticsearch,keycloak,databases}.yml and the external* wiring above.
 
   identity:
     enabled: true
@@ -304,46 +299,6 @@ camunda-platform:
       operator: "Exists"
       effect: "NoSchedule"
 
-  identityKeycloak:
-    enabled: true
-    fullnameOverride: identity-keycloak
-    extraEnvVars:
-    # Required as TLS is enabled
-    - name: KEYCLOAK_PROXY_ADDRESS_FORWARDING
-      value: "true"
-    resources:
-      limits:
-        cpu: "1"
-        memory: 1Gi
-      requests:
-        cpu: 500m
-        memory: 512Mi
-    nodeSelector:
-      cloud.google.com/gke-nodepool: previews
-    tolerations:
-    - key: "previews"
-      operator: "Exists"
-      effect: "NoSchedule"
-    postgresql:
-      fullnameOverride: identity-keycloak-postgresql
-      primary:
-        persistence:
-          enabled: true
-          size: 1Gi
-        resources:
-          limits:
-            cpu: 500m
-            memory: 512Mi
-          requests:
-            cpu: 250m
-            memory: 256Mi
-        nodeSelector:
-          cloud.google.com/gke-nodepool: previews
-        tolerations:
-        - key: "previews"
-          operator: "Exists"
-          effect: "NoSchedule"
-
   optimize:
     enabled: true
     fullnameOverride: optimize
@@ -362,6 +317,11 @@ camunda-platform:
     env:
     - name: JAVA_OPTS
       value: "-Xms512m -Xmx512m"
+    # Optimize manages its own indices with a separate replica default (1); on the
+    # single-node preview Elasticsearch that keeps the cluster Yellow forever
+    # (orchestration indices are covered by orchestration.index.replicas above).
+    - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_NUMBER_OF_REPLICAS
+      value: "0"
     resources:
       limits:
         cpu: "1"
@@ -386,6 +346,16 @@ camunda-platform:
     restapi:
       # image:
       #   repository: camunda/web-modeler-restapi
+      # Database is a CloudNativePG Cluster in the preview namespace
+      # (templates/databases.yml); CNPG exposes the primary at <cluster>-rw.
+      externalDatabase:
+        host: web-modeler-postgresql-rw
+        port: 5432
+        database: web-modeler
+        username: web-modeler
+        secret:
+          existingSecret: web-modeler-postgresql-db
+          existingSecretKey: password
       mail:
         # This value is required, otherwise, the restapi pod won't start.
         fromAddress: noreply@example.com
@@ -426,31 +396,6 @@ camunda-platform:
         requests:
           cpu: 20m
           memory: 64Mi
-      nodeSelector:
-        cloud.google.com/gke-nodepool: previews
-      tolerations:
-      - key: "previews"
-        operator: "Exists"
-        effect: "NoSchedule"
-
-  # WebModeler PostgreSQL
-  webModelerPostgresql:
-    enabled: true
-    fullnameOverride: web-modeler-postgresql
-    auth:
-      # fixed secret, to avoid generating a random password each time
-      existingSecret: camunda-credentials
-    primary:
-      persistence:
-        enabled: true
-        size: 1Gi
-      resources:
-        limits:
-          cpu: 500m
-          memory: 512Mi
-        requests:
-          cpu: 250m
-          memory: 256Mi
       nodeSelector:
         cloud.google.com/gke-nodepool: previews
       tolerations:
