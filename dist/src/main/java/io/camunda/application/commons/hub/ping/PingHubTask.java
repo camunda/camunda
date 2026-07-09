@@ -100,6 +100,12 @@ public class PingHubTask implements Runnable {
     }
   }
 
+  private static String truncate(final String s) {
+    return s.length() <= MAX_RESPONSE_BODY_LENGTH
+        ? s
+        : s.substring(0, MAX_RESPONSE_BODY_LENGTH) + "... [truncated]";
+  }
+
   @JsonInclude(JsonInclude.Include.NON_NULL)
   public record LicensePayload(
       License license,
@@ -111,12 +117,6 @@ public class PingHubTask implements Runnable {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record License(
         boolean validLicense, String licenseType, boolean isCommercial, String expiresAt) {}
-  }
-
-  private static String truncate(final String s) {
-    return s.length() <= MAX_RESPONSE_BODY_LENGTH
-        ? s
-        : s.substring(0, MAX_RESPONSE_BODY_LENGTH) + "... [truncated]";
   }
 
   @VisibleForTesting
