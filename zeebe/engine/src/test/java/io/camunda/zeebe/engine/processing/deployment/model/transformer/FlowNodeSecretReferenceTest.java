@@ -188,6 +188,56 @@ class FlowNodeSecretReferenceTest {
     assertThat(secretReferences).isEmpty();
   }
 
+  @Test
+  void shouldStoreOnlyEffectiveSecretWhenTargetIsOverridden() {
+    // given - two input mappings with the same target; the later one overrides the earlier, so the
+    // generated mapping expression keeps only the last source for that target
+    final var task =
+        transform(
+            t ->
+                t.zeebeInputExpression("camunda.secrets.a", "x")
+                    .zeebeInputExpression("camunda.secrets.b", "x"));
+
+    // when
+    final var secretReferences = task.getSecretReferences();
+
+    // then - only the effective (last) mapping's secret is stored, not the overridden one
+    assertThat(secretReferences).containsExactly(entry("/x", Set.of(new SecretReference("b"))));
+  }
+
+  @Test
+  void shouldNotStoreSecretFromScalarTargetReplacedByNestedTarget() {
+    // given - a scalar target 'a' is replaced by a nested target 'a.b', so 'a' becomes a context
+    // and its scalar source is dropped from the generated mapping expression
+    final var task =
+        transform(
+            t ->
+                t.zeebeInputExpression("camunda.secrets.s1", "a")
+                    .zeebeInputExpression("camunda.secrets.s2", "a.b"));
+
+    // when
+    final var secretReferences = task.getSecretReferences();
+
+    // then - the overridden scalar 'a' contributes no secret; only the surviving /a/b remains
+    assertThat(secretReferences).containsExactly(entry("/a/b", Set.of(new SecretReference("s2"))));
+  }
+
+  @Test
+  void shouldStoreOnlyEffectiveSecretWhenTargetIsOverriddenByScalarTarget() {
+    // given
+    final var task =
+        transform(
+            t ->
+                t.zeebeInputExpression("camunda.secrets.s1", "a.b")
+                    .zeebeInputExpression("camunda.secrets.s2", "a"));
+
+    // when
+    final var secretReferences = task.getSecretReferences();
+
+    // then
+    assertThat(secretReferences).containsExactly(entry("/a", Set.of(new SecretReference("s2"))));
+  }
+
   private ExecutableFlowNode transform(final Consumer<ServiceTaskBuilder> modifier) {
     final BpmnModelInstance model =
         Bpmn.createExecutableProcess("process")

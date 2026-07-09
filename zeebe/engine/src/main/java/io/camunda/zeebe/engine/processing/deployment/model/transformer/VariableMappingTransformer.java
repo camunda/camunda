@@ -91,7 +91,7 @@ public final class VariableMappingTransformer {
     final var contextExpression =
         asFeelContextExpression(context, (contextValue, contextPath) -> contextValue);
     final var expression = parseExpression(contextExpression, expressionLanguage);
-    return new InputMappings(expression, detectSecretReferences(mappings));
+    return new InputMappings(expression, detectSecretReferences(context));
   }
 
   public Expression transformOutputMappings(
@@ -105,49 +105,60 @@ public final class VariableMappingTransformer {
   }
 
   /**
-   * Detects the secrets referenced by the already-parsed input mappings, keyed by the JSON pointer
-   * (RFC 6901) of the leaf each secret belongs to — the mapping's dotted target plus the
-   * reference's FEEL context path. Examples: {@code "Bearer " + camunda.secrets.token -> tokens.t}
-   * gives {@code /tokens/t}; {@code {x2: camunda.secrets.x} -> foo} gives {@code /foo/x2}. The
-   * pointer lets job activation replace the reference in the job variables via a Jackson {@code
-   * JsonPointer}; the conversion happens once, here at deploy time.
+   * Detects the secrets referenced by the built mapping context, keyed by the JSON pointer (RFC
+   * 6901) of the leaf each secret belongs to — the leaf's target path plus the reference's FEEL
+   * context path. Examples: {@code "Bearer " + camunda.secrets.token -> tokens.t} gives {@code
+   * /tokens/t}; {@code {x2: camunda.secrets.x} -> foo} gives {@code /foo/x2}. The pointer lets job
+   * activation replace the reference in the job variables via a Jackson {@code JsonPointer}; the
+   * conversion happens once, here at deploy time.
    *
-   * <p>Reuses the sources parsed by {@link #toMappings}, so each source is parsed once. Mappings
-   * with no reference are omitted (see {@link SecretReference} for what counts).
+   * <p>Walking the built context (not the raw mappings) means overridden targets are already
+   * resolved: a target overwritten by a later mapping contributes no secret. Mappings with no
+   * reference are omitted (see {@link SecretReference} for what counts).
    */
   private static Map<String, Set<SecretReference>> detectSecretReferences(
-      final List<Mapping> mappings) {
+      final MappingContext context) {
     final var secretsByPointer = new LinkedHashMap<String, Set<SecretReference>>();
-    for (final Mapping mapping : mappings) {
-      for (final var detected : SecretReference.parse(mapping.source)) {
-        secretsByPointer
-            .computeIfAbsent(
-                toJsonPointer(mapping.target, detected.path()), key -> new LinkedHashSet<>())
-            .add(detected.secret());
-      }
-    }
+    collectSecrets(context, secretsByPointer);
     return secretsByPointer;
   }
 
   /**
-   * Builds the RFC 6901 JSON pointer of a secret's leaf, so job activation can address it directly
-   * in the job-variables document with JSON parser. Examples:
-   *
-   * <ul>
-   *   <li>direct: {@code tokens.token -> camunda.secrets.token } (empty context path) → {@code
-   *       /tokens/token};
-   *   <li>nested: {@code foo -> {x2: camunda.secrets.x}} (context path {@code [x2]}) → {@code
-   *       /foo/x2}.
-   * </ul>
+   * Walks the mapping context, recording each secret with the JSON pointer of its leaf: the
+   * context's target path, plus the leaf key, plus the reference's FEEL context path within the
+   * source. A nested context is descended; a leaf holds the source expression to scan.
+   */
+  private static void collectSecrets(
+      final MappingContext context, final Map<String, Set<SecretReference>> secretsByPointer) {
+    for (final var entry : context.entries.entrySet()) {
+      if (entry.getValue() instanceof final MappingContext nested) {
+        collectSecrets(nested, secretsByPointer);
+        continue;
+      }
+      final var targetPath = new ArrayList<>(context.path);
+      targetPath.add(entry.getKey());
+      for (final var detected : SecretReference.parse((Expression) entry.getValue())) {
+        final var leafPath = new ArrayList<>(targetPath);
+        leafPath.addAll(detected.path());
+        secretsByPointer
+            .computeIfAbsent(toJsonPointer(leafPath), key -> new LinkedHashSet<>())
+            .add(detected.secret());
+      }
+    }
+  }
+
+  /**
+   * Builds the RFC 6901 JSON pointer of a secret's leaf from its path segments (target path plus
+   * the reference's FEEL context path), so job activation can address it directly in the
+   * job-variables document. Examples: {@code [tokens, token]} → {@code /tokens/token}; {@code [foo,
+   * x2]} → {@code /foo/x2}.
    *
    * <p>{@code ~} and {@code /} are escaped ({@code ~} → {@code ~0}, {@code /} → {@code ~1}) because
    * both are reserved in a pointer: an unescaped {@code /} inside a segment (e.g. a backtick FEEL
-   * name like {@code `a/b`}) would be read as a separator and wrongly split the segment. {@code ~}
-   * is replaced first, otherwise the {@code ~1} produced for {@code /} would be escaped again.
+   * name like {@code `a/b`}) would be read as a separator and wrongly split it. {@code ~} is
+   * replaced first, otherwise the {@code ~1} produced for {@code /} would be escaped again.
    */
-  private static String toJsonPointer(final String targetPath, final List<String> contextPath) {
-    final var segments = new ArrayList<>(Arrays.asList(targetPath.split("\\.")));
-    segments.addAll(contextPath);
+  private static String toJsonPointer(final List<String> segments) {
     final var pointer = new StringBuilder();
     for (final String segment : segments) {
       pointer.append('/').append(segment.replace("~", "~0").replace("/", "~1"));
