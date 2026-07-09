@@ -60,7 +60,7 @@ class SearchEngineSchemaInitializerTest {
   private static SearchEngineSchemaInitializer newInitializer(
       final PhysicalTenantResolver resolver) {
     return new SearchEngineSchemaInitializer(
-        configsFor(resolver), descriptorsFor(resolver), new SimpleMeterRegistry(), true);
+        configsFor(resolver), descriptorsFor(resolver), new SimpleMeterRegistry(), true, true);
   }
 
   private static Map<String, IndexDescriptors> descriptorsFor(

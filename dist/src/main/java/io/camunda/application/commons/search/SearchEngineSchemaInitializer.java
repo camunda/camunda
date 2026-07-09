@@ -12,10 +12,12 @@ import static java.util.stream.Collectors.toUnmodifiableMap;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.SchemaManagerContainer;
+import io.camunda.search.schema.SearchEngineHealthCheckPermissionException;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.search.schema.metrics.SchemaManagerMetrics;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.util.VisibleForTesting;
+import io.camunda.zeebe.util.retry.RetryDecorator;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -32,6 +34,7 @@ public class SearchEngineSchemaInitializer implements InitializingBean, SchemaMa
   private static final Logger LOGGER = LoggerFactory.getLogger(SearchEngineSchemaInitializer.class);
   private final MeterRegistry meterRegistry;
   private final boolean awaitSchemaInitialization;
+  private final boolean healthCheckEnabled;
   private final AtomicBoolean isShutdown = new AtomicBoolean(false);
   private final Map<String, SearchEngineConfiguration> configs;
   private final Map<String, IndexDescriptors> descriptors;
@@ -41,9 +44,11 @@ public class SearchEngineSchemaInitializer implements InitializingBean, SchemaMa
       final Map<String, SearchEngineConfiguration> configsByTenant,
       final Map<String, IndexDescriptors> descriptorsByTenant,
       final MeterRegistry meterRegistry,
-      final boolean awaitSchemaInitialization) {
+      final boolean awaitSchemaInitialization,
+      final boolean healthCheckEnabled) {
     this.meterRegistry = meterRegistry;
     this.awaitSchemaInitialization = awaitSchemaInitialization;
+    this.healthCheckEnabled = healthCheckEnabled;
 
     configs = configsByTenant;
     descriptors = descriptorsByTenant;
@@ -137,6 +142,25 @@ public class SearchEngineSchemaInitializer implements InitializingBean, SchemaMa
                     clientAdapter.objectMapper())
                 .withMetrics(new SchemaManagerMetrics(meterRegistry, physicalTenantId))) {
       schemaManager.startup();
+      if (healthCheckEnabled) {
+        try {
+          new RetryDecorator(configuration.schemaManager().getRetry())
+              .withRetryOnException(e -> !(e instanceof SearchEngineHealthCheckPermissionException))
+              .decorate(
+                  "cluster health check after schema init",
+                  clientAdapter.getSearchEngineClient()::isHealthy,
+                  healthy -> !healthy);
+        } catch (final SearchEngineHealthCheckPermissionException e) {
+          LOGGER.warn(e.getMessage());
+          return;
+        } catch (final Exception e) {
+          LOGGER.warn(
+              "Cluster health check failed after schema init; not declaring schema as ready. "
+                  + "If this is a permission issue, set 'camunda.database.schema-manager.health-check-enabled=false'.",
+              e);
+          return;
+        }
+      }
       initialized.get(physicalTenantId).set(true);
     } catch (final IOException e) {
       if (!isInitialized(physicalTenantId)) {
