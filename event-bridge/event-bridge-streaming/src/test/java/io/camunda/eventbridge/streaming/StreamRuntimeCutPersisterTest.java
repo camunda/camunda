@@ -36,11 +36,13 @@ import java.util.function.IntFunction;
 import org.junit.jupiter.api.Test;
 
 /**
- * The runtime-managed durability path through the dedicated cut persister: cuts of tasks that defer
- * durability are made durable by one writer thread, several queued cuts coalesce into one shared
- * transaction while completing individually, a failed coalesced transaction merges every cut of the
- * batch back for individual retry, and shutdown drains queued cuts before the final synchronous
- * stop commits.
+ * The runtime-managed durability path through the dedicated cut persister: cuts, legacy suspended
+ * commits and final stop commits of tasks that defer durability are all made durable by the one
+ * writer thread — the single writer of the shared durable resources. Several queued cuts coalesce
+ * into one shared transaction while completing individually, a legacy commit queued between cuts
+ * runs alone with its own transaction (never coalesced), a failed coalesced transaction merges
+ * every cut of the batch back for individual retry, and shutdown drains queued work before the
+ * persister stops.
  *
  * <p>The tests inject a same-thread sink executor, so a frozen cut is enqueued on the persister
  * <em>inside</em> the actor's commit barrier — any record the task processes after the barrier is
@@ -81,6 +83,15 @@ final class StreamRuntimeCutPersisterTest {
       final List<String> journal,
       final MeterRegistry meterRegistry,
       final AtomicBoolean failNextTransaction) {
+    return runtime(taskFactory, journal, meterRegistry, failNextTransaction, null);
+  }
+
+  private StreamRuntime<String> runtime(
+      final IntFunction<Task<String>> taskFactory,
+      final List<String> journal,
+      final MeterRegistry meterRegistry,
+      final AtomicBoolean failNextTransaction,
+      final List<String> transactionThreads) {
     return StreamRuntime.<String>builder()
         .client(client)
         .group("g")
@@ -90,6 +101,9 @@ final class StreamRuntimeCutPersisterTest {
         .taskFactory(taskFactory)
         .transactionRunner(
             operations -> {
+              if (transactionThreads != null) {
+                transactionThreads.add(Thread.currentThread().getName());
+              }
               journal.add("tx-begin");
               if (failNextTransaction != null && failNextTransaction.getAndSet(false)) {
                 journal.add("tx-failed");
@@ -309,8 +323,8 @@ final class StreamRuntimeCutPersisterTest {
     runtime.stop();
     task1.persistGate.countDown();
 
-    // then — the queued cut is drained and completes, both actors finish their final synchronous
-    // stop commit on the direct path, and the runtime shuts down cleanly
+    // then — the queued cut is drained and completes, both actors finish their final stop
+    // commit (partition 2's runs as a joined job on the persister), and the runtime shuts down
     loop.join(TimeUnit.SECONDS.toMillis(10));
     assertThat(loop.isAlive()).isFalse();
     assertThat(task1.completions).containsExactly(true);
@@ -321,6 +335,121 @@ final class StreamRuntimeCutPersisterTest {
     assertThat(committed).contains("1:1", "2:1", "2:2");
     assertThat(task1.closed).isTrue();
     assertThat(task2.closed).isTrue();
+  }
+
+  @Test
+  void shouldRunALegacyManagedCommitAndAFrozenBatchAsDisjointTransactionsInEnqueueOrder()
+      throws Exception {
+    // given — partition 4's task has no frozen-cut support, so its commit suspends the actor and
+    // runs the full legacy sequence as an exclusive job on the persister thread; the job is gated
+    // inside its own transaction (at checkpoint) while partition 2 freezes a cut behind it
+    stubClient();
+    final List<String> journal = new CopyOnWriteArrayList<>();
+    final LegacyManagedTask task4 = new LegacyManagedTask(4, journal);
+    final ManagedCutTask task2 = new ManagedCutTask(2, journal);
+    task4.needsCheckpointAt = 1;
+    task4.checkpointGate = new CountDownLatch(1);
+    task2.needsCheckpointAt = 1;
+    final Map<Integer, Task<String>> tasks = Map.of(4, task4, 2, task2);
+    final AtomicBoolean gateDelivered = new AtomicBoolean();
+    final AtomicBoolean othersReady = new AtomicBoolean();
+    final AtomicBoolean othersDelivered = new AtomicBoolean();
+    when(consumer.poll(anyInt(), any()))
+        .thenAnswer(
+            invocation -> {
+              if (!gateDelivered.getAndSet(true)) {
+                return List.of(event(4, 1));
+              }
+              if (othersReady.get() && !othersDelivered.getAndSet(true)) {
+                return List.of(event(2, 1), event(2, 2));
+              }
+              return List.of();
+            });
+    final List<String> committed = stubCommittedOffsets(journal);
+    final StreamRuntime<String> runtime = runtime(tasks::get, journal, null, null);
+    final Thread loop = new Thread(runtime::run, "runtime-under-test");
+    loop.start();
+
+    // when — the persister is pinned inside the legacy job's transaction, partition 2's cut is
+    // queued behind it (proven by its marker record), then the gate opens
+    await().untilTrue(task4.checkpointEntered);
+    othersReady.set(true);
+    await().until(() -> task2.processed.contains("e2"));
+    task4.checkpointGate.countDown();
+
+    // then — two disjoint transactions in enqueue order: the legacy job's own transaction first
+    // (never coalesced into a frozen batch's), the frozen cut's shared transaction second, with
+    // the legacy job fully complete (including its joined source-offset commit) before the batch
+    // even publishes
+    await().until(() -> committed.contains("4:1") && committed.contains("2:1"));
+    assertThat(transaction(journal, 1)).containsExactly("offset:4:1", "checkpoint:4");
+    assertThat(transaction(journal, 2)).containsExactly("offset:2:1", "persist:2");
+    assertThat(journal).containsSubsequence("commitOffset:4:1", "publish:2");
+
+    // then — the frozen cut completed normally behind the legacy job
+    await().until(() -> !task2.completions.isEmpty());
+    assertThat(task2.completions).containsExactly(true);
+
+    runtime.stop();
+    loop.join(TimeUnit.SECONDS.toMillis(5));
+    assertThat(loop.isAlive()).isFalse();
+  }
+
+  @Test
+  void shouldRunFinalStopCommitsOnThePersisterThreadAfterQueuedCuts() throws Exception {
+    // given — partition 2's cut is queued behind partition 1's gated cut when the stop arrives,
+    // and partition 2 has folded past its cut's barrier (so its stop leaves pending work)
+    stubClient();
+    final List<String> journal = new CopyOnWriteArrayList<>();
+    final List<String> transactionThreads = new CopyOnWriteArrayList<>();
+    final ManagedCutTask task1 = new ManagedCutTask(1, journal);
+    final ManagedCutTask task2 = new ManagedCutTask(2, journal);
+    task1.needsCheckpointAt = 1;
+    task1.persistGate = new CountDownLatch(1);
+    task2.needsCheckpointAt = 1;
+    final Map<Integer, ManagedCutTask> tasks = Map.of(1, task1, 2, task2);
+    final AtomicBoolean gateDelivered = new AtomicBoolean();
+    final AtomicBoolean othersReady = new AtomicBoolean();
+    final AtomicBoolean othersDelivered = new AtomicBoolean();
+    when(consumer.poll(anyInt(), any()))
+        .thenAnswer(
+            invocation -> {
+              if (!gateDelivered.getAndSet(true)) {
+                return List.of(event(1, 1));
+              }
+              if (othersReady.get() && !othersDelivered.getAndSet(true)) {
+                return List.of(event(2, 1), event(2, 2));
+              }
+              return List.of();
+            });
+    final List<String> committed = stubCommittedOffsets(journal);
+    final StreamRuntime<String> runtime =
+        runtime(tasks::get, journal, null, null, transactionThreads);
+    final Thread loop = new Thread(runtime::run, "runtime-under-test");
+    loop.start();
+    await().untilTrue(task1.persistEntered);
+    othersReady.set(true);
+    await().until(() -> task2.processed.contains("e2"));
+
+    // when — stop while one cut is being persisted and another is queued, then release the gate
+    runtime.stop();
+    task1.persistGate.countDown();
+
+    // then — partition 2's stop commit runs as a job AFTER its queued cut (enqueue order held:
+    // the stop job is only submitted once the cut completed), and everything completes
+    loop.join(TimeUnit.SECONDS.toMillis(10));
+    assertThat(loop.isAlive()).isFalse();
+    assertThat(journal).containsSubsequence("persist:1", "persist:2", "checkpoint:2");
+    assertThat(task1.completions).containsExactly(true);
+    assertThat(task2.completions).containsExactly(true);
+    assertThat(committed).contains("1:1", "2:1", "2:2");
+    assertThat(task1.closed).isTrue();
+    assertThat(task2.closed).isTrue();
+
+    // then — every shared transaction (both cuts and the stop commit) ran on the persister
+    // thread: the single writer of the shared durable resources, with no lock anywhere
+    assertThat(transactionThreads).hasSize(3);
+    assertThat(transactionThreads).allMatch(("eb-cut-persister-" + TOPIC)::equals);
   }
 
   /** The operations journaled between the {@code n}-th tx-begin and its matching tx-end. */
@@ -439,6 +568,59 @@ final class StreamRuntimeCutPersisterTest {
     @Override
     public void close() {
       closed = true;
+    }
+  }
+
+  /**
+   * A per-partition task deferring durability to the runtime <em>without</em> frozen-cut support:
+   * its commits suspend the actor and run the full legacy sequence as an exclusive job on the
+   * persister thread. The checkpoint journals with a partition tag and optionally blocks on a gate
+   * — pinning the persister <em>inside</em> the legacy job's own transaction.
+   */
+  private static final class LegacyManagedTask implements Task<String> {
+
+    private final int partitionId;
+    private final List<String> journal;
+    private final List<String> live = new ArrayList<>();
+    private final List<String> processed = new CopyOnWriteArrayList<>();
+    private final AtomicBoolean checkpointEntered = new AtomicBoolean();
+    private volatile CountDownLatch checkpointGate;
+    private volatile int needsCheckpointAt = Integer.MAX_VALUE;
+
+    private LegacyManagedTask(final int partitionId, final List<String> journal) {
+      this.partitionId = partitionId;
+      this.journal = journal;
+    }
+
+    @Override
+    public void process(final String record) {
+      live.add(record);
+      processed.add(record);
+    }
+
+    @Override
+    public boolean needsCheckpoint() {
+      return live.size() >= needsCheckpointAt;
+    }
+
+    @Override
+    public void checkpoint() {
+      checkpointEntered.set(true);
+      final CountDownLatch gate = checkpointGate;
+      if (gate != null) {
+        try {
+          if (!gate.await(10, TimeUnit.SECONDS)) {
+            throw new IllegalStateException("checkpoint gate never opened");
+          }
+        } catch (final InterruptedException e) {
+          Thread.currentThread().interrupt();
+          throw new IllegalStateException(e);
+        }
+      }
+      if (!live.isEmpty()) {
+        journal.add("checkpoint:" + partitionId);
+        live.clear();
+      }
     }
   }
 

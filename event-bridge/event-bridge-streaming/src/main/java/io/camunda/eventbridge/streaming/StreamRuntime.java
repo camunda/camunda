@@ -285,8 +285,11 @@ public final class StreamRuntime<R> implements AutoCloseable {
         break;
       }
     }
-    // Every actor finished its in-flight cut before its final synchronous stop commit (which goes
-    // through the direct path), so the cut persister's queue is drained; stop its writer thread.
+    // Close the cut persister strictly AFTER every actor stopped: the final stop commits of
+    // runtime-managed tasks run as joined jobs on the persister thread, so this ordering is what
+    // keeps those joins deadlock-free. An actor that outlived the shutdown wait above is the only
+    // way a stop commit can arrive after this close; the persister then runs it inline on the
+    // actor's thread (trivially exclusive — the writer thread has ended) rather than hanging.
     committer.close();
     if (ownedScheduler != null) {
       try {

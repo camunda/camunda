@@ -41,8 +41,9 @@ final class StreamRuntimeTest {
   private static final String TOPIC = "facts";
 
   @Test
-  void shouldRunBlockingCommitsOnTheConfiguredSinkExecutor() throws Exception {
-    // given — a runtime with a custom sink thread factory and one record to commit
+  void shouldRunOwnedBlockingCommitsOnTheConfiguredSinkExecutor() throws Exception {
+    // given — a runtime with a custom sink thread factory and one record for a task that owns its
+    // durability (nothing shared, so its blocking commit runs on the sink IO executor)
     final Consumer consumer = mock(Consumer.class);
     final EventBridgeClient client = mock(EventBridgeClient.class);
     when(client.subscribe(any(), any(), any()))
@@ -62,6 +63,75 @@ final class StreamRuntimeTest {
           thread.setDaemon(true);
           return thread;
         };
+    final Task<String> owningTask =
+        new Task<>() {
+          @Override
+          public void process(final String record) {}
+
+          @Override
+          public boolean ownsDurability() {
+            return true;
+          }
+
+          @Override
+          public long restore() {
+            // A restored baseline below the record's offset, so materialization does not take the
+            // rebuild-from-source-start path (which would discard this poll's record).
+            return 0L;
+          }
+
+          @Override
+          public void commit(final long offset) {
+            // The commit runs on the sink IO executor — capture the thread it ran on.
+            commitThreadName.set(Thread.currentThread().getName());
+            committed.countDown();
+          }
+        };
+
+    final StreamRuntime<String> runtime =
+        StreamRuntime.<String>builder()
+            .client(client)
+            .group("g")
+            .instanceId("i")
+            .sourceTopic(TOPIC)
+            .deserializer(
+                (payload, partition, offset) -> new String(payload, StandardCharsets.UTF_8))
+            .taskFactory(partition -> owningTask)
+            .sinkIoThreads(1)
+            .sinkThreadFactory(sinkFactory)
+            .commitInterval(Duration.ZERO)
+            .build();
+
+    // when
+    final Thread loop = new Thread(runtime::run, "runtime-under-test");
+    loop.start();
+
+    // then — the blocking commit ran on the configured sink executor, not the actor/source thread
+    assertThat(committed.await(5, TimeUnit.SECONDS)).isTrue();
+    assertThat(commitThreadName.get()).isEqualTo("custom-sink");
+
+    runtime.stop();
+    loop.join(TimeUnit.SECONDS.toMillis(5));
+  }
+
+  @Test
+  void shouldRunManagedBlockingCommitsOnThePersisterThread() throws Exception {
+    // given — one record for a task deferring durability to the runtime: every write of the shared
+    // offset store must happen on the cut persister's writer thread (the single shared-durability
+    // writer), never on a sink IO thread or the actor/source thread
+    final Consumer consumer = mock(Consumer.class);
+    final EventBridgeClient client = mock(EventBridgeClient.class);
+    when(client.subscribe(any(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(consumer));
+    when(consumer.sendHeartbeat()).thenReturn(CompletableFuture.completedFuture(null));
+    when(consumer.poll(anyInt(), any()))
+        .thenReturn(List.of(new Event(5L, TOPIC, 1, "a".getBytes(StandardCharsets.UTF_8))))
+        .thenReturn(List.of());
+    when(consumer.commitOffset(any(), anyInt(), anyLong()))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    final AtomicReference<String> commitThreadName = new AtomicReference<>();
+    final CountDownLatch committed = new CountDownLatch(1);
 
     final StreamRuntime<String> runtime =
         StreamRuntime.<String>builder()
@@ -82,13 +152,10 @@ final class StreamRuntimeTest {
 
                   @Override
                   public void store(final int partition, final long offset) {
-                    // The commit runs on the sink IO executor — capture the thread it ran on.
                     commitThreadName.set(Thread.currentThread().getName());
                     committed.countDown();
                   }
                 })
-            .sinkIoThreads(1)
-            .sinkThreadFactory(sinkFactory)
             .commitInterval(Duration.ZERO)
             .build();
 
@@ -96,9 +163,9 @@ final class StreamRuntimeTest {
     final Thread loop = new Thread(runtime::run, "runtime-under-test");
     loop.start();
 
-    // then — the blocking commit ran on the configured sink executor, not the actor/source thread
+    // then — the shared durable write ran on the persister thread (structural exclusion)
     assertThat(committed.await(5, TimeUnit.SECONDS)).isTrue();
-    assertThat(commitThreadName.get()).isEqualTo("custom-sink");
+    assertThat(commitThreadName.get()).isEqualTo("eb-cut-persister-" + TOPIC);
 
     runtime.stop();
     loop.join(TimeUnit.SECONDS.toMillis(5));
