@@ -93,8 +93,10 @@ public class PingHubTask implements Runnable {
       throw new RetriableException(
           "Too many requests or timeout: " + resp.statusCode(), resp.body());
     } else if (resp.statusCode() >= 400) {
-      LOGGER.debug(
-          "Received client error response: {}. No retry will be attempted.", resp.statusCode());
+      LOGGER.warn(
+          "Received client error response: {}. No retry will be attempted. Body: {}",
+          resp.statusCode(),
+          truncate(resp.body()));
     }
   }
 
@@ -109,6 +111,12 @@ public class PingHubTask implements Runnable {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record License(
         boolean validLicense, String licenseType, boolean isCommercial, String expiresAt) {}
+  }
+
+  private static String truncate(final String s) {
+    return s.length() <= MAX_RESPONSE_BODY_LENGTH
+        ? s
+        : s.substring(0, MAX_RESPONSE_BODY_LENGTH) + "... [truncated]";
   }
 
   @VisibleForTesting
