@@ -33,7 +33,7 @@ public final class TenantAwareDeletionBehavior {
       final TypedRecord<ResourceDeletionRecord> command, final Function<String, Boolean> callback) {
     final var authorizedTenants = getAuthorizedTenants(command);
 
-    if (AuthorizedTenants.ANONYMOUS.equals(authorizedTenants)) {
+    if (authorizedTenants.isAnonymous()) {
       return Optional.of(callback.apply(TenantOwned.DEFAULT_TENANT_IDENTIFIER))
           .filter(Boolean::booleanValue)
           .orElseGet(() -> forEachTenantUntilResourceDeleted(callback));
