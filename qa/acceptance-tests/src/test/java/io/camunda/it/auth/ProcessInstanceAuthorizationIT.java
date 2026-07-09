@@ -32,6 +32,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
@@ -432,7 +433,9 @@ class ProcessInstanceAuthorizationIT {
   }
 
   private static String basicAuthentication(final String username) {
-    return "Basic " + Base64.getEncoder().encodeToString((username + ":password").getBytes());
+    return "Basic "
+        + Base64.getEncoder()
+            .encodeToString((username + ":password").getBytes(StandardCharsets.UTF_8));
   }
 
   private static URI createUri(final CamundaClient client, final String path)
