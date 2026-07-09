@@ -119,7 +119,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-restore</artifactId>
+      <artifactId>zeebe-restore-standalone</artifactId>
     </dependency>
 
     <dependency>
