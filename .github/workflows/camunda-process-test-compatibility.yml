@@ -150,12 +150,12 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           exportEnv: false
           secrets: |
-            secret/data/products/camunda/ci/github-actions SLACK_CAMUNDA_EX_CI_WEBHOOK;
+            secret/data/products/camunda/ci/github-actions SLACK_CPT_ZPT_CI_WEBHOOK;
       - name: Notify failure
         uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
-        if: steps.secrets.outputs.SLACK_CAMUNDA_EX_CI_WEBHOOK != ''
+        if: steps.secrets.outputs.SLACK_CPT_ZPT_CI_WEBHOOK != ''
         with:
-          webhook: ${{ steps.secrets.outputs.SLACK_CAMUNDA_EX_CI_WEBHOOK }}
+          webhook: ${{ steps.secrets.outputs.SLACK_CPT_ZPT_CI_WEBHOOK }}
           webhook-type: incoming-webhook
           payload: |
             {
