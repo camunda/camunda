@@ -9,13 +9,11 @@ package io.camunda.tasklist.archiver.es;
 
 import static io.camunda.tasklist.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.*;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.dateHistogram;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
-import static org.elasticsearch.search.aggregations.PipelineAggregatorBuilders.bucketSort;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.archiver.TaskArchiverJob;
+import io.camunda.tasklist.archiver.util.DateOfArchivedDocumentsUtil;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -23,11 +21,9 @@ import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.util.Either;
 import io.micrometer.core.instrument.Timer;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -35,13 +31,8 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.TermsQueryBuilder;
-import org.elasticsearch.search.SearchHits;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
-import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
-import org.elasticsearch.search.aggregations.metrics.TopHits;
+import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,8 +49,6 @@ public class TaskArchiverJobElasticSearch extends AbstractArchiverJobElasticSear
     implements TaskArchiverJob {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TaskArchiverJobElasticSearch.class);
-  private static final String DATES_AGG = "datesAgg";
-  private static final String INSTANCES_AGG = "instancesAgg";
 
   @Autowired private TaskTemplate taskTemplate;
 
@@ -122,8 +111,7 @@ public class TaskArchiverJobElasticSearch extends AbstractArchiverJobElasticSear
   @Override
   public CompletableFuture<ArchiveBatch> getNextBatch() {
     final var batchFuture = new CompletableFuture<ArchiveBatch>();
-    final var aggregation = createFinishedTasksAggregation(DATES_AGG, INSTANCES_AGG);
-    final var searchRequest = createFinishedTasksSearchRequest(aggregation);
+    final var searchRequest = createFinishedTasksSearchRequest();
 
     final var startTimer = Timer.start();
     sendSearchRequest(searchRequest)
@@ -153,7 +141,7 @@ public class TaskArchiverJobElasticSearch extends AbstractArchiverJobElasticSear
     return Either.right(batch);
   }
 
-  private SearchRequest createFinishedTasksSearchRequest(AggregationBuilder agg) {
+  private SearchRequest createFinishedTasksSearchRequest() {
     final QueryBuilder endDateQ =
         rangeQuery(TaskTemplate.COMPLETION_TIME)
             .lte(tasklistProperties.getArchiver().getArchivingTimepoint());
@@ -165,58 +153,45 @@ public class TaskArchiverJobElasticSearch extends AbstractArchiverJobElasticSear
             .source(
                 new SearchSourceBuilder()
                     .query(q)
-                    .aggregation(agg)
                     .fetchSource(false)
-                    .size(0)
+                    .docValueField(
+                        TaskTemplate.COMPLETION_TIME,
+                        tasklistProperties.getArchiver().getElsRolloverDateFormat())
+                    .size(tasklistProperties.getArchiver().getRolloverBatchSize())
                     .sort(TaskTemplate.COMPLETION_TIME, SortOrder.ASC))
             .requestCache(false); // we don't need to cache this, as each time we need new data
 
-    LOGGER.debug(
-        "Finished tasks for archiving request: \n{}\n and aggregation: \n{}",
-        q.toString(),
-        agg.toString());
+    LOGGER.debug("Finished tasks for archiving request: \n{}", q.toString());
     return searchRequest;
   }
 
-  private AggregationBuilder createFinishedTasksAggregation(
-      String datesAggName, String instancesAggName) {
-    return dateHistogram(datesAggName)
-        .field(TaskTemplate.COMPLETION_TIME)
-        .calendarInterval(
-            new DateHistogramInterval(
-                Optional.ofNullable(tasklistProperties.getArchiver().getRolloverInterval())
-                    .orElse("1d")))
-        .format(tasklistProperties.getArchiver().getElsRolloverDateFormat())
-        .keyed(true) // get result as a map (not an array)
-        // we want to get only one bucket at a time
-        .subAggregation(
-            bucketSort("datesSortedAgg", Arrays.asList(new FieldSortBuilder("_key"))).size(1))
-        // we need process instance ids, also taking into account batch size
-        .subAggregation(
-            topHits(instancesAggName)
-                .size(tasklistProperties.getArchiver().getRolloverBatchSize())
-                .sort(TaskTemplate.ID, SortOrder.ASC)
-                .fetchSource(TaskTemplate.ID, null));
-  }
-
   protected ArchiveBatch createArchiveBatch(final SearchResponse searchResponse) {
-    final List<? extends Histogram.Bucket> buckets =
-        ((Histogram) searchResponse.getAggregations().get(DATES_AGG)).getBuckets();
-
-    if (buckets.size() > 0) {
-      final Histogram.Bucket bucket = buckets.get(0);
-      final String finishDate = bucket.getKeyAsString();
-      final SearchHits hits = ((TopHits) bucket.getAggregations().get(INSTANCES_AGG)).getHits();
-      final ArrayList<String> ids =
-          Arrays.stream(hits.getHits())
-              .collect(
-                  ArrayList::new,
-                  (list, hit) -> list.add(hit.getId()),
-                  (list1, list2) -> list1.addAll(list2));
-      return new ArchiveBatch(finishDate, ids);
-    } else {
+    final SearchHit[] hits = searchResponse.getHits().getHits();
+    if (hits.length == 0) {
       return null;
     }
+    final String rolloverInterval = tasklistProperties.getArchiver().getRolloverInterval();
+    final String dateFormat = tasklistProperties.getArchiver().getElsRolloverDateFormat();
+    DateOfArchivedDocumentsUtil.validateRolloverConfiguration(rolloverInterval, dateFormat);
+    final String firstCompletionTime = completionTimeOf(hits[0]);
+    final String bucketStart =
+        DateOfArchivedDocumentsUtil.getBucketStart(
+            firstCompletionTime, rolloverInterval, dateFormat);
+    final String nextBucketStart =
+        DateOfArchivedDocumentsUtil.getNextBucketStart(
+            firstCompletionTime, rolloverInterval, dateFormat);
+    // hits are sorted by completionTime ASC, so the first hit defines the bucket.
+    // Only the exclusive upper bound needs to be checked.
+    final List<String> ids =
+        Arrays.stream(hits)
+            .takeWhile(hit -> completionTimeOf(hit).compareTo(nextBucketStart) < 0)
+            .map(SearchHit::getId)
+            .toList();
+    return new ArchiveBatch(bucketStart, ids);
+  }
+
+  private static String completionTimeOf(final SearchHit hit) {
+    return hit.field(TaskTemplate.COMPLETION_TIME).getValue();
   }
 
   private Timer getArchiverQueryTimer() {
