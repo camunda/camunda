@@ -76,7 +76,12 @@ public class M2MTokenProvider {
     }
 
     final JsonNode json = OBJECT_MAPPER.readTree(response.body());
-    cachedToken = json.get("access_token").asText();
+    final JsonNode tokenNode = json.path("access_token");
+    if (tokenNode.isMissingNode() || tokenNode.isNull()) {
+      throw new IOException(
+          "Token response missing 'access_token' field. Body: " + truncate(response.body()));
+    }
+    cachedToken = tokenNode.asText();
     final long expiresIn = json.path("expires_in").asLong(3600);
     tokenExpiresAt = Instant.now().plusSeconds(expiresIn - TOKEN_EXPIRY_BUFFER_SECONDS);
     LOGGER.debug("Successfully fetched M2M token, expires in {} seconds", expiresIn);
