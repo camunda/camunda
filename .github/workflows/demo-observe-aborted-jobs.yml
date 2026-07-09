@@ -1,0 +1,64 @@
+---
+name: demo-observe-aborted-jobs
+
+# owner: @camunda/monorepo-devops-team
+#
+# THROWAWAY DEMO — DO NOT MERGE.
+#
+# Purpose: validate that observe-aborted-jobs again records runner-shutdown
+# events after GitHub moved the tell-tale message out of job annotations and
+# into the raw job logs ("The runner has received a shutdown signal.").
+#
+# How to run the simulation:
+#   1. Ensure the fix is live on infra-global-github-actions `main` (the
+#      observe-aborted-jobs wrapper pulls submit-aborted-gha-status@main).
+#   2. Dispatch this workflow from your branch.
+#   3. While the `long-running` job sleeps, stop the systemd runner service on
+#      its self-hosted machine (or let it get preempted) to produce the
+#      "shutdown signal" log line — a plain job cancel does NOT reproduce it.
+#   4. The `observe-aborted-jobs` job runs afterwards and should detect the
+#      abort and submit an "aborted" row to CI Analytics (prod BigQuery).
+
+on:
+  workflow_dispatch:
+    inputs:
+      runs_on:
+        description: Self-hosted (preemptible) runner label for the job to abort
+        default: gcp-core-8-default
+      sleep_seconds:
+        description: Seconds the job sleeps, giving you time to stop the runner
+        default: "600"
+
+permissions: {}
+
+jobs:
+  long-running:
+    runs-on: ${{ inputs.runs_on }}
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        timeout-minutes: 1
+      - name: Sleep so the runner can be stopped/preempted mid-job
+        run: sleep ${{ inputs.sleep_seconds }}
+
+  observe-aborted-jobs:
+    needs: [long-running]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read # required to read raw job logs for runner-abort detection
+      checks: read
+      contents: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        timeout-minutes: 1
+      - name: Check for aborted jobs
+        continue-on-error: true
+        uses: ./.github/actions/observe-aborted-jobs
+        with:
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
