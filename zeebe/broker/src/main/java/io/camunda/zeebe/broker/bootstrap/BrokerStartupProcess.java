@@ -68,6 +68,7 @@ public final class BrokerStartupProcess {
     result.add(new SnapshotApiServiceStep());
     result.add(new PartitionGroupMigrationStep());
     result.add(new RocksDbResourcesStep());
+    result.add(new SecretCacheStep());
     for (final String physicalTenantId : startupContext.getPhysicalTenantIds().known()) {
       result.add(new PartitionManagerStep(physicalTenantId));
     }

@@ -61,6 +61,7 @@ import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.secret.SecretCache;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
@@ -107,6 +108,7 @@ public final class ZeebePartitionFactory {
   private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
   private final ClusterConfigurationService clusterConfigurationService;
   private final RocksDbResources rocksDbResources;
+  private final SecretCache secretCache;
 
   public ZeebePartitionFactory(
       final ActorSchedulingService actorSchedulingService,
@@ -126,7 +128,8 @@ public final class ZeebePartitionFactory {
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final ClusterConfigurationService clusterConfigurationService,
-      final RocksDbResources rocksDbResources) {
+      final RocksDbResources rocksDbResources,
+      final SecretCache secretCache) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
@@ -145,6 +148,7 @@ public final class ZeebePartitionFactory {
     this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
     this.clusterConfigurationService = clusterConfigurationService;
     this.rocksDbResources = rocksDbResources;
+    this.secretCache = secretCache;
   }
 
   public ZeebePartition constructPartition(
@@ -278,7 +282,8 @@ public final class ZeebePartitionFactory {
           featureFlags,
           jobStreamer,
           searchClientsProxy,
-          brokerRequestAuthorizationConverter);
+          brokerRequestAuthorizationConverter,
+          secretCache);
     };
   }
 }

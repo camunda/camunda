@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.job.JobBatchCollector.TooLargeJob;
+import io.camunda.zeebe.engine.processing.secret.SecretCache;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -59,6 +60,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private final ProcessState processState;
   private final CslAuthorizationCheck cslCheck;
   private final IncidentMetrics incidentMetrics;
+  private final SecretCache secretCache;
 
   public JobBatchActivateProcessor(
       final Writers writers,
@@ -67,7 +69,8 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       final JobProcessingMetrics jobMetrics,
       final CslAuthorizationCheck cslCheck,
       final InstantSource clock,
-      final IncidentMetrics incidentMetrics) {
+      final IncidentMetrics incidentMetrics,
+      final SecretCache secretCache) {
 
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
@@ -82,6 +85,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     elementInstanceState = state.getElementInstanceState();
     processState = state.getProcessState();
     this.incidentMetrics = incidentMetrics;
+    this.secretCache = secretCache;
   }
 
   @Override

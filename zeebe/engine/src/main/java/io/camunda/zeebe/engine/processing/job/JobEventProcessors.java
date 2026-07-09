@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.secret.SecretCache;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
@@ -35,7 +36,8 @@ public final class JobEventProcessors {
       final EngineConfiguration config,
       final InstantSource clock,
       final CslAuthorizationCheck cslCheck,
-      final IncidentMetrics incidentMetrics) {
+      final IncidentMetrics incidentMetrics,
+      final SecretCache secretCache) {
 
     final var keyGenerator = processingState.getKeyGenerator();
 
@@ -126,7 +128,8 @@ public final class JobEventProcessors {
                 jobMetrics,
                 cslCheck,
                 clock,
-                incidentMetrics))
+                incidentMetrics,
+                secretCache))
         .withListener(
             new JobTimeoutCheckScheduler(
                 scheduledTaskStateFactory.get().getJobState(),

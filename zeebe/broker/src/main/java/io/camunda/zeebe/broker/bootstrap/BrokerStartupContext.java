@@ -32,6 +32,7 @@ import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
+import io.camunda.zeebe.engine.processing.secret.SecretCache;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -129,6 +130,14 @@ public interface BrokerStartupContext {
   RocksDbResources getRocksDbResources();
 
   void setRocksDbResources(RocksDbResources sharedRocksDbResources);
+
+  /**
+   * Returns the broker-wide secret cache, allocated once per broker and shared across every
+   * partition's engine.
+   */
+  SecretCache getSecretCache();
+
+  void setSecretCache(SecretCache secretCache);
 
   BrokerAdminServiceImpl getBrokerAdminService();
 
