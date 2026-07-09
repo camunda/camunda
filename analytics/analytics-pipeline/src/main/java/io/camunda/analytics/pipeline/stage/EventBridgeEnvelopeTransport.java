@@ -10,17 +10,28 @@ package io.camunda.analytics.pipeline.stage;
 import io.camunda.analytics.aggregation.EnvelopeTransport;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.client.EventBridgeClient.BatchPublisher;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 
 /**
  * The event-bridge {@link EnvelopeTransport}: buffers shuffle-envelope frames per target facts
- * partition and, on {@link #flush()}, publishes one batch per partition and blocks until durable
- * (produce-before-checkpoint). Routing to a partition is already decided by the caller, so the
- * per-message key is unused.
+ * partition and, on {@link #dispatch()}, publishes one batch per partition — all partitions
+ * pipelined at once, acknowledged through the returned future. Routing to a partition is already
+ * decided by the caller, so the per-message key is unused.
+ *
+ * <p><b>How the ordering contract is met.</b> The underlying client gives no ordering across
+ * requests that are in flight concurrently (publishes are independent async HTTP requests over a
+ * shared connection pool), so per-destination order comes from two mechanisms instead: every frame
+ * sent between two dispatches joins one batch per partition — a single publish request whose
+ * entries the broker appends in batch order — and successive dispatches to the same partition are
+ * chained, each starting only after the previous one completed. Distinct partitions stay
+ * independent and publish concurrently.
+ *
+ * <p><b>Threading.</b> Single writer, no locks: the publisher's owner thread and the frozen cut's
+ * IO thread touch this transport alternately, never concurrently — the freeze/complete handoff of
+ * the cut protocol provides the happens-before edges, exactly as for the publisher's outbox.
  */
 public final class EventBridgeEnvelopeTransport implements EnvelopeTransport {
 
@@ -30,8 +41,12 @@ public final class EventBridgeEnvelopeTransport implements EnvelopeTransport {
   private final String topic;
   private final Map<Integer, BatchPublisher> batches = new HashMap<>();
 
-  /** Reused per flush; a fresh flush repopulates it, so a failed join leaves no stale awaits. */
-  private final List<CompletableFuture<?>> futures = new ArrayList<>();
+  /**
+   * The last initiated publish per facts partition; a later dispatch to the same partition chains
+   * behind it so two in-flight publishes can never arrive reordered. Bounded by the facts partition
+   * count.
+   */
+  private final Map<Integer, CompletableFuture<?>> tails = new HashMap<>();
 
   public EventBridgeEnvelopeTransport(final EventBridgeClient client, final String topic) {
     this.client = client;
@@ -44,14 +59,37 @@ public final class EventBridgeEnvelopeTransport implements EnvelopeTransport {
   }
 
   @Override
-  public void flush() {
+  public CompletableFuture<Void> dispatch() {
     if (batches.isEmpty()) {
-      return;
+      return CompletableFuture.completedFuture(null);
     }
-    futures.clear();
-    batches.forEach((partition, batch) -> futures.add(batch.publishToTopic(topic, partition)));
-    CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-    futures.clear();
+    final CompletableFuture<?>[] acks = new CompletableFuture<?>[batches.size()];
+    int index = 0;
+    for (final Entry<Integer, BatchPublisher> entry : batches.entrySet()) {
+      acks[index++] = publishInOrder(entry.getKey(), entry.getValue());
+    }
+    // The batches are handed to the client here; retry ownership stays with the caller's outbox,
+    // which retains the frames of a failed cut and re-sends them as fresh batches.
     batches.clear();
+    return CompletableFuture.allOf(acks);
+  }
+
+  /**
+   * Publishes {@code batch} to {@code partition} after the partition's previous publish (if any)
+   * completed. The chain deliberately continues past a failed predecessor — its failure already
+   * surfaced through its own dispatch future and failed that cut; whether or not it actually
+   * appended, the frames that follow are either fresh or a retained-frame retry whose duplicates
+   * the reducer's {@code (segment, chunk)} dedup absorbs.
+   */
+  private CompletableFuture<?> publishInOrder(final int partition, final BatchPublisher batch) {
+    final CompletableFuture<?> previous = tails.get(partition);
+    final CompletableFuture<?> ack =
+        previous == null
+            ? batch.publishToTopic(topic, partition)
+            : previous
+                .handle((ignoredResult, ignoredError) -> null)
+                .thenCompose(ignored -> batch.publishToTopic(topic, partition));
+    tails.put(partition, ack);
+    return ack;
   }
 }

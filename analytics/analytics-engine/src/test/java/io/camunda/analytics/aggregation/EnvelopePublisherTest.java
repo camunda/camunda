@@ -8,6 +8,7 @@
 package io.camunda.analytics.aggregation;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.analytics.dimension.DimensionColumn;
@@ -22,23 +23,42 @@ import io.camunda.eventbridge.streaming.shuffle.ShuffleEnvelopeCodec;
 import io.camunda.eventbridge.streaming.window.Windowed;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import org.junit.jupiter.api.Test;
 
 final class EnvelopePublisherTest {
 
   private record Sent(int partition, ShuffleEnvelope envelope) {}
 
-  private final List<Sent> sent = new ArrayList<>();
-  private final EnvelopeTransport transport =
-      new EnvelopeTransport() {
-        @Override
-        public void send(final int factsPartition, final byte[] frame) {
-          sent.add(new Sent(factsPartition, ShuffleEnvelopeCodec.decode(frame)));
-        }
+  /**
+   * A recording {@link EnvelopeTransport}: frames land in {@link #sent} on hand-over, and each
+   * {@link #dispatch()} is counted (and can be armed to fail once), so tests can assert that every
+   * frame is handed over before the single acknowledgment await.
+   */
+  private final class RecordingTransport implements EnvelopeTransport {
 
-        @Override
-        public void flush() {}
-      };
+    private int dispatches;
+    private boolean failNextDispatch;
+
+    @Override
+    public void send(final int factsPartition, final byte[] frame) {
+      sent.add(new Sent(factsPartition, ShuffleEnvelopeCodec.decode(frame)));
+    }
+
+    @Override
+    public CompletableFuture<Void> dispatch() {
+      dispatches++;
+      if (failNextDispatch) {
+        failNextDispatch = false;
+        return CompletableFuture.failedFuture(new IllegalStateException("publish failed"));
+      }
+      return CompletableFuture.completedFuture(null);
+    }
+  }
+
+  private final List<Sent> sent = new ArrayList<>();
+  private final RecordingTransport transport = new RecordingTransport();
 
   private static CellDelta cell(final int aggId) {
     return new CellDelta(aggId, 0L, new byte[] {(byte) aggId}, new byte[] {1});
@@ -120,6 +140,67 @@ final class EnvelopePublisherTest {
     publisher.add(0, 99L, 1, cell(11));
     publisher.flush();
     assertThat(sent).singleElement().satisfies(s -> assertThat(s.envelope().chunk()).isEqualTo(1));
+  }
+
+  @Test
+  void shouldPipelineTheFrozenPublishBehindOneAwait() {
+    // given frames frozen for three destinations
+    final EnvelopePublisher publisher = new EnvelopePublisher(transport, 1, 0L);
+    publisher.add(0, 0L, 1, cell(10));
+    publisher.add(0, 0L, 2, cell(11));
+    publisher.add(0, 1L, 3, cell(12));
+    publisher.freeze();
+
+    // when the cut publishes
+    publisher.publishFrozen();
+    publisher.completeFrozen(true);
+
+    // then every frame was handed to the transport, in staging order, ahead of a single
+    // acknowledgment await — the wait is one dispatch, not one per frame
+    assertThat(sent)
+        .extracting(s -> s.envelope().segment(), Sent::partition)
+        .containsExactly(tuple(0L, 1), tuple(0L, 2), tuple(1L, 3));
+    assertThat(transport.dispatches).isEqualTo(1);
+  }
+
+  @Test
+  void shouldSkipTheAwaitForAnEmptyFrozenCut() {
+    // given nothing buffered at the barrier
+    final EnvelopePublisher publisher = new EnvelopePublisher(transport, 1, 0L);
+    publisher.freeze();
+
+    // when the cut publishes
+    publisher.publishFrozen();
+    publisher.completeFrozen(true);
+
+    // then no frame and no acknowledgment await left the publisher
+    assertThat(sent).isEmpty();
+    assertThat(transport.dispatches).isZero();
+  }
+
+  @Test
+  void shouldResendRetainedFramesAheadOfNewerOnesAfterAFailedPublish() {
+    // given a frozen cut whose pipelined publish fails as a whole
+    final EnvelopePublisher publisher = new EnvelopePublisher(transport, 1, 0L);
+    publisher.add(0, 0L, 1, cell(10));
+    publisher.freeze();
+    transport.failNextDispatch = true;
+    assertThatThrownBy(publisher::publishFrozen).isInstanceOf(CompletionException.class);
+    publisher.completeFrozen(false);
+
+    // when a newer delta is staged and the next cut publishes
+    sent.clear();
+    publisher.add(0, 1L, 1, cell(11));
+    publisher.freeze();
+    publisher.publishFrozen();
+    publisher.completeFrozen(true);
+
+    // then the retained frame re-sends first — possibly a duplicate of an acknowledged send from
+    // the failed pipeline, which the reducer's (segment, chunk) dedup absorbs — keeping the
+    // per-stream monotonic sequence ahead of the newer frame
+    assertThat(sent)
+        .extracting(s -> s.envelope().segment(), s -> s.envelope().chunk())
+        .containsExactly(tuple(0L, 0), tuple(1L, 0));
   }
 
   @Test

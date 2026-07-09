@@ -143,17 +143,24 @@ public final class EnvelopePublisher {
   }
 
   /**
-   * IO thread, outside the state transaction: publishes the frozen frames, then flushes the
-   * transport durably (produce-before-commit). Touches only the frozen frames and the transport —
-   * never the live buffer the owner thread keeps filling. Idempotent under replay: the reducer
-   * drops a re-emitted {@code (segment, chunk)}.
+   * IO thread, outside the state transaction: publishes the frozen frames pipelined — every frame
+   * is handed to the transport up front, then a single await covers all acknowledgments
+   * (produce-before-commit), so the wait is the slowest destination's round trip, not the sum.
+   * Touches only the frozen frames and the transport — never the live buffer the owner thread keeps
+   * filling. Idempotent under replay: the reducer drops a re-emitted {@code (segment, chunk)}.
+   *
+   * <p>Any failed acknowledgment fails the whole publish, and with it the cut: the outbox retains
+   * every frozen frame for the next cut. That retry may re-send frames the failed pipeline had
+   * already acknowledged — a duplicate the reducer's {@code (segment, chunk)} dedup absorbs — and
+   * re-emits them ahead of newer frames, so the per-stream monotonic sequence is preserved across
+   * the failure.
    *
    * @throws IllegalStateException if nothing is frozen
    */
   public void publishFrozen() {
     if (outbox.drainFrozen(prepared -> transport.send(prepared.factsPartition(), prepared.frame()))
         > 0) {
-      transport.flush();
+      transport.dispatch().join();
     }
   }
 
