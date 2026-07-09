@@ -399,6 +399,164 @@ final class StreamRuntimeFrozenCutTest {
     loop.join(TimeUnit.SECONDS.toMillis(5));
   }
 
+  @Test
+  void shouldMergeACutBackWhenTheSourceOffsetCommitFails() throws Exception {
+    // given — the transaction commits, but the first (advisory) source-offset commit fails
+    stubClient();
+    final SimpleMeterRegistry registry = new SimpleMeterRegistry();
+    final FrozenCutTask task = new FrozenCutTask();
+    final List<String> journal = new CopyOnWriteArrayList<>();
+    final List<Long> committed = new CopyOnWriteArrayList<>();
+    final AtomicInteger attempts = new AtomicInteger();
+    when(consumer.commitOffset(any(), anyInt(), anyLong()))
+        .thenAnswer(
+            invocation -> {
+              final long offset = invocation.getArgument(2);
+              if (attempts.getAndIncrement() == 0) {
+                journal.add("commitOffset-failed:" + offset);
+                return CompletableFuture.failedFuture(
+                    new IllegalStateException("injected offset-commit failure"));
+              }
+              journal.add("commitOffset:" + offset);
+              committed.add(offset);
+              return CompletableFuture.completedFuture(null);
+            });
+    final AtomicBoolean delivered = new AtomicBoolean();
+    when(consumer.poll(anyInt(), any()))
+        .thenAnswer(
+            invocation -> delivered.getAndSet(true) ? List.of() : List.of(event(1), event(2)));
+    final StreamRuntime<String> runtime = runtime(task, journal, Duration.ZERO, registry);
+    final Thread loop = new Thread(runtime::run, "runtime-under-test");
+    loop.start();
+
+    // then — the failed offset commit funnels into the same merge-back retry path as a failed
+    // persist: the cut completes unsuccessfully, is re-frozen, and re-persisting the
+    // already-committed transaction is idempotent (the same delta lands under the same keys)
+    await().until(() -> committed.contains(2L));
+    assertThat(task.completions).startsWith(false).endsWith(true);
+    assertThat(task.persisted.stream().flatMap(List::stream))
+        .containsExactly("e1", "e2", "e1", "e2");
+    assertThat(retryCount(registry)).isEqualTo(1.0);
+    assertThat(journal)
+        .containsSubsequence(
+            "tx-end", "commitOffset-failed:2", "tx-begin", "tx-end", "commitOffset:2");
+
+    runtime.stop();
+    loop.join(TimeUnit.SECONDS.toMillis(5));
+  }
+
+  @Test
+  void shouldChainTheNextFreezeBehindTheSourceOffsetAck() throws Exception {
+    // given — the first cut's source-offset ack is held back after its transaction committed
+    stubClient();
+    final SimpleMeterRegistry registry = new SimpleMeterRegistry();
+    final FrozenCutTask task = new FrozenCutTask();
+    final List<String> journal = new CopyOnWriteArrayList<>();
+    final List<Long> committed = new CopyOnWriteArrayList<>();
+    final CompletableFuture<Void> firstAck = new CompletableFuture<>();
+    final AtomicInteger attempts = new AtomicInteger();
+    when(consumer.commitOffset(any(), anyInt(), anyLong()))
+        .thenAnswer(
+            invocation -> {
+              final long offset = invocation.getArgument(2);
+              journal.add("commitOffset:" + offset);
+              if (attempts.getAndIncrement() == 0) {
+                return firstAck.whenComplete((ignored, error) -> committed.add(offset));
+              }
+              committed.add(offset);
+              return CompletableFuture.completedFuture(null);
+            });
+    final AtomicBoolean batch1Delivered = new AtomicBoolean();
+    final AtomicBoolean batch2Ready = new AtomicBoolean();
+    final AtomicBoolean batch2Delivered = new AtomicBoolean();
+    when(consumer.poll(anyInt(), any()))
+        .thenAnswer(
+            invocation -> {
+              if (!batch1Delivered.getAndSet(true)) {
+                return List.of(event(1), event(2));
+              }
+              if (batch2Ready.get() && !batch2Delivered.getAndSet(true)) {
+                return List.of(event(3));
+              }
+              return List.of();
+            });
+    final StreamRuntime<String> runtime = runtime(task, journal, Duration.ZERO, registry);
+    final Thread loop = new Thread(runtime::run, "runtime-under-test");
+    loop.start();
+
+    // when — the offset advance was sent (without joining) right after the transaction committed
+    await().until(() -> journal.contains("commitOffset:2"));
+    assertThat(journal).containsSubsequence("tx-end", "commitOffset:2");
+    batch2Ready.set(true);
+
+    // then — the actor keeps folding, but no second freeze starts and the persist timer has no
+    // sample yet: the cut completes (and single-flight releases) only once the ack lands
+    await().until(() -> task.processed.contains("e3"));
+    assertThat(task.freezes).hasValue(1);
+    assertThat(persistTimerCount(registry)).isZero();
+
+    // when — the ack lands
+    firstAck.complete(null);
+
+    // then — the chained completion retires the cut, records its timer, and the next cut runs
+    await().until(() -> committed.contains(3L));
+    assertThat(task.completions).allMatch(Boolean::booleanValue);
+    assertThat(persistTimerCount(registry)).isEqualTo(task.completions.size());
+
+    runtime.stop();
+    loop.join(TimeUnit.SECONDS.toMillis(5));
+  }
+
+  @Test
+  void shouldJoinTheSourceOffsetCommitSynchronouslyOnTheStopPath() throws Exception {
+    // given — no periodic cut (huge interval); the only commit is the final stop commit, whose
+    // source-offset ack is held back
+    stubClient();
+    final FrozenCutTask task = new FrozenCutTask();
+    final List<String> journal = new CopyOnWriteArrayList<>();
+    final List<Long> committed = new CopyOnWriteArrayList<>();
+    final CompletableFuture<Void> finalAck = new CompletableFuture<>();
+    when(consumer.commitOffset(any(), anyInt(), anyLong()))
+        .thenAnswer(
+            invocation -> {
+              final long offset = invocation.getArgument(2);
+              journal.add("commitOffset:" + offset);
+              return finalAck.whenComplete((ignored, error) -> committed.add(offset));
+            });
+    final AtomicBoolean delivered = new AtomicBoolean();
+    when(consumer.poll(anyInt(), any()))
+        .thenAnswer(
+            invocation -> delivered.getAndSet(true) ? List.of() : List.of(event(1), event(2)));
+    final StreamRuntime<String> runtime = runtime(task, journal, Duration.ofHours(1));
+    final Thread loop = new Thread(runtime::run, "runtime-under-test");
+    loop.start();
+    await().until(() -> task.processed.contains("e2"));
+
+    // when — stopping while the final commit's ack is pending
+    runtime.stop();
+
+    // then — the stop path stays fully synchronous: it joins the offset commit, so the runtime
+    // does not finish shutting down (and the task stays open) until the ack lands
+    await().until(() -> journal.contains("commitOffset:2"));
+    loop.join(200);
+    assertThat(loop.isAlive()).isTrue();
+    assertThat(task.closed).isFalse();
+
+    // when — the ack lands
+    finalAck.complete(null);
+
+    // then — the final synchronous commit completes and the runtime shuts down cleanly
+    loop.join(TimeUnit.SECONDS.toMillis(10));
+    assertThat(loop.isAlive()).isFalse();
+    assertThat(committed).containsExactly(2L);
+    assertThat(task.persisted.stream().flatMap(List::stream)).containsExactly("e1", "e2");
+    assertThat(task.closed).isTrue();
+  }
+
+  private static long persistTimerCount(final SimpleMeterRegistry registry) {
+    return registry.get("eb.streaming.cut.persist.duration").tag("partition", "1").timer().count();
+  }
+
   private static double retryCount(final SimpleMeterRegistry registry) {
     return registry.get("eb.streaming.cut.retries").tag("partition", "1").counter().count();
   }

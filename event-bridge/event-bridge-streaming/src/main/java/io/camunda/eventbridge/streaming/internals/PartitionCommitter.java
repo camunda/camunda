@@ -13,6 +13,7 @@ import io.camunda.eventbridge.streaming.OffsetStore;
 import io.camunda.eventbridge.streaming.Task;
 import io.camunda.eventbridge.streaming.TransactionRunner;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Makes one partition an independent atomic cut: emit its output, make it durable, persist state
@@ -55,12 +56,16 @@ public final class PartitionCommitter<R> {
 
   /**
    * Makes a frozen cut durable: publish its produced output, persist its state delta and {@code
-   * offset}, then advance the source offset. Runs on an IO thread while the partition's actor
-   * <em>keeps folding</em> — the cut is detached from the live working state at the freeze barrier,
-   * so the IO thread owns it exclusively and no suspension is needed. The completion (retire or
-   * merge back) happens afterwards on the actor thread, not here.
+   * offset}, then send the source-offset advance and return its future <em>without joining on
+   * it</em>. Runs on an IO thread while the partition's actor <em>keeps folding</em> — the cut is
+   * detached from the live working state at the freeze barrier, so the IO thread owns it
+   * exclusively and no suspension is needed. The completion (retire or merge back) happens
+   * afterwards on the actor thread, chained onto the returned future, not here.
+   *
+   * @return the source-offset commit's future; the cut is fully complete only when it is done
    */
-  public void persistCut(final Partition<R> partition, final long offset, final CommitCut cut) {
+  public CompletableFuture<Void> persistCut(
+      final Partition<R> partition, final long offset, final CommitCut cut) {
     if (partition.task().ownsDurability()) {
       // Self-contained shard: the cut publishes and persists through the task's own sinks and
       // transaction, fully in parallel with other partitions' cuts.
@@ -79,7 +84,12 @@ public final class PartitionCommitter<R> {
             });
       }
     }
-    consumer.commitOffset(sourceTopic, partition.id(), offset).join();
+    // The source-offset commit is advisory — the authoritative resume bookmark was just persisted
+    // inside the transaction — so it is sent after the transaction but not awaited: the IO
+    // thread's occupancy ends here, and the caller chains the cut's completion onto the returned
+    // future. The one hard ordering rule holds by construction: the commit is never sent before
+    // the transaction committed.
+    return consumer.commitOffset(sourceTopic, partition.id(), offset);
   }
 
   /**

@@ -48,7 +48,8 @@ import org.slf4j.LoggerFactory;
  * ({@code committing} is set, so no folding/punctuation/second commit runs), giving the IO thread
  * exclusive access to the live task. In both modes the source offset advances only after the
  * durable write — the produce-before-commit cut is at the freeze barrier's offset, and completion
- * (retire or merge back) runs back on the actor thread.
+ * (retire or merge back) runs back on the actor thread. A frozen cut completes only once both the
+ * transaction and the chained source-offset ack are done, so single-flight covers the full cut.
  *
  * @param <R> the decoded record type
  */
@@ -343,13 +344,26 @@ public final class PartitionActor<R> {
     final CompletableActorFuture<Void> persisted = new CompletableActorFuture<>();
     sinkExecutor.execute(
         () -> {
-          // IO-thread pickup to persist completion: the pause the old synchronous commit design
-          // would have imposed on the fold — the feature's measured win.
+          // IO-thread pickup to full cut completion (transaction plus source-offset ack): the
+          // pause the old synchronous commit design would have imposed on the fold — the
+          // feature's measured win. The timer deliberately keeps spanning the offset ack so runs
+          // stay comparable, even though the IO thread's *occupancy* now ends at the transaction
+          // commit; the ack completes on the client's network thread.
           final long persistStart = System.nanoTime();
           try {
-            committer.persistCut(partition, offset, cut);
-            metrics.observePersist(System.nanoTime() - persistStart);
-            persisted.complete(null);
+            committer
+                .persistCut(partition, offset, cut)
+                .whenComplete(
+                    (ignored, error) -> {
+                      // Possibly on the client's network thread; runOnCompletion below marshals
+                      // the completion back onto the actor thread.
+                      if (error != null) {
+                        persisted.completeExceptionally(error);
+                      } else {
+                        metrics.observePersist(System.nanoTime() - persistStart);
+                        persisted.complete(null);
+                      }
+                    });
           } catch (final Throwable t) {
             persisted.completeExceptionally(t);
           }
@@ -383,7 +397,10 @@ public final class PartitionActor<R> {
     cut.complete(error == null);
     if (error != null) {
       // Merged back: the next freeze re-includes this cut's delta. The commit clock was not
-      // reset, so maybeCommit retries on the next tick.
+      // reset, so maybeCommit retries on the next tick. A failed source-offset commit funnels
+      // into this same path even though its transaction already committed — re-persisting that
+      // delta as part of the next cut is idempotent (the same values land under the same keys),
+      // and the retry re-sends the advisory offset advance.
       metrics.countRetry();
       LOG.warn(
           "Persisting the cut of partition {} at offset {} failed; will retry",
