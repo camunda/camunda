@@ -92,6 +92,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
             state.getBannedInstanceState(),
             "fail",
             List.of(State.ACTIVATABLE, State.ACTIVATED),
+            List.of(JobLeaseFencingCheck.forLifecycleCommand()),
             authCheckBehavior);
     this.keyGenerator = keyGenerator;
     this.jobBackoffChecker = jobBackoffChecker;

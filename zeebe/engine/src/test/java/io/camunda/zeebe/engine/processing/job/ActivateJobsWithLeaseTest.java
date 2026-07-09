@@ -90,7 +90,7 @@ public final class ActivateJobsWithLeaseTest {
             .getJobs()
             .get(0)
             .getLeaseToken();
-    ENGINE.job().withKey(jobKey).withRetries(1).fail();
+    ENGINE.job().withKey(jobKey).withLeaseToken(firstToken).withRetries(1).fail();
     jobRecords(JobIntent.FAILED).withRecordKey(jobKey).await();
 
     // when it is leased again
@@ -129,7 +129,7 @@ public final class ActivateJobsWithLeaseTest {
             .getLeaseToken();
 
     // when it fails back to activatable
-    ENGINE.job().withKey(jobKey).withRetries(1).fail();
+    ENGINE.job().withKey(jobKey).withLeaseToken(leaseToken).withRetries(1).fail();
 
     // then
     final Record<JobRecordValue> failed =

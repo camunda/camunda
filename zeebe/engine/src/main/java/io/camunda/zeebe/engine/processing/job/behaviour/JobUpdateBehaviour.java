@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.job.JobCommandPreconditionValidator;
+import io.camunda.zeebe.engine.processing.job.JobLeaseFencingCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.JobState;
@@ -54,6 +55,7 @@ public class JobUpdateBehaviour {
             processingStateState.getBannedInstanceState(),
             "update",
             List.of(State.ACTIVATABLE, State.ACTIVATED, State.FAILED, State.ERROR_THROWN),
+            List.of(JobLeaseFencingCheck.forUpdateCommand()),
             authCheckBehavior);
     this.authCheckBehavior = authCheckBehavior;
   }

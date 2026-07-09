@@ -160,6 +160,7 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
             "complete",
             List.of(State.ACTIVATABLE, State.ACTIVATED),
             List.of(
+                JobLeaseFencingCheck.forLifecycleCommand(),
                 this::checkAdHocSubprocessActivationTargetsAreValid,
                 this::checkAdHocSubprocessInstanceIsActive,
                 this::checkAdHocSubProcessCompletionConditionNotFulfilledForElementActivation,
