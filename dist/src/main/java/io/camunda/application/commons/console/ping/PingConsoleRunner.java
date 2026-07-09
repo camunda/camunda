@@ -48,6 +48,10 @@ import org.springframework.stereotype.Component;
  * @deprecated Use {@code camunda.hub.ping} configuration instead. This runner is retained for
  *     backwards compatibility and will be removed in a future release. It is disabled automatically
  *     when {@code camunda.hub.ping.enabled=true}.
+ *     <p><b>Important:</b> The ping endpoint now requires authentication regardless of which
+ *     configuration path is used. Before upgrading, you must add M2M credentials under {@code
+ *     camunda.console.ping.credentials} ({@code token-endpoint}, {@code client-id}, {@code
+ *     client-secret}). Missing credentials will cause all pings to fail at startup validation.
  */
 @Deprecated
 @Component
