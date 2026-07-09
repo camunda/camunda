@@ -1,5 +1,6 @@
 #!/usr/bin/env bats
 
+
 # Tests for validate-flattened-poms.sh — verifies required Maven Central metadata
 # checks and the Javadoc-deployability check (maven.javadoc.skip=true must be paired
 # with an empty-javadoc-jar placeholder) across the local parent chain.
