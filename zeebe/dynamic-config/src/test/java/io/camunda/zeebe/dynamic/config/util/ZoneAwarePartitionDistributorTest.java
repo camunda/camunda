@@ -22,18 +22,17 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import net.jqwik.api.ForAll;
+import net.jqwik.api.Property;
+import net.jqwik.api.constraints.IntRange;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 final class ZoneAwarePartitionDistributorTest {
 
-  private static final Logger LOG =
-      LoggerFactory.getLogger(ZoneAwarePartitionDistributorTest.class);
   private static final String GROUP = "raft";
   private static final TestConfig TWO_ZONES =
       new TestConfig(
@@ -265,16 +264,54 @@ final class ZoneAwarePartitionDistributorTest {
   }
 
   @Test
-  void shouldThrowWhenMemberHasNoZone() {
-    // given — bare member id (no zone)
-    final var specs = List.of(new ZoneSpec("us-east1", 1, 1000));
+  void shouldFallbackToRoundRobinWhenClusterIsFullyBare() {
+    // given — a not-yet-migrated cluster: the zone-aware config is already persisted but every
+    // member is still bare. Distributing must not throw; it must behave like plain round-robin so
+    // that recomputing the distribution before migration is a no-op.
+    final var specs = List.of(new ZoneSpec("us-east1", 2, 1000), new ZoneSpec("us-west1", 1, 500));
+    final var bareMembers =
+        Set.of(MemberId.from(0), MemberId.from(1), MemberId.from(2), MemberId.from(3));
     final var distributor = new ZoneAwarePartitionDistributor(specs);
-    final Set<MemberId> bareMembers = Set.of(MemberId.from("0"));
 
-    // when / then
-    assertThatThrownBy(() -> distributor.distributePartitions(bareMembers, partitions(1), 1))
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("no zone");
+    // when
+    final var result = distributor.distributePartitions(bareMembers, partitions(4), 3);
+
+    // then — identical to plain round-robin over the same bare members
+    final var expected =
+        new RoundRobinPartitionDistributor().distributePartitions(bareMembers, partitions(4), 3);
+    assertThat(result).isEqualTo(expected);
+  }
+
+  @Property(tries = 25)
+  void shouldEqualPlainRoundRobinForAnyFullyBareCluster(
+      @ForAll @IntRange(min = 2, max = 30) final int replicationFactor,
+      @ForAll @IntRange(min = 0, max = 30) final int extraBrokers,
+      @ForAll @IntRange(min = 1, max = 30) final int partitionCount) {
+    // given — two zones whose replicas sum to the replication factor, distinct priorities so the
+    // zone-aware path would normally engage, and a fully bare cluster with at least RF brokers.
+    final var zoneAReplicas = (replicationFactor + 1) / 2;
+    final var zoneBReplicas = replicationFactor - zoneAReplicas;
+    final var specs =
+        List.of(
+            new ZoneSpec("us-east1", zoneAReplicas, 1000),
+            new ZoneSpec("us-west1", zoneBReplicas, 500));
+    final var clusterSize = replicationFactor + extraBrokers;
+    final var bareMembers =
+        IntStream.range(0, clusterSize)
+            .mapToObj(MemberId::from)
+            .collect(Collectors.toUnmodifiableSet());
+    final var distributor = new ZoneAwarePartitionDistributor(specs);
+
+    // when
+    final var result =
+        distributor.distributePartitions(
+            bareMembers, partitions(partitionCount), replicationFactor);
+
+    // then — a bare cluster must be distributed exactly like plain round-robin (no changes)
+    final var expected =
+        new RoundRobinPartitionDistributor()
+            .distributePartitions(bareMembers, partitions(partitionCount), replicationFactor);
+    assertThat(result).isEqualTo(expected);
   }
 
   // -------------------------------------------------------------------------
@@ -368,6 +405,55 @@ Partition | us-east1_0 | us-east1_1 | us-west1_0
         2 |     1      |     2      |     3
         3 |     2      |     3      |     1
 """);
+  }
+
+  @Test
+  void shouldFallbackToZoneOrderedRoundRobinWhenClusterIsMixed() {
+    // given - the cluster is in the middle of a staged migration: one zone has zoned members,
+    // the other still has bare members.
+    final var specs = List.of(new ZoneSpec("zone-a", 2, 1000), new ZoneSpec("zone-b", 2, 500));
+    final var mixedMembers =
+        Set.of(
+            MemberId.from(0),
+            MemberId.from(2),
+            MemberId.from("zone-b", 0),
+            MemberId.from("zone-b", 1));
+    final var distributor = new ZoneAwarePartitionDistributor(specs);
+
+    // when
+    final var result = distributor.distributePartitions(mixedMembers, partitions(4), 4);
+
+    // then - mixed topologies should preserve the slot layout via the zone-ordered round-robin
+    // fallback, regardless of the configured zone priorities.
+    final var expected =
+        new RoundRobinPartitionDistributor(specs.stream().map(ZoneSpec::name).toList())
+            .distributePartitions(mixedMembers, partitions(4), 4);
+    assertThat(result).isEqualTo(expected);
+  }
+
+  @Test
+  void shouldSteerRoundRobinByZoneOrderWhenPrioritiesAreIdentical() {
+    // given - two equal-priority zones whose names sort against the desired slot order:
+    // "zzz-region" must own the low slots but sorts after "aaa-region" alphabetically.
+    final var specs =
+        List.of(new ZoneSpec("zzz-region", 1, 100), new ZoneSpec("aaa-region", 1, 100));
+    final var members = union(membersOf("zzz-region", 3), membersOf("aaa-region", 3));
+    final var distributor = new ZoneAwarePartitionDistributor(specs);
+
+    // when
+    final var result = distributor.distributePartitions(members, partitions(6), 2);
+
+    // then - the equal-priority delegation must steer round-robin by the spec order, not by zone
+    // name, so it is identical to a round-robin explicitly steered by that same order.
+    final var steered =
+        new RoundRobinPartitionDistributor(specs.stream().map(ZoneSpec::name).toList())
+            .distributePartitions(members, partitions(6), 2);
+    assertThat(result).isEqualTo(steered);
+
+    // and - it differs from the name-ordered (default) round-robin, proving the steering matters.
+    final var nameOrdered =
+        new RoundRobinPartitionDistributor().distributePartitions(members, partitions(6), 2);
+    assertThat(result).isNotEqualTo(nameOrdered);
   }
 
   // -------------------------------------------------------------------------

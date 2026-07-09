@@ -10,11 +10,15 @@ package io.camunda.zeebe.dynamic.config.util;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -128,6 +132,86 @@ final class RoundRobinPartitionDistributorTest {
                         .isPositive();
                   });
         });
+  }
+
+  @Test
+  void shouldPreserveRoundRobinSlotsForMixedBareAndZonedMembersWhenZoneOrderIsConfigured() {
+    // given
+    final var originalMembers =
+        Set.of(MemberId.from(0), MemberId.from(1), MemberId.from(2), MemberId.from(3));
+    final var mixedMembers =
+        Set.of(
+            MemberId.from(0),
+            MemberId.from(2),
+            MemberId.from("zone-b", 0),
+            MemberId.from("zone-b", 1));
+    final var expectedMapping =
+        Map.of(
+            MemberId.from(0), MemberId.from(0),
+            MemberId.from(1), MemberId.from("zone-b", 0),
+            MemberId.from(2), MemberId.from(2),
+            MemberId.from(3), MemberId.from("zone-b", 1));
+
+    // when
+    final var originalDistribution =
+        new RoundRobinPartitionDistributor()
+            .distributePartitions(originalMembers, getSortedPartitionIds(4), 4);
+    final var mixedDistribution =
+        new RoundRobinPartitionDistributor(List.of("zone-a", "zone-b"))
+            .distributePartitions(mixedMembers, getSortedPartitionIds(4), 4);
+
+    // then
+    assertThat(partitionMembers(mixedDistribution))
+        .isEqualTo(remapMembers(originalDistribution, expectedMapping));
+  }
+
+  @Test
+  void shouldPreserveRoundRobinSlotsForFullyZonedMembersWhenZoneOrderIsConfigured() {
+    // given
+    final var originalMembers =
+        Set.of(MemberId.from(0), MemberId.from(1), MemberId.from(2), MemberId.from(3));
+    final var zonedMembers =
+        Set.of(
+            MemberId.from("zone-a", 0),
+            MemberId.from("zone-b", 0),
+            MemberId.from("zone-a", 1),
+            MemberId.from("zone-b", 1));
+    final var expectedMapping =
+        Map.of(
+            MemberId.from(0), MemberId.from("zone-a", 0),
+            MemberId.from(1), MemberId.from("zone-b", 0),
+            MemberId.from(2), MemberId.from("zone-a", 1),
+            MemberId.from(3), MemberId.from("zone-b", 1));
+
+    // when
+    final var originalDistribution =
+        new RoundRobinPartitionDistributor()
+            .distributePartitions(originalMembers, getSortedPartitionIds(4), 4);
+    final var zonedDistribution =
+        new RoundRobinPartitionDistributor(List.of("zone-a", "zone-b"))
+            .distributePartitions(zonedMembers, getSortedPartitionIds(4), 4);
+
+    // then
+    assertThat(partitionMembers(zonedDistribution))
+        .isEqualTo(remapMembers(originalDistribution, expectedMapping));
+  }
+
+  private Map<Integer, Set<MemberId>> partitionMembers(final Set<PartitionMetadata> distribution) {
+    return distribution.stream()
+        .collect(
+            Collectors.toMap(
+                metadata -> metadata.id().number(), metadata -> Set.copyOf(metadata.members())));
+  }
+
+  private Map<Integer, Set<MemberId>> remapMembers(
+      final Set<PartitionMetadata> distribution, final Map<MemberId, MemberId> mapping) {
+    final var remapped = new HashMap<Integer, Set<MemberId>>();
+    distribution.forEach(
+        metadata ->
+            remapped.put(
+                metadata.id().number(),
+                metadata.members().stream().map(mapping::get).collect(Collectors.toSet())));
+    return remapped;
   }
 
   private Set<MemberId> getMembers(final int nodeCount) {

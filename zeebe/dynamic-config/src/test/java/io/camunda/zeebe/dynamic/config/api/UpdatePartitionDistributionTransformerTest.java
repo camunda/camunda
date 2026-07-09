@@ -93,8 +93,8 @@ class UpdatePartitionDistributionTransformerTest {
   @Test
   void shouldPrependConfigOpAndEmitLeaveOpsWhenRfDecreases() {
     // given: initial RF=2, new RF=1 (remove zone-b, keep only zone-a)
-    // The single-zone distributor reassigns zone-a replicas, causing some zone-a brokers to
-    // move partitions (P2: zone-a_1→leaves, P3: zone-a_1 joins, zone-a_0 and zone-b_0 leave).
+    // The single-zone distributor recomputes the placement after the config change. In the current
+    // layout P2 stays on zone-a_1 and only the zone-b replica leaves.
     final var currentTopology = buildTopology(INITIAL_CONFIG, MEMBERS);
     final var newConfig = new ZoneAwareConfig(List.of(new ZoneSpec("zone-a", 1, 1000)));
 
@@ -142,7 +142,7 @@ class UpdatePartitionDistributionTransformerTest {
   }
 
   @Test
-  void shouldRejectNonZoneAwareCluster() {
+  void shouldPersistConfigWithoutRedistributionOnBareCluster() {
     // given: a plain round-robin cluster with plain-integer member IDs (no zone)
     final var plainMembers = Set.of(MemberId.from("0"), MemberId.from("1"), MemberId.from("2"));
     final var distribution =
@@ -151,11 +151,36 @@ class UpdatePartitionDistributionTransformerTest {
         ConfigurationUtil.getClusterConfigFrom(distribution, PARTITION_CONFIG, "c");
     final var newConfig =
         new ZoneAwareConfig(
-            List.of(new ZoneSpec("zone-a", 2, 1000), new ZoneSpec("zone-b", 1, 500)));
+            List.of(new ZoneSpec("zone-a", 1, 1000), new ZoneSpec("zone-b", 1, 500)));
     final var transformer = new UpdatePartitionDistributionTransformer(newConfig);
 
     // when
     final var result = transformer.operations(roundRobinTopology);
+
+    // then
+    EitherAssert.assertThat(result).isRight();
+    assertThat(result.get())
+        .containsExactly(
+            new UpdatePartitionDistributorConfigOperation(MemberId.from("0"), newConfig));
+  }
+
+  @Test
+  void shouldRejectPartiallyZoneAwareCluster() {
+    // given
+    final var mixedMembers = Set.of(MemberId.from(0), MemberId.from(2), MemberId.from("zone-b", 0));
+    final var mixedDistribution =
+        new RoundRobinPartitionDistributor(List.of("zone-a", "zone-b"))
+            .distributePartitions(mixedMembers, PARTITION_IDS, 2);
+    final var mixedTopology =
+        ConfigurationUtil.getClusterConfigFrom(mixedDistribution, PARTITION_CONFIG, "c")
+            .setPartitionDistributorConfig(INITIAL_CONFIG);
+    final var newConfig =
+        new ZoneAwareConfig(
+            List.of(new ZoneSpec("zone-a", 1, 500), new ZoneSpec("zone-b", 1, 1000)));
+
+    // when
+    final var result =
+        new UpdatePartitionDistributionTransformer(newConfig).operations(mixedTopology);
 
     // then
     EitherAssert.assertThat(result)

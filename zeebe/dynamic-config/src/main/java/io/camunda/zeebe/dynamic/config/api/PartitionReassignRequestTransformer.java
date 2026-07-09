@@ -128,11 +128,9 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
     final var allPartitions =
         Stream.of(oldPartitions, newPartitions).flatMap(List::stream).toList();
 
+    final var distributor = currentConfiguration.partitionDistributor();
     final var newDistribution =
-        currentConfiguration
-            .partitionDistributor()
-            .distributePartitions(brokers, allPartitions, replicationFactor)
-            .stream()
+        distributor.distributePartitions(brokers, allPartitions, replicationFactor).stream()
             .collect(Collectors.toMap(PartitionMetadata::id, p -> p));
 
     for (final PartitionId partition : oldPartitions) {

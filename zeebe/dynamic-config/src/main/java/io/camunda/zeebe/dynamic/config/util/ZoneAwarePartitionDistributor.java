@@ -34,7 +34,14 @@ import org.slf4j.LoggerFactory;
  *
  * <p>The broker list for each zone is derived at distribution time from the {@code clusterMembers}
  * set by filtering members whose {@link MemberId#zone()} matches the zone name and sorting them by
- * {@link MemberId#nodeIdx()} ascending. All members in {@code clusterMembers} must have a zone set.
+ * {@link MemberId#nodeIdx()} ascending.
+ *
+ * <p>Whenever any bare (not-yet-migrated) member is present — a fully bare cluster whose zone-aware
+ * config has been persisted but whose migration has not started, or a cluster mid-migration with a
+ * mix of bare and zoned members — the distributor falls back to a zone-order-steered {@link
+ * RoundRobinPartitionDistributor} so the original slot layout is preserved until the migration is
+ * complete. On a fully bare cluster this reproduces plain round-robin, so recomputing the
+ * distribution before migration is a no-op.
  *
  * <p>Raft election priorities are assigned sequentially from {@code replicationFactor} down to
  * {@code 1}, iterating zones from highest to lowest priority and brokers within each zone in
@@ -47,8 +54,10 @@ import org.slf4j.LoggerFactory;
  *       naturally falls over to the next zone without any additional code.
  * </ul>
  *
- * <p>Zones with equal priority values are allowed; the ordering between them falls back to {@link
- * RoundRobinPartitionDistributor}, with brokers ordered by (nodeId, zone).
+ * <p>Zones with equal priority values are allowed; the distribution then also falls back to {@link
+ * RoundRobinPartitionDistributor}, with brokers ordered by the configured zone order rather than by
+ * zone name, so an equal-priority zone-aware config reproduces the exact placement a
+ * zone-order-steered migration materialised.
  *
  * <p>Example distribution with 3 zones (us-east1 prio=1000 × 2 replicas/2 brokers, us-west1
  * prio=500 × 2 replicas/2 brokers, euro-east1 prio=10 × 1 replica/1 broker), 5 partitions, RF=5:
@@ -72,8 +81,11 @@ public final class ZoneAwarePartitionDistributor implements PartitionDistributor
 
   private static final Logger LOG = LoggerFactory.getLogger(ZoneAwarePartitionDistributor.class);
 
-  /** Regions sorted by {@link ZoneSpec#priority()} descending (highest priority first). */
+  /** Zone specs in the configured request order, used for slot-preserving round-robin fallback. */
   private final List<ZoneSpec> zoneSpecs;
+
+  /** Regions sorted by {@link ZoneSpec#priority()} descending (highest priority first). */
+  private final List<ZoneSpec> zoneSpecsByPriority;
 
   /**
    * @param zoneSpecs the zone specifications. May be in any order; the constructor sorts them by
@@ -81,7 +93,8 @@ public final class ZoneAwarePartitionDistributor implements PartitionDistributor
    *     receive the highest Raft priorities.
    */
   public ZoneAwarePartitionDistributor(final List<ZoneSpec> zoneSpecs) {
-    this.zoneSpecs =
+    this.zoneSpecs = List.copyOf(zoneSpecs);
+    this.zoneSpecsByPriority =
         zoneSpecs.stream().sorted(Comparator.comparingInt(ZoneSpec::priority).reversed()).toList();
     if (this.zoneSpecs.size() == 1) {
       LOG.warn(
@@ -100,14 +113,24 @@ public final class ZoneAwarePartitionDistributor implements PartitionDistributor
       final List<PartitionId> sortedPartitionIds,
       final int replicationFactor) {
 
-    validateMemberZones(clusterMembers);
     validateReplicaSum(replicationFactor);
+
+    // As long as any bare (not-yet-migrated) member is present the cluster is either fully bare
+    // (config persisted but migration not started) or mid-migration. In both cases the zone-aware
+    // placement cannot be materialised yet, so fall back to a zone-order-steered round-robin that
+    // preserves the original slot layout. On a fully bare cluster this is identical to plain
+    // round-robin, so recomputing the distribution before migration is a no-op.
+    if (hasBareMembers(clusterMembers)) {
+      validateKnownZonedMembers(clusterMembers);
+      return new RoundRobinPartitionDistributor(zoneSpecs.stream().map(ZoneSpec::name).toList())
+          .distributePartitions(clusterMembers, sortedPartitionIds, replicationFactor);
+    }
+
     validateZoneHasSufficientBrokers(clusterMembers);
 
     // all zones have the same priority
-    if (zoneSpecs.stream().map(ZoneSpec::priority).distinct().count() == 1) {
-      // use RoundRobinDistributor instead
-      return new RoundRobinPartitionDistributor()
+    if (zoneSpecsByPriority.stream().map(ZoneSpec::priority).distinct().count() == 1) {
+      return new RoundRobinPartitionDistributor(zoneSpecs.stream().map(ZoneSpec::name).toList())
           .distributePartitions(clusterMembers, sortedPartitionIds, replicationFactor);
     }
 
@@ -123,7 +146,7 @@ public final class ZoneAwarePartitionDistributor implements PartitionDistributor
       final List<MemberId> orderedMembers = new ArrayList<>(replicationFactor);
       final Map<MemberId, Integer> priorityMap = new HashMap<>(replicationFactor);
 
-      for (final var spec : zoneSpecs) {
+      for (final var spec : zoneSpecsByPriority) {
         final var zoneBrokers =
             clusterMembers.stream()
                 .filter(m -> m.isInZone(spec.name()))
@@ -155,15 +178,20 @@ public final class ZoneAwarePartitionDistributor implements PartitionDistributor
   }
 
   public List<ZoneSpec> zoneSpecs() {
-    return zoneSpecs;
+    return zoneSpecsByPriority;
   }
 
-  private void validateMemberZones(final Set<MemberId> clusterMembers) {
+  private boolean hasBareMembers(final Set<MemberId> clusterMembers) {
+    return clusterMembers.stream().anyMatch(member -> member.zone() == null);
+  }
+
+  private void validateKnownZonedMembers(final Set<MemberId> clusterMembers) {
+    final var zoneNames = zoneSpecs.stream().map(ZoneSpec::name).collect(Collectors.toSet());
     for (final var member : clusterMembers) {
-      if (member.zone() == null) {
+      if (member.zone() != null && !zoneNames.contains(member.zone())) {
         throw new IllegalStateException(
-            "ZoneAwarePartitionDistributor: member '%s' has no zone configured; all cluster members must have a zone"
-                .formatted(member));
+            "ZoneAwarePartitionDistributor: member '%s' has zone '%s' which is not part of the configured zones"
+                .formatted(member, member.zone()));
       }
     }
   }
