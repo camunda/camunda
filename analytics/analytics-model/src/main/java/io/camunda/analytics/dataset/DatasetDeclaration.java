@@ -55,6 +55,9 @@ public record DatasetDeclaration(
   /** Postgres caps identifiers at 63 bytes; mirror the serving-side 60-char cap. */
   private static final int MAX_IDENTIFIER_LENGTH = 60;
 
+  /** The default allowed lateness (grace) for windowed cubes when a declaration omits it. */
+  public static final long DEFAULT_LATENESS_MS = 5 * 60 * 1000L;
+
   public DatasetDeclaration {
     Objects.requireNonNull(name, "name");
     Objects.requireNonNull(sourceFact, "sourceFact");
@@ -108,6 +111,18 @@ public record DatasetDeclaration(
     }
     if (latenessMs < 0) {
       throw new IllegalArgumentException("lateness must be non-negative, was " + latenessMs);
+    }
+    if (kind != DatasetKind.TABLE && latenessMs == 0) {
+      // Zero grace breaks the reduce side structurally, not just for late data: a cell's window
+      // counts as closed the moment stream time reaches its end, and a window's deltas arrive in
+      // MANY batches (one per sealed segment per source partition) — every batch after the first
+      // would be dropped as late, silently undercounting to roughly one delta per cell. Grace must
+      // at least cover the segment-seal cadence; reject the degenerate declaration outright.
+      throw new IllegalArgumentException(
+          "dataset '"
+              + name
+              + "' declares zero lateness; a windowed cube needs a positive grace (deltas for a"
+              + " window arrive across many segment seals)");
     }
   }
 
@@ -220,7 +235,10 @@ public record DatasetDeclaration(
     private final List<Long> windowSizesMs = new ArrayList<>();
     private DatasetKind kind = DatasetKind.AGGREGATED;
     private String keyField;
-    private long latenessMs;
+    // A windowed cube's deltas arrive across many segment seals, so zero grace structurally drops
+    // all but a window's first delta (the declaration rejects 0). Default to a safe grace; an
+    // explicit lateness overrides it.
+    private long latenessMs = DEFAULT_LATENESS_MS;
 
     private Builder(final String name, final FactType sourceFact) {
       this.name = name;
