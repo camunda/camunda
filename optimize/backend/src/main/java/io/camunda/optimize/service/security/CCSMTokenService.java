@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -163,6 +164,7 @@ public class CCSMTokenService {
     if (!userHasOptimizeAuthorization(verifiedToken)) {
       throw new NotAuthorizedException("User is not authorized to access Optimize");
     }
+    validateEntraTokenVersion(accessToken);
   }
 
   public AccessToken verifyToken(final String accessToken) {
@@ -172,10 +174,61 @@ public class CCSMTokenService {
       if (!userHasOptimizeAuthorization(verifiedToken)) {
         throw new NotAuthorizedException("User is not authorized to access Optimize");
       }
+      validateEntraTokenVersion(accessToken);
       return verifiedToken;
     } catch (final TokenVerificationException ex) {
       throw new NotAuthorizedException("Token could not be verified", ex);
     }
+  }
+
+  /**
+   * Rejects Microsoft Entra (Azure AD) access tokens that were issued in v1.0 format ({@code ver !=
+   * "2.0"}). Entra issues v1.0 tokens by default when {@code api.requestedAccessTokenVersion} is
+   * not set on the app registration. Camunda requires v2.0 because v1.0 tokens use a different
+   * audience format that causes silent redirect loops instead of clear auth errors.
+   *
+   * <p>When a v1.0 token is detected, this method logs an actionable ERROR message and throws
+   * {@link NotAuthorizedException} so the failure surfaces immediately.
+   */
+  private void validateEntraTokenVersion(final String rawToken) {
+    final DecodedJWT decoded;
+    try {
+      decoded = authentication().decodeJWT(extractTokenFromAuthorizationValue(rawToken));
+    } catch (final TokenDecodeException e) {
+      return;
+    }
+    final String issuer = decoded.getIssuer();
+    if (issuer == null || !isMicrosoftEntraIssuer(issuer)) {
+      return;
+    }
+    final String ver = decoded.getClaim("ver").asString();
+    if (!"2.0".equals(ver)) {
+      final String msg =
+          "Microsoft Entra token rejected: 'ver' claim is '"
+              + ver
+              + "' but '2.0' is required. "
+              + "Set 'api.requestedAccessTokenVersion = 2' on the Camunda app registration "
+              + "in the Azure portal to enable v2.0 access tokens.";
+      LOG.error(msg);
+      throw new NotAuthorizedException(msg);
+    }
+  }
+
+  static boolean isMicrosoftEntraIssuer(final String issuer) {
+    final String host;
+    try {
+      host = URI.create(issuer).getHost();
+    } catch (final IllegalArgumentException e) {
+      return false;
+    }
+    if (host == null) {
+      return false;
+    }
+    final String lower = host.toLowerCase(Locale.ROOT);
+    return lower.equals("login.microsoftonline.com")
+        || lower.endsWith(".login.microsoftonline.com")
+        || lower.equals("sts.windows.net")
+        || lower.endsWith(".sts.windows.net");
   }
 
   public Tokens renewToken(final String refreshToken) {
