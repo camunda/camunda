@@ -228,7 +228,7 @@ class PartitionManagerStepTest {
 
       final var secCfg = EngineSecurityConfigurations.unauthenticatedAndUnauthorized();
       final var conv = new BrokerRequestAuthorizationConverter(secCfg);
-      testBrokerStartupContext.setPhysicalTenantEngineContext(
+      testBrokerStartupContext.setPhysicalTenantContext(
           PHYSICAL_TENANT_ID,
           new PhysicalTenantContext(
               secCfg,
@@ -236,7 +236,7 @@ class PartitionManagerStepTest {
               flagsA,
               testBrokerStartupContext.getBrokerConfiguration(),
               new ExporterRepository()));
-      testBrokerStartupContext.setPhysicalTenantEngineContext(
+      testBrokerStartupContext.setPhysicalTenantContext(
           secondTenantId,
           new PhysicalTenantContext(
               secCfg,
@@ -247,6 +247,8 @@ class PartitionManagerStepTest {
 
       final var secondFuture = CONCURRENCY_CONTROL.<BrokerStartupContext>createFuture();
       final var secondStep = new PartitionManagerStep(secondTenantId);
+
+      testBrokerStartupContext.addJobStreamService(secondTenantId, mock(JobStreamService.class));
 
       // when — start the steps one after the other. They are started sequentially on purpose:
       // both steps build their PartitionManagerImpl on actor threads, and that construction reads
@@ -297,7 +299,7 @@ class PartitionManagerStepTest {
 
       final var secCfg = EngineSecurityConfigurations.unauthenticatedAndUnauthorized();
       final var conv = new BrokerRequestAuthorizationConverter(secCfg);
-      testBrokerStartupContext.setPhysicalTenantEngineContext(
+      testBrokerStartupContext.setPhysicalTenantContext(
           PHYSICAL_TENANT_ID,
           new PhysicalTenantContext(
               secCfg,

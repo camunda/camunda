@@ -65,7 +65,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final List<PartitionRaftListener> partitionRaftListeners = new ArrayList<>();
   private final Duration shutdownTimeout;
   private final MeterRegistry meterRegistry;
-  private final Map<String, PhysicalTenantContext> physicalTenantEngineContexts;
+  private final Map<String, PhysicalTenantContext> physicalTenantContexts;
   private final Function<String, UserServices> userServicesForTenant;
   private final PasswordEncoder passwordEncoder;
   private final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory;
@@ -100,7 +100,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final List<PartitionListener> additionalPartitionListeners,
       final Duration shutdownTimeout,
       final MeterRegistry meterRegistry,
-      final Map<String, PhysicalTenantContext> physicalTenantEngineContexts,
+      final Map<String, PhysicalTenantContext> physicalTenantContexts,
       final Function<String, UserServices> userServicesForTenant,
       final PasswordEncoder passwordEncoder,
       final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory,
@@ -118,7 +118,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.brokerClient = brokerClient;
     this.shutdownTimeout = shutdownTimeout;
     this.meterRegistry = requireNonNull(meterRegistry);
-    this.physicalTenantEngineContexts = Map.copyOf(physicalTenantEngineContexts);
+    this.physicalTenantContexts = Map.copyOf(physicalTenantContexts);
     this.userServicesForTenant = userServicesForTenant;
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoderFactory = jwtDecoderFactory;
@@ -346,11 +346,11 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   }
 
   @Override
-  public PhysicalTenantContext getPhysicalTenantEngineContext(final String physicalTenantId) {
-    if (!physicalTenantEngineContexts.containsKey(physicalTenantId)) {
+  public PhysicalTenantContext getPhysicalTenantContext(final String physicalTenantId) {
+    if (!physicalTenantContexts.containsKey(physicalTenantId)) {
       throw new IllegalArgumentException("Unknown physical tenant id '" + physicalTenantId + "'");
     }
-    return physicalTenantEngineContexts.get(physicalTenantId);
+    return physicalTenantContexts.get(physicalTenantId);
   }
 
   @Override

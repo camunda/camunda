@@ -57,7 +57,7 @@ public interface BrokerStartupContext {
   /**
    * Return the broker configuration shared across all physical tenants. This should be used only
    * for broker-wide configuration. The components that run per physical tenant must use the
-   * configuration from #getPhysicalTenantEngineContext(String physicalTenantId) instead.
+   * configuration from #getPhysicalTenantContext(String physicalTenantId) instead.
    *
    * @return the broker-wide configuration shared across all physical tenants
    */
@@ -153,7 +153,7 @@ public interface BrokerStartupContext {
    *
    * @throws IllegalArgumentException if the physical tenant id is unknown
    */
-  PhysicalTenantContext getPhysicalTenantEngineContext(String physicalTenantId);
+  PhysicalTenantContext getPhysicalTenantContext(String physicalTenantId);
 
   Function<String, UserServices> getUserServicesForTenant();
 

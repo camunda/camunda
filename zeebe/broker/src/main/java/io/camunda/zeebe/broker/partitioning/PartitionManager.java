@@ -70,7 +70,7 @@ public interface PartitionManager {
       final String physicalTenantId,
       final TopologyManagerImpl topologyManager) {
     final var physicalTenantContext =
-        brokerStartupContext.getPhysicalTenantEngineContext(physicalTenantId);
+        brokerStartupContext.getPhysicalTenantContext(physicalTenantId);
 
     final var jobStreamService =
         Objects.requireNonNull(
@@ -117,7 +117,7 @@ public interface PartitionManager {
 
     return new RecoveryPartitionManager(
         physicalTenantId,
-        brokerStartupContext.getPhysicalTenantEngineContext(physicalTenantId).config(),
+        brokerStartupContext.getPhysicalTenantContext(physicalTenantId).config(),
         brokerStartupContext.getBrokerInfo(),
         brokerStartupContext.getConcurrencyControl(),
         brokerStartupContext.getClusterConfigurationService(),

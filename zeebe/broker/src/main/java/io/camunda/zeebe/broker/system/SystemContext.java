@@ -129,7 +129,7 @@ public final class SystemContext {
   private final AtomixCluster cluster;
   private final BrokerClient brokerClient;
   private final MeterRegistry meterRegistry;
-  private final Map<String, PhysicalTenantContext> physicalTenantEngineContexts;
+  private final Map<String, PhysicalTenantContext> physicalTenantContexts;
   private final Function<String, UserServices> userServicesForTenant;
   private final PasswordEncoder passwordEncoder;
   private final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory;
@@ -150,7 +150,7 @@ public final class SystemContext {
       final AtomixCluster cluster,
       final BrokerClient brokerClient,
       final MeterRegistry meterRegistry,
-      final Map<String, PhysicalTenantContext> physicalTenantEngineContexts,
+      final Map<String, PhysicalTenantContext> physicalTenantContexts,
       final Function<String, UserServices> userServicesForTenant,
       final PasswordEncoder passwordEncoder,
       final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory,
@@ -164,7 +164,7 @@ public final class SystemContext {
     this.cluster = cluster;
     this.brokerClient = brokerClient;
     this.meterRegistry = meterRegistry;
-    this.physicalTenantEngineContexts = Map.copyOf(physicalTenantEngineContexts);
+    this.physicalTenantContexts = Map.copyOf(physicalTenantContexts);
     this.userServicesForTenant = userServicesForTenant;
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoderFactory = jwtDecoderFactory;
@@ -475,7 +475,7 @@ public final class SystemContext {
   // actually initializing the entities will be done in IdentitySetupInitializer.
   // Validation is done here, only to be able to stop the application on error.
   private void validateInitializationConfig() {
-    physicalTenantEngineContexts.forEach(
+    physicalTenantContexts.forEach(
         (physicalTenantId, ctx) ->
             validateInitializationConfigForTenant(physicalTenantId, ctx.securityConfig()));
   }
@@ -697,8 +697,8 @@ public final class SystemContext {
   }
 
   /** Returns the per-physical-tenant engine context map (unmodifiable). */
-  public Map<String, PhysicalTenantContext> getPhysicalTenantEngineContexts() {
-    return physicalTenantEngineContexts;
+  public Map<String, PhysicalTenantContext> getPhysicalTenantContexts() {
+    return physicalTenantContexts;
   }
 
   /**
@@ -706,11 +706,11 @@ public final class SystemContext {
    *
    * @throws IllegalArgumentException if the physical tenant id is unknown
    */
-  public PhysicalTenantContext getPhysicalTenantEngineContext(final String physicalTenantId) {
-    if (!physicalTenantEngineContexts.containsKey(physicalTenantId)) {
+  public PhysicalTenantContext getPhysicalTenantContext(final String physicalTenantId) {
+    if (!physicalTenantContexts.containsKey(physicalTenantId)) {
       throw new IllegalArgumentException("Unknown physical tenant id '" + physicalTenantId + "'");
     }
-    return physicalTenantEngineContexts.get(physicalTenantId);
+    return physicalTenantContexts.get(physicalTenantId);
   }
 
   /**
@@ -721,7 +721,7 @@ public final class SystemContext {
    *     physical tenant
    */
   public EngineSecurityConfig getSecurityConfiguration() {
-    final var ctx = physicalTenantEngineContexts.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    final var ctx = physicalTenantContexts.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
     if (ctx == null) {
       throw new IllegalStateException(
           "No security configuration registered for the default physical tenant");

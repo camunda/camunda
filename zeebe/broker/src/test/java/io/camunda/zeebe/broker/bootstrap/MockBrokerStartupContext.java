@@ -95,8 +95,7 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   private BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter =
       mock(BrokerRequestAuthorizationConverter.class);
   private FeatureFlags featureFlags = FeatureFlags.createDefaultForTests();
-  private final Map<String, PhysicalTenantContext> physicalTenantEngineContexts =
-      new LinkedHashMap<>();
+  private final Map<String, PhysicalTenantContext> physicalTenantContexts = new LinkedHashMap<>();
   private CheckpointSchedulingService checkpointSchedulingService =
       mock(CheckpointSchedulingService.class);
   private NodeIdProvider nodeIdProvider = mock(NodeIdProvider.class);
@@ -354,8 +353,8 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   }
 
   @Override
-  public PhysicalTenantContext getPhysicalTenantEngineContext(final String physicalTenantId) {
-    return physicalTenantEngineContexts.computeIfAbsent(
+  public PhysicalTenantContext getPhysicalTenantContext(final String physicalTenantId) {
+    return physicalTenantContexts.computeIfAbsent(
         physicalTenantId,
         id ->
             new PhysicalTenantContext(
@@ -430,9 +429,9 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
     this.physicalTenantIds = physicalTenantIds;
   }
 
-  public void setPhysicalTenantEngineContext(
+  public void setPhysicalTenantContext(
       final String physicalTenantId, final PhysicalTenantContext context) {
-    physicalTenantEngineContexts.put(physicalTenantId, context);
+    physicalTenantContexts.put(physicalTenantId, context);
   }
 
   public void setUserServices(final UserServices userServices) {
