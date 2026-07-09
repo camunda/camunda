@@ -7,6 +7,7 @@
  */
 package io.camunda.webapps.backup.repository.elasticsearch;
 
+import static io.camunda.webapps.backup.repository.elasticsearch.ElasticsearchBackupRepository.SNAPSHOT_NAME_ALREADY_IN_USE_EXCEPTION_TYPE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
@@ -21,6 +22,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import co.elastic.clients.elasticsearch._types.ErrorCause;
+import co.elastic.clients.elasticsearch._types.ErrorResponse;
 import co.elastic.clients.elasticsearch.indices.GetIndexRequest;
 import co.elastic.clients.elasticsearch.indices.GetIndexResponse;
 import co.elastic.clients.elasticsearch.snapshot.CreateSnapshotRequest;
@@ -229,6 +233,40 @@ public class ElasticsearchBackupRepositoryTest {
     // 1 element array to bypass closures over final fields
     backupRepository.executeSnapshotting(
         snapshotRequest, () -> {}, () -> fail("Snapshotting failed"));
+  }
+
+  @Test
+  void shouldCallOnFailureWhenSnapshotNameAlreadyInUse() throws IOException {
+    // given
+    final var metadata = new Metadata(1L, "1", 1, 1);
+    final var snapshotRequest =
+        new SnapshotRequest(
+            "repo-name-1",
+            snapshotNameProvider.getSnapshotName(metadata),
+            new SnapshotIndexCollection(List.of("index-1"), List.of()),
+            metadata);
+    final var exception =
+        new ElasticsearchException(
+            "es/snapshot.create",
+            ErrorResponse.of(
+                b ->
+                    b.status(400)
+                        .error(
+                            ErrorCause.of(
+                                e ->
+                                    e.type(SNAPSHOT_NAME_ALREADY_IN_USE_EXCEPTION_TYPE)
+                                        .reason("snapshot with the same name already exists")))));
+    when(esClient.snapshot().create((CreateSnapshotRequest) any())).thenThrow(exception);
+    final boolean[] onFailureCalled = {false};
+
+    // when
+    backupRepository.executeSnapshotting(
+        snapshotRequest,
+        () -> fail("onSuccess should not be called"),
+        () -> onFailureCalled[0] = true);
+
+    // then
+    assertThat(onFailureCalled[0]).isTrue();
   }
 
   @Test

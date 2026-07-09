@@ -9,6 +9,7 @@ package io.camunda.webapps.backup.repository.opensearch;
 
 import static io.camunda.webapps.backup.repository.opensearch.OpensearchBackupRepository.REPOSITORY_MISSING_EXCEPTION_TYPE;
 import static io.camunda.webapps.backup.repository.opensearch.OpensearchBackupRepository.SNAPSHOT_MISSING_EXCEPTION_TYPE;
+import static io.camunda.webapps.backup.repository.opensearch.OpensearchBackupRepository.SNAPSHOT_NAME_ALREADY_IN_USE_EXCEPTION_TYPE;
 import static org.assertj.core.api.Assertions.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.assertj.core.api.AssertionsForClassTypes.fail;
@@ -159,6 +160,39 @@ class OpensearchBackupRepositoryTest {
         .thenReturn(CompletableFuture.failedFuture(new SocketTimeoutException("no internet")));
 
     repository.executeSnapshotting(snapshotRequest, onSuccess, onFailure);
+  }
+
+  @Test
+  void shouldCallOnFailureWhenSnapshotNameAlreadyInUse() throws IOException {
+    // given
+    final var snapshotRequest =
+        new SnapshotRequest(
+            "repo",
+            "camunda_webapps_1_8.7.0_part_1_of_1",
+            new SnapshotIndexCollection(List.of("index-1"), List.of()),
+            new Metadata(1L, "1", 1, 1));
+    final boolean[] onFailureCalled = {false};
+    when(openSearchAsyncClient.snapshot().create((CreateSnapshotRequest) any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new OpenSearchException(
+                    new ErrorResponse.Builder()
+                        .status(400)
+                        .error(
+                            new ErrorCause.Builder()
+                                .type(SNAPSHOT_NAME_ALREADY_IN_USE_EXCEPTION_TYPE)
+                                .reason("snapshot with the same name already exists")
+                                .build())
+                        .build())));
+
+    // when
+    repository.executeSnapshotting(
+        snapshotRequest,
+        () -> fail("onSuccess should not be called"),
+        () -> onFailureCalled[0] = true);
+
+    // then
+    assertThat(onFailureCalled[0]).isTrue();
   }
 
   @Test

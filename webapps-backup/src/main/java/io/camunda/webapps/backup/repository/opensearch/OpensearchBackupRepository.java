@@ -61,6 +61,8 @@ import org.slf4j.LoggerFactory;
 public class OpensearchBackupRepository implements BackupRepository {
   public static final String SNAPSHOT_MISSING_EXCEPTION_TYPE = "snapshot_missing_exception";
   public static final String REPOSITORY_MISSING_EXCEPTION_TYPE = "repository_missing_exception";
+  public static final String SNAPSHOT_NAME_ALREADY_IN_USE_EXCEPTION_TYPE =
+      "snapshot_name_already_in_use_exception";
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchBackupRepository.class);
 
   private final OpenSearchClient openSearchClient;
@@ -334,6 +336,16 @@ public class OpensearchBackupRepository implements BackupRepository {
                     break;
                   }
                 }
+              } else if (isErrorType(e, SNAPSHOT_NAME_ALREADY_IN_USE_EXCEPTION_TYPE)) {
+                LOGGER.warn(
+                    "Snapshot [{}] for backup id [{}] already exists in OpenSearch. "
+                        + "This can happen when retrying a failed backup before deletion of the previous "
+                        + "attempt has fully completed. Use a different backup ID, or wait for the existing "
+                        + "snapshot to be fully deleted before retrying with the same ID. "
+                        + "The underlying race condition is tracked in https://github.com/camunda/camunda/issues/20443.",
+                    snapshotRequest.snapshotName(),
+                    backupId);
+                onFailure.run();
               } else {
                 LOGGER.error(
                     "Exception while creating snapshot [{}] for backup id [{}].",
