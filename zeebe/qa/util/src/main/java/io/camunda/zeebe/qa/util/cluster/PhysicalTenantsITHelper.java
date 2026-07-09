@@ -15,7 +15,6 @@ import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.security.api.model.config.initialization.ConfiguredUser;
-import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -51,9 +50,8 @@ import org.awaitility.Awaitility;
  *   @Test
  *   void shouldIsolate() {
  *     try (final var client = TENANTS.newClientBuilder(broker, "tenanta").build()) {
- *       // gRPC scoped to tenanta
+ *       // both gRPC and REST calls are scoped to tenanta
  *     }
- *     final URI restBase = TENANTS.restBaseFor(broker, "tenanta"); // .../physical-tenants/tenanta/v2
  *   }
  * }
  * }</pre>
@@ -191,17 +189,6 @@ public final class PhysicalTenantsITHelper {
       builder.physicalTenantId(tenantId);
     }
     return builder;
-  }
-
-  public URI restBaseFor(final TestGateway<?> gateway, final String tenantId) {
-    return URI.create(restRootFor(gateway, tenantId) + "/v2");
-  }
-
-  private static URI restRootFor(final TestGateway<?> gateway, final String tenantId) {
-    final String base = gateway.restAddress().toString().replaceAll("/+$", "");
-    final String tenantPrefix =
-        DEFAULT_TENANT_ID.equals(tenantId) ? "" : "/physical-tenants/" + tenantId;
-    return URI.create(base + tenantPrefix);
   }
 
   public Set<String> tenantIds() {
