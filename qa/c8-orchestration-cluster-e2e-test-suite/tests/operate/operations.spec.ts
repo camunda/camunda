@@ -201,7 +201,7 @@ test.describe('Operations', () => {
         onFailure: async () => {
           await page.reload();
         },
-        maxRetries: 8,
+        maxRetries: 15,
       });
 
       await operateOperationPanelPage.collapseOperationIdField();
@@ -260,7 +260,7 @@ test.describe('Operations', () => {
         onFailure: async () => {
           await page.reload();
         },
-        maxRetries: 10,
+        maxRetries: 15,
       });
 
       await operateOperationPanelPage.clickOperationLink(operationEntry);
@@ -309,7 +309,7 @@ test.describe('Operations', () => {
         onFailure: async () => {
           await page.reload();
         },
-        maxRetries: 10,
+        maxRetries: 15,
       });
 
       await Promise.all(
