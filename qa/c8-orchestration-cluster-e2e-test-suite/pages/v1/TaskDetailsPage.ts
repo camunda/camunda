@@ -320,6 +320,31 @@ class TaskDetailsPageV1 {
     );
   }
 
+  async verifyDynamicListValues(
+    fields: Array<{label: string; value: string}>,
+  ): Promise<void> {
+    // form-js re-renders dynamic-list rows asynchronously (e.g. when a newly
+    // added row settles or the invoice total recomputes). A value written into
+    // a row via fillDynamicList() can pass its post-fill assertion but then be
+    // reverted by a delayed re-render before form-js commits it to its data
+    // model, leaving a required field empty on submit (observed: the first
+    // row's "Item Name" reset to empty). Once the form is idle, re-assert every
+    // row and re-fill any field that was reverted so no required field is lost.
+    await expect(async () => {
+      for (const {label, value} of fields) {
+        const elements = await this.page.getByLabel(label).all();
+        for (const [index, element] of elements.entries()) {
+          const expectedValue = `${value}${index + 1}`;
+          if ((await element.inputValue()) !== expectedValue) {
+            await element.fill(expectedValue);
+            await element.blur();
+          }
+          await expect(element).toHaveValue(expectedValue);
+        }
+      }
+    }).toPass({timeout: 30000});
+  }
+
   async getDynamicListValues(label: string): Promise<string[]> {
     const locator = this.page.getByLabel(label);
     const elements = await locator.all();

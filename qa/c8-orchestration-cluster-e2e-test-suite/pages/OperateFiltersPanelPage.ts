@@ -340,7 +340,10 @@ export class OperateFiltersPanelPage {
   }
 
   async clickIncidentsInstancesCheckbox(): Promise<void> {
-    await this.incidentsInstancesCheckbox.click({timeout: 60000});
+    await this.toggleInstanceStateCheckbox(
+      this.incidentsInstancesCheckbox,
+      'Incidents',
+    );
   }
 
   async clickFinishedInstancesCheckbox(): Promise<void> {
@@ -351,6 +354,30 @@ export class OperateFiltersPanelPage {
     await this.completedInstancesCheckbox.click({timeout: 60000});
   }
   async clickCanceledInstancesCheckbox(): Promise<void> {
-    await this.canceledInstancesCheckbox.click({timeout: 60000});
+    await this.toggleInstanceStateCheckbox(
+      this.canceledInstancesCheckbox,
+      'Canceled',
+    );
+  }
+
+  // The filter panel auto-submits with a 100ms throttle and re-renders the
+  // instance-state checkboxes on each change. A label click issued while a
+  // previous toggle is still settling can be swallowed by that re-render,
+  // leaving the checkbox in its old state (e.g. clicking "Canceled" right after
+  // "Incidents" was a no-op, so `canceled=true` never reached the URL). Read the
+  // intended target state once, then retry the click until the underlying
+  // checkbox input actually reflects it.
+  private async toggleInstanceStateCheckbox(
+    label: Locator,
+    name: string,
+  ): Promise<void> {
+    const checkbox = this.page.getByRole('checkbox', {name, exact: true});
+    const target = !(await checkbox.isChecked());
+    await expect(async () => {
+      if ((await checkbox.isChecked()) !== target) {
+        await label.click({timeout: 60000});
+      }
+      await expect(checkbox).toBeChecked({checked: target});
+    }).toPass({timeout: 60000});
   }
 }
