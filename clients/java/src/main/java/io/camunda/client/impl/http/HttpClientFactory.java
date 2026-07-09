@@ -141,7 +141,14 @@ public class HttpClientFactory {
     }
 
     try {
-      final URIBuilder builder = new URIBuilder(basePath).appendPath(REST_API_PATH);
+      final URIBuilder builder = new URIBuilder(basePath);
+      final String physicalTenantId = config.getPhysicalTenantId();
+      if (config.prefixPhysicalTenantPath()
+          && physicalTenantId != null
+          && !physicalTenantId.trim().isEmpty()) {
+        builder.appendPath("/physical-tenants/" + physicalTenantId.trim());
+      }
+      builder.appendPath(REST_API_PATH);
 
       return builder.build();
     } catch (final URISyntaxException e) {

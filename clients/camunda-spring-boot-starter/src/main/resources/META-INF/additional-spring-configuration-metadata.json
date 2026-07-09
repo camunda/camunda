@@ -218,6 +218,10 @@
       "defaultValue": true
     },
     {
+      "name": "camunda.client.prefix-physical-tenant-path",
+      "defaultValue": true
+    },
+    {
       "name": "camunda.client.max-http-connections",
       "defaultValue": 100
     },

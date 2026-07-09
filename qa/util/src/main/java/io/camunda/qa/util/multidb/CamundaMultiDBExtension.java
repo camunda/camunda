@@ -546,6 +546,9 @@ public class CamundaMultiDBExtension
               .newClientBuilder()
               .physicalTenantId(tenantId)
               .preferRestOverGrpc(true)
+              // the REST address already carries the /physical-tenants/<id> prefix, so opt out of
+              // the client's auto-prefixing to avoid a doubled path
+              .prefixPhysicalTenantPath(false)
               .restAddress(restAddress)
               .grpcAddress(applicationUnderTest.application.grpcAddress())
               .credentialsProvider(
@@ -593,7 +596,12 @@ public class CamundaMultiDBExtension
   }
 
   private CamundaClientBuilder applyPhysicalTenant(final CamundaClientBuilder builder) {
-    return physicalTenantId != null ? builder.physicalTenantId(physicalTenantId) : builder;
+    // tenantRestAddress already prefixes the REST address with /physical-tenants/<id>, so opt out
+    // of the client's auto-prefixing to avoid a doubled path; the physical tenant id still drives
+    // the gRPC Camunda-Physical-Tenant header
+    return physicalTenantId != null
+        ? builder.physicalTenantId(physicalTenantId).prefixPhysicalTenantPath(false)
+        : builder;
   }
 
   private URI tenantRestAddress(final URI restAddress) {
