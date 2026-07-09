@@ -44,6 +44,7 @@ import io.camunda.search.schema.IndexMappingProperty;
 import io.camunda.search.schema.MappingSource;
 import io.camunda.search.schema.SchemaResourceSerializer;
 import io.camunda.search.schema.SearchEngineClient;
+import io.camunda.search.schema.SearchEngineHealthCheckPermissionException;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.exceptions.IndexSchemaValidationException;
 import io.camunda.search.schema.exceptions.SearchEngineException;
@@ -340,12 +341,22 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       return !response.timedOut()
           && response.status() != null
           && !response.status().equals(HealthStatus.Red);
-    } catch (final IOException e) {
+    } catch (final ElasticsearchException e) {
+      if (e.status() == 403) {
+        throw new SearchEngineHealthCheckPermissionException(
+            "GET /_cluster/health returned HTTP 403: the Elasticsearch service account lacks the "
+                + "'monitor' cluster privilege required to verify cluster health during startup. "
+                + "The Camunda readiness probe will not pass until this is resolved. "
+                + "To fix: grant the 'monitor' cluster privilege to the service account, "
+                + "or disable the check by setting "
+                + "'camunda.database.schema-manager.health-check-enabled=false'.",
+            e);
+      }
       LOG.warn(
-          String.format(
-              "Couldn't connect to Elasticsearch due to %s. Return unhealthy state. ",
-              e.getMessage()),
-          e);
+          "Elasticsearch cluster health check failed: {}. Returning unhealthy.", e.getMessage(), e);
+      return false;
+    } catch (final IOException e) {
+      LOG.warn("Couldn't connect to Elasticsearch: {}. Returning unhealthy.", e.getMessage(), e);
       return false;
     }
   }

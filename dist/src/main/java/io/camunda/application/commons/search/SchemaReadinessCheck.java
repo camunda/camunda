@@ -14,6 +14,7 @@ import org.springframework.boot.health.contributor.HealthIndicator;
 public class SchemaReadinessCheck implements HealthIndicator {
 
   public static final String SCHEMA_READINESS_CHECK = "schemaReadinessCheck";
+
   private final SchemaManagerContainer schemaManagerContainer;
 
   public SchemaReadinessCheck(final SchemaManagerContainer schemaManagerContainer) {
@@ -22,6 +23,6 @@ public class SchemaReadinessCheck implements HealthIndicator {
 
   @Override
   public Health health() {
-    return (schemaManagerContainer.isInitialized() ? Health.up() : Health.down()).build();
+    return schemaManagerContainer.isInitialized() ? Health.up().build() : Health.down().build();
   }
 }
