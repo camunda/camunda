@@ -73,6 +73,16 @@ public final class DmnScalaDecisionEngine implements DecisionEngine {
     } catch (final Exception e) {
       final var failureMessage = e.getMessage();
       return new ParseFailureMessage(failureMessage);
+    } catch (final StackOverflowError e) {
+      // Deliberate, narrow exception to the "VM errors are unrecoverable"
+      // policy (see VirtualMachineErrorHandler): this specific error is a
+      // deterministic poison-pill on replay, and this catch sits before any
+      // state mutation, so failing the parse gracefully is safer than
+      // looping a crash forever. See the design doc for full rationale.
+      return new ParseFailureMessage(
+          "Failed to parse DMN: the parser failed with a StackOverflowError. This can happen "
+              + "when the decision requirements graph contains a very long chain of dependent "
+              + "decisions or business knowledge models.");
     }
   }
 
@@ -94,9 +104,25 @@ public final class DmnScalaDecisionEngine implements DecisionEngine {
     }
 
     final var parsedDmn = ((ParsedDmnScalaDrg) decisionRequirementsGraph).getParsedDmn();
-    // todo(#8092): pass in context that allows fetching variable by name (lazy)
-    final Either<EvalFailure, EvalResult> result =
-        dmnEngine.eval(parsedDmn, decisionId, evalContext.toMap());
+    final Either<EvalFailure, EvalResult> result;
+    try {
+      // todo(#8092): pass in context that allows fetching variable by name (lazy)
+      result = dmnEngine.eval(parsedDmn, decisionId, evalContext.toMap());
+    } catch (final StackOverflowError e) {
+      // Deliberate, narrow exception to the "VM errors are unrecoverable"
+      // policy (see VirtualMachineErrorHandler): this specific error is a
+      // deterministic poison-pill on replay, and this catch sits before any
+      // state mutation, so failing the evaluation gracefully is safer than
+      // looping a crash forever. See the design doc for full rationale.
+      return new EvaluationFailure(
+          """
+          Expected to evaluate decision '%s', but the evaluation failed with a \
+          StackOverflowError. This can happen when the decision requirements graph contains \
+          a very long chain of dependent decisions.\
+          """
+              .formatted(decisionId),
+          decisionId);
+    }
     final AuditLog auditLog =
         result.map(EvalResult::auditLog).getOrElse(() -> result.left().get().auditLog());
     final var evaluatedDecisions =
