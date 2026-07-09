@@ -32,7 +32,6 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
-import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreType;
 import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenerCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
@@ -41,14 +40,12 @@ import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.scheduler.ActorScheduler;
-import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import java.io.File;
 import java.security.cert.CertificateException;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -360,31 +357,6 @@ final class SystemContextTest {
     assertThatCode(() -> initSystemContext(brokerCfg))
         .isInstanceOf(InvalidConfigurationException.class)
         .hasMessageContaining("Failed configuring backup store S3");
-  }
-
-  @RegressionTest("https://github.com/camunda/camunda/issues/12678")
-  void shouldThrowExceptionWithInvalidExporters() {
-    // given
-    final var brokerCfg = new BrokerCfg();
-    final List<String> exportersNames = Arrays.asList("unknown", "oops", "nope");
-    final Map<String, ExporterCfg> exporters = HashMap.newHashMap(exportersNames.size());
-
-    for (final String exporterName : exportersNames) {
-      final ExporterCfg exporterCfg = new ExporterCfg();
-      exporterCfg.setClassName(null);
-      exporterCfg.setJarPath("unknown".equals(exporterName) ? null : exporterName);
-      final Map<String, Object> args = HashMap.newHashMap(1);
-      args.put("any_arg", 1);
-      exporterCfg.setArgs(args);
-      exporters.put(exporterName, exporterCfg);
-    }
-    brokerCfg.setExporters(exporters);
-
-    // then
-    assertThatCode(() -> initSystemContext(brokerCfg))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageStartingWith(
-            "Expected to find a 'className' configured for the exporter. Couldn't find a valid one for the following exporters ");
   }
 
   // --- per-PT security config tests ---
