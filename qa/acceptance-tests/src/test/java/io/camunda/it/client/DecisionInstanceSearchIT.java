@@ -873,6 +873,57 @@ class DecisionInstanceSearchIT {
             "'%s' is not a valid decision evaluation instance key".formatted(decisionInstanceId));
   }
 
+  @Test
+  void shouldFilterByTenantIdReturnsAllInstances() {
+    // when
+    final var result =
+        camundaClient
+            .newDecisionInstanceSearchRequest()
+            .filter(f -> f.tenantId("<default>"))
+            .page(p -> p.limit(10))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.page().totalItems()).isEqualTo(5);
+    assertThat(result.items()).allMatch(di -> "<default>".equals(di.getTenantId()));
+  }
+
+  @Test
+  void shouldReturnEmptyForNonExistentDecisionDefinitionId() {
+    // when
+    final var result =
+        camundaClient
+            .newDecisionInstanceSearchRequest()
+            .filter(f -> f.decisionDefinitionId("non-existent-definition-id"))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).isEmpty();
+  }
+
+  @Test
+  void shouldSortByEvaluationDateAscProducesChronologicalOrder() {
+    // when
+    final var result =
+        camundaClient
+            .newDecisionInstanceSearchRequest()
+            .sort(s -> s.evaluationDate().asc())
+            .page(p -> p.limit(10))
+            .send()
+            .join();
+
+    // then - each evaluationDate must not be after the next
+    final var dates = result.items().stream().map(DecisionInstance::getEvaluationDate).toList();
+    assertThat(dates).hasSizeGreaterThanOrEqualTo(2);
+    for (int i = 0; i < dates.size() - 1; i++) {
+      assertThat(dates.get(i))
+          .as("evaluationDate at index %d should not be after index %d", i, i + 1)
+          .isBeforeOrEqualTo(dates.get(i + 1));
+    }
+  }
+
   private static EvaluateDecisionResponse evaluateDecision(
       final CamundaClient camundaClient,
       final String decisionDefinitionId,
