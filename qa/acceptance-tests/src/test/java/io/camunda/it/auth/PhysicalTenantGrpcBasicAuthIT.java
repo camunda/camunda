@@ -180,6 +180,9 @@ final class PhysicalTenantGrpcBasicAuthIT {
         .newClientBuilder()
         .physicalTenantId(targetTenantId)
         .preferRestOverGrpc(false)
+        // the REST address already carries the /physical-tenants/<id> prefix, so opt out of the
+        // client's auto-prefixing to avoid a doubled path
+        .prefixPhysicalTenantPath(false)
         .restAddress(restAddress)
         .grpcAddress(BROKER.grpcAddress())
         .credentialsProvider(basicAuth(username, password))
