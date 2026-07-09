@@ -262,6 +262,110 @@ public class JobUpdateTest {
   }
 
   @Test
+  public void shouldUpdateWithTimeoutChangesetOnLeasedJobWithoutLease() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batch =
+        ENGINE.jobs().withType(jobType).withLease().activate();
+    final long jobKey = batch.getValue().getJobKeys().get(0);
+    final String leaseToken = batch.getValue().getJobs().get(0).getLeaseToken();
+    assertThat(leaseToken).describedAs("job was leased").isNotEmpty();
+
+    // when
+    final Record<JobRecordValue> updated =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .withTimeout(Duration.ofMinutes(5).toMillis())
+            .withChangeset(Set.of("timeout"))
+            .update();
+
+    // then
+    assertThat(updated.getIntent())
+        .describedAs("accepted regardless of the existing lease; timeout changeset emits its event")
+        .isEqualTo(JobIntent.TIMEOUT_UPDATED);
+  }
+
+  @Test
+  public void shouldRejectUpdateWithTimeoutChangesetOnLeasedJobWithStaleLease() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batch =
+        ENGINE.jobs().withType(jobType).withLease().activate();
+    final long jobKey = batch.getValue().getJobKeys().get(0);
+    final String leaseToken = batch.getValue().getJobs().get(0).getLeaseToken();
+    assertThat(leaseToken).describedAs("job was leased").isNotEmpty();
+
+    // when
+    final Record<JobRecordValue> rejection =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .withTimeout(Duration.ofMinutes(5).toMillis())
+            .withChangeset(Set.of("timeout"))
+            .withLeaseToken("stale-lease-token")
+            .expectRejection()
+            .update();
+
+    // then
+    Assertions.assertThat(rejection).hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .describedAs("mismatch rejection explains the lease no longer matches")
+        .contains("does not match")
+        .doesNotContain(leaseToken);
+  }
+
+  @Test
+  public void shouldUpdateWithPriorityChangesetOnLeasedJobWithoutLease() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batch =
+        ENGINE.jobs().withType(jobType).withLease().activate();
+    final long jobKey = batch.getValue().getJobKeys().get(0);
+    final String leaseToken = batch.getValue().getJobs().get(0).getLeaseToken();
+    assertThat(leaseToken).describedAs("job was leased").isNotEmpty();
+
+    // when
+    final Record<JobRecordValue> updated =
+        ENGINE.job().withKey(jobKey).withPriority(10).withChangeset(Set.of("priority")).update();
+
+    // then
+    assertThat(updated.getIntent())
+        .describedAs(
+            "accepted regardless of the existing lease; priority changeset emits its event")
+        .isEqualTo(JobIntent.PRIORITY_UPDATED);
+  }
+
+  @Test
+  public void shouldRejectUpdateWithPriorityChangesetOnLeasedJobWithStaleLease() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batch =
+        ENGINE.jobs().withType(jobType).withLease().activate();
+    final long jobKey = batch.getValue().getJobKeys().get(0);
+    final String leaseToken = batch.getValue().getJobs().get(0).getLeaseToken();
+    assertThat(leaseToken).describedAs("job was leased").isNotEmpty();
+
+    // when
+    final Record<JobRecordValue> rejection =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .withPriority(10)
+            .withChangeset(Set.of("priority"))
+            .withLeaseToken("stale-lease-token")
+            .expectRejection()
+            .update();
+
+    // then
+    Assertions.assertThat(rejection).hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .describedAs("mismatch rejection explains the lease no longer matches")
+        .contains("does not match")
+        .doesNotContain(leaseToken);
+  }
+
+  @Test
   public void shouldRejectJobUpdateForBannedProcessInstance() {
     // given
     final Record<JobRecordValue> jobCreated = ENGINE.createJob(jobType, PROCESS_ID);
