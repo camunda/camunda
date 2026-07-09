@@ -45,9 +45,6 @@ public class SecurityPathAdapter implements SecurityPathPort {
           "/health",
           "/startup",
           "/post-logout",
-          "/swagger/**",
-          "/swagger-ui/**",
-          "/v3/api-docs/**",
           "/favicon.ico");
 
   private static final Set<String> WEBAPP_PATHS =
@@ -70,7 +67,10 @@ public class SecurityPathAdapter implements SecurityPathPort {
           "/decisions/*",
           "/instances",
           "/instances/*",
-          "/default-ui.css");
+          "/default-ui.css",
+          "/swagger/**",
+          "/swagger-ui/**",
+          "/v3/api-docs/**");
 
   private static final Set<String> UNAUTHENTICATED_WEBAPP_PATHS =
       Set.of(
@@ -81,7 +81,10 @@ public class SecurityPathAdapter implements SecurityPathPort {
           "/tasklist/favicon.ico",
           "/webapp/assets/**",
           "/webapp/custom.css",
-          "/webapp/favicon.ico");
+          "/webapp/favicon.ico",
+          "/swagger/**",
+          "/swagger-ui/**",
+          "/v3/api-docs/**");
 
   // Single source of truth for the web component names; see WebAppProviderAdapter#WEB_APPS.
   private static final Set<String> WEB_COMPONENT_NAMES = WebAppProviderAdapter.WEB_APPS;
