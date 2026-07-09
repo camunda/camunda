@@ -191,7 +191,7 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
         .toList();
   }
 
-  public ScheduledThreadPoolExecutor createTaskExecutor() {
+  private ScheduledThreadPoolExecutor createTaskExecutor() {
     final var threadFactory =
         Thread.ofPlatform()
             .name("console-license-ping-", 0)

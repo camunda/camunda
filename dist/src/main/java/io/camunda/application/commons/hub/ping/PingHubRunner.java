@@ -177,7 +177,7 @@ public class PingHubRunner implements ApplicationRunner, BrokerTopologyListener 
         .toList();
   }
 
-  public ScheduledThreadPoolExecutor createTaskExecutor() {
+  private ScheduledThreadPoolExecutor createTaskExecutor() {
     final var threadFactory =
         Thread.ofPlatform()
             .name("hub-license-ping-", 0)
