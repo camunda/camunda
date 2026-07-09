@@ -27,3 +27,12 @@ export function authHeaders(token?: string): Record<string, string> {
   if (token) h.Authorization = `Basic ${token}`;
   return h;
 }
+
+export function jsonHeaders(
+  auth: string = credentials.accessToken,
+): Record<string, string> {
+  return {
+    'Content-Type': 'application/json',
+    ...authHeaders(auth),
+  };
+}

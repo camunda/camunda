@@ -8,6 +8,8 @@
 
 import {Camunda8} from '@camunda8/sdk';
 import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types';
+import {readFileSync} from 'fs';
+import {basename} from 'path';
 
 // REST client – uses BASIC auth from env
 const c8Rest = new Camunda8({
@@ -76,6 +78,28 @@ const deploy = async (processFilePaths: string[]) => {
   try {
     const results = await zeebe.deployResourcesFromFiles(processFilePaths);
     return results;
+  } catch (error) {
+    console.error('Deployment failed:', error);
+    throw error;
+  }
+};
+
+const deployWithSubstitutions = async (
+  filePath: string,
+  substitutions: Record<string, string>,
+): Promise<void> => {
+  let content = readFileSync(filePath, 'utf-8');
+  for (const [placeholder, replacement] of Object.entries(substitutions)) {
+    if (!content.includes(placeholder)) {
+      throw new Error(
+        `Placeholder '${placeholder}' not found in BPMN file '${filePath}'`,
+      );
+    }
+    content = content.split(placeholder).join(replacement);
+  }
+  const name = basename(filePath);
+  try {
+    await zeebe.deployResources([{content, name}]);
   } catch (error) {
     console.error('Deployment failed:', error);
     throw error;
@@ -164,6 +188,7 @@ async function checkUpdateOnVersion(
 
 export {
   deploy,
+  deployWithSubstitutions,
   createInstances,
   createSingleInstance,
   createWorker,

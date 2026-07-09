@@ -60,6 +60,15 @@ class OperateProcessesPage {
   readonly resultsCount: Locator;
   readonly scheduledOperationsIcons: Locator;
   readonly processInstanceLinkByKey: (processInstanceKey: string) => Locator;
+  readonly deleteButton: Locator;
+  readonly deleteBatchOperationConfirmButton: Locator;
+  readonly batchOperationStartedMessage: (
+    batchOperationType:
+      | 'Resolve Incident'
+      | 'Retry'
+      | 'Cancel Process Instance'
+      | 'Delete Process Instance',
+  ) => Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -176,6 +185,20 @@ class OperateProcessesPage {
     );
     this.processInstanceLinkByKey = (processInstanceKey: string) =>
       page.getByRole('link', {name: processInstanceKey});
+    this.deleteButton = page.getByTestId('delete-batch-operation');
+    this.deleteBatchOperationConfirmButton = page
+      .getByRole('dialog')
+      .getByRole('button', {name: 'Delete'});
+    this.batchOperationStartedMessage = (
+      batchOperationType:
+        | 'Resolve Incident'
+        | 'Retry'
+        | 'Cancel Process Instance'
+        | 'Delete Process Instance',
+    ) =>
+      page.getByText(
+        `Batch operation "${batchOperationType}" has been started`,
+      );
   }
 
   async filterByProcessName(name: string): Promise<void> {

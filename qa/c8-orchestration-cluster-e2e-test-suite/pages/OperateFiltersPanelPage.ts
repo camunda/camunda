@@ -25,6 +25,7 @@ export class OperateFiltersPanelPage {
   readonly runningInstancesCheckbox: Locator;
   readonly completedCheckbox: Locator;
   readonly canceledCheckbox: Locator;
+  readonly canceledInstancesCheckbox: Locator;
   readonly finishedInstancesCheckbox: Locator;
   readonly processNameFilter: Locator;
   readonly processVersionFilter: Locator;
@@ -68,6 +69,7 @@ export class OperateFiltersPanelPage {
     this.canceledCheckbox = this.page
       .locator('label')
       .filter({hasText: 'Canceled'});
+    this.canceledInstancesCheckbox = this.canceledCheckbox;
     this.finishedInstancesCheckbox = this.page
       .locator('label')
       .filter({hasText: 'Finished'});
