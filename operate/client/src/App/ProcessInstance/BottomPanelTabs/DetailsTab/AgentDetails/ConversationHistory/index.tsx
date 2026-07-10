@@ -6,10 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState} from 'react';
+import {Fragment, useState} from 'react';
 import {SkeletonText} from '@carbon/react';
 import type {
+  AgentInstanceHistoryItem,
   AgentTool,
+  QueryAgentInstanceHistoryResponseBody,
   QuerySortOrder,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {useAgentInstanceHistory} from 'modules/queries/agentInstances/useAgentInstanceHistory';
@@ -20,9 +22,32 @@ import {
   Messages,
   StatusHint,
   ShowMoreButton,
+  LoopIterationMarker,
 } from './styled';
 import {flattenPaginatedPages} from 'modules/queries/flattenPaginatedPages';
 import {ToolResultMessage} from '../ConversationMessage/ToolResultMessage';
+import type {InfiniteData} from '@tanstack/react-query';
+
+function mapIntoLoopIterationChunks(
+  pages: InfiniteData<QueryAgentInstanceHistoryResponseBody>,
+): [number, AgentInstanceHistoryItem[]][] {
+  const history = flattenPaginatedPages(pages).items;
+  const loopIterationMap = new Map<number, AgentInstanceHistoryItem[]>();
+
+  for (const item of history) {
+    const iteration = item.loopIteration;
+    if (iteration === null) {
+      // The connector never set's null and actively guards against it.
+      // Properly grouping those messages is non trivial. To avoid accidental
+      // complexity, this theoretical case is dropped.
+      continue;
+    }
+    const bucket = loopIterationMap.get(iteration) ?? [];
+    bucket.push(item);
+    loopIterationMap.set(iteration, bucket);
+  }
+  return Array.from(loopIterationMap);
+}
 
 type ConversationHistoryProps = {
   agentInstanceKey: string;
@@ -60,7 +85,7 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
     sortOrder,
     elementInstanceKey:
       canBeScoped && isScoped ? selectedElementInstanceKey : null,
-    select: flattenPaginatedPages,
+    select: mapIntoLoopIterationChunks,
   });
 
   if (status === 'pending') {
@@ -87,32 +112,45 @@ const ConversationHistory: React.FC<ConversationHistoryProps> = ({
         onToggleScope={() => setIsScoped((prev) => !prev)}
       />
       <Messages data-dimmed={isPlaceholderData}>
-        {data.items.length === 0 ? (
+        {data.length === 0 ? (
           <StatusHint>
             {canBeScoped && isScoped
               ? 'No scoped conversation with the agent instance found.'
               : 'No conversation with this agent instance found.'}
           </StatusHint>
         ) : (
-          data.items.map((item) =>
-            item.role === 'TOOL_RESULT' ? (
-              <ToolResultMessage
-                key={item.historyItemKey}
-                availableTools={availableTools}
-                toolCalls={item.toolCalls}
-                content={item.content}
-              />
-            ) : (
-              <ConversationMessage
-                key={item.historyItemKey}
-                historyItemKey={item.historyItemKey}
-                actor={item.role}
-                content={item.content}
-                toolCalls={item.toolCalls}
-                metrics={item.metrics}
-              />
-            ),
-          )
+          data.map(([iteration, items]) => {
+            const loopIterationNode = (
+              <LoopIterationMarker>
+                {iteration}.&nbsp;loop&nbsp;iteration
+              </LoopIterationMarker>
+            );
+            return (
+              <Fragment key={iteration}>
+                {sortOrder === 'asc' && loopIterationNode}
+                {items.map((item) =>
+                  item.role === 'TOOL_RESULT' ? (
+                    <ToolResultMessage
+                      key={item.historyItemKey}
+                      availableTools={availableTools}
+                      toolCalls={item.toolCalls}
+                      content={item.content}
+                    />
+                  ) : (
+                    <ConversationMessage
+                      key={item.historyItemKey}
+                      historyItemKey={item.historyItemKey}
+                      actor={item.role}
+                      content={item.content}
+                      toolCalls={item.toolCalls}
+                      metrics={item.metrics}
+                    />
+                  ),
+                )}
+                {sortOrder === 'desc' && loopIterationNode}
+              </Fragment>
+            );
+          })
         )}
       </Messages>
       {isFetchingNextPage && <SkeletonText paragraph lineCount={2} />}
