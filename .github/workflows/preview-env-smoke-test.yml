@@ -42,6 +42,24 @@ on:
         required: false
         type: boolean
         default: false
+      ref-8-8:
+        description: |
+          Git ref to build and deploy the 8.8 preview from (default:
+          stable/8.8). Lets stable-branch chart changes be smoke-tested
+          pre-merge from their PR branch. The reusable deploy workflow itself
+          still runs from stable/8.8 (static `uses:` ref).
+        required: false
+        type: string
+        default: ''
+      ref-8-9:
+        description: |
+          Git ref to build and deploy the 8.9 preview from (default:
+          stable/8.9). Lets stable-branch chart changes be smoke-tested
+          pre-merge from their PR branch. The reusable deploy workflow itself
+          still runs from stable/8.9 (static `uses:` ref).
+        required: false
+        type: string
+        default: ''
 
 env:
   TEST_OWNER: '@camunda/monorepo-devops-team'
@@ -55,7 +73,7 @@ jobs:
     secrets: inherit
     with:
       app-name: smoke88-${{ github.run_number }}
-      ref: stable/8.8
+      ref: ${{ inputs.ref-8-8 || 'stable/8.8' }}
       labels: |
         preview=smoke-test
         repo=camunda_camunda
@@ -70,7 +88,7 @@ jobs:
     secrets: inherit
     with:
       app-name: smoke89-${{ github.run_number }}
-      ref: stable/8.9
+      ref: ${{ inputs.ref-8-9 || 'stable/8.9' }}
       labels: |
         preview=smoke-test
         repo=camunda_camunda
@@ -293,7 +311,7 @@ jobs:
     secrets: inherit
     with:
       app-name: smoke88-${{ github.run_number }}
-      ref: stable/8.8
+      ref: ${{ inputs.ref-8-8 || 'stable/8.8' }}
 
   teardown-8-9:
     name: Teardown 8.9 Preview Environment
@@ -309,7 +327,7 @@ jobs:
     secrets: inherit
     with:
       app-name: smoke89-${{ github.run_number }}
-      ref: stable/8.9
+      ref: ${{ inputs.ref-8-9 || 'stable/8.9' }}
 
   teardown-8-10:
     name: Teardown 8.10 Preview Environment
