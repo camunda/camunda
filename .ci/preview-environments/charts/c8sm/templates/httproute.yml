@@ -13,11 +13,12 @@
 # because the backend service names, ports and context paths are derived from
 # the camunda-platform subchart templates.
 #
-# Known gap: the `global.preview.ingress.internalAuthBypass.enabled` source-IP
-# Vouch bypass (non-default) has no faithful Traefik Gateway API equivalent —
-# Traefik's ipAllowList rejects non-listed IPs rather than letting them skip
-# auth — and is therefore intentionally not translated here; revisit if a
-# consumer enables it.
+# Internal auth bypass: when `global.preview.ingress.internalAuthBypass.enabled`
+# is true (non-default; CI/testing only), a Traefik IngressRoute
+# (templates/internal-bypass-ingressroute.yml) lets requests from the internal
+# source ranges skip Vouch entirely — the nginx-era `satisfy: any` +
+# `whitelist-source-range` semantics, which Gateway API cannot express (no
+# source-IP match; Traefik's ipAllowList rejects instead of falling through).
 ---
 {{- $camundaPlatform := deepCopy (index .Subcharts "camunda-platform") -}}
 {{- $_ := set .Values "camundaPlatform" (deepCopy (index .Values "camunda-platform")) -}}
