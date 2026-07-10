@@ -106,6 +106,16 @@ public final class LogStreamImpl implements LogStream, CommitListener {
   }
 
   @Override
+  public void pauseWrites() {
+    sequencer.pauseWrites();
+  }
+
+  @Override
+  public void resumeWrites() {
+    sequencer.resumeWrites();
+  }
+
+  @Override
   public void registerRecordAvailableListener(final LogRecordAwaiter recordAwaiter) {
     ensureOpen();
     recordAwaiters.add(recordAwaiter);

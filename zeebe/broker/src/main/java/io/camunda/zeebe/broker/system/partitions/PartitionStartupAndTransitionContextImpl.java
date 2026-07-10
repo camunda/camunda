@@ -444,6 +444,11 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
+  public void setPausedForTransfer(final boolean pausedForTransfer) {
+    partitionProcessingState.setPausedForTransfer(pausedForTransfer);
+  }
+
+  @Override
   public TopologyManager getTopologyManager() {
     return topologyManager;
   }

@@ -98,6 +98,7 @@ final class Sequencer implements LogStreamWriter, Closeable {
         return switch (rejected) {
           case RequestLimitExhausted -> Either.left(WriteFailure.REQUEST_LIMIT_EXHAUSTED);
           case WriteRateLimitExhausted -> Either.left(WriteFailure.WRITE_LIMIT_EXHAUSTED);
+          case PartitionPaused -> Either.left(WriteFailure.PARTITION_PAUSED);
         };
       }
       case Either.Right<Rejection, InFlightEntry>(final var accepted) -> inFlightEntry = accepted;
@@ -116,6 +117,14 @@ final class Sequencer implements LogStreamWriter, Closeable {
     final long acquireTime;
     final long highestPosition;
     try {
+      if (flowControl.isPaused()) {
+        // The partition was frozen for a leadership transfer after this writer passed tryAcquire
+        // but before it acquired the lock. Reject under the lock so no entry can cross the freeze,
+        // releasing the flow-control reservation taken by tryAcquire. Together with pauseWrites()
+        // draining the lock, this makes the frozen log head linearizable.
+        inFlightEntry.cleanup();
+        return Either.left(WriteFailure.PARTITION_PAUSED);
+      }
       acquireTime = System.nanoTime();
       final var currentPosition = position;
       highestPosition = currentPosition + batchSize - 1;
@@ -156,6 +165,28 @@ final class Sequencer implements LogStreamWriter, Closeable {
     sequencerMetrics.observeLockHoldTime(context, holdNanos);
     sequencerMetrics.observeBatchLengthBytes(batchLength);
     sequencerMetrics.observeBatchSize(batchSize);
+  }
+
+  /**
+   * Freezes write admission and drains in-flight writers for a coordinated leadership transfer.
+   * Acquiring the lock guarantees that any writer currently inside the critical section has
+   * finished (its append is submitted) before the pause takes effect, and that every writer which
+   * already passed {@link FlowControl#tryAcquire} but is still waiting for the lock will observe
+   * the pause on its under-lock recheck in {@link #tryWrite} and be rejected. After this returns,
+   * no further entry can be appended until {@link #resumeWrites()}. Safe to call repeatedly.
+   */
+  void pauseWrites() {
+    lock.lock();
+    try {
+      flowControl.pause();
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  /** Resumes write admission after a coordinated leadership transfer. Safe to call repeatedly. */
+  void resumeWrites() {
+    flowControl.resume();
   }
 
   /**

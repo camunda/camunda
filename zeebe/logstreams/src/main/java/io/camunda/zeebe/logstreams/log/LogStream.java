@@ -59,6 +59,17 @@ public interface LogStream extends AutoCloseable {
   FlowControl getFlowControl();
 
   /**
+   * Freezes write admission and drains in-flight writers for a coordinated leadership transfer, so
+   * that once this returns no further entry can be appended until {@link #resumeWrites()}. Unlike
+   * setting the flow-control paused flag alone, this drains the shared sequencer's critical
+   * section, making the frozen log head linearizable. Safe to call repeatedly.
+   */
+  void pauseWrites();
+
+  /** Resumes write admission after a coordinated leadership transfer. Safe to call repeatedly. */
+  void resumeWrites();
+
+  /**
    * Registers a listener that will be notified when new records are available to read from the
    * logstream.
    *

@@ -31,10 +31,12 @@ import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionTransitionImpl;
 import io.camunda.zeebe.broker.system.partitions.impl.RecoverablePartitionTransitionException;
+import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.health.CriticalComponentsHealthMonitor;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerRule;
+import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.ComponentTreeListener;
 import io.camunda.zeebe.util.health.FailureListener;
@@ -175,6 +177,128 @@ public class ZeebePartitionTest {
 
     // then
     verify(transition, atLeast(1)).toInactive(3);
+  }
+
+  @Test
+  public void shouldClearTransferPauseOnRoleChange() {
+    // given
+    schedulerRule.submitActor(partition);
+
+    // when
+    partition.onNewRole(Role.FOLLOWER, 1);
+    schedulerRule.workUntilDone();
+
+    // then
+    verify(ctx, atLeast(1)).setPausedForTransfer(false);
+  }
+
+  @Test
+  public void shouldResumeLogStreamWritesOnRoleChange() {
+    // given — the write gate must not depend on components happening to be torn down and rebuilt
+    // unpaused: a transition that interrupts a transfer (e.g. the pause watchdog stepping the
+    // leader down) must explicitly release it, the same way the transient pause flag is cleared.
+    final var logStream = mock(LogStream.class);
+    when(ctx.getLogStream()).thenReturn(logStream);
+    schedulerRule.submitActor(partition);
+
+    // when
+    partition.onNewRole(Role.FOLLOWER, 1);
+    schedulerRule.workUntilDone();
+
+    // then
+    verify(logStream, atLeast(1)).resumeWrites();
+  }
+
+  @Test
+  public void shouldNotFailRoleChangeWhenLogStreamNotYetInstalled() {
+    // given — no LogStream installed yet, e.g. the very first transition out of INACTIVE
+    when(ctx.getLogStream()).thenReturn(null);
+    schedulerRule.submitActor(partition);
+
+    // when
+    partition.onNewRole(Role.LEADER, 1);
+    schedulerRule.workUntilDone();
+
+    // then — no exception; the role change still proceeds
+    verify(transition).toLeader(1);
+  }
+
+  @Test
+  public void shouldRunPauseBarrierInOrderAndReturnTargetIndex() {
+    // given
+    final var logStream = mock(LogStream.class);
+    when(ctx.getLogStream()).thenReturn(logStream);
+    final var streamProcessor = mock(StreamProcessor.class);
+    when(ctx.getStreamProcessor()).thenReturn(streamProcessor);
+    when(streamProcessor.pauseProcessing()).thenReturn(CompletableActorFuture.completed());
+    final var raftServer = raft.getServer();
+    when(raftServer.pauseForTransfer(any())).thenReturn(CompletableFuture.completedFuture(99L));
+    schedulerRule.submitActor(partition);
+    schedulerRule.workUntilDone();
+
+    // when
+    final ActorFuture<Long> targetIndex = partition.pauseForTransfer(Duration.ofSeconds(5));
+    schedulerRule.workUntilDone();
+
+    // then
+    final InOrder inOrder = inOrder(logStream, ctx, streamProcessor, raftServer);
+    inOrder.verify(logStream).pauseWrites();
+    inOrder.verify(ctx).setPausedForTransfer(true);
+    inOrder.verify(streamProcessor).pauseProcessing();
+    inOrder.verify(raftServer).pauseForTransfer(any());
+    assertThat(targetIndex).succeedsWithin(Duration.ofSeconds(5)).isEqualTo(99L);
+  }
+
+  @Test
+  public void shouldClearTransferPauseAndResumeAdmissionOnResume() {
+    // given
+    final var logStream = mock(LogStream.class);
+    when(ctx.getLogStream()).thenReturn(logStream);
+    final var streamProcessor = mock(StreamProcessor.class);
+    when(streamProcessor.resumeProcessing()).thenReturn(CompletableActorFuture.completed());
+    when(ctx.getStreamProcessor()).thenReturn(streamProcessor);
+    when(ctx.shouldProcess()).thenReturn(true);
+    when(raft.getServer().resumeFromTransfer()).thenReturn(CompletableFuture.completedFuture(null));
+    schedulerRule.submitActor(partition);
+    schedulerRule.workUntilDone();
+
+    // when
+    partition.resumeFromTransfer();
+    schedulerRule.workUntilDone();
+
+    // then
+    verify(logStream).resumeWrites();
+    verify(ctx).setPausedForTransfer(false);
+    verify(streamProcessor).resumeProcessing();
+  }
+
+  @Test
+  public void shouldCompleteResumeOnlyAfterStreamProcessorResumes() {
+    // given — the Raft resume is already settled, but the stream processor resume is left pending
+    final var logStream = mock(LogStream.class);
+    when(ctx.getLogStream()).thenReturn(logStream);
+    final var streamProcessor = mock(StreamProcessor.class);
+    final CompletableActorFuture<Void> processorResume = new CompletableActorFuture<>();
+    when(streamProcessor.resumeProcessing()).thenReturn(processorResume);
+    when(ctx.getStreamProcessor()).thenReturn(streamProcessor);
+    when(ctx.shouldProcess()).thenReturn(true);
+    when(raft.getServer().resumeFromTransfer()).thenReturn(CompletableFuture.completedFuture(null));
+    schedulerRule.submitActor(partition);
+    schedulerRule.workUntilDone();
+
+    // when
+    final ActorFuture<Void> resume = partition.resumeFromTransfer();
+    schedulerRule.workUntilDone();
+
+    // then — the transfer resume does not complete while the processor resume is still pending
+    assertThat(resume).isNotDone();
+
+    // when the processor resume settles
+    processorResume.complete(null);
+    schedulerRule.workUntilDone();
+
+    // then the transfer resume completes
+    assertThat(resume).succeedsWithin(Duration.ofSeconds(5));
   }
 
   @Test

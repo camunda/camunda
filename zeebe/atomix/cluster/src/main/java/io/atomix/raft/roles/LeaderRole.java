@@ -28,6 +28,7 @@ import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.impl.RaftMemberContext;
 import io.atomix.raft.impl.RaftContext;
+import io.atomix.raft.metrics.RebalanceMetrics;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.ConfigureRequest;
 import io.atomix.raft.protocol.ConfigureResponse;
@@ -82,9 +83,19 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   private ApplicationEntry lastZbEntry = null;
   private CompletableFuture<ReconfigureResponse> ongoingReconfigurationRequestFuture;
 
+  // --- Coordinated leadership transfer: paused mode ---
+  // The leader keeps its term and keeps replicating; the write freeze and processing pause are
+  // applied by the broker. This role only owns the watchdog that guarantees the partition is never
+  // left paused: if not resumed in time it steps down, which forces a role transition.
+  private final RebalanceMetrics rebalanceMetrics;
+  private Scheduled transferPauseWatchdog;
+  private boolean transferPaused;
+  private long transferPauseStartMs;
+
   public LeaderRole(final RaftContext context) {
     super(context);
     appender = new LeaderAppender(this);
+    rebalanceMetrics = new RebalanceMetrics(context.getName(), context.getMeterRegistry());
   }
 
   @Override
@@ -378,6 +389,76 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     if (appendTimer != null) {
       log.trace("Cancelling append timer");
       appendTimer.cancel();
+    }
+    // Paused mode always exits on a role transition (stop() runs when leadership is lost).
+    clearTransferPause();
+  }
+
+  /**
+   * Enters paused mode for a coordinated leadership transfer. Arms a watchdog on the Raft thread
+   * that steps this leader down if {@link #resumeFromTransfer()} is not called within {@code
+   * resumeTimeout}, so a partition is never left paused and unavailable. The leader keeps its term
+   * and keeps replicating existing entries; the broker applies the write freeze and processing
+   * pause. Idempotent while already paused (the watchdog is not re-armed). Must run on the Raft
+   * thread.
+   *
+   * @param resumeTimeout how long the partition may remain paused before the leader steps down
+   * @return the frozen last log index, captured on the Raft thread after every already-enqueued
+   *     append has been applied; this is the catch-up target the desired leader must reach
+   */
+  public long pauseForTransfer(final Duration resumeTimeout) {
+    raft.checkThread();
+    if (transferPaused) {
+      // Idempotent: the watchdog is already armed. Report the current head so a repeat caller still
+      // gets a usable target.
+      return raft.getLog().getLastIndex();
+    }
+    transferPaused = true;
+    transferPauseStartMs = System.currentTimeMillis();
+    // The broker has frozen write admission and paused (and drained) the stream processor before
+    // this Raft-thread task runs, so by FIFO ordering every write admitted before the freeze has
+    // already been appended: the last index is the true frozen head.
+    final long targetIndex = raft.getLog().getLastIndex();
+    log.info("Pausing partition for leadership transfer; resume deadline in {}", resumeTimeout);
+    transferPauseWatchdog =
+        raft.getThreadContext().schedule(resumeTimeout, this::onTransferPauseDeadline);
+    return targetIndex;
+  }
+
+  /** Leaves paused mode after a coordinated leadership transfer. Must run on the Raft thread. */
+  public void resumeFromTransfer() {
+    raft.checkThread();
+    if (transferPaused) {
+      log.info("Resuming partition after leadership transfer");
+    }
+    clearTransferPause();
+  }
+
+  public boolean isTransferPaused() {
+    return transferPaused;
+  }
+
+  private void onTransferPauseDeadline() {
+    raft.checkThread();
+    if (!transferPaused || !isRunning()) {
+      return;
+    }
+    log.warn(
+        "Partition still paused after the resume deadline; stepping down to follower so services "
+            + "restart and a new leader can be elected");
+    clearTransferPause();
+    raft.transition(RaftServer.Role.FOLLOWER);
+  }
+
+  private void clearTransferPause() {
+    if (transferPauseWatchdog != null) {
+      transferPauseWatchdog.cancel();
+      transferPauseWatchdog = null;
+    }
+    if (transferPaused) {
+      transferPaused = false;
+      rebalanceMetrics.observePauseDuration(
+          Duration.ofMillis(System.currentTimeMillis() - transferPauseStartMs));
     }
   }
 

@@ -23,6 +23,10 @@ public class PartitionProcessingState {
   private ExporterPhase exporterPhase;
   private final RaftPartition raftPartition;
   private boolean diskSpaceAvailable;
+  // Transient, never persisted: a crash mid-transfer must not leave the partition durably paused
+  // (the Raft watchdog handles that). Mirrors diskSpaceAvailable, not the persisted processor
+  // pause.
+  private boolean pausedForTransfer;
 
   public PartitionProcessingState(final RaftPartition raftPartition) {
     this.raftPartition = raftPartition;
@@ -67,8 +71,16 @@ public class PartitionProcessingState {
     isProcessingPaused = getPersistedPauseState(PERSISTED_PAUSE_STATE_FILENAME).exists();
   }
 
+  public boolean isPausedForTransfer() {
+    return pausedForTransfer;
+  }
+
+  public void setPausedForTransfer(final boolean pausedForTransfer) {
+    this.pausedForTransfer = pausedForTransfer;
+  }
+
   public boolean shouldProcess() {
-    return isDiskSpaceAvailable() && !isProcessingPaused();
+    return isDiskSpaceAvailable() && !isProcessingPaused() && !pausedForTransfer;
   }
 
   public boolean isExportingPaused() {

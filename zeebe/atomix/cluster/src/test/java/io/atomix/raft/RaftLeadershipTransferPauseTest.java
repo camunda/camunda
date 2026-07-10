@@ -1,0 +1,129 @@
+/*
+ * Copyright © 2020 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.atomix.raft;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.atomix.raft.RaftServer.Role;
+import io.atomix.raft.roles.LeaderRole;
+import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
+import org.awaitility.Awaitility;
+import org.junit.Rule;
+import org.junit.Test;
+
+/**
+ * Coverage for the paused-mode watchdog on the Raft thread (Coordinated Leadership Transfer). The
+ * watchdog guarantees a partition is never left paused and unavailable: if it is not resumed in
+ * time, the leader steps down so services restart and a new leader can be elected.
+ */
+public class RaftLeadershipTransferPauseTest {
+
+  @Rule public RaftRule raftRule = RaftRule.withBootstrappedNodes(3);
+
+  @Test
+  public void shouldStepDownWhenPauseWatchdogExpires() throws Exception {
+    // given
+    raftRule.appendEntries(5);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var leftLeadership = new CountDownLatch(1);
+    leader.addRoleChangeListener(
+        (role, term) -> {
+          if (role != Role.LEADER) {
+            leftLeadership.countDown();
+          }
+        });
+
+    // when
+    pauseOnRaftThread(leader, Duration.ofMillis(500));
+
+    // then
+    assertThat(leftLeadership.await(15, TimeUnit.SECONDS))
+        .as("leader steps down after the pause watchdog expires")
+        .isTrue();
+  }
+
+  @Test
+  public void shouldNotStepDownWhenResumedBeforeWatchdogExpires() throws Exception {
+    // given
+    raftRule.appendEntries(5);
+    final var leader = raftRule.getLeader().orElseThrow();
+
+    // when
+    leader
+        .getContext()
+        .getThreadContext()
+        .execute(
+            () -> {
+              final var leaderRole = (LeaderRole) leader.getContext().getRaftRole();
+              leaderRole.pauseForTransfer(Duration.ofMillis(500));
+              leaderRole.resumeFromTransfer();
+            });
+
+    // then
+    Awaitility.await("leader keeps leadership after resume")
+        .during(Duration.ofSeconds(2))
+        .atMost(Duration.ofSeconds(3))
+        .until(() -> leader.getRole() == Role.LEADER);
+  }
+
+  @Test
+  public void shouldCaptureFrozenLastIndexWhenPausing() throws Exception {
+    // given
+    raftRule.appendEntries(7);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final long lastIndex = onRaftThread(leader, () -> leader.getContext().getLog().getLastIndex());
+
+    // when
+    final long captured =
+        onRaftThread(
+            leader,
+            () ->
+                ((LeaderRole) leader.getContext().getRaftRole())
+                    .pauseForTransfer(Duration.ofSeconds(30)));
+
+    // then
+    assertThat(captured).isEqualTo(lastIndex);
+  }
+
+  private void pauseOnRaftThread(final RaftServer leader, final Duration resumeTimeout) {
+    leader
+        .getContext()
+        .getThreadContext()
+        .execute(
+            () -> ((LeaderRole) leader.getContext().getRaftRole()).pauseForTransfer(resumeTimeout));
+  }
+
+  private static <T> T onRaftThread(final RaftServer leader, final Supplier<T> action)
+      throws Exception {
+    final var future = new CompletableFuture<T>();
+    leader
+        .getContext()
+        .getThreadContext()
+        .execute(
+            () -> {
+              try {
+                future.complete(action.get());
+              } catch (final Exception e) {
+                future.completeExceptionally(e);
+              }
+            });
+    return future.get();
+  }
+}
