@@ -21,7 +21,7 @@ A physical tenant (PT) is an independent engine inside one orchestration cluster
 ### What is not
 
 - **Gateway health and liveness indicators.** They only reflect the default tenant.
-- **Schema initialization is all-or-nothing.** We initialize every tenant's schema. Whenever an HTTP gateway is enabled, this initialization is synchronous and blocks the startup of other tenants. For RDBMS,
+- **Schema initialization is all-or-nothing.** We initialize every tenant's schema. Whenever an HTTP gateway is enabled, this initialization is synchronous and blocks the startup of other tenants.
 - **`schemaReadinessCheck` aggregates over all tenants.** One tenant's uninitialized schema marks the whole node not-ready
 - **There is no cluster-wide status or topology endpoint.** `/v2/status` and `/v2/topology` are group-scoped by design.
 
@@ -31,10 +31,10 @@ Kubernetes probes hit `/actuator/health/startup`, `/actuator/health/readiness`, 
 
 **D1. Three distinct health surfaces, with distinct questions.**
 
-| Surface                                                            | Question it answers                                | Subject         | Sourced from |
+|                              Surface                               |                Question it answers                 |     Subject     | Sourced from |
 |--------------------------------------------------------------------|----------------------------------------------------|-----------------|--------------|
 | Actuator probes (`/actuator/health/{startup,readiness,liveness}`)  | Should K8s restart this pod / route traffic to it? | Node            | Node         |
-| Per-PT status (`/v2/status`, `/v2/topology`)                       | Can this tenant process work right now?            | Physical Tenant | Cluster      |
+| Per-PT topology (`/v2/topology`)                                   | Can this tenant process work right now?            | Physical Tenant | Cluster      |
 | Cluster-wide status (`/cluster/v2/status`, `/cluster/v2/topology`) | What is the state of the whole cluster?            | Cluster         | Cluster      |
 
 Actuator probes stay node-scoped and must not become "all physical tenants fully healthy", because K8s acting on a probe (restarting a pod, withholding traffic) always affects *all* physical tenants on that node.
@@ -60,14 +60,18 @@ This is the only REST API endpoint that will not exist for non-default physical 
 Users are encouraged to use the new `/cluster/v2/status` endpoint or the `/physical-tenants/{id}/v2/topology` endpoint, depending on their use case.
 Client libraries will be updated to use `/cluster/v2/status` instead, matching the documented intent.
 
-Because `/v2/status` is unauthenticated, we don't want to expose it for non-default physical tenants to prevent leaking ids of physical tenant.
+Because `/v2/status` is unauthenticated, we don't want to expose it for non-default physical tenants to prevent leaking ids of physical tenants.
+To prevent enumeration, `/physical-tenants/{id}/v2/status` returns the same 404 for every non-default id, regardless of whether a physical tenant with that id exists.
+This check must happen before the per-PT security chain is selected, so that existing and unknown physical tenants are indistinguishable to unauthenticated callers.
 
 **D4. New `GET /cluster/v2/status`: Aggregated status over all physical tenants.**
 
 An aggregated status is reported:
 - `HEALTHY` when all tenants are healthy.
-- `DEGRADED` when some tenants are degraded.
-- `DOWN` when all tenants are down.
+- `DOWN` when no tenant can process work.
+- `DEGRADED` in every other case, i.e. some tenants are degraded or down.
+
+The wire contract stays the same as the existing `/v2/status` so that clients can migrate transparently: unauthenticated, 204 with an empty body while the cluster can process work (`HEALTHY` or `DEGRADED`), 503 when it cannot (`DOWN`).
 
 **D5. New `GET /cluster/v2/topology`: Aggregated topology over all physical tenants.**
 
@@ -94,3 +98,4 @@ The response contains the cluster-level fields (`clusterId`, broker list with ho
 - **Readiness = all tenants fully healthy.** Rejected: one tenant's DB outage would remove the node from service for all tenants.
 - **Readiness = default tenant only (status quo for gateway indicators).** Rejected: privileges one tenant arbitrarily and hides real outages of others from operators who only watch probes.
 - **Per-tenant readiness probes (e.g. `/actuator/health/readiness/{pt}`).** Rejected: K8s cannot act per tenant on a shared pod, aggregated health is available via `/cluster/v2/status` instead.
+

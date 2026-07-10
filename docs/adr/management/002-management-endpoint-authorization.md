@@ -16,14 +16,14 @@
 Three management surfaces exist or are being added:
 
 1. **Actuator endpoints**. Today they have *no* authentication at all, access control is purely network-level reachability of the management port (usually 9600).
-2. **Per-tenant management endpoints** Already has per-PT security chains, backed by the tenant's secondary storage.
+2. **Per-tenant management endpoints**. They already have per-PT security chains, backed by the tenant's secondary storage.
 3. **Cluster-wide management endpoints**. Protected by a dedicated **cluster-admin** security chain.
 
-| Endpoint                          | Authentication                               | Authorization                      | Tenant scope                                             |
-|-----------------------------------|----------------------------------------------|------------------------------------|----------------------------------------------------------|
-| Actuator endpoints                | None                                         | None                               | All PTs; optional `?physicalTenant=` narrowing (ADR 003) |
-| Per-tenant management endpoints   | The tenant's existing security chain         | Via PT's secondary storage         | Exactly one PT                                           |
-| Cluster-wide management endpoints | OIDC: any cluster-trusted IdP, or Basic auth | OIDC: token claim, Basic: username | All PTs                                                  |
+|             Endpoint              |            Authentication            |       Authorization        |                       Tenant scope                       |
+|-----------------------------------|--------------------------------------|----------------------------|----------------------------------------------------------|
+| Actuator endpoints                | None                                 | None                       | All PTs; optional `?physicalTenant=` narrowing (ADR 003) |
+| Per-tenant management endpoints   | The tenant's existing security chain | Via PT's secondary storage | Exactly one PT                                           |
+| Cluster-wide management endpoints | Cluster-admin                        | Cluster-admin              | All PTs                                                  |
 
 ## Decision
 
@@ -37,11 +37,9 @@ Operators of multi-tenant clusters must treat management-port access as cluster-
 New per-PT endpoints (backup, exporting control) are ordinary PT-prefixed v2 endpoints: authenticated by that tenant's security chain and authorized against that tenant's authorization data.
 Because these endpoints are not implemented via engine commands, the authorization is performed against the tenant's authorization data in secondary storage, as if this was a search query.
 
-Some endpoints might require new authorization resources, for example `BACKUP`.
-
 **D3. Cluster-wide REST endpoints require the pre-configured cluster-admin**
 
-`/cluster/v2/...` operations are protected by the dedicated cluster-admin chain from #54898 (config-defined Basic users, or OIDC `client_credentials`).
+`/cluster/v2/...` operations are protected by the dedicated cluster-admin chain from #54898.
 No authorization for individual physical tenants is performed.
 
 Exception per ADR 001: `GET /cluster/v2/status` is unauthenticated to allow operational monitoring. No sensitive information is exposed.
@@ -63,3 +61,4 @@ Per-PT management endpoints require and enforce fine-grained authorizations and 
 
 - **Authenticate the actuator surface.** Breaks every existing probe/tooling integration on port 9600, and K8s probes must remain credential-free anyway.
 - **Fine-grained per-operation permissions for cluster operations.** Risks that cluster-wide operations are not possible when the cluster is degraded, difficult to configure for operators.
+
