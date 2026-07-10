@@ -245,6 +245,7 @@ public final class EventAppliers implements EventApplier {
     register(ProcessIntent.CREATED, 2, new ProcessCreatedV2Applier(state));
     register(ProcessIntent.DELETING, new ProcessDeletingApplier(state));
     register(ProcessIntent.DELETED, new ProcessDeletedApplier(state));
+    register(ProcessIntent.DRAINING, new ProcessDrainingApplier(state));
   }
 
   private void registerTimeEventAppliers(final MutableProcessingState state) {

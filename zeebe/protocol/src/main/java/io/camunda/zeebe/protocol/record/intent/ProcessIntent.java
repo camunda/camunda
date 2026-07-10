@@ -18,7 +18,8 @@ package io.camunda.zeebe.protocol.record.intent;
 public enum ProcessIntent implements Intent {
   CREATED((short) 0),
   DELETING((short) 1),
-  DELETED((short) 2);
+  DELETED((short) 2),
+  DRAINING((short) 3);
 
   private final short value;
 
@@ -38,6 +39,8 @@ public enum ProcessIntent implements Intent {
         return DELETING;
       case 2:
         return DELETED;
+      case 3:
+        return DRAINING;
       default:
         return UNKNOWN;
     }

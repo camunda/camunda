@@ -126,7 +126,8 @@ public final class PersistedProcess extends UnpackedObject
 
   public enum PersistedProcessState {
     ACTIVE(0),
-    PENDING_DELETION(1);
+    PENDING_DELETION(1),
+    DRAINING(2);
 
     byte value;
 
