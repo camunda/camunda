@@ -26,11 +26,20 @@ public interface MutableProjectionState extends ProjectionState {
   void activateElement(
       long elementInstanceKey, long startTimeMs, boolean isProcess, long parentScopeKey);
 
-  /** Finalizes an element row {@code {end, status, durationMs}} on a terminal transition. */
-  void completeElement(long elementInstanceKey, long endTimeMs, ElementStatus status);
+  /**
+   * Finalizes an element row {@code {end, status, durationMs}} on a terminal transition.
+   *
+   * @return {@code false} when no row existed to finalize (no activation was folded) — the caller
+   *     surfaces the miss; the state itself stays a plain materialization step
+   */
+  boolean completeElement(long elementInstanceKey, long endTimeMs, ElementStatus status);
 
-  /** Stamps {@code hadIncident} on the element instance's row the incident occurred on. */
-  void markIncident(long elementInstanceKey);
+  /**
+   * Stamps {@code hadIncident} on the element instance's row the incident occurred on.
+   *
+   * @return {@code false} when no row existed to stamp (no activation was folded)
+   */
+  boolean markIncident(long elementInstanceKey);
 
   /** Drops an element row (evict-after-emit). */
   void evictElement(long elementInstanceKey);

@@ -7,9 +7,12 @@
  */
 package io.camunda.analytics.projection.applier;
 
+import io.camunda.analytics.projection.ProjectionMetrics;
 import io.camunda.analytics.projection.SourceRecord;
 import io.camunda.analytics.state.mutable.MutableProjectionState;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Opens an incident: stamps {@code hadIncident} on the element instance's row <em>and</em> its
@@ -17,13 +20,22 @@ import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
  * a later resolution can read the duration and type off the row. Flagging the process instance —
  * not only the element that raised the incident — is what lets the process-level end fact (and the
  * no-incident cohort read off it) reflect that the instance had an incident.
+ *
+ * <p>An incident whose element (or owning process instance) row is missing is an ordering-invariant
+ * breach (ADR 0007): each miss is counted via {@link ProjectionMetrics#foldRowMissing()} and logged
+ * with the record's Zeebe coordinates, naming which of the two keys was missing.
  */
 public final class IncidentCreatedApplier implements EventApplier {
 
-  private final MutableProjectionState state;
+  private static final Logger LOG = LoggerFactory.getLogger(IncidentCreatedApplier.class);
 
-  public IncidentCreatedApplier(final MutableProjectionState state) {
+  private final MutableProjectionState state;
+  private final ProjectionMetrics metrics;
+
+  public IncidentCreatedApplier(
+      final MutableProjectionState state, final ProjectionMetrics metrics) {
     this.state = state;
+    this.metrics = metrics;
   }
 
   @Override
@@ -33,8 +45,24 @@ public final class IncidentCreatedApplier implements EventApplier {
     // Flag both the element that raised the incident and the owning process instance (its own
     // element row), so the process-level end fact carries hadIncident. A process-level incident has
     // the same key for both; marking twice is idempotent.
-    state.markIncident(elementInstanceKey);
-    state.markIncident(value.getProcessInstanceKey());
+    if (!state.markIncident(elementInstanceKey)) {
+      metrics.foldRowMissing();
+      LOG.warn(
+          "Fold met a missing row: no element row for the incident's element instance key {} "
+              + "(zeebe partition {}, position {})",
+          elementInstanceKey,
+          source.record().getPartitionId(),
+          source.record().getPosition());
+    }
+    if (!state.markIncident(value.getProcessInstanceKey())) {
+      metrics.foldRowMissing();
+      LOG.warn(
+          "Fold met a missing row: no element row for the incident's process instance key {} "
+              + "(zeebe partition {}, position {})",
+          value.getProcessInstanceKey(),
+          source.record().getPartitionId(),
+          source.record().getPosition());
+    }
     state.openIncident(elementInstanceKey, source.record().getTimestamp(), errorType(value));
   }
 

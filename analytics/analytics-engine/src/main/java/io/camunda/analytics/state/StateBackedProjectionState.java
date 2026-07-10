@@ -203,12 +203,12 @@ public final class StateBackedProjectionState implements MutableProjectionState,
   }
 
   @Override
-  public void completeElement(
+  public boolean completeElement(
       final long elementInstanceKey, final long endTimeMs, final ElementStatus status) {
     elementKey.wrapLong(elementInstanceKey);
     final ElementEntity current = elements.get(elementKey).orElse(null);
     if (current == null) {
-      return; // no activation seen (out of order / already evicted) — nothing to finalize
+      return false; // no activation seen (out of order / already evicted) — nothing to finalize
     }
     final long start = current.start();
     final boolean isProcess = current.isProcess();
@@ -221,14 +221,15 @@ public final class StateBackedProjectionState implements MutableProjectionState,
             .activate(start, isProcess, parentScope)
             .hadIncident(hadIncident)
             .complete(endTimeMs, status));
+    return true;
   }
 
   @Override
-  public void markIncident(final long elementInstanceKey) {
+  public boolean markIncident(final long elementInstanceKey) {
     elementKey.wrapLong(elementInstanceKey);
     final ElementEntity current = elements.get(elementKey).orElse(null);
     if (current == null) {
-      return; // the element instance's activation has not been folded yet
+      return false; // the element instance's activation has not been folded yet
     }
     final long start = current.start();
     final boolean isProcess = current.isProcess();
@@ -236,6 +237,7 @@ public final class StateBackedProjectionState implements MutableProjectionState,
     elementKey.wrapLong(elementInstanceKey);
     elements.put(
         elementKey, elementWrite.activate(start, isProcess, parentScope).hadIncident(true));
+    return true;
   }
 
   @Override

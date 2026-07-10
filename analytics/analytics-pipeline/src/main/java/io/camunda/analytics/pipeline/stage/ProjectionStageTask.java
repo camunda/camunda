@@ -25,6 +25,7 @@ import io.camunda.analytics.meter.CompositeAccumulatorValue;
 import io.camunda.analytics.meter.CompositeAggregateFunction;
 import io.camunda.analytics.projection.AnalyticsBaseProjection;
 import io.camunda.analytics.projection.AnalyticsColumnFamilies;
+import io.camunda.analytics.projection.ProjectionMetrics;
 import io.camunda.analytics.projection.SourceRecord;
 import io.camunda.analytics.serving.catalog.DatasetCatalog;
 import io.camunda.analytics.serving.spi.DatasetStore;
@@ -122,6 +123,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
   private final DatasetCatalog catalog;
   private final long reloadCheckIntervalMs;
   private final boolean eagerShufflePublish;
+  private final ProjectionMetrics metrics;
 
   private final DbInt offsetKey = new DbInt();
   private final DbLong offsetValue = new DbLong();
@@ -177,6 +179,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
       final DatasetCatalog catalog,
       final long reloadCheckIntervalMs,
       final boolean eagerShufflePublish,
+      final ProjectionMetrics metrics,
       final long nowMs) {
     this.partition = partition;
     this.epoch = epoch;
@@ -201,6 +204,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
     this.catalog = catalog;
     this.reloadCheckIntervalMs = reloadCheckIntervalMs;
     this.eagerShufflePublish = eagerShufflePublish;
+    this.metrics = metrics;
     this.lastReloadCheckMs = nowMs;
     final DatasetCatalog.Snapshot snapshot = catalog.snapshot();
     installTopology(snapshot.cubes(), snapshot.tables());
@@ -250,6 +254,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
         catalog,
         reloadCheckIntervalMs,
         eagerShufflePublish,
+        new MicrometerProjectionMetrics(meterRegistry, partition),
         System.currentTimeMillis());
   }
 
@@ -308,7 +313,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
     final FactTypeDispatcher dispatcher = new FactTypeDispatcher();
     final ProcessorTopology.Builder<SourceRecord> builder =
         ProcessorTopology.<SourceRecord>builder()
-            .source("projection", new AnalyticsBaseProjection(state, variableNames))
+            .source("projection", new AnalyticsBaseProjection(state, variableNames, metrics))
             .processor("dispatch", dispatcher, "projection");
     final List<String> meterNodes = new ArrayList<>();
     final List<SegmentSealingAggregation<Fact, ?, ?>> aggregations = new ArrayList<>();
@@ -446,6 +451,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
     final long zeebePosition = record.record().getPosition();
     final Long watermark = appliedWatermarks.get(zeebePartition);
     if (watermark != null && zeebePosition <= watermark) {
+      metrics.duplicateSkipped();
       return;
     }
     topology.process(record);

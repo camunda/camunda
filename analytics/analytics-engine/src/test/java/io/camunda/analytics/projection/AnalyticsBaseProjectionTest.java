@@ -50,8 +50,9 @@ final class AnalyticsBaseProjectionTest {
 
   private final StateBackedProjectionState state = StateBackedProjectionState.inMemory();
   private final CapturingContext context = new CapturingContext();
+  private final CountingMetrics metrics = new CountingMetrics();
   private final AnalyticsBaseProjection projection =
-      new AnalyticsBaseProjection(state, VariableNames.of(Set.of("region")));
+      new AnalyticsBaseProjection(state, VariableNames.of(Set.of("region")), metrics);
 
   AnalyticsBaseProjectionTest() {
     projection.init(context);
@@ -150,6 +151,31 @@ final class AnalyticsBaseProjectionTest {
   }
 
   @Test
+  void shouldCountTheMissingRowAndTheDroppedFactForAnUnknownCompletion() {
+    // given no activation was folded for the element instance
+
+    // when its completion arrives anyway (an ordering-invariant breach, ADR 0007)
+    projection.process(process(ProcessInstanceIntent.ELEMENT_COMPLETED, 1500L, 10L));
+
+    // then the fold's missing row and the derivation's lost fact are both counted — and no fact
+    // is emitted (the formerly silent undercount, now observable)
+    assertThat(metrics.foldRowMissing).isEqualTo(1);
+    assertThat(metrics.factDropped).isEqualTo(1);
+    assertThat(context.facts).isEmpty();
+  }
+
+  @Test
+  void shouldKeepTheAlarmCountersAtZeroOnAHealthyFlow() {
+    // given / when an ordered activation and completion
+    projection.process(process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1000L, 10L));
+    projection.process(process(ProcessInstanceIntent.ELEMENT_COMPLETED, 1500L, 11L));
+
+    // then no fold met a missing row and no fact was dropped
+    assertThat(metrics.foldRowMissing).isZero();
+    assertThat(metrics.factDropped).isZero();
+  }
+
+  @Test
   void shouldDeriveIncidentResolutionDurationFromTheRow() {
     projection.process(incident(IncidentIntent.CREATED, TASK_KEY, 1000L, 10L));
     projection.process(incident(IncidentIntent.RESOLVED, TASK_KEY, 1700L, 11L));
@@ -240,6 +266,29 @@ final class AnalyticsBaseProjectionTest {
     final Record<?> record =
         new CopiedRecord<>(value, metadata, key, 1, position, position - 1, timestamp);
     return new SourceRecord(1, position, record);
+  }
+
+  /** A {@link ProjectionMetrics} fake counting each signal. */
+  private static final class CountingMetrics implements ProjectionMetrics {
+
+    private int duplicateSkipped;
+    private int foldRowMissing;
+    private int factDropped;
+
+    @Override
+    public void duplicateSkipped() {
+      duplicateSkipped++;
+    }
+
+    @Override
+    public void foldRowMissing() {
+      foldRowMissing++;
+    }
+
+    @Override
+    public void factDropped() {
+      factDropped++;
+    }
   }
 
   /** A {@link ProcessorContext} that captures the forwarded (materialized) facts. */

@@ -22,6 +22,7 @@ import io.camunda.analytics.meter.CompositeAggregateFunction;
 import io.camunda.analytics.meter.Meter;
 import io.camunda.analytics.meter.MeterCatalog;
 import io.camunda.analytics.projection.AnalyticsColumnFamilies;
+import io.camunda.analytics.projection.ProjectionMetrics;
 import io.camunda.analytics.projection.SourceRecord;
 import io.camunda.analytics.serving.catalog.DatasetCatalog;
 import io.camunda.analytics.store.rdbms.RdbmsDatasetStore;
@@ -270,6 +271,7 @@ final class ProjectionStageTaskFrozenCutTest {
             catalog,
             Long.MAX_VALUE, // no reload in these tests
             eagerShufflePublish,
+            ProjectionMetrics.NOOP,
             0L);
     task.init();
   }

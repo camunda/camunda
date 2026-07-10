@@ -70,6 +70,7 @@ final class ProjectionStageTaskDedupTest {
   private DatasetRegistry registry;
   private DatasetCatalog catalog;
   private RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider;
+  private SimpleMeterRegistry meterRegistry;
   private ProjectionStageTask task;
 
   @BeforeEach
@@ -102,6 +103,10 @@ final class ProjectionStageTaskDedupTest {
     // then each record folded exactly once — the open segment counts the two distinct facts, not
     // the duplicates
     assertThat(openSegmentTotal()).isEqualTo(2L);
+    // and the absorbed duplicates are observable, while the alarm counter stays silent in the
+    // healthy flow
+    assertThat(counterValue("analytics.projection.duplicate.skipped")).isEqualTo(2.0);
+    assertThat(counterValue("analytics.projection.fold.row.missing")).isZero();
   }
 
   @Test
@@ -130,9 +135,8 @@ final class ProjectionStageTaskDedupTest {
     final JdbcDataSource dataSource = new JdbcDataSource();
     dataSource.setURL("jdbc:h2:mem:dedup-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1");
     dataSource.setUser("sa");
-    provider =
-        RocksDbStateStoreProvider.open(
-            new File(stateDir.toFile(), "stage1"), new SimpleMeterRegistry());
+    meterRegistry = new SimpleMeterRegistry();
+    provider = RocksDbStateStoreProvider.open(new File(stateDir.toFile(), "stage1"), meterRegistry);
     final KeyValueStore<DbBytes, DbBytes> openSegments =
         provider.keyValueStore(AnalyticsColumnFamilies.OPEN_SEGMENT, new DbBytes(), new DbBytes());
     final KeyValueStore<DbInt, DbLong> offsets =
@@ -160,8 +164,14 @@ final class ProjectionStageTaskDedupTest {
             catalog,
             Long.MAX_VALUE, // no reload in these tests
             false,
+            new MicrometerProjectionMetrics(meterRegistry, EB_PARTITION),
             0L);
     task.init();
+  }
+
+  /** The partition-tagged counter's value from the task's meter registry. */
+  private double counterValue(final String name) {
+    return meterRegistry.get(name).tag("partition", String.valueOf(EB_PARTITION)).counter().count();
   }
 
   /** Declares and stores a single-meter COUNT cube on process-instance facts. */

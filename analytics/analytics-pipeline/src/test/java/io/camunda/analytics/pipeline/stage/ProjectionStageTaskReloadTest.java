@@ -18,6 +18,7 @@ import io.camunda.analytics.fact.FactType;
 import io.camunda.analytics.meter.Meter;
 import io.camunda.analytics.meter.MeterCatalog;
 import io.camunda.analytics.projection.AnalyticsColumnFamilies;
+import io.camunda.analytics.projection.ProjectionMetrics;
 import io.camunda.analytics.serving.catalog.DatasetCatalog;
 import io.camunda.analytics.store.rdbms.RdbmsDatasetStore;
 import io.camunda.analytics.table.ProcessDefinitionSink;
@@ -154,6 +155,7 @@ final class ProjectionStageTaskReloadTest {
             catalog,
             0L, // check the catalog at every commit
             false,
+            ProjectionMetrics.NOOP,
             0L);
   }
 

@@ -56,12 +56,16 @@ public final class AnalyticsBaseProjection implements Processor<SourceRecord, Fa
 
   private final MutableProjectionState state;
   private final VariableNames variableNames;
+  private final ProjectionMetrics metrics;
   private RecordDispatch dispatch;
 
   public AnalyticsBaseProjection(
-      final MutableProjectionState state, final VariableNames variableNames) {
+      final MutableProjectionState state,
+      final VariableNames variableNames,
+      final ProjectionMetrics metrics) {
     this.state = state;
     this.variableNames = variableNames;
+    this.metrics = metrics;
   }
 
   @Override
@@ -72,9 +76,9 @@ public final class AnalyticsBaseProjection implements Processor<SourceRecord, Fa
   /** Declares each applier/deriver with its collaborators, then registers the transition table. */
   private RecordDispatch wire(final Consumer<Fact> facts) {
     final ElementCompletedApplier completed =
-        new ElementCompletedApplier(state, ElementStatus.COMPLETED);
+        new ElementCompletedApplier(state, ElementStatus.COMPLETED, metrics);
     final ElementCompletedApplier terminated =
-        new ElementCompletedApplier(state, ElementStatus.TERMINATED);
+        new ElementCompletedApplier(state, ElementStatus.TERMINATED, metrics);
     final ElementEvictApplier elementEvict = new ElementEvictApplier(state);
     final IncidentEvictApplier incidentEvict = new IncidentEvictApplier(state);
 
@@ -89,21 +93,24 @@ public final class AnalyticsBaseProjection implements Processor<SourceRecord, Fa
             ProcessInstanceIntent.ELEMENT_COMPLETED,
             RecordHandler.applyDeriveEvict(
                 completed,
-                new ElementCompletedDeriver(state, facts, Transition.COMPLETED, variableNames),
+                new ElementCompletedDeriver(
+                    state, facts, Transition.COMPLETED, variableNames, metrics),
                 elementEvict))
         .on(
             ValueType.PROCESS_INSTANCE,
             ProcessInstanceIntent.ELEMENT_TERMINATED,
             RecordHandler.applyDeriveEvict(
                 terminated,
-                new ElementCompletedDeriver(state, facts, Transition.TERMINATED, variableNames),
+                new ElementCompletedDeriver(
+                    state, facts, Transition.TERMINATED, variableNames, metrics),
                 elementEvict))
         .onAnyIntent(ValueType.VARIABLE, RecordHandler.apply(new VariableApplier(state)))
         .on(
             ValueType.INCIDENT,
             IncidentIntent.CREATED,
             RecordHandler.applyDerive(
-                new IncidentCreatedApplier(state), new IncidentCreatedDeriver(state, facts)))
+                new IncidentCreatedApplier(state, metrics),
+                new IncidentCreatedDeriver(state, facts)))
         .on(
             ValueType.INCIDENT,
             IncidentIntent.RESOLVED,
