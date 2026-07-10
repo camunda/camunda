@@ -439,4 +439,60 @@ test.describe('Process Instance Incident', () => {
       await expect(operateProcessInstancePage.diagram).toBeVisible();
     });
   });
+
+  test('Navigate to called decision instance from DMN incident', async ({
+    operateProcessInstancePage,
+    operateDecisionInstancePage,
+    operateHomePage,
+    operateProcessesPage,
+  }) => {
+    test.slow();
+
+    await test.step('Navigate to Processes tab and open the process instance', async () => {
+      await operateHomePage.clickProcessesTab();
+      await operateProcessesPage.filterByProcessName('Process-Incident');
+      await operateProcessesPage.clickProcessInstanceLink();
+    });
+
+    await test.step('Verify process diagram is visible and the incident banner is present', async () => {
+      await expect(operateProcessInstancePage.diagram).toBeVisible();
+      await expect(operateProcessInstancePage.diagramSpinner).toBeHidden({
+        timeout: 30000,
+      });
+      await expect(operateProcessInstancePage.incidentsBanner).toBeVisible();
+    });
+
+    await test.step('Click on the Business Rule Task in the diagram that triggered the decision', async () => {
+      await operateProcessInstancePage.clickOnElementInDiagram('Task_Decision');
+      await expect(operateProcessInstancePage.metadataPopover).toBeVisible();
+    });
+
+    await test.step('Verify the incident popover shows the decision evaluation error', async () => {
+      await expect(
+        operateProcessInstancePage.metadataPopover.getByText(
+          /Decision evaluation error\./i,
+        ),
+      ).toBeVisible();
+    });
+
+    const decisionLink = operateProcessInstancePage.metadataPopover.getByRole(
+      'link',
+      {name: /Decision C \(Root Cause\)/i},
+    );
+
+    await test.step('Verify the popover includes a root cause decision link with the decision name and instance ID', async () => {
+      await expect(decisionLink).toBeVisible();
+      await expect(decisionLink).toHaveAccessibleName(
+        /Decision C \(Root Cause\).*?\d+/i,
+      );
+    });
+
+    await test.step('Click the link to navigate to the decision that caused the incident', async () => {
+      await decisionLink.click();
+    });
+
+    await test.step('Verify navigation to the decision instance page', async () => {
+      await expect(operateDecisionInstancePage.decisionPanel).toBeVisible();
+    });
+  });
 });
