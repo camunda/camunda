@@ -31,11 +31,10 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.config.controllers.OidcFlowTestContext;
+import io.camunda.security.spring.security.CamundaSecurityFilterChainConstants;
+import jakarta.servlet.http.Cookie;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
 import java.util.Objects;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -45,8 +44,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureWebMvc;
 import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockHttpSession;
-import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -95,8 +92,11 @@ public class OidcRS256AlgorithmTest {
 
   // Test RSA JWK used to sign ID tokens and exposed via JWKS
   private static RSAKey rsaJwk;
-  // Store the expected nonce from the authorization request to include in the ID token
-  private static String expectedNonce;
+  // The nonce query parameter from the authorization redirect is already the SHA-256 hash Spring
+  // Security computes from the raw nonce it stores server-side; the ID token's nonce claim must
+  // echo this same hashed value verbatim for OidcAuthorizationCodeAuthenticationProvider's
+  // validation to succeed.
+  private static String expectedNonceHash;
 
   @Autowired MockMvcTester mockMvcTester;
 
@@ -129,17 +129,16 @@ public class OidcRS256AlgorithmTest {
    * ID token
    */
   @Test
-  public void shouldUseCorrectAlgorithmToVerifyIdToken() throws NoSuchAlgorithmException {
-    // establish session and capture the nonce/state from the authorization redirect first
-    final MockHttpSession session = new MockHttpSession();
-    final var state = beginAuthenticationFlow(session);
-    captureNonce(session);
+  public void shouldUseCorrectAlgorithmToVerifyIdToken() {
+    // begin the authorization redirect, capturing its state/nonce and the resulting session cookie
+    final var authorizationRedirect = beginAuthenticationFlow();
+    expectedNonceHash = authorizationRedirect.nonceHash();
 
     stubIdpEndpoints();
-    mockAuthenticatedRedirectFromIdp(session, state);
+    mockAuthenticatedRedirectFromIdp(authorizationRedirect);
   }
 
-  private static void stubIdpEndpoints() throws NoSuchAlgorithmException {
+  private static void stubIdpEndpoints() {
     stubFor(
         post(urlEqualTo(ENDPOINT_TOKEN))
             .willReturn(
@@ -162,43 +161,39 @@ public class OidcRS256AlgorithmTest {
                     .withBody(userInfoResponse())));
   }
 
-  private String beginAuthenticationFlow(final MockHttpSession session) {
+  private AuthorizationRedirect beginAuthenticationFlow() {
     final var redirectResult =
         mockMvcTester
             .get()
             .uri("/oauth2/authorization/oidc")
             .accept(MediaType.TEXT_HTML)
-            .session(session)
             .exchange();
 
     assertThat(redirectResult).hasStatus3xxRedirection();
     final var redirectUrl = redirectResult.getResponse().getHeader("Location");
     final var queryParams =
         UriComponentsBuilder.fromUriString(redirectUrl).build().getQueryParams();
+    final var sessionCookie =
+        redirectResult.getResponse().getCookie(CamundaSecurityFilterChainConstants.SESSION_COOKIE);
+    assertThat(sessionCookie).isNotNull();
 
-    return URLDecoder.decode(
-        Objects.requireNonNull(queryParams.getFirst("state")), StandardCharsets.UTF_8);
+    return new AuthorizationRedirect(
+        URLDecoder.decode(
+            Objects.requireNonNull(queryParams.getFirst("state")), StandardCharsets.UTF_8),
+        URLDecoder.decode(
+            Objects.requireNonNull(queryParams.getFirst("nonce")), StandardCharsets.UTF_8),
+        sessionCookie);
   }
 
-  private static void captureNonce(final MockHttpSession session) {
-    // Retrieve the saved OAuth2AuthorizationRequest to get the generated nonce
-    final var authReqAttr =
-        session.getAttribute(
-            "org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizationRequestRepository.AUTHORIZATION_REQUEST");
-    final var authRequest = (OAuth2AuthorizationRequest) authReqAttr;
-    expectedNonce = (String) authRequest.getAttributes().get("nonce");
-    assertThat(expectedNonce).isNotBlank();
-  }
-
-  private void mockAuthenticatedRedirectFromIdp(final MockHttpSession session, final String state) {
+  private void mockAuthenticatedRedirectFromIdp(final AuthorizationRedirect authorizationRedirect) {
     final MvcTestResult result =
         mockMvcTester
             .get()
             .uri("/sso-callback")
             .accept(MediaType.TEXT_HTML)
-            .session(session)
+            .cookie(authorizationRedirect.sessionCookie())
             .queryParam("code", "test_authorization_code")
-            .queryParam("state", state)
+            .queryParam("state", authorizationRedirect.state())
             .queryParam("session_state", "test_session_state")
             .queryParam("iss", "http://localhost:" + wireMock.getPort() + "/realms/" + REALM)
             .exchange();
@@ -253,8 +248,8 @@ public class OidcRS256AlgorithmTest {
       """;
   }
 
-  private static String tokenResponse() throws NoSuchAlgorithmException {
-    // Build a minimal RS256-signed ID token with kid matching the JWKS and the expected nonce
+  private static String tokenResponse() {
+    // Build a minimal RS256-signed ID token with kid matching the JWKS and the expected nonce hash
     final String issuer = "http://localhost:" + wireMock.getPort() + "/realms/" + REALM;
     final var now = new java.util.Date();
     final var exp = new java.util.Date(now.getTime() + 3600_000L);
@@ -267,7 +262,7 @@ public class OidcRS256AlgorithmTest {
             .claim("admin", true)
             .issueTime(now)
             .expirationTime(exp)
-            .claim("nonce", createHash(expectedNonce))
+            .claim("nonce", expectedNonceHash)
             .build();
 
     final SignedJWT signedJWT =
@@ -292,9 +287,14 @@ public class OidcRS256AlgorithmTest {
         .formatted(idToken);
   }
 
-  private static String createHash(final String nonce) throws NoSuchAlgorithmException {
-    final MessageDigest md = MessageDigest.getInstance("SHA-256");
-    final byte[] digest = md.digest(nonce.getBytes(StandardCharsets.US_ASCII));
-    return Base64.getUrlEncoder().withoutPadding().encodeToString(digest);
-  }
+  /**
+   * Holds what the test needs from the initial authorization redirect: {@code state} and {@code
+   * nonceHash} are plain query parameters on the redirect to the IdP (standard OIDC behaviour, not
+   * something read back out of the session — {@code nonceHash} is already the SHA-256 hash Spring
+   * Security computed from the raw nonce it stores server-side), and {@code sessionCookie} is the
+   * real Spring-Session-backed cookie the server issued — it must be replayed on the follow-up
+   * request so the server resolves the same session (and the {@code OAuth2AuthorizationRequest}
+   * stored in it) rather than starting a new one.
+   */
+  private record AuthorizationRedirect(String state, String nonceHash, Cookie sessionCookie) {}
 }

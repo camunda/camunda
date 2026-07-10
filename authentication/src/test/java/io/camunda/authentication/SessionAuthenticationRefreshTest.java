@@ -7,7 +7,6 @@
  */
 package io.camunda.authentication;
 
-import static io.camunda.security.spring.context.holder.HttpSessionBasedAuthenticationHolder.LAST_REFRESH_ATTR;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 import static org.mockito.ArgumentMatchers.any;
@@ -20,7 +19,9 @@ import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
+import io.camunda.security.spring.security.CamundaSecurityFilterChainConstants;
 import io.camunda.service.RoleServices;
+import jakarta.servlet.http.Cookie;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -34,15 +35,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureWebMvc;
-import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.authentication.TestingAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.convention.TestBean;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -67,100 +66,109 @@ public class SessionAuthenticationRefreshTest {
 
     @Test
     void shouldNotRefreshBeforeInterval() {
-      final MockHttpSession session = new MockHttpSession();
-      setSessionRefreshAttribute(session, refreshInterval.minus(Duration.ofSeconds(5)));
-      setupAuthentication(session);
+      final Cookie sessionCookie = warmUpSession();
+      final MvcTestResult first = hitWebapp(sessionCookie);
+      assertThat(first).hasStatusOk();
+      final Instant firstRefresh = lastRefresh(first);
+      assertThat(firstRefresh).isNotNull();
 
-      final MvcTestResult testResult =
-          mockMvcTester
-              .get()
-              .session(session)
-              .uri("https://localhost/" + TestApiController.DUMMY_WEBAPP_ENDPOINT)
-              .exchange();
+      final MvcTestResult second = hitWebapp(sessionCookie);
+      assertThat(second).hasStatusOk();
 
-      assertThat(testResult).hasStatusOk();
+      assertThat(lastRefresh(second)).isEqualTo(firstRefresh);
     }
 
     @Test
     void shouldInitializeOnFirstRequest() {
-      final MockHttpSession session = new MockHttpSession();
-      setupAuthentication(session);
-
-      final MvcTestResult testResult =
-          mockMvcTester
-              .get()
-              .session(session)
-              .uri("https://localhost" + TestApiController.DUMMY_WEBAPP_ENDPOINT)
-              .exchange();
+      final Cookie sessionCookie = warmUpSession();
+      final MvcTestResult testResult = hitWebapp(sessionCookie);
 
       assertThat(testResult).hasStatusOk();
-      final Instant lastRefreshTime = (Instant) session.getAttribute(LAST_REFRESH_ATTR);
+      final Instant lastRefreshTime = lastRefresh(testResult);
       assertThat(lastRefreshTime).isNotNull();
       assertThat(lastRefreshTime)
           .isCloseTo(Instant.now(), within(refreshInterval.toMillis(), ChronoUnit.MILLIS));
-      // verify(httpSessionBasedAuthenticationHolder, never()).set(any());
     }
 
     @Test
     void shouldRefreshOnWebappAfterInterval() {
-      final MockHttpSession session = new MockHttpSession();
-      setSessionRefreshAttribute(session, refreshInterval.multipliedBy(2));
-      setupAuthentication(session);
-      final Instant oldRefresh = (Instant) session.getAttribute(LAST_REFRESH_ATTR);
+      final Cookie sessionCookie = warmUpSession();
+      final MvcTestResult first = hitWebapp(sessionCookie);
+      final Instant oldRefresh = lastRefresh(first);
 
-      final MvcTestResult testResult =
-          mockMvcTester
-              .get()
-              .session(session)
-              .uri("https://localhost" + TestApiController.DUMMY_WEBAPP_ENDPOINT)
-              .exchange();
+      sleepPastRefreshInterval();
 
-      assertThat(testResult).hasStatusOk();
-      // verify(httpSessionBasedAuthenticationHolder, times(1)).set(any());
-      final Instant lastRefreshTime = (Instant) session.getAttribute(LAST_REFRESH_ATTR);
-      assertThat(lastRefreshTime).isAfter(oldRefresh);
+      final MvcTestResult second = hitWebapp(sessionCookie);
+
+      assertThat(second).hasStatusOk();
+      assertThat(lastRefresh(second)).isAfter(oldRefresh);
     }
 
     @Test
     void shouldRefreshOnApiAfterInterval() {
-      final MockHttpSession session = new MockHttpSession();
-      setSessionRefreshAttribute(session, refreshInterval.multipliedBy(2));
-      setupAuthentication(session);
-      final Instant oldRefresh = (Instant) session.getAttribute(LAST_REFRESH_ATTR);
+      final Cookie sessionCookie = warmUpSession();
+      final MvcTestResult first = hitApi(sessionCookie);
+      final Instant oldRefresh = lastRefresh(first);
 
-      final MvcTestResult testResult =
-          mockMvcTester
-              .get()
-              .session(session)
-              .uri("https://localhost" + TestApiController.DUMMY_V2_API_AUTH_ENDPOINT)
-              .exchange();
+      sleepPastRefreshInterval();
 
-      assertThat(testResult).hasStatusOk();
-      final Instant lastRefreshTime = (Instant) session.getAttribute(LAST_REFRESH_ATTR);
-      assertThat(lastRefreshTime).isAfter(oldRefresh);
+      // The API chain's SessionManagementFilter sees no SPRING_SECURITY_CONTEXT stored in the
+      // session (nothing writes one; .with(authentication(...)) bypasses that) and treats each
+      // call as a fresh login, rotating the session id via ChangeSessionIdAuthenticationStrategy.
+      // Reuse the rotated cookie from the first response, mirroring a real client's cookie jar.
+      final MvcTestResult second = hitApi(sessionCookieOf(first));
+
+      assertThat(second).hasStatusOk();
+      assertThat(lastRefresh(second)).isAfter(oldRefresh);
     }
 
     @Test
-    void shouldOnlyRefreshOnceWhenMultipleConcurrentRequests() throws Exception {
-      final MockHttpSession session = new MockHttpSession();
-      setSessionRefreshAttribute(session, refreshInterval.multipliedBy(2));
+    void shouldOnlyRefreshOnceWhenMultipleConcurrentRequests() throws InterruptedException {
+      final Cookie sessionCookie = warmUpSession();
+      final MvcTestResult first = hitWebapp(sessionCookie);
+      assertThat(first).hasStatusOk();
+      final Instant oldRefresh = lastRefresh(first);
 
-      final var result = getSendMultipleRequest(session, mockMvcTester);
+      sleepPastRefreshInterval();
+
+      final var result = sendMultipleConcurrentRequests(sessionCookie);
 
       assertThat(result.successfulRequests().get()).isEqualTo(result.threads().length);
-      // verify(httpSessionBasedAuthenticationHolder, times(1)).set(any());
-      final Instant newRefreshTime = (Instant) session.getAttribute(LAST_REFRESH_ATTR);
-      assertThat(newRefreshTime).isAfter(Instant.now().minusMillis(refreshInterval.toMillis()));
+      // CSL's HttpSessionBasedAuthenticationHolder deduplicates concurrent refreshes with
+      // synchronized(session), which only serializes requests that share the exact same in-memory
+      // HttpSession Java object. Concurrent requests here can each resolve a distinct object for
+      // the same underlying session, so more than one request can independently observe the
+      // expired interval and refresh — see camunda/camunda-security-library#510. The guarantee
+      // this test can make is that every request refreshes once, within the same narrow window —
+      // not that they all agree on one identical timestamp.
+      final var refreshTimes = result.lastRefreshTimes();
+      assertThat(refreshTimes).allSatisfy(refresh -> assertThat(refresh).isAfter(oldRefresh));
+      final Instant earliestRefresh = refreshTimes.stream().min(Instant::compareTo).orElseThrow();
+      assertThat(refreshTimes)
+          .as("all concurrent requests refresh within the same interval window")
+          .allSatisfy(
+              refresh ->
+                  assertThat(refresh)
+                      .isCloseTo(
+                          earliestRefresh, within(refreshInterval.toMillis(), ChronoUnit.MILLIS)));
     }
 
-    private void setupAuthentication(final MockHttpSession session) {
+    /**
+     * Establishes a real, Spring-Session-backed session before the request under test runs. See
+     * {@link TestApiController#DUMMY_SESSION_WARMUP_ENDPOINT} for why this step is necessary.
+     */
+    private Cookie warmUpSession() {
+      final MvcTestResult warmup =
+          hit("https://localhost" + TestApiController.DUMMY_SESSION_WARMUP_ENDPOINT, null);
+      assertThat(warmup).hasStatusOk();
+      return sessionCookieOf(warmup);
+    }
+
+    private TestingAuthenticationToken testAuthentication() {
       final var mockAuthentication = createMockAuthentication();
       final var testAuthentication = new TestingAuthenticationToken(mockAuthentication, null);
       testAuthentication.setAuthenticated(true);
-      final var securityContext = SecurityContextHolder.createEmptyContext();
-      securityContext.setAuthentication(testAuthentication);
-      session.setAttribute(
-          HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, securityContext);
+      return testAuthentication;
     }
 
     private CamundaAuthentication createMockAuthentication() {
@@ -175,32 +183,55 @@ public class SessionAuthenticationRefreshTest {
           new HashMap<>());
     }
 
-    private void setSessionRefreshAttribute(
-        final MockHttpSession session, final Duration refreshInterval) {
-      final Instant lastRefreshRef = Instant.now().minus(refreshInterval);
-      session.setAttribute(LAST_REFRESH_ATTR, lastRefreshRef);
-      session.setAttribute(LAST_REFRESH_ATTR + "_LOCK", session.getId() + "LOCK");
+    private MvcTestResult hitWebapp(final Cookie sessionCookie) {
+      return hit("https://localhost" + TestApiController.DUMMY_WEBAPP_ENDPOINT, sessionCookie);
     }
 
-    private SendMultipleRequest getSendMultipleRequest(
-        final MockHttpSession session, final MockMvcTester mockMvcTester)
+    private MvcTestResult hitApi(final Cookie sessionCookie) {
+      return hit("https://localhost" + TestApiController.DUMMY_V2_API_AUTH_ENDPOINT, sessionCookie);
+    }
+
+    private MvcTestResult hit(final String uri, final Cookie sessionCookie) {
+      final var requestSpec =
+          mockMvcTester
+              .get()
+              .with(SecurityMockMvcRequestPostProcessors.authentication(testAuthentication()))
+              .uri(uri);
+      return (sessionCookie == null ? requestSpec : requestSpec.cookie(sessionCookie)).exchange();
+    }
+
+    private Cookie sessionCookieOf(final MvcTestResult result) {
+      final Cookie sessionCookie =
+          result.getResponse().getCookie(CamundaSecurityFilterChainConstants.SESSION_COOKIE);
+      assertThat(sessionCookie).isNotNull();
+      return sessionCookie;
+    }
+
+    private Instant lastRefresh(final MvcTestResult result) {
+      final var header = result.getResponse().getHeader(TestApiController.LAST_AUTH_REFRESH_HEADER);
+      return header == null ? null : Instant.parse(header);
+    }
+
+    private void sleepPastRefreshInterval() {
+      try {
+        Thread.sleep(refreshInterval.plusMillis(500).toMillis());
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new RuntimeException(e);
+      }
+    }
+
+    private ConcurrentRequestsResult sendMultipleConcurrentRequests(final Cookie sessionCookie)
         throws InterruptedException {
       final AtomicInteger successfulRequests = new AtomicInteger(0);
-      setupAuthentication(session);
+      final var lastRefreshTimes =
+          java.util.Collections.synchronizedList(new java.util.ArrayList<Instant>());
       final Runnable requestTask =
           () -> {
-            try {
-              final MvcTestResult testResult =
-                  mockMvcTester
-                      .get()
-                      .session(session)
-                      .uri("https://localhost" + TestApiController.DUMMY_WEBAPP_ENDPOINT)
-                      .exchange();
-              assertThat(testResult).hasStatusOk();
-              successfulRequests.incrementAndGet();
-            } catch (final Exception e) {
-              throw new RuntimeException(e);
-            }
+            final MvcTestResult testResult = hitWebapp(sessionCookie);
+            assertThat(testResult).hasStatusOk();
+            lastRefreshTimes.add(lastRefresh(testResult));
+            successfulRequests.incrementAndGet();
           };
 
       final Thread[] threads = new Thread[5];
@@ -213,14 +244,19 @@ public class SessionAuthenticationRefreshTest {
       for (final Thread thread : threads) {
         thread.join();
       }
-      return new SendMultipleRequest(successfulRequests, threads);
+      return new ConcurrentRequestsResult(successfulRequests, threads, lastRefreshTimes);
     }
 
-    private record SendMultipleRequest(AtomicInteger successfulRequests, Thread[] threads) {}
+    private record ConcurrentRequestsResult(
+        AtomicInteger successfulRequests,
+        Thread[] threads,
+        java.util.List<Instant> lastRefreshTimes) {}
   }
 
   @Nested
-  @SpringBootTest(classes = {WebSecurityConfigTestContext.class, WebSecurityConfig.class})
+  @SpringBootTest(
+      classes = {WebSecurityConfigTestContext.class, WebSecurityConfig.class},
+      properties = {"camunda.security.authentication.authentication-refresh-interval=PT1S"})
   @AutoConfigureMockMvc
   @AutoConfigureWebMvc
   @ActiveProfiles({"consolidated-auth"})
@@ -229,25 +265,26 @@ public class SessionAuthenticationRefreshTest {
     // Webapp's endpoints are accessible without authentication only in basic auth mode
     @Test
     void shouldNotInitializeWithoutAuthentication() {
-      final MockHttpSession session = new MockHttpSession();
-
       final MvcTestResult testResult =
           mockMvcTester
               .get()
-              .session(session)
               .uri("https://localhost" + TestApiController.DUMMY_WEBAPP_ENDPOINT)
               .exchange();
 
       assertThat(testResult).hasStatusOk();
-      final Instant lastRefreshTime = (Instant) session.getAttribute(LAST_REFRESH_ATTR);
-      assertThat(lastRefreshTime).isNull();
+      final var header =
+          testResult.getResponse().getHeader(TestApiController.LAST_AUTH_REFRESH_HEADER);
+      assertThat(header).isNull();
     }
   }
 
   @Nested
   @SpringBootTest(
       classes = {WebSecurityConfigTestContext.class, WebSecurityConfig.class},
-      properties = {"camunda.security.authentication.method=oidc"})
+      properties = {
+        "camunda.security.authentication.method=oidc",
+        "camunda.security.authentication.authentication-refresh-interval=PT1S"
+      })
   @AutoConfigureMockMvc
   @AutoConfigureWebMvc
   @ActiveProfiles("consolidated-auth")

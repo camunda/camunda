@@ -28,6 +28,8 @@ import com.nimbusds.jwt.SignedJWT;
 import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.config.controllers.OidcFlowTestContext;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
+import io.camunda.security.spring.security.CamundaSecurityFilterChainConstants;
+import jakarta.servlet.http.Cookie;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
@@ -43,7 +45,6 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureWebMvc;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -138,14 +139,13 @@ class OidcPrivateKeyJwtCustomizeAssertionTest {
       throws ParseException {
     stubIdpEndpoints();
 
-    // with an established session, we notify Spring Security we want to authenticate
-    // which builds and saves an authorizationRequest
-    // and we get a state reference that can be matched upon the redirect from the IdP
-    final MockHttpSession session = new MockHttpSession();
-    final var state = beginAuthenticationFlow(session);
+    // notifying Spring Security we want to authenticate builds and saves an authorizationRequest,
+    // giving us a state reference to match upon the redirect from the IdP, and a real session
+    // cookie that must be replayed so the follow-up request resolves the same session
+    final var authorizationRedirect = beginAuthenticationFlow();
 
     // when inducing an auth code for token exchange
-    mockAuthenticatedRedirectFromIdp(session, state);
+    mockAuthenticatedRedirectFromIdp(authorizationRedirect);
 
     // then the IdP receives the authorization code
     // with the Spring Security client authenticating using private_key_jwt
@@ -169,13 +169,12 @@ class OidcPrivateKeyJwtCustomizeAssertionTest {
             .willReturn(aResponse().withHeader("Content-Type", "application/json").withBody("{}")));
   }
 
-  private String beginAuthenticationFlow(final MockHttpSession session) {
+  private AuthorizationRedirect beginAuthenticationFlow() {
     final var redirectResult =
         mockMvcTester
             .get()
             .uri("/oauth2/authorization/oidc")
             .accept(MediaType.TEXT_HTML)
-            .session(session)
             .exchange();
     assertThat(redirectResult).hasStatus3xxRedirection();
     final String redirectUrl = redirectResult.getResponse().getHeader("Location");
@@ -183,18 +182,23 @@ class OidcPrivateKeyJwtCustomizeAssertionTest {
     final var queryParams =
         UriComponentsBuilder.fromUriString(redirectUrl).build().getQueryParams();
     assertThat(queryParams).containsKey("state");
-    return URLDecoder.decode(
-        Objects.requireNonNull(queryParams.getFirst("state")), StandardCharsets.UTF_8);
+    final var sessionCookie =
+        redirectResult.getResponse().getCookie(CamundaSecurityFilterChainConstants.SESSION_COOKIE);
+    assertThat(sessionCookie).isNotNull();
+    return new AuthorizationRedirect(
+        URLDecoder.decode(
+            Objects.requireNonNull(queryParams.getFirst("state")), StandardCharsets.UTF_8),
+        sessionCookie);
   }
 
-  private void mockAuthenticatedRedirectFromIdp(final MockHttpSession session, final String state) {
+  private void mockAuthenticatedRedirectFromIdp(final AuthorizationRedirect authorizationRedirect) {
     mockMvcTester
         .get()
         .uri("/sso-callback")
         .accept(MediaType.TEXT_HTML)
-        .session(session)
+        .cookie(authorizationRedirect.sessionCookie())
         .queryParam("code", "test_authorization_code")
-        .queryParam("state", state)
+        .queryParam("state", authorizationRedirect.state())
         .queryParam("session_state", "test_session_state")
         .queryParam("iss", "http://localhost:" + wireMock.getPort())
         .exchange();
@@ -299,4 +303,13 @@ class OidcPrivateKeyJwtCustomizeAssertionTest {
             }
         """;
   }
+
+  /**
+   * Holds what the test needs from the initial authorization redirect: {@code state} is the plain
+   * query parameter on the redirect to the IdP, and {@code sessionCookie} is the real
+   * Spring-Session-backed cookie the server issued — it must be replayed on the follow-up request
+   * so the server resolves the same session (and the {@code OAuth2AuthorizationRequest} stored in
+   * it) rather than starting a new one.
+   */
+  private record AuthorizationRedirect(String state, Cookie sessionCookie) {}
 }
