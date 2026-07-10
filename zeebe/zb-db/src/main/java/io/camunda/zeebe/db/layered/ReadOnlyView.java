@@ -32,9 +32,13 @@ import java.util.function.BiConsumer;
  * rotating the snapshot only when a persist round completes, at the same instant the drained
  * segments leave new views.
  *
- * <p><b>Threading:</b> safe to read from any thread. A reader holds exactly one view and swaps it
- * when the coordinator publishes a fresh one; the view's snapshot is closed by the rotation, not by
- * the reader. Everything reachable from a view is immutable.
+ * <p><b>Threading and lifecycle:</b> safe to read from any thread. Views are reference-counted
+ * through their pinned snapshot: every view owns one reference for its own lifetime (taken at
+ * construction), and each reader adds one via {@link #retain()} — normally through {@link
+ * ViewPublisher#acquireLatest()} — and drops it via {@link #release()} when done. The snapshot
+ * closes exactly once, when the last holder (coordinator or reader) releases; a rotation therefore
+ * never pulls a snapshot from under a reader mid-scan. Double release throws. Everything reachable
+ * from a view is immutable.
  *
  * <p><b>Freshness:</b> a view reflects the state as of the last freeze it includes — readers act on
  * slightly stale data by design, and their output must round-trip as commands validated against
@@ -43,16 +47,27 @@ import java.util.function.BiConsumer;
 public final class ReadOnlyView {
 
   private final Map<String, List<FlatSegment>> segmentsNewestFirstByStore;
-  private final ReadSnapshot snapshot;
+  private final RefCountedSnapshot snapshotRef;
 
+  /** Wraps the snapshot in a fresh reference count owned by this view. */
   public ReadOnlyView(
       final Map<String, List<FlatSegment>> segmentsNewestFirstByStore,
       final ReadSnapshot snapshot) {
+    this(segmentsNewestFirstByStore, new RefCountedSnapshot(snapshot));
+  }
+
+  /**
+   * Takes ownership of one already-counted reference on {@code snapshotRef} — the caller must have
+   * retained it for this view (or pass a freshly created count).
+   */
+  ReadOnlyView(
+      final Map<String, List<FlatSegment>> segmentsNewestFirstByStore,
+      final RefCountedSnapshot snapshotRef) {
     Objects.requireNonNull(segmentsNewestFirstByStore, "segmentsNewestFirstByStore");
     final Map<String, List<FlatSegment>> copy = new HashMap<>();
     segmentsNewestFirstByStore.forEach((name, segments) -> copy.put(name, List.copyOf(segments)));
     this.segmentsNewestFirstByStore = Map.copyOf(copy);
-    this.snapshot = Objects.requireNonNull(snapshot, "snapshot");
+    this.snapshotRef = Objects.requireNonNull(snapshotRef, "snapshotRef");
   }
 
   /** The visible value for {@code key} in store {@code storeName}, or null. */
@@ -63,7 +78,7 @@ public final class ReadOnlyView {
         return entry.value(); // null for a tombstone — which must not fall through
       }
     }
-    return snapshot.get(storeName, key);
+    return snapshotRef.snapshot().get(storeName, key);
   }
 
   public boolean exists(final String storeName, final byte[] key) {
@@ -84,13 +99,35 @@ public final class ReadOnlyView {
     }
     ShadowingZipper.merge(
         new KWayMergeIterator(streams),
-        scan -> snapshot.prefixScan(storeName, prefix, scan),
+        scan -> snapshotRef.snapshot().prefixScan(storeName, prefix, scan),
         visitor);
   }
 
-  /** The pinned snapshot, exposed for the coordinator's rotation. Readers never close it. */
-  ReadSnapshot snapshot() {
-    return snapshot;
+  /**
+   * Adds one reference on the view's pinned snapshot, keeping it alive past the coordinator's next
+   * rotation. Safe from any thread, but see {@link RefCountedSnapshot#retain()} for the
+   * caller-holds-a-reference precondition; readers should acquire through {@link
+   * ViewPublisher#acquireLatest()} instead of calling this directly.
+   *
+   * @throws IllegalStateException if the snapshot was already released to zero
+   */
+  public void retain() {
+    snapshotRef.retain();
+  }
+
+  /**
+   * Drops one reference; the pinned snapshot closes when the last holder releases. The view must
+   * not be read after the caller's own release.
+   *
+   * @throws IllegalStateException on a double release
+   */
+  public void release() {
+    snapshotRef.release();
+  }
+
+  /** The shared snapshot count, exposed for the coordinator's rotation and republish. */
+  RefCountedSnapshot snapshotRef() {
+    return snapshotRef;
   }
 
   private List<FlatSegment> segmentsOf(final String storeName) {

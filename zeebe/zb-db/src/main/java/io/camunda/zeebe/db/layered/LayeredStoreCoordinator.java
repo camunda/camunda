@@ -32,9 +32,9 @@ import java.util.function.Consumer;
  *       recovery anchor (the newest drained watermark) into the <em>same</em> batch; commits.
  *       Touches only the immutable segments and the sink — never a store's mutable layers.
  *   <li>{@link #completeRound(PersistRound, boolean)} — owner thread. On success retires the
- *       drained segments in every store, rotates the snapshot (take new, close old) and publishes a
- *       fresh view. On failure the segments stay in their pipelines and the next round retries
- *       them; nothing needs merging back.
+ *       drained segments in every store, rotates the snapshot (take new, release the old view's
+ *       reference) and publishes a fresh view. On failure the segments stay in their pipelines and
+ *       the next round retries them; nothing needs merging back.
  * </ol>
  *
  * <p>Rounds are single-flight: {@link #prepareRound(long)} throws while a round is outstanding. The
@@ -46,11 +46,24 @@ import java.util.function.Consumer;
  * view — segments change, the snapshot stays, which is consistent because the durable state has not
  * moved (persist rounds are its only writer).
  *
- * <p><b>Threading:</b> owner thread only, except {@link PersistRound#persist()}. Hand-offs (round
- * to IO thread, views to readers) must happen through a safe publication mechanism (actor message,
- * executor submission) — the coordinator contains no internal locking.
+ * <p><b>View lifecycle:</b> views and their pinned snapshots are reference-counted so multiple
+ * concurrent readers can each hold one safely. Every published view owns one reference on its
+ * snapshot, and the coordinator holds exactly that reference for the current view. On rotation
+ * (successful {@link #completeRound(PersistRound, boolean)}) the coordinator releases its reference
+ * on the previous view <em>after</em> publishing the new one — the old snapshot closes only when
+ * the last reader also releases, never under a reader mid-scan. A {@link #freezeAll(long)}
+ * republish reuses the same snapshot: the new view retains it, the previous view's reference is
+ * released, and the net count is unchanged, so the shared snapshot survives across view
+ * generations. {@link #close()} releases the coordinator's reference on the current view.
+ *
+ * <p><b>Threading:</b> owner thread only, except {@link PersistRound#persist()} and the retain /
+ * release calls on published views, which readers may issue from any thread. Hand-offs (round to IO
+ * thread, views to readers) must happen through a safe publication mechanism — wire the view
+ * listener to a {@link ViewPublisher} and let readers pair {@link ViewPublisher#acquireLatest()}
+ * with {@link ViewPublisher#release(ReadOnlyView)}. The coordinator itself contains no internal
+ * locking.
  */
-public final class LayeredStoreCoordinator {
+public final class LayeredStoreCoordinator implements AutoCloseable {
 
   private final Map<String, LayeredKeyValueStore> stores;
   private final PersistSink sink;
@@ -64,8 +77,9 @@ public final class LayeredStoreCoordinator {
    * @param stores the stores forming the durability unit; names must be unique
    * @param sink creates the atomic persist batches and reads the anchor at recovery
    * @param snapshots pins durable-state snapshots for views
-   * @param viewListener receives every newly published view; the previous view's snapshot is closed
-   *     by the coordinator once the new one is published
+   * @param viewListener receives every newly published view; the coordinator releases its reference
+   *     on the previous view once the new one is published, so the previous snapshot closes when
+   *     its last reader releases (see the class javadoc's view lifecycle)
    */
   public LayeredStoreCoordinator(
       final Collection<LayeredKeyValueStore> stores,
@@ -84,7 +98,7 @@ public final class LayeredStoreCoordinator {
     }
     this.stores = byName;
     // publish an initial view right away so asynchronous readers always have one to hold
-    publishView(snapshots.takeSnapshot());
+    publishView(new RefCountedSnapshot(snapshots.takeSnapshot()));
   }
 
   /**
@@ -96,8 +110,13 @@ public final class LayeredStoreCoordinator {
       store.freeze(watermark);
     }
     // the durable state has not moved (persist rounds are its only writer), so the current
-    // snapshot still matches the new segment set
-    publishView(currentView.snapshot());
+    // snapshot still matches the new segment set: the new view retains the same snapshot, then
+    // the previous view's reference is released — net count unchanged, the snapshot survives
+    final ReadOnlyView previous = currentView;
+    final RefCountedSnapshot shared = previous.snapshotRef();
+    shared.retain();
+    publishView(shared);
+    previous.release();
   }
 
   /**
@@ -144,17 +163,20 @@ public final class LayeredStoreCoordinator {
       store.completePersist(success);
     }
     if (success) {
-      // rotate: publish the fresh cut first, then release the snapshot the old view pinned —
-      // readers still holding the old view keep their consistent (now stale) cut until they swap
-      final ReadSnapshot previous = currentView.snapshot();
-      publishView(snapshots.takeSnapshot());
-      previous.close();
+      // rotate: publish the fresh cut first, then release the coordinator's reference on the old
+      // view — its snapshot closes once the last reader still holding it releases too
+      final ReadOnlyView previous = currentView;
+      publishView(new RefCountedSnapshot(snapshots.takeSnapshot()));
+      previous.release();
     }
     // on failure the segments stayed in their pipelines and the durable state did not move, so
     // the current view is still valid — nothing to republish
   }
 
-  /** The most recently published view — never null, one is published at construction. */
+  /**
+   * The most recently published view — one is published at construction, so this is never null
+   * until {@link #close()}.
+   */
   public ReadOnlyView currentView() {
     return currentView;
   }
@@ -169,10 +191,23 @@ public final class LayeredStoreCoordinator {
     return sink.readAnchor();
   }
 
-  private void publishView(final ReadSnapshot snapshot) {
+  /**
+   * Releases the coordinator's reference on the current view; the snapshot closes once the last
+   * reader releases too. Owner thread, idempotent; the coordinator must not be used afterwards (and
+   * {@link #currentView()} returns null).
+   */
+  @Override
+  public void close() {
+    if (currentView != null) {
+      currentView.release();
+      currentView = null;
+    }
+  }
+
+  private void publishView(final RefCountedSnapshot snapshotRef) {
     final Map<String, List<FlatSegment>> segments = new HashMap<>();
     stores.forEach((name, store) -> segments.put(name, store.segmentsNewestFirst()));
-    currentView = new ReadOnlyView(segments, snapshot);
+    currentView = new ReadOnlyView(segments, snapshotRef);
     viewListener.accept(currentView);
   }
 

@@ -46,9 +46,9 @@ final class LayeredStoreRoundTripIntegrationTest {
   void tearDown() {
     executor.shutdownNow();
     if (coordinator != null) {
-      // the coordinator never closes its latest view's snapshot; release the native handle
-      // before the database goes away
-      coordinator.currentView().snapshot().close();
+      // release the coordinator's reference on its latest view so the native snapshot handle
+      // closes before the database goes away
+      coordinator.close();
     }
     if (backing != null) {
       backing.close();
@@ -124,7 +124,7 @@ final class LayeredStoreRoundTripIntegrationTest {
     coordinator.completeRound(round, true);
 
     // when -- the database is closed and reopened at the same path
-    coordinator.currentView().snapshot().close();
+    coordinator.close();
     coordinator = null;
     backing.close();
     backing = RocksDbLayeredBacking.open(tempDir, List.of(STORE_A, STORE_B));
