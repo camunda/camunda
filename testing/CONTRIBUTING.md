@@ -198,7 +198,7 @@ Configuration comes from two sources, applied in this order:
 Key property names (see the `*Properties` classes in
 `io.camunda.process.test.impl.runtime.properties`):
 
-| Property                                                                                                   | Purpose                                                                         |
+|                                                  Property                                                  |                                     Purpose                                     |
 |------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
 | `runtimeMode`                                                                                              | `MANAGED` / `SHARED` / `REMOTE`.                                                |
 | `multiTenancyEnabled`                                                                                      | Runtime toggles.                                                                |
