@@ -137,13 +137,14 @@ class IncidentUpdateTaskIT {
           final var postImporterTemplate =
               resources.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
 
-          final PostImporterQueueEntity queueEntity = new PostImporterQueueEntity();
-          queueEntity.setId("incident-1");
-          queueEntity.setPartitionId(PARTITION_ID);
-          queueEntity.setActionType(PostImporterActionType.INCIDENT);
-          queueEntity.setIntent("CREATED");
-          queueEntity.setKey(9999L);
-          queueEntity.setPosition(1L);
+          final PostImporterQueueEntity queueEntity =
+              new PostImporterQueueEntity()
+                  .setId("incident-1")
+                  .setPartitionId(PARTITION_ID)
+                  .setActionType(PostImporterActionType.INCIDENT)
+                  .setIntent("CREATED")
+                  .setKey(9999L)
+                  .setPosition(1L);
 
           store(postImporterTemplate, client, queueEntity);
           client.refresh(testPrefix);
