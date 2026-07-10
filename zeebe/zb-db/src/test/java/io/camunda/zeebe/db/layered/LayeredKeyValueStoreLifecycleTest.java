@@ -189,10 +189,13 @@ final class LayeredKeyValueStoreLifecycleTest {
 
     // when
     store.completePersist(true);
+    // the blind put in the setup cost one delegate point read (exact flushed computation);
+    // serving the retired value must not add another
+    final int getsAfterRetirement = counting.gets;
 
     // then -- retirement moved the value into the clean cache
     assertThat(store.get(bytes("key"))).isEqualTo(bytes("value"));
-    assertThat(counting.gets).isZero();
+    assertThat(counting.gets).isEqualTo(getsAfterRetirement);
   }
 
   @Test
@@ -325,6 +328,58 @@ final class LayeredKeyValueStoreLifecycleTest {
     store.completePersist(true);
 
     // then
+    assertThat(state.committedValue(STORE, bytes("key"))).isNull();
+    assertThat(store.get(bytes("key"))).isNull();
+  }
+
+  @Test
+  void shouldMarkBlindDeleteOfDelegateOnlyKeyFlushed() {
+    // given -- the key exists only in the delegate; the store never read it
+    state.store(STORE).put(bytes("key"), bytes("value"));
+    final LayeredKeyValueStore store = newStore(1024 * 1024, true, 10);
+
+    // when -- a blind delete, no prior get/exists/scan
+    store.delete(bytes("key"));
+    store.promote();
+    store.freeze(1L);
+
+    // then -- the tombstone is flushed, so a persist round must emit the delete instead of
+    // absorbing it and resurrecting the durable row
+    final Entry tombstone = store.segmentsNewestFirst().get(0).findEntry(bytes("key"));
+    assertThat(tombstone).isNotNull();
+    assertThat(tombstone.tombstone()).isTrue();
+    assertThat(tombstone.flushed()).isTrue();
+
+    // when
+    drainToDelegate(store.beginPersist());
+    store.completePersist(true);
+
+    // then
+    assertThat(state.committedValue(STORE, bytes("key"))).isNull();
+    assertThat(store.get(bytes("key"))).isNull();
+  }
+
+  @Test
+  void shouldNotAbsorbDeleteOfBlindPutOverDelegateHeldKey() {
+    // given -- the delegate holds an old version; the store blindly overwrites then deletes
+    state.store(STORE).put(bytes("key"), bytes("old"));
+    final LayeredKeyValueStore store = newStore(1024 * 1024, true, 10);
+    store.put(bytes("key"), bytes("new"));
+    store.delete(bytes("key"));
+    store.promote();
+    store.freeze(1L);
+
+    // then -- the pair must not annihilate: the delegate provably holds the key
+    final Entry tombstone = store.segmentsNewestFirst().get(0).findEntry(bytes("key"));
+    assertThat(tombstone).isNotNull();
+    assertThat(tombstone.tombstone()).isTrue();
+    assertThat(tombstone.flushed()).isTrue();
+
+    // when
+    drainToDelegate(store.beginPersist());
+    store.completePersist(true);
+
+    // then -- the old version is gone, not resurrected
     assertThat(state.committedValue(STORE, bytes("key"))).isNull();
     assertThat(store.get(bytes("key"))).isNull();
   }

@@ -49,10 +49,10 @@ import java.util.function.BiConsumer;
  * </ol>
  *
  * <p><b>Delete absorption</b> (opt-in): a delete of a never-flushed put annihilates the pair in
- * memory — neither write ever reaches the delegate. Sound only under the caller's guarantee that a
- * deleted key is never read again (deletes are garbage collection of dead rows, not semantics): if
- * the delegate holds an older flushed version, skipping the tombstone leaves dead space reclaimed
- * by compaction, never a resurrectable read.
+ * memory — neither write ever reaches the delegate. Flushed flags are exact at write time (a write
+ * of a key unknown to every in-memory layer falls through to a delegate point read), so a pair only
+ * annihilates when the delegate provably never held the key; no behavioral contract is required of
+ * callers, and scans can never resurrect an absorbed key.
  *
  * <p><b>Byte budget:</b> staging, active and pipeline entries are pinned — evicting or persisting
  * them outside a persist round would put durable state ahead of the recovery anchor. Only clean
@@ -155,7 +155,12 @@ public final class LayeredKeyValueStore {
    * Whether the delegate holds — or, via the active overlay or the pipeline, will hold — a version
    * of {@code key}, ignoring the staging layer. The newest version below staging decides: a live
    * put will reach the delegate (frozen segments are drained eventually), while a tombstone shadows
-   * every older version so nothing below it will.
+   * every older version so nothing below it will. A key found in no in-memory layer falls through
+   * to a delegate point read: without it, a blind delete of a delegate-only key would carry {@code
+   * flushed=false} and the persist drain would skip its tombstone, resurrecting the durable row.
+   * The read makes every flushed flag exact at write time, which in turn makes delete absorption
+   * sound without any read-before-delete contract on callers; in practice the layers above absorb
+   * the cost, since keys are typically read (and clean-cached) before being mutated.
    */
   private boolean flushedBelowStaging(final ByteBuffer mapKey, final byte[] key) {
     final Entry activeEntry = activeByKey.get(mapKey);
@@ -169,7 +174,7 @@ public final class LayeredKeyValueStore {
         return !entry.tombstone() || entry.flushed();
       }
     }
-    return false;
+    return delegate.get(key) != null;
   }
 
   /**

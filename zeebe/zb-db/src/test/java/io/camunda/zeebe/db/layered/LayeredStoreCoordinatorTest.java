@@ -257,6 +257,28 @@ final class LayeredStoreCoordinatorTest {
   }
 
   @Test
+  void shouldDeleteDelegateOnlyKeyAfterBlindDelete() throws Exception {
+    // given -- the key exists only in the delegate (e.g. persisted by an earlier incarnation)
+    // and is deleted without ever being read through this store
+    state.store(STORE_A).put(bytes(1), bytes(10));
+    final LayeredKeyValueStore store = newStore(STORE_A);
+    final LayeredStoreCoordinator coordinator = newCoordinator(store);
+    store.delete(bytes(1));
+    store.promote();
+
+    // when
+    final PersistRound round = coordinator.prepareRound(10);
+    round.persist();
+    coordinator.completeRound(round, true);
+
+    // then -- the tombstone reached the delegate; the durable row must not resurface in scans
+    assertThat(sink.deletes).isEqualTo(1);
+    assertThat(state.committedValue(STORE_A, bytes(1))).isNull();
+    assertThat(state.committedSize(STORE_A)).isZero();
+    assertThat(coordinator.currentView().exists(STORE_A, bytes(1))).isFalse();
+  }
+
+  @Test
   void shouldSkipBatchEntirelyWhenRoundCapturedNothing() throws Exception {
     // given
     final LayeredStoreCoordinator coordinator = newCoordinator(newStore(STORE_A));
