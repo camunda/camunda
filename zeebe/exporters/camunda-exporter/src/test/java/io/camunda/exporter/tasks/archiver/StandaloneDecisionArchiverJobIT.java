@@ -15,7 +15,6 @@ import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceState;
-import java.time.Duration;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
@@ -50,13 +49,13 @@ public class StandaloneDecisionArchiverJobIT extends ArchiverJobIT<StandaloneDec
 
           final var decisionInstance = decisionInstance("2020-01-01T00:00:00+00:00");
           store(decisionInstanceTemplate, client, decisionInstance);
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
           verifyMoved(decisionInstanceTemplate, client, decisionInstance, "2020-01-01");
         });
   }
@@ -79,13 +78,13 @@ public class StandaloneDecisionArchiverJobIT extends ArchiverJobIT<StandaloneDec
 
           store(decisionInstanceTemplate, client, standaloneDecision);
           store(decisionInstanceTemplate, client, processDecision);
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
 
           // then - only the standalone decision should be archived
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
           verifyMoved(decisionInstanceTemplate, client, standaloneDecision, "2020-01-01");
           verifyNotMoved(decisionInstanceTemplate, client, processDecision);
         });
@@ -106,13 +105,13 @@ public class StandaloneDecisionArchiverJobIT extends ArchiverJobIT<StandaloneDec
 
           store(decisionInstanceTemplate, client, oldDecision);
           store(decisionInstanceTemplate, client, recentDecision);
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
           verifyMoved(decisionInstanceTemplate, client, oldDecision, "2020-01-01");
           verifyNotMoved(decisionInstanceTemplate, client, recentDecision);
         });

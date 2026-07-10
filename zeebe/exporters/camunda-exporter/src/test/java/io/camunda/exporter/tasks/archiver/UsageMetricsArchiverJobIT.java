@@ -17,7 +17,6 @@ import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsEntity;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsTUEntity;
-import java.time.Duration;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
@@ -56,13 +55,13 @@ public class UsageMetricsArchiverJobIT extends ArchiverJobIT<UsageMetricsArchive
 
           final var metric = usageMetric("2020-01-15T10:00:00+00:00");
           store(usageMetricTemplate, client, metric);
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
           verifyMoved(usageMetricTemplate, client, metric, "2020-01-01");
         });
   }
@@ -82,13 +81,13 @@ public class UsageMetricsArchiverJobIT extends ArchiverJobIT<UsageMetricsArchive
 
           store(usageMetricTemplate, client, oldMetric);
           store(usageMetricTemplate, client, recentMetric);
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
 
           // then - only old metric should be archived
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
           verifyMoved(usageMetricTemplate, client, oldMetric, "2020-01-01");
           verifyNotMoved(usageMetricTemplate, client, recentMetric);
         });
@@ -109,13 +108,13 @@ public class UsageMetricsArchiverJobIT extends ArchiverJobIT<UsageMetricsArchive
 
           store(usageMetricTemplate, client, metric1);
           store(usageMetricTemplate, client, metric2);
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
 
           // then - both should be archived to the same dated index in a single batch
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(2);
+          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(2);
           verifyMoved(usageMetricTemplate, client, metric1, "2020-03-01");
           verifyMoved(usageMetricTemplate, client, metric2, "2020-03-01");
         });
@@ -136,22 +135,22 @@ public class UsageMetricsArchiverJobIT extends ArchiverJobIT<UsageMetricsArchive
 
           store(usageMetricTemplate, client, januaryMetric);
           store(usageMetricTemplate, client, marchMetric);
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when - first execution archives the oldest batch
           final var firstBatch = job.execute();
 
           // then
-          assertThat(firstBatch).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(firstBatch).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
           verifyMoved(usageMetricTemplate, client, januaryMetric, "2020-01-01");
           verifyNotMoved(usageMetricTemplate, client, marchMetric);
 
           // when - second execution archives the next batch
-          client.refresh(); // refresh so we don't try to move the same batch
+          client.refresh(testPrefix); // refresh so we don't try to move the same batch
           final var secondBatch = job.execute();
 
           // then
-          assertThat(secondBatch).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(secondBatch).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
           verifyMoved(usageMetricTemplate, client, marchMetric, "2020-03-01");
         });
   }
@@ -168,13 +167,13 @@ public class UsageMetricsArchiverJobIT extends ArchiverJobIT<UsageMetricsArchive
 
           final var metric = usageMetricTU("2020-01-15T10:00:00+00:00");
           store(template, client, metric);
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
           verifyMoved(template, client, metric, "2020-01-01");
         });
   }
@@ -194,13 +193,13 @@ public class UsageMetricsArchiverJobIT extends ArchiverJobIT<UsageMetricsArchive
 
           store(template, client, oldMetric);
           store(template, client, recentMetric);
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
 
           // then - only old metric should be archived
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
           verifyMoved(template, client, oldMetric, "2020-01-01");
           verifyNotMoved(template, client, recentMetric);
         });
@@ -221,13 +220,13 @@ public class UsageMetricsArchiverJobIT extends ArchiverJobIT<UsageMetricsArchive
 
           store(template, client, metric1);
           store(template, client, metric2);
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
 
           // then - both should be archived to the same dated index in a single batch
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(2);
+          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(2);
           verifyMoved(template, client, metric1, "2020-03-01");
           verifyMoved(template, client, metric2, "2020-03-01");
         });
@@ -248,22 +247,22 @@ public class UsageMetricsArchiverJobIT extends ArchiverJobIT<UsageMetricsArchive
 
           store(template, client, januaryMetric);
           store(template, client, marchMetric);
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when - first execution archives the oldest batch
           final var firstBatch = job.execute();
 
           // then
-          assertThat(firstBatch).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(firstBatch).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
           verifyMoved(template, client, januaryMetric, "2020-01-01");
           verifyNotMoved(template, client, marchMetric);
 
           // when - second execution archives the next batch
-          client.refresh();
+          client.refresh(testPrefix);
           final var secondBatch = job.execute();
 
           // then
-          assertThat(secondBatch).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(secondBatch).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
           verifyMoved(template, client, marchMetric, "2020-03-01");
         });
   }

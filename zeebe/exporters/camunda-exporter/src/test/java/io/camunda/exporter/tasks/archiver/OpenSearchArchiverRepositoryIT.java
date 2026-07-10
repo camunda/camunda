@@ -1500,7 +1500,7 @@ final class OpenSearchArchiverRepositoryIT {
   }
 
   private void startupSchema() {
-    final var searchEngineClient = new OpensearchEngineClient(testClient, objectMapper);
+    final var searchEngineClient = new OpensearchEngineClient(testClient, MAPPER);
     final var connectConfig = new ConnectConfiguration();
     connectConfig.setIndexPrefix(testUniqueId);
     connectConfig.setUrl(SEARCH_DB.esUrl());
@@ -1519,7 +1519,7 @@ final class OpenSearchArchiverRepositoryIT {
             resourceProvider.getIndexDescriptors(),
             resourceProvider.getIndexTemplateDescriptors(),
             searchEngineConfiguration,
-            objectMapper)
+            MAPPER)
         .startup();
   }
 
