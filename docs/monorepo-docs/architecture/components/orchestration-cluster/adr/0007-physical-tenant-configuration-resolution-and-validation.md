@@ -27,7 +27,7 @@ runtime/security decisions already captured in the sibling ADRs in this folder:
 [ADR-0003](0003-physical-tenant-request-scoping-via-pre-security-filter.md) (request scoping),
 [ADR-0004](0004-per-physical-tenant-provider-selection-via-assigned.md) (provider selection),
 [ADR-0005](0005-physical-tenant-routing-of-authorization-reads.md) (authorization-read routing) and
-ADR-0006 (gRPC authentication). Those consume the resolved per-tenant `Camunda`; this ADR is about
+[ADR-0006](0006-physical-tenant-scoped-grpc-authentication.md) (gRPC authentication). Those consume the resolved per-tenant `Camunda`; this ADR is about
 how that `Camunda` is produced and validated.
 
 The problem breaks into three parts:
@@ -80,9 +80,9 @@ the root configuration as a tenant, and the synthesized `default` participates i
 like any other tenant. An explicit `default` declaration is honored as-is.
 
 **Tenant-id constraints.** Ids are discovered by pure key inspection and must be lowercase
-alphanumeric (`[a-z0-9]+`, no dashes) and at most 64 characters. Forbidding dashes keeps YAML
-(`tenant-a`) and environment-variable (`CAMUNDA_PHYSICALTENANTS_TENANTA_*`) forms from resolving to
-two different ids.
+alphanumeric (`[a-z0-9]+`, no dashes) and at most 64 characters. This avoids a mismatch where a YAML
+key containing punctuation (e.g. `tenant-a`) and an environment-variable form that typically drops it
+(e.g. `CAMUNDA_PHYSICALTENANTS_TENANTA_*`) could otherwise resolve to different ids.
 
 ### 2. The `MapBinder` defect and the generic overlay engine (typed-POJO maps)
 
