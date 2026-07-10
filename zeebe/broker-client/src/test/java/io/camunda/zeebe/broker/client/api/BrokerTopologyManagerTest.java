@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.client.api;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.BrokerMemberId;
@@ -620,6 +621,62 @@ final class BrokerTopologyManagerTest {
     // then — backfill fires brokerAdded with the known group
     assertThat(capturedMembers).containsExactly(brokerId);
     assertThat(capturedGroups).containsExactly("tenant1");
+  }
+
+  @Test
+  void shouldNotifyListenerWithGroupWhenBrokerRemoved() {
+    // given
+    final var brokerId = BrokerMemberId.from(0);
+    final BrokerInfo broker = createBrokerWithGroup(brokerId, "tenant1");
+    notifyEvent(createMemberAddedEvent(broker));
+
+    final var capturedRemovedGroups = new CopyOnWriteArrayList<String>();
+    final var capturedRemovedMembers = new CopyOnWriteArrayList<BrokerMemberId>();
+    addTopologyListener(
+        new BrokerTopologyListener() {
+          @Override
+          public void brokerRemoved(final BrokerMemberId memberId, final String physicalTenantId) {
+            capturedRemovedMembers.add(memberId);
+            capturedRemovedGroups.add(physicalTenantId);
+          }
+        });
+
+    // when
+    notifyEvent(createMemberRemoveEvent(broker));
+
+    // then
+    assertThat(capturedRemovedMembers).containsExactly(brokerId);
+    assertThat(capturedRemovedGroups).containsExactly("tenant1");
+  }
+
+  @Test
+  void shouldNotifyListenerForEachGroupOnBrokerRemoved() {
+    // given — broker 0 serves both default and tenant1 groups
+    final var brokerId = BrokerMemberId.from(0);
+    final BrokerInfo defaultInfo = createBroker(brokerId);
+    final BrokerInfo tenant1Info = createBrokerWithGroup(brokerId, "tenant1");
+
+    final Member member = new Member(new MemberConfig().setId(defaultInfo.brokerIdStr()));
+    defaultInfo.writeIntoProperties(member.properties());
+    tenant1Info.writeIntoProperties(member.properties());
+    members.add(member);
+    notifyEvent(new ClusterMembershipEvent(Type.MEMBER_ADDED, member));
+
+    final var capturedRemovedGroups = new CopyOnWriteArrayList<String>();
+    addTopologyListener(
+        new BrokerTopologyListener() {
+          @Override
+          public void brokerRemoved(final BrokerMemberId memberId, final String physicalTenantId) {
+            capturedRemovedGroups.add(physicalTenantId);
+          }
+        });
+
+    // when
+    notifyEvent(new ClusterMembershipEvent(Type.MEMBER_REMOVED, member));
+
+    // then — one notification per group
+    assertThat(capturedRemovedGroups)
+        .containsExactlyInAnyOrder(DEFAULT_PHYSICAL_TENANT_ID, "tenant1");
   }
 
   @Test
