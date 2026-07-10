@@ -32,13 +32,23 @@ global:
     ingress:
       # The domain name under which to expose the preview environment
       domain: camunda.camunda.cloud
-      # WARNING: When enabled, this bypasses Vouch/Okta authentication for all
-      # requests originating from the 10.0.0.0/8 internal IP range, granting
-      # unauthenticated access to any client within that network. This is
-      # intended only for tightly controlled CI/testing scenarios (for example,
-      # CI access via a Teleport TCP tunnel).
+      # WARNING: When enabled, requests from the `sourceRange` networks (the
+      # in-cluster / Teleport tunnel network) bypass Vouch/Okta authentication
+      # ENTIRELY via a high-priority Traefik IngressRoute
+      # (templates/internal-bypass-ingressroute.yml) — the nginx-era
+      # `satisfy: any` + `whitelist-source-range` semantics. This deliberately
+      # covers browser-internal requests (service-worker script fetches and
+      # service-worker-issued requests) that a header-based bypass can never
+      # reach, which Management Identity depends on. External traffic never
+      # matches and keeps the Vouch flow. Intended only for tightly controlled
+      # CI/testing scenarios (for example, CI access via a Teleport TCP tunnel).
       internalAuthBypass:
         enabled: false
+        # Source ranges permitted to skip Vouch. This is where security is
+        # enforced: nothing a client sends (headers, cookies) grants access —
+        # only the network it connects from.
+        sourceRange:
+        - 10.0.0.0/8
     secrets:
       name: camunda-credentials
 
@@ -274,8 +284,6 @@ camunda-platform:
     fullnameOverride: identity
     contextPath: /identity
     fullURL: https://{{ include "ingress.domain" . }}{{ .Values.identity.contextPath }}
-    # image:
-    #     repository: camunda/identity
     firstUser:
       enabled: true
       username: demo
