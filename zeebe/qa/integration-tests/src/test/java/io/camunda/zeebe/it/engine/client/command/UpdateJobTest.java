@@ -347,6 +347,78 @@ public class UpdateJobTest {
         .hasMessageContaining(expectedMessage);
   }
 
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldUpdateTimeoutOfLeasedJobWithoutLeaseToken(
+      final boolean useRest, final TestInfo testInfo) {
+    // given
+    final String jobType = "job-" + testInfo.getDisplayName();
+    createProcessInstance(jobType);
+    final var job = activateLeasedJob(client, useRest, jobType);
+    assertThat(job.getLeaseToken())
+        .describedAs("Expected the leased job to carry a lease token")
+        .isNotEmpty();
+    final long jobKey = job.getKey();
+    final long initialDeadline = job.getDeadline();
+    final long timeout = Duration.ofMinutes(15).toMillis();
+
+    // when
+    // property-update commands validate the lease only if one is supplied; an absent token
+    // must proceed even on a leased job (operator/bulk paths)
+    getTimeoutCommand(client, useRest, jobKey).timeout(timeout).send().join();
+
+    // then
+    assertTimeoutIncreased(initialDeadline, jobKey, useRest);
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldRejectUpdateTimeoutOfLeasedJobWithWrongLeaseToken(
+      final boolean useRest, final TestInfo testInfo) {
+    // given
+    final String jobType = "job-" + testInfo.getDisplayName();
+    createProcessInstance(jobType);
+    final var job = activateLeasedJob(client, useRest, jobType);
+    assertThat(job.getLeaseToken())
+        .describedAs("Expected the leased job to carry a lease token")
+        .isNotEmpty();
+    final long jobKey = job.getKey();
+    final long timeout = Duration.ofMinutes(15).toMillis();
+
+    // when / then
+    final var expectedMessage =
+        String.format(
+            "Expected to process job with key '%d', but the supplied lease token does not match "
+                + "the lease token of the job",
+            jobKey);
+    assertThatThrownBy(
+            () ->
+                getTimeoutCommand(client, useRest, jobKey)
+                    .timeout(timeout)
+                    .withLeaseToken("wrong-lease-token")
+                    .send()
+                    .join())
+        .hasMessageContaining(expectedMessage);
+  }
+
+  private ActivatedJob activateLeasedJob(
+      final CamundaClient client, final boolean useRest, final String jobType) {
+    final var activateResponse =
+        getActivateCommand(client, useRest)
+            .jobType(jobType)
+            .maxJobsToActivate(1)
+            .timeout(Duration.ofMinutes(14))
+            .withLease(true)
+            .send()
+            .join();
+
+    assertThat(activateResponse.getJobs())
+        .describedAs("Expected one job to be activated")
+        .hasSize(1);
+
+    return activateResponse.getJobs().get(0);
+  }
+
   private void assertTimeoutIncreased(
       final long initialDeadline, final long jobKey, final boolean useRest) {
     final Long updatedDeadline =

@@ -12,10 +12,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.CompleteJobCommandStep1.CompleteJobCommandJobResultStep;
+import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -211,6 +214,118 @@ public final class CompleteJobTest {
     // when
     assertThatThrownBy(() -> getCommand(client, useRest, jobKey).variable(null, null).send().join())
         .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldCompleteLeasedJobWithMatchingLeaseToken(
+      final boolean useRest, final TestInfo testInfo) {
+    // given
+    final String jobType = "job-" + testInfo.getDisplayName();
+    final var job = activateLeasedJob(client, useRest, jobType);
+    assertThat(job.getLeaseToken())
+        .describedAs("Expected the leased job to carry a lease token")
+        .isNotEmpty();
+
+    // when
+    getCommand(client, useRest, job.getKey()).withLeaseToken(job.getLeaseToken()).send().join();
+
+    // then
+    ZeebeAssertHelper.assertJobCompleted(jobType);
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldRejectCompleteLeasedJobWithWrongLeaseToken(
+      final boolean useRest, final TestInfo testInfo) {
+    // given
+    final String jobType = "job-" + testInfo.getDisplayName();
+    final var job = activateLeasedJob(client, useRest, jobType);
+    assertThat(job.getLeaseToken())
+        .describedAs("Expected the leased job to carry a lease token")
+        .isNotEmpty();
+
+    // when / then
+    final var expectedMessage =
+        String.format(
+            "Expected to process job with key '%d', but the supplied lease token does not match "
+                + "the lease token of the job",
+            job.getKey());
+    assertThatThrownBy(
+            () ->
+                getCommand(client, useRest, job.getKey())
+                    .withLeaseToken("wrong-lease-token")
+                    .send()
+                    .join())
+        .hasMessageContaining(expectedMessage);
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldRejectCompleteLeasedJobWithoutLeaseToken(
+      final boolean useRest, final TestInfo testInfo) {
+    // given
+    final String jobType = "job-" + testInfo.getDisplayName();
+    final var job = activateLeasedJob(client, useRest, jobType);
+    assertThat(job.getLeaseToken())
+        .describedAs("Expected the leased job to carry a lease token")
+        .isNotEmpty();
+
+    // when / then
+    final var expectedMessage =
+        String.format(
+            "Expected to process job with key '%d', but a matching lease token must be provided "
+                + "because the job is currently leased",
+            job.getKey());
+    assertThatThrownBy(() -> getCommand(client, useRest, job.getKey()).send().join())
+        .hasMessageContaining(expectedMessage);
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldCompleteLeasedJobWithLeaseTokenCarriedFromActivatedJob(
+      final boolean useRest, final TestInfo testInfo) {
+    // given
+    final String jobType = "job-" + testInfo.getDisplayName();
+    final var job = activateLeasedJob(client, useRest, jobType);
+    assertThat(job.getLeaseToken())
+        .describedAs("Expected the leased job to carry a lease token")
+        .isNotEmpty();
+
+    // when
+    final CompleteJobCommandStep1 command = client.newCompleteCommand(job);
+    (useRest ? command.useRest() : command.useGrpc()).send().join();
+
+    // then
+    ZeebeAssertHelper.assertJobCompleted(jobType);
+  }
+
+  private ActivatedJob activateLeasedJob(
+      final CamundaClient client, final boolean useRest, final String jobType) {
+    final var processDefinitionKey =
+        resourcesHelper.deployProcess(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType(jobType))
+                .endEvent()
+                .done());
+    resourcesHelper.createProcessInstance(processDefinitionKey);
+
+    final ActivateJobsCommandStep1 activateCommand = client.newActivateJobsCommand();
+    final var activateResponse =
+        (useRest ? activateCommand.useRest() : activateCommand.useGrpc())
+            .jobType(jobType)
+            .maxJobsToActivate(1)
+            .timeout(Duration.ofMinutes(14))
+            .withLease(true)
+            .send()
+            .join();
+
+    assertThat(activateResponse.getJobs())
+        .describedAs("Expected one job to be activated")
+        .hasSize(1);
+
+    return activateResponse.getJobs().get(0);
   }
 
   private CompleteJobCommandStep1 getCommand(
