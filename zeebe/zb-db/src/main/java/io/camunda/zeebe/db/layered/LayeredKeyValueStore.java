@@ -8,6 +8,8 @@
 package io.camunda.zeebe.db.layered;
 
 import io.camunda.zeebe.db.layered.segment.FlatSegment;
+import io.camunda.zeebe.db.layered.segment.KWayMergeIterator;
+import io.camunda.zeebe.db.layered.segment.ShadowingZipper;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -277,32 +279,12 @@ public final class LayeredKeyValueStore {
     }
     // the clean cache is intentionally absent: its entries mirror the delegate, which the
     // delegate stream below already returns
-    final MergedCursor buffered = new MergedCursor(layers);
-    delegate.prefixScan(
-        prefix,
-        (key, value) -> {
-          while (buffered.hasNext() && Arrays.compareUnsigned(buffered.peekKey(), key) < 0) {
-            emit(buffered.next(), visitor);
-          }
-          if (buffered.hasNext() && Arrays.compareUnsigned(buffered.peekKey(), key) == 0) {
-            emit(buffered.next(), visitor); // any buffered version shadows the committed one
-          } else {
-            visitor.accept(key, value);
-          }
-        });
-    while (buffered.hasNext()) {
-      emit(buffered.next(), visitor);
-    }
+    ShadowingZipper.merge(
+        new KWayMergeIterator(layers), scan -> delegate.prefixScan(prefix, scan), visitor);
   }
 
   public void forEach(final BiConsumer<byte[], byte[]> visitor) {
     prefixScan(EMPTY_PREFIX, visitor);
-  }
-
-  private static void emit(final Entry entry, final BiConsumer<byte[], byte[]> visitor) {
-    if (!entry.tombstone()) {
-      visitor.accept(entry.key(), entry.value());
-    }
   }
 
   // ------------------------------------------------------------------
@@ -531,68 +513,5 @@ public final class LayeredKeyValueStore {
       }
     }
     return null;
-  }
-
-  /**
-   * A k-way merge cursor over the in-memory layers, ordered by priority: staging, active, then
-   * pipeline segments newest first. Yields one entry per key — the highest-priority version — and
-   * consumes every shadowed lower version of the same key.
-   */
-  private static final class MergedCursor {
-
-    private final List<Iterator<Entry>> layers;
-    private final Entry[] heads;
-    private Entry next;
-
-    MergedCursor(final List<Iterator<Entry>> layers) {
-      this.layers = layers;
-      heads = new Entry[layers.size()];
-      for (int i = 0; i < layers.size(); i++) {
-        advance(i);
-      }
-      next = computeNext();
-    }
-
-    boolean hasNext() {
-      return next != null;
-    }
-
-    byte[] peekKey() {
-      return next.key();
-    }
-
-    Entry next() {
-      final Entry current = next;
-      next = computeNext();
-      return current;
-    }
-
-    private Entry computeNext() {
-      int winner = -1;
-      for (int i = 0; i < heads.length; i++) {
-        if (heads[i] == null) {
-          continue;
-        }
-        // strict comparison: on equal keys the earlier (higher-priority) layer keeps the win
-        if (winner == -1 || Arrays.compareUnsigned(heads[i].key(), heads[winner].key()) < 0) {
-          winner = i;
-        }
-      }
-      if (winner == -1) {
-        return null;
-      }
-      final Entry result = heads[winner];
-      for (int i = 0; i < heads.length; i++) {
-        if (heads[i] != null && Arrays.compareUnsigned(heads[i].key(), result.key()) == 0) {
-          advance(i);
-        }
-      }
-      return result;
-    }
-
-    private void advance(final int layer) {
-      final Iterator<Entry> iterator = layers.get(layer);
-      heads[layer] = iterator.hasNext() ? iterator.next() : null;
-    }
   }
 }

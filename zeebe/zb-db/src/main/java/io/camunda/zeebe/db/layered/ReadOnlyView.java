@@ -9,8 +9,8 @@ package io.camunda.zeebe.db.layered;
 
 import io.camunda.zeebe.db.layered.segment.FlatSegment;
 import io.camunda.zeebe.db.layered.segment.KWayMergeIterator;
+import io.camunda.zeebe.db.layered.segment.ShadowingZipper;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -82,25 +82,10 @@ public final class ReadOnlyView {
     for (final FlatSegment segment : segments) {
       streams.add(segment.range(prefix));
     }
-    // the snapshot's stream is push-based, so the pull-based segment merge acts as a pending
-    // cursor: emit everything below the pushed key, shadow it on an equal key, flush the tail
-    final PendingCursor buffered = new PendingCursor(new KWayMergeIterator(streams));
-    snapshot.prefixScan(
-        storeName,
-        prefix,
-        (key, value) -> {
-          while (buffered.hasNext() && Arrays.compareUnsigned(buffered.peekKey(), key) < 0) {
-            emit(buffered.next(), visitor);
-          }
-          if (buffered.hasNext() && Arrays.compareUnsigned(buffered.peekKey(), key) == 0) {
-            emit(buffered.next(), visitor); // any segment version shadows the snapshot one
-          } else {
-            visitor.accept(key, value);
-          }
-        });
-    while (buffered.hasNext()) {
-      emit(buffered.next(), visitor);
-    }
+    ShadowingZipper.merge(
+        new KWayMergeIterator(streams),
+        scan -> snapshot.prefixScan(storeName, prefix, scan),
+        visitor);
   }
 
   /** The pinned snapshot, exposed for the coordinator's rotation. Readers never close it. */
@@ -116,41 +101,5 @@ public final class ReadOnlyView {
               .formatted(storeName, segmentsNewestFirstByStore.keySet()));
     }
     return segments;
-  }
-
-  private static void emit(final Entry entry, final BiConsumer<byte[], byte[]> visitor) {
-    if (!entry.tombstone()) {
-      visitor.accept(entry.key(), entry.value());
-    }
-  }
-
-  /** A single-entry lookahead over the segment merge, so the push-based snapshot side can peek. */
-  private static final class PendingCursor {
-
-    private final Iterator<Entry> entries;
-    private Entry next;
-
-    PendingCursor(final Iterator<Entry> entries) {
-      this.entries = entries;
-      advance();
-    }
-
-    boolean hasNext() {
-      return next != null;
-    }
-
-    byte[] peekKey() {
-      return next.key();
-    }
-
-    Entry next() {
-      final Entry current = next;
-      advance();
-      return current;
-    }
-
-    private void advance() {
-      next = entries.hasNext() ? entries.next() : null;
-    }
   }
 }
