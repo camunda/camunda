@@ -195,6 +195,9 @@ final class MemberIdTest {
       // when / then
       assertThat(MemberId.ID_COMPARATOR.compare(member2, member10)).isNegative();
       assertThat(MemberId.ID_COMPARATOR.compare(member10, member2)).isPositive();
+
+      assertThat(member2.compareTo(member10)).isNegative();
+      assertThat(member10.compareTo(member2)).isPositive();
     }
 
     @Test
@@ -205,6 +208,7 @@ final class MemberIdTest {
 
       // when / then
       assertThat(MemberId.ID_COMPARATOR.compare(usZone0, euZone1)).isNegative();
+      assertThat(usZone0.compareTo(euZone1)).isNegative();
     }
 
     @Test
@@ -216,6 +220,9 @@ final class MemberIdTest {
       // when / then — "eu" < "us"
       assertThat(MemberId.ID_COMPARATOR.compare(euZone0, usZone0)).isNegative();
       assertThat(MemberId.ID_COMPARATOR.compare(usZone0, euZone0)).isPositive();
+
+      assertThat(euZone0.compareTo(usZone0)).isNegative();
+      assertThat(usZone0.compareTo(euZone0)).isPositive();
     }
 
     @Test
@@ -226,6 +233,7 @@ final class MemberIdTest {
 
       // when / then
       assertThat(MemberId.ID_COMPARATOR.compare(bare, zoned)).isNegative();
+      assertThat(bare.compareTo(zoned)).isNegative();
     }
 
     @Test
@@ -236,6 +244,7 @@ final class MemberIdTest {
 
       // when / then
       assertThat(MemberId.ID_COMPARATOR.compare(indexed, anonymous)).isNegative();
+      assertThat(indexed.compareTo(anonymous)).isNegative();
     }
 
     @Test
@@ -251,10 +260,12 @@ final class MemberIdTest {
       final var members = List.of(bare10, us0, eu1, bare2, eu0, bare0);
 
       // when
-      final var sorted = members.stream().sorted(MemberId.ID_COMPARATOR).toList();
+      final var sorted = members.stream().sorted().toList();
+      final var sortedViaComparator = members.stream().sorted(MemberId.ID_COMPARATOR).toList();
 
       // then — bare0 first (nodeIdx=0, no zone), then eu0 (nodeIdx=0, "eu"), then us0 (nodeIdx=0,
       // "us"), then eu1, bare2, bare10
+      assertThat(sorted).isEqualTo(sortedViaComparator);
       assertThat(sorted).containsExactly(bare0, eu0, us0, eu1, bare2, bare10);
     }
   }
