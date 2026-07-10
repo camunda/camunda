@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
-import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
-
 import io.camunda.zeebe.broker.jobstream.JobStreamMetrics;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.jobstream.RemoteJobStreamErrorHandlerService;
@@ -28,6 +26,7 @@ import io.camunda.zeebe.transport.stream.api.RemoteStreamService;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
@@ -71,8 +70,12 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
           }
           brokerStartupContext
               .getSpringBrokerBridge()
-              .registerJobStreamServiceSupplier(
-                  () -> brokerStartupContext.getJobStreamService(DEFAULT_PHYSICAL_TENANT_ID));
+              .registerJobStreamServicesSupplier(
+                  () ->
+                      tenantIds.stream()
+                          .map(brokerStartupContext::getJobStreamService)
+                          .filter(Objects::nonNull)
+                          .toList());
           startupFuture.complete(brokerStartupContext);
         });
   }
@@ -95,7 +98,7 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
     concurrencyControl.runOnCompletion(
         futures,
         (ok, err) -> {
-          brokerShutdownContext.getSpringBrokerBridge().registerJobStreamServiceSupplier(null);
+          brokerShutdownContext.getSpringBrokerBridge().registerJobStreamServicesSupplier(null);
           if (err != null) {
             shutdownFuture.completeExceptionally(err);
           } else {

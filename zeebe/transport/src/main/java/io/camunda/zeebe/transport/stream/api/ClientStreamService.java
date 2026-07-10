@@ -20,7 +20,7 @@ import java.util.Optional;
  * Manages an instance of {@link ClientStreamer}. Intended to be the main entry point when setting
  * up the client side for remote streams, primarily via {@link
  * io.camunda.zeebe.transport.TransportFactory#createRemoteStreamClient(ClusterCommunicationService,
- * ClientStreamMetrics, String)}.
+ * ClientStreamMetrics)}.
  *
  * @param <M> the type of the streaming metadata
  */
@@ -33,10 +33,12 @@ public interface ClientStreamService<M extends BufferWriter> extends AsyncClosab
   ActorFuture<Void> start(final ActorSchedulingService schedulingService);
 
   /**
-   * A callback to be invoked when a new streaming server is added. Implementations should be
+   * A callback to be invoked when a streaming server is confirmed to serve a specific partition
+   * group. Drives group-aware stream registration: only streams whose physical tenant matches
+   * {@code physicalTenantId} are registered with {@code memberId}. Implementations should be
    * idempotent.
    */
-  void onServerJoined(final MemberId memberId);
+  void onServerJoined(final MemberId memberId, final String physicalTenantId);
 
   /**
    * A callback to be invoked when a new streaming server is removed. Implementations should be

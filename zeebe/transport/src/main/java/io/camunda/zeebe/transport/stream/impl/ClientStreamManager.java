@@ -15,7 +15,10 @@ import io.camunda.zeebe.transport.stream.api.ClientStreamMetrics;
 import io.camunda.zeebe.transport.stream.api.NoSuchStreamException;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
@@ -23,7 +26,13 @@ import org.slf4j.LoggerFactory;
 
 final class ClientStreamManager<M extends BufferWriter> {
   private static final Logger LOG = LoggerFactory.getLogger(ClientStreamManager.class);
-  private final Set<MemberId> servers = new HashSet<>();
+
+  /** physicalTenantId → set of broker member IDs serving that physical tenant */
+  private final Map<String, Set<MemberId>> serversByPhysicalTenantId = new HashMap<>();
+
+  /** broker member ID → set of physicalTenantIds it serves (for RESTART lookup) */
+  private final Map<MemberId, Set<String>> physicalTenantsByServer = new HashMap<>();
+
   private final ClientStreamRegistry<M> registry;
   private final ClientStreamRequestManager<M> requestManager;
   private final ClientStreamMetrics metrics;
@@ -40,22 +49,56 @@ final class ClientStreamManager<M extends BufferWriter> {
   }
 
   /**
-   * When a new server is added to the cluster, or an existing server restarted, existing client
-   * streams must be registered (again) with the server.
+   * Called when a server joins the cluster for a specific partition group. Only streams whose
+   * physical tenant matches {@code physicalTenantId} are registered with this server.
    *
-   * @param serverId id of the server that is added or restarted
+   * @param serverId the joining server
+   * @param physicalTenantId the physical tenant served by this server
    */
-  void onServerJoined(final MemberId serverId) {
-    servers.add(serverId);
-    metrics.serverCount(servers.size());
+  void onServerJoined(final MemberId serverId, final String physicalTenantId) {
+    serversByPhysicalTenantId
+        .computeIfAbsent(physicalTenantId, id -> new HashSet<>())
+        .add(serverId);
+    physicalTenantsByServer.computeIfAbsent(serverId, id -> new HashSet<>()).add(physicalTenantId);
+    metrics.serverCount(physicalTenantsByServer.size());
 
-    registry.list().forEach(c -> requestManager.add(c, serverId));
+    registry.list().stream()
+        .filter(c -> physicalTenantId.equals(c.physicalTenantId()))
+        .forEach(c -> requestManager.add(c, serverId));
   }
 
   void onServerRemoved(final MemberId serverId) {
-    servers.remove(serverId);
-    metrics.serverCount(servers.size());
+    final var physicalTenantIds = physicalTenantsByServer.remove(serverId);
+    if (physicalTenantIds != null) {
+      physicalTenantIds.forEach(
+          physicalTenantId -> {
+            final var servers = serversByPhysicalTenantId.get(physicalTenantId);
+            if (servers != null) {
+              servers.remove(serverId);
+              if (servers.isEmpty()) {
+                serversByPhysicalTenantId.remove(physicalTenantId);
+              }
+            }
+          });
+    }
+    metrics.serverCount(physicalTenantsByServer.size());
     requestManager.onServerRemoved(serverId);
+  }
+
+  /**
+   * Called when a server that was already in the topology sends a RESTART_STREAMS signal. Resets
+   * its registrations and re-registers all streams belonging to its known physical tenants —
+   * without touching the topology maps.
+   */
+  void onServerRestarted(final MemberId serverId) {
+    requestManager.onServerRemoved(serverId);
+    physicalTenantsByServer
+        .getOrDefault(serverId, Collections.emptySet())
+        .forEach(
+            physicalTenantId ->
+                registry.list().stream()
+                    .filter(c -> physicalTenantId.equals(c.physicalTenantId()))
+                    .forEach(c -> requestManager.add(c, serverId)));
   }
 
   ClientStreamId add(
@@ -67,6 +110,8 @@ final class ClientStreamManager<M extends BufferWriter> {
     final var clientStream =
         registry.addClient(streamType, metadata, clientStreamConsumer, physicalTenantId);
     LOG.debug("Added new client stream [{}]", clientStream.streamId());
+    final var servers =
+        serversByPhysicalTenantId.getOrDefault(physicalTenantId, Collections.emptySet());
     clientStream.serverStream().open(requestManager, servers);
 
     return clientStream.streamId();
@@ -79,13 +124,16 @@ final class ClientStreamManager<M extends BufferWriter> {
         stream -> {
           LOG.debug("Removing aggregated stream [{}]", stream.streamId());
           stream.close();
+          final var servers =
+              serversByPhysicalTenantId.getOrDefault(
+                  stream.physicalTenantId(), Collections.emptySet());
           requestManager.remove(stream, servers);
         });
   }
 
   void close() {
     registry.clear();
-    requestManager.removeAll(servers);
+    requestManager.removeAll(serversByPhysicalTenantId);
   }
 
   public void onPayloadReceived(
@@ -115,7 +163,7 @@ final class ClientStreamManager<M extends BufferWriter> {
           // Stream does not exist. We expect to have already sent remove request to all servers.
           // But just in case that request is lost, we send remove request again. To keep it simple,
           // we do not retry. Otherwise, it is possible that we send it multiple times unnecessary.
-          requestManager.removeUnreliable(streamId, servers);
+          requestManager.removeUnreliable(streamId, serversByPhysicalTenantId);
           LOG.warn("Expected to push payload to stream {}, but no stream found.", streamId);
           responseFuture.completeExceptionally(
               new NoSuchStreamException(

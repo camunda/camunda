@@ -42,6 +42,7 @@ import org.junit.jupiter.api.Test;
 
 class ClientStreamManagerTest {
 
+  private static final String OTHER_PHYSICAL_TENANT_ID = "other-tenant";
   private static final ClientStreamConsumer NOOP_CONSUMER =
       p -> CompletableActorFuture.completed(null);
   private final DirectBuffer streamType = BufferUtil.wrapString("foo");
@@ -52,8 +53,7 @@ class ClientStreamManagerTest {
   private final ClientStreamManager<TestMetadata> clientStreamManager =
       new ClientStreamManager<>(
           registry,
-          new ClientStreamRequestManager<>(
-              mockTransport, new TestConcurrencyControl(), DEFAULT_PHYSICAL_TENANT_ID),
+          new ClientStreamRequestManager<>(mockTransport, new TestConcurrencyControl()),
           metrics);
 
   @BeforeEach
@@ -95,13 +95,13 @@ class ClientStreamManagerTest {
   void shouldAddStreamAfterServerWasRemoved() {
     // given
     final var serverId = MemberId.anonymous();
-    clientStreamManager.onServerJoined(serverId);
+    clientStreamManager.onServerJoined(serverId, DEFAULT_PHYSICAL_TENANT_ID);
     final var streamId =
         clientStreamManager.add(streamType, metadata, NOOP_CONSUMER, DEFAULT_PHYSICAL_TENANT_ID);
     clientStreamManager.onServerRemoved(serverId);
 
     // when
-    clientStreamManager.onServerJoined(serverId);
+    clientStreamManager.onServerJoined(serverId, DEFAULT_PHYSICAL_TENANT_ID);
 
     // then
     assertThat(registry.getClient(streamId))
@@ -167,9 +167,9 @@ class ClientStreamManagerTest {
   void shouldOpenStreamToExistingServers() {
     // given
     final MemberId server1 = MemberId.from("1");
-    clientStreamManager.onServerJoined(server1);
+    clientStreamManager.onServerJoined(server1, DEFAULT_PHYSICAL_TENANT_ID);
     final MemberId server2 = MemberId.from("2");
-    clientStreamManager.onServerJoined(server2);
+    clientStreamManager.onServerJoined(server2, DEFAULT_PHYSICAL_TENANT_ID);
 
     // when
     final var uuid =
@@ -192,7 +192,7 @@ class ClientStreamManagerTest {
 
     // when
     final MemberId server = MemberId.from("3");
-    clientStreamManager.onServerJoined(server);
+    clientStreamManager.onServerJoined(server, DEFAULT_PHYSICAL_TENANT_ID);
 
     // then
     assertThat(serverStream.isConnected(server)).isTrue();
@@ -209,9 +209,10 @@ class ClientStreamManagerTest {
             BufferUtil.wrapString("bar"), metadata, NOOP_CONSUMER, DEFAULT_PHYSICAL_TENANT_ID);
     final var serverStream1 = registry.get(getServerStreamId(stream1)).orElseThrow();
     final var serverStream2 = registry.get(getServerStreamId(stream2)).orElseThrow();
+
     // when
     final MemberId server = MemberId.from("3");
-    clientStreamManager.onServerJoined(server);
+    clientStreamManager.onServerJoined(server, DEFAULT_PHYSICAL_TENANT_ID);
 
     // then
     assertThat(serverStream1.isConnected(server)).isTrue();
@@ -326,7 +327,7 @@ class ClientStreamManagerTest {
   void shouldRemoveServerFromClientStream() {
     // given
     final MemberId server = MemberId.from("1");
-    clientStreamManager.onServerJoined(server);
+    clientStreamManager.onServerJoined(server, DEFAULT_PHYSICAL_TENANT_ID);
     final var uuid =
         clientStreamManager.add(streamType, metadata, NOOP_CONSUMER, DEFAULT_PHYSICAL_TENANT_ID);
     final var stream = registry.get(getServerStreamId(uuid)).orElseThrow();
@@ -345,7 +346,7 @@ class ClientStreamManagerTest {
     final MemberId server = MemberId.from("1");
 
     // when
-    clientStreamManager.onServerJoined(server);
+    clientStreamManager.onServerJoined(server, DEFAULT_PHYSICAL_TENANT_ID);
 
     // then
     assertThat(metrics.getServerCount()).isOne();
@@ -355,13 +356,75 @@ class ClientStreamManagerTest {
   void shouldReportServerCountOnRemoved() {
     // given
     final MemberId server = MemberId.from("1");
-    clientStreamManager.onServerJoined(server);
+    clientStreamManager.onServerJoined(server, DEFAULT_PHYSICAL_TENANT_ID);
 
     // when
     clientStreamManager.onServerRemoved(server);
 
     // then
     assertThat(metrics.getServerCount()).isZero();
+  }
+
+  @Test
+  void shouldNotRegisterStreamWithServerFromDifferentGroup() {
+    // given
+    final MemberId defaultServer = MemberId.from("default-1");
+    final MemberId otherServer = MemberId.from("other-1");
+    clientStreamManager.onServerJoined(defaultServer, DEFAULT_PHYSICAL_TENANT_ID);
+    clientStreamManager.onServerJoined(otherServer, OTHER_PHYSICAL_TENANT_ID);
+
+    // when - add a stream for the default group
+    final var uuid =
+        clientStreamManager.add(streamType, metadata, NOOP_CONSUMER, DEFAULT_PHYSICAL_TENANT_ID);
+    final var stream = registry.get(getServerStreamId(uuid)).orElseThrow();
+
+    // then - only registered with the default server, not the other-group server
+    assertThat(stream.isConnected(defaultServer)).isTrue();
+    assertThat(stream.isConnected(otherServer)).isFalse();
+  }
+
+  @Test
+  void shouldOnlyPropagateServerJoinToMatchingGroupStreams() {
+    // given - stream for default group already open
+    final var uuid =
+        clientStreamManager.add(streamType, metadata, NOOP_CONSUMER, DEFAULT_PHYSICAL_TENANT_ID);
+    final var stream = registry.get(getServerStreamId(uuid)).orElseThrow();
+
+    // when - a server from a different group joins
+    final MemberId otherServer = MemberId.from("other-1");
+    clientStreamManager.onServerJoined(otherServer, OTHER_PHYSICAL_TENANT_ID);
+
+    // then - stream not registered with that server
+    assertThat(stream.isConnected(otherServer)).isFalse();
+  }
+
+  @Test
+  void shouldRestartOnlyStreamsForKnownGroups() {
+    // given
+    final MemberId server = MemberId.from("1");
+    clientStreamManager.onServerJoined(server, DEFAULT_PHYSICAL_TENANT_ID);
+    final var uuid =
+        clientStreamManager.add(streamType, metadata, NOOP_CONSUMER, DEFAULT_PHYSICAL_TENANT_ID);
+    final var stream = registry.get(getServerStreamId(uuid)).orElseThrow();
+    assertThat(stream.isConnected(server)).isTrue();
+
+    // when - server restarts
+    clientStreamManager.onServerRestarted(server);
+
+    // then - stream re-registered with same server
+    assertThat(stream.isConnected(server)).isTrue();
+  }
+
+  @Test
+  void shouldHandleRestartFromUnknownServerGracefully() {
+    // given — a stream exists but this server never joined any group
+    clientStreamManager.add(streamType, metadata, NOOP_CONSUMER, DEFAULT_PHYSICAL_TENANT_ID);
+    final MemberId unknownServer = MemberId.from("never-joined");
+
+    // when / then — no exception, stream stays unregistered with unknown server
+    clientStreamManager.onServerRestarted(unknownServer);
+    final var stream = registry.list().stream().findFirst().orElseThrow();
+    assertThat(stream.isConnected(unknownServer)).isFalse();
   }
 
   private UUID getServerStreamId(final ClientStreamId clientStreamId) {

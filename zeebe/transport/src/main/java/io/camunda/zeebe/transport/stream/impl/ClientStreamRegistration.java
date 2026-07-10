@@ -43,6 +43,10 @@ final class ClientStreamRegistration<M extends BufferWriter> {
     return stream.streamId();
   }
 
+  String physicalTenantId() {
+    return stream.physicalTenantId();
+  }
+
   LogicalId<? extends BufferWriter> logicalId() {
     return stream.logicalId();
   }

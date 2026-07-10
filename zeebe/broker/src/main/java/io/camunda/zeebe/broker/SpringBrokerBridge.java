@@ -11,6 +11,7 @@ import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
+import java.util.Collection;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
@@ -29,7 +30,7 @@ public class SpringBrokerBridge {
 
   private Supplier<BrokerHealthCheckService> healthCheckServiceSupplier;
   private Supplier<BrokerAdminService> adminServiceSupplier;
-  private Supplier<JobStreamService> jobStreamServiceSupplier;
+  private Supplier<Collection<JobStreamService>> jobStreamServicesSupplier;
   private Supplier<JobStreamClient> jobStreamClientSupplier;
 
   private BiConsumer<Integer, String> shutdownHelper;
@@ -61,13 +62,13 @@ public class SpringBrokerBridge {
     return Optional.ofNullable(jobStreamClientSupplier).map(Supplier::get);
   }
 
-  public void registerJobStreamServiceSupplier(
-      final Supplier<JobStreamService> jobStreamServiceSupplier) {
-    this.jobStreamServiceSupplier = jobStreamServiceSupplier;
+  public void registerJobStreamServicesSupplier(
+      final Supplier<Collection<JobStreamService>> jobStreamServicesSupplier) {
+    this.jobStreamServicesSupplier = jobStreamServicesSupplier;
   }
 
-  public Optional<JobStreamService> getJobStreamService() {
-    return Optional.ofNullable(jobStreamServiceSupplier).map(Supplier::get);
+  public Optional<Collection<JobStreamService>> getJobStreamServices() {
+    return Optional.ofNullable(jobStreamServicesSupplier).map(Supplier::get);
   }
 
   /**

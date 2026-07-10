@@ -41,8 +41,7 @@ final class ClientStreamApiHandler {
   }
 
   byte[] handleRestartRequest(final MemberId sender, final byte[] ignored) {
-    clientStreamManager.onServerRemoved(MemberId.from(sender.id()));
-    clientStreamManager.onServerJoined(MemberId.from(sender.id()));
+    clientStreamManager.onServerRestarted(MemberId.from(sender.id()));
     return ArrayUtil.EMPTY_BYTE_ARRAY;
   }
 
