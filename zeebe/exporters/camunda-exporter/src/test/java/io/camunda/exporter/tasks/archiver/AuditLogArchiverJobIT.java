@@ -51,7 +51,7 @@ public class AuditLogArchiverJobIT extends ArchiverJobIT<AuditLogArchiverJob> {
   @TestTemplate
   void shouldArchiveAuditLogsAndDeleteCleanupMetadata(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given - a cleanup entity pointing at audit logs by processInstanceKey
@@ -83,7 +83,7 @@ public class AuditLogArchiverJobIT extends ArchiverJobIT<AuditLogArchiverJob> {
           final var archived = job.execute();
 
           // then - should archive 1 audit log + delete 1 cleanup = 2
-          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(2);
+          assertThat(archived).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(2);
 
           // then - matching audit log should be moved to the dated index
           client.refresh(testPrefix);
@@ -100,7 +100,7 @@ public class AuditLogArchiverJobIT extends ArchiverJobIT<AuditLogArchiverJob> {
   @TestTemplate
   void shouldDeleteCleanupMetadataWhenNoMatchingAuditLogs(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given - a cleanup entity with no matching audit logs in the index
@@ -120,7 +120,7 @@ public class AuditLogArchiverJobIT extends ArchiverJobIT<AuditLogArchiverJob> {
           final var archived = job.execute();
 
           // then - should delete the cleanup entry even though there were no audit logs to move
-          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
+          assertThat(archived).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
 
           // then - cleanup metadata should be deleted
           client.refresh(testPrefix);
@@ -133,7 +133,7 @@ public class AuditLogArchiverJobIT extends ArchiverJobIT<AuditLogArchiverJob> {
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
     // set a small rollover batch size so we can trigger the threshold condition
     config.getHistory().setRolloverBatchSize(1);
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given - a cleanup entity with matching audit logs exceeding the batch size
@@ -167,7 +167,7 @@ public class AuditLogArchiverJobIT extends ArchiverJobIT<AuditLogArchiverJob> {
           // then - should archive audit logs but not delete the cleanup metadata since
           // the number of archived audit logs >= rolloverBatchSize, indicating more work remains
           assertThat(archived)
-              .succeedsWithin(ARCHIVE_TIMEOUT)
+              .succeedsWithin(EXECUTE_TIMEOUT)
               .satisfies(count -> assertThat((int) count).isGreaterThanOrEqualTo(1));
 
           // then - cleanup metadata should NOT be deleted because batch size was reached
@@ -179,7 +179,7 @@ public class AuditLogArchiverJobIT extends ArchiverJobIT<AuditLogArchiverJob> {
   @TestTemplate
   void shouldArchiveAuditLogsFromMultipleCleanupEntities(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given - two cleanup entities with matching audit logs
@@ -219,7 +219,7 @@ public class AuditLogArchiverJobIT extends ArchiverJobIT<AuditLogArchiverJob> {
           final var archived = job.execute();
 
           // then - should archive both audit logs and delete both cleanup entries
-          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(4);
+          assertThat(archived).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(4);
 
           // then - both audit logs should be moved
           client.refresh(testPrefix);
