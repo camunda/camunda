@@ -31,8 +31,9 @@ import scala.jdk.javaapi.CollectionConverters;
  *   <li>only expressions are scanned; a static value (no leading {@code =}) is a plain string;
  *   <li>a reference inside a string literal (e.g. {@code ="camunda.secrets.token"}) stays literal,
  *       so a runtime value that merely looks like a reference is never resolved (injection-safe);
- *   <li>FEEL variants — whitespace, unicode, backtick names, trailing access, comments — are
- *       handled by feel-scala.
+ *   <li>FEEL variants — whitespace, unicode, backtick names, comments — are handled by feel-scala;
+ *       a trailing path access into the secret ({@code camunda.secrets.token.length}) is a longer
+ *       qualified name and is deliberately not treated as a reference.
  * </ul>
  */
 @NullMarked
@@ -41,8 +42,8 @@ public record SecretReference(String name) {
   private static final String ROOT = "camunda";
   private static final String NAMESPACE = "secrets";
 
-  /** Segments a {@code camunda.secrets.<name>} reference needs: root, namespace and name. */
-  private static final int MINIMUM_SEGMENTS = 3;
+  /** Segments a {@code camunda.secrets.<name>} reference has: root, namespace and name. */
+  private static final int REFERENCE_SEGMENT_COUNT = 3;
 
   /**
    * Parses the secret references used as expressions in a mapping source, each with the FEEL
@@ -86,7 +87,9 @@ public record SecretReference(String name) {
   }
 
   private static boolean isSecretReference(final List<String> qualifiedName) {
-    return qualifiedName.size() >= MINIMUM_SEGMENTS
+    // exactly three segments: a trailing path access (camunda.secrets.token.length) parses to a
+    // longer qualified name and is deliberately not treated as a reference
+    return qualifiedName.size() == REFERENCE_SEGMENT_COUNT
         && ROOT.equals(qualifiedName.get(0))
         && NAMESPACE.equals(qualifiedName.get(1));
   }
@@ -97,9 +100,9 @@ public record SecretReference(String name) {
   }
 
   /**
-   * A secret reference with the FEEL context path where it occurs: empty for a scalar source,
-   * {@code [x]} for {@code ={x: camunda.secrets.token}}. The path is appended to the mapping target
-   * to form the secret leaf's JSON pointer.
+   * A secret reference with the FEEL context path where it occurs. {@code [x]} for {@code ={x:
+   * camunda.secrets.token}}. The path is appended to the mapping target to form the secret leaf's
+   * JSON pointer.
    */
   public record DetectedSecret(List<String> path, SecretReference secret) {}
 }

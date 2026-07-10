@@ -59,6 +59,8 @@ class SecretReferenceTest {
         "=camunda.vars.clusterVariable",
         "=camunda.secrets.",
         "=camunda.secrets",
+        // a trailing path access into the secret is not a reference (longer qualified name)
+        "=camunda.secrets.token.length",
         // no reference at all
         "=",
         "=userId + orderId",
@@ -176,8 +178,6 @@ class SecretReferenceTest {
         arguments("=camunda.secrets.tokén", refs("tokén")),
         // backtick-escaped names allow special characters
         arguments("=camunda.secrets.`my-secret`", refs("my-secret")),
-        // trailing path access after the secret name still references the secret
-        arguments("=camunda.secrets.token.length", refs("token")),
         // a reference used inside a comment is not part of the expression
         arguments("=camunda.secrets.token // camunda.secrets.other", refs("token")),
         // a literal reference is ignored
