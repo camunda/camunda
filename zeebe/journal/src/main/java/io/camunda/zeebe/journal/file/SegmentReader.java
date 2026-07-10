@@ -34,6 +34,11 @@ final class SegmentReader implements Iterator<JournalRecord> {
     reset();
   }
 
+  /** Returns the reader's byte offset within the segment, excluding the descriptor. */
+  int getOffsetInSegment() {
+    return buffer.position() - descriptorLength;
+  }
+
   @Override
   public boolean hasNext() {
     if (!segment.isOpen()) {
@@ -55,7 +60,7 @@ final class SegmentReader implements Iterator<JournalRecord> {
     // Read version so that buffer's position is advanced.
     FrameUtil.readVersion(buffer);
 
-    final var currentEntry = recordReader.read(buffer, getNextIndex());
+    final var currentEntry = recordReader.read(buffer, getNextIndex(), FrameUtil.getLength());
     // currentEntry should not be null as hasNext returns true
     currentIndex = currentEntry.index();
     return currentEntry;

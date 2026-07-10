@@ -107,6 +107,17 @@ public interface JournalReader extends Iterator<JournalRecord>, AutoCloseable {
   /** Get the index of the next record to be read. */
   long getNextIndex();
 
+  /**
+   * Returns the total bytes of journal records between the reader's current position and the end of
+   * the journal.
+   *
+   * <p>This method does not serialize with journal appends (which do not take a lock). The caller
+   * must ensure that the journal is not concurrently modified (e.g. through thread confinement).
+   *
+   * @return the bytes between the reader and the end of the journal (non-negative)
+   */
+  long bytesUntilEnd();
+
   @Override
   void close();
 }

@@ -66,6 +66,12 @@ public class PersistedRaftRecord implements JournalRecord, ReplicatableRaftRecor
         "Serialized journal record is not available in PersistedRaftRecord");
   }
 
+  @Override
+  public int size() {
+    throw new UnsupportedOperationException(
+        "On-disk journal size is not available in PersistedRaftRecord");
+  }
+
   /**
    * Returns the term for this record
    *

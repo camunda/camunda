@@ -65,4 +65,11 @@ public interface IndexedRaftLogEntry {
    * @return a record to replicate
    */
   ReplicatableJournalRecord getReplicatableJournalRecord();
+
+  /**
+   * Returns the total on-disk size of this entry in the journal, including framing and metadata.
+   *
+   * @return the entry size in bytes
+   */
+  int size();
 }

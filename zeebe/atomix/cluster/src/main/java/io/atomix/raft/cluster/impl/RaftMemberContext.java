@@ -23,6 +23,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogReader;
+import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotChunkReader;
 import java.nio.ByteBuffer;
 import org.slf4j.LoggerFactory;
@@ -53,6 +54,9 @@ public final class RaftMemberContext {
   private IndexedRaftLogEntry currentEntry;
   private volatile long snapshotReplicationLag;
   private long snapshotChunkBytesInFlight;
+  private volatile long logReplicationLag;
+  private long sentAppendWatermark;
+  private long acknowledgedAppendWatermark;
 
   RaftMemberContext(
       final DefaultRaftMember member,
@@ -78,6 +82,8 @@ public final class RaftMemberContext {
     failureTime = 0;
     snapshotReplicationLag = 0;
     snapshotChunkBytesInFlight = 0;
+    logReplicationLag = 0;
+    acknowledgedAppendWatermark = sentAppendWatermark;
 
     if (reader != null) {
       closeReader();
@@ -266,6 +272,7 @@ public final class RaftMemberContext {
         .add("installing", installing)
         .add("failures", failures)
         .add("snapshotReplicationLag", snapshotReplicationLag)
+        .add("logReplicationLag", logReplicationLag)
         .toString();
   }
 
@@ -483,16 +490,49 @@ public final class RaftMemberContext {
     this.snapshotChunkBytesInFlight = snapshotChunkBytesInFlight;
   }
 
+  /** Tracks replication lag for each locally-appended entry. */
+  public void recordAppendedBytes(final long bytes) {
+    logReplicationLag += bytes;
+  }
+
+  /**
+   * Update the watermark tracking appended bytes for lag replication, and return the new watermark.
+   *
+   * @param bytes the size of this append batch, in bytes
+   * @return the updated watermark
+   */
+  public long recordInFlightAppend(final long bytes) {
+    sentAppendWatermark += bytes;
+    return sentAppendWatermark;
+  }
+
+  /**
+   * Acknowledges every byte up to {@code appendWatermark}. A later successful request therefore
+   * accounts for an earlier request whose local future timed out, while callbacks at or below the
+   * current watermark are no-ops.
+   */
+  public void acknowledgeInFlightAppends(final long appendWatermark) {
+    if (appendWatermark <= acknowledgedAppendWatermark) {
+      return;
+    }
+    // non-atomic write is okay because we only write from one thread
+    logReplicationLag -= appendWatermark - acknowledgedAppendWatermark;
+    acknowledgedAppendWatermark = appendWatermark;
+  }
+
+  public long getLogReplicationLag() {
+    return logReplicationLag;
+  }
+
   /**
    * The total per-follower replication lag in bytes.
    *
-   * <p>Currently this is the remaining snapshot-install bytes; log replication lag will be added to
-   * this total in future.
+   * <p>This is the outstanding log replication bytes plus the remaining snapshot-install bytes.
    *
    * @return the replication lag in bytes, never negative
    */
   public long getReplicationLagBytes() {
-    return snapshotReplicationLag;
+    return logReplicationLag + snapshotReplicationLag;
   }
 
   public boolean hasNextEntry() {
@@ -518,6 +558,26 @@ public final class RaftMemberContext {
       currentEntry = reader.next();
     } else {
       currentEntry = null;
+    }
+
+    acknowledgedAppendWatermark = sentAppendWatermark;
+    logReplicationLag = reader.bytesUntilEnd();
+  }
+
+  public void beginSnapshotInstall(final RaftLog log, final PersistedSnapshot persistedSnapshot) {
+    setNextSnapshotIndex(persistedSnapshot.getIndex());
+    setNextSnapshotChunkId(null);
+    setSnapshotReplicationLag(persistedSnapshot.getTotalSizeInBytes());
+
+    // Get the remaining log bytes after the snapshot with a temporary reader to avoid disrupting
+    // the current reader
+    try (final var lagReader = newReader(log)) {
+      if (lagReader == null) {
+        return;
+      }
+      lagReader.seek(persistedSnapshot.getIndex() + 1);
+      acknowledgedAppendWatermark = sentAppendWatermark;
+      logReplicationLag = lagReader.bytesUntilEnd();
     }
   }
 }
