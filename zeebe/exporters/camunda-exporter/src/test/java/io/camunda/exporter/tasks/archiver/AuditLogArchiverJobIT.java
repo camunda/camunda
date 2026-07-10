@@ -20,11 +20,9 @@ import io.camunda.webapps.schema.entities.auditlog.AuditLogCleanupEntity;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogEntityType;
 import java.io.IOException;
-import java.time.Duration;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.TestTemplate;
@@ -79,34 +77,16 @@ public class AuditLogArchiverJobIT extends ArchiverJobIT<AuditLogArchiverJob> {
           store(cleanupIndex, client, cleanupEntity);
           store(auditLogTemplate, client, auditLog);
           store(auditLogTemplate, client, unrelatedAuditLog);
-          client.refresh();
-
-          // explicit wait after store() calls and client.refresh(). This is needed to keep nudging
-          // OpenSearch until the documents are provably visible before the job runs.
-          Awaitility.await()
-              .atMost(Duration.ofSeconds(30))
-              .pollInterval(Duration.ofMillis(200))
-              .untilAsserted(
-                  () -> {
-                    client.refresh();
-                    assertThat(
-                            client.searchAll(
-                                cleanupIndex.getFullQualifiedName(), AuditLogCleanupEntity.class))
-                        .hasSize(1);
-                    assertThat(
-                            client.searchAll(
-                                auditLogTemplate.getFullQualifiedName(), AuditLogEntity.class))
-                        .hasSize(2);
-                  });
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
 
           // then - should archive 1 audit log + delete 1 cleanup = 2
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(30L)).isEqualTo(2);
+          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(2);
 
           // then - matching audit log should be moved to the dated index
-          client.refresh();
+          client.refresh(testPrefix);
           verifyMoved(auditLogTemplate, client, auditLog, todayDateSuffix());
 
           // then - unrelated audit log should remain in the original index
@@ -134,16 +114,16 @@ public class AuditLogArchiverJobIT extends ArchiverJobIT<AuditLogArchiverJob> {
                   .setPartitionId(PARTITION_ID);
 
           store(cleanupIndex, client, cleanupEntity);
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
 
           // then - should delete the cleanup entry even though there were no audit logs to move
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(30L)).isEqualTo(1);
+          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
 
           // then - cleanup metadata should be deleted
-          client.refresh();
+          client.refresh(testPrefix);
           verifyCleanupDeleted(cleanupIndex, client, cleanupEntity);
         });
   }
@@ -179,7 +159,7 @@ public class AuditLogArchiverJobIT extends ArchiverJobIT<AuditLogArchiverJob> {
           store(cleanupIndex, client, cleanupEntity);
           store(auditLogTemplate, client, auditLog1);
           store(auditLogTemplate, client, auditLog2);
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
@@ -187,11 +167,11 @@ public class AuditLogArchiverJobIT extends ArchiverJobIT<AuditLogArchiverJob> {
           // then - should archive audit logs but not delete the cleanup metadata since
           // the number of archived audit logs >= rolloverBatchSize, indicating more work remains
           assertThat(archived)
-              .succeedsWithin(Duration.ofSeconds(30L))
+              .succeedsWithin(ARCHIVE_TIMEOUT)
               .satisfies(count -> assertThat((int) count).isGreaterThanOrEqualTo(1));
 
           // then - cleanup metadata should NOT be deleted because batch size was reached
-          client.refresh();
+          client.refresh(testPrefix);
           verifyCleanupNotDeleted(cleanupIndex, client, cleanupEntity);
         });
   }
@@ -233,16 +213,16 @@ public class AuditLogArchiverJobIT extends ArchiverJobIT<AuditLogArchiverJob> {
           store(cleanupIndex, client, cleanupEntity2);
           store(auditLogTemplate, client, auditLog1);
           store(auditLogTemplate, client, auditLog2);
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
 
           // then - should archive both audit logs and delete both cleanup entries
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(30L)).isEqualTo(4);
+          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(4);
 
           // then - both audit logs should be moved
-          client.refresh();
+          client.refresh(testPrefix);
           verifyMoved(auditLogTemplate, client, auditLog1, todayDateSuffix());
           verifyMoved(auditLogTemplate, client, auditLog2, todayDateSuffix());
 
