@@ -563,7 +563,7 @@ final class BrokerTopologyManagerTest {
     topologyManager.addTopologyListener(
         new BrokerTopologyListener() {
           @Override
-          public void brokerAdded(final BrokerMemberId memberId) {
+          public void brokerAdded(final BrokerMemberId memberId, final String physicalTenantId) {
             capturedIds.add(memberId);
           }
         });
@@ -581,8 +581,7 @@ final class BrokerTopologyManagerTest {
     addTopologyListener(
         new BrokerTopologyListener() {
           @Override
-          public void brokerAddedToGroup(
-              final BrokerMemberId memberId, final String physicalTenantId) {
+          public void brokerAdded(final BrokerMemberId memberId, final String physicalTenantId) {
             capturedMembers.add(memberId);
             capturedGroups.add(physicalTenantId);
           }
@@ -612,14 +611,13 @@ final class BrokerTopologyManagerTest {
     addTopologyListener(
         new BrokerTopologyListener() {
           @Override
-          public void brokerAddedToGroup(
-              final BrokerMemberId memberId, final String physicalTenantId) {
+          public void brokerAdded(final BrokerMemberId memberId, final String physicalTenantId) {
             capturedMembers.add(memberId);
             capturedGroups.add(physicalTenantId);
           }
         });
 
-    // then — backfill fires brokerAddedToGroup with the known group
+    // then — backfill fires brokerAdded with the known group
     assertThat(capturedMembers).containsExactly(brokerId);
     assertThat(capturedGroups).containsExactly("tenant1");
   }
@@ -744,7 +742,7 @@ final class BrokerTopologyManagerTest {
     private final Set<BrokerMemberId> brokers = new CopyOnWriteArraySet<>();
 
     @Override
-    public void brokerAdded(final BrokerMemberId memberId) {
+    public void brokerAdded(final BrokerMemberId memberId, final String physicalTenantId) {
       brokers.add(memberId);
     }
 

@@ -78,17 +78,9 @@ public final class BrokerTopologyManagerImpl extends Actor
     actor.run(
         () -> {
           topologyListeners.add(listener);
-          // Backfill listener with all known broker IDs across all groups
-          memberPropertiesPerGroup.values().stream()
-              .flatMap(m -> m.keySet().stream())
-              .distinct()
-              .forEach(listener::brokerAdded);
-          // Backfill group-aware listener per physicalTenantId
           memberPropertiesPerGroup.forEach(
               (physicalTenantId, groupMap) ->
-                  groupMap
-                      .keySet()
-                      .forEach(id -> listener.brokerAddedToGroup(id, physicalTenantId)));
+                  groupMap.keySet().forEach(id -> listener.brokerAdded(id, physicalTenantId)));
         });
   }
 
@@ -123,22 +115,11 @@ public final class BrokerTopologyManagerImpl extends Actor
     final var physicalTenantId = brokerInfo.getPartitionGroup();
     actor.run(
         () -> {
-          // Notify listeners only on the first appearance of this broker across all groups.
-          final boolean isNew =
-              memberPropertiesPerGroup.values().stream()
-                  .noneMatch(m -> m.containsKey(brokerMemberId));
-          if (isNew) {
-            topologyListeners.forEach(l -> l.brokerAdded(brokerMemberId));
-          }
-
           memberPropertiesPerGroup
               .computeIfAbsent(physicalTenantId, id -> new HashMap<>())
               .put(brokerMemberId, brokerInfo);
           rebuildGroupTopology(physicalTenantId);
-
-          // Notify group-aware listeners every time (per physicalTenantId, not just on first
-          // appearance).
-          topologyListeners.forEach(l -> l.brokerAddedToGroup(brokerMemberId, physicalTenantId));
+          topologyListeners.forEach(l -> l.brokerAdded(brokerMemberId, physicalTenantId));
         });
   }
 

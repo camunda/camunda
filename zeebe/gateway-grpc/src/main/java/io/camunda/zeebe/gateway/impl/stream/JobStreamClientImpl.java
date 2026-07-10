@@ -46,15 +46,8 @@ public final class JobStreamClientImpl implements JobStreamClient {
                 clusterCommunicationService, new JobClientStreamMetrics(meterRegistry));
   }
 
-  /**
-   * No-op: group information is required for correct stream routing. Handled by {@link
-   * #brokerAddedToGroup(BrokerMemberId, String)}.
-   */
   @Override
-  public synchronized void brokerAdded(final BrokerMemberId memberId) {}
-
-  @Override
-  public synchronized void brokerAddedToGroup(
+  public synchronized void brokerAdded(
       final BrokerMemberId memberId, final String physicalTenantId) {
     if (!started) {
       return;

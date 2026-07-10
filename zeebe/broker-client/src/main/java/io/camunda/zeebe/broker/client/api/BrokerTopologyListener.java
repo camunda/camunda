@@ -15,9 +15,7 @@ import io.atomix.cluster.BrokerMemberId;
  */
 public interface BrokerTopologyListener {
 
-  default void brokerAdded(final BrokerMemberId memberId) {}
-
-  default void brokerAddedToGroup(final BrokerMemberId memberId, final String physicalTenantId) {}
+  default void brokerAdded(final BrokerMemberId memberId, final String physicalTenantId) {}
 
   default void brokerRemoved(final BrokerMemberId memberId) {}
 
