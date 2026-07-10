@@ -5,6 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+
 package io.camunda.zeebe.dynamic.config.api;
 
 import static io.camunda.zeebe.test.util.asserts.EitherAssert.assertThat;
@@ -13,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.ZoneLayout;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
@@ -22,6 +24,8 @@ import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRobinConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import java.util.HashMap;
 import java.util.List;
@@ -35,6 +39,14 @@ final class ZoneMigrationRequestTransformerTest {
 
   private static final String ZONE_A = "us-east-1";
   private static final String ZONE_B = "us-west-1";
+  private static final MemberId bare0 = MemberId.from(0);
+  private static final MemberId bare1 = MemberId.from(1);
+  private static final MemberId bare2 = MemberId.from(2);
+  private static final MemberId zoneB0 = MemberId.from(ZONE_B, 0);
+  private static final MemberId zoneB1 = MemberId.from(ZONE_B, 1);
+  private static final MemberId zoneA0 = MemberId.from(ZONE_A, 0);
+  private static final MemberId zoneA1 = MemberId.from(ZONE_A, 1);
+  private static final MemberId zoneA2 = MemberId.from(ZONE_A, 2);
   private final DynamicPartitionConfig partitionConfig = DynamicPartitionConfig.init();
 
   @Test
@@ -45,7 +57,37 @@ final class ZoneMigrationRequestTransformerTest {
     final var configUpdatedTopology = setZoneAwareConfig(initialTopology, zones);
 
     // when
-    final var newTopology = migrate(configUpdatedTopology, 0);
+    final var result =
+        new ZoneMigrationRequestTransformer(ZONE_A).operations(configUpdatedTopology);
+    assertThat(result).isRight();
+    assertThat(result.get())
+        // check is unordered because member ordering between runs is not stable
+        .containsExactlyInAnyOrder(
+            new MemberJoinOperation(zoneA0),
+            new MemberJoinOperation(zoneA1),
+            new MemberJoinOperation(zoneA2),
+            new PartitionJoinOperation(zoneA0, 1, 3),
+            new PartitionJoinOperation(zoneA2, 1, 1),
+            new PartitionJoinOperation(zoneA1, 1, 2),
+            new PartitionLeaveOperation(bare1, 1, 1),
+            new PartitionLeaveOperation(bare2, 1, 1),
+            new PartitionLeaveOperation(bare0, 1, 1),
+            new PartitionJoinOperation(zoneA0, 2, 1),
+            new PartitionJoinOperation(zoneA2, 2, 2),
+            new PartitionJoinOperation(zoneA1, 2, 3),
+            new PartitionLeaveOperation(bare1, 2, 1),
+            new PartitionLeaveOperation(bare2, 2, 1),
+            new PartitionLeaveOperation(bare0, 2, 1),
+            new PartitionJoinOperation(zoneA0, 3, 2),
+            new PartitionJoinOperation(zoneA2, 3, 3),
+            new PartitionJoinOperation(zoneA1, 3, 1),
+            new PartitionLeaveOperation(bare1, 3, 1),
+            new PartitionLeaveOperation(bare2, 3, 1),
+            new PartitionLeaveOperation(bare0, 3, 1),
+            new MemberLeaveOperation(bare1),
+            new MemberLeaveOperation(bare2),
+            new MemberLeaveOperation(bare0));
+    final var newTopology = TestTopologyChangeSimulator.apply(configUpdatedTopology, result.get());
 
     // then
     assertThat(newTopology.isFullyZoneAware()).isTrue();
@@ -73,15 +115,24 @@ final class ZoneMigrationRequestTransformerTest {
     final var secondaryLastLeaveIndex =
         indexOf(operations, new MemberLeaveOperation(MemberId.from(3)));
     assertThat(operations.subList(0, secondaryLastLeaveIndex + 1))
-        .extracting(ClusterConfigurationChangeOperation::memberId)
-        .contains(
-            MemberId.from(ZONE_B, 0), MemberId.from(ZONE_B, 1), MemberId.from(1), MemberId.from(3))
-        .doesNotContain(
-            MemberId.from(ZONE_A, 0), MemberId.from(ZONE_A, 1), MemberId.from(0), MemberId.from(2));
+        // check is unordered because member ordering between runs is not stable
+        .containsExactlyInAnyOrder(
+            new MemberJoinOperation(zoneB0),
+            new MemberJoinOperation(zoneB1),
+            new PartitionJoinOperation(zoneB0, 1, 3),
+            new PartitionJoinOperation(zoneB1, 1, 1),
+            new PartitionLeaveOperation(MemberId.from(1), 1, 1),
+            new PartitionLeaveOperation(MemberId.from(3), 1, 1),
+            new PartitionJoinOperation(zoneB0, 2, 4),
+            new PartitionJoinOperation(zoneB1, 2, 2),
+            new PartitionLeaveOperation(MemberId.from(1), 2, 1),
+            new PartitionLeaveOperation(MemberId.from(3), 2, 1),
+            new MemberLeaveOperation(MemberId.from(1)),
+            new MemberLeaveOperation(MemberId.from(3)));
+
     assertThat(operations)
         .filteredOn(MemberJoinOperation.class::isInstance)
-        .extracting(ClusterConfigurationChangeOperation::memberId)
-        .doesNotContain(MemberId.from(ZONE_A, 0), MemberId.from(ZONE_A, 1));
+        .doesNotContain(new MemberJoinOperation(zoneA0), new MemberJoinOperation(zoneA1));
   }
 
   @Test
@@ -114,7 +165,7 @@ final class ZoneMigrationRequestTransformerTest {
             MemberId.from(ZONE_B, 0),
             MemberId.from(ZONE_B, 1));
     assertSamePartitionDistribution(
-        initialTopology, finalTopology, dualRegionNodeMapping(4, ZONE_A, ZONE_B));
+        initialTopology, finalTopology, dualRegionNodeMapping(4, List.of(ZONE_A, ZONE_B)));
   }
 
   @Test
@@ -131,7 +182,7 @@ final class ZoneMigrationRequestTransformerTest {
 
     // then
     assertThat(newTopology.isFullyZoneAware()).isTrue();
-    final var expectedNodeMapping = dualRegionNodeMapping(6, "zzz-region", "aaa-region");
+    final var expectedNodeMapping = dualRegionNodeMapping(6, List.of("zzz-region", "aaa-region"));
     assertSamePartitionDistribution(initialTopology, newTopology, expectedNodeMapping);
   }
 
@@ -194,7 +245,7 @@ final class ZoneMigrationRequestTransformerTest {
             e ->
                 assertThat(e)
                     .hasMessageContaining(
-                        "Zone migration requires a persisted zone-aware partition distribution config, but was Optional[RoundRobinConfig]. Update the partition distribution before migrating brokers"));
+                        "Zone migration requires a persisted zone-aware partition distribution config, but was RoundRobinConfig. Update the partition distribution before migrating brokers."));
   }
 
   @Test
@@ -318,6 +369,7 @@ final class ZoneMigrationRequestTransformerTest {
       final Map<MemberId, MemberId> nodeMapping) {
     final Map<Integer, Set<MemberId>> expected =
         partitionToMembers(oldTopology).entrySet().stream()
+            // remap bare ids to zoned ids to compare
             .collect(
                 Collectors.toMap(
                     Map.Entry::getKey,
@@ -381,16 +433,13 @@ final class ZoneMigrationRequestTransformerTest {
   }
 
   private Map<MemberId, MemberId> dualRegionNodeMapping(
-      final int clusterSize, final String zoneA, final String zoneB) {
+      final int clusterSize, final List<String> zones) {
     final var nodeMapping = new HashMap<MemberId, MemberId>();
-    int localA = 0;
-    int localB = 0;
     for (int i = 0; i < clusterSize; i++) {
-      if (i % 2 == 0) {
-        nodeMapping.put(MemberId.from(i), MemberId.from(zoneA, localA++));
-      } else {
-        nodeMapping.put(MemberId.from(i), MemberId.from(zoneB, localB++));
-      }
+      final var zoneIdx = ZoneLayout.zoneRankForBareNodeIdx(i, zones.size());
+      nodeMapping.put(
+          MemberId.from(i),
+          MemberId.from(zones.get(zoneIdx), ZoneLayout.localNodeIdxForBareNodeIdx(i, 2)));
     }
     return nodeMapping;
   }
