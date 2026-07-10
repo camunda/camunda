@@ -39,6 +39,8 @@ describe('<TaskDetailsTaskPage />', () => {
 		const screen = await renderWithRouter(
 			() => (
 				<TaskDetailsTaskPage
+					formSchema={null}
+					variables={[]}
 					task={createUserTask({assignee: currentUser.username, state: 'CREATED'})}
 					currentUser={currentUser}
 					search={search}
@@ -54,6 +56,8 @@ describe('<TaskDetailsTaskPage />', () => {
 		const screen = await renderWithRouter(
 			() => (
 				<TaskDetailsTaskPage
+					formSchema={null}
+					variables={[]}
 					task={createUserTask({assignee: null, state: 'CREATED'})}
 					currentUser={currentUser}
 					search={search}
@@ -69,6 +73,8 @@ describe('<TaskDetailsTaskPage />', () => {
 		const screen = await renderWithRouter(
 			() => (
 				<TaskDetailsTaskPage
+					formSchema={null}
+					variables={[]}
 					task={createUserTask({assignee: 'alice', state: 'CREATED'})}
 					currentUser={currentUser}
 					search={search}
@@ -84,6 +90,8 @@ describe('<TaskDetailsTaskPage />', () => {
 		const screen = await renderWithRouter(
 			() => (
 				<TaskDetailsTaskPage
+					formSchema={null}
+					variables={[]}
 					task={createUserTask({assignee: currentUser.username, state: 'UPDATING'})}
 					currentUser={currentUser}
 					search={search}
@@ -99,6 +107,8 @@ describe('<TaskDetailsTaskPage />', () => {
 		const screen = await renderWithRouter(
 			() => (
 				<TaskDetailsTaskPage
+					formSchema={null}
+					variables={[]}
 					task={createUserTask({assignee: currentUser.username, state: 'COMPLETED'})}
 					currentUser={currentUser}
 					search={search}
@@ -124,6 +134,8 @@ describe('<TaskDetailsTaskPage />', () => {
 		const {router, ...screen} = await renderWithRouter(
 			() => (
 				<TaskDetailsTaskPage
+					formSchema={null}
+					variables={[]}
 					task={createUserTask({assignee: currentUser.username, state: 'CREATED'})}
 					currentUser={currentUser}
 					search={search}
@@ -149,6 +161,8 @@ describe('<TaskDetailsTaskPage />', () => {
 		const {router, ...screen} = await renderWithRouter(
 			() => (
 				<TaskDetailsTaskPage
+					formSchema={null}
+					variables={[]}
 					task={createUserTask({assignee: currentUser.username, state: 'CREATED'})}
 					currentUser={currentUser}
 					search={search}
@@ -183,6 +197,8 @@ describe('<TaskDetailsTaskPage />', () => {
 		const screen = await renderWithRouter(
 			() => (
 				<TaskDetailsTaskPage
+					formSchema={null}
+					variables={[]}
 					task={createUserTask({assignee: currentUser.username, state: 'CREATED'})}
 					currentUser={currentUser}
 					search={search}
@@ -212,6 +228,8 @@ describe('<TaskDetailsTaskPage />', () => {
 		const {router, ...screen} = await renderWithRouter(
 			() => (
 				<TaskDetailsTaskPage
+					formSchema={null}
+					variables={[]}
 					task={createUserTask({assignee: currentUser.username, state: 'CREATED'})}
 					currentUser={currentUser}
 					search={search}
@@ -234,6 +252,8 @@ describe('<TaskDetailsTaskPage />', () => {
 		const {router, ...screen} = await renderWithRouter(
 			() => (
 				<TaskDetailsTaskPage
+					formSchema={null}
+					variables={[]}
 					task={createUserTask({assignee: currentUser.username, state: 'COMPLETING'})}
 					currentUser={currentUser}
 					search={search}

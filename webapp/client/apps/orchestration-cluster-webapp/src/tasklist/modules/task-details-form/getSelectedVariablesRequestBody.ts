@@ -6,24 +6,19 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-.container {
-	width: 100%;
-	min-height: 0;
-	flex: 1;
-	display: flex;
-	flex-direction: column;
+import type {QueryVariablesByUserTaskRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
+
+function getSelectedVariablesRequestBody(variableNames: string[]): QueryVariablesByUserTaskRequestBody {
+	return {
+		filter: {
+			name: {
+				$in: variableNames,
+			},
+		},
+		page: {
+			limit: variableNames.length,
+		},
+	};
 }
 
-.content {
-	width: 100%;
-	min-height: 0;
-	flex: 1;
-	overflow-y: auto;
-}
-
-.footer {
-	padding: var(--cds-spacing-05);
-	border-top: 1px solid var(--cds-border-subtle);
-	display: flex;
-	justify-content: flex-end;
-}
+export {getSelectedVariablesRequestBody};

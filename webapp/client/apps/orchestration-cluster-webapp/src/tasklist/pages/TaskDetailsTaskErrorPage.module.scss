@@ -12,18 +12,8 @@
 	flex: 1;
 	display: flex;
 	flex-direction: column;
-}
-
-.content {
-	width: 100%;
-	min-height: 0;
-	flex: 1;
-	overflow-y: auto;
-}
-
-.footer {
+	align-items: center;
+	justify-content: center;
+	gap: var(--cds-spacing-05);
 	padding: var(--cds-spacing-05);
-	border-top: 1px solid var(--cds-border-subtle);
-	display: flex;
-	justify-content: flex-end;
 }
