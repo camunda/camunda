@@ -12,20 +12,22 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import io.camunda.search.clients.PersistentWebSessionClient;
 import io.camunda.search.entities.PersistentWebSessionEntity;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.security.api.model.session.PersistentSession;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
-/** Unit tests for {@link PhysicalTenantSessionStoreAdapter}. */
-class PhysicalTenantSessionStoreAdapterTest {
+/** Unit tests for {@link SessionStoreAdapter}. */
+class SessionStoreAdapterTest {
 
   @Test
   void shouldOperateOnlyOnItsOwnClient() {
     // given — the adapter is bound to one client, with a second client left untouched
     final var own = new PersistentWebSessionClientStub();
     final var other = new PersistentWebSessionClientStub();
-    final var adapter = new PhysicalTenantSessionStoreAdapter(own);
+    final var adapter = new SessionStoreAdapter(own);
 
     // when
     adapter.upsert(new PersistentSession("s1", 100L, 200L, 1800L, Map.of("a", new byte[] {1})));
@@ -45,7 +47,7 @@ class PhysicalTenantSessionStoreAdapterTest {
   void shouldReturnOnlyItsOwnSessionsFromGetAll() {
     // given
     final var client = new PersistentWebSessionClientStub();
-    final var adapter = new PhysicalTenantSessionStoreAdapter(client);
+    final var adapter = new SessionStoreAdapter(client);
     client.upsertPersistentWebSession(
         new PersistentWebSessionEntity("s1", 1L, 2L, 1800L, Map.of()));
     client.upsertPersistentWebSession(
@@ -69,7 +71,7 @@ class PhysicalTenantSessionStoreAdapterTest {
             throw new RuntimeException("Connection refused");
           }
         };
-    final var adapter = new PhysicalTenantSessionStoreAdapter(failing);
+    final var adapter = new SessionStoreAdapter(failing);
 
     // when / then — retried three times, and the failure never propagates to the save path
     assertThatNoException()
@@ -78,8 +80,51 @@ class PhysicalTenantSessionStoreAdapterTest {
   }
 
   @Test
+  void shouldNotRetryNonTransientCamundaSearchException() {
+    // given — a client whose failure reason is not one of the transient reasons
+    final var attempts = new AtomicInteger();
+    final PersistentWebSessionClient failing =
+        new PersistentWebSessionClientStub() {
+          @Override
+          public void upsertPersistentWebSession(final PersistentWebSessionEntity entity) {
+            attempts.incrementAndGet();
+            throw new CamundaSearchException("invalid session", Reason.INVALID_ARGUMENT);
+          }
+        };
+    final var adapter = new SessionStoreAdapter(failing);
+
+    // when / then — not retried, and the failure never propagates to the save path
+    assertThatNoException()
+        .isThrownBy(() -> adapter.upsert(new PersistentSession("s1", 1L, 2L, 1800L, Map.of())));
+    assertThat(attempts.get()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldRecoverAfterTransientCamundaSearchException() {
+    // given — a client that fails transiently once, then succeeds
+    final var attempts = new AtomicInteger();
+    final PersistentWebSessionClient recovering =
+        new PersistentWebSessionClientStub() {
+          @Override
+          public void upsertPersistentWebSession(final PersistentWebSessionEntity entity) {
+            if (attempts.incrementAndGet() == 1) {
+              throw new CamundaSearchException("connection refused", Reason.CONNECTION_FAILED);
+            }
+            super.upsertPersistentWebSession(entity);
+          }
+        };
+    final var adapter = new SessionStoreAdapter(recovering);
+
+    // when
+    adapter.upsert(new PersistentSession("s1", 1L, 2L, 1800L, Map.of()));
+
+    // then — retried once and the second attempt succeeded, so the session is stored
+    assertThat(attempts.get()).isEqualTo(2);
+    assertThat(adapter.get("s1")).isNotNull();
+  }
+
+  @Test
   void shouldReturnNullOnGetWhenAbsent() {
-    assertThat(new PhysicalTenantSessionStoreAdapter(new PersistentWebSessionClientStub()).get("x"))
-        .isNull();
+    assertThat(new SessionStoreAdapter(new PersistentWebSessionClientStub()).get("x")).isNull();
   }
 }

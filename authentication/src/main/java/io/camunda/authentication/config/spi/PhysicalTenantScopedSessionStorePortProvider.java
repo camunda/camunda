@@ -22,13 +22,13 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * <p>This lets CSL give each scoped {@code SessionRepositoryFilter} its own single-tenant store, so
  * a scope's persistent session reads/writes route to the correct storage <em>structurally</em> —
- * even during Spring Session's commit phase, when the request scope is gone. See ADR-0029.
+ * even during Spring Session's commit phase, when the request scope is gone. See CSL ADR-0029.
  *
  * <p>Adapters are built once per tenant and cached: CSL's expiry sweep deduplicates repositories by
  * backing {@link SessionStorePort} <em>instance</em>, so a caller that needs the default tenant's
  * store outside a basePath (the global session filter's default surface) should call {@link
  * #forPhysicalTenant} on this same shared instance rather than build its own adapter — that is what
- * makes the sweep's dedup of the default store actually collapse (ADR-0029 §4).
+ * makes the sweep's dedup of the default store actually collapse (CSL ADR-0029 §4).
  */
 public final class PhysicalTenantScopedSessionStorePortProvider
     implements ScopedSessionStorePortProvider {
@@ -52,8 +52,7 @@ public final class PhysicalTenantScopedSessionStorePortProvider
    */
   public SessionStorePort forPhysicalTenant(final String physicalTenantId) {
     return adaptersByPhysicalTenant.computeIfAbsent(
-        physicalTenantId,
-        id -> new PhysicalTenantSessionStoreAdapter(sessionClients.withPhysicalTenant(id)));
+        physicalTenantId, id -> new SessionStoreAdapter(sessionClients.withPhysicalTenant(id)));
   }
 
   private static String physicalTenantIdFrom(final String basePath) {

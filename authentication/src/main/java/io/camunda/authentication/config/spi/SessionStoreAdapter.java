@@ -26,19 +26,19 @@ import org.slf4j.LoggerFactory;
  * storage — there is no request-context routing and no cross-tenant fan-out.
  *
  * <p>Scoped security chains use one instance per scope (via {@code ScopedSessionStorePortProvider},
- * ADR-0029), so a persistent session read/write routes to the correct store <em>structurally</em> —
- * decided by which scoped {@code SessionRepositoryFilter} handles the request — even during Spring
- * Session's commit phase, which runs after the request scope is torn down.
+ * CSL ADR-0029), so a persistent session read/write routes to the correct store
+ * <em>structurally</em> — decided by which scoped {@code SessionRepositoryFilter} handles the
+ * request — even during Spring Session's commit phase, which runs after the request scope is torn
+ * down.
  *
  * <p>Upserts are retried on transient storage failures with exponential backoff; once retries are
  * exhausted the failure is logged and swallowed so a storage blip never propagates into the session
  * save path. This resilience policy lives here (rather than in the library) because it inspects the
  * search-specific {@link CamundaSearchException} reasons to decide what is transient.
  */
-public final class PhysicalTenantSessionStoreAdapter implements SessionStorePort {
+public final class SessionStoreAdapter implements SessionStorePort {
 
-  private static final Logger LOGGER =
-      LoggerFactory.getLogger(PhysicalTenantSessionStoreAdapter.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(SessionStoreAdapter.class);
   private static final int MAX_RETRY_ATTEMPTS = 3;
   private static final long INITIAL_RETRY_DELAY_MS = 100;
 
@@ -48,12 +48,12 @@ public final class PhysicalTenantSessionStoreAdapter implements SessionStorePort
           RetryConfig.custom()
               .maxAttempts(MAX_RETRY_ATTEMPTS)
               .intervalFunction(IntervalFunction.ofExponentialBackoff(INITIAL_RETRY_DELAY_MS, 2))
-              .retryOnException(PhysicalTenantSessionStoreAdapter::isTransientFailure)
+              .retryOnException(SessionStoreAdapter::isTransientFailure)
               .build());
 
   private final PersistentWebSessionClient client;
 
-  public PhysicalTenantSessionStoreAdapter(final PersistentWebSessionClient client) {
+  public SessionStoreAdapter(final PersistentWebSessionClient client) {
     this.client = client;
   }
 
@@ -93,9 +93,7 @@ public final class PhysicalTenantSessionStoreAdapter implements SessionStorePort
     final var result = new ArrayList<PersistentSession>();
     final var items = client.getAllPersistentWebSessions().items();
     if (items != null) {
-      items.stream()
-          .map(PhysicalTenantSessionStoreAdapter::toPersistentSession)
-          .forEach(result::add);
+      items.stream().map(SessionStoreAdapter::toPersistentSession).forEach(result::add);
     }
     return result;
   }
