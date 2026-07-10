@@ -19,9 +19,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftServer.Role;
+import io.atomix.raft.protocol.TestRaftServerProtocol;
+import io.atomix.raft.protocol.TimeoutNowRequest;
 import io.atomix.raft.roles.LeaderRole;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.LongAdder;
 import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
@@ -54,6 +58,108 @@ public class RaftLeadershipTransferPromoteTest {
         .succeedsWithin(Duration.ofSeconds(5))
         .isEqualTo(LeadershipTransferResult.TRANSFERRED);
     assertThat(leader.getRole()).isNotEqualTo(Role.LEADER);
+  }
+
+  @Test
+  public void shouldSendExactlyMaxTransferAttemptsThenGiveUp() throws Exception {
+    // given
+    raftRule.appendEntries(10);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var target = raftRule.getFollower().orElseThrow();
+    final var targetId = target.getContext().getCluster().getLocalMember().memberId();
+    final int maxAttempts = leader.getContext().getRebalanceMaxTransferAttempts();
+
+    final var leaderProtocol = (TestRaftServerProtocol) leader.getContext().getProtocol();
+    final LongAdder sends = new LongAdder();
+    leaderProtocol.interceptRequest(
+        TimeoutNowRequest.class,
+        request -> {
+          sends.increment();
+          return CompletableFuture.failedFuture(new RuntimeException("dropped in test"));
+        });
+
+    // when
+    final var transfer = promoteOnRaftThread(leader, targetId);
+
+    // then
+    assertThat(transfer)
+        .succeedsWithin(Duration.ofSeconds(15))
+        .isEqualTo(LeadershipTransferResult.TRANSFER_FAILED);
+    assertThat(sends.sum()).as("sends are count-bounded").isEqualTo(maxAttempts);
+    assertThat(leader.getRole()).isEqualTo(Role.LEADER);
+  }
+
+  @Test
+  public void shouldReportLeaderChangedWhenAnotherNodeWinsDuringPromotion() throws Exception {
+    // given
+    raftRule.appendEntries(10);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var target = raftRule.getFollower().orElseThrow();
+    final var targetId = target.getContext().getCluster().getLocalMember().memberId();
+    raftRule.partition(target);
+
+    // when
+    final var transfer = promoteOnRaftThread(leader, targetId);
+    leader.stepDown().get();
+
+    // then
+    assertThat(transfer)
+        .succeedsWithin(Duration.ofSeconds(15))
+        .isEqualTo(LeadershipTransferResult.LEADER_CHANGED);
+  }
+
+  @Test
+  public void shouldFailImmediatelyWhenTargetIsNotAMemberBeforeFirstAttempt() throws Exception {
+    // given
+    raftRule.appendEntries(10);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var target = raftRule.getFollower().orElseThrow();
+    final var targetId = target.getContext().getCluster().getLocalMember().memberId();
+    target.leave().get(30, TimeUnit.SECONDS);
+
+    // when
+    final var transfer = promoteOnRaftThread(leader, targetId);
+
+    // then
+    assertThat(transfer)
+        .succeedsWithin(Duration.ofSeconds(5))
+        .isEqualTo(LeadershipTransferResult.OFFLINE);
+  }
+
+  @Test
+  public void shouldAbandonTransferWhenTargetLeavesBetweenRetries() throws Exception {
+    // given
+    raftRule.appendEntries(10);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var target = raftRule.getFollower().orElseThrow();
+    final var targetId = target.getContext().getCluster().getLocalMember().memberId();
+
+    // every TimeoutNow is dropped, so the transfer only ever completes via the membership recheck
+    final var leaderProtocol = (TestRaftServerProtocol) leader.getContext().getProtocol();
+    final LongAdder sends = new LongAdder();
+    final var firstAttemptSent = new CompletableFuture<Void>();
+    leaderProtocol.interceptRequest(
+        TimeoutNowRequest.class,
+        request -> {
+          sends.increment();
+          firstAttemptSent.complete(null);
+          return CompletableFuture.failedFuture(new RuntimeException("dropped in test"));
+        });
+
+    // when
+    final var transfer = promoteOnRaftThread(leader, targetId);
+    firstAttemptSent.get(15, TimeUnit.SECONDS);
+    target.leave().get(30, TimeUnit.SECONDS);
+
+    // then
+    final int maxAttempts = leader.getContext().getRebalanceMaxTransferAttempts();
+    assertThat(transfer)
+        .succeedsWithin(Duration.ofSeconds(15))
+        .isEqualTo(LeadershipTransferResult.OFFLINE);
+    assertThat(sends.sum())
+        .as("the membership recheck abandons the transfer before the attempt budget is spent")
+        .isLessThan(maxAttempts);
+    assertThat(leader.getRole()).isEqualTo(Role.LEADER);
   }
 
   private CompletableFuture<LeadershipTransferResult> promoteOnRaftThread(

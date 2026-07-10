@@ -21,6 +21,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.roles.LeaderRole;
 import java.time.Duration;
 import java.util.Comparator;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import org.awaitility.Awaitility;
@@ -106,7 +107,7 @@ public class RaftLeadershipTransferInitiateTest {
                 leaderRole(leader).precheckTransfer(targetId, coordinator(leader), index(leader)));
     assertThat(precheck).as("pre-checks pass for a caught-up follower").isEmpty();
 
-    final CompletableFuture<Boolean> caughtUp =
+    final CompletableFuture<Optional<LeadershipTransferResult>> caughtUp =
         onRaftThread(
             leader,
             () ->
@@ -117,7 +118,7 @@ public class RaftLeadershipTransferInitiateTest {
                         Duration.ofSeconds(10)));
 
     // then
-    assertThat(caughtUp).succeedsWithin(Duration.ofSeconds(10)).isEqualTo(true);
+    assertThat(caughtUp).succeedsWithin(Duration.ofSeconds(10)).isEqualTo(Optional.empty());
   }
 
   @Test
@@ -207,6 +208,33 @@ public class RaftLeadershipTransferInitiateTest {
 
     // then
     assertThat(result).contains(LeadershipTransferResult.LAG_TOO_HIGH);
+  }
+
+  @Test
+  public void shouldCompleteCatchUpWithTimedOutWhenPauseWatchdogExpires() throws Exception {
+    // given
+    raftRule.appendEntries(5);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var target = raftRule.getFollower().orElseThrow();
+    final var targetId = memberId(target);
+
+    // when
+    final CompletableFuture<Optional<LeadershipTransferResult>> caughtUp =
+        onRaftThread(
+            leader,
+            () -> {
+              leaderRole(leader).pauseForTransfer(Duration.ofMillis(500));
+              return leaderRole(leader)
+                  .awaitDesiredLeaderCaughtUp(
+                      targetId,
+                      leader.getContext().getLog().getLastIndex() + 1_000,
+                      Duration.ofSeconds(30));
+            });
+
+    // then
+    assertThat(caughtUp)
+        .succeedsWithin(Duration.ofSeconds(10))
+        .isEqualTo(Optional.of(LeadershipTransferResult.REPLICATION_TIMED_OUT));
   }
 
   private static LeaderRole leaderRole(final RaftServer leader) {
