@@ -66,9 +66,34 @@ env:
   E2E_DIR: e2e-tests
 
 jobs:
+  # Gate for the free-form ref-8-8/ref-8-9 dispatch inputs: they are forwarded
+  # as `ref` into the reusable deploy/teardown workflows, where they end up in
+  # shell-built ArgoCD arguments (--revision, --helm-set), so restrict them to
+  # git-ref characters before anything consumes them. Always runs (trivially
+  # green on scheduled runs, where inputs are empty) so the deploy jobs'
+  # implicit success() dependency doesn't skip the default path.
+  validate-ref-inputs:
+    name: Validate ref override inputs
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Validate refs
+        env:
+          REF_8_8: ${{ inputs.ref-8-8 }}
+          REF_8_9: ${{ inputs.ref-8-9 }}
+        run: |
+          for ref in "$REF_8_8" "$REF_8_9"; do
+            if [[ -n "$ref" && ! "$ref" =~ ^[A-Za-z0-9._/-]+$ ]]; then
+              echo "::error::Invalid ref override (allowed: A-Z a-z 0-9 . _ / -): ${ref}"
+              exit 1
+            fi
+          done
+          echo "✅ ref overrides valid (or empty)"
+
   deploy-8-8:
     name: Deploy 8.8 Preview Environment
     if: contains(fromJSON('["all", "8.8", ""]'), inputs.version)
+    needs: validate-ref-inputs
     uses: camunda/camunda/.github/workflows/preview-env-build-and-deploy.yml@stable/8.8
     secrets: inherit
     with:
@@ -84,6 +109,7 @@ jobs:
   deploy-8-9:
     name: Deploy 8.9 Preview Environment
     if: contains(fromJSON('["all", "8.9", ""]'), inputs.version)
+    needs: validate-ref-inputs
     uses: camunda/camunda/.github/workflows/preview-env-build-and-deploy.yml@stable/8.9
     secrets: inherit
     with:
