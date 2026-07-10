@@ -30,51 +30,54 @@ import java.util.function.Consumer;
 
 /**
  * A decorator making the layered state store usable through the existing {@link ZeebeDb} surface,
- * wrapping a real database (the {@code inner} durable store).
+ * wrapping a real database (the {@code inner} durable store) and hosting an ownership registry of
+ * single-owner {@link LayeredDomain}s.
  *
  * <p><b>Pass-through by default:</b> every context created via {@link #createContext()} — and every
  * column family created on such a context — behaves exactly like the wrapped database: secondary
  * consumers (exporters writing through their own context, the query service, migrations, backup)
- * are untouched by the layering. Their committed writes are visible to the layered path through its
- * delegate reads.
+ * are untouched by the layering. Their committed writes are visible to the layered paths through
+ * their delegate reads.
  *
- * <p><b>The layered path is explicit:</b> {@link #layeredContext()} returns the single owner-thread
- * context whose column families buffer writes in per-column-family {@link LayeredKeyValueStore}s
- * instead of RocksDB. Transaction commit on that context promotes the staged batch in memory —
- * <em>no RocksDB write ever happens on commit</em> — and rollback discards exactly the staged
- * batch. Buffered state reaches the wrapped database only in atomic persist rounds driven through
- * {@link #coordinator()}; {@link #overCapacity()} signals when a round is due.
+ * <p><b>The layered path is explicit and per domain:</b> {@link #registerDomain(String)} creates a
+ * named {@link LayeredDomain} with its own owner-thread context, layered stores, lazily built
+ * {@link LayeredStoreCoordinator} (independent persist cadence) and view publisher. A column family
+ * joins a domain implicitly by being created on that domain's context; a column family has at most
+ * one owning domain — creating it in a second domain throws. Transaction commit on a domain's
+ * context promotes the staged batch in memory — <em>no RocksDB write ever happens on commit</em> —
+ * and rollback discards exactly the staged batch. Buffered state reaches the wrapped database only
+ * in a domain's atomic persist rounds; rounds of different domains are separate inner transactions,
+ * so <b>cross-domain atomicity is intentionally not provided</b> (see {@link LayeredDomain}).
  *
- * <p><b>Lifecycle:</b> create all layered column families before the first {@link #coordinator()}
- * call — the coordinator captures the store set, so later layered creations throw. {@link #close()}
+ * <p><b>Default domain:</b> {@link #layeredContext()}, {@link #coordinator()} and {@link
+ * #coordinator(Consumer)} are conveniences over a default domain named {@value
+ * #DEFAULT_DOMAIN_NAME}, registered on first use — single-domain wirings need never touch the
+ * registry.
+ *
+ * <p><b>Lifecycle:</b> create all of a domain's layered column families before that domain's first
+ * {@code coordinator()} call — the coordinator captures the store set, so later layered creations
+ * in that domain throw. {@link #close()} releases every built coordinator's view reference and
  * closes the wrapped database.
  *
- * <p><b>Snapshot source:</b> by default views published by the coordinator read the wrapped
+ * <p><b>Snapshot source:</b> by default views published by a domain's coordinator read the wrapped
  * database <em>without</em> a pinned snapshot (see {@link UnpinnedSnapshotSource} for the exact
  * limitations); wirings with asynchronous readers must inject a pinning {@link SnapshotSource} via
- * the dedicated constructor.
+ * the dedicated constructor — it is shared by all domains, which is sound because a column family
+ * (and thus a store name) has exactly one owning domain.
  */
 public final class LayeredZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType> & EnumValue>
     implements ZeebeDb<ColumnFamilyType> {
+
+  /** The name of the domain backing the {@link #layeredContext()} convenience surface. */
+  public static final String DEFAULT_DOMAIN_NAME = "engine";
 
   private final ZeebeDb<ColumnFamilyType> inner;
   private final LayeredZeebeDbConfig config;
   private final SnapshotSource snapshotSource;
   private final boolean fallbackSnapshots;
 
-  private final LayeredTransactionContext layeredContext;
-  private final TransactionContext delegateReadContext;
-  private final TransactionContext persistContext;
-  private final TransactionContext snapshotReadContext;
-  private final InnerPersistSink sink;
-
-  private final Map<ColumnFamilyType, LayeredKeyValueStore> storesByColumnFamily =
-      new LinkedHashMap<>();
-  private final Map<String, ColumnFamily<DbBytes, DbBytes>> persistColumnFamilies = new HashMap<>();
-  private final Map<String, ColumnFamily<DbBytes, DbBytes>> snapshotColumnFamilies =
-      new HashMap<>();
-
-  private LayeredStoreCoordinator coordinator;
+  private final Map<String, LayeredDomain> domainsByName = new LinkedHashMap<>();
+  private final Map<String, LayeredDomain> ownerByColumnFamily = new HashMap<>();
 
   /** Creates a facade whose coordinator views read through the unpinned fallback source. */
   public LayeredZeebeDb(final ZeebeDb<ColumnFamilyType> inner, final LayeredZeebeDbConfig config) {
@@ -91,18 +94,8 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType
       final SnapshotSource snapshotSource) {
     this.inner = Objects.requireNonNull(inner, "inner");
     this.config = Objects.requireNonNull(config, "config");
-    delegateReadContext = inner.createContext();
-    persistContext = inner.createContext();
+    this.snapshotSource = snapshotSource;
     fallbackSnapshots = snapshotSource == null;
-    if (fallbackSnapshots) {
-      snapshotReadContext = inner.createContext();
-      this.snapshotSource = new UnpinnedSnapshotSource(snapshotColumnFamilies);
-    } else {
-      snapshotReadContext = null;
-      this.snapshotSource = snapshotSource;
-    }
-    layeredContext = new LayeredTransactionContext(storesByColumnFamily.values());
-    sink = new InnerPersistSink(persistContext, persistColumnFamilies);
   }
 
   // ------------------------------------------------------------------
@@ -116,19 +109,28 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType
           final TransactionContext context,
           final KeyType keyInstance,
           final ValueType valueInstance) {
-    if (context != layeredContext) {
+    final LayeredDomain domain = domainOf(context);
+    if (domain == null) {
       return inner.createColumnFamily(columnFamily, context, keyInstance, valueInstance);
     }
-    if (coordinator != null) {
+    if (domain.coordinatorBuilt()) {
       throw new IllegalStateException(
-          "expected all layered column families to be created before the coordinator, but '"
-              + columnFamily.name()
-              + "' was requested after coordinator() was called");
+          ("expected all layered column families of domain '%s' to be created before its"
+                  + " coordinator, but '%s' was requested after coordinator() was called")
+              .formatted(domain.name(), columnFamily.name()));
+    }
+    final String name = columnFamily.name();
+    final LayeredDomain owner = ownerByColumnFamily.putIfAbsent(name, domain);
+    if (owner != null && owner != domain) {
+      throw new IllegalStateException(
+          ("expected column family '%s' to have a single owning domain, but it is owned by '%s'"
+                  + " and was requested in '%s'")
+              .formatted(name, owner.name(), domain.name()));
     }
     final LayeredKeyValueStore store =
-        storesByColumnFamily.computeIfAbsent(columnFamily, this::createStore);
+        domain.stores().computeIfAbsent(name, ignored -> createStore(columnFamily, domain));
     return new LayeredTransactionalColumnFamily<>(
-        layeredContext, new LayeredColumnFamily<>(store, keyInstance, valueInstance));
+        domain.transactionContext(), new LayeredColumnFamily<>(store, keyInstance, valueInstance));
   }
 
   @Override
@@ -148,13 +150,14 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType
 
   @Override
   public boolean isEmpty(final ColumnFamilyType column, final TransactionContext context) {
-    if (context != layeredContext) {
+    final LayeredDomain domain = domainOf(context);
+    if (domain == null) {
       return inner.isEmpty(column, context);
     }
-    final LayeredKeyValueStore store = storesByColumnFamily.get(column);
+    final LayeredKeyValueStore store = domain.stores().get(column.name());
     if (store == null) {
       // no layered store means no buffered writes; the wrapped database alone answers
-      return inner.isEmpty(column, delegateReadContext);
+      return inner.isEmpty(column, domain.delegateReadContext());
     }
     return new LayeredColumnFamily<>(store, new DbBytes(), new DbBytes()).isEmpty();
   }
@@ -171,78 +174,111 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType
 
   @Override
   public void close() throws Exception {
+    domainsByName.values().forEach(LayeredDomain::closeCoordinatorIfBuilt);
     inner.close();
   }
 
   // ------------------------------------------------------------------
-  // Layered surface (not part of the ZeebeDb interface)
+  // Ownership registry (not part of the ZeebeDb interface)
   // ------------------------------------------------------------------
 
   /**
-   * The single owner-thread context of the layered path; every call returns the same instance.
-   * Column families created on it buffer writes in memory until a persist round drains them.
+   * Registers a new single-owner domain under the given unique name. Register a domain before
+   * creating its column families (they join by being created on {@link LayeredDomain#context()})
+   * and thus before its coordinator is built.
+   *
+   * @throws IllegalStateException if a domain with that name is already registered
+   */
+  public LayeredDomain registerDomain(final String name) {
+    Objects.requireNonNull(name, "name");
+    if (domainsByName.containsKey(name)) {
+      throw new IllegalStateException(
+          "expected a unique domain name, but '%s' is already registered".formatted(name));
+    }
+    final LayeredDomain domain =
+        new LayeredDomain(
+            name,
+            inner.createContext(),
+            inner.createContext(),
+            fallbackSnapshots ? inner.createContext() : null,
+            snapshotSource);
+    domainsByName.put(name, domain);
+    return domain;
+  }
+
+  /**
+   * The owner-thread context of the default {@value #DEFAULT_DOMAIN_NAME} domain, registered on
+   * first use; every call returns the same instance. Convenience over {@link
+   * #registerDomain(String)} for single-domain wirings.
    */
   public TransactionContext layeredContext() {
-    return layeredContext;
+    return defaultDomain().context();
   }
 
   /**
-   * The coordinator driving freezes and persist rounds over all layered stores. Built lazily on the
-   * first call, capturing every layered column family created so far — create them all first.
+   * The default domain's coordinator; see {@link LayeredDomain#coordinator()}. Convenience over
+   * {@link #registerDomain(String)} for single-domain wirings.
    */
   public LayeredStoreCoordinator coordinator() {
-    if (coordinator == null) {
-      coordinator =
-          new LayeredStoreCoordinator(
-              storesByColumnFamily.values(), sink, snapshotSource, view -> {});
-    }
-    return coordinator;
+    return defaultDomain().coordinator();
   }
 
   /**
-   * The coordinator driving freezes and persist rounds, with the given listener receiving every
-   * published {@link ReadOnlyView}. Must be the first {@code coordinator} call.
+   * The default domain's coordinator with a view listener; see {@link
+   * LayeredDomain#coordinator(Consumer)}.
    */
   public LayeredStoreCoordinator coordinator(final Consumer<ReadOnlyView> viewListener) {
-    if (coordinator != null) {
-      throw new IllegalStateException(
-          "expected the view listener to be registered before the coordinator is built,"
-              + " but one already exists");
-    }
-    coordinator =
-        new LayeredStoreCoordinator(
-            storesByColumnFamily.values(), sink, snapshotSource, viewListener);
-    return coordinator;
+    return defaultDomain().coordinator(viewListener);
   }
 
   /**
-   * Whether any layered store's pinned (un-evictable) entries exceed its byte budget — the signal
-   * to schedule a persist round now.
+   * Whether any domain's layered stores hold more pinned (un-evictable) bytes than their budget —
+   * the signal to schedule a persist round now. Per-domain scheduling should prefer {@link
+   * LayeredDomain#overCapacity()}.
    */
   public boolean overCapacity() {
-    return storesByColumnFamily.values().stream().anyMatch(LayeredKeyValueStore::overCapacity);
+    return domainsByName.values().stream().anyMatch(LayeredDomain::overCapacity);
   }
 
   // ------------------------------------------------------------------
   // Wiring
   // ------------------------------------------------------------------
 
-  private LayeredKeyValueStore createStore(final ColumnFamilyType columnFamily) {
+  private LayeredDomain defaultDomain() {
+    final LayeredDomain existing = domainsByName.get(DEFAULT_DOMAIN_NAME);
+    return existing != null ? existing : registerDomain(DEFAULT_DOMAIN_NAME);
+  }
+
+  private LayeredDomain domainOf(final TransactionContext context) {
+    for (final LayeredDomain domain : domainsByName.values()) {
+      if (domain.context() == context) {
+        return domain;
+      }
+    }
+    return null;
+  }
+
+  private LayeredKeyValueStore createStore(
+      final ColumnFamilyType columnFamily, final LayeredDomain domain) {
     final String name = columnFamily.name();
     final ColumnFamily<DbBytes, DbBytes> readColumnFamily =
-        inner.createColumnFamily(columnFamily, delegateReadContext, new DbBytes(), new DbBytes());
+        inner.createColumnFamily(
+            columnFamily, domain.delegateReadContext(), new DbBytes(), new DbBytes());
     final ColumnFamily<DbBytes, DbBytes> persistColumnFamily =
-        inner.createColumnFamily(columnFamily, persistContext, new DbBytes(), new DbBytes());
-    persistColumnFamilies.put(name, persistColumnFamily);
+        inner.createColumnFamily(
+            columnFamily, domain.persistContext(), new DbBytes(), new DbBytes());
+    domain.persistColumnFamilies().put(name, persistColumnFamily);
     if (fallbackSnapshots) {
-      snapshotColumnFamilies.put(
-          name,
-          inner.createColumnFamily(
-              columnFamily, snapshotReadContext, new DbBytes(), new DbBytes()));
+      domain
+          .snapshotColumnFamilies()
+          .put(
+              name,
+              inner.createColumnFamily(
+                  columnFamily, domain.snapshotReadContext(), new DbBytes(), new DbBytes()));
     }
     return new LayeredKeyValueStore(
         name,
-        new InnerBytesStore(readColumnFamily, persistColumnFamily, persistContext),
+        new InnerBytesStore(readColumnFamily, persistColumnFamily, domain.persistContext()),
         config.maxBytesPerStore(),
         config.absorbDeletes(),
         config.pipelineSegmentLimit());
