@@ -48,3 +48,7 @@ zeebe:
           businessIdUniquenessEnabled: true
         startup:
           rpaReexportMigrationEnabled: false
+        layeredState:
+          enabled: true
+          persistInterval: 5s
+          maxBytesPerStore: 32MB

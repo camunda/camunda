@@ -20,6 +20,7 @@ import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
 import io.camunda.zeebe.stream.impl.metrics.ScheduledTaskMetrics;
 import java.time.Duration;
 import java.time.InstantSource;
+import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
@@ -47,6 +48,9 @@ public class ProcessingScheduleServiceImpl
   private ActorControl actorControl;
   private AbortableRetryStrategy writeRetryStrategy;
   private CompletableActorFuture<Void> openFuture;
+  // invoked on this service's actor right before a task executes; returning false defers the
+  // task until after the current processing batch (see taskExecutionBarrier(BooleanSupplier))
+  private BooleanSupplier taskExecutionBarrier = () -> true;
 
   public ProcessingScheduleServiceImpl(
       final Supplier<Phase> streamProcessorPhaseSupplier,
@@ -167,22 +171,42 @@ public class ProcessingScheduleServiceImpl
     return scheduledTask;
   }
 
+  /**
+   * Installs a barrier invoked on this service's actor right before every task execution. Used by
+   * the experimental layered-state wiring to drain buffered state so persisted-state scans (e.g.
+   * due-date checkers) observe every committed batch; returning false defers the task until the
+   * in-flight processing batch completed. Must be set before the service is opened.
+   */
+  void taskExecutionBarrier(final BooleanSupplier barrier) {
+    taskExecutionBarrier = Objects.requireNonNull(barrier);
+  }
+
   Runnable guardRunnable(final Runnable task) {
-    return () -> {
-      if (abortCondition.getAsBoolean()) {
-        // it might be that we are closing, then we should just stop
-        return;
-      }
+    return new Runnable() {
+      @Override
+      public void run() {
+        if (abortCondition.getAsBoolean()) {
+          // it might be that we are closing, then we should just stop
+          return;
+        }
 
-      final var currentStreamProcessorPhase = streamProcessorPhaseSupplier.get();
-      if (currentStreamProcessorPhase != Phase.PROCESSING) {
-        LOG.trace(
-            "Not able to execute scheduled task right now. [streamProcessorPhase: {}]",
-            currentStreamProcessorPhase);
-        return;
-      }
+        final var currentStreamProcessorPhase = streamProcessorPhaseSupplier.get();
+        if (currentStreamProcessorPhase != Phase.PROCESSING) {
+          LOG.trace(
+              "Not able to execute scheduled task right now. [streamProcessorPhase: {}]",
+              currentStreamProcessorPhase);
+          return;
+        }
 
-      task.run();
+        if (!taskExecutionBarrier.getAsBoolean()) {
+          // committed state cannot be made visible to the task right now (a processing batch is
+          // in flight on this actor); run again once the batch completed
+          actorControl.submit(this);
+          return;
+        }
+
+        task.run();
+      }
     };
   }
 
@@ -207,6 +231,13 @@ public class ProcessingScheduleServiceImpl
         LOG.trace(
             "Not able to execute scheduled task right now. [streamProcessorPhase: {}]",
             currentStreamProcessorPhase);
+        actorControl.submit(toRunnable(task));
+        return;
+      }
+
+      if (!taskExecutionBarrier.getAsBoolean()) {
+        // committed state cannot be made visible to the task right now (a processing batch is
+        // in flight on this actor); run again once the batch completed
         actorControl.submit(toRunnable(task));
         return;
       }

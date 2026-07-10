@@ -9,6 +9,7 @@ package io.camunda.zeebe.stream.impl;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.layered.zdb.LayeredZeebeDb;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
 import io.camunda.zeebe.logstreams.log.LogStream;
@@ -111,6 +112,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private final List<RecordProcessor> recordProcessors = new ArrayList<>();
   private AsyncScheduleServiceContext asyncScheduleServiceContext;
   private ProcessingScheduleServiceImpl processorActorService;
+  // set once in onActorStarted iff the db is layered (experimental flag); null otherwise
+  private LayeredStatePersistence layeredStatePersistence;
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
     super("StreamProcessor", processorBuilder.getProcessingContext().partitionId());
@@ -150,6 +153,13 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       LOG.debug("Recovering state of partition {} from snapshot", partitionId);
       final long snapshotPosition = recoverFromSnapshot();
 
+      if (zeebeDb instanceof LayeredZeebeDb) {
+        // scheduled tasks read persisted state; with buffered (layered) state they must run on
+        // this actor behind a persist barrier (see initLayeredStatePersistence) so their scans
+        // observe every committed batch — otherwise event-driven checkers can lose wake-ups
+        streamProcessorContext.setEnableAsyncScheduledTasks(false);
+      }
+
       final var scheduledTaskMetrics =
           ScheduledTaskMetrics.of(streamProcessorContext.getMeterRegistry());
 
@@ -169,6 +179,15 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
       processorActorService = actorServiceFactory.create();
 
+      if (zeebeDb instanceof LayeredZeebeDb) {
+        // drain the buffered state before every scheduled task runs on this actor, so its
+        // persisted-state reads are exactly as fresh as they are without the layered buffer
+        processorActorService.taskExecutionBarrier(
+            () ->
+                layeredStatePersistence == null
+                    || layeredStatePersistence.prepareForScheduledTask());
+      }
+
       final var processingScheduleService =
           new ExtendedProcessingScheduleServiceImpl(
               asyncScheduleServiceContext,
@@ -177,6 +196,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       streamProcessorContext.scheduleService(processingScheduleService);
 
       initRecordProcessors();
+
+      initLayeredStatePersistence();
 
       healthCheckTick();
 
@@ -323,8 +344,81 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     lifecycleAwareListeners.addAll(processorContext.getLifecycleListeners());
   }
 
+  private void initLayeredStatePersistence() {
+    if (!(zeebeDb instanceof final LayeredZeebeDb<?> layeredDb)) {
+      return;
+    }
+    // all layered column families exist now (created during recovery and record-processor init),
+    // so the persist driver can capture the engine domain's store set
+    layeredStatePersistence =
+        new LayeredStatePersistence(
+            layeredDb,
+            () ->
+                streamProcessorContext
+                    .getLastProcessedPositionState()
+                    .getLastSuccessfulProcessedRecordPosition());
+    streamProcessorContext.batchCommittedListener(layeredStatePersistence::onBatchCommitted);
+    // scheduled directly on the actor (not the processing schedule service) so the cadence also
+    // covers the replay phase, where the layered context buffers writes too
+    scheduleLayeredPersistTick();
+  }
+
+  private void scheduleLayeredPersistTick() {
+    actor.schedule(
+        layeredStatePersistence.persistInterval(),
+        () -> {
+          layeredStatePersistence.onPeriodicTick();
+          scheduleLayeredPersistTick();
+        });
+  }
+
+  /**
+   * Drains the layered db's buffered state to RocksDB so a subsequent {@code createSnapshot}
+   * checkpoints a durable cut at least as new as the caller's last-processed position. Completes
+   * immediately when the experimental layered-state flag is off; waits for an in-flight batch to
+   * complete before draining otherwise.
+   */
+  public ActorFuture<Void> flushBufferedState() {
+    if (!(zeebeDb instanceof LayeredZeebeDb)) {
+      return CompletableActorFuture.completed(null);
+    }
+    final CompletableActorFuture<Void> flushed = new CompletableActorFuture<>();
+    actor.run(() -> tryFlushBufferedState(flushed));
+    return flushed;
+  }
+
+  private void tryFlushBufferedState(final CompletableActorFuture<Void> flushed) {
+    try {
+      if (layeredStatePersistence == null) {
+        // nothing was buffered yet — recovery has not reached record-processor init
+        flushed.complete(null);
+        return;
+      }
+      if (!layeredStatePersistence.tryPersistForSnapshot()) {
+        // a batch is mid-flight on this actor; run again once it completed
+        actor.submit(() -> tryFlushBufferedState(flushed));
+        return;
+      }
+      flushed.complete(null);
+    } catch (final Exception e) {
+      flushed.completeExceptionally(e);
+    }
+  }
+
   private long recoverFromSnapshot() {
-    final TransactionContext transactionContext = zeebeDb.createContext();
+    // with the experimental layered-state flag on, the processing context is the layered db's
+    // engine-domain context: batch commits promote an in-memory layer instead of writing RocksDB,
+    // and LayeredStatePersistence drains the buffered state in periodic persist rounds
+    final TransactionContext transactionContext;
+    if (zeebeDb instanceof final LayeredZeebeDb<?> layeredDb) {
+      // the db (and thus the domain context) may be reused across stream processors, e.g. on a
+      // follower-to-leader transition; a predecessor that died mid-batch left uncommitted staged
+      // writes behind — discard them, replay rebuilds their effects from the log
+      layeredDb.defaultDomain().discardOpenBatch();
+      transactionContext = layeredDb.layeredContext();
+    } else {
+      transactionContext = zeebeDb.createContext();
+    }
     streamProcessorContext.transactionContext(transactionContext);
     streamProcessorContext.keyGeneratorControls(
         new DbKeyGenerator(partitionId, zeebeDb, transactionContext));

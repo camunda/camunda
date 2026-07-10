@@ -117,6 +117,9 @@ public final class AsyncSnapshottingTest {
   private void createStreamProcessorControllerMock() {
     mockStreamProcessor = mock(StreamProcessor.class);
 
+    when(mockStreamProcessor.flushBufferedState())
+        .thenReturn(CompletableActorFuture.completed(null));
+
     when(mockStreamProcessor.getLastProcessedPositionAsync())
         .thenReturn(CompletableActorFuture.completed(0L))
         .thenReturn(CompletableActorFuture.completed(25L))

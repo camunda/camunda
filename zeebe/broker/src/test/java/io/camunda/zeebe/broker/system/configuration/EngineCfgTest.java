@@ -116,6 +116,34 @@ final class EngineCfgTest {
     assertThat(configuration.isCandidateGroupNameResolution()).isFalse();
   }
 
+  @Test
+  void shouldDisableLayeredStateByDefault() {
+    // given
+    final BrokerCfg cfg = TestConfigReader.readConfig("empty", environment);
+
+    // when
+    final var layeredState = cfg.getExperimental().getEngine().getLayeredState();
+
+    // then
+    assertThat(layeredState.isEnabled()).isFalse();
+    assertThat(layeredState.getPersistInterval()).isEqualTo(Duration.ofSeconds(1));
+    assertThat(layeredState.getMaxBytesPerStore().toBytes()).isEqualTo(16 * 1024 * 1024L);
+  }
+
+  @Test
+  void shouldReadLayeredStateFromConfig() {
+    // given
+    final BrokerCfg cfg = TestConfigReader.readConfig("engine", environment);
+
+    // when
+    final var layeredState = cfg.getExperimental().getEngine().getLayeredState();
+
+    // then
+    assertThat(layeredState.isEnabled()).isTrue();
+    assertThat(layeredState.getPersistInterval()).isEqualTo(Duration.ofSeconds(5));
+    assertThat(layeredState.getMaxBytesPerStore().toBytes()).isEqualTo(32 * 1024 * 1024L);
+  }
+
   void assertListenerCfg(
       final GlobalListenerConfiguration config,
       final String type,

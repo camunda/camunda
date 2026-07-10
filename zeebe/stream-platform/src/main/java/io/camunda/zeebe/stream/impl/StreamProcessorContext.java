@@ -34,6 +34,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   public static final int DEFAULT_MAX_COMMANDS_IN_BATCH = 100;
   public static final int DEFAULT_MAX_RECOVERABLE_RETRIES = 1000;
   private static final StreamProcessorListener NOOP_LISTENER = processedCommand -> {};
+  private static final Runnable NOOP_BATCH_COMMITTED_LISTENER = () -> {};
   private ActorControl actor;
   private LogStream logStream;
   private PartitionId partitionId;
@@ -59,6 +60,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private int maxRecoverableRetries = DEFAULT_MAX_RECOVERABLE_RETRIES;
   private boolean enableAsyncScheduledTasks = true;
   private EventFilter processingFilter = e -> true;
+  private Runnable batchCommittedListener = NOOP_BATCH_COMMITTED_LISTENER;
   private ControllableStreamClock clock;
   private MeterRegistry meterRegistry;
   private Duration scheduledTaskCheckInterval = Duration.ofSeconds(1);
@@ -256,6 +258,19 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   public StreamProcessorContext setEnableAsyncScheduledTasks(final boolean enabled) {
     enableAsyncScheduledTasks = enabled;
     return this;
+  }
+
+  /**
+   * Invoked on the processor actor after every successfully committed processing batch; used by the
+   * experimental layered-state wiring to force a persist round when over capacity.
+   */
+  public StreamProcessorContext batchCommittedListener(final Runnable batchCommittedListener) {
+    this.batchCommittedListener = Objects.requireNonNull(batchCommittedListener);
+    return this;
+  }
+
+  public Runnable getBatchCommittedListener() {
+    return batchCommittedListener;
   }
 
   public EventFilter processingFilter() {

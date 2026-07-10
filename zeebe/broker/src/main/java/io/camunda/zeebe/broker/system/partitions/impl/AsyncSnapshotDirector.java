@@ -239,7 +239,12 @@ public final class AsyncSnapshotDirector extends Actor
 
   private ActorFuture<PersistedSnapshot> snapshot(
       final InProgressSnapshot inProgressSnapshot, final boolean forceSnapshot) {
-    return takeTransientSnapshot(inProgressSnapshot, forceSnapshot)
+    // with the experimental layered-state flag on, buffered runtime state must be drained to
+    // RocksDB first so the checkpoint's content is at least as new as the snapshot's claimed
+    // processed position (resolved before this chain); a no-op when the flag is off
+    return streamProcessor
+        .flushBufferedState()
+        .andThen(() -> takeTransientSnapshot(inProgressSnapshot, forceSnapshot), actor)
         .andThen(() -> getPositionsAfterSnapshot(inProgressSnapshot), actor)
         .andThen(() -> waitUntilLastWrittenPositionIsCommitted(inProgressSnapshot), actor)
         .andThen(this::flushJournal, actor)
