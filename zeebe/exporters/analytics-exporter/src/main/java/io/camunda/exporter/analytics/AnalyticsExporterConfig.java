@@ -102,15 +102,7 @@ public class AnalyticsExporterConfig {
   /** Validates configuration, logging warnings where appropriate. */
   public AnalyticsExporterConfig validate() {
     validateEndpoint();
-    final Duration parsedPush;
-    try {
-      parsedPush = Duration.parse(pushInterval);
-    } catch (final Exception e) {
-      throw new IllegalArgumentException("Invalid pushInterval: " + pushInterval, e);
-    }
-    if (parsedPush.isZero() || parsedPush.isNegative()) {
-      throw new IllegalArgumentException("pushInterval must be positive, got: " + pushInterval);
-    }
+    validatePushInterval();
     final Duration parsedHeartbeat;
     try {
       parsedHeartbeat = Duration.parse(heartbeatInterval);
@@ -147,6 +139,18 @@ public class AnalyticsExporterConfig {
               + samplingRate);
     }
     return this;
+  }
+
+  private void validatePushInterval() {
+    final Duration parsedPush;
+    try {
+      parsedPush = Duration.parse(pushInterval);
+    } catch (final Exception e) {
+      throw new IllegalArgumentException("Invalid pushInterval: " + pushInterval, e);
+    }
+    if (parsedPush.isZero() || parsedPush.isNegative()) {
+      throw new IllegalArgumentException("pushInterval must be positive, got: " + pushInterval);
+    }
   }
 
   private void validateEndpoint() {
