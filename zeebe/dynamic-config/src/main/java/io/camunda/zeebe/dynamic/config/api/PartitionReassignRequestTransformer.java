@@ -24,6 +24,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOper
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -197,11 +198,13 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
                 newMember ->
                     new PartitionJoinOperation(
                         newMember, partitionId, newMetadata.getPriority(newMember)))
+            .sorted(Comparator.comparing(ClusterConfigurationChangeOperation::memberId))
             .toList();
     final var membersToLeave =
         oldMetadata.members().stream()
             .filter(member -> !newMetadata.members().contains(member))
             .map(oldMember -> new PartitionLeaveOperation(oldMember, partitionId, 1))
+            .sorted(Comparator.comparing(ClusterConfigurationChangeOperation::memberId))
             .toList();
     final var membersToChangePriority =
         oldMetadata.members().stream()
@@ -212,6 +215,7 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
                 memberId ->
                     new PartitionReconfigurePriorityOperation(
                         memberId, partitionId, newMetadata.getPriority(memberId)))
+            .sorted(Comparator.comparing(ClusterConfigurationChangeOperation::memberId))
             .toList();
 
     // TODO: interleave join and leave operation
