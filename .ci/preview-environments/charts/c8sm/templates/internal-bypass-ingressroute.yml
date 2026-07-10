@@ -1,0 +1,59 @@
+# Internal auth bypass for CI/testing: requests from the internal source ranges
+# (Teleport tunnel / in-cluster network) skip Vouch/Okta entirely — nginx-era
+# `satisfy: any` + `whitelist-source-range` semantics. Source-IP matching is the
+# only selector that also covers browser-internal requests (service-worker
+# script fetches and service-worker-issued requests), which cannot carry
+# client-injected headers; Management Identity depends on its service worker to
+# remap its root-path /static and /api references under /identity, where its
+# path-scoped IDENTITY_JWT cookie applies.
+#
+# A Traefik IngressRoute rather than a Gateway API HTTPRoute because Gateway API
+# has no source-IP match and Traefik's ipAllowList middleware rejects
+# non-matching requests instead of falling through to the next rule.
+#
+# External traffic (public source IPs) never matches and is served by the
+# Vouch-protected HTTPRoute (templates/httproute.yml).
+{{- $iab := .Values.global.preview.ingress.internalAuthBypass | default dict -}}
+{{- if $iab.enabled }}
+{{- $camundaPlatform := deepCopy (index .Subcharts "camunda-platform") -}}
+{{- $_ := set .Values "camundaPlatform" (deepCopy (index .Values "camunda-platform")) -}}
+{{- $gateway := required "infra-preview-environments-gateway-api values block must be set" (index .Values "infra-preview-environments-gateway-api") -}}
+{{- $tlsSecret := required "infra-preview-environments-gateway-api.gateway.tls.secretName must be set" $gateway.gateway.tls.secretName -}}
+{{- $sourceRanges := required "internalAuthBypass.sourceRange must be set when the bypass is enabled" $iab.sourceRange -}}
+{{- $clientIP := printf "ClientIP(`%s`)" (join "`, `" $sourceRanges) -}}
+{{- $host := include "ingress.domain" $ -}}
+{{- $backends := list
+    (dict "path" .Values.camundaPlatform.console.contextPath "name" (include "console.fullname" $camundaPlatform) "port" .Values.camundaPlatform.console.service.port)
+    (dict "path" .Values.camundaPlatform.orchestration.contextPath "name" (printf "%s-gateway" (include "orchestration.fullname" $camundaPlatform)) "port" .Values.camundaPlatform.orchestration.service.httpPort)
+    (dict "path" (include "identity.keycloak.contextPath" $camundaPlatform) "name" (include "identity.keycloak.service" $camundaPlatform) "port" (include "identity.keycloak.port" $camundaPlatform | int))
+    (dict "path" .Values.camundaPlatform.identity.contextPath "name" (include "identity.fullname" $camundaPlatform) "port" .Values.camundaPlatform.identity.service.port)
+    (dict "path" .Values.camundaPlatform.optimize.contextPath "name" (include "optimize.fullname" $camundaPlatform) "port" .Values.camundaPlatform.optimize.service.port)
+    (dict "path" .Values.camundaPlatform.webModeler.contextPath "name" (include "webModeler.restapi.fullname" $camundaPlatform) "port" .Values.camundaPlatform.webModeler.restapi.service.port)
+    (dict "path" (include "webModeler.websocketContextPath" $camundaPlatform) "name" (include "webModeler.websockets.fullname" $camundaPlatform) "port" .Values.camundaPlatform.webModeler.websockets.service.port)
+    (dict "path" .Values.camundaPlatform.connectors.contextPath "name" (include "connectors.fullname" $camundaPlatform) "port" .Values.camundaPlatform.connectors.service.serverPort)
+}}
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ include "camundaPlatform.fullname" $camundaPlatform }}-internal-bypass
+  labels: {{ include "commonLabels" $ | nindent 4 }}
+  annotations: {{ include "commonAnnotations" $ | nindent 4 }}
+spec:
+  entryPoints:
+  # The internal Traefik entrypoint terminating TLS for preview domains.
+  - websecure
+  tls:
+    secretName: {{ $tlsSecret }}
+  routes:
+  {{- range $b := $backends }}
+  - kind: Rule
+    # Outrank the Gateway API routers (Traefik computes their priorities from
+    # match specificity; an explicit high value wins deterministically).
+    priority: 42000000
+    match: Host(`{{ $host }}`) && {{ $clientIP }} && PathPrefix(`{{ $b.path }}`)
+    services:
+    - name: {{ $b.name }}
+      port: {{ $b.port }}
+  {{- end }}
+{{- end }}
