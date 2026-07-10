@@ -14,8 +14,10 @@ import io.camunda.eventbridge.streaming.window.Windowed;
 import io.camunda.eventbridge.streaming.window.Windows;
 import io.camunda.zeebe.db.impl.DbBytes;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.function.Predicate;
 
 /**
@@ -38,7 +40,9 @@ import java.util.function.Predicate;
  * immediately; {@link #persistFrozen()} writes the frozen delta inside the transaction the task
  * supplies; {@link #completeFrozen(boolean)} drops it on success or merges it back on failure.
  * {@link #checkpoint()} composes the three synchronously for callers without an asynchronous
- * commit.
+ * commit. The persisted delta is a <em>true</em> delta: each changed cell's bytes once, and a
+ * delete only for an evicted cell some completed cut actually wrote — a cell born and evicted
+ * between two cuts never had a durable row and leaves no delete.
  *
  * @param <K> the grouping key type
  * @param <ACC> the accumulator type
@@ -79,12 +83,19 @@ public final class SegmentMergingAggregation<K, ACC> {
   // one) rather than shadowing every open cell's accumulator with a second serialized copy.
   private Map<Windowed<K>, byte[]> serializedSinceFlush = new HashMap<>();
   private long maxEventTime = Long.MIN_VALUE;
+  // The cells whose durable row exists right now — written by a completed cut (or recovered) and
+  // not yet deleted by one. It gates the cut's deletes: an evicted cell with no durable row (born
+  // and evicted between two cuts, or written only by a failed cut) needs no delete. Mutated only
+  // on complete/recover, never on freeze — a cut counts as written only once it durably completed.
+  private final Set<Windowed<K>> durablyWritten = new HashSet<>();
 
   // The outstanding frozen checkpoint delta (null when none): the changed/evicted cell sets stolen
-  // from the working set plus the at-freeze serialized bytes of every frozen changed cell. Owned
-  // by the freeze/complete pair on the owner thread; persistFrozen only reads it.
+  // from the working set, the at-freeze serialized bytes of every frozen changed cell, and the
+  // durable rows the cut deletes (the frozen evicted cells a completed cut had written). Owned by
+  // the freeze/complete pair on the owner thread; persistFrozen only reads it.
   private CheckpointDelta<K> frozenCells;
   private Map<Windowed<K>, byte[]> frozenSerialized;
+  private Set<Windowed<K>> frozenDeletes;
 
   public SegmentMergingAggregation(
       final int group,
@@ -196,9 +207,11 @@ public final class SegmentMergingAggregation<K, ACC> {
   /**
    * Owner thread: finalizes closed windows, flushes, and detaches the checkpoint delta — the
    * changed/evicted cell sets plus the serialized bytes of every changed cell — into the frozen
-   * slot, installing fresh empty trackers so folding resumes immediately. The frozen delta is
-   * immutable data: later folds touch only the live accumulators and trackers, never the frozen
-   * bytes, so no copy-on-write of live accumulators is needed.
+   * slot, installing fresh empty trackers so folding resumes immediately. The cut's deletes are
+   * captured here too: only the frozen evicted cells whose durable row exists (written by a
+   * completed cut and not yet deleted) — an evicted cell that was never durably written needs no
+   * delete. The frozen delta is immutable data: later folds touch only the live accumulators and
+   * trackers, never the frozen bytes, so no copy-on-write of live accumulators is needed.
    *
    * <p>Invariant (checked): after the flush, {@code serializedSinceFlush} holds current bytes for
    * every cell changed since the last checkpoint — a change invalidates the cached bytes and
@@ -226,16 +239,23 @@ public final class SegmentMergingAggregation<K, ACC> {
                 + " has none");
       }
     }
+    final Set<Windowed<K>> deletes = new HashSet<>();
+    for (final Windowed<K> cell : delta.evicted()) {
+      if (durablyWritten.contains(cell)) {
+        deletes.add(cell);
+      }
+    }
     frozenCells = delta;
     frozenSerialized = serialized;
+    frozenDeletes = deletes;
   }
 
   /**
    * IO thread, inside the caller's commit transaction: persists the frozen delta to the durable
    * cells — the at-freeze bytes for every frozen changed cell, a delete for every frozen evicted
-   * cell. Touches only the frozen slot and the cell store (which the owner thread itself only uses
-   * on this path and at recovery), never the live working state — the owner keeps folding
-   * concurrently.
+   * cell a completed cut had written (an eviction with no durable row persists nothing). Touches
+   * only the frozen slot and the cell store (which the owner thread itself only uses on this path
+   * and at recovery), never the live working state — the owner keeps folding concurrently.
    *
    * @throws IllegalStateException if nothing is frozen
    */
@@ -246,18 +266,21 @@ public final class SegmentMergingAggregation<K, ACC> {
     for (final Windowed<K> cell : frozenCells.changed()) {
       cells.putSerialized(cell, frozenSerialized.get(cell));
     }
-    for (final Windowed<K> cell : frozenCells.evicted()) {
+    for (final Windowed<K> cell : frozenDeletes) {
       cells.delete(cell);
     }
   }
 
   /**
    * Owner thread, once the transaction's outcome is known. Success: the frozen delta is durable —
-   * drop it. Failure: merge it back so the next freeze re-includes it — frozen changed cells are
-   * re-marked changed and their bytes re-cached, frozen evicted cells re-marked for deletion. The
-   * live state always wins; the frozen delta only fills gaps: a cell re-changed since the freeze
-   * keeps its newer total and its pending (or already re-cached) re-serialization, a cell evicted
-   * since the freeze stays evicted, and a cell re-created since the freeze is not re-deleted.
+   * drop it, remembering the rows the cut wrote and forgetting the ones it deleted (the
+   * was-ever-persisted tracking moves only here, so a cut that froze but never durably completed
+   * marks nothing as written). Failure: merge it back so the next freeze re-includes it — frozen
+   * changed cells are re-marked changed and their bytes re-cached, frozen evicted cells re-marked
+   * for deletion. The live state always wins; the frozen delta only fills gaps: a cell re-changed
+   * since the freeze keeps its newer total and its pending (or already re-cached) re-serialization,
+   * a cell evicted since the freeze stays evicted, and a cell re-created since the freeze is not
+   * re-deleted.
    *
    * @throws IllegalStateException if nothing is frozen
    */
@@ -265,7 +288,10 @@ public final class SegmentMergingAggregation<K, ACC> {
     if (frozenCells == null) {
       throw new IllegalStateException("expected a frozen checkpoint delta to complete, but none");
     }
-    if (!success) {
+    if (success) {
+      durablyWritten.addAll(frozenCells.changed());
+      durablyWritten.removeAll(frozenDeletes);
+    } else {
       open.mergeBackCheckpointDelta(frozenCells);
       for (final Entry<Windowed<K>, byte[]> frozen : frozenSerialized.entrySet()) {
         final Windowed<K> cell = frozen.getKey();
@@ -283,6 +309,7 @@ public final class SegmentMergingAggregation<K, ACC> {
     }
     frozenCells = null;
     frozenSerialized = null;
+    frozenDeletes = null;
   }
 
   /**
@@ -333,6 +360,7 @@ public final class SegmentMergingAggregation<K, ACC> {
         (cell, total) -> {
           open.put(cell, total);
           open.index(cell, windowEnd(cell));
+          durablyWritten.add(cell);
           maxEventTime = Math.max(maxEventTime, windowEnd(cell));
         });
   }

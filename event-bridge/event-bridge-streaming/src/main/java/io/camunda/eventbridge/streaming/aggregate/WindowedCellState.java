@@ -34,7 +34,8 @@ import java.util.function.BiConsumer;
  *
  * <p>The window-end index and the changed/evicted sets are maintained only for the cells the owner
  * feeds into {@link #index(Windowed, long)} and {@link #markChanged(Windowed)} — an owner that
- * needs neither (the sealing side) simply never calls them.
+ * needs no due-window finalization (the sealing side) never indexes, and one with no durable
+ * checkpoint (Model R sealing) never marks.
  *
  * <p>The checkpoint delta supports being <em>detached</em>: {@link #detachCheckpointDelta()} hands
  * the changed/evicted sets over for an asynchronous persist and installs fresh empty ones, so

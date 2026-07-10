@@ -513,6 +513,85 @@ final class SegmentMergingAggregationTest {
   }
 
   @Test
+  void shouldNotPersistADeleteForACellBornAndEvictedBetweenTwoCuts() {
+    // given a completed cut, and a cell then born AND finalized before the next cut — no cut ever
+    // wrote its row
+    final RecordingKeyValueStore store =
+        new RecordingKeyValueStore(new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes()));
+    final InMemoryResultSink<Windowed<String>, Long> sink = new InMemoryResultSink<>();
+    final SegmentMergingAggregation<String, Long> merger =
+        merger(store, sink, TumblingWindows.ofSizeAndGrace(1_000L, 2_000L));
+    merger.checkpoint();
+    final Windowed<String> cell = new Windowed<>("k", 0L);
+    merger.merge(cell, 5L);
+    merger.merge(new Windowed<>("later", 10_000L), 1L); // closes the cell's window
+
+    // when the next cut finalizes and evicts the born-and-died cell
+    merger.checkpoint();
+
+    // then its window was still emitted downstream, but no delete was persisted — there was never
+    // a durable row to remove
+    assertThat(sink.get(cell)).hasValue(5L);
+    assertThat(store.deleteWindowStarts()).isEmpty();
+    assertThat(storedWindowStarts(store)).containsExactly(10_000L);
+  }
+
+  @Test
+  void shouldPersistADeleteForAnEvictedCellAnEarlierCutWrote() {
+    // given a cell whose row a completed cut persisted
+    final RecordingKeyValueStore store =
+        new RecordingKeyValueStore(new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes()));
+    final SegmentMergingAggregation<String, Long> merger =
+        merger(store, new InMemoryResultSink<>(), TumblingWindows.ofSizeAndGrace(1_000L, 2_000L));
+    final Windowed<String> cell = new Windowed<>("k", 0L);
+    merger.merge(cell, 5L);
+    merger.checkpoint();
+    store.clearRecorded();
+
+    // when event time closes the cell's window and the next cut evicts it
+    merger.merge(new Windowed<>("later", 10_000L), 1L);
+    merger.checkpoint();
+
+    // then exactly that row's delete was persisted
+    assertThat(store.deleteWindowStarts()).containsExactly(0L);
+    assertThat(storedWindowStarts(store)).containsExactly(10_000L);
+  }
+
+  @Test
+  void shouldNotPersistADeleteForACellOnlyAFailedCutCarried() {
+    // given a cell frozen by a cut whose persist failed — it was never durably written
+    final AtomicBoolean failTransaction = new AtomicBoolean();
+    final TransactionRunner tx =
+        operations -> {
+          if (failTransaction.get()) {
+            throw new IllegalStateException("transaction failed");
+          }
+          operations.run();
+        };
+    final RecordingKeyValueStore store =
+        new RecordingKeyValueStore(new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes()));
+    final InMemoryResultSink<Windowed<String>, Long> sink = new InMemoryResultSink<>();
+    final SegmentMergingAggregation<String, Long> merger =
+        merger(store, sink, TumblingWindows.ofSizeAndGrace(1_000L, 2_000L), tx);
+    final Windowed<String> cell = new Windowed<>("k", 0L);
+    merger.merge(cell, 5L);
+    failTransaction.set(true);
+    assertThatThrownBy(merger::checkpoint).hasMessage("transaction failed");
+    assertThat(storedWindowStarts(store)).as("the failed cut persisted nothing").isEmpty();
+
+    // when the cell's window closes and the next successful cut evicts it
+    failTransaction.set(false);
+    merger.merge(new Windowed<>("later", 10_000L), 1L);
+    merger.checkpoint();
+
+    // then no delete was persisted for it, and its merged-back data was not lost — the window
+    // finalized downstream with the full total
+    assertThat(store.deleteWindowStarts()).isEmpty();
+    assertThat(sink.get(cell)).hasValue(5L);
+    assertThat(storedWindowStarts(store)).containsExactly(10_000L);
+  }
+
+  @Test
   void shouldRejectOverlappingFreezesAndUnpairedPersistOrComplete() {
     // given an outstanding frozen delta
     final SegmentMergingAggregation<String, Long> merger =

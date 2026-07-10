@@ -18,6 +18,7 @@ import io.camunda.zeebe.db.impl.DbBytes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
 final class SegmentSealingAggregationTest {
@@ -81,6 +82,18 @@ final class SegmentSealingAggregationTest {
   private SegmentSink<String, Long> sink() {
     return (cell, partition, segment, delta) ->
         emitted.add(new Sealed(cell.key(), cell.windowStart(), partition, segment, delta));
+  }
+
+  /** Decodes each recorded cell-row key's base string key ({@code group ++ windowStart ++ key}). */
+  private static List<String> cellKeys(final List<byte[]> keys) {
+    final StringRecordValue codec = new StringRecordValue();
+    final List<String> decoded = new ArrayList<>();
+    for (final byte[] key : keys) {
+      final int offset = Integer.BYTES + Long.BYTES;
+      codec.wrap(new UnsafeBuffer(key), offset, key.length - offset);
+      decoded.add(codec.value());
+    }
+    return decoded;
   }
 
   @Test
@@ -303,6 +316,125 @@ final class SegmentSealingAggregationTest {
     final SegmentSealingAggregation<Ev, String, Long> after = durable(store);
     after.accept(new Ev(0, 20L, 100L, "b", 1L));
     assertThat(emitted).containsExactly(new Sealed("b", 0L, 0, 1L, 7L));
+  }
+
+  @Test
+  void shouldPersistOnlyTheCellsFoldedIntoSinceTheLastCompletedCut() {
+    // given a cell persisted by a completed cut
+    final RecordingKeyValueStore store =
+        new RecordingKeyValueStore(new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes()));
+    final SegmentSealingAggregation<Ev, String, Long> aggregation = durable(store);
+    aggregation.accept(new Ev(0, 0L, 100L, "a", 5L));
+    aggregation.checkpoint();
+    assertThat(cellKeys(store.putCellKeys())).containsExactly("a");
+    store.clearRecorded();
+
+    // when another cell is folded into the same open segment and the next cut runs
+    aggregation.accept(new Ev(0, 1L, 100L, "b", 7L));
+    aggregation.checkpoint();
+
+    // then only the dirty cell is persisted — the unchanged cell's row from the earlier cut stays
+    assertThat(cellKeys(store.putCellKeys())).containsExactly("b");
+    assertThat(store.deleteCellKeys()).isEmpty();
+
+    // and a cut with nothing folded since persists no cell at all — a cell untouched across three
+    // cuts was written exactly once
+    store.clearRecorded();
+    aggregation.checkpoint();
+    assertThat(cellKeys(store.putCellKeys())).isEmpty();
+    assertThat(store.deleteCellKeys()).isEmpty();
+  }
+
+  @Test
+  void shouldDeleteASealedAwayCellButNeverAnUnchangedOpenOne() {
+    // given a sealed-away cell whose row a completed cut wrote, and an open cell persisted by the
+    // following cut
+    final RecordingKeyValueStore store =
+        new RecordingKeyValueStore(new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes()));
+    final SegmentSealingAggregation<Ev, String, Long> aggregation = durable(store);
+    aggregation.accept(new Ev(0, 0L, 100L, "a", 5L));
+    aggregation.checkpoint(); // cut 1 writes "a"
+    aggregation.accept(new Ev(0, 10L, 100L, "b", 7L)); // seals segment 0, opens segment 1
+    store.clearRecorded();
+    aggregation.checkpoint(); // cut 2: persists "b", deletes the sealed-away "a"
+    assertThat(cellKeys(store.putCellKeys())).containsExactly("b");
+    assertThat(cellKeys(store.deleteCellKeys())).containsExactly("a");
+
+    // when a later cut runs with "b" untouched (only a new cell is dirty)
+    aggregation.accept(new Ev(0, 11L, 100L, "c", 1L));
+    store.clearRecorded();
+    aggregation.checkpoint();
+
+    // then the unchanged-but-alive "b" is neither rewritten nor mistaken for sealed-away and
+    // deleted — its earlier row still restores it
+    assertThat(cellKeys(store.putCellKeys())).containsExactly("c");
+    assertThat(store.deleteCellKeys()).isEmpty();
+    emitted.clear();
+    final SegmentSealingAggregation<Ev, String, Long> recovered = durable(store);
+    recovered.accept(new Ev(0, 20L, 100L, "d", 100L)); // seals the recovered segment 1
+    assertThat(emitted)
+        .containsExactlyInAnyOrder(new Sealed("b", 0L, 0, 1L, 7L), new Sealed("c", 0L, 0, 1L, 1L));
+  }
+
+  @Test
+  void shouldRepersistEverythingAFailedCutCarriedOnTheNextCut() {
+    // given a fold frozen by a cut whose persist transaction fails
+    final AtomicBoolean failTransaction = new AtomicBoolean();
+    final TransactionRunner tx =
+        operations -> {
+          if (failTransaction.get()) {
+            throw new IllegalStateException("transaction failed");
+          }
+          operations.run();
+        };
+    final RecordingKeyValueStore store =
+        new RecordingKeyValueStore(new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes()));
+    final SegmentSealingAggregation<Ev, String, Long> aggregation = durable(store, tx);
+    aggregation.accept(new Ev(0, 0L, 100L, "a", 5L));
+    failTransaction.set(true);
+    assertThatThrownBy(aggregation::checkpoint).hasMessage("transaction failed");
+    assertThat(store.putCellKeys()).as("the failed cut persisted nothing").isEmpty();
+
+    // when more is folded and the next cut succeeds
+    failTransaction.set(false);
+    aggregation.accept(new Ev(0, 1L, 100L, "a", 3L));
+    aggregation.checkpoint();
+
+    // then the failed cut's cell was not dropped from the delta — the retried cut persists its
+    // full current total, as a recovery proves
+    assertThat(cellKeys(store.putCellKeys())).containsExactly("a");
+    final SegmentSealingAggregation<Ev, String, Long> recovered = durable(store);
+    recovered.accept(new Ev(0, 10L, 100L, "b", 100L)); // seals segment 0
+    assertThat(emitted).containsExactly(new Sealed("a", 0L, 0, 0L, 8L));
+  }
+
+  @Test
+  void shouldRestoreTheFullOpenBufferFromRowsWrittenByDifferentCuts() {
+    // given an open segment persisted across two cuts — "a" only by the first, "b" only by the
+    // second — plus an uncommitted fold after the last cut
+    final RecordingKeyValueStore store =
+        new RecordingKeyValueStore(new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes()));
+    final SegmentSealingAggregation<Ev, String, Long> before = durable(store);
+    before.accept(new Ev(0, 0L, 100L, "a", 5L));
+    before.checkpoint();
+    before.accept(new Ev(0, 1L, 100L, "b", 7L));
+    store.clearRecorded();
+    before.checkpoint();
+    assertThat(cellKeys(store.putCellKeys()))
+        .as("the second cut wrote only 'b'")
+        .containsExactly("b");
+    before.accept(new Ev(0, 2L, 100L, "a", 2L)); // after the last cut — lost by the crash
+
+    // when a fresh aggregation recovers (a crash) and the uncommitted tail replays from the
+    // committed offset
+    final SegmentSealingAggregation<Ev, String, Long> after = durable(store);
+    after.accept(new Ev(0, 2L, 100L, "a", 2L));
+    after.accept(new Ev(0, 10L, 100L, "c", 100L)); // seals segment 0
+
+    // then the sealed delta carries both restored cells — the unchanged cell's older row and the
+    // dirty cell's newer row together are the exact at-barrier buffer — plus the replayed fold
+    assertThat(emitted)
+        .containsExactlyInAnyOrder(new Sealed("a", 0L, 0, 0L, 7L), new Sealed("b", 0L, 0, 0L, 7L));
   }
 
   @Test
