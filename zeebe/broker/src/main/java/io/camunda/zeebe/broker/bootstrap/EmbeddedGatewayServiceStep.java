@@ -46,7 +46,7 @@ class EmbeddedGatewayServiceStep extends AbstractBrokerStartupStep {
                     physicalTenantId -> physicalTenantId,
                     physicalTenantId ->
                         brokerStartupContext
-                            .getPhysicalTenantEngineContext(physicalTenantId)
+                            .getPhysicalTenantContext(physicalTenantId)
                             .securityConfig()));
 
     final var embeddedGatewayService =

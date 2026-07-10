@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
+import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.service.UserServices;
@@ -30,8 +31,11 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Set;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.springframework.mock.env.MockEnvironment;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 
@@ -44,6 +48,18 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 final class SystemContextLoaderTest {
 
   @TempDir private Path workingDirectory;
+
+  @BeforeEach
+  void setUpEnvironment() {
+    // Guard against static-field contamination from Spring-context tests that leave a plain
+    // mock(Environment.class), which is not a ConfigurableEnvironment and crashes Binder.get().
+    UnifiedConfigurationHelper.setCustomEnvironment(new MockEnvironment());
+  }
+
+  @AfterEach
+  void resetEnvironment() {
+    UnifiedConfigurationHelper.setCustomEnvironment(null);
+  }
 
   @Test
   void shouldThrowWhenExporterHasNoClassName() {
@@ -84,7 +100,7 @@ final class SystemContextLoaderTest {
     // then - the default tenant reuses the fully-initialized root broker config as-is
     assertThat(
             systemContext
-                .getPhysicalTenantEngineContext(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+                .getPhysicalTenantContext(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
                 .config())
         .isSameAs(rootBrokerCfg);
   }
@@ -110,11 +126,11 @@ final class SystemContextLoaderTest {
     final SystemContext systemContext = loader.createSystemContext();
 
     // then - the non-default tenant gets its own converted config, distinct from the root
-    final var tenantConfig = systemContext.getPhysicalTenantEngineContext("tenanta").config();
+    final var tenantConfig = systemContext.getPhysicalTenantContext("tenanta").config();
     assertThat(tenantConfig).isNotSameAs(rootBrokerCfg);
     assertThat(
             systemContext
-                .getPhysicalTenantEngineContext(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+                .getPhysicalTenantContext(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
                 .config())
         .isSameAs(rootBrokerCfg);
   }

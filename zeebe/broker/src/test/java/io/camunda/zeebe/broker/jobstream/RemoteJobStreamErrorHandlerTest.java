@@ -98,6 +98,56 @@ final class RemoteJobStreamErrorHandlerTest {
         .containsExactly(1L, job.jobRecord());
   }
 
+  @Test
+  void shouldRouteErrorToCorrectTenantHandlerWhenBothManagePartitionWithSameId() {
+    // two instances with the same numeric partition id never share log-stream writers.
+
+    // given — two handler instances, one per physical tenant, both owning partition 1
+    final var tenantAErrors = new TestErrorHandler();
+    final var tenantBErrors = new TestErrorHandler();
+    final var handlerA = new RemoteJobStreamErrorHandler(tenantAErrors);
+    final var handlerB = new RemoteJobStreamErrorHandler(tenantBErrors);
+
+    final var writtenByA = new ArrayList<LogAppendEntry>();
+    final var writtenByB = new ArrayList<LogAppendEntry>();
+    handlerA.addWriter(
+        1,
+        (ctx, entries, ignored) -> {
+          writtenByA.addAll(entries);
+          return Either.right(1L);
+        });
+    handlerB.addWriter(
+        1,
+        (ctx, entries, ignored) -> {
+          writtenByB.addAll(entries);
+          return Either.right(1L);
+        });
+
+    final var jobRecord = new JobRecord();
+    final var job = new TestActivatedJob(Protocol.encodePartitionId(1, 42), jobRecord);
+    final var error = new RuntimeException("push failed");
+
+    // when — a push failure is reported to each tenant handler independently
+    handlerA.handleError(error, job);
+    handlerB.handleError(error, job);
+
+    // then — each tenant's writes land only on its own log stream, not the other's
+    Assertions.assertThat(writtenByA)
+        .as("tenant A writes only to its own stream")
+        .hasSize(1)
+        .first()
+        .extracting(LogAppendEntry::recordValue)
+        .isEqualTo(jobRecord);
+    Assertions.assertThat(writtenByB)
+        .as("tenant B writes only to its own stream")
+        .hasSize(1)
+        .first()
+        .extracting(LogAppendEntry::recordValue)
+        .isEqualTo(jobRecord);
+    Assertions.assertThat(tenantAErrors.errors()).hasSize(1);
+    Assertions.assertThat(tenantBErrors.errors()).hasSize(1);
+  }
+
   // TODO: use actual one if possible
   private record TestActivatedJob(long jobKey, JobRecord jobRecord) implements ActivatedJob {
 

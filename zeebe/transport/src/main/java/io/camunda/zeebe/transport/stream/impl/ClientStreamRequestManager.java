@@ -30,6 +30,7 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
@@ -39,6 +40,10 @@ import org.slf4j.LoggerFactory;
 /**
  * Coordinates registering/de-registering {@link AggregatedClientStream} with arbitrary set of
  * servers.
+ *
+ * <p>Each stream carries its own {@code physicalTenantId}; this manager uses that value to form the
+ * correct physicalTenantId-scoped topic for every ADD/REMOVE/REMOVE_ALL message, so that streams
+ * are only registered with brokers that serve their physical tenant.
  *
  * <p>NOTE: all operations are potentially asynchronous as network I/O is involved. To avoid race
  * conditions w.r.t to the stream lifecycle, the manager keeps track of the registration state per
@@ -62,15 +67,11 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
 
   private final ClusterCommunicationService communicationService;
   private final ConcurrencyControl executor;
-  private final String physicalTenantId;
 
   ClientStreamRequestManager(
-      final ClusterCommunicationService communicationService,
-      final ConcurrencyControl executor,
-      final String physicalTenantId) {
+      final ClusterCommunicationService communicationService, final ConcurrencyControl executor) {
     this.communicationService = communicationService;
     this.executor = executor;
-    this.physicalTenantId = physicalTenantId;
   }
 
   /**
@@ -144,38 +145,45 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
   }
 
   /**
-   * Sends a single remove all request to each given server, and closes all pending registrations.
+   * Sends REMOVE_ALL to each broker on its physicalTenantId-scoped topic, and closes all pending
+   * registrations.
    *
-   * @param servers the list of servers to notify
+   * @param serversByPhysicalTenantId physicalTenantId → set of broker member IDs
    */
-  void removeAll(final Collection<MemberId> servers) {
+  void removeAll(final Map<String, Set<MemberId>> serversByPhysicalTenantId) {
     registrations.values().stream()
         .flatMap(m -> m.values().stream())
         .forEach(ClientStreamRegistration::transitionToClosed);
     registrations.clear();
 
-    servers.forEach(this::doRemoveAll);
+    serversByPhysicalTenantId.forEach(
+        (physicalTenantId, servers) ->
+            servers.forEach(brokerId -> doRemoveAll(brokerId, physicalTenantId)));
   }
 
   /**
    * Send remove stream request to servers without waiting for ack and without retry. As this is
    * used to send even when no stream was originally registered, we ignore any existing
-   * registrations.
+   * registrations. Iterates all known physical tenants since the stream's tenant is unknown at this
+   * point.
    */
-  void removeUnreliable(final UUID streamId, final Collection<MemberId> servers) {
+  void removeUnreliable(
+      final UUID streamId, final Map<String, Set<MemberId>> serversByPhysicalTenantId) {
     final var request = new RemoveStreamRequest().streamId(streamId);
     final var payload = BufferUtil.bufferAsArray(request);
 
-    servers.forEach(
-        serverId -> {
-          communicationService.unicast(
-              StreamTopics.REMOVE.topic(physicalTenantId),
-              payload,
-              Function.identity(),
-              serverId,
-              true);
-          purgeRegistration(streamId, serverId);
-        });
+    serversByPhysicalTenantId.forEach(
+        (physicalTenantId, servers) ->
+            servers.forEach(
+                serverId -> {
+                  communicationService.unicast(
+                      StreamTopics.REMOVE.topic(physicalTenantId),
+                      payload,
+                      Function.identity(),
+                      serverId,
+                      true);
+                  purgeRegistration(streamId, serverId);
+                }));
   }
 
   private void add(final ClientStreamRegistration<M> registration) {
@@ -256,7 +264,7 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
 
     final var pendingRequest =
         communicationService.send(
-            StreamTopics.ADD.topic(physicalTenantId),
+            StreamTopics.ADD.topic(registration.physicalTenantId()),
             request,
             Function.identity(),
             Function.identity(),
@@ -315,7 +323,7 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
 
     final var pendingRequest =
         communicationService.send(
-            StreamTopics.REMOVE.topic(physicalTenantId),
+            StreamTopics.REMOVE.topic(registration.physicalTenantId()),
             request,
             Function.identity(),
             Function.identity(),
@@ -408,8 +416,7 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
     }
   }
 
-  private void doRemoveAll(final MemberId brokerId) {
-    // Do not wait for response, as this is expected to be called while shutting down.
+  private void doRemoveAll(final MemberId brokerId, final String physicalTenantId) {
     communicationService.unicast(
         StreamTopics.REMOVE_ALL.topic(physicalTenantId),
         REMOVE_ALL_REQUEST,

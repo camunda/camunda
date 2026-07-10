@@ -57,7 +57,7 @@ public interface BrokerStartupContext {
   /**
    * Return the broker configuration shared across all physical tenants. This should be used only
    * for broker-wide configuration. The components that run per physical tenant must use the
-   * configuration from #getPhysicalTenantEngineContext(String physicalTenantId) instead.
+   * configuration from #getPhysicalTenantContext(String physicalTenantId) instead.
    *
    * @return the broker-wide configuration shared across all physical tenants
    */
@@ -107,6 +107,12 @@ public interface BrokerStartupContext {
 
   void setDiskSpaceUsageMonitor(DiskSpaceUsageMonitor diskSpaceUsageMonitor);
 
+  JobStreamService getJobStreamService(String physicalTenantId);
+
+  void addJobStreamService(String physicalTenantId, JobStreamService service);
+
+  void removeJobStreamService(String physicalTenantId);
+
   /** Returns all currently registered partition managers, keyed by physical tenant ID. */
   Map<String, PartitionManager> getPartitionManagers();
 
@@ -128,10 +134,6 @@ public interface BrokerStartupContext {
 
   void setBrokerAdminService(final BrokerAdminServiceImpl brokerAdminService);
 
-  JobStreamService getJobStreamService();
-
-  void setJobStreamService(final JobStreamService jobStreamService);
-
   ClusterConfigurationService getClusterConfigurationService();
 
   void setClusterConfigurationService(ClusterConfigurationService clusterConfigurationService);
@@ -151,7 +153,7 @@ public interface BrokerStartupContext {
    *
    * @throws IllegalArgumentException if the physical tenant id is unknown
    */
-  PhysicalTenantContext getPhysicalTenantEngineContext(String physicalTenantId);
+  PhysicalTenantContext getPhysicalTenantContext(String physicalTenantId);
 
   Function<String, UserServices> getUserServicesForTenant();
 

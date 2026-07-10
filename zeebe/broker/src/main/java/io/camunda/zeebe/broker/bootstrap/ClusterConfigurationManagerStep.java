@@ -40,7 +40,7 @@ public class ClusterConfigurationManagerStep
             // This is a temporary solution until we support multiple physical tenants in dynamic
             // cluster config module.
             brokerStartupContext
-                .getPhysicalTenantEngineContext(DEFAULT_PHYSICAL_TENANT_ID)
+                .getPhysicalTenantContext(DEFAULT_PHYSICAL_TENANT_ID)
                 .exporterRepository(),
             brokerStartupContext.getNodeIdProvider(),
             brokerStartupContext.getMeterRegistry(),

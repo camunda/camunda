@@ -36,6 +36,7 @@ import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -53,8 +54,7 @@ final class ClientStreamRequestManagerTest {
   private final ClusterCommunicationService mockTransport = mock(ClusterCommunicationService.class);
   private final TestConcurrencyControl concurrencyControl = spy(new TestConcurrencyControl());
   private final ClientStreamRequestManager<TestMetadata> requestManager =
-      new ClientStreamRequestManager<>(
-          mockTransport, concurrencyControl, DEFAULT_PHYSICAL_TENANT_ID);
+      new ClientStreamRequestManager<>(mockTransport, concurrencyControl);
   private final AggregatedClientStream<TestMetadata> clientStream =
       new AggregatedClientStream<>(
           UUID.randomUUID(),
@@ -484,7 +484,7 @@ final class ClientStreamRequestManagerTest {
 
     // when - remove all, which will close all registrations
     requestManager.remove(clientStream, serverId);
-    requestManager.removeAll(Collections.singleton(serverId));
+    requestManager.removeAll(Map.of(DEFAULT_PHYSICAL_TENANT_ID, Collections.singleton(serverId)));
     pendingRequest.completeExceptionally(new RuntimeException("failed"));
 
     // then
@@ -580,7 +580,7 @@ final class ClientStreamRequestManagerTest {
 
     // when - remove all, which will close all registrations
     requestManager.add(clientStream, serverId);
-    requestManager.removeAll(Collections.singleton(serverId));
+    requestManager.removeAll(Map.of(DEFAULT_PHYSICAL_TENANT_ID, Collections.singleton(serverId)));
     pendingRequest.completeExceptionally(new RuntimeException("failed"));
 
     // then
@@ -600,10 +600,11 @@ final class ClientStreamRequestManagerTest {
     // given
     final MemberId server1 = MemberId.from("1");
     final MemberId server2 = MemberId.from("2");
-    final var servers = Set.of(server1, server2);
+    final var serversByPhysicalTenantId =
+        Map.of(DEFAULT_PHYSICAL_TENANT_ID, Set.of(server1, server2));
 
     // when
-    requestManager.removeAll(servers);
+    requestManager.removeAll(serversByPhysicalTenantId);
 
     // then
     verify(mockTransport)
@@ -620,6 +621,71 @@ final class ClientStreamRequestManagerTest {
             any(),
             eq(server2),
             anyBoolean());
+  }
+
+  @Test
+  void shouldUseGroupScopedTopicForNonDefaultPhysicalTenant() {
+    // given — stream owned by a non-default partition group
+    final String physicalTenantId = "tenant1";
+    final var tenantStream =
+        new AggregatedClientStream<>(
+            UUID.randomUUID(),
+            new LogicalId<>(
+                new UnsafeBuffer(BufferUtil.wrapString("tenant-foo")), new TestMetadata()),
+            physicalTenantId);
+    tenantStream.open(requestManager, Collections.emptySet());
+
+    final var serverId = MemberId.anonymous();
+    when(mockTransport.send(
+            eq(StreamTopics.ADD.topic(physicalTenantId)), any(), any(), any(), eq(serverId), any()))
+        .thenReturn(CompletableFuture.completedFuture(addStreamSuccess));
+    when(mockTransport.send(
+            eq(StreamTopics.REMOVE.topic(physicalTenantId)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any()))
+        .thenReturn(CompletableFuture.completedFuture(removeStreamSuccess));
+
+    // when
+    requestManager.add(tenantStream, serverId);
+
+    // then — ADD uses prefixed topic "tenant1-stream-add", not legacy "stream-add"
+    verify(mockTransport)
+        .send(
+            eq(StreamTopics.ADD.topic(physicalTenantId)), any(), any(), any(), eq(serverId), any());
+    verify(mockTransport, never())
+        .send(
+            eq(StreamTopics.ADD.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
+    assertThat(tenantStream.isConnected(serverId)).isTrue();
+
+    // when
+    requestManager.remove(tenantStream, serverId);
+
+    // then — REMOVE also uses prefixed topic
+    verify(mockTransport)
+        .send(
+            eq(StreamTopics.REMOVE.topic(physicalTenantId)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
+    verify(mockTransport, never())
+        .send(
+            eq(StreamTopics.REMOVE.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
+    assertThat(tenantStream.isConnected(serverId)).isFalse();
   }
 
   private static Stream<MessagingException> provideMessagingFailures() {

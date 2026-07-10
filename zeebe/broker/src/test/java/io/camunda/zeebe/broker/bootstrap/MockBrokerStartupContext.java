@@ -74,10 +74,10 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   private EmbeddedGatewayService embeddedGatewayService;
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor = mock(DiskSpaceUsageMonitor.class);
   private final ExporterRepository exporterRepository = mock(ExporterRepository.class);
+  private final Map<String, JobStreamService> jobStreamServices = new LinkedHashMap<>();
   private final Map<String, PartitionManager> partitionManagers = new LinkedHashMap<>();
   private RocksDbResources sharedRocksDbResources;
   private BrokerAdminServiceImpl brokerAdminService = mock(BrokerAdminServiceImpl.class);
-  private JobStreamService jobStreamService = mock(JobStreamService.class);
   private ClusterConfigurationService clusterConfigurationService =
       mock(ClusterConfigurationService.class);
   private BrokerClient brokerClient = mock(BrokerClient.class);
@@ -95,8 +95,7 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   private BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter =
       mock(BrokerRequestAuthorizationConverter.class);
   private FeatureFlags featureFlags = FeatureFlags.createDefaultForTests();
-  private final Map<String, PhysicalTenantContext> physicalTenantEngineContexts =
-      new LinkedHashMap<>();
+  private final Map<String, PhysicalTenantContext> physicalTenantContexts = new LinkedHashMap<>();
   private CheckpointSchedulingService checkpointSchedulingService =
       mock(CheckpointSchedulingService.class);
   private NodeIdProvider nodeIdProvider = mock(NodeIdProvider.class);
@@ -291,13 +290,18 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   }
 
   @Override
-  public JobStreamService getJobStreamService() {
-    return jobStreamService;
+  public JobStreamService getJobStreamService(final String physicalTenantId) {
+    return jobStreamServices.get(physicalTenantId);
   }
 
   @Override
-  public void setJobStreamService(final JobStreamService jobStreamService) {
-    this.jobStreamService = jobStreamService;
+  public void addJobStreamService(final String physicalTenantId, final JobStreamService service) {
+    jobStreamServices.put(physicalTenantId, service);
+  }
+
+  @Override
+  public void removeJobStreamService(final String physicalTenantId) {
+    jobStreamServices.remove(physicalTenantId);
   }
 
   @Override
@@ -349,8 +353,8 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   }
 
   @Override
-  public PhysicalTenantContext getPhysicalTenantEngineContext(final String physicalTenantId) {
-    return physicalTenantEngineContexts.computeIfAbsent(
+  public PhysicalTenantContext getPhysicalTenantContext(final String physicalTenantId) {
+    return physicalTenantContexts.computeIfAbsent(
         physicalTenantId,
         id ->
             new PhysicalTenantContext(
@@ -425,9 +429,9 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
     this.physicalTenantIds = physicalTenantIds;
   }
 
-  public void setPhysicalTenantEngineContext(
+  public void setPhysicalTenantContext(
       final String physicalTenantId, final PhysicalTenantContext context) {
-    physicalTenantEngineContexts.put(physicalTenantId, context);
+    physicalTenantContexts.put(physicalTenantId, context);
   }
 
   public void setUserServices(final UserServices userServices) {

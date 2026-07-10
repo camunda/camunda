@@ -7,14 +7,12 @@
  */
 package io.camunda.zeebe.broker;
 
-import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.shared.management.JobStreamEndpoint;
 import io.camunda.zeebe.transport.stream.api.ClientStream;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamInfo;
-import io.camunda.zeebe.transport.stream.api.RemoteStreamService;
 import java.util.Collection;
 import java.util.Collections;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,9 +30,12 @@ final class BrokerJobStreamService implements JobStreamEndpoint.Service {
   @Override
   public Collection<RemoteStreamInfo<JobActivationProperties>> remoteJobStreams() {
     return bridge
-        .getJobStreamService()
-        .map(JobStreamService::remoteStreamService)
-        .map(RemoteStreamService::streams)
+        .getJobStreamServices()
+        .map(
+            services ->
+                services.stream()
+                    .flatMap(svc -> svc.remoteStreamService().streams().stream())
+                    .toList())
         .orElse(Collections.emptyList());
   }
 

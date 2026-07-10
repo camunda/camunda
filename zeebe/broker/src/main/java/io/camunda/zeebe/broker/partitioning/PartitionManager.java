@@ -15,7 +15,9 @@ import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 
@@ -68,7 +70,17 @@ public interface PartitionManager {
       final String physicalTenantId,
       final TopologyManagerImpl topologyManager) {
     final var physicalTenantContext =
-        brokerStartupContext.getPhysicalTenantEngineContext(physicalTenantId);
+        brokerStartupContext.getPhysicalTenantContext(physicalTenantId);
+
+    final var jobStreamService =
+        Objects.requireNonNull(
+            brokerStartupContext.getJobStreamService(physicalTenantId),
+            "JobStreamService not initialized for tenant " + physicalTenantId);
+
+    // Combine global listeners with this tenant's error handler so each handler only ever
+    // sees its own group's partitions, resolving the bare-int partition-id aliasing bug.
+    final var partitionListeners = new ArrayList<>(brokerStartupContext.getPartitionListeners());
+    partitionListeners.add(jobStreamService.errorHandlerService());
 
     return new PartitionManagerImpl(
         physicalTenantId,
@@ -81,12 +93,12 @@ public interface PartitionManager {
         brokerStartupContext.getClusterServices(),
         brokerStartupContext.getHealthCheckService(),
         brokerStartupContext.getDiskSpaceUsageMonitor(),
-        brokerStartupContext.getPartitionListeners(),
+        partitionListeners,
         brokerStartupContext.getPartitionRaftListeners(),
         brokerStartupContext.getSnapshotApiRequestHandler(),
         physicalTenantContext.exporterRepository(),
         brokerStartupContext.getGatewayBrokerTransport(),
-        brokerStartupContext.getJobStreamService().jobStreamer(),
+        jobStreamService.jobStreamer(),
         brokerStartupContext.getClusterConfigurationService(),
         brokerStartupContext.getMeterRegistry(),
         brokerStartupContext.getBrokerClient(),
@@ -105,7 +117,7 @@ public interface PartitionManager {
 
     return new RecoveryPartitionManager(
         physicalTenantId,
-        brokerStartupContext.getPhysicalTenantEngineContext(physicalTenantId).config(),
+        brokerStartupContext.getPhysicalTenantContext(physicalTenantId).config(),
         brokerStartupContext.getBrokerInfo(),
         brokerStartupContext.getConcurrencyControl(),
         brokerStartupContext.getClusterConfigurationService(),

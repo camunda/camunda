@@ -372,7 +372,7 @@ final class SystemContextTest {
     // when / then
     assertThat(ctx.getSecurityConfiguration()).isSameAs(defaultCfg);
     assertThat(
-            ctx.getPhysicalTenantEngineContext(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+            ctx.getPhysicalTenantContext(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
                 .securityConfig())
         .isSameAs(defaultCfg);
   }
@@ -386,7 +386,7 @@ final class SystemContextTest {
             new BrokerCfg(), Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, defaultCfg));
 
     // when / then
-    assertThatThrownBy(() -> ctx.getPhysicalTenantEngineContext("unknown-tenant"))
+    assertThatThrownBy(() -> ctx.getPhysicalTenantContext("unknown-tenant"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Unknown physical tenant id")
         .hasMessageContaining("unknown-tenant");
@@ -420,11 +420,11 @@ final class SystemContextTest {
 
     // when / then
     assertThat(
-            ctx.getPhysicalTenantEngineContext(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+            ctx.getPhysicalTenantContext(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
                 .securityConfig())
         .isSameAs(defaultCfg);
-    assertThat(ctx.getPhysicalTenantEngineContext("pta").securityConfig()).isSameAs(ptaCfg);
-    assertThatThrownBy(() -> ctx.getPhysicalTenantEngineContext("unknown"))
+    assertThat(ctx.getPhysicalTenantContext("pta").securityConfig()).isSameAs(ptaCfg);
+    assertThatThrownBy(() -> ctx.getPhysicalTenantContext("unknown"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Unknown physical tenant id");
   }
@@ -437,10 +437,10 @@ final class SystemContextTest {
     // when / then – the single-config ctor populates every known tenant with the supplied config
     assertThat(ctx.getSecurityConfiguration()).isNotNull();
     assertThat(
-            ctx.getPhysicalTenantEngineContext(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+            ctx.getPhysicalTenantContext(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
                 .securityConfig())
         .isSameAs(ctx.getSecurityConfiguration());
-    assertThatThrownBy(() -> ctx.getPhysicalTenantEngineContext("any-other"))
+    assertThatThrownBy(() -> ctx.getPhysicalTenantContext("any-other"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Unknown physical tenant id");
   }
@@ -466,11 +466,10 @@ final class SystemContextTest {
 
     // when / then
     assertThat(
-            ctx.getPhysicalTenantEngineContext(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+            ctx.getPhysicalTenantContext(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
                 .authorizationConverter())
         .isSameAs(defaultConverter);
-    assertThat(ctx.getPhysicalTenantEngineContext("pta").authorizationConverter())
-        .isSameAs(ptConverter);
+    assertThat(ctx.getPhysicalTenantContext("pta").authorizationConverter()).isSameAs(ptConverter);
   }
 
   @Test
@@ -487,10 +486,10 @@ final class SystemContextTest {
 
     // when / then
     assertThat(
-            ctx.getPhysicalTenantEngineContext(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+            ctx.getPhysicalTenantContext(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
                 .authorizationConverter())
         .isSameAs(defaultConverter);
-    assertThatThrownBy(() -> ctx.getPhysicalTenantEngineContext("unknown"))
+    assertThatThrownBy(() -> ctx.getPhysicalTenantContext("unknown"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Unknown physical tenant id");
   }
@@ -502,10 +501,10 @@ final class SystemContextTest {
 
     // when / then
     assertThat(
-            ctx.getPhysicalTenantEngineContext(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+            ctx.getPhysicalTenantContext(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
                 .authorizationConverter())
         .isNotNull();
-    assertThatThrownBy(() -> ctx.getPhysicalTenantEngineContext("any-other"))
+    assertThatThrownBy(() -> ctx.getPhysicalTenantContext("any-other"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Unknown physical tenant id");
   }
@@ -587,7 +586,7 @@ final class SystemContextTest {
             PhysicalTenantIds.DEFAULT);
 
     // when / then
-    assertThat(ctx.getPhysicalTenantEngineContext(tenantId).featureFlags()).isSameAs(flags);
+    assertThat(ctx.getPhysicalTenantContext(tenantId).featureFlags()).isSameAs(flags);
   }
 
   @Test
@@ -596,7 +595,7 @@ final class SystemContextTest {
     final var ctx = initSystemContext(new BrokerCfg());
 
     // when / then
-    assertThatThrownBy(() -> ctx.getPhysicalTenantEngineContext("unknown-tenant"))
+    assertThatThrownBy(() -> ctx.getPhysicalTenantContext("unknown-tenant"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("unknown-tenant");
   }
