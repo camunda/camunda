@@ -13,7 +13,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NavigableMap;
 import java.util.NoSuchElementException;
-import java.util.TreeMap;
 
 /**
  * An immutable, flattened snapshot of an active overlay: entries in unsigned-byte key order, stored
@@ -79,23 +78,63 @@ public final class FlatSegment {
    */
   public static FlatSegment merge(
       final List<FlatSegment> oldestFirst, final boolean absorbAnnihilated) {
-    final TreeMap<byte[], Entry> merged = new TreeMap<>(Arrays::compareUnsigned);
+    final int k = oldestFirst.size();
+    final int[] cursors = new int[k];
     long watermark = -1;
+    int capacity = 0;
     for (final FlatSegment segment : oldestFirst) {
       watermark = Math.max(watermark, segment.watermark);
-      for (int i = 0; i < segment.keys.length; i++) {
-        final byte[] key = segment.keys[i];
-        final Entry older = merged.get(key);
-        // The flushed property is sticky across versions: once any version of the key was
-        // flushed, its final tombstone must reach the delegate.
-        final boolean wasFlushed = segment.flushed[i] || (older != null && older.flushed());
-        merged.put(key, new Entry(key, segment.values[i], wasFlushed));
+      capacity += segment.keys.length;
+    }
+    final byte[][] mergedKeys = new byte[capacity][];
+    final byte[][] mergedValues = new byte[capacity][];
+    final boolean[] mergedFlushed = new boolean[capacity];
+    int size = 0;
+    while (true) {
+      byte[] minKey = null;
+      for (int i = 0; i < k; i++) {
+        final FlatSegment segment = oldestFirst.get(i);
+        if (cursors[i] < segment.keys.length) {
+          final byte[] key = segment.keys[cursors[i]];
+          if (minKey == null || Arrays.compareUnsigned(key, minKey) < 0) {
+            minKey = key;
+          }
+        }
       }
+      if (minKey == null) {
+        break;
+      }
+      // Walking oldest to newest, the last matching version's value wins; the flushed
+      // property is sticky across versions: once any version of the key was flushed, its
+      // final tombstone must reach the delegate.
+      byte[] value = null;
+      boolean wasFlushed = false;
+      for (int i = 0; i < k; i++) {
+        final FlatSegment segment = oldestFirst.get(i);
+        final int cursor = cursors[i];
+        if (cursor < segment.keys.length
+            && Arrays.compareUnsigned(segment.keys[cursor], minKey) == 0) {
+          value = segment.values[cursor];
+          wasFlushed |= segment.flushed[cursor];
+          cursors[i]++;
+        }
+      }
+      if (absorbAnnihilated && value == null && !wasFlushed) {
+        continue;
+      }
+      mergedKeys[size] = minKey;
+      mergedValues[size] = value;
+      mergedFlushed[size] = wasFlushed;
+      size++;
     }
-    if (absorbAnnihilated) {
-      merged.values().removeIf(entry -> entry.tombstone() && !entry.flushed());
+    if (size == capacity) {
+      return new FlatSegment(mergedKeys, mergedValues, mergedFlushed, watermark);
     }
-    return of(merged, watermark);
+    return new FlatSegment(
+        Arrays.copyOf(mergedKeys, size),
+        Arrays.copyOf(mergedValues, size),
+        Arrays.copyOf(mergedFlushed, size),
+        watermark);
   }
 
   /** The entry for {@code key}, or {@code null} if this segment has no version of it. */
