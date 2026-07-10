@@ -31,12 +31,12 @@ var update = flag.Bool("update-golden", false,
 // PhysicalTenants, when true, passes physical_tenants=true to the platform
 // template target. Only supported for rdbms secondary_storage (main version only).
 type scenario struct {
-	Name           string
-	Storage        string // elasticsearch | opensearch | postgresql | none
-	Optimize       bool
-	Stable         bool
-	Workload       string // "" = default profile; e.g. "max", "realistic"
-	SetupTarget    string // named make target for template-load-test-setup variants
+	Name            string
+	Storage         string // elasticsearch | opensearch | postgresql | none
+	Optimize        bool
+	Stable          bool
+	Workload        string // "" = default profile; e.g. "max", "realistic"
+	SetupTarget     string // named make target for template-load-test-setup variants
 	PhysicalTenants bool
 }
 
@@ -73,8 +73,7 @@ var defaultScenarios = []scenario{
 	{Name: "chaos-killer", Storage: "elasticsearch", Optimize: false, SetupTarget: "template-load-test-setup-chaos"},
 	// physical_tenants=true deploys a second tenant alongside the default on a
 	// shared RDBMS (table-prefix isolation). Only supported for rdbms storage.
-	// Uncomment and run `make update-golden` to generate the golden files:
-	// {Name: "rdbms-physical-tenants", Storage: "postgresql", Optimize: false, PhysicalTenants: true},
+	{Name: "rdbms-physical-tenants", Storage: "postgresql", Optimize: false, PhysicalTenants: true},
 }
 
 // versions lists the setup directories under test, each the name of a directory
