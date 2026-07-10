@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.security.api.model.CamundaAuthentication;
 import java.util.List;
+import java.util.Objects;
 
 /** Adapts {@link CamundaAuthentication} to the engine's {@link AuthorizedTenants} interface. */
 public final class AuthorizedTenantsAdapter implements AuthorizedTenants {
@@ -21,12 +22,12 @@ public final class AuthorizedTenantsAdapter implements AuthorizedTenants {
 
   @Override
   public boolean isAuthorizedForTenantId(final String tenantId) {
-    return auth.anonymousUser() || auth.authenticatedTenantIds().contains(tenantId);
+    return auth.anonymousUser() || authenticatedTenantIds().contains(tenantId);
   }
 
   @Override
   public boolean isAuthorizedForTenantIds(final List<String> tenantIds) {
-    return auth.anonymousUser() || auth.authenticatedTenantIds().containsAll(tenantIds);
+    return auth.anonymousUser() || authenticatedTenantIds().containsAll(tenantIds);
   }
 
   @Override
@@ -35,7 +36,17 @@ public final class AuthorizedTenantsAdapter implements AuthorizedTenants {
       throw new UnsupportedOperationException(
           "Retrieval of authorized tenants is not supported when authenticated anonymously");
     }
-    return auth.authenticatedTenantIds();
+    return authenticatedTenantIds();
+  }
+
+  /**
+   * The {@link CamundaAuthentication} produced by the claims converter always carries a non-null
+   * tenant list, but the record's canonical constructor permits {@code null}; guard defensively so
+   * a bare authentication cannot trip an NPE, matching the pre-migration {@code
+   * AuthenticatedAuthorizedTenants} behavior.
+   */
+  private List<String> authenticatedTenantIds() {
+    return Objects.requireNonNullElse(auth.authenticatedTenantIds(), List.of());
   }
 
   @Override

@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.identity;
 import io.camunda.security.api.model.authz.AuthorizationRejection;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
 
 @NullMarked
@@ -43,7 +44,9 @@ public final class AuthorizationRejectionMapper {
           new Rejection(
               RejectionType.FORBIDDEN,
               FORBIDDEN_MSG_WITH_PROPERTIES.formatted(
-                  p.permissionType(), p.resourceType(), String.join(", ", p.propertyNames())));
+                  p.permissionType(),
+                  p.resourceType(),
+                  p.propertyNames().stream().sorted().collect(Collectors.joining(", "))));
     };
   }
 
