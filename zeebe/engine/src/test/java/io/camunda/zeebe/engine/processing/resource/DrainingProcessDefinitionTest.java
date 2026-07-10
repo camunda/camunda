@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
@@ -79,6 +80,54 @@ public class DrainingProcessDefinitionTest {
 
     // when
     engine.processInstance().ofBpmnProcessId(processId).withVersion(1).expectRejection().create();
+
+    // then
+    final var rejection =
+        RecordingExporter.processInstanceCreationRecords().onlyCommandRejections().getFirst();
+    assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            "Expected to create instance of process with ID '%s' and version %d (key %d), but it is being deleted"
+                .formatted(processId, metadata.getVersion(), metadata.getProcessDefinitionKey()));
+  }
+
+  @Test
+  public void shouldRejectCreateInstanceWithResultWhenDraining() {
+    // given
+    final var processId = helper.getBpmnProcessId();
+    final var metadata = deploy(processId);
+    drain(metadata);
+
+    // when
+    engine.processInstance().ofBpmnProcessId(processId).withResult().asyncCreate();
+
+    // then
+    final var rejection =
+        RecordingExporter.processInstanceCreationRecords()
+            .withIntent(ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT)
+            .onlyCommandRejections()
+            .getFirst();
+    assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            "Expected to create instance of process with ID '%s' and version %d (key %d), but it is being deleted"
+                .formatted(processId, metadata.getVersion(), metadata.getProcessDefinitionKey()));
+  }
+
+  @Test
+  public void shouldRejectCreateInstanceWithStartInstructionsWhenDraining() {
+    // given
+    final var processId = helper.getBpmnProcessId();
+    final var metadata = deploy(processId);
+    drain(metadata);
+
+    // when - bogus element id: proves the draining guard runs before start-instruction validation
+    engine
+        .processInstance()
+        .ofBpmnProcessId(processId)
+        .withStartInstruction("nonExistentElement")
+        .expectRejection()
+        .create();
 
     // then
     final var rejection =
