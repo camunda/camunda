@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSta
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
@@ -243,6 +244,12 @@ public final class EventHandle {
       final String tenantId,
       final DirectBuffer businessId) {
 
+    final var process = processState.getProcessByKeyAndTenant(processDefinitionKey, tenantId);
+    if (process == null || process.getState() == PersistedProcessState.DRAINING) {
+      // Never spawn a new instance on a draining (or already removed) definition
+      return;
+    }
+
     triggeringProcessEvent(
         processDefinitionKey,
         processInstanceKey,
@@ -250,8 +257,6 @@ public final class EventHandle {
         processDefinitionKey /* The eventScope for the start event is the process definition key */,
         targetElementId,
         variablesBuffer);
-
-    final var process = processState.getProcessByKeyAndTenant(processDefinitionKey, tenantId);
 
     recordForPICreation
         .setBpmnProcessId(process.getBpmnProcessId())

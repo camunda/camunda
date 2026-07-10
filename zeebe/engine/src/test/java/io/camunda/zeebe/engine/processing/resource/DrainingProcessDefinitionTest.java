@@ -12,16 +12,26 @@ import static io.camunda.zeebe.protocol.record.RecordAssert.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.protocol.record.intent.SignalIntent;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
+import java.util.Map;
+import java.util.function.Consumer;
+import org.assertj.core.api.Assertions;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -43,7 +53,8 @@ public class DrainingProcessDefinitionTest {
   public void shouldRejectCreateInstanceByProcessIdWhenDraining() {
     // given
     final var processId = helper.getBpmnProcessId();
-    drain(deploy(processId));
+    final var metadata = deploy(processId);
+    drain(metadata);
 
     // when
     engine.processInstance().ofBpmnProcessId(processId).expectRejection().create();
@@ -51,18 +62,19 @@ public class DrainingProcessDefinitionTest {
     // then
     final var rejection =
         RecordingExporter.processInstanceCreationRecords().onlyCommandRejections().getFirst();
-    io.camunda.zeebe.protocol.record.Assertions.assertThat(rejection)
+    assertThat(rejection)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-            "Expected to create instance of process '%s', but it is being deleted"
-                .formatted(processId));
+            "Expected to create instance of process '%s' (version %d, process definition key %d), but it is being deleted"
+                .formatted(processId, metadata.getVersion(), metadata.getProcessDefinitionKey()));
   }
 
   @Test
   public void shouldRejectCreateInstanceByVersionWhenDraining() {
     // given
     final var processId = helper.getBpmnProcessId();
-    drain(deploy(processId));
+    final var metadata = deploy(processId);
+    drain(metadata);
 
     // when
     engine.processInstance().ofBpmnProcessId(processId).withVersion(1).expectRejection().create();
@@ -70,11 +82,11 @@ public class DrainingProcessDefinitionTest {
     // then
     final var rejection =
         RecordingExporter.processInstanceCreationRecords().onlyCommandRejections().getFirst();
-    io.camunda.zeebe.protocol.record.Assertions.assertThat(rejection)
+    assertThat(rejection)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-            "Expected to create instance of process '%s', but it is being deleted"
-                .formatted(processId));
+            "Expected to create instance of process '%s' (version %d, process definition key %d), but it is being deleted"
+                .formatted(processId, metadata.getVersion(), metadata.getProcessDefinitionKey()));
   }
 
   @Test
@@ -185,9 +197,9 @@ public class DrainingProcessDefinitionTest {
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
             .withProcessInstanceKey(parentInstanceKey)
             .getFirst();
-    org.assertj.core.api.Assertions.assertThat(incident.getValue().getErrorType())
+    Assertions.assertThat(incident.getValue().getErrorType())
         .isEqualTo(ErrorType.CALLED_ELEMENT_ERROR);
-    org.assertj.core.api.Assertions.assertThat(incident.getValue().getErrorMessage())
+    Assertions.assertThat(incident.getValue().getErrorMessage())
         .isEqualTo(
             "Expected to call process with BPMN process id '%s', but it is being deleted."
                 .formatted(childId));
@@ -206,10 +218,9 @@ public class DrainingProcessDefinitionTest {
     final var target = deploy(targetId, "B");
 
     final long processInstanceKey = engine.processInstance().ofBpmnProcessId(sourceId).create();
-    RecordingExporter.processInstanceRecords(
-            io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATED)
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
         .withProcessInstanceKey(processInstanceKey)
-        .withElementType(io.camunda.zeebe.protocol.record.value.BpmnElementType.USER_TASK)
+        .withElementType(BpmnElementType.USER_TASK)
         .await();
     drain(target);
     final long targetProcessDefinitionKey = target.getProcessDefinitionKey();
@@ -231,6 +242,99 @@ public class DrainingProcessDefinitionTest {
         .hasRejectionReason(
             "Expected to migrate process instance to process definition with key '%d' but it is being deleted"
                 .formatted(targetProcessDefinitionKey));
+  }
+
+  @Test
+  public void shouldNotSpawnInstanceForDrainingDefinitionOnTimerStartEvent() {
+    // given
+    final var processId = helper.getBpmnProcessId();
+    final var metadata = deployWithStartEvent(processId, start -> start.timerWithCycle("R1/PT1S"));
+    drain(metadata);
+
+    // when - the timer start event fires
+    engine.increaseTime(Duration.ofHours(1));
+    RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+        .withProcessDefinitionKey(metadata.getProcessDefinitionKey())
+        .await();
+
+    // then
+    assertNoInstanceSpawned(metadata.getProcessDefinitionKey());
+  }
+
+  @Test
+  public void shouldNotSpawnInstanceForDrainingDefinitionOnMessageStartEvent() {
+    // given
+    final var processId = helper.getBpmnProcessId();
+    final var metadata = deployWithStartEvent(processId, start -> start.message("start-message"));
+    drain(metadata);
+
+    // when - a message correlates to the (still-subscribed) message start event
+    engine.message().withName("start-message").withCorrelationKey("key").publish();
+    RecordingExporter.messageStartEventSubscriptionRecords(
+            MessageStartEventSubscriptionIntent.CORRELATED)
+        .withProcessDefinitionKey(metadata.getProcessDefinitionKey())
+        .await();
+
+    // then
+    assertNoInstanceSpawned(metadata.getProcessDefinitionKey());
+  }
+
+  @Test
+  public void shouldNotSpawnInstanceForDrainingDefinitionOnSignalStartEvent() {
+    // given
+    final var processId = helper.getBpmnProcessId();
+    final var metadata = deployWithStartEvent(processId, start -> start.signal("start-signal"));
+    drain(metadata);
+
+    // when - a signal is broadcast to the (still-subscribed) signal start event
+    engine.signal().withSignalName("start-signal").broadcast();
+    RecordingExporter.signalRecords(SignalIntent.BROADCASTED)
+        .withSignalName("start-signal")
+        .await();
+
+    // then
+    assertNoInstanceSpawned(metadata.getProcessDefinitionKey());
+  }
+
+  @Test
+  public void shouldNotSpawnInstanceForDrainingDefinitionOnConditionalStartEvent() {
+    // given
+    final var processId = helper.getBpmnProcessId();
+    final var metadata =
+        deployWithStartEvent(processId, start -> start.condition(c -> c.condition("=x > y")));
+    drain(metadata);
+
+    // when - the conditional start event's condition is evaluated to true
+    engine.conditionalEvaluation().withVariables(Map.of("x", 100, "y", 1)).evaluate();
+
+    // then - the guard blocks the activation
+    assertNoInstanceSpawned(metadata.getProcessDefinitionKey());
+  }
+
+  private ProcessMetadataValue deployWithStartEvent(
+      final String processId, final Consumer<StartEventBuilder> startEventConfigurer) {
+    final var start = Bpmn.createExecutableProcess(processId).startEvent("start");
+    startEventConfigurer.accept(start);
+    return engine
+        .deployment()
+        .withXmlResource(start.endEvent().done())
+        .deploy()
+        .getValue()
+        .getProcessesMetadata()
+        .get(0);
+  }
+
+  private void assertNoInstanceSpawned(final long processDefinitionKey) {
+    Assertions.assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    RecordingExporter.processInstanceRecords(
+                            ProcessInstanceIntent.ELEMENT_ACTIVATING)
+                        .withProcessDefinitionKey(processDefinitionKey)
+                        .withElementType(BpmnElementType.PROCESS)
+                        .exists()))
+        .describedAs("no new instance is spawned on a draining definition via a start event")
+        .isFalse();
   }
 
   private ProcessMetadataValue deploy(final String processId) {
