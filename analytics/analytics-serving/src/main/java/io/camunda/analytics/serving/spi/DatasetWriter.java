@@ -42,6 +42,15 @@ public interface DatasetWriter extends AutoCloseable {
    */
   void upsertRow(CompiledTable table, String rowKey, List<Object> values);
 
+  /**
+   * Upserts one periodic-snapshot row (ADR 0010): the cube's <em>cumulative</em> meter values for
+   * {@code key} as of the event-time boundary {@code sampleTime}, encoded as a composite
+   * accumulator. Written to the cube's {@code _snapshots} table — the Kimball periodic-snapshot
+   * companion of the cells: same columns, absolute values, one meaning per table.
+   */
+  void upsertSnapshotRow(
+      CompiledDataset dataset, DimensionKey key, long sampleTime, byte[] compositeAccumulator);
+
   /** Batch boundary: make buffered writes durable. */
   void flush();
 

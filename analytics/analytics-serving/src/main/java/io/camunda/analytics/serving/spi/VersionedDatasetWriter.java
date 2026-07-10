@@ -43,6 +43,17 @@ public interface VersionedDatasetWriter extends AutoCloseable {
    */
   void upsertRow(CompiledTable table, String rowKey, List<Object> values, WriteVersion version);
 
+  /**
+   * Upserts one periodic-snapshot row (see {@link DatasetWriter#upsertSnapshotRow}), applied only
+   * when {@code version} is at-or-above the row's stored version.
+   */
+  void upsertSnapshotRow(
+      CompiledDataset dataset,
+      DimensionKey key,
+      long sampleTime,
+      byte[] compositeAccumulator,
+      WriteVersion version);
+
   /** Batch boundary: make buffered writes durable. */
   void flush();
 

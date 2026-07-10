@@ -33,7 +33,8 @@ public record DatasetDeclaration(
     List<Meter> meters,
     List<Long> windowSizesMs,
     String keyField,
-    long latenessMs) {
+    long latenessMs,
+    long snapshotEveryMs) {
 
   /**
    * A dataset name is a metadata-plane lookup key (never a physical identifier), so its charset is
@@ -108,6 +109,7 @@ public record DatasetDeclaration(
         throw new IllegalArgumentException("dataset '" + name + "' declares no window tiers");
       }
       requireValidTiers(name, windowSizesMs);
+      requireValidSnapshots(name, windowSizesMs, snapshotEveryMs);
     }
     if (latenessMs < 0) {
       throw new IllegalArgumentException("lateness must be non-negative, was " + latenessMs);
@@ -220,6 +222,36 @@ public record DatasetDeclaration(
     }
   }
 
+  /**
+   * Periodic snapshots (the Kimball periodic-snapshot pattern): {@code snapshotEveryMs > 0} makes
+   * Stage 2 additionally materialise each key's <em>cumulative</em> meter values at event-time
+   * boundaries of this grid, into the cube's {@code _snapshots} table — the "balance over time"
+   * read for level-style meters. Restricted to cubes whose meters are all additive (a cumulative
+   * all-time sketch per key is unbounded in meaning and memory), and the grid must align with the
+   * finest window (samples are folds of finalized finest cells).
+   */
+  private static void requireValidSnapshots(
+      final String name, final List<Long> windowSizesMs, final long snapshotEveryMs) {
+    if (snapshotEveryMs == 0) {
+      return;
+    }
+    if (snapshotEveryMs < 0) {
+      throw new IllegalArgumentException(
+          "dataset '" + name + "' declares a negative snapshot interval: " + snapshotEveryMs);
+    }
+    final long finest = windowSizesMs.stream().mapToLong(Long::longValue).min().orElseThrow();
+    if (snapshotEveryMs % finest != 0) {
+      throw new IllegalArgumentException(
+          "dataset '"
+              + name
+              + "' declares snapshots every "
+              + snapshotEveryMs
+              + " ms, which is not a multiple of its finest window ("
+              + finest
+              + " ms) — snapshots are folds of finalized finest-window cells");
+    }
+  }
+
   public static Builder builder(final String name, final FactType sourceFact) {
     return new Builder(name, sourceFact);
   }
@@ -239,6 +271,7 @@ public record DatasetDeclaration(
     // all but a window's first delta (the declaration rejects 0). Default to a safe grace; an
     // explicit lateness overrides it.
     private long latenessMs = DEFAULT_LATENESS_MS;
+    private long snapshotEveryMs;
 
     private Builder(final String name, final FactType sourceFact) {
       this.name = name;
@@ -327,6 +360,12 @@ public record DatasetDeclaration(
       return this;
     }
 
+    /** Enables periodic snapshots on the given event-time grid; see the record validation. */
+    public Builder snapshots(final long everyMs) {
+      snapshotEveryMs = everyMs;
+      return this;
+    }
+
     public Builder lateness(final long lateness) {
       latenessMs = lateness;
       return this;
@@ -334,7 +373,16 @@ public record DatasetDeclaration(
 
     public DatasetDeclaration build() {
       return new DatasetDeclaration(
-          name, sourceFact, kind, filters, dimensions, meters, windowSizesMs, keyField, latenessMs);
+          name,
+          sourceFact,
+          kind,
+          filters,
+          dimensions,
+          meters,
+          windowSizesMs,
+          keyField,
+          latenessMs,
+          snapshotEveryMs);
     }
   }
 }

@@ -16,4 +16,5 @@ Module-scoped ADRs for the Optimize analytics pipeline (`analytics/analytics-eng
 - [0007 — Stable source coordinates: dedup the Zeebe stream before the fold](0007-stable-source-coordinates.md)
 - [0008 — Byte-backed dimension keys: the key is its serialized form](0008-byte-backed-dimension-keys.md)
 - [0009 — The cube is the unit: single-writer composite cells](0009-single-writer-composite-cells.md)
+- [0010 — Periodic snapshots: balance-over-time for additive cubes](0010-periodic-snapshots.md)
 

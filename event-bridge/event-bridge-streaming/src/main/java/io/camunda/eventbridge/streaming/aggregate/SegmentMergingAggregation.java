@@ -53,6 +53,23 @@ public final class SegmentMergingAggregation<K, ACC> {
   private final TransactionRunner tx;
   private final Predicate<ACC> drained;
 
+  /**
+   * Observes window finalization — the one moment a cell's value becomes event-time-final. {@code
+   * onFinal} fires per finalized cell in ascending window-end order (so per key, in window order),
+   * with the value about to be evicted; {@code onWatermark} fires after each finalization pass with
+   * the watermark that drove it. A consumer deriving cumulative views (e.g. periodic snapshots)
+   * folds finalized values and uses the watermark to release boundaries no further window can
+   * precede. The listener must not retain {@code value} beyond the callback if it is a mutable
+   * accumulator — fold it, don't store it.
+   */
+  public interface FinalizationListener<K, ACC> {
+    void onFinal(Windowed<K> cell, ACC value);
+
+    default void onWatermark(final long watermark) {}
+  }
+
+  private FinalizationListener<K, ACC> finalizationListener = (cell, value) -> {};
+
   // Heap working set: one running accumulator per open cell, indexed by window end for due-window
   // finalization and tracked for flush/checkpoint deltas.
   private final WindowedCellState<K, ACC> open = new WindowedCellState<>();
@@ -99,6 +116,11 @@ public final class SegmentMergingAggregation<K, ACC> {
     this.tx = tx;
     this.drained = drained;
     recover();
+  }
+
+  /** Wires the finalization observer (before processing starts); at most one. */
+  public void onFinalization(final FinalizationListener<K, ACC> listener) {
+    finalizationListener = listener;
   }
 
   /** Folds one (deduped) segment delta into {@code cell}'s running total and marks it changed. */
@@ -290,8 +312,10 @@ public final class SegmentMergingAggregation<K, ACC> {
             return false;
           }
           emitFinal(cell, value);
+          finalizationListener.onFinal(cell, value);
           return true;
         });
+    finalizationListener.onWatermark(watermark);
   }
 
   /** Emits the cell's final value to the serving view; the state then evicts the cell. */

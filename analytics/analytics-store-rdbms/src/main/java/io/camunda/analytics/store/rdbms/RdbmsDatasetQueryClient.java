@@ -22,10 +22,13 @@ import io.camunda.analytics.serving.spi.AggregatedRow;
 import io.camunda.analytics.serving.spi.Cell;
 import io.camunda.analytics.serving.spi.DatasetFetch;
 import io.camunda.analytics.serving.spi.DatasetQueryClient;
+import io.camunda.analytics.serving.spi.SnapshotPoint;
 import io.camunda.analytics.serving.spi.TableFetch;
 import io.camunda.analytics.serving.spi.TableRow;
 import java.io.IOException;
 import java.sql.Clob;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,6 +38,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.apache.ibatis.cursor.Cursor;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -52,6 +56,128 @@ public final class RdbmsDatasetQueryClient implements DatasetQueryClient {
 
   public RdbmsDatasetQueryClient(final SqlSessionFactory sessionFactory) {
     this.sessionFactory = sessionFactory;
+  }
+
+  @Override
+  public List<SnapshotPoint> snapshotBaseline(final CompiledDataset dataset, final long atMs) {
+    // Newest snapshot at-or-before atMs, per key. NULL-safe key matching (a dimension may be the
+    // "unknown" bucket) via IS NOT DISTINCT FROM — supported by both H2 and Postgres.
+    final List<DimensionColumn> grain = dataset.grain().columns();
+    final String table = RdbmsNames.snapshotTable(dataset.cubeId());
+    final String keyMatch =
+        grain.isEmpty()
+            ? "1 = 1"
+            : grain.stream()
+                .map(
+                    c ->
+                        "i."
+                            + RdbmsNames.quotedColumn(c.name())
+                            + " IS NOT DISTINCT FROM s."
+                            + RdbmsNames.quotedColumn(c.name()))
+                .collect(Collectors.joining(" AND "));
+    final String sql =
+        "SELECT "
+            + selectColumns(dataset, "s.")
+            + " FROM "
+            + table
+            + " s WHERE s.sample_time <= ? AND s.sample_time = (SELECT MAX(i.sample_time) FROM "
+            + table
+            + " i WHERE "
+            + keyMatch
+            + " AND i.sample_time <= ?)";
+    return querySnapshots(
+        dataset,
+        sql,
+        statement -> {
+          statement.setLong(1, atMs);
+          statement.setLong(2, atMs);
+        });
+  }
+
+  @Override
+  public List<SnapshotPoint> snapshotRange(
+      final CompiledDataset dataset, final long fromMs, final long toMs) {
+    final List<DimensionColumn> grain = dataset.grain().columns();
+    final String orderDims =
+        grain.stream()
+            .map(c -> RdbmsNames.quotedColumn(c.name()) + ", ")
+            .collect(Collectors.joining());
+    final String sql =
+        "SELECT "
+            + selectColumns(dataset, "")
+            + " FROM "
+            + RdbmsNames.snapshotTable(dataset.cubeId())
+            + " WHERE sample_time > ? AND sample_time <= ? ORDER BY "
+            + orderDims
+            + "sample_time";
+    return querySnapshots(
+        dataset,
+        sql,
+        statement -> {
+          statement.setLong(1, fromMs);
+          statement.setLong(2, toMs);
+        });
+  }
+
+  private static String selectColumns(final CompiledDataset dataset, final String alias) {
+    final StringBuilder columns = new StringBuilder();
+    for (final DimensionColumn dim : dataset.grain().columns()) {
+      columns.append(alias).append(RdbmsNames.quotedColumn(dim.name())).append(", ");
+    }
+    columns.append(alias).append("sample_time");
+    for (final CompiledMeter meter : dataset.meters()) {
+      for (final PushdownColumn column : meter.pushdown().orElseThrow().columns()) {
+        columns
+            .append(", ")
+            .append(alias)
+            .append(RdbmsNames.quotedPushdownColumn(meter.meterName(), column.suffix()));
+      }
+    }
+    return columns.toString();
+  }
+
+  private List<SnapshotPoint> querySnapshots(
+      final CompiledDataset dataset, final String sql, final SnapshotBinder binder) {
+    final List<DimensionColumn> grain = dataset.grain().columns();
+    final List<SnapshotPoint> points = new ArrayList<>();
+    try (SqlSession session = sessionFactory.openSession();
+        PreparedStatement statement = session.getConnection().prepareStatement(sql)) {
+      binder.bind(statement);
+      try (ResultSet resultSet = statement.executeQuery()) {
+        while (resultSet.next()) {
+          int index = 1;
+          final List<Object> keyValues = new ArrayList<>(grain.size());
+          for (int i = 0; i < grain.size(); i++) {
+            keyValues.add(resultSet.getObject(index++));
+          }
+          final long sampleTime = resultSet.getLong(index++);
+          final Map<String, Object> measures = new LinkedHashMap<>();
+          for (final CompiledMeter meter : dataset.meters()) {
+            final PushdownSpec<?, ?> spec = meter.pushdown().orElseThrow();
+            final List<Object> columnValues = new ArrayList<>(spec.columns().size());
+            for (int i = 0; i < spec.columns().size(); i++) {
+              columnValues.add(resultSet.getObject(index++));
+            }
+            measures.put(meter.meterName(), recompose(spec, columnValues));
+          }
+          points.add(new SnapshotPoint(keyValues, sampleTime, measures));
+        }
+      }
+    } catch (final SQLException e) {
+      throw new IllegalStateException(
+          "failed to read snapshots of cube '" + dataset.name() + "'", e);
+    }
+    return points;
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Object recompose(final PushdownSpec<?, ?> spec, final List<Object> columnValues) {
+    return ((PushdownSpec<Object, Object>) spec).recompose().apply(columnValues);
+  }
+
+  @FunctionalInterface
+  private interface SnapshotBinder {
+    void bind(PreparedStatement statement) throws SQLException;
   }
 
   @Override

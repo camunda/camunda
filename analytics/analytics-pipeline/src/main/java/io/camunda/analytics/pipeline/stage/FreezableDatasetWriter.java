@@ -68,6 +68,15 @@ final class FreezableDatasetWriter implements DatasetWriter {
     outbox.stage(new RowUpsert(table, rowKey, values));
   }
 
+  @Override
+  public void upsertSnapshotRow(
+      final CompiledDataset dataset,
+      final DimensionKey key,
+      final long sampleTime,
+      final byte[] compositeAccumulator) {
+    outbox.stage(new SnapshotUpsert(dataset, key, sampleTime, compositeAccumulator));
+  }
+
   /**
    * Synchronous batch boundary (close-time drain): applies every retained and staged row with the
    * next version within the current ownership — newer than the last sealed cut (these rows reflect
@@ -134,7 +143,7 @@ final class FreezableDatasetWriter implements DatasetWriter {
    * One buffered serving write, replayed against the backend at drain time with its batch's
    * version.
    */
-  private sealed interface Op permits CellUpsert, RowUpsert {
+  private sealed interface Op permits CellUpsert, RowUpsert, SnapshotUpsert {
     void applyTo(VersionedDatasetWriter writer, WriteVersion version);
   }
 
@@ -157,6 +166,16 @@ final class FreezableDatasetWriter implements DatasetWriter {
     @Override
     public void applyTo(final VersionedDatasetWriter writer, final WriteVersion version) {
       writer.upsertRow(table, rowKey, values, version);
+    }
+  }
+
+  private record SnapshotUpsert(
+      CompiledDataset dataset, DimensionKey key, long sampleTime, byte[] compositeAccumulator)
+      implements Op {
+
+    @Override
+    public void applyTo(final VersionedDatasetWriter writer, final WriteVersion version) {
+      writer.upsertSnapshotRow(dataset, key, sampleTime, compositeAccumulator, version);
     }
   }
 }

@@ -7,6 +7,7 @@
  */
 package io.camunda.analytics.serving.spi;
 
+import io.camunda.analytics.dataset.CompiledDataset;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -22,6 +23,27 @@ public interface DatasetQueryClient extends AutoCloseable {
 
   /** Fetches the raw cells of a cube at one tier (see {@link DatasetFetch}). */
   List<Cell> fetch(DatasetFetch fetch);
+
+  /**
+   * The snapshot BASELINE (ADR 0010): per key, the newest snapshot at-or-before {@code atMs} — the
+   * "opening balance" a series read carries forward from. One point per key that has ever
+   * snapshotted, however far back its newest row lies; O(keys), never O(history).
+   */
+  default List<SnapshotPoint> snapshotBaseline(final CompiledDataset dataset, final long atMs) {
+    throw new UnsupportedOperationException(
+        "periodic snapshots are not supported by this backend yet");
+  }
+
+  /**
+   * The snapshot RANGE (ADR 0010): every snapshot point with {@code fromMs < sample_time <= toMs},
+   * ordered by key then time — the sparse change points a series read applies on top of the
+   * baseline.
+   */
+  default List<SnapshotPoint> snapshotRange(
+      final CompiledDataset dataset, final long fromMs, final long toMs) {
+    throw new UnsupportedOperationException(
+        "periodic snapshots are not supported by this backend yet");
+  }
 
   /**
    * Streams the raw cells of a cube at one tier to {@code sink}, one page at a time — the executor

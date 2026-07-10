@@ -73,6 +73,13 @@ final class CubeServingSinkTest {
         final CompiledTable table, final String rowKey, final List<Object> values) {}
 
     @Override
+    public void upsertSnapshotRow(
+        final CompiledDataset dataset,
+        final DimensionKey key,
+        final long sampleTime,
+        final byte[] compositeAccumulator) {}
+
+    @Override
     public void flush() {}
 
     @Override

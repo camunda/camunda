@@ -20,6 +20,36 @@ import org.junit.jupiter.api.Test;
 final class DatasetDeclarationTest {
 
   @Test
+  void shouldRejectSnapshotsNotAlignedWithTheFinestWindow() {
+    // given / when / then: a snapshot grid that is not a multiple of the finest window
+    assertThatThrownBy(
+            () ->
+                DatasetDeclaration.builder("bad-snapshots", FactType.PROCESS_INSTANCE)
+                    .dimension("bpmnProcessId", DimensionType.STRING)
+                    .meter(Meter.of("count", MeterCatalog.COUNT))
+                    .window(60_000L)
+                    .snapshots(90_000L)
+                    .build())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("not a multiple of its finest window");
+  }
+
+  @Test
+  void shouldAcceptSnapshotsOnTheFinestWindowGrid() {
+    // given / when
+    final DatasetDeclaration declaration =
+        DatasetDeclaration.builder("good-snapshots", FactType.PROCESS_INSTANCE)
+            .dimension("bpmnProcessId", DimensionType.STRING)
+            .meter(Meter.of("count", MeterCatalog.COUNT))
+            .window(60_000L)
+            .snapshots(300_000L)
+            .build();
+
+    // then
+    assertThat(declaration.snapshotEveryMs()).isEqualTo(300_000L);
+  }
+
+  @Test
   void shouldBuildADeclaration() {
     // given: "duration by definition and region (from the completion snapshot), per minute & hour"
     final DatasetDeclaration declaration =

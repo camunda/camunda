@@ -31,6 +31,18 @@ final class RdbmsNames {
     return "projection_" + cubeId;
   }
 
+  /** A cube's periodic-snapshot table: absolute cumulative values per (key, sample_time). */
+  static String snapshotTable(final long cubeId) {
+    return "dataset_" + cubeId + "_snapshots";
+  }
+
+  /**
+   * The time-per-key index a snapshot baseline/range read seeks on: {@code (…dims, sample_time)}.
+   */
+  static String snapshotIndex(final long cubeId) {
+    return "idx_dataset_" + cubeId + "_snapshots";
+  }
+
   /**
    * The time-leading secondary index on a cube's {@code dataset_<id>} table: {@code (window_size,
    * window_start, …dims)}. It leads with the always-present, selective read predicates (tier + time
@@ -113,6 +125,15 @@ final class RdbmsNames {
    */
   static String quotedColumn(final String name) {
     return "\"" + column(name) + "\"";
+  }
+
+  /** A deterministic primary key over the dimension values and the sample boundary. */
+  static String snapshotKey(final DimensionKey key, final long sampleTime) {
+    final StringBuilder builder = new StringBuilder();
+    for (final Object value : key.values()) {
+      builder.append(value == null ? " " : value).append(KEY_SEPARATOR);
+    }
+    return builder.append('|').append(sampleTime).toString();
   }
 
   /** A deterministic primary key over the dimension values and the window/tier coordinate. */

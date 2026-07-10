@@ -32,6 +32,7 @@ public record CompiledDataset(
     int streamId,
     List<CompiledMeter> meters,
     List<CompiledTier> tiers,
+    CompiledSnapshots snapshots,
     DatasetSchema schema) {
 
   public CompiledDataset {
@@ -51,6 +52,11 @@ public record CompiledDataset(
   /** The finest tier — the only one Stage 1 aggregates and ships; Stage 2 derives the rest. */
   public CompiledTier finestTier() {
     return tiers.get(0);
+  }
+
+  /** Whether this cube materialises periodic snapshots (see {@link CompiledSnapshots}). */
+  public boolean hasSnapshots() {
+    return snapshots != null;
   }
 
   /** The meters' bound aggregates/codecs in slot order — the composite's construction input. */

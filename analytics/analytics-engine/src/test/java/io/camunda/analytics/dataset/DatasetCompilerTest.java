@@ -109,6 +109,43 @@ final class DatasetCompilerTest {
   }
 
   @Test
+  void shouldCompileSnapshotsWithAStableCellGroup() {
+    // given a snapshot-enabled additive cube
+    final DatasetDeclaration declaration =
+        DatasetDeclaration.builder("snap", FactType.PROCESS_INSTANCE)
+            .dimension("bpmnProcessId", DimensionType.STRING)
+            .meter(Meter.of("count", MeterCatalog.COUNT))
+            .window(60_000L)
+            .snapshots(60_000L)
+            .build();
+
+    // when
+    final CompiledDataset compiled = compiler.compile(7L, declaration);
+
+    // then
+    assertThat(compiled.hasSnapshots()).isTrue();
+    assertThat(compiled.snapshots().everyMs()).isEqualTo(60_000L);
+    assertThat(compiled.snapshots().cellGroup()).isNotEqualTo(compiled.streamId());
+  }
+
+  @Test
+  void shouldRejectSnapshotsOnASketchMeterAtCompileTime() {
+    // given a snapshot declaration whose meter is a (non-additive) sketch
+    final DatasetDeclaration declaration =
+        DatasetDeclaration.builder("snap-sketch", FactType.PROCESS_INSTANCE)
+            .dimension("bpmnProcessId", DimensionType.STRING)
+            .meter(Meter.of("p95", MeterCatalog.PERCENTILE, "durationMs"))
+            .window(60_000L)
+            .snapshots(60_000L)
+            .build();
+
+    // when / then
+    assertThatThrownBy(() -> compiler.compile(8L, declaration))
+        .isInstanceOf(DatasetValidationException.class)
+        .hasMessageContaining("snapshots require additive meters only");
+  }
+
+  @Test
   void shouldRejectMalformedTopKCountAtCompileTime() {
     // given a top-k meter whose k is not an integer
     final Meter meter = new Meter("top", MeterCatalog.TOP_K, "bpmnProcessId", Map.of("k", "abc"));

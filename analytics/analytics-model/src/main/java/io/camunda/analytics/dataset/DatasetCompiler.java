@@ -74,10 +74,38 @@ public final class DatasetCompiler {
               TumblingWindows.ofSizeAndGrace(windowMs, declaration.latenessMs())));
     }
 
+    final CompiledSnapshots snapshots = compileSnapshots(cubeId, declaration, meters);
+
     final DatasetSchema schema =
         new DatasetSchema(grain, declaration.meters().stream().map(Meter::name).toList());
     return new CompiledDataset(
-        cubeId, declaration.name(), factBinding, grain, streamId, meters, tiers, schema);
+        cubeId, declaration.name(), factBinding, grain, streamId, meters, tiers, snapshots, schema);
+  }
+
+  /**
+   * Compiles the optional periodic-snapshot configuration. Additive meters only (checked here,
+   * after binding, because additivity is a property of the bound meter's pushdown capability): a
+   * snapshot row carries every meter's cumulative absolute value, and a cumulative all-time sketch
+   * per key is unbounded in meaning; the gate can be lifted later if a real ask appears.
+   */
+  private CompiledSnapshots compileSnapshots(
+      final long cubeId, final DatasetDeclaration declaration, final List<CompiledMeter> meters) {
+    if (declaration.snapshotEveryMs() == 0) {
+      return null;
+    }
+    for (final CompiledMeter meter : meters) {
+      if (meter.pushdown().isEmpty()) {
+        throw new DatasetValidationException(
+            "dataset '"
+                + declaration.name()
+                + "' declares snapshots, but meter '"
+                + meter.meterName()
+                + "' is not additive — snapshots require additive meters only");
+      }
+    }
+    return new CompiledSnapshots(
+        declaration.snapshotEveryMs(),
+        registry.aggIdFor(cubeId, "snapshots@" + declaration.snapshotEveryMs()));
   }
 
   /**

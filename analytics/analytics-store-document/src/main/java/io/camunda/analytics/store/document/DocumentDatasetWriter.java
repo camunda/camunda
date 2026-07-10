@@ -135,6 +135,43 @@ public final class DocumentDatasetWriter implements VersionedDatasetWriter {
   }
 
   @Override
+  public void upsertSnapshotRow(
+      final CompiledDataset dataset,
+      final DimensionKey key,
+      final long sampleTime,
+      final byte[] compositeAccumulator,
+      final WriteVersion version) {
+    // Snapshot cubes are additive-only, so every slot writes native numeric fields — the key's
+    // cumulative absolutes as of sample_time — into the cube's dedicated _snapshots index.
+    final List<CompiledMeter> meters = dataset.meters();
+    final List<byte[]> slots =
+        CompositeAccumulatorValue.slotBytes(compositeAccumulator, meters.size());
+    for (int slot = 0; slot < meters.size(); slot++) {
+      final CompiledMeter meter = meters.get(slot);
+      final Map<String, Object> doc = new LinkedHashMap<>();
+      final List<DimensionColumn> grain = dataset.grain().columns();
+      for (int i = 0; i < grain.size(); i++) {
+        doc.put(DocumentCubeNames.field(grain.get(i).name()), key.get(i));
+      }
+      doc.put(DocumentCubeNames.SAMPLE_TIME, sampleTime);
+      doc.put(DocumentCubeNames.METER_NAME, meter.meterName());
+      final List<Object> values = decompose(meter.bound(), slots.get(slot));
+      final List<PushdownColumn> columns = meter.pushdown().orElseThrow().columns();
+      for (int i = 0; i < columns.size(); i++) {
+        doc.put(DocumentCubeNames.pushdownField(columns.get(i).suffix()), values.get(i));
+      }
+      doc.put(DocumentCubeNames.VER_EPOCH, version.epoch());
+      doc.put(DocumentCubeNames.VER_OFFSET, version.offset());
+      final String id = DocumentCubeNames.snapshotDocId(key, sampleTime, meter.meterName());
+      doc.put(DocumentCubeNames.DOC_KEY, id);
+      writeClient.index(
+          RequestBuilders.<Map<String, Object>>indexRequest(
+              r ->
+                  r.index(DocumentCubeNames.snapshotIndex(dataset.cubeId())).id(id).document(doc)));
+    }
+  }
+
+  @Override
   public void upsertRow(
       final CompiledTable table,
       final String rowKey,

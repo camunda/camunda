@@ -24,6 +24,7 @@ final class DocumentCubeNames {
   static final String WINDOW_START = "window_start";
   static final String WINDOW_SIZE = "window_size";
   static final String METER_NAME = "meter_name";
+  static final String SAMPLE_TIME = "sample_time";
   static final String VER_EPOCH = "ver_epoch";
   static final String VER_OFFSET = "ver_offset";
   static final String ACCUMULATOR = "accumulator";
@@ -53,6 +54,20 @@ final class DocumentCubeNames {
 
   static String rowIndex(final long cubeId) {
     return "projection_" + cubeId;
+  }
+
+  /** A cube's periodic-snapshot index: absolute cumulative values per (key, sample_time). */
+  static String snapshotIndex(final long cubeId) {
+    return "dataset_" + cubeId + "_snapshots";
+  }
+
+  /** Deterministic id for one meter of one snapshot row: dimensions + boundary + meter. */
+  static String snapshotDocId(final DimensionKey key, final long sampleTime, final String meter) {
+    final StringBuilder builder = new StringBuilder();
+    for (final Object value : key.values()) {
+      builder.append(value == null ? " " : value).append(KEY_SEPARATOR);
+    }
+    return builder.append('|').append(sampleTime).append('|').append(meter).toString();
   }
 
   static String field(final String declaredName) {

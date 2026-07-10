@@ -195,6 +195,83 @@ public final class RdbmsDatasetWriter implements VersionedDatasetWriter {
         "cube " + dataset.name());
   }
 
+  @Override
+  public void upsertSnapshotRow(
+      final CompiledDataset dataset,
+      final DimensionKey key,
+      final long sampleTime,
+      final byte[] compositeAccumulator,
+      final WriteVersion version) {
+    final List<DimensionColumn> grain = dataset.grain().columns();
+    final List<CompiledMeter> meters = dataset.meters();
+    final List<byte[]> slots =
+        CompositeAccumulatorValue.slotBytes(compositeAccumulator, meters.size());
+
+    // Snapshot cubes are additive-only (validated at compile time), so every slot decomposes into
+    // native numeric columns — the row carries the key's cumulative absolutes as of sample_time.
+    final List<String> meterCols = new ArrayList<>();
+    final List<String> meterColTypes = new ArrayList<>();
+    final List<MeterBind> binds = new ArrayList<>();
+    for (int slot = 0; slot < meters.size(); slot++) {
+      final CompiledMeter meter = meters.get(slot);
+      final List<PushdownColumn> columns = meter.pushdown().orElseThrow().columns();
+      final List<Object> values = decompose(meter.bound(), slots.get(slot));
+      for (int i = 0; i < columns.size(); i++) {
+        meterCols.add(RdbmsNames.quotedPushdownColumn(meter.meterName(), columns.get(i).suffix()));
+        final PushdownColumn column = columns.get(i);
+        meterColTypes.add(dialect.columnType(column.type()));
+        final Object value = values.get(i);
+        binds.add((statement, index) -> bind(statement, index, column.type(), value));
+      }
+    }
+
+    final List<String> insertColumns = new ArrayList<>();
+    final List<String> columnTypes = new ArrayList<>();
+    insertColumns.add("row_key");
+    columnTypes.add("VARCHAR");
+    for (final DimensionColumn dim : grain) {
+      insertColumns.add(RdbmsNames.quotedColumn(dim.name()));
+      columnTypes.add(dialect.columnType(dim.type()));
+    }
+    insertColumns.add("sample_time");
+    columnTypes.add("BIGINT");
+    insertColumns.addAll(meterCols);
+    columnTypes.addAll(meterColTypes);
+    insertColumns.add("ver_epoch");
+    columnTypes.add("BIGINT");
+    insertColumns.add("ver_offset");
+    columnTypes.add("BIGINT");
+    final List<String> updateColumns = new ArrayList<>(meterCols);
+    updateColumns.add("ver_epoch");
+    updateColumns.add("ver_offset");
+    final String sql =
+        fencedUpsertSql(
+            dialect,
+            RdbmsNames.snapshotTable(dataset.cubeId()),
+            insertColumns,
+            columnTypes,
+            "row_key",
+            "row_key",
+            updateColumns);
+
+    execute(
+        sql,
+        statement -> {
+          int index = 1;
+          statement.setString(index++, RdbmsNames.snapshotKey(key, sampleTime));
+          for (int i = 0; i < grain.size(); i++) {
+            bind(statement, index++, grain.get(i).type(), key.get(i));
+          }
+          statement.setLong(index++, sampleTime);
+          for (final MeterBind meterBind : binds) {
+            meterBind.bind(statement, index++);
+          }
+          statement.setLong(index++, version.epoch());
+          statement.setLong(index, version.offset());
+        },
+        "cube snapshots " + dataset.name());
+  }
+
   /** Binds one meter-derived column value at its statement index. */
   @FunctionalInterface
   private interface MeterBind {

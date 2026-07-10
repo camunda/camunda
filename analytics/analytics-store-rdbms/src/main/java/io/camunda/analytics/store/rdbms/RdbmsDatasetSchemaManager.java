@@ -52,6 +52,61 @@ public final class RdbmsDatasetSchemaManager implements DatasetSchemaManager {
     // Postgres propagates an index declared on the partitioned parent to every (present and future)
     // partition; on H2 the same statement targets the plain table.
     execute(scanIndexDdl(dataset), "cube scan index " + dataset.name());
+    if (dataset.hasSnapshots()) {
+      execute(snapshotsDdl(dataset), "cube snapshots " + dataset.name());
+      execute(snapshotsIndexDdl(dataset), "cube snapshots index " + dataset.name());
+    }
+  }
+
+  /**
+   * The {@code CREATE TABLE} for a cube's periodic-snapshot companion (ADR 0010): the same grain
+   * and meter columns as the cells table, but every meter value is the key's <em>cumulative
+   * absolute</em> as of {@code sample_time} — the Kimball periodic-snapshot pattern, one meaning
+   * per table. Snapshot cubes are additive-only, so the meter columns are always the native
+   * pushdown columns (no blobs).
+   */
+  String snapshotsDdl(final CompiledDataset dataset) {
+    final String dims =
+        dataset.grain().columns().stream()
+            .map(c -> RdbmsNames.quotedColumn(c.name()) + " " + dialect.columnType(c.type()))
+            .collect(Collectors.joining(", "));
+    final Map<String, Optional<PushdownSpec<?, ?>>> specs = specsByMeter(dataset);
+    final List<String> meterDefs = new ArrayList<>();
+    for (final String name : dataset.schema().meterNames()) {
+      for (final PushdownColumn column : specs.get(name).orElseThrow().columns()) {
+        meterDefs.add(
+            RdbmsNames.quotedPushdownColumn(name, column.suffix())
+                + " "
+                + dialect.columnType(column.type()));
+      }
+    }
+    return "CREATE TABLE IF NOT EXISTS "
+        + RdbmsNames.snapshotTable(dataset.cubeId())
+        + " (row_key VARCHAR(4000) PRIMARY KEY, "
+        + dims
+        + (dims.isEmpty() ? "" : ", ")
+        + "sample_time BIGINT NOT NULL, "
+        + String.join(", ", meterDefs)
+        + ", ver_epoch BIGINT NOT NULL DEFAULT 0, ver_offset BIGINT NOT NULL DEFAULT 0)";
+  }
+
+  /**
+   * The per-key time index the snapshot reads seek on: the baseline fetch is a per-key backward
+   * seek to the newest row at-or-before a time, the range fetch a per-key ascending walk — both
+   * want the grain leading and {@code sample_time} last.
+   */
+  String snapshotsIndexDdl(final CompiledDataset dataset) {
+    final String indexDims =
+        dataset.grain().columns().stream()
+            .map(c -> RdbmsNames.quotedColumn(c.name()))
+            .collect(Collectors.joining(", "));
+    return "CREATE INDEX IF NOT EXISTS "
+        + RdbmsNames.snapshotIndex(dataset.cubeId())
+        + " ON "
+        + RdbmsNames.snapshotTable(dataset.cubeId())
+        + " ("
+        + (indexDims.isEmpty() ? "" : indexDims + ", ")
+        + "sample_time)";
   }
 
   /**

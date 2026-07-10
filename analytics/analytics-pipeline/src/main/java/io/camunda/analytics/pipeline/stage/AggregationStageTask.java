@@ -10,6 +10,7 @@ package io.camunda.analytics.pipeline.stage;
 import io.camunda.analytics.aggregation.CubeMergeProcessor;
 import io.camunda.analytics.aggregation.CubeMergeProcessor.CellApplier;
 import io.camunda.analytics.aggregation.CubeServingSink;
+import io.camunda.analytics.aggregation.SnapshotSampler;
 import io.camunda.analytics.dataset.ActiveCube;
 import io.camunda.analytics.dataset.CompiledDataset;
 import io.camunda.analytics.dataset.CompiledTier;
@@ -114,6 +115,7 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
   // The current topology's mergers, kept so the frozen cut can drive their
   // freeze/persist/complete split directly; rebuilt with the topology on each live reload.
   private List<SegmentMergingAggregation<?, ?>> activeMergers = List.of();
+  private List<SnapshotSampler> activeSamplers = List.of();
   private long appliedVersion;
   private long lastReloadCheckMs;
 
@@ -270,6 +272,11 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
     wiringByStreamId.keySet().retainAll(byStreamId.keySet());
     appliedCubeIds = Set.copyOf(cubeIds);
     activeMergers = List.copyOf(mergers);
+    activeSamplers =
+        wiringByStreamId.values().stream()
+            .map(CubeWiring::sampler)
+            .filter(sampler -> sampler != null)
+            .toList();
     topology =
         ProcessorTopology.<ShuffleEnvelope>builder()
             .source("merge", new CubeMergeProcessor(dedup, byStreamId, mergers, this::park))
@@ -410,8 +417,11 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
         seq, streamId, sourcePartition, segment, chunk, windowStart, cellKey, payload);
   }
 
-  /** One cube's reusable wiring: the dispatch applier and its per-tier composite mergers. */
-  private record CubeWiring(CellApplier applier, List<SegmentMergingAggregation<?, ?>> mergers) {}
+  /** One cube's reusable wiring: applier, per-tier composite mergers, optional snapshot sampler. */
+  private record CubeWiring(
+      CellApplier applier,
+      List<SegmentMergingAggregation<?, ?>> mergers,
+      SnapshotSampler sampler) {}
 
   /** A tier's merger paired with the window size a rolled-up delta aligns down to. */
   private record TierMerger(
@@ -450,6 +460,24 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
       mergers.add(merger);
       tierMergers.add(new TierMerger(tier.windowMs(), merger));
     }
+    // Periodic snapshots (ADR 0010): the sampler observes the FINEST tier's finalizations — the
+    // sole event-time-final signal — folds them into a durable cumulative per key, and stages
+    // absolute-value rows through the same serving writer (inheriting frozen cuts + the fence).
+    SnapshotSampler sampler = null;
+    if (compiled.hasSnapshots()) {
+      sampler =
+          new SnapshotSampler(
+              compiled,
+              writer,
+              cellStore,
+              new DimensionKeyValue(compiled.grain()),
+              new CompositeAccumulatorValue(bounds),
+              new DimensionKeyValue(compiled.grain()),
+              new CompositeAccumulatorValue(bounds));
+      final SegmentMergingAggregation<DimensionKey, Object[]> finest = tierMergers.get(0).merger();
+      finest.onFinalization(sampler);
+    }
+
     // One delta codec for the whole cube (the applier runs on the task's single thread), decoding
     // each composite delta once through the merge-only path: the mergers fold a delta into an
     // accumulator they own and never store it, so all tiers share one read-only decoded view.
@@ -470,7 +498,7 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
             tier.merger().merge(new Windowed<>(key, tierWindowStart), delta, eventTimeHint);
           }
         };
-    return new CubeWiring(applier, List.copyOf(mergers));
+    return new CubeWiring(applier, List.copyOf(mergers), sampler);
   }
 
   @Override
@@ -538,6 +566,10 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
     parkedToPersist.clear();
     final List<byte[]> parkedDeleteBatch = List.copyOf(parkedToDelete);
     parkedToDelete.clear();
+    // The samplers' fold/emissions happened inside the mergers' freeze (finalization); freezing
+    // them here captures exactly the state matching the frozen cells and staged snapshot rows.
+    final List<SnapshotSampler> samplers = activeSamplers;
+    samplers.forEach(SnapshotSampler::freeze);
 
     return new CommitCut() {
 
@@ -578,12 +610,14 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
                 parkedStore.delete(parkedKey);
               }
               mergers.forEach(SegmentMergingAggregation::persistFrozen);
+              samplers.forEach(SnapshotSampler::persistFrozen);
             });
       }
 
       @Override
       public void complete(final boolean success) {
         mergers.forEach(merger -> merger.completeFrozen(success));
+        samplers.forEach(sampler -> sampler.completeFrozen(success));
         servingWriter.completeFrozen(success);
         if (success) {
           // Only now are the watermarks durable; recording them earlier would make the next cut
