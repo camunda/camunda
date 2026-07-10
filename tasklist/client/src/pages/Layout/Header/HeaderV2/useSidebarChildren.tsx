@@ -38,8 +38,9 @@ const stopRowNavigation = (e: React.SyntheticEvent) => {
 
 function useSidebarChildren(params: {
   currentUser: CurrentUser | undefined;
+  hideNavLinks: boolean;
 }): SidebarNodeDescriptor[] {
-  const {currentUser} = params;
+  const {currentUser, hideNavLinks} = params;
   const location = useLocation();
   const {customFilters, startEditing, startDeleting, startAdding, status} =
     useCustomFiltersContext();
@@ -211,7 +212,7 @@ function useSidebarChildren(params: {
 
   // @ts-expect-error - we need to fix it from the C3 side
   return useMemo(() => {
-    if (isForbidden(currentUser)) {
+    if (isForbidden(currentUser) || hideNavLinks) {
       return [];
     }
 
@@ -245,7 +246,7 @@ function useSidebarChildren(params: {
         },
       },
     ];
-  }, [currentUser, isProcessesPage, tasksChildren]);
+  }, [currentUser, hideNavLinks, isProcessesPage, tasksChildren]);
 }
 
 export {useSidebarChildren};

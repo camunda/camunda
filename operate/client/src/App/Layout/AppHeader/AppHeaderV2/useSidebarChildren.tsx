@@ -22,14 +22,14 @@ import {useCurrentPage} from 'modules/hooks/useCurrentPage';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {isForbidden} from 'modules/auth/isForbidden';
 
-function useSidebarChildren(): SidebarNodeDescriptor[] {
+function useSidebarChildren(hideNavLinks = false): SidebarNodeDescriptor[] {
   const {data: currentUser} = useCurrentUser();
   const {currentPage} = useCurrentPage();
   const forbidden = isForbidden(currentUser);
 
   // @ts-expect-error - we need to fix it from the C3 side
   return useMemo(() => {
-    if (forbidden) {
+    if (forbidden || hideNavLinks) {
       return [];
     }
 
@@ -134,7 +134,7 @@ function useSidebarChildren(): SidebarNodeDescriptor[] {
     ];
 
     return children;
-  }, [forbidden, currentPage]);
+  }, [forbidden, hideNavLinks, currentPage]);
 }
 
 export {useSidebarChildren};

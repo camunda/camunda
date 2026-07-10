@@ -8,7 +8,7 @@
 
 /* istanbul ignore file */
 
-import {Outlet} from 'react-router-dom';
+import {Outlet, useMatch} from 'react-router-dom';
 import {Header} from './Header';
 import {AuthenticationCheck} from 'modules/auth/AuthenticationCheck';
 import {AuthorizationCheck} from 'modules/auth/AuthorizationCheck';
@@ -18,12 +18,14 @@ import {C3Provider} from './C3Provider';
 import styles from './styles.module.scss';
 
 const Layout: React.FC = () => {
+  const isForbiddenRoute = useMatch(pages.forbidden) !== null;
+
   return (
     <C3Provider>
       <AuthenticationCheck redirectPath={pages.login}>
         <AuthorizationCheck>
           <OSNotifications />
-          <Header />
+          <Header hideNavLinks={isForbiddenRoute} />
           <div id="main-content" tabIndex={-1} className={styles.mainContent}>
             <Outlet />
           </div>

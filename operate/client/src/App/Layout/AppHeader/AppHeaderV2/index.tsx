@@ -30,100 +30,102 @@ import {useCamundaToolsConfig} from './useCamundaToolsConfig';
 const SKIP_TO_CONTENT_TARGET_ID = 'main-content';
 const LOGOUT_DELAY = 1000;
 
-const AppHeaderV2: React.FC = observer(() => {
-  const {data: currentUser} = useCurrentUser();
-  const clientConfig = getClientConfig();
-  const isSaas = typeof clientConfig.organizationId === 'string';
-  const {currentPage} = useCurrentPage();
-  const {isTagVisible, isProductionLicense, isCommercial, expiresAt} =
-    licenseTagStore.state;
-  const selectedTheme = currentTheme.state.selectedTheme;
+const AppHeaderV2: React.FC<{hideNavLinks?: boolean}> = observer(
+  ({hideNavLinks = false}) => {
+    const {data: currentUser} = useCurrentUser();
+    const clientConfig = getClientConfig();
+    const isSaas = typeof clientConfig.organizationId === 'string';
+    const {currentPage} = useCurrentPage();
+    const {isTagVisible, isProductionLicense, isCommercial, expiresAt} =
+      licenseTagStore.state;
+    const selectedTheme = currentTheme.state.selectedTheme;
 
-  useEffect(() => {
-    if (currentUser !== undefined) {
-      tracking.identifyUser({
-        username: currentUser.username,
-        salesPlanType: currentUser.salesPlanType,
-        roles: currentUser.roles,
-      });
-    }
-  }, [currentUser]);
+    useEffect(() => {
+      if (currentUser !== undefined) {
+        tracking.identifyUser({
+          username: currentUser.username,
+          salesPlanType: currentUser.salesPlanType,
+          roles: currentUser.roles,
+        });
+      }
+    }, [currentUser]);
 
-  useEffect(() => {
-    licenseTagStore.fetchLicense();
-    return licenseTagStore.reset;
-  }, []);
+    useEffect(() => {
+      licenseTagStore.fetchLicense();
+      return licenseTagStore.reset;
+    }, []);
 
-  const isPaidPlan =
-    typeof currentUser?.salesPlanType === 'string' &&
-    ['paid-cc', 'enterprise'].includes(currentUser.salesPlanType);
+    const isPaidPlan =
+      typeof currentUser?.salesPlanType === 'string' &&
+      ['paid-cc', 'enterprise'].includes(currentUser.salesPlanType);
 
-  const breadcrumbs = useClusterWebappBreadcrumbs({currentApp: 'operate'});
-  const sidebarChildren = useSidebarChildren();
-  const {tools, ToolsProvider} = useCamundaToolsConfig({
-    isSaas,
-    isPaidPlan,
-    userName: currentUser?.displayName ?? '',
-    userEmail: currentUser?.email ?? '',
-    canLogout: clientConfig.canLogout,
-    onLogout: () => {
-      notificationsStore.displayNotification({
-        kind: 'info',
-        title: 'Log Out',
-        subtitle: 'You are being logged out...',
-        isDismissable: true,
-      });
-      setTimeout(authenticationStore.handleLogout, LOGOUT_DELAY);
-    },
-    selectedTheme,
-    onThemeChange: (theme) => currentTheme.changeTheme(theme),
-  });
+    const breadcrumbs = useClusterWebappBreadcrumbs({currentApp: 'operate'});
+    const sidebarChildren = useSidebarChildren(hideNavLinks);
+    const {tools, ToolsProvider} = useCamundaToolsConfig({
+      isSaas,
+      isPaidPlan,
+      userName: currentUser?.displayName ?? '',
+      userEmail: currentUser?.email ?? '',
+      canLogout: clientConfig.canLogout,
+      onLogout: () => {
+        notificationsStore.displayNotification({
+          kind: 'info',
+          title: 'Log Out',
+          subtitle: 'You are being logged out...',
+          isDismissable: true,
+        });
+        setTimeout(authenticationStore.handleLogout, LOGOUT_DELAY);
+      },
+      selectedTheme,
+      onThemeChange: (theme) => currentTheme.changeTheme(theme),
+    });
 
-  const options = useMemo(
-    (): Parameters<typeof useC3NavigationV2>[0] => ({
-      app: {
-        ariaLabel: 'Camunda Operate',
-        linkProps: {
-          to: Paths.dashboard(),
-          onClick: () => {
-            tracking.track({eventName: 'navigation', link: 'header-logo'});
+    const options = useMemo(
+      (): Parameters<typeof useC3NavigationV2>[0] => ({
+        app: {
+          ariaLabel: 'Camunda Operate',
+          linkProps: {
+            to: Paths.dashboard(),
+            onClick: () => {
+              tracking.track({eventName: 'navigation', link: 'header-logo'});
+            },
           },
         },
-      },
-      skipToContentTargetId: SKIP_TO_CONTENT_TARGET_ID,
-      activeItemKey: currentPage ?? '',
-      sidebarChildren,
-      breadcrumbs,
-      tools,
-      // @ts-expect-error - we need to fix it from the C3 side
-      linkComponent: Link,
-      headerTrailingContent: isTagVisible ? (
-        <C3LicenseTag
-          isProductionLicense={isProductionLicense}
-          isCommercial={isCommercial}
-          expiresAt={expiresAt ?? undefined}
-        />
-      ) : undefined,
-    }),
-    [
-      currentPage,
-      sidebarChildren,
-      breadcrumbs,
-      tools,
-      isTagVisible,
-      isProductionLicense,
-      isCommercial,
-      expiresAt,
-    ],
-  );
+        skipToContentTargetId: SKIP_TO_CONTENT_TARGET_ID,
+        activeItemKey: currentPage ?? '',
+        sidebarChildren,
+        breadcrumbs,
+        tools,
+        // @ts-expect-error - we need to fix it from the C3 side
+        linkComponent: Link,
+        headerTrailingContent: isTagVisible ? (
+          <C3LicenseTag
+            isProductionLicense={isProductionLicense}
+            isCommercial={isCommercial}
+            expiresAt={expiresAt ?? undefined}
+          />
+        ) : undefined,
+      }),
+      [
+        currentPage,
+        sidebarChildren,
+        breadcrumbs,
+        tools,
+        isTagVisible,
+        isProductionLicense,
+        isCommercial,
+        expiresAt,
+      ],
+    );
 
-  const {navProps} = useC3NavigationV2(options);
+    const {navProps} = useC3NavigationV2(options);
 
-  return (
-    <ToolsProvider>
-      <C3NavigationV2 {...navProps} />
-    </ToolsProvider>
-  );
-});
+    return (
+      <ToolsProvider>
+        <C3NavigationV2 {...navProps} />
+      </ToolsProvider>
+    );
+  },
+);
 
 export {AppHeaderV2};

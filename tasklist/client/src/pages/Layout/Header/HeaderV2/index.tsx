@@ -39,7 +39,9 @@ function useActiveKey(): 'processes' | `tasks:${string}` {
   return `tasks:${rawFilterParam}`;
 }
 
-const HeaderV2: React.FC = () => {
+const HeaderV2: React.FC<{hideNavLinks?: boolean}> = ({
+  hideNavLinks = false,
+}) => {
   const {t} = useTranslation();
   const {data: currentUser} = useCurrentUser();
   const {data: license} = useLicense();
@@ -55,6 +57,7 @@ const HeaderV2: React.FC = () => {
 
   const sidebarChildren = useSidebarChildren({
     currentUser,
+    hideNavLinks,
   });
   const breadcrumbs = useClusterWebappBreadcrumbs({currentApp: 'tasklist'});
   const {tools, ToolsProvider} = useCamundaToolsConfig({
