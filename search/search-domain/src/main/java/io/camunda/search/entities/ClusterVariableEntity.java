@@ -30,7 +30,7 @@ public record ClusterVariableEntity(
     Objects.requireNonNull(name, "name");
     Objects.requireNonNull(value, "value");
     Objects.requireNonNull(scope, "scope");
-    metadata = metadata != null ? metadata : new ArrayList<>();
+    metadata = metadata != null ? new ArrayList<>(metadata) : new ArrayList<>();
   }
 
   @Override

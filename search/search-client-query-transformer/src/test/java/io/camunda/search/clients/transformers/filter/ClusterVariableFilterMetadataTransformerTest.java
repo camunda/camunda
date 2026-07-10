@@ -30,25 +30,17 @@ import io.camunda.search.clients.query.SearchTermsQuery;
 import io.camunda.search.clients.query.SearchWildcardQuery;
 import io.camunda.search.filter.ClusterVariableFilter;
 import io.camunda.search.filter.MetadataValueFilter;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UntypedOperation;
 import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
 import org.junit.jupiter.api.Test;
 
-public final class ClusterVariableFilterTransformerTest extends AbstractTransformerTest {
+public final class ClusterVariableFilterMetadataTransformerTest extends AbstractTransformerTest {
 
   @Test
   public void shouldQueryMetadataByExactKeyValue() {
-    // given
-    final var metadataFilter =
-        new MetadataValueFilter.Builder()
-            .key("kind")
-            .valueOperation(UntypedOperation.of(eq("CREDENTIAL")))
-            .build();
-    final var filter =
-        new ClusterVariableFilter.Builder().metadataOperations(metadataFilter).build();
-
     // when
-    final var searchQuery = transformQuery(filter);
+    final var searchQuery = transformMetadataQuery("kind", eq("CREDENTIAL"));
 
     // then
     final var nested = extractSingleNestedQuery(searchQuery);
@@ -61,17 +53,8 @@ public final class ClusterVariableFilterTransformerTest extends AbstractTransfor
 
   @Test
   public void shouldQueryMetadataByNumericRange() {
-    // given
-    final var metadataFilter =
-        new MetadataValueFilter.Builder()
-            .key("schemaVersion")
-            .valueOperation(UntypedOperation.of(gte(2)))
-            .build();
-    final var filter =
-        new ClusterVariableFilter.Builder().metadataOperations(metadataFilter).build();
-
     // when
-    final var searchQuery = transformQuery(filter);
+    final var searchQuery = transformMetadataQuery("schemaVersion", gte(2));
 
     // then
     final var nested = extractSingleNestedQuery(searchQuery);
@@ -85,17 +68,8 @@ public final class ClusterVariableFilterTransformerTest extends AbstractTransfor
 
   @Test
   public void shouldQueryMetadataByLike() {
-    // given
-    final var metadataFilter =
-        new MetadataValueFilter.Builder()
-            .key("schemaRef")
-            .valueOperation(UntypedOperation.of(like("io.camunda.connector*")))
-            .build();
-    final var filter =
-        new ClusterVariableFilter.Builder().metadataOperations(metadataFilter).build();
-
     // when
-    final var searchQuery = transformQuery(filter);
+    final var searchQuery = transformMetadataQuery("schemaRef", like("io.camunda.connector*"));
 
     // then
     final var nested = extractSingleNestedQuery(searchQuery);
@@ -109,17 +83,8 @@ public final class ClusterVariableFilterTransformerTest extends AbstractTransfor
 
   @Test
   public void shouldQueryMetadataByExistence() {
-    // given
-    final var metadataFilter =
-        new MetadataValueFilter.Builder()
-            .key("kind")
-            .valueOperation(UntypedOperation.of(exists(true)))
-            .build();
-    final var filter =
-        new ClusterVariableFilter.Builder().metadataOperations(metadataFilter).build();
-
     // when
-    final var searchQuery = transformQuery(filter);
+    final var searchQuery = transformMetadataQuery("kind", exists(true));
 
     // then
     final var nested = extractSingleNestedQuery(searchQuery);
@@ -141,17 +106,8 @@ public final class ClusterVariableFilterTransformerTest extends AbstractTransfor
 
   @Test
   public void shouldQueryMetadataByNonExistence() {
-    // given
-    final var metadataFilter =
-        new MetadataValueFilter.Builder()
-            .key("kind")
-            .valueOperation(UntypedOperation.of(exists(false)))
-            .build();
-    final var filter =
-        new ClusterVariableFilter.Builder().metadataOperations(metadataFilter).build();
-
     // when
-    final var searchQuery = transformQuery(filter);
+    final var searchQuery = transformMetadataQuery("kind", exists(false));
 
     // then
     final var bool = (SearchBoolQuery) searchQuery.queryOption();
@@ -163,29 +119,15 @@ public final class ClusterVariableFilterTransformerTest extends AbstractTransfor
 
   @Test
   public void shouldRejectNotExistsCombinedWithOtherOperations() {
-    // given
-    final var metadataFilter =
-        new MetadataValueFilter.Builder()
-            .key("kind")
-            .valueOperation(UntypedOperation.of(exists(false)))
-            .valueOperation(UntypedOperation.of(eq("CREDENTIAL")))
-            .build();
-    final var filter =
-        new ClusterVariableFilter.Builder().metadataOperations(metadataFilter).build();
-
     // when / then
-    assertThatThrownBy(() -> transformQuery(filter)).isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> transformMetadataQuery("kind", exists(false), eq("CREDENTIAL")))
+        .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
   public void shouldQueryMetadataByKeyOnly() {
-    // given
-    final var metadataFilter = new MetadataValueFilter.Builder().key("kind").build();
-    final var filter =
-        new ClusterVariableFilter.Builder().metadataOperations(metadataFilter).build();
-
     // when
-    final var searchQuery = transformQuery(filter);
+    final var searchQuery = transformMetadataQuery("kind");
 
     // then
     final var nested = extractSingleNestedQuery(searchQuery);
@@ -195,17 +137,8 @@ public final class ClusterVariableFilterTransformerTest extends AbstractTransfor
 
   @Test
   public void shouldQueryMetadataByNotEquals() {
-    // given
-    final var metadataFilter =
-        new MetadataValueFilter.Builder()
-            .key("kind")
-            .valueOperation(UntypedOperation.of(neq("CREDENTIAL")))
-            .build();
-    final var filter =
-        new ClusterVariableFilter.Builder().metadataOperations(metadataFilter).build();
-
     // when
-    final var searchQuery = transformQuery(filter);
+    final var searchQuery = transformMetadataQuery("kind", neq("CREDENTIAL"));
 
     // then
     final var nested = extractSingleNestedQuery(searchQuery);
@@ -219,17 +152,8 @@ public final class ClusterVariableFilterTransformerTest extends AbstractTransfor
 
   @Test
   public void shouldQueryMetadataByNumericLessThan() {
-    // given
-    final var metadataFilter =
-        new MetadataValueFilter.Builder()
-            .key("schemaVersion")
-            .valueOperation(UntypedOperation.of(lt(5)))
-            .build();
-    final var filter =
-        new ClusterVariableFilter.Builder().metadataOperations(metadataFilter).build();
-
     // when
-    final var searchQuery = transformQuery(filter);
+    final var searchQuery = transformMetadataQuery("schemaVersion", lt(5));
 
     // then
     final var nested = extractSingleNestedQuery(searchQuery);
@@ -243,17 +167,8 @@ public final class ClusterVariableFilterTransformerTest extends AbstractTransfor
 
   @Test
   public void shouldQueryMetadataByNumericLessThanEquals() {
-    // given
-    final var metadataFilter =
-        new MetadataValueFilter.Builder()
-            .key("schemaVersion")
-            .valueOperation(UntypedOperation.of(lte(5)))
-            .build();
-    final var filter =
-        new ClusterVariableFilter.Builder().metadataOperations(metadataFilter).build();
-
     // when
-    final var searchQuery = transformQuery(filter);
+    final var searchQuery = transformMetadataQuery("schemaVersion", lte(5));
 
     // then
     final var nested = extractSingleNestedQuery(searchQuery);
@@ -266,17 +181,8 @@ public final class ClusterVariableFilterTransformerTest extends AbstractTransfor
 
   @Test
   public void shouldQueryMetadataByNumericGreaterThan() {
-    // given
-    final var metadataFilter =
-        new MetadataValueFilter.Builder()
-            .key("schemaVersion")
-            .valueOperation(UntypedOperation.of(gt(1)))
-            .build();
-    final var filter =
-        new ClusterVariableFilter.Builder().metadataOperations(metadataFilter).build();
-
     // when
-    final var searchQuery = transformQuery(filter);
+    final var searchQuery = transformMetadataQuery("schemaVersion", gt(1));
 
     // then
     final var nested = extractSingleNestedQuery(searchQuery);
@@ -289,17 +195,8 @@ public final class ClusterVariableFilterTransformerTest extends AbstractTransfor
 
   @Test
   public void shouldQueryMetadataByIn() {
-    // given
-    final var metadataFilter =
-        new MetadataValueFilter.Builder()
-            .key("kind")
-            .valueOperation(UntypedOperation.of(in("CREDENTIAL", "SECRET")))
-            .build();
-    final var filter =
-        new ClusterVariableFilter.Builder().metadataOperations(metadataFilter).build();
-
     // when
-    final var searchQuery = transformQuery(filter);
+    final var searchQuery = transformMetadataQuery("kind", in("CREDENTIAL", "SECRET"));
 
     // then
     final var nested = extractSingleNestedQuery(searchQuery);
@@ -312,17 +209,8 @@ public final class ClusterVariableFilterTransformerTest extends AbstractTransfor
 
   @Test
   public void shouldQueryMetadataByNotIn() {
-    // given
-    final var metadataFilter =
-        new MetadataValueFilter.Builder()
-            .key("kind")
-            .valueOperation(UntypedOperation.of(notIn("CREDENTIAL", "SECRET")))
-            .build();
-    final var filter =
-        new ClusterVariableFilter.Builder().metadataOperations(metadataFilter).build();
-
     // when
-    final var searchQuery = transformQuery(filter);
+    final var searchQuery = transformMetadataQuery("kind", notIn("CREDENTIAL", "SECRET"));
 
     // then
     final var nested = extractSingleNestedQuery(searchQuery);
@@ -362,8 +250,18 @@ public final class ClusterVariableFilterTransformerTest extends AbstractTransfor
     assertThat(nestedQueries).hasSize(2);
   }
 
+  private SearchQuery transformMetadataQuery(final String key, final Operation<?>... operations) {
+    final var builder = new MetadataValueFilter.Builder().key(key);
+    for (final var op : operations) {
+      builder.valueOperation(UntypedOperation.of(op));
+    }
+    final var filter =
+        new ClusterVariableFilter.Builder().metadataOperations(builder.build()).build();
+    return transformQuery(filter);
+  }
+
   private SearchNestedQuery extractSingleNestedQuery(final SearchQuery searchQuery) {
-    if (searchQuery.queryOption() instanceof SearchNestedQuery nestedQuery) {
+    if (searchQuery.queryOption() instanceof final SearchNestedQuery nestedQuery) {
       return nestedQuery;
     }
     final var bool = (SearchBoolQuery) searchQuery.queryOption();
