@@ -132,6 +132,11 @@ public final class JobClient {
     return this;
   }
 
+  public JobClient withLeaseToken(final String leaseToken) {
+    jobRecord.setLeaseToken(leaseToken);
+    return this;
+  }
+
   public JobClient expectRejection() {
     expectation = REJECTION_SUPPLIER;
     return this;

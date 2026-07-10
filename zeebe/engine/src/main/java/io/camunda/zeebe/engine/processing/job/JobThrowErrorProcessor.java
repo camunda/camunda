@@ -108,6 +108,7 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
             state.getBannedInstanceState(),
             "throw an error for",
             List.of(State.ACTIVATABLE, State.ACTIVATED),
+            List.of(JobLeaseFencingCheck.forLifecycleCommand()),
             authCheckBehavior);
 
     stateAnalyzer = new CatchEventAnalyzer(state.getProcessState(), elementInstanceState);

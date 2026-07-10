@@ -431,6 +431,114 @@ public final class CompleteJobTest {
   }
 
   @Test
+  public void shouldCompleteLeasedJobWithMatchingLease() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).withLease().activate(username);
+    final Long jobKey = batchRecord.getValue().getJobKeys().get(0);
+    final String leaseToken = batchRecord.getValue().getJobs().get(0).getLeaseToken();
+    assertThat(leaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
+
+    // when
+    final Record<JobRecordValue> completedRecord =
+        ENGINE.job().withKey(jobKey).withLeaseToken(leaseToken).complete();
+
+    // then
+    Assertions.assertThat(completedRecord)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(JobIntent.COMPLETED);
+  }
+
+  @Test
+  public void shouldRejectCompleteOnLeasedJobWithoutLease() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).withLease().activate(username);
+    final Long jobKey = batchRecord.getValue().getJobKeys().get(0);
+    final String leaseToken = batchRecord.getValue().getJobs().get(0).getLeaseToken();
+    assertThat(leaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
+
+    // when
+    final Record<JobRecordValue> rejection =
+        ENGINE.job().withKey(jobKey).expectRejection().complete();
+
+    // then
+    Assertions.assertThat(rejection)
+        .describedAs("A complete command without a lease token on a leased job is rejected")
+        .hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .describedAs("missing-lease rejection tells the worker a matching lease must be provided")
+        .contains("must be provided")
+        .doesNotContain(leaseToken);
+  }
+
+  @Test
+  public void shouldRejectCompleteOnLeasedJobWithWrongLease() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).withLease().activate(username);
+    final Long jobKey = batchRecord.getValue().getJobKeys().get(0);
+    final String leaseToken = batchRecord.getValue().getJobs().get(0).getLeaseToken();
+    assertThat(leaseToken).describedAs("A leased job has a non-empty lease token").isNotEmpty();
+
+    // when
+    final Record<JobRecordValue> rejection =
+        ENGINE
+            .job()
+            .withKey(jobKey)
+            .withLeaseToken("stale-lease-token")
+            .expectRejection()
+            .complete();
+
+    // then
+    Assertions.assertThat(rejection)
+        .describedAs("A complete command with a non-matching lease token is rejected")
+        .hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(rejection.getRejectionReason())
+        .describedAs("mismatched-lease rejection tells the worker the lease does not match")
+        .contains("does not match")
+        .doesNotContain(leaseToken);
+  }
+
+  @Test
+  public void shouldCompleteNonLeasedJobWithoutLease() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).activate(username);
+    final Long jobKey = batchRecord.getValue().getJobKeys().get(0);
+
+    // when
+    final Record<JobRecordValue> completedRecord = ENGINE.job().withKey(jobKey).complete();
+
+    // then
+    Assertions.assertThat(completedRecord)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(JobIntent.COMPLETED);
+  }
+
+  @Test
+  public void shouldCompleteNonLeasedJobEvenWhenLeaseSupplied() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).activate(username);
+    final Long jobKey = batchRecord.getValue().getJobKeys().get(0);
+
+    // when
+    final Record<JobRecordValue> completedRecord =
+        ENGINE.job().withKey(jobKey).withLeaseToken("some-token").complete();
+
+    // then
+    Assertions.assertThat(completedRecord)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(JobIntent.COMPLETED);
+  }
+
+  @Test
   public void shouldRejectJobCompleteForBannedProcessInstance() {
     // given
     final Record<JobRecordValue> jobCreated = ENGINE.createJob(jobType, PROCESS_ID);
