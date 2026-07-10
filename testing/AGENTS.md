@@ -57,7 +57,7 @@ keep it the single source of truth and update it when conventions change.
 
 ## Common how-tos
 
-See the step-by-step guides in [`CONTRIBUTING.md`](CONTRIBUTING.md#7-common-contributions-how-to):
+See the step-by-step guides in [`CONTRIBUTING.md`](CONTRIBUTING.md#8-common-contributions-how-to):
 
 - **Add a new assertion** — `CamundaAssert` → `*Assert` interface → `*Assertj` impl → unit tests.
 - **Add a new JSON test-case instruction** — schema → Immutables interface → type + handler →

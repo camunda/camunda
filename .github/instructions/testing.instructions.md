@@ -35,5 +35,5 @@ rather than duplicating recipes elsewhere.
 ## How-tos
 
 Step-by-step guides live in
-[`CONTRIBUTING.md`](../../testing/CONTRIBUTING.md#7-common-contributions-how-to): adding a new
+[`CONTRIBUTING.md`](../../testing/CONTRIBUTING.md#8-common-contributions-how-to): adding a new
 assertion, a new JSON test-case instruction, and a new AI model provider.

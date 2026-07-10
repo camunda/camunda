@@ -167,7 +167,92 @@ See the module's [README](camunda-process-test-coverage/README.md) and
 
 ---
 
-## 3. Testing conventions
+## 3. Configuration
+
+CPT is configured differently depending on the module. The **runtime mode** is the central setting
+in both:
+
+|        Mode         |                                      Meaning                                       |
+|---------------------|------------------------------------------------------------------------------------|
+| `MANAGED` (default) | CPT starts a Camunda runtime (Testcontainers) per test class.                      |
+| `SHARED`            | CPT starts one managed runtime shared by all test classes (faster, shared config). |
+| `REMOTE`            | CPT connects to an externally managed Camunda runtime — nothing is started.        |
+
+Defaults live in
+[`CamundaProcessTestRuntimeDefaults`](camunda-process-test-java/src/main/java/io/camunda/process/test/impl/runtime/CamundaProcessTestRuntimeDefaults.java).
+
+### Java (`camunda-process-test-java`)
+
+Configuration comes from two sources, applied in this order:
+
+1. **Properties file** — an optional `camunda-container-runtime.properties` on the test classpath
+   (e.g. `src/test/resources/`). It overrides the built-in
+   `camunda-container-runtime-version.properties` (which carries the default image versions). Loaded
+   by
+   [`ContainerRuntimePropertiesUtil`](camunda-process-test-java/src/main/java/io/camunda/process/test/impl/runtime/ContainerRuntimePropertiesUtil.java).
+2. **Programmatic** — fluent `withX(...)` methods on
+   [`CamundaProcessTestExtension`](camunda-process-test-java/src/main/java/io/camunda/process/test/api/CamundaProcessTestExtension.java)
+   when the extension is registered manually (`@RegisterExtension`). These take precedence over the
+   file.
+
+Key property names (see the `*Properties` classes in
+`io.camunda.process.test.impl.runtime.properties`):
+
+|                                                  Property                                                  |                          Purpose                          |
+|------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------|
+| `runtimeMode`                                                                                              | `MANAGED` / `SHARED` / `REMOTE`.                          |
+| `elasticsearch.version`, `multiTenancyEnabled`                                                             | Runtime toggles.                                          |
+| `remote.client.grpcAddress`, `remote.client.restAddress`                                                   | Client endpoints for `REMOTE` mode.                       |
+| `remote.camundaMonitoringApiAddress`, `remote.connectorsRestApiAddress`, `remote.runtimeConnectionTimeout` | Remote runtime endpoints/timeout.                         |
+| `assertion.timeout`, `assertion.interval`                                                                  | Awaitility tuning for assertions.                         |
+| `coverage.reportDirectory`, `coverage.excludedProcesses`, `coverage.excludedDecisions`                     | Coverage report output.                                   |
+| `judge.chatModel.provider`, `judge.threshold`, …                                                           | LLM-as-a-judge (see `JudgeProperties`).                   |
+| `similarity.embeddingModel.provider`, `similarity.threshold`, …                                            | Semantic similarity (see `SemanticSimilarityProperties`). |
+
+The Docker image name/version are **not** hard-coded in the file — they are resolved from the Maven
+properties `io.camunda.process.test.camundaDockerImageName` / `…camundaDockerImageVersion` (and the
+connectors equivalents) at build time. This is how CI points the tests at a freshly built image
+(see [CI pipeline](#6-ci-pipeline)).
+
+### Spring (`camunda-process-test-spring`)
+
+Configuration is standard Spring Boot configuration properties under the **`camunda.process-test`**
+prefix, bound by
+[`CamundaProcessTestRuntimeConfiguration`](camunda-process-test-spring/src/main/java/io/camunda/process/test/impl/configuration/CamundaProcessTestRuntimeConfiguration.java).
+Set them in `application.yaml`/`application.properties` (typically under `src/test/resources`):
+
+```yaml
+camunda:
+  process-test:
+    runtime-mode: MANAGED           # MANAGED | SHARED | REMOTE
+    camunda-docker-image-version: SNAPSHOT
+    connectors-enabled: false
+    multi-tenancy-enabled: false
+    remote:                         # used when runtime-mode: REMOTE
+      client:
+        grpc-address: http://localhost:26500
+        rest-address: http://localhost:8080
+    coverage:
+      report-directory: target/coverage-report
+    judge: { ... }                  # LLM-as-a-judge config
+    similarity: { ... }             # semantic similarity config
+    assertion: { ... }              # assertion timeout/interval
+```
+
+The nested `remote`, `coverage`, `judge`, `assertion`, and `similarity` blocks map to the
+`*Configuration` classes in `io.camunda.process.test.impl.configuration`. In `REMOTE` mode the
+Camunda client is configured under `camunda.process-test.remote.client.*`, which binds a standard
+`CamundaClientProperties` (auth, gRPC/REST addresses, etc.).
+
+> [!NOTE]
+> For AI assertions, `camunda-process-test-langchain4j` reads the same `judge.*` / `similarity.*`
+> keys — from the properties file in the Java module, and from `camunda.process-test.judge` /
+> `…​.similarity` application properties in Spring. See the
+> [langchain4j README](camunda-process-test-langchain4j/README.md) for provider-specific keys.
+
+---
+
+## 4. Testing conventions
 
 - Prefer **unit tests over integration tests**. We don't test the runtime or the SDK itself — test
   the logic in the assertions, utilities, and instruction handlers.
@@ -179,7 +264,7 @@ See the module's [README](camunda-process-test-coverage/README.md) and
 
 ---
 
-## 4. Local development
+## 5. Local development
 
 Build the testing modules (and their dependencies) with the Maven wrapper from the repo root — scope
 to the module you are working on rather than building the whole repo:
@@ -212,7 +297,7 @@ For the coverage **frontend**, see [its CONTRIBUTING guide](camunda-process-test
 
 ---
 
-## 5. CI pipeline
+## 6. CI pipeline
 
 - **Unit tests** run as part of the standard `ci.yml` unit-test matrix.
 - **Integration tests** run in the `qa-camunda-process-test` group of `ci.yml` (name *"Camunda
@@ -239,7 +324,7 @@ branches and reports failures to Slack.
 
 ---
 
-## 6. Release management
+## 7. Release management
 
 After releasing a new minor version of CPT, apply the following:
 
@@ -272,7 +357,7 @@ to the next minor (e.g. `.../8.10/schema.json` when releasing `8.9.0`).
 
 ---
 
-## 7. Common contributions (how-to)
+## 8. Common contributions (how-to)
 
 ### Add a new assertion
 
@@ -331,7 +416,7 @@ Example: support a new chat-model provider for LLM-as-a-judge.
 
 ---
 
-## 8. FAQ
+## 9. FAQ
 
 ### The integration tests fail locally but pass in CI
 
