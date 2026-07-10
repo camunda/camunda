@@ -99,6 +99,64 @@ public class JobUpdateTimeoutTest extends ClientTest {
   }
 
   @Test
+  public void shouldUpdateTimeoutWithLeaseToken() {
+    // given
+    final long jobKey = 12;
+    final String leaseToken = "lease-token";
+
+    // when
+    client.newUpdateTimeoutCommand(jobKey).timeout(100).withLeaseToken(leaseToken).send().join();
+
+    // then
+    final UpdateJobTimeoutRequest request = gatewayService.getLastRequest();
+    assertThat(request.getLeaseToken()).isEqualTo(leaseToken);
+  }
+
+  @Test
+  public void shouldCarryLeaseTokenFromActivatedJob() {
+    // given
+    final String leaseToken = "lease-token";
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+    Mockito.when(job.getLeaseToken()).thenReturn(leaseToken);
+
+    // when
+    client.newUpdateTimeoutCommand(job).timeout(100).send().join();
+
+    // then
+    final UpdateJobTimeoutRequest request = gatewayService.getLastRequest();
+    assertThat(request.getLeaseToken()).isEqualTo(leaseToken);
+  }
+
+  @Test
+  public void shouldNotCarryLeaseTokenFromActivatedJobWithoutOne() {
+    // given
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+    Mockito.when(job.getLeaseToken()).thenReturn(null);
+
+    // when
+    client.newUpdateTimeoutCommand(job).timeout(100).send().join();
+
+    // then
+    final UpdateJobTimeoutRequest request = gatewayService.getLastRequest();
+    assertThat(request.getLeaseToken()).isEmpty();
+  }
+
+  @Test
+  public void shouldNotCarryLeaseTokenByJobKey() {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client.newUpdateTimeoutCommand(jobKey).timeout(100).send().join();
+
+    // then
+    final UpdateJobTimeoutRequest request = gatewayService.getLastRequest();
+    assertThat(request.getLeaseToken()).isEmpty();
+  }
+
+  @Test
   public void shouldSetRequestTimeout() {
     // given
     final Duration requestTimeout = Duration.ofHours(124);

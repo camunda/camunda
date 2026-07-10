@@ -75,6 +75,73 @@ public class ThrowErrorRestTest extends ClientRestTest {
   }
 
   @Test
+  public void shouldThrowErrorWithLeaseToken() {
+    // given
+    final long jobKey = 12;
+    final String errorCode = "errorCode";
+    final String leaseToken = "lease-token";
+
+    // when
+    client
+        .newThrowErrorCommand(jobKey)
+        .errorCode(errorCode)
+        .withLeaseToken(leaseToken)
+        .send()
+        .join();
+
+    // then
+    final JobErrorRequest request = gatewayService.getLastRequest(JobErrorRequest.class);
+    assertThat(request.getLeaseToken()).isEqualTo(leaseToken);
+  }
+
+  @Test
+  public void shouldCarryLeaseTokenFromActivatedJob() {
+    // given
+    final String errorCode = "errorCode";
+    final String leaseToken = "lease-token";
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+    Mockito.when(job.getLeaseToken()).thenReturn(leaseToken);
+
+    // when
+    client.newThrowErrorCommand(job).errorCode(errorCode).send().join();
+
+    // then
+    final JobErrorRequest request = gatewayService.getLastRequest(JobErrorRequest.class);
+    assertThat(request.getLeaseToken()).isEqualTo(leaseToken);
+  }
+
+  @Test
+  public void shouldNotCarryLeaseTokenFromActivatedJobWithoutOne() {
+    // given
+    final String errorCode = "errorCode";
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+    Mockito.when(job.getLeaseToken()).thenReturn(null);
+
+    // when
+    client.newThrowErrorCommand(job).errorCode(errorCode).send().join();
+
+    // then
+    final JobErrorRequest request = gatewayService.getLastRequest(JobErrorRequest.class);
+    assertThat(request.getLeaseToken()).isNull();
+  }
+
+  @Test
+  public void shouldNotCarryLeaseTokenByJobKey() {
+    // given
+    final long jobKey = 12;
+    final String errorCode = "errorCode";
+
+    // when
+    client.newThrowErrorCommand(jobKey).errorCode(errorCode).send().join();
+
+    // then
+    final JobErrorRequest request = gatewayService.getLastRequest(JobErrorRequest.class);
+    assertThat(request.getLeaseToken()).isNull();
+  }
+
+  @Test
   public void shouldThrowErrorWithJsonStringVariables() {
     // given
     final long jobKey = 12;

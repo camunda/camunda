@@ -145,6 +145,64 @@ public class JobUpdateRestTest extends ClientRestTest {
   }
 
   @Test
+  public void shouldUpdateTimeoutWithLeaseToken() {
+    // given
+    final long jobKey = 12;
+    final String leaseToken = "lease-token";
+
+    // when
+    client.newUpdateTimeoutCommand(jobKey).timeout(100).withLeaseToken(leaseToken).send().join();
+
+    // then
+    final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
+    assertThat(request.getLeaseToken()).isEqualTo(leaseToken);
+  }
+
+  @Test
+  public void shouldCarryLeaseTokenFromActivatedJob() {
+    // given
+    final String leaseToken = "lease-token";
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+    Mockito.when(job.getLeaseToken()).thenReturn(leaseToken);
+
+    // when
+    client.newUpdateTimeoutCommand(job).timeout(100).send().join();
+
+    // then
+    final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
+    assertThat(request.getLeaseToken()).isEqualTo(leaseToken);
+  }
+
+  @Test
+  public void shouldNotCarryLeaseTokenFromActivatedJobWithoutOne() {
+    // given
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+    Mockito.when(job.getLeaseToken()).thenReturn(null);
+
+    // when
+    client.newUpdateTimeoutCommand(job).timeout(100).send().join();
+
+    // then
+    final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
+    assertThat(request.getLeaseToken()).isNull();
+  }
+
+  @Test
+  public void shouldNotCarryLeaseTokenByJobKey() {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client.newUpdateTimeoutCommand(jobKey).timeout(100).send().join();
+
+    // then
+    final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
+    assertThat(request.getLeaseToken()).isNull();
+  }
+
+  @Test
   public void shouldUpdateRetriesAndTimeoutByKey() {
     // given
     final long jobKey = 12;
