@@ -447,6 +447,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName(),
             ErrorHandlers.IGNORE_DOCUMENT_DOES_NOT_EXIST,
             indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
+            ErrorHandlers.IGNORE_DOCUMENT_DOES_NOT_EXIST,
+            indexDescriptors.get(ProcessIndex.class).getFullQualifiedName(),
             ErrorHandlers.IGNORE_DOCUMENT_DOES_NOT_EXIST);
   }
 
