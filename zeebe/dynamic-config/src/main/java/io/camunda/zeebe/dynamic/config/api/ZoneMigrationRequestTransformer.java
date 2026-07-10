@@ -45,19 +45,22 @@ public final class ZoneMigrationRequestTransformer implements ConfigurationChang
   @Override
   public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
       final ClusterConfiguration currentConfiguration) {
-    final var zoneAwareConfig =
-        currentConfiguration
-            .partitionDistributorConfig()
-            .filter(ZoneAwareConfig.class::isInstance)
-            .map(ZoneAwareConfig.class::cast);
-    if (zoneAwareConfig.isEmpty()) {
+    final var partitionDistribution = currentConfiguration.partitionDistributorConfig();
+    final ZoneAwareConfig zoneAwareConfig;
+    if (partitionDistribution.isPresent()
+        && partitionDistribution.get() instanceof final ZoneAwareConfig cfg) {
+      zoneAwareConfig = cfg;
+    } else {
       return Either.left(
           new InvalidRequest(
-              "Zone migration requires a persisted zone-aware partition distribution config. "
-                  + "Update the partition distribution before migrating brokers."));
+              "Zone migration requires a persisted zone-aware partition distribution config, but was %s. Update the partition distribution before migrating brokers."
+                  .formatted(
+                      partitionDistribution
+                          .map(c -> c.getClass().getSimpleName())
+                          .orElse("not set"))));
     }
 
-    final var zones = zoneAwareConfig.get().zones();
+    final var zones = zoneAwareConfig.zones();
     if (zones.stream().noneMatch(zone -> zone.name().equals(zoneName))) {
       return Either.left(
           new InvalidRequest(

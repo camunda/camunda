@@ -173,7 +173,28 @@ final class ZoneMigrationRequestTransformerTest {
             e ->
                 assertThat(e)
                     .hasMessageContaining(
-                        "Zone migration requires a persisted zone-aware partition distribution config"));
+                        "Zone migration requires a persisted zone-aware partition distribution config, but was not set. Update the partition distribution before migrating brokers."));
+  }
+
+  @Test
+  void shouldRejectInvalidPartitionDistribution() {
+    // given
+    final var oldTopology =
+        unzonedTopology(3, 3, 3).setPartitionDistributorConfig(new RoundRobinConfig());
+
+    // when
+    final var result = new ZoneMigrationRequestTransformer(ZONE_A).operations(oldTopology);
+
+    // then
+    assertThat(result)
+        .isLeft()
+        .left()
+        .isInstanceOf(ClusterConfigurationRequestFailedException.InvalidRequest.class)
+        .satisfies(
+            e ->
+                assertThat(e)
+                    .hasMessageContaining(
+                        "Zone migration requires a persisted zone-aware partition distribution config, but was Optional[RoundRobinConfig]. Update the partition distribution before migrating brokers"));
   }
 
   @Test
