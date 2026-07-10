@@ -52,6 +52,11 @@ final class LayeredTransactionContext implements TransactionContext {
     return transaction;
   }
 
+  /** Whether a transaction is currently open (started but neither committed nor rolled back). */
+  boolean transactionOpen() {
+    return transaction.isInCurrentTransaction();
+  }
+
   private void runInNewTransaction(final TransactionOperation operations) throws Exception {
     try {
       transaction.resetTransaction();

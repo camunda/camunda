@@ -74,6 +74,7 @@ public final class LayeredKeyValueStore {
   private final long maxBytes;
   private final boolean absorbDeletes;
   private final int pipelineSegmentLimit;
+  private final LayeredStoreMetrics metrics;
 
   // staging and active each pair a hash index (point lookups) with a sorted index (scans); the
   // two indexes of a layer share the same Entry objects
@@ -101,7 +102,18 @@ public final class LayeredKeyValueStore {
       final long maxBytes,
       final boolean absorbDeletes,
       final int pipelineSegmentLimit) {
+    this(name, delegate, maxBytes, absorbDeletes, pipelineSegmentLimit, LayeredStoreMetrics.noop());
+  }
+
+  public LayeredKeyValueStore(
+      final String name,
+      final BytesStore delegate,
+      final long maxBytes,
+      final boolean absorbDeletes,
+      final int pipelineSegmentLimit,
+      final LayeredStoreMetrics metrics) {
     this.name = Objects.requireNonNull(name, "name");
+    this.metrics = Objects.requireNonNull(metrics, "metrics");
     this.delegate = Objects.requireNonNull(delegate, "delegate");
     if (maxBytes <= 0) {
       throw new IllegalArgumentException("expected maxBytes to be positive, but was " + maxBytes);
@@ -176,6 +188,7 @@ public final class LayeredKeyValueStore {
         return !entry.tombstone() || entry.flushed();
       }
     }
+    metrics.countFlushedPointRead();
     return delegate.get(key) != null;
   }
 
@@ -200,6 +213,7 @@ public final class LayeredKeyValueStore {
           activeSorted.remove(entry.key());
           activeBytes -= entrySize(existing);
         }
+        metrics.countAnnihilatedWrites(existing != null ? 2 : 1);
         continue;
       }
       // the flushed property is sticky: once any version of the key was flushed, every newer
@@ -250,8 +264,10 @@ public final class LayeredKeyValueStore {
     }
     final byte[] cached = clean.get(mapKey);
     if (cached != null) {
+      metrics.countCleanCacheHit();
       return cached;
     }
+    metrics.countDelegateReadThrough();
     final byte[] committed = delegate.get(key);
     if (committed != null) {
       clean.put(mapKey, committed);
@@ -348,6 +364,7 @@ public final class LayeredKeyValueStore {
     run.clear();
     pipeline.add(0, merged);
     pipelineBytes += merged.byteSize();
+    metrics.countPipelineMerge();
   }
 
   /**
@@ -479,6 +496,57 @@ public final class LayeredKeyValueStore {
   /** Approximate heap footprint of staging + active + pipeline + clean together. */
   public long approximateBytes() {
     return stagingBytes + activeBytes + pipelineBytes + cleanBytes;
+  }
+
+  /** Whether any pinned layer (staging, active, pipeline) holds writes not yet persisted. */
+  public boolean hasBufferedWrites() {
+    return !stagingByKey.isEmpty() || !activeByKey.isEmpty() || !pipeline.isEmpty();
+  }
+
+  /** The watermark of the newest frozen segment, or -1 if the pipeline is empty. */
+  public long newestSegmentWatermark() {
+    return pipeline.isEmpty() ? -1 : pipeline.get(0).watermark();
+  }
+
+  public long stagingBytes() {
+    return stagingBytes;
+  }
+
+  public long activeBytes() {
+    return activeBytes;
+  }
+
+  public long pipelineBytes() {
+    return pipelineBytes;
+  }
+
+  public long cleanBytes() {
+    return cleanBytes;
+  }
+
+  public long stagingEntryCount() {
+    return stagingByKey.size();
+  }
+
+  public long activeEntryCount() {
+    return activeByKey.size();
+  }
+
+  public long pipelineEntryCount() {
+    long entries = 0;
+    for (final FlatSegment segment : pipeline) {
+      entries += segment.entryCount();
+    }
+    return entries;
+  }
+
+  public long cleanEntryCount() {
+    return clean.size();
+  }
+
+  /** The number of frozen segments currently in the pipeline. */
+  public int pipelineDepth() {
+    return pipeline.size();
   }
 
   /**

@@ -15,6 +15,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbBytes;
 import io.camunda.zeebe.db.layered.LayeredKeyValueStore;
 import io.camunda.zeebe.db.layered.LayeredStoreCoordinator;
+import io.camunda.zeebe.db.layered.LayeredStoreMetrics;
 import io.camunda.zeebe.db.layered.ReadOnlyView;
 import io.camunda.zeebe.db.layered.SnapshotSource;
 import io.camunda.zeebe.db.layered.typed.LayeredColumnFamily;
@@ -55,9 +56,11 @@ import java.util.function.Consumer;
  * registry.
  *
  * <p><b>Lifecycle:</b> create all of a domain's layered column families before that domain's first
- * {@code coordinator()} call — the coordinator captures the store set, so later layered creations
- * in that domain throw. {@link #close()} releases every built coordinator's view reference and
- * closes the wrapped database.
+ * {@code coordinator()} call — the coordinator captures the store set, so creating a <em>new</em>
+ * layered column family in that domain afterwards throws (re-creating an existing one binds fresh
+ * accessors to the same store and is allowed; successor owners on a reused database rely on it).
+ * {@link #close()} releases every built coordinator's view reference and closes the wrapped
+ * database.
  *
  * <p><b>Snapshot source:</b> by default views published by a domain's coordinator read the wrapped
  * database <em>without</em> a pinned snapshot (see {@link UnpinnedSnapshotSource} for the exact
@@ -113,12 +116,6 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType
     if (domain == null) {
       return inner.createColumnFamily(columnFamily, context, keyInstance, valueInstance);
     }
-    if (domain.coordinatorBuilt()) {
-      throw new IllegalStateException(
-          ("expected all layered column families of domain '%s' to be created before its"
-                  + " coordinator, but '%s' was requested after coordinator() was called")
-              .formatted(domain.name(), columnFamily.name()));
-    }
     final String name = columnFamily.name();
     final LayeredDomain owner = ownerByColumnFamily.putIfAbsent(name, domain);
     if (owner != null && owner != domain) {
@@ -127,8 +124,19 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType
                   + " and was requested in '%s'")
               .formatted(name, owner.name(), domain.name()));
     }
-    final LayeredKeyValueStore store =
-        domain.stores().computeIfAbsent(name, ignored -> createStore(columnFamily, domain));
+    LayeredKeyValueStore store = domain.stores().get(name);
+    if (store == null) {
+      // only creating a NEW store is forbidden after the coordinator captured the store set;
+      // re-creating a column family over an existing store is fine — a successor owner (e.g. a
+      // new stream processor on a reused database) binds fresh accessors to the same stores
+      if (domain.coordinatorBuilt()) {
+        throw new IllegalStateException(
+            ("expected all layered column families of domain '%s' to be created before its"
+                    + " coordinator, but '%s' was requested after coordinator() was called")
+                .formatted(domain.name(), name));
+      }
+      store = domain.stores().computeIfAbsent(name, ignored -> createStore(columnFamily, domain));
+    }
     return new LayeredTransactionalColumnFamily<>(
         domain.transactionContext(), new LayeredColumnFamily<>(store, keyInstance, valueInstance));
   }
@@ -201,7 +209,8 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType
             inner.createContext(),
             inner.createContext(),
             fallbackSnapshots ? inner.createContext() : null,
-            snapshotSource);
+            snapshotSource,
+            LayeredStoreMetrics.of(inner.getMeterRegistry(), name));
     domainsByName.put(name, domain);
     return domain;
   }
@@ -240,11 +249,20 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType
     return domainsByName.values().stream().anyMatch(LayeredDomain::overCapacity);
   }
 
+  /** The configuration all of this facade's layered stores were created with. */
+  public LayeredZeebeDbConfig config() {
+    return config;
+  }
+
   // ------------------------------------------------------------------
   // Wiring
   // ------------------------------------------------------------------
 
-  private LayeredDomain defaultDomain() {
+  /**
+   * The domain backing the {@link #layeredContext()} convenience surface, registered on first use;
+   * every call returns the same instance.
+   */
+  public LayeredDomain defaultDomain() {
     final LayeredDomain existing = domainsByName.get(DEFAULT_DOMAIN_NAME);
     return existing != null ? existing : registerDomain(DEFAULT_DOMAIN_NAME);
   }
@@ -281,6 +299,7 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType
         new InnerBytesStore(readColumnFamily, persistColumnFamily, domain.persistContext()),
         config.maxBytesPerStore(),
         config.absorbDeletes(),
-        config.pipelineSegmentLimit());
+        config.pipelineSegmentLimit(),
+        domain.metrics());
   }
 }

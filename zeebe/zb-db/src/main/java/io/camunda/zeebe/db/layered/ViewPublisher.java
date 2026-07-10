@@ -31,7 +31,16 @@ import java.util.Objects;
  */
 public final class ViewPublisher {
 
+  private final LayeredStoreMetrics metrics;
   private ReadOnlyView latest; // guarded by this
+
+  public ViewPublisher() {
+    this(LayeredStoreMetrics.noop());
+  }
+
+  public ViewPublisher(final LayeredStoreMetrics metrics) {
+    this.metrics = Objects.requireNonNull(metrics, "metrics");
+  }
 
   /** Publishes a new view as the latest; wired as the coordinator's view listener. */
   public synchronized void publish(final ReadOnlyView view) {
@@ -49,6 +58,7 @@ public final class ViewPublisher {
       throw new IllegalStateException("expected a published view to acquire, but none exists yet");
     }
     latest.retain();
+    metrics.countViewAcquisition();
     return latest;
   }
 

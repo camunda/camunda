@@ -9,9 +9,13 @@ package io.camunda.zeebe.db.layered.zdb;
 
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.impl.DbBytes;
 import io.camunda.zeebe.db.layered.LayeredKeyValueStore;
 import io.camunda.zeebe.db.layered.LayeredStoreCoordinator;
+import io.camunda.zeebe.db.layered.LayeredStoreCoordinator.PersistRound;
+import io.camunda.zeebe.db.layered.LayeredStoreMetrics;
+import io.camunda.zeebe.db.layered.PersistTrigger;
 import io.camunda.zeebe.db.layered.ReadOnlyView;
 import io.camunda.zeebe.db.layered.SnapshotSource;
 import io.camunda.zeebe.db.layered.ViewPublisher;
@@ -34,8 +38,9 @@ import java.util.function.Consumer;
  * that must be atomic with a recovery anchor must live in a single domain.
  *
  * <p><b>Lifecycle:</b> create all of the domain's layered column families before the first {@link
- * #coordinator()} call — the coordinator captures the domain's store set, so later creations in
- * this domain throw (other domains are unaffected).
+ * #coordinator()} call — the coordinator captures the domain's store set, so creating a new column
+ * family in this domain afterwards throws (other domains are unaffected; re-creating an existing
+ * one is allowed).
  *
  * <p><b>Threading:</b> a domain is owner-thread only, but different domains may have different
  * owner threads — domains share nothing except the wrapped database. Views cross threads through
@@ -54,7 +59,8 @@ public final class LayeredDomain {
   private final TransactionContext snapshotReadContext;
   private final SnapshotSource snapshotSource;
   private final InnerPersistSink sink;
-  private final ViewPublisher viewPublisher = new ViewPublisher();
+  private final LayeredStoreMetrics metrics;
+  private final ViewPublisher viewPublisher;
 
   private LayeredStoreCoordinator coordinator;
 
@@ -63,17 +69,20 @@ public final class LayeredDomain {
    *     non-null exactly when {@code sharedSnapshotSource} is null
    * @param sharedSnapshotSource the pinning source shared across domains (store names are globally
    *     unique because a column family has one owning domain), or null for the fallback
+   * @param metrics receives this domain's instrumentation; never null (use the no-op)
    */
   LayeredDomain(
       final String name,
       final TransactionContext delegateReadContext,
       final TransactionContext persistContext,
       final TransactionContext snapshotReadContext,
-      final SnapshotSource sharedSnapshotSource) {
+      final SnapshotSource sharedSnapshotSource,
+      final LayeredStoreMetrics metrics) {
     this.name = Objects.requireNonNull(name, "name");
     this.delegateReadContext = Objects.requireNonNull(delegateReadContext, "delegateReadContext");
     this.persistContext = Objects.requireNonNull(persistContext, "persistContext");
     this.snapshotReadContext = snapshotReadContext;
+    this.metrics = Objects.requireNonNull(metrics, "metrics");
     if (sharedSnapshotSource == null) {
       Objects.requireNonNull(snapshotReadContext, "snapshotReadContext");
       snapshotSource = new UnpinnedSnapshotSource(snapshotColumnFamilies);
@@ -82,6 +91,7 @@ public final class LayeredDomain {
     }
     context = new LayeredTransactionContext(storesByColumnFamily.values());
     sink = new InnerPersistSink(persistContext, persistColumnFamilies);
+    viewPublisher = new ViewPublisher(metrics);
   }
 
   /** The unique name of this domain within its {@link LayeredZeebeDb}. */
@@ -107,7 +117,8 @@ public final class LayeredDomain {
     if (coordinator == null) {
       coordinator =
           new LayeredStoreCoordinator(
-              storesByColumnFamily.values(), sink, snapshotSource, viewPublisher::publish);
+              storesByColumnFamily.values(), sink, snapshotSource, viewPublisher::publish, metrics);
+      metrics.registerStoreGauges(storesByColumnFamily.values());
     }
     return coordinator;
   }
@@ -133,7 +144,9 @@ public final class LayeredDomain {
             view -> {
               viewPublisher.publish(view);
               viewListener.accept(view);
-            });
+            },
+            metrics);
+    metrics.registerStoreGauges(storesByColumnFamily.values());
     return coordinator;
   }
 
@@ -153,6 +166,72 @@ public final class LayeredDomain {
     return storesByColumnFamily.values().stream().anyMatch(LayeredKeyValueStore::overCapacity);
   }
 
+  /** Whether any of this domain's stores holds buffered writes not yet persisted. */
+  public boolean hasBufferedWrites() {
+    for (final LayeredKeyValueStore store : storesByColumnFamily.values()) {
+      if (store.hasBufferedWrites()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Whether a batch is currently open on this domain's owner-thread context (a transaction has
+   * started but was not yet committed or rolled back). Persist rounds must not run while a batch is
+   * in flight — its staging writes are not part of any durable cut yet.
+   */
+  public boolean batchInFlight() {
+    return context.transactionOpen();
+  }
+
+  /**
+   * Discards a batch a previous owner left open — e.g. a stream processor that closed mid-batch
+   * before a successor took over the same database. The staged writes were never part of a
+   * committed batch, so dropping them loses nothing the log does not replay; committed layers are
+   * untouched. A no-op when no batch is in flight.
+   */
+  public void discardOpenBatch() {
+    if (!context.transactionOpen()) {
+      return;
+    }
+    try {
+      context.getCurrentTransaction().rollback();
+    } catch (final Exception e) {
+      // the layered rollback is a pure in-memory discard and cannot actually fail; the checked
+      // exception is an artifact of the shared ZeebeDbTransaction interface
+      throw new ZeebeDbException(
+          "Failed to discard the open batch of domain '%s'".formatted(name), e);
+    }
+  }
+
+  /**
+   * Runs one full persist round inline on the owner thread: prepare, drain into the wrapped
+   * database in one atomic batch, complete. Everything committed on this domain's context up to
+   * {@code watermark} — including the recovery anchor written through a layered column family —
+   * moves to the wrapped database as one prefix-consistent cut.
+   *
+   * <p>Must not be called while {@link #batchInFlight()} is true or a round is outstanding.
+   *
+   * @param watermark the highest log position whose effects the buffered state contains
+   * @param trigger why this round runs, for instrumentation
+   * @throws ZeebeDbException if the drain fails; the segments stay buffered and the next round
+   *     retries them
+   */
+  public void persistNow(final long watermark, final PersistTrigger trigger) {
+    final LayeredStoreCoordinator roundCoordinator = coordinator();
+    metrics.countRound(trigger);
+    final PersistRound round = roundCoordinator.prepareRound(watermark);
+    try {
+      round.persist();
+    } catch (final Exception e) {
+      roundCoordinator.completeRound(round, false);
+      throw new ZeebeDbException(
+          "Failed to persist the buffered state of domain '%s'".formatted(name), e);
+    }
+    roundCoordinator.completeRound(round, true);
+  }
+
   // ------------------------------------------------------------------
   // Wiring accessors for LayeredZeebeDb
   // ------------------------------------------------------------------
@@ -163,6 +242,10 @@ public final class LayeredDomain {
 
   Map<String, LayeredKeyValueStore> stores() {
     return storesByColumnFamily;
+  }
+
+  LayeredStoreMetrics metrics() {
+    return metrics;
   }
 
   Map<String, ColumnFamily<DbBytes, DbBytes>> persistColumnFamilies() {

@@ -69,9 +69,19 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
   private final PersistSink sink;
   private final SnapshotSource snapshots;
   private final Consumer<ReadOnlyView> viewListener;
+  private final LayeredStoreMetrics metrics;
 
   private ReadOnlyView currentView;
   private PersistRound outstandingRound;
+  private long lastPersistedAnchor = -1;
+
+  public LayeredStoreCoordinator(
+      final Collection<LayeredKeyValueStore> stores,
+      final PersistSink sink,
+      final SnapshotSource snapshots,
+      final Consumer<ReadOnlyView> viewListener) {
+    this(stores, sink, snapshots, viewListener, LayeredStoreMetrics.noop());
+  }
 
   /**
    * @param stores the stores forming the durability unit; names must be unique
@@ -80,15 +90,18 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
    * @param viewListener receives every newly published view; the coordinator releases its reference
    *     on the previous view once the new one is published, so the previous snapshot closes when
    *     its last reader releases (see the class javadoc's view lifecycle)
+   * @param metrics receives the persist-round and view instrumentation of this durability unit
    */
   public LayeredStoreCoordinator(
       final Collection<LayeredKeyValueStore> stores,
       final PersistSink sink,
       final SnapshotSource snapshots,
-      final Consumer<ReadOnlyView> viewListener) {
+      final Consumer<ReadOnlyView> viewListener,
+      final LayeredStoreMetrics metrics) {
     this.sink = Objects.requireNonNull(sink, "sink");
     this.snapshots = Objects.requireNonNull(snapshots, "snapshots");
     this.viewListener = Objects.requireNonNull(viewListener, "viewListener");
+    this.metrics = Objects.requireNonNull(metrics, "metrics");
     final Map<String, LayeredKeyValueStore> byName = new LinkedHashMap<>();
     for (final LayeredKeyValueStore store : stores) {
       if (byName.put(store.name(), store) != null) {
@@ -97,8 +110,24 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
       }
     }
     this.stores = byName;
+    metrics.registerAnchorLag(this::anchorLag);
     // publish an initial view right away so asynchronous readers always have one to hold
     publishView(new RefCountedSnapshot(snapshots.takeSnapshot()));
+  }
+
+  /**
+   * How many log positions the durable state trails the buffered state: newest frozen segment
+   * watermark minus the anchor of the last successful round, zero when nothing is frozen.
+   */
+  private long anchorLag() {
+    long newestFrozen = -1;
+    for (final LayeredKeyValueStore store : stores.values()) {
+      newestFrozen = Math.max(newestFrozen, store.newestSegmentWatermark());
+    }
+    if (newestFrozen < 0) {
+      return 0;
+    }
+    return Math.max(0, newestFrozen - Math.max(0, lastPersistedAnchor));
   }
 
   /**
@@ -141,7 +170,7 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
         anchor = Math.max(anchor, segment.watermark());
       }
     }
-    outstandingRound = new PersistRound(sink, capturedOldestFirst, anchor);
+    outstandingRound = new PersistRound(sink, capturedOldestFirst, anchor, metrics);
     return outstandingRound;
   }
 
@@ -163,11 +192,17 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
       store.completePersist(success);
     }
     if (success) {
+      if (round.anchor() >= 0) {
+        lastPersistedAnchor = round.anchor();
+      }
       // rotate: publish the fresh cut first, then release the coordinator's reference on the old
       // view — its snapshot closes once the last reader still holding it releases too
       final ReadOnlyView previous = currentView;
       publishView(new RefCountedSnapshot(snapshots.takeSnapshot()));
       previous.release();
+      metrics.countViewRotation();
+    } else {
+      metrics.countRoundFailure();
     }
     // on failure the segments stayed in their pipelines and the durable state did not move, so
     // the current view is still valid — nothing to republish
@@ -222,14 +257,17 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
     private final PersistSink sink;
     private final Map<String, List<FlatSegment>> capturedOldestFirst;
     private final long anchor;
+    private final LayeredStoreMetrics metrics;
 
     private PersistRound(
         final PersistSink sink,
         final Map<String, List<FlatSegment>> capturedOldestFirst,
-        final long anchor) {
+        final long anchor,
+        final LayeredStoreMetrics metrics) {
       this.sink = sink;
       this.capturedOldestFirst = capturedOldestFirst;
       this.anchor = anchor;
+      this.metrics = metrics;
     }
 
     /**
@@ -241,6 +279,7 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
       if (capturedOldestFirst.values().stream().allMatch(List::isEmpty)) {
         return; // nothing captured — no state to persist, no anchor to advance
       }
+      final long started = System.nanoTime();
       try (final PersistBatch batch = sink.newBatch()) {
         for (final Map.Entry<String, List<FlatSegment>> captured : capturedOldestFirst.entrySet()) {
           drainStore(batch, captured.getKey(), captured.getValue());
@@ -249,10 +288,12 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
           batch.putAnchor(anchor);
         }
         batch.commit();
+      } finally {
+        metrics.observeRoundDuration(System.nanoTime() - started);
       }
     }
 
-    private static void drainStore(
+    private void drainStore(
         final PersistBatch batch, final String storeName, final List<FlatSegment> oldestFirst) {
       if (oldestFirst.isEmpty()) {
         return;
@@ -267,11 +308,15 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
         final Entry entry = entries.next();
         if (!entry.tombstone()) {
           batch.put(storeName, entry.key(), entry.value());
+          metrics.countDrainedEntry(entry.key().length, entry.value().length);
         } else if (entry.flushed()) {
           batch.delete(storeName, entry.key());
+          metrics.countDrainedEntry(entry.key().length, 0);
+        } else {
+          // a never-flushed tombstone is skipped entirely: the pair annihilated in memory and the
+          // durable store never held the key
+          metrics.countDrainSkippedTombstone();
         }
-        // a never-flushed tombstone is skipped entirely: the pair annihilated in memory and the
-        // durable store never held the key
       }
     }
 
