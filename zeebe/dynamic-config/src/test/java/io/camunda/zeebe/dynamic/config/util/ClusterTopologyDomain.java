@@ -8,20 +8,37 @@
 package io.camunda.zeebe.dynamic.config.util;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.state.BrokerPartitionState;
+import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
+import io.camunda.zeebe.dynamic.config.state.CompletedPhasedChange;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.ActivePartitions;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
 import io.camunda.zeebe.util.ReflectUtil;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -181,6 +198,149 @@ public final class ClusterTopologyDomain extends DomainContextBase {
         .enableRecursion()
         .map(DynamicPartitionConfig::new)
         .filter(DynamicPartitionConfig::isInitialized);
+  }
+
+  // ---- New multi-partition-group model (8.10) ----
+
+  @Provide
+  Arbitrary<CurrentClusterConfiguration> currentClusterConfigurations() {
+    final var partitionGroups =
+        Arbitraries.maps(partitionGroupIds(), partitionGroupConfigurations()).ofMaxSize(4);
+    return Combinators.combine(globalConfigurations(), partitionGroups, phasedChangeStates())
+        .as(
+            (global, groups, phasedChangeState) ->
+                // version is always INITIAL_VERSION and reserved; it is not used in merge.
+                new CurrentClusterConfiguration(
+                    CurrentClusterConfiguration.INITIAL_VERSION,
+                    global,
+                    groups,
+                    phasedChangeState));
+  }
+
+  @Provide
+  Arbitrary<GlobalConfiguration> globalConfigurations() {
+    final var version = Arbitraries.longs().greaterOrEqual(0);
+    // clusterId must be non-empty: the serializer treats the empty string as "absent".
+    final var clusterId = Arbitraries.strings().ofMinLength(1).ofMaxLength(50).optional();
+    final var members = Arbitraries.maps(memberIds(), brokerStates()).ofMaxSize(6);
+    final var pendingChanges =
+        Arbitraries.forType(ClusterChangePlan.class).enableRecursion().optional();
+    final var lastChange = Arbitraries.forType(CompletedChange.class).enableRecursion().optional();
+    return Combinators.combine(
+            version, clusterId, members, partitionDistributorConfigs(), pendingChanges, lastChange)
+        .as(
+            (v, cid, m, distributor, pending, last) ->
+                new GlobalConfiguration(v, cid, m, distributor, pending, last));
+  }
+
+  @Provide
+  Arbitrary<PartitionGroupConfiguration> partitionGroupConfigurations() {
+    final var version = Arbitraries.longs().greaterOrEqual(0);
+    final var incarnationNumber = Arbitraries.longs().greaterOrEqual(0);
+    final var members = Arbitraries.maps(memberIds(), brokerPartitionStates()).ofMaxSize(6);
+    final var routingState = routingStates().optional();
+    final var pendingChanges =
+        Arbitraries.forType(ClusterChangePlan.class).enableRecursion().optional();
+    final var lastChange = Arbitraries.forType(CompletedChange.class).enableRecursion().optional();
+    return Combinators.combine(
+            version, incarnationNumber, members, routingState, pendingChanges, lastChange)
+        .as(
+            (v, inc, m, routing, pending, last) ->
+                new PartitionGroupConfiguration(v, inc, m, routing, pending, last));
+  }
+
+  @Provide
+  Arbitrary<BrokerState> brokerStates() {
+    final var version = Arbitraries.longs().greaterOrEqual(0);
+    final var state = Arbitraries.of(BrokerState.State.values());
+    return Combinators.combine(version, instants(), state)
+        .as((v, lastUpdated, s) -> new BrokerState(v, lastUpdated, s));
+  }
+
+  @Provide
+  Arbitrary<BrokerPartitionState> brokerPartitionStates() {
+    final var version = Arbitraries.longs().greaterOrEqual(0);
+    final var partitions =
+        Arbitraries.maps(
+                Arbitraries.integers().between(1, 20),
+                Arbitraries.forType(PartitionState.class).enableRecursion())
+            .ofMaxSize(4);
+    final var mode = Arbitraries.of(Mode.values());
+    return Combinators.combine(version, instants(), partitions, mode)
+        .as((v, lastUpdated, p, m) -> new BrokerPartitionState(v, lastUpdated, p, m));
+  }
+
+  @Provide
+  Arbitrary<PhasedChangeState> phasedChangeStates() {
+    return completedPhasedChanges()
+        .optional()
+        .flatMap(
+            lastChange -> {
+              // Pending plan id must be positive and greater than the last completed change id.
+              final long minPendingId = lastChange.map(c -> c.id() + 1).orElse(1L);
+              return phasedChangePlans(minPendingId)
+                  .optional()
+                  .map(pending -> new PhasedChangeState(pending, lastChange));
+            });
+  }
+
+  Arbitrary<PhasedChangePlan> phasedChangePlans(final long minId) {
+    final var id = Arbitraries.longs().between(minId, minId + 1000);
+    final var phases = phases().list().ofMinSize(1).ofMaxSize(4);
+    return Combinators.combine(id, phases, instants())
+        .flatAs(
+            (planId, phaseList, startedAt) ->
+                Arbitraries.integers()
+                    .between(0, phaseList.size() - 1)
+                    .map(index -> new PhasedChangePlan(planId, index, phaseList, startedAt)));
+  }
+
+  @Provide
+  Arbitrary<Phase> phases() {
+    final Arbitrary<Phase> globalPhases =
+        globalChangeOperations().list().ofMaxSize(3).<Phase>map(GlobalPhase::new);
+    final Arbitrary<Phase> parallelPhases =
+        Arbitraries.maps(partitionGroupIds(), partitionGroupChangeOperations().list().ofMaxSize(3))
+            .ofMaxSize(3)
+            .<Phase>map(PartitionGroupParallelPhase::new);
+    return Arbitraries.oneOf(globalPhases, parallelPhases);
+  }
+
+  @Provide
+  Arbitrary<CompletedPhasedChange> completedPhasedChanges() {
+    final var id = Arbitraries.longs().between(0, 500);
+    final var status = Arbitraries.of(PhasedChangePlanStatus.values());
+    return Combinators.combine(id, status, instants(), instants())
+        .as(
+            (planId, s, startedAt, completedAt) ->
+                new CompletedPhasedChange(planId, s, startedAt, completedAt));
+  }
+
+  @Provide
+  Arbitrary<GlobalChangeOperation> globalChangeOperations() {
+    return Arbitraries.of(
+            ReflectUtil.implementationsOfSealedInterface(GlobalChangeOperation.class).toList())
+        .flatMap(Arbitraries::forType);
+  }
+
+  @Provide
+  Arbitrary<PartitionGroupOperation> partitionGroupChangeOperations() {
+    return Arbitraries.of(
+            ReflectUtil.implementationsOfSealedInterface(PartitionGroupOperation.class).toList())
+        .flatMap(Arbitraries::forType);
+  }
+
+  @Provide
+  Arbitrary<String> partitionGroupIds() {
+    return Arbitraries.strings().alpha().ofMinLength(1).ofMaxLength(10);
+  }
+
+  /**
+   * Whole-second instants. Serialization preserves nanos, but some reused legacy sub-type decoders
+   * read seconds only; whole-second fixtures keep every round-trip exact.
+   */
+  Arbitrary<Instant> instants() {
+    return Arbitraries.longs().between(0, 4_000_000_000L).map(Instant::ofEpochSecond);
   }
 
   @SuppressWarnings("unused")
