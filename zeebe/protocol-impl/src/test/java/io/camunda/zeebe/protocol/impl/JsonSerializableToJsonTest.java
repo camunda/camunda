@@ -584,7 +584,8 @@ final class JsonSerializableToJsonTest {
                   "duplicate": false,
                   "tenantId": "<default>",
                   "deploymentKey": 1234,
-                  "versionTag": "v1.0"
+                  "versionTag": "v1.0",
+                  "transformerVersions": {}
                 }
                 """
       },
@@ -623,7 +624,41 @@ final class JsonSerializableToJsonTest {
                   "duplicate": false,
                   "tenantId": "<default>",
                   "deploymentKey": -1,
-                  "versionTag": ""
+                  "versionTag": "",
+                  "transformerVersions": {}
+                }
+                """
+      },
+      new Object[] {
+        "ProcessRecord (with transformer versions)",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final ProcessRecord record = new ProcessRecord();
+              record
+                  .setResourceName(wrapString("process.bpmn"))
+                  .setResource(wrapString("contents"))
+                  .setBpmnProcessId(wrapString("testProcess"))
+                  .setKey(123L)
+                  .setVersion(1)
+                  .setChecksum(wrapString("checksum"))
+                  .setDeploymentKey(456L)
+                  .setVersionTag("v1.0")
+                  .setTransformerVersions(Map.of(1, 2, 5, 3));
+              return record;
+            },
+        """
+                {
+                  "resourceName": "process.bpmn",
+                  "resource": "Y29udGVudHM=",
+                  "checksum": "Y2hlY2tzdW0=",
+                  "bpmnProcessId": "testProcess",
+                  "version": 1,
+                  "processDefinitionKey": 123,
+                  "duplicate": false,
+                  "tenantId": "<default>",
+                  "deploymentKey": 456,
+                  "versionTag": "v1.0",
+                  "transformerVersions": {"1": 2, "5": 3}
                 }
                 """
       },
