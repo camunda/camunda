@@ -38,6 +38,8 @@ import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.ReconfigureRequest;
 import io.atomix.raft.protocol.ReconfigureResponse;
+import io.atomix.raft.protocol.TimeoutNowRequest;
+import io.atomix.raft.protocol.TimeoutNowResponse;
 import io.atomix.raft.protocol.TransferRequest;
 import io.atomix.raft.protocol.TransferResponse;
 import io.atomix.raft.protocol.VoteRequest;
@@ -148,6 +150,18 @@ public class InactiveRole extends AbstractRole {
     final var result =
         logResponse(
             TransferResponse.builder()
+                .withStatus(Status.ERROR)
+                .withError(RaftError.Type.UNAVAILABLE)
+                .build());
+    return CompletableFuture.completedFuture(result);
+  }
+
+  @Override
+  public CompletableFuture<TimeoutNowResponse> onTimeoutNow(final TimeoutNowRequest request) {
+    logRequest(request);
+    final var result =
+        logResponse(
+            TimeoutNowResponse.builder()
                 .withStatus(Status.ERROR)
                 .withError(RaftError.Type.UNAVAILABLE)
                 .build());

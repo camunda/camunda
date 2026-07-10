@@ -54,6 +54,7 @@ import io.atomix.raft.protocol.RaftResponse.Builder;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.RaftServerProtocol;
 import io.atomix.raft.protocol.ReconfigureResponse;
+import io.atomix.raft.protocol.TimeoutNowResponse;
 import io.atomix.raft.protocol.TransferResponse;
 import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.raft.roles.ActiveRole;
@@ -369,6 +370,10 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
         request ->
             handleRequestOnContext(
                 request, () -> role.onTransfer(request), TransferResponse::builder));
+    protocol.registerTimeoutNowHandler(
+        request ->
+            handleRequestOnContext(
+                request, () -> role.onTimeoutNow(request), TimeoutNowResponse::builder));
     protocol.registerAppendV1Handler(
         request ->
             handleRequestOnContext(
@@ -900,6 +905,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     protocol.unregisterJoinHandler();
     protocol.unregisterLeaveHandler();
     protocol.unregisterTransferHandler();
+    protocol.unregisterTimeoutNowHandler();
     protocol.unregisterAppendHandler();
     protocol.unregisterPollHandler();
     protocol.unregisterVoteHandler();
