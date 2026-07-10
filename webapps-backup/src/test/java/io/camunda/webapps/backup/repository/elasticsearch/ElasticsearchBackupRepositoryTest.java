@@ -56,6 +56,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.test.appender.ListAppender;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -259,14 +263,41 @@ public class ElasticsearchBackupRepositoryTest {
     when(esClient.snapshot().create((CreateSnapshotRequest) any())).thenThrow(exception);
     final boolean[] onFailureCalled = {false};
 
-    // when
-    backupRepository.executeSnapshotting(
-        snapshotRequest,
-        () -> fail("onSuccess should not be called"),
-        () -> onFailureCalled[0] = true);
+    final String loggerName = ElasticsearchBackupRepository.class.getName();
+    final ListAppender appender = new ListAppender("test-list-appender");
+    appender.start();
+    final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+    final var loggerConfig =
+        new org.apache.logging.log4j.core.config.LoggerConfig(loggerName, Level.ALL, true);
+    loggerConfig.addAppender(appender, null, null);
+    ctx.getConfiguration().addLogger(loggerName, loggerConfig);
+    ctx.updateLoggers();
 
-    // then
-    assertThat(onFailureCalled[0]).isTrue();
+    try {
+      // when
+      backupRepository.executeSnapshotting(
+          snapshotRequest,
+          () -> fail("onSuccess should not be called"),
+          () -> onFailureCalled[0] = true);
+
+      // then
+      assertThat(onFailureCalled[0]).isTrue();
+      assertThat(appender.getEvents())
+          .singleElement()
+          .satisfies(
+              event -> {
+                assertThat(event.getLevel()).isEqualTo(Level.WARN);
+                final String message = event.getMessage().getFormattedMessage();
+                assertThat(message)
+                    .contains(snapshotRequest.snapshotName())
+                    .contains("already exists")
+                    .contains("use a different backup ID");
+              });
+    } finally {
+      ctx.getConfiguration().removeLogger(loggerName);
+      ctx.updateLoggers();
+      appender.stop();
+    }
   }
 
   @Test
