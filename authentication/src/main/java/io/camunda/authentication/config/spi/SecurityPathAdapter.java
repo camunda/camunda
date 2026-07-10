@@ -8,6 +8,7 @@
 package io.camunda.authentication.config.spi;
 
 import io.camunda.security.core.port.out.SecurityPathPort;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -58,6 +59,7 @@ public class SecurityPathAdapter implements SecurityPathPort {
           "/",
           "/sso-callback/**",
           "/oauth2/authorization/**",
+          "/post-logout",
           "/processes",
           "/processes/*",
           "/{regex:[\\d]+}",
@@ -74,6 +76,7 @@ public class SecurityPathAdapter implements SecurityPathPort {
 
   private static final Set<String> UNAUTHENTICATED_WEBAPP_PATHS =
       Set.of(
+          "/post-logout",
           "/default-ui.css",
           "/tasklist/assets/**",
           "/tasklist/client-config.js",
@@ -136,6 +139,11 @@ public class SecurityPathAdapter implements SecurityPathPort {
   @Override
   public Set<String> adminFilterBypassPaths() {
     return ADMIN_FILTER_BYPASS_PATHS;
+  }
+
+  @Override
+  public Optional<String> postLogoutRedirectPath() {
+    return Optional.of("/post-logout");
   }
 
   // staticResourceSuffixes() inherits the SPI default which already matches OC's source set.

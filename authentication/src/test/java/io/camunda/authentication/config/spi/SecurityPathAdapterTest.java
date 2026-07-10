@@ -61,6 +61,7 @@ class SecurityPathAdapterTest {
             "/",
             "/sso-callback/**",
             "/oauth2/authorization/**",
+            "/post-logout",
             "/processes",
             "/processes/*",
             "/{regex:[\\d]+}",
@@ -85,6 +86,7 @@ class SecurityPathAdapterTest {
   void shouldExposeUnauthenticatedWebappPaths() {
     assertThat(port.unauthenticatedWebappPaths())
         .containsExactlyInAnyOrder(
+            "/post-logout",
             "/default-ui.css",
             "/tasklist/assets/**",
             "/tasklist/client-config.js",
