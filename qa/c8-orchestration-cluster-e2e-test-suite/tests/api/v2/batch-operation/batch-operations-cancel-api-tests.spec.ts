@@ -20,6 +20,7 @@ import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
   createCancellationBatch,
   cancelBatchOperation,
+  cancelBatchOperationExpectSuccess,
   createCompletedBatchOperation,
 } from '@requestHelpers';
 
@@ -47,8 +48,7 @@ test.describe.parallel('Cancel Batch Operation Tests', () => {
       });
 
     await test.step('Cancel batch operation', async () => {
-      const res = await cancelBatchOperation(request, key);
-      await assertStatusCode(res, 204);
+      await cancelBatchOperationExpectSuccess(request, key);
     });
 
     await test.step('Poll batch status', async () => {
@@ -75,8 +75,7 @@ test.describe.parallel('Cancel Batch Operation Tests', () => {
       });
 
     await test.step('Send first cancel request', async () => {
-      const firstRes = await cancelBatchOperation(request, key);
-      await assertStatusCode(firstRes, 204);
+      await cancelBatchOperationExpectSuccess(request, key);
     });
 
     await test.step('Send second cancel request and assert failure', async () => {

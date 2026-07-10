@@ -23,6 +23,24 @@ export async function cancelBatchOperation(
   );
 }
 
+// A freshly created batch operation is not immediately actionable: the CANCEL
+// command can be rejected with NOT_FOUND until the batch operation has been
+// distributed across partitions. Retry until it succeeds, mirroring the
+// suspend/resume helpers below.
+export async function cancelBatchOperationExpectSuccess(
+  request: APIRequestContext,
+  batchOperationKey: string,
+  expectedStatusCode = 204,
+): Promise<APIResponse> {
+  const result: Record<string, unknown> = {};
+  await expect(async () => {
+    const res = await cancelBatchOperation(request, batchOperationKey);
+    result.response = res;
+    await assertStatusCode(res, expectedStatusCode);
+  }).toPass(defaultAssertionOptions);
+  return result.response as APIResponse;
+}
+
 export async function suspendBatchOperation(
   request: APIRequestContext,
   batchOperationKey: string,
