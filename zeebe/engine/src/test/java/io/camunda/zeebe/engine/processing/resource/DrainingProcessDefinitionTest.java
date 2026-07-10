@@ -12,12 +12,12 @@ import static io.camunda.zeebe.protocol.record.RecordAssert.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -78,7 +78,7 @@ public class DrainingProcessDefinitionTest {
   }
 
   @Test
-  public void shouldRaiseIncidentWhenCallActivityCallsDrainingProcess() {
+  public void shouldRaiseIncidentWhenCallActivityCallsDrainingProcessWithLatestBinding() {
     // given
     final var childId = helper.getBpmnProcessId() + "-child";
     final var parentId = helper.getBpmnProcessId() + "-parent";
@@ -88,7 +88,9 @@ public class DrainingProcessDefinitionTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(parentId)
                 .startEvent()
-                .callActivity("call", c -> c.zeebeProcessId(childId))
+                .callActivity(
+                    "call",
+                    c -> c.zeebeProcessId(childId).zeebeBindingType(ZeebeBindingType.latest))
                 .endEvent()
                 .done())
         .deploy();
@@ -98,6 +100,87 @@ public class DrainingProcessDefinitionTest {
     final long parentInstanceKey = engine.processInstance().ofBpmnProcessId(parentId).create();
 
     // then
+    assertCalledElementIncident(parentInstanceKey, childId);
+  }
+
+  @Test
+  public void shouldRaiseIncidentWhenCallActivityCallsDrainingProcessWithDeploymentBinding() {
+    // given
+    final var childId = helper.getBpmnProcessId() + "-child";
+    final var parentId = helper.getBpmnProcessId() + "-parent";
+    // deployment binding resolves the called process within the same deployment
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                "child.bpmn", Bpmn.createExecutableProcess(childId).startEvent().endEvent().done())
+            .withXmlResource(
+                "parent.bpmn",
+                Bpmn.createExecutableProcess(parentId)
+                    .startEvent()
+                    .callActivity(
+                        "call",
+                        c ->
+                            c.zeebeProcessId(childId).zeebeBindingType(ZeebeBindingType.deployment))
+                    .endEvent()
+                    .done())
+            .deploy();
+    final var child =
+        deployment.getValue().getProcessesMetadata().stream()
+            .filter(p -> p.getBpmnProcessId().equals(childId))
+            .findFirst()
+            .orElseThrow();
+    drain(child);
+
+    // when
+    final long parentInstanceKey = engine.processInstance().ofBpmnProcessId(parentId).create();
+
+    // then
+    assertCalledElementIncident(parentInstanceKey, childId);
+  }
+
+  @Test
+  public void shouldRaiseIncidentWhenCallActivityCallsDrainingProcessWithVersionTagBinding() {
+    // given
+    final var childId = helper.getBpmnProcessId() + "-child";
+    final var parentId = helper.getBpmnProcessId() + "-parent";
+    final var child =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(childId)
+                    .versionTag("v1")
+                    .startEvent()
+                    .endEvent()
+                    .done())
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .get(0);
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(parentId)
+                .startEvent()
+                .callActivity(
+                    "call",
+                    c ->
+                        c.zeebeProcessId(childId)
+                            .zeebeBindingType(ZeebeBindingType.versionTag)
+                            .zeebeVersionTag("v1"))
+                .endEvent()
+                .done())
+        .deploy();
+    drain(child);
+
+    // when
+    final long parentInstanceKey = engine.processInstance().ofBpmnProcessId(parentId).create();
+
+    // then
+    assertCalledElementIncident(parentInstanceKey, childId);
+  }
+
+  private void assertCalledElementIncident(final long parentInstanceKey, final String childId) {
     final var incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
             .withProcessInstanceKey(parentInstanceKey)
@@ -187,7 +270,7 @@ public class DrainingProcessDefinitionTest {
                     .setBpmnProcessId(metadata.getBpmnProcessId())
                     .setVersion(metadata.getVersion())
                     .setResourceName(metadata.getResourceName())
-                    .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)));
+                    .setTenantId(metadata.getTenantId())));
     engine.start();
 
     RecordingExporter.processRecords()
