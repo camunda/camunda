@@ -226,6 +226,48 @@ class CurrentClusterConfigurationTest {
       assertThat(migrated.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP).members())
           .isEmpty();
     }
+
+    @Test
+    void shouldNormalizeRestorePendingPlanId() {
+      // given — a legacy restore plan uses the negative sentinel id (RESTORE_CHANGE_ID = -2)
+      final var restore =
+          ClusterChangePlan.initForRestore(List.of(new DeleteHistoryOperation(MEMBER_0)));
+      final var legacy =
+          ClusterConfiguration.builder()
+              .version(5)
+              .members(Map.of(MEMBER_0, activeMember()))
+              .pendingChanges(Optional.of(restore))
+              .build();
+
+      // when — migration must not fail on the non-positive id
+      final var migrated = CurrentClusterConfiguration.ofDefault(legacy);
+
+      // then — the pending plan id is normalized to a positive value
+      final var plan = migrated.phasedChangeState().pending().orElseThrow();
+      assertThat(plan.id()).isEqualTo(1);
+    }
+
+    @Test
+    void shouldNormalizeCompletedRestoreLastChangeIdSoNextPlanCanStart() {
+      // given — a completed restore keeps the negative sentinel id in lastChange
+      final var completedRestore =
+          new CompletedChange(-2, ClusterChangePlan.Status.COMPLETED, Instant.EPOCH, Instant.EPOCH);
+      final var legacy =
+          ClusterConfiguration.builder()
+              .version(5)
+              .members(Map.of(MEMBER_0, activeMember()))
+              .lastChange(Optional.of(completedRestore))
+              .build();
+
+      // when
+      final var migrated = CurrentClusterConfiguration.ofDefault(legacy);
+
+      // then — the last change id is clamped to non-negative, so a new plan can still be started
+      assertThat(migrated.phasedChangeState().lastChange().orElseThrow().id()).isEqualTo(0);
+      final var withPlan =
+          migrated.initPlan(List.of(new GlobalPhase(List.of(new MemberJoinOperation(MEMBER_0)))));
+      assertThat(withPlan.phasedChangeState().pending().orElseThrow().id()).isEqualTo(1);
+    }
   }
 
   @Nested

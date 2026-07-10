@@ -288,17 +288,28 @@ public record CurrentClusterConfiguration(
   private static PhasedChangeState toPhasedChangeState(final ClusterConfiguration legacy) {
     final Optional<CompletedPhasedChange> lastChange =
         legacy.lastChange().map(CurrentClusterConfiguration::toCompletedPhasedChange);
+    final long lastChangeId = lastChange.map(CompletedPhasedChange::id).orElse(0L);
     final Optional<PhasedChangePlan> pending =
-        legacy.pendingChanges().flatMap(CurrentClusterConfiguration::toPhasedChangePlan);
+        legacy.pendingChanges().flatMap(plan -> toPhasedChangePlan(plan, lastChangeId));
     return new PhasedChangeState(pending, lastChange);
   }
 
-  private static Optional<PhasedChangePlan> toPhasedChangePlan(final ClusterChangePlan plan) {
+  /**
+   * Builds the pending {@link PhasedChangePlan}, normalizing the plan id. Legacy restore plans use
+   * a negative sentinel id ({@code ClusterChangePlan.RESTORE_CHANGE_ID = -2}), but {@link
+   * PhasedChangePlan} requires a positive id and {@link PhasedChangeState} requires the pending id
+   * to exceed the last completed change id. Any legacy id that is not positive or not greater than
+   * {@code lastChangeId} is replaced with {@code lastChangeId + 1}, keeping ids positive and
+   * monotonic after migration.
+   */
+  private static Optional<PhasedChangePlan> toPhasedChangePlan(
+      final ClusterChangePlan plan, final long lastChangeId) {
     final var phases = toPhases(plan.pendingOperations());
     if (phases.isEmpty()) {
       return Optional.empty();
     }
-    return Optional.of(new PhasedChangePlan(plan.id(), 0, phases, plan.startedAt()));
+    final long id = plan.id() > 0 && plan.id() > lastChangeId ? plan.id() : lastChangeId + 1;
+    return Optional.of(new PhasedChangePlan(id, 0, phases, plan.startedAt()));
   }
 
   /**
@@ -356,7 +367,12 @@ public record CurrentClusterConfiguration(
               throw new IllegalStateException(
                   "Cannot migrate a legacy last change with IN_PROGRESS status: " + change);
         };
-    return new CompletedPhasedChange(change.id(), status, change.startedAt(), change.completedAt());
+    // A completed legacy restore keeps the negative sentinel id
+    // (ClusterChangePlan.RESTORE_CHANGE_ID
+    // = -2). Clamp non-positive ids to 0 so the next derived plan id (lastChange.id() + 1) stays
+    // positive and PhasedChangePlan's id-must-be-positive invariant is preserved.
+    final long id = Math.max(change.id(), 0);
+    return new CompletedPhasedChange(id, status, change.startedAt(), change.completedAt());
   }
 
   private static BrokerState toBrokerState(final MemberState memberState) {
