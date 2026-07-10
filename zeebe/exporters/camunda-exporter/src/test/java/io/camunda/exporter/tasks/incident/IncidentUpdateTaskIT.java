@@ -37,6 +37,7 @@ import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.PostImporterQueueTemplate;
 import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.post.PostImporterActionType;
 import io.camunda.webapps.schema.entities.post.PostImporterQueueEntity;
 import io.camunda.zeebe.exporter.api.ExporterException;
@@ -51,6 +52,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.CloseHelper;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -63,6 +65,7 @@ import org.slf4j.LoggerFactory;
 
 class IncidentUpdateTaskIT {
   private static final Logger LOGGER = LoggerFactory.getLogger(IncidentUpdateTaskIT.class);
+  private static final AtomicLong ID_GENERATOR = new AtomicLong(1);
   private static final int PARTITION_ID = 1;
   private static final Instant NOW = Instant.parse("2026-05-01T10:26:00Z");
   private static final int BATCH_SIZE = 10;
@@ -125,6 +128,8 @@ class IncidentUpdateTaskIT {
 
           // then
           assertThat(updated).succeedsWithin(UPDATE_TIMEOUT).isEqualTo(0);
+
+          assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(-1L);
         });
   }
 
@@ -139,7 +144,7 @@ class IncidentUpdateTaskIT {
 
           final PostImporterQueueEntity queueEntity =
               new PostImporterQueueEntity()
-                  .setId("incident-1")
+                  .setId("queue-1")
                   .setPartitionId(PARTITION_ID)
                   .setActionType(PostImporterActionType.INCIDENT)
                   .setIntent("CREATED")
@@ -147,7 +152,7 @@ class IncidentUpdateTaskIT {
                   .setPosition(1L);
 
           store(postImporterTemplate, client, queueEntity);
-          client.refresh(testPrefix);
+          client.refresh(postImporterTemplate.getFullQualifiedName());
 
           // when
           final var updated = job.execute();
@@ -160,6 +165,55 @@ class IncidentUpdateTaskIT {
               .withMessageContaining(
                   "Failed to fetch incidents associated with post-export updates")
               .withMessageContaining("Missing incident IDs: [[9999]]");
+
+          assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(-1L);
+        });
+  }
+
+  @TestTemplate
+  void shouldExecuteWithoutErrorsButNotUpdatePositionWhenProcessInstanceNotFound(
+      final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
+    withIncidentUpdateTask(
+        config,
+        (job, resources) -> {
+          final var incidentTemplateTemplate =
+              resources.getIndexTemplateDescriptor(IncidentTemplate.class);
+
+          final var incidentKey = ID_GENERATOR.getAndIncrement();
+          final IncidentEntity incidentEntity =
+              new IncidentEntity()
+                  .setId(String.valueOf(incidentKey))
+                  .setPartitionId(PARTITION_ID)
+                  .setKey(incidentKey)
+                  .setErrorMessage("An error happened")
+                  .setProcessInstanceKey(9999L)
+                  .setFlowNodeInstanceKey(9999L);
+
+          store(incidentTemplateTemplate, client, incidentEntity);
+          client.refresh(incidentTemplateTemplate.getFullQualifiedName());
+
+          final var postImporterTemplate =
+              resources.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
+
+          final PostImporterQueueEntity queueEntity =
+              new PostImporterQueueEntity()
+                  .setId("queue-1")
+                  .setPartitionId(PARTITION_ID)
+                  .setActionType(PostImporterActionType.INCIDENT)
+                  .setIntent("CREATED")
+                  .setKey(incidentKey)
+                  .setPosition(1L);
+
+          store(postImporterTemplate, client, queueEntity);
+          client.refresh(postImporterTemplate.getFullQualifiedName());
+
+          // when
+          final var updated = job.execute();
+
+          // then
+          assertThat(updated).succeedsWithin(UPDATE_TIMEOUT).isEqualTo(1);
+
+          assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(-1L);
         });
   }
 
