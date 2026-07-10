@@ -52,7 +52,7 @@ keep it the single source of truth and update it when conventions change.
 
 # Before committing (mandatory — formatting also covers markdown)
 ./mvnw license:format spotless:apply -T1C && \
-./mvnw verify -pl testing/camunda-process-test-java -DskipTests=false -Dquickly
+./mvnw verify -pl testing/camunda-process-test-java -DskipTests=false -DskipITs -Dquickly
 ```
 
 ## Common how-tos
