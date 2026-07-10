@@ -179,7 +179,7 @@ public class AnalyticsExporterConfig {
           "Analytics exporter endpoint uses an insecure scheme ({}). "
               + "This is allowed because allowInsecure=true, but is not recommended for"
               + " production.",
-          endpoint);
+          scheme);
     }
   }
 
