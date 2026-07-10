@@ -11,9 +11,12 @@ import io.camunda.exporter.analytics.sampling.HashSampler;
 import java.net.URI;
 import java.time.Duration;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Configuration for the Analytics Exporter. Instantiated from the exporter's args map. */
 public class AnalyticsExporterConfig {
+
+  private static final Logger LOG = LoggerFactory.getLogger(AnalyticsExporterConfig.class);
 
   private String endpoint = "https://analytics.cloud.camunda.io";
   private int maxQueueSize = 2048;
@@ -96,20 +99,12 @@ public class AnalyticsExporterConfig {
     return this;
   }
 
-  /** Validates configuration without logging warnings. */
+  /** Validates configuration, logging warnings where appropriate. */
   public AnalyticsExporterConfig validate() {
-    return validate(null);
-  }
-
-  /**
-   * Validates configuration, logging warnings where appropriate. Prefer this overload when a logger
-   * is available.
-   */
-  public AnalyticsExporterConfig validate(final Logger log) {
     if (endpoint == null || endpoint.isBlank()) {
       throw new IllegalArgumentException("Analytics exporter endpoint is not configured");
     }
-    validateEndpointScheme(log);
+    validateEndpointScheme();
     final Duration parsedPush;
     try {
       parsedPush = Duration.parse(pushInterval);
@@ -157,7 +152,7 @@ public class AnalyticsExporterConfig {
     return this;
   }
 
-  private void validateEndpointScheme(final Logger log) {
+  private void validateEndpointScheme() {
     final URI uri = URI.create(endpoint);
     final String host = uri.getHost();
     final boolean isLocalhost =
@@ -179,8 +174,8 @@ public class AnalyticsExporterConfig {
               + endpoint);
     }
 
-    if (allowInsecure && log != null) {
-      log.warn(
+    if (allowInsecure) {
+      LOG.warn(
           "Analytics exporter endpoint uses an insecure scheme ({}). "
               + "This is allowed because allowInsecure=true, but is not recommended for"
               + " production.",

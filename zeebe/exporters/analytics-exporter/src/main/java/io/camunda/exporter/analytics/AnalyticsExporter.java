@@ -46,7 +46,7 @@ public class AnalyticsExporter implements Exporter {
 
   @Override
   public void configure(final Context context) {
-    config = context.getConfiguration().instantiate(AnalyticsExporterConfig.class).validate(LOG);
+    config = context.getConfiguration().instantiate(AnalyticsExporterConfig.class).validate();
 
     handlers = AnalyticsHandlerCatalog.build(otelSdkManager).apply(context);
     meterRegistry = context.getMeterRegistry();
