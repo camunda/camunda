@@ -503,6 +503,80 @@ class IncidentUpdateTaskIT {
         });
   }
 
+  @TestTemplate
+  void shouldUpdateRelevantEntitiesWhenIncidentIsProcessInstanceLevel(
+      final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
+    withIncidentUpdateTask(
+        config,
+        (job, resources) -> {
+          final var listViewTemplate = resources.getIndexTemplateDescriptor(ListViewTemplate.class);
+
+          final var processInstanceKey = ID_GENERATOR.getAndIncrement();
+          final var treePath = String.format("PI_%d", processInstanceKey);
+          final ProcessInstanceForListViewEntity processInstance =
+              new ProcessInstanceForListViewEntity()
+                  .setId(String.valueOf(processInstanceKey))
+                  .setPartitionId(PARTITION_ID)
+                  .setKey(processInstanceKey)
+                  .setProcessDefinitionKey(9999L)
+                  .setBpmnProcessId("process-1")
+                  .setTreePath(treePath);
+          store(listViewTemplate, client, processInstance);
+
+          client.refresh(listViewTemplate.getFullQualifiedName());
+
+          final var incidentTemplateTemplate =
+              resources.getIndexTemplateDescriptor(IncidentTemplate.class);
+
+          final var incidentKey = ID_GENERATOR.getAndIncrement();
+          final IncidentEntity incidentEntity =
+              new IncidentEntity()
+                  .setId(String.valueOf(incidentKey))
+                  .setPartitionId(PARTITION_ID)
+                  .setKey(incidentKey)
+                  .setErrorMessage("An error happened")
+                  .setProcessInstanceKey(processInstanceKey)
+                  .setFlowNodeInstanceKey(processInstanceKey);
+
+          store(incidentTemplateTemplate, client, incidentEntity);
+          client.refresh(incidentTemplateTemplate.getFullQualifiedName());
+
+          final var postImporterTemplate =
+              resources.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
+
+          final PostImporterQueueEntity queueEntity =
+              new PostImporterQueueEntity()
+                  .setId("queue-1")
+                  .setPartitionId(PARTITION_ID)
+                  .setActionType(PostImporterActionType.INCIDENT)
+                  .setIntent("CREATED")
+                  .setKey(incidentKey)
+                  .setPosition(1L);
+
+          store(postImporterTemplate, client, queueEntity);
+          client.refresh(postImporterTemplate.getFullQualifiedName());
+
+          // when
+          final var updated = job.execute();
+
+          // then
+          assertThat(updated).succeedsWithin(UPDATE_TIMEOUT).isEqualTo(2);
+
+          client.refresh(testPrefix);
+
+          final var updatedProcessInstance =
+              getFromIndex(listViewTemplate, client, processInstance);
+          assertThat(updatedProcessInstance.isIncident()).isTrue();
+
+          final var updatedIncident =
+              getFromIndex(incidentTemplateTemplate, client, incidentEntity);
+          assertThat(updatedIncident.getTreePath())
+              .isEqualTo(String.format("%s/FNI_%d", treePath, processInstanceKey));
+
+          assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(1L);
+        });
+  }
+
   void withIncidentUpdateTask(
       final ExporterConfiguration config, final IncidentUpdateTaskConsumer taskConsumer)
       throws Exception {
