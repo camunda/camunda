@@ -1,7 +1,6 @@
  {
 	"settings": {
 		"index": {
-			"refresh_interval": "2s",
 			"analysis": {
 				"normalizer": {
 					"case_insensitive": {
