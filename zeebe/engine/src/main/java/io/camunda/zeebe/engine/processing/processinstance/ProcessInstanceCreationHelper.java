@@ -45,6 +45,8 @@ import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 public class ProcessInstanceCreationHelper {
+  public static final String ERROR_MESSAGE_PROCESS_IS_DRAINING =
+      "Expected to create instance of process with ID '%s' and version %d (key %d), but it is being deleted";
   private static final String ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED =
       "Expected at least a bpmnProcessId or a key greater than -1, but none given";
   private static final String ERROR_MESSAGE_NOT_FOUND_BY_PROCESS =
@@ -55,8 +57,6 @@ public class ProcessInstanceCreationHelper {
       "Expected to find process definition with key '%d', but none found";
   private static final String ERROR_MESSAGE_NO_NONE_START_EVENT =
       "Expected to create instance of process with none start event, but there is no such event";
-  private static final String ERROR_MESSAGE_PROCESS_IS_DRAINING =
-      "Expected to create instance of process with ID '%s' and version %d (key %d), but it is being deleted";
   private static final String ERROR_MESSAGE_BUSINESS_ID_ALREADY_EXISTS =
       "Expected to create instance of process with business id '%s', but an instance with this business id already exists for process definition '%s'";
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =

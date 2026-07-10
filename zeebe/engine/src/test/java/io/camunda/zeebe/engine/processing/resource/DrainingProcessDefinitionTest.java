@@ -15,6 +15,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
@@ -65,7 +66,7 @@ public class DrainingProcessDefinitionTest {
     assertThat(rejection)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-            "Expected to create instance of process '%s' (version %d, process definition key %d), but it is being deleted"
+            "Expected to create instance of process with ID '%s' and version %d (key %d), but it is being deleted"
                 .formatted(processId, metadata.getVersion(), metadata.getProcessDefinitionKey()));
   }
 
@@ -85,7 +86,7 @@ public class DrainingProcessDefinitionTest {
     assertThat(rejection)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-            "Expected to create instance of process '%s' (version %d, process definition key %d), but it is being deleted"
+            "Expected to create instance of process with ID '%s' and version %d (key %d), but it is being deleted"
                 .formatted(processId, metadata.getVersion(), metadata.getProcessDefinitionKey()));
   }
 
@@ -335,6 +336,47 @@ public class DrainingProcessDefinitionTest {
                         .exists()))
         .describedAs("no new instance is spawned on a draining definition via a start event")
         .isFalse();
+  }
+
+  @Test
+  public void shouldRejectActivateElementCommandForDrainingDefinition() {
+    // given - a draining definition and a raw ACTIVATE_ELEMENT command for a fresh root process
+    // instance, mimicking a follow-up command that outlived the DRAINING mark. This bypasses the
+    // EventHandle guard to exercise the defensive ProcessInstanceStateTransitionGuard directly.
+    final var processId = helper.getBpmnProcessId();
+    final var metadata = deploy(processId);
+    drain(metadata);
+
+    final long processInstanceKey = 123L;
+    final var record =
+        new ProcessInstanceRecord()
+            .setBpmnProcessId(processId)
+            .setProcessDefinitionKey(metadata.getProcessDefinitionKey())
+            .setVersion(metadata.getVersion())
+            .setProcessInstanceKey(processInstanceKey)
+            .setElementId(processId)
+            .setBpmnElementType(BpmnElementType.PROCESS)
+            .setTenantId(metadata.getTenantId());
+
+    // when
+    engine.writeRecords(
+        RecordToWrite.command()
+            .key(processInstanceKey)
+            .processInstance(ProcessInstanceIntent.ACTIVATE_ELEMENT, record));
+
+    // then - the command is rejected and no instance is activated
+    final var rejection =
+        RecordingExporter.processInstanceRecords()
+            .withIntent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
+            .onlyCommandRejections()
+            .withProcessDefinitionKey(metadata.getProcessDefinitionKey())
+            .getFirst();
+    assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            "Expected to create instance of process with ID '%s' and version %d (key %d), but it is being deleted"
+                .formatted(processId, metadata.getVersion(), metadata.getProcessDefinitionKey()));
+    assertNoInstanceSpawned(metadata.getProcessDefinitionKey());
   }
 
   private ProcessMetadataValue deploy(final String processId) {
