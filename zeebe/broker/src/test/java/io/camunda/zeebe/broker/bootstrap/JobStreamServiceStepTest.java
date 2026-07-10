@@ -96,15 +96,15 @@ final class JobStreamServiceStepTest {
     }
 
     @Test
-    void shouldRegisterDefaultTenantServiceSupplierWithSpringBrokerBridge() {
+    void shouldRegisterAllTenantServicesSupplierWithSpringBrokerBridge() {
       // when
       sut.startupInternal(ctx, CONCURRENCY_CONTROL, startupFuture);
       completeAllScheduledActors();
 
-      // then — the bridge supplier is wired to the default physical tenant's service
+      // then — the bridge supplier exposes all physical tenant services for the actuator
       assertThat(startupFuture.isDone()).as("startup completed").isTrue();
       assertThat(startupFuture.isCompletedExceptionally()).as("no startup error").isFalse();
-      verify(ctx.getSpringBrokerBridge()).registerJobStreamServiceSupplier(notNull());
+      verify(ctx.getSpringBrokerBridge()).registerJobStreamServicesSupplier(notNull());
     }
 
     @Test
