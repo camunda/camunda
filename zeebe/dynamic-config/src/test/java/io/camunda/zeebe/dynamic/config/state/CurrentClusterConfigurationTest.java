@@ -268,6 +268,124 @@ class CurrentClusterConfigurationTest {
           migrated.initPlan(List.of(new GlobalPhase(List.of(new MemberJoinOperation(MEMBER_0)))));
       assertThat(withPlan.phasedChangeState().pending().orElseThrow().id()).isEqualTo(1);
     }
+
+    @Test
+    void shouldGroupConsecutiveGlobalOpsIntoSinglePhase() {
+      // given — two consecutive global operations
+      final var join = new MemberJoinOperation(MEMBER_0);
+      final var leave = new MemberLeaveOperation(MEMBER_0);
+      final var legacy =
+          ClusterConfiguration.builder()
+              .version(5)
+              .members(Map.of(MEMBER_0, activeMember()))
+              .pendingChanges(Optional.of(ClusterChangePlan.init(2, List.of(join, leave))))
+              .build();
+
+      // when
+      final var migrated = CurrentClusterConfiguration.ofDefault(legacy);
+
+      // then — a single GlobalPhase holds both, in order
+      assertThat(migrated.phasedChangeState().pending().orElseThrow().phases())
+          .containsExactly(new GlobalPhase(List.of(join, leave)));
+    }
+
+    @Test
+    void shouldGroupConsecutivePartitionOpsIntoSinglePhase() {
+      // given — a pending plan with only partition operations
+      final var join = new PartitionJoinOperation(MEMBER_0, 1, 1);
+      final var leave = new PartitionLeaveOperation(MEMBER_0, 1, 1);
+      final var legacy =
+          ClusterConfiguration.builder()
+              .version(5)
+              .members(Map.of(MEMBER_0, activeMember()))
+              .pendingChanges(Optional.of(ClusterChangePlan.init(2, List.of(join, leave))))
+              .build();
+
+      // when
+      final var migrated = CurrentClusterConfiguration.ofDefault(legacy);
+
+      // then — a single default-group phase holds both, in order
+      assertThat(migrated.phasedChangeState().pending().orElseThrow().phases())
+          .containsExactly(
+              new PartitionGroupParallelPhase(
+                  Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, List.of(join, leave))));
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+        value = ClusterChangePlan.Status.class,
+        names = {"COMPLETED", "FAILED", "CANCELLED"})
+    void shouldConvertEachTerminalLegacyLastChangeStatus(final ClusterChangePlan.Status status) {
+      // given
+      final var last = new CompletedChange(3, status, Instant.EPOCH, Instant.EPOCH);
+      final var legacy =
+          ClusterConfiguration.builder()
+              .version(5)
+              .members(Map.of(MEMBER_0, activeMember()))
+              .lastChange(Optional.of(last))
+              .build();
+
+      // when
+      final var migrated = CurrentClusterConfiguration.ofDefault(legacy);
+
+      // then — the status maps to the matching PhasedChangePlanStatus
+      assertThat(migrated.phasedChangeState().lastChange().orElseThrow().status())
+          .isEqualTo(PhasedChangePlanStatus.valueOf(status.name()));
+    }
+
+    @Test
+    void shouldPreserveTimestampsDuringMigration() {
+      // given — a pending plan and a last change with distinct timestamps
+      final var pendingStartedAt = Instant.ofEpochSecond(300);
+      final var pending =
+          new ClusterChangePlan(
+              7,
+              1,
+              ClusterChangePlan.Status.IN_PROGRESS,
+              pendingStartedAt,
+              List.of(),
+              List.of(new DeleteHistoryOperation(MEMBER_0)));
+      final var last =
+          new CompletedChange(
+              3,
+              ClusterChangePlan.Status.COMPLETED,
+              Instant.ofEpochSecond(100),
+              Instant.ofEpochSecond(200));
+      final var legacy =
+          ClusterConfiguration.builder()
+              .version(8)
+              .members(Map.of(MEMBER_0, activeMember()))
+              .pendingChanges(Optional.of(pending))
+              .lastChange(Optional.of(last))
+              .build();
+
+      // when
+      final var migrated = CurrentClusterConfiguration.ofDefault(legacy);
+
+      // then — startedAt of the pending plan and both timestamps of the last change are preserved
+      assertThat(migrated.phasedChangeState().pending().orElseThrow().startedAt())
+          .isEqualTo(pendingStartedAt);
+      final var lastChange = migrated.phasedChangeState().lastChange().orElseThrow();
+      assertThat(lastChange.startedAt()).isEqualTo(Instant.ofEpochSecond(100));
+      assertThat(lastChange.completedAt()).isEqualTo(Instant.ofEpochSecond(200));
+    }
+
+    @Test
+    void shouldProduceNoPendingPlanWhenLegacyPendingHasNoOperations() {
+      // given — a pending change plan present but with no operations
+      final var legacy =
+          ClusterConfiguration.builder()
+              .version(5)
+              .members(Map.of(MEMBER_0, activeMember()))
+              .pendingChanges(Optional.of(ClusterChangePlan.init(2, List.of())))
+              .build();
+
+      // when
+      final var migrated = CurrentClusterConfiguration.ofDefault(legacy);
+
+      // then — no pending phased plan is produced
+      assertThat(migrated.phasedChangeState().pending()).isEmpty();
+    }
   }
 
   @Nested
