@@ -27,6 +27,9 @@ import java.util.Optional;
  * first and then redistributes partitions accordingly. When migrating from {@link RoundRobinConfig}
  * the same {@link ZoneAwareConfig} no partition reassignment is expected if the new configuration
  * is correct.
+ *
+ * <p>When migrating to {@link ZoneAwareConfig} the order of the zones is used to identify primary
+ * and secondary zone: the first zone is primary, the second is secondary.
  */
 public class UpdatePartitionDistributionTransformer implements ConfigurationChangeRequest {
 
