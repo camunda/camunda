@@ -394,7 +394,8 @@ public final class EngineRule extends ExternalResource {
                     }
                   }),
               cfg -> cfg.streamProcessorMode(mode),
-              awaitOpening,
+              // when in replay mode, onRecovered callback is never called
+              awaitOpening && mode != StreamProcessorMode.REPLAY,
               securityConfig);
         });
     interPartitionCommandSenders.forEach(s -> s.initializeWriters(partitionCount));
