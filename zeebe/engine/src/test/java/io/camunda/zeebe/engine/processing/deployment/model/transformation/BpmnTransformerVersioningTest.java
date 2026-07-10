@@ -73,7 +73,7 @@ class BpmnTransformerVersioningTest {
         TransformerSlot.SIGNAL, 2, () -> new RecordingSignalTransformer(ran));
 
     // when — replay pins SIGNAL to v2 via the stored slot-id map
-    transformer.transformDefinitions(signalModel(), Map.of(TransformerSlot.SIGNAL.id(), 2));
+    transformer.transformDefinitions(signalModel(), Map.of(TransformerSlot.SIGNAL, 2));
 
     // then
     assertThat(ran).isTrue();
@@ -103,8 +103,7 @@ class BpmnTransformerVersioningTest {
     // the leader's pipeline
     assertThatThrownBy(
             () ->
-                transformer.transformDefinitions(
-                    signalModel(), Map.of(TransformerSlot.SIGNAL.id(), 2)))
+                transformer.transformDefinitions(signalModel(), Map.of(TransformerSlot.SIGNAL, 2)))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("SIGNAL")
         .hasMessageContaining("version 2");
@@ -118,7 +117,7 @@ class BpmnTransformerVersioningTest {
 
     // when / then — the version map is validated upfront, not lazily per visited element
     assertThatThrownBy(
-            () -> transformer.transformDefinitions(model, Map.of(TransformerSlot.SIGNAL.id(), 2)))
+            () -> transformer.transformDefinitions(model, Map.of(TransformerSlot.SIGNAL, 2)))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("SIGNAL")
         .hasMessageContaining("version 2");

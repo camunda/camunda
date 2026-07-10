@@ -45,7 +45,7 @@ class TransformerVersionReplayDeterminismTest {
         Bpmn.createExecutableProcess("p").startEvent().signal("sig").endEvent().done();
 
     // when — transform once pinned to SIGNAL v2, once pinned to the empty (all-v1) map
-    transformer.transformDefinitions(model, Map.of(TransformerSlot.SIGNAL.id(), 2));
+    transformer.transformDefinitions(model, Map.of(TransformerSlot.SIGNAL, 2));
     final int afterV2 = v2Runs.get();
     transformer.transformDefinitions(model, Map.of());
     final int afterV1 = v2Runs.get();

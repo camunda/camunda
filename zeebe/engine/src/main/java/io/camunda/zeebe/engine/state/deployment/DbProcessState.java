@@ -35,9 +35,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
@@ -383,12 +381,8 @@ public final class DbProcessState implements MutableProcessState {
     final BpmnModelInstance modelInstance =
         readModelInstanceFromBuffer(copiedProcess.getResource());
     // pin the pipeline to the versions frozen at deploy time (absent slots resolve to v1)
-    final Map<Integer, Integer> slotVersionsById = new HashMap<>();
-    copiedProcess
-        .getTransformerVersions()
-        .forEach((slot, version) -> slotVersionsById.put(slot.id(), version));
     final List<ExecutableProcess> definitions =
-        transformer.transformDefinitions(modelInstance, slotVersionsById);
+        transformer.transformDefinitions(modelInstance, copiedProcess.getTransformerVersions());
 
     final ExecutableProcess executableProcess =
         definitions.stream()

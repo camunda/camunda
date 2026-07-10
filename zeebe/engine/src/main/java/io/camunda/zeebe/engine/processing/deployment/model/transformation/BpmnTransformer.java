@@ -151,6 +151,11 @@ public final class BpmnTransformer {
    * Registers a handler version greater than 1 for a slot. Version 1 lives in the constructor as
    * the original (frozen) class; to version a handler, write {@code XTransformerV2} (leaving the
    * original untouched) and register it here at version 2.
+   *
+   * <p>This method adds to {@code handlerFactories} only — it does NOT add a new entry to {@link
+   * #stepRegistrations}. The traversal order (which step each slot runs at) is fixed entirely by
+   * the {@code register()} calls in the constructor. Adding a v2 factory at the end of the
+   * constructor is safe; it cannot disturb the step ordering of any other slot.
    */
   public void registerHandlerVersion(
       final TransformerSlot slot,
@@ -189,19 +194,22 @@ public final class BpmnTransformer {
    * pipeline, matching what {@link #currentVersionsById()} stamps into the {@code ProcessRecord}.
    */
   public List<ExecutableProcess> transformDefinitions(final BpmnModelInstance modelInstance) {
-    return transformDefinitions(modelInstance, currentVersionsById());
+    final Map<TransformerSlot, Integer> current = new EnumMap<>(TransformerSlot.class);
+    currentVersionsById()
+        .forEach((slotId, version) -> current.put(TransformerSlot.fromId(slotId), version));
+    return transformDefinitions(modelInstance, current);
   }
 
   /**
-   * Transforms with the handler versions pinned in {@code slotVersionsById} ({@link
-   * TransformerSlot#id()} → version, as stored in {@code PersistedProcess}); absent slots use
-   * version 1. The map is validated upfront: every pinned version above the default must have a
-   * registered handler — even for elements not present in the model — otherwise an {@link
+   * Transforms with the handler versions pinned in {@code slotVersions} (as stored in {@link
+   * io.camunda.zeebe.engine.state.deployment.PersistedProcess#getTransformerVersions()}); absent
+   * slots use version 1. The map is validated upfront: every pinned version above the default must
+   * have a registered handler — even for elements not present in the model — otherwise an {@link
    * IllegalStateException} naming the slot and version is thrown before any transformation runs.
    */
   public List<ExecutableProcess> transformDefinitions(
-      final BpmnModelInstance modelInstance, final Map<Integer, Integer> slotVersionsById) {
-    final Map<TransformerSlot, Integer> slotVersions = validateVersions(slotVersionsById);
+      final BpmnModelInstance modelInstance, final Map<TransformerSlot, Integer> slotVersions) {
+    validateVersions(slotVersions);
 
     final TransformContext context = new TransformContext();
     context.setExpressionLanguage(expressionLanguage);
@@ -216,12 +224,9 @@ public final class BpmnTransformer {
     return context.getProcesses();
   }
 
-  private Map<TransformerSlot, Integer> validateVersions(
-      final Map<Integer, Integer> slotVersionsById) {
-    final Map<TransformerSlot, Integer> resolved = new EnumMap<>(TransformerSlot.class);
-    slotVersionsById.forEach(
-        (slotId, version) -> {
-          final TransformerSlot slot = TransformerSlot.fromId(slotId);
+  private void validateVersions(final Map<TransformerSlot, Integer> slotVersions) {
+    slotVersions.forEach(
+        (slot, version) -> {
           if (version > TransformerSlot.DEFAULT_VERSION && factoryFor(slot, version) == null) {
             throw new IllegalStateException(
                 "Slot "
@@ -232,9 +237,7 @@ public final class BpmnTransformer {
                     + " BpmnTransformer is missing a handler that existed when the process was"
                     + " deployed.");
           }
-          resolved.put(slot, version);
         });
-    return resolved;
   }
 
   private TransformationVisitor[] buildVisitors(final Map<TransformerSlot, Integer> slotVersions) {
