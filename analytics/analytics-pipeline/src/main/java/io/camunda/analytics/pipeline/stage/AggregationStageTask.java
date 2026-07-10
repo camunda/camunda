@@ -33,6 +33,7 @@ import io.camunda.eventbridge.streaming.aggregate.SegmentDedup.StreamKey;
 import io.camunda.eventbridge.streaming.aggregate.SegmentMergingAggregation;
 import io.camunda.eventbridge.streaming.aggregate.SegmentPosition;
 import io.camunda.eventbridge.streaming.processor.ProcessorTopology;
+import io.camunda.eventbridge.streaming.shuffle.CellDelta;
 import io.camunda.eventbridge.streaming.shuffle.ShuffleEnvelope;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.state.rocksdb.RocksDbStateStoreProvider;
@@ -47,6 +48,8 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -90,6 +93,7 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
   private final KeyValueStore<DbBytes, DbBytes> cellStore;
   private final KeyValueStore<DbInt, DbLong> offsets;
   private final KeyValueStore<DbBytes, DbBytes> dedupStore;
+  private final KeyValueStore<DbBytes, DbBytes> parkedStore;
   private final DatasetCatalog catalog;
   private final long reloadCheckIntervalMs;
 
@@ -97,6 +101,8 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
   private final DbLong offsetValue = new DbLong();
   private final DbBytes dedupKey = new DbBytes();
   private final DbBytes dedupValue = new DbBytes();
+  private final DbBytes parkedKey = new DbBytes();
+  private final DbBytes parkedValue = new DbBytes();
 
   /**
    * The dedup watermarks as last persisted, so each commit writes only the streams whose admission
@@ -121,6 +127,24 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
   private final Map<Integer, CubeWiring> wiringByStreamId = new HashMap<>();
   private Set<Long> appliedCubeIds = Set.of();
 
+  // Parked shuffle deltas (streams with no applier in the current topology — the catalog-reload
+  // gap), insertion-ordered by seq. An entry is parked during processing, persisted by the next
+  // cut, drained (through the dedup) or discarded at a later reload, and its CF row deleted by the
+  // cut after that — so drain-then-crash replays it instead of losing the merge. The to-persist /
+  // to-delete queues follow the dedup-watermark pattern: snapshotted at the freeze barrier,
+  // re-queued when a cut fails.
+  private final Map<Long, ParkedDelta> parked = new LinkedHashMap<>();
+  // Streams this task once wired and a reload then dropped: a delta for one of these is a REMOVED
+  // dataset's straggler (Stage 1's own reload lag), not a new dataset's early delta — dropped
+  // outright, so re-adding the same id later recovers from durable state only, never from
+  // resurrected stragglers. Heap-only by design: after a restart the distinction is made by the
+  // fresh catalog snapshot instead (an unknown stream parks, and the first install discards it if
+  // the catalog does not know it).
+  private final Set<Integer> retiredStreamIds = new HashSet<>();
+  private long nextParkedSeq;
+  private final List<ParkedDelta> parkedToPersist = new ArrayList<>();
+  private final List<byte[]> parkedToDelete = new ArrayList<>();
+
   AggregationStageTask(
       final int partition,
       final OwnershipEpoch epoch,
@@ -130,6 +154,7 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
       final KeyValueStore<DbBytes, DbBytes> cellStore,
       final KeyValueStore<DbInt, DbLong> offsets,
       final KeyValueStore<DbBytes, DbBytes> dedupStore,
+      final KeyValueStore<DbBytes, DbBytes> parkedStore,
       final DatasetCatalog catalog,
       final long reloadCheckIntervalMs,
       final long nowMs) {
@@ -145,11 +170,21 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
     this.cellStore = cellStore;
     this.offsets = offsets;
     this.dedupStore = dedupStore;
+    this.parkedStore = parkedStore;
     // Restore the dedup's admission watermarks once, at task open — the one SegmentDedup instance
     // then survives every live reload, so a reload never forgets what was already admitted.
     dedupStore.forEach(
         (key, value) -> persistedDedup.put(decodeStreamKey(key), decodeSegmentPosition(value)));
     dedup.restore(persistedDedup);
+    // Restore parked deltas (streams that had no applier when their envelope was consumed): a
+    // crash between a drain and the cut that would have deleted them replays them from here — the
+    // dedup watermarks of the failed cut rolled back with them, so the re-drain admits again.
+    parkedStore.forEach(
+        (key, value) -> {
+          final ParkedDelta delta = decodeParked(key, value);
+          parked.put(delta.seq(), delta);
+          nextParkedSeq = Math.max(nextParkedSeq, delta.seq() + 1);
+        });
     this.catalog = catalog;
     this.reloadCheckIntervalMs = reloadCheckIntervalMs;
     this.lastReloadCheckMs = nowMs;
@@ -178,6 +213,8 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
     final KeyValueStore<DbBytes, DbBytes> dedupStore =
         provider.keyValueStore(
             AnalyticsColumnFamilies.SHUFFLE_DEDUP_WATERMARK, new DbBytes(), new DbBytes());
+    final KeyValueStore<DbBytes, DbBytes> parkedStore =
+        provider.keyValueStore(AnalyticsColumnFamilies.PARKED_DELTAS, new DbBytes(), new DbBytes());
     return new AggregationStageTask(
         partition,
         epoch,
@@ -187,6 +224,7 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
         cellStore,
         offsets,
         dedupStore,
+        parkedStore,
         catalog,
         reloadCheckIntervalMs,
         System.currentTimeMillis());
@@ -220,14 +258,156 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
       mergers.addAll(wiring.mergers());
     }
     // Drop a removed cube's wiring: its heap state goes with it, while the durable cells remain —
-    // a removed-then-readded id reconstructs above and recovers from durable state only.
+    // a removed-then-readded id reconstructs above and recovers from durable state only. Remember
+    // the retired stream ids so their late stragglers are dropped instead of parked; a re-added
+    // id leaves the retired set again.
+    for (final Integer streamId : wiringByStreamId.keySet()) {
+      if (!byStreamId.containsKey(streamId)) {
+        retiredStreamIds.add(streamId);
+      }
+    }
+    retiredStreamIds.removeAll(byStreamId.keySet());
     wiringByStreamId.keySet().retainAll(byStreamId.keySet());
     appliedCubeIds = Set.copyOf(cubeIds);
     activeMergers = List.copyOf(mergers);
     topology =
         ProcessorTopology.<ShuffleEnvelope>builder()
-            .source("merge", new CubeMergeProcessor(dedup, byStreamId, mergers))
+            .source("merge", new CubeMergeProcessor(dedup, byStreamId, mergers, this::park))
             .build();
+    // Deltas parked before this (re)install: streams the new topology wires are drained through
+    // the dedup into their appliers; streams the reloaded catalog does not know are a removed
+    // dataset's stragglers — discarded, exactly as a live envelope for them would be.
+    drainParked(byStreamId);
+  }
+
+  /** A shuffle delta parked for a stream with no applier yet (see PARKED_DELTAS). */
+  private record ParkedDelta(
+      long seq,
+      int streamId,
+      int sourcePartition,
+      long segment,
+      int chunk,
+      long windowStart,
+      byte[] key,
+      byte[] payload) {}
+
+  /** One parked batch's admission identity — all its cells share one dedup decision. */
+  private record DrainGroup(int sourcePartition, int streamId, long segment, int chunk) {}
+
+  private void park(
+      final int sourcePartition, final long segment, final int chunk, final CellDelta cell) {
+    if (retiredStreamIds.contains(cell.streamId())) {
+      // A removed dataset's straggler (Stage 1 was still publishing during its own reload lag) —
+      // exactly what the pre-parking behavior dropped, and what re-adding the id must not
+      // resurrect.
+      return;
+    }
+    final ParkedDelta delta =
+        new ParkedDelta(
+            nextParkedSeq++,
+            cell.streamId(),
+            sourcePartition,
+            segment,
+            chunk,
+            cell.windowStart(),
+            cell.key(),
+            cell.payload());
+    parked.put(delta.seq(), delta);
+    parkedToPersist.add(delta);
+    if (parked.size() % 10_000 == 0) {
+      LOG.warn(
+          "Stage 2 facts partition {} holds {} parked deltas for streams without an applier —"
+              + " a dataset reload should drain or discard them shortly",
+          partition,
+          parked.size());
+    }
+  }
+
+  private void drainParked(final Map<Integer, CellApplier> byStreamId) {
+    if (parked.isEmpty()) {
+      return;
+    }
+    // One admission decision per (sourcePartition, streamId, segment, chunk): all cells of a
+    // parked batch were one envelope slice, exactly like the live path in CubeMergeProcessor.
+    final Map<DrainGroup, Boolean> admitted = new HashMap<>();
+    int drained = 0;
+    int discarded = 0;
+    final Iterator<ParkedDelta> deltas = parked.values().iterator();
+    while (deltas.hasNext()) {
+      final ParkedDelta delta = deltas.next();
+      final CellApplier applier = byStreamId.get(delta.streamId());
+      if (applier != null) {
+        final boolean merge =
+            admitted.computeIfAbsent(
+                new DrainGroup(
+                    delta.sourcePartition(), delta.streamId(), delta.segment(), delta.chunk()),
+                group ->
+                    dedup.admit(
+                        group.sourcePartition(), group.streamId(), group.segment(), group.chunk()));
+        if (merge) {
+          applier.apply(delta.key(), delta.windowStart(), delta.payload());
+        }
+        drained++;
+      } else {
+        discarded++;
+      }
+      parkedToDelete.add(encodeParkedKey(delta));
+      deltas.remove();
+    }
+    if (drained > 0 || discarded > 0) {
+      LOG.info(
+          "Stage 2 facts partition {} drained {} parked deltas into reloaded streams and"
+              + " discarded {} for streams absent from the catalog",
+          partition,
+          drained,
+          discarded);
+    }
+  }
+
+  /** Parked key: {@code streamId(4) ++ seq(8)}, big-endian. */
+  private static byte[] encodeParkedKey(final ParkedDelta delta) {
+    return ByteBuffer.allocate(Integer.BYTES + Long.BYTES)
+        .putInt(delta.streamId())
+        .putLong(delta.seq())
+        .array();
+  }
+
+  private static byte[] encodeParkedValue(final ParkedDelta delta) {
+    return ByteBuffer.allocate(
+            Integer.BYTES // sourcePartition
+                + Long.BYTES // segment
+                + Integer.BYTES // chunk
+                + Long.BYTES // windowStart
+                + Integer.BYTES
+                + delta.key().length
+                + Integer.BYTES
+                + delta.payload().length)
+        .putInt(delta.sourcePartition())
+        .putLong(delta.segment())
+        .putInt(delta.chunk())
+        .putLong(delta.windowStart())
+        .putInt(delta.key().length)
+        .put(delta.key())
+        .putInt(delta.payload().length)
+        .put(delta.payload())
+        .array();
+  }
+
+  private static ParkedDelta decodeParked(final DbBytes key, final DbBytes value) {
+    final ByteBuffer keyBuffer = ByteBuffer.wrap(key.getBytes());
+    final int streamId = keyBuffer.getInt();
+    final long seq = keyBuffer.getLong();
+    final ByteBuffer buffer = ByteBuffer.wrap(value.getBytes());
+    final int sourcePartition = buffer.getInt();
+    final long segment = buffer.getLong();
+    final int chunk = buffer.getInt();
+    final long windowStart = buffer.getLong();
+    final byte[] cellKey = new byte[buffer.getInt()];
+    buffer.get(cellKey);
+    final byte[] payload = new byte[buffer.getInt()];
+    buffer.get(payload);
+    return new ParkedDelta(
+        seq, streamId, sourcePartition, segment, chunk, windowStart, cellKey, payload);
   }
 
   /** One cube's reusable wiring: the dispatch applier and its per-tier composite mergers. */
@@ -351,6 +531,13 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
     // time would cover batches admitted after the freeze — merges the frozen cut does not contain
     // — and a crash-replay would drop those batches as already admitted: silent data loss.
     final Map<StreamKey, SegmentPosition> movedWatermarks = movedDedupWatermarks();
+    // Parked-delta bookkeeping is snapshotted at the barrier like the watermarks: entries parked
+    // since the last cut become durable with this cut, and rows drained/discarded since the last
+    // cut are deleted by it. A failed cut re-queues both, so nothing is lost or leaked.
+    final List<ParkedDelta> parkedPersistBatch = List.copyOf(parkedToPersist);
+    parkedToPersist.clear();
+    final List<byte[]> parkedDeleteBatch = List.copyOf(parkedToDelete);
+    parkedToDelete.clear();
 
     return new CommitCut() {
 
@@ -381,6 +568,15 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
                 dedupValue.wrapBytes(encodeSegmentPosition(watermark.getValue()));
                 dedupStore.put(dedupKey, dedupValue);
               }
+              for (final ParkedDelta delta : parkedPersistBatch) {
+                parkedKey.wrapBytes(encodeParkedKey(delta));
+                parkedValue.wrapBytes(encodeParkedValue(delta));
+                parkedStore.put(parkedKey, parkedValue);
+              }
+              for (final byte[] key : parkedDeleteBatch) {
+                parkedKey.wrapBytes(key);
+                parkedStore.delete(parkedKey);
+              }
               mergers.forEach(SegmentMergingAggregation::persistFrozen);
             });
       }
@@ -394,6 +590,11 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
           // skip re-persisting them after a failed transaction.
           persistedDedup.putAll(movedWatermarks);
           maybeReload();
+        } else {
+          // Re-queue the parked bookkeeping so the next cut retries it (order-preserving:
+          // re-queued entries go ahead of anything parked or drained since the freeze).
+          parkedToPersist.addAll(0, parkedPersistBatch);
+          parkedToDelete.addAll(0, parkedDeleteBatch);
         }
       }
     };

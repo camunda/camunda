@@ -263,6 +263,8 @@ final class AggregationStageTaskFrozenCutTest {
     final KeyValueStore<DbBytes, DbBytes> dedupStore =
         provider.keyValueStore(
             AnalyticsColumnFamilies.SHUFFLE_DEDUP_WATERMARK, new DbBytes(), new DbBytes());
+    final KeyValueStore<DbBytes, DbBytes> parkedStore =
+        provider.keyValueStore(AnalyticsColumnFamilies.PARKED_DELTAS, new DbBytes(), new DbBytes());
     final RdbmsDatasetStore datasetStore = new RdbmsDatasetStore(dataSource);
     dedupStoreWrapper = new FailingOnceKeyValueStore<>(dedupStore);
     task =
@@ -275,6 +277,7 @@ final class AggregationStageTaskFrozenCutTest {
             cellStore,
             offsets,
             dedupStoreWrapper,
+            parkedStore,
             catalog,
             Long.MAX_VALUE, // no reload in these tests
             0L);
@@ -388,6 +391,8 @@ final class AggregationStageTaskFrozenCutTest {
     final KeyValueStore<DbBytes, DbBytes> dedupStore =
         provider.keyValueStore(
             AnalyticsColumnFamilies.SHUFFLE_DEDUP_WATERMARK, new DbBytes(), new DbBytes());
+    final KeyValueStore<DbBytes, DbBytes> parkedStore =
+        provider.keyValueStore(AnalyticsColumnFamilies.PARKED_DELTAS, new DbBytes(), new DbBytes());
     final DbBytes key = new DbBytes();
     key.wrapBytes(
         ByteBuffer.allocate(2 * Integer.BYTES).putInt(1).putInt(handle.streamId()).array());

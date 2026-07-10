@@ -87,7 +87,21 @@ public enum AnalyticsColumnFamilies implements EnumValue, ScopedColumnFamily {
    * delta as a new facts-topic append) is still dropped by a restarted Stage 2 instead of being
    * double-folded by the non-idempotent merge.
    */
-  SHUFFLE_DEDUP_WATERMARK(9, ColumnFamilyScope.PARTITION_LOCAL);
+  SHUFFLE_DEDUP_WATERMARK(9, ColumnFamilyScope.PARTITION_LOCAL),
+
+  /**
+   * Stage-2 parked shuffle deltas for streams the merge topology has no applier for (yet): {@code
+   * streamId(4) ++ seq(8) -> sourcePartition(4) ++ segment(8) ++ chunk(4) ++ windowStart(8) ++
+   * keyLen(4) ++ key ++ payloadLen(4) ++ payload} (big-endian). A newly-declared cube's first
+   * deltas can arrive before this task's catalog reload wires its merger; instead of being
+   * consumed-and-lost (the facts offset advances regardless), they are parked here — persisted in
+   * the same atomic cut as the offset — and drained through the segment dedup when a reload
+   * installs the stream's applier, or discarded when the reloaded catalog does not know the stream
+   * (a removed dataset's stragglers). Parked entries are deleted only in the cut <em>after</em>
+   * their drain, so a crash between drain and cut replays them from here rather than losing the
+   * merge.
+   */
+  PARKED_DELTAS(10, ColumnFamilyScope.PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope scope;

@@ -125,6 +125,8 @@ final class AggregationStageTaskDedupPersistenceTest {
     final KeyValueStore<DbBytes, DbBytes> dedupStore =
         provider.keyValueStore(
             AnalyticsColumnFamilies.SHUFFLE_DEDUP_WATERMARK, new DbBytes(), new DbBytes());
+    final KeyValueStore<DbBytes, DbBytes> parkedStore =
+        provider.keyValueStore(AnalyticsColumnFamilies.PARKED_DELTAS, new DbBytes(), new DbBytes());
     final RdbmsDatasetStore datasetStore = new RdbmsDatasetStore(dataSource);
     task =
         new AggregationStageTask(
@@ -136,6 +138,7 @@ final class AggregationStageTaskDedupPersistenceTest {
             cellStore,
             offsets,
             dedupStore,
+            parkedStore,
             catalog,
             Long.MAX_VALUE, // no reload in these tests
             0L);

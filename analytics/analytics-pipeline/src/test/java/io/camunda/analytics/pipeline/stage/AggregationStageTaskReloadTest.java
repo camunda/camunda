@@ -155,6 +155,62 @@ final class AggregationStageTaskReloadTest {
     assertThat(durableTotal(handleA)).isEqualTo(2L);
   }
 
+  @Test
+  void shouldParkADeltaArrivingBeforeTheCatalogReloadAndDrainItAtTheReload() {
+    // given a running task whose topology predates a just-declared cube
+    openTask(); // no cubes known yet
+    final CubeHandle late = provision("cube-late");
+    final CubeHandle handle = resolve(late);
+
+    // when the cube's first delta arrives BEFORE this task's catalog reload (the facts offset
+    // advances past its envelope regardless)
+    task.process(envelope(handle));
+    task.commit(0L); // persists the parked delta, then the reload wires the cube and drains it
+    task.commit(1L); // the next cut makes the drained cells durable and deletes the parked rows
+
+    // then the delta survived the reload gap and folded exactly once
+    assertThat(durableTotal(handle)).isEqualTo(1L);
+  }
+
+  @Test
+  void shouldReplayAParkedDeltaFromDurableStateAcrossARestart() {
+    // given a parked delta committed durably, with the drain's fold still heap-only (no cut after
+    // the reload) — the crash window between drain and checkpoint
+    openTask(); // no cubes known yet
+    final CubeHandle late = provision("cube-late");
+    final CubeHandle handle = resolve(late);
+    task.process(envelope(handle));
+    task.commit(0L);
+    task.close();
+    task = null;
+
+    // when the task restarts over the same stores with the cube now in the catalog
+    reopenStores();
+    openTask();
+
+    // then the parked delta was restored and re-drained at construction (the pre-drain dedup
+    // watermarks rolled back with the lost fold, so admission succeeds again — exactly once)
+    task.commit(1L);
+    assertThat(durableTotal(handle)).isEqualTo(1L);
+  }
+
+  /** Reopens the RocksDB provider and stores over the same directory (a restart). */
+  private void reopenStores() {
+    final JdbcDataSource dataSource = new JdbcDataSource();
+    dataSource.setURL("jdbc:h2:mem:reload-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1");
+    dataSource.setUser("sa");
+    datasetStore = new CountingDatasetStore(new RdbmsDatasetStore(dataSource));
+    provider =
+        RocksDbStateStoreProvider.open(
+            new File(stateDir.toFile(), "stage2"), new SimpleMeterRegistry());
+    cellStore =
+        new CountingKeyValueStore(
+            provider.keyValueStore(
+                AnalyticsColumnFamilies.CUBE_CELLS, new DbBytes(), new DbBytes()));
+    rawCells =
+        provider.keyValueStore(AnalyticsColumnFamilies.CUBE_CELLS, new DbBytes(), new DbBytes());
+  }
+
   private void openTask() {
     catalog = new DatasetCatalog(metadataStore);
     final KeyValueStore<DbInt, DbLong> offsets =
@@ -163,6 +219,8 @@ final class AggregationStageTaskReloadTest {
     final KeyValueStore<DbBytes, DbBytes> dedupStore =
         provider.keyValueStore(
             AnalyticsColumnFamilies.SHUFFLE_DEDUP_WATERMARK, new DbBytes(), new DbBytes());
+    final KeyValueStore<DbBytes, DbBytes> parkedStore =
+        provider.keyValueStore(AnalyticsColumnFamilies.PARKED_DELTAS, new DbBytes(), new DbBytes());
     task =
         new AggregationStageTask(
             1,
@@ -173,6 +231,7 @@ final class AggregationStageTaskReloadTest {
             cellStore,
             offsets,
             dedupStore,
+            parkedStore,
             catalog,
             0L, // check the catalog at every commit
             0L);

@@ -42,9 +42,20 @@ public final class CubeMergeProcessor implements Processor<ShuffleEnvelope, Void
     void apply(byte[] keyBytes, long windowStart, byte[] accBytes);
   }
 
+  /**
+   * Receives a delta whose stream has no applier in the current topology — e.g. a newly-declared
+   * cube whose deltas arrive before this task's catalog reload wires its merger. The owner parks it
+   * durably and drains it (through the dedup) once a reload installs the stream, or discards it
+   * when the reloaded catalog does not know the stream.
+   */
+  public interface DeltaParker {
+    void park(int sourcePartition, long segment, int chunk, CellDelta cell);
+  }
+
   private final SegmentDedup dedup;
   private final Map<Integer, CellApplier> byStreamId;
   private final List<SegmentMergingAggregation<?, ?>> mergers;
+  private final DeltaParker parker;
 
   /**
    * Reused per-envelope admit-once-per-stream memo (the task processes envelopes one at a time on
@@ -55,10 +66,12 @@ public final class CubeMergeProcessor implements Processor<ShuffleEnvelope, Void
   public CubeMergeProcessor(
       final SegmentDedup dedup,
       final Map<Integer, CellApplier> byStreamId,
-      final List<SegmentMergingAggregation<?, ?>> mergers) {
+      final List<SegmentMergingAggregation<?, ?>> mergers,
+      final DeltaParker parker) {
     this.dedup = dedup;
     this.byStreamId = Map.copyOf(byStreamId);
     this.mergers = List.copyOf(mergers);
+    this.parker = parker;
   }
 
   @Override
@@ -77,10 +90,12 @@ public final class CubeMergeProcessor implements Processor<ShuffleEnvelope, Void
       final CellApplier applier = byStreamId.get(cell.streamId());
       if (applier == null) {
         // Unknown stream — e.g. a cube declared after this task's last catalog reload. Do NOT
-        // advance the dedup watermark for it: admitting without applying would permanently mark
-        // these (segment, chunk)s as merged, so nothing could ever replay them. (The envelope's
-        // offset still advances — closing that reload race needs a Stage-2-side replay, tracked
-        // separately — but at least the admission watermarks never lie about what was folded.)
+        // advance the dedup watermark (admitting without applying would permanently mark these
+        // (segment, chunk)s as merged); park the delta instead. The owner drains it through the
+        // dedup once a reload installs the stream's applier, or discards it when the reloaded
+        // catalog does not know the stream — so a new cube's first deltas survive the reload gap
+        // even though the facts offset advances past this envelope.
+        parker.park(sourcePartition, segment, chunk, cell);
         continue;
       }
       final boolean merge =
