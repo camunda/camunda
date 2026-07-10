@@ -61,6 +61,8 @@ import org.slf4j.LoggerFactory;
 public class OpensearchBackupRepository implements BackupRepository {
   public static final String SNAPSHOT_MISSING_EXCEPTION_TYPE = "snapshot_missing_exception";
   public static final String REPOSITORY_MISSING_EXCEPTION_TYPE = "repository_missing_exception";
+  public static final String SNAPSHOT_NAME_ALREADY_IN_USE_EXCEPTION_TYPE =
+      "snapshot_name_already_in_use_exception";
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchBackupRepository.class);
 
   private final OpenSearchClient openSearchClient;
@@ -334,6 +336,15 @@ public class OpensearchBackupRepository implements BackupRepository {
                     break;
                   }
                 }
+              } else if (isErrorType(e, SNAPSHOT_NAME_ALREADY_IN_USE_EXCEPTION_TYPE)) {
+                LOGGER.warn(
+                    "Snapshot [{}] for backup id [{}] already exists in OpenSearch. "
+                        + "A previous backup attempt with the same ID may still be in the process of being deleted. "
+                        + "To retry with the same backup ID, wait for the deletion to complete first. "
+                        + "To proceed immediately, use a different backup ID.",
+                    snapshotRequest.snapshotName(),
+                    backupId);
+                onFailure.run();
               } else {
                 LOGGER.error(
                     "Exception while creating snapshot [{}] for backup id [{}].",
