@@ -127,10 +127,10 @@
       </if>
       <if test="filter.isDeleted != null">
         <if test="filter.isDeleted == true">
-          AND IS_DELETED = TRUE
+          AND IS_DELETED = #{filter.isDeleted}
         </if>
         <if test="filter.isDeleted == false">
-          AND (IS_DELETED = FALSE OR IS_DELETED IS NULL)
+          AND (IS_DELETED = #{filter.isDeleted} OR IS_DELETED IS NULL)
         </if>
       </if>
     </where>
@@ -354,8 +354,9 @@
   </insert>
 
   <update id="markDeleted" parameterType="java.lang.Long">
+    <bind name="deleted" value="true"/>
     UPDATE ${prefix}PROCESS_DEFINITION
-    SET IS_DELETED = TRUE
+    SET IS_DELETED = #{deleted}
     WHERE PROCESS_DEFINITION_KEY = #{processDefinitionKey}
   </update>
 
