@@ -19,6 +19,7 @@ public class ZoneFixtures {
   // zones
   public static final String ZONE_A = "zone-a";
   public static final String ZONE_B = "zone-b";
+  public static final String ZONE_C = "zone-c";
 
   // bare node ids
   public static final MemberId BARE_0 = MemberId.from(0);
