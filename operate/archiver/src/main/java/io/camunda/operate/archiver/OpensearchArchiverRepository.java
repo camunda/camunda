@@ -582,6 +582,7 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
     if (hits.isEmpty()) {
       return null;
     }
+    DateOfArchivedDocumentsUtil.validateRolloverConfiguration(rolloverInterval, dateFormat);
     final String firstEndDate = endDateOf(hits.get(0), dateField);
     final String bucketStart =
         DateOfArchivedDocumentsUtil.getBucketStart(firstEndDate, rolloverInterval, dateFormat);

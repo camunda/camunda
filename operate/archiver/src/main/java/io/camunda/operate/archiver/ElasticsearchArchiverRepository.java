@@ -130,6 +130,7 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
     if (hits.length == 0) {
       return null;
     }
+    DateOfArchivedDocumentsUtil.validateRolloverConfiguration(rolloverInterval, dateFormat);
     final String firstEndDate = hits[0].field(dateField).getValue();
     final String bucketStart =
         DateOfArchivedDocumentsUtil.getBucketStart(firstEndDate, rolloverInterval, dateFormat);

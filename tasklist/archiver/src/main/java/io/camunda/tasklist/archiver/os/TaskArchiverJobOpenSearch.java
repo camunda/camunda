@@ -12,6 +12,7 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROT
 
 import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.archiver.TaskArchiverJob;
+import io.camunda.tasklist.archiver.util.DateOfArchivedDocumentsUtil;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -20,11 +21,8 @@ import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.util.Either;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.micrometer.core.instrument.Timer;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonData;
@@ -32,7 +30,6 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldSort;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.SortOrder;
-import org.opensearch.client.opensearch._types.aggregations.*;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
@@ -53,8 +50,6 @@ public class TaskArchiverJobOpenSearch extends AbstractArchiverJobOpenSearch
     implements TaskArchiverJob {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TaskArchiverJobOpenSearch.class);
-  private static final String DATES_AGG = "datesAgg";
-  private static final String INSTANCES_AGG = "instancesAgg";
 
   @Autowired private TaskTemplate taskTemplate;
 
@@ -118,8 +113,7 @@ public class TaskArchiverJobOpenSearch extends AbstractArchiverJobOpenSearch
   @Override
   public CompletableFuture<ArchiveBatch> getNextBatch() {
     final var batchFuture = new CompletableFuture<ArchiveBatch>();
-    final var aggregation = createFinishedTasksAggregation(DATES_AGG, INSTANCES_AGG);
-    final var searchRequest = createFinishedTasksSearchRequest(aggregation);
+    final var searchRequest = createFinishedTasksSearchRequest();
 
     final var startTimer = Timer.start();
     sendSearchRequest(searchRequest)
@@ -149,10 +143,9 @@ public class TaskArchiverJobOpenSearch extends AbstractArchiverJobOpenSearch
     return Either.right(batch);
   }
 
-  private SearchRequest createFinishedTasksSearchRequest(final Aggregation agg) {
+  private SearchRequest createFinishedTasksSearchRequest() {
     final List<FieldValue> partitions =
         getPartitionIds().stream().map(m -> FieldValue.of(m)).collect(Collectors.toList());
-    final SearchRequest.Builder builder = new SearchRequest.Builder();
 
     final Query.Builder endDateQ = new Query.Builder();
     endDateQ.range(
@@ -169,106 +162,52 @@ public class TaskArchiverJobOpenSearch extends AbstractArchiverJobOpenSearch
             .constantScore(cs -> cs.filter(OpenSearchUtil.joinWithAnd(endDateQ, partitionQ)))
             .build();
 
-    builder
+    final String dateFormat = tasklistProperties.getArchiver().getElsRolloverDateFormat();
+
+    LOGGER.debug("Finished tasks for archiving request: \n{}", q.toString());
+
+    return new SearchRequest.Builder()
         .index(taskTemplate.getFullQualifiedName())
         .query(q)
+        .source(s -> s.fetch(false))
+        .fields(f -> f.field(TaskTemplate.COMPLETION_TIME).format(dateFormat))
+        .size(tasklistProperties.getArchiver().getRolloverBatchSize())
         .sort(
             s ->
                 s.field(
                     FieldSort.of(f -> f.field(TaskTemplate.COMPLETION_TIME).order(SortOrder.Asc))))
-        .aggregations(DATES_AGG, agg)
-        .size(0)
-        .requestCache(false);
-
-    LOGGER.debug(
-        "Finished tasks for archiving request: \n{}\n and aggregation: \n{}",
-        q.toString(),
-        agg.toString());
-
-    return builder.build();
-  }
-
-  private CalendarInterval calendarIntervalByAlias(final String alias) {
-    return Arrays.stream(CalendarInterval.values())
-        .filter(ci -> Arrays.asList(ci.aliases()).contains(alias))
-        .findFirst()
-        .orElseThrow(
-            () -> {
-              final List<String> legalAliases =
-                  Arrays.stream(CalendarInterval.values())
-                      .flatMap(v -> Arrays.stream(v.aliases()))
-                      .sorted()
-                      .toList();
-              return new TasklistRuntimeException(
-                  format(
-                      "Unknown CalendarInterval alias %s! Legal aliases: %s", alias, legalAliases));
-            });
-  }
-
-  private Aggregation createFinishedTasksAggregation(
-      final String datesAggName, final String instancesAggName) {
-
-    final Aggregation dateHistogram =
-        new Aggregation.Builder()
-            .dateHistogram(
-                d ->
-                    d.field(TaskTemplate.COMPLETION_TIME)
-                        .calendarInterval(
-                            calendarIntervalByAlias(
-                                tasklistProperties.getArchiver().getRolloverInterval()))
-                        .format(tasklistProperties.getArchiver().getElsRolloverDateFormat())
-                        .keyed(true))
-            .aggregations(
-                "datesSortedAgg",
-                new Aggregation.Builder()
-                    .bucketSort(
-                        bs ->
-                            bs.sort(
-                                    s ->
-                                        s.field(
-                                            FieldSort.of(
-                                                f -> f.field("_key").order(SortOrder.Desc))))
-                                // we want to get only one bucket at a time
-                                .size(1))
-                    .build())
-            .aggregations(
-                instancesAggName,
-                new Aggregation.Builder()
-                    .topHits(
-                        th ->
-                            th.size(tasklistProperties.getArchiver().getRolloverBatchSize())
-                                .sort(
-                                    s ->
-                                        s.field(f -> f.field(TaskTemplate.ID).order(SortOrder.Asc)))
-                                .source(s -> s.filter(sf -> sf.includes(List.of(TaskTemplate.ID)))))
-                    .build())
-            .build();
-
-    return dateHistogram;
+        .requestCache(false)
+        .build();
   }
 
   protected ArchiveBatch createArchiveBatch(final SearchResponse searchResponse) {
-    final Aggregate agg = ((Aggregate) searchResponse.aggregations().get(DATES_AGG));
-    final DateHistogramAggregate histogramAgg = (DateHistogramAggregate) agg._get();
-    final Buckets<DateHistogramBucket> buckets = histogramAgg.buckets();
-    final HashMap bucket = (HashMap) buckets._get();
-
-    if (bucket.size() > 0) {
-      final Set<Map.Entry<String, DateHistogramBucket>> bucketEntrySet = bucket.entrySet();
-      for (final Map.Entry<String, DateHistogramBucket> bucketItem : bucketEntrySet) {
-        final String finishDate = bucketItem.getKey();
-        final HitsMetadata hits =
-            bucketItem.getValue().aggregations().get(INSTANCES_AGG).topHits().hits();
-
-        final List<String> ids =
-            (List<String>)
-                hits.hits().stream().map(hit -> ((Hit) hit).id()).collect(Collectors.toList());
-        return new ArchiveBatch(finishDate, ids);
-      }
-      return null;
-    } else {
+    final HitsMetadata<?> metadata = searchResponse.hits();
+    final List<? extends Hit<?>> hits = metadata.hits();
+    if (hits.isEmpty()) {
       return null;
     }
+    final String rolloverInterval = tasklistProperties.getArchiver().getRolloverInterval();
+    final String dateFormat = tasklistProperties.getArchiver().getElsRolloverDateFormat();
+    DateOfArchivedDocumentsUtil.validateRolloverConfiguration(rolloverInterval, dateFormat);
+    final String firstCompletionTime = completionTimeOf(hits.get(0));
+    final String bucketStart =
+        DateOfArchivedDocumentsUtil.getBucketStart(
+            firstCompletionTime, rolloverInterval, dateFormat);
+    final String nextBucketStart =
+        DateOfArchivedDocumentsUtil.getNextBucketStart(
+            firstCompletionTime, rolloverInterval, dateFormat);
+    // hits are sorted by completionTime ASC, so the first hit defines the bucket.
+    // Only the exclusive upper bound needs to be checked.
+    final List<String> ids =
+        hits.stream()
+            .takeWhile(hit -> completionTimeOf(hit).compareTo(nextBucketStart) < 0)
+            .map(Hit::id)
+            .toList();
+    return new ArchiveBatch(bucketStart, ids);
+  }
+
+  private static String completionTimeOf(final Hit<?> hit) {
+    return hit.fields().get(TaskTemplate.COMPLETION_TIME).toJson().asJsonArray().getString(0);
   }
 
   private Timer getArchiverQueryTimer() {
