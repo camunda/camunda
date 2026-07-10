@@ -58,7 +58,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
   @TestTemplate
   void shouldArchiveLoneProcessInstance(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given
@@ -76,7 +76,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
+          assertThat(archived).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
 
           // check that the process is no longer in the main index
           verifyMoved(listViewTemplate, client, processInstance, "2020-01-01");
@@ -88,7 +88,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
     final int batchSize = 5;
     config.getHistory().setRolloverBatchSize(batchSize);
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given
@@ -112,7 +112,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(5);
+          assertThat(archived).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(5);
 
           // check that the first batch of processes are no longer in the main index
           for (var i = 0; i < batchSize; i++) {
@@ -126,7 +126,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
   @TestTemplate
   void shouldOnlyArchiveFinishedProcessInstances(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given
@@ -147,7 +147,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
+          assertThat(archived).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
 
           // check that the finished process is no longer in the main index
           verifyMoved(listViewTemplate, client, finishedInstance, "2020-01-01");
@@ -158,7 +158,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
   @TestTemplate
   void shouldOnlyArchiveProcessInstancesCompletedAfterAWhile(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given
@@ -179,7 +179,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
+          assertThat(archived).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
 
           // check that the finished process is no longer in the main index
           verifyMoved(listViewTemplate, client, finishedInstance, "2020-01-01");
@@ -190,7 +190,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
   @TestTemplate
   void shouldArchiveProcessInstanceAndDependentChildListViewEntities(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given
@@ -217,7 +217,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
+          assertThat(archived).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
 
           // check that the process is no longer in the main index
           verifyMoved(listViewTemplate, client, processInstance, "2020-01-01");
@@ -232,7 +232,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
     // set smaller reindex batch size to verify things work when multiple batches are needed
     config.getHistory().setReindexBatchSize(10);
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given
@@ -259,7 +259,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
+          assertThat(archived).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
 
           // check that the process is no longer in the main index
           verifyMoved(listViewTemplate, client, processInstance, "2020-01-01");
@@ -272,7 +272,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
   @TestTemplate
   void shouldOnlyArchiveFinishedProcessInstanceAndDependentChildListViewEntities(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given
@@ -313,7 +313,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
+          assertThat(archived).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
 
           // check that the process is no longer in the main index
           verifyMoved(listViewTemplate, client, finishedInstance, "2020-01-01");
@@ -331,7 +331,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
   @TestTemplate
   void shouldOnlyArchiveFinishedProcessInstanceAndProcessInstanceDependentEntities(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given
@@ -369,7 +369,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
+          assertThat(archived).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
 
           // check that the process is no longer in the main index
           verifyMoved(listViewTemplate, client, finishedInstance, "2020-01-01");
@@ -391,7 +391,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
   @TestTemplate
   void shouldArchiveProcessInstanceAndProcessInstanceDependentEntities(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given
@@ -417,7 +417,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
+          assertThat(archived).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
 
           // check that the process is no longer in the main index
           verifyMoved(listViewTemplate, client, processInstance, "2020-01-01");
@@ -432,7 +432,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
   @TestTemplate
   void shouldNotDeleteDocumentsWhenReindexDoesNotFullySucceed(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given - a finished process instance together with its dependent records
@@ -465,7 +465,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
           // when
           final var result = job.execute().toCompletableFuture();
           Awaitility.await("until the archive job has finished")
-              .atMost(ARCHIVE_TIMEOUT)
+              .atMost(EXECUTE_TIMEOUT)
               .until(result::isDone);
           client.refresh();
 
@@ -486,7 +486,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
   @TestTemplate
   void shouldHaveProcessInstanceDependentEntitiesSpecifiedInTests(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given
