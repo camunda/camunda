@@ -383,6 +383,11 @@ public final class RaftRule extends ExternalResource {
   /** Takes a snapshot on the given node, without waiting for compaction to occur. */
   public Optional<PersistedSnapshot> takeSnapshot(
       final RaftServer raftServer, final long index, final int size) {
+    return takeSnapshot(raftServer, index, size, false);
+  }
+
+  public Optional<PersistedSnapshot> takeSnapshot(
+      final RaftServer raftServer, final long index, final int size, final boolean withMetadata) {
     if (!raftServer.isRunning()) {
       return Optional.empty();
     }
@@ -393,7 +398,12 @@ public final class RaftRule extends ExternalResource {
 
     return Optional.of(
         InMemorySnapshot.newPersistedSnapshot(
-            Integer.parseInt(memberId.id()), index, raftContext.getTerm(), size, snapshotStore));
+            Integer.parseInt(memberId.id()),
+            index,
+            raftContext.getTerm(),
+            size,
+            snapshotStore,
+            withMetadata));
   }
 
   private TestSnapshotStore getSnapshotStore(final String memberId) {

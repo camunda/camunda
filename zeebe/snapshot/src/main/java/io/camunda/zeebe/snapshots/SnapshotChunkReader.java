@@ -42,4 +42,14 @@ public interface SnapshotChunkReader extends Iterator<SnapshotChunk>, CloseableS
    * @param maximumChunkSize
    */
   void setMaximumChunkSize(final int maximumChunkSize);
+
+  /**
+   * The number of bytes the given chunk contributes to {@link
+   * PersistedSnapshot#getTotalSizeInBytes()}, i.e. the amount of replication lag it clears once
+   * acknowledged. Chunks excluded from the total (e.g. the metadata chunk) return {@code 0}.
+   *
+   * @param chunk a chunk produced by this reader
+   * @return the chunk's tracked byte size
+   */
+  long trackedSizeOf(SnapshotChunk chunk);
 }
