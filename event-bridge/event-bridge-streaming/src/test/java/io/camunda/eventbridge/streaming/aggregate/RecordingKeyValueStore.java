@@ -43,6 +43,16 @@ final class RecordingKeyValueStore implements KeyValueStore<DbBytes, DbBytes> {
     return windowStarts(deletes);
   }
 
+  /** Every recorded cell-row put key's raw bytes, in write order (meta rows skipped). */
+  List<byte[]> putCellKeys() {
+    return cellKeys(puts);
+  }
+
+  /** Every recorded cell-row delete key's raw bytes, in write order. */
+  List<byte[]> deleteCellKeys() {
+    return cellKeys(deletes);
+  }
+
   /** Forgets everything recorded so far, so a test can scope assertions to one cut. */
   void clearRecorded() {
     puts.clear();
@@ -92,12 +102,19 @@ final class RecordingKeyValueStore implements KeyValueStore<DbBytes, DbBytes> {
    */
   private static List<Long> windowStarts(final List<byte[]> keys) {
     final List<Long> starts = new ArrayList<>();
-    for (final byte[] key : keys) {
-      if (key.length < Integer.BYTES + Long.BYTES) {
-        continue;
-      }
+    for (final byte[] key : cellKeys(keys)) {
       starts.add(ByteBuffer.wrap(key).getLong(Integer.BYTES));
     }
     return starts;
+  }
+
+  private static List<byte[]> cellKeys(final List<byte[]> keys) {
+    final List<byte[]> cells = new ArrayList<>();
+    for (final byte[] key : keys) {
+      if (key.length >= Integer.BYTES + Long.BYTES) {
+        cells.add(key);
+      }
+    }
+    return cells;
   }
 }

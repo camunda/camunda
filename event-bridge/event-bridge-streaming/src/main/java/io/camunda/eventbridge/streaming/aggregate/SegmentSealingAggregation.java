@@ -8,6 +8,7 @@
 package io.camunda.eventbridge.streaming.aggregate;
 
 import io.camunda.eventbridge.streaming.TransactionRunner;
+import io.camunda.eventbridge.streaming.aggregate.WindowedCellState.CheckpointDelta;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.window.Windowed;
 import io.camunda.eventbridge.streaming.window.Windows;
@@ -38,18 +39,22 @@ import org.agrona.concurrent.UnsafeBuffer;
  * lose it. Constructed {@linkplain #SegmentSealingAggregation(int, AggregateFunction, KeySelector,
  * SourceCoordinate, ToLongFunction, Windows, Segments, SegmentSink, KeyValueStore, RecordValue,
  * RecordValue, TransactionRunner) with a state store}, {@link #checkpoint()} persists the open
- * {@code (window, key) -> accumulator} buffer plus the {@code (openSegment, sourcePartition)} meta,
- * and the buffer is restored on construction — so replay resumes from the committed offset onto the
+ * {@code (window, key) -> accumulator} buffer plus the {@code (openSegment, sourcePartition)} meta
+ * incrementally — each cut writes the cells folded into since the last completed cut and deletes
+ * the rows of cells sealed away, so the store always holds the buffer's exact at-barrier image —
+ * and the buffer is restored on construction, so replay resumes from the committed offset onto the
  * matching open segment (no reconcile). Constructed {@linkplain #SegmentSealingAggregation(
  * AggregateFunction, KeySelector, SourceCoordinate, ToLongFunction, Windows, Segments, SegmentSink)
  * without a store}, it keeps no durable aggregation state — the buffer is ephemeral and rebuilt by
  * replay, so the owner must commit offsets only up to {@link #safeOffset()} (Model R).
  *
  * <p>The Model-F checkpoint is split so the durable write can run off the owner thread: {@link
- * #freeze()} serializes the open buffer into an immutable snapshot and folding resumes immediately;
- * {@link #persistFrozen()} writes the snapshot inside the transaction the task supplies; {@link
- * #completeFrozen(boolean)} settles the outcome. {@link #checkpoint()} composes the three
- * synchronously for callers without an asynchronous commit. All three are no-ops under Model R.
+ * #freeze()} serializes the cells dirtied since the last completed cut into an immutable snapshot
+ * delta and folding resumes immediately; {@link #persistFrozen()} writes the delta inside the
+ * transaction the task supplies; {@link #completeFrozen(boolean)} settles the outcome — a failed
+ * cut's dirty cells are re-marked so the next cut re-persists them. {@link #checkpoint()} composes
+ * the three synchronously for callers without an asynchronous commit. All three are no-ops under
+ * Model R.
  *
  * @param <IN> the value type folded
  * @param <K> the base grouping key type
@@ -74,12 +79,15 @@ public final class SegmentSealingAggregation<IN, K, ACC> implements Aggregation<
   private final GroupedCellStore<K, ACC> cells;
   private final RecordValue<ACC> accCodec;
   private final TransactionRunner tx;
+  // The cells whose durable row exists right now — written by a completed cut (or recovered) and
+  // not yet deleted by one. Mutated only on complete/recover, never on freeze — a cut counts as
+  // written only once it durably completed, so a frozen-but-failed cut marks nothing.
   private final Set<Windowed<K>> durablyWritten = new HashSet<>();
 
-  // The outstanding frozen open-segment snapshot (null when none): every open cell serialized at
-  // freeze time, the durable rows that must go (sealed away since the last successful cut), and
-  // the segment meta. Owned by the freeze/complete pair on the owner thread; persistFrozen only
-  // reads it.
+  // The outstanding frozen open-segment snapshot (null when none): the cells dirtied since the
+  // last completed cut serialized at freeze time, the durable rows that must go (sealed away since
+  // the last successful cut), the segment meta, and the stolen dirty set (merged back if the cut
+  // fails). Owned by the freeze/complete pair on the owner thread; persistFrozen only reads it.
   private FrozenSnapshot<K> frozen;
 
   private final WindowedCellState<K, ACC> open = new WindowedCellState<>();
@@ -184,18 +192,26 @@ public final class SegmentSealingAggregation<IN, K, ACC> implements Aggregation<
       sourcePartition = coordinate.partition(value);
     }
     // Probe with a possibly-reusable view key; an owned copy is made only when a new cell is
-    // inserted. On the hit path the map keeps its existing (owned) key — the probe is only
-    // compared, never stored.
+    // inserted or first dirtied since the last cut. On the hit path the map keeps its existing
+    // (owned) key — the probe is only compared, never stored.
     final K probe = keySelector.probeKey(value);
     final Windowed<K> cell =
         new Windowed<>(probe, windows.windowStart(eventTime.applyAsLong(value)));
     final ACC current = open.get(cell);
     if (current == null) {
-      open.put(
-          new Windowed<>(keySelector.ownKey(probe), cell.windowStart()),
-          aggregate.add(value, aggregate.createAccumulator()));
+      final Windowed<K> owned = new Windowed<>(keySelector.ownKey(probe), cell.windowStart());
+      open.put(owned, aggregate.add(value, aggregate.createAccumulator()));
+      if (cells != null) {
+        open.markChanged(owned);
+      }
     } else {
       open.put(cell, aggregate.add(value, current));
+      // Dirty-mark the first fold since the last cut (Model F only — Model R never checkpoints).
+      // The mark stores the key in a set, so it must be an owned copy, never the probe view; the
+      // copy is made at most once per cell per cut, when the cell is not yet marked.
+      if (cells != null && !open.isChangedSinceCheckpoint(cell)) {
+        open.markChanged(new Windowed<>(keySelector.ownKey(probe), cell.windowStart()));
+      }
     }
   }
 
@@ -271,11 +287,13 @@ public final class SegmentSealingAggregation<IN, K, ACC> implements Aggregation<
   }
 
   /**
-   * Owner thread: snapshots the open buffer as immutable bytes. The open cells are not serialized
-   * until they are persisted, so the freeze serializes them here — O(open buffer) codec work but no
-   * store writes — rather than copy-on-write the live accumulators. Also captures the durable rows
-   * to delete (written by the last successful cut but sealed away since) and the segment meta, so a
-   * seal or fold after the freeze cannot leak into the frozen cut. No-op under Model R.
+   * Owner thread: detaches the dirty set and snapshots the cut's <em>delta</em> as immutable bytes
+   * — only the cells folded into since the last completed cut are serialized (O(delta) codec work,
+   * no store writes); an unchanged open cell's row from an earlier cut is still exact and is simply
+   * not rewritten. Also captures the durable rows to delete — computed against the live open
+   * buffer, not the delta, so an unchanged-but-alive cell is never mistaken for a sealed-away one —
+   * and the segment meta, so a seal or fold after the freeze cannot leak into the frozen cut. No-op
+   * under Model R.
    *
    * @throws IllegalStateException if a frozen snapshot is already outstanding
    */
@@ -288,22 +306,31 @@ public final class SegmentSealingAggregation<IN, K, ACC> implements Aggregation<
           "expected no outstanding frozen open-segment snapshot, but freeze() was called again"
               + " before completeFrozen()");
     }
+    final CheckpointDelta<K> delta = open.detachCheckpointDelta();
     final Map<Windowed<K>, byte[]> snapshot = new HashMap<>();
-    open.forEachOpen((cell, acc) -> snapshot.put(cell, accCodec.toBytes(acc)));
+    for (final Windowed<K> cell : delta.changed()) {
+      final ACC acc = open.get(cell);
+      if (acc != null) {
+        // A dirty cell sealed away since it was marked has nothing left to persist; its durable
+        // row (if an earlier cut wrote one) is deleted through the stale set below.
+        snapshot.put(cell, accCodec.toBytes(acc));
+      }
+    }
     final Set<Windowed<K>> stale = new HashSet<>();
     for (final Windowed<K> cell : durablyWritten) {
-      if (!snapshot.containsKey(cell)) {
+      if (!open.contains(cell)) {
         stale.add(cell);
       }
     }
-    frozen = new FrozenSnapshot<>(snapshot, stale, encodeMeta());
+    frozen = new FrozenSnapshot<>(snapshot, stale, encodeMeta(), delta);
   }
 
   /**
    * IO thread, inside the caller's commit transaction: deletes the stale rows, then persists every
-   * frozen cell's at-freeze bytes and the frozen meta. Touches only the frozen snapshot and the
-   * cell store (which the owner thread itself only uses on this path and at recovery), never the
-   * live buffer — the owner keeps folding, even sealing, concurrently. No-op under Model R.
+   * frozen dirty cell's at-freeze bytes and the frozen meta — unchanged open cells are not
+   * rewritten. Touches only the frozen snapshot and the cell store (which the owner thread itself
+   * only uses on this path and at recovery), never the live buffer — the owner keeps folding, even
+   * sealing, concurrently. No-op under Model R.
    *
    * @throws IllegalStateException if nothing is frozen
    */
@@ -323,11 +350,12 @@ public final class SegmentSealingAggregation<IN, K, ACC> implements Aggregation<
   }
 
   /**
-   * Owner thread, once the transaction's outcome is known. Success: the frozen snapshot <em>is</em>
-   * the durable state now — remember its rows so the next freeze can compute the stale set.
-   * Failure: discard it; the snapshot is a full image (not an incremental delta), so the next
-   * freeze re-captures everything against the unchanged durable rows and nothing is lost. No-op
-   * under Model R.
+   * Owner thread, once the transaction's outcome is known. Success: fold the cut into the
+   * was-written tracking — the deleted stale rows are forgotten and the persisted cells remembered,
+   * so the next freeze computes its stale set against the rows that now exist. Failure: merge the
+   * stolen dirty set back so the next cut re-serializes and re-persists everything this cut carried
+   * (newer folds already in the fresh dirty set simply win); the durable rows are untouched, so the
+   * stale set is recomputed intact by the next freeze. No-op under Model R.
    *
    * @throws IllegalStateException if nothing is frozen
    */
@@ -340,8 +368,10 @@ public final class SegmentSealingAggregation<IN, K, ACC> implements Aggregation<
           "expected a frozen open-segment snapshot to complete," + " but none");
     }
     if (success) {
-      durablyWritten.clear();
+      durablyWritten.removeAll(frozen.staleCells());
       durablyWritten.addAll(frozen.cells().keySet());
+    } else {
+      open.mergeBackCheckpointDelta(frozen.delta());
     }
     frozen = null;
   }
@@ -374,7 +404,13 @@ public final class SegmentSealingAggregation<IN, K, ACC> implements Aggregation<
     return meta;
   }
 
-  /** One freeze's immutable snapshot of the open segment: cell bytes, rows to delete, meta. */
+  /**
+   * One freeze's immutable cut delta: the dirty cells' bytes, the rows to delete, the meta, and the
+   * stolen dirty set (merged back on failure).
+   */
   private record FrozenSnapshot<K>(
-      Map<Windowed<K>, byte[]> cells, Set<Windowed<K>> staleCells, byte[] meta) {}
+      Map<Windowed<K>, byte[]> cells,
+      Set<Windowed<K>> staleCells,
+      byte[] meta,
+      CheckpointDelta<K> delta) {}
 }
