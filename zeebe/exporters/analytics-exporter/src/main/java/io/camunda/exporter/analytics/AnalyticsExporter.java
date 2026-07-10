@@ -38,7 +38,6 @@ public class AnalyticsExporter implements Exporter {
   private MeterRegistry meterRegistry;
   private ScheduledTask metricFlushTask;
   private ScheduledTask heartbeatTask;
-  private int partitionId;
 
   public AnalyticsExporter() {
     this(new OtelSdkManager());
@@ -54,7 +53,6 @@ public class AnalyticsExporter implements Exporter {
 
     handlers = AnalyticsHandlerCatalog.build(otelSdkManager).apply(context);
     meterRegistry = context.getMeterRegistry();
-    partitionId = context.getPartitionId();
 
     analyticsContext =
         AnalyticsExporterContext.create(
@@ -106,7 +104,7 @@ public class AnalyticsExporter implements Exporter {
   @Override
   public void export(final Record<?> record) {
     try {
-      if (Protocol.decodePartitionId(record.getKey()) == partitionId) {
+      if (Protocol.decodePartitionId(record.getKey()) == analyticsContext.partitionId()) {
         handlers.handle(record);
       }
     } catch (final Exception e) {
