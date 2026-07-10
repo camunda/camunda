@@ -8,7 +8,9 @@
 package io.camunda.exporter.analytics;
 
 import io.camunda.exporter.analytics.sampling.HashSampler;
+import java.net.URI;
 import java.time.Duration;
+import org.slf4j.Logger;
 
 /** Configuration for the Analytics Exporter. Instantiated from the exporter's args map. */
 public class AnalyticsExporterConfig {
@@ -19,6 +21,7 @@ public class AnalyticsExporterConfig {
   private String pushInterval = "PT5M";
   private String heartbeatInterval = "PT10M";
   private boolean signing = true;
+  private boolean allowInsecure = false;
   private double samplingRate = HashSampler.MAX_SAMPLE_RATE;
 
   public String getEndpoint() {
@@ -75,6 +78,15 @@ public class AnalyticsExporterConfig {
     return this;
   }
 
+  public boolean isAllowInsecure() {
+    return allowInsecure;
+  }
+
+  public AnalyticsExporterConfig setAllowInsecure(final boolean allowInsecure) {
+    this.allowInsecure = allowInsecure;
+    return this;
+  }
+
   public double getSamplingRate() {
     return samplingRate;
   }
@@ -84,14 +96,28 @@ public class AnalyticsExporterConfig {
     return this;
   }
 
+  /** Validates configuration without logging warnings. */
   public AnalyticsExporterConfig validate() {
+    return validate(null);
+  }
+
+  /**
+   * Validates configuration, logging warnings where appropriate. Prefer this overload when a logger
+   * is available.
+   */
+  public AnalyticsExporterConfig validate(final Logger log) {
     if (endpoint == null || endpoint.isBlank()) {
       throw new IllegalArgumentException("Analytics exporter endpoint is not configured");
     }
+    validateEndpointScheme(log);
+    final Duration parsedPush;
     try {
-      Duration.parse(pushInterval);
+      parsedPush = Duration.parse(pushInterval);
     } catch (final Exception e) {
       throw new IllegalArgumentException("Invalid pushInterval: " + pushInterval, e);
+    }
+    if (parsedPush.isZero() || parsedPush.isNegative()) {
+      throw new IllegalArgumentException("pushInterval must be positive, got: " + pushInterval);
     }
     final Duration parsedHeartbeat;
     try {
@@ -129,6 +155,33 @@ public class AnalyticsExporterConfig {
               + samplingRate);
     }
     return this;
+  }
+
+  private void validateEndpointScheme(final Logger log) {
+    final URI uri = URI.create(endpoint);
+    final String host = uri.getHost();
+    final boolean isLocalhost =
+        host != null && (host.equals("localhost") || host.equals("127.0.0.1"));
+    final String scheme = uri.getScheme();
+
+    if ("https".equalsIgnoreCase(scheme)) {
+      return;
+    }
+
+    if (!allowInsecure && !isLocalhost) {
+      throw new IllegalArgumentException(
+          "Analytics exporter endpoint must use https:// unless allowInsecure is true or the"
+              + " host is localhost. Got: "
+              + endpoint);
+    }
+
+    if (allowInsecure && log != null) {
+      log.warn(
+          "Analytics exporter endpoint uses an insecure scheme ({}). "
+              + "This is allowed because allowInsecure=true, but is not recommended for"
+              + " production.",
+          endpoint);
+    }
   }
 
   /**
