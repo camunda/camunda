@@ -31,13 +31,19 @@ import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.PostImporterQueueTemplate;
+import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.webapps.schema.entities.post.PostImporterActionType;
+import io.camunda.webapps.schema.entities.post.PostImporterQueueEntity;
+import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.InstantSource;
@@ -120,6 +126,39 @@ class IncidentUpdateTaskIT {
         });
   }
 
+  @TestTemplate
+  void shouldThrowExceptionWhenIncidentsToUpdateAreNotFound(
+      final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
+    withIncidentUpdateTask(
+        config,
+        (job, resources) -> {
+          final var postImporterTemplate =
+              resources.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
+
+          final PostImporterQueueEntity queueEntity = new PostImporterQueueEntity();
+          queueEntity.setId("incident-1");
+          queueEntity.setPartitionId(PARTITION_ID);
+          queueEntity.setActionType(PostImporterActionType.INCIDENT);
+          queueEntity.setIntent("CREATED");
+          queueEntity.setKey(9999L);
+          queueEntity.setPosition(1L);
+
+          store(postImporterTemplate, client, queueEntity);
+
+          // when
+          final var updated = job.execute();
+
+          // then
+          assertThat(updated)
+              .failsWithin(UPDATE_TIMEOUT)
+              .withThrowableThat()
+              .withRootCauseInstanceOf(ExporterException.class)
+              .withMessageContaining(
+                  "Failed to fetch incidents associated with post-export updates")
+              .withMessageContaining("Missing incident IDs: [[9999]]");
+        });
+  }
+
   void withIncidentUpdateTask(
       final ExporterConfiguration config, final IncidentUpdateTaskConsumer taskConsumer)
       throws Exception {
@@ -143,6 +182,14 @@ class IncidentUpdateTaskIT {
             Duration.ofSeconds(1))) {
       taskConsumer.accept(task, exporterResourceProvider);
     }
+  }
+
+  private void store(
+      final IndexDescriptor indexDescriptor,
+      final SearchClientAdapter client,
+      final ExporterEntity<?> entity)
+      throws IOException {
+    client.index(entity.getId(), indexDescriptor.getFullQualifiedName(), entity);
   }
 
   private ExporterResourceProvider exporterResourceProvider(final ExporterConfiguration config) {
