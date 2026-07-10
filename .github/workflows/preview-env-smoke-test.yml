@@ -44,22 +44,22 @@ on:
         default: false
       ref-8-8:
         description: |
-          Git ref to build and deploy the 8.8 preview from (default:
-          stable/8.8). Lets stable-branch chart changes be smoke-tested
-          pre-merge from their PR branch. The reusable deploy workflow itself
-          still runs from stable/8.8 (static `uses:` ref).
+          Git ref to build and deploy the 8.8 preview from. Lets stable-branch
+          chart changes be smoke-tested pre-merge from their PR branch. The
+          reusable deploy workflow itself still runs from stable/8.8 (static
+          `uses:` ref).
         required: false
         type: string
-        default: ''
+        default: 'stable/8.8'
       ref-8-9:
         description: |
-          Git ref to build and deploy the 8.9 preview from (default:
-          stable/8.9). Lets stable-branch chart changes be smoke-tested
-          pre-merge from their PR branch. The reusable deploy workflow itself
-          still runs from stable/8.9 (static `uses:` ref).
+          Git ref to build and deploy the 8.9 preview from. Lets stable-branch
+          chart changes be smoke-tested pre-merge from their PR branch. The
+          reusable deploy workflow itself still runs from stable/8.9 (static
+          `uses:` ref).
         required: false
         type: string
-        default: ''
+        default: 'stable/8.9'
 
 env:
   TEST_OWNER: '@camunda/monorepo-devops-team'
@@ -98,6 +98,10 @@ jobs:
     secrets: inherit
     with:
       app-name: smoke88-${{ github.run_number }}
+      # The || fallback stays despite the input default: input defaults only
+      # apply to workflow_dispatch — on scheduled runs the inputs context is
+      # empty, and an empty ref would make the cross-branch reusable workflow
+      # fall back to the caller's SHA (main). Same for every ref below.
       ref: ${{ inputs.ref-8-8 || 'stable/8.8' }}
       labels: |
         preview=smoke-test
