@@ -15,6 +15,8 @@ import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartiti
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRobinConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
+import io.camunda.zeebe.util.CollectionUtil;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,17 +46,19 @@ public class UpdatePartitionDistributionTransformer implements ConfigurationChan
               "Only ZONE_AWARE partition distribution config is supported. Received: "
                   + newConfig.getClass().getSimpleName()));
     }
+    final var zones = zoneAwareConfig.zones();
 
-    if (zoneAwareConfig.zones().isEmpty()) {
+    if (zones.isEmpty()) {
       return Either.left(
           new InvalidRequest(
               "Expected partition distribution config to contain at least one zone, but was empty"));
     }
 
-    final var zoneNames = zoneAwareConfig.zones().stream().map(z -> z.name()).toList();
-    if (zoneNames.stream().distinct().count() != zoneNames.size()) {
+    if (CollectionUtil.containsDuplicates(zones, ZoneSpec::name)) {
       return Either.left(
-          new InvalidRequest("Expected zone names to be unique, but got duplicates: " + zoneNames));
+          new InvalidRequest(
+              "Expected zone names to be unique, but got duplicates: "
+                  + zones.stream().map(ZoneSpec::name).toList()));
     }
 
     final int targetReplicationFactor = zoneAwareConfig.replicationFactor();
