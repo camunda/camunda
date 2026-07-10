@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import static io.camunda.zeebe.dynamic.config.api.ZoneFixtures.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
@@ -36,12 +37,9 @@ class UpdatePartitionDistributionTransformerTest {
   // 3 partitions, 2 zones: zone-a (1 replica, priority 1000), zone-b (1 replica, priority 500)
   // Members: zone-a_0, zone-a_1, zone-b_0 — RF = 2
   private static final ZoneAwareConfig INITIAL_CONFIG =
-      new ZoneAwareConfig(List.of(new ZoneSpec("zone-a", 1, 1000), new ZoneSpec("zone-b", 1, 500)));
+      new ZoneAwareConfig(List.of(new ZoneSpec(ZONE_A, 1, 1000), new ZoneSpec(ZONE_B, 1, 500)));
 
   // Coordinator = lexicographically smallest member ID = zone-a_0
-  private static final MemberId ZONE_A_0 = MemberId.from("zone-a", 0);
-  private static final MemberId ZONE_A_1 = MemberId.from("zone-a", 1);
-  private static final MemberId ZONE_B_0 = MemberId.from("zone-b", 0);
   private static final MemberId COORDINATOR = ZONE_A_0;
 
   private static final Set<MemberId> MEMBERS = Set.of(ZONE_A_0, ZONE_A_1, ZONE_B_0);
@@ -70,8 +68,7 @@ class UpdatePartitionDistributionTransformerTest {
     // new replica joins at priority 2.
     final var currentTopology = buildTopology(INITIAL_CONFIG, MEMBERS);
     final var newConfig =
-        new ZoneAwareConfig(
-            List.of(new ZoneSpec("zone-a", 2, 1000), new ZoneSpec("zone-b", 1, 500)));
+        new ZoneAwareConfig(List.of(new ZoneSpec(ZONE_A, 2, 1000), new ZoneSpec(ZONE_B, 1, 500)));
 
     // when
     final var result =
@@ -96,7 +93,7 @@ class UpdatePartitionDistributionTransformerTest {
     // The single-zone distributor recomputes the placement after the config change. In the current
     // layout P2 stays on zone-a_1 and only the zone-b replica leaves.
     final var currentTopology = buildTopology(INITIAL_CONFIG, MEMBERS);
-    final var newConfig = new ZoneAwareConfig(List.of(new ZoneSpec("zone-a", 1, 1000)));
+    final var newConfig = new ZoneAwareConfig(List.of(new ZoneSpec(ZONE_A, 1, 1000)));
 
     // when
     final var result =
@@ -121,8 +118,7 @@ class UpdatePartitionDistributionTransformerTest {
     // zone-b replicas get promoted to priority 2, zone-a replicas demoted to priority 1.
     final var currentTopology = buildTopology(INITIAL_CONFIG, MEMBERS);
     final var newConfig =
-        new ZoneAwareConfig(
-            List.of(new ZoneSpec("zone-a", 1, 500), new ZoneSpec("zone-b", 1, 1000)));
+        new ZoneAwareConfig(List.of(new ZoneSpec(ZONE_A, 1, 500), new ZoneSpec(ZONE_B, 1, 1000)));
 
     // when
     final var result =
@@ -150,8 +146,7 @@ class UpdatePartitionDistributionTransformerTest {
     final var roundRobinTopology =
         ConfigurationUtil.getClusterConfigFrom(distribution, PARTITION_CONFIG, "c");
     final var newConfig =
-        new ZoneAwareConfig(
-            List.of(new ZoneSpec("zone-a", 1, 1000), new ZoneSpec("zone-b", 1, 500)));
+        new ZoneAwareConfig(List.of(new ZoneSpec(ZONE_A, 1, 1000), new ZoneSpec(ZONE_B, 1, 500)));
     final var transformer = new UpdatePartitionDistributionTransformer(newConfig);
 
     // when
@@ -167,16 +162,15 @@ class UpdatePartitionDistributionTransformerTest {
   @Test
   void shouldRejectPartiallyZoneAwareCluster() {
     // given
-    final var mixedMembers = Set.of(MemberId.from(0), MemberId.from(2), MemberId.from("zone-b", 0));
+    final var mixedMembers = Set.of(MemberId.from(0), MemberId.from(2), MemberId.from(ZONE_B, 0));
     final var mixedDistribution =
-        new RoundRobinPartitionDistributor(List.of("zone-a", "zone-b"))
+        new RoundRobinPartitionDistributor(List.of(ZONE_A, ZONE_B))
             .distributePartitions(mixedMembers, PARTITION_IDS, 2);
     final var mixedTopology =
         ConfigurationUtil.getClusterConfigFrom(mixedDistribution, PARTITION_CONFIG, "c")
             .setPartitionDistributorConfig(INITIAL_CONFIG);
     final var newConfig =
-        new ZoneAwareConfig(
-            List.of(new ZoneSpec("zone-a", 1, 500), new ZoneSpec("zone-b", 1, 1000)));
+        new ZoneAwareConfig(List.of(new ZoneSpec(ZONE_A, 1, 500), new ZoneSpec(ZONE_B, 1, 1000)));
 
     // when
     final var result =
