@@ -56,7 +56,7 @@ public class ProcessInstanceCreationHelper {
   private static final String ERROR_MESSAGE_NO_NONE_START_EVENT =
       "Expected to create instance of process with none start event, but there is no such event";
   private static final String ERROR_MESSAGE_PROCESS_IS_DRAINING =
-      "Expected to create instance of process '%s', but it is being deleted";
+      "Expected to create instance of process with ID '%s' and version %d (key %d), but it is being deleted";
   private static final String ERROR_MESSAGE_BUSINESS_ID_ALREADY_EXISTS =
       "Expected to create instance of process with business id '%s', but an instance with this business id already exists for process definition '%s'";
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
@@ -122,7 +122,10 @@ public class ProcessInstanceCreationHelper {
           new Rejection(
               RejectionType.INVALID_STATE,
               String.format(
-                  ERROR_MESSAGE_PROCESS_IS_DRAINING, bufferAsString(process.getBpmnProcessId()))));
+                  ERROR_MESSAGE_PROCESS_IS_DRAINING,
+                  bufferAsString(process.getBpmnProcessId()),
+                  process.getVersion(),
+                  process.getKey())));
     }
     return Either.right(process);
   }
