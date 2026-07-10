@@ -10,6 +10,8 @@ package io.camunda.operate.property;
 public class ArchiverProperties {
 
   private static final int DEFAULT_ARCHIVER_THREADS_COUNT = 1;
+  private static final int DEFAULT_ROLLOVER_BATCH_SIZE = 100;
+  private static final int DEFAULT_ARCHIVE_BY_ID_ROLLOVER_BATCH_SIZE = 500;
 
   private boolean rolloverEnabled = true;
 
@@ -33,7 +35,7 @@ public class ArchiverProperties {
    */
   private String rolloverInterval = "1d";
 
-  private int rolloverBatchSize = 100;
+  private Integer rolloverBatchSize;
 
   private String waitPeriodBeforeArchiving = "1h";
 
@@ -138,6 +140,11 @@ public class ArchiverProperties {
   }
 
   public int getRolloverBatchSize() {
+    if (rolloverBatchSize == null) {
+      return archiveByIdEnabled
+          ? DEFAULT_ARCHIVE_BY_ID_ROLLOVER_BATCH_SIZE
+          : DEFAULT_ROLLOVER_BATCH_SIZE;
+    }
     return rolloverBatchSize;
   }
 

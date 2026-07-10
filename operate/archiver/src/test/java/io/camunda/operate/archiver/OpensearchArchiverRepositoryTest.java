@@ -7,19 +7,15 @@
  */
 package io.camunda.operate.archiver;
 
-import static io.camunda.operate.archiver.AbstractArchiverJob.DATES_AGG;
 import static io.camunda.operate.schema.SchemaManager.OPERATE_DELETE_ARCHIVED_INDICES;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.sortOptions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.opensearch.client.opensearch._types.SortOrder.Asc;
 
 import io.camunda.operate.Metrics;
 import io.camunda.operate.archiver.ArchiveByIdTaskSupplier.IdWithRouting;
@@ -33,7 +29,6 @@ import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchISMOperations;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchIndexOperations;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
-import io.camunda.operate.store.opensearch.dsl.AggregationDSL;
 import io.camunda.operate.store.opensearch.dsl.QueryDSL;
 import io.camunda.operate.store.opensearch.dsl.RequestDSL;
 import io.camunda.operate.util.Either;
@@ -45,7 +40,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -59,13 +53,9 @@ import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
-import org.opensearch.client.opensearch._types.aggregations.BucketSortAggregation;
 import org.opensearch.client.opensearch._types.aggregations.Buckets;
-import org.opensearch.client.opensearch._types.aggregations.DateHistogramAggregate;
-import org.opensearch.client.opensearch._types.aggregations.DateHistogramAggregation;
 import org.opensearch.client.opensearch._types.aggregations.LongTermsAggregate;
 import org.opensearch.client.opensearch._types.aggregations.LongTermsBucket;
-import org.opensearch.client.opensearch._types.aggregations.TopHitsAggregation;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
@@ -240,7 +230,7 @@ public class OpensearchArchiverRepositoryTest {
         final MockedStatic<QueryDSL> queryDSLMockedStatic = mockStatic(QueryDSL.class);
         final MockedStatic<Timer> timerMockedStatic = mockStatic(Timer.class);
         final MockedStatic<OpensearchUtil> opensearchUtil = mockStatic(OpensearchUtil.class)) {
-      setupPISearchRequestBuilderMock(requestDSLMockedStatic, queryDSLMockedStatic);
+      setupPISearchRequestBuilderMock(requestDSLMockedStatic);
 
       final Timer.Sample timerSample = mock(Timer.Sample.class);
       timerMockedStatic.when(Timer::start).thenReturn(timerSample);
@@ -270,7 +260,7 @@ public class OpensearchArchiverRepositoryTest {
         final MockedStatic<QueryDSL> queryDSLMockedStatic = mockStatic(QueryDSL.class);
         final MockedStatic<Timer> timerMockedStatic = mockStatic(Timer.class);
         final MockedStatic<OpensearchUtil> opensearchUtil = mockStatic(OpensearchUtil.class)) {
-      setupPISearchRequestBuilderMock(requestDSLMockedStatic, queryDSLMockedStatic);
+      setupPISearchRequestBuilderMock(requestDSLMockedStatic);
 
       final Timer.Sample timerSample = mock(Timer.Sample.class);
       timerMockedStatic.when(Timer::start).thenReturn(timerSample);
@@ -278,9 +268,9 @@ public class OpensearchArchiverRepositoryTest {
 
       // hits: "a" and "b" on 2024-01-01 (same bucket); "c" on 2024-01-02 (next bucket)
       // hit "c" fields() IS read by takeWhile predicate, but id() is NOT mapped
-      final Hit<Object> hitA = hitWithEndDate("a", "2024-01-01");
-      final Hit<Object> hitB = hitWithEndDate("b", "2024-01-01");
-      final Hit<Object> hitC = hitWithEndDateNoId("2024-01-02");
+      final Hit<Object> hitA = hitWithEndDate("a", ListViewTemplate.END_DATE, "2024-01-01");
+      final Hit<Object> hitB = hitWithEndDate("b", ListViewTemplate.END_DATE, "2024-01-01");
+      final Hit<Object> hitC = hitWithEndDateNoId(ListViewTemplate.END_DATE, "2024-01-02");
 
       final HitsMetadata<Object> hitsMeta = mock(HitsMetadata.class);
       final SearchResponse<Object> resp = mock(SearchResponse.class);
@@ -340,32 +330,128 @@ public class OpensearchArchiverRepositoryTest {
   }
 
   @Test
-  public void testGetBatchOperationsNextBatch() {
+  public void testGetBatchOperationsNextBatchEmptyHitsReturnsNull() {
     setBatchOperationMocks();
-    try (final MockedStatic<QueryDSL> queryDSLMockedStatic = mockStatic(QueryDSL.class)) {
-      try (final MockedStatic<AggregationDSL> aggregationDSLMockedStatic =
-          mockStatic(AggregationDSL.class)) {
-        testGetNextBatchHelper(
-            underTest::getBatchOperationNextBatch,
-            queryDSLMockedStatic,
-            aggregationDSLMockedStatic,
-            "endDate");
-      }
+    try (final MockedStatic<RequestDSL> requestDSLMockedStatic = mockStatic(RequestDSL.class);
+        final MockedStatic<QueryDSL> queryDSLMockedStatic = mockStatic(QueryDSL.class);
+        final MockedStatic<Timer> timerMockedStatic = mockStatic(Timer.class);
+        final MockedStatic<OpensearchUtil> opensearchUtil = mockStatic(OpensearchUtil.class)) {
+      setupPlainSearchRequestBuilderMock(requestDSLMockedStatic);
+
+      final Timer.Sample timerSample = mock(Timer.Sample.class);
+      timerMockedStatic.when(Timer::start).thenReturn(timerSample);
+      when(metrics.getTimer(any())).thenReturn(mock(Timer.class));
+
+      final HitsMetadata<Object> hitsMeta = mock(HitsMetadata.class);
+      final SearchResponse<Object> resp = mock(SearchResponse.class);
+      when(resp.hits()).thenReturn(hitsMeta);
+      when(hitsMeta.hits()).thenReturn(List.of());
+
+      opensearchUtil
+          .when(() -> OpensearchUtil.searchAsync(any(), any(), any()))
+          .thenReturn(CompletableFuture.completedFuture(resp));
+
+      final CompletableFuture<ArchiveBatch> result = underTest.getBatchOperationNextBatch();
+      assertThat(result).isCompleted();
+      assertThat(result.join()).isNull();
     }
   }
 
   @Test
-  public void testGetStandaloneDecisionInstancesNextBatch() {
+  public void testGetBatchOperationsNextBatchPacksEarliestBucketOnly() {
+    setBatchOperationMocks();
+    try (final MockedStatic<RequestDSL> requestDSLMockedStatic = mockStatic(RequestDSL.class);
+        final MockedStatic<QueryDSL> queryDSLMockedStatic = mockStatic(QueryDSL.class);
+        final MockedStatic<Timer> timerMockedStatic = mockStatic(Timer.class);
+        final MockedStatic<OpensearchUtil> opensearchUtil = mockStatic(OpensearchUtil.class)) {
+      setupPlainSearchRequestBuilderMock(requestDSLMockedStatic);
+
+      final Timer.Sample timerSample = mock(Timer.Sample.class);
+      timerMockedStatic.when(Timer::start).thenReturn(timerSample);
+      when(metrics.getTimer(any())).thenReturn(mock(Timer.class));
+
+      final Hit<Object> hitA = hitWithEndDate("a", BatchOperationTemplate.END_DATE, "2024-01-01");
+      final Hit<Object> hitB = hitWithEndDate("b", BatchOperationTemplate.END_DATE, "2024-01-01");
+      final Hit<Object> hitC = hitWithEndDateNoId(BatchOperationTemplate.END_DATE, "2024-01-02");
+
+      final HitsMetadata<Object> hitsMeta = mock(HitsMetadata.class);
+      final SearchResponse<Object> resp = mock(SearchResponse.class);
+      when(resp.hits()).thenReturn(hitsMeta);
+      when(hitsMeta.hits()).thenReturn(List.of(hitA, hitB, hitC));
+
+      opensearchUtil
+          .when(() -> OpensearchUtil.searchAsync(any(), any(), any()))
+          .thenReturn(CompletableFuture.completedFuture(resp));
+
+      final ArchiveBatch batch = underTest.getBatchOperationNextBatch().join();
+      assertThat(batch).isNotNull();
+      assertThat(batch.getFinishDate()).isEqualTo("2024-01-01");
+      assertThat(batch.getIds()).isEqualTo(List.of("a", "b"));
+    }
+  }
+
+  @Test
+  public void testGetStandaloneDecisionInstancesNextBatchEmptyHitsReturnsNull() {
     setDecisionInstanceMocks();
-    try (final MockedStatic<QueryDSL> queryDSLMockedStatic = mockStatic(QueryDSL.class)) {
-      try (final MockedStatic<AggregationDSL> aggregationDSLMockedStatic =
-          mockStatic(AggregationDSL.class)) {
-        testGetNextBatchHelper(
-            () -> underTest.getStandaloneDecisionNextBatch(PARTITION_IDS),
-            queryDSLMockedStatic,
-            aggregationDSLMockedStatic,
-            "evaluationDate");
-      }
+    try (final MockedStatic<RequestDSL> requestDSLMockedStatic = mockStatic(RequestDSL.class);
+        final MockedStatic<QueryDSL> queryDSLMockedStatic = mockStatic(QueryDSL.class);
+        final MockedStatic<Timer> timerMockedStatic = mockStatic(Timer.class);
+        final MockedStatic<OpensearchUtil> opensearchUtil = mockStatic(OpensearchUtil.class)) {
+      setupPlainSearchRequestBuilderMock(requestDSLMockedStatic);
+
+      final Timer.Sample timerSample = mock(Timer.Sample.class);
+      timerMockedStatic.when(Timer::start).thenReturn(timerSample);
+      when(metrics.getTimer(any())).thenReturn(mock(Timer.class));
+
+      final HitsMetadata<Object> hitsMeta = mock(HitsMetadata.class);
+      final SearchResponse<Object> resp = mock(SearchResponse.class);
+      when(resp.hits()).thenReturn(hitsMeta);
+      when(hitsMeta.hits()).thenReturn(List.of());
+
+      opensearchUtil
+          .when(() -> OpensearchUtil.searchAsync(any(), any(), any()))
+          .thenReturn(CompletableFuture.completedFuture(resp));
+
+      final CompletableFuture<ArchiveBatch> result =
+          underTest.getStandaloneDecisionNextBatch(PARTITION_IDS);
+      assertThat(result).isCompleted();
+      assertThat(result.join()).isNull();
+    }
+  }
+
+  @Test
+  public void testGetStandaloneDecisionInstancesNextBatchPacksEarliestBucketOnly() {
+    setDecisionInstanceMocks();
+    try (final MockedStatic<RequestDSL> requestDSLMockedStatic = mockStatic(RequestDSL.class);
+        final MockedStatic<QueryDSL> queryDSLMockedStatic = mockStatic(QueryDSL.class);
+        final MockedStatic<Timer> timerMockedStatic = mockStatic(Timer.class);
+        final MockedStatic<OpensearchUtil> opensearchUtil = mockStatic(OpensearchUtil.class)) {
+      setupPlainSearchRequestBuilderMock(requestDSLMockedStatic);
+
+      final Timer.Sample timerSample = mock(Timer.Sample.class);
+      timerMockedStatic.when(Timer::start).thenReturn(timerSample);
+      when(metrics.getTimer(any())).thenReturn(mock(Timer.class));
+
+      final Hit<Object> hitA =
+          hitWithEndDate("a", DecisionInstanceTemplate.EVALUATION_DATE, "2024-01-01");
+      final Hit<Object> hitB =
+          hitWithEndDate("b", DecisionInstanceTemplate.EVALUATION_DATE, "2024-01-01");
+      final Hit<Object> hitC =
+          hitWithEndDateNoId(DecisionInstanceTemplate.EVALUATION_DATE, "2024-01-02");
+
+      final HitsMetadata<Object> hitsMeta = mock(HitsMetadata.class);
+      final SearchResponse<Object> resp = mock(SearchResponse.class);
+      when(resp.hits()).thenReturn(hitsMeta);
+      when(hitsMeta.hits()).thenReturn(List.of(hitA, hitB, hitC));
+
+      opensearchUtil
+          .when(() -> OpensearchUtil.searchAsync(any(), any(), any()))
+          .thenReturn(CompletableFuture.completedFuture(resp));
+
+      final ArchiveBatch batch = underTest.getStandaloneDecisionNextBatch(PARTITION_IDS).join();
+      assertThat(batch).isNotNull();
+      assertThat(batch.getFinishDate()).isEqualTo("2024-01-01");
+      assertThat(batch.getIds()).isEqualTo(List.of("a", "b"));
     }
   }
 
@@ -400,110 +486,9 @@ public class OpensearchArchiverRepositoryTest {
     assertThat(ops.get(1).delete().routing()).isNull();
   }
 
-  public void testGetNextBatchHelper(
-      final Supplier<CompletableFuture<ArchiveBatch>> testMethod,
-      final MockedStatic<QueryDSL> queryDSLMockedStatic,
-      final MockedStatic<AggregationDSL> aggregationDSLMockedStatic,
-      final String sortFieldName) {
-
-    try (final MockedStatic<RequestDSL> requestDSLMockedStatic = mockStatic(RequestDSL.class)) {
-      try (final MockedStatic<Timer> timerMockedStatic = mockStatic(Timer.class)) {
-        final Query query = mock(Query.class);
-        queryDSLMockedStatic.when(() -> QueryDSL.constantScore(any())).thenReturn(query);
-        queryDSLMockedStatic
-            .when(() -> QueryDSL.sortOptions(sortFieldName, Asc))
-            .thenReturn(mock(SortOptions.class));
-        final SearchRequest.Builder searchRequestBuilder = mock(SearchRequest.Builder.class);
-        final Aggregation aggregation = mock(Aggregation.class);
-        final DateHistogramAggregation dateHistogramAggregation =
-            mock(DateHistogramAggregation.class);
-        final Aggregation bucketAggregation = mock(Aggregation.class);
-        final Aggregation topHitAggregation = mock(Aggregation.class);
-        final BucketSortAggregation bucketSortAggregation = mock(BucketSortAggregation.class);
-        final TopHitsAggregation topHitsAggregation = mock(TopHitsAggregation.class);
-        when(topHitsAggregation._toAggregation()).thenReturn(topHitAggregation);
-        aggregationDSLMockedStatic
-            .when(() -> AggregationDSL.bucketSortAggregation(any(), any()))
-            .thenReturn(bucketSortAggregation);
-        when(bucketSortAggregation._toAggregation()).thenReturn(bucketAggregation);
-        aggregationDSLMockedStatic
-            .when(
-                () ->
-                    AggregationDSL.dateHistogramAggregation(
-                        any(), any(), anyString(), anyBoolean()))
-            .thenReturn(dateHistogramAggregation);
-        aggregationDSLMockedStatic
-            .when(() -> AggregationDSL.withSubaggregations((DateHistogramAggregation) any(), any()))
-            .thenReturn(aggregation);
-        aggregationDSLMockedStatic
-            .when(() -> AggregationDSL.topHitsAggregation(any(), anyInt(), any()))
-            .thenReturn(topHitsAggregation);
-        requestDSLMockedStatic
-            .when(() -> RequestDSL.searchRequestBuilder(anyString()))
-            .thenReturn(searchRequestBuilder);
-        when(searchRequestBuilder.query(query)).thenReturn(searchRequestBuilder);
-        when(searchRequestBuilder.aggregations(anyString(), (Aggregation) any()))
-            .thenReturn(searchRequestBuilder);
-        when(searchRequestBuilder.source((SourceConfig) any())).thenReturn(searchRequestBuilder);
-        when(searchRequestBuilder.size(0)).thenReturn(searchRequestBuilder);
-        when(searchRequestBuilder.sort((SortOptions) any())).thenReturn(searchRequestBuilder);
-        when(searchRequestBuilder.requestCache(false)).thenReturn(searchRequestBuilder);
-
-        final SearchResponse searchResponse = mock(SearchResponse.class);
-        final CompletableFuture<SearchResponse<Object>> completableFuture =
-            new CompletableFuture<>();
-        completableFuture.complete(searchResponse);
-        try (final MockedStatic<OpensearchUtil> opensearchUtil = mockStatic(OpensearchUtil.class)) {
-          opensearchUtil
-              .when(() -> OpensearchUtil.searchAsync(any(), any(), any()))
-              .thenReturn(completableFuture);
-          final Map<String, Aggregate> aggregations = new HashMap<>();
-          when(searchResponse.aggregations()).thenReturn(aggregations);
-          final Aggregate aggregate = mock(Aggregate.class);
-          aggregations.put(DATES_AGG, aggregate);
-          final DateHistogramAggregate dateHistogramAggregate = mock(DateHistogramAggregate.class);
-          when(aggregate.dateHistogram()).thenReturn(dateHistogramAggregate);
-          final Buckets buckets = mock(Buckets.class);
-          when(dateHistogramAggregate.buckets()).thenReturn(buckets);
-          final Map<String, String> bucketsMap = new HashMap<>();
-          when(buckets.keyed()).thenReturn(bucketsMap);
-          final Timer timer = mock(Timer.class);
-          final Timer.Sample timerSample = mock(Timer.Sample.class);
-          when(metrics.getTimer(any())).thenReturn(timer);
-          timerMockedStatic.when(Timer::start).thenReturn(timerSample);
-          when(timerSample.stop(any())).thenReturn(5L);
-          final CompletableFuture<ArchiveBatch> res = testMethod.get();
-          assertThat(res).isCompleted();
-          verify(searchRequestBuilder).query(query);
-          verify(searchRequestBuilder).aggregations(DATES_AGG, aggregation);
-          verify(searchRequestBuilder).source((SourceConfig) any());
-          verify(searchRequestBuilder).size(0);
-          verify(searchRequestBuilder).sort(any(SortOptions.class));
-          queryDSLMockedStatic.verify(() -> sortOptions(sortFieldName, Asc));
-          verify(searchRequestBuilder).requestCache(false);
-          verify(bucketSortAggregation)._toAggregation();
-          verify(topHitsAggregation)._toAggregation();
-          verify(searchResponse).aggregations();
-          verify(aggregate).dateHistogram();
-          verify(dateHistogramAggregate).buckets();
-        }
-      }
-    }
-  }
-
-  private void setProcessInstancesMocks() {
-    when(operateProperties.getArchiver()).thenReturn(archiverProperties);
-    when(archiverProperties.getRolloverInterval()).thenReturn("1d");
-    when(archiverProperties.getElsRolloverDateFormat()).thenReturn("date");
-    when(archiverProperties.getRolloverBatchSize()).thenReturn(100);
-    when(archiverProperties.getArchivingTimepoint()).thenReturn("now-1s");
-    when(processInstanceTemplate.getFullQualifiedName()).thenReturn("qualifiedName");
-  }
-
   @SuppressWarnings("unchecked")
   private void setupPISearchRequestBuilderMock(
-      final MockedStatic<RequestDSL> requestDSLMockedStatic,
-      final MockedStatic<QueryDSL> queryDSLMockedStatic) {
+      final MockedStatic<RequestDSL> requestDSLMockedStatic) {
     final SearchRequest.Builder searchRequestBuilder = mock(SearchRequest.Builder.class);
     requestDSLMockedStatic
         .when(() -> RequestDSL.searchRequestBuilder(anyString()))
@@ -520,13 +505,30 @@ public class OpensearchArchiverRepositoryTest {
   }
 
   @SuppressWarnings("unchecked")
-  private Hit<Object> hitWithEndDate(final String id, final String endDate) {
+  private void setupPlainSearchRequestBuilderMock(
+      final MockedStatic<RequestDSL> requestDSLMockedStatic) {
+    final SearchRequest.Builder searchRequestBuilder = mock(SearchRequest.Builder.class);
+    requestDSLMockedStatic
+        .when(() -> RequestDSL.searchRequestBuilder(anyString()))
+        .thenReturn(searchRequestBuilder);
+    when(searchRequestBuilder.query((Query) any())).thenReturn(searchRequestBuilder);
+    when(searchRequestBuilder.source((SourceConfig) any())).thenReturn(searchRequestBuilder);
+    when(searchRequestBuilder.fields(any(java.util.function.Function.class)))
+        .thenReturn(searchRequestBuilder);
+    when(searchRequestBuilder.size(anyInt())).thenReturn(searchRequestBuilder);
+    when(searchRequestBuilder.sort((SortOptions) any())).thenReturn(searchRequestBuilder);
+    when(searchRequestBuilder.requestCache(false)).thenReturn(searchRequestBuilder);
+  }
+
+  @SuppressWarnings("unchecked")
+  private Hit<Object> hitWithEndDate(
+      final String id, final String fieldName, final String endDate) {
     final Hit<Object> hit = mock(Hit.class);
     when(hit.id()).thenReturn(id);
     final JsonValue jsonValue = mock(JsonValue.class);
     final JsonArray jsonArray = mock(JsonArray.class);
     final JsonData jsonData = mock(JsonData.class);
-    when(hit.fields()).thenReturn(java.util.Map.of("endDate", jsonData));
+    when(hit.fields()).thenReturn(java.util.Map.of(fieldName, jsonData));
     when(jsonData.toJson()).thenReturn(jsonValue);
     when(jsonValue.asJsonArray()).thenReturn(jsonArray);
     when(jsonArray.getString(0)).thenReturn(endDate);
@@ -534,31 +536,38 @@ public class OpensearchArchiverRepositoryTest {
   }
 
   @SuppressWarnings("unchecked")
-  private Hit<Object> hitWithEndDateNoId(final String endDate) {
+  private Hit<Object> hitWithEndDateNoId(final String fieldName, final String endDate) {
     final Hit<Object> hit = mock(Hit.class);
     final JsonValue jsonValue = mock(JsonValue.class);
     final JsonArray jsonArray = mock(JsonArray.class);
     final JsonData jsonData = mock(JsonData.class);
-    when(hit.fields()).thenReturn(java.util.Map.of("endDate", jsonData));
+    when(hit.fields()).thenReturn(java.util.Map.of(fieldName, jsonData));
     when(jsonData.toJson()).thenReturn(jsonValue);
     when(jsonValue.asJsonArray()).thenReturn(jsonArray);
     when(jsonArray.getString(0)).thenReturn(endDate);
     return hit;
   }
 
-  private void setBatchOperationMocks() {
+  private void setupMocks() {
     when(operateProperties.getArchiver()).thenReturn(archiverProperties);
-    when(archiverProperties.getRolloverInterval()).thenReturn("1m");
-    when(archiverProperties.getElsRolloverDateFormat()).thenReturn("format");
-    when(archiverProperties.getRolloverBatchSize()).thenReturn(12);
+    when(archiverProperties.getRolloverInterval()).thenReturn("1d");
+    when(archiverProperties.getElsRolloverDateFormat()).thenReturn("date");
+    when(archiverProperties.getRolloverBatchSize()).thenReturn(100);
+    when(archiverProperties.getArchivingTimepoint()).thenReturn("now-1s");
+  }
+
+  private void setProcessInstancesMocks() {
+    setupMocks();
+    when(processInstanceTemplate.getFullQualifiedName()).thenReturn("qualifiedName");
+  }
+
+  private void setBatchOperationMocks() {
+    setupMocks();
     when(batchOperationTemplate.getFullQualifiedName()).thenReturn("qualifiedName");
   }
 
   private void setDecisionInstanceMocks() {
-    when(operateProperties.getArchiver()).thenReturn(archiverProperties);
-    when(archiverProperties.getRolloverInterval()).thenReturn("1m");
-    when(archiverProperties.getArchivingTimepoint()).thenReturn("now-1s");
-    when(archiverProperties.getElsRolloverDateFormat()).thenReturn("format");
+    setupMocks();
     when(decisionInstanceTemplate.getFullQualifiedName()).thenReturn("decisionsQualifiedName");
   }
 
@@ -569,14 +578,14 @@ public class OpensearchArchiverRepositoryTest {
         final MockedStatic<QueryDSL> queryDSLMockedStatic = mockStatic(QueryDSL.class);
         final MockedStatic<Timer> timerMockedStatic = mockStatic(Timer.class);
         final MockedStatic<OpensearchUtil> opensearchUtil = mockStatic(OpensearchUtil.class)) {
-      setupPISearchRequestBuilderMock(requestDSLMockedStatic, queryDSLMockedStatic);
+      setupPISearchRequestBuilderMock(requestDSLMockedStatic);
 
       final Timer.Sample timerSample = mock(Timer.Sample.class);
       timerMockedStatic.when(Timer::start).thenReturn(timerSample);
       when(metrics.getTimer(any())).thenReturn(mock(Timer.class));
 
       // one hit so the batch is non-null and we reach getTotalPendingCount
-      final Hit<Object> hitA = hitWithEndDate("a", "2024-01-01");
+      final Hit<Object> hitA = hitWithEndDate("a", ListViewTemplate.END_DATE, "2024-01-01");
       final HitsMetadata<Object> hitsMeta = mock(HitsMetadata.class);
       final SearchResponse<Object> resp = mock(SearchResponse.class);
       when(resp.hits()).thenReturn(hitsMeta);

@@ -9,8 +9,6 @@ package io.camunda.operate.archiver;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -31,11 +29,9 @@ import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.micrometer.core.instrument.Timer;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -50,15 +46,6 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.PipelineAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
-import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
-import org.elasticsearch.search.aggregations.metrics.TopHitsAggregationBuilder;
-import org.elasticsearch.search.sort.SortOrder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -236,18 +223,41 @@ public class ElasticsearchArchiveRepositoryTest {
   }
 
   @Test
-  public void testGetBatchOperationsNextBatchEmptyBucket() {
+  public void testGetBatchOperationsNextBatchEmptyHits() {
     setBatchOperationMocks();
 
     try (final MockedStatic<ElasticsearchUtil> elasticsearchUtilMockedStatic =
         mockStatic(ElasticsearchUtil.class)) {
-      testGetNextBatchEmptyBucket(
-          underTest::getBatchOperationNextBatch, "endDate", elasticsearchUtilMockedStatic);
+      final SearchResponse searchResponse = mock(SearchResponse.class);
+      final SearchHits searchHits = mock(SearchHits.class);
+      when(searchResponse.getHits()).thenReturn(searchHits);
+      when(searchHits.getHits()).thenReturn(new SearchHit[0]);
+
+      try (final MockedConstruction<SearchRequest> mockedConstruction =
+          mockConstruction(
+              SearchRequest.class,
+              (mock, context) -> {
+                when(mock.source(any())).thenReturn(mock);
+                when(mock.requestCache(false)).thenReturn(mock);
+              })) {
+        try (final MockedStatic<Timer> mockedTimer = mockStatic(Timer.class)) {
+          final Timer.Sample timer = mock(Timer.Sample.class);
+          when(timer.stop(any())).thenReturn(1000L);
+          mockedTimer.when(Timer::start).thenReturn(timer);
+          elasticsearchUtilMockedStatic
+              .when(() -> ElasticsearchUtil.searchAsync(any(), any(), any()))
+              .thenReturn(CompletableFuture.completedFuture(searchResponse));
+
+          final CompletableFuture<ArchiveBatch> res = underTest.getBatchOperationNextBatch();
+          assertThat(res).isCompleted();
+          assertThat(res.join()).isNull();
+        }
+      }
     }
   }
 
   @Test
-  public void testGetStandaloneDecisionInstancesNextBatchEmptyBucket() {
+  public void testGetStandaloneDecisionInstancesNextBatchEmptyHits() {
     setDecisionInstanceMocks();
 
     try (final MockedStatic<ElasticsearchUtil> elasticsearchUtilMockedStatic =
@@ -265,10 +275,147 @@ public class ElasticsearchArchiveRepositoryTest {
                               DecisionInstanceTemplate.PROCESS_INSTANCE_KEY, -1))))
           .thenCallRealMethod();
 
-      testGetNextBatchEmptyBucket(
-          () -> underTest.getStandaloneDecisionNextBatch(PARTITION_IDS),
-          "evaluationDate",
-          elasticsearchUtilMockedStatic);
+      final SearchResponse searchResponse = mock(SearchResponse.class);
+      final SearchHits searchHits = mock(SearchHits.class);
+      when(searchResponse.getHits()).thenReturn(searchHits);
+      when(searchHits.getHits()).thenReturn(new SearchHit[0]);
+
+      try (final MockedConstruction<SearchRequest> mockedConstruction =
+          mockConstruction(
+              SearchRequest.class,
+              (mock, context) -> {
+                when(mock.source(any())).thenReturn(mock);
+                when(mock.requestCache(false)).thenReturn(mock);
+              })) {
+        try (final MockedStatic<Timer> mockedTimer = mockStatic(Timer.class)) {
+          final Timer.Sample timer = mock(Timer.Sample.class);
+          when(timer.stop(any())).thenReturn(1000L);
+          mockedTimer.when(Timer::start).thenReturn(timer);
+          elasticsearchUtilMockedStatic
+              .when(() -> ElasticsearchUtil.searchAsync(any(), any(), any()))
+              .thenReturn(CompletableFuture.completedFuture(searchResponse));
+
+          final CompletableFuture<ArchiveBatch> res =
+              underTest.getStandaloneDecisionNextBatch(PARTITION_IDS);
+          assertThat(res).isCompleted();
+          assertThat(res.join()).isNull();
+        }
+      }
+    }
+  }
+
+  @Test
+  public void testGetBatchOperationsNextBatchPacksEarliestBucketOnly() {
+    setBatchOperationMocks();
+
+    try (final MockedStatic<ElasticsearchUtil> elasticsearchUtilMockedStatic =
+        mockStatic(ElasticsearchUtil.class)) {
+      final SearchResponse searchResponse = mock(SearchResponse.class);
+      final SearchHits searchHits = mock(SearchHits.class);
+      when(searchResponse.getHits()).thenReturn(searchHits);
+
+      final SearchHit hitA = mock(SearchHit.class);
+      final SearchHit hitB = mock(SearchHit.class);
+      final SearchHit hitC = mock(SearchHit.class);
+      when(hitA.getId()).thenReturn("a");
+      when(hitB.getId()).thenReturn("b");
+      // hitC.getId() is NOT stubbed — takeWhile stops before hitC so getId() is never called
+      final DocumentField fieldA = mock(DocumentField.class);
+      final DocumentField fieldB = mock(DocumentField.class);
+      final DocumentField fieldC = mock(DocumentField.class);
+      when(fieldA.getValue()).thenReturn("2024-01-01");
+      when(fieldB.getValue()).thenReturn("2024-01-01");
+      when(fieldC.getValue()).thenReturn("2024-01-02");
+      when(hitA.field(BatchOperationTemplate.END_DATE)).thenReturn(fieldA);
+      when(hitB.field(BatchOperationTemplate.END_DATE)).thenReturn(fieldB);
+      when(hitC.field(BatchOperationTemplate.END_DATE)).thenReturn(fieldC);
+      when(searchHits.getHits()).thenReturn(new SearchHit[] {hitA, hitB, hitC});
+
+      try (final MockedConstruction<SearchRequest> mockedConstruction =
+          mockConstruction(
+              SearchRequest.class,
+              (mock, context) -> {
+                when(mock.source(any())).thenReturn(mock);
+                when(mock.requestCache(false)).thenReturn(mock);
+              })) {
+        try (final MockedStatic<Timer> mockedTimer = mockStatic(Timer.class)) {
+          final Timer.Sample timer = mock(Timer.Sample.class);
+          when(timer.stop(any())).thenReturn(1000L);
+          mockedTimer.when(Timer::start).thenReturn(timer);
+          elasticsearchUtilMockedStatic
+              .when(() -> ElasticsearchUtil.searchAsync(any(), any(), any()))
+              .thenReturn(CompletableFuture.completedFuture(searchResponse));
+
+          final ArchiveBatch batch = underTest.getBatchOperationNextBatch().join();
+          assertThat(batch).isNotNull();
+          assertThat(batch.getFinishDate()).isEqualTo("2024-01-01");
+          assertThat(batch.getIds()).isEqualTo(List.of("a", "b"));
+        }
+      }
+    }
+  }
+
+  @Test
+  public void testGetStandaloneDecisionInstancesNextBatchPacksEarliestBucketOnly() {
+    setDecisionInstanceMocks();
+
+    try (final MockedStatic<ElasticsearchUtil> elasticsearchUtilMockedStatic =
+        mockStatic(ElasticsearchUtil.class)) {
+      elasticsearchUtilMockedStatic
+          .when(
+              () ->
+                  ElasticsearchUtil.joinWithAnd(
+                      any(),
+                      eq(
+                          QueryBuilders.termsQuery(
+                              DecisionInstanceTemplate.PARTITION_ID, PARTITION_IDS)),
+                      eq(
+                          QueryBuilders.termQuery(
+                              DecisionInstanceTemplate.PROCESS_INSTANCE_KEY, -1))))
+          .thenCallRealMethod();
+
+      final SearchResponse searchResponse = mock(SearchResponse.class);
+      final SearchHits searchHits = mock(SearchHits.class);
+      when(searchResponse.getHits()).thenReturn(searchHits);
+
+      final SearchHit hitA = mock(SearchHit.class);
+      final SearchHit hitB = mock(SearchHit.class);
+      final SearchHit hitC = mock(SearchHit.class);
+      when(hitA.getId()).thenReturn("a");
+      when(hitB.getId()).thenReturn("b");
+      // hitC.getId() is NOT stubbed — takeWhile stops before hitC so getId() is never called
+      final DocumentField fieldA = mock(DocumentField.class);
+      final DocumentField fieldB = mock(DocumentField.class);
+      final DocumentField fieldC = mock(DocumentField.class);
+      when(fieldA.getValue()).thenReturn("2024-01-01");
+      when(fieldB.getValue()).thenReturn("2024-01-01");
+      when(fieldC.getValue()).thenReturn("2024-01-02");
+      when(hitA.field(DecisionInstanceTemplate.EVALUATION_DATE)).thenReturn(fieldA);
+      when(hitB.field(DecisionInstanceTemplate.EVALUATION_DATE)).thenReturn(fieldB);
+      when(hitC.field(DecisionInstanceTemplate.EVALUATION_DATE)).thenReturn(fieldC);
+      when(searchHits.getHits()).thenReturn(new SearchHit[] {hitA, hitB, hitC});
+
+      try (final MockedConstruction<SearchRequest> mockedConstruction =
+          mockConstruction(
+              SearchRequest.class,
+              (mock, context) -> {
+                when(mock.source(any())).thenReturn(mock);
+                when(mock.requestCache(false)).thenReturn(mock);
+              })) {
+        try (final MockedStatic<Timer> mockedTimer = mockStatic(Timer.class)) {
+          final Timer.Sample timer = mock(Timer.Sample.class);
+          when(timer.stop(any())).thenReturn(1000L);
+          mockedTimer.when(Timer::start).thenReturn(timer);
+          elasticsearchUtilMockedStatic
+              .when(() -> ElasticsearchUtil.searchAsync(any(), any(), any()))
+              .thenReturn(CompletableFuture.completedFuture(searchResponse));
+
+          final ArchiveBatch batch = underTest.getStandaloneDecisionNextBatch(PARTITION_IDS).join();
+          assertThat(batch).isNotNull();
+          assertThat(batch.getFinishDate()).isEqualTo("2024-01-01");
+          assertThat(batch.getIds()).isEqualTo(List.of("a", "b"));
+        }
+      }
     }
   }
 
@@ -309,81 +456,6 @@ public class ElasticsearchArchiveRepositoryTest {
     assertThat(requests.get(0).routing()).isEqualTo("99");
     assertThat(requests.get(1).id()).isEqualTo("pi-doc");
     assertThat(requests.get(1).routing()).isNull();
-  }
-
-  public void testGetNextBatchEmptyBucket(
-      final Supplier<CompletableFuture<ArchiveBatch>> testMethod,
-      final String aggFieldName,
-      final MockedStatic<ElasticsearchUtil> elasticsearchUtilMockedStatic) {
-    final SearchRequest searchRequest = mock(SearchRequest.class);
-    final SearchResponse searchResponse = mock(SearchResponse.class);
-    try (final MockedStatic<AggregationBuilders> mockedStatic =
-        mockStatic(AggregationBuilders.class)) {
-      try (final MockedConstruction<SearchRequest> mockedConstruction =
-          mockConstruction(
-              SearchRequest.class,
-              (mock, context) -> {
-                when(mock.source(any())).thenReturn(searchRequest);
-                when(mock.requestCache(false)).thenReturn(searchRequest);
-              })) {
-        try (final MockedStatic<Timer> mockedTimer = mockStatic(Timer.class)) {
-          testGetNextBatchEmptyBucketHelper(
-              testMethod,
-              searchResponse,
-              mockedStatic,
-              mockedTimer,
-              elasticsearchUtilMockedStatic,
-              aggFieldName);
-          verify(searchRequest).requestCache(false);
-        }
-      }
-    }
-  }
-
-  public void testGetNextBatchEmptyBucketHelper(
-      final Supplier<CompletableFuture<ArchiveBatch>> testMethod,
-      final SearchResponse searchResponse,
-      final MockedStatic<AggregationBuilders> mockedStatic,
-      final MockedStatic<Timer> mockedTimer,
-      final MockedStatic<ElasticsearchUtil> elasticsearchUtilMockedStatic,
-      final String aggFieldName) {
-
-    final DateHistogramAggregationBuilder dateHistogramAggregationBuilder =
-        setHistogramMockForBatchOperations(mockedStatic);
-    final TopHitsAggregationBuilder topHitsAggregationBuilder =
-        setTopHitsAggregationBuilder(mockedStatic);
-    mockedStatic
-        .when(() -> AggregationBuilders.topHits(anyString()))
-        .thenReturn(topHitsAggregationBuilder);
-    final Timer.Sample timer = mock(Timer.Sample.class);
-    when(timer.stop(any())).thenReturn(1000L);
-    mockedTimer.when(Timer::start).thenReturn(timer);
-    elasticsearchUtilMockedStatic
-        .when(() -> ElasticsearchUtil.searchAsync(any(), any(), any()))
-        .thenReturn(CompletableFuture.completedFuture(searchResponse));
-    final Aggregations aggregations = mock(Aggregations.class);
-    final Histogram histogram = mock(Histogram.class);
-    final CompletableFuture<SearchResponse> completableFuture = new CompletableFuture<>();
-    when(searchResponse.getAggregations()).thenReturn(aggregations);
-    when(aggregations.get(anyString())).thenReturn(histogram);
-    when(histogram.getBuckets()).thenReturn(new ArrayList<>());
-    completableFuture.complete(searchResponse);
-    final CompletableFuture<ArchiveBatch> res = testMethod.get();
-    assertThat(res).isCompleted();
-
-    verify(dateHistogramAggregationBuilder).field(aggFieldName);
-    verify(dateHistogramAggregationBuilder).calendarInterval(new DateHistogramInterval("1m"));
-    verify(dateHistogramAggregationBuilder).format("format");
-    verify(dateHistogramAggregationBuilder).keyed(true);
-    verify(dateHistogramAggregationBuilder).subAggregation((AggregationBuilder) any());
-    verify(dateHistogramAggregationBuilder).subAggregation((PipelineAggregationBuilder) any());
-    verify(topHitsAggregationBuilder).size(0);
-    verify(topHitsAggregationBuilder).sort("id", SortOrder.ASC);
-    verify(topHitsAggregationBuilder).fetchSource("id", null);
-    verify(searchResponse).getAggregations();
-    verify(timer).stop(any());
-    verify(aggregations).get("datesAgg");
-    verify(histogram).getBuckets();
   }
 
   @Test
@@ -499,62 +571,26 @@ public class ElasticsearchArchiveRepositoryTest {
     }
   }
 
-  private void setProcessInstancesMocks() {
+  private void setupMocks() {
     when(operateProperties.getArchiver()).thenReturn(archiverProperties);
     when(archiverProperties.getRolloverInterval()).thenReturn("1d");
     when(archiverProperties.getElsRolloverDateFormat()).thenReturn("date");
     when(archiverProperties.getRolloverBatchSize()).thenReturn(100);
     when(archiverProperties.getArchivingTimepoint()).thenReturn("now-1s");
+  }
+
+  private void setProcessInstancesMocks() {
+    setupMocks();
     when(listViewTemplate.getFullQualifiedName()).thenReturn("qualifiedName");
   }
 
   private void setBatchOperationMocks() {
-    when(operateProperties.getArchiver()).thenReturn(archiverProperties);
-    when(archiverProperties.getRolloverInterval()).thenReturn("1m");
-    when(archiverProperties.getElsRolloverDateFormat()).thenReturn("format");
+    setupMocks();
     when(batchOperationTemplate.getFullQualifiedName()).thenReturn("qualifiedName");
   }
 
   private void setDecisionInstanceMocks() {
-    when(operateProperties.getArchiver()).thenReturn(archiverProperties);
-    when(archiverProperties.getRolloverInterval()).thenReturn("1m");
-    when(archiverProperties.getArchivingTimepoint()).thenReturn("now-1s");
-    when(archiverProperties.getElsRolloverDateFormat()).thenReturn("format");
+    setupMocks();
     when(decisionInstanceTemplate.getFullQualifiedName()).thenReturn("decisionsQualifiedName");
-  }
-
-  private DateHistogramAggregationBuilder setHistogramMockForBatchOperations(
-      final MockedStatic<AggregationBuilders> mockedStatic) {
-    final DateHistogramAggregationBuilder dateHistogramAggregationBuilder =
-        mock(DateHistogramAggregationBuilder.class);
-    mockedStatic
-        .when(() -> AggregationBuilders.dateHistogram(anyString()))
-        .thenReturn(dateHistogramAggregationBuilder);
-    when(dateHistogramAggregationBuilder.field(anyString()))
-        .thenReturn(dateHistogramAggregationBuilder);
-    when(dateHistogramAggregationBuilder.calendarInterval(any()))
-        .thenReturn(dateHistogramAggregationBuilder);
-    when(dateHistogramAggregationBuilder.format(anyString()))
-        .thenReturn(dateHistogramAggregationBuilder);
-    when(dateHistogramAggregationBuilder.keyed(true)).thenReturn(dateHistogramAggregationBuilder);
-    when(dateHistogramAggregationBuilder.subAggregation((PipelineAggregationBuilder) any()))
-        .thenReturn(dateHistogramAggregationBuilder);
-    when(dateHistogramAggregationBuilder.subAggregation((TopHitsAggregationBuilder) any()))
-        .thenReturn(dateHistogramAggregationBuilder);
-    return dateHistogramAggregationBuilder;
-  }
-
-  private TopHitsAggregationBuilder setTopHitsAggregationBuilder(
-      final MockedStatic<AggregationBuilders> mockedStatic) {
-    final TopHitsAggregationBuilder topHitsAggregationBuilder =
-        mock(TopHitsAggregationBuilder.class);
-    mockedStatic
-        .when(() -> AggregationBuilders.topHits(anyString()))
-        .thenReturn(topHitsAggregationBuilder);
-    when(topHitsAggregationBuilder.size(anyInt())).thenReturn(topHitsAggregationBuilder);
-    when(topHitsAggregationBuilder.sort(anyString(), any())).thenReturn(topHitsAggregationBuilder);
-    when(topHitsAggregationBuilder.fetchSource(anyString(), eq(null)))
-        .thenReturn(topHitsAggregationBuilder);
-    return topHitsAggregationBuilder;
   }
 }
