@@ -278,6 +278,16 @@ Zeebe Medic: can help with Zeebe-specific questions and tasks.
 
 Core Features Medic: can help with questions and tasks related to Operate, Tasklist, and other core features.
 
+CPT Medic: can help with Camunda Process Test (CPT, formerly Zeebe Process Test / ZPT) questions and tasks. Call the CPT Medic when any of these or similar issues arise:
+
+- CPT/ZPT CI workflows fail after a Zeebe version bump (patch or minor).
+- The CPT/ZPT release or `deploy-artifact` job fails with a compilation error.
+- CPT/ZPT Maven Central publishing is blocked by missing metadata.
+- A CPT/ZPT PR needs review to unblock an RC or release step.
+- The CPT/ZPT merge-back PR after a release has failing CI due to API incompatibility.
+
+Reliability/Testing Medic: can help with questions and tasks related to reliability and load testing.
+
 ## Backporting Guidelines
 
 We want the release process for all supported versions 8.6+ to be as similar as possible, to reduce maintenance effort, surprises and mental load. Improvements and fixes to the release process should always apply to all supported versions, if possible.
