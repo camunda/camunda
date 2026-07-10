@@ -20,8 +20,8 @@ const COOLNESS = 2.5;
 const EDGE_BUFFER = 75;
 const RESOLUTION = 4;
 
-export function getHeatmap(viewer, data, noSequenceHighlight) {
-  const heat = generateHeatmap(viewer, data, noSequenceHighlight);
+export function getHeatmap(viewer, data, noSequenceHighlight, allowAdHocSubProcess) {
+  const heat = generateHeatmap(viewer, data, noSequenceHighlight, allowAdHocSubProcess);
   const node = document.createElementNS('http://www.w3.org/2000/svg', 'image');
 
   Object.keys(heat.dimensions).forEach((prop) => {
@@ -34,9 +34,15 @@ export function getHeatmap(viewer, data, noSequenceHighlight) {
   return node;
 }
 
-function generateHeatmap(viewer, data, noSequenceHighlight) {
+function generateHeatmap(viewer, data, noSequenceHighlight, allowAdHocSubProcess) {
   const dimensions = getDimensions(viewer);
-  let heatmapData = generateData(data, viewer, dimensions, noSequenceHighlight);
+  let heatmapData = generateData(
+    data,
+    viewer,
+    dimensions,
+    noSequenceHighlight,
+    allowAdHocSubProcess
+  );
 
   const map = createMap(dimensions);
   const heatmapDataValueMax = Math.max.apply(
@@ -106,11 +112,20 @@ function isBpmnType(element, types) {
   );
 }
 
-function isExcluded(element) {
+export function isExcluded(element, allowAdHocSubProcess) {
+  if (allowAdHocSubProcess && isBpmnType(element, 'AdHocSubProcess')) {
+    return false;
+  }
   return isBpmnType(element, 'SubProcess') && !element.collapsed;
 }
 
-function generateData(values, viewer, {x: xOffset, y: yOffset}, noSequenceHighlight) {
+function generateData(
+  values,
+  viewer,
+  {x: xOffset, y: yOffset},
+  noSequenceHighlight,
+  allowAdHocSubProcess
+) {
   const data = [];
   const elementRegistry = viewer.get('elementRegistry');
 
@@ -122,7 +137,7 @@ function generateData(values, viewer, {x: xOffset, y: yOffset}, noSequenceHighli
       continue;
     }
 
-    if (!isExcluded(element)) {
+    if (!isExcluded(element, allowAdHocSubProcess)) {
       // add multiple points evenly distributed in the area of the node. Number of points depends on area of node
       for (let i = 0; i < element.width + ACTIVITY_DENSITY / 2; i += ACTIVITY_DENSITY) {
         for (let j = 0; j < element.height + ACTIVITY_DENSITY / 2; j += ACTIVITY_DENSITY) {

@@ -134,6 +134,23 @@ it('should display a heatmap overlay', () => {
   expect(node.find('HeatmapOverlay')).toExist();
 });
 
+it('should allow the ad-hoc subprocess when the report is a tool-calls heatmap', () => {
+  const node = shallow(
+    <Heatmap
+      {...props}
+      report={update(report, {data: {view: {properties: {$set: ['toolCalls']}}}})}
+    />
+  );
+
+  expect(node.find('HeatmapOverlay').prop('allowAdHocSubProcess')).toBe(true);
+});
+
+it('should not allow the ad-hoc subprocess for a non-tool-calls heatmap', () => {
+  const node = shallow(<Heatmap {...props} />);
+
+  expect(node.find('HeatmapOverlay').prop('allowAdHocSubProcess')).toBe(false);
+});
+
 it('should convert the data to target value heat when target value mode is active', () => {
   const heatmapTargetValue = {
     active: true,

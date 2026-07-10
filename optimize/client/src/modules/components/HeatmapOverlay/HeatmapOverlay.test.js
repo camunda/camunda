@@ -43,7 +43,13 @@ const data = 'some heatmap data';
 it('create get a heatmap', () => {
   shallow(<HeatmapOverlay viewer={viewer} data={data} />);
 
-  expect(getHeatmap).toHaveBeenCalledWith(viewer, data, undefined);
+  expect(getHeatmap).toHaveBeenCalledWith(viewer, data, undefined, undefined);
+});
+
+it('should forward the allowAdHocSubProcess flag to getHeatmap', () => {
+  shallow(<HeatmapOverlay viewer={viewer} data={data} allowAdHocSubProcess />);
+
+  expect(getHeatmap).toHaveBeenCalledWith(viewer, data, undefined, true);
 });
 
 it('append the heatmap to the viewer viewport', () => {

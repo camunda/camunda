@@ -44,6 +44,10 @@ export default function Heatmap({report, context}) {
 
   const isDuration = properties[0].toLowerCase().includes('duration');
   const alwaysShow = isDuration ? alwaysShowAbsolute : alwaysShowAbsolute || alwaysShowRelative;
+  // Tool-call activity is attributed to the AI Agent ad-hoc subprocess, which is an expanded
+  // subprocess container. Heatmaps normally exclude expanded subprocesses from being colored, so
+  // for the tool-calls heatmap we allow the ad-hoc subprocess to be tinted.
+  const allowAdHocSubProcess = properties.includes('toolCalls');
 
   if (!xml || !result) {
     return <Loading />;
@@ -60,6 +64,7 @@ export default function Heatmap({report, context}) {
       <HeatmapOverlay
         key="heatmap"
         data={heat}
+        allowAdHocSubProcess={allowAdHocSubProcess}
         tooltipOptions={{alwaysShow}}
         formatter={(_, id) => {
           const target = formatters.convertToMilliseconds(
@@ -130,6 +135,7 @@ export default function Heatmap({report, context}) {
     heatmapComponent = (
       <HeatmapOverlay
         data={resultObj}
+        allowAdHocSubProcess={allowAdHocSubProcess}
         tooltipOptions={{alwaysShow}}
         formatter={(_data, id) => {
           if (

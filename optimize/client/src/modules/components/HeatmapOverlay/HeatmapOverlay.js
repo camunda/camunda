@@ -62,9 +62,9 @@ export default class HeatmapOverlay extends React.Component {
   }
 
   renderHeatmap = () => {
-    const {viewer, data, noSequenceHighlight} = this.props;
+    const {viewer, data, noSequenceHighlight, allowAdHocSubProcess} = this.props;
 
-    const heatmap = getHeatmap(viewer, data, noSequenceHighlight);
+    const heatmap = getHeatmap(viewer, data, noSequenceHighlight, allowAdHocSubProcess);
 
     if (this.heatmap) {
       viewer.get('canvas')._viewport.removeChild(this.heatmap);
