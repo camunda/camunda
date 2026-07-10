@@ -49,12 +49,18 @@ Cluster-wide status and topology endpoints show all physical tenants and all nod
 
 Single-tenant clusters keep today's operational behavior.
 
-**D3. Existing `/v2/status`: Reports status for one physical tenant only**
+**D3. Existing `/v2/status`: Scoped to the default physical tenant only**
 
-Only the requested physical tenant's status is reported.
+This endpoint is only exposed under the prefix-less `/v2/status` and `/physical-tenants/default/v2/status`.
+It only reports the status of the default physical tenant.
 
-This _could_ be considered a breaking change because it is currently documented to
-report the overall cluster status.
+This _could_ be considered a breaking change because it is currently documented to report the overall cluster status.
+
+This is the only REST API endpoint that will not exist for non-default physical tenants.
+Users are encouraged to use the new `/cluster/v2/status` endpoint or the `/physical-tenants/{id}/v2/topology` endpoint, depending on their use case.
+Client libraries will be updated to use `/cluster/v2/status` instead, matching the documented intent.
+
+Because `/v2/status` is unauthenticated, we don't want to expose it for non-default physical tenants to prevent leaking ids of physical tenant.
 
 **D4. New `GET /cluster/v2/status`: Aggregated status over all physical tenants.**
 
