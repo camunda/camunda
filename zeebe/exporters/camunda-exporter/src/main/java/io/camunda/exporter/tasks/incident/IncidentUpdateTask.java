@@ -34,7 +34,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 import javax.annotation.WillCloseWhenClosed;
 import org.agrona.LangUtil;
@@ -45,7 +45,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
   private final IncidentUpdateRepository repository;
   private final boolean ignoreMissingData;
   private final int batchSize;
-  private final ScheduledExecutorService executor;
+  private final ExecutorService executor;
   private final Logger logger;
   private final Duration waitForRefreshInterval;
   private final IncidentNotifier incidentNotifier;
@@ -56,7 +56,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
       final IncidentUpdateRepository repository,
       final boolean ignoreMissingData,
       final int batchSize,
-      final ScheduledExecutorService executor,
+      final ExecutorService executor,
       @WillCloseWhenClosed final IncidentNotifier incidentNotifier,
       final CamundaExporterMetrics metrics,
       final Logger logger) {
@@ -78,7 +78,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
       final IncidentUpdateRepository repository,
       final boolean ignoreMissingData,
       final int batchSize,
-      final ScheduledExecutorService executor,
+      final ExecutorService executor,
       @WillCloseWhenClosed final IncidentNotifier incidentNotifier,
       final CamundaExporterMetrics metrics,
       final Logger logger,
