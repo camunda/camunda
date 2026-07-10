@@ -9,6 +9,7 @@ package io.camunda.webapps.backup.repository.opensearch;
 
 import static io.camunda.webapps.backup.repository.opensearch.OpensearchBackupRepository.REPOSITORY_MISSING_EXCEPTION_TYPE;
 import static io.camunda.webapps.backup.repository.opensearch.OpensearchBackupRepository.SNAPSHOT_MISSING_EXCEPTION_TYPE;
+import static io.camunda.webapps.backup.repository.opensearch.OpensearchBackupRepository.SNAPSHOT_NAME_ALREADY_IN_USE_EXCEPTION_TYPE;
 import static org.assertj.core.api.Assertions.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.assertj.core.api.AssertionsForClassTypes.fail;
@@ -35,6 +36,10 @@ import java.net.SocketTimeoutException;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.test.appender.ListAppender;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -159,6 +164,66 @@ class OpensearchBackupRepositoryTest {
         .thenReturn(CompletableFuture.failedFuture(new SocketTimeoutException("no internet")));
 
     repository.executeSnapshotting(snapshotRequest, onSuccess, onFailure);
+  }
+
+  @Test
+  void shouldCallOnFailureWhenSnapshotNameAlreadyInUse() throws IOException {
+    // given
+    final var snapshotRequest =
+        new SnapshotRequest(
+            "repo",
+            "camunda_webapps_1_8.7.0_part_1_of_1",
+            new SnapshotIndexCollection(List.of("index-1"), List.of()),
+            new Metadata(1L, "1", 1, 1));
+    final boolean[] onFailureCalled = {false};
+    when(openSearchAsyncClient.snapshot().create((CreateSnapshotRequest) any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new OpenSearchException(
+                    new ErrorResponse.Builder()
+                        .status(400)
+                        .error(
+                            new ErrorCause.Builder()
+                                .type(SNAPSHOT_NAME_ALREADY_IN_USE_EXCEPTION_TYPE)
+                                .reason("snapshot with the same name already exists")
+                                .build())
+                        .build())));
+
+    final String loggerName = OpensearchBackupRepository.class.getName();
+    final ListAppender appender = new ListAppender("test-list-appender");
+    appender.start();
+    final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+    final var loggerConfig =
+        new org.apache.logging.log4j.core.config.LoggerConfig(loggerName, Level.ALL, true);
+    loggerConfig.addAppender(appender, null, null);
+    ctx.getConfiguration().addLogger(loggerName, loggerConfig);
+    ctx.updateLoggers();
+
+    try {
+      // when
+      repository.executeSnapshotting(
+          snapshotRequest,
+          () -> fail("onSuccess should not be called"),
+          () -> onFailureCalled[0] = true);
+
+      // then
+      assertThat(onFailureCalled[0]).isTrue();
+      assertThat(appender.getEvents())
+          .singleElement()
+          .satisfies(
+              event -> {
+                assertThat(event.getLevel()).isEqualTo(Level.WARN);
+                final String message = event.getMessage().getFormattedMessage();
+                assertThat(message)
+                    .contains(snapshotRequest.snapshotName())
+                    .contains("already exists")
+                    .contains("use a different backup ID");
+              });
+    } finally {
+      ctx.getConfiguration().removeLogger(loggerName);
+      ctx.updateLoggers();
+      appender.stop();
+    }
   }
 
   @Test
