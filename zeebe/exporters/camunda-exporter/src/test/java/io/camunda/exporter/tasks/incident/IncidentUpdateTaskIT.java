@@ -38,6 +38,7 @@ import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.PostImporterQueueTemplate;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.post.PostImporterActionType;
 import io.camunda.webapps.schema.entities.post.PostImporterQueueEntity;
 import io.camunda.zeebe.exporter.api.ExporterException;
@@ -212,6 +213,73 @@ class IncidentUpdateTaskIT {
 
           // then
           assertThat(updated).succeedsWithin(UPDATE_TIMEOUT).isEqualTo(1);
+
+          assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(-1L);
+        });
+  }
+
+  @TestTemplate
+  void shouldThrowExceptionWhenFlowNodeInstanceToUpdateAreNotFound(
+      final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
+    withIncidentUpdateTask(
+        config,
+        (job, resources) -> {
+          final var listViewTemplate = resources.getIndexTemplateDescriptor(ListViewTemplate.class);
+
+          final var processInstanceKey = ID_GENERATOR.getAndIncrement();
+          final ProcessInstanceForListViewEntity processInstance =
+              new ProcessInstanceForListViewEntity()
+                  .setId(String.valueOf(processInstanceKey))
+                  .setPartitionId(PARTITION_ID)
+                  .setKey(processInstanceKey)
+                  .setProcessDefinitionKey(9999L)
+                  .setBpmnProcessId("process-1");
+          store(listViewTemplate, client, processInstance);
+          client.refresh(listViewTemplate.getFullQualifiedName());
+
+          final var incidentTemplateTemplate =
+              resources.getIndexTemplateDescriptor(IncidentTemplate.class);
+
+          final var incidentKey = ID_GENERATOR.getAndIncrement();
+          final IncidentEntity incidentEntity =
+              new IncidentEntity()
+                  .setId(String.valueOf(incidentKey))
+                  .setPartitionId(PARTITION_ID)
+                  .setKey(incidentKey)
+                  .setErrorMessage("An error happened")
+                  .setProcessInstanceKey(processInstanceKey)
+                  .setFlowNodeInstanceKey(9999L);
+
+          store(incidentTemplateTemplate, client, incidentEntity);
+          client.refresh(incidentTemplateTemplate.getFullQualifiedName());
+
+          final var postImporterTemplate =
+              resources.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
+
+          final PostImporterQueueEntity queueEntity =
+              new PostImporterQueueEntity()
+                  .setId("queue-1")
+                  .setPartitionId(PARTITION_ID)
+                  .setActionType(PostImporterActionType.INCIDENT)
+                  .setIntent("CREATED")
+                  .setKey(incidentKey)
+                  .setPosition(1L);
+
+          store(postImporterTemplate, client, queueEntity);
+          client.refresh(postImporterTemplate.getFullQualifiedName());
+
+          // when
+          final var updated = job.execute();
+
+          // then
+          assertThat(updated)
+              .failsWithin(UPDATE_TIMEOUT)
+              .withThrowableThat()
+              .withRootCauseInstanceOf(ExporterException.class)
+              .withMessageContaining("Flow node instance 9999 affected by incident")
+              .withMessageContaining(
+                  "cannot be updated because there is no document for it in the list view index yet")
+              .withMessageContaining(" this will be retried later");
 
           assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(-1L);
         });
