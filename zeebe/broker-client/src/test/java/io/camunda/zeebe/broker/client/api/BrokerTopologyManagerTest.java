@@ -747,7 +747,7 @@ final class BrokerTopologyManagerTest {
     }
 
     @Override
-    public void brokerRemoved(final BrokerMemberId memberId) {
+    public void brokerRemoved(final BrokerMemberId memberId, final String physicalTenantId) {
       brokers.remove(memberId);
     }
 

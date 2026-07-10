@@ -17,7 +17,7 @@ public interface BrokerTopologyListener {
 
   default void brokerAdded(final BrokerMemberId memberId, final String physicalTenantId) {}
 
-  default void brokerRemoved(final BrokerMemberId memberId) {}
+  default void brokerRemoved(final BrokerMemberId memberId, final String physicalTenantId) {}
 
   default void completedClusterChange() {}
 

@@ -145,8 +145,11 @@ public final class BrokerTopologyManagerImpl extends Actor
               });
 
           if (!groupsToRebuild.isEmpty()) {
-            topologyListeners.forEach(l -> l.brokerRemoved(brokerMemberId));
-            groupsToRebuild.forEach(this::rebuildGroupTopology);
+            groupsToRebuild.forEach(
+                physicalTenantId -> {
+                  rebuildGroupTopology(physicalTenantId);
+                  topologyListeners.forEach(l -> l.brokerRemoved(brokerMemberId, physicalTenantId));
+                });
           }
         });
   }

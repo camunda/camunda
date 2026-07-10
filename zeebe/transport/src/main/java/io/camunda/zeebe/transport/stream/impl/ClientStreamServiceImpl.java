@@ -70,7 +70,7 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
         actor::run);
 
     // Pre-register the default group's RESTART topic so restarted legacy brokers are handled
-    // even before the first brokerAddedToGroup callback fires.
+    // even before the first brokerAdded callback fires.
     registerRestartHandler(DEFAULT_PHYSICAL_TENANT_ID);
   }
 

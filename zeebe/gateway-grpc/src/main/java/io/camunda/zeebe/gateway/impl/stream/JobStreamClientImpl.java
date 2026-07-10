@@ -57,7 +57,8 @@ public final class JobStreamClientImpl implements JobStreamClient {
   }
 
   @Override
-  public synchronized void brokerRemoved(final BrokerMemberId memberId) {
+  public synchronized void brokerRemoved(
+      final BrokerMemberId memberId, final String physicalTenantId) {
     if (!started) {
       return;
     }
