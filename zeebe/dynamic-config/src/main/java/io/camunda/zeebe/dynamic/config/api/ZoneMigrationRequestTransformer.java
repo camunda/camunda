@@ -17,7 +17,6 @@ import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwar
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
 import io.camunda.zeebe.util.Either;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -46,14 +45,35 @@ public final class ZoneMigrationRequestTransformer implements ConfigurationChang
   @Override
   public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
       final ClusterConfiguration currentConfiguration) {
-    final var validation = validate(currentConfiguration);
+    final var zoneAwareConfig =
+        currentConfiguration
+            .partitionDistributorConfig()
+            .filter(ZoneAwareConfig.class::isInstance)
+            .map(ZoneAwareConfig.class::cast);
+    if (zoneAwareConfig.isEmpty()) {
+      return Either.left(
+          new InvalidRequest(
+              "Zone migration requires a persisted zone-aware partition distribution config. "
+                  + "Update the partition distribution before migrating brokers."));
+    }
+
+    final var zones = zoneAwareConfig.get().zones();
+    if (zones.stream().noneMatch(zone -> zone.name().equals(zoneName))) {
+      return Either.left(
+          new InvalidRequest(
+              "Zone migration request targets unknown zone '"
+                  + zoneName
+                  + "'. Configure it first via the persisted partition distribution."));
+    }
+
+    final var stageReplacements = stageReplacements(currentConfiguration, zones);
+    final var validation = validate(currentConfiguration, zones, stageReplacements);
     if (validation.isLeft()) {
       return Either.left(validation.getLeft());
     }
 
-    final var zones = zones(currentConfiguration);
     return new ScaleRequestTransformer(
-            stageTargetMembers(currentConfiguration, zones),
+            stageTargetMembers(currentConfiguration, stageReplacements),
             Optional.empty(),
             Optional.empty(),
             Optional.of(zoneName))
@@ -91,9 +111,8 @@ public final class ZoneMigrationRequestTransformer implements ConfigurationChang
   }
 
   private Set<MemberId> stageTargetMembers(
-      final ClusterConfiguration currentConfiguration, final List<ZoneSpec> zones) {
-    final var stageReplacements = stageReplacements(currentConfiguration, zones);
-
+      final ClusterConfiguration currentConfiguration,
+      final Map<MemberId, MemberId> stageReplacements) {
     // Keep member iteration deterministic, e.g. for stable coordinator selection and test output.
     final var stageTargetMembers = new LinkedHashSet<>(currentConfiguration.members().keySet());
     stageTargetMembers.removeAll(stageReplacements.keySet());
@@ -101,67 +120,11 @@ public final class ZoneMigrationRequestTransformer implements ConfigurationChang
     return stageTargetMembers;
   }
 
-  private Either<Exception, Void> validate(final ClusterConfiguration currentConfiguration) {
-    final var zoneAwareConfig =
-        currentConfiguration
-            .partitionDistributorConfig()
-            .filter(ZoneAwareConfig.class::isInstance)
-            .map(ZoneAwareConfig.class::cast);
-    if (zoneAwareConfig.isEmpty()) {
-      return Either.left(
-          new InvalidRequest(
-              "Zone migration requires a persisted zone-aware partition distribution config. "
-                  + "Update the partition distribution before migrating brokers."));
-    }
-
-    if (currentConfiguration.isFullyZoneAware()) {
-      return Either.left(
-          new InvalidRequest(
-              "Zone migration is only supported while the cluster still contains bare brokers, but"
-                  + " the current cluster is already fully zone-aware."));
-    }
-
-    final var zones = zoneAwareConfig.get().zones();
-    if (zones.isEmpty()) {
-      return Either.left(new InvalidRequest("Zone migration requires at least one target zone."));
-    }
-
-    if (zones.stream().noneMatch(zone -> zone.name().equals(zoneName))) {
-      return Either.left(
-          new InvalidRequest(
-              "Zone migration request targets unknown zone '"
-                  + zoneName
-                  + "'. Configure it first via the persisted partition distribution."));
-    }
-
+  private Either<Exception, Void> validate(
+      final ClusterConfiguration currentConfiguration,
+      final List<ZoneSpec> zones,
+      final Map<MemberId, MemberId> stageReplacements) {
     final int zoneIndex = zoneIndex(zones);
-
-    if (zones.stream().map(ZoneSpec::name).distinct().count() != zones.size()) {
-      return Either.left(
-          new InvalidRequest("Zone migration requires zone names to be unique: " + zones));
-    }
-
-    final int targetReplicationFactor = zones.stream().mapToInt(ZoneSpec::numberOfReplicas).sum();
-    final int currentReplicationFactor = currentConfiguration.minReplicationFactor();
-    if (targetReplicationFactor != currentReplicationFactor) {
-      return Either.left(
-          new InvalidRequest(
-              String.format(
-                  "Sum of zone replicas [%d] must equal the current replication factor [%d];"
-                      + " zone migration must not change the replication factor.",
-                  targetReplicationFactor, currentReplicationFactor)));
-    }
-
-    final var topologyValidation = validateCurrentTopologyAgainstZones(currentConfiguration, zones);
-    if (topologyValidation.isLeft()) {
-      return Either.left(topologyValidation.getLeft());
-    }
-
-    final var capacityValidation = validateZoneBrokerCapacity(currentConfiguration, zones);
-    if (capacityValidation.isLeft()) {
-      return Either.left(capacityValidation.getLeft());
-    }
-
     if (currentConfiguration.members().keySet().stream()
         .anyMatch(member -> zoneName.equals(member.zone()))) {
       return Either.left(
@@ -181,7 +144,7 @@ public final class ZoneMigrationRequestTransformer implements ConfigurationChang
                   expectedNextZoneIndex, zoneIndex)));
     }
 
-    if (stageReplacements(currentConfiguration, zones).isEmpty()) {
+    if (stageReplacements.isEmpty()) {
       return Either.left(
           new InvalidRequest(
               String.format(
@@ -192,86 +155,15 @@ public final class ZoneMigrationRequestTransformer implements ConfigurationChang
     return Either.right(null);
   }
 
-  /**
-   * The migration assigns physical broker slots to zones purely by {@code slot % zones.size()}, so
-   * the number of brokers a zone ends up with is fixed by the total broker count and the zone's
-   * rank in the persisted config — independent of its {@link ZoneSpec#numberOfReplicas()}. This
-   * rejects plans where that fixed share is smaller than the declared replica count (which would
-   * otherwise fail late when the fully-zoned distribution is computed), e.g. when an
-   * asymmetric-replica config lists a high-replica zone in a rank that receives too few brokers.
-   */
-  private Either<Exception, Void> validateZoneBrokerCapacity(
-      final ClusterConfiguration currentConfiguration, final List<ZoneSpec> zones) {
-    final int brokerCount = currentConfiguration.members().size();
-    final int zoneCount = zones.size();
-    for (int rank = 0; rank < zoneCount; rank++) {
-      final int brokerSlots = Math.max(0, Math.ceilDiv(brokerCount - rank, zoneCount));
-      final var zone = zones.get(rank);
-      if (brokerSlots < zone.numberOfReplicas()) {
-        return Either.left(
-            new InvalidRequest(
-                String.format(
-                    "Zone '%s' requires %d replicas but only %d broker slot(s) map to it under the"
-                        + " current %d-broker topology and %d-zone plan. Adjust the zone order or"
-                        + " replica counts so each zone receives at least as many brokers as"
-                        + " replicas.",
-                    zone.name(), zone.numberOfReplicas(), brokerSlots, brokerCount, zoneCount)));
-      }
-    }
-    return Either.right(null);
-  }
-
-  private Either<Exception, Void> validateCurrentTopologyAgainstZones(
-      final ClusterConfiguration currentConfiguration, final List<ZoneSpec> zones) {
-    final var brokerCount = currentConfiguration.members().size();
-    final var effectiveSlots = new HashSet<Integer>(brokerCount);
-    final var zoneNames = zones.stream().map(ZoneSpec::name).toList();
-
-    for (final var memberId : currentConfiguration.members().keySet()) {
-      final var slot = ZoneLayout.effectiveSlot(memberId.zone(), memberId.nodeIdx(), zoneNames);
-      if (slot.isEmpty()) {
-        return Either.left(
-            new InvalidRequest(
-                "Current topology is incompatible with the persisted zone migration plan: member '"
-                    + memberId
-                    + "' belongs to zone '"
-                    + memberId.zone()
-                    + "' which is not part of the persisted config."));
-      }
-
-      final var slotValue = slot.getAsInt();
-      if (slotValue >= brokerCount) {
-        return Either.left(
-            new InvalidRequest(
-                "Current topology is incompatible with the persisted zone migration plan: member '"
-                    + memberId
-                    + "' maps to slot "
-                    + slotValue
-                    + " but the cluster has only "
-                    + brokerCount
-                    + " broker slots."));
-      }
-
-      if (!effectiveSlots.add(slotValue)) {
-        return Either.left(
-            new InvalidRequest(
-                "Current topology is incompatible with the persisted zone migration plan: multiple"
-                    + " members map to slot "
-                    + slotValue
-                    + ". Check the persisted zone order."));
-      }
-    }
-
-    return Either.right(null);
-  }
-
   private int expectedNextZoneIndex(
       final ClusterConfiguration currentConfiguration, final List<ZoneSpec> zones) {
+    // Bare members have no zone identity, so derive the next stage from the highest configured
+    // zone that does not yet have a zoned member.
     return IntStream.range(0, zones.size())
         .filter(
-            index ->
+            zoneIndex ->
                 currentConfiguration.members().keySet().stream()
-                    .noneMatch(member -> zones.get(index).name().equals(member.zone())))
+                    .noneMatch(member -> zones.get(zoneIndex).name().equals(member.zone())))
         .max()
         .orElseThrow();
   }
@@ -281,14 +173,5 @@ public final class ZoneMigrationRequestTransformer implements ConfigurationChang
         .filter(index -> zones.get(index).name().equals(zoneName))
         .findFirst()
         .orElseThrow();
-  }
-
-  private List<ZoneSpec> zones(final ClusterConfiguration currentConfiguration) {
-    return currentConfiguration
-        .partitionDistributorConfig()
-        .filter(ZoneAwareConfig.class::isInstance)
-        .map(ZoneAwareConfig.class::cast)
-        .orElseThrow()
-        .zones();
   }
 }

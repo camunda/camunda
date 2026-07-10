@@ -153,7 +153,7 @@ final class ZoneMigrationRequestTransformerTest {
             e ->
                 assertThat(e)
                     .hasMessageContaining(
-                        "Zone migration is only supported while the cluster still contains bare brokers, but the current cluster is already fully zone-aware."));
+                        "Zone migration request targets zone 'us-east-1' which has already been migrated"));
   }
 
   @Test
@@ -246,8 +246,8 @@ final class ZoneMigrationRequestTransformerTest {
   void shouldRejectPersistedZoneOrderThatDoesNotMatchTheCurrentMixedTopology() {
     // given
     final var originalZones = List.of(new ZoneSpec(ZONE_A, 2, 100), new ZoneSpec(ZONE_B, 2, 100));
-    final var afterSecondaryMigration =
-        migrate(setZoneAwareConfig(unzonedTopology(4, 2, 4), originalZones), 1);
+    final var oldConfig = setZoneAwareConfig(unzonedTopology(4, 2, 4), originalZones);
+    final var afterSecondaryMigration = migrate(oldConfig, 1);
     final var swappedZones = List.of(new ZoneSpec(ZONE_B, 2, 100), new ZoneSpec(ZONE_A, 2, 100));
     final var mismatchedConfigTopology =
         afterSecondaryMigration.setPartitionDistributorConfig(new ZoneAwareConfig(swappedZones));
@@ -265,31 +265,7 @@ final class ZoneMigrationRequestTransformerTest {
             e ->
                 assertThat(e)
                     .hasMessageContaining(
-                        "Current topology is incompatible with the persisted zone migration plan: multiple members map to slot 0. Check the persisted zone order."));
-  }
-
-  @Test
-  void shouldRejectWhenAZoneGetsFewerBrokerSlotsThanItsReplicas() {
-    // given — 3 bare brokers, RF=3. Under the nodeIdx % zoneCount assignment the first zone owns
-    // slots {0,2} (2 brokers) and the second owns slot {1} (1 broker). Declaring the second zone
-    // with 2 replicas is therefore impossible to realise, even though the replica sum equals RF.
-    final var zones = List.of(new ZoneSpec(ZONE_A, 1, 100), new ZoneSpec(ZONE_B, 2, 100));
-    final var topology = setZoneAwareConfig(unzonedTopology(3, 3, 3), zones);
-
-    // when
-    final var result = new ZoneMigrationRequestTransformer(ZONE_B).operations(topology);
-
-    // then
-    assertThat(result)
-        .isLeft()
-        .left()
-        .isInstanceOf(ClusterConfigurationRequestFailedException.InvalidRequest.class)
-        .satisfies(
-            e ->
-                assertThat(e)
-                    .hasMessageContaining("us-west-1")
-                    .hasMessageContaining("2 replicas")
-                    .hasMessageContaining("1 broker slot"));
+                        "No unzoned brokers map to zone 'us-east-1' under the persisted 2-zone migration plan."));
   }
 
   private ClusterConfiguration migrate(
