@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.1">
 <title data-rh="true">ADR-0007: Physical-Tenant Configuration Resolution — Shared-Config-with-Override Model and the Per-PT / Cross-PT Validation Split | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-57276/architecture/components/orchestration-cluster/adr/physical-tenant-configuration-resolution-and-validation/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="ADR-0007: Physical-Tenant Configuration Resolution — Shared-Config-with-Override Model and the Per-PT / Cross-PT Validation Split | Camunda Platform"><meta data-rh="true" name="description" content="Status"><meta data-rh="true" property="og:description" content="Status"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-57276/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-57276/architecture/components/orchestration-cluster/adr/physical-tenant-configuration-resolution-and-validation/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-57276/architecture/components/orchestration-cluster/adr/physical-tenant-configuration-resolution-and-validation/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-57276/architecture/components/orchestration-cluster/adr/physical-tenant-configuration-resolution-and-validation/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-57276/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-57276/assets/js/runtime~main.71338d31.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-57276/assets/js/main.06c6a23c.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-57276/assets/js/runtime~main.4832fe63.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-57276/assets/js/main.dda0c8c0.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -34,7 +34,7 @@ runtime/security decisions already captured in the sibling ADRs in this folder:
 <a class="" href="/camunda/pr-preview/pr-57276/architecture/components/orchestration-cluster/adr/physical-tenant-request-scoping-via-pre-security-filter/">ADR-0003</a> (request scoping),
 <a class="" href="/camunda/pr-preview/pr-57276/architecture/components/orchestration-cluster/adr/per-physical-tenant-provider-selection-via-assigned/">ADR-0004</a> (provider selection),
 <a class="" href="/camunda/pr-preview/pr-57276/architecture/components/orchestration-cluster/adr/physical-tenant-routing-of-authorization-reads/">ADR-0005</a> (authorization-read routing) and
-ADR-0006 (gRPC authentication). Those consume the resolved per-tenant <code>Camunda</code>; this ADR is about
+<a class="" href="/camunda/pr-preview/pr-57276/architecture/components/orchestration-cluster/adr/physical-tenant-scoped-grpc-authentication/">ADR-0006</a> (gRPC authentication). Those consume the resolved per-tenant <code>Camunda</code>; this ADR is about
 how that <code>Camunda</code> is produced and validated.</p>
 <p>The problem breaks into three parts:</p>
 <ol>
@@ -80,9 +80,9 @@ the resolver synthesizes one whose value <strong>is the root <code>Camunda</code
 the root configuration as a tenant, and the synthesized <code>default</code> participates in cross-PT validation
 like any other tenant. An explicit <code>default</code> declaration is honored as-is.</p>
 <p><strong>Tenant-id constraints.</strong> Ids are discovered by pure key inspection and must be lowercase
-alphanumeric (<code>[a-z0-9]+</code>, no dashes) and at most 64 characters. Forbidding dashes keeps YAML
-(<code>tenant-a</code>) and environment-variable (<code>CAMUNDA_PHYSICALTENANTS_TENANTA_*</code>) forms from resolving to
-two different ids.</p>
+alphanumeric (<code>[a-z0-9]+</code>, no dashes) and at most 64 characters. This avoids a mismatch where a YAML
+key containing punctuation (e.g. <code>tenant-a</code>) and an environment-variable form that typically drops it
+(e.g. <code>CAMUNDA_PHYSICALTENANTS_TENANTA_*</code>) could otherwise resolve to different ids.</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="2-the-mapbinder-defect-and-the-generic-overlay-engine-typed-pojo-maps">2. The <code>MapBinder</code> defect and the generic overlay engine (typed-POJO maps)<a href="#2-the-mapbinder-defect-and-the-generic-overlay-engine-typed-pojo-maps" class="hash-link" aria-label="Direct link to 2-the-mapbinder-defect-and-the-generic-overlay-engine-typed-pojo-maps" title="Direct link to 2-the-mapbinder-defect-and-the-generic-overlay-engine-typed-pojo-maps" translate="no">​</a></h3>
 <p>Spring Boot&#x27;s <code>MapBinder</code> merges <code>Map</code>-typed properties at the <strong>entry level</strong> (disjoint keys
 survive), but for a key the tenant overlay <em>touches</em>, it constructs a <strong>fresh</strong> value POJO from only
