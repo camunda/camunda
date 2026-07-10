@@ -246,6 +246,29 @@ class OpenApiYamlLoaderTest {
   }
 
   @Test
+  void shouldCopyOpenApiVersionToTargetSpec() throws IOException {
+    // given
+    final String yaml =
+        """
+        openapi: "3.0.3"
+        info:
+          title: Test API
+          version: "1.0"
+        paths: {}
+        """;
+    final Path yamlFile = tempDir.resolve("test-api.yaml");
+    Files.writeString(yamlFile, yaml);
+    final OpenAPI target = new OpenAPI();
+    target.setOpenapi("3.0.1");
+
+    // when
+    OpenApiYamlLoader.customizeOpenApiFromYaml(target, yamlFile.toString());
+
+    // then
+    assertThat(target.getOpenapi()).isEqualTo("3.0.3");
+  }
+
+  @Test
   void openApiLoadingExceptionShouldHaveCorrectMessageAndCause() {
     // given
     final String message = "Test error message";

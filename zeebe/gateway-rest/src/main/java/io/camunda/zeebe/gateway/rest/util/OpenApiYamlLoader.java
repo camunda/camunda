@@ -68,6 +68,10 @@ public final class OpenApiYamlLoader {
     try {
       final OpenAPI yamlOpenApi = loadOpenApiFromYaml(yamlPath);
 
+      if (yamlOpenApi.getOpenapi() != null) {
+        targetOpenApi.setOpenapi(yamlOpenApi.getOpenapi());
+      }
+
       if (yamlOpenApi.getTags() != null) {
         targetOpenApi.setTags(yamlOpenApi.getTags());
       }
