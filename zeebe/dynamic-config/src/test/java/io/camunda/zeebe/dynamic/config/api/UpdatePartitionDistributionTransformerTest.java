@@ -135,8 +135,8 @@ class UpdatePartitionDistributionTransformerTest {
             new UpdatePartitionDistributorConfigOperation(COORDINATOR, newConfig),
             new PartitionReconfigurePriorityOperation(ZONE_A_0, 1, 1),
             new PartitionReconfigurePriorityOperation(ZONE_B_0, 1, 2),
-            new PartitionReconfigurePriorityOperation(ZONE_A_1, 2, 1),
             new PartitionReconfigurePriorityOperation(ZONE_B_0, 2, 2),
+            new PartitionReconfigurePriorityOperation(ZONE_A_1, 2, 1),
             new PartitionReconfigurePriorityOperation(ZONE_A_0, 3, 1),
             new PartitionReconfigurePriorityOperation(ZONE_B_0, 3, 2));
   }

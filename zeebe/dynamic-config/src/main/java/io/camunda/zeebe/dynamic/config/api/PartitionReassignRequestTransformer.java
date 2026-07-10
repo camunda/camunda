@@ -176,7 +176,7 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
             primary, partitionId, newMetadata.getPriority(primary), true));
 
     // Join each remaining members to the partition
-    for (final MemberId member : newMetadata.members()) {
+    for (final MemberId member : newMetadata.members().stream().sorted().toList()) {
       if (!member.equals(primary)) {
         operations.add(
             new PartitionJoinOperation(member, partitionId, newMetadata.getPriority(member)));
