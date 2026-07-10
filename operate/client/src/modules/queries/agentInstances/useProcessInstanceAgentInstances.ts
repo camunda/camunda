@@ -6,26 +6,28 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useQuery} from '@tanstack/react-query';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
-import {useAgentInstancesSearch} from './useAgentInstancesSearch';
+import {agentInstancesSearchOptions} from './agentInstancesSearch';
 import {ACTIVE_STATUSES_ARRAY} from './agentInstanceStatus';
 
 const useProcessInstanceAgentInstances = () => {
   const {processInstanceId} = useProcessInstancePageParams();
 
-  return useAgentInstancesSearch(
-    {
-      filter: {
-        processInstanceKey: processInstanceId ?? '',
-        status: {$in: ACTIVE_STATUSES_ARRAY},
-      },
-    },
-    {
-      enabled: !!processInstanceId,
-      refetchInterval: 5000,
+  return useQuery({
+    ...agentInstancesSearchOptions({
       loadAllItems: true,
-    },
-  );
+      payload: {
+        filter: {
+          processInstanceKey: processInstanceId ?? '',
+          status: {$in: ACTIVE_STATUSES_ARRAY},
+        },
+      },
+    }),
+    enabled: !!processInstanceId,
+    refetchInterval: 5000,
+    staleTime: 5000,
+  });
 };
 
 export {useProcessInstanceAgentInstances};

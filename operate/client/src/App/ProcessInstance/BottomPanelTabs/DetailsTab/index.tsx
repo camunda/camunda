@@ -31,10 +31,11 @@ import {
   Callout,
   SectionContainer,
   SectionHeading,
+  ElementInstanceHint,
 } from './styled';
 import {StructuredList} from 'modules/components/StructuredList';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
-import {useAgentInstanceForElement} from 'modules/queries/agentInstances/useAgentInstanceForElement';
+import {useAgentInstancesForElement} from 'modules/queries/agentInstances/useAgentInstancesForElement';
 import {AgentDetails} from './AgentDetails';
 import {useProcessInstancePageParams} from '../../useProcessInstancePageParams';
 import {useElementInstanceInspection} from 'modules/queries/elementInstanceInspection/useElementInstanceInspection';
@@ -170,10 +171,20 @@ const DetailsTab: React.FC = () => {
   const messageSubscription = messageSubscriptionResult?.items?.[0] ?? null;
 
   const {
-    agentInstance,
+    data: agentInstancesResult,
     isLoading: isAgentLoading,
     isError: isAgentError,
-  } = useAgentInstanceForElement(effectiveElementId, elementInstanceKey);
+  } = useAgentInstancesForElement({
+    processInstanceKey: processInstance?.processInstanceKey ?? '',
+    elementId: effectiveElementId ?? '',
+    elementInstanceKey,
+    enabled: !!processInstance?.processInstanceKey && !!effectiveElementId,
+    enablePeriodicRefetch: true,
+  });
+  const showAgentInstance =
+    (agentInstancesResult && agentInstancesResult.items.length > 0) ||
+    isAgentLoading ||
+    isAgentError;
 
   const calledDecisionInstance = decisionInstanceSearchResult?.items?.find(
     (instance) =>
@@ -509,15 +520,15 @@ const DetailsTab: React.FC = () => {
     return <StructuredListSkeleton rowCount={5} />;
   }
 
-  if (resolvedElementInstance === null) {
-    const isMultiInstance =
-      selectedInstancesCount !== null && selectedInstancesCount > 1;
+  const hasMultipleInstances =
+    selectedInstancesCount !== null && selectedInstancesCount > 1;
 
+  if (resolvedElementInstance === null && !showAgentInstance) {
     return (
       <EmptyMessageContainer>
         <EmptyMessage
           message={
-            isMultiInstance
+            hasMultipleInstances
               ? 'To view the details, select a single element instance in the instance history.'
               : 'There is no element selected.'
           }
@@ -525,9 +536,6 @@ const DetailsTab: React.FC = () => {
       </EmptyMessageContainer>
     );
   }
-
-  const showAgentInstance =
-    agentInstance !== undefined || isAgentLoading || isAgentError;
 
   return (
     <Container data-testid="details-tab">
@@ -542,7 +550,11 @@ const DetailsTab: React.FC = () => {
         )}
       {showAgentInstance && (
         <AgentDetails
-          agentInstance={agentInstance}
+          agentInstances={agentInstancesResult?.items ?? []}
+          totalAgentsCount={agentInstancesResult?.page.totalItems ?? 0}
+          hasMoreTotalItems={
+            agentInstancesResult?.page.hasMoreTotalItems ?? false
+          }
           isLoading={isAgentLoading}
           isError={isAgentError}
           selectedElementInstanceKey={elementInstanceKey}
@@ -553,15 +565,23 @@ const DetailsTab: React.FC = () => {
       )}
       <SectionContainer>
         <SectionHeading>Element Instance</SectionHeading>
-        <StructuredList
-          label="Element Instance Details"
-          headerSize="sm"
-          headerColumns={[
-            {cellContent: 'Property', width: '30%'},
-            {cellContent: 'Value', width: '70%'},
-          ]}
-          rows={rows}
-        />
+        {resolvedElementInstance === null ? (
+          <ElementInstanceHint>
+            {hasMultipleInstances
+              ? 'To view the details, select a single element instance in the instance history.'
+              : 'There is no element instance selected.'}
+          </ElementInstanceHint>
+        ) : (
+          <StructuredList
+            label="Element Instance Details"
+            headerSize="sm"
+            headerColumns={[
+              {cellContent: 'Property', width: '30%'},
+              {cellContent: 'Value', width: '70%'},
+            ]}
+            rows={rows}
+          />
+        )}
       </SectionContainer>
     </Container>
   );

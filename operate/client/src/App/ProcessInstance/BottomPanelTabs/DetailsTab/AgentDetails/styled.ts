@@ -29,11 +29,24 @@ const ErrorHint = styled.span`
   color: var(--cds-text-secondary);
 `;
 
+const AgentHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: var(--cds-spacing-03);
+`;
+
 const AgentHeading = styled.h5`
   font-size: var(--cds-heading-compact-01-font-size);
   font-weight: var(--cds-heading-compact-01-font-weight);
   line-height: var(--cds-heading-compact-01-line-height);
   margin: 0;
+`;
+
+const AgentInstanceKey = styled.span`
+  font-size: var(--cds-body-compact-01-font-size);
+  line-height: var(--cds-body-compact-01-line-height);
+  letter-spacing: var(--cds-body-compact-01-letter-spacing);
+  color: var(--cds-text-secondary);
 `;
 
 const MetricsRow = styled.div`
@@ -56,7 +69,9 @@ const ModelInfoLabel = styled.strong`
 
 export {
   AgentDetailsContainer,
+  AgentHeader,
   AgentHeading,
+  AgentInstanceKey,
   ErrorHint,
   MetricsRow,
   ModelInfo,

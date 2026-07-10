@@ -46,10 +46,18 @@ const SectionHeading = styled.h5`
   margin: 0;
 `;
 
+const ElementInstanceHint = styled.span`
+  font-size: var(--cds-body-compact-01-font-size);
+  line-height: var(--cds-body-compact-01-line-height);
+  letter-spacing: var(--cds-body-compact-01-letter-spacing);
+  color: var(--cds-text-secondary);
+`;
+
 export {
   EmptyMessageContainer,
   Container,
   Callout,
   SectionContainer,
   SectionHeading,
+  ElementInstanceHint,
 };
