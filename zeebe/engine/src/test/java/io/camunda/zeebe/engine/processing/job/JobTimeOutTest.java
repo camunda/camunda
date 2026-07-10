@@ -95,10 +95,11 @@ public final class JobTimeOutTest {
         .hasRecordType(RecordType.EVENT)
         .hasIntent(TIMED_OUT);
 
-    // and
-    final Record<JobBatchRecordValue> reactivatedBatch = ENGINE.jobs().withType(jobType).activate();
+    // and it stays leased, so only a leasing worker re-activates it
+    final Record<JobBatchRecordValue> reactivatedBatch =
+        ENGINE.jobs().withType(jobType).withLease().activate();
     assertThat(reactivatedBatch.getValue().getJobKeys())
-        .describedAs("the timed-out job became activatable again")
+        .describedAs("the timed-out job stays leased and is re-activated by a leasing worker")
         .containsExactly(jobKey);
   }
 

@@ -89,10 +89,11 @@ public final class YieldJobTest {
         .hasRecordType(RecordType.EVENT)
         .hasIntent(JobIntent.YIELDED);
 
-    // and
-    final Record<JobBatchRecordValue> reactivatedBatch = ENGINE.jobs().withType(jobType).activate();
+    // and it stays leased, so only a leasing worker re-activates it
+    final Record<JobBatchRecordValue> reactivatedBatch =
+        ENGINE.jobs().withType(jobType).withLease().activate();
     assertThat(reactivatedBatch.getValue().getJobKeys())
-        .describedAs("the yielded job became activatable again")
+        .describedAs("the yielded job stays leased and is re-activated by a leasing worker")
         .containsExactly(jobKey);
   }
 

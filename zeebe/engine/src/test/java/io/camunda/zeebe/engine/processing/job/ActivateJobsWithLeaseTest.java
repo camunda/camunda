@@ -203,8 +203,17 @@ public final class ActivateJobsWithLeaseTest {
   public void shouldSkipLeasedJobWhenActivatingWithoutLease() {
     // given a leased job that failed back to activatable, alongside two unleased jobs
     final long leasedJobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
-    ENGINE.jobs().withType(jobType).withLease().activate();
-    ENGINE.job().withKey(leasedJobKey).withRetries(1).fail();
+    final String leaseToken =
+        ENGINE
+            .jobs()
+            .withType(jobType)
+            .withLease()
+            .activate()
+            .getValue()
+            .getJobs()
+            .get(0)
+            .getLeaseToken();
+    ENGINE.job().withKey(leasedJobKey).withLeaseToken(leaseToken).withRetries(1).fail();
     jobRecords(JobIntent.FAILED).withRecordKey(leasedJobKey).await();
     final long unleasedJobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
     final long otherUnleasedJobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
@@ -225,8 +234,17 @@ public final class ActivateJobsWithLeaseTest {
     // given a leased job that failed back to activatable, alongside two unleased jobs.
     // The leased job is created first (lowest key) so it is visited before the batch fills.
     final long leasedJobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
-    ENGINE.jobs().withType(jobType).withLease().activate();
-    ENGINE.job().withKey(leasedJobKey).withRetries(1).fail();
+    final String leaseToken =
+        ENGINE
+            .jobs()
+            .withType(jobType)
+            .withLease()
+            .activate()
+            .getValue()
+            .getJobs()
+            .get(0)
+            .getLeaseToken();
+    ENGINE.job().withKey(leasedJobKey).withLeaseToken(leaseToken).withRetries(1).fail();
     jobRecords(JobIntent.FAILED).withRecordKey(leasedJobKey).await();
     final long unleasedJobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
     final long otherUnleasedJobKey = ENGINE.createJob(jobType, PROCESS_ID).getKey();
