@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.analytics;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -14,6 +15,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 
 /** Persisted state for the analytics exporter, stored alongside the last exported position. */
+@JsonAutoDetect(
+    fieldVisibility = JsonAutoDetect.Visibility.ANY,
+    getterVisibility = JsonAutoDetect.Visibility.NONE,
+    setterVisibility = JsonAutoDetect.Visibility.NONE)
 @JsonIgnoreProperties(ignoreUnknown = true)
 final class AnalyticsExporterMetadata {
 
@@ -38,28 +43,20 @@ final class AnalyticsExporterMetadata {
     this.metricSequenceNumber = metricSequenceNumber;
   }
 
-  public long getEventSequenceNumber() {
+  long getEventSequenceNumber() {
     return eventSequenceNumber;
   }
 
-  public void setEventSequenceNumber(final long eventSequenceNumber) {
-    this.eventSequenceNumber = eventSequenceNumber;
-  }
-
-  public long incrementAndGetEventSequenceNumber() {
+  long incrementAndGetEventSequenceNumber() {
     dirty = true;
     return ++eventSequenceNumber;
   }
 
-  public long getMetricSequenceNumber() {
+  long getMetricSequenceNumber() {
     return metricSequenceNumber;
   }
 
-  public void setMetricSequenceNumber(final long metricSequenceNumber) {
-    this.metricSequenceNumber = metricSequenceNumber;
-  }
-
-  public long incrementAndGetMetricSequenceNumber() {
+  long incrementAndGetMetricSequenceNumber() {
     dirty = true;
     return ++metricSequenceNumber;
   }
