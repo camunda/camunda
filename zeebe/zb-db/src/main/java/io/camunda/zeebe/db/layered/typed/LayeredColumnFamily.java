@@ -42,9 +42,11 @@ import org.agrona.collections.MutableLong;
  *       and caught locally (allocation-free).
  *   <li>Reverse iteration: the store scans forward only, so reverse methods buffer the matching
  *       range of a forward scan and replay it backwards — O(range) memory.
- *   <li>Mutating the column family from within a visitor is not supported: the scan iterates the
- *       store's live in-memory layers directly.
  * </ul>
+ *
+ * <p>Mutating the column family from within a visitor is supported: the store's scans are
+ * point-in-time (see {@link LayeredKeyValueStore#prefixScan}), so a visitor deleting or updating
+ * keys — including the one being visited — never disturbs the ongoing iteration.
  */
 public final class LayeredColumnFamily<KeyType extends DbKey, ValueType extends DbValue>
     implements ColumnFamily<KeyType, ValueType> {

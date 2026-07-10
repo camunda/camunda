@@ -269,11 +269,23 @@ public final class LayeredKeyValueStore {
    * Visits every visible entry whose key starts with {@code prefix}, in unsigned-byte key order — a
    * k-way merge of staging, active, all pipeline segments and the delegate stream, upper layers
    * shadowing lower ones on equal keys, tombstones hiding everything below.
+   *
+   * <p><b>Point-in-time:</b> the scan iterates the state as of the call, so the visitor may freely
+   * write to this store (the engine's delete-while-scanning pattern): the staging and active prefix
+   * selections are copied up front (cost proportional to the selection, not the store), pipeline
+   * segments are immutable, and visitor writes never reach the delegate mid-scan (they land in
+   * staging). Consequently a key put during the scan is not visited by it, a key deleted during the
+   * scan may still be visited (it was visible at scan start), and every mutation is visible to
+   * point reads during and any read or scan after the scan. This is deliberately stricter than the
+   * RocksDB-backed reference, whose write-batch delta iterator is live: there, an in-scan write
+   * ahead of the cursor does surface in the ongoing scan, and updating the currently visited key is
+   * documented as unsafe. Point-in-time is the safer contract, and every visitor-mutation pattern
+   * tolerated there is well-defined here.
    */
   public void prefixScan(final byte[] prefix, final BiConsumer<byte[], byte[]> visitor) {
     final List<Iterator<Entry>> layers = new ArrayList<>(2 + pipeline.size());
-    layers.add(prefixSelection(stagingSorted, prefix).values().iterator());
-    layers.add(prefixSelection(activeSorted, prefix).values().iterator());
+    layers.add(List.copyOf(prefixSelection(stagingSorted, prefix).values()).iterator());
+    layers.add(List.copyOf(prefixSelection(activeSorted, prefix).values()).iterator());
     for (final FlatSegment segment : pipeline) {
       layers.add(segment.range(prefix));
     }

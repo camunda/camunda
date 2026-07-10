@@ -196,6 +196,106 @@ final class LayeredKeyValueStoreScanTest {
     assertThat(scan(store, "")).isEmpty();
   }
 
+  @Test
+  void shouldCompleteForEachWhenVisitorDeletesVisitedKey() {
+    // given -- keys in the delegate and in staging, deleted from inside the visitor
+    state.store(STORE).put(bytes("a1"), bytes("delegate"));
+    state.store(STORE).put(bytes("a3"), bytes("delegate"));
+    final LayeredKeyValueStore store = newStore();
+    store.put(bytes("a2"), bytes("staging"));
+
+    // when -- the engine's delete-while-scanning pattern
+    final List<String> visited = new ArrayList<>();
+    store.forEach(
+        (key, value) -> {
+          visited.add(new String(key, UTF_8));
+          store.delete(key);
+        });
+
+    // then -- every originally-present key was visited, and all are gone afterwards
+    assertThat(visited).containsExactly("a1", "a2", "a3");
+    assertThat(store.get(bytes("a1"))).isNull();
+    assertThat(store.get(bytes("a2"))).isNull();
+    assertThat(store.get(bytes("a3"))).isNull();
+    assertThat(scan(store, "")).isEmpty();
+  }
+
+  @Test
+  void shouldNotVisitKeyPutDuringScan() {
+    // given
+    final LayeredKeyValueStore store = newStore();
+    store.put(bytes("a1"), bytes("v"));
+    store.put(bytes("a2"), bytes("v"));
+
+    // when -- the visitor puts a key ahead of the cursor
+    final List<String> visited = new ArrayList<>();
+    store.prefixScan(
+        bytes(""),
+        (key, value) -> {
+          visited.add(new String(key, UTF_8));
+          store.put(bytes("a9"), bytes("in-scan"));
+        });
+
+    // then -- the ongoing scan is point-in-time, a subsequent scan sees the new key
+    assertThat(visited).containsExactly("a1", "a2");
+    assertThat(scan(store, "").keySet()).containsExactly("a1", "a2", "a9");
+  }
+
+  @Test
+  void shouldStillVisitKeyDeletedAheadOfCursor() {
+    // given
+    final LayeredKeyValueStore store = newStore();
+    store.put(bytes("a1"), bytes("v"));
+    store.put(bytes("a2"), bytes("v"));
+
+    // when -- visiting the first key deletes one the cursor has not reached yet
+    final List<String> visited = new ArrayList<>();
+    store.prefixScan(
+        bytes(""),
+        (key, value) -> {
+          visited.add(new String(key, UTF_8));
+          store.delete(bytes("a2"));
+        });
+
+    // then -- it was in the point-in-time view, so the ongoing scan still visits it
+    assertThat(visited).containsExactly("a1", "a2");
+    assertThat(store.get(bytes("a2"))).isNull();
+    assertThat(scan(store, "").keySet()).containsExactly("a1");
+  }
+
+  @Test
+  void shouldVisitPointInTimeViewOnceWhenVisitorDeletesAcrossAllLayers() {
+    // given -- distinct keys in delegate, pipeline segment, active and staging, plus one key
+    // shadowed across all layers
+    state.store(STORE).put(bytes("delegate"), bytes("delegate"));
+    state.store(STORE).put(bytes("shared"), bytes("delegate"));
+    final LayeredKeyValueStore store = newStore();
+    store.put(bytes("segment"), bytes("segment"));
+    store.put(bytes("shared"), bytes("segment"));
+    store.promote();
+    store.freeze(1L);
+    store.put(bytes("active"), bytes("active"));
+    store.put(bytes("shared"), bytes("active"));
+    store.promote();
+    store.put(bytes("staging"), bytes("staging"));
+    store.put(bytes("shared"), bytes("staging"));
+
+    // when -- the visitor deletes every key it visits
+    final Map<String, String> visited = new LinkedHashMap<>();
+    store.forEach(
+        (key, value) -> {
+          visited.put(new String(key, UTF_8), new String(value, UTF_8));
+          store.delete(key);
+        });
+
+    // then -- the full merged view, exactly once per key, topmost version winning; all gone after
+    assertThat(visited.keySet())
+        .containsExactly("active", "delegate", "segment", "shared", "staging");
+    assertThat(visited).containsEntry("shared", "staging");
+    assertThat(scan(store, "")).isEmpty();
+    assertThat(store.get(bytes("shared"))).isNull();
+  }
+
   private static Map<String, String> scan(final LayeredKeyValueStore store, final String prefix) {
     final Map<String, String> result = new LinkedHashMap<>();
     store.prefixScan(

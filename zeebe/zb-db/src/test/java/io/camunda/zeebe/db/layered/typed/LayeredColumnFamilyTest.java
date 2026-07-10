@@ -646,6 +646,35 @@ final class LayeredColumnFamilyTest {
   }
 
   @Test
+  void shouldDeleteVisitedKeysDuringWhileEqualPrefix() {
+    // given -- prefixed entries spread over a pipeline segment, the active overlay and staging
+    final var compositeFamily = compositeColumnFamily();
+    putComposite(compositeFamily, 1L, 1L, "segment");
+    store.promote();
+    store.freeze(1L);
+    putComposite(compositeFamily, 1L, 2L, "active");
+    store.promote();
+    putComposite(compositeFamily, 1L, 3L, "staging");
+    putComposite(compositeFamily, 2L, 0L, "outside");
+    final DbLong prefix = new DbLong();
+    prefix.wrapLong(1L);
+
+    // when -- the engine pattern: the visitor deletes the key it is visiting
+    final List<Long> visitedSeconds = new ArrayList<>();
+    compositeFamily.whileEqualPrefix(
+        prefix,
+        (visitedKey, visitedValue) -> {
+          visitedSeconds.add(visitedKey.second().getValue());
+          compositeFamily.deleteExisting(visitedKey);
+        });
+
+    // then -- every prefixed key was visited and deleted; the outsider survives
+    assertThat(visitedSeconds).containsExactly(1L, 2L, 3L);
+    assertThat(compositeFamily.countEqualPrefix(prefix)).isZero();
+    assertThat(compositeFamily.count()).isEqualTo(1);
+  }
+
+  @Test
   void shouldCountEqualPrefix() {
     // given
     final var compositeFamily = compositeColumnFamily();
