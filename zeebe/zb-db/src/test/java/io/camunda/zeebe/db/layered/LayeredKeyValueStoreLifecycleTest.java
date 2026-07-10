@@ -1,0 +1,472 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.db.layered;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import io.camunda.zeebe.db.layered.segment.FlatSegment;
+import io.camunda.zeebe.db.layered.util.InMemoryDurableState;
+import java.util.Iterator;
+import java.util.List;
+import java.util.function.BiConsumer;
+import org.junit.jupiter.api.Test;
+
+/**
+ * Freeze/persist lifecycle, delete absorption and byte-budget behavior. The store never writes the
+ * delegate itself — the coordinator does — so tests simulate a persist round by draining the
+ * segments returned from {@link LayeredKeyValueStore#beginPersist()} into the delegate manually.
+ */
+final class LayeredKeyValueStoreLifecycleTest {
+
+  private static final String STORE = "cf";
+
+  private final InMemoryDurableState state = new InMemoryDurableState();
+
+  private LayeredKeyValueStore newStore(
+      final long maxBytes, final boolean absorbDeletes, final int pipelineSegmentLimit) {
+    return new LayeredKeyValueStore(
+        STORE, state.store(STORE), maxBytes, absorbDeletes, pipelineSegmentLimit);
+  }
+
+  private LayeredKeyValueStore newStore() {
+    return newStore(1024 * 1024, false, 10);
+  }
+
+  // ------------------------------------------------------------------
+  // freeze
+  // ------------------------------------------------------------------
+
+  @Test
+  void shouldStampWatermarkOnFreeze() {
+    // given
+    final LayeredKeyValueStore store = newStore();
+    store.put(bytes("key"), bytes("value"));
+    store.promote();
+
+    // when
+    store.freeze(42L);
+
+    // then
+    assertThat(store.segmentsNewestFirst()).hasSize(1);
+    assertThat(store.segmentsNewestFirst().get(0).watermark()).isEqualTo(42L);
+  }
+
+  @Test
+  void shouldRejectFreezeWhileBatchInFlight() {
+    // given
+    final LayeredKeyValueStore store = newStore();
+    store.put(bytes("key"), bytes("value"));
+
+    // when / then
+    assertThatThrownBy(() -> store.freeze(1L)).isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  void shouldSkipFreezeWithEmptyActiveOverlay() {
+    // given
+    final LayeredKeyValueStore store = newStore();
+
+    // when
+    store.freeze(1L);
+
+    // then
+    assertThat(store.segmentsNewestFirst()).isEmpty();
+  }
+
+  @Test
+  void shouldMergePipelineBeyondSegmentLimit() {
+    // given
+    final LayeredKeyValueStore store = newStore(1024 * 1024, false, 2);
+    putPromoteFreeze(store, "key1", "v1", 1L);
+    putPromoteFreeze(store, "key2", "v2", 2L);
+
+    // when -- the third freeze pushes the pipeline over the limit
+    putPromoteFreeze(store, "key3", "v3", 3L);
+
+    // then -- merged down to one segment carrying the newest watermark and all entries
+    final List<FlatSegment> segments = store.segmentsNewestFirst();
+    assertThat(segments).hasSize(1);
+    assertThat(segments.get(0).watermark()).isEqualTo(3L);
+    assertThat(segments.get(0).entryCount()).isEqualTo(3);
+    assertThat(store.get(bytes("key1"))).isEqualTo(bytes("v1"));
+    assertThat(store.get(bytes("key3"))).isEqualTo(bytes("v3"));
+  }
+
+  @Test
+  void shouldMergeOnlyNonPersistingSegments() {
+    // given -- two segments handed to an outstanding persist round
+    final LayeredKeyValueStore store = newStore(1024 * 1024, false, 2);
+    putPromoteFreeze(store, "old1", "v", 1L);
+    putPromoteFreeze(store, "old2", "v", 2L);
+    store.beginPersist();
+
+    // when -- three more freezes exceed the limit for the non-persisting run
+    putPromoteFreeze(store, "new1", "v", 3L);
+    putPromoteFreeze(store, "new2", "v", 4L);
+    putPromoteFreeze(store, "new3", "v", 5L);
+
+    // then -- only the non-persisting segments merged; the persisting ones are untouched
+    final List<FlatSegment> segments = store.segmentsNewestFirst();
+    assertThat(segments).hasSize(3);
+    assertThat(segments.get(0).watermark()).isEqualTo(5L);
+    assertThat(segments.get(0).entryCount()).isEqualTo(3);
+    assertThat(segments.get(1).watermark()).isEqualTo(2L);
+    assertThat(segments.get(2).watermark()).isEqualTo(1L);
+  }
+
+  // ------------------------------------------------------------------
+  // persist lifecycle
+  // ------------------------------------------------------------------
+
+  @Test
+  void shouldReturnSegmentsOldestFirstFromBeginPersist() {
+    // given
+    final LayeredKeyValueStore store = newStore();
+    putPromoteFreeze(store, "key1", "v1", 1L);
+    putPromoteFreeze(store, "key2", "v2", 2L);
+
+    // when
+    final List<FlatSegment> draining = store.beginPersist();
+
+    // then
+    assertThat(draining).hasSize(2);
+    assertThat(draining.get(0).watermark()).isEqualTo(1L);
+    assertThat(draining.get(1).watermark()).isEqualTo(2L);
+  }
+
+  @Test
+  void shouldRejectConcurrentPersistRounds() {
+    // given
+    final LayeredKeyValueStore store = newStore();
+    putPromoteFreeze(store, "key", "value", 1L);
+    store.beginPersist();
+
+    // when / then
+    assertThatThrownBy(store::beginPersist).isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  void shouldRejectCompletePersistWithoutOutstandingRound() {
+    // given
+    final LayeredKeyValueStore store = newStore();
+
+    // when / then
+    assertThatThrownBy(() -> store.completePersist(true)).isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  void shouldRetireSegmentsOnSuccessfulPersist() {
+    // given
+    final LayeredKeyValueStore store = newStore();
+    putPromoteFreeze(store, "key", "value", 1L);
+    final List<FlatSegment> draining = store.beginPersist();
+    drainToDelegate(draining);
+
+    // when
+    store.completePersist(true);
+
+    // then -- pipeline empty, delegate authoritative, value still readable
+    assertThat(store.segmentsNewestFirst()).isEmpty();
+    assertThat(state.committedValue(STORE, bytes("key"))).isEqualTo(bytes("value"));
+    assertThat(store.get(bytes("key"))).isEqualTo(bytes("value"));
+  }
+
+  @Test
+  void shouldServeRetiredValueFromCleanCacheWithoutDelegateRead() {
+    // given
+    final CountingBytesStore counting = new CountingBytesStore(state.store(STORE));
+    final LayeredKeyValueStore store =
+        new LayeredKeyValueStore(STORE, counting, 1024 * 1024, false, 10);
+    putPromoteFreeze(store, "key", "value", 1L);
+    drainToDelegate(store.beginPersist());
+
+    // when
+    store.completePersist(true);
+
+    // then -- retirement moved the value into the clean cache
+    assertThat(store.get(bytes("key"))).isEqualTo(bytes("value"));
+    assertThat(counting.gets).isZero();
+  }
+
+  @Test
+  void shouldKeepSegmentsOnFailedPersistAndRetryThem() {
+    // given
+    final LayeredKeyValueStore store = newStore();
+    putPromoteFreeze(store, "key1", "v1", 1L);
+    putPromoteFreeze(store, "key2", "v2", 2L);
+    store.beginPersist();
+
+    // when -- the round fails without draining anything
+    store.completePersist(false);
+
+    // then -- segments stay readable and a retry returns them again, oldest first
+    assertThat(store.segmentsNewestFirst()).hasSize(2);
+    assertThat(store.get(bytes("key1"))).isEqualTo(bytes("v1"));
+    assertThat(state.committedSize(STORE)).isZero();
+    final List<FlatSegment> retry = store.beginPersist();
+    assertThat(retry).hasSize(2);
+    assertThat(retry.get(0).watermark()).isEqualTo(1L);
+    assertThat(retry.get(1).watermark()).isEqualTo(2L);
+  }
+
+  @Test
+  void shouldDropPersistedValueShadowedByNewerVersion() {
+    // given -- a newer version promoted while the persist round is outstanding
+    final LayeredKeyValueStore store = newStore();
+    putPromoteFreeze(store, "key", "old", 1L);
+    final List<FlatSegment> draining = store.beginPersist();
+    store.put(bytes("key"), bytes("new"));
+    store.promote();
+    drainToDelegate(draining);
+
+    // when
+    store.completePersist(true);
+
+    // then -- the newer version stays authoritative over the just-persisted one
+    assertThat(store.get(bytes("key"))).isEqualTo(bytes("new"));
+    assertThat(state.committedValue(STORE, bytes("key"))).isEqualTo(bytes("old"));
+  }
+
+  @Test
+  void shouldPersistTombstoneOfFlushedKeyAfterPersistedPutWasSuperseded() {
+    // given -- key reaches the delegate, then a newer version and finally a delete
+    final LayeredKeyValueStore store = newStore(1024 * 1024, true, 10);
+    putPromoteFreeze(store, "key", "old", 1L);
+    drainToDelegate(store.beginPersist());
+    store.completePersist(true);
+    store.put(bytes("key"), bytes("new"));
+    store.promote();
+    store.delete(bytes("key"));
+    store.promote();
+    store.freeze(2L);
+
+    // when -- despite delete absorption the tombstone must survive: the delegate holds the key
+    drainToDelegate(store.beginPersist());
+    store.completePersist(true);
+
+    // then
+    assertThat(state.committedValue(STORE, bytes("key"))).isNull();
+    assertThat(store.get(bytes("key"))).isNull();
+  }
+
+  // ------------------------------------------------------------------
+  // delete absorption
+  // ------------------------------------------------------------------
+
+  @Test
+  void shouldAnnihilatePutDeletePairInSameBatch() {
+    // given
+    final LayeredKeyValueStore store = newStore(1024 * 1024, true, 10);
+    store.put(bytes("key"), bytes("value"));
+    store.delete(bytes("key"));
+
+    // when
+    store.promote();
+
+    // then -- the pair annihilated: nothing buffered anywhere, nothing to freeze or persist
+    assertThat(store.get(bytes("key"))).isNull();
+    assertThat(store.approximateBytes()).isZero();
+    store.freeze(1L);
+    assertThat(store.segmentsNewestFirst()).isEmpty();
+    assertThat(store.beginPersist()).isEmpty();
+    store.completePersist(true);
+    assertThat(state.committedSize(STORE)).isZero();
+  }
+
+  @Test
+  void shouldAnnihilateDeleteOfNeverFlushedActivePut() {
+    // given -- put and delete in separate batches, neither ever flushed
+    final LayeredKeyValueStore store = newStore(1024 * 1024, true, 10);
+    store.put(bytes("key"), bytes("value"));
+    store.promote();
+    store.delete(bytes("key"));
+
+    // when
+    store.promote();
+
+    // then
+    assertThat(store.get(bytes("key"))).isNull();
+    assertThat(store.approximateBytes()).isZero();
+    store.freeze(1L);
+    assertThat(store.segmentsNewestFirst()).isEmpty();
+    assertThat(state.committedSize(STORE)).isZero();
+  }
+
+  @Test
+  void shouldKeepTombstoneOfFlushedKeyThroughPromoteAndFreeze() {
+    // given -- the key reached the delegate and sits in the clean cache
+    final LayeredKeyValueStore store = newStore(1024 * 1024, true, 10);
+    putPromoteFreeze(store, "key", "value", 1L);
+    drainToDelegate(store.beginPersist());
+    store.completePersist(true);
+
+    // when -- deleting a flushed key must produce a durable tombstone, not an absorption
+    store.delete(bytes("key"));
+    store.promote();
+    store.freeze(2L);
+
+    // then -- the tombstone survived into the frozen segment, marked flushed
+    final List<FlatSegment> segments = store.segmentsNewestFirst();
+    assertThat(segments).hasSize(1);
+    final Entry tombstone = segments.get(0).findEntry(bytes("key"));
+    assertThat(tombstone).isNotNull();
+    assertThat(tombstone.tombstone()).isTrue();
+    assertThat(tombstone.flushed()).isTrue();
+
+    // when -- the next round drains it
+    drainToDelegate(store.beginPersist());
+    store.completePersist(true);
+
+    // then
+    assertThat(state.committedValue(STORE, bytes("key"))).isNull();
+    assertThat(store.get(bytes("key"))).isNull();
+  }
+
+  // ------------------------------------------------------------------
+  // byte budget
+  // ------------------------------------------------------------------
+
+  @Test
+  void shouldTrackApproximateBytesAcrossLayers() {
+    // given
+    final LayeredKeyValueStore store = newStore();
+    final long entryBytes = "key".length() + "value".length();
+
+    // when / then -- the same bytes travel staging -> active -> pipeline
+    store.put(bytes("key"), bytes("value"));
+    assertThat(store.approximateBytes()).isEqualTo(entryBytes);
+    store.promote();
+    assertThat(store.approximateBytes()).isEqualTo(entryBytes);
+    store.freeze(1L);
+    assertThat(store.approximateBytes()).isEqualTo(entryBytes);
+  }
+
+  @Test
+  void shouldResetStagingBytesOnDiscard() {
+    // given
+    final LayeredKeyValueStore store = newStore();
+    store.put(bytes("key"), bytes("value"));
+
+    // when
+    store.discard();
+
+    // then
+    assertThat(store.approximateBytes()).isZero();
+  }
+
+  @Test
+  void shouldEvictCleanEntriesOnReadThroughOverflow() {
+    // given -- budget for two clean entries; three delegate keys
+    final byte[] value = bytes("0123456789abcdef"); // 16 bytes; entry = 18 bytes
+    state.store(STORE).put(bytes("k1"), value);
+    state.store(STORE).put(bytes("k2"), value);
+    state.store(STORE).put(bytes("k3"), value);
+    final CountingBytesStore counting = new CountingBytesStore(state.store(STORE));
+    final LayeredKeyValueStore store = new LayeredKeyValueStore(STORE, counting, 40, false, 10);
+
+    // when -- the third read-through overflows the budget
+    store.get(bytes("k1"));
+    store.get(bytes("k2"));
+    store.get(bytes("k3"));
+
+    // then -- eldest (k1) evicted, k3 still cached
+    assertThat(store.approximateBytes()).isLessThanOrEqualTo(40);
+    assertThat(counting.gets).isEqualTo(3);
+    assertThat(store.get(bytes("k3"))).isEqualTo(value);
+    assertThat(counting.gets).isEqualTo(3);
+    assertThat(store.get(bytes("k1"))).isEqualTo(value);
+    assertThat(counting.gets).isEqualTo(4);
+  }
+
+  @Test
+  void shouldSignalOverCapacityWhilePinnedBytesExceedBudget() {
+    // given -- one pinned entry larger than the whole budget
+    final LayeredKeyValueStore store = newStore(10, false, 10);
+    store.put(bytes("key"), bytes("a-value-well-over-budget"));
+    assertThat(store.overCapacity()).isTrue();
+    store.promote();
+    store.freeze(1L);
+    assertThat(store.overCapacity()).isTrue();
+
+    // when -- a persist round drains the pinned bytes
+    drainToDelegate(store.beginPersist());
+    store.completePersist(true);
+
+    // then -- the retired entry is clean (evictable) and was trimmed to budget
+    assertThat(store.overCapacity()).isFalse();
+    assertThat(store.get(bytes("key"))).isEqualTo(bytes("a-value-well-over-budget"));
+  }
+
+  // ------------------------------------------------------------------
+  // helpers
+  // ------------------------------------------------------------------
+
+  private void putPromoteFreeze(
+      final LayeredKeyValueStore store,
+      final String key,
+      final String value,
+      final long watermark) {
+    store.put(bytes(key), bytes(value));
+    store.promote();
+    store.freeze(watermark);
+  }
+
+  /** Simulates the coordinator's drain: newest version per key wins via oldest-first replay. */
+  private void drainToDelegate(final List<FlatSegment> oldestFirst) {
+    final BytesStore delegate = state.store(STORE);
+    for (final FlatSegment segment : oldestFirst) {
+      final Iterator<Entry> entries = segment.range(new byte[0]);
+      while (entries.hasNext()) {
+        final Entry entry = entries.next();
+        if (entry.tombstone()) {
+          delegate.delete(entry.key());
+        } else {
+          delegate.put(entry.key(), entry.value());
+        }
+      }
+    }
+  }
+
+  private static byte[] bytes(final String value) {
+    return value.getBytes(UTF_8);
+  }
+
+  /** Counts delegate point reads, to prove which reads the clean cache absorbs. */
+  private static final class CountingBytesStore implements BytesStore {
+
+    private final BytesStore delegate;
+    private int gets;
+
+    private CountingBytesStore(final BytesStore delegate) {
+      this.delegate = delegate;
+    }
+
+    @Override
+    public byte[] get(final byte[] key) {
+      gets++;
+      return delegate.get(key);
+    }
+
+    @Override
+    public void put(final byte[] key, final byte[] value) {
+      delegate.put(key, value);
+    }
+
+    @Override
+    public void delete(final byte[] key) {
+      delegate.delete(key);
+    }
+
+    @Override
+    public void prefixScan(final byte[] prefix, final BiConsumer<byte[], byte[]> visitor) {
+      delegate.prefixScan(prefix, visitor);
+    }
+  }
+}

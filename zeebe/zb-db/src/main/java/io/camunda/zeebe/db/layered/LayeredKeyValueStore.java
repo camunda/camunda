@@ -8,7 +8,20 @@
 package io.camunda.zeebe.db.layered;
 
 import io.camunda.zeebe.db.layered.segment.FlatSegment;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.NavigableMap;
+import java.util.Objects;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.BiConsumer;
 
 /**
@@ -52,7 +65,33 @@ import java.util.function.BiConsumer;
  */
 public final class LayeredKeyValueStore {
 
+  private static final byte[] EMPTY_PREFIX = new byte[0];
+
   private final String name;
+  private final BytesStore delegate;
+  private final long maxBytes;
+  private final boolean absorbDeletes;
+  private final int pipelineSegmentLimit;
+
+  // staging and active each pair a hash index (point lookups) with a sorted index (scans); the
+  // two indexes of a layer share the same Entry objects
+  private final Map<ByteBuffer, Entry> stagingByKey = new HashMap<>();
+  private final TreeMap<byte[], Entry> stagingSorted = new TreeMap<>(Arrays::compareUnsigned);
+  private final Map<ByteBuffer, Entry> activeByKey = new HashMap<>();
+  private final TreeMap<byte[], Entry> activeSorted = new TreeMap<>(Arrays::compareUnsigned);
+
+  // newest first; the segments of an outstanding persist round are the oldest ones — the last
+  // persistingCount elements
+  private final List<FlatSegment> pipeline = new ArrayList<>();
+  private boolean persisting;
+  private int persistingCount;
+
+  private final LinkedHashMap<ByteBuffer, byte[]> clean = new LinkedHashMap<>(16, 0.75f, true);
+
+  private long stagingBytes;
+  private long activeBytes;
+  private long pipelineBytes;
+  private long cleanBytes;
 
   public LayeredKeyValueStore(
       final String name,
@@ -60,8 +99,18 @@ public final class LayeredKeyValueStore {
       final long maxBytes,
       final boolean absorbDeletes,
       final int pipelineSegmentLimit) {
-    this.name = name;
-    throw new UnsupportedOperationException("implemented in task #4");
+    this.name = Objects.requireNonNull(name, "name");
+    this.delegate = Objects.requireNonNull(delegate, "delegate");
+    if (maxBytes <= 0) {
+      throw new IllegalArgumentException("expected maxBytes to be positive, but was " + maxBytes);
+    }
+    if (pipelineSegmentLimit < 1) {
+      throw new IllegalArgumentException(
+          "expected pipelineSegmentLimit to be at least 1, but was " + pipelineSegmentLimit);
+    }
+    this.maxBytes = maxBytes;
+    this.absorbDeletes = absorbDeletes;
+    this.pipelineSegmentLimit = pipelineSegmentLimit;
   }
 
   /** The store name, used to route persist-batch writes and view reads. */
@@ -74,11 +123,53 @@ public final class LayeredKeyValueStore {
   // ------------------------------------------------------------------
 
   public void put(final byte[] key, final byte[] value) {
-    throw new UnsupportedOperationException("implemented in task #4");
+    write(key, Objects.requireNonNull(value, "value"));
   }
 
   public void delete(final byte[] key) {
-    throw new UnsupportedOperationException("implemented in task #4");
+    write(key, null);
+  }
+
+  private void write(final byte[] key, final byte[] value) {
+    Objects.requireNonNull(key, "key");
+    final ByteBuffer mapKey = ByteBuffer.wrap(key);
+    // a clean entry mirrors the delegate: the new version shadows it, so remove it to keep the
+    // layers disjoint — and its existence proves the delegate holds the key
+    final byte[] cleanHit = clean.remove(mapKey);
+    if (cleanHit != null) {
+      cleanBytes -= key.length + cleanHit.length;
+    }
+    final Entry replacedStaging = stagingByKey.get(mapKey);
+    final boolean flushed =
+        cleanHit != null
+            || (replacedStaging != null && replacedStaging.flushed())
+            || flushedBelowStaging(mapKey, key);
+    final Entry entry = new Entry(key, value, flushed);
+    stagingByKey.put(mapKey, entry);
+    stagingSorted.put(key, entry);
+    stagingBytes += entrySize(entry) - (replacedStaging == null ? 0 : entrySize(replacedStaging));
+    evictIfNeeded();
+  }
+
+  /**
+   * Whether the delegate holds — or, via the active overlay or the pipeline, will hold — a version
+   * of {@code key}, ignoring the staging layer. The newest version below staging decides: a live
+   * put will reach the delegate (frozen segments are drained eventually), while a tombstone shadows
+   * every older version so nothing below it will.
+   */
+  private boolean flushedBelowStaging(final ByteBuffer mapKey, final byte[] key) {
+    final Entry activeEntry = activeByKey.get(mapKey);
+    if (activeEntry != null) {
+      // a never-flushed active put does not count: it may still annihilate with a later delete
+      return activeEntry.flushed();
+    }
+    for (final FlatSegment segment : pipeline) {
+      final Entry entry = segment.findEntry(key);
+      if (entry != null) {
+        return !entry.tombstone() || entry.flushed();
+      }
+    }
+    return false;
   }
 
   /**
@@ -87,7 +178,36 @@ public final class LayeredKeyValueStore {
    * delete absorption (if enabled) annihilates a staging delete meeting a never-flushed put.
    */
   public void promote() {
-    throw new UnsupportedOperationException("implemented in task #4");
+    for (final Entry entry : stagingSorted.values()) {
+      final ByteBuffer mapKey = ByteBuffer.wrap(entry.key());
+      final Entry existing = activeByKey.get(mapKey);
+      if (absorbDeletes
+          && entry.tombstone()
+          && !entry.flushed()
+          && (existing == null || !existing.flushed())) {
+        // no version of this key was ever flushed or will reach the delegate (a non-flushed
+        // tombstone guarantees that), so the tombstone — and the never-flushed put it meets, if
+        // any — annihilates in memory
+        if (existing != null) {
+          activeByKey.remove(mapKey);
+          activeSorted.remove(entry.key());
+          activeBytes -= entrySize(existing);
+        }
+        continue;
+      }
+      // the flushed property is sticky: once any version of the key was flushed, every newer
+      // version must reach the delegate too
+      final Entry promoted =
+          existing != null && existing.flushed() && !entry.flushed()
+              ? new Entry(entry.key(), entry.value(), true)
+              : entry;
+      activeByKey.put(mapKey, promoted);
+      activeSorted.put(promoted.key(), promoted);
+      activeBytes += entrySize(promoted) - (existing == null ? 0 : entrySize(existing));
+    }
+    stagingByKey.clear();
+    stagingSorted.clear();
+    stagingBytes = 0;
   }
 
   /**
@@ -96,7 +216,9 @@ public final class LayeredKeyValueStore {
    * batch must never affect.
    */
   public void discard() {
-    throw new UnsupportedOperationException("implemented in task #4");
+    stagingByKey.clear();
+    stagingSorted.clear();
+    stagingBytes = 0;
   }
 
   // ------------------------------------------------------------------
@@ -105,11 +227,35 @@ public final class LayeredKeyValueStore {
 
   /** The value visible to the owner thread, or {@code null} if absent or tombstoned. */
   public byte[] get(final byte[] key) {
-    throw new UnsupportedOperationException("implemented in task #4");
+    final ByteBuffer mapKey = ByteBuffer.wrap(key);
+    Entry entry = stagingByKey.get(mapKey);
+    if (entry == null) {
+      entry = activeByKey.get(mapKey);
+    }
+    if (entry != null) {
+      return entry.value(); // null for a tombstone — which must not fall through
+    }
+    for (final FlatSegment segment : pipeline) {
+      final Entry segmentEntry = segment.findEntry(key);
+      if (segmentEntry != null) {
+        return segmentEntry.value();
+      }
+    }
+    final byte[] cached = clean.get(mapKey);
+    if (cached != null) {
+      return cached;
+    }
+    final byte[] committed = delegate.get(key);
+    if (committed != null) {
+      clean.put(mapKey, committed);
+      cleanBytes += key.length + committed.length;
+      evictIfNeeded();
+    }
+    return committed;
   }
 
   public boolean exists(final byte[] key) {
-    throw new UnsupportedOperationException("implemented in task #4");
+    return get(key) != null;
   }
 
   /**
@@ -118,11 +264,40 @@ public final class LayeredKeyValueStore {
    * shadowing lower ones on equal keys, tombstones hiding everything below.
    */
   public void prefixScan(final byte[] prefix, final BiConsumer<byte[], byte[]> visitor) {
-    throw new UnsupportedOperationException("implemented in task #4");
+    final List<Iterator<Entry>> layers = new ArrayList<>(2 + pipeline.size());
+    layers.add(prefixSelection(stagingSorted, prefix).values().iterator());
+    layers.add(prefixSelection(activeSorted, prefix).values().iterator());
+    for (final FlatSegment segment : pipeline) {
+      layers.add(segment.range(prefix));
+    }
+    // the clean cache is intentionally absent: its entries mirror the delegate, which the
+    // delegate stream below already returns
+    final MergedCursor buffered = new MergedCursor(layers);
+    delegate.prefixScan(
+        prefix,
+        (key, value) -> {
+          while (buffered.hasNext() && Arrays.compareUnsigned(buffered.peekKey(), key) < 0) {
+            emit(buffered.next(), visitor);
+          }
+          if (buffered.hasNext() && Arrays.compareUnsigned(buffered.peekKey(), key) == 0) {
+            emit(buffered.next(), visitor); // any buffered version shadows the committed one
+          } else {
+            visitor.accept(key, value);
+          }
+        });
+    while (buffered.hasNext()) {
+      emit(buffered.next(), visitor);
+    }
   }
 
   public void forEach(final BiConsumer<byte[], byte[]> visitor) {
-    throw new UnsupportedOperationException("implemented in task #4");
+    prefixScan(EMPTY_PREFIX, visitor);
+  }
+
+  private static void emit(final Entry entry, final BiConsumer<byte[], byte[]> visitor) {
+    if (!entry.tombstone()) {
+      visitor.accept(entry.key(), entry.value());
+    }
   }
 
   // ------------------------------------------------------------------
@@ -137,7 +312,43 @@ public final class LayeredKeyValueStore {
    * empty (no batch in flight). A no-op if the active overlay is empty.
    */
   public void freeze(final long watermark) {
-    throw new UnsupportedOperationException("implemented in task #4");
+    if (!stagingByKey.isEmpty()) {
+      throw new IllegalStateException(
+          "expected staging of store '"
+              + name
+              + "' to be empty on freeze, but a batch with "
+              + stagingByKey.size()
+              + " write(s) is in flight");
+    }
+    if (activeByKey.isEmpty()) {
+      return;
+    }
+    final FlatSegment segment = FlatSegment.of(activeSorted, watermark);
+    pipeline.add(0, segment);
+    pipelineBytes += segment.byteSize();
+    activeByKey.clear();
+    activeSorted.clear();
+    activeBytes = 0;
+    mergePipelineIfNeeded();
+  }
+
+  private void mergePipelineIfNeeded() {
+    // persisting segments are pinned by the outstanding round — merge only the newest,
+    // non-persisting run
+    final int nonPersisting = pipeline.size() - persistingCount;
+    if (nonPersisting <= pipelineSegmentLimit) {
+      return;
+    }
+    final List<FlatSegment> run = pipeline.subList(0, nonPersisting);
+    final List<FlatSegment> oldestFirst = new ArrayList<>(run);
+    Collections.reverse(oldestFirst);
+    final FlatSegment merged = FlatSegment.merge(oldestFirst, absorbDeletes);
+    for (final FlatSegment segment : run) {
+      pipelineBytes -= segment.byteSize();
+    }
+    run.clear();
+    pipeline.add(0, merged);
+    pipelineBytes += merged.byteSize();
   }
 
   /**
@@ -147,7 +358,17 @@ public final class LayeredKeyValueStore {
    * outstanding (persist rounds are single-flight).
    */
   public List<FlatSegment> beginPersist() {
-    throw new UnsupportedOperationException("implemented in task #4");
+    if (persisting) {
+      throw new IllegalStateException(
+          "expected no outstanding persist round for store '"
+              + name
+              + "', but one is in flight (persist rounds are single-flight)");
+    }
+    persisting = true;
+    persistingCount = pipeline.size();
+    final List<FlatSegment> oldestFirst = new ArrayList<>(pipeline);
+    Collections.reverse(oldestFirst);
+    return List.copyOf(oldestFirst);
   }
 
   /**
@@ -156,7 +377,92 @@ public final class LayeredKeyValueStore {
    * simply un-marks them — they stay in the pipeline and the next round retries them.
    */
   public void completePersist(final boolean success) {
-    throw new UnsupportedOperationException("implemented in task #4");
+    if (!persisting) {
+      throw new IllegalStateException(
+          "expected an outstanding persist round for store '" + name + "', but there is none");
+    }
+    if (success) {
+      final List<FlatSegment> persisted =
+          pipeline.subList(pipeline.size() - persistingCount, pipeline.size());
+      retire(persisted);
+      for (final FlatSegment segment : persisted) {
+        pipelineBytes -= segment.byteSize();
+      }
+      persisted.clear();
+    }
+    persisting = false;
+    persistingCount = 0;
+    if (success) {
+      evictIfNeeded();
+    }
+  }
+
+  /**
+   * Moves the retiring segments' entries out of the pinned layers: the delegate now holds the
+   * newest persisted version of every key, so live values become clean (evictable) cache entries —
+   * unless a newer version above still shadows them — and tombstones simply drop.
+   */
+  private void retire(final List<FlatSegment> persistedNewestFirst) {
+    final Set<ByteBuffer> seen = new HashSet<>();
+    for (final FlatSegment segment : persistedNewestFirst) {
+      final Iterator<Entry> entries = segment.range(EMPTY_PREFIX);
+      while (entries.hasNext()) {
+        final Entry entry = entries.next();
+        final ByteBuffer mapKey = ByteBuffer.wrap(entry.key());
+        if (!seen.add(mapKey)) {
+          continue; // a newer persisted version won in the drained batch; this one never landed
+        }
+        if (entry.tombstone()) {
+          continue; // the delegate deleted the key — nothing to cache
+        }
+        if (shadowedByNewerVersion(mapKey, entry.key())) {
+          continue; // the newer version stays authoritative; the persisted value is stale
+        }
+        final byte[] replaced = clean.put(mapKey, entry.value());
+        cleanBytes += entry.key().length + entry.value().length;
+        if (replaced != null) {
+          cleanBytes -= entry.key().length + replaced.length;
+        }
+      }
+    }
+  }
+
+  /**
+   * Whether a version newer than the just-persisted one exists in staging, active or a newer
+   * non-persisted segment. The delegate now holds the key, so a newer staging/active version is
+   * marked flushed — its final tombstone must reach the delegate. Newer versions held by immutable
+   * segments cannot be re-flagged; their flushed flag stays conservative, which only costs a
+   * potential redundant delete, never a missed one.
+   */
+  private boolean shadowedByNewerVersion(final ByteBuffer mapKey, final byte[] key) {
+    boolean shadowed = false;
+    final Entry stagingEntry = stagingByKey.get(mapKey);
+    if (stagingEntry != null) {
+      shadowed = true;
+      if (!stagingEntry.flushed()) {
+        final Entry updated = new Entry(stagingEntry.key(), stagingEntry.value(), true);
+        stagingByKey.put(mapKey, updated);
+        stagingSorted.put(updated.key(), updated);
+      }
+    }
+    final Entry activeEntry = activeByKey.get(mapKey);
+    if (activeEntry != null) {
+      shadowed = true;
+      if (!activeEntry.flushed()) {
+        final Entry updated = new Entry(activeEntry.key(), activeEntry.value(), true);
+        activeByKey.put(mapKey, updated);
+        activeSorted.put(updated.key(), updated);
+      }
+    }
+    if (!shadowed) {
+      final int nonPersisted = pipeline.size() - persistingCount;
+      for (int i = 0; i < nonPersisted; i++) {
+        if (pipeline.get(i).findEntry(key) != null) {
+          return true;
+        }
+      }
+    }
+    return shadowed;
   }
 
   /**
@@ -164,7 +470,7 @@ public final class LayeredKeyValueStore {
    * {@link ReadOnlyView}. Includes segments currently persisting.
    */
   public List<FlatSegment> segmentsNewestFirst() {
-    throw new UnsupportedOperationException("implemented in task #4");
+    return List.copyOf(pipeline);
   }
 
   // ------------------------------------------------------------------
@@ -173,7 +479,7 @@ public final class LayeredKeyValueStore {
 
   /** Approximate heap footprint of staging + active + pipeline + clean together. */
   public long approximateBytes() {
-    throw new UnsupportedOperationException("implemented in task #4");
+    return stagingBytes + activeBytes + pipelineBytes + cleanBytes;
   }
 
   /**
@@ -181,6 +487,107 @@ public final class LayeredKeyValueStore {
    * persist round now.
    */
   public boolean overCapacity() {
-    throw new UnsupportedOperationException("implemented in task #4");
+    return approximateBytes() > maxBytes;
+  }
+
+  private void evictIfNeeded() {
+    final Iterator<Map.Entry<ByteBuffer, byte[]>> eldestFirst = clean.entrySet().iterator();
+    while (approximateBytes() > maxBytes && eldestFirst.hasNext()) {
+      final Map.Entry<ByteBuffer, byte[]> eldest = eldestFirst.next();
+      cleanBytes -= eldest.getKey().remaining() + eldest.getValue().length;
+      eldestFirst.remove();
+    }
+  }
+
+  private static long entrySize(final Entry entry) {
+    return entry.key().length + (entry.tombstone() ? 0 : entry.value().length);
+  }
+
+  // ------------------------------------------------------------------
+  // Scan-merge helpers
+  // ------------------------------------------------------------------
+
+  private static NavigableMap<byte[], Entry> prefixSelection(
+      final TreeMap<byte[], Entry> sorted, final byte[] prefix) {
+    if (prefix.length == 0) {
+      return sorted;
+    }
+    final byte[] upper = prefixSuccessor(prefix);
+    return upper == null ? sorted.tailMap(prefix, true) : sorted.subMap(prefix, true, upper, false);
+  }
+
+  /** The smallest key greater than every key prefixed by {@code prefix}; null for all-0xFF. */
+  private static byte[] prefixSuccessor(final byte[] prefix) {
+    for (int i = prefix.length - 1; i >= 0; i--) {
+      if (prefix[i] != (byte) 0xFF) {
+        final byte[] upper = Arrays.copyOf(prefix, i + 1);
+        upper[i]++;
+        return upper;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * A k-way merge cursor over the in-memory layers, ordered by priority: staging, active, then
+   * pipeline segments newest first. Yields one entry per key — the highest-priority version — and
+   * consumes every shadowed lower version of the same key.
+   */
+  private static final class MergedCursor {
+
+    private final List<Iterator<Entry>> layers;
+    private final Entry[] heads;
+    private Entry next;
+
+    MergedCursor(final List<Iterator<Entry>> layers) {
+      this.layers = layers;
+      heads = new Entry[layers.size()];
+      for (int i = 0; i < layers.size(); i++) {
+        advance(i);
+      }
+      next = computeNext();
+    }
+
+    boolean hasNext() {
+      return next != null;
+    }
+
+    byte[] peekKey() {
+      return next.key();
+    }
+
+    Entry next() {
+      final Entry current = next;
+      next = computeNext();
+      return current;
+    }
+
+    private Entry computeNext() {
+      int winner = -1;
+      for (int i = 0; i < heads.length; i++) {
+        if (heads[i] == null) {
+          continue;
+        }
+        // strict comparison: on equal keys the earlier (higher-priority) layer keeps the win
+        if (winner == -1 || Arrays.compareUnsigned(heads[i].key(), heads[winner].key()) < 0) {
+          winner = i;
+        }
+      }
+      if (winner == -1) {
+        return null;
+      }
+      final Entry result = heads[winner];
+      for (int i = 0; i < heads.length; i++) {
+        if (heads[i] != null && Arrays.compareUnsigned(heads[i].key(), result.key()) == 0) {
+          advance(i);
+        }
+      }
+      return result;
+    }
+
+    private void advance(final int layer) {
+      final Iterator<Entry> iterator = layers.get(layer);
+      heads[layer] = iterator.hasNext() ? iterator.next() : null;
+    }
   }
 }
