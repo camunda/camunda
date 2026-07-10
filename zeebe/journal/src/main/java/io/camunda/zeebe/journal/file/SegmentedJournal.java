@@ -35,6 +35,7 @@ import java.util.Objects;
 import java.util.OptionalLong;
 import java.util.SortedMap;
 import java.util.concurrent.locks.StampedLock;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -52,21 +53,21 @@ public final class SegmentedJournal implements Journal {
   private final StampedLock rwlock = new StampedLock();
   private final SegmentsManager segments;
   private final JournalMetaStore metaStore;
-  private final @Nullable JournalIndexCursor journalIndexCursor;
+  private final @Nullable Supplier<JournalIndexCursor> indexCursorSupplier;
 
   SegmentedJournal(
       final JournalIndex journalIndex,
       final SegmentsManager segments,
       final JournalMetrics journalMetrics,
       final JournalMetaStore metaStore,
-      final @Nullable JournalIndexCursor journalIndexCursor) {
+      final @Nullable Supplier<JournalIndexCursor> indexCursorSupplier) {
     this.journalMetrics = Objects.requireNonNull(journalMetrics, "must specify journal metrics");
     this.journalIndex = Objects.requireNonNull(journalIndex, "must specify a journal index");
     this.segments = Objects.requireNonNull(segments, "must specify a journal segments manager");
     this.metaStore = Objects.requireNonNull(metaStore, "must specify a journal meta store");
     this.segments.open();
     writer = new SegmentedJournalWriter(segments, metaStore, journalMetrics);
-    this.journalIndexCursor = journalIndexCursor;
+    this.indexCursorSupplier = indexCursorSupplier;
   }
 
   /**
@@ -321,6 +322,14 @@ public final class SegmentedJournal implements Journal {
 
   JournalIndex getJournalIndex() {
     return journalIndex;
+  }
+
+  /**
+   * Creates a new {@link JournalIndexCursor} for a reader, or returns {@code null} if this journal
+   * has no cursor factory. The cursor is stateful, so every reader must use its own instance.
+   */
+  @Nullable JournalIndexCursor createIndexCursor() {
+    return indexCursorSupplier != null ? indexCursorSupplier.get() : null;
   }
 
   long acquireReadlock() {

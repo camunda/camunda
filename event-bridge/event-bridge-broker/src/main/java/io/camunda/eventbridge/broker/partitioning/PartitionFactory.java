@@ -25,6 +25,7 @@ import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.JournalIndexCursor;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -32,6 +33,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,7 +86,7 @@ public final class PartitionFactory {
             members,
             localMemberId,
             partitionDir,
-            new ApplicationEntryCursorAdapter());
+            ApplicationEntryCursorAdapter::new);
 
     // Data partitions are pure event logs with no state machine, but they still use a real snapshot
     // store: retention takes an empty marker snapshot at the compaction bound, which both drives
@@ -181,7 +183,7 @@ public final class PartitionFactory {
       final Set<MemberId> members,
       final MemberId localMemberId,
       final Path partitionDirectory,
-      final ApplicationEntryCursorAdapter journalIndexCursor) {
+      final Supplier<JournalIndexCursor> indexCursorSupplier) {
 
     final var storageConfig = buildStorageConfig();
     // The Raft messaging subject prefix is "<tenantName>-partition-<id>", so the two groups MUST
@@ -191,7 +193,7 @@ public final class PartitionFactory {
     final var partitionConfig = buildPartitionConfig(storageConfig, groupName);
     final var metadata = buildMetadata(groupName, partitionId, members, localMemberId);
 
-    return journalIndexCursor == null
+    return indexCursorSupplier == null
         ? new RaftPartition(
             metadata, partitionConfig, partitionDirectory.toFile(), new SimpleMeterRegistry())
         : new RaftPartition(
@@ -199,7 +201,7 @@ public final class PartitionFactory {
             partitionConfig,
             partitionDirectory.toFile(),
             new SimpleMeterRegistry(),
-            journalIndexCursor);
+            indexCursorSupplier);
   }
 
   private RaftStorageConfig buildStorageConfig() {

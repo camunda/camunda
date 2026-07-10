@@ -33,6 +33,16 @@ interface JournalIndex {
   void index(JournalRecord record, int position);
 
   /**
+   * Indexes a record by its index and asqn, and its position within a segment. Behaves like {@link
+   * #index(JournalRecord, int)} without requiring a materialized record.
+   *
+   * @param recordIndex the index of the record
+   * @param asqn the asqn of the record, or {@link SegmentedJournal#ASQN_IGNORE}
+   * @param position the position of the record within its segment
+   */
+  void index(long recordIndex, long asqn, int position);
+
+  /**
    * Looks up the position of the given index.
    *
    * @param index the index to lookup

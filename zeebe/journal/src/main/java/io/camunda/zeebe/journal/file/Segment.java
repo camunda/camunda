@@ -23,7 +23,6 @@ import com.google.common.collect.Sets;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.util.FileUtil;
-import io.camunda.zeebe.util.JournalIndexCursor;
 import io.camunda.zeebe.util.ResourceLease;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -36,7 +35,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.agrona.IoUtil;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +48,6 @@ final class Segment implements AutoCloseable, FlushableSegment {
   private static final ByteOrder ENDIANNESS = ByteOrder.LITTLE_ENDIAN;
   private static final Logger LOG = LoggerFactory.getLogger(Segment.class);
 
-  private final SegmentIndex segmentIndex;
   private final SegmentFile file;
   private SegmentDescriptor descriptor;
   private final SegmentDescriptorSerializer descriptorSerializer;
@@ -67,7 +64,6 @@ final class Segment implements AutoCloseable, FlushableSegment {
   // This need to be volatile because both the writer and the readers access it concurrently
   private volatile boolean markedForDeletion = false;
   private final AtomicBoolean deleted = new AtomicBoolean(false);
-  private final @Nullable JournalIndexCursor journalIndexCursor;
 
   Segment(
       final SegmentFile file,
@@ -77,18 +73,14 @@ final class Segment implements AutoCloseable, FlushableSegment {
       final FileChannel channel,
       final long lastWrittenAsqn,
       final JournalIndex index,
-      final SegmentIndex segmentIndex,
-      final JournalMetrics metrics,
-      final @Nullable JournalIndexCursor journalIndexCursor) {
+      final JournalMetrics metrics) {
     this.file = file;
     this.descriptor = descriptor;
     this.descriptorSerializer = descriptorSerializer;
     this.buffer = buffer;
     this.channel = channel;
     this.index = index;
-    this.segmentIndex = segmentIndex;
     this.metrics = metrics;
-    this.journalIndexCursor = journalIndexCursor;
 
     writer = createWriter(lastWrittenAsqn, metrics);
   }
@@ -210,8 +202,18 @@ final class Segment implements AutoCloseable, FlushableSegment {
     return reader;
   }
 
+  /**
+   * Returns a read-only view of the segment's buffer, used to walk journal frames during index
+   * scans. Callers must hold the journal's read lock while using the view, and must retain the
+   * segment (see {@link #retain()}) if the view's contents outlive the lock.
+   */
+  ByteBuffer createScanView() {
+    checkOpen();
+    return buffer.asReadOnlyBuffer().position(0).order(ENDIANNESS);
+  }
+
   private SegmentWriter createWriter(final long lastWrittenAsqn, final JournalMetrics metrics) {
-    return new SegmentWriter(buffer, this, index, lastWrittenAsqn, metrics, journalIndexCursor);
+    return new SegmentWriter(buffer, this, index, lastWrittenAsqn, metrics);
   }
 
   /**
@@ -248,12 +250,6 @@ final class Segment implements AutoCloseable, FlushableSegment {
     if (refCnt.get() == 0) {
       IoUtil.unmap(buffer);
 
-      try {
-        segmentIndex.close();
-      } catch (final Exception e) {
-        LOG.warn("Failed to close index for segment {}", file(), e);
-      }
-
       if (channel != null && channel.isOpen()) {
         try {
           channel.close();
@@ -284,7 +280,6 @@ final class Segment implements AutoCloseable, FlushableSegment {
     try {
       IoUtil.unmap(buffer);
       Files.deleteIfExists(file.getFileMarkedForDeletion());
-      segmentIndex.delete();
     } catch (final IOException e) {
       LOG.warn(
           "Could not delete segment {}. File to delete {}. This can lead to increased disk usage.",
@@ -358,9 +353,5 @@ final class Segment implements AutoCloseable, FlushableSegment {
 
   FileChannel channel() {
     return channel;
-  }
-
-  SegmentIndex segmentIndex() {
-    return segmentIndex;
   }
 }

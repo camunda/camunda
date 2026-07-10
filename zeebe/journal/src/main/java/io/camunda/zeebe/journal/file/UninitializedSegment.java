@@ -7,12 +7,8 @@
  */
 package io.camunda.zeebe.journal.file;
 
-import io.camunda.zeebe.journal.JournalException;
-import io.camunda.zeebe.util.JournalIndexCursor;
-import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Holds a normal segment file that hasn't been written to and that has no {@link
@@ -24,8 +20,7 @@ record UninitializedSegment(
     int maxSegmentSize,
     MappedByteBuffer buffer,
     FileChannel channel,
-    JournalIndex journalIndex,
-    @Nullable JournalIndexCursor journalIndexCursor) {
+    JournalIndex journalIndex) {
 
   /**
    * Creates a proper, initialized segment by writing a {@link SegmentDescriptor } with the given
@@ -42,15 +37,6 @@ record UninitializedSegment(
     final var descriptorSerializer = SegmentDescriptorSerializer.currentSerializer();
     descriptorSerializer.writeTo(updatedDescriptor, buffer);
 
-    // Initialize the SegmentIndex now that the segment is formally in use
-    final SegmentIndex segmentIndex;
-    try {
-      segmentIndex = new SegmentIndex(file.file().toPath(), maxSegmentSize);
-    } catch (final IOException e) {
-      throw new JournalException(
-          String.format("Failed to initialize SegmentIndex for %s", file.file()), e);
-    }
-
     return new Segment(
         file,
         updatedDescriptor,
@@ -59,8 +45,6 @@ record UninitializedSegment(
         channel,
         lastWrittenAsqn,
         journalIndex,
-        segmentIndex,
-        metrics,
-        journalIndexCursor);
+        metrics);
   }
 }

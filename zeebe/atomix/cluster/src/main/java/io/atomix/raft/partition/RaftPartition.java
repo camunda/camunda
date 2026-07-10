@@ -39,6 +39,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +58,7 @@ public final class RaftPartition implements Partition, HealthMonitorable {
       new CopyOnWriteArraySet<>();
   private final PartitionMetadata partitionMetadata;
   private RaftPartitionServer server;
-  private final JournalIndexCursor journalIndexCursor;
+  private final Supplier<JournalIndexCursor> indexCursorSupplier;
 
   public RaftPartition(
       final PartitionMetadata partitionMetadata,
@@ -69,7 +70,7 @@ public final class RaftPartition implements Partition, HealthMonitorable {
     this.config = config;
     this.dataDirectory = dataDirectory;
     this.meterRegistry = meterRegistry;
-    journalIndexCursor = null;
+    indexCursorSupplier = null;
   }
 
   public RaftPartition(
@@ -77,13 +78,13 @@ public final class RaftPartition implements Partition, HealthMonitorable {
       final RaftPartitionConfig config,
       final File dataDirectory,
       final MeterRegistry meterRegistry,
-      final JournalIndexCursor journalIndexCursor) {
+      final Supplier<JournalIndexCursor> indexCursorSupplier) {
     partitionId = partitionMetadata.id();
     this.partitionMetadata = partitionMetadata;
     this.config = config;
     this.dataDirectory = dataDirectory;
     this.meterRegistry = meterRegistry;
-    this.journalIndexCursor = journalIndexCursor;
+    this.indexCursorSupplier = indexCursorSupplier;
   }
 
   public void addRoleChangeListener(final RaftRoleChangeListener listener) {
@@ -188,7 +189,7 @@ public final class RaftPartition implements Partition, HealthMonitorable {
         snapshotStore,
         partitionMetadata,
         meterRegistry,
-        journalIndexCursor);
+        indexCursorSupplier);
   }
 
   /**

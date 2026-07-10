@@ -105,6 +105,22 @@ public interface JournalReader extends Iterator<JournalRecord>, AutoCloseable {
    */
   long seekToAsqn(long asqn, long indexUpperBound);
 
+  /**
+   * Scans for the batches of application data starting at the batch containing the given ASQN,
+   * returning zero-copy slices into the underlying segment file. All returned slices belong to a
+   * single segment; the result carries the segment's channel and a lease that must be released once
+   * the slices have been consumed.
+   *
+   * <p>If the requested ASQN precedes the oldest retained batch, the scan reports {@link
+   * IndexScanResult.Truncated}. If it lies past the end of the written log, the scan reports {@link
+   * IndexScanResult.EndOfLog}. If the batch exists but only beyond {@code upperBoundIndex} (e.g. it
+   * is not yet committed), the scan reports {@link IndexScanResult.FutureOffset}.
+   *
+   * @param asqn the application sequence number to scan from
+   * @param maxBytes a soft bound on the total length of the returned slices
+   * @param upperBoundIndex the highest record index (inclusive) that may be served
+   * @return the scan result
+   */
   IndexScanResult scanIndex(final long asqn, final int maxBytes, final long upperBoundIndex);
 
   /** Get the index of the next record to be read. */

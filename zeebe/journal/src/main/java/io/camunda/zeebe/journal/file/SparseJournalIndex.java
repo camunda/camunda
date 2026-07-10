@@ -37,13 +37,16 @@ final class SparseJournalIndex implements JournalIndex {
 
   @Override
   public void index(final JournalRecord indexedEntry, final int position) {
-    final long index = indexedEntry.index();
-    if (index % density == 0) {
-      indexToPosition.put(index, position);
-      final long asqn = indexedEntry.asqn();
+    index(indexedEntry.index(), indexedEntry.asqn(), position);
+  }
+
+  @Override
+  public void index(final long recordIndex, final long asqn, final int position) {
+    if (recordIndex % density == 0) {
+      indexToPosition.put(recordIndex, position);
       if (asqn != SegmentedJournal.ASQN_IGNORE) {
-        asqnToIndex.put(asqn, index);
-        indexToAsqn.put(index, asqn);
+        asqnToIndex.put(asqn, recordIndex);
+        indexToAsqn.put(recordIndex, asqn);
       }
     }
   }

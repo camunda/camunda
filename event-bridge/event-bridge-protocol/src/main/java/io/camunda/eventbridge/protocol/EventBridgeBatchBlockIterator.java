@@ -17,7 +17,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  *
  * <p><b>Zero Allocation:</b> This iterator maintains primitive state and yields the offsets and
  * lengths of each batch without allocating objects on the hot path. It is designed to be used
- * directly by the Journal to populate the Segment Index.
+ * directly by the journal to resolve per-batch slices when serving index scans.
  */
 public final class EventBridgeBatchBlockIterator {
 
