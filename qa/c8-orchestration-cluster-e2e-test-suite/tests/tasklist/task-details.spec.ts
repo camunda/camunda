@@ -195,14 +195,10 @@ test.describe('task details page', () => {
       timeout: 120000,
     });
     await taskDetailsPage.clickAssignToMeButton();
-    await waitForAssertion({
-      assertion: async () => {
-        await expect(page.getByText('zeebeVar', {exact: true})).toBeVisible();
-      },
-      onFailure: async () => {
-        await page.reload();
-      },
-    });
+    // Zeebe_user_task and JobWorker_user_task run on parallel branches, so the
+    // zeebeVar added while completing the Zeebe task is not shown on the still-open
+    // JobWorker task (its variable panel legitimately reads "Task has no variables").
+    // Its propagation is verified later, after completion, in the Completed view.
     await expect(taskDetailsPage.completeTaskButton).toBeEnabled();
     await taskDetailsPage.addVariable({
       name: 'jobWorkerVar',
