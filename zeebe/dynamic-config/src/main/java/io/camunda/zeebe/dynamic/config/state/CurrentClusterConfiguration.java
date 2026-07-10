@@ -186,6 +186,97 @@ public record CurrentClusterConfiguration(
         version, globalConfiguration, updatedGroups, phasedChangeState);
   }
 
+  /**
+   * Initializes a new phased change plan from {@code phases} and activates its first phase (phase
+   * 0) into the sub-configurations. The plan id is derived inside {@link PhasedChangeState} from
+   * the last completed change, so callers never supply an id (see Amendment 1 of the solution
+   * spec).
+   *
+   * <p>Consecutive phases must not target the same sub-configuration: activating a phase starts a
+   * configuration change on the affected sub-config, and a later phase targeting the same
+   * sub-config can only be activated once that change has been fully advanced (drained) — otherwise
+   * {@link #activateNextPhase()} throws because a change is still in progress.
+   *
+   * @throws IllegalArgumentException if {@code phases} is empty
+   * @throws IllegalStateException if a plan is already pending
+   */
+  public CurrentClusterConfiguration initPlan(final List<Phase> phases) {
+    if (phases.isEmpty()) {
+      throw new IllegalArgumentException(
+          "Expected to init a plan with at least one phase, but the phase list is empty");
+    }
+    final var newState = phasedChangeState.initPlan(phases);
+    final var plan = newState.pending().orElseThrow();
+    return withPhasedChangeState(newState).applyPhase(plan);
+  }
+
+  /**
+   * Advances the pending plan to the next phase and activates that phase into the
+   * sub-configurations.
+   *
+   * <p>The next phase must not target a sub-configuration that still has the previous phase's
+   * change in progress (see {@link #initPlan(List)}); if it does, this throws because a
+   * configuration change is already in progress on that sub-config.
+   *
+   * @throws IllegalStateException if no plan is pending, or the plan is already on its last phase
+   */
+  public CurrentClusterConfiguration activateNextPhase() {
+    final var plan =
+        phasedChangeState
+            .pending()
+            .orElseThrow(
+                () ->
+                    new IllegalStateException(
+                        "Cannot activate the next phase when no plan is pending"));
+    if (!plan.hasNextPhase()) {
+      throw new IllegalStateException(
+          "Cannot activate the next phase: the plan is already on its last phase");
+    }
+    final var advanced = plan.withNextPhase();
+    final var newState =
+        new PhasedChangeState(Optional.of(advanced), phasedChangeState.lastChange());
+    return withPhasedChangeState(newState).applyPhase(advanced);
+  }
+
+  /**
+   * Completes the pending plan with the given terminal status, moving it into the last-completed
+   * change. Sub-configuration changes activated by the plan are left untouched.
+   *
+   * @throws IllegalStateException if no plan is pending
+   */
+  public CurrentClusterConfiguration completePlan(final PhasedChangePlanStatus status) {
+    return withPhasedChangeState(phasedChangeState.completePlan(status));
+  }
+
+  /**
+   * Activates the plan's current phase by copying its operations into the affected sub-config(s): a
+   * {@link GlobalPhase} starts a configuration change on {@link GlobalConfiguration} only; a {@link
+   * PartitionGroupParallelPhase} starts one on each named partition group only.
+   */
+  private CurrentClusterConfiguration applyPhase(final PhasedChangePlan plan) {
+    return switch (plan.currentPhase()) {
+      case final GlobalPhase globalPhase ->
+          updateGlobalConfiguration(
+              global ->
+                  global.startConfigurationChange(
+                      List.<ClusterConfigurationChangeOperation>copyOf(globalPhase.operations())));
+      case final PartitionGroupParallelPhase parallelPhase -> {
+        var result = this;
+        for (final var entry : parallelPhase.groupOperations().entrySet()) {
+          final var operations = List.<ClusterConfigurationChangeOperation>copyOf(entry.getValue());
+          result =
+              result.updatePartitionGroupConfig(
+                  entry.getKey(), group -> group.startConfigurationChange(operations));
+        }
+        yield result;
+      }
+    };
+  }
+
+  private CurrentClusterConfiguration withPhasedChangeState(final PhasedChangeState newState) {
+    return new CurrentClusterConfiguration(version, globalConfiguration, partitionGroups, newState);
+  }
+
   public boolean hasPartitionGroup(final String groupId) {
     return partitionGroups.containsKey(groupId);
   }

@@ -27,6 +27,8 @@ import java.util.Optional;
 import java.util.function.UnaryOperator;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 class CurrentClusterConfigurationTest {
 
@@ -403,6 +405,146 @@ class CurrentClusterConfigurationTest {
       assertThatThrownBy(
               () -> config.updatePartitionGroupConfig("missing", UnaryOperator.identity()))
           .isInstanceOf(IllegalStateException.class);
+    }
+  }
+
+  @Nested
+  class PlanTransitions {
+
+    private static GlobalPhase globalPhase() {
+      return new GlobalPhase(List.of(new MemberJoinOperation(MEMBER_0)));
+    }
+
+    private static PartitionGroupParallelPhase parallelPhase(final String groupId) {
+      return new PartitionGroupParallelPhase(
+          Map.of(groupId, List.of(new DeleteHistoryOperation(MEMBER_0))));
+    }
+
+    @Test
+    void shouldInitPlanAndActivateFirstPhase() {
+      // given — an empty config
+      final var config = CurrentClusterConfiguration.init();
+
+      // when — init a plan whose first phase is a global phase
+      final var updated = config.initPlan(List.of(globalPhase()));
+
+      // then — the plan is pending at phase 0 (id derived by PhasedChangeState) and activated
+      assertThat(updated.phasedChangeState().pending()).isPresent();
+      assertThat(updated.phasedChangeState().pending().orElseThrow().currentPhaseIndex()).isZero();
+      assertThat(updated.phasedChangeState().pending().orElseThrow().id()).isEqualTo(1);
+      assertThat(updated.globalConfiguration().hasPendingChanges()).isTrue();
+    }
+
+    @Test
+    void shouldThrowWhenInitPlanWhileOneIsPending() {
+      // given
+      final var config = CurrentClusterConfiguration.init().initPlan(List.of(globalPhase()));
+
+      // when / then
+      assertThatThrownBy(() -> config.initPlan(List.of(globalPhase())))
+          .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void shouldActivateNextPhase() {
+      // given — plan: phase 0 global, phase 1 targets group "a"
+      final var config =
+          config(global(1, Map.of()), Map.of("a", group(1, Map.of())), PhasedChangeState.empty())
+              .initPlan(List.of(globalPhase(), parallelPhase("a")));
+
+      // when
+      final var updated = config.activateNextPhase();
+
+      // then — now on phase 1, and group "a" has the activated change
+      assertThat(updated.phasedChangeState().pending().orElseThrow().currentPhaseIndex())
+          .isEqualTo(1);
+      assertThat(updated.partitionGroup("a").hasPendingChanges()).isTrue();
+    }
+
+    @Test
+    void shouldThrowWhenActivatingNextPhaseOnLastPhase() {
+      // given — a single-phase plan
+      final var config = CurrentClusterConfiguration.init().initPlan(List.of(globalPhase()));
+
+      // when / then
+      assertThatThrownBy(config::activateNextPhase).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void shouldThrowWhenActivatingNextPhaseWithNoPendingPlan() {
+      // given
+      final var config = CurrentClusterConfiguration.init();
+
+      // when / then
+      assertThatThrownBy(config::activateNextPhase).isInstanceOf(IllegalStateException.class);
+    }
+
+    @ParameterizedTest
+    @EnumSource(PhasedChangePlanStatus.class)
+    void shouldCompletePlanWithTerminalStatus(final PhasedChangePlanStatus status) {
+      // given
+      final var config = CurrentClusterConfiguration.init().initPlan(List.of(globalPhase()));
+
+      // when
+      final var completed = config.completePlan(status);
+
+      // then — the pending plan is moved into the last completed change with the given status
+      assertThat(completed.phasedChangeState().pending()).isEmpty();
+      assertThat(completed.phasedChangeState().lastChange()).isPresent();
+      assertThat(completed.phasedChangeState().lastChange().orElseThrow().status())
+          .isEqualTo(status);
+    }
+
+    @Test
+    void shouldThrowWhenInitPlanWithNoPhases() {
+      // given
+      final var config = CurrentClusterConfiguration.init();
+
+      // when / then
+      assertThatThrownBy(() -> config.initPlan(List.of()))
+          .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void shouldThrowWhenCompletingWithNoPendingPlan() {
+      // given
+      final var config = CurrentClusterConfiguration.init();
+
+      // when / then
+      assertThatThrownBy(() -> config.completePlan(PhasedChangePlanStatus.COMPLETED))
+          .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void shouldActivateOnlyGlobalConfigurationForGlobalPhase() {
+      // given — a config with a partition group and a global-phase plan
+      final var config =
+          config(global(1, Map.of()), Map.of("a", group(1, Map.of())), PhasedChangeState.empty());
+
+      // when
+      final var updated = config.initPlan(List.of(globalPhase()));
+
+      // then — only the global config is changed; the partition group is untouched
+      assertThat(updated.globalConfiguration().hasPendingChanges()).isTrue();
+      assertThat(updated.partitionGroup("a").hasPendingChanges()).isFalse();
+    }
+
+    @Test
+    void shouldActivateOnlyNamedGroupsForParallelPhase() {
+      // given — a config with groups "a" and "b" and a parallel phase targeting only "a"
+      final var config =
+          config(
+              global(1, Map.of()),
+              Map.of("a", group(1, Map.of()), "b", group(1, Map.of())),
+              PhasedChangeState.empty());
+
+      // when
+      final var updated = config.initPlan(List.of(parallelPhase("a")));
+
+      // then — only group "a" is changed; group "b" and the global config are untouched
+      assertThat(updated.partitionGroup("a").hasPendingChanges()).isTrue();
+      assertThat(updated.partitionGroup("b").hasPendingChanges()).isFalse();
+      assertThat(updated.globalConfiguration().hasPendingChanges()).isFalse();
     }
   }
 
