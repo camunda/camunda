@@ -253,7 +253,8 @@ public class RequestMapper {
         getIntOrZero(failRequest, JobFailRequest::getRetries),
         getStringOrEmpty(failRequest, JobFailRequest::getErrorMessage),
         getLongOrZero(failRequest, JobFailRequest::getRetryBackOff),
-        getMapOrEmpty(failRequest, JobFailRequest::getVariables));
+        getMapOrEmpty(failRequest, JobFailRequest::getVariables),
+        null);
   }
 
   public static Either<ProblemDetail, ErrorJobRequest> toJobErrorRequest(
@@ -267,7 +268,8 @@ public class RequestMapper {
                 jobKey,
                 errorRequest.getErrorCode(),
                 getStringOrEmpty(errorRequest, JobErrorRequest::getErrorMessage),
-                getMapOrEmpty(errorRequest, JobErrorRequest::getVariables)));
+                getMapOrEmpty(errorRequest, JobErrorRequest::getVariables),
+                null));
   }
 
   public static Either<ProblemDetail, CorrelateMessageRequest> toMessageCorrelationRequest(
@@ -297,7 +299,8 @@ public class RequestMapper {
     return new CompleteJobRequest(
         jobKey,
         getMapOrEmpty(completionRequest, JobCompletionRequest::getVariables),
-        getJobResultOrDefault(completionRequest));
+        getJobResultOrDefault(completionRequest),
+        null);
   }
 
   public static Either<ProblemDetail, UpdateJobRequest> toJobUpdateRequest(
@@ -312,7 +315,8 @@ public class RequestMapper {
                 new UpdateJobChangeset(
                     updateRequest.getChangeset().getRetries(),
                     updateRequest.getChangeset().getTimeout(),
-                    updateRequest.getChangeset().getPriority())));
+                    updateRequest.getChangeset().getPriority()),
+                null));
   }
 
   public static Either<ProblemDetail, BatchUpdateJobRequest> toJobBatchUpdateRequest(
@@ -1261,15 +1265,24 @@ public class RequestMapper {
       int retries,
       String errorMessage,
       Long retryBackoff,
-      Map<String, Object> variables) {}
+      Map<String, Object> variables,
+      @Nullable String leaseToken) {}
 
   public record ErrorJobRequest(
-      long jobKey, String errorCode, String errorMessage, Map<String, Object> variables) {}
+      long jobKey,
+      String errorCode,
+      String errorMessage,
+      Map<String, Object> variables,
+      @Nullable String leaseToken) {}
 
-  public record CompleteJobRequest(long jobKey, Map<String, Object> variables, JobResult result) {}
+  public record CompleteJobRequest(
+      long jobKey, Map<String, Object> variables, JobResult result, @Nullable String leaseToken) {}
 
   public record UpdateJobRequest(
-      long jobKey, @Nullable Long operationReference, UpdateJobChangeset changeset) {}
+      long jobKey,
+      @Nullable Long operationReference,
+      UpdateJobChangeset changeset,
+      @Nullable String leaseToken) {}
 
   public record BroadcastSignalRequest(
       String signalName, Map<String, Object> variables, String tenantId) {}
