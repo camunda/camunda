@@ -25,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import org.agrona.IoUtil;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -151,18 +152,29 @@ final class SegmentLoader {
           lastWrittenAsqn,
           journalIndex);
 
+    } catch (final CorruptedJournalException e) {
+      // Corruption must propagate as-is: SegmentsManager relies on the exception type to decide
+      // whether trailing unflushed (e.g. preallocated-but-uninitialized) segments can safely be
+      // deleted on load.
+      closeQuietly(channel);
+      throw e;
     } catch (
         final Exception
             e) { // Catch Exception to cover IOException and RuntimeExceptions from readDescriptor
       // Prevent FD leak on corruption/failure
-      if (channel != null) {
-        try {
-          channel.close();
-        } catch (final Exception ignored) {
-        }
-      }
+      closeQuietly(channel);
       throw new JournalException(
           String.format("Failed to load existing segment %s", segmentFile), e);
+    }
+  }
+
+  private static void closeQuietly(final @Nullable FileChannel channel) {
+    if (channel != null) {
+      try {
+        channel.close();
+      } catch (final Exception ignored) {
+        // the channel is only closed to avoid a file descriptor leak on a failure path
+      }
     }
   }
 
