@@ -60,9 +60,7 @@ const ToolResultModal: React.FC<ToolResultModalProps> = ({
       size="lg"
       passiveModal
     >
-      <Description>
-        {description ?? 'No description available for this tool.'}
-      </Description>
+      {description && <Description>{description}</Description>}
       <Columns>
         <Column aria-label="Input" data-testid="tool-call-input">
           <ColumnLabel>Input</ColumnLabel>

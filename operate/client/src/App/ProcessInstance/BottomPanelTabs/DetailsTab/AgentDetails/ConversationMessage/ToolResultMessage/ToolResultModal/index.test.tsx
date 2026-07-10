@@ -28,22 +28,6 @@ describe('<ToolResultModal />', () => {
     expect(modal.getByText('Searches the web.')).toBeInTheDocument();
   });
 
-  it('should render a fallback when the tool has no description', () => {
-    render(
-      <ToolResultModal
-        toolName="search"
-        description={null}
-        input={null}
-        content={[]}
-        onClose={vi.fn()}
-      />,
-    );
-
-    expect(
-      screen.getByText('No description available for this tool.'),
-    ).toBeInTheDocument();
-  });
-
   it('should render the input and output in rich-text editors', async () => {
     render(
       <ToolResultModal
