@@ -31,6 +31,7 @@ import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.filter.JobFilter;
+import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Incident;
@@ -62,6 +63,8 @@ import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -123,6 +126,8 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   private final Supplier<CamundaAssertAwaitBehavior> awaitBehaviorSupplier;
   private final ConditionalBehaviorEngine conditionalBehaviorEngine;
 
+  private OffsetDateTime testCaseStartTime;
+
   public CamundaProcessTestContextImpl(
       final CamundaProcessTestRuntime camundaRuntime,
       final Consumer<AutoCloseable> clientCreationCallback,
@@ -140,6 +145,17 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     this.awaitBehaviorSupplier = awaitBehaviorSupplier;
     this.jsonMapper = jsonMapper;
     this.conditionalBehaviorEngine = conditionalBehaviorEngine;
+  }
+
+  /**
+   * Sets the start time of the current test case. When set, all search queries will only return
+   * data created at or after this time, so that results from previous test cases are excluded.
+   *
+   * @param startTime the start time of the current test case, as reported by the runtime clock; may
+   *     be {@code null} to disable filtering
+   */
+  public void setTestCaseStartTime(final Instant startTime) {
+    testCaseStartTime = startTime != null ? startTime.atOffset(ZoneOffset.UTC) : null;
   }
 
   @Override
@@ -776,17 +792,14 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
   private Optional<UserTask> findUserTask(
       final UserTaskSelector userTaskSelector, final CamundaClient client) {
-    return client
-        .newUserTaskSearchRequest()
-        .filter(
-            filter ->
-                DEFAULT_USER_TASK_COMPLETION_FILTER
-                    .andThen(userTaskSelector::applyFilter)
-                    .accept(filter))
-        .send()
-        .join()
-        .items()
-        .stream()
+    Consumer<UserTaskFilter> filter =
+        DEFAULT_USER_TASK_COMPLETION_FILTER.andThen(userTaskSelector::applyFilter);
+    if (testCaseStartTime != null) {
+      final OffsetDateTime startTime = testCaseStartTime;
+      filter =
+          ((Consumer<UserTaskFilter>) f -> f.creationDate(b -> b.gte(startTime))).andThen(filter);
+    }
+    return client.newUserTaskSearchRequest().filter(filter).send().join().items().stream()
         .filter(userTaskSelector::test)
         .findFirst();
   }
@@ -922,31 +935,28 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
   private Optional<Incident> findIncident(
       final IncidentSelector incidentSelector, final CamundaClient client) {
-    return client
-        .newIncidentSearchRequest()
-        .filter(
-            filter -> {
-              DEFAULT_INCIDENT_RESOLUTION_FILTER
-                  .andThen(incidentSelector::applyFilter)
-                  .accept(filter);
-            })
-        .send()
-        .join()
-        .items()
-        .stream()
+    Consumer<IncidentFilter> filter =
+        DEFAULT_INCIDENT_RESOLUTION_FILTER.andThen(incidentSelector::applyFilter);
+    if (testCaseStartTime != null) {
+      final OffsetDateTime startTime = testCaseStartTime;
+      filter =
+          ((Consumer<IncidentFilter>) f -> f.creationTime(b -> b.gte(startTime))).andThen(filter);
+    }
+    return client.newIncidentSearchRequest().filter(filter).send().join().items().stream()
         .filter(incidentSelector::test)
         .findFirst();
   }
 
   private Optional<ProcessInstance> findProcessInstance(
       final ProcessInstanceSelector processInstanceSelector, final CamundaClient client) {
-    return client
-        .newProcessInstanceSearchRequest()
-        .filter(processInstanceSelector::applyFilter)
-        .send()
-        .join()
-        .items()
-        .stream()
+    Consumer<ProcessInstanceFilter> filter = processInstanceSelector::applyFilter;
+    if (testCaseStartTime != null) {
+      final OffsetDateTime startTime = testCaseStartTime;
+      filter =
+          ((Consumer<ProcessInstanceFilter>) f -> f.startDate(b -> b.gte(startTime)))
+              .andThen(filter);
+    }
+    return client.newProcessInstanceSearchRequest().filter(filter).send().join().items().stream()
         .filter(processInstanceSelector::test)
         .findFirst();
   }
@@ -955,17 +965,17 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
       final long processInstanceKey,
       final ElementSelector elementSelector,
       final CamundaClient client) {
-    return client
-        .newElementInstanceSearchRequest()
-        .filter(
-            filter ->
-                DEFAULT_ELEMENT_INSTANCE_FILTER
-                    .andThen(elementSelector::applyFilter)
-                    .accept(filter.processInstanceKey(processInstanceKey)))
-        .send()
-        .join()
-        .items()
-        .stream()
+    Consumer<ElementInstanceFilter> filter =
+        DEFAULT_ELEMENT_INSTANCE_FILTER
+            .andThen(f -> f.processInstanceKey(processInstanceKey))
+            .andThen(elementSelector::applyFilter);
+    if (testCaseStartTime != null) {
+      final OffsetDateTime startTime = testCaseStartTime;
+      filter =
+          ((Consumer<ElementInstanceFilter>) f -> f.startDate(b -> b.gte(startTime)))
+              .andThen(filter);
+    }
+    return client.newElementInstanceSearchRequest().filter(filter).send().join().items().stream()
         .filter(elementSelector::test)
         .findFirst();
   }

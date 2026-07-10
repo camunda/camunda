@@ -53,20 +53,25 @@ public class CamundaDataSource {
   private static final Consumer<AnyPage> DEFAULT_PAGE_REQUEST = page -> page.limit(100);
 
   private final CamundaClient client;
-  private Instant testCaseStartTime;
+  private final OffsetDateTime testCaseStartTime;
 
   public CamundaDataSource(final CamundaClient client) {
-    this.client = client;
+    this(client, null);
   }
 
   /**
-   * Sets the start time of the current test case. When set, all query methods will only return data
-   * created at or after this time, so that results from previous test cases are excluded.
+   * Creates a data source that filters all query results to only include data created at or after
+   * the given {@code testCaseStartTime}. When {@code testCaseStartTime} is {@code null}, no time
+   * filter is applied.
    *
-   * @param startTime the start time of the current test case, as reported by the runtime clock
+   * @param client the Camunda client to use for queries
+   * @param testCaseStartTime the start time of the current test case, as reported by the runtime
+   *     clock; may be {@code null} to disable filtering
    */
-  public void setTestCaseStartTime(final Instant startTime) {
-    testCaseStartTime = startTime;
+  public CamundaDataSource(final CamundaClient client, final Instant testCaseStartTime) {
+    this.client = client;
+    this.testCaseStartTime =
+        testCaseStartTime != null ? testCaseStartTime.atOffset(ZoneOffset.UTC) : null;
   }
 
   public byte[] getDocumentContent(final DocumentReferenceResponse reference) {
@@ -141,8 +146,8 @@ public class CamundaDataSource {
     if (testCaseStartTime == null) {
       return filter;
     }
-    final OffsetDateTime startTime = testCaseStartTime.atOffset(ZoneOffset.UTC);
-    return filter.andThen(f -> f.startDate(b -> b.gte(startTime)));
+    return ((Consumer<ElementInstanceFilter>) f -> f.startDate(b -> b.gte(testCaseStartTime)))
+        .andThen(filter);
   }
 
   public List<Variable> findGlobalVariablesByProcessInstanceKey(final long processInstanceKey) {
@@ -195,8 +200,8 @@ public class CamundaDataSource {
     if (testCaseStartTime == null) {
       return filter;
     }
-    final OffsetDateTime startTime = testCaseStartTime.atOffset(ZoneOffset.UTC);
-    return filter.andThen(f -> f.startDate(b -> b.gte(startTime)));
+    return ((Consumer<ProcessInstanceFilter>) f -> f.startDate(b -> b.gte(testCaseStartTime)))
+        .andThen(filter);
   }
 
   public List<Incident> findIncidents(final Consumer<IncidentFilter> filter) {
@@ -215,8 +220,8 @@ public class CamundaDataSource {
     if (testCaseStartTime == null) {
       return filter;
     }
-    final OffsetDateTime startTime = testCaseStartTime.atOffset(ZoneOffset.UTC);
-    return filter.andThen(f -> f.creationTime(b -> b.gte(startTime)));
+    return ((Consumer<IncidentFilter>) f -> f.creationTime(b -> b.gte(testCaseStartTime)))
+        .andThen(filter);
   }
 
   public List<UserTask> findUserTasks(final Consumer<UserTaskFilter> filter) {
@@ -235,8 +240,8 @@ public class CamundaDataSource {
     if (testCaseStartTime == null) {
       return filter;
     }
-    final OffsetDateTime startTime = testCaseStartTime.atOffset(ZoneOffset.UTC);
-    return filter.andThen(f -> f.creationDate(b -> b.gte(startTime)));
+    return ((Consumer<UserTaskFilter>) f -> f.creationDate(b -> b.gte(testCaseStartTime)))
+        .andThen(filter);
   }
 
   public List<DecisionInstance> findDecisionInstances(
@@ -254,8 +259,8 @@ public class CamundaDataSource {
     if (testCaseStartTime == null) {
       return filter;
     }
-    final OffsetDateTime startTime = testCaseStartTime.atOffset(ZoneOffset.UTC);
-    return filter.andThen(f -> f.evaluationDate(b -> b.gte(startTime)));
+    return ((Consumer<DecisionInstanceFilter>) f -> f.evaluationDate(b -> b.gte(testCaseStartTime)))
+        .andThen(filter);
   }
 
   public DecisionInstance getDecisionInstance(final String decisionInstanceId) {
@@ -305,8 +310,9 @@ public class CamundaDataSource {
     if (testCaseStartTime == null) {
       return filter;
     }
-    final OffsetDateTime startTime = testCaseStartTime.atOffset(ZoneOffset.UTC);
-    return filter.andThen(f -> f.lastUpdatedDate(b -> b.gte(startTime)));
+    return ((Consumer<MessageSubscriptionFilter>)
+            f -> f.lastUpdatedDate(b -> b.gte(testCaseStartTime)))
+        .andThen(filter);
   }
 
   public List<CorrelatedMessageSubscription> findCorrelatedMessages(
@@ -326,7 +332,8 @@ public class CamundaDataSource {
     if (testCaseStartTime == null) {
       return filter;
     }
-    final OffsetDateTime startTime = testCaseStartTime.atOffset(ZoneOffset.UTC);
-    return filter.andThen(f -> f.correlationTime(b -> b.gte(startTime)));
+    return ((Consumer<CorrelatedMessageSubscriptionFilter>)
+            f -> f.correlationTime(b -> b.gte(testCaseStartTime)))
+        .andThen(filter);
   }
 }

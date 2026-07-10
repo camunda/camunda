@@ -127,6 +127,7 @@ public class CamundaProcessTestExtension
 
   private CamundaManagementClient camundaManagementClient;
   private Instant testCaseStartTime;
+  private CamundaDataSource dataSource;
   private boolean clockResetEnabled = CamundaProcessTestRuntimeDefaults.CLOCK_RESET_ENABLED;
   private boolean dataDeletionEnabled = CamundaProcessTestRuntimeDefaults.DATA_DELETION_ENABLED;
 
@@ -317,9 +318,11 @@ public class CamundaProcessTestExtension
 
     // initialize assertions
     testCaseStartTime = readCurrentRuntimeTime();
-    final CamundaDataSource dataSource =
-        new CamundaDataSource(camundaProcessTestContext.createClient());
-    dataSource.setTestCaseStartTime(testCaseStartTime);
+    dataSource = new CamundaDataSource(camundaProcessTestContext.createClient(), testCaseStartTime);
+    if (camundaProcessTestContext instanceof CamundaProcessTestContextImpl) {
+      ((CamundaProcessTestContextImpl) camundaProcessTestContext)
+          .setTestCaseStartTime(testCaseStartTime);
+    }
     CamundaAssert.initialize(dataSource);
 
     // initialize result collector
@@ -383,9 +386,6 @@ public class CamundaProcessTestExtension
     conditionalBehaviorEngine.stop();
 
     try {
-      final CamundaDataSource dataSource =
-          new CamundaDataSource(camundaProcessTestContext.createClient());
-      dataSource.setTestCaseStartTime(testCaseStartTime);
       final CoverageTestData coverageData = CoverageTestDataCollector.collectData(dataSource);
       coverageCollector.collectTestRunCoverage(
           context.getRequiredTestClass(),

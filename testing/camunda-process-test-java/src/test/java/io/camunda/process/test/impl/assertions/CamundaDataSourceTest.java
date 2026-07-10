@@ -16,21 +16,39 @@
 package io.camunda.process.test.impl.assertions;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.CamundaFuture;
+import io.camunda.client.api.search.filter.CorrelatedMessageSubscriptionFilter;
+import io.camunda.client.api.search.filter.DecisionInstanceFilter;
+import io.camunda.client.api.search.filter.ElementInstanceFilter;
+import io.camunda.client.api.search.filter.IncidentFilter;
+import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
+import io.camunda.client.api.search.filter.UserTaskFilter;
+import io.camunda.client.api.search.request.CorrelatedMessageSubscriptionSearchRequest;
+import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
+import io.camunda.client.api.search.request.ElementInstanceSearchRequest;
+import io.camunda.client.api.search.request.IncidentSearchRequest;
+import io.camunda.client.api.search.request.MessageSubscriptionSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSearchRequest;
+import io.camunda.client.api.search.request.UserTaskSearchRequest;
+import io.camunda.client.api.search.response.CorrelatedMessageSubscription;
+import io.camunda.client.api.search.response.DecisionInstance;
+import io.camunda.client.api.search.response.ElementInstance;
+import io.camunda.client.api.search.response.Incident;
+import io.camunda.client.api.search.response.MessageSubscription;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
+import io.camunda.client.api.search.response.UserTask;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -42,82 +60,388 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class CamundaDataSourceTest {
 
+  private static final Instant START_TIME = Instant.parse("2024-01-01T10:00:00Z");
+
   @Mock private CamundaClient client;
 
-  @Mock(answer = Answers.RETURNS_SELF)
-  private ProcessInstanceSearchRequest searchRequest;
+  @Nested
+  class ProcessInstanceTests {
 
-  @Mock private CamundaFuture<SearchResponse<ProcessInstance>> future;
-  @Mock private SearchResponse<ProcessInstance> searchResponse;
+    @Mock(answer = Answers.RETURNS_SELF)
+    private ProcessInstanceSearchRequest searchRequest;
 
-  @Mock(answer = Answers.RETURNS_SELF)
-  private ProcessInstanceFilter processInstanceFilter;
+    @Mock private CamundaFuture<SearchResponse<ProcessInstance>> future;
+    @Mock private SearchResponse<ProcessInstance> searchResponse;
 
-  @Captor private ArgumentCaptor<Consumer<ProcessInstanceFilter>> filterCaptor;
+    @Mock(answer = Answers.RETURNS_SELF)
+    private ProcessInstanceFilter processInstanceFilter;
 
-  private CamundaDataSource dataSource;
+    @Captor private ArgumentCaptor<Consumer<ProcessInstanceFilter>> filterCaptor;
 
-  @BeforeEach
-  @SuppressWarnings("unchecked")
-  void setUp() {
-    dataSource = new CamundaDataSource(client);
-    when(client.newProcessInstanceSearchRequest()).thenReturn(searchRequest);
-    when(searchRequest.send()).thenReturn(future);
-    when(future.join()).thenReturn(searchResponse);
-    when(searchResponse.items()).thenReturn(Collections.emptyList());
+    @BeforeEach
+    @SuppressWarnings("unchecked")
+    void setUp() {
+      when(client.newProcessInstanceSearchRequest()).thenReturn(searchRequest);
+      when(searchRequest.send()).thenReturn(future);
+      when(future.join()).thenReturn(searchResponse);
+      when(searchResponse.items()).thenReturn(Collections.emptyList());
+    }
+
+    @Test
+    void shouldNotApplyStartTimeFilterWhenNotSet() {
+      // given
+      final CamundaDataSource dataSource = new CamundaDataSource(client);
+
+      // when
+      dataSource.findProcessInstances();
+
+      // then
+      verify(searchRequest).filter(filterCaptor.capture());
+      filterCaptor.getValue().accept(processInstanceFilter);
+      verify(processInstanceFilter, never()).startDate(any(Consumer.class));
+    }
+
+    @Test
+    void shouldApplyStartTimeFilterToProcessInstances() {
+      // given
+      final CamundaDataSource dataSource = new CamundaDataSource(client, START_TIME);
+
+      // when
+      dataSource.findProcessInstances();
+
+      // then
+      verify(searchRequest).filter(filterCaptor.capture());
+      filterCaptor.getValue().accept(processInstanceFilter);
+      verify(processInstanceFilter).startDate(any(Consumer.class));
+    }
+
+    @Test
+    void shouldApplyStartTimeFilterBeforeUserFilter() {
+      // given
+      final CamundaDataSource dataSource = new CamundaDataSource(client, START_TIME);
+
+      // when - user provides a custom filter AND start time is set
+      dataSource.findProcessInstances(f -> f.processDefinitionId("myProcess"));
+
+      // then
+      verify(searchRequest).filter(filterCaptor.capture());
+      filterCaptor.getValue().accept(processInstanceFilter);
+
+      // The start time filter should be applied in addition to the user's filter
+      verify(processInstanceFilter).startDate(any(Consumer.class));
+      verify(processInstanceFilter).processDefinitionId("myProcess");
+    }
   }
 
-  @Test
-  void shouldNotApplyStartTimeFilterWhenNotSet() {
-    // when
-    dataSource.findProcessInstances();
+  @Nested
+  class ElementInstanceTests {
 
-    // then - verify the filter consumer was applied but without start time
-    verify(searchRequest).filter(filterCaptor.capture());
+    @Mock(answer = Answers.RETURNS_SELF)
+    private ElementInstanceSearchRequest searchRequest;
 
-    // Apply the captured filter to a mock ProcessInstanceFilter
-    filterCaptor.getValue().accept(processInstanceFilter);
+    @Mock private CamundaFuture<SearchResponse<ElementInstance>> future;
+    @Mock private SearchResponse<ElementInstance> searchResponse;
 
-    // No startDate filter should be applied
-    verify(processInstanceFilter, never()).startDate(any(Consumer.class));
+    @Mock(answer = Answers.RETURNS_SELF)
+    private ElementInstanceFilter elementInstanceFilter;
+
+    @Captor private ArgumentCaptor<Consumer<ElementInstanceFilter>> filterCaptor;
+
+    @BeforeEach
+    @SuppressWarnings("unchecked")
+    void setUp() {
+      when(client.newElementInstanceSearchRequest()).thenReturn(searchRequest);
+      when(searchRequest.send()).thenReturn(future);
+      when(future.join()).thenReturn(searchResponse);
+      when(searchResponse.items()).thenReturn(Collections.emptyList());
+    }
+
+    @Test
+    void shouldNotApplyStartTimeFilterWhenNotSet() {
+      // given
+      final CamundaDataSource dataSource = new CamundaDataSource(client);
+
+      // when
+      dataSource.findElementInstances(f -> {});
+
+      // then
+      verify(searchRequest).filter(filterCaptor.capture());
+      filterCaptor.getValue().accept(elementInstanceFilter);
+      verify(elementInstanceFilter, never()).startDate(any(Consumer.class));
+    }
+
+    @Test
+    void shouldApplyStartTimeFilterToElementInstances() {
+      // given
+      final CamundaDataSource dataSource = new CamundaDataSource(client, START_TIME);
+
+      // when
+      dataSource.findElementInstances(f -> {});
+
+      // then
+      verify(searchRequest).filter(filterCaptor.capture());
+      filterCaptor.getValue().accept(elementInstanceFilter);
+      verify(elementInstanceFilter).startDate(any(Consumer.class));
+    }
   }
 
-  @Test
-  void shouldApplyStartTimeFilterToProcessInstances() {
-    // given
-    final Instant startTime = Instant.parse("2024-01-01T10:00:00Z");
-    dataSource.setTestCaseStartTime(startTime);
+  @Nested
+  class IncidentTests {
 
-    // when
-    dataSource.findProcessInstances();
+    @Mock(answer = Answers.RETURNS_SELF)
+    private IncidentSearchRequest searchRequest;
 
-    // then - verify the filter consumer was applied with start time
-    verify(searchRequest).filter(filterCaptor.capture());
+    @Mock private CamundaFuture<SearchResponse<Incident>> future;
+    @Mock private SearchResponse<Incident> searchResponse;
 
-    // Apply the captured filter to a mock ProcessInstanceFilter
-    filterCaptor.getValue().accept(processInstanceFilter);
+    @Mock(answer = Answers.RETURNS_SELF)
+    private IncidentFilter incidentFilter;
 
-    // startDate filter should be applied
-    verify(processInstanceFilter).startDate(any(Consumer.class));
+    @Captor private ArgumentCaptor<Consumer<IncidentFilter>> filterCaptor;
+
+    @BeforeEach
+    @SuppressWarnings("unchecked")
+    void setUp() {
+      when(client.newIncidentSearchRequest()).thenReturn(searchRequest);
+      when(searchRequest.send()).thenReturn(future);
+      when(future.join()).thenReturn(searchResponse);
+      when(searchResponse.items()).thenReturn(Collections.emptyList());
+    }
+
+    @Test
+    void shouldNotApplyStartTimeFilterWhenNotSet() {
+      // given
+      final CamundaDataSource dataSource = new CamundaDataSource(client);
+
+      // when
+      dataSource.findIncidents(f -> {});
+
+      // then
+      verify(searchRequest).filter(filterCaptor.capture());
+      filterCaptor.getValue().accept(incidentFilter);
+      verify(incidentFilter, never()).creationTime(any(Consumer.class));
+    }
+
+    @Test
+    void shouldApplyStartTimeFilterToIncidents() {
+      // given
+      final CamundaDataSource dataSource = new CamundaDataSource(client, START_TIME);
+
+      // when
+      dataSource.findIncidents(f -> {});
+
+      // then
+      verify(searchRequest).filter(filterCaptor.capture());
+      filterCaptor.getValue().accept(incidentFilter);
+      verify(incidentFilter).creationTime(any(Consumer.class));
+    }
   }
 
-  @Test
-  void shouldApplyStartTimeFilterWithUserFilter() {
-    // given
-    final Instant startTime = Instant.parse("2024-01-01T10:00:00Z");
-    dataSource.setTestCaseStartTime(startTime);
+  @Nested
+  class UserTaskTests {
 
-    final ProcessInstanceFilter userFilter =
-        mock(ProcessInstanceFilter.class, Answers.RETURNS_SELF);
+    @Mock(answer = Answers.RETURNS_SELF)
+    private UserTaskSearchRequest searchRequest;
 
-    // when - user provides a custom filter AND start time is set
-    dataSource.findProcessInstances(f -> userFilter.processDefinitionId("myProcess"));
+    @Mock private CamundaFuture<SearchResponse<UserTask>> future;
+    @Mock private SearchResponse<UserTask> searchResponse;
 
-    // then
-    verify(searchRequest).filter(filterCaptor.capture());
-    filterCaptor.getValue().accept(processInstanceFilter);
+    @Mock(answer = Answers.RETURNS_SELF)
+    private UserTaskFilter userTaskFilter;
 
-    // The start time filter should be applied in addition to the user's filter
-    verify(processInstanceFilter).startDate(any(Consumer.class));
+    @Captor private ArgumentCaptor<Consumer<UserTaskFilter>> filterCaptor;
+
+    @BeforeEach
+    @SuppressWarnings("unchecked")
+    void setUp() {
+      when(client.newUserTaskSearchRequest()).thenReturn(searchRequest);
+      when(searchRequest.send()).thenReturn(future);
+      when(future.join()).thenReturn(searchResponse);
+      when(searchResponse.items()).thenReturn(Collections.emptyList());
+    }
+
+    @Test
+    void shouldNotApplyStartTimeFilterWhenNotSet() {
+      // given
+      final CamundaDataSource dataSource = new CamundaDataSource(client);
+
+      // when
+      dataSource.findUserTasks(f -> {});
+
+      // then
+      verify(searchRequest).filter(filterCaptor.capture());
+      filterCaptor.getValue().accept(userTaskFilter);
+      verify(userTaskFilter, never()).creationDate(any(Consumer.class));
+    }
+
+    @Test
+    void shouldApplyStartTimeFilterToUserTasks() {
+      // given
+      final CamundaDataSource dataSource = new CamundaDataSource(client, START_TIME);
+
+      // when
+      dataSource.findUserTasks(f -> {});
+
+      // then
+      verify(searchRequest).filter(filterCaptor.capture());
+      filterCaptor.getValue().accept(userTaskFilter);
+      verify(userTaskFilter).creationDate(any(Consumer.class));
+    }
+  }
+
+  @Nested
+  class DecisionInstanceTests {
+
+    @Mock(answer = Answers.RETURNS_SELF)
+    private DecisionInstanceSearchRequest searchRequest;
+
+    @Mock private CamundaFuture<SearchResponse<DecisionInstance>> future;
+    @Mock private SearchResponse<DecisionInstance> searchResponse;
+
+    @Mock(answer = Answers.RETURNS_SELF)
+    private DecisionInstanceFilter decisionInstanceFilter;
+
+    @Captor private ArgumentCaptor<Consumer<DecisionInstanceFilter>> filterCaptor;
+
+    @BeforeEach
+    @SuppressWarnings("unchecked")
+    void setUp() {
+      when(client.newDecisionInstanceSearchRequest()).thenReturn(searchRequest);
+      when(searchRequest.send()).thenReturn(future);
+      when(future.join()).thenReturn(searchResponse);
+      when(searchResponse.items()).thenReturn(Collections.emptyList());
+    }
+
+    @Test
+    void shouldNotApplyStartTimeFilterWhenNotSet() {
+      // given
+      final CamundaDataSource dataSource = new CamundaDataSource(client);
+
+      // when
+      dataSource.findDecisionInstances(f -> {});
+
+      // then
+      verify(searchRequest).filter(filterCaptor.capture());
+      filterCaptor.getValue().accept(decisionInstanceFilter);
+      verify(decisionInstanceFilter, never()).evaluationDate(any(Consumer.class));
+    }
+
+    @Test
+    void shouldApplyStartTimeFilterToDecisionInstances() {
+      // given
+      final CamundaDataSource dataSource = new CamundaDataSource(client, START_TIME);
+
+      // when
+      dataSource.findDecisionInstances(f -> {});
+
+      // then
+      verify(searchRequest).filter(filterCaptor.capture());
+      filterCaptor.getValue().accept(decisionInstanceFilter);
+      verify(decisionInstanceFilter).evaluationDate(any(Consumer.class));
+    }
+  }
+
+  @Nested
+  class MessageSubscriptionTests {
+
+    @Mock(answer = Answers.RETURNS_SELF)
+    private MessageSubscriptionSearchRequest searchRequest;
+
+    @Mock private CamundaFuture<SearchResponse<MessageSubscription>> future;
+    @Mock private SearchResponse<MessageSubscription> searchResponse;
+
+    @Mock(answer = Answers.RETURNS_SELF)
+    private MessageSubscriptionFilter messageSubscriptionFilter;
+
+    @Captor private ArgumentCaptor<Consumer<MessageSubscriptionFilter>> filterCaptor;
+
+    @BeforeEach
+    @SuppressWarnings("unchecked")
+    void setUp() {
+      when(client.newMessageSubscriptionSearchRequest()).thenReturn(searchRequest);
+      when(searchRequest.send()).thenReturn(future);
+      when(future.join()).thenReturn(searchResponse);
+      when(searchResponse.items()).thenReturn(Collections.emptyList());
+    }
+
+    @Test
+    void shouldNotApplyStartTimeFilterWhenNotSet() {
+      // given
+      final CamundaDataSource dataSource = new CamundaDataSource(client);
+
+      // when
+      dataSource.findMessageSubscriptions(f -> {});
+
+      // then
+      verify(searchRequest).filter(filterCaptor.capture());
+      filterCaptor.getValue().accept(messageSubscriptionFilter);
+      verify(messageSubscriptionFilter, never()).lastUpdatedDate(any(Consumer.class));
+    }
+
+    @Test
+    void shouldApplyStartTimeFilterToMessageSubscriptions() {
+      // given
+      final CamundaDataSource dataSource = new CamundaDataSource(client, START_TIME);
+
+      // when
+      dataSource.findMessageSubscriptions(f -> {});
+
+      // then
+      verify(searchRequest).filter(filterCaptor.capture());
+      filterCaptor.getValue().accept(messageSubscriptionFilter);
+      verify(messageSubscriptionFilter).lastUpdatedDate(any(Consumer.class));
+    }
+  }
+
+  @Nested
+  class CorrelatedMessageTests {
+
+    @Mock(answer = Answers.RETURNS_SELF)
+    private CorrelatedMessageSubscriptionSearchRequest searchRequest;
+
+    @Mock private CamundaFuture<SearchResponse<CorrelatedMessageSubscription>> future;
+    @Mock private SearchResponse<CorrelatedMessageSubscription> searchResponse;
+
+    @Mock(answer = Answers.RETURNS_SELF)
+    private CorrelatedMessageSubscriptionFilter correlatedMessageFilter;
+
+    @Captor private ArgumentCaptor<Consumer<CorrelatedMessageSubscriptionFilter>> filterCaptor;
+
+    @BeforeEach
+    @SuppressWarnings("unchecked")
+    void setUp() {
+      when(client.newCorrelatedMessageSubscriptionSearchRequest()).thenReturn(searchRequest);
+      when(searchRequest.send()).thenReturn(future);
+      when(future.join()).thenReturn(searchResponse);
+      when(searchResponse.items()).thenReturn(Collections.emptyList());
+    }
+
+    @Test
+    void shouldNotApplyStartTimeFilterWhenNotSet() {
+      // given
+      final CamundaDataSource dataSource = new CamundaDataSource(client);
+
+      // when
+      dataSource.findCorrelatedMessages(f -> {});
+
+      // then
+      verify(searchRequest).filter(filterCaptor.capture());
+      filterCaptor.getValue().accept(correlatedMessageFilter);
+      verify(correlatedMessageFilter, never()).correlationTime(any(Consumer.class));
+    }
+
+    @Test
+    void shouldApplyStartTimeFilterToCorrelatedMessages() {
+      // given
+      final CamundaDataSource dataSource = new CamundaDataSource(client, START_TIME);
+
+      // when
+      dataSource.findCorrelatedMessages(f -> {});
+
+      // then
+      verify(searchRequest).filter(filterCaptor.capture());
+      filterCaptor.getValue().accept(correlatedMessageFilter);
+      verify(correlatedMessageFilter).correlationTime(any(Consumer.class));
+    }
   }
 }

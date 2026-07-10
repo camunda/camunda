@@ -100,6 +100,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   private CamundaProcessTestContext camundaProcessTestContext;
   private CamundaManagementClient camundaManagementClient;
   private Instant testCaseStartTime;
+  private CamundaDataSource dataSource;
   private boolean clockResetEnabled = true;
   private boolean dataDeletionEnabled = true;
 
@@ -185,8 +186,11 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
     // initialize assertions
     testCaseStartTime = readCurrentRuntimeTime();
-    final CamundaDataSource dataSource = new CamundaDataSource(client);
-    dataSource.setTestCaseStartTime(testCaseStartTime);
+    dataSource = new CamundaDataSource(client, testCaseStartTime);
+    if (camundaProcessTestContext instanceof CamundaProcessTestContextImpl) {
+      ((CamundaProcessTestContextImpl) camundaProcessTestContext)
+          .setTestCaseStartTime(testCaseStartTime);
+    }
     CamundaAssert.initialize(dataSource);
 
     // initialize result collector
@@ -217,8 +221,6 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     conditionalBehaviorEngine.stop();
 
     try {
-      final CamundaDataSource dataSource = new CamundaDataSource(client);
-      dataSource.setTestCaseStartTime(testCaseStartTime);
       final CoverageTestData coverageTestData = CoverageTestDataCollector.collectData(dataSource);
       final java.lang.reflect.Method testMethod = testContext.getTestMethod();
       final String runName = testMethod.getName();
