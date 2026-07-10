@@ -42,20 +42,83 @@ on:
         required: false
         type: boolean
         default: false
+      ref-8-8:
+        description: |
+          Git ref to build and deploy the 8.8 preview from. Lets stable-branch
+          chart changes be smoke-tested pre-merge from their PR branch. The
+          reusable deploy workflow itself still runs from stable/8.8 (static
+          `uses:` ref).
+        required: false
+        type: string
+        default: 'stable/8.8'
+      ref-8-9:
+        description: |
+          Git ref to build and deploy the 8.9 preview from. Lets stable-branch
+          chart changes be smoke-tested pre-merge from their PR branch. The
+          reusable deploy workflow itself still runs from stable/8.9 (static
+          `uses:` ref).
+        required: false
+        type: string
+        default: 'stable/8.9'
 
 env:
   TEST_OWNER: '@camunda/monorepo-devops-team'
   E2E_DIR: e2e-tests
 
 jobs:
+  # Gate for the free-form ref-8-8/ref-8-9 dispatch inputs: they are forwarded
+  # as `ref` into the reusable deploy/teardown workflows, where they end up in
+  # shell-built ArgoCD arguments (--revision, --helm-set), so restrict them to
+  # git-ref characters before anything consumes them. Always runs (trivially
+  # green on scheduled runs, where inputs are empty) so the deploy jobs'
+  # implicit success() dependency doesn't skip the default path.
+  validate-ref-inputs:
+    name: Validate ref override inputs
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Validate refs
+        env:
+          REF_8_8: ${{ inputs.ref-8-8 }}
+          REF_8_9: ${{ inputs.ref-8-9 }}
+        run: |
+          for ref in "$REF_8_8" "$REF_8_9"; do
+            if [[ -n "$ref" && ! "$ref" =~ ^[A-Za-z0-9._/-]+$ ]]; then
+              echo "::error::Invalid ref override (allowed: A-Z a-z 0-9 . _ / -): ${ref}"
+              exit 1
+            fi
+          done
+          echo "✅ ref overrides valid (or empty)"
+      - name: Checkout
+        if: always()
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          sparse-checkout: .github
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   deploy-8-8:
     name: Deploy 8.8 Preview Environment
     if: contains(fromJSON('["all", "8.8", ""]'), inputs.version)
+    needs: validate-ref-inputs
     uses: camunda/camunda/.github/workflows/preview-env-build-and-deploy.yml@stable/8.8
     secrets: inherit
     with:
       app-name: smoke88-${{ github.run_number }}
-      ref: stable/8.8
+      # The || fallback stays despite the input default: input defaults only
+      # apply to workflow_dispatch — on scheduled runs the inputs context is
+      # empty, and an empty ref would make the cross-branch reusable workflow
+      # fall back to the caller's SHA (main). Same for every ref below.
+      ref: ${{ inputs.ref-8-8 || 'stable/8.8' }}
       labels: |
         preview=smoke-test
         repo=camunda_camunda
@@ -66,11 +129,12 @@ jobs:
   deploy-8-9:
     name: Deploy 8.9 Preview Environment
     if: contains(fromJSON('["all", "8.9", ""]'), inputs.version)
+    needs: validate-ref-inputs
     uses: camunda/camunda/.github/workflows/preview-env-build-and-deploy.yml@stable/8.9
     secrets: inherit
     with:
       app-name: smoke89-${{ github.run_number }}
-      ref: stable/8.9
+      ref: ${{ inputs.ref-8-9 || 'stable/8.9' }}
       labels: |
         preview=smoke-test
         repo=camunda_camunda
@@ -293,7 +357,7 @@ jobs:
     secrets: inherit
     with:
       app-name: smoke88-${{ github.run_number }}
-      ref: stable/8.8
+      ref: ${{ inputs.ref-8-8 || 'stable/8.8' }}
 
   teardown-8-9:
     name: Teardown 8.9 Preview Environment
@@ -309,7 +373,7 @@ jobs:
     secrets: inherit
     with:
       app-name: smoke89-${{ github.run_number }}
-      ref: stable/8.9
+      ref: ${{ inputs.ref-8-9 || 'stable/8.9' }}
 
   teardown-8-10:
     name: Teardown 8.10 Preview Environment
