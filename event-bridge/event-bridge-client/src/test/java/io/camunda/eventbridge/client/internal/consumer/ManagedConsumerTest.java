@@ -14,6 +14,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -85,6 +86,51 @@ final class ManagedConsumerTest {
 
     // then: close also closed the underlying consumer
     verify(consumer).close();
+  }
+
+  @Test
+  void shouldStopBeforeCommittingAFailedRecordSoItIsRedelivered() throws InterruptedException {
+    // given: a batch of three records on one partition whose SECOND record's handler throws
+    final Consumer consumer = mock(Consumer.class);
+    when(consumer.getGroupId()).thenReturn("g1");
+    final CountDownLatch committed = new CountDownLatch(1);
+    when(consumer.commitOffset(any(), anyInt(), anyLong()))
+        .thenAnswer(
+            inv -> {
+              committed.countDown();
+              return CompletableFuture.completedFuture(null);
+            });
+    final List<Event> batch =
+        List.of(
+            new Event(10L, "t1", 1, "a".getBytes(StandardCharsets.UTF_8)),
+            new Event(11L, "t1", 1, "b".getBytes(StandardCharsets.UTF_8)),
+            new Event(12L, "t1", 1, "c".getBytes(StandardCharsets.UTF_8)));
+    when(consumer.poll(anyInt(), any(Duration.class))).thenReturn(batch).thenReturn(List.of());
+
+    final List<Event> handled = new CopyOnWriteArrayList<>();
+    final MessageHandler<Event> handler =
+        event -> {
+          if (event.position() == 11L) {
+            throw new IllegalStateException("boom");
+          }
+          handled.add(event);
+        };
+
+    // when
+    final ManagedConsumer<Event> managed =
+        new ManagedConsumer<>(consumer, executor, handler, null, true, 100, Duration.ofMillis(10));
+    try {
+      assertThat(committed.await(5, TimeUnit.SECONDS)).isTrue();
+
+      // then: the loop stopped at the failure — the commit covers ONLY the record that succeeded,
+      // so the failed record (and everything after it) is redelivered on resume, never dropped
+      verify(consumer, atLeast(1)).commitOffset(eq("t1"), eq(1), eq(10L));
+      verify(consumer, never()).commitOffset(eq("t1"), eq(1), eq(11L));
+      verify(consumer, never()).commitOffset(eq("t1"), eq(1), eq(12L));
+      assertThat(handled).containsExactly(batch.get(0));
+    } finally {
+      managed.close();
+    }
   }
 
   @Test

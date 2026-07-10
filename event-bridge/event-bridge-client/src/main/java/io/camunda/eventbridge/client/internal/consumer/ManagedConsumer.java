@@ -36,6 +36,11 @@ import org.slf4j.LoggerFactory;
  * only its submitted task ({@link #loop}); the executor's lifecycle belongs to the client. Virtual
  * threads are always daemon, so the loop never keeps the JVM alive.
  *
+ * <p><b>Failure semantics:</b> a record's offset is recorded only after its handler returned, and a
+ * deserialization or handler failure stops the consumer after committing the offsets of the records
+ * that did succeed — the failed record and everything after it are redelivered to the next consumer
+ * resuming from the committed offsets (at-least-once). The loop never commits past a failure.
+ *
  * <p>{@link #close()} stops the loop, performs a final commit (when auto-commit is on), and closes
  * the underlying consumer, without touching the shared executor. Idempotent.
  *
@@ -99,7 +104,15 @@ public final class ManagedConsumer<T> implements MessageConsumer {
         }
 
         for (final Event event : batch) {
-          dispatch(event);
+          if (!dispatch(event)) {
+            // Fail fast: the failed record was NOT recorded as processed, so the final commit
+            // below stops just before it and the next consumer resuming from the committed
+            // offsets redelivers it (at-least-once). Continuing instead would either commit
+            // past the failure (silent loss) or starve the partition (fetch positions only
+            // advance, so the record cannot be re-fetched by this consumer).
+            running = false;
+            break;
+          }
         }
 
         if (autoCommit) {
@@ -111,20 +124,33 @@ public final class ManagedConsumer<T> implements MessageConsumer {
     }
   }
 
-  /** Deserializes (if configured), records the processed offset, and invokes the handler. */
+  /**
+   * Deserializes (if configured), invokes the handler, and — only on success — records the
+   * processed offset. Returns {@code false} when deserialization or the handler failed: the record
+   * must not be committed, and the loop stops so it is redelivered rather than silently dropped
+   * (recording before handling used to commit straight past a throwing handler).
+   */
   @SuppressWarnings("unchecked")
-  private void dispatch(final Event event) {
-    final T record =
-        deserializer == null
-            ? (T) event
-            : deserializer.deserialize(event.payload(), event.partitionId(), event.position());
+  private boolean dispatch(final Event event) {
     final TopicPartition tp = new TopicPartition(event.topic(), event.partitionId());
-    processed.merge(tp, event.position(), Math::max);
     try {
+      final T record =
+          deserializer == null
+              ? (T) event
+              : deserializer.deserialize(event.payload(), event.partitionId(), event.position());
       handler.handle(record);
     } catch (final RuntimeException e) {
-      LOG.warn("Handler failed for {} at offset {}", tp, event.position(), e);
+      LOG.error(
+          "Handler failed for {} at offset {}; stopping this consumer — the record is not"
+              + " committed and will be redelivered to a consumer resuming from the committed"
+              + " offsets",
+          tp,
+          event.position(),
+          e);
+      return false;
     }
+    processed.merge(tp, event.position(), Math::max);
+    return true;
   }
 
   /** Commits the max processed offset per partition that has advanced since the last commit. */
