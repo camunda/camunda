@@ -133,7 +133,7 @@ jobs:
             secret/data/products/zeebe/ci/zeebe TESTBENCH_PROD_REST_ADDRESS;
 
       - name: Get Auth Token
-        uses: fjogeleit/http-request-action@551353b829c3646756b2ec2b3694f819d7957495 # v2.0.0
+        uses: fjogeleit/http-request-action@f98bb26551cd1af7d3eb2674578a80754ece88db # v2.0.1
         id: authorization
         with:
           url: 'https://login.cloud.camunda.io/oauth/token'
