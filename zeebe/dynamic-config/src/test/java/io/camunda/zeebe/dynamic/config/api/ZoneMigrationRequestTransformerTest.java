@@ -182,7 +182,7 @@ final class ZoneMigrationRequestTransformerTest {
             e ->
                 assertThat(e)
                     .hasMessageContaining(
-                        "Zone migration request targets zone 'us-east-1' which has already been migrated"));
+                        "Zone migration request targets zone 'zone-a' which has already been migrated"));
   }
 
   @Test
@@ -245,7 +245,7 @@ final class ZoneMigrationRequestTransformerTest {
             e ->
                 assertThat(e)
                     .hasMessageContaining(
-                        "Zone migration request targets zone 'us-west-1' which has already been migrated."));
+                        "Zone migration request targets zone 'zone-b' which has already been migrated."));
   }
 
   @Test
