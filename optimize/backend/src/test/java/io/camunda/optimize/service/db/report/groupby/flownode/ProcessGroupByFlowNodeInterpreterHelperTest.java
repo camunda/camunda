@@ -19,8 +19,12 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.filter.Filte
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.report.ExecutionContext;
+import io.camunda.optimize.service.db.report.groupby.flownode.ProcessGroupByFlowNodeInterpreterHelper.AdHocSubProcessStructure;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult.DistributedByResult;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult.GroupByResult;
+import io.camunda.optimize.service.db.report.result.CompositeCommandResult.ViewMeasure;
+import io.camunda.optimize.service.db.report.result.CompositeCommandResult.ViewResult;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -135,6 +139,115 @@ class ProcessGroupByFlowNodeInterpreterHelperTest {
 
     // then no enrichment happens because the filter may legitimately exclude the missing node
     assertThat(groups).isEmpty();
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void shouldSkipAdHocSubProcessContainerAndEmitInnerToolsFromFlowNodeBuckets() {
+    // given an AI Agent service task, an ad-hoc subprocess container and its two inner tool nodes
+    underTest = helper();
+    stubFlowNodeNames(
+        "agent-task", "Agent Task", "ahsp", "AI Agent", "tool-a", "Tool A", "tool-b", "Tool B");
+    when(context.getReportData()).thenReturn(new ProcessReportDataDto());
+    final AdHocSubProcessStructure structure =
+        new AdHocSubProcessStructure(Set.of("ahsp"), Set.of("tool-a", "tool-b"));
+    final Function<String, List<DistributedByResult>> agentResultExtractor = mock(Function.class);
+    when(agentResultExtractor.apply(any())).thenReturn(List.of());
+    final Function<String, List<DistributedByResult>> innerToolResultExtractor =
+        mock(Function.class);
+    when(innerToolResultExtractor.apply(any())).thenReturn(List.of());
+
+    // when
+    final List<GroupByResult> groups =
+        underTest.mapAgentFlowNodeBucketsToGroupByResults(
+            List.of("agent-task", "ahsp"),
+            Function.identity(),
+            agentResultExtractor,
+            List.of("tool-a", "tool-b"),
+            Function.identity(),
+            innerToolResultExtractor,
+            structure,
+            context,
+            List.of());
+
+    // then the non-container agent node keeps its aggregated value, the inner tools are emitted,
+    // and
+    // the container is not valued from the agent bucket (only backfilled empty)
+    assertThat(groups)
+        .extracting(GroupByResult::getKey)
+        .containsExactlyInAnyOrder("agent-task", "tool-a", "tool-b", "ahsp");
+    verify(agentResultExtractor).apply("agent-task");
+    verify(agentResultExtractor, never()).apply("ahsp");
+    verify(innerToolResultExtractor).apply("tool-a");
+    verify(innerToolResultExtractor).apply("tool-b");
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void shouldOnlyEmitInnerToolBucketsThatAreAdHocSubProcessChildren() {
+    // given an inner-tool bucket that is not a child of any ad-hoc subprocess (e.g. an unrelated
+    // flow node instance)
+    underTest = helper();
+    stubFlowNodeNames("ahsp", "AI Agent", "tool-a", "Tool A", "other", "Other Task");
+    when(context.getReportData()).thenReturn(new ProcessReportDataDto());
+    final AdHocSubProcessStructure structure =
+        new AdHocSubProcessStructure(Set.of("ahsp"), Set.of("tool-a"));
+    final Function<String, List<DistributedByResult>> innerToolResultExtractor =
+        mock(Function.class);
+    when(innerToolResultExtractor.apply(any())).thenReturn(List.of());
+
+    // when
+    final List<GroupByResult> groups =
+        underTest.mapAgentFlowNodeBucketsToGroupByResults(
+            List.of("ahsp"),
+            Function.identity(),
+            bucket -> List.of(),
+            List.of("tool-a", "other"),
+            Function.identity(),
+            innerToolResultExtractor,
+            structure,
+            context,
+            List.of());
+
+    // then only the ad-hoc subprocess child tool is valued from the flow-node bucket; the unrelated
+    // node is not (though it is still backfilled as a modelled node)
+    verify(innerToolResultExtractor).apply("tool-a");
+    verify(innerToolResultExtractor, never()).apply("other");
+    assertThat(groups).extracting(GroupByResult::getKey).contains("tool-a", "other", "ahsp");
+  }
+
+  @Test
+  void shouldSetEveryViewMeasureToDocCountInFrequencyResult() {
+    // given a distributed-by result with two (unset) view measures
+    underTest = helper();
+    final ViewMeasure measureA = ViewMeasure.builder().value(null).build();
+    final ViewMeasure measureB = ViewMeasure.builder().value(null).build();
+    final DistributedByResult result =
+        DistributedByResult.createDistributedByNoneResult(
+            ViewResult.builder().viewMeasures(List.of(measureA, measureB)).build());
+
+    // when
+    final List<DistributedByResult> frequencyResult =
+        underTest.toFrequencyResult(new ArrayList<>(List.of(result)), 7L);
+
+    // then every view measure carries the bucket's document count as its value
+    assertThat(frequencyResult).hasSize(1);
+    assertThat(measureA.getValue()).isEqualTo(7.0);
+    assertThat(measureB.getValue()).isEqualTo(7.0);
+  }
+
+  @Test
+  void shouldNotFailFrequencyResultWhenViewResultOrMeasuresAreNull() {
+    // given distributed-by results with a null view result and a null measures list
+    underTest = helper();
+    final DistributedByResult nullViewResult =
+        DistributedByResult.createDistributedByNoneResult(null);
+    final DistributedByResult nullMeasures =
+        DistributedByResult.createDistributedByNoneResult(ViewResult.builder().build());
+
+    // when / then no exception is raised and the same list is returned
+    final List<DistributedByResult> input = new ArrayList<>(List.of(nullViewResult, nullMeasures));
+    assertThat(underTest.toFrequencyResult(input, 3L)).isSameAs(input);
   }
 
   private void stubFlowNodeNames(final String... keyLabelPairs) {
