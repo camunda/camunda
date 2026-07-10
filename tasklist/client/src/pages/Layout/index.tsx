@@ -8,7 +8,7 @@
 
 /* istanbul ignore file */
 
-import {Outlet, useLocation} from 'react-router-dom';
+import {Outlet, useMatch} from 'react-router-dom';
 import {Header} from './Header';
 import {AuthenticationCheck} from 'modules/auth/AuthenticationCheck';
 import {AuthorizationCheck} from 'modules/auth/AuthorizationCheck';
@@ -18,8 +18,7 @@ import {C3Provider} from './C3Provider';
 import styles from './styles.module.scss';
 
 const Layout: React.FC = () => {
-  const location = useLocation();
-  const isForbiddenRoute = location.pathname.includes(pages.forbidden);
+  const isForbiddenRoute = useMatch(pages.forbidden) !== null;
 
   return (
     <C3Provider>
