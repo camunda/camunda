@@ -313,7 +313,7 @@ public final class VariableBehavior {
     if (validate.isLeft()) {
       throw new VariableValidationException(
           String.format(
-              "Failed to validate variable document for scope %d: %s",
+              "Failed to validate variable document in scope %d: %s",
               scopeKey, validate.getLeft().getMessage()));
     }
   }

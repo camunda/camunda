@@ -91,27 +91,21 @@ public final class NestingDepthValidator {
       remaining--;
       final var token = reader.readToken();
 
+      final long childTokenCount;
       switch (token.getType()) {
-        case MAP -> {
-          depth++;
-          if (depth > maxNestingDepth) {
-            return true;
-          }
-          stack.push(remaining);
-          // A map with N entries contains N key tokens + N value tokens.
-          remaining = (long) token.getSize() * 2;
+        // A map with N entries contains N key tokens + N value tokens.
+        case MAP -> childTokenCount = (long) token.getSize() * 2;
+        case ARRAY -> childTokenCount = token.getSize();
+        default -> childTokenCount = -1; // scalar value: nothing to descend into
+      }
+
+      if (childTokenCount >= 0) {
+        depth++;
+        if (depth > maxNestingDepth) {
+          return true;
         }
-        case ARRAY -> {
-          depth++;
-          if (depth > maxNestingDepth) {
-            return true;
-          }
-          stack.push(remaining);
-          remaining = token.getSize();
-        }
-        default -> {
-          // Scalar value: nothing to descend into.
-        }
+        stack.push(remaining);
+        remaining = childTokenCount;
       }
     }
     return false;

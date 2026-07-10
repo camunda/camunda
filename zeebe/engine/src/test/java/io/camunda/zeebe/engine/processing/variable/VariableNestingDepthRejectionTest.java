@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.HashMap;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -32,17 +33,21 @@ import org.junit.Test;
 
 public final class VariableNestingDepthRejectionTest {
 
-  private static final int MAX_DEPTH = 3;
-
-  @ClassRule
-  public static final EngineRule ENGINE =
-      EngineRule.singlePartition().withEngineConfig(c -> c.setMaxVariableNestingDepth(MAX_DEPTH));
-
-  private static final Map<String, Object> DEEPLY_NESTED =
-      Map.of("a", Map.of("b", Map.of("c", Map.of("d", 1))));
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  private static final int MAX_DEPTH = 1000;
+  private static final Map<String, Object> DEEPLY_NESTED = new HashMap<>();
   private static final String EXPECTED_REJECTION_REASON =
-      "Expected variable document to be nested at most %d levels deep, but it exceeds that limit"
+      "Expected document to be nested at most %d levels deep, but it exceeds that limit"
           .formatted(MAX_DEPTH);
+
+  static {
+    var currMap = DEEPLY_NESTED;
+    for (int i = 0; i < MAX_DEPTH; i++) {
+      currMap =
+          (Map<String, Object>)
+              currMap.computeIfAbsent("level" + i, (unused) -> new HashMap<String, Object>());
+    }
+  }
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
