@@ -198,16 +198,16 @@ Configuration comes from two sources, applied in this order:
 Key property names (see the `*Properties` classes in
 `io.camunda.process.test.impl.runtime.properties`):
 
-|                                                  Property                                                  |                          Purpose                          |
-|------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------|
-| `runtimeMode`                                                                                              | `MANAGED` / `SHARED` / `REMOTE`.                          |
-| `elasticsearch.version`, `multiTenancyEnabled`                                                             | Runtime toggles.                                          |
-| `remote.client.grpcAddress`, `remote.client.restAddress`                                                   | Client endpoints for `REMOTE` mode.                       |
-| `remote.camundaMonitoringApiAddress`, `remote.connectorsRestApiAddress`, `remote.runtimeConnectionTimeout` | Remote runtime endpoints/timeout.                         |
-| `assertion.timeout`, `assertion.interval`                                                                  | Awaitility tuning for assertions.                         |
-| `coverage.reportDirectory`, `coverage.excludedProcesses`, `coverage.excludedDecisions`                     | Coverage report output.                                   |
-| `judge.chatModel.provider`, `judge.threshold`, …                                                           | LLM-as-a-judge (see `JudgeProperties`).                   |
-| `similarity.embeddingModel.provider`, `similarity.threshold`, …                                            | Semantic similarity (see `SemanticSimilarityProperties`). |
+| Property                                                                                                   | Purpose                                                                         |
+|------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
+| `runtimeMode`                                                                                              | `MANAGED` / `SHARED` / `REMOTE`.                                                |
+| `multiTenancyEnabled`                                                                                      | Runtime toggles.                                                                |
+| `camunda.client.gateway.grpc.address`, `camunda.client.gateway.rest.address`                               | Client endpoints and configuration ( see `io.camunda.client.ClientProperties`). |
+| `remote.camundaMonitoringApiAddress`, `remote.connectorsRestApiAddress`, `remote.runtimeConnectionTimeout` | Remote runtime endpoints/timeout.                                               |
+| `assertion.timeout`, `assertion.interval`                                                                  | Awaitility tuning for assertions.                                               |
+| `coverage.reportDirectory`, `coverage.excludedProcesses`, `coverage.excludedDecisions`                     | Coverage report output.                                                         |
+| `judge.chatModel.provider`, `judge.threshold`, …                                                           | LLM-as-a-judge (see `JudgeProperties`).                                         |
+| `similarity.embeddingModel.provider`, `similarity.threshold`, …                                            | Semantic similarity (see `SemanticSimilarityProperties`).                       |
 
 The Docker image name/version are **not** hard-coded in the file — they are resolved from the Maven
 properties `io.camunda.process.test.camundaDockerImageName` / `…camundaDockerImageVersion` (and the
@@ -228,21 +228,21 @@ camunda:
     camunda-docker-image-version: SNAPSHOT
     connectors-enabled: false
     multi-tenancy-enabled: false
-    remote:                         # used when runtime-mode: REMOTE
-      client:
-        grpc-address: http://localhost:26500
-        rest-address: http://localhost:8080
     coverage:
       report-directory: target/coverage-report
     judge: { ... }                  # LLM-as-a-judge config
     similarity: { ... }             # semantic similarity config
     assertion: { ... }              # assertion timeout/interval
+
+  client:                           # used when runtime-mode: REMOTE
+    grpc-address: http://localhost:26500
+    rest-address: http://localhost:8080
 ```
 
 The nested `remote`, `coverage`, `judge`, `assertion`, and `similarity` blocks map to the
-`*Configuration` classes in `io.camunda.process.test.impl.configuration`. In `REMOTE` mode the
-Camunda client is configured under `camunda.process-test.remote.client.*`, which binds a standard
-`CamundaClientProperties` (auth, gRPC/REST addresses, etc.).
+`*Configuration` classes in `io.camunda.process.test.impl.configuration`. The Camunda client is
+configured under `camunda.client.*`, which binds the standard `CamundaClientProperties` (auth,
+gRPC/REST addresses, etc.).
 
 > [!NOTE]
 > For AI assertions, `camunda-process-test-langchain4j` reads the same `judge.*` / `similarity.*`
