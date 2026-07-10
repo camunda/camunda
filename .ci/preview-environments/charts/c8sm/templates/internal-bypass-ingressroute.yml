@@ -19,7 +19,7 @@
 {{- $_ := set .Values "camundaPlatform" (deepCopy (index .Values "camunda-platform")) -}}
 {{- $gateway := required "infra-preview-environments-gateway-api values block must be set" (index .Values "infra-preview-environments-gateway-api") -}}
 {{- $tlsSecret := required "infra-preview-environments-gateway-api.gateway.tls.secretName must be set" $gateway.gateway.tls.secretName -}}
-{{- $sourceRanges := required "internalAuthBypass.sourceRange must be set when the bypass is enabled" $iab.sourceRange -}}
+{{- $sourceRanges := required "global.preview.ingress.internalAuthBypass.sourceRange must be set when internalAuthBypass.enabled is true" $iab.sourceRange -}}
 {{- $clientIP := printf "ClientIP(`%s`)" (join "`, `" $sourceRanges) -}}
 {{- $host := include "ingress.domain" $ -}}
 {{- $backends := list
