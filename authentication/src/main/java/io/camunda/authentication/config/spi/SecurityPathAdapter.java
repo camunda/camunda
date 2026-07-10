@@ -39,14 +39,7 @@ public class SecurityPathAdapter implements SecurityPathPort {
           "/.well-known/oauth-protected-resource/**");
 
   private static final Set<String> UNPROTECTED_PATHS =
-      Set.of(
-          "/error",
-          "/actuator/**",
-          "/ready",
-          "/health",
-          "/startup",
-          "/post-logout",
-          "/favicon.ico");
+      Set.of("/error", "/actuator/**", "/ready", "/health", "/startup", "/favicon.ico");
 
   private static final Set<String> WEBAPP_PATHS =
       Set.of(

@@ -39,13 +39,7 @@ class SecurityPathAdapterTest {
   void shouldExposeUnprotectedPaths() {
     assertThat(port.unprotectedPaths())
         .containsExactlyInAnyOrder(
-            "/error",
-            "/actuator/**",
-            "/ready",
-            "/health",
-            "/startup",
-            "/post-logout",
-            "/favicon.ico");
+            "/error", "/actuator/**", "/ready", "/health", "/startup", "/favicon.ico");
   }
 
   @Test
