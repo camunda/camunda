@@ -160,11 +160,10 @@ public class AnalyticsExporterConfig {
     final URI uri = URI.create(endpoint);
     final String host = uri.getHost();
     final boolean isLocalhost =
-        host != null
-            && (host.equals("localhost")
-                || host.equals("127.0.0.1")
-                || host.equals("[::1]")
-                || host.equals("::1"));
+        "localhost".equals(host)
+            || "127.0.0.1".equals(host)
+            || "[::1]".equals(host)
+            || "::1".equals(host);
     final String scheme = uri.getScheme();
 
     if ("https".equalsIgnoreCase(scheme)) {
