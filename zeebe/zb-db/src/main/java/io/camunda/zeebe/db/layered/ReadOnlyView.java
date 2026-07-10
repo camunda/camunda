@@ -8,8 +8,14 @@
 package io.camunda.zeebe.db.layered;
 
 import io.camunda.zeebe.db.layered.segment.FlatSegment;
+import io.camunda.zeebe.db.layered.segment.KWayMergeIterator;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.BiConsumer;
 
 /**
@@ -36,19 +42,32 @@ import java.util.function.BiConsumer;
  */
 public final class ReadOnlyView {
 
+  private final Map<String, List<FlatSegment>> segmentsNewestFirstByStore;
+  private final ReadSnapshot snapshot;
+
   public ReadOnlyView(
       final Map<String, List<FlatSegment>> segmentsNewestFirstByStore,
       final ReadSnapshot snapshot) {
-    throw new UnsupportedOperationException("implemented in task #6");
+    Objects.requireNonNull(segmentsNewestFirstByStore, "segmentsNewestFirstByStore");
+    final Map<String, List<FlatSegment>> copy = new HashMap<>();
+    segmentsNewestFirstByStore.forEach((name, segments) -> copy.put(name, List.copyOf(segments)));
+    this.segmentsNewestFirstByStore = Map.copyOf(copy);
+    this.snapshot = Objects.requireNonNull(snapshot, "snapshot");
   }
 
   /** The visible value for {@code key} in store {@code storeName}, or null. */
   public byte[] get(final String storeName, final byte[] key) {
-    throw new UnsupportedOperationException("implemented in task #6");
+    for (final FlatSegment segment : segmentsOf(storeName)) {
+      final Entry entry = segment.findEntry(key);
+      if (entry != null) {
+        return entry.value(); // null for a tombstone — which must not fall through
+      }
+    }
+    return snapshot.get(storeName, key);
   }
 
   public boolean exists(final String storeName, final byte[] key) {
-    throw new UnsupportedOperationException("implemented in task #6");
+    return get(storeName, key) != null;
   }
 
   /**
@@ -58,11 +77,80 @@ public final class ReadOnlyView {
    */
   public void prefixScan(
       final String storeName, final byte[] prefix, final BiConsumer<byte[], byte[]> visitor) {
-    throw new UnsupportedOperationException("implemented in task #6");
+    final List<FlatSegment> segments = segmentsOf(storeName);
+    final List<Iterator<Entry>> streams = new ArrayList<>(segments.size());
+    for (final FlatSegment segment : segments) {
+      streams.add(segment.range(prefix));
+    }
+    // the snapshot's stream is push-based, so the pull-based segment merge acts as a pending
+    // cursor: emit everything below the pushed key, shadow it on an equal key, flush the tail
+    final PendingCursor buffered = new PendingCursor(new KWayMergeIterator(streams));
+    snapshot.prefixScan(
+        storeName,
+        prefix,
+        (key, value) -> {
+          while (buffered.hasNext() && Arrays.compareUnsigned(buffered.peekKey(), key) < 0) {
+            emit(buffered.next(), visitor);
+          }
+          if (buffered.hasNext() && Arrays.compareUnsigned(buffered.peekKey(), key) == 0) {
+            emit(buffered.next(), visitor); // any segment version shadows the snapshot one
+          } else {
+            visitor.accept(key, value);
+          }
+        });
+    while (buffered.hasNext()) {
+      emit(buffered.next(), visitor);
+    }
   }
 
   /** The pinned snapshot, exposed for the coordinator's rotation. Readers never close it. */
   ReadSnapshot snapshot() {
-    throw new UnsupportedOperationException("implemented in task #6");
+    return snapshot;
+  }
+
+  private List<FlatSegment> segmentsOf(final String storeName) {
+    final List<FlatSegment> segments = segmentsNewestFirstByStore.get(storeName);
+    if (segments == null) {
+      throw new IllegalArgumentException(
+          "Unknown store '%s'; known stores: %s"
+              .formatted(storeName, segmentsNewestFirstByStore.keySet()));
+    }
+    return segments;
+  }
+
+  private static void emit(final Entry entry, final BiConsumer<byte[], byte[]> visitor) {
+    if (!entry.tombstone()) {
+      visitor.accept(entry.key(), entry.value());
+    }
+  }
+
+  /** A single-entry lookahead over the segment merge, so the push-based snapshot side can peek. */
+  private static final class PendingCursor {
+
+    private final Iterator<Entry> entries;
+    private Entry next;
+
+    PendingCursor(final Iterator<Entry> entries) {
+      this.entries = entries;
+      advance();
+    }
+
+    boolean hasNext() {
+      return next != null;
+    }
+
+    byte[] peekKey() {
+      return next.key();
+    }
+
+    Entry next() {
+      final Entry current = next;
+      advance();
+      return current;
+    }
+
+    private void advance() {
+      next = entries.hasNext() ? entries.next() : null;
+    }
   }
 }
