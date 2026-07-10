@@ -44,6 +44,7 @@
     <module>exporters/elasticsearch-exporter</module>
     <module>exporters/opensearch-exporter</module>
     <module>exporters/rdbms-exporter</module>
+    <module>exporters/analytics-exporter</module>
     <module>protocol-impl</module>
     <module>protocol-jackson</module>
     <module>zb-db</module>
