@@ -38,8 +38,8 @@ public final class JobLeaseFencingCheck {
       "Expected to process job with key '%d', but a matching lease token must be provided "
           + "because the job is currently leased";
   private static final String LEASE_TOKEN_MISMATCH_MESSAGE =
-      "Expected to process job with key '%d', but the supplied lease token does not match "
-          + "the lease token of the job";
+      "Expected to process job with key '%d', but the supplied lease token does not match. "
+          + "The job may have been re-activated by another worker.";
 
   private JobLeaseFencingCheck() {}
 
