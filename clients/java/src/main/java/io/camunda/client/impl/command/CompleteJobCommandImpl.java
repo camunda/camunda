@@ -59,6 +59,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   private boolean useRest;
   private final long jobKey;
   private final JsonMapper jsonMapper;
+  private String leaseToken;
 
   public CompleteJobCommandImpl(
       final GatewayStub asyncStub,
@@ -110,6 +111,12 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
       throw new IllegalArgumentException(
           "Unsupported job result type: " + result.getClass().getName());
     }
+    return this;
+  }
+
+  @Override
+  public CompleteJobCommandStep1 withLeaseToken(final String leaseToken) {
+    this.leaseToken = leaseToken;
     return this;
   }
 

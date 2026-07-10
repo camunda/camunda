@@ -84,6 +84,27 @@ public interface CompleteJobCommandStep1
   CompleteJobCommandStep1 withResult(
       Function<CompleteJobCommandJobResultStep, CompleteJobResult> consumer);
 
+  /**
+   * Sets the lease token identifying the job's activation, fencing this command against a
+   * superseded activation of the same job. Obtain it from {@link
+   * io.camunda.client.api.response.ActivatedJob#getLeaseToken() ActivatedJob#getLeaseToken()}.
+   *
+   * <p>For a leased job, the matching token must be supplied to prove the command comes from the
+   * worker that holds the current lease; a command with no token is rejected. A command carrying a
+   * stale token is likewise rejected, fencing the job against a superseded activation (e.g. after
+   * the job timed out or failed and was re-activated by another worker). A job that was activated
+   * without a lease requires no token.
+   *
+   * <p>When this command is created from an activated job (e.g. {@code
+   * newCompleteCommand(activatedJob)}) the job's lease token is carried automatically, so this
+   * method is only needed when building the command from a job key.
+   *
+   * @param leaseToken the opaque lease token the worker received when the job was activated
+   * @return the builder for this command. Call {@link #send()} to complete the command and send it
+   *     to the broker.
+   */
+  CompleteJobCommandStep1 withLeaseToken(String leaseToken);
+
   interface CompleteJobCommandJobResultStep {
     /**
      * Initializes the job result to allow corrections or a denial to be configured.

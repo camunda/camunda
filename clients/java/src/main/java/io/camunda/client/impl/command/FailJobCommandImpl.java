@@ -49,6 +49,7 @@ public final class FailJobCommandImpl extends CommandWithVariables<FailJobComman
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
   private final long jobKey;
+  private String leaseToken;
 
   public FailJobCommandImpl(
       final GatewayStub asyncStub,
@@ -89,6 +90,12 @@ public final class FailJobCommandImpl extends CommandWithVariables<FailJobComman
   public FailJobCommandStep2 errorMessage(final String errorMsg) {
     grpcRequestObjectBuilder.setErrorMessage(errorMsg);
     httpRequestObject.setErrorMessage(errorMsg);
+    return this;
+  }
+
+  @Override
+  public FailJobCommandStep2 withLeaseToken(final String leaseToken) {
+    this.leaseToken = leaseToken;
     return this;
   }
 
