@@ -96,6 +96,25 @@ class FlowNodeSecretReferenceTest {
   }
 
   @Test
+  void shouldStoreSecretsForSiblingNestedTargets() {
+    // given - two mappings under the same parent target, each referencing a different secret
+    final var task =
+        transform(
+            t ->
+                t.zeebeInputExpression("camunda.secrets.s1", "a.b")
+                    .zeebeInputExpression("camunda.secrets.s2", "a.c"));
+
+    // when
+    final var secretReferences = task.getSecretReferences();
+
+    // then - each sibling leaf keeps its own pointer
+    assertThat(secretReferences)
+        .containsExactly(
+            entry("/a/b", Set.of(new SecretReference("s1"))),
+            entry("/a/c", Set.of(new SecretReference("s2"))));
+  }
+
+  @Test
   void shouldScopeJsonPointerToContextEntryOfReference() {
     // given - the source is a FEEL context; only one entry holds a secret reference
     final var task =
