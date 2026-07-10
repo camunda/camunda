@@ -96,4 +96,34 @@ describe('<ToolResultMessage />', () => {
       screen.getByText('The tool call did not return content.'),
     ).toBeInTheDocument();
   });
+
+  it('should open the tool result modal when the expand button is clicked', async () => {
+    const {user} = render(
+      <ToolResultMessage
+        availableTools={[
+          {name: 'search', description: 'Searches the web.', elementId: null},
+        ]}
+        toolCalls={[
+          {
+            toolCallId: '1',
+            toolName: 'search',
+            elementId: null,
+            arguments: {},
+          },
+        ]}
+        content={[]}
+      />,
+    );
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    const expandButton = screen.getByRole('button', {name: 'Expand'});
+    await user.click(expandButton);
+
+    const modal = within(screen.getByRole('dialog'));
+    expect(
+      modal.getByRole('heading', {name: 'Tool call: search'}),
+    ).toBeInTheDocument();
+    expect(modal.getByText('Searches the web.')).toBeInTheDocument();
+  });
 });
