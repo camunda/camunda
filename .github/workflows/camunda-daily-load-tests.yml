@@ -1,9 +1,12 @@
 # description: Runs a daily max-load stress test against main.
+#              After a 15-minute warmup, profiles the next 30 minutes of both
+#              runs via async-profiler.
 #              After a 3-hour soak: snapshots metrics as a GitHub artifact,
-#              posts a side-by-side summary table to Slack, then immediately
-#              deletes both namespaces to reduce cost.
+#              posts a side-by-side summary table (with flamegraph links) to
+#              Slack, then immediately deletes both namespaces to reduce cost.
 #              Naming pattern: medic-daily-YYYY-MM-DD-<sha>
 # calls: camunda-load-test.yml (scenario: max),
+#        profile-load-test.yml,
 #        camunda-load-test-metrics.yaml,
 #        camunda-delete-load-test.yml
 # type: CI
@@ -95,15 +98,138 @@ jobs:
       build-frontend: true
       load-test-load: --set global.preferRest.enabled=true
 
-  # Wait 3 hours to let both load tests reach a stable operating state before
-  # taking the metrics snapshot. Skipped if both setup jobs failed (no tests running).
-  # soak.started_at is read by the PR load-test resolver to anchor the comparison
-  # window; the resolver adds WARMUP_SECONDS + METRICS_WINDOW_SECONDS as an offset.
-  soak:
+  # Wait 15 minutes after setup succeeds before profiling starts, mirroring the
+  # warmup convention the rest of the load-test flow already uses (see
+  # WARMUP_SECONDS in resolve-daily.py and await-benchmark's `sleep 900` in
+  # camunda-pr-load-test.yaml): profiling from t=0 would capture pod startup
+  # and ramp-up noise instead of steady-state behavior.
+  warmup-grpc:
+    name: Warmup before profiling (gRPC)
+    runs-on: ubuntu-latest
+    needs: setup-max-load-test
+    if: needs.setup-max-load-test.result == 'success'
+    timeout-minutes: 20
+    permissions: { }
+    steps:
+      - name: Wait 15 minutes for warmup period
+        run: sleep 900
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  warmup-rest:
+    name: Warmup before profiling (REST)
+    runs-on: ubuntu-latest
+    needs: setup-max-rest-load-test
+    if: needs.setup-max-rest-load-test.result == 'success'
+    timeout-minutes: 20
+    permissions: { }
+    steps:
+      - name: Wait 15 minutes for warmup period
+        run: sleep 900
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  # Profile the first 30 minutes post-warmup of each run via async-profiler.
+  # Runs concurrently with soak (not on its critical path).
+  profile-grpc:
+    name: Profile gRPC pods
+    needs: [ benchmark-data, setup-max-load-test, warmup-grpc ]
+    if: needs.warmup-grpc.result == 'success'
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/profile-load-test.yml
+    secrets: inherit
+    with:
+      name: c8-${{ needs.benchmark-data.outputs.benchmark }}
+      pod: ''
+      database: elasticsearch
+      duration-seconds: '1800'
+
+  profile-rest:
+    name: Profile REST pods
+    needs: [ benchmark-data, setup-max-rest-load-test, warmup-rest ]
+    if: needs.warmup-rest.result == 'success'
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/profile-load-test.yml
+    secrets: inherit
+    with:
+      name: c8-${{ needs.benchmark-data.outputs.benchmark }}-rest
+      pod: ''
+      database: elasticsearch
+      duration-seconds: '1800'
+
+  # Wait 3 hours per variant, anchored to that variant's own setup completion,
+  # before taking its metrics snapshot. gRPC and REST setups build+deploy
+  # independently and don't reliably finish at the same time, so a single
+  # shared soak job (anchored to whichever setup finished last) would shift
+  # the metrics window for the earlier-finishing variant later than its
+  # actual start, cutting off the beginning of its run. Mirrors the
+  # per-variant warmup-grpc/warmup-rest pattern above.
+  # `Soak`'s name is intentionally unchanged (kept for gRPC): soak.started_at
+  # is read by the PR load-test resolver (SOAK_JOB_NAME in resolve-daily.py)
+  # to anchor the daily-vs-PR comparison window, which is always the gRPC
+  # namespace; the resolver adds WARMUP_SECONDS + METRICS_WINDOW_SECONDS as
+  # an offset. `REST soak`'s name deliberately does not start with "Soak" so
+  # that lookup keeps resolving to the gRPC job only.
+  soak-grpc:
     name: Soak
     runs-on: ubuntu-latest
-    needs: [ setup-max-load-test, setup-max-rest-load-test ]
-    if: needs.setup-max-load-test.result == 'success' || needs.setup-max-rest-load-test.result == 'success'
+    needs: setup-max-load-test
+    if: needs.setup-max-load-test.result == 'success'
+    timeout-minutes: 195
+    permissions: { }
+    outputs:
+      soak_end_epoch: ${{ steps.timing.outputs.soak_end_epoch }}
+    steps:
+      - name: Wait 3 hours for soak period
+        run: sleep 10800
+      - name: Record soak end time
+        id: timing
+        run: echo "soak_end_epoch=$(date +%s)" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  soak-rest:
+    name: REST soak
+    runs-on: ubuntu-latest
+    needs: setup-max-rest-load-test
+    if: needs.setup-max-rest-load-test.result == 'success'
     timeout-minutes: 195
     permissions: { }
     outputs:
@@ -132,25 +258,25 @@ jobs:
   # created, so skip metrics collection rather than query a missing namespace.
   collect-metrics-grpc:
     name: Collect metrics (gRPC)
-    needs: [ benchmark-data, setup-max-load-test, soak ]
-    if: needs.soak.result == 'success' && needs.setup-max-load-test.result == 'success'
+    needs: [ benchmark-data, setup-max-load-test, soak-grpc ]
+    if: needs.soak-grpc.result == 'success' && needs.setup-max-load-test.result == 'success'
     uses: ./.github/workflows/camunda-load-test-metrics.yaml
     secrets: inherit
     with:
       namespace: c8-${{ needs.benchmark-data.outputs.benchmark }}
       duration-seconds: '10800'
-      at: ${{ needs.soak.outputs.soak_end_epoch }}
+      at: ${{ needs.soak-grpc.outputs.soak_end_epoch }}
 
   collect-metrics-rest:
     name: Collect metrics (REST)
-    needs: [ benchmark-data, setup-max-rest-load-test, soak ]
-    if: needs.soak.result == 'success' && needs.setup-max-rest-load-test.result == 'success'
+    needs: [ benchmark-data, setup-max-rest-load-test, soak-rest ]
+    if: needs.soak-rest.result == 'success' && needs.setup-max-rest-load-test.result == 'success'
     uses: ./.github/workflows/camunda-load-test-metrics.yaml
     secrets: inherit
     with:
       namespace: c8-${{ needs.benchmark-data.outputs.benchmark }}-rest
       duration-seconds: '10800'
-      at: ${{ needs.soak.outputs.soak_end_epoch }}
+      at: ${{ needs.soak-rest.outputs.soak_end_epoch }}
 
   # Upload both metrics JSON files as a workflow artifact (90-day retention).
   upload-metrics:
@@ -195,15 +321,38 @@ jobs:
   notify-results:
     name: Notify Slack with results
     runs-on: ubuntu-latest
-    needs: [ benchmark-data, soak, collect-metrics-grpc, collect-metrics-rest ]
+    needs: [ benchmark-data, soak-grpc, collect-metrics-grpc, collect-metrics-rest, profile-grpc, profile-rest ]
     # Post if at least one side collected metrics; the skipped side renders as n/a.
+    # `always()` means a profile-grpc/profile-rest failure never blocks this job -
+    # profiling is supplementary and just yields no flamegraph links below.
     if: always() && (needs.collect-metrics-grpc.result == 'success' || needs.collect-metrics-rest.result == 'success')
     timeout-minutes: 5
-    permissions: { }
+    permissions:
+      actions: read
+      contents: read
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
+      - name: List flamegraph artifacts
+        id: flamegraph-artifacts
+        # Best-effort enhancement: a failure here shouldn't block the Slack results
+        # notification, it just means the Slack message omits flamegraph links.
+        continue-on-error: true
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const { data } = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId,
+            });
+            const runURL = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const links = data.artifacts
+              .filter(a => a.name.startsWith('flamegraph-'))
+              .map(a => `<${runURL}/artifacts/${a.id}|${a.name}>`)
+              .join(' · ');
+            core.setOutput('links', links);
       - name: Import Slack webhook from Vault
         id: slack-secrets
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
@@ -225,7 +374,11 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ steps.slack-secrets.outputs.SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL }}
           REPO: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
-          SOAK_END_EPOCH: ${{ needs.soak.outputs.soak_end_epoch }}
+          # gRPC's own soak end; used only to build the Grafana deep-link time
+          # range for both dashboards, not for metrics query correctness (each
+          # collect-metrics-* job already queried its own variant's window).
+          SOAK_END_EPOCH: ${{ needs.soak-grpc.outputs.soak_end_epoch }}
+          FLAMEGRAPH_LINKS: ${{ steps.flamegraph-artifacts.outputs.links }}
         run: python3 .github/scripts/post-load-test-results-to-slack.py
       - name: Observe build status
         if: always()
@@ -267,7 +420,7 @@ jobs:
   notify:
     name: Notify on failure
     runs-on: ubuntu-latest
-    needs: [ setup-max-load-test, setup-max-rest-load-test, soak, collect-metrics-grpc, collect-metrics-rest, upload-metrics, notify-results ]
+    needs: [ setup-max-load-test, setup-max-rest-load-test, soak-grpc, soak-rest, collect-metrics-grpc, collect-metrics-rest, upload-metrics, notify-results ]
     if: failure()
     timeout-minutes: 5
     permissions: { }

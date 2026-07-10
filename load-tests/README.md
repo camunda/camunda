@@ -71,6 +71,7 @@ graph TD
     SCHEDULED -- "one job per stable branch<br/>+ main, official images" --> RELEASE
     SCHEDULED -- "verify + delete namespace" --> VERIFY
     DAILY -- "scenario: max" --> CORE
+    DAILY -- "always profiles first<br/>30min of both runs" --> PROFILE
     WEEKLY -- "4 parallel calls:<br/>typical, realistic,<br/>rdbms-realistic, latency" --> CORE
     WEEKLY -- "ECS" --> ECS
     ROLLING -- "latest release tag<br/>custom helm values" --> CORE
@@ -354,6 +355,8 @@ Daily stress tests run against the state of the **main** branch via the [Camunda
 - Daily sanity check that load tests work with current Helm charts and application
 
 **Validation:** TBD — explicit dashboard with KPIs is tracked in [#42274](https://github.com/camunda/camunda/issues/42274).
+
+**Profiling:** unlike the PR-label flow, profiling here is unconditional — after each run's setup job succeeds, the reusable [`profile-load-test.yml`](../.github/workflows/profile-load-test.yml) workflow waits out the same 15-minute warmup as the metrics path, then captures a 30-minute async-profiler flamegraph for both the gRPC and REST runs, in parallel with the 3-hour soak. Flamegraph artifacts upload the same way as the PR path.
 
 ### Ad-hoc load tests
 
