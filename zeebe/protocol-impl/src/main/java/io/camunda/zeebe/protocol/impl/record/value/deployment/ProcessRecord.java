@@ -22,8 +22,8 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -222,26 +222,29 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
   }
 
   /**
-   * Sets the per-slot transformer versions frozen at deploy time. Version-1 entries are stored but
-   * redundant — {@link
+   * Sets the per-slot transformer versions frozen at deploy time. Entries are sorted by slot ID
+   * before writing so the msgpack array is always in a deterministic order regardless of the input
+   * map's iteration order. Version-1 entries are stored but redundant — {@link
    * io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer#currentVersionsById()}
    * omits them automatically, so callers using that method need not filter.
    */
   public ProcessRecord setTransformerVersions(final Map<Integer, Integer> versions) {
     transformerVersionsProp.reset();
-    versions.forEach(
-        (slotId, version) -> {
-          final var entry = transformerVersionsProp.add();
-          entry.setSlotId(slotId);
-          entry.setVersion(version);
-        });
+    new TreeMap<>(versions)
+        .forEach(
+            (slotId, version) -> {
+              final var entry = transformerVersionsProp.add();
+              entry.setSlotId(slotId);
+              entry.setVersion(version);
+            });
     return this;
   }
 
-  /** Returns the stored slot→version pairs. Absent entries default to version 1. */
-  @JsonIgnore
+  /**
+   * Returns the stored slot→version pairs sorted by slot ID. Absent entries default to version 1.
+   */
   public Map<Integer, Integer> getTransformerVersions() {
-    final Map<Integer, Integer> result = new HashMap<>();
+    final Map<Integer, Integer> result = new TreeMap<>();
     for (final TransformerVersion entry : transformerVersionsProp) {
       result.put(entry.getSlotId(), entry.getVersion());
     }
