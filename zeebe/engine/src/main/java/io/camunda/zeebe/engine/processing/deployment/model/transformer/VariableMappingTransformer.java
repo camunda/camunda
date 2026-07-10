@@ -116,6 +116,10 @@ public final class VariableMappingTransformer {
    * <p>Walking the built context (not the raw mappings) means overridden targets are already
    * resolved: a target overwritten by a later mapping contributes no secret. Mappings with no
    * reference are omitted (see {@link SecretReference} for what counts).
+   *
+   * <p>The pointer is leaf-precise only for references in literal FEEL contexts. A reference inside
+   * a context produced by another expression (e.g. an {@code if} that returns a context) is keyed
+   * at the enclosing target, not the exact leaf — see {@link SecretReference} for this limitation.
    */
   private static Map<String, Set<SecretReference>> detectSecretReferences(
       final MappingContext context) {

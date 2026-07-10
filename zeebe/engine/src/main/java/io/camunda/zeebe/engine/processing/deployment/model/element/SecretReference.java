@@ -35,6 +35,11 @@ import scala.jdk.javaapi.CollectionConverters;
  *       a trailing path access into the secret ({@code camunda.secrets.token.length}) is a longer
  *       qualified name and is deliberately not treated as a reference.
  * </ul>
+ *
+ * <p>Known gaps (an undetected or less-specific reference is simply not resolved, so nothing
+ * leaks): a {@code camunda} bound by an iterator/parameter/context key still reports the reference;
+ * and a reference inside a context produced by a non-context expression (e.g. {@code =if c then {x:
+ * camunda.secrets.token} else null}) is reported at the enclosing path, not the inner {@code x}.
  */
 @NullMarked
 public record SecretReference(String name) {
