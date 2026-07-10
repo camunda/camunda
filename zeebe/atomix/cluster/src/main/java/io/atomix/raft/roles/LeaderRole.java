@@ -46,6 +46,7 @@ import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.ReconfigureRequest;
 import io.atomix.raft.protocol.ReconfigureResponse;
+import io.atomix.raft.protocol.TimeoutNowRequest;
 import io.atomix.raft.protocol.TransferRequest;
 import io.atomix.raft.protocol.TransferResponse;
 import io.atomix.raft.protocol.VoteRequest;
@@ -72,6 +73,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 /** Leader state. */
@@ -96,6 +98,13 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   private boolean transferInProgress;
   private Scheduled catchUpPollTimer;
   private Scheduled catchUpDeadlineTimer;
+  // Promotion (TimeoutNow send + bounded retry). Success is detected implicitly: once the target
+  // campaigns the term advances and this leader steps down, completing timeoutNowFuture.
+  private Scheduled timeoutNowTimer;
+  private Scheduled timeoutNowDeadline;
+  private CompletableFuture<Void> timeoutNowFuture;
+  private MemberId timeoutNowTarget;
+  private int timeoutNowAttempts;
 
   public LeaderRole(final RaftContext context) {
     super(context);
@@ -395,6 +404,15 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       log.trace("Cancelling append timer");
       appendTimer.cancel();
     }
+    // Losing leadership while a TimeoutNow transfer is in flight means the term advanced — i.e. the
+    // target (or someone) campaigned — so from this leader's perspective the transfer is effected.
+    if (timeoutNowFuture != null) {
+      log.debug(
+          "Stepping down during TimeoutNow transfer to {}; completing transfer", timeoutNowTarget);
+      final var future = timeoutNowFuture;
+      cancelTimeoutNow();
+      future.complete(null);
+    }
     // Paused mode always exits on a role transition (stop() runs when leadership is lost).
     clearTransferPause();
   }
@@ -616,6 +634,113 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       catchUpDeadlineTimer.cancel();
       catchUpDeadlineTimer = null;
     }
+  }
+
+  /**
+   * Promotes {@code target} by sending it TimeoutNow, retrying every {@code heartbeatInterval}
+   * until leadership actually moves or {@code maxTransferAttempts} is spent. Completes with {@link
+   * LeadershipTransferResult#TRANSFERRED} once this leader steps down (the target campaigned and
+   * the term advanced), or {@link LeadershipTransferResult#TRANSFER_FAILED} if leadership does not
+   * move within the budget. Must run on the Raft thread.
+   */
+  public CompletableFuture<LeadershipTransferResult> promoteDesiredLeader(final MemberId target) {
+    raft.checkThread();
+    if (timeoutNowFuture != null) {
+      return CompletableFuture.completedFuture(LeadershipTransferResult.TRANSFER_IN_PROGRESS);
+    }
+    if (!raft.getCluster().isMember(target)) {
+      return CompletableFuture.completedFuture(LeadershipTransferResult.OFFLINE);
+    }
+
+    final Duration retryInterval = raft.getHeartbeatInterval();
+    final Duration giveUpAfter = retryInterval.multipliedBy(raft.getRebalanceMaxTransferAttempts());
+    timeoutNowTarget = target;
+    timeoutNowAttempts = 0;
+    timeoutNowFuture = new CompletableFuture<>();
+
+    log.info(
+        "Starting TimeoutNow leadership transfer to {} (resend every {}, giving up after {})",
+        target,
+        retryInterval,
+        giveUpAfter);
+
+    sendTimeoutNow();
+    timeoutNowTimer =
+        raft.getThreadContext().schedule(retryInterval, retryInterval, this::retryTimeoutNow);
+    timeoutNowDeadline = raft.getThreadContext().schedule(giveUpAfter, this::onTimeoutNowDeadline);
+
+    return timeoutNowFuture.handle(
+        (ok, error) ->
+            error == null
+                ? LeadershipTransferResult.TRANSFERRED
+                : LeadershipTransferResult.TRANSFER_FAILED);
+  }
+
+  private void sendTimeoutNow() {
+    raft.checkThread();
+    timeoutNowAttempts++;
+    final var request =
+        TimeoutNowRequest.builder()
+            .withTerm(raft.getTerm())
+            .withLeader(raft.getCluster().getLocalMember().memberId())
+            .build();
+    log.debug("Sending TimeoutNow to {} (attempt {})", timeoutNowTarget, timeoutNowAttempts);
+    // The RPC ack is only for tracing: the authoritative success signal is the term advancing
+    // (i.e. losing leadership), so a lost or failed ack simply falls through to the next retry.
+    raft.getProtocol()
+        .timeoutNow(timeoutNowTarget, request)
+        .whenCompleteAsync(
+            (response, error) -> {
+              if (error != null) {
+                log.trace(
+                    "TimeoutNow to {} failed, will retry if budget remains",
+                    timeoutNowTarget,
+                    error);
+              } else {
+                log.trace("TimeoutNow to {} acknowledged: {}", timeoutNowTarget, response);
+              }
+            },
+            raft.getThreadContext());
+  }
+
+  private void retryTimeoutNow() {
+    raft.checkThread();
+    if (!isRunning() || timeoutNowFuture == null) {
+      // We are no longer leader (deposed, presumably by the target) — cancelTimers() owns
+      // completion. The disruption budget is enforced separately by onTimeoutNowDeadline.
+      return;
+    }
+    sendTimeoutNow();
+  }
+
+  private void onTimeoutNowDeadline() {
+    raft.checkThread();
+    if (!isRunning() || timeoutNowFuture == null) {
+      return;
+    }
+    log.info(
+        "TimeoutNow transfer to {} did not move leadership within {} attempts while still leader; "
+            + "giving up",
+        timeoutNowTarget,
+        timeoutNowAttempts);
+    final var future = timeoutNowFuture;
+    cancelTimeoutNow();
+    future.completeExceptionally(
+        new TimeoutException("Leadership did not transfer within the disruption budget"));
+  }
+
+  private void cancelTimeoutNow() {
+    if (timeoutNowTimer != null) {
+      timeoutNowTimer.cancel();
+      timeoutNowTimer = null;
+    }
+    if (timeoutNowDeadline != null) {
+      timeoutNowDeadline.cancel();
+      timeoutNowDeadline = null;
+    }
+    timeoutNowFuture = null;
+    timeoutNowTarget = null;
+    timeoutNowAttempts = 0;
   }
 
   /** Ensures the local server is not the leader. */
