@@ -18,8 +18,11 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeleteResourceRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRequest;
 import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -948,6 +951,132 @@ public class RequestMapperTest {
 
       // then
       assertThat(brokerRequest.getRequestWriter().getBusinessId()).isEmpty();
+    }
+  }
+
+  @Nested
+  class CompleteJobRequestLeaseTokenTest {
+
+    @Test
+    public void shouldMapLeaseTokenToBrokerRequest() {
+      // given
+      final var grpcRequest =
+          CompleteJobRequest.newBuilder().setJobKey(123L).setLeaseToken("lease-token-1").build();
+
+      // when
+      final var brokerRequest = RequestMapper.toCompleteJobRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getLeaseToken()).isEqualTo("lease-token-1");
+    }
+
+    @Test
+    public void shouldNotSetLeaseTokenByDefault() {
+      // given
+      final var grpcRequest = CompleteJobRequest.newBuilder().setJobKey(123L).build();
+
+      // when
+      final var brokerRequest = RequestMapper.toCompleteJobRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getLeaseToken()).isEmpty();
+    }
+  }
+
+  @Nested
+  class FailJobRequestLeaseTokenTest {
+
+    @Test
+    public void shouldMapLeaseTokenToBrokerRequest() {
+      // given
+      final var grpcRequest =
+          FailJobRequest.newBuilder().setJobKey(123L).setLeaseToken("lease-token-2").build();
+
+      // when
+      final var brokerRequest = RequestMapper.toFailJobRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getLeaseToken()).isEqualTo("lease-token-2");
+    }
+
+    @Test
+    public void shouldNotSetLeaseTokenByDefault() {
+      // given
+      final var grpcRequest = FailJobRequest.newBuilder().setJobKey(123L).build();
+
+      // when
+      final var brokerRequest = RequestMapper.toFailJobRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getLeaseToken()).isEmpty();
+    }
+  }
+
+  @Nested
+  class ThrowErrorRequestLeaseTokenTest {
+
+    @Test
+    public void shouldMapLeaseTokenToBrokerRequest() {
+      // given
+      final var grpcRequest =
+          ThrowErrorRequest.newBuilder()
+              .setJobKey(123L)
+              .setErrorCode("error-code")
+              .setLeaseToken("lease-token-3")
+              .build();
+
+      // when
+      final var brokerRequest = RequestMapper.toThrowErrorRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getLeaseToken()).isEqualTo("lease-token-3");
+    }
+
+    @Test
+    public void shouldNotSetLeaseTokenByDefault() {
+      // given
+      final var grpcRequest =
+          ThrowErrorRequest.newBuilder().setJobKey(123L).setErrorCode("error-code").build();
+
+      // when
+      final var brokerRequest = RequestMapper.toThrowErrorRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getLeaseToken()).isEmpty();
+    }
+  }
+
+  @Nested
+  class UpdateJobTimeoutRequestLeaseTokenTest {
+
+    @Test
+    public void shouldMapLeaseTokenToBrokerRequest() {
+      // given
+      final var grpcRequest =
+          UpdateJobTimeoutRequest.newBuilder()
+              .setJobKey(123L)
+              .setTimeout(5000L)
+              .setLeaseToken("lease-token-4")
+              .build();
+
+      // when
+      final var brokerRequest = RequestMapper.toUpdateJobTimeoutRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getLeaseToken()).isEqualTo("lease-token-4");
+    }
+
+    @Test
+    public void shouldNotSetLeaseTokenByDefault() {
+      // given
+      final var grpcRequest =
+          UpdateJobTimeoutRequest.newBuilder().setJobKey(123L).setTimeout(5000L).build();
+
+      // when
+      final var brokerRequest = RequestMapper.toUpdateJobTimeoutRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getLeaseToken()).isEmpty();
     }
   }
 }
