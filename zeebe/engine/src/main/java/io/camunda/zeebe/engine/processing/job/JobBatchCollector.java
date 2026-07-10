@@ -7,11 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
@@ -20,10 +21,7 @@ import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.JobKind;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -32,7 +30,6 @@ import java.util.Collection;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
@@ -50,7 +47,7 @@ final class JobBatchCollector {
 
   private final JobState jobState;
   private final JobVariablesCollector jobVariablesCollector;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
   private final Predicate<Integer> canWriteEventOfLength;
   private final InstantSource clock;
   private final JobProcessingMetrics jobMetrics;
@@ -64,13 +61,13 @@ final class JobBatchCollector {
   JobBatchCollector(
       final ProcessingState state,
       final Predicate<Integer> canWriteEventOfLength,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final CslAuthorizationCheck cslCheck,
       final InstantSource clock,
       final JobProcessingMetrics jobMetrics) {
     jobState = state.getJobState();
     this.canWriteEventOfLength = canWriteEventOfLength;
     jobVariablesCollector = new JobVariablesCollector(state);
-    this.authCheckBehavior = authCheckBehavior;
+    this.cslCheck = cslCheck;
     this.clock = clock;
     this.jobMetrics = jobMetrics;
   }
@@ -98,23 +95,17 @@ final class JobBatchCollector {
     final var activatedCount = new MutableInteger(0);
     final var unwritableJob = new MutableReference<TooLargeJob>();
     final Map<JobKind, Integer> jobCountPerJobKind = new EnumMap<>(JobKind.class);
-    // the tenant check is performed earlier in the JobBatchActivateProcessor, so we can skip it
-    // here and only check if the requester has the correct permissions to access the jobs
-    final var authorizedProcessIds =
-        authCheckBehavior.getAllAuthorizedScopes(
-            AuthorizationRequest.builder()
-                .command(record)
-                .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-                .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
-                .build());
     final var deadline = clock.millis() + value.getTimeout();
+
+    // compute per-job authorization predicate once before the loop
+    final Predicate<JobRecord> isAuthorizedForJob = buildAuthzPredicate(record);
 
     jobState.forEachActivatableJobs(
         value.getTypeBuffer(),
         tenantIds,
         (key, jobRecord) -> {
-          if (!isAuthorizedForJob(jobRecord, authorizedProcessIds)) {
-            // Skip Jobs the user is not authorized for
+          if (!isAuthorizedForJob.test(jobRecord)) {
+            // Skip jobs the requester is not authorized for
             return true;
           }
 
@@ -169,10 +160,27 @@ final class JobBatchCollector {
     return Either.right(jobCountPerJobKind);
   }
 
-  private boolean isAuthorizedForJob(
-      final JobRecord jobRecord, final Set<AuthorizationScope> authorizedProcessIds) {
-    return authorizedProcessIds.contains(AuthorizationScope.WILDCARD)
-        || authorizedProcessIds.contains(AuthorizationScope.id(jobRecord.getBpmnProcessId()));
+  private Predicate<JobRecord> buildAuthzPredicate(final TypedRecord<JobBatchRecord> record) {
+    final var resolved =
+        cslCheck.resolveForCheck(record, AuthorizationRejectionMapper.noPrincipal());
+    if (resolved.isLeft()) {
+      return job -> false;
+    }
+    final var maybeAuth = resolved.get();
+    if (maybeAuth.isEmpty()) {
+      return job -> true;
+    }
+    final var auth = maybeAuth.get();
+    return job ->
+        cslCheck
+            .checkAuth(
+                auth,
+                RequiredAuthorization.of(
+                    b ->
+                        b.processDefinition()
+                            .updateProcessInstance()
+                            .resourceId(job.getBpmnProcessId())))
+            .isRight();
   }
 
   private void appendJobToBatch(

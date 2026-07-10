@@ -8,13 +8,13 @@
 package io.camunda.zeebe.engine.processing.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import io.camunda.security.configuration.EngineSecurityConfigurations;
 import io.camunda.zeebe.engine.EngineConfiguration;
-import io.camunda.zeebe.engine.metrics.AuthorizationCheckMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.identity.AuthenticatedAuthorizedTenants;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.job.JobBatchCollector.TooLargeJob;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.MockTypedRecord;
@@ -39,7 +39,6 @@ import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.InstantSource;
@@ -70,19 +69,13 @@ final class JobBatchCollectorTest {
 
   @BeforeEach
   void beforeEach() {
-    final var authorizationCheckBehavior =
-        new AuthorizationCheckBehavior(
-            state,
-            EngineSecurityConfigurations.unauthenticatedAndUnauthorized(),
-            new EngineConfiguration(),
-            new AuthorizationCheckMetrics(new SimpleMeterRegistry()));
+    final var securityConfig = EngineSecurityConfigurations.unauthenticatedAndUnauthorized();
+    // Both authorization and multi-tenancy are disabled, so authzService and claimsConverter
+    // are never invoked by the collector — pass nulls to satisfy the CslAuthorizationCheck ctor.
+    final var cslCheck = new CslAuthorizationCheck(null, null, securityConfig);
     collector =
         new JobBatchCollector(
-            state,
-            lengthEvaluator,
-            authorizationCheckBehavior,
-            clock,
-            new JobProcessingMetrics(new SimpleMeterRegistry()));
+            state, lengthEvaluator, cslCheck, clock, mock(JobProcessingMetrics.class));
   }
 
   @Test

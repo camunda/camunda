@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
@@ -106,6 +107,11 @@ public final class JobActivationClient {
 
   public JobActivationClient withLease() {
     jobBatchRecord.setWithLease(true);
+    return this;
+  }
+
+  public JobActivationClient withTenantFilter(final TenantFilter tenantFilter) {
+    jobBatchRecord.setTenantFilter(tenantFilter);
     return this;
   }
 

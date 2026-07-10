@@ -7,13 +7,14 @@
  */
 package io.camunda.zeebe.engine.processing.usertask.processors;
 
-import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationHelper.buildProcessDefinitionRequest;
-import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationHelper.buildUserTaskRequest;
+import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationCheck.TaskProperties.ALL;
+import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationCheck.processDefinition;
+import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationCheck.userTask;
 
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -46,25 +47,26 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
   private final TypedResponseWriter responseWriter;
   private final AsyncRequestState asyncRequestState;
   private final AsyncRequestBehavior asyncRequestBehavior;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final UserTaskAuthorizationCheck userTaskAuth;
   private final UserTaskCommandPreconditionValidator commandChecker;
 
   public UserTaskClaimProcessor(
       final ProcessingState state,
       final Writers writers,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final CslAuthorizationCheck cslCheck,
+      final UserTaskAuthorizationCheck userTaskAuth) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     asyncRequestState = state.getAsyncRequestState();
     this.asyncRequestBehavior = asyncRequestBehavior;
-    this.authCheckBehavior = authCheckBehavior;
+    this.userTaskAuth = userTaskAuth;
     commandChecker =
         new UserTaskCommandPreconditionValidator(
             List.of(LifecycleState.CREATED),
             "claim",
             state.getUserTaskState(),
-            authCheckBehavior,
+            cslCheck,
             state.getBannedInstanceState());
   }
 
@@ -72,8 +74,8 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
   public Either<Rejection, UserTaskRecord> validateCommand(
       final TypedRecord<UserTaskRecord> command) {
     return commandChecker
-        .validate(command, userTask -> checkAuthorization(command, userTask))
-        .flatMap(userTask -> checkClaim(command, userTask));
+        .validate(command, task -> checkAuthorization(command, task))
+        .flatMap(task -> checkClaim(command, task));
   }
 
   @Override
@@ -121,15 +123,14 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
 
   private Either<Rejection, UserTaskRecord> checkAuthorization(
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord persistedUserTask) {
-    return authCheckBehavior
-        .isAnyAuthorizedOrInternalCommand(
-            buildProcessDefinitionRequest(
-                command, persistedUserTask, PermissionType.UPDATE_USER_TASK),
-            buildProcessDefinitionRequest(
-                command, persistedUserTask, PermissionType.CLAIM_USER_TASK),
-            buildUserTaskRequest(command, persistedUserTask, PermissionType.UPDATE),
-            buildUserTaskRequest(command, persistedUserTask, PermissionType.CLAIM))
-        .map(ignored -> persistedUserTask);
+    // 4-way OR: PD.UPDATE_USER_TASK || PD.CLAIM_USER_TASK || UT.UPDATE || UT.CLAIM
+    return userTaskAuth.check(
+        command,
+        persistedUserTask,
+        processDefinition(PermissionType.UPDATE_USER_TASK),
+        processDefinition(PermissionType.CLAIM_USER_TASK),
+        userTask(PermissionType.UPDATE, ALL),
+        userTask(PermissionType.CLAIM, ALL));
   }
 
   private static Either<Rejection, UserTaskRecord> checkClaim(

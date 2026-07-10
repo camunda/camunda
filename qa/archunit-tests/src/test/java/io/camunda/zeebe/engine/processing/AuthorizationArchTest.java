@@ -19,17 +19,24 @@ import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.conditions.ArchConditions;
+import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.authz.AuthorizationService;
+import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationHelper;
 import io.camunda.zeebe.engine.processing.resource.ResourceDeletionAuthorizationBehavior;
 import io.camunda.zeebe.engine.processing.resource.TenantAwareDeletionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCommandProcessor;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -148,6 +155,36 @@ public class AuthorizationArchTest {
                     ResourceDeletionAuthorizationBehavior.class,
                     "checkAuthorizationForHistoryDeletion",
                     TypedRecord.class))
+            .or(
+                ArchConditions.callMethod(
+                    AuthorizationCheckPort.class,
+                    "check",
+                    CamundaAuthentication.class,
+                    RequiredAuthorization.class))
+            .or(
+                ArchConditions.callMethod(
+                    AuthorizationService.class,
+                    "check",
+                    CamundaAuthentication.class,
+                    RequiredAuthorization.class))
+            // Or the processor should delegate the skip-logic + check to CslAuthorizationCheck
+            .or(
+                ArchConditions.callMethod(
+                    CslAuthorizationCheck.class,
+                    "check",
+                    TypedRecord.class,
+                    RequiredAuthorization.class,
+                    Object.class,
+                    Rejection.class))
+            // Or the UserTask processors should delegate the OR-orchestration to
+            // UserTaskAuthorizationCheck
+            .or(
+                ArchConditions.callMethod(
+                    UserTaskAuthorizationCheck.class,
+                    "check",
+                    TypedRecord.class,
+                    UserTaskRecord.class,
+                    UserTaskAuthorizationCheck.Alt[].class))
             .check(item, events);
       }
     };
@@ -159,6 +196,7 @@ public class AuthorizationArchTest {
       public boolean test(final JavaClass javaClass) {
         return Predicates.assignableFrom(JobUpdateBehaviour.class)
             .or(Predicates.assignableFrom(PermissionsBehavior.class))
+            .or(Predicates.assignableFrom(UserTaskAuthorizationCheck.class))
             .test(javaClass);
       }
     };

@@ -7,12 +7,14 @@
  */
 package io.camunda.zeebe.engine.processing.usertask;
 
+import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAssignProcessor;
+import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCancelProcessor;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskClaimProcessor;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCommandProcessor;
@@ -37,7 +39,8 @@ public final class UserTaskCommandProcessors {
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckPort authzService,
+      final CslAuthorizationCheck cslCheck) {
     final EventHandle eventHandle =
         new EventHandle(
             keyGenerator,
@@ -46,6 +49,8 @@ public final class UserTaskCommandProcessors {
             processingState.getProcessState(),
             bpmnBehaviors.eventTriggerBehavior(),
             bpmnBehaviors.stateBehavior());
+
+    final var userTaskAuth = new UserTaskAuthorizationCheck(cslCheck, authzService);
 
     commandToProcessor =
         new EnumMap<>(
@@ -58,20 +63,26 @@ public final class UserTaskCommandProcessors {
                     bpmnBehaviors.jobBehavior()),
                 UserTaskIntent.ASSIGN,
                 new UserTaskAssignProcessor(
-                    processingState, writers, asyncRequestBehavior, authCheckBehavior),
+                    processingState, writers, asyncRequestBehavior, cslCheck, userTaskAuth),
                 UserTaskIntent.CLAIM,
                 new UserTaskClaimProcessor(
-                    processingState, writers, asyncRequestBehavior, authCheckBehavior),
+                    processingState, writers, asyncRequestBehavior, cslCheck, userTaskAuth),
                 UserTaskIntent.UPDATE,
                 new UserTaskUpdateProcessor(
                     processingState,
                     writers,
                     bpmnBehaviors.variableBehavior(),
                     asyncRequestBehavior,
-                    authCheckBehavior),
+                    cslCheck,
+                    userTaskAuth),
                 UserTaskIntent.COMPLETE,
                 new UserTaskCompleteProcessor(
-                    processingState, eventHandle, writers, asyncRequestBehavior, authCheckBehavior),
+                    processingState,
+                    eventHandle,
+                    writers,
+                    asyncRequestBehavior,
+                    cslCheck,
+                    userTaskAuth),
                 UserTaskIntent.CANCEL,
                 new UserTaskCancelProcessor(processingState, writers)));
     validateProcessorsSetup(commandToProcessor);

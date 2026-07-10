@@ -16,7 +16,7 @@ import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.job.JobBatchCollector.TooLargeJob;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -57,7 +57,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private final JobProcessingMetrics jobMetrics;
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
-  private final AuthorizationCheckBehavior authorizationCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
   private final IncidentMetrics incidentMetrics;
 
   public JobBatchActivateProcessor(
@@ -65,17 +65,17 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       final ProcessingState state,
       final KeyGenerator keyGenerator,
       final JobProcessingMetrics jobMetrics,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final CslAuthorizationCheck cslCheck,
       final InstantSource clock,
       final IncidentMetrics incidentMetrics) {
 
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
-    authorizationCheckBehavior = authCheckBehavior;
+    this.cslCheck = cslCheck;
     jobBatchCollector =
         new JobBatchCollector(
-            state, stateWriter::canWriteEventOfLength, authCheckBehavior, clock, jobMetrics);
+            state, stateWriter::canWriteEventOfLength, cslCheck, clock, jobMetrics);
 
     this.keyGenerator = keyGenerator;
     this.jobMetrics = jobMetrics;
@@ -86,7 +86,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
 
   @Override
   public void processRecord(final TypedRecord<JobBatchRecord> record) {
-    final var authorizedTenantIds = authorizationCheckBehavior.getAuthorizedTenantIds(record);
+    final var authorizedTenantIds = cslCheck.resolveAuthorizedTenants(record.getAuthorizations());
     final var value = record.getValue();
 
     final var validationResult = validateRequest(record, authorizedTenantIds);

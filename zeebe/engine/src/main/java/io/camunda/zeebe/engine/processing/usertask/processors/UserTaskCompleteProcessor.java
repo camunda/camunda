@@ -7,13 +7,14 @@
  */
 package io.camunda.zeebe.engine.processing.usertask.processors;
 
-import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationHelper.buildProcessDefinitionRequest;
-import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationHelper.buildUserTaskRequest;
+import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationCheck.TaskProperties.ALL;
+import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationCheck.processDefinition;
+import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationCheck.userTask;
 
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -45,14 +46,15 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
   private final TypedResponseWriter responseWriter;
   private final UserTaskCommandPreconditionValidator commandChecker;
   private final AsyncRequestBehavior asyncRequestBehavior;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final UserTaskAuthorizationCheck userTaskAuth;
 
   public UserTaskCompleteProcessor(
       final ProcessingState state,
       final EventHandle eventHandle,
       final Writers writers,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final CslAuthorizationCheck cslCheck,
+      final UserTaskAuthorizationCheck userTaskAuth) {
     elementInstanceState = state.getElementInstanceState();
     asyncRequestState = state.getAsyncRequestState();
     this.eventHandle = eventHandle;
@@ -64,16 +66,16 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
             List.of(LifecycleState.CREATED),
             "complete",
             state.getUserTaskState(),
-            authCheckBehavior,
+            cslCheck,
             state.getBannedInstanceState());
     this.asyncRequestBehavior = asyncRequestBehavior;
-    this.authCheckBehavior = authCheckBehavior;
+    this.userTaskAuth = userTaskAuth;
   }
 
   @Override
   public Either<Rejection, UserTaskRecord> validateCommand(
       final TypedRecord<UserTaskRecord> command) {
-    return commandChecker.validate(command, userTask -> checkAuthorization(command, userTask));
+    return commandChecker.validate(command, task -> checkAuthorization(command, task));
   }
 
   @Override
@@ -120,15 +122,14 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
 
   private Either<Rejection, UserTaskRecord> checkAuthorization(
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord persistedUserTask) {
-    return authCheckBehavior
-        .isAnyAuthorizedOrInternalCommand(
-            buildProcessDefinitionRequest(
-                command, persistedUserTask, PermissionType.UPDATE_USER_TASK),
-            buildProcessDefinitionRequest(
-                command, persistedUserTask, PermissionType.COMPLETE_USER_TASK),
-            buildUserTaskRequest(command, persistedUserTask, PermissionType.UPDATE),
-            buildUserTaskRequest(command, persistedUserTask, PermissionType.COMPLETE))
-        .map(ignored -> persistedUserTask);
+    // 4-way OR: PD.UPDATE_USER_TASK || PD.COMPLETE_USER_TASK || UT.UPDATE || UT.COMPLETE
+    return userTaskAuth.check(
+        command,
+        persistedUserTask,
+        processDefinition(PermissionType.UPDATE_USER_TASK),
+        processDefinition(PermissionType.COMPLETE_USER_TASK),
+        userTask(PermissionType.UPDATE, ALL),
+        userTask(PermissionType.COMPLETE, ALL));
   }
 
   private void completeElementInstance(final UserTaskRecord userTaskRecord) {

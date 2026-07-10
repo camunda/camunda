@@ -28,6 +28,7 @@ import io.camunda.zeebe.engine.processing.expression.ProcessInstanceContextEvalu
 import io.camunda.zeebe.engine.processing.expression.TenantScopeClusterVariableEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.VariableEvaluationContext;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
@@ -83,7 +84,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final ExpressionLanguageMetrics expressionMetrics,
       final EngineConfiguration config,
       final IncidentMetrics incidentMetrics,
-      final boolean evaluateBoundaryEventCorrelationKeyInActivityScope) {
+      final boolean evaluateBoundaryEventCorrelationKeyInActivityScope,
+      final CslAuthorizationCheck cslCheck) {
 
     final var tenantClusterScope =
         new TenantScopeClusterVariableEvaluationContext(processingState.getClusterVariableState());
@@ -283,7 +285,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
         new BpmnCompensationSubscriptionBehaviour(
             processingState.getKeyGenerator(), processingState, writers, stateBehavior);
 
-    jobUpdateBehaviour = new JobUpdateBehaviour(processingState, clock, authCheckBehavior, writers);
+    jobUpdateBehaviour = new JobUpdateBehaviour(processingState, clock, cslCheck, writers);
 
     adHocSubProcessBehavior =
         new BpmnAdHocSubProcessBehavior(
