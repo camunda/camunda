@@ -324,6 +324,7 @@ security.authentication.oidc.client-id-claim
 security.authentication.oidc.client-name
 security.authentication.oidc.client-secret
 security.authentication.oidc.clock-skew
+security.authentication.oidc.diagnostics.enabled
 security.authentication.oidc.end-session-endpoint-uri
 security.authentication.oidc.grant-type
 security.authentication.oidc.groups-claim
