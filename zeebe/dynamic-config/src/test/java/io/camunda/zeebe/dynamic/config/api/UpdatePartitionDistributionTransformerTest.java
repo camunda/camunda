@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
-import static io.camunda.zeebe.dynamic.config.api.ZoneFixtures.*;
+import static io.camunda.zeebe.dynamic.config.util.ZoneFixtures.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;

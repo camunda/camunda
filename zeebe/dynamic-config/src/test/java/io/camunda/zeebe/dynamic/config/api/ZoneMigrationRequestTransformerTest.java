@@ -8,7 +8,7 @@
 
 package io.camunda.zeebe.dynamic.config.api;
 
-import static io.camunda.zeebe.dynamic.config.api.ZoneFixtures.*;
+import static io.camunda.zeebe.dynamic.config.util.ZoneFixtures.*;
 import static io.camunda.zeebe.test.util.asserts.EitherAssert.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 

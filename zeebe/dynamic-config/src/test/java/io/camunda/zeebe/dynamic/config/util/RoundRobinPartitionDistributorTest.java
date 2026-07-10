@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.config.util;
 
+import static io.camunda.zeebe.dynamic.config.util.ZoneFixtures.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
@@ -107,8 +108,7 @@ final class RoundRobinPartitionDistributorTest {
   @Test
   void shouldDistributePartitionsAcrossZoneAwareMembers() {
     // given
-    final var members =
-        Set.of(MemberId.from("eu-west_0"), MemberId.from("eu-west_1"), MemberId.from("eu-west_2"));
+    final var members = new HashSet<>(ZONE_A_NODES);
 
     // when
     final var distribution =
@@ -137,27 +137,21 @@ final class RoundRobinPartitionDistributorTest {
   @Test
   void shouldPreserveRoundRobinSlotsForMixedBareAndZonedMembersWhenZoneOrderIsConfigured() {
     // given
-    final var originalMembers =
-        Set.of(MemberId.from(0), MemberId.from(1), MemberId.from(2), MemberId.from(3));
-    final var mixedMembers =
-        Set.of(
-            MemberId.from(0),
-            MemberId.from(2),
-            MemberId.from("zone-b", 0),
-            MemberId.from("zone-b", 1));
+    final var originalMembers = bareNodes(4);
+    final var mixedMembers = Set.of(BARE_0, BARE_2, ZONE_B_0, ZONE_B_1);
     final var expectedMapping =
         Map.of(
-            MemberId.from(0), MemberId.from(0),
-            MemberId.from(1), MemberId.from("zone-b", 0),
-            MemberId.from(2), MemberId.from(2),
-            MemberId.from(3), MemberId.from("zone-b", 1));
+            BARE_0, BARE_0, // no change
+            BARE_1, ZONE_B_0, // to zoned
+            BARE_2, BARE_2, // no change
+            BARE_3, ZONE_B_1 // to zoned
+            );
 
-    // when
     final var originalDistribution =
         new RoundRobinPartitionDistributor()
             .distributePartitions(originalMembers, getSortedPartitionIds(4), 4);
     final var mixedDistribution =
-        new RoundRobinPartitionDistributor(List.of("zone-a", "zone-b"))
+        new RoundRobinPartitionDistributor(List.of(ZONE_A, ZONE_B))
             .distributePartitions(mixedMembers, getSortedPartitionIds(4), 4);
 
     // then
@@ -170,25 +164,21 @@ final class RoundRobinPartitionDistributorTest {
     // given
     final var originalMembers =
         Set.of(MemberId.from(0), MemberId.from(1), MemberId.from(2), MemberId.from(3));
-    final var zonedMembers =
-        Set.of(
-            MemberId.from("zone-a", 0),
-            MemberId.from("zone-b", 0),
-            MemberId.from("zone-a", 1),
-            MemberId.from("zone-b", 1));
+    final var zonedMembers = Set.of(ZONE_A_0, ZONE_B_0, ZONE_A_1, ZONE_B_1);
     final var expectedMapping =
         Map.of(
-            MemberId.from(0), MemberId.from("zone-a", 0),
-            MemberId.from(1), MemberId.from("zone-b", 0),
-            MemberId.from(2), MemberId.from("zone-a", 1),
-            MemberId.from(3), MemberId.from("zone-b", 1));
+            BARE_0, ZONE_A_0, // to primary
+            BARE_1, ZONE_B_0, // to secondary
+            BARE_2, ZONE_A_1, // to primary
+            BARE_3, ZONE_B_1 // to secondary
+            );
 
     // when
     final var originalDistribution =
         new RoundRobinPartitionDistributor()
             .distributePartitions(originalMembers, getSortedPartitionIds(4), 4);
     final var zonedDistribution =
-        new RoundRobinPartitionDistributor(List.of("zone-a", "zone-b"))
+        new RoundRobinPartitionDistributor(List.of(ZONE_A, ZONE_B))
             .distributePartitions(zonedMembers, getSortedPartitionIds(4), 4);
 
     // then
@@ -217,7 +207,7 @@ final class RoundRobinPartitionDistributorTest {
   private Set<MemberId> getMembers(final int nodeCount) {
     final Set<MemberId> members = new HashSet<>();
     for (int i = 0; i < nodeCount; i++) {
-      members.add(MemberId.from(String.valueOf(i)));
+      members.add(MemberId.from(i));
     }
     return members;
   }
