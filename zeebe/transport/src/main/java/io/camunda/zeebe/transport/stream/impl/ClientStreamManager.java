@@ -55,7 +55,7 @@ final class ClientStreamManager<M extends BufferWriter> {
    * @param serverId the joining server
    * @param physicalTenantId the physical tenant served by this server
    */
-  void onServerJoinedToGroup(final MemberId serverId, final String physicalTenantId) {
+  void onServerJoined(final MemberId serverId, final String physicalTenantId) {
     serversByPhysicalTenantId
         .computeIfAbsent(physicalTenantId, id -> new HashSet<>())
         .add(serverId);

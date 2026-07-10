@@ -86,9 +86,9 @@ final class StreamIntegrationTest {
     server2.start();
     client.start();
 
-    client.streamService.onServerJoinedToGroup(
+    client.streamService.onServerJoined(
         server1.cluster.getMembershipService().getLocalMember().id(), DEFAULT_PHYSICAL_TENANT_ID);
-    client.streamService.onServerJoinedToGroup(
+    client.streamService.onServerJoined(
         server2.cluster.getMembershipService().getLocalMember().id(), DEFAULT_PHYSICAL_TENANT_ID);
     clientStreamer = client.streamService.streamer();
   }
@@ -345,7 +345,7 @@ final class StreamIntegrationTest {
                   .hasValue(Set.of(server2.memberId())));
 
       // when
-      client.streamService.onServerJoinedToGroup(server1.memberId(), DEFAULT_PHYSICAL_TENANT_ID);
+      client.streamService.onServerJoined(server1.memberId(), DEFAULT_PHYSICAL_TENANT_ID);
 
       // then
       awaitStreamAdded(streamType, streamId, server1, server2);
@@ -414,8 +414,7 @@ final class StreamIntegrationTest {
       try (final var restartedServer =
           new TestServer(createClusterNode(clusterNodes.get(0), clusterNodes))) {
         restartedServer.start();
-        client.streamService.onServerJoinedToGroup(
-            restartedServer.memberId(), DEFAULT_PHYSICAL_TENANT_ID);
+        client.streamService.onServerJoined(restartedServer.memberId(), DEFAULT_PHYSICAL_TENANT_ID);
 
         // then
         awaitStreamAdded(streamType, streamId, restartedServer, server2);

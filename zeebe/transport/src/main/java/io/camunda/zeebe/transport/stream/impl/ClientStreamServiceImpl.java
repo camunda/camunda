@@ -101,11 +101,11 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
   }
 
   @Override
-  public void onServerJoinedToGroup(final MemberId memberId, final String physicalTenantId) {
+  public void onServerJoined(final MemberId memberId, final String physicalTenantId) {
     actor.run(
         () -> {
           registerRestartHandler(physicalTenantId);
-          clientStreamManager.onServerJoinedToGroup(memberId, physicalTenantId);
+          clientStreamManager.onServerJoined(memberId, physicalTenantId);
         });
   }
 

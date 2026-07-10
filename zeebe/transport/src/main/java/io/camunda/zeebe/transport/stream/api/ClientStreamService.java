@@ -38,7 +38,7 @@ public interface ClientStreamService<M extends BufferWriter> extends AsyncClosab
    * {@code physicalTenantId} are registered with {@code memberId}. Implementations should be
    * idempotent.
    */
-  void onServerJoinedToGroup(final MemberId memberId, final String physicalTenantId);
+  void onServerJoined(final MemberId memberId, final String physicalTenantId);
 
   /**
    * A callback to be invoked when a new streaming server is removed. Implementations should be

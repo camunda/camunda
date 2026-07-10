@@ -53,7 +53,7 @@ public final class JobStreamClientImpl implements JobStreamClient {
       return;
     }
 
-    streamService.onServerJoinedToGroup(memberId.memberId(), physicalTenantId);
+    streamService.onServerJoined(memberId.memberId(), physicalTenantId);
   }
 
   @Override
