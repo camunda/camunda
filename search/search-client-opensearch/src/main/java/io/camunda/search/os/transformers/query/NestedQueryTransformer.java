@@ -9,6 +9,7 @@ package io.camunda.search.os.transformers.query;
 
 import io.camunda.search.clients.query.SearchNestedQuery;
 import io.camunda.search.os.transformers.OpensearchTransformers;
+import org.opensearch.client.opensearch._types.query_dsl.ChildScoreMode;
 import org.opensearch.client.opensearch._types.query_dsl.NestedQuery;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 
@@ -25,6 +26,6 @@ public final class NestedQueryTransformer
     final var searchQuery = value.query();
     final var query = transformer.apply(searchQuery);
     final var path = value.path();
-    return QueryBuilders.nested().path(path).query(query).build();
+    return QueryBuilders.nested().path(path).query(query).scoreMode(ChildScoreMode.None).build();
   }
 }

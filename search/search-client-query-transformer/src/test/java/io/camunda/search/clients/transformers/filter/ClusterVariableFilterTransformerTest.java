@@ -9,8 +9,14 @@ package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.filter.Operation.eq;
 import static io.camunda.search.filter.Operation.exists;
+import static io.camunda.search.filter.Operation.gt;
 import static io.camunda.search.filter.Operation.gte;
+import static io.camunda.search.filter.Operation.in;
 import static io.camunda.search.filter.Operation.like;
+import static io.camunda.search.filter.Operation.lt;
+import static io.camunda.search.filter.Operation.lte;
+import static io.camunda.search.filter.Operation.neq;
+import static io.camunda.search.filter.Operation.notIn;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -20,6 +26,7 @@ import io.camunda.search.clients.query.SearchNestedQuery;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
+import io.camunda.search.clients.query.SearchTermsQuery;
 import io.camunda.search.clients.query.SearchWildcardQuery;
 import io.camunda.search.filter.ClusterVariableFilter;
 import io.camunda.search.filter.MetadataValueFilter;
@@ -168,6 +175,163 @@ public final class ClusterVariableFilterTransformerTest extends AbstractTransfor
 
     // when / then
     assertThatThrownBy(() -> transformQuery(filter)).isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  public void shouldQueryMetadataByKeyOnly() {
+    // given
+    final var metadataFilter = new MetadataValueFilter.Builder().key("kind").build();
+    final var filter =
+        new ClusterVariableFilter.Builder().metadataOperations(metadataFilter).build();
+
+    // when
+    final var searchQuery = transformQuery(filter);
+
+    // then
+    final var nested = extractSingleNestedQuery(searchQuery);
+    assertThat(nested.path()).isEqualTo(ClusterVariableIndex.METADATA);
+    assertIsTermQuery(nested.query(), ClusterVariableIndex.METADATA_KEY, "kind");
+  }
+
+  @Test
+  public void shouldQueryMetadataByNotEquals() {
+    // given
+    final var metadataFilter =
+        new MetadataValueFilter.Builder()
+            .key("kind")
+            .valueOperation(UntypedOperation.of(neq("CREDENTIAL")))
+            .build();
+    final var filter =
+        new ClusterVariableFilter.Builder().metadataOperations(metadataFilter).build();
+
+    // when
+    final var searchQuery = transformQuery(filter);
+
+    // then
+    final var nested = extractSingleNestedQuery(searchQuery);
+    final var inner = (SearchBoolQuery) nested.query().queryOption();
+    assertThat(inner.must()).hasSize(2);
+    assertIsTermQuery(inner.must().get(0), ClusterVariableIndex.METADATA_KEY, "kind");
+    final var notBool = (SearchBoolQuery) inner.must().get(1).queryOption();
+    assertIsTermQuery(
+        notBool.mustNot().getFirst(), ClusterVariableIndex.METADATA_VALUE, "CREDENTIAL");
+  }
+
+  @Test
+  public void shouldQueryMetadataByNumericLessThan() {
+    // given
+    final var metadataFilter =
+        new MetadataValueFilter.Builder()
+            .key("schemaVersion")
+            .valueOperation(UntypedOperation.of(lt(5)))
+            .build();
+    final var filter =
+        new ClusterVariableFilter.Builder().metadataOperations(metadataFilter).build();
+
+    // when
+    final var searchQuery = transformQuery(filter);
+
+    // then
+    final var nested = extractSingleNestedQuery(searchQuery);
+    final var inner = (SearchBoolQuery) nested.query().queryOption();
+    assertThat(inner.must()).hasSize(2);
+    assertIsTermQuery(inner.must().get(0), ClusterVariableIndex.METADATA_KEY, "schemaVersion");
+    final var rangeQuery = (SearchRangeQuery) inner.must().get(1).queryOption();
+    assertThat(rangeQuery.field()).isEqualTo(ClusterVariableIndex.METADATA_VALUE_NUMBER);
+    assertThat(rangeQuery.lt()).isEqualTo(5L);
+  }
+
+  @Test
+  public void shouldQueryMetadataByNumericLessThanEquals() {
+    // given
+    final var metadataFilter =
+        new MetadataValueFilter.Builder()
+            .key("schemaVersion")
+            .valueOperation(UntypedOperation.of(lte(5)))
+            .build();
+    final var filter =
+        new ClusterVariableFilter.Builder().metadataOperations(metadataFilter).build();
+
+    // when
+    final var searchQuery = transformQuery(filter);
+
+    // then
+    final var nested = extractSingleNestedQuery(searchQuery);
+    final var inner = (SearchBoolQuery) nested.query().queryOption();
+    assertIsTermQuery(inner.must().get(0), ClusterVariableIndex.METADATA_KEY, "schemaVersion");
+    final var rangeQuery = (SearchRangeQuery) inner.must().get(1).queryOption();
+    assertThat(rangeQuery.field()).isEqualTo(ClusterVariableIndex.METADATA_VALUE_NUMBER);
+    assertThat(rangeQuery.lte()).isEqualTo(5L);
+  }
+
+  @Test
+  public void shouldQueryMetadataByNumericGreaterThan() {
+    // given
+    final var metadataFilter =
+        new MetadataValueFilter.Builder()
+            .key("schemaVersion")
+            .valueOperation(UntypedOperation.of(gt(1)))
+            .build();
+    final var filter =
+        new ClusterVariableFilter.Builder().metadataOperations(metadataFilter).build();
+
+    // when
+    final var searchQuery = transformQuery(filter);
+
+    // then
+    final var nested = extractSingleNestedQuery(searchQuery);
+    final var inner = (SearchBoolQuery) nested.query().queryOption();
+    assertIsTermQuery(inner.must().get(0), ClusterVariableIndex.METADATA_KEY, "schemaVersion");
+    final var rangeQuery = (SearchRangeQuery) inner.must().get(1).queryOption();
+    assertThat(rangeQuery.field()).isEqualTo(ClusterVariableIndex.METADATA_VALUE_NUMBER);
+    assertThat(rangeQuery.gt()).isEqualTo(1L);
+  }
+
+  @Test
+  public void shouldQueryMetadataByIn() {
+    // given
+    final var metadataFilter =
+        new MetadataValueFilter.Builder()
+            .key("kind")
+            .valueOperation(UntypedOperation.of(in("CREDENTIAL", "SECRET")))
+            .build();
+    final var filter =
+        new ClusterVariableFilter.Builder().metadataOperations(metadataFilter).build();
+
+    // when
+    final var searchQuery = transformQuery(filter);
+
+    // then
+    final var nested = extractSingleNestedQuery(searchQuery);
+    final var inner = (SearchBoolQuery) nested.query().queryOption();
+    assertThat(inner.must()).hasSize(2);
+    assertIsTermQuery(inner.must().get(0), ClusterVariableIndex.METADATA_KEY, "kind");
+    final var termsQuery = (SearchTermsQuery) inner.must().get(1).queryOption();
+    assertThat(termsQuery.field()).isEqualTo(ClusterVariableIndex.METADATA_VALUE);
+  }
+
+  @Test
+  public void shouldQueryMetadataByNotIn() {
+    // given
+    final var metadataFilter =
+        new MetadataValueFilter.Builder()
+            .key("kind")
+            .valueOperation(UntypedOperation.of(notIn("CREDENTIAL", "SECRET")))
+            .build();
+    final var filter =
+        new ClusterVariableFilter.Builder().metadataOperations(metadataFilter).build();
+
+    // when
+    final var searchQuery = transformQuery(filter);
+
+    // then
+    final var nested = extractSingleNestedQuery(searchQuery);
+    final var inner = (SearchBoolQuery) nested.query().queryOption();
+    assertThat(inner.must()).hasSize(2);
+    assertIsTermQuery(inner.must().get(0), ClusterVariableIndex.METADATA_KEY, "kind");
+    final var notBool = (SearchBoolQuery) inner.must().get(1).queryOption();
+    final var termsQuery = (SearchTermsQuery) notBool.mustNot().getFirst().queryOption();
+    assertThat(termsQuery.field()).isEqualTo(ClusterVariableIndex.METADATA_VALUE);
   }
 
   @Test

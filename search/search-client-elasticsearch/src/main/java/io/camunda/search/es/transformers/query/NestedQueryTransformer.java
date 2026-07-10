@@ -7,6 +7,7 @@
  */
 package io.camunda.search.es.transformers.query;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.ChildScoreMode;
 import co.elastic.clients.elasticsearch._types.query_dsl.NestedQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import io.camunda.search.clients.query.SearchNestedQuery;
@@ -21,10 +22,10 @@ public final class NestedQueryTransformer
 
   @Override
   public NestedQuery apply(final SearchNestedQuery value) {
-    final var transformer = getQueryTransformer();
-    final var searchQuery = value.query();
-    final var query = transformer.apply(searchQuery);
-    final var path = value.path();
-    return QueryBuilders.nested().path(path).query(query).build();
+    return QueryBuilders.nested()
+        .path(value.path())
+        .query(getQueryTransformer().apply(value.query()))
+        .scoreMode(ChildScoreMode.None)
+        .build();
   }
 }
