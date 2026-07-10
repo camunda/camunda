@@ -101,10 +101,7 @@ public class AnalyticsExporterConfig {
 
   /** Validates configuration, logging warnings where appropriate. */
   public AnalyticsExporterConfig validate() {
-    if (endpoint == null || endpoint.isBlank()) {
-      throw new IllegalArgumentException("Analytics exporter endpoint is not configured");
-    }
-    validateEndpointScheme();
+    validateEndpoint();
     final Duration parsedPush;
     try {
       parsedPush = Duration.parse(pushInterval);
@@ -152,7 +149,10 @@ public class AnalyticsExporterConfig {
     return this;
   }
 
-  private void validateEndpointScheme() {
+  private void validateEndpoint() {
+    if (endpoint == null || endpoint.isBlank()) {
+      throw new IllegalArgumentException("Analytics exporter endpoint is not configured");
+    }
     final URI uri = URI.create(endpoint);
     final String host = uri.getHost();
     final boolean isLocalhost =
@@ -192,7 +192,7 @@ public class AnalyticsExporterConfig {
    *
    * <p><b>Excluded</b> (transport-only — affect delivery, not event semantics): {@code endpoint},
    * {@code maxQueueSize}, {@code maxBatchSize}, {@code pushInterval}, {@code heartbeatInterval},
-   * {@code signing}.
+   * {@code signing}, {@code allowInsecure}.
    *
    * <p>When adding a new field to this class, decide explicitly: if it changes event selection or
    * content, add it here; if it only affects delivery mechanics, leave it out and update the
