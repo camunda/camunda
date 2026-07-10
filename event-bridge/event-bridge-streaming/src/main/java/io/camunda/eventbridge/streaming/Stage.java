@@ -28,31 +28,21 @@ public interface Stage<R> {
   /** Wall-clock tick: flush buffered work so latency stays bounded. */
   default void flush() {}
 
-  /** Commit-interval tick: make the working state durable (state + offsets) in one cut. */
-  default void checkpoint() {}
-
   /**
-   * Whether this stage supports splitting its checkpoint into {@link #freezeCheckpoint()}, {@link
-   * #persistCheckpoint()} and {@link #completeCheckpoint(boolean)} so the runtime can persist in
-   * the background while the stage keeps processing. When any registered stage returns {@code
-   * false}, the {@link StreamProcessor} falls back to the synchronous {@link #checkpoint()} for all
-   * of them. Default {@code false}.
-   */
-  default boolean supportsFrozenCheckpoint() {
-    return false;
-  }
-
-  /**
-   * Freezes the stage's checkpoint delta as immutable data detached from the live working state.
-   * Runs on the processing thread at the commit barrier; must be cheap (steal-and-replace, at most
-   * O(delta) serialization, no store writes). At most one frozen delta is outstanding.
+   * Freezes the stage's checkpoint delta as immutable data detached from the live working state —
+   * the first phase of the stage's one checkpoint contract, the freeze/persist/complete trio the
+   * {@link StreamProcessor} drives inside every commit cut. Runs on the processing thread at the
+   * commit barrier; must be cheap (steal-and-replace, at most O(delta) serialization, no store
+   * writes). At most one frozen delta is outstanding. Default no-op for a stateless stage — its cut
+   * still advances the consumed offset.
    */
   default void freezeCheckpoint() {}
 
   /**
-   * Persists the frozen delta to the durable store. Runs on an IO thread inside the runtime's
-   * commit transaction — must not open its own transaction and must not touch any live (non-frozen)
-   * state, which the processing thread keeps mutating concurrently.
+   * Persists the frozen delta to the durable store. Runs on an IO thread inside the processor's
+   * shard transaction (or inline on the processing thread for the final cut at shutdown) — must not
+   * open its own transaction and must not touch any live (non-frozen) state, which the processing
+   * thread may keep mutating concurrently.
    */
   default void persistCheckpoint() {}
 

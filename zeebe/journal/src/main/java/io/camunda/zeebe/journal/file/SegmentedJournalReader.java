@@ -20,10 +20,18 @@ import static io.camunda.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
 
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
+import io.camunda.zeebe.journal.record.RecordData;
+import io.camunda.zeebe.journal.record.RecordMetadata;
+import io.camunda.zeebe.journal.record.SBESerializer;
 import io.camunda.zeebe.util.IndexEntry;
 import io.camunda.zeebe.util.IndexScanResult;
+import io.camunda.zeebe.util.JournalIndexCursor;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.jspecify.annotations.Nullable;
 
 class SegmentedJournalReader implements JournalReader {
@@ -32,10 +40,13 @@ class SegmentedJournalReader implements JournalReader {
   private Segment currentSegment;
   private SegmentReader currentReader;
   private final JournalMetrics metrics;
+  private final @Nullable JournalIndexCursor indexCursor;
+  private final SBESerializer scanSerializer = new SBESerializer();
 
   SegmentedJournalReader(final SegmentedJournal journal, final JournalMetrics journalMetrics) {
     this.journal = journal;
     metrics = journalMetrics;
+    indexCursor = journal.createIndexCursor();
     initialize();
   }
 
@@ -188,86 +199,140 @@ class SegmentedJournalReader implements JournalReader {
     return journal.getFirstSegment() == segment;
   }
 
-  private boolean isLastSegment(final Segment segment) {
-    return journal.getLastSegment() == segment;
-  }
-
-  private @Nullable Segment forwardToCorrectSegment(final Segment segment, final long asqn) {
-    Segment currentSegment = segment;
-    while (currentSegment != null && currentSegment.isOpen()) {
-      final var segmentIndex = currentSegment.segmentIndex();
-      final var segmentIndexEntryCount = segmentIndex.getEntryCount();
-
-      // Skip segments that have no out-of-band index or are empty
-      if (segmentIndex == null || segmentIndexEntryCount == 0) {
-        currentSegment = journal.getNextSegment(currentSegment.index());
-        continue;
-      }
-
-      // If this segment's highest ASQN is >= requested ASQN, we found the right one!
-      // We also stop if it's the absolute last segment to prevent over-shooting.
-      if (isLastSegment(currentSegment) || segmentIndex.getLastIndexedAsqn() >= asqn) {
-        return currentSegment;
-      }
-
-      // Still behind, move to the next segment
-      currentSegment = journal.getNextSegment(currentSegment.index());
-    }
-
-    return null; // Reached end of log
-  }
-
+  /**
+   * Serves a fetch scan from the in-memory sparse index plus an on-demand walk over journal frames.
+   * The sparse floor for {@code fromAsqn} yields a byte position at or before the record containing
+   * it; from there the scan hops frames reading only their headers until it finds the first batch
+   * with {@code highestAsqn >= fromAsqn}. Batches are then emitted as zero-copy slices until {@code
+   * maxBytes} is reached, a record crosses {@code upperBoundIndex}, or the serving segment ends.
+   * All emitted slices belong to a single segment, whose channel and lease are handed to the
+   * caller.
+   *
+   * <p>Records passed by the walk are fed back into the sparse index, so a scan against a cold
+   * index (e.g. right after a restart) warms it for subsequent scans.
+   */
   private IndexScanResult unsafeScanIndex(
       final long fromAsqn, final int maxBytes, final long upperBoundIndex) {
-    final var index = journal.getJournalIndex().lookupAsqn(fromAsqn, upperBoundIndex);
-
-    final Segment initialSegment;
-    if (index == null) {
-      initialSegment = journal.getFirstSegment();
-    } else {
-      initialSegment = journal.getSegment(index);
-    }
-
-    if (initialSegment == null) {
-      throw new RuntimeException("initialSegment is null");
-    }
-
-    final var finalSegment = forwardToCorrectSegment(initialSegment, fromAsqn);
-
-    // If we skipped an empty last segment, or ran completely out of segments
-    if (finalSegment == null) {
+    if (indexCursor == null) {
+      // Without an application-entry cursor the journal cannot interpret record data as batches;
+      // such journals never serve batch scans.
       return IndexScanResult.EndOfLog.INSTANCE;
     }
 
-    final var segmentIndex = finalSegment.segmentIndex();
-    final long firstIndexedAsqn = segmentIndex.getFirstIndexedAsqn();
-    final long lastIndexedAsqn = segmentIndex.getLastIndexedAsqn();
+    final var journalIndex = journal.getJournalIndex();
+    final Long floorIndex = journalIndex.lookupAsqn(fromAsqn, upperBoundIndex);
+    // Only a walk that starts at the very beginning of the retained log can prove that the
+    // requested ASQN precedes the oldest retained batch.
+    final boolean walkFromLogStart = floorIndex == null;
 
-    // Truncation Check
-    if (isFirstSegment(finalSegment) && firstIndexedAsqn > fromAsqn) {
-      return IndexScanResult.Truncated.INSTANCE;
+    Segment segment =
+        floorIndex == null ? journal.getFirstSegment() : journal.getSegment(floorIndex);
+    if (segment == null) {
+      throw new IllegalStateException(
+          "Expected a segment containing index %d, but none was found".formatted(floorIndex));
     }
 
-    List<IndexEntry> entries = null;
-    final var lease = finalSegment.retain();
-    try {
-      entries = segmentIndex.scanEntries(fromAsqn, maxBytes, upperBoundIndex);
+    final List<IndexEntry> entries = new ArrayList<>();
+    int readBytes = 0;
+    boolean firstBatchSeen = false;
 
-      if (entries.isEmpty()) {
-        if (fromAsqn > lastIndexedAsqn) {
-          return IndexScanResult.EndOfLog.INSTANCE;
-        } else {
-          return IndexScanResult.FutureOffset.INSTANCE;
+    int startPosition = initialScanPosition(segment, floorIndex);
+    while (segment != null && segment.isOpen()) {
+      final ByteBuffer view = segment.createScanView();
+      final DirectBuffer frameReader = new UnsafeBuffer(view);
+      view.position(startPosition);
+
+      while (FrameUtil.hasValidVersion(view)) {
+        final int frameStart = view.position();
+        final int metadataOffset = frameStart + FrameUtil.getLength();
+        final RecordMetadata metadata = scanSerializer.readMetadata(frameReader, metadataOffset);
+        final int recordOffset =
+            metadataOffset + scanSerializer.getMetadataLength(frameReader, metadataOffset);
+        final RecordData record = scanSerializer.readData(frameReader, recordOffset);
+        final int nextFrame = recordOffset + metadata.length();
+
+        // Self-warm the sparse index so the next scan starts closer to its floor.
+        journalIndex.index(record.index(), record.asqn(), frameStart);
+
+        if (record.asqn() != ASQN_IGNORE) {
+          // The absolute offset of the record's data, i.e. right after the record's header.
+          final int dataOffset = nextFrame - record.data().capacity();
+          indexCursor.wrap(record.data(), dataOffset);
+          while (indexCursor.hasNext()) {
+            indexCursor.next();
+            final long lowestAsqn = indexCursor.currentLowestAsqn();
+            final long highestAsqn = indexCursor.currentHighestAsqn();
+
+            if (!firstBatchSeen) {
+              firstBatchSeen = true;
+              if (walkFromLogStart && isFirstSegment(segment) && lowestAsqn > fromAsqn) {
+                return IndexScanResult.Truncated.INSTANCE;
+              }
+            }
+
+            if (highestAsqn < fromAsqn) {
+              // The batch lies entirely before the requested ASQN.
+              continue;
+            }
+
+            if (record.index() > upperBoundIndex) {
+              // The batch exists but lies beyond the visibility bound (e.g. not yet committed).
+              return entries.isEmpty()
+                  ? IndexScanResult.FutureOffset.INSTANCE
+                  : success(segment, entries);
+            }
+
+            entries.add(
+                new IndexEntry(
+                    lowestAsqn,
+                    highestAsqn,
+                    record.index(),
+                    indexCursor.currentOffset(),
+                    indexCursor.currentLength()));
+            readBytes += indexCursor.currentLength();
+            if (readBytes >= maxBytes) {
+              return success(segment, entries);
+            }
+          }
         }
+
+        view.position(nextFrame);
       }
 
-      return new IndexScanResult.Success(finalSegment.channel(), entries, lease);
-
-    } finally {
-      if (entries == null || entries.isEmpty()) {
-        lease.close(); // Release lease on failure/empty paths
+      if (!entries.isEmpty()) {
+        // The response is always served from a single segment.
+        return success(segment, entries);
       }
+
+      segment = journal.getNextSegment(segment.index());
+      startPosition = segment != null ? segment.descriptor().encodingLength() : 0;
     }
+
+    return IndexScanResult.EndOfLog.INSTANCE;
+  }
+
+  private IndexScanResult success(final Segment segment, final List<IndexEntry> entries) {
+    return new IndexScanResult.Success(segment.channel(), entries, segment.retain());
+  }
+
+  /**
+   * Returns the byte position at which the scan walk enters the given segment: the sparse index
+   * position of the floor record if it lies within the segment, otherwise the segment start.
+   */
+  private int initialScanPosition(final Segment segment, final @Nullable Long floorIndex) {
+    final int segmentStart = segment.descriptor().encodingLength();
+    if (floorIndex == null) {
+      return segmentStart;
+    }
+
+    final var floorPosition = journal.getJournalIndex().lookup(floorIndex);
+    if (floorPosition != null
+        && floorPosition.index() >= segment.index()
+        && floorPosition.index() <= segment.lastIndex()) {
+      return floorPosition.position();
+    }
+
+    return segmentStart;
   }
 
   long unsafeSeek(final long index) {

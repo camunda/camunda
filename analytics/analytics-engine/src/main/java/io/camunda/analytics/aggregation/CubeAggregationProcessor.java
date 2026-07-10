@@ -28,9 +28,10 @@ import java.util.List;
  * <em>forwarded</em> downstream as a {@link SegmentCell} to the shuffle sink node — the aggregate
  * emits its results; a separate node owns the transport.
  *
- * <p>{@code checkpoint()} persists the aggregation's open segment (Model F), so committing the full
- * consumed offset never loses the in-flight partial; the sealed deltas reach the shuffle sink
- * synchronously as they are emitted, and that node publishes them on {@code flush()}.
+ * <p>Durability is the owning task's concern: it freezes and persists the aggregation's open
+ * segment (Model F) inside its commit cut, so committing the full consumed offset never loses the
+ * in-flight partial; the sealed deltas reach the shuffle sink synchronously as they are emitted,
+ * and that node publishes them on {@code flush()}.
  */
 public final class CubeAggregationProcessor implements Processor<Fact, SegmentCell> {
 
@@ -77,11 +78,6 @@ public final class CubeAggregationProcessor implements Processor<Fact, SegmentCe
   @Override
   public void flush() {
     aggregation.flush();
-  }
-
-  @Override
-  public void checkpoint() {
-    aggregation.checkpoint();
   }
 
   @Override

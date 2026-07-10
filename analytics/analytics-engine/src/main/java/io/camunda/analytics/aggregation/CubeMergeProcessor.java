@@ -23,8 +23,8 @@ import java.util.Map;
  * cell by {@link SegmentDedup} per {@code (sourcePartition, streamId)}, and dispatches its cell
  * deltas by {@code streamId} to the matching meter's {@link SegmentMergingAggregation}, which
  * merges into one running cell and converges the idempotent serving sink. A terminal node ({@code
- * Out = Void}); {@code flush()} converges the sinks (produce-before-commit) and {@code
- * checkpoint()} persists the merged cells in the runtime's cut.
+ * Out = Void}); {@code flush()} converges the sinks (produce-before-commit), and the owning task
+ * freezes and persists the mergers' cells inside its commit cut.
  *
  * <p>Dedup is <em>per stream</em>, not per envelope: one source partition multiplexes many streams
  * (one per meter) that seal the same segment in different flushes, so admission is decided once per
@@ -111,11 +111,6 @@ public final class CubeMergeProcessor implements Processor<ShuffleEnvelope, Void
   @Override
   public void flush() {
     mergers.forEach(SegmentMergingAggregation::flush);
-  }
-
-  @Override
-  public void checkpoint() {
-    mergers.forEach(SegmentMergingAggregation::checkpoint);
   }
 
   @Override

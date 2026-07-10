@@ -109,20 +109,20 @@ final class AggregationStageTaskSnapshotTest {
     // when the first window's delta arrives (window [0, 1m), one fact) and a much later window
     // advances the watermark far past it
     task.process(envelope(dataset, 0L, 1L));
-    task.commit(0L);
+    Cuts.commit(task, 0L);
     task.process(envelope(dataset, 4 * MINUTE, 2L));
-    task.commit(1L);
+    Cuts.commit(task, 1L);
     // watermark = 5m - 1m grace = 4m: window [0,1m) finalized -> fold=1, boundary 1m released by
     // the watermark; window [4m,5m) still open (its end 5m > watermark)
-    task.commit(2L);
+    Cuts.commit(task, 2L);
 
     // then the snapshot at boundary 1m carries the ABSOLUTE cumulative value
     assertThat(snapshots()).containsExactly(Map.entry(MINUTE, 1L));
 
     // when an even later window finalizes the second one (watermark reaches 5m)
     task.process(envelope(dataset, 6 * MINUTE, 4L));
-    task.commit(3L);
-    task.commit(4L);
+    Cuts.commit(task, 3L);
+    Cuts.commit(task, 4L);
 
     // then the second snapshot is cumulative (1 + 2), sparse (no rows for silent boundaries)
     assertThat(snapshots()).containsExactly(Map.entry(MINUTE, 1L), Map.entry(5 * MINUTE, 3L));
@@ -134,10 +134,10 @@ final class AggregationStageTaskSnapshotTest {
     openTask();
     CompiledDataset dataset = compiled();
     task.process(envelope(dataset, 0L, 1L));
-    task.commit(0L);
+    Cuts.commit(task, 0L);
     task.process(envelope(dataset, 4 * MINUTE, 2L));
-    task.commit(1L);
-    task.commit(2L);
+    Cuts.commit(task, 1L);
+    Cuts.commit(task, 2L);
     assertThat(snapshots()).containsExactly(Map.entry(MINUTE, 1L));
 
     // when the task restarts over the same stores
@@ -151,8 +151,8 @@ final class AggregationStageTaskSnapshotTest {
 
     // and the next window finalizes the pre-restart open one
     task.process(envelope(dataset, 6 * MINUTE, 4L));
-    task.commit(3L);
-    task.commit(4L);
+    Cuts.commit(task, 3L);
+    Cuts.commit(task, 4L);
 
     // then the cumulative continued from the recovered fold — not from zero
     assertThat(snapshots()).containsExactly(Map.entry(MINUTE, 1L), Map.entry(5 * MINUTE, 3L));

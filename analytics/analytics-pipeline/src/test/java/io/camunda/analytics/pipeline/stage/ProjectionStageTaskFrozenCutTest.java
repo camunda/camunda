@@ -118,7 +118,7 @@ final class ProjectionStageTaskFrozenCutTest {
     assertThat(durableOffset()).hasValue(101L);
 
     // and the next commit covers the post-barrier fold
-    task.commit(102L);
+    Cuts.commit(task, 102L);
     assertThat(openSegmentTotal()).isEqualTo(3L);
     assertThat(durableOffset()).hasValue(102L);
   }
@@ -141,7 +141,7 @@ final class ProjectionStageTaskFrozenCutTest {
     assertThat(durableAppliedPosition()).hasValue(10L);
 
     // and the next commit advances it together with that fold
-    task.commit(101L);
+    Cuts.commit(task, 101L);
     assertThat(durableAppliedPosition()).hasValue(20L);
     assertThat(openSegmentTotal()).isEqualTo(2L);
   }
@@ -164,7 +164,7 @@ final class ProjectionStageTaskFrozenCutTest {
     assertThat(durableAppliedPosition()).isEmpty();
 
     // and the next commit covers all three folds exactly once
-    task.commit(102L);
+    Cuts.commit(task, 102L);
     assertThat(openSegmentTotal()).isEqualTo(3L);
     assertThat(durableOffset()).hasValue(102L);
     assertThat(durableAppliedPosition()).hasValue(12L);

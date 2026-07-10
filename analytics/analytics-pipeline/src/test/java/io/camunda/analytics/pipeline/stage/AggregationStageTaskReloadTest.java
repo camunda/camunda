@@ -104,11 +104,11 @@ final class AggregationStageTaskReloadTest {
     final CubeHandle handleA = resolve(cubeA);
     assertThat(cellStore.scans(handleA.cellGroup())).isEqualTo(1); // recovered once at construction
     task.process(envelope(handleA));
-    task.commit(0L);
+    Cuts.commit(task, 0L);
 
     // when a second cube is provisioned and the next commit reloads the topology
     final CubeHandle cubeB = provision("cube-b");
-    task.commit(1L);
+    Cuts.commit(task, 1L);
 
     // then only the added cube's aggregation recovered and only its DDL ran — the existing one
     // kept its wiring and in-heap state untouched
@@ -120,7 +120,7 @@ final class AggregationStageTaskReloadTest {
 
     // and a further delta folds onto the surviving cube's prior total
     task.process(envelope(handleA));
-    task.commit(2L);
+    Cuts.commit(task, 2L);
     assertThat(durableTotal(handleA)).isEqualTo(2L);
   }
 
@@ -131,27 +131,27 @@ final class AggregationStageTaskReloadTest {
     openTask();
     final CubeHandle handleA = resolve(cubeA); // resolved before the cube disappears
     task.process(envelope(handleA));
-    task.commit(0L);
+    Cuts.commit(task, 0L);
     assertThat(durableTotal(handleA)).isEqualTo(1L);
 
     // when the cube is removed and the next commit reloads
     metadataStore.hide(handleA.cubeId());
-    task.commit(1L);
+    Cuts.commit(task, 1L);
 
     // then its node is gone: a delta for its stream is dropped, the durable cell untouched
     task.process(envelope(handleA));
-    task.commit(2L);
+    Cuts.commit(task, 2L);
     assertThat(durableTotal(handleA)).isEqualTo(1L);
 
     // when the same id is re-added
     metadataStore.unhide(handleA.cubeId());
-    task.commit(3L);
+    Cuts.commit(task, 3L);
 
     // then it recovered afresh from durable state only (a second recover scan, no leaked heap
     // state) and folds forward from the durable total
     assertThat(cellStore.scans(handleA.cellGroup())).isEqualTo(2);
     task.process(envelope(handleA));
-    task.commit(4L);
+    Cuts.commit(task, 4L);
     assertThat(durableTotal(handleA)).isEqualTo(2L);
   }
 
@@ -165,8 +165,10 @@ final class AggregationStageTaskReloadTest {
     // when the cube's first delta arrives BEFORE this task's catalog reload (the facts offset
     // advances past its envelope regardless)
     task.process(envelope(handle));
-    task.commit(0L); // persists the parked delta, then the reload wires the cube and drains it
-    task.commit(1L); // the next cut makes the drained cells durable and deletes the parked rows
+    Cuts.commit(
+        task, 0L); // persists the parked delta, then the reload wires the cube and drains it
+    Cuts.commit(
+        task, 1L); // the next cut makes the drained cells durable and deletes the parked rows
 
     // then the delta survived the reload gap and folded exactly once
     assertThat(durableTotal(handle)).isEqualTo(1L);
@@ -180,7 +182,7 @@ final class AggregationStageTaskReloadTest {
     final CubeHandle late = provision("cube-late");
     final CubeHandle handle = resolve(late);
     task.process(envelope(handle));
-    task.commit(0L);
+    Cuts.commit(task, 0L);
     task.close();
     task = null;
 
@@ -190,7 +192,7 @@ final class AggregationStageTaskReloadTest {
 
     // then the parked delta was restored and re-drained at construction (the pre-drain dedup
     // watermarks rolled back with the lost fold, so admission succeeds again — exactly once)
-    task.commit(1L);
+    Cuts.commit(task, 1L);
     assertThat(durableTotal(handle)).isEqualTo(1L);
   }
 

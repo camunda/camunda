@@ -60,6 +60,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,7 +81,7 @@ public class RaftPartitionServer implements HealthMonitorable {
   private final ReceivableSnapshotStore persistedSnapshotStore;
   private final RaftServer server;
   private final MeterRegistry meterRegistry;
-  private final JournalIndexCursor journalIndexCursor;
+  private final Supplier<JournalIndexCursor> indexCursorSupplier;
 
   public RaftPartitionServer(
       final RaftPartition partition,
@@ -103,7 +104,7 @@ public class RaftPartitionServer implements HealthMonitorable {
     snapshotRequestTimeout = config.getSnapshotRequestTimeout();
     configurationChangeTimeout = config.getConfigurationChangeTimeout();
     server = buildServer(meterRegistry);
-    journalIndexCursor = null;
+    indexCursorSupplier = null;
   }
 
   public RaftPartitionServer(
@@ -115,7 +116,7 @@ public class RaftPartitionServer implements HealthMonitorable {
       final ReceivableSnapshotStore persistedSnapshotStore,
       final PartitionMetadata partitionMetadata,
       final MeterRegistry meterRegistry,
-      final JournalIndexCursor journalIndexCursor) {
+      final Supplier<JournalIndexCursor> indexCursorSupplier) {
     this.partition = partition;
     this.config = config;
     this.localMemberId = localMemberId;
@@ -127,7 +128,7 @@ public class RaftPartitionServer implements HealthMonitorable {
     requestTimeout = config.getRequestTimeout();
     snapshotRequestTimeout = config.getSnapshotRequestTimeout();
     configurationChangeTimeout = config.getConfigurationChangeTimeout();
-    this.journalIndexCursor = journalIndexCursor;
+    this.indexCursorSupplier = indexCursorSupplier;
     server = buildServer(meterRegistry);
   }
 
@@ -380,7 +381,7 @@ public class RaftPartitionServer implements HealthMonitorable {
         .withSnapshotStore(persistedSnapshotStore)
         .withJournalIndexDensity(storageConfig.getJournalIndexDensity())
         .withSegmentAllocator(storageConfig.getSegmentAllocator())
-        .withIndexSupplier(journalIndexCursor)
+        .withIndexCursorSupplier(indexCursorSupplier)
         .build();
   }
 

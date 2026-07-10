@@ -29,9 +29,10 @@ import java.util.function.Supplier;
  * }</pre>
  *
  * <p>With caching, the store is wrapped in a {@link CachingKeyValueStore} — a bytes-bounded
- * read-through cache whose writes flush on {@link
- * io.camunda.eventbridge.streaming.state.api.Checkpointable#checkpoint()} into the runtime's commit
- * transaction. Recovery is changelog-free by design: the delegate advances atomically with the
+ * read-through cache whose writes flush into the owning task's commit cut (the
+ * freeze/persist/complete split, or {@link
+ * io.camunda.eventbridge.streaming.state.api.Checkpointable#checkpoint()} as its inline
+ * composition). Recovery is changelog-free by design: the delegate advances atomically with the
  * consumed offsets and a crash replays the source log, so no per-store changelog is materialized.
  *
  * @param <CF> the caller's column-family enum

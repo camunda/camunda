@@ -31,20 +31,13 @@ public interface Processor<In, Out> {
 
   /**
    * Wall-clock freshness tick: emit buffered output so latency stays bounded. Does <em>not</em>
-   * make state durable (see {@link #checkpoint()}). Default: no-op.
+   * make state durable — durability is the owning task's concern: it freezes and persists its
+   * processors' state inside its own commit cut. Default: no-op.
    */
   default void flush() {}
 
   /**
-   * Commit-interval tick: make this processor's working state durable, inside the runtime's one
-   * checkpoint transaction, so it lands in the same atomic cut as the consumed offset. A processor
-   * backed only by in-memory or write-through state may leave this a no-op; a write-back-cached
-   * store flushes here. Default: no-op.
-   */
-  default void checkpoint() {}
-
-  /**
-   * Whether this processor holds buffered writes that should be checkpointed before the regular
+   * Whether this processor holds buffered writes that should be committed before the regular
    * interval — e.g. a bounded write-back cache is full. Bubbles up through the topology so the
    * runtime runs the commit barrier early. Default {@code false}.
    */

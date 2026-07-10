@@ -28,8 +28,8 @@ import java.util.Set;
  * #punctuateWallClock(long)} runs the {@link PunctuationType#WALL_CLOCK_TIME} punctuators (bounded
  * latency, idle-timeout work) and {@link #advanceStreamTime(long)} the {@link
  * PunctuationType#STREAM_TIME} ones (window finalization, retention). State stores are added by
- * name and connected to the processors allowed to reach them; their durability is the runtime's
- * concern (the driver's checkpoint), not the topology's.
+ * name and connected to the processors allowed to reach them; their durability is the owning task's
+ * concern — it freezes and persists their deltas inside its own commit cut — not the topology's.
  *
  * <p>Single-writer: one topology per source partition, driven on the runtime thread.
  *
@@ -86,15 +86,6 @@ public final class ProcessorTopology<R> implements Stage<R> {
   @Override
   public void flush() {
     nodes.forEach(ProcessorNode::flush);
-  }
-
-  /**
-   * Commit-interval tick: checkpoint every node in one cut (order among nodes is irrelevant — the
-   * runtime commits them in a single transaction).
-   */
-  @Override
-  public void checkpoint() {
-    nodes.forEach(ProcessorNode::checkpoint);
   }
 
   @Override

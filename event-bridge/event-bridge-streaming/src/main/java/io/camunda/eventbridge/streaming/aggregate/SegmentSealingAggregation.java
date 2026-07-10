@@ -32,10 +32,10 @@ import org.agrona.concurrent.UnsafeBuffer;
  * feeding the fold), re-folding after a crash reproduces the identical delta; downstream merges
  * each once, deduped by the {@code (sourcePartition, segment)} coordinate.
  *
- * <p><b>Durability.</b> Under the consistent-cut model (Model F) the runtime commits the <em>full
- * processed offset</em> together with all operator state in one transaction, so the open segment's
- * partial buffer must be checkpointed too — otherwise committing the full offset would lose it.
- * Constructed {@linkplain #SegmentSealingAggregation(int, AggregateFunction, KeySelector,
+ * <p><b>Durability.</b> Under the consistent-cut model (Model F) the owning task commits the
+ * <em>full processed offset</em> together with all operator state in one transaction, so the open
+ * segment's partial buffer must be checkpointed too — otherwise committing the full offset would
+ * lose it. Constructed {@linkplain #SegmentSealingAggregation(int, AggregateFunction, KeySelector,
  * SourceCoordinate, ToLongFunction, Windows, Segments, SegmentSink, KeyValueStore, RecordValue,
  * RecordValue, TransactionRunner) with a state store}, {@link #checkpoint()} persists the open
  * {@code (window, key) -> accumulator} buffer plus the {@code (openSegment, sourcePartition)} meta,
@@ -47,7 +47,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  *
  * <p>The Model-F checkpoint is split so the durable write can run off the owner thread: {@link
  * #freeze()} serializes the open buffer into an immutable snapshot and folding resumes immediately;
- * {@link #persistFrozen()} writes the snapshot inside the transaction the runtime supplies; {@link
+ * {@link #persistFrozen()} writes the snapshot inside the transaction the task supplies; {@link
  * #completeFrozen(boolean)} settles the outcome. {@link #checkpoint()} composes the three
  * synchronously for callers without an asynchronous commit. All three are no-ops under Model R.
  *
@@ -249,10 +249,10 @@ public final class SegmentSealingAggregation<IN, K, ACC> implements Aggregation<
   }
 
   /**
-   * Commit-interval tick as one synchronous cut: {@link #freeze()} the open buffer, persist it
-   * inside one transaction, {@link #completeFrozen(boolean) complete}. Callers that overlap the
-   * persist with processing drive the three steps themselves instead — freeze and complete on the
-   * owner thread, {@link #persistFrozen()} inside the transaction the runtime supplies.
+   * An inline cut on the owner thread: {@link #freeze()} the open buffer, persist it inside one
+   * transaction, {@link #completeFrozen(boolean) complete}. Callers that overlap the persist with
+   * processing drive the three steps themselves instead — freeze and complete on the owner thread,
+   * {@link #persistFrozen()} inside the transaction the task supplies.
    */
   @Override
   public void checkpoint() {

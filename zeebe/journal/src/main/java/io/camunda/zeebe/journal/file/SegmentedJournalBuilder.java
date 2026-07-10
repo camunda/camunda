@@ -24,6 +24,7 @@ import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.util.JournalIndexCursor;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
+import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 
 /** Raft log builder. */
@@ -50,7 +51,7 @@ public class SegmentedJournalBuilder {
 
   private @Nullable JournalMetaStore journalMetaStore;
   private final MeterRegistry meterRegistry;
-  private @Nullable JournalIndexCursor indexSupplier;
+  private @Nullable Supplier<JournalIndexCursor> indexCursorSupplier;
   private SegmentAllocator segmentAllocator = SegmentAllocator.defaultAllocator();
 
   SegmentedJournalBuilder(final MeterRegistry meterRegistry) {
@@ -169,19 +170,22 @@ public class SegmentedJournalBuilder {
     return this;
   }
 
-  public SegmentedJournalBuilder withIndexSupplier(final JournalIndexCursor supplier) {
-    indexSupplier = supplier;
+  /**
+   * Sets the factory for {@link JournalIndexCursor}s used by readers to interpret application
+   * records as batches when serving index scans (zero-copy fetch, event bridge). The cursor is
+   * stateful, so each reader receives its own instance. Journals without a cursor factory (e.g.
+   * regular Zeebe partitions) do not serve index scans.
+   */
+  public SegmentedJournalBuilder withIndexCursorSupplier(
+      final Supplier<JournalIndexCursor> supplier) {
+    indexCursorSupplier = supplier;
     return this;
   }
 
   public SegmentedJournal build() {
     final var journalIndex = new SparseJournalIndex(journalIndexDensity);
     final var journalMetrics = new JournalMetrics(meterRegistry);
-    // The index cursor is optional: it is only used to populate the out-of-band ASQN index for
-    // zero-copy fetch (event bridge). Journals without it (e.g. regular Zeebe partitions) simply
-    // do not maintain that index; the append and recovery paths null-guard the cursor.
-    final var segmentLoader =
-        new SegmentLoader(freeDiskSpace, journalMetrics, segmentAllocator, indexSupplier);
+    final var segmentLoader = new SegmentLoader(freeDiskSpace, journalMetrics, segmentAllocator);
     final var metaStore = requireNonNull(journalMetaStore, "must specify a journal meta store");
     final var segmentsManager =
         new SegmentsManager(
@@ -191,10 +195,9 @@ public class SegmentedJournalBuilder {
             name,
             segmentLoader,
             journalMetrics,
-            metaStore,
-            indexSupplier);
+            metaStore);
 
     return new SegmentedJournal(
-        journalIndex, segmentsManager, journalMetrics, metaStore, indexSupplier);
+        journalIndex, segmentsManager, journalMetrics, metaStore, indexCursorSupplier);
   }
 }

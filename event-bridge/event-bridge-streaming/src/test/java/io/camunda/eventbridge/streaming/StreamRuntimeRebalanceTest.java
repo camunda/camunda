@@ -34,7 +34,7 @@ final class StreamRuntimeRebalanceTest {
   private static final String TOPIC = "facts";
 
   @Test
-  void shouldRebuildAnAssignedOwningShardAndReleaseARevokedOne() throws Exception {
+  void shouldRebuildAnAssignedShardAndReleaseARevokedOne() throws Exception {
     final AtomicReference<RebalanceListener> listener = new AtomicReference<>();
     final List<Collection<TopicPartition>> sought = new CopyOnWriteArrayList<>();
     final java.util.Set<Integer> built = ConcurrentHashMap.newKeySet();
@@ -65,14 +65,9 @@ final class StreamRuntimeRebalanceTest {
         .when(consumer)
         .seekToBeginning(any());
 
-    // A self-owning shard with no local state (restore == NO_OFFSET), latching its close().
-    final Task<String> owningTask =
+    // A shard with no local state (restore == NO_OFFSET), latching its close().
+    final Task<String> shardTask =
         new Task<>() {
-          @Override
-          public boolean ownsDurability() {
-            return true;
-          }
-
           @Override
           public long restore() {
             return Task.NO_OFFSET;
@@ -98,7 +93,7 @@ final class StreamRuntimeRebalanceTest {
             .taskFactory(
                 partition -> {
                   built.add(partition);
-                  return owningTask;
+                  return shardTask;
                 })
             .build();
 

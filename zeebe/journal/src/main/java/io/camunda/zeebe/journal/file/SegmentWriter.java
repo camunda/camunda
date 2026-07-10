@@ -31,7 +31,6 @@ import io.camunda.zeebe.journal.record.RecordMetadata;
 import io.camunda.zeebe.journal.record.SBESerializer;
 import io.camunda.zeebe.journal.util.ChecksumGenerator;
 import io.camunda.zeebe.util.Either;
-import io.camunda.zeebe.util.JournalIndexCursor;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import java.nio.BufferUnderflowException;
@@ -61,15 +60,13 @@ final class SegmentWriter {
   private final MutableDirectBuffer writeBuffer = new UnsafeBuffer();
   private final int descriptorLength;
   private final JournalMetrics metrics;
-  private final @Nullable JournalIndexCursor journalIndexCursor;
 
   SegmentWriter(
       final MappedByteBuffer buffer,
       final Segment segment,
       final JournalIndex index,
       final long lastWrittenAsqn,
-      final JournalMetrics metrics,
-      final @Nullable JournalIndexCursor journalIndexCursor) {
+      final JournalMetrics metrics) {
     this.segment = segment;
     descriptorLength = segment.descriptor().encodingLength();
     recordUtil = new JournalRecordReaderUtil(serializer);
@@ -79,7 +76,6 @@ final class SegmentWriter {
     writeBuffer.wrap(buffer);
     firstAsqn = lastWrittenAsqn + 1;
     lastAsqn = lastWrittenAsqn;
-    this.journalIndexCursor = journalIndexCursor;
     lastEntryPosition = segment.descriptor().lastPosition();
     this.metrics = metrics;
     if (lastEntryPosition > 0) {
@@ -181,13 +177,6 @@ final class SegmentWriter {
 
     final var record =
         finalizeAppend(expectedChecksum, startPosition, frameLength, metadataLength, recordLength);
-    // Index this entry too. This is the replication path a follower (or passive member) uses for
-    // entries received from the leader; without this only entries a node appends *as leader* land
-    // in the segment index, so after a leadership change the new leader is missing index entries
-    // for records it replicated as a follower — making committed, present records unreadable via
-    // fetch (OFFSET_OUT_OF_RANGE). The call is a no-op for journals without an application-entry
-    // cursor (non-event-bridge partitions), so Zeebe partitions are unaffected.
-    tryUpdateIndex(record, startPosition, frameLength, metadataLength);
     return Either.right(record);
   }
 
@@ -221,45 +210,11 @@ final class SegmentWriter {
             recordLength ->
                 finalizeAppend(
                     expectedChecksum, startPosition, frameLength, metadataLength, recordLength))
-        .map(
-            entry -> {
-              tryUpdateIndex(entry, startPosition, frameLength, metadataLength);
-              return entry;
-            })
         .mapLeft(
             segmentFull -> {
               buffer.position(startPosition);
               return segmentFull;
             });
-  }
-
-  private void tryUpdateIndex(
-      final JournalRecord record,
-      final int startPosition,
-      final int frameLength,
-      final int metadataLength) {
-
-    if (journalIndexCursor == null) {
-      return;
-    }
-
-    final var index = record.index();
-    final var headerLength = ((SBESerializer) serializer).getSerializedHeaderLength();
-    final int baseOffset = startPosition + frameLength + metadataLength + headerLength;
-
-    journalIndexCursor.wrap(record.data(), baseOffset);
-    while (journalIndexCursor.hasNext()) {
-      journalIndexCursor.next();
-
-      segment
-          .segmentIndex()
-          .appendEntry(
-              journalIndexCursor.currentLowestAsqn(),
-              journalIndexCursor.currentHighestAsqn(),
-              index,
-              journalIndexCursor.currentOffset(),
-              journalIndexCursor.currentLength());
-    }
   }
 
   /** Writes record metadata and header. Update lastWrittenEntry. Update JournalIndex */

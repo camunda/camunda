@@ -68,10 +68,6 @@ final class ProcessorNode<In, Out> {
     processor.flush();
   }
 
-  void checkpoint() {
-    processor.checkpoint();
-  }
-
   boolean needsCheckpoint() {
     return processor.needsCheckpoint();
   }

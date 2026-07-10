@@ -39,6 +39,7 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 /**
  * Immutable log configuration and {@link RaftLog} factory.
@@ -69,7 +70,7 @@ public final class RaftStorage {
   private final SegmentAllocator segmentAllocator;
   private final MeterRegistry meterRegistry;
   private final RaftLogFlusher.Factory flusherFactory;
-  private final JournalIndexCursor journalIndexCursor;
+  private final Supplier<JournalIndexCursor> indexCursorSupplier;
 
   private RaftStorage(
       final String prefix,
@@ -82,7 +83,7 @@ public final class RaftStorage {
       final int journalIndexDensity,
       final SegmentAllocator segmentAllocator,
       final MeterRegistry meterRegistry,
-      final JournalIndexCursor journalIndexCursor) {
+      final Supplier<JournalIndexCursor> indexCursorSupplier) {
     this.prefix = prefix;
     this.partitionId = partitionId;
     this.directory = directory;
@@ -93,7 +94,7 @@ public final class RaftStorage {
     this.journalIndexDensity = journalIndexDensity;
     this.segmentAllocator = segmentAllocator;
     this.meterRegistry = meterRegistry;
-    this.journalIndexCursor = journalIndexCursor;
+    this.indexCursorSupplier = indexCursorSupplier;
 
     try {
       FileUtil.ensureDirectoryExists(directory.toPath());
@@ -204,7 +205,7 @@ public final class RaftStorage {
         .withSegmentAllocator(segmentAllocator)
         .withMetaStore(metaStore)
         .withFlusher(flusherFactory.createFlusher(threadFactory))
-        .withIndexEntrySupplier(journalIndexCursor)
+        .withIndexCursorSupplier(indexCursorSupplier)
         .build();
   }
 
@@ -273,7 +274,7 @@ public final class RaftStorage {
     private SegmentAllocator segmentAllocator = SegmentAllocator.defaultAllocator();
     private int partitionId = DEFAULT_PARTITION_ID;
     private final MeterRegistry meterRegistry;
-    private JournalIndexCursor journalIndexCursor;
+    private Supplier<JournalIndexCursor> indexCursorSupplier;
 
     private Builder(final MeterRegistry meterRegistry) {
       this.meterRegistry = Objects.requireNonNull(meterRegistry, "meterRegistry cannot be null");
@@ -390,8 +391,8 @@ public final class RaftStorage {
       return this;
     }
 
-    public Builder withIndexSupplier(final JournalIndexCursor supplier) {
-      journalIndexCursor = supplier;
+    public Builder withIndexCursorSupplier(final Supplier<JournalIndexCursor> supplier) {
+      indexCursorSupplier = supplier;
       return this;
     }
 
@@ -413,7 +414,7 @@ public final class RaftStorage {
           journalIndexDensity,
           segmentAllocator,
           meterRegistry,
-          journalIndexCursor);
+          indexCursorSupplier);
     }
   }
 }

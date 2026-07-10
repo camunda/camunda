@@ -88,7 +88,7 @@ final class AggregationStageTaskDedupPersistenceTest {
     openTask();
     final CubeHandle handle = resolve();
     task.process(envelope(handle, 1L, 0));
-    task.commit(0L);
+    Cuts.commit(task, 0L);
     assertThat(durableTotal(handle)).isEqualTo(1L);
 
     // when the task restarts over the same store and the same (segment, chunk) is re-delivered as
@@ -98,14 +98,14 @@ final class AggregationStageTaskDedupPersistenceTest {
     openTask();
     final CubeHandle reopened = resolve();
     task.process(envelope(reopened, 1L, 0));
-    task.commit(1L);
+    Cuts.commit(task, 1L);
 
     // then the restored watermarks drop it — the durable total is unchanged
     assertThat(durableTotal(reopened)).isEqualTo(1L);
 
     // and a genuinely new chunk still admits and folds
     task.process(envelope(reopened, 2L, 0));
-    task.commit(2L);
+    Cuts.commit(task, 2L);
     assertThat(durableTotal(reopened)).isEqualTo(2L);
   }
 

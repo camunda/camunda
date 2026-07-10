@@ -62,19 +62,18 @@ import org.slf4j.LoggerFactory;
  * drives a one-node {@link ProcessorTopology} whose source is a {@link CubeMergeProcessor} — dedup
  * each envelope, dispatch its composite cell deltas by the cube's {@code streamId} to its per-tier
  * {@link SegmentMergingAggregation}s, converge the idempotent serving sink. The merged cells and
- * the facts offset live in the one provider, so {@link #commit(long)} makes them one atomic cut:
+ * the facts offset live in the one provider, so {@link #freezeCut(long)} makes them one atomic cut:
  * converge the sinks and flush the serving rows (produce-before-commit), then persist the offset +
  * merged cells.
  *
- * <p><b>Frozen cuts (streaming ADR 0005).</b> {@link #freezeCut(long)} detaches the same cut at the
- * barrier — every merger's frozen checkpoint delta (closed windows finalized, changed cells
- * converged), the staged serving rows, and the <em>at-barrier</em> dedup watermark snapshot — so
- * the partition keeps merging while the IO thread flushes the serving rows and persists the state;
- * {@link #commit(long)} remains the synchronous composition of that cut (the final stop commit and
- * the fallback path).
+ * <p><b>Frozen cuts (streaming ADR 0005, 0008).</b> {@link #freezeCut(long)} detaches the cut at
+ * the barrier — every merger's frozen checkpoint delta (closed windows finalized, changed cells
+ * converged), the staged serving rows, and the <em>at-barrier</em> dedup watermark snapshot — and
+ * the runtime drives publish → persist → complete: on an IO thread while the partition keeps
+ * merging, or inline on the actor thread for the final cut at shutdown.
  *
  * <p><b>Live reload (ADR 0005).</b> The merge topology is built from the shared versioned {@link
- * DatasetCatalog}. At each {@link #commit(long)} — after the durable cut, at most once per
+ * DatasetCatalog}. On each successful cut's completion — after the durable cut, at most once per
  * reload-check interval — the task checks the catalog version and, when it moved, rebuilds the
  * merge node from the catalog's current cubes <em>over the same open RocksDB</em> so it has a
  * merger + {@code CellApplier} for a newly-declared cube's {@code streamId} (otherwise the merge
@@ -502,11 +501,6 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
   }
 
   @Override
-  public boolean ownsDurability() {
-    return true;
-  }
-
-  @Override
   public void init() {
     topology.init();
   }
@@ -525,21 +519,6 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
   @Override
   public void flush() {
     topology.flush();
-  }
-
-  @Override
-  public void commit(final long offset) {
-    // The synchronous composition of the frozen cut — the final stop commit and the fallback path.
-    // Same barrier, same produce-before-commit ordering, just with no merging in between.
-    final CommitCut cut = freezeCut(offset);
-    try {
-      cut.publish();
-      cut.persist();
-    } catch (final RuntimeException e) {
-      cut.complete(false);
-      throw e;
-    }
-    cut.complete(true);
   }
 
   @Override

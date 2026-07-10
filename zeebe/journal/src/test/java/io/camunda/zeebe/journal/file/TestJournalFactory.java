@@ -75,7 +75,7 @@ final class TestJournalFactory {
     size = getSerializedSize(entryData);
     this.maxEntryCount = maxEntryCount;
 
-    loader = new SegmentLoader(2L * maxSegmentSize(), metrics, allocator, null);
+    loader = new SegmentLoader(2L * maxSegmentSize(), metrics, allocator);
   }
 
   int serializedEntrySize() {
@@ -116,8 +116,7 @@ final class TestJournalFactory {
         "journal",
         loader,
         metrics,
-        metaStore,
-        null);
+        metaStore);
   }
 
   SegmentedJournal journal(final SegmentsManager segments) {

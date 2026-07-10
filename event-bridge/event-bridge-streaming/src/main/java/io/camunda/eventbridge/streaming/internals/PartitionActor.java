@@ -36,22 +36,19 @@ import org.slf4j.LoggerFactory;
  * partition's {@link Task} and working state are touched by nothing else. This replaces the
  * lease/lock model with the framework's own guarantee.
  *
- * <p><b>Async commit, two modes.</b> The commit is the only step that blocks on a DB sink, so it
- * runs on an IO executor either way; the modes differ in what the actor does meanwhile. <em>Frozen
- * cut</em> (a task that supports {@link Task#freezeCut}): the actor freezes the cut at the barrier
- * — pointer swaps detaching the delta from the live state — and <b>keeps folding</b> while the IO
- * thread persists the frozen data it now exclusively owns ({@code cutInFlight} gates only a second
- * freeze; at most one cut is in flight). Folding pauses only in a <em>write stall</em> (the RocksDB
- * term): the task reports {@link Task#needsCheckpoint()} — its budget is exhausted because both the
- * active and the frozen entries are pinned — while the persist is still running, the natural
- * backpressure valve. <em>Legacy</em> (no frozen-cut support): the actor is <em>suspended</em>
- * ({@code committing} is set, so no folding/punctuation/second commit runs), giving the committing
- * thread — an IO thread for a task that owns its durability, the cut persister's writer thread for
- * a runtime-managed one — exclusive access to the live task. In both modes the source offset
- * advances only after the durable write — the produce-before-commit cut is at the freeze barrier's
- * offset, and completion (retire or merge back) runs back on the actor thread. A frozen cut
- * completes only once both the transaction and the chained source-offset ack are done, so
- * single-flight covers the full cut.
+ * <p><b>Every commit is a cut.</b> At the barrier the actor freezes the cut ({@link Task#freezeCut}
+ * — pointer swaps detaching the delta from the live state) and <b>keeps folding</b> while the sink
+ * IO executor publishes and persists the frozen data it now exclusively owns ({@code cutInFlight}
+ * gates only a second freeze; at most one cut is in flight). Folding pauses only in a <em>write
+ * stall</em> (the RocksDB term): the task reports {@link Task#needsCheckpoint()} — its budget is
+ * exhausted because both the active and the frozen entries are pinned — while the persist is still
+ * running, the natural backpressure valve. The source offset advances only after the durable write
+ * — the produce-before-commit cut is at the freeze barrier's offset — and completion (retire or
+ * merge back) runs back on the actor thread. A cut completes only once both the transaction and the
+ * chained source-offset ack are done, so single-flight covers the full cut. The final cut at
+ * shutdown is the same contract executed inline on the actor thread (see {@link #finalizeStop()}).
+ * Every task is a self-contained shard, so cuts of different partitions never contend on anything
+ * durable.
  *
  * @param <R> the decoded record type
  */
@@ -80,9 +77,8 @@ public final class PartitionActor<R> {
   private ActorControl control;
   private ActorCondition workAvailable;
   private ActorCondition stopSignal;
-  private boolean committing;
-  // A frozen cut is being persisted on the IO thread. Unlike committing, folding continues; the
-  // flag only enforces single-flight (no second freeze) and the budget-exhausted write stall.
+  // A frozen cut is being persisted on the IO thread. Folding continues; the flag only enforces
+  // single-flight (no second freeze) and the budget-exhausted write stall.
   private boolean cutInFlight;
   // Whether the fold is currently write-stalled, so the stall counter counts entries into the
   // stall rather than every re-check; reset when the in-flight cut completes.
@@ -91,10 +87,10 @@ public final class PartitionActor<R> {
   private boolean finalized;
 
   // The reused drain batch and the resume cursor into it. Entries drained from the queue live
-  // ONLY here until handled — when a mid-batch commit (memory pressure) suspends the fold, the
-  // unprocessed tail stays in the batch and onWork resumes from batchNext, so no drained entry is
-  // ever dropped (it is no longer in the queue; dropping it would silently lose the record until
-  // a restart replays it). Actor thread only.
+  // ONLY here until handled — when a write stall (memory pressure while a cut is in flight) parks
+  // the fold, the unprocessed tail stays in the batch and onWork resumes from batchNext, so no
+  // drained entry is ever dropped (it is no longer in the queue; dropping it would silently lose
+  // the record until a restart replays it). Actor thread only.
   private final List<SourceEntry<R>> batch = new ArrayList<>();
   private int batchNext;
 
@@ -187,12 +183,12 @@ public final class PartitionActor<R> {
     workAvailable.signal();
   }
 
-  /** Requests a graceful stop (final commit + close); safe to call from the source thread. */
+  /** Requests a graceful stop (final cut + close); safe to call from the source thread. */
   public void requestStop() {
     stopSignal.signal();
   }
 
-  /** Waits for the actor to finish its final commit and close its task. */
+  /** Waits for the actor to finish its final cut and close its task. */
   public boolean awaitStopped(final long timeoutMs) throws InterruptedException {
     return stopped.await(timeoutMs, TimeUnit.MILLISECONDS);
   }
@@ -208,11 +204,11 @@ public final class PartitionActor<R> {
   }
 
   /**
-   * Folds the current batch (resuming a tail a mid-batch commit left behind), refilling it from the
+   * Folds the current batch (resuming a tail a write stall left behind), refilling it from the
    * queue when exhausted, then commits if due. Runs on the actor thread.
    */
   private void onWork() {
-    if (committing || finalized || !running.getAsBoolean()) {
+    if (finalized || !running.getAsBoolean()) {
       return;
     }
     if (batchNext >= batch.size()) {
@@ -224,9 +220,9 @@ public final class PartitionActor<R> {
       final SourceEntry<R> entry = batch.get(batchNext);
       batchNext++;
       handleEntry(entry);
-      if (committing || finalized || !running.getAsBoolean()) {
-        return; // a fatal error stopped the runtime, or a commit suspended the fold — the
-        // unprocessed tail stays in the batch and resumes from batchNext
+      if (finalized || !running.getAsBoolean()) {
+        return; // a fatal error stopped the runtime — the unprocessed tail stays in the batch
+        // and resumes from batchNext
       }
       if (partition.task().needsCheckpoint()) {
         if (cutInFlight) {
@@ -240,15 +236,12 @@ public final class PartitionActor<R> {
           return;
         }
         beginCommit();
-        if (committing) {
-          return; // legacy synchronous cut suspended the fold; resumes via onCommitted
-        }
-        // Frozen cut: keep folding — the write stall above kicks in only if the budget is still
-        // exhausted while the persist runs.
+        // The cut is in flight but detached: keep folding — the write stall above kicks in only
+        // if the budget is still exhausted while the persist runs.
       }
     }
     maybeCommit();
-    if (!committing && !partition.queue().isEmpty()) {
+    if (!partition.queue().isEmpty()) {
       control.submit(this::onWork); // keep draining, yielding so timers still interleave
     }
   }
@@ -300,7 +293,7 @@ public final class PartitionActor<R> {
 
   /** The freshness tick and the idle-commit driver. Runs on the actor thread. */
   private void onPunctuationTick() {
-    if (committing || finalized || !running.getAsBoolean()) {
+    if (finalized || !running.getAsBoolean()) {
       return;
     }
     final Task<R> task = partition.task();
@@ -315,7 +308,7 @@ public final class PartitionActor<R> {
   }
 
   private void maybeCommit() {
-    if (committing || cutInFlight || finalized || !partition.hasPending()) {
+    if (cutInFlight || finalized || !partition.hasPending()) {
       return;
     }
     if (System.nanoTime() - partition.lastCommitNanos() >= commitIntervalNanos) {
@@ -325,11 +318,10 @@ public final class PartitionActor<R> {
 
   /**
    * Starts a commit: freeze a cut at the current barrier and keep folding while the IO thread
-   * persists it, or — for a task without frozen-cut support — suspend for a legacy synchronous
-   * commit. Actor thread only.
+   * persists it. Actor thread only.
    */
   private void beginCommit() {
-    if (committing || cutInFlight || !partition.hasPending()) {
+    if (cutInFlight || !partition.hasPending()) {
       return;
     }
     final long offset = partition.pending();
@@ -337,24 +329,20 @@ public final class PartitionActor<R> {
     // work; the durable write is what gets offloaded. The freeze timer is the residual pause.
     final long freezeStart = System.nanoTime();
     final CommitCut cut = partition.task().freezeCut(offset);
-    if (cut == null) {
-      beginLegacyCommit(offset);
-      return;
-    }
     metrics.observeFreeze(System.nanoTime() - freezeStart);
     cutInFlight = true;
     final CompletableActorFuture<Void> persisted = new CompletableActorFuture<>();
     sinkExecutor.execute(
         () -> {
           // IO-thread pickup to full cut completion (transaction plus source-offset ack): the
-          // pause the old synchronous commit design would have imposed on the fold — the
-          // feature's measured win. The timer deliberately keeps spanning the offset ack so runs
-          // stay comparable, even though the IO thread's *occupancy* now ends at the transaction
-          // commit; the ack completes on the client's network thread.
+          // pause a synchronous barrier would impose on the fold — the feature's measured win.
+          // The timer deliberately keeps spanning the offset ack so runs stay comparable, even
+          // though the IO thread's *occupancy* ends at the transaction commit; the ack completes
+          // on the client's network thread.
           final long persistStart = System.nanoTime();
           try {
             committer
-                .persistCut(partition, offset, cut, metrics)
+                .persistCut(partition, offset, cut)
                 .whenComplete(
                     (ignored, error) -> {
                       // Possibly on the client's network thread; runOnCompletion below marshals
@@ -371,44 +359,6 @@ public final class PartitionActor<R> {
           }
         });
     control.runOnCompletion(persisted, (ignored, error) -> onCutPersisted(offset, cut, error));
-  }
-
-  /**
-   * Offloads the blocking suspended commit — to the IO executor for a task that owns its
-   * durability, or to the cut persister's writer thread for a runtime-managed one — and resumes on
-   * completion. Actor thread only.
-   */
-  private void beginLegacyCommit(final long offset) {
-    committing = true;
-    final CompletableActorFuture<Void> committed = new CompletableActorFuture<>();
-    if (partition.task().ownsDurability()) {
-      // Self-contained shard: nothing shared, so the commit runs on any IO thread in parallel.
-      sinkExecutor.execute(
-          () -> {
-            try {
-              committer.commit(partition, offset);
-              committed.complete(null);
-            } catch (final Throwable t) {
-              committed.completeExceptionally(t);
-            }
-          });
-    } else {
-      // Runtime-managed durability: the whole legacy sequence runs on the persister thread — the
-      // only writer of the shared durable resources. Touching the live task there is safe because
-      // this actor stays suspended (committing) until the future settles, so any single thread may
-      // access the task, and the persister thread is that thread.
-      committer
-          .commitSuspended(partition, offset)
-          .whenComplete(
-              (ignored, error) -> {
-                if (error != null) {
-                  committed.completeExceptionally(error);
-                } else {
-                  committed.complete(null);
-                }
-              });
-    }
-    control.runOnCompletion(committed, (ignored, error) -> onCommitted(offset, error));
   }
 
   /**
@@ -445,54 +395,54 @@ public final class PartitionActor<R> {
     control.submit(this::onWork);
   }
 
-  private void onCommitted(final long offset, final Throwable error) {
-    committing = false;
-    if (error != null) {
-      LOG.warn("Commit of partition {} at offset {} failed; will retry", id(), offset, error);
-    } else {
-      // No folding ran while committing, so pending is still this offset.
-      partition.clearPending();
-      partition.markCommitted(System.nanoTime());
-    }
-    if (stopRequested) {
-      finalizeStop();
-      return;
-    }
-    // Resume the suspended batch tail first (if any), then anything queued during the commit.
-    control.submit(this::onWork);
-  }
-
   private void onStop() {
     stopRequested = true;
     finalizeStop();
   }
 
-  /** Final synchronous commit + close, once no commit is in flight. Actor thread only. */
+  /** Final cut + close, once no cut is in flight. Actor thread only. */
   private void finalizeStop() {
-    if (finalized || committing || cutInFlight) {
-      return; // an in-flight commit/cut finishes first; its completion re-enters finalizeStop
+    if (finalized || cutInFlight) {
+      return; // an in-flight cut finishes first; its completion re-enters finalizeStop
     }
     finalized = true;
     if (partition.hasPending()) {
-      try {
-        if (partition.task().ownsDurability()) {
-          // Self-contained shard: commits directly on this thread, shares nothing.
-          committer.commit(partition, partition.pending());
-        } else {
-          // Runtime-managed durability: the stop commit runs as a job on the persister thread —
-          // the only writer of the shared durable resources — and this actor joins it here.
-          // Joining is deadlock-free: the persister is a separate thread, and StreamRuntime's
-          // shutdown closes it only after every actor has stopped (this stop included). Should a
-          // late stop still find it closed, the persister runs the job inline on this thread —
-          // trivially exclusive, because its writer thread has already ended — so nothing hangs.
-          committer.commitSuspended(partition, partition.pending()).join();
-        }
-        partition.clearPending();
-      } catch (final RuntimeException e) {
-        LOG.warn("Final commit of partition {} failed", id(), e);
-      }
+      finalCut(partition.pending());
     }
     partition.task().close();
     stopped.countDown();
+  }
+
+  /**
+   * The final cut of the shard: the same contract as every other commit — freeze → publish →
+   * persist → complete — executed inline on the actor thread, with the source-offset commit joined
+   * (shutdown legitimately waits for durability). Inline execution trivially satisfies the cut's
+   * threading contract: the freezing thread and the persisting thread are the same thread, and no
+   * folding is concurrent because this actor runs nothing else while finalizing. Actor thread only.
+   */
+  private void finalCut(final long offset) {
+    // The freeze and persist record the usual timers, so the stop cut appears in the same metric
+    // stream as every in-flight cut; a failed final persist is NOT counted as a retry, because
+    // nothing retries it.
+    final long freezeStart = System.nanoTime();
+    final CommitCut cut = partition.task().freezeCut(offset);
+    metrics.observeFreeze(System.nanoTime() - freezeStart);
+    try {
+      final long persistStart = System.nanoTime();
+      committer.persistCut(partition, offset, cut).join();
+      metrics.observePersist(System.nanoTime() - persistStart);
+      cut.complete(true);
+      partition.clearPending();
+    } catch (final RuntimeException e) {
+      // Merge the cut back and proceed with the close anyway: the delta was not lost, only not
+      // persisted — after a restart, replay from the last durable cut re-folds the remainder.
+      cut.complete(false);
+      LOG.warn(
+          "Final cut of partition {} at offset {} failed; closing anyway — replay from the last"
+              + " durable cut covers the remainder",
+          id(),
+          offset,
+          e);
+    }
   }
 }

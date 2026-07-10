@@ -14,9 +14,10 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Instrumentation of one partition's commit-cut lifecycle: how long the fold pauses to freeze a
- * cut, how long the background persist takes, how often a failed persist merges back for retry, and
- * how often folding enters a write stall. Every meter is tagged by partition id only, keeping
- * cardinality low.
+ * cut, how long the persist takes, how often a failed persist merges back for retry, and how often
+ * folding enters a write stall. Every cut records the same timers — in-flight cuts persisting on
+ * the IO pool and the final inline stop cut alike — so a partition's cuts form one consistent
+ * stream. Every meter is tagged by partition id only, keeping cardinality low.
  *
  * <p>Optional by design: without a meter registry, {@link #NOOP} makes every recording a
  * zero-allocation no-op, so the hot path pays nothing when instrumentation is off.
@@ -41,20 +42,15 @@ public interface CutMetrics {
   default void observeFreeze(final long durationNanos) {}
 
   /**
-   * Wall time from IO-thread pickup to persist completion. This is the pause the old synchronous
-   * commit design would have imposed on the fold — the feature's measured win is the gap between
-   * this timer and the freeze timer.
+   * Wall time from persist pickup to full cut completion (transaction plus source-offset ack). This
+   * is the pause a synchronous barrier would impose on the fold — the async design's measured win
+   * is the gap between this timer and the freeze timer. Recorded only for successful persists; a
+   * failure counts a {@link #countRetry() retry} instead.
    */
   default void observePersist(final long durationNanos) {}
 
   /** A persist failed and its cut merged back for retry as part of the next, larger cut. */
   default void countRetry() {}
-
-  /**
-   * The partition's cut was made durable as part of a coalesced batch (more than one cut in one
-   * shared transaction) by the runtime-managed cut persister.
-   */
-  default void countCoalesced() {}
 
   /**
    * Folding entered a write stall: the budget was exhausted (active + frozen entries pinned) while
@@ -70,7 +66,6 @@ public interface CutMetrics {
     private final Timer freezeDuration;
     private final Timer persistDuration;
     private final Counter retries;
-    private final Counter coalesced;
     private final Counter writeStalls;
 
     private MicrometerCutMetrics(final MeterRegistry registry, final int partitionId) {
@@ -82,17 +77,12 @@ public interface CutMetrics {
               .register(registry);
       persistDuration =
           Timer.builder("eb.streaming.cut.persist.duration")
-              .description("Wall time of persisting a frozen commit cut on the IO thread")
+              .description("Wall time of persisting a frozen commit cut")
               .tag("partition", partition)
               .register(registry);
       retries =
           Counter.builder("eb.streaming.cut.retries")
               .description("Failed cut persists that merged back for retry")
-              .tag("partition", partition)
-              .register(registry);
-      coalesced =
-          Counter.builder("eb.streaming.cut.coalesced")
-              .description("Cuts made durable as part of a coalesced multi-cut transaction")
               .tag("partition", partition)
               .register(registry);
       writeStalls =
@@ -116,11 +106,6 @@ public interface CutMetrics {
     @Override
     public void countRetry() {
       retries.increment();
-    }
-
-    @Override
-    public void countCoalesced() {
-      coalesced.increment();
     }
 
     @Override

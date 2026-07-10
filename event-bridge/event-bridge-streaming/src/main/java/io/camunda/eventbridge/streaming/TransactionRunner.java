@@ -8,9 +8,11 @@
 package io.camunda.eventbridge.streaming;
 
 /**
- * Runs a block of state-store writes atomically, so a {@link Task#checkpoint() Task checkpoint} and
- * the {@link OffsetStore} offset write commit as one unit. A {@code
- * RocksDbStateStoreProvider::runInTransaction} method reference satisfies it.
+ * Runs a block of state-store writes atomically. Owned by a task's own state backend — a {@code
+ * RocksDbStateStoreProvider::runInTransaction} method reference satisfies it — and used wherever a
+ * shard makes its commit cut durable: the aggregation operators persist their checkpoint writes
+ * through it, and a {@link ShardDurability} wraps one so state and the consumed offset land as one
+ * atomic cut.
  */
 @FunctionalInterface
 public interface TransactionRunner {

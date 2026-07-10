@@ -25,6 +25,7 @@ import io.camunda.zeebe.journal.file.SegmentedJournalBuilder;
 import io.camunda.zeebe.util.JournalIndexCursor;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
+import java.util.function.Supplier;
 
 public class RaftLogBuilder implements io.atomix.utils.Builder<RaftLog> {
 
@@ -151,8 +152,14 @@ public class RaftLogBuilder implements io.atomix.utils.Builder<RaftLog> {
     return this;
   }
 
-  public RaftLogBuilder withIndexEntrySupplier(final JournalIndexCursor journalIndexCursor) {
-    journalBuilder.withIndexSupplier(journalIndexCursor);
+  /**
+   * Sets the factory for the stateful cursor readers use to interpret application records as
+   * batches when serving index scans; see {@link
+   * SegmentedJournalBuilder#withIndexCursorSupplier(Supplier)}.
+   */
+  public RaftLogBuilder withIndexCursorSupplier(
+      final Supplier<JournalIndexCursor> indexCursorSupplier) {
+    journalBuilder.withIndexCursorSupplier(indexCursorSupplier);
     return this;
   }
 

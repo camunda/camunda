@@ -98,7 +98,7 @@ final class ProjectionStageTaskDedupTest {
     // batch under at-least-once delivery)
     task.process(process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1000L, 10L, 102L));
     task.process(process(ProcessInstanceIntent.ELEMENT_COMPLETED, 1500L, 11L, 103L));
-    task.commit(103L);
+    Cuts.commit(task, 103L);
 
     // then each record folded exactly once — the open segment counts the two distinct facts, not
     // the duplicates
@@ -114,7 +114,7 @@ final class ProjectionStageTaskDedupTest {
     // given a committed activation and an uncommitted completion when the task crashes
     openTask();
     task.process(process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1000L, 10L, 100L));
-    task.commit(100L);
+    Cuts.commit(task, 100L);
     task.process(process(ProcessInstanceIntent.ELEMENT_COMPLETED, 1500L, 11L, 101L));
     task.close();
     task = null;
@@ -123,7 +123,7 @@ final class ProjectionStageTaskDedupTest {
     openTask();
     assertThat(task.restore()).isEqualTo(100L);
     task.process(process(ProcessInstanceIntent.ELEMENT_COMPLETED, 1500L, 11L, 101L));
-    task.commit(101L);
+    Cuts.commit(task, 101L);
 
     // then the replayed completion folded (its fold was not part of the cut) — exactly once — on
     // top of the recovered activation fold

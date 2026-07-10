@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -19,7 +20,6 @@ import io.camunda.eventbridge.client.EventBridgeClient;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -207,22 +207,15 @@ final class StreamRuntimeGroupTest {
         .sourceTopic(TOPIC)
         .deserializer((payload, partition, offset) -> new String(payload, StandardCharsets.UTF_8))
         .taskFactory(partition -> mockTask())
-        .transactionRunner(Runnable::run)
-        .offsetStore(
-            new OffsetStore() {
-              @Override
-              public Map<Integer, Long> restore() {
-                return Map.of();
-              }
-
-              @Override
-              public void store(final int partition, final long offset) {}
-            })
         .build();
   }
 
   @SuppressWarnings("unchecked")
   private static Task<String> mockTask() {
-    return mock(Task.class);
+    final Task<String> task = mock(Task.class);
+    // A Mockito mock returns null for object-typed methods, but freezeCut must never return null
+    // under the single commit contract — stub the empty cut, as a stateless task's default would.
+    when(task.freezeCut(anyLong())).thenReturn(CommitCut.NONE);
+    return task;
   }
 }

@@ -48,9 +48,9 @@ import java.util.function.Consumer;
  * <p>Rows are bounded by evict-after-emit: a completed/terminated element's row is dropped once its
  * fact is derived. (Instances that never reach a terminal event keep their row, as before.)
  *
- * <p>Correctness rests on the runtime's consistent-cut checkpoint (Model F): the rows and the
- * consumed offset commit as one atomic cut, so replay-from-committed lands on matching state — the
- * projection therefore just materializes its stores plainly ({@link #checkpoint()}).
+ * <p>Correctness rests on the owning task's consistent commit cut (Model F): the rows and the
+ * consumed offset commit as one atomic cut — the task freezes and persists this projection's state
+ * inside it — so replay-from-committed lands on matching state.
  */
 public final class AnalyticsBaseProjection implements Processor<SourceRecord, Fact> {
 
@@ -147,11 +147,6 @@ public final class AnalyticsBaseProjection implements Processor<SourceRecord, Fa
   @Override
   public void process(final SourceRecord record) {
     dispatch.dispatch(record);
-  }
-
-  @Override
-  public void checkpoint() {
-    state.checkpoint();
   }
 
   @Override
