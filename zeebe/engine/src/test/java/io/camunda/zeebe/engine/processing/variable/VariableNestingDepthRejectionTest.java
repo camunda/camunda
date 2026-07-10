@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.variable;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.validation.ValidationConstraints;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -34,7 +35,7 @@ import org.junit.Test;
 public final class VariableNestingDepthRejectionTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
-  private static final int MAX_DEPTH = 1000;
+  private static final int MAX_DEPTH = ValidationConstraints.MAX_NESTING_DEPTH;
   private static final Map<String, Object> DEEPLY_NESTED = new HashMap<>();
   private static final String EXPECTED_REJECTION_REASON =
       "Expected document to be nested at most %d levels deep, but it exceeds that limit"
@@ -45,7 +46,7 @@ public final class VariableNestingDepthRejectionTest {
     for (int i = 0; i < MAX_DEPTH; i++) {
       currMap =
           (Map<String, Object>)
-              currMap.computeIfAbsent("level" + i, (unused) -> new HashMap<String, Object>());
+              currMap.computeIfAbsent(String.valueOf(i), (unused) -> new HashMap<String, Object>());
     }
   }
 

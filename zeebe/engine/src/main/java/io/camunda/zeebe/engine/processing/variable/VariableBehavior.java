@@ -42,7 +42,6 @@ public final class VariableBehavior {
   private final StateWriter stateWriter;
   private final BpmnConditionalBehavior conditionalBehavior;
   private final KeyGenerator keyGenerator;
-  private final int maxVariableNestingDepth;
 
   private final IndexedDocument indexedDocument = new IndexedDocument();
   private final VariableRecord variableRecord = new VariableRecord();
@@ -52,13 +51,11 @@ public final class VariableBehavior {
       final VariableState variableState,
       final StateWriter stateWriter,
       final BpmnConditionalBehavior conditionalBehavior,
-      final KeyGenerator keyGenerator,
-      final int maxVariableNestingDepth) {
+      final KeyGenerator keyGenerator) {
     this.variableState = variableState;
     this.stateWriter = stateWriter;
     this.conditionalBehavior = conditionalBehavior;
     this.keyGenerator = keyGenerator;
-    this.maxVariableNestingDepth = maxVariableNestingDepth;
     variableSourceRecord = VariableSourceRecord.none();
   }
 
@@ -67,24 +64,17 @@ public final class VariableBehavior {
       final StateWriter stateWriter,
       final BpmnConditionalBehavior conditionalBehavior,
       final KeyGenerator keyGenerator,
-      final int maxVariableNestingDepth,
       final VariableSourceRecord variableSourceRecord) {
     this.variableState = variableState;
     this.stateWriter = stateWriter;
     this.conditionalBehavior = conditionalBehavior;
     this.keyGenerator = keyGenerator;
-    this.maxVariableNestingDepth = maxVariableNestingDepth;
     this.variableSourceRecord = variableSourceRecord;
   }
 
   public VariableBehavior withVariableSource(final VariableSourceRecord source) {
     return new VariableBehavior(
-        variableState,
-        stateWriter,
-        conditionalBehavior,
-        keyGenerator,
-        maxVariableNestingDepth,
-        source);
+        variableState, stateWriter, conditionalBehavior, keyGenerator, source);
   }
 
   /**
@@ -298,7 +288,7 @@ public final class VariableBehavior {
    * @return Either with Rejection if validation fails, or Void if validation succeeds
    */
   public Either<Rejection, Void> validateVariables(final DirectBuffer variableBuffer) {
-    return NestingDepthValidator.validate(variableBuffer, maxVariableNestingDepth)
+    return NestingDepthValidator.validate(variableBuffer)
         .mapLeft(
             failure ->
                 new Rejection(
@@ -308,8 +298,7 @@ public final class VariableBehavior {
 
   private void validateBuffer(final long scopeKey, final DirectBuffer variableBuffer)
       throws VariableValidationException {
-    final Either<Failure, Void> validate =
-        NestingDepthValidator.validate(variableBuffer, maxVariableNestingDepth);
+    final Either<Failure, Void> validate = NestingDepthValidator.validate(variableBuffer);
     if (validate.isLeft()) {
       throw new VariableValidationException(
           String.format(

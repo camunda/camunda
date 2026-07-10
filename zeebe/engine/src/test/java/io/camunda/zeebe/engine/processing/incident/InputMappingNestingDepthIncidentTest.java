@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.validation.ValidationConstraints;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
@@ -25,11 +26,9 @@ import org.junit.Test;
 
 public final class InputMappingNestingDepthIncidentTest {
 
-  private static final int MAX_DEPTH = 3;
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
-  @ClassRule
-  public static final EngineRule ENGINE =
-      EngineRule.singlePartition().withEngineConfig(c -> c.setMaxVariableNestingDepth(MAX_DEPTH));
+  private static final int MAX_DEPTH = ValidationConstraints.MAX_NESTING_DEPTH;
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -43,6 +42,10 @@ public final class InputMappingNestingDepthIncidentTest {
   @Before
   public void init() {
     processId = helper.getBpmnProcessId();
+    final String deeplyNestedFeelExpression =
+        String.format(
+            "(for i in 1..%s return if i = 1 then [\"leaf\"] else [partial[-1]])[-1]",
+            MAX_DEPTH + 1);
     processDefinitionKey =
         ENGINE
             .deployment()
@@ -53,7 +56,7 @@ public final class InputMappingNestingDepthIncidentTest {
                         "task",
                         t ->
                             t.zeebeJobType(helper.getJobType())
-                                .zeebeInputExpression("{a: {b: {c: \"leaf\"}}}", "nested"))
+                                .zeebeInputExpression(deeplyNestedFeelExpression, "nested"))
                     .endEvent()
                     .done())
             .deploy()
@@ -86,7 +89,7 @@ public final class InputMappingNestingDepthIncidentTest {
 
     assertThat(incident.getValue().getErrorMessage())
         .contains(
-            "Expected variable document to be nested at most %d levels deep, but it exceeds that limit"
+            "Expected document to be nested at most %d levels deep, but it exceeds that limit"
                 .formatted(MAX_DEPTH));
   }
 }

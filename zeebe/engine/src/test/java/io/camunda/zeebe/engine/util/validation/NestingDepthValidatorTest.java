@@ -58,7 +58,7 @@ public final class NestingDepthValidatorTest {
   @Test
   void shouldReturnRightForNullBuffer() {
     // when
-    final var result = NestingDepthValidator.validate(null, 1000);
+    final var result = NestingDepthValidator.validate(null);
 
     // then
     assertThat(result.isRight()).isTrue();
@@ -70,7 +70,7 @@ public final class NestingDepthValidatorTest {
     final var buffer = new UnsafeBuffer(new byte[0]);
 
     // when
-    final var result = NestingDepthValidator.validate(buffer, 1000);
+    final var result = NestingDepthValidator.validate(buffer);
 
     // then
     assertThat(result.isRight()).isTrue();
@@ -79,10 +79,10 @@ public final class NestingDepthValidatorTest {
   @Test
   void shouldReturnRightWhenDocumentIsWithinLimit() {
     // given
-    final var buffer = msgPackOf(buildNestedJson(1000));
+    final var buffer = msgPackOf(buildNestedJson(ValidationConstraints.MAX_NESTING_DEPTH));
 
     // when
-    final var result = NestingDepthValidator.validate(buffer, 1000);
+    final var result = NestingDepthValidator.validate(buffer);
 
     // then
     assertThat(result.isRight()).isTrue();
@@ -91,16 +91,18 @@ public final class NestingDepthValidatorTest {
   @Test
   void shouldReturnLeftWhenDocumentExceedsLimit() {
     // given
-    final var buffer = msgPackOf(buildNestedJson(1001));
+    final var buffer = msgPackOf(buildNestedJson(ValidationConstraints.MAX_NESTING_DEPTH + 1));
 
     // when
-    final var result = NestingDepthValidator.validate(buffer, 1000);
+    final var result = NestingDepthValidator.validate(buffer);
 
     // then
     assertThat(result.isLeft()).isTrue();
     assertThat(result.getLeft().getErrorType()).isEqualTo(ErrorType.IO_MAPPING_ERROR);
     assertThat(result.getLeft().getMessage())
-        .isEqualTo(NestingDepthValidator.NESTING_DEPTH_EXCEEDED_ERROR_MESSAGE.formatted(1000));
+        .isEqualTo(
+            NestingDepthValidator.NESTING_DEPTH_EXCEEDED_ERROR_MESSAGE.formatted(
+                ValidationConstraints.MAX_NESTING_DEPTH));
   }
 
   @Test
@@ -109,7 +111,7 @@ public final class NestingDepthValidatorTest {
     final var buffer = msgPackOf(buildNestedJson(50_000));
 
     // when / then — must not throw
-    final var result = NestingDepthValidator.validate(buffer, 1000);
+    final var result = NestingDepthValidator.validate(buffer);
 
     assertThat(result.isLeft()).isTrue();
 

@@ -16,7 +16,8 @@ import java.util.Deque;
 import org.agrona.DirectBuffer;
 
 /**
- * Validates that a msgpack document does not exceed a configurable maximum nesting depth.
+ * Validates that a msgpack document does not exceed {@link
+ * ValidationConstraints#MAX_NESTING_DEPTH}.
  *
  * <p>Deep nesting (beyond the Jackson {@code StreamWriteConstraints} default of 1000 levels) would
  * break the Elasticsearch/OpenSearch exporter when it serializes the document to JSON, causing
@@ -35,24 +36,23 @@ public final class NestingDepthValidator {
   private NestingDepthValidator() {}
 
   /**
-   * Validates that the given msgpack document does not exceed {@code maxNestingDepth} levels of
-   * container nesting.
+   * Validates that the given msgpack document does not exceed {@link
+   * ValidationConstraints#MAX_NESTING_DEPTH} levels of container nesting.
    *
    * @param buffer the msgpack document to validate
-   * @param maxNestingDepth the maximum allowed nesting depth (inclusive)
    * @return {@link Either#right(Object)} when within the limit; {@link Either#left(Object)} with a
    *     {@link Failure} when the limit is exceeded
    */
-  public static Either<Failure, Void> validate(
-      final DirectBuffer buffer, final int maxNestingDepth) {
+  public static Either<Failure, Void> validate(final DirectBuffer buffer) {
     if (isEmpty(buffer)) {
       return Either.right(null);
     }
     try {
-      if (exceedsMaxDepth(buffer, maxNestingDepth)) {
+      if (exceedsMaxDepth(buffer, ValidationConstraints.MAX_NESTING_DEPTH)) {
         return Either.left(
             new Failure(
-                NESTING_DEPTH_EXCEEDED_ERROR_MESSAGE.formatted(maxNestingDepth),
+                NESTING_DEPTH_EXCEEDED_ERROR_MESSAGE.formatted(
+                    ValidationConstraints.MAX_NESTING_DEPTH),
                 ErrorType.IO_MAPPING_ERROR));
       }
     } catch (final RuntimeException exception) {

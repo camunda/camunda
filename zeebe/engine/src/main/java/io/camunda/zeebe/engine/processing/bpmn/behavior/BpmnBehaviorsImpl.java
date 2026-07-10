@@ -145,8 +145,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState.getVariableState(),
             writers.state(),
             conditionalBehavior,
-            processingState.getKeyGenerator(),
-            config.getMaxVariableNestingDepth());
+            processingState.getKeyGenerator());
 
     catchEventBehavior =
         new CatchEventBehavior(
