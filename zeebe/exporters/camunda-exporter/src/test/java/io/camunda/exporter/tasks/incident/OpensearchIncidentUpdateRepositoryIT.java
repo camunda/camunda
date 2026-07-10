@@ -83,6 +83,17 @@ final class OpensearchIncidentUpdateRepositoryIT extends IncidentUpdateRepositor
         .toList();
   }
 
+  @Override
+  protected void setListViewWriteBlock(final boolean blocked) throws IOException {
+    final var client = new OpenSearchClient(transport);
+    client
+        .indices()
+        .putSettings(
+            r ->
+                r.index(listViewTemplate.getFullQualifiedName())
+                    .settings(s -> s.blocksWrite(blocked)));
+  }
+
   private OpenSearchTransport createTransport() {
     try {
       return ApacheHttpClient5TransportBuilder.builder(

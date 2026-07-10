@@ -89,6 +89,17 @@ final class ElasticsearchIncidentUpdateRepositoryIT extends IncidentUpdateReposi
   }
 
   @Override
+  protected void setListViewWriteBlock(final boolean blocked) throws IOException {
+    final var client = new ElasticsearchClient(transport);
+    client
+        .indices()
+        .putSettings(
+            r ->
+                r.index(listViewTemplate.getFullQualifiedName())
+                    .settings(s -> s.blocks(b -> b.write(blocked))));
+  }
+
+  @Override
   protected void assertRoutedEntriesAreColocatedOnSingleShard(
       final String index, final String routing, final String field, final int expectedHits)
       throws IOException {

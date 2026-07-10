@@ -9,6 +9,7 @@ package io.camunda.exporter.tasks.incident;
 
 import static io.camunda.search.test.utils.SearchDBExtension.INCIDENT_IDX_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -65,6 +66,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.stream.LongStream;
@@ -159,6 +161,14 @@ abstract class IncidentUpdateRepositoryIT {
       throws IOException {
     // no-op by default (see javadoc)
   }
+
+  /**
+   * Blocks or unblocks writes to the list view write index ({@code index.blocks.write}). Used to
+   * make exactly the list view items of an incident update bulk fail while the other items are
+   * applied, simulating a partially applied bulk (e.g. a rejected execution, a document moved by
+   * the archiver, or a version conflict on a single item).
+   */
+  protected abstract void setListViewWriteBlock(final boolean blocked) throws IOException;
 
   private IncidentEntity newIncident(final long key) {
     final var incident = new IncidentEntity();
@@ -466,6 +476,132 @@ abstract class IncidentUpdateRepositoryIT {
         Awaitility.await()
             .until(() -> metadata.getLastIncidentUpdatePosition() == incidentUpdatePosition);
       }
+    }
+  }
+
+  @DisabledIfSystemProperty(
+      named = SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL,
+      matches = "^(?=\\s*\\S).*$",
+      disabledReason = "Excluding from AWS OS IT CI")
+  @Nested
+  final class PartialBulkRetryRegressionIT {
+    // The incident state update and the list view flag update travel in one non-atomic bulk. This
+    // test makes exactly the list view item fail (write-blocked index) while the incident item is
+    // applied, then lets the task retry the batch as it does after any transient failure. The
+    // retry derives "does the list view still need updating?" from a state=ACTIVE search over the
+    // incident documents - but the failed attempt already flipped the incident to RESOLVED, so the
+    // retry queues no list view update, succeeds, and advances the position past the batch,
+    // leaving a permanently stale incident=true on the list view document.
+    private static final long INCIDENT_KEY = 1L;
+    private static final long PIQ_POSITION = 10L;
+
+    @RegressionTest("https://github.com/camunda/camunda/issues/54279")
+    void shouldClearListViewIncidentFlagWhenResolveIsRetriedAfterPartialBulkFailure()
+        throws Exception {
+      // given - an ACTIVE incident already flagged on its list view process instance document, and
+      // a pending RESOLVED entry for it in the post-importer queue; the flow node instance key
+      // equals the process instance key, so the bulk contains exactly two items: the incident
+      // state update and the list view process instance update
+      final var metadata = new ExporterMetadata(new ObjectMapper());
+      final var repository = createRepository();
+      final var incidentNotifier = mock(IncidentNotifier.class);
+      when(incidentNotifier.notifyAsync(anyList()))
+          .thenReturn(CompletableFuture.completedFuture(null));
+
+      indexIncident(
+          newIncident(INCIDENT_KEY).setState(IncidentState.ACTIVE).setTreePath("PI_1/FN_1/FNI_1"));
+      indexListViewProcessInstanceWithIncident();
+      indexPendingResolve();
+
+      try (final var executor = Executors.newSingleThreadScheduledExecutor()) {
+        final var incidentUpdateTask =
+            new IncidentUpdateTask(
+                metadata,
+                repository,
+                true,
+                100,
+                executor,
+                incidentNotifier,
+                mock(CamundaExporterMetrics.class),
+                LOGGER);
+
+        // when - the first attempt partially applies the bulk: the incident update succeeds, the
+        // list view update is rejected, and the attempt fails without advancing the position
+        setListViewWriteBlock(true);
+        try {
+          assertThatThrownBy(() -> incidentUpdateTask.execute().toCompletableFuture().join())
+              .isInstanceOf(CompletionException.class);
+        } finally {
+          setListViewWriteBlock(false);
+        }
+
+        assertThat(incidentState()).isEqualTo(IncidentState.RESOLVED);
+        assertThat(listViewIncidentFlag()).isTrue();
+        assertThat(metadata.getLastIncidentUpdatePosition()).isNotEqualTo(PIQ_POSITION);
+
+        // when - the batch is retried after the transient failure is gone
+        incidentUpdateTask.execute().toCompletableFuture().join();
+
+        // then - the batch was consumed for good and the incident stays resolved
+        Awaitility.await().until(() -> metadata.getLastIncidentUpdatePosition() == PIQ_POSITION);
+        assertThat(incidentState()).isEqualTo(IncidentState.RESOLVED);
+
+        // then - the retried resolve must also clear the list view flag
+        assertThat(listViewIncidentFlag())
+            .describedAs(
+                "the retried resolve must clear the list view incident flag even though the "
+                    + "incident document was already updated by the failed attempt")
+            .isFalse();
+      }
+    }
+
+    private void indexListViewProcessInstanceWithIncident() throws PersistenceException {
+      final var processInstance =
+          new ProcessInstanceForListViewEntity()
+              .setProcessInstanceKey(INCIDENT_KEY)
+              .setTreePath("PI_1")
+              .setIncident(true);
+      processInstance.setPartitionId(PARTITION_ID);
+      final var batchRequest = clientAdapter.createBatchRequest();
+      batchRequest.addWithId(
+          listViewTemplate.getFullQualifiedName(), String.valueOf(INCIDENT_KEY), processInstance);
+      batchRequest.executeWithRefresh();
+    }
+
+    private void indexPendingResolve() throws PersistenceException {
+      final var update =
+          new PostImporterQueueEntity()
+              .setActionType(PostImporterActionType.INCIDENT)
+              .setIntent(IncidentIntent.RESOLVED.name())
+              .setKey(INCIDENT_KEY)
+              .setPosition(PIQ_POSITION)
+              .setPartitionId(PARTITION_ID)
+              .setProcessInstanceKey(INCIDENT_KEY);
+      final var batchRequest = clientAdapter.createBatchRequest();
+      batchRequest.add(postImporterQueueTemplate.getFullQualifiedName(), update);
+      batchRequest.executeWithRefresh();
+    }
+
+    private IncidentState incidentState() throws IOException {
+      final var incidents =
+          search(
+              incidentTemplate.getFullQualifiedName(),
+              "key",
+              List.of(String.valueOf(INCIDENT_KEY)),
+              IncidentEntity.class);
+      assertThat(incidents).hasSize(1);
+      return incidents.iterator().next().getState();
+    }
+
+    private boolean listViewIncidentFlag() throws IOException {
+      final var processInstances =
+          search(
+              listViewTemplate.getFullQualifiedName(),
+              "key",
+              List.of(String.valueOf(INCIDENT_KEY)),
+              ProcessInstanceForListViewEntity.class);
+      assertThat(processInstances).hasSize(1);
+      return processInstances.iterator().next().isIncident();
     }
   }
 
