@@ -13,6 +13,7 @@ import io.camunda.zeebe.el.impl.NullExpression;
 import io.camunda.zeebe.el.impl.StaticExpression;
 import io.camunda.zeebe.engine.processing.deployment.model.element.InputMappings;
 import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference;
+import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference.DetectedSecret;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeMapping;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -119,32 +120,51 @@ public final class VariableMappingTransformer {
   private static Map<String, Set<SecretReference>> detectSecretReferences(
       final MappingContext context) {
     final var secretsByPointer = new LinkedHashMap<String, Set<SecretReference>>();
-    collectSecrets(context, secretsByPointer);
+    for (final var detected : context.visit(secretCollector())) {
+      secretsByPointer
+          .computeIfAbsent(toJsonPointer(detected.path()), key -> new LinkedHashSet<>())
+          .add(detected.secret());
+    }
     return secretsByPointer;
   }
 
   /**
-   * Walks the mapping context, recording each secret with the JSON pointer of its leaf: the
-   * context's target path, plus the leaf key, plus the reference's FEEL context path within the
-   * source. A nested context is descended; a leaf holds the source expression to scan.
+   * Visitor that collects the secrets of a mapping context as a flat list, each carrying the path
+   * segments of its leaf: the target path (built up from the context keys as the visit descends)
+   * plus the reference's FEEL context path within the source. A nested context is descended; a leaf
+   * holds the source expression to scan.
    */
-  private static void collectSecrets(
-      final MappingContext context, final Map<String, Set<SecretReference>> secretsByPointer) {
-    for (final var entry : context.entries.entrySet()) {
-      if (entry.getValue() instanceof final MappingContext nested) {
-        collectSecrets(nested, secretsByPointer);
-        continue;
+  private static MappingContextVisitor<List<DetectedSecret>> secretCollector() {
+    return new MappingContextVisitor<>() {
+      @Override
+      public List<DetectedSecret> onEntry(final String targetKey, final Expression source) {
+        return SecretReference.parse(source).stream()
+            .map(detected -> prependKey(targetKey, detected))
+            .collect(Collectors.toList());
       }
-      final var targetPath = new ArrayList<>(context.path);
-      targetPath.add(entry.getKey());
-      for (final var detected : SecretReference.parse((Expression) entry.getValue())) {
-        final var leafPath = new ArrayList<>(targetPath);
-        leafPath.addAll(detected.path());
-        secretsByPointer
-            .computeIfAbsent(toJsonPointer(leafPath), key -> new LinkedHashSet<>())
-            .add(detected.secret());
+
+      @Override
+      public List<DetectedSecret> onContext(final List<List<DetectedSecret>> entries) {
+        return entries.stream().flatMap(List::stream).collect(Collectors.toList());
       }
-    }
+
+      @Override
+      public List<DetectedSecret> onContextEntry(
+          final String targetKey,
+          final List<DetectedSecret> contextValue,
+          final List<String> contextPath) {
+        return contextValue.stream()
+            .map(detected -> prependKey(targetKey, detected))
+            .collect(Collectors.toList());
+      }
+    };
+  }
+
+  private static DetectedSecret prependKey(final String key, final DetectedSecret detected) {
+    final var path = new ArrayList<String>();
+    path.add(key);
+    path.addAll(detected.path());
+    return new DetectedSecret(path, detected.secret());
   }
 
   /**
