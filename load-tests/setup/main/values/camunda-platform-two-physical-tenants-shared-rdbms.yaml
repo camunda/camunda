@@ -46,7 +46,7 @@ orchestration:
         camunda.data.secondary-storage.rdbms.history.min-history-cleanup-interval: PT1S
         camunda.data.secondary-storage.rdbms.history.max-history-cleanup-interval: PT1M
         # Physical tenants: shared RDBMS database, isolated by table prefix.
-        # The default tenant uses the root prefix; testfoo overrides with its own.
+        # The default tenant uses the DEFAULT_ prefix; testfoo uses the TESTFOO_ prefix.
         camunda.data.secondary-storage.rdbms.prefix: DEFAULT_
         camunda.physical-tenants.testfoo.data.secondary-storage.rdbms.prefix: TESTFOO_
         # testfoo tenant: grant the orchestration client the same permissions as the default tenant

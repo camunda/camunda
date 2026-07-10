@@ -257,8 +257,7 @@ install-load-test-physical-tenant:
 	@# Clone the generated load-test-credentials secret, overriding only the REST address to the
 	@# testfoo tenant path. Inherits every real credential value (clientId/secret, authServer, audience).
 	kubectl get secret load-test-credentials -n $(namespace) -o json \
-	  | jq --arg addr "$$(printf %s 'http://camunda:8080/physical-tenants/testfoo' | base64 -w0)" \
-	      '.data.zeebeRestAddress=$$addr | .metadata.name="load-test-credentials-testfoo" | del(.metadata.uid,.metadata.resourceVersion,.metadata.creationTimestamp,.metadata.ownerReferences)' \
+	  | jq '.data.zeebeRestAddress = ("http://camunda:8080/physical-tenants/testfoo" | @base64) | .metadata.name = "load-test-credentials-testfoo" | del(.metadata.uid,.metadata.resourceVersion,.metadata.creationTimestamp,.metadata.ownerReferences,.metadata.managedFields)' \
 	  | kubectl apply -n $(namespace) -f -
 	@# Render only the subchart starter+worker, rename to *-testfoo, and apply.
 	helm template load-test-setup $(helm_chart_load_test_setup) \
