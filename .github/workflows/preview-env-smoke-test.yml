@@ -374,9 +374,9 @@ jobs:
               .jobs
               | map(select(.conclusion == "failure" or .conclusion == "cancelled"))
               | map(
-                  (.name | capture("(?<v>8\\.[0-9]+)").v) as $ver |
+                  (try (.name | capture("(?<v>8\\.[0-9]+)").v) // .name) as $ver |
                   (if .name | test("Deploy") then "deploy" elif .name | test("Test") then "tests" else "job" end) as $type |
-                  "• *\($ver)* <\(.html_url)|\($type) \(if .conclusion == "cancelled" then "timed out" else "failed" end)>"
+                  "• *\($ver)* <\(.html_url)|\($type) \(if .conclusion == "cancelled" then "cancelled" else "failed" end)>"
                 )
               | join("\n")
             '
