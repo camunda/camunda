@@ -45,5 +45,50 @@ public enum RebalanceMetricsDoc implements ExtendedMeterDocumentation {
     public KeyName[] getKeyNames() {
       return new KeyName[] {PartitionKeyNames.PARTITION, PartitionKeyNames.PHYSICAL_TENANT};
     }
+  },
+
+  /**
+   * How long a whole per-partition transfer attempt took, from initiate to terminal result,
+   * labelled with that result. Covers both transfers that end at the catch-up step and those that
+   * proceed to promotion.
+   */
+  PARTITION_TRANSFER_DURATION {
+    @Override
+    public String getBaseUnit() {
+      return "ms";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.cluster.rebalance.partition.duration";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.TIMER;
+    }
+
+    @Override
+    public String getDescription() {
+      return "Duration of a per-partition coordinated leadership transfer attempt, by result";
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {
+        RebalanceKeyNames.RESULT, PartitionKeyNames.PARTITION, PartitionKeyNames.PHYSICAL_TENANT
+      };
+    }
+  };
+
+  /** Tag keys specific to rebalancing metrics. */
+  public enum RebalanceKeyNames implements io.micrometer.common.docs.KeyName {
+    /** The terminal {@link io.atomix.raft.LeadershipTransferResult} of the transfer. */
+    RESULT {
+      @Override
+      public String asString() {
+        return "result";
+      }
+    }
   }
 }

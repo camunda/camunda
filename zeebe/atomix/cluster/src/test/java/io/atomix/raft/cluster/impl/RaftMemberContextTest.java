@@ -296,6 +296,53 @@ final class RaftMemberContextTest {
     assertThat(context.getReplicationLagBytes()).isZero();
   }
 
+  @Test
+  void shouldNotHaveAckedAppendBeforeFirstSuccess() {
+    // given / then
+    assertThat(newContext().hasAckedAppend()).isFalse();
+  }
+
+  @Test
+  void shouldMarkAckedAppendOnSuccess() {
+    // given
+    final var context = newContext();
+
+    // when
+    context.appendSucceeded();
+
+    // then
+    assertThat(context.hasAckedAppend()).isTrue();
+  }
+
+  @Test
+  void shouldClearAckedAppendOnFailure() {
+    // given
+    final var context = newContext();
+    context.appendSucceeded();
+
+    // when
+    context.appendFailed();
+
+    // then
+    assertThat(context.hasAckedAppend()).isFalse();
+  }
+
+  @Test
+  void shouldClearAckedAppendWhenReplicationContextReopens() {
+    // given — a successful append is recorded, then the leader reopens the replication context
+    // (as it does post-election), which must reset the acked signal to "unknown".
+    final var log = mock(RaftLog.class);
+    when(log.openUncommittedReader()).thenReturn(mock(RaftLogReader.class));
+    final var context = newContext();
+    context.appendSucceeded();
+
+    // when
+    context.openReplicationContext(log);
+
+    // then
+    assertThat(context.hasAckedAppend()).isFalse();
+  }
+
   private RaftMemberContext newContext() {
     final var member = new DefaultRaftMember(MemberId.from("1"), Type.ACTIVE, Instant.now());
     return new RaftMemberContext(member, mock(RaftClusterContext.class), 1);

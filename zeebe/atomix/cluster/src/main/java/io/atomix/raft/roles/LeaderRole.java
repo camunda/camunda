@@ -18,6 +18,7 @@ package io.atomix.raft.roles;
 
 import com.google.common.base.Throwables;
 import io.atomix.cluster.MemberId;
+import io.atomix.raft.LeadershipTransferResult;
 import io.atomix.raft.RaftError;
 import io.atomix.raft.RaftError.Type;
 import io.atomix.raft.RaftException;
@@ -68,6 +69,7 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
@@ -91,6 +93,9 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   private Scheduled transferPauseWatchdog;
   private boolean transferPaused;
   private long transferPauseStartMs;
+  private boolean transferInProgress;
+  private Scheduled catchUpPollTimer;
+  private Scheduled catchUpDeadlineTimer;
 
   public LeaderRole(final RaftContext context) {
     super(context);
@@ -459,6 +464,157 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       transferPaused = false;
       rebalanceMetrics.observePauseDuration(
           Duration.ofMillis(System.currentTimeMillis() - transferPauseStartMs));
+    }
+    cancelCatchUp();
+    transferInProgress = false;
+  }
+
+  /**
+   * Evaluates the coordinated-leadership-transfer pre-checks for {@code desiredLeader} on behalf of
+   * {@code coordinator}. Returns the skip reason if any check fails, or empty if the transfer may
+   * proceed. Must run on the Raft thread.
+   *
+   * @param desiredLeader the intended successor (highest-priority node)
+   * @param coordinator the node that requested the transfer
+   * @param coordinatorConfigVersion the configuration version the coordinator based its request on
+   */
+  public Optional<LeadershipTransferResult> precheckTransfer(
+      final MemberId desiredLeader,
+      final MemberId coordinator,
+      final long coordinatorConfigVersion) {
+    raft.checkThread();
+    final var localMember = raft.getCluster().getLocalMember().memberId();
+
+    if (desiredLeader.equals(localMember)) {
+      return Optional.of(LeadershipTransferResult.ALREADY_LEADER);
+    }
+    if (transferInProgress) {
+      return Optional.of(LeadershipTransferResult.TRANSFER_IN_PROGRESS);
+    }
+    if (!isCurrentCoordinator(coordinator, coordinatorConfigVersion)) {
+      return Optional.of(LeadershipTransferResult.INVALID_COORDINATOR);
+    }
+    final var desiredContext = raft.getCluster().getMemberContext(desiredLeader);
+    // OFFLINE must reflect actual availability, not just membership: a configured member can be
+    // down or partitioned. The leader resets a member's failure count on every successful contact
+    // and increments it on each failed append/heartbeat, so a non-zero count means the most recent
+    // contact did not succeed — the desired leader is not currently reachable.
+    //
+    // The failure count and replication lag are also both zeroed when this leader opens the
+    // member's replication context (post-election), and the lag reader starts at the log head — so
+    // before the first current-term response a member that is actually offline or far behind still
+    // reads as reachable and fully caught up. Require a successful append in this term
+    // (hasAckedAppend) before trusting those counters; until then we treat availability as unknown
+    // and decline, so a rebalance triggered right after an election cannot pause a partition for
+    // such a member.
+    if (desiredContext == null
+        || !raft.getCluster().isMember(desiredLeader)
+        || !desiredContext.hasAckedAppend()
+        || desiredContext.getFailureCount() > 0) {
+      return Optional.of(LeadershipTransferResult.OFFLINE);
+    }
+    // An unknown snapshot size must fail closed: it is not zero, and treating it as zero would let
+    // a follower with a potentially large snapshot outstanding pass as caught up.
+    if (desiredContext.isSnapshotReplicationLagUnknown()) {
+      return Optional.of(LeadershipTransferResult.LAG_TOO_HIGH);
+    }
+    // Point-in-time lag sample: the threshold is tuned so a passing desired leader reliably catches
+    // up within replicationTimeout; we do not wait for the lag to reach the value here.
+    if (desiredContext.getReplicationLagBytes() > raft.getRebalanceReplicationLagThreshold()) {
+      return Optional.of(LeadershipTransferResult.LAG_TOO_HIGH);
+    }
+    return Optional.empty();
+  }
+
+  /**
+   * The coordinator is the lowest-id member of the leader's committed configuration. A request from
+   * any other member, or one carrying a configuration version older than the leader's, is rejected
+   * so a stale or non-coordinator node cannot drive a transfer.
+   */
+  private boolean isCurrentCoordinator(
+      final MemberId coordinator, final long coordinatorConfigVersion) {
+    final var configuration = raft.getCluster().getConfiguration();
+    if (configuration == null) {
+      return false;
+    }
+    if (coordinatorConfigVersion < configuration.index()) {
+      return false;
+    }
+    return configuration.newMembers().stream()
+        .map(RaftMember::memberId)
+        .min(MemberId.ID_COMPARATOR)
+        .map(coordinator::equals)
+        .orElse(false);
+  }
+
+  /**
+   * Marks a transfer as in progress and waits until {@code desiredLeader}'s {@code matchIndex}
+   * reaches {@code targetIndex} (the leader's last log index, frozen by the broker's write freeze),
+   * polling on the Raft thread each {@code heartbeatInterval}. Completes with {@code true} once the
+   * desired leader is fully caught up, or {@code false} if it does not catch up within {@code
+   * timeout} or disappears — in which case the caller resumes and reports {@code
+   * REPLICATION_TIMED_OUT}. Must run on the Raft thread.
+   */
+  public CompletableFuture<Boolean> awaitDesiredLeaderCaughtUp(
+      final MemberId desiredLeader, final long targetIndex, final Duration timeout) {
+    raft.checkThread();
+    transferInProgress = true;
+    final var future = new CompletableFuture<Boolean>();
+
+    if (isCaughtUp(desiredLeader, targetIndex)) {
+      future.complete(true);
+      return future;
+    }
+
+    catchUpDeadlineTimer =
+        raft.getThreadContext()
+            .schedule(
+                timeout,
+                () -> {
+                  if (!future.isDone()) {
+                    log.info(
+                        "Desired leader {} did not catch up to index {} within {}",
+                        desiredLeader,
+                        targetIndex,
+                        timeout);
+                    cancelCatchUp();
+                    future.complete(false);
+                  }
+                });
+    final var pollInterval = raft.getHeartbeatInterval();
+    catchUpPollTimer =
+        raft.getThreadContext()
+            .schedule(
+                pollInterval,
+                pollInterval,
+                () -> {
+                  if (future.isDone()) {
+                    return;
+                  }
+                  if (!isRunning() || raft.getCluster().getMemberContext(desiredLeader) == null) {
+                    cancelCatchUp();
+                    future.complete(false);
+                  } else if (isCaughtUp(desiredLeader, targetIndex)) {
+                    cancelCatchUp();
+                    future.complete(true);
+                  }
+                });
+    return future;
+  }
+
+  private boolean isCaughtUp(final MemberId desiredLeader, final long targetIndex) {
+    final var context = raft.getCluster().getMemberContext(desiredLeader);
+    return context != null && context.getMatchIndex() >= targetIndex;
+  }
+
+  private void cancelCatchUp() {
+    if (catchUpPollTimer != null) {
+      catchUpPollTimer.cancel();
+      catchUpPollTimer = null;
+    }
+    if (catchUpDeadlineTimer != null) {
+      catchUpDeadlineTimer.cancel();
+      catchUpDeadlineTimer = null;
     }
   }
 

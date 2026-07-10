@@ -176,6 +176,18 @@ public final class RaftMemberContext {
   }
 
   /**
+   * Whether the most recent append to this member succeeded. Reset to {@code false} when the leader
+   * opens the replication context (post-election), so until the first successful current-term
+   * response it reports {@code false} even though {@link #getFailureCount()} and {@link
+   * #getReplicationLagBytes()} are still at their zeroed reset values. Callers that must
+   * distinguish "confirmed reachable and caught up" from "no information yet in this term" should
+   * require this before trusting the failure count and lag.
+   */
+  public boolean hasAckedAppend() {
+    return appendSucceeded;
+  }
+
+  /**
    * Sets whether the last append to the member succeeded.
    *
    * @param succeeded Whether the last append to the member succeeded.
