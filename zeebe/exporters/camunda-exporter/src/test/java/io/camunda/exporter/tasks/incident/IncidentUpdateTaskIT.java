@@ -8,7 +8,6 @@
 package io.camunda.exporter.tasks.incident;
 
 import static io.camunda.exporter.utils.CamundaExporterSchemaUtils.createSchemas;
-import static io.camunda.search.test.utils.SearchDBExtension.CUSTOM_PREFIX;
 import static io.camunda.search.test.utils.SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -53,6 +52,7 @@ import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.agrona.CloseHelper;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestTemplate;
@@ -79,11 +79,13 @@ class IncidentUpdateTaskIT {
   private IncidentNotifier incidentNotifier;
   private ExporterMetadata exporterMetadata;
   private Context context;
+  private String testPrefix;
 
   private final List<AutoCloseable> resourcesToClose = new ArrayList<>();
 
   @BeforeEach
   void setup() {
+    testPrefix = RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
     context =
         new ExporterTestContext().setPartitionId(PARTITION_ID).setClock(InstantSource.fixed(NOW));
     exporterMetrics = new CamundaExporterMetrics(context.getMeterRegistry());
@@ -97,9 +99,9 @@ class IncidentUpdateTaskIT {
     final var openSearchAwsInstanceUrl =
         Optional.ofNullable(System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL)).orElse("");
     if (openSearchAwsInstanceUrl.isEmpty()) {
-      searchDB.esClient().indices().delete(req -> req.index(CUSTOM_PREFIX + "*"));
+      searchDB.esClient().indices().delete(req -> req.index(testPrefix + "*"));
     }
-    searchDB.osClient().indices().delete(req -> req.index(CUSTOM_PREFIX + "*"));
+    searchDB.osClient().indices().delete(req -> req.index(testPrefix + "*"));
 
     if (executor != null) {
       executor.shutdown();
@@ -144,6 +146,7 @@ class IncidentUpdateTaskIT {
           queueEntity.setPosition(1L);
 
           store(postImporterTemplate, client, queueEntity);
+          client.refresh(testPrefix);
 
           // when
           final var updated = job.execute();
@@ -162,7 +165,9 @@ class IncidentUpdateTaskIT {
   void withIncidentUpdateTask(
       final ExporterConfiguration config, final IncidentUpdateTaskConsumer taskConsumer)
       throws Exception {
+    config.getConnect().setIndexPrefix(testPrefix);
     config.getIndex().setNumberOfShards(3);
+    config.getIndex().setNumberOfReplicas(0);
     createSchemas(config);
 
     final ExporterResourceProvider exporterResourceProvider = exporterResourceProvider(config);
