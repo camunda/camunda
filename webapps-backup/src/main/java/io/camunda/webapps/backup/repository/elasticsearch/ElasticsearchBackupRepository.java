@@ -56,9 +56,9 @@ import org.slf4j.LoggerFactory;
 
 public class ElasticsearchBackupRepository implements BackupRepository {
   public static final String SNAPSHOT_MISSING_EXCEPTION_TYPE = "snapshot_missing_exception";
-  private static final String REPOSITORY_MISSING_EXCEPTION_TYPE = "repository_missing_exception";
   public static final String SNAPSHOT_NAME_ALREADY_IN_USE_EXCEPTION_TYPE =
       "snapshot_name_already_in_use_exception";
+  private static final String REPOSITORY_MISSING_EXCEPTION_TYPE = "repository_missing_exception";
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchBackupRepository.class);
   private final ElasticsearchClient esClient;
   private final BackupRepositoryProps backupProps;
