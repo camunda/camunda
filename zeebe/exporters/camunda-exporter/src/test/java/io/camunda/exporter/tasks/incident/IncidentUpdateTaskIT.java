@@ -180,8 +180,7 @@ class IncidentUpdateTaskIT {
     withIncidentUpdateTask(
         config,
         (job, resources) -> {
-          final var incidentTemplateTemplate =
-              resources.getIndexTemplateDescriptor(IncidentTemplate.class);
+          final var incidentTemplate = resources.getIndexTemplateDescriptor(IncidentTemplate.class);
 
           final var incidentKey = ID_GENERATOR.getAndIncrement();
           final IncidentEntity incidentEntity =
@@ -193,8 +192,8 @@ class IncidentUpdateTaskIT {
                   .setProcessInstanceKey(9999L)
                   .setFlowNodeInstanceKey(9999L);
 
-          store(incidentTemplateTemplate, client, incidentEntity);
-          client.refresh(incidentTemplateTemplate.getFullQualifiedName());
+          store(incidentTemplate, client, incidentEntity);
+          client.refresh(incidentTemplate.getFullQualifiedName());
 
           final var postImporterTemplate =
               resources.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
@@ -240,8 +239,7 @@ class IncidentUpdateTaskIT {
           store(listViewTemplate, client, processInstance);
           client.refresh(listViewTemplate.getFullQualifiedName());
 
-          final var incidentTemplateTemplate =
-              resources.getIndexTemplateDescriptor(IncidentTemplate.class);
+          final var incidentTemplate = resources.getIndexTemplateDescriptor(IncidentTemplate.class);
 
           final var incidentKey = ID_GENERATOR.getAndIncrement();
           final IncidentEntity incidentEntity =
@@ -253,8 +251,8 @@ class IncidentUpdateTaskIT {
                   .setProcessInstanceKey(processInstanceKey)
                   .setFlowNodeInstanceKey(9999L);
 
-          store(incidentTemplateTemplate, client, incidentEntity);
-          client.refresh(incidentTemplateTemplate.getFullQualifiedName());
+          store(incidentTemplate, client, incidentEntity);
+          client.refresh(incidentTemplate.getFullQualifiedName());
 
           final var postImporterTemplate =
               resources.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
@@ -335,8 +333,7 @@ class IncidentUpdateTaskIT {
           client.refresh(listViewTemplate.getFullQualifiedName());
           client.refresh(flowNodeInstanceTemplate.getFullQualifiedName());
 
-          final var incidentTemplateTemplate =
-              resources.getIndexTemplateDescriptor(IncidentTemplate.class);
+          final var incidentTemplate = resources.getIndexTemplateDescriptor(IncidentTemplate.class);
 
           final var incidentKey = ID_GENERATOR.getAndIncrement();
           final IncidentEntity incidentEntity =
@@ -348,8 +345,8 @@ class IncidentUpdateTaskIT {
                   .setProcessInstanceKey(processInstanceKey)
                   .setFlowNodeInstanceKey(flowNodeInstanceKey);
 
-          store(incidentTemplateTemplate, client, incidentEntity);
-          client.refresh(incidentTemplateTemplate.getFullQualifiedName());
+          store(incidentTemplate, client, incidentEntity);
+          client.refresh(incidentTemplate.getFullQualifiedName());
 
           final var postImporterTemplate =
               resources.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
@@ -387,8 +384,7 @@ class IncidentUpdateTaskIT {
               getFromIndex(flowNodeInstanceTemplate, client, flowNodeInstance);
           assertThat(updatedFlowNodeInstance.isIncident()).isTrue();
 
-          final var updatedIncident =
-              getFromIndex(incidentTemplateTemplate, client, incidentEntity);
+          final var updatedIncident = getFromIndex(incidentTemplate, client, incidentEntity);
           assertThat(updatedIncident.getTreePath())
               .isEqualTo(String.format("%s/FNI_%d", treePath, flowNodeInstanceKey));
 
@@ -441,8 +437,7 @@ class IncidentUpdateTaskIT {
           client.refresh(listViewTemplate.getFullQualifiedName());
           client.refresh(flowNodeInstanceTemplate.getFullQualifiedName());
 
-          final var incidentTemplateTemplate =
-              resources.getIndexTemplateDescriptor(IncidentTemplate.class);
+          final var incidentTemplate = resources.getIndexTemplateDescriptor(IncidentTemplate.class);
 
           final var incidentKey = ID_GENERATOR.getAndIncrement();
           final IncidentEntity incidentEntity =
@@ -454,8 +449,8 @@ class IncidentUpdateTaskIT {
                   .setProcessInstanceKey(processInstanceKey)
                   .setFlowNodeInstanceKey(flowNodeInstanceKey);
 
-          store(incidentTemplateTemplate, client, incidentEntity);
-          client.refresh(incidentTemplateTemplate.getFullQualifiedName());
+          store(incidentTemplate, client, incidentEntity);
+          client.refresh(incidentTemplate.getFullQualifiedName());
 
           final var postImporterTemplate =
               resources.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
@@ -495,8 +490,7 @@ class IncidentUpdateTaskIT {
 
           final String sparseTreePath =
               String.format("PI_%d/FNI_%d", processInstanceKey, flowNodeInstanceKey);
-          final var updatedIncident =
-              getFromIndex(incidentTemplateTemplate, client, incidentEntity);
+          final var updatedIncident = getFromIndex(incidentTemplate, client, incidentEntity);
           assertThat(updatedIncident.getTreePath()).isEqualTo(sparseTreePath);
 
           assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(1L);
@@ -525,8 +519,7 @@ class IncidentUpdateTaskIT {
 
           client.refresh(listViewTemplate.getFullQualifiedName());
 
-          final var incidentTemplateTemplate =
-              resources.getIndexTemplateDescriptor(IncidentTemplate.class);
+          final var incidentTemplate = resources.getIndexTemplateDescriptor(IncidentTemplate.class);
 
           final var incidentKey = ID_GENERATOR.getAndIncrement();
           final IncidentEntity incidentEntity =
@@ -538,8 +531,8 @@ class IncidentUpdateTaskIT {
                   .setProcessInstanceKey(processInstanceKey)
                   .setFlowNodeInstanceKey(processInstanceKey);
 
-          store(incidentTemplateTemplate, client, incidentEntity);
-          client.refresh(incidentTemplateTemplate.getFullQualifiedName());
+          store(incidentTemplate, client, incidentEntity);
+          client.refresh(incidentTemplate.getFullQualifiedName());
 
           final var postImporterTemplate =
               resources.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
@@ -568,8 +561,7 @@ class IncidentUpdateTaskIT {
               getFromIndex(listViewTemplate, client, processInstance);
           assertThat(updatedProcessInstance.isIncident()).isTrue();
 
-          final var updatedIncident =
-              getFromIndex(incidentTemplateTemplate, client, incidentEntity);
+          final var updatedIncident = getFromIndex(incidentTemplate, client, incidentEntity);
           assertThat(updatedIncident.getTreePath())
               .isEqualTo(String.format("%s/FNI_%d", treePath, processInstanceKey));
 
