@@ -30,7 +30,6 @@ export const blankReportButton = Selector('button').withText('Blank report');
 export const externalReport = Selector('iframe', {timeout: 60000});
 export const textReport = Selector('.TextTile .editor');
 export const textReportField = (element) => textReport.find(element);
-export const exampleHeading = Selector('h1');
 export const fullscreenButton = Selector('.fullscreen-button');
 export const header = Selector('.cds--header');
 export const themeButton = Selector('.theme-toggle');
