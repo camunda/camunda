@@ -14,7 +14,6 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.webapps.schema.descriptors.template.JobMetricsBatchTemplate;
 import io.camunda.webapps.schema.entities.jobmetricsbatch.JobMetricsBatchEntity;
-import java.time.Duration;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
@@ -47,13 +46,13 @@ public class JobBatchMetricsArchiverJobIT extends ArchiverJobIT<JobBatchMetricsA
 
           final var metric = jobBatchMetric("2020-03-15T10:00:00+00:00");
           store(template, client, metric);
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
           verifyMoved(template, client, metric, "2020-03-15");
         });
   }
@@ -73,13 +72,13 @@ public class JobBatchMetricsArchiverJobIT extends ArchiverJobIT<JobBatchMetricsA
 
           store(template, client, oldMetric);
           store(template, client, recentMetric);
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
 
           // then - only the old metric should be archived
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
           verifyMoved(template, client, oldMetric, "2020-03-15");
           verifyNotMoved(template, client, recentMetric);
         });
@@ -101,13 +100,13 @@ public class JobBatchMetricsArchiverJobIT extends ArchiverJobIT<JobBatchMetricsA
 
           store(template, client, ownPartitionMetric);
           store(template, client, otherPartitionMetric);
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
 
           // then - only the metric from this partition should be archived
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
           verifyMoved(template, client, ownPartitionMetric, "2020-03-15");
           verifyNotMoved(template, client, otherPartitionMetric);
         });
@@ -130,13 +129,13 @@ public class JobBatchMetricsArchiverJobIT extends ArchiverJobIT<JobBatchMetricsA
           store(template, client, metric1);
           store(template, client, metric2);
           store(template, client, metric3);
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
 
           // then - all old metrics should be archived
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(3);
+          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(3);
           verifyMoved(template, client, metric1, "2020-06-01");
           verifyMoved(template, client, metric2, "2020-06-01");
           verifyMoved(template, client, metric3, "2020-06-01");
@@ -158,15 +157,15 @@ public class JobBatchMetricsArchiverJobIT extends ArchiverJobIT<JobBatchMetricsA
 
           store(template, client, metric1);
           store(template, client, metric2);
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when - execute twice since batches are grouped by date
           final var firstRun = job.execute();
-          assertThat(firstRun).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(firstRun).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
 
-          client.refresh();
+          client.refresh(testPrefix);
           final var secondRun = job.execute();
-          assertThat(secondRun).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(secondRun).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
 
           // then - metrics should be moved to their respective dated indices
           verifyMoved(template, client, metric1, "2020-01-10");

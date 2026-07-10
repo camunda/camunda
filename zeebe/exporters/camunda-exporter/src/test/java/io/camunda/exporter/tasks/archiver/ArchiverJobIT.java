@@ -8,7 +8,6 @@
 package io.camunda.exporter.tasks.archiver;
 
 import static io.camunda.exporter.utils.CamundaExporterSchemaUtils.createSchemas;
-import static io.camunda.search.test.utils.SearchDBExtension.CUSTOM_PREFIX;
 import static io.camunda.search.test.utils.SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -75,7 +74,7 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
   protected CamundaExporterMetrics exporterMetrics;
   protected ExecutorService executor;
   protected Context context;
-  private String testPrefix;
+  protected String testPrefix;
 
   private final List<AutoCloseable> resourcesToClose = new ArrayList<>();
   private LifecyclePolicyNameVerifier lifecyclePolicyNameVerifier;
@@ -95,9 +94,9 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
     final var openSearchAwsInstanceUrl =
         Optional.ofNullable(System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL)).orElse("");
     if (openSearchAwsInstanceUrl.isEmpty()) {
-      searchDB.esClient().indices().delete(req -> req.index(CUSTOM_PREFIX + "*"));
+      searchDB.esClient().indices().delete(req -> req.index(testPrefix + "*"));
     }
-    searchDB.osClient().indices().delete(req -> req.index(CUSTOM_PREFIX + "*"));
+    searchDB.osClient().indices().delete(req -> req.index(testPrefix + "*"));
 
     if (executor != null) {
       executor.shutdown();
@@ -128,7 +127,9 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
       throws Exception {
     config.getHistory().getRetention().setEnabled(true);
     config.getHistory().getRetention().setPolicyName(testPrefix + "-camunda-retention-policy");
+    config.getConnect().setIndexPrefix(testPrefix);
     config.getIndex().setNumberOfShards(3);
+    config.getIndex().setNumberOfReplicas(0);
     createSchemas(config);
 
     final ExporterResourceProvider exporterResourceProvider = exporterResourceProvider(config);
@@ -323,7 +324,7 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
         return;
       }
       Awaitility.await()
-          .atMost(Duration.ofSeconds(10L))
+          .atMost(ARCHIVE_TIMEOUT)
           .untilAsserted(
               () -> {
                 final var policy = client.getLifecyclePolicyNameForIndex(indexName);
