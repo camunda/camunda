@@ -100,7 +100,7 @@ public abstract class BackgroundTaskIT<T extends BackgroundTask> {
   }
 
   @TestTemplate
-  void shouldExecuteWithoutErrorsWhenNothingToDo(
+  protected void shouldExecuteWithoutErrorsWhenNothingToDo(
       final ExporterConfiguration config, final SearchClientAdapter ignored) throws Exception {
     // just a basic smoke test to verify that the task runs and creates well-formed queries etc
     // when there's nothing to actually do
