@@ -40,6 +40,7 @@ import io.camunda.webapps.schema.descriptors.template.PostImporterQueueTemplate;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
+import io.camunda.webapps.schema.entities.incident.IncidentState;
 import io.camunda.webapps.schema.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.post.PostImporterActionType;
@@ -564,6 +565,113 @@ class IncidentUpdateTaskIT {
           final var updatedIncident = getFromIndex(incidentTemplate, client, incidentEntity);
           assertThat(updatedIncident.getTreePath())
               .isEqualTo(String.format("%s/FNI_%d", treePath, processInstanceKey));
+
+          assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(1L);
+        });
+  }
+
+  @TestTemplate
+  void shouldUpdateRelevantEntities2(
+      final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
+    withIncidentUpdateTask(
+        config,
+        (job, resources) -> {
+          final var listViewTemplate = resources.getIndexTemplateDescriptor(ListViewTemplate.class);
+
+          final var processInstanceKey = ID_GENERATOR.getAndIncrement();
+          final var treePath = String.format("PI_%d/FN_callActivity1", processInstanceKey);
+          final ProcessInstanceForListViewEntity processInstance =
+              new ProcessInstanceForListViewEntity()
+                  .setId(String.valueOf(processInstanceKey))
+                  .setPartitionId(PARTITION_ID)
+                  .setKey(processInstanceKey)
+                  .setProcessDefinitionKey(9999L)
+                  .setBpmnProcessId("process-1")
+                  .setTreePath(treePath)
+                  .setIncident(true);
+          store(listViewTemplate, client, processInstance);
+
+          final var flowNodeInstanceKey = ID_GENERATOR.getAndIncrement();
+
+          final FlowNodeInstanceForListViewEntity listViewFlowNodeInstance =
+              new FlowNodeInstanceForListViewEntity()
+                  .setId(String.valueOf(flowNodeInstanceKey))
+                  .setPartitionId(PARTITION_ID)
+                  .setKey(flowNodeInstanceKey)
+                  .setProcessInstanceKey(processInstance.getKey())
+                  .setRootProcessInstanceKey(processInstance.getKey())
+                  .setIncident(true);
+          listViewFlowNodeInstance.getJoinRelation().setParent(processInstance.getKey());
+          store(listViewTemplate, client, processInstance, listViewFlowNodeInstance);
+
+          final var flowNodeInstanceTemplate =
+              resources.getIndexTemplateDescriptor(FlowNodeInstanceTemplate.class);
+
+          final FlowNodeInstanceEntity flowNodeInstance =
+              new FlowNodeInstanceEntity()
+                  .setId(String.valueOf(flowNodeInstanceKey))
+                  .setPartitionId(PARTITION_ID)
+                  .setKey(flowNodeInstanceKey)
+                  .setProcessInstanceKey(processInstance.getKey())
+                  .setRootProcessInstanceKey(processInstance.getKey())
+                  .setIncident(true);
+          store(flowNodeInstanceTemplate, client, flowNodeInstance);
+
+          client.refresh(listViewTemplate.getFullQualifiedName());
+          client.refresh(flowNodeInstanceTemplate.getFullQualifiedName());
+
+          final var incidentTemplate = resources.getIndexTemplateDescriptor(IncidentTemplate.class);
+
+          final var incidentKey = ID_GENERATOR.getAndIncrement();
+          final IncidentEntity incidentEntity =
+              new IncidentEntity()
+                  .setId(String.valueOf(incidentKey))
+                  .setPartitionId(PARTITION_ID)
+                  .setKey(incidentKey)
+                  .setState(IncidentState.ACTIVE)
+                  .setErrorMessage("An error happened")
+                  .setProcessInstanceKey(processInstanceKey)
+                  .setFlowNodeInstanceKey(flowNodeInstanceKey)
+                  .setTreePath(String.format("%s/FNI_%d", treePath, flowNodeInstanceKey));
+
+          store(incidentTemplate, client, incidentEntity);
+          client.refresh(incidentTemplate.getFullQualifiedName());
+
+          final var postImporterTemplate =
+              resources.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
+
+          final PostImporterQueueEntity queueEntity =
+              new PostImporterQueueEntity()
+                  .setId("queue-1")
+                  .setPartitionId(PARTITION_ID)
+                  .setActionType(PostImporterActionType.INCIDENT)
+                  .setIntent("RESOLVED")
+                  .setKey(incidentKey)
+                  .setPosition(1L);
+
+          store(postImporterTemplate, client, queueEntity);
+          client.refresh(postImporterTemplate.getFullQualifiedName());
+
+          // when
+          final var updated = job.execute();
+
+          // then
+          assertThat(updated).succeedsWithin(UPDATE_TIMEOUT).isEqualTo(4);
+
+          client.refresh(testPrefix);
+
+          final var updatedProcessInstance =
+              getFromIndex(listViewTemplate, client, processInstance);
+          assertThat(updatedProcessInstance.isIncident()).isFalse();
+
+          final var updatedListViewFlowNodeInstance =
+              getChildFromIndex(
+                  listViewTemplate, client, processInstance, listViewFlowNodeInstance);
+          assertThat(updatedListViewFlowNodeInstance.isIncident()).isFalse();
+
+          final var updatedFlowNodeInstance =
+              getFromIndex(flowNodeInstanceTemplate, client, flowNodeInstance);
+          assertThat(updatedFlowNodeInstance.isIncident()).isFalse();
 
           assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(1L);
         });
