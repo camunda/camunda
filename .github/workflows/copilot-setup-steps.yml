@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Install gh-aw extension
-        uses: github/gh-aw-actions/setup-cli@cba13b4e136caf371ffda4b9432f43841d6e5ec1 # v0.82.4
+        uses: github/gh-aw-actions/setup-cli@55402c5c057cb7cd9a0b95156e31ab8ca1f5cde3 # v0.82.5
         with:
           version: v0.77.5
       # If we want to align Copilot and CI setups more in the future, consider using (parts of) .github/actions/setup-build here
