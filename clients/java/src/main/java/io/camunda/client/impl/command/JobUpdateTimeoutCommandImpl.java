@@ -51,7 +51,6 @@ public class JobUpdateTimeoutCommandImpl
   private final RequestConfig.Builder httpRequestConfig;
   private final long jobKey;
   private final JsonMapper jsonMapper;
-  private String leaseToken;
 
   public JobUpdateTimeoutCommandImpl(
       final GatewayStub asyncStub,
@@ -143,7 +142,11 @@ public class JobUpdateTimeoutCommandImpl
 
   @Override
   public UpdateTimeoutJobCommandStep2 withLeaseToken(final String leaseToken) {
-    this.leaseToken = leaseToken;
+    if (leaseToken == null) {
+      return this;
+    }
+    grpcRequestObjectBuilder.setLeaseToken(leaseToken);
+    httpRequestObject.setLeaseToken(leaseToken);
     return this;
   }
 

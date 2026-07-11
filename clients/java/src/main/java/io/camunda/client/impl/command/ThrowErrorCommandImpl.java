@@ -49,7 +49,6 @@ public final class ThrowErrorCommandImpl extends CommandWithVariables<ThrowError
   private final JobErrorRequest httpRequestObject;
   private boolean useRest;
   private final long jobKey;
-  private String leaseToken;
 
   public ThrowErrorCommandImpl(
       final GatewayStub asyncStub,
@@ -88,7 +87,11 @@ public final class ThrowErrorCommandImpl extends CommandWithVariables<ThrowError
 
   @Override
   public ThrowErrorCommandStep2 withLeaseToken(final String leaseToken) {
-    this.leaseToken = leaseToken;
+    if (leaseToken == null) {
+      return this;
+    }
+    grpcRequestObjectBuilder.setLeaseToken(leaseToken);
+    httpRequestObject.setLeaseToken(leaseToken);
     return this;
   }
 

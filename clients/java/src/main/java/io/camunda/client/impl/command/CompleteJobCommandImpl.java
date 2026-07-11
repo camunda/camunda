@@ -59,7 +59,6 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   private boolean useRest;
   private final long jobKey;
   private final JsonMapper jsonMapper;
-  private String leaseToken;
 
   public CompleteJobCommandImpl(
       final GatewayStub asyncStub,
@@ -116,7 +115,11 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
 
   @Override
   public CompleteJobCommandStep1 withLeaseToken(final String leaseToken) {
-    this.leaseToken = leaseToken;
+    if (leaseToken == null) {
+      return this;
+    }
+    grpcRequestObjectBuilder.setLeaseToken(leaseToken);
+    httpRequestObject.setLeaseToken(leaseToken);
     return this;
   }
 

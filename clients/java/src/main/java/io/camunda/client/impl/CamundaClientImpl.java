@@ -861,7 +861,10 @@ public final class CamundaClientImpl implements CamundaClient {
 
   @Override
   public UpdateTimeoutJobCommandStep1 newUpdateTimeoutCommand(final ActivatedJob job) {
-    return newUpdateTimeoutCommand(job.getKey());
+    final JobUpdateTimeoutCommandImpl command =
+        (JobUpdateTimeoutCommandImpl) newUpdateTimeoutCommand(job.getKey());
+    command.withLeaseToken(job.getLeaseToken());
+    return command;
   }
 
   @Override
@@ -1830,7 +1833,7 @@ public final class CamundaClientImpl implements CamundaClient {
 
   @Override
   public CompleteJobCommandStep1 newCompleteCommand(final ActivatedJob job) {
-    return newCompleteCommand(job.getKey());
+    return jobClient.newCompleteCommand(job);
   }
 
   @Override
@@ -1840,7 +1843,7 @@ public final class CamundaClientImpl implements CamundaClient {
 
   @Override
   public FailJobCommandStep1 newFailCommand(final ActivatedJob job) {
-    return newFailCommand(job.getKey());
+    return jobClient.newFailCommand(job);
   }
 
   @Override
@@ -1850,7 +1853,7 @@ public final class CamundaClientImpl implements CamundaClient {
 
   @Override
   public ThrowErrorCommandStep1 newThrowErrorCommand(final ActivatedJob job) {
-    return newThrowErrorCommand(job.getKey());
+    return jobClient.newThrowErrorCommand(job);
   }
 
   @Override
