@@ -401,6 +401,54 @@ public class UpdateJobTest {
         .hasMessageContaining(expectedMessage);
   }
 
+  @Test
+  public void shouldUpdateRetriesOfLeasedJobWithoutLeaseToken(final TestInfo testInfo) {
+    // given
+    final String jobType = "job-" + testInfo.getDisplayName();
+    createProcessInstance(jobType);
+    final var job = activateLeasedJob(client, false, jobType);
+    assertThat(job.getLeaseToken())
+        .describedAs("Expected the leased job to carry a lease token")
+        .isNotEmpty();
+    final long jobKey = job.getKey();
+    final int retries = 10;
+
+    // when
+    // property-update commands validate the lease only if one is supplied; an absent token
+    // must proceed even on a leased job (operator/bulk paths)
+    getRetriesCommand(client, false, jobKey).retries(retries).send().join();
+
+    // then
+    assertRetriesUpdated(jobKey, false, retries);
+  }
+
+  @Test
+  public void shouldRejectUpdateRetriesOfLeasedJobWithWrongLeaseToken(final TestInfo testInfo) {
+    // given
+    final String jobType = "job-" + testInfo.getDisplayName();
+    createProcessInstance(jobType);
+    final var job = activateLeasedJob(client, false, jobType);
+    assertThat(job.getLeaseToken())
+        .describedAs("Expected the leased job to carry a lease token")
+        .isNotEmpty();
+    final long jobKey = job.getKey();
+
+    // when / then
+    final var expectedMessage =
+        String.format(
+            "Expected to process job with key '%d', but the supplied lease token does not match. "
+                + "The job may have been re-activated by another worker.",
+            jobKey);
+    assertThatThrownBy(
+            () ->
+                getRetriesCommand(client, false, jobKey)
+                    .retries(10)
+                    .withLeaseToken("wrong-lease-token")
+                    .send()
+                    .join())
+        .hasMessageContaining(expectedMessage);
+  }
+
   private ActivatedJob activateLeasedJob(
       final CamundaClient client, final boolean useRest, final String jobType) {
     final var activateResponse =
