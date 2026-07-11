@@ -108,6 +108,11 @@ public class UpdateJobCommandImpl implements UpdateJobCommandStep1, UpdateJobCom
     return this;
   }
 
+  @Override
+  public UpdateJobCommandStep2 withLeaseToken(final String leaseToken) {
+    return this;
+  }
+
   private io.camunda.client.protocol.rest.JobChangeset getChangesetEnsureInitialized() {
 
     io.camunda.client.protocol.rest.JobChangeset changeset = httpRequestObject.getChangeset();

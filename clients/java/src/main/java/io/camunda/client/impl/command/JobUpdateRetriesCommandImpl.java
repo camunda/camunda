@@ -137,6 +137,11 @@ public final class JobUpdateRetriesCommandImpl
   }
 
   @Override
+  public UpdateRetriesJobCommandStep2 withLeaseToken(final String leaseToken) {
+    return this;
+  }
+
+  @Override
   public UpdateRetriesJobCommandStep1 useRest() {
     useRest = true;
     return this;
