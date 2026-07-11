@@ -151,7 +151,8 @@ public final class RequestMapper extends RequestUtil {
   public static BrokerUpdateJobRetriesRequest toUpdateJobRetriesRequest(
       final UpdateJobRetriesRequest grpcRequest) {
     final var brokerRequest =
-        new BrokerUpdateJobRetriesRequest(grpcRequest.getJobKey(), grpcRequest.getRetries());
+        new BrokerUpdateJobRetriesRequest(grpcRequest.getJobKey(), grpcRequest.getRetries())
+            .setLeaseToken(grpcRequest.getLeaseToken());
     if (grpcRequest.hasOperationReference()) {
       brokerRequest.setOperationReference(grpcRequest.getOperationReference());
     }
@@ -178,7 +179,8 @@ public final class RequestMapper extends RequestUtil {
           "Expected to update job priority, but priority must be provided");
     }
     final var brokerRequest =
-        new BrokerUpdateJobRequest(grpcRequest.getJobKey(), null, null, grpcRequest.getPriority());
+        new BrokerUpdateJobRequest(grpcRequest.getJobKey(), null, null, grpcRequest.getPriority())
+            .setLeaseToken(grpcRequest.getLeaseToken());
     if (grpcRequest.hasOperationReference()) {
       brokerRequest.setOperationReference(grpcRequest.getOperationReference());
     }
