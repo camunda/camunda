@@ -254,7 +254,7 @@ public class RequestMapper {
         getStringOrEmpty(failRequest, JobFailRequest::getErrorMessage),
         getLongOrZero(failRequest, JobFailRequest::getRetryBackOff),
         getMapOrEmpty(failRequest, JobFailRequest::getVariables),
-        null);
+        failRequest == null ? null : failRequest.getLeaseToken());
   }
 
   public static Either<ProblemDetail, ErrorJobRequest> toJobErrorRequest(
@@ -269,7 +269,7 @@ public class RequestMapper {
                 errorRequest.getErrorCode(),
                 getStringOrEmpty(errorRequest, JobErrorRequest::getErrorMessage),
                 getMapOrEmpty(errorRequest, JobErrorRequest::getVariables),
-                null));
+                errorRequest.getLeaseToken()));
   }
 
   public static Either<ProblemDetail, CorrelateMessageRequest> toMessageCorrelationRequest(
@@ -300,7 +300,7 @@ public class RequestMapper {
         jobKey,
         getMapOrEmpty(completionRequest, JobCompletionRequest::getVariables),
         getJobResultOrDefault(completionRequest),
-        null);
+        completionRequest == null ? null : completionRequest.getLeaseToken());
   }
 
   public static Either<ProblemDetail, UpdateJobRequest> toJobUpdateRequest(
@@ -316,7 +316,7 @@ public class RequestMapper {
                     updateRequest.getChangeset().getRetries(),
                     updateRequest.getChangeset().getTimeout(),
                     updateRequest.getChangeset().getPriority()),
-                null));
+                updateRequest.getLeaseToken()));
   }
 
   public static Either<ProblemDetail, BatchUpdateJobRequest> toJobBatchUpdateRequest(
