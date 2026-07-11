@@ -388,8 +388,8 @@ public class UpdateJobTest {
     // when / then
     final var expectedMessage =
         String.format(
-            "Expected to process job with key '%d', but the supplied lease token does not match "
-                + "the lease token of the job",
+            "Expected to process job with key '%d', but the supplied lease token does not match. "
+                + "The job may have been re-activated by another worker.",
             jobKey);
     assertThatThrownBy(
             () ->
