@@ -844,7 +844,10 @@ public final class CamundaClientImpl implements CamundaClient {
 
   @Override
   public UpdateRetriesJobCommandStep1 newUpdateRetriesCommand(final ActivatedJob job) {
-    return newUpdateRetriesCommand(job.getKey());
+    final JobUpdateRetriesCommandImpl command =
+        (JobUpdateRetriesCommandImpl) newUpdateRetriesCommand(job.getKey());
+    command.withLeaseToken(job.getLeaseToken());
+    return command;
   }
 
   @Override
@@ -881,7 +884,10 @@ public final class CamundaClientImpl implements CamundaClient {
 
   @Override
   public UpdateJobPriorityCommandStep1 newUpdateJobPriorityCommand(final ActivatedJob job) {
-    return newUpdateJobPriorityCommand(job.getKey());
+    final JobUpdatePriorityCommandImpl command =
+        (JobUpdatePriorityCommandImpl) newUpdateJobPriorityCommand(job.getKey());
+    command.withLeaseToken(job.getLeaseToken());
+    return command;
   }
 
   @Override
@@ -933,7 +939,9 @@ public final class CamundaClientImpl implements CamundaClient {
 
   @Override
   public UpdateJobCommandStep1 newUpdateJobCommand(final ActivatedJob job) {
-    return newUpdateJobCommand(job.getKey());
+    final UpdateJobCommandImpl command = (UpdateJobCommandImpl) newUpdateJobCommand(job.getKey());
+    command.withLeaseToken(job.getLeaseToken());
+    return command;
   }
 
   @Override

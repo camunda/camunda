@@ -110,6 +110,10 @@ public class UpdateJobCommandImpl implements UpdateJobCommandStep1, UpdateJobCom
 
   @Override
   public UpdateJobCommandStep2 withLeaseToken(final String leaseToken) {
+    if (leaseToken == null) {
+      return this;
+    }
+    httpRequestObject.setLeaseToken(leaseToken);
     return this;
   }
 
