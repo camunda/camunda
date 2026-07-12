@@ -2191,12 +2191,17 @@ public final class SearchQueryResponseMapper {
             .orElseGet(Collections::emptyList);
 
     final var m = entity.metrics();
-    final var metrics =
-        AgentInstanceHistoryItemMetrics.Builder.create()
-            .inputTokens(m.inputTokens())
-            .outputTokens(m.outputTokens())
-            .durationMs(m.durationMs())
-            .build();
+    final AgentInstanceHistoryItemMetrics metrics;
+    if (m == null) {
+      metrics = null;
+    } else {
+      metrics =
+          AgentInstanceHistoryItemMetrics.Builder.create()
+              .inputTokens(m.inputTokens())
+              .outputTokens(m.outputTokens())
+              .durationMs(m.durationMs())
+              .build();
+    }
 
     return AgentInstanceHistoryItemResult.Builder.create()
         .historyItemKey(keyToString(entity.historyItemKey()))
