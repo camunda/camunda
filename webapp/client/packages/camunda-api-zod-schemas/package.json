@@ -605,7 +605,7 @@
 	"publishConfig": {
 		"access": "public"
 	},
-	"packageManager": "npm@11.18.0",
+	"packageManager": "npm@12.0.0",
 	"devDependencies": {
 		"@types/node": "26.1.1",
 		"changelogen": "0.6.2",
