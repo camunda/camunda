@@ -136,4 +136,68 @@ class MultiCamundaClientPropertiesResolverTest {
         .hasMessageContaining("physical-tenant-id")
         .hasMessageContaining("risk-production");
   }
+
+  @Test
+  void shouldTreatSingleClientAsPrimary() {
+    // given a single client and no explicit primary flag
+    final StandardEnvironment environment =
+        environmentWith(Map.of("camunda.clients.finance.physical-tenant-id", "finance"));
+
+    // when
+    final MultiCamundaClientProperties properties =
+        MultiCamundaClientPropertiesResolver.resolve(environment);
+
+    // then it is the primary implicitly
+    assertThat(properties.getPrimaryClientName()).contains("finance");
+  }
+
+  @Test
+  void shouldResolveExplicitlyFlaggedPrimary() {
+    // given two clients with one flagged primary
+    final StandardEnvironment environment =
+        environmentWith(
+            Map.of(
+                "camunda.clients.finance.physical-tenant-id", "finance",
+                "camunda.clients.risk.physical-tenant-id", "riskproduction",
+                "camunda.clients.risk.primary", "true"));
+
+    // when
+    final MultiCamundaClientProperties properties =
+        MultiCamundaClientPropertiesResolver.resolve(environment);
+
+    // then
+    assertThat(properties.getPrimaryClientName()).contains("risk");
+  }
+
+  @Test
+  void shouldHaveNoPrimaryWhenMultipleClientsAndNoneFlagged() {
+    // given two clients and no primary flag
+    final StandardEnvironment environment =
+        environmentWith(
+            Map.of(
+                "camunda.clients.finance.physical-tenant-id", "finance",
+                "camunda.clients.risk.physical-tenant-id", "riskproduction"));
+
+    // when
+    final MultiCamundaClientProperties properties =
+        MultiCamundaClientPropertiesResolver.resolve(environment);
+
+    // then no primary is designated
+    assertThat(properties.getPrimaryClientName()).isEmpty();
+  }
+
+  @Test
+  void shouldRejectMoreThanOnePrimary() {
+    // given two clients both flagged primary
+    final StandardEnvironment environment =
+        environmentWith(
+            Map.of(
+                "camunda.clients.finance.primary", "true",
+                "camunda.clients.risk.primary", "true"));
+
+    // when / then
+    assertThatThrownBy(() -> MultiCamundaClientPropertiesResolver.resolve(environment))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("primary");
+  }
 }

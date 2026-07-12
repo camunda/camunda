@@ -15,8 +15,10 @@
  */
 package io.camunda.client.spring.properties;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -48,6 +50,9 @@ import org.springframework.core.env.Environment;
  * and at most {@value #MAX_PHYSICAL_TENANT_ID_LENGTH} characters. The rule is mirrored from the
  * server-side {@code io.camunda.configuration.physicaltenants.PhysicalTenantResolver}; keep the two
  * in sync.
+ *
+ * <p>Exactly one entry may be marked with {@code camunda.clients.<name>.primary=true} to designate
+ * the default client; if only one client is configured it is the primary implicitly.
  */
 public final class MultiCamundaClientPropertiesResolver {
 
@@ -81,7 +86,37 @@ public final class MultiCamundaClientPropertiesResolver {
       validatePhysicalTenantId(name, properties.getPhysicalTenantId());
       resolved.put(name, properties);
     }
-    return new MultiCamundaClientProperties(resolved);
+    return new MultiCamundaClientProperties(resolved, resolvePrimaryClientName(binder, names));
+  }
+
+  /**
+   * Resolves which client is primary: the single entry flagged {@code
+   * camunda.clients.<name>.primary=true}, or — when none is flagged — the sole configured client.
+   *
+   * @throws IllegalArgumentException if more than one entry is flagged primary
+   */
+  private static String resolvePrimaryClientName(final Binder binder, final Set<String> names) {
+    final List<String> flagged = new ArrayList<>();
+    for (final String name : names) {
+      final boolean primary =
+          binder
+              .bind(CLIENTS_PREFIX + "." + name + ".primary", Bindable.of(Boolean.class))
+              .orElse(false);
+      if (primary) {
+        flagged.add(name);
+      }
+    }
+    if (flagged.size() > 1) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Multiple clients are marked primary (%s); at most one 'camunda.clients.<name>."
+                  + "primary=true' is allowed.",
+              flagged));
+    }
+    if (flagged.size() == 1) {
+      return flagged.get(0);
+    }
+    return names.size() == 1 ? names.iterator().next() : null;
   }
 
   /**
