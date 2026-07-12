@@ -17,6 +17,7 @@ package io.camunda.client.spring.configuration;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.spring.configuration.condition.ConditionalOnCamundaClientEnabled;
+import io.camunda.client.spring.configuration.condition.OnSingleClientConfigurationCondition;
 import io.camunda.client.spring.event.CamundaLifecycleEventProducer;
 import io.camunda.client.spring.testsupport.CamundaSpringProcessTestContext;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -24,10 +25,12 @@ import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
 
 /** Enabled by META-INF of Spring Boot Starter to provide beans for Camunda Clients */
 @AutoConfiguration
 @ConditionalOnCamundaClientEnabled
+@Conditional(OnSingleClientConfigurationCondition.class)
 @ImportAutoConfiguration({
   CamundaClientProdAutoConfiguration.class,
   CamundaClientAllAutoConfiguration.class,
