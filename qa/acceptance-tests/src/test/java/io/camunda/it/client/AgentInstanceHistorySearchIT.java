@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.AgentInstanceHistoryContent;
 import io.camunda.client.api.command.AgentInstanceHistoryContent.ObjectContent;
+import io.camunda.client.api.command.AgentInstanceHistoryMetrics;
 import io.camunda.client.api.search.enums.AgentInstanceHistoryRole;
 import io.camunda.client.api.search.response.AgentInstanceHistory;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
@@ -125,6 +126,11 @@ public class AgentInstanceHistorySearchIT {
             .role(AgentInstanceHistoryRole.ASSISTANT)
             .content(List.of(AgentInstanceHistoryContent.text("I can help with many tasks.")))
             .producedAt(OffsetDateTime.parse("2025-06-01T10:01:00Z"))
+            .metrics(
+                new AgentInstanceHistoryMetrics()
+                    .inputTokens(512L)
+                    .outputTokens(148L)
+                    .durationMs(1200L))
             .send()
             .join()
             .getHistoryItemKey();
@@ -271,6 +277,53 @@ public class AgentInstanceHistorySearchIT {
                       42,
                       true,
                       "search-complete");
+            });
+  }
+
+  @Test
+  void shouldReturnNullMetricsWhenNotProvided() {
+    // when — fetch USER and TOOL_RESULT items, both created without metrics
+    final var response =
+        camundaClient
+            .newAgentInstanceHistorySearchRequest(agentInstanceKey)
+            .filter(f -> f.historyItemKey(p -> p.in(historyItemKey1, historyItemKey3)))
+            .execute();
+
+    // then
+    assertThat(response.items())
+        .hasSize(2)
+        .as("USER and TOOL_RESULT items created without metrics must return null metrics")
+        .extracting(AgentInstanceHistory::getMetrics)
+        .containsOnlyNulls();
+  }
+
+  @Test
+  void shouldReturnProvidedMetrics() {
+    // when — fetch ASSISTANT item, created with explicit metrics
+    final var response =
+        camundaClient
+            .newAgentInstanceHistorySearchRequest(agentInstanceKey)
+            .filter(f -> f.historyItemKey(historyItemKey2))
+            .execute();
+
+    // then
+    assertThat(response.items())
+        .singleElement()
+        .extracting(AgentInstanceHistory::getMetrics)
+        .satisfies(
+            m -> {
+              assertThat(m)
+                  .as("ASSISTANT item created with metrics must return non-null metrics")
+                  .isNotNull();
+              assertThat(m.getInputTokens())
+                  .as("inputTokens must match the value provided at creation")
+                  .isEqualTo(512L);
+              assertThat(m.getOutputTokens())
+                  .as("outputTokens must match the value provided at creation")
+                  .isEqualTo(148L);
+              assertThat(m.getDurationMs())
+                  .as("durationMs must match the value provided at creation")
+                  .isEqualTo(1200L);
             });
   }
 
