@@ -103,9 +103,9 @@ public class AgentHistoryHandler
             DateUtil.toOffsetDateTime(
                 Instant.ofEpochMilli(
                     value.getProducedAt() > 0 ? value.getProducedAt() : record.getTimestamp())))
-        .setInputTokens(value.getMetrics().getInputTokens())
-        .setOutputTokens(value.getMetrics().getOutputTokens())
-        .setDurationMs(value.getMetrics().getDurationMs())
+        .setInputTokens(ExporterUtil.nullIfNegative(value.getMetrics().getInputTokens()))
+        .setOutputTokens(ExporterUtil.nullIfNegative(value.getMetrics().getOutputTokens()))
+        .setDurationMs(ExporterUtil.nullIfNegative(value.getMetrics().getDurationMs()))
         .setContent(mapContent(value.getContent()))
         .setToolCalls(mapToolCalls(value.getToolCalls()));
   }

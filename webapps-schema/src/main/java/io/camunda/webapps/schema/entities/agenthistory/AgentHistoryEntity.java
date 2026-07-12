@@ -79,13 +79,13 @@ public final class AgentHistoryEntity
 
   // Metrics fields — flattened from AgentHistoryMetricsValue
   @SinceVersion(value = "8.10.0", requireDefault = false)
-  private long inputTokens;
+  private Long inputTokens;
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
-  private long outputTokens;
+  private Long outputTokens;
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
-  private long durationMs;
+  private Long durationMs;
 
   @SinceVersion(value = "8.10.0", requireDefault = false)
   private List<AgentHistoryContentValue> content;
@@ -242,29 +242,29 @@ public final class AgentHistoryEntity
     return this;
   }
 
-  public long getInputTokens() {
+  public Long getInputTokens() {
     return inputTokens;
   }
 
-  public AgentHistoryEntity setInputTokens(final long inputTokens) {
+  public AgentHistoryEntity setInputTokens(final Long inputTokens) {
     this.inputTokens = inputTokens;
     return this;
   }
 
-  public long getOutputTokens() {
+  public Long getOutputTokens() {
     return outputTokens;
   }
 
-  public AgentHistoryEntity setOutputTokens(final long outputTokens) {
+  public AgentHistoryEntity setOutputTokens(final Long outputTokens) {
     this.outputTokens = outputTokens;
     return this;
   }
 
-  public long getDurationMs() {
+  public Long getDurationMs() {
     return durationMs;
   }
 
-  public AgentHistoryEntity setDurationMs(final long durationMs) {
+  public AgentHistoryEntity setDurationMs(final Long durationMs) {
     this.durationMs = durationMs;
     return this;
   }
@@ -338,9 +338,9 @@ public final class AgentHistoryEntity
         && Objects.equals(role, that.role)
         && Objects.equals(commitStatus, that.commitStatus)
         && Objects.equals(producedAt, that.producedAt)
-        && inputTokens == that.inputTokens
-        && outputTokens == that.outputTokens
-        && durationMs == that.durationMs
+        && Objects.equals(inputTokens, that.inputTokens)
+        && Objects.equals(outputTokens, that.outputTokens)
+        && Objects.equals(durationMs, that.durationMs)
         && Objects.equals(content, that.content)
         && Objects.equals(toolCalls, that.toolCalls);
   }
