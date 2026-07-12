@@ -226,4 +226,37 @@ class AgentHistoryEntityTransformerTest {
     assertThat(result.commitStatus()).isNotNull();
     assertThat(result.commitStatus().name()).isEqualTo(schemaStatus.name());
   }
+
+  @Test
+  void shouldMapAllNullMetricsToNullMetrics() {
+    // given — all three metric fields null means metrics were never provided
+    final var source = buildSource();
+    source.setInputTokens(null);
+    source.setOutputTokens(null);
+    source.setDurationMs(null);
+
+    // when
+    final AgentInstanceHistoryEntity result = transformer.apply(source);
+
+    // then
+    assertThat(result.metrics()).isNull();
+  }
+
+  @Test
+  void shouldPreservePartialMetricsWhenOnlyDurationMsIsNull() {
+    // given — inputTokens and outputTokens set, durationMs absent
+    final var source = buildSource();
+    source.setInputTokens(100L);
+    source.setOutputTokens(200L);
+    source.setDurationMs(null);
+
+    // when
+    final AgentInstanceHistoryEntity result = transformer.apply(source);
+
+    // then
+    assertThat(result.metrics()).isNotNull();
+    assertThat(result.metrics().inputTokens()).isEqualTo(100L);
+    assertThat(result.metrics().outputTokens()).isEqualTo(200L);
+    assertThat(result.metrics().durationMs()).isNull();
+  }
 }
