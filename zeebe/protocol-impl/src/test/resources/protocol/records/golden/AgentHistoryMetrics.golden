@@ -15,9 +15,9 @@ import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue.AgentHisto
 @JsonIgnoreProperties({"encodedLength", "empty"})
 public final class AgentHistoryMetrics extends ObjectValue implements AgentHistoryMetricsValue {
 
-  private final LongProperty inputTokensProp = new LongProperty("inputTokens", 0L);
-  private final LongProperty outputTokensProp = new LongProperty("outputTokens", 0L);
-  private final LongProperty durationMsProp = new LongProperty("durationMs", 0L);
+  private final LongProperty inputTokensProp = new LongProperty("inputTokens", -1L);
+  private final LongProperty outputTokensProp = new LongProperty("outputTokens", -1L);
+  private final LongProperty durationMsProp = new LongProperty("durationMs", -1L);
 
   public AgentHistoryMetrics() {
     super(3);

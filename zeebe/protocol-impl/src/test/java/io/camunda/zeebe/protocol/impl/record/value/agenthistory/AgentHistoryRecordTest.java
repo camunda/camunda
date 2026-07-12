@@ -212,9 +212,9 @@ final class AgentHistoryRecordTest {
     final AgentHistoryRecord record = new AgentHistoryRecord();
 
     // then
-    assertThat(record.getMetrics().getInputTokens()).isEqualTo(0L);
-    assertThat(record.getMetrics().getOutputTokens()).isEqualTo(0L);
-    assertThat(record.getMetrics().getDurationMs()).isEqualTo(0L);
+    assertThat(record.getMetrics().getInputTokens()).isEqualTo(-1L);
+    assertThat(record.getMetrics().getOutputTokens()).isEqualTo(-1L);
+    assertThat(record.getMetrics().getDurationMs()).isEqualTo(-1L);
   }
 
   @Test
