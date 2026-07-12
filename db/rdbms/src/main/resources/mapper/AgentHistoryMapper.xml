@@ -104,9 +104,9 @@
     <result property="commitStatus" column="COMMIT_STATUS"
       javaType="io.camunda.search.entities.AgentInstanceHistoryEntity$AgentInstanceHistoryCommitStatus"/>
     <result property="producedAt" column="PRODUCED_AT" javaType="java.time.OffsetDateTime"/>
-    <result property="inputTokens" column="INPUT_TOKENS" javaType="long"/>
-    <result property="outputTokens" column="OUTPUT_TOKENS" javaType="long"/>
-    <result property="durationMs" column="DURATION_MS" javaType="long"/>
+    <result property="inputTokens" column="INPUT_TOKENS" javaType="java.lang.Long"/>
+    <result property="outputTokens" column="OUTPUT_TOKENS" javaType="java.lang.Long"/>
+    <result property="durationMs" column="DURATION_MS" javaType="java.lang.Long"/>
     <result property="content" column="CONTENT" javaType="java.lang.String"/>
     <result property="toolCalls" column="TOOL_CALLS" javaType="java.lang.String"/>
   </resultMap>
