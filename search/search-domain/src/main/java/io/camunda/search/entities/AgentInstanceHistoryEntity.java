@@ -35,7 +35,7 @@ public record AgentInstanceHistoryEntity(
     AgentInstanceHistoryRole role,
     List<ContentItem> content,
     List<ToolCall> toolCalls,
-    Metrics metrics,
+    @Nullable Metrics metrics,
     AgentInstanceHistoryCommitStatus commitStatus,
     OffsetDateTime producedAt)
     implements TenantOwnedEntity {
@@ -51,7 +51,6 @@ public record AgentInstanceHistoryEntity(
     Objects.requireNonNull(jobKey, "jobKey");
     Objects.requireNonNull(jobLease, "jobLease");
     Objects.requireNonNull(role, "role");
-    Objects.requireNonNull(metrics, "metrics");
     Objects.requireNonNull(commitStatus, "commitStatus");
     Objects.requireNonNull(producedAt, "producedAt");
     // Mutable lists required — readers may hydrate by calling .add()
@@ -140,7 +139,8 @@ public record AgentInstanceHistoryEntity(
     }
   }
 
-  /** Per-call token and latency metrics. Zero-valued rather than null when not available. */
+  /** Per-call token and latency metrics. Null when metrics were not provided at creation time. */
   @JsonIgnoreProperties(ignoreUnknown = true)
-  public record Metrics(long inputTokens, long outputTokens, long durationMs) {}
+  public record Metrics(
+      @Nullable Long inputTokens, @Nullable Long outputTokens, @Nullable Long durationMs) {}
 }
