@@ -155,6 +155,20 @@ class MultiCamundaClientAutoConfigurationTest {
   }
 
   @Test
+  void shouldFailStartupOnMixedAuthTypes() {
+    contextRunner
+        .withPropertyValues(
+            "camunda.clients.finance.auth.method=oidc", "camunda.clients.risk.auth.method=basic")
+        .run(
+            context -> {
+              assertThat(context).hasFailed();
+              assertThat(context.getStartupFailure())
+                  .isInstanceOf(IllegalArgumentException.class)
+                  .hasMessageContaining("authentication method");
+            });
+  }
+
+  @Test
   void shouldFailStartupOnInvalidPhysicalTenantId() {
     contextRunner
         .withPropertyValues("camunda.clients.bad.physical-tenant-id=risk-production")

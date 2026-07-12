@@ -53,6 +53,10 @@ import org.springframework.core.env.Environment;
  *
  * <p>Exactly one entry may be marked with {@code camunda.clients.<name>.primary=true} to designate
  * the default client; if only one client is configured it is the primary implicitly.
+ *
+ * <p>All configured clients must share a single authentication <em>type</em> ({@code auth.method});
+ * per-client credentials/identities may differ, but mixing e.g. {@code basic} and {@code oidc}
+ * across clients fails fast. This mirrors the parent physical-tenant design.
  */
 public final class MultiCamundaClientPropertiesResolver {
 
@@ -86,7 +90,30 @@ public final class MultiCamundaClientPropertiesResolver {
       validatePhysicalTenantId(name, properties.getPhysicalTenantId());
       resolved.put(name, properties);
     }
+    validateSingleAuthType(resolved);
     return new MultiCamundaClientProperties(resolved, resolvePrimaryClientName(binder, names));
+  }
+
+  /**
+   * Validates that all configured clients share a single authentication type ({@code auth.method}).
+   * Per-client credentials/identities may differ, but the type must be uniform.
+   *
+   * @throws IllegalArgumentException if clients declare more than one distinct {@code auth.method}
+   */
+  private static void validateSingleAuthType(final Map<String, CamundaClientProperties> clients) {
+    final Map<String, CamundaClientAuthProperties.AuthMethod> methodByClient =
+        new LinkedHashMap<>();
+    clients.forEach(
+        (name, properties) -> methodByClient.put(name, properties.getAuth().getMethod()));
+    final long distinctMethods = methodByClient.values().stream().distinct().count();
+    if (distinctMethods > 1) {
+      throw new IllegalArgumentException(
+          String.format(
+              "All 'camunda.clients.*' must use the same authentication method (auth.method); found "
+                  + "mixed methods %s. Per-client credentials may differ, but the auth type must be "
+                  + "uniform.",
+              methodByClient));
+    }
   }
 
   /**
