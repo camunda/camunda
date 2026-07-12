@@ -157,11 +157,16 @@ public class AgentInstanceMapper {
 
           if (request.getMetrics() != null) {
             final var metrics = request.getMetrics();
-            record
-                .getMetrics()
-                .setInputTokens(metrics.getInputTokens() != null ? metrics.getInputTokens() : 0L)
-                .setOutputTokens(metrics.getOutputTokens() != null ? metrics.getOutputTokens() : 0L)
-                .setDurationMs(metrics.getDurationMs() != null ? metrics.getDurationMs() : 0L);
+            final var recordMetrics = record.getMetrics();
+            if (metrics.getInputTokens() != null) {
+              recordMetrics.setInputTokens(metrics.getInputTokens());
+            }
+            if (metrics.getOutputTokens() != null) {
+              recordMetrics.setOutputTokens(metrics.getOutputTokens());
+            }
+            if (metrics.getDurationMs() != null) {
+              recordMetrics.setDurationMs(metrics.getDurationMs());
+            }
           }
 
           return record;
