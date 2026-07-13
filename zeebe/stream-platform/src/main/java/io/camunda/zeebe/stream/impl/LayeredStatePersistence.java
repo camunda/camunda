@@ -50,7 +50,10 @@ import org.slf4j.Logger;
  *       stack — and is re-checked once the round completed.
  *   <li>{@link #flushForSnapshot(CompletableActorFuture)} — invoked before a snapshot checkpoint;
  *       completes once the durable store holds a cut at least as new as the position the snapshot
- *       will claim, awaiting any in-flight round first.
+ *       will claim, awaiting any in-flight round first. It also latches a snapshot guard that
+ *       defers every new round start until {@link #releaseSnapshotGuard()} after the checkpoint — a
+ *       round started in between could commit data slices without their anchor into the very
+ *       RocksDB state the checkpoint copies (see the method javadoc).
  *   <li>{@link #prepareForScheduledTask()} — invoked before a scheduled task executes on the stream
  *       processor's actor; returns a future after which the task's persisted-state reads observe
  *       everything committed before the preparation began.
@@ -120,6 +123,25 @@ final class LayeredStatePersistence {
 
   /** A ladder rung observed while a round or merge was in flight; re-checked on completion. */
   private boolean sizeTriggerWhileInFlight;
+
+  /**
+   * How many snapshot guards are currently latched (see {@link #flushForSnapshot}): from a
+   * pre-snapshot flush's acceptance until the snapshot's RocksDB checkpoint completed, no new
+   * persist round may start — a paced round commits data slices before the anchor, and a checkpoint
+   * taken between two slices would capture state ahead of its anchor with nothing masking the tear
+   * (the shadowing segments are heap-only and do not travel with a snapshot). Rounds are deferred,
+   * never dropped: latched triggers re-fire on release.
+   */
+  private int snapshotGuards;
+
+  /**
+   * Completes when the last snapshot guard is released, so deferred round starts can chain on it;
+   * non-null exactly while {@link #snapshotGuards} is positive. Never completes exceptionally.
+   */
+  private CompletableActorFuture<Void> snapshotGuardReleased;
+
+  /** A ladder rung observed while the snapshot guard was latched; re-checked on release. */
+  private boolean sizeTriggerWhileGuarded;
 
   /**
    * Whether the full-budget admission warning was already logged for the current excursion above
@@ -311,6 +333,13 @@ final class LayeredStatePersistence {
       ready.complete(null);
       return;
     }
+    if (snapshotGuardHeld()) {
+      // rounds are latched while a snapshot is between its flush and its checkpoint (see
+      // onBatchCommitted); deferred, not dropped — the preparation resumes on release
+      snapshotGuardReleased.onComplete(
+          (ignored, error) -> continueScheduledTaskPreparation(ready, roundRan), processor);
+      return;
+    }
     startRound(PersistTrigger.SCHEDULED_TASK)
         .onComplete((failure, ignored) -> continueScheduledTaskPreparation(ready, true), processor);
   }
@@ -344,17 +373,30 @@ final class LayeredStatePersistence {
     }
     if (roundInFlight() || mergeInFlight()) {
       sizeTriggerWhileInFlight = true;
-      if (inFlightPacer != null) {
-        // on a rung while a round is already draining: stop pacing it, so the drain finishes
-        // flat-out and the follow-up round starts sooner
-        inFlightPacer.expedite();
-      }
+      // on a rung while a round is already draining: stop pacing it, so the drain finishes
+      // flat-out and the follow-up round starts sooner
+      expediteInFlightRound();
+      return;
+    }
+    if (snapshotGuardHeld()) {
+      // a snapshot is between its buffered-state flush and its RocksDB checkpoint: a round
+      // starting now could commit data slices the checkpoint captures without their anchor (the
+      // heap-only masking segments do not travel with a snapshot), so the rung is latched and
+      // re-checked once the guard is released
+      sizeTriggerWhileGuarded = true;
       return;
     }
     if (domain.batchInFlight()) {
       return;
     }
     startRound(rung);
+  }
+
+  /** Expedites the pacer of the in-flight round, if any — a no-op otherwise. */
+  private void expediteInFlightRound() {
+    if (inFlightPacer != null) {
+      inFlightPacer.expedite();
+    }
   }
 
   /** Meters (each occasion) and warns (once per excursion) when the full budget is reached. */
@@ -401,22 +443,35 @@ final class LayeredStatePersistence {
    * covers every position resolved before the flush; batches committed during it belong to later
    * snapshots.
    *
+   * <p><b>Snapshot guard:</b> accepting the flush latches a guard that defers every new round start
+   * until {@link #releaseSnapshotGuard()} — a paced round commits data slices before the anchor,
+   * and a RocksDB checkpoint taken between two slices would capture state ahead of its anchor with
+   * nothing masking the tear once restored (the shadowing segments are heap-only), so no round may
+   * start between this flush and the snapshot's checkpoint. On success the guard stays latched and
+   * the caller must release it once the checkpoint completed (or failed); a failed flush releases
+   * the guard itself before completing exceptionally — no checkpoint follows then.
+   *
    * @param flushed completed once the durable cut is fresh enough, or exceptionally if the
    *     pre-snapshot round fails — the snapshot must not proceed on a stale durable cut
    */
   void flushForSnapshot(final CompletableActorFuture<Void> flushed) {
+    acquireSnapshotGuard();
+    continueSnapshotFlush(flushed);
+  }
+
+  private void continueSnapshotFlush(final CompletableActorFuture<Void> flushed) {
     if (domain.batchInFlight()) {
       // a batch is mid-flight on the processor actor; run again once it completed
-      processor.execute(() -> flushForSnapshot(flushed));
+      processor.execute(() -> continueSnapshotFlush(flushed));
       return;
     }
     if (mergeInFlight()) {
       // the flush's round must not start while a merge is in flight; merges are quick
-      inFlightMerge.onComplete((ignored, error) -> flushForSnapshot(flushed), processor);
+      inFlightMerge.onComplete((ignored, error) -> continueSnapshotFlush(flushed), processor);
       return;
     }
     if (roundInFlight()) {
-      inFlightRound.onComplete((failure, ignored) -> flushForSnapshot(flushed), processor);
+      inFlightRound.onComplete((failure, ignored) -> continueSnapshotFlush(flushed), processor);
       return;
     }
     if (!domain.hasBufferedWrites()) {
@@ -429,6 +484,8 @@ final class LayeredStatePersistence {
               if (failure == null) {
                 flushed.complete(null);
               } else {
+                // no checkpoint follows a failed flush, so the guard must not stay latched
+                releaseSnapshotGuard();
                 flushed.completeExceptionally(
                     new ZeebeDbException(
                         "Failed to persist the buffered layered state before a snapshot; the"
@@ -437,6 +494,42 @@ final class LayeredStatePersistence {
               }
             },
             processor);
+  }
+
+  /** Whether a snapshot guard is latched — no new round may start while one is. */
+  private boolean snapshotGuardHeld() {
+    return snapshotGuards > 0;
+  }
+
+  private void acquireSnapshotGuard() {
+    snapshotGuards++;
+    if (snapshotGuardReleased == null) {
+      snapshotGuardReleased = new CompletableActorFuture<>();
+    }
+  }
+
+  /**
+   * Releases the snapshot guard latched by {@link #flushForSnapshot} once the snapshot's RocksDB
+   * checkpoint completed — successfully or not; the guard must never outlive the checkpoint
+   * attempt, or rounds would stay latched forever. Deferred round triggers re-fire now. Processor
+   * actor only; a release without a latched guard is a no-op (the failure path may have released
+   * already).
+   */
+  void releaseSnapshotGuard() {
+    if (snapshotGuards == 0) {
+      return;
+    }
+    snapshotGuards--;
+    if (snapshotGuards > 0) {
+      return;
+    }
+    final CompletableActorFuture<Void> released = snapshotGuardReleased;
+    snapshotGuardReleased = null;
+    released.complete(null);
+    if (sizeTriggerWhileGuarded) {
+      sizeTriggerWhileGuarded = false;
+      processor.execute(this::onBatchCommitted);
+    }
   }
 
   /**

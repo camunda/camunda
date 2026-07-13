@@ -14,6 +14,7 @@ import io.camunda.zeebe.db.layered.LayeredStoreCoordinator.MergeRound;
 import io.camunda.zeebe.db.layered.LayeredStoreCoordinator.PersistRound;
 import io.camunda.zeebe.db.layered.segment.FlatSegment;
 import io.camunda.zeebe.db.layered.util.InMemoryDurableState;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -371,6 +372,51 @@ final class LayeredStoreCoordinatorTest {
       assertThat(recordingSink.committedBatches).hasSizeGreaterThan(2);
       assertThat(anchorState.committedValue(STORE_A, bytes(9))).containsExactly(bytes(90));
       assertThat(anchorState.committedValue(STORE_A, bytes(5))).containsExactly(bytes(50));
+    }
+  }
+
+  @Test
+  void shouldNotAdvanceAnchorGaugeWhenRoundCarriedNoAnchorEntry() throws Exception {
+    // given a designated-carrier wiring (the durable anchor is a normal drained key — the real
+    // wiring's sink anchor cell is a no-op, so recovery reads the carrier, not the cell) with
+    // micrometer-backed gauges
+    final SimpleMeterRegistry registry = new SimpleMeterRegistry();
+    final LayeredStoreMetrics metrics = LayeredStoreMetrics.of(registry, "anchor-gauge");
+    final InMemoryDurableState anchorState = new InMemoryDurableState();
+    final LayeredKeyValueStore store =
+        new LayeredKeyValueStore(
+            STORE_A, anchorState.store(STORE_A), 1024 * 1024, false, 4, metrics);
+    final List<LayeredKeyValueStore> stores = List.of(store);
+    try (final LayeredStoreCoordinator coordinator =
+        new LayeredStoreCoordinator(
+            stores, anchorState.sink(), anchorState.snapshotSource(), view -> {}, metrics)) {
+      coordinator.designateAnchorEntry(STORE_A, bytes(9));
+
+      // and a first round that drained the carrier: the durable anchor is 10
+      store.put(bytes(9), bytes(90));
+      store.promote();
+      coordinator.freezeAll(10);
+      final PersistRound anchored = coordinator.prepareRound(10);
+      anchored.persist();
+      coordinator.completeRound(anchored, true);
+
+      // when a round without the carrier drains at watermark 20 — the durable anchor stays 10
+      store.put(bytes(1), bytes(10));
+      store.promote();
+      coordinator.freezeAll(20);
+      final PersistRound carrierless = coordinator.prepareRound(20);
+      carrierless.persist();
+      coordinator.completeRound(carrierless, true);
+
+      // and newer writes freeze at watermark 30
+      store.put(bytes(2), bytes(20));
+      store.promote();
+      coordinator.freezeAll(30);
+
+      // then the anchor-lag gauge measures from the last round that actually committed an
+      // anchor (10), never from the carrier-less round's watermark (20) — the gauge must not
+      // run ahead of what recovery would read
+      assertThat(registry.get("zeebe.db.layered.anchor.lag").gauge().value()).isEqualTo(20.0);
     }
   }
 

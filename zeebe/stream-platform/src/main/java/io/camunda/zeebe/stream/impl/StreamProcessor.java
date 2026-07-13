@@ -32,6 +32,7 @@ import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
 import io.camunda.zeebe.stream.impl.state.DbLastProcessedPositionState;
 import io.camunda.zeebe.stream.impl.state.StreamProcessorDbState;
+import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
@@ -84,6 +85,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   public static final long UNSET_POSITION = -1L;
   public static final Duration HEALTH_CHECK_TICK_DURATION = Duration.ofSeconds(5);
+
+  /** The guard {@link #flushBufferedState()} hands out when the layered-state flag is off. */
+  private static final CloseableSilently NOOP_SNAPSHOT_GUARD = () -> {};
 
   private static final String ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED =
       "Expected to find event with the snapshot position %s in log stream, but nothing was found. Failed to recover '%s'.";
@@ -471,17 +475,24 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
    * immediately when the experimental layered-state flag is off; awaits an in-flight persist round
    * and any in-flight batch before draining otherwise (all waiting is future-chained on this actor,
    * never blocking).
+   *
+   * <p>The returned guard keeps new persist rounds latched until it is closed: a paced round
+   * commits data slices before its anchor, so a RocksDB checkpoint taken while one runs would
+   * capture state ahead of its anchor — torn once restored, because the heap-only masking segments
+   * do not travel with a snapshot. The caller <b>must</b> close the guard once the transient
+   * snapshot's checkpoint completed, on success and on failure alike; closing is idempotent and
+   * safe from any thread. With the flag off the guard is a no-op.
    */
-  public ActorFuture<Void> flushBufferedState() {
+  public ActorFuture<CloseableSilently> flushBufferedState() {
     if (!(zeebeDb instanceof LayeredZeebeDb)) {
-      return CompletableActorFuture.completed(null);
+      return CompletableActorFuture.completed(NOOP_SNAPSHOT_GUARD);
     }
-    final CompletableActorFuture<Void> flushed = new CompletableActorFuture<>();
+    final CompletableActorFuture<CloseableSilently> flushed = new CompletableActorFuture<>();
     actor.run(() -> tryFlushBufferedState(flushed));
     return flushed;
   }
 
-  private void tryFlushBufferedState(final CompletableActorFuture<Void> flushed) {
+  private void tryFlushBufferedState(final CompletableActorFuture<CloseableSilently> flushed) {
     try {
       if (layeredStatePersistence == null) {
         if (actor.isClosed() || isFailed()) {
@@ -496,10 +507,40 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
         actor.submit(() -> tryFlushBufferedState(flushed));
         return;
       }
-      layeredStatePersistence.flushForSnapshot(flushed);
+      final CompletableActorFuture<Void> drained = new CompletableActorFuture<>();
+      layeredStatePersistence.flushForSnapshot(drained);
+      drained.onComplete(
+          (ok, error) -> {
+            if (error != null) {
+              // a failed flush released its guard itself — no checkpoint follows
+              flushed.completeExceptionally(error);
+            } else {
+              flushed.complete(newSnapshotGuardLease());
+            }
+          },
+          actor);
     } catch (final Exception e) {
       flushed.completeExceptionally(e);
     }
+  }
+
+  /**
+   * The release handle of the snapshot guard a successful flush left latched: closing marshals the
+   * release onto this actor. Idempotent — the guard is counted once per flush and must be released
+   * exactly once, no matter how often the caller's failure handling closes.
+   */
+  private CloseableSilently newSnapshotGuardLease() {
+    final AtomicBoolean released = new AtomicBoolean();
+    return () -> {
+      if (released.compareAndSet(false, true)) {
+        actor.run(
+            () -> {
+              if (layeredStatePersistence != null) {
+                layeredStatePersistence.releaseSnapshotGuard();
+              }
+            });
+      }
+    };
   }
 
   private long recoverFromSnapshot() {

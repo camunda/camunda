@@ -256,7 +256,11 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
       store.completePersist(success);
     }
     if (success) {
-      if (round.anchor() >= 0) {
+      if (round.anchorCommitted) {
+        // only rounds that actually committed an anchor advance the gauge: in the
+        // designated-carrier wiring the sink's anchor cell is a no-op, so a round that drained no
+        // carrier left the durable anchor untouched — the gauge must not run ahead of what
+        // recovery would read, or the anchor-lag metric misreports
         lastPersistedAnchor = round.anchor();
       }
       // rotate: publish the fresh cut first, then release the coordinator's reference on the old
@@ -480,6 +484,11 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
     private Drain drain;
     // written by the drain thread, read by progress() callers — see the Threading javadoc
     private volatile long drainedBytesVolatile;
+    // whether the final slice actually committed an anchor: a putAnchor in wirings without
+    // designated carriers, or at least one drained carrier entry otherwise (there the sink cell
+    // is a no-op and only the carrier advances the durable anchor). Written by the drain thread,
+    // read on the owner thread after the completion hand-off (a safe publication, like `drain`)
+    private boolean anchorCommitted;
 
     private PersistRound(
         final PersistSink sink,
@@ -547,6 +556,8 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
             batch.commit();
             committed = true;
             drain.finished = true;
+            anchorCommitted =
+                anchor >= 0 && (anchorEntries.isEmpty() || !drain.heldAnchorWrites.isEmpty());
             metrics.countPersistSlice();
             metrics.observeRoundDuration(System.nanoTime() - drain.startedNanos);
             return true;

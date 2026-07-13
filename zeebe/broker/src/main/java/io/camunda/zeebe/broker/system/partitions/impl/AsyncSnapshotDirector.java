@@ -24,6 +24,7 @@ import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransferService;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
+import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
@@ -252,15 +253,42 @@ public final class AsyncSnapshotDirector extends Actor
     // RocksDB first so the checkpoint's content is at least as new as the snapshot's claimed
     // processed position (resolved before this chain), and the buffered exporter positions must
     // be committed so the transient snapshot's index selection sees the current exporter reality;
-    // both are no-ops when the flag is off
+    // both are no-ops when the flag is off. The flush hands back a guard that keeps new layered
+    // persist rounds latched until the transient snapshot checkpointed RocksDB — a round starting
+    // in between could commit data slices without their anchor into the very state the checkpoint
+    // copies; the guard is closed after the checkpoint, on failure too
     return streamProcessor
         .flushBufferedState()
-        .andThen(this::tryFlushExporterState, actor)
-        .andThen(() -> takeTransientSnapshot(inProgressSnapshot, forceSnapshot), actor)
+        .andThen(
+            stateGuard ->
+                takeGuardedTransientSnapshot(stateGuard, inProgressSnapshot, forceSnapshot),
+            actor)
         .andThen(() -> getPositionsAfterSnapshot(inProgressSnapshot), actor)
         .andThen(() -> waitUntilLastWrittenPositionIsCommitted(inProgressSnapshot), actor)
         .andThen(this::flushJournal, actor)
         .andThen(() -> persistSnapshot(inProgressSnapshot), actor);
+  }
+
+  /**
+   * Runs the flush-to-checkpoint stretch of the snapshot chain under the buffered-state guard and
+   * closes the guard once the transient snapshot's checkpoint completed — successfully or not; the
+   * guard must never outlive the checkpoint attempt, or buffered layered state could never persist
+   * again.
+   */
+  private ActorFuture<Void> takeGuardedTransientSnapshot(
+      final CloseableSilently stateGuard,
+      final InProgressSnapshot inProgressSnapshot,
+      final boolean forceSnapshot) {
+    return tryFlushExporterState()
+        .andThen(() -> takeTransientSnapshot(inProgressSnapshot, forceSnapshot), actor)
+        .andThen(
+            (ignored, error) -> {
+              stateGuard.close();
+              return error == null
+                  ? CompletableActorFuture.<Void>completed(null)
+                  : CompletableActorFuture.<Void>completedExceptionally(error);
+            },
+            actor);
   }
 
   /**

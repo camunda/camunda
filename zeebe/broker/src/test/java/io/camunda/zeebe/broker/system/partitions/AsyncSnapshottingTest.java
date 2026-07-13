@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.after;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
@@ -35,6 +36,7 @@ import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
+import io.camunda.zeebe.util.CloseableSilently;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
@@ -42,6 +44,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -123,7 +126,7 @@ public final class AsyncSnapshottingTest {
     mockStreamProcessor = mock(StreamProcessor.class);
 
     when(mockStreamProcessor.flushBufferedState())
-        .thenReturn(CompletableActorFuture.completed(null));
+        .thenReturn(CompletableActorFuture.completed((CloseableSilently) () -> {}));
 
     when(mockStreamProcessor.getLastProcessedPositionAsync())
         .thenReturn(CompletableActorFuture.completed(0L))
@@ -339,6 +342,46 @@ public final class AsyncSnapshottingTest {
     assertThat(snapshot.join()).isNotNull();
     verify(snapshotController, timeout(10000).times(1))
         .takeTransientSnapshot(anyLong(), anyBoolean());
+  }
+
+  @Test
+  public void shouldReleaseBufferedStateGuardAfterTransientSnapshot() {
+    // given a buffered-state flush handing out a guard whose closes are counted (with the
+    // layered-state flag on, the guard keeps new persist rounds latched until the checkpoint)
+    final AtomicInteger guardCloses = new AtomicInteger();
+    when(mockStreamProcessor.flushBufferedState())
+        .thenReturn(CompletableActorFuture.completed(guardCloses::incrementAndGet));
+    createSnapshotDirector(StreamProcessorMode.PROCESSING);
+    setCommitPosition(100L);
+
+    // when a snapshot completes
+    assertThat(asyncSnapshotDirector.forceSnapshot().join()).isNotNull();
+
+    // then the guard was released — exactly once, right after the transient snapshot
+    assertThat(guardCloses.get()).isEqualTo(1);
+  }
+
+  @Test
+  public void shouldReleaseBufferedStateGuardWhenTransientSnapshotFails() {
+    // given a failing transient snapshot (checkpoint attempt fails)
+    final AtomicInteger guardCloses = new AtomicInteger();
+    when(mockStreamProcessor.flushBufferedState())
+        .thenReturn(CompletableActorFuture.completed(guardCloses::incrementAndGet));
+    doReturn(CompletableActorFuture.completedExceptionally(new RuntimeException("no checkpoint")))
+        .when(snapshotController)
+        .takeTransientSnapshot(anyLong(), anyBoolean());
+    createSnapshotDirector(StreamProcessorMode.PROCESSING);
+    setCommitPosition(100L);
+
+    // when the snapshot fails at the checkpoint
+    assertThat(asyncSnapshotDirector.forceSnapshot())
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableOfType(ExecutionException.class)
+        .withMessageContaining("no checkpoint");
+
+    // then the guard must not outlive the checkpoint attempt — a latched guard would keep the
+    // stream processor's buffered state from ever persisting again
+    assertThat(guardCloses.get()).isEqualTo(1);
   }
 
   @Test

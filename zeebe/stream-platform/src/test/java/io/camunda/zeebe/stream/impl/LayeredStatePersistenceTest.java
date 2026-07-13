@@ -314,6 +314,82 @@ final class LayeredStatePersistenceTest {
   }
 
   // ------------------------------------------------------------------
+  // Snapshot guard: no round may start between the flush and the checkpoint
+  // ------------------------------------------------------------------
+
+  @Test
+  void shouldDeferLadderRoundsBetweenSnapshotFlushAndCheckpoint() throws Exception {
+    // given a completed pre-snapshot flush whose guard is still latched — the RocksDB checkpoint
+    // has not happened yet
+    recreateWithBatchFillFraction(1.0);
+    final CompletableActorFuture<Void> flushed = new CompletableActorFuture<>();
+    persistence.flushForSnapshot(flushed);
+    runProcessorJobsUntil(flushed::isDone);
+    flushed.join();
+    final long roundsAfterFlush = io.roundsPersisted();
+
+    // when a batch commits onto the flat-out rung while the guard is latched
+    commitBatch(1, 100);
+    persistence.onBatchCommitted();
+
+    // then no round starts: its data slices could reach RocksDB without their anchor right
+    // before the checkpoint copies it — a torn cut nothing masks after a restore (the shadowing
+    // segments are heap-only and do not travel with a snapshot)
+    assertThat(persistence.roundInFlight()).isFalse();
+    assertThat(io.roundsPersisted()).isEqualTo(roundsAfterFlush);
+    assertThat(passThroughGet(1)).isNull();
+
+    // when the checkpoint completed and the guard is released
+    persistence.releaseSnapshotGuard();
+
+    // then the deferred trigger re-fires — latched, never dropped — and the round drains
+    runProcessorJobsUntil(
+        () -> !persistence.roundInFlight() && !layered.defaultDomain().hasBufferedWrites());
+    assertThat(passThroughGet(1)).isEqualTo(100);
+  }
+
+  @Test
+  void shouldDeferScheduledTaskRoundWhileSnapshotGuardLatched() throws Exception {
+    // given a latched snapshot guard (flush done, checkpoint pending) and a batch committed after
+    // the flush
+    final CompletableActorFuture<Void> flushed = new CompletableActorFuture<>();
+    persistence.flushForSnapshot(flushed);
+    runProcessorJobsUntil(flushed::isDone);
+    flushed.join();
+    commitBatch(1, 100);
+
+    // when a scheduled task prepares while the guard is latched
+    final ActorFuture<Void> ready = persistence.prepareForScheduledTask();
+    assertThat(ready).isNotNull();
+
+    // then its drain round is deferred — not dropped — until the guard is released
+    assertThat(ready.isDone()).isFalse();
+    assertThat(persistence.roundInFlight()).isFalse();
+    persistence.releaseSnapshotGuard();
+    runProcessorJobsUntil(ready::isDone);
+    assertThat(passThroughGet(1)).isEqualTo(100);
+  }
+
+  @Test
+  void shouldReleaseSnapshotGuardWhenFlushFails() throws Exception {
+    // given a flush whose own round fails — no checkpoint follows a failed flush
+    commitBatch(1, 100);
+    io.failNextRound();
+    final CompletableActorFuture<Void> flushed = new CompletableActorFuture<>();
+    persistence.flushForSnapshot(flushed);
+    runProcessorJobsUntil(flushed::isDone);
+    assertThat(flushed.isCompletedExceptionally()).isTrue();
+
+    // when a scheduled task prepares afterwards (its drain round is guard-gated)
+    final ActorFuture<Void> ready = persistence.prepareForScheduledTask();
+    assertThat(ready).isNotNull();
+    runProcessorJobsUntil(ready::isDone);
+
+    // then the guard did not leak: the retried round ran and drained the buffered batch
+    assertThat(passThroughGet(1)).isEqualTo(100);
+  }
+
+  // ------------------------------------------------------------------
   // Replay watermark
   // ------------------------------------------------------------------
 
