@@ -735,6 +735,34 @@ components:
         - sourceElementId
         - targetElementId
 
+    ProcessInstanceSuspensionBatchOperationRequest:
+      type: object
+      additionalProperties: false
+      description: The process instance filter that defines which process instances should be suspended.
+      properties:
+        filter:
+          allOf:
+            - $ref: 'process-instances.yaml#/components/schemas/ProcessInstanceFilter'
+          description: The process instance filter.
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
+      required:
+        - filter
+
+    ProcessInstanceResumptionBatchOperationRequest:
+      type: object
+      additionalProperties: false
+      description: The process instance filter that defines which process instances should be resumed.
+      properties:
+        filter:
+          allOf:
+            - $ref: 'process-instances.yaml#/components/schemas/ProcessInstanceFilter'
+          description: The process instance filter.
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
+      required:
+        - filter
+
     ## Enums
 
     BatchOperationItemStateEnum:
@@ -771,6 +799,8 @@ components:
         - MIGRATE_PROCESS_INSTANCE
         - MODIFY_PROCESS_INSTANCE
         - RESOLVE_INCIDENT
+        - RESUME_PROCESS_INSTANCE
+        - SUSPEND_PROCESS_INSTANCE
         - UPDATE_JOB
         - UPDATE_VARIABLE
 
