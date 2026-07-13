@@ -26,10 +26,10 @@ import java.util.function.BiConsumer;
  * while a persist round commits concurrently (the phantom/ghost anomalies described in {@link
  * ReadOnlyView}). It is only sound where persist rounds run inline on the owner thread and views
  * are read on that same thread — tests and single-threaded wirings. Deployments with asynchronous
- * view readers or an off-thread persist stage must inject a pinning source (see {@code
- * io.camunda.zeebe.db.layered.rocksdb.RocksDbLayeredBacking#snapshotSource()}). For the same reason
- * the returned snapshots are <b>not</b> safe to read from multiple threads: they share one inner
- * transaction context.
+ * view readers or an off-thread persist stage must inject a pinning source (the production wiring
+ * uses {@code io.camunda.zeebe.db.impl.rocksdb.transaction.RocksDbPinnedSnapshotSource}). For the
+ * same reason the returned snapshots are <b>not</b> safe to read from multiple threads: they share
+ * one inner transaction context.
  */
 final class UnpinnedSnapshotSource implements SnapshotSource {
 

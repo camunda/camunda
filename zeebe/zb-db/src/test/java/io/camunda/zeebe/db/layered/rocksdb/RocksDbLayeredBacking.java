@@ -34,6 +34,13 @@ import org.rocksdb.WriteOptions;
  * Routes store names to column family handles and hands out the {@link PersistSink} and {@link
  * SnapshotSource} adapters over the same database.
  *
+ * <p><b>Test scope only.</b> The production wiring drains persist rounds through {@code
+ * io.camunda.zeebe.db.layered.zdb.InnerPersistSink} and pins view snapshots through {@code
+ * io.camunda.zeebe.db.impl.rocksdb.transaction.RocksDbPinnedSnapshotSource}, both over the wrapped
+ * {@code ZeebeDb}; this standalone backing exercises the library against a raw RocksDB — including
+ * the real anchor semantics the zdb wiring intentionally elides — in {@code
+ * RocksDbLayeredBackingTest} and {@code LayeredStoreRoundTripIntegrationTest}.
+ *
  * <p>A backing created via {@link #open(Path, List)} owns the database, the column family handles
  * and the options, and releases them all on {@link #close()}. A backing created via the public
  * constructor adapts an externally owned database and only releases the resources it created
