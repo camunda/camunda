@@ -25,6 +25,8 @@ import {NoInstancesEmptyState} from './NoInstancesEmptyState';
 import {useDashboardScrollPagination} from 'modules/hooks/useDashboardScrollPagination';
 import {flattenPaginatedPages} from 'modules/queries/flattenPaginatedPages';
 
+const ROW_HEIGHT = 64;
+
 const Dashboard: React.FC = () => {
   const scrollableContentRef = useRef<HTMLDivElement>(null);
   const incidentScrollableContentRef = useRef<HTMLDivElement>(null);
@@ -45,10 +47,12 @@ const Dashboard: React.FC = () => {
   const processScroll = useDashboardScrollPagination(
     processStats,
     PROCESS_PAGE_LIMIT,
+    ROW_HEIGHT,
   );
   const incidentScroll = useDashboardScrollPagination(
     incidentStats,
     INCIDENT_PAGE_LIMIT,
+    ROW_HEIGHT,
   );
 
   const hasNoInstances =

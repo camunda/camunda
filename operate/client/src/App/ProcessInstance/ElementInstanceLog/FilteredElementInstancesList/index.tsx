@@ -37,6 +37,7 @@ import {
 } from './styled';
 
 const PAGE_LIMIT = 50;
+const ROW_HEIGHT = 32;
 
 type RowProps = {
   item: ElementInstance;
@@ -128,7 +129,7 @@ const FilteredElementInstancesList: React.FC<Props> = ({
     select: flattenPaginatedPages,
   });
 
-  const scroll = useDashboardScrollPagination(query, PAGE_LIMIT);
+  const scroll = useDashboardScrollPagination(query, PAGE_LIMIT, ROW_HEIGHT);
 
   const isForbiddenError =
     query.status === 'error' &&
