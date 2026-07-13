@@ -12,8 +12,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -31,8 +34,9 @@ import org.junit.jupiter.api.io.TempDir;
 /**
  * Acceptance coverage for the experimental layered state store flag
  * (zeebe.broker.experimental.engine.layeredState.enabled): with buffered state and periodic persist
- * rounds, timers still fire, instances complete, snapshots contain a consistent cut (the
- * pre-snapshot persist round), and the broker recovers across a restart.
+ * rounds, timers still fire — promptly, through the asynchronous due-date checker scanning read
+ * views refreshed at the freeze cadence — instances complete, snapshots contain a consistent cut
+ * (the pre-snapshot persist round), and the broker recovers across a restart.
  */
 @Timeout(300)
 @ZeebeIntegration
@@ -56,7 +60,8 @@ final class LayeredStateStandaloneBrokerTest {
             .withWorkingDirectory(workingDirectory)
             .withProperty("zeebe.broker.experimental.engine.layeredState.enabled", "true")
             // short interval so the test exercises several periodic persist rounds
-            .withProperty("zeebe.broker.experimental.engine.layeredState.persistInterval", "500ms");
+            .withProperty("zeebe.broker.experimental.engine.layeredState.persistInterval", "500ms")
+            .withProperty("zeebe.broker.experimental.engine.layeredState.freezeInterval", "250ms");
     broker.start().awaitCompleteTopology();
     client = newClient();
   }
@@ -91,6 +96,28 @@ final class LayeredStateStandaloneBrokerTest {
     // then the recovered state still serves the deployed process and new instances complete
     final long secondInstanceKey = createInstance();
     awaitInstanceCompleted(secondInstanceKey);
+  }
+
+  @Test
+  void shouldTriggerTimerPromptlyThroughReadViews() {
+    // given a deployed process whose only work is a 2s timer
+    deployTimerProcess();
+
+    // when an instance is started, the asynchronous due-date checker picks the timer up from a
+    // read view of the buffered state
+    final long processInstanceKey = createInstance();
+    final Record<TimerRecordValue> triggered =
+        RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // then the timer fires promptly: the lateness is bounded by the freeze cadence (250ms) plus
+    // the checker's resolution (100ms) and scheduling slack — well under a second
+    final long lateness = triggered.getTimestamp() - triggered.getValue().getDueDate();
+    assertThat(lateness)
+        .describedAs("timer lateness (trigger time - due date) in ms")
+        .isBetween(0L, 1_000L);
+    awaitInstanceCompleted(processInstanceKey);
   }
 
   private CamundaClient newClient() {

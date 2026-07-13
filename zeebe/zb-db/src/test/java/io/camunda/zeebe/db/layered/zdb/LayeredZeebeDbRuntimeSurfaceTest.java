@@ -16,6 +16,8 @@ import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DefaultZeebeDbFactory;
 import io.camunda.zeebe.db.layered.PersistTrigger;
+import io.camunda.zeebe.db.layered.ReadOnlyView;
+import io.camunda.zeebe.db.layered.typed.LayeredViewReader;
 import io.camunda.zeebe.protocol.ColumnFamilyScope;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.protocol.ScopedColumnFamily;
@@ -189,6 +191,27 @@ final class LayeredZeebeDbRuntimeSurfaceTest {
   }
 
   // ------------------------------------------------------------------
+  // Freeze surface (drives the runtime's freeze cadence)
+  // ------------------------------------------------------------------
+
+  @Test
+  void shouldFreezeActiveWritesIntoPublishedViews() {
+    // given a committed batch, invisible to views until frozen
+    final LayeredDomain domain = layered.defaultDomain();
+    domain.coordinator();
+    layered.layeredContext().runInTransaction(() -> put(1, 100));
+    assertThat(domain.hasActiveWrites()).isTrue();
+    assertThat(readThroughLatestView(domain, 1)).isNull();
+
+    // when
+    domain.freezeNow(7L);
+
+    // then the republished view serves the committed write and the overlay is drained
+    assertThat(domain.hasActiveWrites()).isFalse();
+    assertThat(readThroughLatestView(domain, 1)).isEqualTo(100L);
+  }
+
+  // ------------------------------------------------------------------
   // Factory decoration
   // ------------------------------------------------------------------
 
@@ -203,6 +226,59 @@ final class LayeredZeebeDbRuntimeSurfaceTest {
     // then the runtime db is layered and snapshotting it delegates to the wrapped db
     try {
       assertThat(runtimeDb).isInstanceOf(LayeredZeebeDb.class);
+    } finally {
+      runtimeDb.close();
+    }
+  }
+
+  @Test
+  void shouldPinViewSnapshotsWhenCreatedWithColumnFamilyClass() throws Exception {
+    // given a factory-wrapped db whose views read through the pinned snapshot source
+    final var layeredFactory =
+        LayeredZeebeDbFactory.of(dbFactory, LayeredZeebeDbConfig.defaults(), ColumnFamilies.class);
+    final ZeebeDb<ColumnFamilies> runtimeDb = layeredFactory.createDb(secondDbDirectory);
+    try {
+      final var layeredDb = (LayeredZeebeDb<ColumnFamilies>) runtimeDb;
+      final TransactionContext context = layeredDb.layeredContext();
+      final ColumnFamily<DbLong, DbLong> columnFamily =
+          layeredDb.createColumnFamily(ColumnFamilies.ONE, context, new DbLong(), new DbLong());
+      final LayeredDomain domain = layeredDb.defaultDomain();
+      final DbLong key = new DbLong();
+      final DbLong value = new DbLong();
+
+      // and a persisted key, so a view's snapshot is its only source for it
+      context.runInTransaction(
+          () -> {
+            key.wrapLong(1);
+            value.wrapLong(100);
+            columnFamily.upsert(key, value);
+          });
+      domain.persistNow(1L, PersistTrigger.INTERVAL);
+      final ReadOnlyView pinnedBeforeDelete = domain.viewPublisher().acquireLatest();
+
+      // when the key is deleted and the deletion is persisted after the view was acquired
+      context.runInTransaction(
+          () -> {
+            key.wrapLong(1);
+            columnFamily.deleteExisting(key);
+          });
+      domain.persistNow(2L, PersistTrigger.INTERVAL);
+
+      // then the held view still serves the pinned cut — an unpinned source would lose the key
+      try {
+        final var viewReader =
+            new LayeredViewReader<>(
+                pinnedBeforeDelete, ColumnFamilies.ONE.name(), new DbLong(), new DbLong());
+        key.wrapLong(1);
+        final DbLong pinnedValue = viewReader.get(key);
+        assertThat(pinnedValue).isNotNull();
+        assertThat(pinnedValue.getValue()).isEqualTo(100L);
+      } finally {
+        domain.viewPublisher().release(pinnedBeforeDelete);
+      }
+
+      // and the latest view observes the deletion
+      assertThat(readThroughLatestView(domain, 1)).isNull();
     } finally {
       runtimeDb.close();
     }
@@ -225,6 +301,20 @@ final class LayeredZeebeDbRuntimeSurfaceTest {
     dbKey.wrapLong(key);
     final DbLong value = layeredColumnFamily.get(dbKey);
     return value == null ? null : value.getValue();
+  }
+
+  private Long readThroughLatestView(final LayeredDomain domain, final long key) {
+    final ReadOnlyView view = domain.viewPublisher().acquireLatest();
+    try {
+      final var viewReader =
+          new LayeredViewReader<>(view, ColumnFamilies.ONE.name(), new DbLong(), new DbLong());
+      final DbLong dbKey = new DbLong();
+      dbKey.wrapLong(key);
+      final DbLong value = viewReader.get(dbKey);
+      return value == null ? null : value.getValue();
+    } finally {
+      domain.viewPublisher().release(view);
+    }
   }
 
   private Long passThroughGet(final long key) {

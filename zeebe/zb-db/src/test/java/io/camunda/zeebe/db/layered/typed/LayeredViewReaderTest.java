@@ -179,6 +179,59 @@ final class LayeredViewReaderTest {
     assertThat(visitedValues).containsExactly("snapshot-1", "segment-2", "segment-3");
   }
 
+  @Test
+  void shouldStopFullScanWhenVisitorReturnsFalse() {
+    // given -- entries split between the delegate and a frozen segment
+    final DbString seeded = new DbString();
+    seeded.wrapString("snapshot-1");
+    durable.store(STORE_NAME).put(TypedBytes.serialize(dbLong(1L)), TypedBytes.serialize(seeded));
+    put(2L, "segment-2");
+    put(3L, "segment-3");
+    promoteAndFreeze(1L);
+    final LayeredViewReader<DbLong, DbString> viewReader = reader(buildView());
+
+    // when -- stopping after the second visited entry
+    final List<Long> visitedKeys = new ArrayList<>();
+    viewReader.whileTrue(
+        (visitedKey, visitedValue) -> {
+          visitedKeys.add(visitedKey.getValue());
+          return visitedKeys.size() < 2;
+        });
+
+    // then -- merged in key order, the scan never reached the third entry
+    assertThat(visitedKeys).containsExactly(1L, 2L);
+  }
+
+  @Test
+  void shouldStopPrefixScanWhenVisitorReturnsFalse() {
+    // given
+    final var compositeFamily =
+        new LayeredColumnFamily<>(
+            store, new DbCompositeKey<>(new DbLong(), new DbLong()), new DbString());
+    putComposite(compositeFamily, 1L, 1L, "one");
+    putComposite(compositeFamily, 1L, 2L, "two");
+    putComposite(compositeFamily, 1L, 3L, "three");
+    promoteAndFreeze(1L);
+    final var viewReader =
+        new LayeredViewReader<>(
+            buildView(),
+            STORE_NAME,
+            new DbCompositeKey<>(new DbLong(), new DbLong()),
+            new DbString());
+
+    // when
+    final List<String> visitedValues = new ArrayList<>();
+    viewReader.whileEqualPrefix(
+        dbLong(1L),
+        (visitedKey, visitedValue) -> {
+          visitedValues.add(visitedValue.toString());
+          return false;
+        });
+
+    // then
+    assertThat(visitedValues).containsExactly("one");
+  }
+
   private void putComposite(
       final LayeredColumnFamily<DbCompositeKey<DbLong, DbLong>, DbString> compositeFamily,
       final long first,

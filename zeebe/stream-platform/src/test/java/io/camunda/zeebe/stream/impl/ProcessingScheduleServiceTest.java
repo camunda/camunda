@@ -23,6 +23,7 @@ import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.NoopScheduledCommandCache;
@@ -91,6 +92,41 @@ class ProcessingScheduleServiceTest {
     actorScheduler.workUntilDone();
 
     // then
+    verify(mockedTask).execute(any());
+  }
+
+  @Test
+  void shouldAwaitFreshnessPreparationBeforeExecutingTask() {
+    // given a service whose task executions await a freshness preparation (the experimental
+    // layered-state wiring freezes buffered state into a fresh read view this way)
+    final var preparation = new CompletableActorFuture<Void>();
+    final var preparedServiceImpl =
+        new ProcessingScheduleServiceImpl(
+            lifecycleSupplier,
+            lifecycleSupplier,
+            () -> testWriter,
+            commandCache,
+            actorScheduler.getClock(),
+            Duration.ofSeconds(1),
+            ScheduledTaskMetrics.noop());
+    preparedServiceImpl.taskFreshnessPreparation(() -> preparation);
+    final var preparedService = new TestScheduleServiceActorDecorator(preparedServiceImpl);
+    actorScheduler.submitActor(preparedService);
+    actorScheduler.workUntilDone();
+    final var mockedTask = spy(new DummyTask());
+
+    // when the task is due but the preparation has not completed
+    preparedService.runDelayed(Duration.ZERO, mockedTask);
+    actorScheduler.workUntilDone();
+
+    // then the task did not execute yet
+    verify(mockedTask, never()).execute(any());
+
+    // when the preparation completes
+    preparation.complete(null);
+    actorScheduler.workUntilDone();
+
+    // then the task executed
     verify(mockedTask).execute(any());
   }
 
