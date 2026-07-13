@@ -356,12 +356,16 @@ paths:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1migration'
   /process-instances/{processInstanceKey}/modification:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1modification'
+  /process-instances/{processInstanceKey}/resumption:
+    $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1resumption'
   /process-instances/{processInstanceKey}/sequence-flows:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1sequence-flows'
   /process-instances/{processInstanceKey}/statistics/element-instances:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1statistics~1element-instances'
   /process-instances/{processInstanceKey}/statistics/wait-states:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1statistics~1wait-states'
+  /process-instances/{processInstanceKey}/suspension:
+    $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1suspension'
 
   # Resource endpoints
   /resources/search:
