@@ -1335,7 +1335,8 @@
         },
         "createLocalVariables": {
           "description": "Whether to create variables locally in the scope of the element (requires elementSelector). When true, variables are created in the element's local scope and are not propagated to parent scopes. Optional, defaults to false.",
-          "type": "boolean"
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [

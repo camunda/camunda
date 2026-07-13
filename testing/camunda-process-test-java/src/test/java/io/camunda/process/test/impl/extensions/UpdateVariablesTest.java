@@ -163,7 +163,11 @@ public class UpdateVariablesTest {
           variables);
 
       // then
-      verify(camundaClient.newSetVariablesCommand(ELEMENT_INSTANCE_KEY).variables(variables))
+      verify(
+              camundaClient
+                  .newSetVariablesCommand(ELEMENT_INSTANCE_KEY)
+                  .variables(variables)
+                  .local(false))
           .send();
     }
 
