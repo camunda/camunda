@@ -11,12 +11,14 @@ import io.camunda.zeebe.dynamic.config.changes.appliers.MemberJoinApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.MemberLeaveApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PostScalingApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PreScalingApplier;
+import io.camunda.zeebe.dynamic.config.changes.appliers.UpdatePartitionDistributorConfigApplier;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberRemoveOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PostScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PreScalingOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartitionDistributorConfigOperation;
 
 public final class GlobalConfigurationChangeAppliersImpl
     implements GlobalConfigurationChangeAppliers {
@@ -46,9 +48,8 @@ public final class GlobalConfigurationChangeAppliersImpl
           new PreScalingApplier(op.memberId(), op.clusterMembers(), clusterChangeExecutor);
       case final PostScalingOperation op ->
           new PostScalingApplier(op.memberId(), op.clusterMembers(), clusterChangeExecutor);
-      default ->
-          throw new UnsupportedOperationException(
-              "No new-model applier implemented yet for %s".formatted(operation));
+      case final UpdatePartitionDistributorConfigOperation op ->
+          new UpdatePartitionDistributorConfigApplier(op);
     };
   }
 }
