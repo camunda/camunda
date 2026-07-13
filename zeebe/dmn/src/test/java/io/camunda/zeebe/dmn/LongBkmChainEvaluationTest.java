@@ -19,25 +19,42 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-final class LongDecisionChainEvaluationTest {
+/**
+ * These tests reproduce a real, uncaught {@link StackOverflowError} from the {@code dmn-scala}
+ * library to verify {@code DmnScalaDecisionEngine}'s graceful-degradation catch blocks
+ * (camunda/camunda#43232). They use a long chain of dependent <b>business knowledge models</b>
+ * (BKMs), not decisions: the decision-chain recursion originally reported in camunda/dmn-scala#335
+ * is fixed as of {@code dmn-scala} 1.12.2 (pinned in this repo), covering both the evaluator
+ * ({@code DecisionEvaluator}) and the parser's cycle detection ({@code
+ * DmnParser.hasDependencyCycle}) — so a long decision chain no longer overflows and can't be used
+ * to reproduce this anymore. BKM-to-BKM dependency chains have a separate, still-unfixed recursion
+ * in the same library ({@code BusinessKnowledgeEvaluator.createFunction} / {@code
+ * evalRequiredKnowledge} at evaluation time, {@code DmnParser.parseBusinessKnowledgeModel} at parse
+ * time), which reliably reproduces a genuine uncaught {@code StackOverflowError} today.
+ *
+ * <p>An artificially tiny thread stack size (independent of any real recursion) was considered and
+ * rejected: on this JVM/platform, {@link Thread}'s {@code stackSize} hint gets silently clamped to
+ * a usable floor well below 4 KiB, so it can't be shrunk far enough to overflow a shallow,
+ * non-recursive workload — a real, sufficiently deep recursion is still required.
+ */
+final class LongBkmChainEvaluationTest {
 
-  private static final int DECISION_COUNT = 10_000;
-  // Small enough that a ~10,000-deep recursion reliably overflows it,
+  private static final int BKM_COUNT = 2_000;
+  // Small enough that a ~2,000-deep recursion reliably overflows it,
   // regardless of the JVM/CI runner's default thread stack size.
   private static final long SMALL_STACK_SIZE = 512 * 1024L;
-  // Large enough to get past dmn-scala's own (not-yet-fixed on this pinned
-  // version) parser recursion purely for test setup — see the eval-path test.
+  // Large enough that parsing the same chain succeeds, for test setup.
   private static final long LARGE_STACK_SIZE = 64L * 1024 * 1024;
 
   private final DecisionEngine decisionEngine = DecisionEngineFactory.createDecisionEngine();
 
   @Test
   @DisplayName(
-      "Should turn a StackOverflowError from parsing a long decision chain into a graceful "
-          + "failure instead of crashing")
+      "Should turn a StackOverflowError from parsing a long BKM chain into a graceful failure "
+          + "instead of crashing")
   void shouldGracefullyFailInsteadOfCrashingOnParseStackOverflow() throws Throwable {
     // given
-    final var drgXml = buildLongDecisionChainDrg(DECISION_COUNT);
+    final var drgXml = buildLongBkmChainDrg(BKM_COUNT);
 
     // when
     final var parsedDrg =
@@ -59,15 +76,13 @@ final class LongDecisionChainEvaluationTest {
 
   @Test
   @DisplayName(
-      "Should turn a StackOverflowError from evaluating a long decision chain into a graceful "
+      "Should turn a StackOverflowError from evaluating a long BKM chain into a graceful "
           + "failure instead of crashing")
   void shouldGracefullyFailInsteadOfCrashingOnEvaluationStackOverflow() throws Throwable {
     // given
-    final var drgXml = buildLongDecisionChainDrg(DECISION_COUNT);
-    // Parsed on a large stack purely so this test's setup can get past
-    // dmn-scala's own unfixed parser recursion (camunda/dmn-scala#335) on
-    // the version currently pinned in parent/pom.xml, isolating this test
-    // to the eval()-path catch under test.
+    final var drgXml = buildLongBkmChainDrg(BKM_COUNT);
+    // Parsed on a large stack purely so this test's setup succeeds, isolating this test to the
+    // eval()-path catch under test.
     final var parsedDrg =
         runWithStackSize(
             LARGE_STACK_SIZE,
@@ -138,51 +153,41 @@ final class LongDecisionChainEvaluationTest {
     return result.get();
   }
 
-  // Builds a linear DRG: d0 -> d1 -> d2 -> ... -> d(n-1), where d(n-1) = 1
-  // and each d(i) = d(i+1) + 1. Mirrors the shape from camunda/dmn-scala#335.
-  private static String buildLongDecisionChainDrg(final int decisionCount) {
-    final var decisions = new StringBuilder();
-    for (int i = 0; i < decisionCount; i++) {
-      final boolean isLeaf = i == decisionCount - 1;
-      decisions
-          .append("<decision id=\"d")
+  // Builds a decision d0 that requires a long chain of business knowledge models,
+  // bkm0 -> bkm1 -> ... -> bkm(n-1), via knowledgeRequirement. Evaluating/parsing d0 pulls in
+  // the whole BKM chain regardless of whether d0's own logic invokes it.
+  private static String buildLongBkmChainDrg(final int bkmCount) {
+    final var bkms = new StringBuilder();
+    for (int i = 0; i < bkmCount; i++) {
+      final boolean isLeaf = i == bkmCount - 1;
+      bkms.append("<businessKnowledgeModel id=\"bkm")
           .append(i)
-          .append("\" name=\"d")
+          .append("\" name=\"bkm")
           .append(i)
           .append("\">")
-          .append("<variable id=\"v")
-          .append(i)
-          .append("\" name=\"v")
-          .append(i)
-          .append("\" />");
+          .append("<encapsulatedLogic><literalExpression><text>1</text></literalExpression>")
+          .append("</encapsulatedLogic>");
       if (!isLeaf) {
         final int next = i + 1;
-        decisions
-            .append("<informationRequirement id=\"ir")
-            .append(i)
-            .append("\">")
-            .append("<requiredDecision href=\"#d")
+        bkms.append("<knowledgeRequirement><requiredKnowledge href=\"#bkm")
             .append(next)
-            .append("\" />")
-            .append("</informationRequirement>")
-            .append("<literalExpression id=\"le")
-            .append(i)
-            .append("\"><text>v")
-            .append(next)
-            .append(" + 1</text></literalExpression>");
-      } else {
-        decisions
-            .append("<literalExpression id=\"le")
-            .append(i)
-            .append("\"><text>1</text></literalExpression>");
+            .append("\" /></knowledgeRequirement>");
       }
-      decisions.append("</decision>");
+      bkms.append("</businessKnowledgeModel>");
     }
+
+    final var decision =
+        "<decision id=\"d0\" name=\"d0\">"
+            + "<variable id=\"v0\" name=\"v0\" />"
+            + "<knowledgeRequirement><requiredKnowledge href=\"#bkm0\" /></knowledgeRequirement>"
+            + "<literalExpression><text>1</text></literalExpression>"
+            + "</decision>";
 
     return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
         + "<definitions xmlns=\"https://www.omg.org/spec/DMN/20191111/MODEL/\" "
-        + "id=\"Definitions_chain\" name=\"Chain\" namespace=\"http://camunda.org/schema/1.0/dmn\">"
-        + decisions
+        + "id=\"Definitions_bkmchain\" name=\"BkmChain\" namespace=\"http://camunda.org/schema/1.0/dmn\">"
+        + decision
+        + bkms
         + "</definitions>";
   }
 }
