@@ -37,7 +37,7 @@ public class JobBatchMetricsArchiverJobIT extends ArchiverJobIT<JobBatchMetricsA
   @TestTemplate
   void shouldArchiveOldJobBatchMetrics(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given - a job batch metric with an end time in the past
@@ -52,7 +52,7 @@ public class JobBatchMetricsArchiverJobIT extends ArchiverJobIT<JobBatchMetricsA
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
+          assertThat(archived).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
           verifyMoved(template, client, metric, "2020-03-15");
         });
   }
@@ -60,7 +60,7 @@ public class JobBatchMetricsArchiverJobIT extends ArchiverJobIT<JobBatchMetricsA
   @TestTemplate
   void shouldNotArchiveRecentJobBatchMetrics(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given - one old metric and one recent metric (end time in the future)
@@ -78,7 +78,7 @@ public class JobBatchMetricsArchiverJobIT extends ArchiverJobIT<JobBatchMetricsA
           final var archived = job.execute();
 
           // then - only the old metric should be archived
-          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
+          assertThat(archived).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
           verifyMoved(template, client, oldMetric, "2020-03-15");
           verifyNotMoved(template, client, recentMetric);
         });
@@ -87,7 +87,7 @@ public class JobBatchMetricsArchiverJobIT extends ArchiverJobIT<JobBatchMetricsA
   @TestTemplate
   void shouldNotArchiveMetricsFromDifferentPartition(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given - an old metric belonging to a different partition
@@ -106,7 +106,7 @@ public class JobBatchMetricsArchiverJobIT extends ArchiverJobIT<JobBatchMetricsA
           final var archived = job.execute();
 
           // then - only the metric from this partition should be archived
-          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
+          assertThat(archived).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
           verifyMoved(template, client, ownPartitionMetric, "2020-03-15");
           verifyNotMoved(template, client, otherPartitionMetric);
         });
@@ -115,7 +115,7 @@ public class JobBatchMetricsArchiverJobIT extends ArchiverJobIT<JobBatchMetricsA
   @TestTemplate
   void shouldArchiveMultipleOldJobBatchMetrics(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given - multiple old metrics from the same date
@@ -135,7 +135,7 @@ public class JobBatchMetricsArchiverJobIT extends ArchiverJobIT<JobBatchMetricsA
           final var archived = job.execute();
 
           // then - all old metrics should be archived
-          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(3);
+          assertThat(archived).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(3);
           verifyMoved(template, client, metric1, "2020-06-01");
           verifyMoved(template, client, metric2, "2020-06-01");
           verifyMoved(template, client, metric3, "2020-06-01");
@@ -145,7 +145,7 @@ public class JobBatchMetricsArchiverJobIT extends ArchiverJobIT<JobBatchMetricsA
   @TestTemplate
   void shouldArchiveMetricsFromDifferentDatesIntoDifferentIndices(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given - old metrics from different dates
@@ -161,11 +161,11 @@ public class JobBatchMetricsArchiverJobIT extends ArchiverJobIT<JobBatchMetricsA
 
           // when - execute twice since batches are grouped by date
           final var firstRun = job.execute();
-          assertThat(firstRun).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
+          assertThat(firstRun).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
 
           client.refresh(testPrefix);
           final var secondRun = job.execute();
-          assertThat(secondRun).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
+          assertThat(secondRun).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
 
           // then - metrics should be moved to their respective dated indices
           verifyMoved(template, client, metric1, "2020-01-10");

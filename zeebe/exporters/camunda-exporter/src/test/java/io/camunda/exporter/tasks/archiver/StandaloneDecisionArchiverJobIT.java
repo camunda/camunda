@@ -51,7 +51,7 @@ public class StandaloneDecisionArchiverJobIT extends ArchiverJobIT<StandaloneDec
   @TestTemplate
   void shouldArchiveStandaloneDecisionInstance(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given
@@ -66,7 +66,7 @@ public class StandaloneDecisionArchiverJobIT extends ArchiverJobIT<StandaloneDec
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
+          assertThat(archived).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
           verifyMoved(decisionInstanceTemplate, client, decisionInstance, "2020-01-01");
         });
   }
@@ -74,7 +74,7 @@ public class StandaloneDecisionArchiverJobIT extends ArchiverJobIT<StandaloneDec
   @TestTemplate
   void shouldNotArchiveDecisionInstanceWithProcessInstanceKey(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given - a decision instance that belongs to a process instance (not standalone)
@@ -95,7 +95,7 @@ public class StandaloneDecisionArchiverJobIT extends ArchiverJobIT<StandaloneDec
           final var archived = job.execute();
 
           // then - only the standalone decision should be archived
-          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
+          assertThat(archived).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
           verifyMoved(decisionInstanceTemplate, client, standaloneDecision, "2020-01-01");
           verifyNotMoved(decisionInstanceTemplate, client, processDecision);
         });
@@ -104,7 +104,7 @@ public class StandaloneDecisionArchiverJobIT extends ArchiverJobIT<StandaloneDec
   @TestTemplate
   void shouldNotArchiveRecentStandaloneDecisionInstance(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given - a decision instance evaluated very recently (should not be archived yet)
@@ -122,7 +122,7 @@ public class StandaloneDecisionArchiverJobIT extends ArchiverJobIT<StandaloneDec
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
+          assertThat(archived).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
           verifyMoved(decisionInstanceTemplate, client, oldDecision, "2020-01-01");
           verifyNotMoved(decisionInstanceTemplate, client, recentDecision);
         });
@@ -131,7 +131,7 @@ public class StandaloneDecisionArchiverJobIT extends ArchiverJobIT<StandaloneDec
   @TestTemplate
   void shouldArchiveStandaloneDecisionInstanceWithDependantAuditLog(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given
@@ -154,7 +154,7 @@ public class StandaloneDecisionArchiverJobIT extends ArchiverJobIT<StandaloneDec
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
+          assertThat(archived).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
           verifyMoved(decisionInstanceTemplate, client, decisionInstance, "2020-01-01");
           verifyMoved(auditLogTemplate, client, auditLogEntry, "2020-01-01");
         });
@@ -163,7 +163,7 @@ public class StandaloneDecisionArchiverJobIT extends ArchiverJobIT<StandaloneDec
   @TestTemplate
   void shouldNotArchiveAuditLogWithDifferentEntityType(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given - an audit log entry for a different entity type should not be archived
@@ -186,7 +186,7 @@ public class StandaloneDecisionArchiverJobIT extends ArchiverJobIT<StandaloneDec
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
+          assertThat(archived).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
           verifyMoved(decisionInstanceTemplate, client, decisionInstance, "2020-01-01");
           verifyNotMoved(auditLogTemplate, client, unrelatedAuditLog);
         });

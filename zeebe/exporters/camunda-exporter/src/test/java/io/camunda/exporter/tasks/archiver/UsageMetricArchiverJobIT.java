@@ -15,7 +15,6 @@ import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsEntity;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType;
-import java.time.Duration;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
@@ -44,7 +43,7 @@ public class UsageMetricArchiverJobIT extends ArchiverJobIT<UsageMetricArchiverJ
   @TestTemplate
   void shouldArchiveOldUsageMetric(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given
@@ -59,7 +58,7 @@ public class UsageMetricArchiverJobIT extends ArchiverJobIT<UsageMetricArchiverJ
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(archived).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
           verifyMoved(usageMetricTemplate, client, metric, "2020-01-01");
         });
   }
@@ -67,7 +66,7 @@ public class UsageMetricArchiverJobIT extends ArchiverJobIT<UsageMetricArchiverJ
   @TestTemplate
   void shouldNotArchiveRecentUsageMetric(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given - one old metric and one recent metric
@@ -85,7 +84,7 @@ public class UsageMetricArchiverJobIT extends ArchiverJobIT<UsageMetricArchiverJ
           final var archived = job.execute();
 
           // then - only old metric should be archived
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(archived).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
           verifyMoved(usageMetricTemplate, client, oldMetric, "2020-01-01");
           verifyNotMoved(usageMetricTemplate, client, recentMetric);
         });
@@ -94,7 +93,7 @@ public class UsageMetricArchiverJobIT extends ArchiverJobIT<UsageMetricArchiverJ
   @TestTemplate
   void shouldArchiveMultipleUsageMetricsWithSameEndTime(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given - multiple metrics with the same endTime are batched together
@@ -112,7 +111,7 @@ public class UsageMetricArchiverJobIT extends ArchiverJobIT<UsageMetricArchiverJ
           final var archived = job.execute();
 
           // then - both should be archived to the same dated index in a single batch
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(2);
+          assertThat(archived).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(2);
           verifyMoved(usageMetricTemplate, client, metric1, "2020-03-01");
           verifyMoved(usageMetricTemplate, client, metric2, "2020-03-01");
         });
@@ -121,7 +120,7 @@ public class UsageMetricArchiverJobIT extends ArchiverJobIT<UsageMetricArchiverJ
   @TestTemplate
   void shouldArchiveMetricsFromDifferentMonthsInSeparateBatches(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
-    withArchiverJob(
+    withTask(
         config,
         (job, resourceProvider) -> {
           // given - metrics from different months require separate execute calls
@@ -139,7 +138,7 @@ public class UsageMetricArchiverJobIT extends ArchiverJobIT<UsageMetricArchiverJ
           final var firstBatch = job.execute();
 
           // then
-          assertThat(firstBatch).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(firstBatch).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
           verifyMoved(usageMetricTemplate, client, januaryMetric, "2020-01-01");
           verifyNotMoved(usageMetricTemplate, client, marchMetric);
 
@@ -148,7 +147,7 @@ public class UsageMetricArchiverJobIT extends ArchiverJobIT<UsageMetricArchiverJ
           final var secondBatch = job.execute();
 
           // then
-          assertThat(secondBatch).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(secondBatch).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
           verifyMoved(usageMetricTemplate, client, marchMetric, "2020-03-01");
         });
   }
