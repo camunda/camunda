@@ -242,7 +242,9 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
 
   /**
    * Returns the stored slot→version pairs sorted by slot ID. Absent entries default to version 1.
+   * Excluded from JSON export — engine-internal state not exposed to external consumers.
    */
+  @JsonIgnore
   public Map<Integer, Integer> getTransformerVersions() {
     final Map<Integer, Integer> result = new TreeMap<>();
     for (final TransformerVersion entry : transformerVersionsProp) {

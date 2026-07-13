@@ -48,9 +48,6 @@
             },
             "versionTag": {
               "type": "keyword"
-            },
-            "transformerVersions": {
-              "enabled": false
             }
           }
         }
