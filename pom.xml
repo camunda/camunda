@@ -40,6 +40,7 @@
     <module>gateways/gateway-mcp</module>
     <module>spring-utils</module>
     <module>clients/java</module>
+    <module>clients/java-runner</module>
     <module>clients/camunda-spring-boot-starter</module>
     <module>clients/camunda-spring-boot-3-starter</module>
     <module>clients/camunda-spring-boot-4-starter</module>
