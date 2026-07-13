@@ -1458,7 +1458,7 @@
     inherits "^2.0.4"
     tiny-svg "^3.0.0"
 
-"@camunda/camunda-composite-components@^0.25.0":
+"@camunda/camunda-composite-components@^0.25.2":
   version "0.25.2"
   resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.25.2.tgz#e4ff229d702b734ca2fe8dc4f6987db78ffd41d5"
   integrity sha512-UBLqWvhcMKyNeiCyrp2SvnE0AHmjV5RVNi5uXwy6VmZPRzvAQg4J786TGVC1zYCKxfg6o7Ep5QYBsUxGiFkfNw==
