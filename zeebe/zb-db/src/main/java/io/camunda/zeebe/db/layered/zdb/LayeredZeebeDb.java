@@ -22,11 +22,12 @@ import io.camunda.zeebe.db.layered.typed.LayeredColumnFamily;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 /**
@@ -67,6 +68,13 @@ import java.util.function.Consumer;
  * limitations); wirings with asynchronous readers must inject a pinning {@link SnapshotSource} via
  * the dedicated constructor — it is shared by all domains, which is sound because a column family
  * (and thus a store name) has exactly one owning domain.
+ *
+ * <p><b>Threading:</b> the ownership registry — domain registration/lookup and the column-family
+ * ownership check — is thread-safe: different domains have different owner threads (e.g. the stream
+ * processor and exporter director actors of one partition), and a domain may register while another
+ * thread resolves its context or creates a pass-through column family. Everything <em>inside</em> a
+ * domain stays owner-thread-only: its context, stores and coordinator must only ever be used by the
+ * single thread owning that domain (see {@link LayeredDomain}).
  */
 public final class LayeredZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType> & EnumValue>
     implements ZeebeDb<ColumnFamilyType> {
@@ -79,8 +87,12 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType
   private final SnapshotSource snapshotSource;
   private final boolean fallbackSnapshots;
 
+  // guards domainsByName: registration happens on each domain's owner thread (engine and exporter
+  // actors), while lookups (domainOf, close) may run on other threads concurrently — registration
+  // is cold-path, so the lock is uncontended in steady state
+  private final Object domainRegistrationLock = new Object();
   private final Map<String, LayeredDomain> domainsByName = new LinkedHashMap<>();
-  private final Map<String, LayeredDomain> ownerByColumnFamily = new HashMap<>();
+  private final Map<String, LayeredDomain> ownerByColumnFamily = new ConcurrentHashMap<>();
 
   /** Creates a facade whose coordinator views read through the unpinned fallback source. */
   public LayeredZeebeDb(final ZeebeDb<ColumnFamilyType> inner, final LayeredZeebeDbConfig config) {
@@ -182,7 +194,11 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType
 
   @Override
   public void close() throws Exception {
-    domainsByName.values().forEach(LayeredDomain::closeCoordinatorIfBuilt);
+    final List<LayeredDomain> domains;
+    synchronized (domainRegistrationLock) {
+      domains = List.copyOf(domainsByName.values());
+    }
+    domains.forEach(LayeredDomain::closeCoordinatorIfBuilt);
     inner.close();
   }
 
@@ -193,26 +209,29 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType
   /**
    * Registers a new single-owner domain under the given unique name. Register a domain before
    * creating its column families (they join by being created on {@link LayeredDomain#context()})
-   * and thus before its coordinator is built.
+   * and thus before its coordinator is built. Thread-safe (see the class javadoc's Threading
+   * section); the returned domain itself is owner-thread-only.
    *
    * @throws IllegalStateException if a domain with that name is already registered
    */
   public LayeredDomain registerDomain(final String name) {
     Objects.requireNonNull(name, "name");
-    if (domainsByName.containsKey(name)) {
-      throw new IllegalStateException(
-          "expected a unique domain name, but '%s' is already registered".formatted(name));
+    synchronized (domainRegistrationLock) {
+      if (domainsByName.containsKey(name)) {
+        throw new IllegalStateException(
+            "expected a unique domain name, but '%s' is already registered".formatted(name));
+      }
+      final LayeredDomain domain =
+          new LayeredDomain(
+              name,
+              inner.createContext(),
+              inner.createContext(),
+              fallbackSnapshots ? inner.createContext() : null,
+              snapshotSource,
+              LayeredStoreMetrics.of(inner.getMeterRegistry(), name));
+      domainsByName.put(name, domain);
+      return domain;
     }
-    final LayeredDomain domain =
-        new LayeredDomain(
-            name,
-            inner.createContext(),
-            inner.createContext(),
-            fallbackSnapshots ? inner.createContext() : null,
-            snapshotSource,
-            LayeredStoreMetrics.of(inner.getMeterRegistry(), name));
-    domainsByName.put(name, domain);
-    return domain;
   }
 
   /**
@@ -246,7 +265,9 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType
    * LayeredDomain#overCapacity()}.
    */
   public boolean overCapacity() {
-    return domainsByName.values().stream().anyMatch(LayeredDomain::overCapacity);
+    synchronized (domainRegistrationLock) {
+      return domainsByName.values().stream().anyMatch(LayeredDomain::overCapacity);
+    }
   }
 
   /** The configuration all of this facade's layered stores were created with. */
@@ -270,20 +291,25 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType
    * The domain with the given name, registered on first use; every call returns the same instance.
    * The get-or-register semantics are what successive owners of a reused database rely on (e.g. a
    * new exporter director after a leader transition): the first owner registers the domain, every
-   * successor gets it back with its stores — and any buffered state — intact.
+   * successor gets it back with its stores — and any buffered state — intact. Thread-safe (see the
+   * class javadoc's Threading section); the returned domain itself is owner-thread-only.
    */
   public LayeredDomain domain(final String name) {
-    final LayeredDomain existing = domainsByName.get(name);
-    return existing != null ? existing : registerDomain(name);
+    synchronized (domainRegistrationLock) {
+      final LayeredDomain existing = domainsByName.get(name);
+      return existing != null ? existing : registerDomain(name);
+    }
   }
 
   private LayeredDomain domainOf(final TransactionContext context) {
-    for (final LayeredDomain domain : domainsByName.values()) {
-      if (domain.context() == context) {
-        return domain;
+    synchronized (domainRegistrationLock) {
+      for (final LayeredDomain domain : domainsByName.values()) {
+        if (domain.context() == context) {
+          return domain;
+        }
       }
+      return null;
     }
-    return null;
   }
 
   private LayeredKeyValueStore createStore(
