@@ -63,7 +63,7 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
             .withElementInstanceKey(agentTaskInstance.getKey())
             .create()
             .getKey();
-    ENGINE.jobs().withType(AGENT_JOB_TYPE).activate();
+    awaitAndActivateJob(AGENT_JOB_TYPE);
 
     // when
     ENGINE.job().ofInstance(processInstanceKey).withType(AGENT_JOB_TYPE).complete();
@@ -97,7 +97,7 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
             .withElementInstanceKey(agentTaskInstance.getKey())
             .create()
             .getKey();
-    ENGINE.jobs().withType(AGENT_JOB_TYPE).activate();
+    awaitAndActivateJob(AGENT_JOB_TYPE);
 
     // when — the agentic job is still active (never completed) when cancellation happens
     ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
@@ -133,7 +133,7 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
     final long agentInstanceKey =
         ENGINE.agentInstances().withElementInstanceKey(elementInstanceKey).create().getKey();
 
-    ENGINE.jobs().withType(agenticJobType).activate();
+    awaitAndActivateJob(agenticJobType);
     final long jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
@@ -151,8 +151,8 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
             .create()
             .getKey();
 
-    // when — the agentic job (and its PENDING history item) is still active when the process
-    // instance is canceled
+    // when — the agentic job and its just-created (not yet committed or discarded) history
+    // item are still active when the process instance is canceled
     ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
     // then
@@ -206,8 +206,8 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
             .withElementInstanceKey(secondTaskInstance.getKey())
             .create()
             .getKey();
-    ENGINE.jobs().withType(AGENT_JOB_TYPE).activate();
-    ENGINE.jobs().withType(otherAgentJobType).activate();
+    awaitAndActivateJob(AGENT_JOB_TYPE);
+    awaitAndActivateJob(otherAgentJobType);
 
     // when
     ENGINE.job().ofInstance(processInstanceKey).withType(AGENT_JOB_TYPE).complete();
@@ -274,7 +274,7 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
             .create()
             .getKey();
 
-    ENGINE.jobs().withType(AGENT_JOB_TYPE).activate();
+    awaitAndActivateJob(AGENT_JOB_TYPE);
 
     // when — the child process instance completes (completing its agent instance), while the
     // parent's own parallel branch (parentTaskId) is still active
@@ -307,7 +307,7 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
 
     // when — completing the remaining parallel branch lets the parent process instance complete
     // too
-    ENGINE.jobs().withType(parentJobType).activate();
+    awaitAndActivateJob(parentJobType);
     ENGINE.job().ofInstance(parentProcessInstanceKey).withType(parentJobType).complete();
 
     // then
@@ -367,7 +367,7 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
             .create()
             .getKey();
 
-    ENGINE.jobs().withType(AGENT_JOB_TYPE).activate();
+    awaitAndActivateJob(AGENT_JOB_TYPE);
 
     // when — the agentic job on the child process instance is still active when the parent
     // (and, cascading from it, the child) is canceled
@@ -391,5 +391,10 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
         .withElementType(BpmnElementType.SERVICE_TASK)
         .withElementId(elementId)
         .getFirst();
+  }
+
+  private static void awaitAndActivateJob(final String jobType) {
+    RecordingExporter.jobRecords(JobIntent.CREATED).withType(jobType).await();
+    ENGINE.jobs().withType(jobType).activate();
   }
 }
