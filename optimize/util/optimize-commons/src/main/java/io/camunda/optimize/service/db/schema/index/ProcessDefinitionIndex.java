@@ -13,7 +13,7 @@ import io.camunda.optimize.service.db.DatabaseConstants;
 
 public abstract class ProcessDefinitionIndex<TBuilder> extends AbstractDefinitionIndex<TBuilder> {
 
-  public static final int VERSION = 6;
+  public static final int VERSION = 7;
 
   public static final String PROCESS_DEFINITION_ID = DEFINITION_ID;
   public static final String PROCESS_DEFINITION_KEY = DEFINITION_KEY;
@@ -25,6 +25,7 @@ public abstract class ProcessDefinitionIndex<TBuilder> extends AbstractDefinitio
   public static final String USER_TASK_NAMES = ProcessDefinitionOptimizeDto.Fields.userTaskNames;
   public static final String TENANT_ID = DEFINITION_TENANT_ID;
   public static final String ONBOARDED = ProcessDefinitionOptimizeDto.Fields.onboarded;
+  public static final String AGENTIC_PROCESS = ProcessDefinitionOptimizeDto.Fields.agenticProcess;
 
   @Override
   public String getIndexName() {
@@ -44,6 +45,7 @@ public abstract class ProcessDefinitionIndex<TBuilder> extends AbstractDefinitio
         .properties(USER_TASK_NAMES, p -> p.object(o -> o.enabled(false)))
         .properties(
             PROCESS_DEFINITION_XML, p -> p.text(o -> o.index(true).analyzer("is_present_analyzer")))
-        .properties(ONBOARDED, p -> p.boolean_(b -> b));
+        .properties(ONBOARDED, p -> p.boolean_(b -> b))
+        .properties(AGENTIC_PROCESS, p -> p.boolean_(b -> b));
   }
 }

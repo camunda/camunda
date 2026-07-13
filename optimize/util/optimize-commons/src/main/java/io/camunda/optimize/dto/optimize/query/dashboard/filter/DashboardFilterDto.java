@@ -45,17 +45,17 @@ public abstract class DashboardFilterDto<DATA extends FilterDataDto> {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hashCode(data);
+  }
+
+  @Override
   public boolean equals(final Object o) {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
     final DashboardFilterDto<?> that = (DashboardFilterDto<?>) o;
     return Objects.equals(data, that.data);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hashCode(data);
   }
 
   @Override
