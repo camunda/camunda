@@ -13,6 +13,7 @@ import type {
   QueryElementInstancesRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
+import {TreeView} from '@carbon/react';
 import {Search} from '@carbon/react/icons';
 import {EmptyState} from 'modules/components/EmptyState';
 import {ErrorMessage} from 'modules/components/ErrorMessage';
@@ -181,7 +182,7 @@ const FilteredElementInstancesList: React.FC<Props> = ({
           onVerticalScrollEndReach={scroll.handleScrollEndReach}
           onVerticalScrollStartReach={scroll.handleScrollStartReach}
         >
-          <ul>
+          <TreeView label="Search results" hideLabel>
             {query.data?.items.map((item) => (
               <Row
                 key={item.elementInstanceKey}
@@ -189,7 +190,7 @@ const FilteredElementInstancesList: React.FC<Props> = ({
                 businessObjects={businessObjects}
               />
             ))}
-          </ul>
+          </TreeView>
         </InfiniteScroller>
       </ScrollContainer>
     </>

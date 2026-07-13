@@ -127,6 +127,34 @@ describe('<FilteredElementInstancesList />', () => {
     expect(screen.getByTestId('search-result-101')).toBeInTheDocument();
   });
 
+  it('gives each treeitem row a role="tree" ancestor', async () => {
+    mockSearchElementInstances().withSuccess(
+      mockResponse(
+        [
+          createMockElementInstance({
+            elementInstanceKey: '100',
+            elementName: 'Order Task',
+            elementId: 'order_task',
+          }),
+        ],
+        1,
+      ),
+    );
+
+    render(
+      <FilteredElementInstancesList
+        searchText="order"
+        processInstanceKey={PROCESS_INSTANCE_KEY}
+        businessObjects={businessObjects}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    const row = await screen.findByTestId('search-result-100');
+    expect(row).toHaveAttribute('role', 'treeitem');
+    expect(row.closest('[role="tree"]')).not.toBeNull();
+  });
+
   it('renders the empty state when there are no results', async () => {
     mockSearchElementInstances().withSuccess(mockResponse([], 0));
 
