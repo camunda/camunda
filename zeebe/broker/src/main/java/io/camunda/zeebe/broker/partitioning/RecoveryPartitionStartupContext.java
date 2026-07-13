@@ -32,7 +32,7 @@ public final class RecoveryPartitionStartupContext {
   private final BrokerCfg brokerCfg;
   private final BrokerInfo brokerInfo;
   private final AtomixServerTransport gatewayBrokerTransport;
-  private BackupStore backupStore;
+  private final BackupStore backupStore;
   private ReadOnlyBackupService backupService;
   private ReadOnlyBackupApiRequestHandler backupApiRequestHandler;
 
@@ -45,7 +45,8 @@ public final class RecoveryPartitionStartupContext {
       final ConcurrencyControl concurrencyControl,
       final BrokerCfg brokerCfg,
       final BrokerInfo brokerInfo,
-      final AtomixServerTransport gatewayBrokerTransport) {
+      final AtomixServerTransport gatewayBrokerTransport,
+      final BackupStore backupStore) {
     this.partitionId = partitionId;
     this.partitionDirectory = partitionDirectory;
     this.schedulingService = schedulingService;
@@ -55,6 +56,7 @@ public final class RecoveryPartitionStartupContext {
     this.brokerCfg = brokerCfg;
     this.brokerInfo = brokerInfo;
     this.gatewayBrokerTransport = gatewayBrokerTransport;
+    this.backupStore = backupStore;
   }
 
   @Override
@@ -100,11 +102,6 @@ public final class RecoveryPartitionStartupContext {
 
   public BackupStore getBackupStore() {
     return backupStore;
-  }
-
-  public RecoveryPartitionStartupContext setBackupStore(final BackupStore backupStore) {
-    this.backupStore = backupStore;
-    return this;
   }
 
   public ReadOnlyBackupService getBackupService() {

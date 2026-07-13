@@ -12,10 +12,12 @@ import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.cluster.PartitionId;
+import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
@@ -64,6 +66,7 @@ public final class RecoveryPartitionManager
   private final BrokerCfg brokerCfg;
   private final BrokerInfo brokerInfo;
   private final AtomixServerTransport gatewayBrokerTransport;
+  private @Nullable BackupStore backupStore;
 
   public RecoveryPartitionManager(
       final String partitionGroup,
@@ -139,6 +142,14 @@ public final class RecoveryPartitionManager
       return;
     }
 
+    final var backupCfg = brokerCfg.getData().getBackup();
+    try {
+      backupStore = BackupCfg.BackupStoreFactory.createStore(backupCfg);
+    } catch (final Exception e) {
+      result.completeExceptionally(e);
+      return;
+    }
+
     final List<RecoveryPartition> starting = new ArrayList<>();
     final var startFutures = new ArrayList<ActorFuture<RecoveryPartition>>();
     for (final var partitionMetadata : localPartitions) {
@@ -187,7 +198,8 @@ public final class RecoveryPartitionManager
         concurrencyControl,
         brokerCfg,
         brokerInfo,
-        gatewayBrokerTransport);
+        gatewayBrokerTransport,
+        backupStore);
   }
 
   private void stopInternal(final ActorFuture<Void> result) {
@@ -202,12 +214,28 @@ public final class RecoveryPartitionManager
           recoveryPartitions.clear();
           if (stopError != null) {
             LOG.error("Failed to stop recovery partitions", stopError);
-            result.completeExceptionally(stopError);
-          } else {
-            LOG.info("Stopped recovery partitions");
-            result.complete(null);
           }
+          if (backupStore == null) {
+            handleCompletion(result, stopError);
+            return;
+          }
+          final var store = backupStore;
+          backupStore = null;
+          store
+              .closeAsync()
+              .whenCompleteAsync(
+                  (ignore, closeError) ->
+                      handleCompletion(result, stopError != null ? stopError : closeError),
+                  concurrencyControl);
         });
+  }
+
+  private void handleCompletion(final ActorFuture<Void> result, final Throwable error) {
+    if (error != null) {
+      result.completeExceptionally(error);
+    } else {
+      result.complete(null);
+    }
   }
 
   private Path partitionDirectory(final PartitionId partitionId) {
