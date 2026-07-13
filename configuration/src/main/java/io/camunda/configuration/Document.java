@@ -132,6 +132,10 @@ public class Document {
     private String bucketPath;
     private String region;
     private Long bucketTtl;
+    private String endpoint;
+    private Boolean forcePathStyle;
+    private Boolean chunkedEncodingEnabled;
+    private Boolean supportLegacyMd5;
 
     public String getBucketName() {
       return bucketName;
@@ -163,6 +167,38 @@ public class Document {
 
     public void setBucketTtl(final Long bucketTtl) {
       this.bucketTtl = bucketTtl;
+    }
+
+    public String getEndpoint() {
+      return endpoint;
+    }
+
+    public void setEndpoint(final String endpoint) {
+      this.endpoint = endpoint;
+    }
+
+    public Boolean getForcePathStyle() {
+      return forcePathStyle;
+    }
+
+    public void setForcePathStyle(final Boolean forcePathStyle) {
+      this.forcePathStyle = forcePathStyle;
+    }
+
+    public Boolean getChunkedEncodingEnabled() {
+      return chunkedEncodingEnabled;
+    }
+
+    public void setChunkedEncodingEnabled(final Boolean chunkedEncodingEnabled) {
+      this.chunkedEncodingEnabled = chunkedEncodingEnabled;
+    }
+
+    public Boolean getSupportLegacyMd5() {
+      return supportLegacyMd5;
+    }
+
+    public void setSupportLegacyMd5(final Boolean supportLegacyMd5) {
+      this.supportLegacyMd5 = supportLegacyMd5;
     }
   }
 
