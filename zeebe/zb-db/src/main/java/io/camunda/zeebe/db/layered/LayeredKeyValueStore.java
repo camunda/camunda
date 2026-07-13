@@ -41,7 +41,11 @@ import java.util.function.BiConsumer;
  *   <li><em>Pipeline</em> — frozen {@link FlatSegment}s, newest first. Immutable; safe to share
  *       with the persist IO thread and reader views. Merged down (newest-wins, with
  *       delete-absorption if enabled) when longer than the segment limit, so read amplification
- *       stays bounded no matter how long persistence is deferred.
+ *       stays bounded no matter how long persistence is deferred. Merging is adaptive: while the
+ *       last merge annihilated too few entries (no key overlap to deduplicate, no pairs to absorb),
+ *       over-limit merges are skipped and the pipeline may overshoot to a hard cap of {@link
+ *       #MERGE_OVERSHOOT_FACTOR} × the limit, where a merge is forced and the ratio re-measured —
+ *       so read amplification stays bounded either way.
  *   <li><em>Clean cache</em> — delegate-mirroring entries, LRU, the only evictable layer: values
  *       read through the delegate, plus known-absent sentinels for keys the delegate missed
  *       (negative caching, see {@link #NEGATIVE}). Repopulation after a persist round is lazy —
@@ -73,6 +77,21 @@ import java.util.function.BiConsumer;
  * layers.
  */
 public final class LayeredKeyValueStore {
+
+  /**
+   * Minimum fraction of entries a pipeline merge must annihilate (deduplicated versions plus
+   * absorbed put/delete pairs, measured as entries-in vs entries-out) for over-limit merges to keep
+   * running eagerly. Below this, merging is mostly copying arrays for no byte savings, so merges
+   * are skipped until the pipeline reaches the hard cap.
+   */
+  private static final double MERGE_ANNIHILATION_THRESHOLD = 0.1;
+
+  /**
+   * Hard cap on pipeline overshoot while merges are skipped, as a multiple of the segment limit. A
+   * merge at the cap is unconditional and re-measures the annihilation ratio, so a workload shift
+   * back to overlapping keys re-enables eager merging.
+   */
+  private static final int MERGE_OVERSHOOT_FACTOR = 2;
 
   private static final byte[] EMPTY_PREFIX = new byte[0];
 
@@ -108,6 +127,10 @@ public final class LayeredKeyValueStore {
   private final List<FlatSegment> pipeline = new ArrayList<>();
   private boolean persisting;
   private int persistingCount;
+
+  // fraction of entries the last pipeline merge annihilated; starts optimistic (1.0) so the first
+  // over-limit merge always runs and measures the real ratio (owner thread only)
+  private double lastMergeAnnihilation = 1.0;
 
   private final LinkedHashMap<ByteBuffer, byte[]> clean = new LinkedHashMap<>(16, 0.75f, true);
 
@@ -361,8 +384,9 @@ public final class LayeredKeyValueStore {
    * Flattens the active overlay into an immutable {@link FlatSegment} stamped with {@code
    * watermark} (the highest log position whose effects it contains), pushes it onto the pipeline,
    * and installs a fresh active overlay. Pointer swaps and one flatten — no delegate IO. Merges the
-   * non-persisting tail of the pipeline down when it exceeds the segment limit. Staging must be
-   * empty (no batch in flight). A no-op if the active overlay is empty.
+   * non-persisting tail of the pipeline down when it exceeds the segment limit — adaptively skipped
+   * up to a hard cap while merging does not pay off (see the class javadoc's pipeline layer).
+   * Staging must be empty (no batch in flight). A no-op if the active overlay is empty.
    */
   public void freeze(final long watermark) {
     if (!stagingByKey.isEmpty()) {
@@ -394,16 +418,27 @@ public final class LayeredKeyValueStore {
     if (nonPersisting <= pipelineSegmentLimit) {
       return;
     }
+    // adaptive skip: while the last merge annihilated too little, an over-limit merge would mostly
+    // copy arrays for no byte savings — let the pipeline overshoot to the hard cap instead, where
+    // the forced merge re-measures the ratio
+    if (nonPersisting < pipelineSegmentLimit * MERGE_OVERSHOOT_FACTOR
+        && lastMergeAnnihilation < MERGE_ANNIHILATION_THRESHOLD) {
+      metrics.countPipelineMergeSkipped();
+      return;
+    }
     final List<FlatSegment> run = pipeline.subList(0, nonPersisting);
     final List<FlatSegment> oldestFirst = new ArrayList<>(run);
     Collections.reverse(oldestFirst);
-    final FlatSegment merged = FlatSegment.merge(oldestFirst, absorbDeletes);
+    long entriesIn = 0;
     for (final FlatSegment segment : run) {
+      entriesIn += segment.entryCount();
       pipelineBytes -= segment.byteSize();
     }
+    final FlatSegment merged = FlatSegment.merge(oldestFirst, absorbDeletes);
     run.clear();
     pipeline.add(0, merged);
     pipelineBytes += merged.byteSize();
+    lastMergeAnnihilation = entriesIn == 0 ? 1.0 : 1.0 - merged.entryCount() / (double) entriesIn;
     metrics.countPipelineMerge();
   }
 

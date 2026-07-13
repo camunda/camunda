@@ -36,6 +36,12 @@ public interface LayeredStoreMetrics {
   /** Counts an in-memory merge collapsing a pipeline back under its segment limit. */
   void countPipelineMerge();
 
+  /**
+   * Counts an over-limit pipeline merge skipped because the store's last merge annihilated too few
+   * entries to pay off (the pipeline overshoots to a hard cap instead).
+   */
+  void countPipelineMergeSkipped();
+
   /** Counts a persist round started for the given trigger. */
   void countRound(PersistTrigger trigger);
 
@@ -107,6 +113,9 @@ public interface LayeredStoreMetrics {
 
     @Override
     public void countPipelineMerge() {}
+
+    @Override
+    public void countPipelineMergeSkipped() {}
 
     @Override
     public void countRound(final PersistTrigger trigger) {}

@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.db.layered.segment.FlatSegment;
 import io.camunda.zeebe.db.layered.util.InMemoryDurableState;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -119,6 +120,72 @@ final class LayeredKeyValueStoreLifecycleTest {
     assertThat(segments.get(0).entryCount()).isEqualTo(3);
     assertThat(segments.get(1).watermark()).isEqualTo(2L);
     assertThat(segments.get(2).watermark()).isEqualTo(1L);
+  }
+
+  @Test
+  void shouldSkipMergeAfterLowAnnihilationMergeUntilHardCap() {
+    // given -- limit 2; the first over-limit merge of fully disjoint segments measures zero
+    // annihilation (3 entries in, 3 out)
+    final var registry = new SimpleMeterRegistry();
+    final LayeredKeyValueStore store =
+        new LayeredKeyValueStore(
+            STORE,
+            state.store(STORE),
+            1024 * 1024,
+            false,
+            2,
+            LayeredStoreMetrics.of(registry, "t"));
+    putPromoteFreeze(store, "k1", "v", 1L);
+    putPromoteFreeze(store, "k2", "v", 2L);
+    putPromoteFreeze(store, "k3", "v", 3L);
+    assertThat(store.pipelineDepth()).isEqualTo(1);
+
+    // when -- further disjoint freezes exceed the limit again
+    putPromoteFreeze(store, "k4", "v", 4L);
+    putPromoteFreeze(store, "k5", "v", 5L);
+
+    // then -- the merge is skipped (and metered): the pipeline overshoots past the limit
+    assertThat(store.pipelineDepth()).isEqualTo(3);
+    assertThat(skippedMerges(registry)).isEqualTo(1);
+
+    // when -- the overshoot reaches the hard cap (2x the limit)
+    putPromoteFreeze(store, "k6", "v", 6L);
+
+    // then -- the merge is forced, collapsing everything back to one readable segment
+    assertThat(store.pipelineDepth()).isEqualTo(1);
+    assertThat(store.get(bytes("k1"))).isEqualTo(bytes("v"));
+    assertThat(store.get(bytes("k6"))).isEqualTo(bytes("v"));
+  }
+
+  @Test
+  void shouldKeepMergingAtLimitWhileAnnihilationStaysHigh() {
+    // given -- limit 2; every segment overwrites the same key, so merges fully deduplicate
+    final var registry = new SimpleMeterRegistry();
+    final LayeredKeyValueStore store =
+        new LayeredKeyValueStore(
+            STORE,
+            state.store(STORE),
+            1024 * 1024,
+            false,
+            2,
+            LayeredStoreMetrics.of(registry, "t"));
+    putPromoteFreeze(store, "key", "v1", 1L);
+    putPromoteFreeze(store, "key", "v2", 2L);
+    putPromoteFreeze(store, "key", "v3", 3L);
+    assertThat(store.pipelineDepth()).isEqualTo(1);
+
+    // when -- the next freezes exceed the limit again
+    putPromoteFreeze(store, "key", "v4", 4L);
+    putPromoteFreeze(store, "key", "v5", 5L);
+
+    // then -- merged promptly at the limit (the measured ratio stays high), no overshoot
+    assertThat(store.pipelineDepth()).isEqualTo(1);
+    assertThat(skippedMerges(registry)).isZero();
+    assertThat(store.get(bytes("key"))).isEqualTo(bytes("v5"));
+  }
+
+  private static double skippedMerges(final SimpleMeterRegistry registry) {
+    return registry.get("zeebe.db.layered.pipeline.merges.skipped").counter().count();
   }
 
   // ------------------------------------------------------------------

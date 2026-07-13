@@ -37,6 +37,7 @@ final class MicrometerLayeredStoreMetrics implements LayeredStoreMetrics {
   private final Counter delegateReadThroughs;
   private final Counter flushedPointReads;
   private final Counter pipelineMerges;
+  private final Counter pipelineMergesSkipped;
   private final Counter[] roundsByTrigger;
   private final Counter roundFailures;
   private final Timer roundDuration;
@@ -57,6 +58,7 @@ final class MicrometerLayeredStoreMetrics implements LayeredStoreMetrics {
     delegateReadThroughs = readCounter(LayeredStateMetricsDoc.READS, ReadSource.DELEGATE);
     flushedPointReads = counter(LayeredStateMetricsDoc.FLUSHED_POINT_READS);
     pipelineMerges = counter(LayeredStateMetricsDoc.PIPELINE_MERGES);
+    pipelineMergesSkipped = counter(LayeredStateMetricsDoc.PIPELINE_MERGES_SKIPPED);
     final PersistTrigger[] triggers = PersistTrigger.values();
     roundsByTrigger = new Counter[triggers.length];
     for (final PersistTrigger trigger : triggers) {
@@ -106,6 +108,11 @@ final class MicrometerLayeredStoreMetrics implements LayeredStoreMetrics {
   @Override
   public void countPipelineMerge() {
     pipelineMerges.increment();
+  }
+
+  @Override
+  public void countPipelineMergeSkipped() {
+    pipelineMergesSkipped.increment();
   }
 
   @Override

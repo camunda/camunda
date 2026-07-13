@@ -342,6 +342,29 @@ public enum LayeredStateMetricsDoc implements ExtendedMeterDocumentation {
       return DOMAIN_ONLY;
     }
   },
+  /** Over-limit pipeline merges skipped for lack of annihilation */
+  PIPELINE_MERGES_SKIPPED {
+    @Override
+    public String getName() {
+      return "zeebe.db.layered.pipeline.merges.skipped";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.COUNTER;
+    }
+
+    @Override
+    public String getDescription() {
+      return "Over-limit pipeline merges skipped because the store's last merge annihilated too"
+          + " few entries to pay off; the pipeline overshoots to a hard cap instead";
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return DOMAIN_ONLY;
+    }
+  },
   /** Reader view rotations after successful persist rounds */
   VIEW_ROTATIONS {
     @Override
