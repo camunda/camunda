@@ -115,6 +115,7 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
    * forwarded-header mismatches and session-cookie issues in the OIDC redirect flow.
    */
   @Bean
+  @Order(org.springframework.core.Ordered.HIGHEST_PRECEDENCE)
   FilterRegistrationBean<OidcRedirectDiagnosticsFilter> oidcRedirectDiagnosticsFilter() {
     final var registration = new FilterRegistrationBean<OidcRedirectDiagnosticsFilter>();
     final boolean enabled =
@@ -125,6 +126,7 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
     final String callbackPath = REST_API_PATH + AUTHENTICATION_PATH + CALLBACK;
     registration.setFilter(new OidcRedirectDiagnosticsFilter(callbackPath));
     registration.addUrlPatterns("/*");
+    registration.setOrder(org.springframework.core.Ordered.HIGHEST_PRECEDENCE);
     registration.setEnabled(enabled);
     if (enabled) {
       LOG.info(
