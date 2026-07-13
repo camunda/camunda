@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dynamic.config.changes;
 
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionBootstrapApplier;
+import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionDeleteExporterApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionDisableExporterApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionEnableExporterApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionForceReconfigureApplier;
@@ -16,6 +17,7 @@ import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionLeaveApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionReconfigurePriorityApplier;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
@@ -63,6 +65,9 @@ public final class PartitionGroupConfigurationChangeAppliersImpl
               partitionChangeExecutor);
       case final PartitionDisableExporterOperation op ->
           new PartitionDisableExporterApplier(
+              op.memberId(), op.partitionId(), op.exporterId(), partitionChangeExecutor);
+      case final PartitionDeleteExporterOperation op ->
+          new PartitionDeleteExporterApplier(
               op.memberId(), op.partitionId(), op.exporterId(), partitionChangeExecutor);
       default ->
           throw new UnsupportedOperationException(
