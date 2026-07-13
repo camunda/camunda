@@ -9,6 +9,7 @@ package io.camunda.zeebe.dynamic.config.changes;
 
 import io.camunda.zeebe.dynamic.config.changes.appliers.AwaitRedistributionCompletionApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.AwaitRelocationCompletionApplier;
+import io.camunda.zeebe.dynamic.config.changes.appliers.DeleteHistoryApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionBootstrapApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionDeleteExporterApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionDisableExporterApplier;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.dynamic.config.changes.appliers.StartPartitionScaleUpApp
 import io.camunda.zeebe.dynamic.config.changes.appliers.UpdateIncarnationNumberApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.UpdateRoutingStateApplier;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.DeleteHistoryOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
@@ -41,12 +43,15 @@ public final class PartitionGroupConfigurationChangeAppliersImpl
 
   private final PartitionChangeExecutor partitionChangeExecutor;
   private final PartitionScalingChangeExecutor partitionScalingChangeExecutor;
+  private final ClusterChangeExecutor clusterChangeExecutor;
 
   public PartitionGroupConfigurationChangeAppliersImpl(
       final PartitionChangeExecutor partitionChangeExecutor,
-      final PartitionScalingChangeExecutor partitionScalingChangeExecutor) {
+      final PartitionScalingChangeExecutor partitionScalingChangeExecutor,
+      final ClusterChangeExecutor clusterChangeExecutor) {
     this.partitionChangeExecutor = partitionChangeExecutor;
     this.partitionScalingChangeExecutor = partitionScalingChangeExecutor;
+    this.clusterChangeExecutor = clusterChangeExecutor;
   }
 
   @Override
@@ -99,6 +104,7 @@ public final class PartitionGroupConfigurationChangeAppliersImpl
       case final UpdateRoutingState op ->
           new UpdateRoutingStateApplier(op, partitionScalingChangeExecutor);
       case final UpdateIncarnationNumberOperation ignored -> new UpdateIncarnationNumberApplier();
+      case final DeleteHistoryOperation ignored -> new DeleteHistoryApplier(clusterChangeExecutor);
       default ->
           throw new UnsupportedOperationException(
               "No new-model applier implemented yet for %s".formatted(operation));
