@@ -113,6 +113,7 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
     }
     this.stores = byName;
     metrics.registerAnchorLag(this::anchorLag);
+    metrics.registerRoundInFlight(() -> outstandingRound != null ? 1 : 0);
     // publish an initial view right away so asynchronous readers always have one to hold
     publishView(new RefCountedSnapshot(snapshots.takeSnapshot()));
   }
@@ -221,6 +222,23 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
   /** Whether a persist round is outstanding (prepared but not completed). */
   public boolean roundOutstanding() {
     return outstandingRound != null;
+  }
+
+  /**
+   * Completes an outstanding round as failed without waiting for its {@link PersistRound#persist()}
+   * — recovery for a successor owner taking over stores whose previous owner died between preparing
+   * and completing a round. The segments stay in their pipelines and the successor's next round
+   * retries them; if the orphaned round's atomic batch did commit before the owner died, the retry
+   * merely rewrites the same versions, which is idempotent. A no-op when no round is outstanding.
+   *
+   * <p><b>Precondition:</b> the previous owner's persist IO must no longer be running (its IO
+   * executor terminated) — otherwise the orphaned {@code persist()} could race a new round on the
+   * shared sink.
+   */
+  public void abortOutstandingRound() {
+    if (outstandingRound != null) {
+      completeRound(outstandingRound, false);
+    }
   }
 
   /** The recovery anchor as last committed by a round, or -1; delegates to the sink. */

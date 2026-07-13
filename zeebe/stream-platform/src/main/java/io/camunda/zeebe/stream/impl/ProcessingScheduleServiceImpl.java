@@ -48,9 +48,9 @@ public class ProcessingScheduleServiceImpl
   private ActorControl actorControl;
   private AbortableRetryStrategy writeRetryStrategy;
   private CompletableActorFuture<Void> openFuture;
-  // invoked on this service's actor right before a task executes; returning false defers the
-  // task until after the current processing batch (see taskExecutionBarrier(BooleanSupplier))
-  private BooleanSupplier taskExecutionBarrier = () -> true;
+  // invoked on this service's actor right before a task executes; a non-null future defers the
+  // task until the barrier's drain attempt finished (see taskExecutionBarrier(Supplier))
+  private Supplier<ActorFuture<Void>> taskExecutionBarrier = () -> null;
   // when set, every task execution first awaits the supplied future — used by the experimental
   // layered-state wiring to freeze buffered state into a fresh read view before an async checker
   // runs (see taskFreshnessPreparation(Supplier))
@@ -178,10 +178,14 @@ public class ProcessingScheduleServiceImpl
   /**
    * Installs a barrier invoked on this service's actor right before every task execution. Used by
    * the experimental layered-state wiring to drain buffered state so persisted-state scans (e.g.
-   * due-date checkers) observe every committed batch; returning false defers the task until the
-   * in-flight processing batch completed. Must be set before the service is opened.
+   * due-date checkers) observe every batch committed before the task's preparation began. The
+   * barrier returns null when the task may run right now, or a future — never completing
+   * exceptionally — after which the task runs (re-checking only the abort condition and the
+   * processor phase, not the barrier: one preparation makes one drain attempt, deliberately not
+   * chasing batches committed while it drained, which would starve the task under sustained load).
+   * Must be set before the service is opened.
    */
-  void taskExecutionBarrier(final BooleanSupplier barrier) {
+  void taskExecutionBarrier(final Supplier<ActorFuture<Void>> barrier) {
     taskExecutionBarrier = Objects.requireNonNull(barrier);
   }
 
@@ -215,13 +219,30 @@ public class ProcessingScheduleServiceImpl
           return;
         }
 
-        if (!taskExecutionBarrier.getAsBoolean()) {
-          // committed state cannot be made visible to the task right now (a processing batch is
-          // in flight on this actor); run again once the batch completed
-          actorControl.submit(this);
+        final var barrier = taskExecutionBarrier.get();
+        if (barrier != null) {
+          // committed state is not visible to the task yet (buffered state must drain, or a
+          // processing batch is in flight); run once the barrier's drain attempt finished
+          actorControl.runOnCompletion(barrier, (ok, error) -> runPrepared(task));
           return;
         }
 
+        runPrepared(task);
+      }
+
+      private void runPrepared(final Runnable task) {
+        if (abortCondition.getAsBoolean()) {
+          return;
+        }
+        final var phaseAfterBarrier = streamProcessorPhaseSupplier.get();
+        if (phaseAfterBarrier != Phase.PROCESSING) {
+          // the phase changed while the barrier drained; drop the task, matching the pre-barrier
+          // check of this path
+          LOG.trace(
+              "Not able to execute scheduled task right now. [streamProcessorPhase: {}]",
+              phaseAfterBarrier);
+          return;
+        }
         if (taskFreshnessPreparation != null) {
           // run only after the buffered state was frozen into a fresh read view; on preparation
           // failure the task still runs — a staler view beats blocking all scheduled work
@@ -259,23 +280,41 @@ public class ProcessingScheduleServiceImpl
         return;
       }
 
-      if (!taskExecutionBarrier.getAsBoolean()) {
-        // committed state cannot be made visible to the task right now (a processing batch is
-        // in flight on this actor); run again once the batch completed
-        actorControl.submit(toRunnable(task));
+      final var barrier = taskExecutionBarrier.get();
+      if (barrier != null) {
+        // committed state is not visible to the task yet (buffered state must drain, or a
+        // processing batch is in flight); run once the barrier's drain attempt finished
+        actorControl.runOnCompletion(barrier, (ok, error) -> executePreparedTask(task));
         return;
       }
 
-      if (taskFreshnessPreparation != null) {
-        // run only after the buffered state was frozen into a fresh read view; on preparation
-        // failure the task still runs — a staler view beats blocking all scheduled work
-        actorControl.runOnCompletion(
-            taskFreshnessPreparation.get(), (ok, error) -> executeTask(task));
-        return;
-      }
-
-      executeTask(task);
+      executePreparedTask(task);
     };
+  }
+
+  private void executePreparedTask(final Task task) {
+    if (abortCondition.getAsBoolean()) {
+      return;
+    }
+    final var phaseAfterBarrier = streamProcessorPhaseSupplier.get();
+    if (phaseAfterBarrier != Phase.PROCESSING) {
+      // the phase changed while the barrier drained; requeue the task, matching the pre-barrier
+      // check of this path
+      LOG.trace(
+          "Not able to execute scheduled task right now. [streamProcessorPhase: {}]",
+          phaseAfterBarrier);
+      actorControl.submit(toRunnable(task));
+      return;
+    }
+    if (taskFreshnessPreparation != null) {
+      // run only after the buffered state was frozen into a fresh read view; on preparation
+      // failure the task still runs — a staler view beats blocking all scheduled work
+      actorControl.runOnCompletion(
+          taskFreshnessPreparation.get(), (ok, error) -> executeTask(task));
+      return;
+    }
+
+    executeTask(task);
   }
 
   private void executeTask(final Task task) {

@@ -148,6 +148,14 @@ final class MicrometerLayeredStoreMetrics implements LayeredStoreMetrics {
   }
 
   @Override
+  public void registerRoundInFlight(final LongSupplier inFlight) {
+    Gauge.builder(LayeredStateMetricsDoc.PERSIST_INFLIGHT.getName(), inFlight::getAsLong)
+        .description(LayeredStateMetricsDoc.PERSIST_INFLIGHT.getDescription())
+        .tag(LayeredStateKeyNames.DOMAIN.asString(), domain)
+        .register(registry);
+  }
+
+  @Override
   public void registerStoreGauges(final Collection<LayeredKeyValueStore> stores) {
     layerGauge(
         LayeredStateMetricsDoc.BUFFERED_BYTES,

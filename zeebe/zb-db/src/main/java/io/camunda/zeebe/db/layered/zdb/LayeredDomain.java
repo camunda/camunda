@@ -244,17 +244,63 @@ public final class LayeredDomain {
    *     retries them
    */
   public void persistNow(final long watermark, final PersistTrigger trigger) {
-    final LayeredStoreCoordinator roundCoordinator = coordinator();
-    metrics.countRound(trigger);
-    final PersistRound round = roundCoordinator.prepareRound(watermark);
+    final PersistRound round = preparePersist(watermark, trigger);
     try {
       round.persist();
     } catch (final Exception e) {
-      roundCoordinator.completeRound(round, false);
+      completePersist(round, false);
       throw new ZeebeDbException(
           "Failed to persist the buffered state of domain '%s'".formatted(name), e);
     }
-    roundCoordinator.completeRound(round, true);
+    completePersist(round, true);
+  }
+
+  /**
+   * Prepares one persist round on the owner thread (freeze plus segment capture, cheap) and returns
+   * it for draining. {@link PersistRound#persist()} may then run on an IO thread — it touches only
+   * the captured immutable segments and the sink — while the owner thread keeps writing, reading
+   * and freezing; the captured segments stay in their pipelines, readable and shadowing the wrapped
+   * database, until {@link #completePersist(PersistRound, boolean)} retires them back on the owner
+   * thread. Rounds are single-flight per domain.
+   *
+   * <p>Must not be called while {@link #batchInFlight()} is true or a round is outstanding.
+   *
+   * @param watermark the highest log position whose effects the buffered state contains
+   * @param trigger why this round runs, for instrumentation
+   */
+  public PersistRound preparePersist(final long watermark, final PersistTrigger trigger) {
+    final LayeredStoreCoordinator roundCoordinator = coordinator();
+    metrics.countRound(trigger);
+    return roundCoordinator.prepareRound(watermark);
+  }
+
+  /**
+   * Finishes a prepared round on the owner thread after {@link PersistRound#persist()} returned
+   * (successfully or not): on success the drained segments retire and the read view rotates; on
+   * failure they stay buffered and the next round retries them. Safe to call while a batch is in
+   * flight — completion never touches the staging layer's contents.
+   */
+  public void completePersist(final PersistRound round, final boolean success) {
+    coordinator().completeRound(round, success);
+  }
+
+  /** Whether one of this domain's persist rounds is outstanding (prepared but not completed). */
+  public boolean roundInFlight() {
+    return coordinator != null && coordinator.roundOutstanding();
+  }
+
+  /**
+   * Completes (as failed) a persist round a previous owner left outstanding — e.g. a stream
+   * processor that died between preparing a round and completing it before a successor took over
+   * the same database. The captured segments stay buffered and the successor's rounds retry them;
+   * see {@link LayeredStoreCoordinator#abortOutstandingRound()} for the idempotency argument and
+   * the precondition (the previous owner's persist IO must have terminated). A no-op when no round
+   * is outstanding.
+   */
+  public void abortStaleRound() {
+    if (coordinator != null) {
+      coordinator.abortOutstandingRound();
+    }
   }
 
   // ------------------------------------------------------------------

@@ -57,6 +57,12 @@ public interface LayeredStoreMetrics {
   /** Registers the anchor-lag gauge; called once when the domain's coordinator is built. */
   void registerAnchorLag(LongSupplier lag);
 
+  /**
+   * Registers the round-in-flight gauge (1 while a persist round is outstanding, 0 otherwise);
+   * called once when the domain's coordinator is built.
+   */
+  void registerRoundInFlight(LongSupplier inFlight);
+
   /** Registers the per-layer byte/entry and pipeline-depth gauges over the given stores. */
   void registerStoreGauges(Collection<LayeredKeyValueStore> stores);
 
@@ -118,6 +124,9 @@ public interface LayeredStoreMetrics {
 
     @Override
     public void registerAnchorLag(final LongSupplier lag) {}
+
+    @Override
+    public void registerRoundInFlight(final LongSupplier inFlight) {}
 
     @Override
     public void registerStoreGauges(final Collection<LayeredKeyValueStore> stores) {}

@@ -86,6 +86,29 @@ public enum LayeredStateMetricsDoc implements ExtendedMeterDocumentation {
       return DOMAIN_ONLY;
     }
   },
+  /** Whether a persist round is currently in flight */
+  PERSIST_INFLIGHT {
+    @Override
+    public String getName() {
+      return "zeebe.db.layered.persist.inflight";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+
+    @Override
+    public String getDescription() {
+      return "Whether a persist round of the domain is currently in flight (1) or not (0); rounds"
+          + " are single-flight per domain";
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return DOMAIN_ONLY;
+    }
+  },
   /** Duration of the persist step of a round */
   PERSIST_DURATION {
     @Override
