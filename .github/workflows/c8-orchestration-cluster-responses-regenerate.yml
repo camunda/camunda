@@ -59,7 +59,7 @@ jobs:
       SAFE: ${{ matrix.safe }}
 
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@fa78e4f0192774657f65066f77b76e270df0c088 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@5d7013fb2ad2393bb85af96581cb4936faeef055 # main
       - name: Checkout ${{ matrix.ref }}
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
