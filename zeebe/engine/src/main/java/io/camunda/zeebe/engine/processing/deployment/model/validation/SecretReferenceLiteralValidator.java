@@ -13,7 +13,9 @@ import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.util.Either;
+import java.util.LinkedHashSet;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 import org.jspecify.annotations.NullMarked;
@@ -34,8 +36,9 @@ import org.jspecify.annotations.Nullable;
 @NullMarked
 final class SecretReferenceLiteralValidator implements ModelElementValidator<ZeebeInput> {
 
+  // unicode-aware so names with non-ASCII letters/digits are matched (and reported) in full
   private static final Pattern SECRET_REFERENCE =
-      Pattern.compile("camunda\\.secrets\\.[\\p{Alnum}_]+");
+      Pattern.compile("camunda\\.secrets\\.[\\p{L}\\p{N}_]+");
 
   private final ExpressionLanguage expressionLanguage;
 
@@ -71,14 +74,21 @@ final class SecretReferenceLiteralValidator implements ModelElementValidator<Zee
     }
 
     final var matcher = SECRET_REFERENCE.matcher(constant);
-    if (matcher.find()) {
-      final var reference = matcher.group();
+    final var references = new LinkedHashSet<String>();
+    while (matcher.find()) {
+      references.add(matcher.group());
+    }
+    if (!references.isEmpty()) {
+      final var formatted =
+          references.stream()
+              .map(reference -> "'" + reference + "'")
+              .collect(Collectors.joining(", "));
       validationResultCollector.addError(
           0,
           String.format(
-              "Secret reference '%s' must be used as an expression (e.g. '=%s'), not as a string"
-                  + " literal, in input mapping source '%s'.",
-              reference, reference, source));
+              "Secret reference(s) %s must be used as an expression (e.g. '=camunda.secrets.<name>'),"
+                  + " not as a string literal, in input mapping source '%s'.",
+              formatted, source));
     }
   }
 

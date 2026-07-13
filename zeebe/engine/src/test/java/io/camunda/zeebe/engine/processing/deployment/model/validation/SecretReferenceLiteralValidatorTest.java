@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.validation;
 
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -145,6 +146,40 @@ final class SecretReferenceLiteralValidatorTest {
 
     // then
     verifyNoInteractions(collector);
+  }
+
+  @Test
+  void shouldReportEverySecretReferenceInAnObjectLiteral() {
+    // when - two distinct references appear as literals in one object
+    final var collector =
+        validate("={\"a\": \"camunda.secrets.tokenA\", \"b\": \"camunda.secrets.tokenB\"}");
+
+    // then - both are listed, not just the first
+    verify(collector)
+        .addError(
+            eq(0),
+            argThat(
+                message ->
+                    message.contains("camunda.secrets.tokenA")
+                        && message.contains("camunda.secrets.tokenB")));
+  }
+
+  @Test
+  void shouldRejectAndReportSecretReferenceWithUnicodeName() {
+    // when - a name with non-ASCII letters
+    final var collector = validate("=\"camunda.secrets.tökén\"");
+
+    // then - matched and reported in full
+    verify(collector).addError(eq(0), contains("camunda.secrets.tökén"));
+  }
+
+  @Test
+  void shouldRejectSecretReferenceContainingDigits() {
+    // when
+    final var collector = validate("camunda.secrets.token_2");
+
+    // then
+    verify(collector).addError(eq(0), contains("camunda.secrets.token_2"));
   }
 
   private ValidationResultCollector validate(final String source) {
