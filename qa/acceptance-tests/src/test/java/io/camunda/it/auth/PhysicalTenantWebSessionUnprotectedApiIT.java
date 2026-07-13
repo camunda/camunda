@@ -34,11 +34,11 @@ import org.springframework.http.HttpStatus;
  * physical tenant configured alongside it. See {@link BasicAuthUnprotectedApiSessionIT} for the
  * plain, in-memory-session scenario.
  *
- * <p>Does not exercise {@code /physical-tenants/<id>/...} paths under {@code unprotected-api}:
- * {@link io.camunda.authentication.config.spi.SecurityPathAdapter#apiPaths()} excludes
- * tenant-prefixed paths, which are owned exclusively by per-tenant scoped chains — a PT scope has
- * no unprotected mode to exercise here. The tenant is provisioned only to prove the default-path
- * behaviour holds when physical tenants are configured alongside it.
+ * <p>Only exercises the default (non-PT) path. The tenant is provisioned to prove that behaviour
+ * holds when a physical tenant is configured alongside it; whether a physical tenant's own scoped
+ * API chain (which also has an unprotected variant when {@code unprotected-api=true}, built via
+ * {@code ScopedApiSecurityChainBuilder#buildUnprotectedScopedApiChain}) recognises sessions the
+ * same way is a separate, unverified surface not covered here.
  */
 @MultiDbTest
 @MultiDbPhysicalTenants({PhysicalTenantWebSessionUnprotectedApiIT.TENANT_A})
