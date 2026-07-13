@@ -36,6 +36,7 @@ import io.camunda.client.api.search.response.Job;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.JobSelectors;
+import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaClockClient;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.extension.ConditionalBehaviorEngine;
@@ -110,7 +111,8 @@ public class ThrowBpmnErrorTest {
               clockClient,
               DevAwaitBehavior::expectSuccess,
               jsonMapper,
-              new ConditionalBehaviorEngine());
+              new ConditionalBehaviorEngine(),
+              () -> new CamundaDataSource(camundaClient));
 
       when(camundaClient
               .newJobSearchRequest()
@@ -269,7 +271,8 @@ public class ThrowBpmnErrorTest {
               clockClient,
               DevAwaitBehavior::expectFailure,
               jsonMapper,
-              new ConditionalBehaviorEngine());
+              new ConditionalBehaviorEngine(),
+              () -> new CamundaDataSource(camundaClient));
     }
 
     @Test

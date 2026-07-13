@@ -52,6 +52,7 @@ import io.camunda.process.test.api.assertions.UserTaskSelectors;
 import io.camunda.process.test.api.behavior.BehaviorCondition;
 import io.camunda.process.test.api.behavior.ConditionalBehaviorBuilder;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
+import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaClockClient;
 import io.camunda.process.test.impl.mock.BpmnExampleDataReader;
 import io.camunda.process.test.impl.mock.BpmnExampleDataReader.BpmnExampleDataReaderException;
@@ -64,7 +65,6 @@ import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -126,7 +126,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   private final Supplier<CamundaAssertAwaitBehavior> awaitBehaviorSupplier;
   private final ConditionalBehaviorEngine conditionalBehaviorEngine;
 
-  private OffsetDateTime testCaseStartTime;
+  private final Supplier<CamundaDataSource> dataSourceSupplier;
 
   public CamundaProcessTestContextImpl(
       final CamundaProcessTestRuntime camundaRuntime,
@@ -134,7 +134,8 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
       final CamundaClockClient clockClient,
       final Supplier<CamundaAssertAwaitBehavior> awaitBehaviorSupplier,
       final JsonMapper jsonMapper,
-      final ConditionalBehaviorEngine conditionalBehaviorEngine) {
+      final ConditionalBehaviorEngine conditionalBehaviorEngine,
+      final Supplier<CamundaDataSource> dataSourceSupplier) {
 
     camundaClientBuilderFactory = camundaRuntime.getCamundaClientBuilderFactory();
     camundaRestApiAddress = camundaRuntime.getCamundaRestApiAddress();
@@ -145,17 +146,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     this.awaitBehaviorSupplier = awaitBehaviorSupplier;
     this.jsonMapper = jsonMapper;
     this.conditionalBehaviorEngine = conditionalBehaviorEngine;
-  }
-
-  /**
-   * Sets the start time of the current test case. When set, all search queries will only return
-   * data created at or after this time, so that results from previous test cases are excluded.
-   *
-   * @param startTime the start time of the current test case, as reported by the runtime clock; may
-   *     be {@code null} to disable filtering
-   */
-  public void setTestCaseStartTime(final Instant startTime) {
-    testCaseStartTime = startTime != null ? startTime.atOffset(ZoneOffset.UTC) : null;
+    this.dataSourceSupplier = dataSourceSupplier;
   }
 
   @Override
@@ -794,8 +785,8 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
       final UserTaskSelector userTaskSelector, final CamundaClient client) {
     Consumer<UserTaskFilter> filter =
         DEFAULT_USER_TASK_COMPLETION_FILTER.andThen(userTaskSelector::applyFilter);
-    if (testCaseStartTime != null) {
-      final OffsetDateTime startTime = testCaseStartTime;
+    final OffsetDateTime startTime = dataSourceSupplier.get().getTestCaseStartTime();
+    if (startTime != null) {
       filter =
           ((Consumer<UserTaskFilter>) f -> f.creationDate(b -> b.gte(startTime))).andThen(filter);
     }
@@ -900,15 +891,12 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   private Optional<Job> findJob(final JobSelector jobSelector, final CamundaClient client) {
-    return client
-        .newJobSearchRequest()
-        .filter(
-            filter ->
-                DEFAULT_JOB_COMPLETION_FILTER.andThen(jobSelector::applyFilter).accept(filter))
-        .send()
-        .join()
-        .items()
-        .stream()
+    Consumer<JobFilter> filter = DEFAULT_JOB_COMPLETION_FILTER.andThen(jobSelector::applyFilter);
+    final OffsetDateTime startTime = dataSourceSupplier.get().getTestCaseStartTime();
+    if (startTime != null) {
+      filter = ((Consumer<JobFilter>) f -> f.creationTime(b -> b.gte(startTime))).andThen(filter);
+    }
+    return client.newJobSearchRequest().filter(filter).send().join().items().stream()
         .filter(jobSelector::test)
         .findFirst();
   }
@@ -937,8 +925,8 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
       final IncidentSelector incidentSelector, final CamundaClient client) {
     Consumer<IncidentFilter> filter =
         DEFAULT_INCIDENT_RESOLUTION_FILTER.andThen(incidentSelector::applyFilter);
-    if (testCaseStartTime != null) {
-      final OffsetDateTime startTime = testCaseStartTime;
+    final OffsetDateTime startTime = dataSourceSupplier.get().getTestCaseStartTime();
+    if (startTime != null) {
       filter =
           ((Consumer<IncidentFilter>) f -> f.creationTime(b -> b.gte(startTime))).andThen(filter);
     }
@@ -950,8 +938,8 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   private Optional<ProcessInstance> findProcessInstance(
       final ProcessInstanceSelector processInstanceSelector, final CamundaClient client) {
     Consumer<ProcessInstanceFilter> filter = processInstanceSelector::applyFilter;
-    if (testCaseStartTime != null) {
-      final OffsetDateTime startTime = testCaseStartTime;
+    final OffsetDateTime startTime = dataSourceSupplier.get().getTestCaseStartTime();
+    if (startTime != null) {
       filter =
           ((Consumer<ProcessInstanceFilter>) f -> f.startDate(b -> b.gte(startTime)))
               .andThen(filter);
@@ -969,8 +957,8 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
         DEFAULT_ELEMENT_INSTANCE_FILTER
             .andThen(f -> f.processInstanceKey(processInstanceKey))
             .andThen(elementSelector::applyFilter);
-    if (testCaseStartTime != null) {
-      final OffsetDateTime startTime = testCaseStartTime;
+    final OffsetDateTime startTime = dataSourceSupplier.get().getTestCaseStartTime();
+    if (startTime != null) {
       filter =
           ((Consumer<ElementInstanceFilter>) f -> f.startDate(b -> b.gte(startTime)))
               .andThen(filter);

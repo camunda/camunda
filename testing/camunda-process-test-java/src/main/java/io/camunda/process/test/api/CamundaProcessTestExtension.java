@@ -191,7 +191,8 @@ public class CamundaProcessTestExtension
             camundaManagementClient,
             CamundaAssert::getAwaitBehavior,
             jsonMapper,
-            conditionalBehaviorEngine);
+            conditionalBehaviorEngine,
+            () -> dataSource);
 
     // put in store
     final Store store = context.getStore(NAMESPACE);
@@ -319,10 +320,6 @@ public class CamundaProcessTestExtension
     // initialize assertions
     testCaseStartTime = readCurrentRuntimeTime();
     dataSource = new CamundaDataSource(camundaProcessTestContext.createClient(), testCaseStartTime);
-    if (camundaProcessTestContext instanceof CamundaProcessTestContextImpl) {
-      ((CamundaProcessTestContextImpl) camundaProcessTestContext)
-          .setTestCaseStartTime(testCaseStartTime);
-    }
     CamundaAssert.initialize(dataSource);
 
     // initialize result collector

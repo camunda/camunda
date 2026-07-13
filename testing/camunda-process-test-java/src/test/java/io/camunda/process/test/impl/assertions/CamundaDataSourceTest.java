@@ -26,6 +26,7 @@ import io.camunda.client.api.search.filter.CorrelatedMessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
+import io.camunda.client.api.search.filter.JobFilter;
 import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
@@ -33,6 +34,7 @@ import io.camunda.client.api.search.request.CorrelatedMessageSubscriptionSearchR
 import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
 import io.camunda.client.api.search.request.ElementInstanceSearchRequest;
 import io.camunda.client.api.search.request.IncidentSearchRequest;
+import io.camunda.client.api.search.request.JobSearchRequest;
 import io.camunda.client.api.search.request.MessageSubscriptionSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSearchRequest;
 import io.camunda.client.api.search.request.UserTaskSearchRequest;
@@ -40,6 +42,7 @@ import io.camunda.client.api.search.response.CorrelatedMessageSubscription;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Incident;
+import io.camunda.client.api.search.response.Job;
 import io.camunda.client.api.search.response.MessageSubscription;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
@@ -286,6 +289,58 @@ public class CamundaDataSourceTest {
       verify(searchRequest).filter(filterCaptor.capture());
       filterCaptor.getValue().accept(userTaskFilter);
       verify(userTaskFilter).creationDate(any(Consumer.class));
+    }
+  }
+
+  @Nested
+  class JobTests {
+
+    @Mock(answer = Answers.RETURNS_SELF)
+    private JobSearchRequest searchRequest;
+
+    @Mock private CamundaFuture<SearchResponse<Job>> future;
+    @Mock private SearchResponse<Job> searchResponse;
+
+    @Mock(answer = Answers.RETURNS_SELF)
+    private JobFilter jobFilter;
+
+    @Captor private ArgumentCaptor<Consumer<JobFilter>> filterCaptor;
+
+    @BeforeEach
+    @SuppressWarnings("unchecked")
+    void setUp() {
+      when(client.newJobSearchRequest()).thenReturn(searchRequest);
+      when(searchRequest.send()).thenReturn(future);
+      when(future.join()).thenReturn(searchResponse);
+      when(searchResponse.items()).thenReturn(Collections.emptyList());
+    }
+
+    @Test
+    void shouldNotApplyStartTimeFilterWhenNotSet() {
+      // given
+      final CamundaDataSource dataSource = new CamundaDataSource(client);
+
+      // when
+      dataSource.findJobs(f -> {});
+
+      // then
+      verify(searchRequest).filter(filterCaptor.capture());
+      filterCaptor.getValue().accept(jobFilter);
+      verify(jobFilter, never()).creationTime(any(Consumer.class));
+    }
+
+    @Test
+    void shouldApplyStartTimeFilterToJobs() {
+      // given
+      final CamundaDataSource dataSource = new CamundaDataSource(client, START_TIME);
+
+      // when
+      dataSource.findJobs(f -> {});
+
+      // then
+      verify(searchRequest).filter(filterCaptor.capture());
+      filterCaptor.getValue().accept(jobFilter);
+      verify(jobFilter).creationTime(any(Consumer.class));
     }
   }
 

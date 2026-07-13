@@ -25,6 +25,7 @@ import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.response.Job;
 import io.camunda.client.api.search.response.UserTask;
+import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.assertions.util.InstantProbeAwaitBehavior;
 import io.camunda.process.test.impl.client.CamundaClockClient;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
@@ -93,7 +94,8 @@ class CamundaProcessTestContextAwaitBehaviorResolutionTest {
             clockClient,
             CamundaAssert::getAwaitBehavior,
             jsonMapper,
-            engine);
+            engine,
+            () -> new CamundaDataSource(camundaClient));
 
     engine.start(
         () -> {},

@@ -22,6 +22,7 @@ import io.camunda.client.api.search.filter.CorrelatedMessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
+import io.camunda.client.api.search.filter.JobFilter;
 import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
@@ -32,6 +33,7 @@ import io.camunda.client.api.search.response.DecisionDefinition;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Incident;
+import io.camunda.client.api.search.response.Job;
 import io.camunda.client.api.search.response.MessageSubscription;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.ProcessInstance;
@@ -72,6 +74,14 @@ public class CamundaDataSource {
     this.client = client;
     this.testCaseStartTime =
         testCaseStartTime != null ? testCaseStartTime.atOffset(ZoneOffset.UTC) : null;
+  }
+
+  /**
+   * Returns the test case start time used for time-scoping queries, or {@code null} if no filter is
+   * set.
+   */
+  public OffsetDateTime getTestCaseStartTime() {
+    return testCaseStartTime;
   }
 
   public byte[] getDocumentContent(final DocumentReferenceResponse reference) {
@@ -241,6 +251,24 @@ public class CamundaDataSource {
       return filter;
     }
     return ((Consumer<UserTaskFilter>) f -> f.creationDate(b -> b.gte(testCaseStartTime)))
+        .andThen(filter);
+  }
+
+  public List<Job> findJobs(final Consumer<JobFilter> filter) {
+    return client
+        .newJobSearchRequest()
+        .filter(withJobStartTimeFilter(filter))
+        .page(DEFAULT_PAGE_REQUEST)
+        .send()
+        .join()
+        .items();
+  }
+
+  private Consumer<JobFilter> withJobStartTimeFilter(final Consumer<JobFilter> filter) {
+    if (testCaseStartTime == null) {
+      return filter;
+    }
+    return ((Consumer<JobFilter>) f -> f.creationTime(b -> b.gte(testCaseStartTime)))
         .andThen(filter);
   }
 

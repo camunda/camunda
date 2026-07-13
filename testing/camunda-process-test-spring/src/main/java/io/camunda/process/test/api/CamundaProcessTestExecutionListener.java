@@ -145,7 +145,8 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
             camundaManagementClient,
             CamundaAssert::getAwaitBehavior,
             jsonMapper,
-            conditionalBehaviorEngine);
+            conditionalBehaviorEngine,
+            () -> dataSource);
 
     // create process coverage
     final CoverageReportConfiguration coverageReportConfiguration =
@@ -187,10 +188,6 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     // initialize assertions
     testCaseStartTime = readCurrentRuntimeTime();
     dataSource = new CamundaDataSource(client, testCaseStartTime);
-    if (camundaProcessTestContext instanceof CamundaProcessTestContextImpl) {
-      ((CamundaProcessTestContextImpl) camundaProcessTestContext)
-          .setTestCaseStartTime(testCaseStartTime);
-    }
     CamundaAssert.initialize(dataSource);
 
     // initialize result collector
