@@ -129,6 +129,15 @@ public final class CslAuthorizationCheck {
   }
 
   /**
+   * Direct authentication-based check with a context value, for multi-check callers that have
+   * already resolved the principal via {@link #resolveForCheck}.
+   */
+  public <T> io.camunda.security.api.model.Either<AuthorizationRejection, Void> checkAuth(
+      final CamundaAuthentication auth, final RequiredAuthorization<T> required, final T ctx) {
+    return authzService.check(auth, required, ctx);
+  }
+
+  /**
    * Full authorization check for single-check sites.
    *
    * <p>Applies {@link #resolveForCheck} and, if a principal is present, delegates to {@link

@@ -176,6 +176,22 @@ public class AuthorizationArchTest {
                     RequiredAuthorization.class,
                     Object.class,
                     Rejection.class))
+            // Or the class should delegate an already-resolved-principal check to
+            // CslAuthorizationCheck.checkAuth (used by UserTaskAuthorizationCheck for the
+            // per-alternative resource-id and property-scoped grants)
+            .or(
+                ArchConditions.callMethod(
+                    CslAuthorizationCheck.class,
+                    "checkAuth",
+                    CamundaAuthentication.class,
+                    RequiredAuthorization.class))
+            .or(
+                ArchConditions.callMethod(
+                    CslAuthorizationCheck.class,
+                    "checkAuth",
+                    CamundaAuthentication.class,
+                    RequiredAuthorization.class,
+                    Object.class))
             // Or the UserTask processors should delegate the OR-orchestration to
             // UserTaskAuthorizationCheck
             .or(

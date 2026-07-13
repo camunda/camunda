@@ -11,7 +11,6 @@ import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.AuthorizationRejection;
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.core.auth.RequiredAuthorization.Builder;
-import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
@@ -51,12 +50,9 @@ public final class UserTaskAuthorizationCheck {
       " or resource must match property constraints '[%s]'";
 
   private final CslAuthorizationCheck cslCheck;
-  private final AuthorizationCheckPort authzService;
 
-  public UserTaskAuthorizationCheck(
-      final CslAuthorizationCheck cslCheck, final AuthorizationCheckPort authzService) {
+  public UserTaskAuthorizationCheck(final CslAuthorizationCheck cslCheck) {
     this.cslCheck = cslCheck;
-    this.authzService = authzService;
   }
 
   /**
@@ -138,7 +134,7 @@ public final class UserTaskAuthorizationCheck {
       return Optional.empty();
     }
     final var byProperty =
-        authzService.check(
+        cslCheck.checkAuth(
             auth,
             RequiredAuthorization.<UserTaskRecord>of(
                 b -> properties.declareOn(b.userTask().permissionType(cslPermission))),
@@ -152,7 +148,7 @@ public final class UserTaskAuthorizationCheck {
   private io.camunda.security.api.model.Either<AuthorizationRejection, Void> authorized(
       final CamundaAuthentication auth,
       final UnaryOperator<RequiredAuthorization.Builder<UserTaskRecord>> spec) {
-    return authzService.check(auth, RequiredAuthorization.of(spec::apply));
+    return cslCheck.checkAuth(auth, RequiredAuthorization.of(spec::apply));
   }
 
   private static Optional<String> reasonIfDenied(

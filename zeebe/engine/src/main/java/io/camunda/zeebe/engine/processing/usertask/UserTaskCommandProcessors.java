@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.usertask;
 
-import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
@@ -39,7 +38,6 @@ public final class UserTaskCommandProcessors {
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final AuthorizationCheckPort authzService,
       final CslAuthorizationCheck cslCheck) {
     final EventHandle eventHandle =
         new EventHandle(
@@ -50,7 +48,7 @@ public final class UserTaskCommandProcessors {
             bpmnBehaviors.eventTriggerBehavior(),
             bpmnBehaviors.stateBehavior());
 
-    final var userTaskAuth = new UserTaskAuthorizationCheck(cslCheck, authzService);
+    final var userTaskAuth = new UserTaskAuthorizationCheck(cslCheck);
 
     commandToProcessor =
         new EnumMap<>(
