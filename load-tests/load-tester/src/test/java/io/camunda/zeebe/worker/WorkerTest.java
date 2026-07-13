@@ -8,6 +8,7 @@
 package io.camunda.zeebe.worker;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -18,10 +19,13 @@ import static org.mockito.Mockito.when;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
+import io.camunda.client.api.command.FailJobCommandStep1;
+import io.camunda.client.api.command.FailJobCommandStep1.FailJobCommandStep2;
 import io.camunda.client.api.command.PublishMessageCommandStep1;
 import io.camunda.client.api.command.PublishMessageCommandStep1.PublishMessageCommandStep2;
 import io.camunda.client.api.command.PublishMessageCommandStep1.PublishMessageCommandStep3;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.response.FailJobResponse;
 import io.camunda.client.api.response.PublishMessageResponse;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.zeebe.config.LoadTesterProperties;
@@ -61,6 +65,42 @@ class WorkerTest {
     verify(jobClient, never()).newCompleteCommand(job);
     verify(jobClient, never()).newFailCommand(anyLong());
     verify(jobClient, never()).newFailCommand(job);
+  }
+
+  @Test
+  void shouldFailJobWithZeroRetriesWhenIncidentRatioForcesGeneration() {
+    // given — a worker configured to generate an incident for every job (ratio = 1)
+    final var jobClient = mock(JobClient.class);
+    final var job = mockJob();
+    final var client = mock(CamundaClient.class);
+    final var failStep1 = mockFailJob(jobClient);
+    final var worker = newWorker(client, incidentProperties(1.0));
+
+    // when
+    worker.handleJob(jobClient, job);
+
+    // then — the job is failed with zero retries to mint an incident and never completed
+    verify(jobClient).newFailCommand(job.getKey());
+    verify(failStep1).retries(0);
+    verify(jobClient, never()).newCompleteCommand(anyLong());
+  }
+
+  @Test
+  void shouldCompleteJobWhenIncidentRatioIsZero() {
+    // given — incident generation disabled (the default ratio of 0)
+    final var jobClient = mock(JobClient.class);
+    final var job = mockJob();
+    final var client = mock(CamundaClient.class);
+    final var completeStep = mockCompleteJob(jobClient);
+    final var worker = newWorker(client, incidentProperties(0));
+
+    // when
+    worker.handleJob(jobClient, job);
+
+    // then — the job is completed and never failed
+    verify(jobClient).newCompleteCommand(job.getKey());
+    verify(completeStep).send();
+    verify(jobClient, never()).newFailCommand(anyLong());
   }
 
   @Test
@@ -107,6 +147,13 @@ class WorkerTest {
     return props;
   }
 
+  private static WorkerProperties incidentProperties(final double incidentRatio) {
+    final var props = new WorkerProperties();
+    props.setCompletionDelay(Duration.ZERO);
+    props.setIncidentRatio(incidentRatio);
+    return props;
+  }
+
   private static Worker newWorker(final CamundaClient client, final WorkerProperties workerProps) {
     final var properties = new LoadTesterProperties();
     properties.setWorker(workerProps);
@@ -142,6 +189,18 @@ class WorkerTest {
     when(step3.send()).thenReturn(future);
     when(future.get(anyLong(), org.mockito.ArgumentMatchers.any(TimeUnit.class)))
         .thenReturn(mock(PublishMessageResponse.class));
+  }
+
+  @SuppressWarnings("unchecked")
+  private static FailJobCommandStep1 mockFailJob(final JobClient jobClient) {
+    final var failStep1 = mock(FailJobCommandStep1.class);
+    final var failStep2 = mock(FailJobCommandStep2.class);
+    final CamundaFuture<FailJobResponse> future = mock(CamundaFuture.class);
+    when(jobClient.newFailCommand(anyLong())).thenReturn(failStep1);
+    when(failStep1.retries(anyInt())).thenReturn(failStep2);
+    when(failStep2.errorMessage(anyString())).thenReturn(failStep2);
+    when(failStep2.send()).thenReturn((CamundaFuture) future);
+    return failStep1;
   }
 
   @SuppressWarnings("unchecked")
