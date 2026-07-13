@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-class FileBasedSecretStoreTest {
+class PropertiesBasedSecretStoreTest {
 
   @TempDir Path tempDir;
 
@@ -33,13 +33,13 @@ class FileBasedSecretStoreTest {
   void shouldResolveKnownSecret() throws IOException {
     // given
     final var file = writeProperties("db-password=s3cr3t");
-    final var store = new FileBasedSecretStore(file);
+    final var store = new PropertiesBasedSecretStore(file);
 
     // when
-    final var result = store.resolve(Set.of(new FileBasedSecretReference("db-password")));
+    final var result = store.resolve(Set.of(new PropertiesBasedSecretReference("db-password")));
 
     // then
-    assertThat(result.get(new FileBasedSecretReference("db-password")))
+    assertThat(result.get(new PropertiesBasedSecretReference("db-password")))
         .isInstanceOf(SecretResolutionResult.Resolved.class)
         .extracting(r -> ((SecretResolutionResult.Resolved) r).value())
         .isEqualTo("s3cr3t");
@@ -49,13 +49,13 @@ class FileBasedSecretStoreTest {
   void shouldReturnFailedForUnknownRef() throws IOException {
     // given
     final var file = writeProperties("other=value");
-    final var store = new FileBasedSecretStore(file);
+    final var store = new PropertiesBasedSecretStore(file);
 
     // when
-    final var result = store.resolve(Set.of(new FileBasedSecretReference("missing")));
+    final var result = store.resolve(Set.of(new PropertiesBasedSecretReference("missing")));
 
     // then
-    final var entry = result.get(new FileBasedSecretReference("missing"));
+    final var entry = result.get(new PropertiesBasedSecretReference("missing"));
     assertThat(entry).isInstanceOf(SecretResolutionResult.Failed.class);
     assertThat(((SecretResolutionResult.Failed) entry).code()).isEqualTo(SecretErrorCode.NOT_FOUND);
   }
@@ -64,27 +64,27 @@ class FileBasedSecretStoreTest {
   void shouldResolveMultipleRefsInOneBatch() throws IOException {
     // given
     final var file = writeProperties("a=1\nb=2");
-    final var store = new FileBasedSecretStore(file);
+    final var store = new PropertiesBasedSecretStore(file);
 
     // when
     final var refs =
         Set.of(
-            new FileBasedSecretReference("a"),
-            new FileBasedSecretReference("b"),
-            new FileBasedSecretReference("missing"));
+            new PropertiesBasedSecretReference("a"),
+            new PropertiesBasedSecretReference("b"),
+            new PropertiesBasedSecretReference("missing"));
     final var result = store.resolve(refs);
 
     // then — result map contains an entry for every requested ref
     assertThat(result)
         .containsKeys(
-            new FileBasedSecretReference("a"),
-            new FileBasedSecretReference("b"),
-            new FileBasedSecretReference("missing"));
-    assertThat(result.get(new FileBasedSecretReference("a")))
+            new PropertiesBasedSecretReference("a"),
+            new PropertiesBasedSecretReference("b"),
+            new PropertiesBasedSecretReference("missing"));
+    assertThat(result.get(new PropertiesBasedSecretReference("a")))
         .isInstanceOf(SecretResolutionResult.Resolved.class);
-    assertThat(result.get(new FileBasedSecretReference("b")))
+    assertThat(result.get(new PropertiesBasedSecretReference("b")))
         .isInstanceOf(SecretResolutionResult.Resolved.class);
-    assertThat(result.get(new FileBasedSecretReference("missing")))
+    assertThat(result.get(new PropertiesBasedSecretReference("missing")))
         .isInstanceOf(SecretResolutionResult.Failed.class);
   }
 
@@ -92,7 +92,7 @@ class FileBasedSecretStoreTest {
   void shouldListAllSecrets() throws IOException {
     // given
     final var file = writeProperties("a=1\nb=2\nc=3");
-    final var store = new FileBasedSecretStore(file);
+    final var store = new PropertiesBasedSecretStore(file);
 
     // when
     final var list = store.list();
@@ -100,22 +100,22 @@ class FileBasedSecretStoreTest {
     // then
     assertThat(list)
         .containsExactlyInAnyOrder(
-            new FileBasedSecretReference("a"),
-            new FileBasedSecretReference("b"),
-            new FileBasedSecretReference("c"));
+            new PropertiesBasedSecretReference("a"),
+            new PropertiesBasedSecretReference("b"),
+            new PropertiesBasedSecretReference("c"));
   }
 
   @Test
   void shouldPickUpRotatedValue() throws IOException {
     // given
     final var file = writeProperties("api-key=old-value");
-    final var store = new FileBasedSecretStore(file);
+    final var store = new PropertiesBasedSecretStore(file);
 
     // when — first resolve returns old value
     assertThat(
             store
-                .resolve(Set.of(new FileBasedSecretReference("api-key")))
-                .get(new FileBasedSecretReference("api-key")))
+                .resolve(Set.of(new PropertiesBasedSecretReference("api-key")))
+                .get(new PropertiesBasedSecretReference("api-key")))
         .isInstanceOf(SecretResolutionResult.Resolved.class)
         .extracting(r -> ((SecretResolutionResult.Resolved) r).value())
         .isEqualTo("old-value");
@@ -126,8 +126,8 @@ class FileBasedSecretStoreTest {
     // then — second resolve picks up the new value without restart
     assertThat(
             store
-                .resolve(Set.of(new FileBasedSecretReference("api-key")))
-                .get(new FileBasedSecretReference("api-key")))
+                .resolve(Set.of(new PropertiesBasedSecretReference("api-key")))
+                .get(new PropertiesBasedSecretReference("api-key")))
         .isInstanceOf(SecretResolutionResult.Resolved.class)
         .extracting(r -> ((SecretResolutionResult.Resolved) r).value())
         .isEqualTo("new-value");
@@ -136,8 +136,8 @@ class FileBasedSecretStoreTest {
   @Test
   void shouldThrowWhenResolvingMissingFile() {
     // given
-    final var store = new FileBasedSecretStore(tempDir.resolve("nonexistent.properties"));
-    final var ref = new FileBasedSecretReference("any");
+    final var store = new PropertiesBasedSecretStore(tempDir.resolve("nonexistent.properties"));
+    final var ref = new PropertiesBasedSecretReference("any");
 
     // when / then
     assertThatThrownBy(() -> store.resolve(Set.of(ref)))
@@ -147,7 +147,7 @@ class FileBasedSecretStoreTest {
   @Test
   void shouldThrowWhenListingMissingFile() {
     // given
-    final var store = new FileBasedSecretStore(tempDir.resolve("nonexistent.properties"));
+    final var store = new PropertiesBasedSecretStore(tempDir.resolve("nonexistent.properties"));
 
     // when / then
     assertThatThrownBy(store::list).isInstanceOf(SecretStoreUnavailableException.class);
@@ -158,10 +158,10 @@ class FileBasedSecretStoreTest {
     // given
     final var file = tempDir.resolve("secrets.properties");
     Files.writeString(file, "bad=\\uZZZZ\n", StandardCharsets.UTF_8);
-    final var store = new FileBasedSecretStore(file);
+    final var store = new PropertiesBasedSecretStore(file);
 
     // when / then
-    assertThatThrownBy(() -> store.resolve(Set.of(new FileBasedSecretReference("bad"))))
+    assertThatThrownBy(() -> store.resolve(Set.of(new PropertiesBasedSecretReference("bad"))))
         .isInstanceOf(SecretStoreUnavailableException.class);
   }
 
@@ -170,7 +170,7 @@ class FileBasedSecretStoreTest {
     // given — a properties file with a malformed unicode escape
     final var file = tempDir.resolve("secrets.properties");
     Files.writeString(file, "bad=\\uZZZZ\n", StandardCharsets.UTF_8);
-    final var store = new FileBasedSecretStore(file);
+    final var store = new PropertiesBasedSecretStore(file);
 
     // when / then
     assertThatThrownBy(store::list).isInstanceOf(SecretStoreUnavailableException.class);
@@ -181,26 +181,26 @@ class FileBasedSecretStoreTest {
     // given — a properties file with an empty-key entry and a normal entry
     final var file = tempDir.resolve("secrets.properties");
     Files.writeString(file, "=orphaned-value\na=1\n", StandardCharsets.UTF_8);
-    final var store = new FileBasedSecretStore(file);
+    final var store = new PropertiesBasedSecretStore(file);
 
     // when
     final var refs = store.list();
 
     // then
-    assertThat(refs).containsExactly(new FileBasedSecretReference("a"));
+    assertThat(refs).containsExactly(new PropertiesBasedSecretReference("a"));
   }
 
   @Test
   void shouldHandleUtf8Values() throws IOException {
     // given — non-Latin-1 characters that would be mangled by ISO-8859-1
     final var file = writeProperties("token=café-中文\n");
-    final var store = new FileBasedSecretStore(file);
+    final var store = new PropertiesBasedSecretStore(file);
 
     // when
-    final var result = store.resolve(Set.of(new FileBasedSecretReference("token")));
+    final var result = store.resolve(Set.of(new PropertiesBasedSecretReference("token")));
 
     // then
-    assertThat(result.get(new FileBasedSecretReference("token")))
+    assertThat(result.get(new PropertiesBasedSecretReference("token")))
         .isInstanceOf(SecretResolutionResult.Resolved.class)
         .extracting(r -> ((SecretResolutionResult.Resolved) r).value())
         .isEqualTo("café-中文");
@@ -211,32 +211,36 @@ class FileBasedSecretStoreTest {
     // given — values containing characters that are special in .properties format (escaped)
     final var file =
         writeProperties("key1=val\\=ue\nkey2=has\\:colon\nkey3= padded\nkey4=back\\\\slash\n");
-    final var store = new FileBasedSecretStore(file);
+    final var store = new PropertiesBasedSecretStore(file);
 
     // when
     final var result =
         store.resolve(
             Set.of(
-                new FileBasedSecretReference("key1"),
-                new FileBasedSecretReference("key2"),
-                new FileBasedSecretReference("key3"),
-                new FileBasedSecretReference("key4")));
+                new PropertiesBasedSecretReference("key1"),
+                new PropertiesBasedSecretReference("key2"),
+                new PropertiesBasedSecretReference("key3"),
+                new PropertiesBasedSecretReference("key4")));
 
     // then
     assertThat(
-            ((SecretResolutionResult.Resolved) result.get(new FileBasedSecretReference("key1")))
+            ((SecretResolutionResult.Resolved)
+                    result.get(new PropertiesBasedSecretReference("key1")))
                 .value())
         .isEqualTo("val=ue");
     assertThat(
-            ((SecretResolutionResult.Resolved) result.get(new FileBasedSecretReference("key2")))
+            ((SecretResolutionResult.Resolved)
+                    result.get(new PropertiesBasedSecretReference("key2")))
                 .value())
         .isEqualTo("has:colon");
     assertThat(
-            ((SecretResolutionResult.Resolved) result.get(new FileBasedSecretReference("key3")))
+            ((SecretResolutionResult.Resolved)
+                    result.get(new PropertiesBasedSecretReference("key3")))
                 .value())
         .isEqualTo("padded");
     assertThat(
-            ((SecretResolutionResult.Resolved) result.get(new FileBasedSecretReference("key4")))
+            ((SecretResolutionResult.Resolved)
+                    result.get(new PropertiesBasedSecretReference("key4")))
                 .value())
         .isEqualTo("back\\slash");
   }
@@ -245,7 +249,7 @@ class FileBasedSecretStoreTest {
   void shouldBeThreadSafe() throws IOException, InterruptedException {
     // given
     final var file = writeProperties("secret=value");
-    final var store = new FileBasedSecretStore(file);
+    final var store = new PropertiesBasedSecretStore(file);
     final int threadCount = 10;
     final int callsPerThread = 100;
     final var latch = new CountDownLatch(1);
@@ -259,8 +263,9 @@ class FileBasedSecretStoreTest {
             try {
               latch.await();
               for (int j = 0; j < callsPerThread; j++) {
-                final var result = store.resolve(Set.of(new FileBasedSecretReference("secret")));
-                if (!(result.get(new FileBasedSecretReference("secret"))
+                final var result =
+                    store.resolve(Set.of(new PropertiesBasedSecretReference("secret")));
+                if (!(result.get(new PropertiesBasedSecretReference("secret"))
                     instanceof SecretResolutionResult.Resolved)) {
                   errors.incrementAndGet();
                 }

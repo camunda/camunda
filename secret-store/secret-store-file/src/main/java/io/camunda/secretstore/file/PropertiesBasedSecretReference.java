@@ -10,8 +10,9 @@ package io.camunda.secretstore.file;
 import io.camunda.secretstore.SecretReference;
 import java.util.Objects;
 
-public record FileBasedSecretReference(String name) implements SecretReference {
-  public FileBasedSecretReference {
+/** A secret reference resolved by {@link PropertiesBasedSecretStore}, identified by its key. */
+public record PropertiesBasedSecretReference(String name) implements SecretReference {
+  public PropertiesBasedSecretReference {
     Objects.requireNonNull(name, "name must not be null");
     if (name.isBlank()) {
       throw new IllegalArgumentException("name must not be blank");

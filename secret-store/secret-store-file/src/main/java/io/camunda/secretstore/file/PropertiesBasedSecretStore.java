@@ -24,19 +24,25 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class FileBasedSecretStore implements SecretStore<FileBasedSecretReference> {
+/**
+ * A secret store backed by a single Java {@code .properties} file: each property key is a secret
+ * name and its value the secret. The file is re-read on every call, so rotated values are picked up
+ * without a restart.
+ */
+public final class PropertiesBasedSecretStore
+    implements SecretStore<PropertiesBasedSecretReference> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(FileBasedSecretStore.class);
+  private static final Logger LOG = LoggerFactory.getLogger(PropertiesBasedSecretStore.class);
 
   private final Path filePath;
 
-  public FileBasedSecretStore(final Path filePath) {
+  public PropertiesBasedSecretStore(final Path filePath) {
     this.filePath = filePath;
   }
 
   @Override
-  public Map<FileBasedSecretReference, SecretResolutionResult> resolve(
-      final Set<FileBasedSecretReference> refs) {
+  public Map<PropertiesBasedSecretReference, SecretResolutionResult> resolve(
+      final Set<PropertiesBasedSecretReference> refs) {
     if (refs.isEmpty()) {
       return Map.of();
     }
@@ -56,12 +62,12 @@ public final class FileBasedSecretStore implements SecretStore<FileBasedSecretRe
   }
 
   @Override
-  public Collection<FileBasedSecretReference> list() {
+  public Collection<PropertiesBasedSecretReference> list() {
     final var props = loadProperties();
     final var refs =
         props.stringPropertyNames().stream()
             .filter(name -> !name.isBlank())
-            .map(FileBasedSecretReference::new)
+            .map(PropertiesBasedSecretReference::new)
             .toList();
     LOG.debug("Listing {} secrets from '{}'", refs.size(), filePath);
     return refs;

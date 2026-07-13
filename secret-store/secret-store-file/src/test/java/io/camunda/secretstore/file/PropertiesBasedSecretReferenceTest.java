@@ -13,11 +13,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.util.HashMap;
 import org.junit.jupiter.api.Test;
 
-class FileBasedSecretReferenceTest {
+class PropertiesBasedSecretReferenceTest {
   @Test
   void shouldCreateWithName() {
     // given / when
-    final var ref = new FileBasedSecretReference("my-secret");
+    final var ref = new PropertiesBasedSecretReference("my-secret");
 
     // then
     assertThat(ref.name()).isEqualTo("my-secret");
@@ -25,21 +25,21 @@ class FileBasedSecretReferenceTest {
 
   @Test
   void shouldRejectNullName() {
-    assertThatThrownBy(() -> new FileBasedSecretReference(null))
+    assertThatThrownBy(() -> new PropertiesBasedSecretReference(null))
         .isInstanceOf(NullPointerException.class)
         .hasMessageContaining("name must not be null");
   }
 
   @Test
   void shouldRejectBlankName() {
-    assertThatThrownBy(() -> new FileBasedSecretReference("   "))
+    assertThatThrownBy(() -> new PropertiesBasedSecretReference("   "))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("name must not be blank");
   }
 
   @Test
   void shouldRejectEmptyName() {
-    assertThatThrownBy(() -> new FileBasedSecretReference(""))
+    assertThatThrownBy(() -> new PropertiesBasedSecretReference(""))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("name must not be blank");
   }
@@ -47,8 +47,8 @@ class FileBasedSecretReferenceTest {
   @Test
   void shouldSupportEqualityAndHashCode() {
     // given
-    final var ref1 = new FileBasedSecretReference("my-secret");
-    final var ref2 = new FileBasedSecretReference("my-secret");
+    final var ref1 = new PropertiesBasedSecretReference("my-secret");
+    final var ref2 = new PropertiesBasedSecretReference("my-secret");
 
     // then
     assertThat(ref1).isEqualTo(ref2);
@@ -58,11 +58,11 @@ class FileBasedSecretReferenceTest {
   @Test
   void shouldBeUsableAsMapKey() {
     // given
-    final var map = new HashMap<FileBasedSecretReference, String>();
-    final var ref = new FileBasedSecretReference("my-secret");
+    final var map = new HashMap<PropertiesBasedSecretReference, String>();
+    final var ref = new PropertiesBasedSecretReference("my-secret");
     map.put(ref, "value");
 
     // when / then
-    assertThat(map.get(new FileBasedSecretReference("my-secret"))).isEqualTo("value");
+    assertThat(map.get(new PropertiesBasedSecretReference("my-secret"))).isEqualTo("value");
   }
 }
