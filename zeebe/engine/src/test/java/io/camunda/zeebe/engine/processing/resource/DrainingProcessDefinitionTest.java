@@ -17,6 +17,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.ConditionalEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
@@ -318,14 +319,19 @@ public class DrainingProcessDefinitionTest {
     final var metadata = deployWithStartEvent(processId, start -> start.message("start-message"));
     drain(metadata);
 
-    // when - a message correlates to the (still-subscribed) message start event
+    // when - a message is published against the (still-subscribed) message start event
     engine.message().withName("start-message").withCorrelationKey("key").publish();
-    RecordingExporter.messageStartEventSubscriptionRecords(
-            MessageStartEventSubscriptionIntent.CORRELATED)
-        .withProcessDefinitionKey(metadata.getProcessDefinitionKey())
-        .await();
 
-    // then
+    // then - the message is not correlated to a phantom instance and no instance is spawned
+    Assertions.assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    RecordingExporter.messageStartEventSubscriptionRecords(
+                            MessageStartEventSubscriptionIntent.CORRELATED)
+                        .withProcessDefinitionKey(metadata.getProcessDefinitionKey())
+                        .exists()))
+        .describedAs("message is not correlated to a draining definition's start subscription")
+        .isFalse();
     assertNoInstanceSpawned(metadata.getProcessDefinitionKey());
   }
 
@@ -357,7 +363,13 @@ public class DrainingProcessDefinitionTest {
     // when - the conditional start event's condition is evaluated to true
     engine.conditionalEvaluation().withVariables(Map.of("x", 100, "y", 1)).evaluate();
 
-    // then - the guard blocks the activation
+    // then - the guard blocks the activation and the draining definition is not reported as started
+    final var evaluated =
+        RecordingExporter.conditionalEvaluationRecords(ConditionalEvaluationIntent.EVALUATED)
+            .getFirst();
+    Assertions.assertThat(evaluated.getValue().getStartedProcessInstances())
+        .describedAs("a draining definition is not reported as a started instance")
+        .isEmpty();
     assertNoInstanceSpawned(metadata.getProcessDefinitionKey());
   }
 

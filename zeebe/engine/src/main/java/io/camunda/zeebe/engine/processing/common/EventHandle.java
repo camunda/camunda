@@ -204,22 +204,28 @@ public final class EventHandle {
         .setVariables(variables)
         .setTenantId(subscription.getTenantId());
 
+    // Activate first so a draining (or removed) definition short-circuits
+    final var activated =
+        activateProcessInstanceForStartEvent(
+            subscription.getProcessDefinitionKey(),
+            newProcessInstanceKey,
+            startEventSubscriptionRecord.getStartEventIdBuffer(),
+            variables,
+            subscription.getTenantId());
+
+    if (!activated) {
+      return -1L;
+    }
+
     stateWriter.appendFollowUpEvent(
         subscriptionKey,
         MessageStartEventSubscriptionIntent.CORRELATED,
         startEventSubscriptionRecord);
 
-    activateProcessInstanceForStartEvent(
-        subscription.getProcessDefinitionKey(),
-        newProcessInstanceKey,
-        startEventSubscriptionRecord.getStartEventIdBuffer(),
-        variables,
-        subscription.getTenantId());
-
     return newProcessInstanceKey;
   }
 
-  public void activateProcessInstanceForStartEvent(
+  public boolean activateProcessInstanceForStartEvent(
       final long processDefinitionKey,
       final long processInstanceKey,
       final DirectBuffer targetElementId,
@@ -229,7 +235,7 @@ public final class EventHandle {
     final var process = processState.getProcessByKeyAndTenant(processDefinitionKey, tenantId);
     if (process == null || process.getState() == PersistedProcessState.DRAINING) {
       // Never spawn a new instance on a draining (or already removed) definition
-      return;
+      return false;
     }
 
     triggeringProcessEvent(
@@ -251,5 +257,6 @@ public final class EventHandle {
 
     commandWriter.appendFollowUpCommand(
         processInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, recordForPICreation);
+    return true;
   }
 }
