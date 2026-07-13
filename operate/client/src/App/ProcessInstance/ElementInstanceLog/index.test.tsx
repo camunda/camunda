@@ -409,7 +409,7 @@ describe('ElementInstanceLog — search flow', () => {
     );
 
     expect(
-      screen.getByLabelText('Search instance history'),
+      screen.getByRole('searchbox', {name: 'Search instance history'}),
     ).toBeInTheDocument();
   });
 
@@ -449,13 +449,13 @@ describe('ElementInstanceLog — search flow', () => {
     );
 
     expect(
-      screen.getByLabelText('Search instance history'),
+      screen.getByRole('searchbox', {name: 'Search instance history'}),
     ).toBeInTheDocument();
 
     modificationsStore.enableModificationMode();
 
     await waitForElementToBeRemoved(
-      screen.queryByLabelText('Search instance history'),
+      screen.queryByRole('searchbox', {name: 'Search instance history'}),
     );
 
     modificationsStore.reset();

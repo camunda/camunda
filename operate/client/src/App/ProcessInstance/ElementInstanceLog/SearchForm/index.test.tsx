@@ -60,7 +60,10 @@ describe('<SearchForm />', () => {
       ),
     });
 
-    await user.type(screen.getByLabelText('Search instance history'), 'order');
+    await user.type(
+      screen.getByRole('searchbox', {name: 'Search instance history'}),
+      'order',
+    );
 
     vi.runOnlyPendingTimers();
 
@@ -80,9 +83,9 @@ describe('<SearchForm />', () => {
       ),
     });
 
-    expect(screen.getByLabelText('Search instance history')).toHaveValue(
-      'order task',
-    );
+    expect(
+      screen.getByRole('searchbox', {name: 'Search instance history'}),
+    ).toHaveValue('order task');
   });
 
   it('removes the URL param when the input is cleared', async () => {

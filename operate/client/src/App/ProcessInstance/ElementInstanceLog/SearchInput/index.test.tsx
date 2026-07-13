@@ -12,7 +12,9 @@ import {SearchInput} from './index';
 describe('<SearchInput />', () => {
   it('renders with the documented placeholder and aria-label', () => {
     render(<SearchInput value="" onChange={vi.fn()} onClear={vi.fn()} />);
-    const input = screen.getByLabelText('Search instance history');
+    const input = screen.getByRole('searchbox', {
+      name: 'Search instance history',
+    });
     expect(input).toBeInTheDocument();
     expect(input).toHaveAttribute('placeholder', 'Element name or ID');
   });
@@ -21,7 +23,9 @@ describe('<SearchInput />', () => {
     render(
       <SearchInput value="Validate" onChange={vi.fn()} onClear={vi.fn()} />,
     );
-    const input = screen.getByLabelText('Search instance history');
+    const input = screen.getByRole('searchbox', {
+      name: 'Search instance history',
+    });
     expect(input).toHaveValue('Validate');
   });
 
@@ -30,7 +34,9 @@ describe('<SearchInput />', () => {
     const {user} = render(
       <SearchInput value="" onChange={onChange} onClear={vi.fn()} />,
     );
-    const input = screen.getByLabelText('Search instance history');
+    const input = screen.getByRole('searchbox', {
+      name: 'Search instance history',
+    });
     await user.type(input, 'a');
     expect(onChange).toHaveBeenCalledWith('a');
   });
