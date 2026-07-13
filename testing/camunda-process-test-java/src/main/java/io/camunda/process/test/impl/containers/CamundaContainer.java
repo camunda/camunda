@@ -47,7 +47,7 @@ import org.testcontainers.utility.DockerImageName;
 
 public class CamundaContainer extends GenericContainer<CamundaContainer> {
 
-  private static final Duration DEFAULT_STARTUP_TIMEOUT = Duration.ofMinutes(1);
+  private static final Duration DEFAULT_STARTUP_TIMEOUT = Duration.ofMinutes(2);
   private static final Duration DEFAULT_READINESS_TIMEOUT = Duration.ofSeconds(10);
 
   private static final String READY_ENDPOINT = "/actuator/health/status";
