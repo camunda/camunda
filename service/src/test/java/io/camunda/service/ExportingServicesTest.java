@@ -5,26 +5,28 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.admin.exporting;
+package io.camunda.service;
 
-import static io.camunda.zeebe.gateway.admin.exporting.ExportingControlServiceTest.RequestMatcher.requestTo;
+import static io.camunda.service.ExportingServicesTest.RequestMatcher.requestTo;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Named.named;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.BrokerMemberId;
+import io.camunda.service.management.IncompleteTopologyException;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
-import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
 import io.camunda.zeebe.protocol.impl.encoding.AdminResponse;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import java.time.Duration;
@@ -36,6 +38,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.jspecify.annotations.NonNull;
@@ -45,29 +48,38 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentMatcher;
 
-public class ExportingControlServiceTest {
+final class ExportingServicesTest {
+  private static final String PHYSICAL_TENANT_ID = "tenantA";
+
+  private ExportingServices makeService(final BrokerClient brokerClient) {
+    return new ExportingServices(
+        PHYSICAL_TENANT_ID,
+        brokerClient,
+        new SecurityContextProvider(),
+        new ApiServicesExecutorProvider(Executors.newVirtualThreadPerTaskExecutor()),
+        null);
+  }
 
   @ParameterizedTest
   @MethodSource("validTopologies")
   void shouldPauseOnAllBrokersAndPartitions(final BrokerClusterState topology) {
     // given
     final var client = setupBrokerClient(topology);
-    final var service = new ExportingControlService(client);
+    final var service = makeService(client);
 
     // when
     service.pauseExporting().join();
 
     // then
     for (final var partition : topology.getPartitions()) {
-      for (final var follower :
-          Optional.ofNullable(topology.getFollowersForPartition(partition)).orElse(Set.of())) {
-        verify(client).sendRequest(requestTo(partition, follower));
+      for (final var follower : topology.getFollowersForPartition(partition)) {
+        verify(client).sendRequestWithRetry(requestTo(partition, follower));
       }
-      verify(client).sendRequest(requestTo(partition, topology.getLeaderForPartition(partition)));
+      verify(client)
+          .sendRequestWithRetry(requestTo(partition, topology.getLeaderForPartition(partition)));
 
-      for (final var inactive :
-          Optional.ofNullable(topology.getInactiveNodesForPartition(partition)).orElse(Set.of())) {
-        verify(client).sendRequest(requestTo(partition, inactive));
+      for (final var inactive : topology.getInactiveNodesForPartition(partition)) {
+        verify(client).sendRequestWithRetry(requestTo(partition, inactive));
       }
     }
   }
@@ -77,7 +89,7 @@ public class ExportingControlServiceTest {
   void shouldFailOnIncompleteTopology(final BrokerClusterState topology) {
     // given
     final var client = setupBrokerClient(topology);
-    final var service = new ExportingControlService(client);
+    final var service = makeService(client);
 
     // then
     assertThatExceptionOfType(IncompleteTopologyException.class)
@@ -89,7 +101,7 @@ public class ExportingControlServiceTest {
   void shouldSucceedIfAllRequestsFinish(final BrokerClusterState topology) {
     // given
     final var client = setupBrokerClient(topology);
-    final var service = new ExportingControlService(client);
+    final var service = makeService(client);
 
     // then
     assertThat(service.pauseExporting()).succeedsWithin(Duration.ofSeconds(10));
@@ -100,23 +112,28 @@ public class ExportingControlServiceTest {
   void shouldFailIfAnyRequestFails(final BrokerClusterState topology) {
     // given
     final var client = setupBrokerClient(topology);
-    final var service = new ExportingControlService(client);
+    final var service = makeService(client);
 
     // when
-    when(client.sendRequest(requestTo(1, BrokerMemberId.from(1))))
-        .thenThrow(new RuntimeException("request failed"));
+    final var failure = new RuntimeException("request failed");
+    when(client.sendRequestWithRetry(requestTo(1, BrokerMemberId.from(1))))
+        .thenAnswer(invocation -> CompletableFuture.failedFuture(failure));
 
     // then
-    assertThatExceptionOfType(Throwable.class).isThrownBy(service::pauseExporting);
+    assertThat(service.pauseExporting())
+        .failsWithin(Duration.ofSeconds(10))
+        .withThrowableThat()
+        .havingRootCause()
+        .isSameAs(failure);
   }
 
   private BrokerClient setupBrokerClient(final BrokerClusterState topology) {
     final var client = mock(BrokerClient.class);
     final var topologyManager = mock(BrokerTopologyManager.class);
 
-    when(topologyManager.getTopology()).thenReturn(topology);
+    when(topologyManager.getTopology(eq(PHYSICAL_TENANT_ID))).thenReturn(topology);
     when(client.getTopologyManager()).thenReturn(topologyManager);
-    when(client.sendRequest(any()))
+    when(client.sendRequestWithRetry(any()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(new AdminResponse())));
     return client;
   }
@@ -209,14 +226,14 @@ public class ExportingControlServiceTest {
       }
 
       @Override
-      public Set<BrokerMemberId> getFollowersForPartition(final int partition) {
+      public @NonNull Set<BrokerMemberId> getFollowersForPartition(final int partition) {
         return topology.getOrDefault(partition, List.of()).stream()
             .skip(1)
             .collect(Collectors.toSet());
       }
 
       @Override
-      public Set<BrokerMemberId> getInactiveNodesForPartition(final int partition) {
+      public @NonNull Set<BrokerMemberId> getInactiveNodesForPartition(final int partition) {
         final var members = topology.getOrDefault(partition, List.of());
 
         return getBrokers().stream()
@@ -230,12 +247,12 @@ public class ExportingControlServiceTest {
       }
 
       @Override
-      public List<Integer> getPartitions() {
+      public @NonNull List<Integer> getPartitions() {
         return new ArrayList<>(topology.keySet());
       }
 
       @Override
-      public List<BrokerMemberId> getBrokers() {
+      public @NonNull List<BrokerMemberId> getBrokers() {
         return topology.values().stream().flatMap(Collection::stream).toList();
       }
 
@@ -261,7 +278,7 @@ public class ExportingControlServiceTest {
       }
 
       @Override
-      public String getClusterId() {
+      public @NonNull String getClusterId() {
         throw new UnsupportedOperationException();
       }
     };

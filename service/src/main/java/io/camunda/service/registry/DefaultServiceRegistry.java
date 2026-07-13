@@ -21,6 +21,7 @@ import io.camunda.service.DecisionInstanceServices;
 import io.camunda.service.DecisionRequirementsServices;
 import io.camunda.service.DocumentServices;
 import io.camunda.service.ElementInstanceServices;
+import io.camunda.service.ExportingServices;
 import io.camunda.service.ExpressionServices;
 import io.camunda.service.FormServices;
 import io.camunda.service.GlobalListenerServices;
@@ -86,6 +87,7 @@ public record DefaultServiceRegistry(
     Map<String, UserServices> userByTenant,
     Map<String, UserTaskServices> userTaskByTenant,
     Map<String, VariableServices> variableByTenant,
+    Map<String, ExportingServices> exportingByTenant,
     LicenseService licenseService)
     implements ServiceRegistry {
 
@@ -270,6 +272,11 @@ public record DefaultServiceRegistry(
   }
 
   @Override
+  public ExportingServices exportingServices(final String physicalTenantId) {
+    return byTenant(exportingByTenant, physicalTenantId);
+  }
+
+  @Override
   public LicenseService licenseService() {
     return licenseService;
   }
@@ -347,6 +354,7 @@ public record DefaultServiceRegistry(
     private final Map<String, UserServices> userByTenant = new HashMap<>();
     private final Map<String, UserTaskServices> userTaskByTenant = new HashMap<>();
     private final Map<String, VariableServices> variableByTenant = new HashMap<>();
+    private final Map<String, ExportingServices> exportingByTenant = new HashMap<>();
     private LicenseService licenseService;
 
     public Builder adHocSubProcessActivityServices(
@@ -532,6 +540,11 @@ public record DefaultServiceRegistry(
       return this;
     }
 
+    public Builder exportingServices(final String tenantId, final ExportingServices service) {
+      exportingByTenant.put(tenantId, service);
+      return this;
+    }
+
     public Builder licenseServices(final LicenseService service) {
       licenseService = service;
       return this;
@@ -573,6 +586,7 @@ public record DefaultServiceRegistry(
           Map.copyOf(userByTenant),
           Map.copyOf(userTaskByTenant),
           Map.copyOf(variableByTenant),
+          Map.copyOf(exportingByTenant),
           licenseService);
     }
   }

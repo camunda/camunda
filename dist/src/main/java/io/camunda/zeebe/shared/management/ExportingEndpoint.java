@@ -7,7 +7,10 @@
  */
 package io.camunda.zeebe.shared.management;
 
-import io.camunda.zeebe.gateway.admin.exporting.ExportingControlApi;
+import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.service.ExportingServices;
+import io.camunda.service.registry.ServiceRegistry;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.concurrent.CompletionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
@@ -22,11 +25,18 @@ import org.springframework.web.bind.annotation.RequestParam;
 public final class ExportingEndpoint {
   static final String PAUSE = "pause";
   static final String RESUME = "resume";
-  final ExportingControlApi exportingService;
+  final ExportingServices exportingServices;
 
   @Autowired
-  public ExportingEndpoint(final ExportingControlApi exportingService) {
-    this.exportingService = exportingService;
+  public ExportingEndpoint(final ServiceRegistry serviceRegistry) {
+    // TODO: The hardcoded default tenant will be removed in
+    //   https://github.com/camunda/camunda/issues/57011
+    this(serviceRegistry.exportingServices(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID));
+  }
+
+  @VisibleForTesting
+  public ExportingEndpoint(final ExportingServices exportingServices) {
+    this.exportingServices = exportingServices;
   }
 
   @PostMapping(path = "/{operationKey}")
@@ -38,11 +48,11 @@ public final class ExportingEndpoint {
       final boolean softPause = soft;
       final var result =
           switch (operationKey) {
-            case RESUME -> exportingService.resumeExporting();
+            case RESUME -> exportingServices.resumeExporting();
             case PAUSE ->
                 softPause
-                    ? exportingService.softPauseExporting()
-                    : exportingService.pauseExporting();
+                    ? exportingServices.softPauseExporting()
+                    : exportingServices.pauseExporting();
             default -> throw new UnsupportedOperationException();
           };
       result.join();
