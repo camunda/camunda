@@ -55,3 +55,5 @@ zeebe:
           maxBufferedBytes: 8MB
           absorbDeletes: false
           pipelineSegmentLimit: 8
+          persistMinSliceBytes: 2MB
+          persistPacingTargetFraction: 0.5
