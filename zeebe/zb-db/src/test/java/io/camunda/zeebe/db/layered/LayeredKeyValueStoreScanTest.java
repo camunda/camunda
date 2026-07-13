@@ -173,6 +173,22 @@ final class LayeredKeyValueStoreScanTest {
   }
 
   @Test
+  void shouldNotEmitCachedNegativesInScans() {
+    // given -- read misses cached negatives on both sides of a real delegate key
+    state.store(STORE).put(bytes("a2"), bytes("committed"));
+    final LayeredKeyValueStore store = newStore();
+    assertThat(store.get(bytes("a1"))).isNull();
+    assertThat(store.get(bytes("a3"))).isNull();
+
+    // when
+    final Map<String, String> scanned = scan(store, "");
+
+    // then -- the clean cache is never merged into scans, so negatives cannot leak out
+    assertThat(scanned.keySet()).containsExactly("a2");
+    assertThat(scanned).containsEntry("a2", "committed");
+  }
+
+  @Test
   void shouldScanEverythingWithForEach() {
     // given
     state.store(STORE).put(bytes("delegate"), bytes("v"));

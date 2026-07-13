@@ -211,19 +211,25 @@ final class LayeredKeyValueStoreTest {
     assertThat(counting.gets).isEqualTo(1);
   }
 
+  // replaces shouldNotCacheDelegateMisses: misses are now cached as negatives, so repeated reads
+  // of an absent key cost one delegate probe instead of one per read
   @Test
-  void shouldNotCacheDelegateMisses() {
+  void shouldCacheDelegateMissAndSkipDelegateOnRepeatedReads() {
     // given
     final CountingBytesStore counting = new CountingBytesStore(state.store(STORE));
     final LayeredKeyValueStore store = newStore(counting);
 
-    // when
-    store.get(bytes("missing"));
-    store.get(bytes("missing"));
+    // when -- the first miss caches a negative; later reads hit it without a delegate probe
+    final byte[] first = store.get(bytes("missing"));
+    final byte[] second = store.get(bytes("missing"));
+    final boolean exists = store.exists(bytes("missing"));
 
-    // then
-    assertThat(counting.gets).isEqualTo(2);
-    assertThat(store.approximateBytes()).isZero();
+    // then -- one probe total, and the negative is accounted at key bytes only
+    assertThat(first).isNull();
+    assertThat(second).isNull();
+    assertThat(exists).isFalse();
+    assertThat(counting.gets).isEqualTo(1);
+    assertThat(store.approximateBytes()).isEqualTo("missing".length());
   }
 
   @Test
@@ -239,6 +245,21 @@ final class LayeredKeyValueStoreTest {
     // then
     assertThat(store.get(bytes("key"))).isEqualTo(bytes("newer"));
     assertThat(scanAll(store)).containsEntry("key", "newer");
+  }
+
+  @Test
+  void shouldShadowCachedNegativeWithNewerWrite() {
+    // given -- a read miss cached a negative for the key
+    final LayeredKeyValueStore store = newStore();
+    assertThat(store.get(bytes("key"))).isNull();
+
+    // when -- the write evicts the sentinel (the write shadows it)
+    store.put(bytes("key"), bytes("value"));
+
+    // then
+    assertThat(store.get(bytes("key"))).isEqualTo(bytes("value"));
+    assertThat(store.exists(bytes("key"))).isTrue();
+    assertThat(scanAll(store)).containsEntry("key", "value");
   }
 
   private static Map<String, String> scanAll(final LayeredKeyValueStore store) {

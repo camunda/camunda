@@ -199,6 +199,46 @@ final class LayeredKeyValueStoreLifecycleTest {
   }
 
   @Test
+  void shouldInsertFreshKeyAfterExistsCheckWithSingleDelegateProbe() {
+    // given -- the common check-then-insert pattern on a fresh key
+    final CountingBytesStore counting = new CountingBytesStore(state.store(STORE));
+    final LayeredKeyValueStore store =
+        new LayeredKeyValueStore(STORE, counting, 1024 * 1024, false, 10);
+    assertThat(store.exists(bytes("key"))).isFalse();
+
+    // when -- the insert's flushed check is answered by the cached negative, not the delegate
+    store.put(bytes("key"), bytes("value"));
+    store.promote();
+    store.freeze(1L);
+
+    // then -- one delegate probe total, and the insert carries exactly flushed=false
+    assertThat(counting.gets).isEqualTo(1);
+    final Entry entry = store.segmentsNewestFirst().get(0).findEntry(bytes("key"));
+    assertThat(entry).isNotNull();
+    assertThat(entry.tombstone()).isFalse();
+    assertThat(entry.flushed()).isFalse();
+  }
+
+  @Test
+  void shouldServePersistedValueAfterEarlierCachedNegative() {
+    // given -- a read miss cached a negative, then the key is written and fully persisted
+    final CountingBytesStore counting = new CountingBytesStore(state.store(STORE));
+    final LayeredKeyValueStore store =
+        new LayeredKeyValueStore(STORE, counting, 1024 * 1024, false, 10);
+    assertThat(store.get(bytes("key"))).isNull();
+    putPromoteFreeze(store, "key", "value", 1L);
+    drainToDelegate(store.beginPersist());
+
+    // when -- retirement moves the persisted value into the clean cache
+    store.completePersist(true);
+
+    // then -- the retired value wins (no stale negative), without another delegate probe
+    final int getsAfterRetirement = counting.gets;
+    assertThat(store.get(bytes("key"))).isEqualTo(bytes("value"));
+    assertThat(counting.gets).isEqualTo(getsAfterRetirement);
+  }
+
+  @Test
   void shouldKeepSegmentsOnFailedPersistAndRetryThem() {
     // given
     final LayeredKeyValueStore store = newStore();
@@ -274,8 +314,9 @@ final class LayeredKeyValueStoreLifecycleTest {
     store.promote();
 
     // then -- the pair annihilated: nothing buffered anywhere, nothing to freeze or persist
-    assertThat(store.get(bytes("key"))).isNull();
+    // (bytes checked before the read: the read itself caches a negative for the absent key)
     assertThat(store.approximateBytes()).isZero();
+    assertThat(store.get(bytes("key"))).isNull();
     store.freeze(1L);
     assertThat(store.segmentsNewestFirst()).isEmpty();
     assertThat(store.beginPersist()).isEmpty();
@@ -294,8 +335,29 @@ final class LayeredKeyValueStoreLifecycleTest {
     // when
     store.promote();
 
-    // then
+    // then -- bytes checked before the read: the read itself caches a negative for the absent key
+    assertThat(store.approximateBytes()).isZero();
     assertThat(store.get(bytes("key"))).isNull();
+    store.freeze(1L);
+    assertThat(store.segmentsNewestFirst()).isEmpty();
+    assertThat(state.committedSize(STORE)).isZero();
+  }
+
+  @Test
+  void shouldAnnihilateDeleteAfterCachedNegativeWithoutSecondProbe() {
+    // given -- an absorb-deletes store; a read miss cached a negative for the key
+    final CountingBytesStore counting = new CountingBytesStore(state.store(STORE));
+    final LayeredKeyValueStore store =
+        new LayeredKeyValueStore(STORE, counting, 1024 * 1024, true, 10);
+    assertThat(store.get(bytes("key"))).isNull();
+
+    // when -- the delete's flushed check is answered by the negative (exactly flushed=false), so
+    // the unflushed tombstone annihilates on promote without a second delegate probe
+    store.delete(bytes("key"));
+    store.promote();
+
+    // then -- only the initial probe was paid; nothing buffered, nothing reaches the delegate
+    assertThat(counting.gets).isEqualTo(1);
     assertThat(store.approximateBytes()).isZero();
     store.freeze(1L);
     assertThat(store.segmentsNewestFirst()).isEmpty();
@@ -437,6 +499,27 @@ final class LayeredKeyValueStoreLifecycleTest {
     assertThat(store.get(bytes("k3"))).isEqualTo(value);
     assertThat(counting.gets).isEqualTo(3);
     assertThat(store.get(bytes("k1"))).isEqualTo(value);
+    assertThat(counting.gets).isEqualTo(4);
+  }
+
+  @Test
+  void shouldReprobeDelegateAfterCachedNegativeIsEvicted() {
+    // given -- a cached negative (key bytes only), then positive read-throughs overflow the budget
+    final byte[] value = bytes("0123456789abcdef"); // 16 bytes; entry = 18 bytes
+    state.store(STORE).put(bytes("k1"), value);
+    state.store(STORE).put(bytes("k2"), value);
+    final CountingBytesStore counting = new CountingBytesStore(state.store(STORE));
+    final LayeredKeyValueStore store = new LayeredKeyValueStore(STORE, counting, 36, false, 10);
+    assertThat(store.get(bytes("gone"))).isNull(); // negative cached, 4 bytes
+
+    // when -- the second positive entry evicts the eldest clean entry, the negative
+    store.get(bytes("k1"));
+    store.get(bytes("k2"));
+
+    // then -- eviction only costs a re-probe: the next read of the absent key asks the delegate
+    assertThat(store.approximateBytes()).isLessThanOrEqualTo(36);
+    assertThat(counting.gets).isEqualTo(3);
+    assertThat(store.get(bytes("gone"))).isNull();
     assertThat(counting.gets).isEqualTo(4);
   }
 

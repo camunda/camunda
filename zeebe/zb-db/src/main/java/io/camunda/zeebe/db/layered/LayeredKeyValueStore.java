@@ -44,9 +44,11 @@ import java.util.function.BiConsumer;
  *       with the persist IO thread and reader views. Merged down (newest-wins, with
  *       delete-absorption if enabled) when longer than the segment limit, so read amplification
  *       stays bounded no matter how long persistence is deferred.
- *   <li><em>Clean cache</em> — delegate-backed read-through entries, LRU, the only evictable layer.
- *       Never part of scan merges: its entries are by definition in the delegate, so the delegate
- *       scan already returns them.
+ *   <li><em>Clean cache</em> — delegate-mirroring entries, LRU, the only evictable layer: values
+ *       read through or retired from a persist round, plus known-absent sentinels for keys the
+ *       delegate missed (negative caching, see {@link #NEGATIVE}). Never part of scan merges:
+ *       positive entries are by definition in the delegate, so the delegate scan already returns
+ *       them, and negative entries have nothing to emit.
  *   <li>The delegate — committed durable state, lagging the log by the persist cadence.
  * </ol>
  *
@@ -68,6 +70,19 @@ import java.util.function.BiConsumer;
 public final class LayeredKeyValueStore {
 
   private static final byte[] EMPTY_PREFIX = new byte[0];
+
+  /**
+   * Clean-cache sentinel marking a key the delegate provably does not hold (negative cache),
+   * compared by identity — a genuine zero-length delegate value is a different array instance.
+   * Negative caching is sound because the delegate content for this store's column family changes
+   * only through this store's own persist rounds (single owner per column family, enforced by the
+   * domain registry), and every write to a key removes its clean entry first — there is no external
+   * invalidation path that could make a cached negative stale. Sentinels are accounted at key bytes
+   * only (the shared sentinel array is empty), retirement overwrites them like any clean entry, and
+   * they are LRU-evictable exactly like positive entries — eviction merely costs a future re-probe.
+   * They can never leak into scans: the clean cache is not part of scan merges.
+   */
+  private static final byte[] NEGATIVE = new byte[0];
 
   private final String name;
   private final BytesStore delegate;
@@ -148,16 +163,19 @@ public final class LayeredKeyValueStore {
     Objects.requireNonNull(key, "key");
     final ByteBuffer mapKey = ByteBuffer.wrap(key);
     // a clean entry mirrors the delegate: the new version shadows it, so remove it to keep the
-    // layers disjoint — and its existence proves the delegate holds the key
+    // layers disjoint — and it settles the flushed flag exactly, positive or negative
     final byte[] cleanHit = clean.remove(mapKey);
     if (cleanHit != null) {
       cleanBytes -= key.length + cleanHit.length;
     }
     final Entry replacedStaging = stagingByKey.get(mapKey);
+    // a negative clean hit proves the delegate does not hold the key (see NEGATIVE): flushed is
+    // exactly false and the delegate probe is skipped; a positive hit proves it does (flushed=true)
     final boolean flushed =
         cleanHit != null
-            || (replacedStaging != null && replacedStaging.flushed())
-            || flushedBelowStaging(mapKey, key);
+            ? cleanHit != NEGATIVE
+            : (replacedStaging != null && replacedStaging.flushed())
+                || flushedBelowStaging(mapKey, key);
     final Entry entry = new Entry(key, value, flushed);
     stagingByKey.put(mapKey, entry);
     stagingSorted.put(key, entry);
@@ -265,15 +283,15 @@ public final class LayeredKeyValueStore {
     final byte[] cached = clean.get(mapKey);
     if (cached != null) {
       metrics.countCleanCacheHit();
-      return cached;
+      return cached == NEGATIVE ? null : cached;
     }
     metrics.countDelegateReadThrough();
     final byte[] committed = delegate.get(key);
-    if (committed != null) {
-      clean.put(mapKey, committed);
-      cleanBytes += key.length + committed.length;
-      evictIfNeeded();
-    }
+    // a miss is cached too (negative caching, sound per NEGATIVE): repeated reads of an absent key
+    // and the flushed check of a later write to it are served without another delegate probe
+    clean.put(mapKey, committed == null ? NEGATIVE : committed);
+    cleanBytes += key.length + (committed == null ? 0 : committed.length);
+    evictIfNeeded();
     return committed;
   }
 
