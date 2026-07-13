@@ -410,7 +410,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
                               .getLastProcessedPositionState()
                               .getLastSuccessfulProcessedRecordPosition(),
                       actor::submit,
-                      layeredPersistIo::persist);
+                      layeredPersistIo);
               streamProcessorContext.batchCommittedListener(
                   layeredStatePersistence::onBatchCommitted);
               // scheduled directly on the actor (not the processing schedule service) so the
@@ -515,12 +515,13 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       // the db (and thus the domain context) may be reused across stream processors, e.g. on a
       // follower-to-leader transition; a predecessor that died mid-batch left uncommitted staged
       // writes behind — discard them, replay rebuilds their effects from the log. A predecessor
-      // that died between preparing and completing a persist round left the round outstanding —
-      // abort it (the segments stay buffered and this processor's rounds retry them); safe
+      // that died between preparing and completing a persist round (or a pipeline merge) left it
+      // outstanding — abort it (the segments stay buffered and this processor retries them); safe
       // because the predecessor closed its persist IO actor before its close/failure completed,
       // and a new stream processor only starts after its predecessor fully stopped
       layeredDb.defaultDomain().discardOpenBatch();
       layeredDb.defaultDomain().abortStaleRound();
+      layeredDb.defaultDomain().abortStaleMerge();
       transactionContext = layeredDb.layeredContext();
     } else {
       transactionContext = zeebeDb.createContext();

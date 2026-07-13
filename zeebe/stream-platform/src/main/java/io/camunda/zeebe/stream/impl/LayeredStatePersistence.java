@@ -8,6 +8,7 @@
 package io.camunda.zeebe.stream.impl;
 
 import io.camunda.zeebe.db.ZeebeDbException;
+import io.camunda.zeebe.db.layered.LayeredStoreCoordinator.MergeRound;
 import io.camunda.zeebe.db.layered.LayeredStoreCoordinator.PersistRound;
 import io.camunda.zeebe.db.layered.PersistTrigger;
 import io.camunda.zeebe.db.layered.zdb.LayeredDomain;
@@ -34,7 +35,12 @@ import org.slf4j.Logger;
  *   <li>{@link #onFreezeTick()} — the freeze cadence, invoked at the configured freeze interval;
  *       freezes the active overlays into pipeline segments and republishes the read view whenever
  *       new batches were committed, bounding the staleness asynchronous view readers observe to
- *       roughly the freeze interval.
+ *       roughly the freeze interval. Every freeze occasion also checks whether a pipeline grew past
+ *       its segment limit and, if so, hands a merge round to the IO executor — pipeline merges
+ *       never run on the processing actor. A merge may overlap an in-flight persist round (it
+ *       captures only non-persisting segments, and the IO executor serializes the two), but a new
+ *       round is deferred while a merge is in flight — segments captured by a round must never
+ *       concurrently merge.
  *   <li>{@link #onBatchCommitted()} — invoked after every committed processing batch; starts a
  *       round as soon as a size budget is exceeded (a single store over its own budget, or the
  *       domain's total buffered bytes over the configured {@code maxBufferedBytes}). While a round
@@ -84,7 +90,14 @@ final class LayeredStatePersistence {
    */
   private CompletableActorFuture<Throwable> inFlightRound;
 
-  /** A size trigger observed while a round was in flight; re-checked on completion. */
+  /**
+   * The completion of the single in-flight merge, or null while none is; completes on the processor
+   * actor — after the merge was completed on the domain — and never exceptionally (a failed merge
+   * is retried by the next freeze occasion).
+   */
+  private CompletableActorFuture<Void> inFlightMerge;
+
+  /** A size trigger observed while a round or merge was in flight; re-checked on completion. */
   private boolean sizeTriggerWhileInFlight;
 
   /**
@@ -129,6 +142,11 @@ final class LayeredStatePersistence {
     return inFlightRound != null;
   }
 
+  /** Whether a pipeline merge is currently in flight on the IO executor. */
+  boolean mergeInFlight() {
+    return inFlightMerge != null;
+  }
+
   /**
    * The watermark for freezes and persist rounds: the last successfully processed position, clamped
    * to 0 while none exists yet. During replay the position state is fed by the replayed batches
@@ -143,7 +161,10 @@ final class LayeredStatePersistence {
 
   /** The regular persist cadence; a failed round stays buffered and the next tick retries. */
   void onPeriodicTick() {
-    if (roundInFlight() || domain.batchInFlight() || !domain.hasBufferedWrites()) {
+    if (roundInFlight()
+        || mergeInFlight()
+        || domain.batchInFlight()
+        || !domain.hasBufferedWrites()) {
       return;
     }
     startRound(PersistTrigger.INTERVAL);
@@ -154,13 +175,15 @@ final class LayeredStatePersistence {
    * the read view whenever batches were committed since the last freeze. Cheap — pointer swaps and
    * flattens, no durable IO, safe while a round is in flight (freezes only touch the newest,
    * non-persisting run of each pipeline). Skips while a batch is in flight (staging must be empty
-   * on a freeze) and when there is nothing new to freeze; the next tick catches up.
+   * on a freeze) and when there is nothing new to freeze; the next tick catches up. Every tick
+   * additionally checks the merge condition, whether it froze or not — a merge deferred while
+   * another was in flight must be retried even when no new batches committed since.
    */
   void onFreezeTick() {
-    if (domain.batchInFlight() || !domain.hasActiveWrites()) {
-      return;
+    if (!domain.batchInFlight() && domain.hasActiveWrites()) {
+      domain.freezeNow(watermark());
     }
-    domain.freezeNow(watermark());
+    maybeStartMerge();
   }
 
   /**
@@ -180,6 +203,7 @@ final class LayeredStatePersistence {
     if (domain.hasActiveWrites()) {
       domain.freezeNow(watermark());
     }
+    maybeStartMerge();
     return true;
   }
 
@@ -217,6 +241,12 @@ final class LayeredStatePersistence {
       processor.execute(() -> continueScheduledTaskPreparation(ready, roundRan));
       return;
     }
+    if (mergeInFlight()) {
+      // a round must not start while a merge is in flight; merges are index-only and quick
+      inFlightMerge.onComplete(
+          (ignored, error) -> continueScheduledTaskPreparation(ready, roundRan), processor);
+      return;
+    }
     if (roundInFlight()) {
       // await the round already in flight before (or instead of) starting our own
       inFlightRound.onComplete(
@@ -246,7 +276,7 @@ final class LayeredStatePersistence {
     if (trigger == null) {
       return;
     }
-    if (roundInFlight()) {
+    if (roundInFlight() || mergeInFlight()) {
       sizeTriggerWhileInFlight = true;
       return;
     }
@@ -283,6 +313,11 @@ final class LayeredStatePersistence {
     if (domain.batchInFlight()) {
       // a batch is mid-flight on the processor actor; run again once it completed
       processor.execute(() -> flushForSnapshot(flushed));
+      return;
+    }
+    if (mergeInFlight()) {
+      // the flush's round must not start while a merge is in flight; merges are quick
+      inFlightMerge.onComplete((ignored, error) -> flushForSnapshot(flushed), processor);
       return;
     }
     if (roundInFlight()) {
@@ -347,8 +382,49 @@ final class LayeredStatePersistence {
     return completed;
   }
 
-  /** Runs the persist step of a prepared round off the processor actor. */
-  @FunctionalInterface
+  /**
+   * Hands a merge round to the IO executor when any of the domain's pipelines grew past its segment
+   * limit; a no-op while a merge is already in flight (single-flight — the next freeze occasion
+   * retries) or when no store needs merging. The merge may overlap an in-flight persist round: it
+   * captures only non-persisting segments, and the shared IO executor serializes the actual work.
+   * Completion is marshalled back onto the processor actor, where the merged segments are swapped
+   * in; a failed merge leaves the captured runs untouched and is retried by the next freeze
+   * occasion.
+   */
+  private void maybeStartMerge() {
+    if (mergeInFlight()) {
+      return;
+    }
+    final MergeRound round = domain.prepareMerge();
+    if (round == null) {
+      return;
+    }
+    final CompletableActorFuture<Void> completed = new CompletableActorFuture<>();
+    inFlightMerge = completed;
+    io.merge(round)
+        .onComplete(
+            (ignored, error) -> {
+              final boolean success = error == null;
+              domain.completeMerge(round, success);
+              inFlightMerge = null;
+              if (!success) {
+                LOG.warn(
+                    "Failed to merge buffered layered pipeline segments; the captured runs stay"
+                        + " unmerged and the next freeze occasion retries",
+                    error);
+              }
+              final boolean recheckSizeTrigger = sizeTriggerWhileInFlight;
+              sizeTriggerWhileInFlight = false;
+              completed.complete(null);
+              if (recheckSizeTrigger) {
+                // a size-triggered round was deferred while this merge ran; re-check now
+                processor.execute(this::onBatchCommitted);
+              }
+            },
+            processor);
+  }
+
+  /** Runs the persist and merge steps of prepared rounds off the processor actor. */
   interface PersistIo {
 
     /**
@@ -356,5 +432,13 @@ final class LayeredStatePersistence {
      * exceptionally when the drain failed or never ran.
      */
     ActorFuture<Void> persist(PersistRound round);
+
+    /**
+     * Runs {@link MergeRound#merge()} on an IO thread; the returned future completes exceptionally
+     * when the merge failed or never ran. Must be serialized with {@link #persist(PersistRound)}
+     * (one executor thread per domain), so a merge overlapping a round never executes concurrently
+     * with it.
+     */
+    ActorFuture<Void> merge(MergeRound round);
   }
 }

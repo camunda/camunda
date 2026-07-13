@@ -13,6 +13,7 @@ import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.impl.DbBytes;
 import io.camunda.zeebe.db.layered.LayeredKeyValueStore;
 import io.camunda.zeebe.db.layered.LayeredStoreCoordinator;
+import io.camunda.zeebe.db.layered.LayeredStoreCoordinator.MergeRound;
 import io.camunda.zeebe.db.layered.LayeredStoreCoordinator.PersistRound;
 import io.camunda.zeebe.db.layered.LayeredStoreMetrics;
 import io.camunda.zeebe.db.layered.PersistTrigger;
@@ -25,6 +26,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /**
  * One single-owner durability domain of a {@link LayeredZeebeDb}: its own owner-thread {@link
@@ -281,6 +283,44 @@ public final class LayeredDomain {
   /** Whether one of this domain's persist rounds is outstanding (prepared but not completed). */
   public boolean roundInFlight() {
     return coordinator != null && coordinator.roundOutstanding();
+  }
+
+  /**
+   * Captures a merge round over every store whose pipeline needs merging, or returns null when no
+   * store does. {@link MergeRound#merge()} may then run on an IO thread — index-only over the
+   * captured immutable segments — while the owner thread keeps writing, reading and freezing;
+   * complete on the owner thread via {@link #completeMerge(MergeRound, boolean)}. Merges are
+   * single-flight per domain and may overlap an outstanding persist round, but a new round must not
+   * start while a merge is outstanding (see {@link LayeredStoreCoordinator}).
+   */
+  public @Nullable MergeRound prepareMerge() {
+    return coordinator().prepareMerge();
+  }
+
+  /**
+   * Finishes a prepared merge on the owner thread after {@link MergeRound#merge()} returned
+   * (successfully or not): on success the merged segments replace their captured runs; on failure
+   * the runs stay as they were and the next merge retries them.
+   */
+  public void completeMerge(final MergeRound round, final boolean success) {
+    coordinator().completeMerge(round, success);
+  }
+
+  /** Whether one of this domain's merges is outstanding (prepared but not completed). */
+  public boolean mergeInFlight() {
+    return coordinator != null && coordinator.mergeOutstanding();
+  }
+
+  /**
+   * Completes (as failed) a merge a previous owner left outstanding — the merge analog of {@link
+   * #abortStaleRound()}, with the same precondition (the previous owner's IO must have terminated).
+   * The captured runs stay in their pipelines, unmerged; the successor's merges retry them. A no-op
+   * when no merge is outstanding.
+   */
+  public void abortStaleMerge() {
+    if (coordinator != null) {
+      coordinator.abortOutstandingMerge();
+    }
   }
 
   /**

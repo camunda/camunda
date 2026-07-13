@@ -13,6 +13,7 @@ import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.db.layered.LayeredStoreCoordinator.MergeRound;
 import io.camunda.zeebe.db.layered.LayeredStoreCoordinator.PersistRound;
 import io.camunda.zeebe.db.layered.zdb.LayeredZeebeDb;
 import io.camunda.zeebe.db.layered.zdb.LayeredZeebeDbConfig;
@@ -379,6 +380,97 @@ final class LayeredStatePersistenceTest {
   }
 
   // ------------------------------------------------------------------
+  // Off-thread pipeline merges
+  // ------------------------------------------------------------------
+
+  /** A pipeline segment limit of 1, so the second freeze makes a merge necessary. */
+  private void recreateWithSegmentLimit1() {
+    recreate(
+        new LayeredZeebeDbConfig(
+            1024 * 1024, 0, true, 1, Duration.ofSeconds(1), Duration.ofMillis(250)));
+  }
+
+  @Test
+  void shouldMergeOverLimitPipelineOnIoThread() throws Exception {
+    // given -- two freezes pushing the pipeline over its segment limit
+    recreateWithSegmentLimit1();
+    commitBatch(1, 100);
+    persistence.onFreezeTick();
+    assertThat(persistence.mergeInFlight()).isFalse(); // within the limit, nothing to merge
+    commitBatch(2, 200);
+
+    // when -- the next freeze occasion detects the over-limit pipeline
+    persistence.onFreezeTick();
+    assertThat(persistence.mergeInFlight()).isTrue();
+    runProcessorJobsUntil(() -> !persistence.mergeInFlight());
+
+    // then -- the merge ran on the IO thread, no persist round was involved, and the buffered
+    // writes are still visible to the owner and still not durable
+    assertThat(io.roundsMerged()).isEqualTo(1);
+    assertThat(io.roundsPersisted()).isZero();
+    assertThat(ownerGet(1)).isEqualTo(100);
+    assertThat(ownerGet(2)).isEqualTo(200);
+    assertThat(passThroughGet(1)).isNull();
+    assertThat(layered.defaultDomain().hasBufferedWrites()).isTrue();
+  }
+
+  @Test
+  void shouldDeferRoundWhileMergeInFlight() throws Exception {
+    // given -- a merge blocked on the IO thread
+    recreateWithSegmentLimit1();
+    commitBatch(1, 100);
+    persistence.onFreezeTick();
+    commitBatch(2, 200);
+    io.blockNextRound();
+    persistence.onFreezeTick();
+    io.awaitRoundEntered();
+    assertThat(persistence.mergeInFlight()).isTrue();
+
+    // when -- the persist cadence fires while the merge is in flight
+    persistence.onPeriodicTick();
+
+    // then -- no round started (its captured segments could concurrently merge otherwise)
+    assertThat(persistence.roundInFlight()).isFalse();
+    assertThat(io.roundsPersisted()).isZero();
+
+    // when -- the merge completes, the next tick drains
+    io.releaseRound();
+    runProcessorJobsUntil(() -> !persistence.mergeInFlight());
+    persistence.onPeriodicTick();
+    runProcessorJobsUntil(() -> !persistence.roundInFlight());
+
+    // then
+    assertThat(passThroughGet(1)).isEqualTo(100);
+    assertThat(passThroughGet(2)).isEqualTo(200);
+    assertThat(layered.defaultDomain().hasBufferedWrites()).isFalse();
+  }
+
+  @Test
+  void shouldAwaitInFlightMergeBeforeSnapshotFlush() throws Exception {
+    // given -- a merge blocked on the IO thread
+    recreateWithSegmentLimit1();
+    commitBatch(1, 100);
+    persistence.onFreezeTick();
+    commitBatch(2, 200);
+    io.blockNextRound();
+    persistence.onFreezeTick();
+    io.awaitRoundEntered();
+
+    // when -- a pre-snapshot flush is requested mid-merge
+    final CompletableActorFuture<Void> flushed = new CompletableActorFuture<>();
+    persistence.flushForSnapshot(flushed);
+    assertThat(flushed.isDone()).isFalse();
+
+    // then -- it chains behind the merge and its own round, and completes with a fresh cut
+    io.releaseRound();
+    runProcessorJobsUntil(flushed::isDone);
+    flushed.join();
+    assertThat(passThroughGet(1)).isEqualTo(100);
+    assertThat(passThroughGet(2)).isEqualTo(200);
+    assertThat(layered.defaultDomain().hasBufferedWrites()).isFalse();
+  }
+
+  // ------------------------------------------------------------------
   // Owner-thread plumbing
   // ------------------------------------------------------------------
 
@@ -502,6 +594,7 @@ final class LayeredStatePersistenceTest {
         Executors.newSingleThreadExecutor(runnable -> new Thread(runnable, "layered-persist-io"));
     private final AtomicBoolean failNext = new AtomicBoolean();
     private final AtomicLong persisted = new AtomicLong();
+    private final AtomicLong merged = new AtomicLong();
     private final AtomicLong lastRoundAnchor = new AtomicLong(Long.MIN_VALUE);
     // consumed (nulled) by the IO thread so only the next round blocks
     private volatile CountDownLatch entered;
@@ -513,6 +606,24 @@ final class LayeredStatePersistenceTest {
     @Override
     public ActorFuture<Void> persist(final PersistRound round) {
       lastRoundAnchor.set(round.anchor());
+      return runOnIoThread(
+          () -> {
+            round.persist();
+            persisted.incrementAndGet();
+          });
+    }
+
+    @Override
+    public ActorFuture<Void> merge(final MergeRound round) {
+      return runOnIoThread(
+          () -> {
+            round.merge();
+            merged.incrementAndGet();
+          });
+    }
+
+    /** Runs the step on the IO thread, honoring the entered/gate latches and failure injection. */
+    private ActorFuture<Void> runOnIoThread(final IoStep step) {
       final CompletableActorFuture<Void> done = new CompletableActorFuture<>();
       ioThread.execute(
           () -> {
@@ -526,14 +637,13 @@ final class LayeredStatePersistenceTest {
               if (gateNow != null) {
                 gate = null;
                 if (!gateNow.await(TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)) {
-                  throw new IllegalStateException("the round's gate was never released");
+                  throw new IllegalStateException("the step's gate was never released");
                 }
               }
               if (failNext.getAndSet(false)) {
-                throw new RuntimeException("injected persist failure");
+                throw new RuntimeException("injected IO failure");
               }
-              round.persist();
-              persisted.incrementAndGet();
+              step.run();
               done.complete(null);
             } catch (final Exception e) {
               done.completeExceptionally(e);
@@ -542,7 +652,7 @@ final class LayeredStatePersistenceTest {
       return done;
     }
 
-    /** Blocks the next round inside the persist step until {@link #releaseRound()}. */
+    /** Blocks the next IO step (persist or merge) until {@link #releaseRound()}. */
     void blockNextRound() {
       entered = new CountDownLatch(1);
       gate = new CountDownLatch(1);
@@ -554,7 +664,7 @@ final class LayeredStatePersistenceTest {
       final CountDownLatch probe = enteredProbe;
       assertThat(probe).describedAs("blockNextRound() must be called first").isNotNull();
       assertThat(probe.await(TIMEOUT.toMillis(), TimeUnit.MILLISECONDS))
-          .describedAs("the IO thread never entered the persist step")
+          .describedAs("the IO thread never entered the blocked step")
           .isTrue();
     }
 
@@ -568,6 +678,15 @@ final class LayeredStatePersistenceTest {
 
     long roundsPersisted() {
       return persisted.get();
+    }
+
+    long roundsMerged() {
+      return merged.get();
+    }
+
+    @FunctionalInterface
+    private interface IoStep {
+      void run() throws Exception;
     }
 
     /** The anchor (newest frozen watermark) of the round most recently handed to the IO thread. */

@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.db.layered.LayeredStoreCoordinator.PersistRound;
 import io.camunda.zeebe.db.layered.segment.ChunkPool;
 import io.camunda.zeebe.db.layered.segment.ChunkWriter;
+import io.camunda.zeebe.db.layered.segment.FlatSegment;
 import io.camunda.zeebe.db.layered.util.InMemoryDurableState;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -119,11 +120,15 @@ final class ChunkReclamationTest {
 
   @Test
   void shouldShareChunksAcrossIndexOnlyMerges() throws Exception {
-    // given -- a segment limit of 1, so the second freeze merges the pipeline
+    // given -- a segment limit of 1, so the second freeze makes a merge necessary
     final LayeredKeyValueStore store = newStore(1);
     final LayeredStoreCoordinator coordinator = newCoordinator(store);
     writeAndFreeze(store, "a", 1);
-    writeAndFreeze(store, "b", 2); // merges; inputs released, merged segment adopts their chunks
+    writeAndFreeze(store, "b", 2);
+
+    // when -- the run merges; inputs release, the merged segment adopts their chunks
+    assertThat(store.mergeNeeded()).isTrue();
+    store.completeMerge(FlatSegment.merge(store.beginMerge(), store.absorbsDeletes()), true);
 
     // then -- the merge moved refs, not bytes: no chunk recycled, all entries readable
     assertThat(store.segmentsNewestFirst()).hasSize(1);

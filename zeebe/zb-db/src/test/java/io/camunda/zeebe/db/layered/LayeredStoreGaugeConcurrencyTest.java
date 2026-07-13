@@ -9,6 +9,7 @@ package io.camunda.zeebe.db.layered;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.db.layered.LayeredStoreCoordinator.MergeRound;
 import io.camunda.zeebe.db.layered.LayeredStoreCoordinator.PersistRound;
 import io.camunda.zeebe.db.layered.util.InMemoryDurableState;
 import io.micrometer.core.instrument.Gauge;
@@ -87,6 +88,12 @@ final class LayeredStoreGaugeConcurrencyTest {
         store.get(key(random.nextInt(64)));
         store.promote();
         coordinator.freezeAll(i);
+        // the driver's post-freeze merge check, run inline (merge() may run on any thread)
+        final MergeRound merge = coordinator.prepareMerge();
+        if (merge != null) {
+          merge.merge();
+          coordinator.completeMerge(merge, true);
+        }
         if (i % 3 == 0) {
           final PersistRound round = coordinator.prepareRound(i);
           boolean success = true;

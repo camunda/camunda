@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Orchestrates the layered stores of one partition as a single durability unit: freezes them
@@ -44,6 +45,16 @@ import java.util.function.Consumer;
  * atomic batch is what upholds the anchor invariant — recovery either sees the full cut (state@P,
  * anchor=P) or none of it (state@P₀, anchor=P₀, replay rebuilds the difference); the torn states
  * (double application, holes) are unrepresentable.
+ *
+ * <p><b>Pipeline merges</b> follow the same three-step shape so their k-way walk also leaves the
+ * owner thread: {@link #prepareMerge()} captures the over-limit non-persisting run of every store
+ * that needs one (owner thread), {@link MergeRound#merge()} builds the merged segments — index-only
+ * over immutable inputs, so safe on an IO thread — and {@link #completeMerge(MergeRound, boolean)}
+ * swaps them in (owner thread). Merges are single-flight and mutually exclusive with rounds in one
+ * direction: a merge may start while a round is outstanding (it captures only non-persisting runs,
+ * disjoint from the round's segments), but a round must not start while a merge is outstanding — a
+ * round captures every pipeline segment, and segments captured by a round must never concurrently
+ * merge; {@link #prepareRound(long)} throws until the merge completed.
  *
  * <p>{@link #freezeAll(long)} freezes every store at a common watermark and publishes a refreshed
  * view — segments change, the snapshot stays, which is consistent because the durable state has not
@@ -81,6 +92,8 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
   // the owner thread) — see the Threading javadoc
   private volatile PersistRound outstandingRound;
   private volatile long lastPersistedAnchor = -1;
+  // owner thread only — no gauge reads it
+  private MergeRound outstandingMerge;
 
   /**
    * @param stores the stores forming the durability unit; names must be unique
@@ -163,6 +176,11 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
           "expected no outstanding persist round, but one is in flight"
               + " (persist rounds are single-flight)");
     }
+    if (outstandingMerge != null) {
+      throw new IllegalStateException(
+          "expected no outstanding merge when preparing a persist round, but one is in flight"
+              + " (segments captured by a round must never concurrently merge)");
+    }
     freezeAll(watermark);
     final Map<String, List<FlatSegment>> capturedOldestFirst = new LinkedHashMap<>();
     long anchor = -1;
@@ -222,6 +240,86 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
   /** Whether a persist round is outstanding (prepared but not completed). */
   public boolean roundOutstanding() {
     return outstandingRound != null;
+  }
+
+  /**
+   * Captures a merge round over every store whose pipeline needs merging (see {@link
+   * LayeredKeyValueStore#mergeNeeded()}), or returns null when no store does. Owner thread; the
+   * returned round's {@link MergeRound#merge()} may then run on an IO thread. May be called while a
+   * persist round is outstanding — the captured runs exclude the round's persisting segments.
+   *
+   * @throws IllegalStateException if a merge is already outstanding (merges are single-flight)
+   */
+  public @Nullable MergeRound prepareMerge() {
+    if (outstandingMerge != null) {
+      throw new IllegalStateException(
+          "expected no outstanding merge, but one is in flight (merges are single-flight)");
+    }
+    final List<MergeRound.CapturedRun> runs = new ArrayList<>();
+    for (final LayeredKeyValueStore store : stores.values()) {
+      if (store.mergeNeeded()) {
+        runs.add(
+            new MergeRound.CapturedRun(store.name(), store.beginMerge(), store.absorbsDeletes()));
+      }
+    }
+    if (runs.isEmpty()) {
+      return null;
+    }
+    outstandingMerge = new MergeRound(runs);
+    return outstandingMerge;
+  }
+
+  /**
+   * Finishes an outstanding merge on the owner thread after {@link MergeRound#merge()} returned
+   * (successfully or not). On success every captured run is swapped for its merged segment; on
+   * failure the runs stay in their pipelines, any merged segments the round did build are released
+   * (recycling their chunk references), and the next merge retries.
+   */
+  public void completeMerge(final MergeRound round, final boolean success) {
+    if (outstandingMerge == null) {
+      throw new IllegalStateException(
+          "expected an outstanding merge to complete, but there is none");
+    }
+    if (round != outstandingMerge) {
+      throw new IllegalStateException("expected the outstanding merge, but got a different one");
+    }
+    outstandingMerge = null;
+    for (final MergeRound.CapturedRun run : round.runs()) {
+      stores.get(run.store()).completeMerge(success ? round.merged(run.store()) : null, success);
+    }
+    if (!success) {
+      round.releaseMergedSegments();
+    }
+  }
+
+  /** Whether a merge is outstanding (prepared but not completed). */
+  public boolean mergeOutstanding() {
+    return outstandingMerge != null;
+  }
+
+  /**
+   * Completes an outstanding merge as failed without waiting for its {@link MergeRound#merge()} —
+   * recovery for a successor owner taking over stores whose previous owner died between preparing
+   * and completing a merge. The captured runs stay in their pipelines, unmerged; a merged result
+   * the orphaned round did build is abandoned to the garbage collector together with its chunk
+   * references (the chunks are simply never reused — never recycled under a holder). A no-op when
+   * no merge is outstanding.
+   *
+   * <p><b>Precondition:</b> the previous owner's merge IO must no longer be running, mirroring
+   * {@link #abortOutstandingRound()}.
+   */
+  public void abortOutstandingMerge() {
+    if (outstandingMerge != null) {
+      // deliberately do not release the orphaned round's merged segments: there is no safe
+      // publication from the dead owner's merge IO thread to this one, so the round's result map
+      // must not be read — leaking the results to the garbage collector is safe (chunks are never
+      // recycled under a holder), reading a torn map would not be
+      final MergeRound orphaned = outstandingMerge;
+      outstandingMerge = null;
+      for (final MergeRound.CapturedRun run : orphaned.runs()) {
+        stores.get(run.store()).completeMerge(null, false);
+      }
+    }
   }
 
   /**
@@ -348,5 +446,51 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
     public long anchor() {
       return anchor;
     }
+  }
+
+  /**
+   * One prepared merge round: the immutable non-persisting runs captured from every store that
+   * needed merging, collapsed by {@link #merge()} — which may run on an IO thread — and swapped in
+   * on the owner thread by {@link #completeMerge(MergeRound, boolean)}. Never touches a store's
+   * mutable layers; the results cross back to the owner thread through the driver's future
+   * hand-off, which is the required safe publication.
+   */
+  public static final class MergeRound {
+
+    private final List<CapturedRun> runs;
+    private final Map<String, FlatSegment> mergedByStore = new HashMap<>();
+
+    private MergeRound(final List<CapturedRun> runs) {
+      this.runs = List.copyOf(runs);
+    }
+
+    /**
+     * Builds the merged segment of every captured run — index-only k-way walks over immutable
+     * inputs (refs move, bytes don't; see {@link FlatSegment#merge(List, boolean)}), the only merge
+     * operation allowed off the owner thread. Throws on failure; the caller reports the outcome via
+     * {@link #completeMerge(MergeRound, boolean)} either way.
+     */
+    public void merge() {
+      for (final CapturedRun run : runs) {
+        mergedByStore.put(run.store(), FlatSegment.merge(run.oldestFirst(), run.absorbDeletes()));
+      }
+    }
+
+    private List<CapturedRun> runs() {
+      return runs;
+    }
+
+    private FlatSegment merged(final String store) {
+      return mergedByStore.get(store);
+    }
+
+    /** Releases the merged segments a failed round built, recycling their chunk references. */
+    private void releaseMergedSegments() {
+      mergedByStore.values().forEach(FlatSegment::release);
+      mergedByStore.clear();
+    }
+
+    private record CapturedRun(
+        String store, List<FlatSegment> oldestFirst, boolean absorbDeletes) {}
   }
 }

@@ -44,8 +44,11 @@ import java.util.function.BiConsumer;
  *       with the persist IO thread and reader views. Freezing copies the entry bytes into pooled
  *       chunks (see {@link FlatSegment} for the lifetime rule: the pipeline retains its segments,
  *       and dropping or merging away a segment releases it, recycling chunks no holder references
- *       anymore). Merged down (newest-wins, with delete-absorption if enabled) when longer than the
- *       segment limit, so read amplification stays bounded no matter how long persistence is
+ *       anymore). Merged down (newest-wins, with delete-absorption if enabled) by the lifecycle
+ *       driver when longer than the segment limit — {@link #mergeNeeded()} signals it, {@link
+ *       #beginMerge()} captures the run so the merge itself may execute off the owner thread
+ *       (index-only: refs move, bytes don't), {@link #completeMerge(FlatSegment, boolean)} swaps
+ *       the result in — so read amplification stays bounded no matter how long persistence is
  *       deferred. Merging is adaptive: while the last merge annihilated too few entries (no key
  *       overlap to deduplicate, no pairs to absorb), over-limit merges are skipped and the pipeline
  *       may overshoot to a hard cap of {@link #MERGE_OVERSHOOT_FACTOR} × the limit, where a merge
@@ -135,6 +138,10 @@ public final class LayeredKeyValueStore {
   private boolean persisting;
   private int persistingCount;
 
+  // the run captured by an outstanding merge (newest first), or null; disjoint from the
+  // persisting tail by construction — see beginMerge
+  private List<FlatSegment> merging;
+
   // fraction of entries the last pipeline merge annihilated; starts optimistic (1.0) so the first
   // over-limit merge always runs and measures the real ratio (owner thread only)
   private double lastMergeAnnihilation = 1.0;
@@ -213,6 +220,11 @@ public final class LayeredKeyValueStore {
   /** The store name, used to route persist-batch writes and view reads. */
   public String name() {
     return name;
+  }
+
+  /** Whether pipeline merges of this store absorb annihilated put/delete pairs. */
+  boolean absorbsDeletes() {
+    return absorbDeletes;
   }
 
   // ------------------------------------------------------------------
@@ -414,10 +426,10 @@ public final class LayeredKeyValueStore {
   /**
    * Flattens the active overlay into an immutable {@link FlatSegment} stamped with {@code
    * watermark} (the highest log position whose effects it contains), pushes it onto the pipeline,
-   * and installs a fresh active overlay. Pointer swaps and one flatten — no delegate IO. Merges the
-   * non-persisting tail of the pipeline down when it exceeds the segment limit — adaptively skipped
-   * up to a hard cap while merging does not pay off (see the class javadoc's pipeline layer).
-   * Staging must be empty (no batch in flight). A no-op if the active overlay is empty.
+   * and installs a fresh active overlay. Pointer swaps and one flatten — no delegate IO, and no
+   * merging: the lifecycle driver checks {@link #mergeNeeded()} after freezes and runs the merge
+   * (possibly off the owner thread). Staging must be empty (no batch in flight). A no-op if the
+   * active overlay is empty.
    */
   public void freeze(final long watermark) {
     if (!stagingByKey.isEmpty()) {
@@ -438,51 +450,130 @@ public final class LayeredKeyValueStore {
     activeSorted.clear();
     activeBytes = 0;
     activeEntries = 0;
-    mergePipelineIfNeeded();
     refreshPipelineStats();
   }
 
-  private void mergePipelineIfNeeded() {
-    // persisting segments are pinned by the outstanding round — merge only the newest,
-    // non-persisting run
+  /**
+   * Whether the lifecycle driver should run a pipeline merge now: no merge is outstanding, the
+   * non-persisting run exceeds the segment limit (persisting segments are pinned by their round —
+   * only the newest, non-persisting run ever merges), and merging is expected to pay off. The
+   * payoff heuristic is adaptive: while the last merge annihilated too little, an over-limit merge
+   * would mostly copy index arrays for no savings, so the merge is declined (and counted as
+   * skipped) until the pipeline reaches the hard overshoot cap, where it is unconditional and
+   * re-measures the ratio.
+   */
+  public boolean mergeNeeded() {
+    if (merging != null) {
+      return false;
+    }
     final int nonPersisting = pipeline.size() - persistingCount;
     if (nonPersisting <= pipelineSegmentLimit) {
-      return;
+      return false;
     }
-    // adaptive skip: while the last merge annihilated too little, an over-limit merge would mostly
-    // copy arrays for no byte savings — let the pipeline overshoot to the hard cap instead, where
-    // the forced merge re-measures the ratio
     if (nonPersisting < pipelineSegmentLimit * MERGE_OVERSHOOT_FACTOR
         && lastMergeAnnihilation < MERGE_ANNIHILATION_THRESHOLD) {
       metrics.countPipelineMergeSkipped();
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Captures the current non-persisting pipeline run for merging and returns it oldest-first (the
+   * input order of {@link FlatSegment#merge(List, boolean)}). The captured segments stay in the
+   * pipeline — retained, readable and shadowing the delegate — until {@link
+   * #completeMerge(FlatSegment, boolean)} swaps the merged result in, so the merge itself may
+   * execute off the owner thread over the immutable segments. Merges are single-flight per store,
+   * and mutually exclusive with persist rounds in one direction: a merge may start while a round is
+   * outstanding (the captured run excludes the round's persisting tail by construction), but {@link
+   * #beginPersist()} refuses to start while a merge is outstanding — a round captures every
+   * pipeline segment, and segments captured by a round must never concurrently merge.
+   *
+   * @throws IllegalStateException if a merge is already outstanding, or the non-persisting run has
+   *     fewer than two segments (nothing to merge — gate on {@link #mergeNeeded()})
+   */
+  public List<FlatSegment> beginMerge() {
+    if (merging != null) {
+      throw new IllegalStateException(
+          "expected no outstanding merge for store '"
+              + name
+              + "', but one is in flight (merges are single-flight)");
+    }
+    final int nonPersisting = pipeline.size() - persistingCount;
+    if (nonPersisting < 2) {
+      throw new IllegalStateException(
+          "expected at least two non-persisting segments to merge in store '"
+              + name
+              + "', but there are "
+              + nonPersisting);
+    }
+    merging = List.copyOf(pipeline.subList(0, nonPersisting));
+    final List<FlatSegment> oldestFirst = new ArrayList<>(merging);
+    Collections.reverse(oldestFirst);
+    return oldestFirst;
+  }
+
+  /**
+   * Finishes an outstanding merge on the owner thread. On success, swaps {@code merged} in place of
+   * the captured run: the run is located by identity — freezes may have prepended newer segments
+   * and a persist-round completion may have dropped the persisted tail meanwhile, neither of which
+   * reorders the run — the pipeline's references on the inputs are released (views still holding
+   * them keep them and their chunks alive), and the annihilation ratio is re-measured for {@link
+   * #mergeNeeded()}'s adaptive skip. On failure the run stays exactly as captured and the next
+   * merge retries it; a discarded merge result is the caller's to release.
+   */
+  public void completeMerge(final FlatSegment merged, final boolean success) {
+    if (merging == null) {
+      throw new IllegalStateException(
+          "expected an outstanding merge for store '" + name + "', but there is none");
+    }
+    final List<FlatSegment> captured = merging;
+    merging = null;
+    if (!success) {
       return;
     }
-    final List<FlatSegment> run = pipeline.subList(0, nonPersisting);
-    final List<FlatSegment> oldestFirst = new ArrayList<>(run);
-    Collections.reverse(oldestFirst);
-    long entriesIn = 0;
-    for (final FlatSegment segment : run) {
-      entriesIn += segment.entryCount();
-      pipelineBytes -= segment.byteSize();
+    Objects.requireNonNull(merged, "merged");
+    int start = -1;
+    for (int i = 0; i < pipeline.size(); i++) {
+      if (pipeline.get(i) == captured.get(0)) {
+        start = i;
+        break;
+      }
     }
-    final FlatSegment merged = FlatSegment.merge(oldestFirst, absorbDeletes);
+    if (start < 0 || start + captured.size() > pipeline.size()) {
+      throw new IllegalStateException(
+          "expected the captured merge run of store '" + name + "' to still be in the pipeline");
+    }
+    final List<FlatSegment> run = pipeline.subList(start, start + captured.size());
+    long entriesIn = 0;
+    for (int i = 0; i < captured.size(); i++) {
+      if (run.get(i) != captured.get(i)) {
+        throw new IllegalStateException(
+            "expected the captured merge run of store '" + name + "' to be contiguous");
+      }
+      entriesIn += captured.get(i).entryCount();
+      pipelineBytes -= captured.get(i).byteSize();
+    }
     run.clear();
-    // release the pipeline's reference on the merged-away inputs only after the merged segment
-    // took its chunk references; views still holding the inputs keep them (and their chunks) alive
-    for (final FlatSegment input : oldestFirst) {
+    // release the pipeline's reference on the merged-away inputs only now — the merged segment
+    // holds its own chunk references since its construction
+    for (final FlatSegment input : captured) {
       input.release();
     }
-    pipeline.add(0, merged);
+    pipeline.add(start, merged);
     pipelineBytes += merged.byteSize();
     lastMergeAnnihilation = entriesIn == 0 ? 1.0 : 1.0 - merged.entryCount() / (double) entriesIn;
     metrics.countPipelineMerge();
+    refreshPipelineStats();
   }
 
   /**
    * Marks every current pipeline segment as persisting and returns them oldest-first for draining.
    * The segments stay in the pipeline — readable and shadowing the delegate — until {@link
    * #completePersist(boolean)}. Throws {@link IllegalStateException} if a persist is already
-   * outstanding (persist rounds are single-flight).
+   * outstanding (persist rounds are single-flight) or a merge is outstanding (a round captures
+   * every pipeline segment, and segments captured by a round must never concurrently merge — see
+   * {@link #beginMerge()}).
    */
   public List<FlatSegment> beginPersist() {
     if (persisting) {
@@ -490,6 +581,12 @@ public final class LayeredKeyValueStore {
           "expected no outstanding persist round for store '"
               + name
               + "', but one is in flight (persist rounds are single-flight)");
+    }
+    if (merging != null) {
+      throw new IllegalStateException(
+          "expected no outstanding merge for store '"
+              + name
+              + "' when starting a persist round, but one is in flight");
     }
     persisting = true;
     persistingCount = pipeline.size();

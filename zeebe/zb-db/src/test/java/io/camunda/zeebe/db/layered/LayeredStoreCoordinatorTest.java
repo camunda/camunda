@@ -10,6 +10,7 @@ package io.camunda.zeebe.db.layered;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.db.layered.LayeredStoreCoordinator.MergeRound;
 import io.camunda.zeebe.db.layered.LayeredStoreCoordinator.PersistRound;
 import io.camunda.zeebe.db.layered.segment.FlatSegment;
 import io.camunda.zeebe.db.layered.util.InMemoryDurableState;
@@ -183,6 +184,118 @@ final class LayeredStoreCoordinatorTest {
     // alive (no ghost) and the key created after its freeze is invisible (no phantom)
     assertThat(oldView.get(STORE_A, bytes(9))).containsExactly(bytes(90));
     assertThat(oldView.get(STORE_A, bytes(1))).isNull();
+  }
+
+  @Test
+  void shouldRejectRoundWhileMergeOutstandingAndProceedAfterIt() throws Exception {
+    // given -- an over-limit pipeline captured into a merge round
+    final LayeredKeyValueStore store = newStore(STORE_A);
+    final LayeredStoreCoordinator coordinator = newCoordinator(store);
+    freezeDisjointBatches(store, coordinator, 5);
+    final MergeRound merge = coordinator.prepareMerge();
+    assertThat(merge).isNotNull();
+    assertThat(coordinator.mergeOutstanding()).isTrue();
+
+    // when / then -- a round captures every pipeline segment, so it must not start now
+    assertThatThrownBy(() -> coordinator.prepareRound(10))
+        .isInstanceOf(IllegalStateException.class);
+
+    // when -- the merge (which may have run on an IO thread) completes
+    merge.merge();
+    coordinator.completeMerge(merge, true);
+
+    // then -- one merged segment, and the round proceeds over it
+    assertThat(store.segmentsNewestFirst()).hasSize(1);
+    final PersistRound round = coordinator.prepareRound(10);
+    round.persist();
+    coordinator.completeRound(round, true);
+    assertThat(state.committedValue(STORE_A, bytes(1))).containsExactly(bytes(10));
+    assertThat(state.committedValue(STORE_A, bytes(5))).containsExactly(bytes(50));
+  }
+
+  @Test
+  void shouldMergeWhileRoundOutstandingOverDisjointSegments() throws Exception {
+    // given -- a round outstanding over one frozen segment
+    final LayeredKeyValueStore store = newStore(STORE_A);
+    final LayeredStoreCoordinator coordinator = newCoordinator(store);
+    store.put(bytes(9), bytes(90));
+    store.promote();
+    final PersistRound round = coordinator.prepareRound(1);
+
+    // and an over-limit non-persisting run frozen while it drains
+    freezeDisjointBatches(store, coordinator, 5);
+    final MergeRound merge = coordinator.prepareMerge();
+    assertThat(merge).isNotNull();
+    merge.merge();
+    round.persist();
+
+    // when -- the round completes (dropping its tail) before the merge is swapped in
+    coordinator.completeRound(round, true);
+    coordinator.completeMerge(merge, true);
+
+    // then -- the merged run replaced exactly the non-persisting segments
+    assertThat(store.segmentsNewestFirst()).hasSize(1);
+    assertThat(store.get(bytes(1))).containsExactly(bytes(10));
+    assertThat(state.committedValue(STORE_A, bytes(9))).containsExactly(bytes(90));
+  }
+
+  @Test
+  void shouldKeepRunsAndRetryAfterFailedOrAbortedMerge() {
+    // given -- a captured merge round
+    final LayeredKeyValueStore store = newStore(STORE_A);
+    final LayeredStoreCoordinator coordinator = newCoordinator(store);
+    freezeDisjointBatches(store, coordinator, 5);
+    final MergeRound failed = coordinator.prepareMerge();
+    assertThat(failed).isNotNull();
+    failed.merge();
+
+    // when -- it completes as failed (the built results are released, the runs stay)
+    coordinator.completeMerge(failed, false);
+
+    // then -- nothing merged, everything readable, and a retry captures the same runs
+    assertThat(store.segmentsNewestFirst()).hasSize(5);
+    assertThat(store.get(bytes(3))).containsExactly(bytes(30));
+    final MergeRound retry = coordinator.prepareMerge();
+    assertThat(retry).isNotNull();
+
+    // when -- a successor aborts the (now stale) retry without running it
+    coordinator.abortOutstandingMerge();
+
+    // then -- still unmerged and consistent; the next merge proceeds normally
+    assertThat(coordinator.mergeOutstanding()).isFalse();
+    assertThat(store.segmentsNewestFirst()).hasSize(5);
+    final MergeRound next = coordinator.prepareMerge();
+    assertThat(next).isNotNull();
+    next.merge();
+    coordinator.completeMerge(next, true);
+    assertThat(store.segmentsNewestFirst()).hasSize(1);
+    assertThat(store.get(bytes(3))).containsExactly(bytes(30));
+  }
+
+  @Test
+  void shouldReturnNoMergeRoundWhenNoStoreNeedsOne() {
+    // given -- a pipeline within its segment limit
+    final LayeredKeyValueStore store = newStore(STORE_A);
+    final LayeredStoreCoordinator coordinator = newCoordinator(store);
+    store.put(bytes(1), bytes(10));
+    store.promote();
+    coordinator.freezeAll(1);
+
+    // when / then
+    assertThat(coordinator.prepareMerge()).isNull();
+    assertThat(coordinator.mergeOutstanding()).isFalse();
+  }
+
+  /** Freezes {@code batches} disjoint single-key batches (key i -> value 10*i). */
+  private static void freezeDisjointBatches(
+      final LayeredKeyValueStore store,
+      final LayeredStoreCoordinator coordinator,
+      final int batches) {
+    for (int i = 1; i <= batches; i++) {
+      store.put(bytes(i), bytes(10 * i));
+      store.promote();
+      coordinator.freezeAll(i);
+    }
   }
 
   @Test

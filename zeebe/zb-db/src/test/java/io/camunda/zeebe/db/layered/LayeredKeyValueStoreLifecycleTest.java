@@ -88,7 +88,7 @@ final class LayeredKeyValueStoreLifecycleTest {
     putPromoteFreeze(store, "key1", "v1", 1L);
     putPromoteFreeze(store, "key2", "v2", 2L);
 
-    // when -- the third freeze pushes the pipeline over the limit
+    // when -- the third freeze pushes the pipeline over the limit and the driver's check merges
     putPromoteFreeze(store, "key3", "v3", 3L);
 
     // then -- merged down to one segment carrying the newest watermark and all entries
@@ -144,7 +144,7 @@ final class LayeredKeyValueStoreLifecycleTest {
     putPromoteFreeze(store, "k4", "v", 4L);
     putPromoteFreeze(store, "k5", "v", 5L);
 
-    // then -- the merge is skipped (and metered): the pipeline overshoots past the limit
+    // then -- the merge is declined (and metered): the pipeline overshoots past the limit
     assertThat(store.pipelineDepth()).isEqualTo(3);
     assertThat(skippedMerges(registry)).isEqualTo(1);
 
@@ -186,6 +186,104 @@ final class LayeredKeyValueStoreLifecycleTest {
 
   private static double skippedMerges(final SimpleMeterRegistry registry) {
     return registry.get("zeebe.db.layered.pipeline.merges.skipped").counter().count();
+  }
+
+  // ------------------------------------------------------------------
+  // merge lifecycle (captured on the owner thread, executable elsewhere)
+  // ------------------------------------------------------------------
+
+  @Test
+  void shouldSwapMergedRunBelowSegmentsFrozenDuringMerge() {
+    // given -- an over-limit run captured for merging
+    final LayeredKeyValueStore store = newStore(1024 * 1024, false, 1);
+    putPromoteFreezeRaw(store, "a", "v1", 1L);
+    putPromoteFreezeRaw(store, "b", "v2", 2L);
+    final List<FlatSegment> oldestFirst = store.beginMerge();
+
+    // when -- a newer segment freezes while the merge is in flight, then the merge completes
+    putPromoteFreezeRaw(store, "c", "v3", 3L);
+    store.completeMerge(FlatSegment.merge(oldestFirst, store.absorbsDeletes()), true);
+
+    // then -- the merged segment replaced the run in place, below the newer freeze
+    final List<FlatSegment> segments = store.segmentsNewestFirst();
+    assertThat(segments).hasSize(2);
+    assertThat(segments.get(0).watermark()).isEqualTo(3L);
+    assertThat(segments.get(1).watermark()).isEqualTo(2L);
+    assertThat(segments.get(1).entryCount()).isEqualTo(2);
+    assertThat(store.get(bytes("a"))).isEqualTo(bytes("v1"));
+    assertThat(store.get(bytes("c"))).isEqualTo(bytes("v3"));
+  }
+
+  @Test
+  void shouldCompleteMergeAfterPersistedTailWasDropped() {
+    // given -- a persisting tail plus a captured non-persisting run
+    final LayeredKeyValueStore store = newStore(1024 * 1024, false, 1);
+    putPromoteFreezeRaw(store, "old", "v0", 1L);
+    final List<FlatSegment> draining = store.beginPersist();
+    putPromoteFreezeRaw(store, "a", "v1", 2L);
+    putPromoteFreezeRaw(store, "b", "v2", 3L);
+    final List<FlatSegment> oldestFirst = store.beginMerge();
+
+    // when -- the round completes (dropping the tail) while the merge is in flight
+    drainToDelegate(draining);
+    store.completePersist(true);
+    store.completeMerge(FlatSegment.merge(oldestFirst, store.absorbsDeletes()), true);
+
+    // then -- the merged segment replaced the run despite the pipeline shrinking meanwhile
+    final List<FlatSegment> segments = store.segmentsNewestFirst();
+    assertThat(segments).hasSize(1);
+    assertThat(segments.get(0).entryCount()).isEqualTo(2);
+    assertThat(store.get(bytes("a"))).isEqualTo(bytes("v1"));
+    assertThat(store.get(bytes("old"))).isEqualTo(bytes("v0"));
+  }
+
+  @Test
+  void shouldKeepRunOnFailedMerge() {
+    // given -- a captured run whose merge fails
+    final LayeredKeyValueStore store = newStore(1024 * 1024, false, 1);
+    putPromoteFreezeRaw(store, "a", "v1", 1L);
+    putPromoteFreezeRaw(store, "b", "v2", 2L);
+    store.beginMerge();
+
+    // when
+    store.completeMerge(null, false);
+
+    // then -- the run stays exactly as captured and the next merge retries it
+    assertThat(store.segmentsNewestFirst()).hasSize(2);
+    assertThat(store.mergeNeeded()).isTrue();
+    final List<FlatSegment> retry = store.beginMerge();
+    store.completeMerge(FlatSegment.merge(retry, store.absorbsDeletes()), true);
+    assertThat(store.segmentsNewestFirst()).hasSize(1);
+    assertThat(store.get(bytes("a"))).isEqualTo(bytes("v1"));
+  }
+
+  @Test
+  void shouldRejectPersistWhileMergeOutstanding() {
+    // given -- a captured merge run
+    final LayeredKeyValueStore store = newStore(1024 * 1024, false, 1);
+    putPromoteFreezeRaw(store, "a", "v1", 1L);
+    putPromoteFreezeRaw(store, "b", "v2", 2L);
+    final List<FlatSegment> oldestFirst = store.beginMerge();
+
+    // when / then -- a round captures every pipeline segment, so it must not start now
+    assertThatThrownBy(store::beginPersist).isInstanceOf(IllegalStateException.class);
+
+    // and once the merge completed, the round proceeds
+    store.completeMerge(FlatSegment.merge(oldestFirst, store.absorbsDeletes()), true);
+    assertThat(store.beginPersist()).hasSize(1);
+  }
+
+  @Test
+  void shouldRejectConcurrentMerges() {
+    // given
+    final LayeredKeyValueStore store = newStore(1024 * 1024, false, 1);
+    putPromoteFreezeRaw(store, "a", "v1", 1L);
+    putPromoteFreezeRaw(store, "b", "v2", 2L);
+    store.beginMerge();
+
+    // when / then -- merges are single-flight, and the need check reports none while one is out
+    assertThat(store.mergeNeeded()).isFalse();
+    assertThatThrownBy(store::beginMerge).isInstanceOf(IllegalStateException.class);
   }
 
   // ------------------------------------------------------------------
@@ -638,6 +736,29 @@ final class LayeredKeyValueStoreLifecycleTest {
     store.put(bytes(key), bytes(value));
     store.promote();
     store.freeze(watermark);
+    mergeIfNeeded(store);
+  }
+
+  /**
+   * Like {@link #putPromoteFreeze} but without the driver's merge check, for tests that capture
+   * merges explicitly.
+   */
+  private void putPromoteFreezeRaw(
+      final LayeredKeyValueStore store,
+      final String key,
+      final String value,
+      final long watermark) {
+    store.put(bytes(key), bytes(value));
+    store.promote();
+    store.freeze(watermark);
+  }
+
+  /** Mirrors the lifecycle driver: after every freeze occasion, merge when the store asks. */
+  private static void mergeIfNeeded(final LayeredKeyValueStore store) {
+    if (store.mergeNeeded()) {
+      final List<FlatSegment> oldestFirst = store.beginMerge();
+      store.completeMerge(FlatSegment.merge(oldestFirst, store.absorbsDeletes()), true);
+    }
   }
 
   /** Simulates the coordinator's drain: newest version per key wins via oldest-first replay. */
