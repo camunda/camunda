@@ -47,8 +47,6 @@ public final class AdHocSubProcessHandler implements AnalyticsHandler<ProcessIns
             log.setAttribute(BPMN_PROCESS_ID, value.getBpmnProcessId())
                 .setAttribute(DEFINITION_KEY, value.getProcessDefinitionKey())
                 .setAttribute(INSTANCE_KEY, value.getProcessInstanceKey())
-                // Element.ID and Tenant.ID share the unqualified name ID — use qualified form to
-                // disambiguate
                 .setAttribute(AnalyticsAttributes.Element.ID, value.getElementId())
                 .setAttribute(AnalyticsAttributes.Tenant.ID, value.getTenantId())
                 .setTimestamp(record.getTimestamp(), TimeUnit.MILLISECONDS));

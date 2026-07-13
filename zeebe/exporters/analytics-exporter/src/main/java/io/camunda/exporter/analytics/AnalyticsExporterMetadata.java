@@ -9,6 +9,7 @@ package io.camunda.exporter.analytics;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
@@ -19,9 +20,9 @@ final class AnalyticsExporterMetadata {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-  private long eventSequenceNumber;
+  @JsonProperty private long eventSequenceNumber;
 
-  private long metricSequenceNumber;
+  @JsonProperty private long metricSequenceNumber;
 
   /**
    * Transient flag: true when a mutating method has been called since the last {@link #serialize()}
@@ -42,11 +43,7 @@ final class AnalyticsExporterMetadata {
     return eventSequenceNumber;
   }
 
-  public void setEventSequenceNumber(final long eventSequenceNumber) {
-    this.eventSequenceNumber = eventSequenceNumber;
-  }
-
-  public long incrementAndGetEventSequenceNumber() {
+  long incrementAndGetEventSequenceNumber() {
     dirty = true;
     return ++eventSequenceNumber;
   }
@@ -55,11 +52,7 @@ final class AnalyticsExporterMetadata {
     return metricSequenceNumber;
   }
 
-  public void setMetricSequenceNumber(final long metricSequenceNumber) {
-    this.metricSequenceNumber = metricSequenceNumber;
-  }
-
-  public long incrementAndGetMetricSequenceNumber() {
+  long incrementAndGetMetricSequenceNumber() {
     dirty = true;
     return ++metricSequenceNumber;
   }

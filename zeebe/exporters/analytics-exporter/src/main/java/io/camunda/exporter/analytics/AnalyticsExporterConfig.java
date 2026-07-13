@@ -8,10 +8,15 @@
 package io.camunda.exporter.analytics;
 
 import io.camunda.exporter.analytics.sampling.HashSampler;
+import java.net.URI;
 import java.time.Duration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Configuration for the Analytics Exporter. Instantiated from the exporter's args map. */
 public class AnalyticsExporterConfig {
+
+  private static final Logger LOG = LoggerFactory.getLogger(AnalyticsExporterConfig.class);
 
   private String endpoint = "https://analytics.cloud.camunda.io";
   private int maxQueueSize = 2048;
@@ -19,6 +24,7 @@ public class AnalyticsExporterConfig {
   private String pushInterval = "PT5M";
   private String heartbeatInterval = "PT10M";
   private boolean signing = true;
+  private boolean allowInsecure = false;
   private double samplingRate = HashSampler.MAX_SAMPLE_RATE;
 
   public String getEndpoint() {
@@ -75,6 +81,15 @@ public class AnalyticsExporterConfig {
     return this;
   }
 
+  public boolean isAllowInsecure() {
+    return allowInsecure;
+  }
+
+  public AnalyticsExporterConfig setAllowInsecure(final boolean allowInsecure) {
+    this.allowInsecure = allowInsecure;
+    return this;
+  }
+
   public double getSamplingRate() {
     return samplingRate;
   }
@@ -84,15 +99,10 @@ public class AnalyticsExporterConfig {
     return this;
   }
 
+  /** Validates configuration, logging warnings where appropriate. */
   public AnalyticsExporterConfig validate() {
-    if (endpoint == null || endpoint.isBlank()) {
-      throw new IllegalArgumentException("Analytics exporter endpoint is not configured");
-    }
-    try {
-      Duration.parse(pushInterval);
-    } catch (final Exception e) {
-      throw new IllegalArgumentException("Invalid pushInterval: " + pushInterval, e);
-    }
+    validateEndpoint();
+    validatePushInterval();
     final Duration parsedHeartbeat;
     try {
       parsedHeartbeat = Duration.parse(heartbeatInterval);
@@ -131,6 +141,51 @@ public class AnalyticsExporterConfig {
     return this;
   }
 
+  private void validatePushInterval() {
+    final Duration parsedPush;
+    try {
+      parsedPush = Duration.parse(pushInterval);
+    } catch (final Exception e) {
+      throw new IllegalArgumentException("Invalid pushInterval: " + pushInterval, e);
+    }
+    if (parsedPush.isZero() || parsedPush.isNegative()) {
+      throw new IllegalArgumentException("pushInterval must be positive, got: " + pushInterval);
+    }
+  }
+
+  private void validateEndpoint() {
+    if (endpoint == null || endpoint.isBlank()) {
+      throw new IllegalArgumentException("Analytics exporter endpoint is not configured");
+    }
+    final URI uri = URI.create(endpoint);
+    final String host = uri.getHost();
+    final boolean isLocalhost =
+        "localhost".equals(host)
+            || "127.0.0.1".equals(host)
+            || "[::1]".equals(host)
+            || "::1".equals(host);
+    final String scheme = uri.getScheme();
+
+    if ("https".equalsIgnoreCase(scheme)) {
+      return;
+    }
+
+    if (!allowInsecure && !isLocalhost) {
+      throw new IllegalArgumentException(
+          "Analytics exporter endpoint must use https:// unless allowInsecure is true or the"
+              + " host is localhost. Got: "
+              + endpoint);
+    }
+
+    if (allowInsecure) {
+      LOG.warn(
+          "Analytics exporter endpoint uses an insecure scheme ({}). "
+              + "This is allowed because allowInsecure=true, but is not recommended for"
+              + " production.",
+          scheme);
+    }
+  }
+
   /**
    * Returns a stable string encoding the config fields that affect which events are emitted and at
    * what rate. Used as input to the exporter digest.
@@ -140,7 +195,7 @@ public class AnalyticsExporterConfig {
    *
    * <p><b>Excluded</b> (transport-only — affect delivery, not event semantics): {@code endpoint},
    * {@code maxQueueSize}, {@code maxBatchSize}, {@code pushInterval}, {@code heartbeatInterval},
-   * {@code signing}.
+   * {@code signing}, {@code allowInsecure}.
    *
    * <p>When adding a new field to this class, decide explicitly: if it changes event selection or
    * content, add it here; if it only affects delivery mechanics, leave it out and update the
