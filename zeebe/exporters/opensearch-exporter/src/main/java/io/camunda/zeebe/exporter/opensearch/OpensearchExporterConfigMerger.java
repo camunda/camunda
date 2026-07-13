@@ -10,12 +10,14 @@ package io.camunda.zeebe.exporter.opensearch;
 import io.camunda.zeebe.exporter.api.ExporterConfigMerger;
 import io.camunda.zeebe.exporter.support.ExporterConfigMergeSupport;
 import java.util.Map;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * Enables per-physical-tenant partial overrides of a root-declared OpenSearch exporter's {@code
  * args} (ADR-0008 §3): registered via {@code META-INF/services}, discovered with {@link
  * java.util.ServiceLoader} at configuration-resolution time.
  */
+@NullMarked
 public final class OpensearchExporterConfigMerger implements ExporterConfigMerger {
 
   @Override

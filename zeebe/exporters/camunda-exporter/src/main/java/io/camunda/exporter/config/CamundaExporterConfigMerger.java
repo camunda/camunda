@@ -11,6 +11,7 @@ import io.camunda.exporter.CamundaExporter;
 import io.camunda.zeebe.exporter.api.ExporterConfigMerger;
 import io.camunda.zeebe.exporter.support.ExporterConfigMergeSupport;
 import java.util.Map;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * Enables per-physical-tenant partial overrides of an <em>explicitly declared</em> CamundaExporter
@@ -21,6 +22,7 @@ import java.util.Map;
  * META-INF/services}, discovered with {@link java.util.ServiceLoader} at configuration-resolution
  * time.
  */
+@NullMarked
 public final class CamundaExporterConfigMerger implements ExporterConfigMerger {
 
   @Override

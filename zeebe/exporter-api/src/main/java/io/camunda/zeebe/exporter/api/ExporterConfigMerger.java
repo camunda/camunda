@@ -16,6 +16,7 @@
 package io.camunda.zeebe.exporter.api;
 
 import java.util.Map;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * Opt-in, per-exporter-class deep merge of exporter {@code args} maps, used when resolving
@@ -33,6 +34,7 @@ import java.util.Map;
  *
  * <p>Implementations should be stateless; {@link #merge(Map, Map)} must not mutate its inputs.
  */
+@NullMarked
 public interface ExporterConfigMerger {
 
   /**
