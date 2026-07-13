@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import org.agrona.DirectBuffer;
@@ -71,6 +72,7 @@ public final class NestingDepthValidator {
    * <p>Uses an iterative algorithm with an explicit stack to avoid {@link StackOverflowError} on
    * deeply nested input.
    */
+  @VisibleForTesting
   static boolean exceedsMaxDepth(final DirectBuffer buffer, final int maxNestingDepth) {
     final var reader = new MsgPackReader();
     reader.wrap(buffer, 0, buffer.capacity());
