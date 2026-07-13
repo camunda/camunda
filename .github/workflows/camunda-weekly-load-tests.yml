@@ -1,7 +1,7 @@
 # description: Runs parallel endurance tests weekly against main (TTL: 28 days).
-#              Variants: realistic, rdbms-realistic (PostgreSQL), opensearch-realistic, latency.
+#              Variants: realistic, rdbms-realistic (PostgreSQL), opensearch-realistic.
 #              Naming pattern: medic-y-YYYY-cw-WW-<sha>
-# calls: camunda-load-test.yml (5 parallel calls, one per scenario)
+# calls: camunda-load-test.yml (3 parallel calls, one per scenario)
 # type: CI
 # owner: @camunda/reliability-testing
 name: Camunda weekly medic load test
@@ -235,25 +235,6 @@ jobs:
       reuse-tag: ${{ needs.test-data.outputs.image-tag }}
       scenario: realistic
 
-  setup-latency-test:
-    name: Latency test
-    uses: ./.github/workflows/camunda-load-test.yml
-    secrets: inherit
-    needs:
-      - test-data
-      - build-camunda-image
-      - build-load-test-images
-    if: |
-      always() &&
-      needs.test-data.result == 'success' &&
-      (needs.build-camunda-image.result == 'success' || needs.build-camunda-image.result == 'skipped') &&
-      (needs.build-load-test-images.result == 'success' || needs.build-load-test-images.result == 'skipped')
-    with:
-      name: ${{ needs.test-data.outputs.image-tag }}-latency
-      ttl: ${{ fromJSON(inputs.ttl || '28') }}
-      reuse-tag: ${{ needs.test-data.outputs.image-tag }}
-      scenario: latency
-
   setup-ecs-benchmark:
     name: ECS Weekly Benchmark
     needs:
@@ -276,7 +257,7 @@ jobs:
   notify:
     name: Notify on failure
     runs-on: ubuntu-latest
-    needs: [ build-camunda-image, build-load-test-images, setup-rdbms-realistic-load-test, setup-opensearch-realistic-load-test, setup-realistic-test, setup-latency-test, setup-ecs-benchmark ]
+    needs: [ build-camunda-image, build-load-test-images, setup-rdbms-realistic-load-test, setup-opensearch-realistic-load-test, setup-realistic-test, setup-ecs-benchmark ]
     if: failure()
     timeout-minutes: 5
     permissions: { }
