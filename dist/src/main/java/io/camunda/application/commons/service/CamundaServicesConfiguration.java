@@ -9,7 +9,6 @@ package io.camunda.application.commons.service;
 
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
 import io.camunda.application.commons.document.CamundaDocumentStoreConfigurationLoader;
-import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
@@ -444,13 +443,5 @@ public class CamundaServicesConfiguration {
             });
 
     return builder.build();
-  }
-
-  // UserServices bean is used by BrokerModuleConfiguration and GatewayModuleConfiguration for Basic
-  // auth in gRPC
-  // TODO to be removed by https://github.com/camunda/camunda/issues/55753
-  @Bean
-  public UserServices userServices(final ServiceRegistry serviceRegistry) {
-    return serviceRegistry.userServices(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 }
