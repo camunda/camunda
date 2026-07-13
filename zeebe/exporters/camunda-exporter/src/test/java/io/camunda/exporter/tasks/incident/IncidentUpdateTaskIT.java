@@ -331,6 +331,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
           final var updatedIncident = getFromIndex(incidentTemplate, client, incidentEntity);
           assertThat(updatedIncident.getTreePath())
               .isEqualTo(String.format("%s/FNI_%d", treePath, flowNodeInstanceKey));
+          assertThat(updatedIncident.getState()).isEqualTo(IncidentState.ACTIVE);
 
           assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(1L);
         });
@@ -434,6 +435,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               String.format("PI_%d/FNI_%d", processInstanceKey, flowNodeInstanceKey);
           final var updatedIncident = getFromIndex(incidentTemplate, client, incidentEntity);
           assertThat(updatedIncident.getTreePath()).isEqualTo(sparseTreePath);
+          assertThat(updatedIncident.getState()).isEqualTo(IncidentState.ACTIVE);
 
           assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(1L);
         });
@@ -504,6 +506,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
           assertThat(updatedProcessInstance.isIncident()).isTrue();
 
           final var updatedIncident = getFromIndex(incidentTemplate, client, incidentEntity);
+          assertThat(updatedIncident.getState()).isEqualTo(IncidentState.ACTIVE);
           assertThat(updatedIncident.getTreePath())
               .isEqualTo(String.format("%s/FNI_%d", treePath, processInstanceKey));
 
@@ -611,6 +614,9 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
           final var updatedFlowNodeInstance =
               getFromIndex(flowNodeInstanceTemplate, client, flowNodeInstance);
           assertThat(updatedFlowNodeInstance.isIncident()).isFalse();
+
+          final var updatedIncident = getFromIndex(incidentTemplate, client, incidentEntity);
+          assertThat(updatedIncident.getState()).isEqualTo(IncidentState.RESOLVED);
 
           assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(1L);
         });
