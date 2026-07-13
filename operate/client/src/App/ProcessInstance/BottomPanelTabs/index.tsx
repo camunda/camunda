@@ -195,9 +195,10 @@ const BottomPanelTabs: React.FC<{isHistoryTabVisible: boolean}> = ({
         <Navigate
           to={{
             ...location,
-            pathname: hasSelection || isProcessLevelWaiting
-              ? Paths.processInstanceDetails({processInstanceId})
-              : Paths.processInstanceVariables({processInstanceId}),
+            pathname:
+              hasSelection || isProcessLevelWaiting
+                ? Paths.processInstanceDetails({processInstanceId})
+                : Paths.processInstanceVariables({processInstanceId}),
           }}
           replace
         />
