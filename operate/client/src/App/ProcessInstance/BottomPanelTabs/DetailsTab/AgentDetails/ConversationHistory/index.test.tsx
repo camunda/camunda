@@ -664,20 +664,20 @@ describe('<ConversationHistory />', () => {
         mockAgentInstanceHistoryItem({
           historyItemKey: '3',
           loopIteration: 2,
-          role: 'TOOL_RESULT',
-          content: [{contentType: 'TEXT', text: 'Second iteration message'}],
+          role: 'ASSISTANT',
+          content: [{contentType: 'TEXT', text: 'message 3'}],
         }),
         mockAgentInstanceHistoryItem({
           historyItemKey: '2',
           loopIteration: 2,
-          role: 'ASSISTANT',
-          content: [{contentType: 'TEXT', text: 'Second iteration message'}],
+          role: 'USER',
+          content: [{contentType: 'TEXT', text: 'message 2'}],
         }),
         mockAgentInstanceHistoryItem({
           historyItemKey: '1',
           loopIteration: 1,
           role: 'ASSISTANT',
-          content: [{contentType: 'TEXT', text: 'Only message'}],
+          content: [{contentType: 'TEXT', text: 'message 1'}],
         }),
       ]),
     );
@@ -706,10 +706,10 @@ describe('<ConversationHistory />', () => {
         Node.DOCUMENT_POSITION_PRECEDING,
     ).toBeTruthy();
 
-    const secondMarker = screen.getByText('1. loop iteration');
+    const secondMarker = screen.getByText('2. loop iteration');
     expect(secondMarker).toBeVisible();
-    const secondMessage = screen.getByTestId('conversation-message-1');
-    const thirdMessage = screen.getByTestId('conversation-message-1');
+    const secondMessage = screen.getByTestId('conversation-message-2');
+    const thirdMessage = screen.getByTestId('conversation-message-3');
     expect(
       secondMarker.compareDocumentPosition(secondMessage) &
         Node.DOCUMENT_POSITION_PRECEDING,
@@ -727,19 +727,19 @@ describe('<ConversationHistory />', () => {
           historyItemKey: '1',
           loopIteration: 1,
           role: 'ASSISTANT',
-          content: [{contentType: 'TEXT', text: 'Only message'}],
+          content: [{contentType: 'TEXT', text: 'message 1'}],
         }),
         mockAgentInstanceHistoryItem({
           historyItemKey: '2',
           loopIteration: 2,
-          role: 'ASSISTANT',
-          content: [{contentType: 'TEXT', text: 'Second iteration message'}],
+          role: 'USER',
+          content: [{contentType: 'TEXT', text: 'message 2'}],
         }),
         mockAgentInstanceHistoryItem({
           historyItemKey: '3',
           loopIteration: 2,
-          role: 'TOOL_RESULT',
-          content: [{contentType: 'TEXT', text: 'Second iteration message'}],
+          role: 'ASSISTANT',
+          content: [{contentType: 'TEXT', text: 'message 3'}],
         }),
       ]),
     );
@@ -773,10 +773,10 @@ describe('<ConversationHistory />', () => {
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
 
-    const secondMarker = screen.getByText('1. loop iteration');
+    const secondMarker = screen.getByText('2. loop iteration');
     expect(secondMarker).toBeVisible();
-    const secondMessage = screen.getByTestId('conversation-message-1');
-    const thirdMessage = screen.getByTestId('conversation-message-1');
+    const secondMessage = screen.getByTestId('conversation-message-2');
+    const thirdMessage = screen.getByTestId('conversation-message-3');
     expect(
       secondMarker.compareDocumentPosition(secondMessage) &
         Node.DOCUMENT_POSITION_FOLLOWING,
