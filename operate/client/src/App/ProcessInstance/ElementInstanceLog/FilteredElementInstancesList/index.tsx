@@ -23,7 +23,10 @@ import {ElementInstanceIcon} from '../ElementInstancesTree/styled';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {tracking} from 'modules/tracking';
-import {useElementInstancesSearchPaginated} from 'modules/queries/elementInstances/useElementInstancesSearchPaginated';
+import {
+  useElementInstancesSearchPaginated,
+  PAGE_LIMIT,
+} from 'modules/queries/elementInstances/useElementInstancesSearchPaginated';
 import {flattenPaginatedPages} from 'modules/queries/flattenPaginatedPages';
 import {useDashboardScrollPagination} from 'modules/hooks/useDashboardScrollPagination';
 import {escapeLikePattern} from 'modules/utils/escapeLikePattern';
@@ -36,7 +39,6 @@ import {
   IndentedTreeNode,
 } from './styled';
 
-const PAGE_LIMIT = 50;
 const ROW_HEIGHT = 32;
 
 type RowProps = {

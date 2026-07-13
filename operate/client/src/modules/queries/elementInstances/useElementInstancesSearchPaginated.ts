@@ -59,4 +59,4 @@ const useElementInstancesSearchPaginated = <
   });
 };
 
-export {useElementInstancesSearchPaginated};
+export {useElementInstancesSearchPaginated, PAGE_LIMIT};
