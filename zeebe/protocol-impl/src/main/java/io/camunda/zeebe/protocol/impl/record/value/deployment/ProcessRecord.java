@@ -12,6 +12,8 @@ import static io.camunda.zeebe.protocol.impl.record.value.processinstance.Proces
 import static io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord.VERSION_KEY;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
@@ -20,6 +22,8 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Map;
+import java.util.TreeMap;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -34,9 +38,11 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1);
   private final StringProperty versionTagProp = new StringProperty("versionTag", "");
+  private final ArrayProperty<TransformerVersion> transformerVersionsProp =
+      new ArrayProperty<>("transformerVersions", TransformerVersion::new);
 
   public ProcessRecord() {
-    super(9);
+    super(10);
     declareProperty(bpmnProcessIdProp)
         .declareProperty(versionProp)
         .declareProperty(keyProp)
@@ -45,7 +51,8 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
         .declareProperty(resourceProp)
         .declareProperty(tenantIdProp)
         .declareProperty(deploymentKeyProp)
-        .declareProperty(versionTagProp);
+        .declareProperty(versionTagProp)
+        .declareProperty(transformerVersionsProp);
   }
 
   public ProcessRecord wrap(final ProcessMetadata metadata, final byte[] resource) {
@@ -212,5 +219,66 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
   public ProcessRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
     return this;
+  }
+
+  /**
+   * Sets the per-slot transformer versions frozen at deploy time. Entries are sorted by slot ID
+   * before writing so the msgpack array is always in a deterministic order regardless of the input
+   * map's iteration order. Version-1 entries are stored but redundant — {@link
+   * io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer#currentVersionsById()}
+   * omits them automatically, so callers using that method need not filter.
+   */
+  public ProcessRecord setTransformerVersions(final Map<Integer, Integer> versions) {
+    transformerVersionsProp.reset();
+    new TreeMap<>(versions)
+        .forEach(
+            (slotId, version) -> {
+              final var entry = transformerVersionsProp.add();
+              entry.setSlotId(slotId);
+              entry.setVersion(version);
+            });
+    return this;
+  }
+
+  /**
+   * Returns the stored slot→version pairs sorted by slot ID. Absent entries default to version 1.
+   * Excluded from JSON export — engine-internal state not exposed to external consumers.
+   */
+  @JsonIgnore
+  public Map<Integer, Integer> getTransformerVersions() {
+    final Map<Integer, Integer> result = new TreeMap<>();
+    for (final TransformerVersion entry : transformerVersionsProp) {
+      result.put(entry.getSlotId(), entry.getVersion());
+    }
+    return result;
+  }
+
+  /** A single (slotId, version) pair persisted inside the transformer-versions array. */
+  public static final class TransformerVersion extends UnpackedObject {
+    private final IntegerProperty slotIdProp = new IntegerProperty("slotId");
+    private final IntegerProperty versionProp = new IntegerProperty("version");
+
+    public TransformerVersion() {
+      super(2);
+      declareProperty(slotIdProp).declareProperty(versionProp);
+    }
+
+    public int getSlotId() {
+      return slotIdProp.getValue();
+    }
+
+    public TransformerVersion setSlotId(final int slotId) {
+      slotIdProp.setValue(slotId);
+      return this;
+    }
+
+    public int getVersion() {
+      return versionProp.getValue();
+    }
+
+    public TransformerVersion setVersion(final int version) {
+      versionProp.setValue(version);
+      return this;
+    }
   }
 }

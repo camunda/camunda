@@ -21,9 +21,7 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
-import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
-import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
@@ -37,7 +35,6 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.time.InstantSource;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -114,13 +111,8 @@ public final class DbProcessState implements MutableProcessState {
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
       final EngineConfiguration config,
-      final InstantSource clock,
-      final ExpressionLanguageMetrics expressionLanguageMetrics) {
-    // Since this transformer is used for processes from the engine state, we set the max length to
-    // Integer.MAX_VALUE, because validation has already happened during deployment and we want to
-    // be able to transform processes even if the max length has been changes in the meantime.
-    transformer =
-        BpmnFactory.createTransformer(clock, expressionLanguageMetrics, Integer.MAX_VALUE);
+      final BpmnTransformer transformer) {
+    this.transformer = transformer;
     processDefinitionKey = new DbLong();
     persistedProcess = new PersistedProcess();
     tenantIdKey = new DbString();
@@ -388,7 +380,9 @@ public final class DbProcessState implements MutableProcessState {
 
     final BpmnModelInstance modelInstance =
         readModelInstanceFromBuffer(copiedProcess.getResource());
-    final List<ExecutableProcess> definitions = transformer.transformDefinitions(modelInstance);
+    // pin the pipeline to the versions frozen at deploy time (absent slots resolve to v1)
+    final List<ExecutableProcess> definitions =
+        transformer.transformDefinitions(modelInstance, copiedProcess.getTransformerVersions());
 
     final ExecutableProcess executableProcess =
         definitions.stream()

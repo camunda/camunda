@@ -82,6 +82,35 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
     this.processDefinitionMetrics = processDefinitionMetrics;
   }
 
+  /** Used by {@link DeploymentTransformer} to inject the shared transformer instance. */
+  BpmnResourceTransformer(
+      final BpmnTransformer bpmnTransformer,
+      final KeyGenerator keyGenerator,
+      final StateWriter stateWriter,
+      final ChecksumGenerator checksumGenerator,
+      final ProcessState processState,
+      final ExpressionProcessor expressionProcessor,
+      final boolean enableStraightThroughProcessingLoopDetector,
+      final ValidationConfig config,
+      final InstantSource clock,
+      final ExpressionLanguageMetrics expressionLanguageMetrics,
+      final ProcessDefinitionMetrics processDefinitionMetrics) {
+    this.bpmnTransformer = bpmnTransformer;
+    this.keyGenerator = keyGenerator;
+    this.stateWriter = stateWriter;
+    this.checksumGenerator = checksumGenerator;
+    this.processState = processState;
+    validator =
+        BpmnFactory.createValidator(clock, expressionProcessor, config, expressionLanguageMetrics);
+    this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
+    elementOrderErrorTransformer = new BpmnElementOrderErrorTransformer();
+    this.processDefinitionMetrics = processDefinitionMetrics;
+  }
+
+  Map<Integer, Integer> currentTransformerVersionsById() {
+    return bpmnTransformer.currentVersionsById();
+  }
+
   @Override
   public boolean canTransform(final DeploymentResource resource) {
     final var resourceName = resource.getResourceName();
@@ -175,7 +204,10 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
                     .setDuplicate(false)
                     .setDeploymentKey(deployment.getDeploymentKey());
               }
-              final var processRecord = new ProcessRecord().wrap(metadata, resource.getResource());
+              final var processRecord =
+                  new ProcessRecord()
+                      .wrap(metadata, resource.getResource())
+                      .setTransformerVersions(bpmnTransformer.currentVersionsById());
               stateWriter.appendFollowUpEvent(key, ProcessIntent.CREATED, processRecord);
               processDefinitionMetrics.processDefinitionDeployed(
                   key, processRecord.getBpmnProcessId(), resource.getResource().length);

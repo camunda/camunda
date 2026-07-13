@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.ChecksumGenerator;
+import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
 import io.camunda.zeebe.engine.processing.deployment.model.validation.DeploymentValidator;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -25,6 +26,7 @@ import io.camunda.zeebe.util.FeatureFlags;
 import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.agrona.DirectBuffer;
 
 public final class DeploymentTransformer {
@@ -32,6 +34,7 @@ public final class DeploymentTransformer {
   private final DeploymentValidator validator;
   private final List<DeploymentResourceTransformer> resourceTransformers;
   private final ChecksumGenerator checksumGenerator = new ChecksumGenerator();
+  private final BpmnResourceTransformer bpmnResourceTransformer;
 
   public DeploymentTransformer(
       final StateWriter stateWriter,
@@ -45,8 +48,12 @@ public final class DeploymentTransformer {
       final ProcessDefinitionMetrics processDefinitionMetrics) {
     validator = new DeploymentValidator(config);
 
-    final var bpmnResourceTransformer =
+    final var bpmnTransformer =
+        BpmnFactory.createTransformer(
+            clock, expressionLanguageMetrics, config.maxNameFieldLength());
+    bpmnResourceTransformer =
         new BpmnResourceTransformer(
+            bpmnTransformer,
             keyGenerator,
             stateWriter,
             checksumGenerator,
@@ -91,6 +98,15 @@ public final class DeploymentTransformer {
 
   public DirectBuffer getChecksum(final byte[] resource) {
     return wrapArray(checksumGenerator.checksum(resource));
+  }
+
+  /**
+   * Sparse map of {@code TransformerSlot} id → current handler version of the deploy-time BPMN
+   * transformer pipeline, as stamped into every {@code ProcessRecord} written by this transformer.
+   * The same instance transforms the model and stamps the map — no catalog drift possible.
+   */
+  public Map<Integer, Integer> getTransformerVersionsById() {
+    return bpmnResourceTransformer.currentTransformerVersionsById();
   }
 
   public Either<Failure, Void> transform(final DeploymentRecord deploymentEvent) {
