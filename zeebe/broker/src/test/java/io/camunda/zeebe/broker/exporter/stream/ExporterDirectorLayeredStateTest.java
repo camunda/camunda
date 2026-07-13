@@ -26,8 +26,11 @@ import org.junit.Test;
 /**
  * The exporter ownership domain (experimental layered-state flag): exporter positions are written
  * through the {@code exporter} domain's context — buffered in memory on the director's actor — and
- * drained to committed RocksDB by the director's own persist cadence; a successor director on the
- * same database (a leader transition) takes the domain over and keeps working.
+ * drained to committed RocksDB on demand only: the initial entries immediately after recovery and
+ * the buffered positions on the pre-snapshot {@link ExporterDirector#flushBufferedExporterState()}
+ * (there is no persist cadence — the domain participates in the RocksDB snapshot, so intermediate
+ * persists buy nothing a crash can use); a successor director on the same database (a leader
+ * transition) takes the domain over and keeps working.
  *
  * <p>Assertions on committed positions read through a pass-through context ({@link
  * ExporterRule#getExportersState()}), i.e. they only see what a persist round drained — exactly
@@ -36,16 +39,10 @@ import org.junit.Test;
 public final class ExporterDirectorLayeredStateTest {
 
   private static final String EXPORTER_ID = "layered-test-exporter";
-  private static final Duration PERSIST_INTERVAL = Duration.ofMillis(100);
   private static final Duration TIMEOUT = Duration.ofSeconds(10);
 
-  private final LayeredZeebeDbConfig layeredConfig =
-      new LayeredZeebeDbConfig(
-          LayeredZeebeDbConfig.defaults().maxBytesPerStore(),
-          LayeredZeebeDbConfig.defaults().maxBufferedBytes(),
-          LayeredZeebeDbConfig.defaults().absorbDeletes(),
-          LayeredZeebeDbConfig.defaults().pipelineSegmentLimit(),
-          PERSIST_INTERVAL);
+  // the store configuration carries no persist interval — the exporter domain drains on demand
+  private final LayeredZeebeDbConfig layeredConfig = LayeredZeebeDbConfig.defaults();
 
   @Rule public final ExporterRule rule = ExporterRule.activeExporter().withLayeredDb(layeredConfig);
 
@@ -53,12 +50,13 @@ public final class ExporterDirectorLayeredStateTest {
       new ControlledTestExporter().shouldAutoUpdatePosition(true);
 
   @Test
-  public void shouldPersistBufferedExporterPositionsAtCadence() {
+  public void shouldCommitBufferedExporterPositionsOnSnapshotFlush() {
     // given a director writing exporter positions through the exporter domain
     rule.startExporterDirector(List.of(descriptor()));
 
-    // the initial exporter entry is drained right away, so snapshot selection (which reads
-    // committed RocksDB only) sees the exporter and keeps bounding compaction by its position
+    // the initial exporter entry is drained right away (the empty-column-family guard), so
+    // snapshot selection — which reads committed RocksDB only — sees the exporter and keeps
+    // bounding compaction by its position
     Awaitility.await("until the initial exporter entry is committed")
         .atMost(TIMEOUT)
         .untilAsserted(() -> assertThat(rule.getExportersState().hasExporters()).isTrue());
@@ -66,44 +64,49 @@ public final class ExporterDirectorLayeredStateTest {
     // when a record is exported and acknowledged
     final long position = rule.writeEvent(DeploymentIntent.CREATED, new DeploymentRecord());
 
-    // then the buffered position is visible to the director immediately and reaches committed
-    // RocksDB within the persist cadence
+    // then the buffered position is visible to the director immediately, while the committed
+    // position lags — there is no persist cadence
     Awaitility.await("until the director observes the acknowledged position")
         .atMost(TIMEOUT)
         .untilAsserted(
             () -> assertThat(rule.getDirector().getLowestPosition().join()).isEqualTo(position));
-    Awaitility.await("until a persist round committed the position")
-        .atMost(TIMEOUT)
-        .untilAsserted(
-            () ->
-                assertThat(rule.getExportersState().getPosition(EXPORTER_ID)).isEqualTo(position));
+    assertThat(rule.getExportersState().getPosition(EXPORTER_ID)).isNotEqualTo(position);
+
+    // and the pre-snapshot flush commits it, so snapshot-index selection sees the current
+    // exporter reality at checkpoint time
+    rule.getDirector().flushBufferedExporterState().join();
+    assertThat(rule.getExportersState().getPosition(EXPORTER_ID)).isEqualTo(position);
   }
 
   @Test
   public void shouldTakeOverExporterDomainOnSameDbAfterRestart() {
-    // given a director whose acknowledged position was persisted
+    // given a director whose acknowledged position was committed by a pre-snapshot flush
     rule.startExporterDirector(List.of(descriptor()));
     final long firstPosition = rule.writeEvent(DeploymentIntent.CREATED, new DeploymentRecord());
-    Awaitility.await("until a persist round committed the first position")
+    Awaitility.await("until the pre-snapshot flush committed the first position")
         .atMost(TIMEOUT)
         .untilAsserted(
-            () ->
-                assertThat(rule.getExportersState().getPosition(EXPORTER_ID))
-                    .isEqualTo(firstPosition));
+            () -> {
+              rule.getDirector().flushBufferedExporterState().join();
+              assertThat(rule.getExportersState().getPosition(EXPORTER_ID))
+                  .isEqualTo(firstPosition);
+            });
 
     // when a successor director takes over the same database (a leader transition)
     rule.stopExporterDirector();
     rule.startExporterDirectorOnSameDb(List.of(descriptor()));
 
-    // then it recovered the persisted position and keeps exporting and persisting through the
-    // taken-over domain
+    // then it recovered the persisted position — recovery resumes exporting from the committed
+    // (snapshotted) positions — and keeps exporting and flushing through the taken-over domain
     final long secondPosition = rule.writeEvent(DeploymentIntent.CREATED, new DeploymentRecord());
-    Awaitility.await("until the successor's persist round committed the new position")
+    Awaitility.await("until the successor's pre-snapshot flush committed the new position")
         .atMost(TIMEOUT)
         .untilAsserted(
-            () ->
-                assertThat(rule.getExportersState().getPosition(EXPORTER_ID))
-                    .isEqualTo(secondPosition));
+            () -> {
+              rule.getDirector().flushBufferedExporterState().join();
+              assertThat(rule.getExportersState().getPosition(EXPORTER_ID))
+                  .isEqualTo(secondPosition);
+            });
     assertThat(secondPosition).isGreaterThan(firstPosition);
   }
 

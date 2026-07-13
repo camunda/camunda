@@ -9,8 +9,13 @@ package io.camunda.zeebe.db.layered;
 
 /** What caused a persist round to be scheduled; the runtime picks the trigger, the store counts. */
 public enum PersistTrigger {
-  /** The regular persist cadence found buffered writes. */
-  INTERVAL("interval"),
+  /**
+   * The initial entries of a freshly opened exporter domain are drained immediately: committed
+   * readers (snapshot selection, log compaction) treat an empty exporter column family as "no
+   * exporters configured", so the initial entries must not linger in the buffer where that check
+   * cannot see them.
+   */
+  EXPORTER_INITIAL("exporterInitial"),
   /**
    * The domain's buffered bytes climbed onto the buffer-pressure ladder's start rung (a configured
    * fraction of the buffered-bytes budget), starting a paced round early. Labelled after the

@@ -35,6 +35,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 
 public final class AsyncSnapshotDirector extends Actor
@@ -61,6 +62,7 @@ public final class AsyncSnapshotDirector extends Actor
   private final StreamProcessorMode streamProcessorMode;
   private final Callable<CompletableFuture<Void>> flushLog;
   private final StatePositionSupplier positionSupplier;
+  private final Supplier<ActorFuture<Void>> flushExporterState;
   private final Set<FailureListener> listeners = new HashSet<>();
   private final TreeMap<Long, ActorFuture<Void>> commitAwaiters = new TreeMap<>();
   private CompletableActorFuture<PersistedSnapshot> ongoingSnapshotFuture;
@@ -77,7 +79,8 @@ public final class AsyncSnapshotDirector extends Actor
       final Duration snapshotRate,
       final StreamProcessorMode streamProcessorMode,
       final Callable<CompletableFuture<Void>> flushLog,
-      final StatePositionSupplier positionSupplier) {
+      final StatePositionSupplier positionSupplier,
+      final Supplier<ActorFuture<Void>> flushExporterState) {
     super("SnapshotDirector", partitionId);
     this.streamProcessor = streamProcessor;
     this.stateController = stateController;
@@ -86,6 +89,7 @@ public final class AsyncSnapshotDirector extends Actor
     this.streamProcessorMode = streamProcessorMode;
     this.flushLog = flushLog;
     this.positionSupplier = positionSupplier;
+    this.flushExporterState = flushExporterState;
     healthReport = HealthReport.healthy(this);
   }
 
@@ -100,6 +104,9 @@ public final class AsyncSnapshotDirector extends Actor
    * @param snapshotRate rate at which the snapshot is taken
    * @param flushLog callable to flush the log
    * @param positionSupplier supplier for positions from the state
+   * @param flushExporterState drains buffered exporter positions to committed RocksDB before a
+   *     snapshot (experimental layered-state flag; a completed no-op otherwise), so snapshot-index
+   *     selection — which reads the committed positions — sees the current exporter reality
    * @return snapshot director
    */
   public static AsyncSnapshotDirector of(
@@ -109,7 +116,8 @@ public final class AsyncSnapshotDirector extends Actor
       final StreamProcessorMode streamProcessorMode,
       final Duration snapshotRate,
       final Callable<CompletableFuture<Void>> flushLog,
-      final StatePositionSupplier positionSupplier) {
+      final StatePositionSupplier positionSupplier,
+      final Supplier<ActorFuture<Void>> flushExporterState) {
     return new AsyncSnapshotDirector(
         partitionId,
         streamProcessor,
@@ -117,7 +125,8 @@ public final class AsyncSnapshotDirector extends Actor
         snapshotRate,
         streamProcessorMode,
         flushLog,
-        positionSupplier);
+        positionSupplier,
+        flushExporterState);
   }
 
   @Override
@@ -241,14 +250,51 @@ public final class AsyncSnapshotDirector extends Actor
       final InProgressSnapshot inProgressSnapshot, final boolean forceSnapshot) {
     // with the experimental layered-state flag on, buffered runtime state must be drained to
     // RocksDB first so the checkpoint's content is at least as new as the snapshot's claimed
-    // processed position (resolved before this chain); a no-op when the flag is off
+    // processed position (resolved before this chain), and the buffered exporter positions must
+    // be committed so the transient snapshot's index selection sees the current exporter reality;
+    // both are no-ops when the flag is off
     return streamProcessor
         .flushBufferedState()
+        .andThen(this::tryFlushExporterState, actor)
         .andThen(() -> takeTransientSnapshot(inProgressSnapshot, forceSnapshot), actor)
         .andThen(() -> getPositionsAfterSnapshot(inProgressSnapshot), actor)
         .andThen(() -> waitUntilLastWrittenPositionIsCommitted(inProgressSnapshot), actor)
         .andThen(this::flushJournal, actor)
         .andThen(() -> persistSnapshot(inProgressSnapshot), actor);
+  }
+
+  /**
+   * Drains the buffered exporter positions before the transient snapshot; best-effort by design —
+   * unlike the engine-state flush, a failed exporter drain must not fail the snapshot: the
+   * committed positions only lag conservatively (snapshot-index selection picks an older index and
+   * retention keeps more log), which the next snapshot corrects.
+   */
+  private ActorFuture<Void> tryFlushExporterState() {
+    final CompletableActorFuture<Void> flushed = new CompletableActorFuture<>();
+    try {
+      flushExporterState
+          .get()
+          .onComplete(
+              (ok, error) -> {
+                if (error != null) {
+                  LOG.warn(
+                      "Failed to flush the buffered exporter state before the snapshot; the"
+                          + " snapshot proceeds with the last committed exporter positions"
+                          + " (conservative: retention only keeps more log)",
+                      error);
+                }
+                flushed.complete(null);
+              },
+              actor);
+    } catch (final Exception e) {
+      LOG.warn(
+          "Failed to flush the buffered exporter state before the snapshot; the snapshot proceeds"
+              + " with the last committed exporter positions (conservative: retention only keeps"
+              + " more log)",
+          e);
+      flushed.complete(null);
+    }
+    return flushed;
   }
 
   private ActorFuture<Void> flushJournal() {

@@ -77,7 +77,8 @@ final class LayeredPersistIoActorTest {
     for (long key = 1; key <= 3; key++) {
       commitBatch(key, key * 100);
     }
-    final PersistRound round = layered.defaultDomain().preparePersist(3, PersistTrigger.INTERVAL);
+    final PersistRound round =
+        layered.defaultDomain().preparePersist(3, PersistTrigger.PRE_SNAPSHOT);
     final DrainPacer pacer = new DrainPacer(0, System.nanoTime());
 
     // when
@@ -99,7 +100,8 @@ final class LayeredPersistIoActorTest {
     // given two buffered entries and a real pacing budget
     commitBatch(1, 100);
     commitBatch(2, 200);
-    final PersistRound round = layered.defaultDomain().preparePersist(2, PersistTrigger.INTERVAL);
+    final PersistRound round =
+        layered.defaultDomain().preparePersist(2, PersistTrigger.PRE_SNAPSHOT);
     final DrainPacer pacer = new DrainPacer(Duration.ofHours(1).toNanos(), System.nanoTime());
 
     // when the drain runs everything currently runnable
@@ -130,7 +132,8 @@ final class LayeredPersistIoActorTest {
     // given a paced round parked between slices on a long pacing wait
     commitBatch(1, 100);
     commitBatch(2, 200);
-    final PersistRound round = layered.defaultDomain().preparePersist(2, PersistTrigger.INTERVAL);
+    final PersistRound round =
+        layered.defaultDomain().preparePersist(2, PersistTrigger.PRE_SNAPSHOT);
     final DrainPacer pacer = new DrainPacer(Duration.ofHours(1).toNanos(), System.nanoTime());
     final ActorFuture<Void> done = io.persist(round, pacer);
     scheduler.workUntilDone();

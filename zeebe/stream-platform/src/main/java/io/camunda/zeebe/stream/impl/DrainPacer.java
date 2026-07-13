@@ -33,7 +33,8 @@ final class DrainPacer {
 
   /**
    * @param budgetNanos the time budget of the whole drain, from {@code startNanos} on — typically
-   *     {@code pacingTargetFraction × persistInterval}
+   *     the configured pacing window; the deadline only shapes disk amplitude, correctness never
+   *     depends on it
    * @param startNanos the drain's start timestamp ({@code System.nanoTime()} domain)
    */
   DrainPacer(final long budgetNanos, final long startNanos) {

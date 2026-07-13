@@ -10,6 +10,9 @@ package io.camunda.zeebe.broker.system.partitions;
 import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
@@ -23,6 +26,7 @@ import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
@@ -38,6 +42,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Supplier;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.Before;
@@ -131,6 +136,16 @@ public final class AsyncSnapshottingTest {
   }
 
   private void createSnapshotDirector(final StreamProcessorMode mode) {
+    createSnapshotDirector(mode, () -> CompletableActorFuture.completed(null));
+  }
+
+  private void createSnapshotDirectorWithExporterFlush(
+      final Supplier<ActorFuture<Void>> flushExporterState) {
+    createSnapshotDirector(StreamProcessorMode.PROCESSING, flushExporterState);
+  }
+
+  private void createSnapshotDirector(
+      final StreamProcessorMode mode, final Supplier<ActorFuture<Void>> flushExporterState) {
     asyncSnapshotDirector =
         AsyncSnapshotDirector.of(
             new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
@@ -139,7 +154,8 @@ public final class AsyncSnapshottingTest {
             mode,
             Duration.ofMinutes(1),
             () -> CompletableFuture.completedFuture(null),
-            positionSupplier);
+            positionSupplier,
+            flushExporterState);
     actorSchedulerRule.submitActor(asyncSnapshotDirector).join();
   }
 
@@ -259,7 +275,8 @@ public final class AsyncSnapshottingTest {
             StreamProcessorMode.PROCESSING,
             Duration.ofMinutes(1),
             () -> flushFuture,
-            positionSupplier);
+            positionSupplier,
+            () -> CompletableActorFuture.completed(null));
     actorSchedulerRule.submitActor(asyncSnapshotDirector).join();
     setCommitPosition(100L);
 
@@ -287,7 +304,8 @@ public final class AsyncSnapshottingTest {
             StreamProcessorMode.REPLAY,
             Duration.ofMinutes(1),
             () -> flushFuture,
-            positionSupplier);
+            positionSupplier,
+            () -> CompletableActorFuture.completed(null));
     actorSchedulerRule.submitActor(asyncSnapshotDirector).join();
 
     // when
@@ -299,5 +317,43 @@ public final class AsyncSnapshottingTest {
         .failsWithin(Duration.ofMillis(1000))
         .withThrowableOfType(ExecutionException.class)
         .withMessageContaining("Flush failed");
+  }
+
+  @Test
+  public void shouldCommitBufferedExporterPositionsBeforeTakingTransientSnapshot() {
+    // given a director whose pre-snapshot exporter flush is gated (experimental layered-state
+    // flag: the exporter domain buffers its positions and drains them before the snapshot)
+    final CompletableActorFuture<Void> exporterFlushed = new CompletableActorFuture<>();
+    createSnapshotDirectorWithExporterFlush(() -> exporterFlushed);
+    setCommitPosition(100L);
+
+    // when a snapshot is forced
+    final var snapshot = asyncSnapshotDirector.forceSnapshot();
+
+    // then the transient snapshot — whose index selection reads the committed exporter
+    // positions — is not taken until the buffered exporter positions were committed
+    verify(snapshotController, after(1000).never()).takeTransientSnapshot(anyLong(), anyBoolean());
+
+    // and it proceeds once the exporter flush completed
+    exporterFlushed.complete(null);
+    assertThat(snapshot.join()).isNotNull();
+    verify(snapshotController, timeout(10000).times(1))
+        .takeTransientSnapshot(anyLong(), anyBoolean());
+  }
+
+  @Test
+  public void shouldTakeSnapshotEvenIfExporterFlushFails() {
+    // given a director whose pre-snapshot exporter flush fails (e.g. the exporter director is
+    // closing during a transition)
+    createSnapshotDirectorWithExporterFlush(
+        () ->
+            CompletableActorFuture.completedExceptionally(
+                new RuntimeException("exporter director closed")));
+    setCommitPosition(100L);
+
+    // when / then the snapshot still persists: buffered exporter staleness is conservative by
+    // direction (snapshot-index selection picks an older index and retention only keeps more
+    // log), so it must not block snapshotting
+    assertThat(asyncSnapshotDirector.forceSnapshot().join()).isNotNull();
   }
 }

@@ -50,7 +50,6 @@ zeebe:
           rpaReexportMigrationEnabled: false
         layeredState:
           enabled: true
-          persistInterval: 5s
           maxBytesPerStore: 32MB
           maxBufferedBytes: 8MB
           ladderStartFraction: 0.6
@@ -58,4 +57,4 @@ zeebe:
           absorbDeletes: false
           pipelineSegmentLimit: 8
           persistMinSliceBytes: 2MB
-          persistPacingTargetFraction: 0.5
+          persistPacingWindow: 45s

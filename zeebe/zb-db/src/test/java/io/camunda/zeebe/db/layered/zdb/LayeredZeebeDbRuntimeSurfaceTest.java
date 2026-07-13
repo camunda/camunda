@@ -79,7 +79,7 @@ final class LayeredZeebeDbRuntimeSurfaceTest {
 
     // then the write is buffered until a persist round drains it
     assertThat(domain.hasBufferedWrites()).isTrue();
-    domain.persistNow(1, PersistTrigger.INTERVAL);
+    domain.persistNow(1, PersistTrigger.PRE_SNAPSHOT);
     assertThat(domain.hasBufferedWrites()).isFalse();
     assertThat(passThroughGet(1)).isEqualTo(100);
   }
@@ -152,7 +152,7 @@ final class LayeredZeebeDbRuntimeSurfaceTest {
   void shouldPublishDrainAndBufferMetrics() {
     // given committed writes that are read back once from the durable store
     layered.layeredContext().runInTransaction(() -> put(1, 100));
-    layered.defaultDomain().persistNow(1, PersistTrigger.INTERVAL);
+    layered.defaultDomain().persistNow(1, PersistTrigger.PRE_SNAPSHOT);
 
     // when reading a key that only the durable store holds
     layered.layeredContext().runInTransaction(() -> get(1));
@@ -179,7 +179,7 @@ final class LayeredZeebeDbRuntimeSurfaceTest {
     layered.layeredContext().runInTransaction(() -> delete(1));
 
     // when the buffer drains
-    layered.defaultDomain().persistNow(2, PersistTrigger.INTERVAL);
+    layered.defaultDomain().persistNow(2, PersistTrigger.PRE_SNAPSHOT);
 
     // then the pair annihilated in memory — the elision meter moved and neither write ever
     // reached RocksDB
@@ -221,7 +221,7 @@ final class LayeredZeebeDbRuntimeSurfaceTest {
     // persist IO has terminated)
     final LayeredDomain domain = layered.defaultDomain();
     layered.layeredContext().runInTransaction(() -> put(1, 100));
-    domain.preparePersist(1, PersistTrigger.INTERVAL);
+    domain.preparePersist(1, PersistTrigger.PRE_SNAPSHOT);
     assertThat(domain.roundInFlight()).isTrue();
 
     // when the successor aborts the stale round
@@ -230,7 +230,7 @@ final class LayeredZeebeDbRuntimeSurfaceTest {
     // then the segments stayed buffered and the successor's own round drains them
     assertThat(domain.roundInFlight()).isFalse();
     assertThat(domain.hasBufferedWrites()).isTrue();
-    domain.persistNow(2, PersistTrigger.INTERVAL);
+    domain.persistNow(2, PersistTrigger.PRE_SNAPSHOT);
     assertThat(passThroughGet(1)).isEqualTo(100);
     // and aborting without an outstanding round is a no-op
     domain.abortStaleRound();
@@ -243,7 +243,7 @@ final class LayeredZeebeDbRuntimeSurfaceTest {
     final LayeredDomain domain = layered.defaultDomain();
     layered.layeredContext().runInTransaction(() -> put(1, 100));
     layered.layeredContext().runInTransaction(() -> put(2, 200));
-    final var round = domain.preparePersist(2, PersistTrigger.INTERVAL);
+    final var round = domain.preparePersist(2, PersistTrigger.PRE_SNAPSHOT);
     assertThat(round.persistSlice(1)).isFalse();
     assertThat(domain.roundInFlight()).isTrue();
 
@@ -270,7 +270,7 @@ final class LayeredZeebeDbRuntimeSurfaceTest {
     layered.layeredContext().runInTransaction(() -> put(9, 900));
 
     // when a paced drain commits its data slices
-    final var round = domain.preparePersist(2, PersistTrigger.INTERVAL);
+    final var round = domain.preparePersist(2, PersistTrigger.PRE_SNAPSHOT);
     boolean done = round.persistSlice(1);
     while (!done) {
       // the anchor carrier must never land while data slices remain
@@ -379,7 +379,7 @@ final class LayeredZeebeDbRuntimeSurfaceTest {
             value.wrapLong(100);
             columnFamily.upsert(key, value);
           });
-      domain.persistNow(1L, PersistTrigger.INTERVAL);
+      domain.persistNow(1L, PersistTrigger.PRE_SNAPSHOT);
       final ReadOnlyView pinnedBeforeDelete = domain.viewPublisher().acquireLatest();
 
       // when the key is deleted and the deletion is persisted after the view was acquired
@@ -388,7 +388,7 @@ final class LayeredZeebeDbRuntimeSurfaceTest {
             key.wrapLong(1);
             columnFamily.deleteExisting(key);
           });
-      domain.persistNow(2L, PersistTrigger.INTERVAL);
+      domain.persistNow(2L, PersistTrigger.PRE_SNAPSHOT);
 
       // then the held view still serves the pinned cut — an unpinned source would lose the key
       try {

@@ -49,8 +49,9 @@ the owner thread (drop drained segments, rotate reader views per D3). At most on
 flight. The recovery anchor (`lastProcessedPosition`, stored in the DEFAULT column family) is a
 normal key in the drain set, not a separately-written marker. The persist step commits either one
 atomic `WriteBatch` (inline drains) or a *paced* sequence of sub-batch slices, each its own
-commit, spread across a configurable fraction of the persist interval (Postgres
-checkpoint-spreading style). Slicing relaxes the all-or-nothing cut to the **anchor-last
+commit, spread across a configurable pacing window (Postgres checkpoint-spreading style); the
+pacing deadline only shapes disk amplitude — correctness never depends on when a drained cut
+lands. Slicing relaxes the all-or-nothing cut to the **anchor-last
 invariant**: the anchor — and any entry designated as its carrier — rides only in the final slice,
 so durable state may transiently run *ahead* of the anchor (re-drained idempotently, newest-wins),
 but the anchor can never run ahead of the state it describes. The torn recovery states — replay
@@ -129,16 +130,23 @@ implicitly.
   delegate reads.
 - The stream-processor contract is unchanged: per-batch commit/rollback semantics are preserved
   via the staging layer (D1), and recovery semantics via the atomic anchor cut (D2).
-- **Log retention** must cover the persist interval: segments not yet persisted are recoverable
-  only from the log, so retention is gated on the *persisted* anchor. The existing
+- **Log retention** must cover the un-persisted window: segments not yet persisted are
+  recoverable only from the log, so retention is gated on the *persisted* anchor. The existing
   exported-position bound is already more conservative than this, so no new retention risk is
   introduced — but the coupling becomes load-bearing and must be asserted, not assumed.
 - **Zeebe snapshots** must run a persist round first (hooked into the `StateControllerImpl` take
   callback), so the checkpointed RocksDB directory contains a prefix-consistent cut.
-- The recovery replay window grows from one batch to the persist cadence; recovery time after a
-  crash scales with it.
-- Buffered state needs a **memory budget**; `overCapacity()` acts as a forced-persist trigger so
-  the pipeline cannot grow unboundedly under sustained load.
+- The recovery replay window grows from one batch to the interval between spills. Crash recovery
+  restores from snapshots (intermediate persists write a runtime directory a crash discards), so
+  no *age*-based bound is needed — there is deliberately no periodic persist cadence. The window
+  that matters is the in-place takeover replay window on a reused database, and it is bounded by
+  *memory*: the buffer-pressure ladder over `maxBufferedBytes` (a paced round starts early at the
+  start rung, an unpaced one at the flat-out rung) plus the pre-snapshot flush.
+- Buffered state needs a **memory budget**; the ladder rungs and the per-store `overCapacity()`
+  act as forced-persist triggers so the pipeline cannot grow unboundedly under sustained load.
+  Reaching the full budget is surfaced (admission-pressure meter and warning); an admission
+  slow-down into the log stream's flow control is a documented follow-up — no clean seam exists
+  there yet.
 - Async checker freshness becomes freeze-cadence (Phase B), decoupled from persist cadence.
 
 ## Reference implementation
@@ -156,9 +164,10 @@ turning it into pipeline-merge work. The remaining secondary readers (query serv
 position supplier, other engine schedulers) still read pass-through contexts — the scheduled ones
 behind the sync drain barrier, the rest at persist-round freshness — correctness-safe, flipped in
 a later step. All remaining drain-barrier consumers run at multi-second cadences, so
-barrier-forced persist rounds are rare and the effective persist window is governed by the
-interval and, when configured, the `maxBufferedBytes` size trigger (a round starts as soon as the
-domain's buffered bytes reach the budget, whichever of size or age comes first).
+barrier-forced persist rounds are rare and the effective persist window is governed by memory
+(the buffer-pressure ladder over `maxBufferedBytes`) and the snapshot cadence (the pre-snapshot
+flush) — there is no periodic persist trigger; an age-based cadence bounds nothing an invariant
+needs, because crash recovery restores from snapshots.
 
 The persist step of D2 runs asynchronously: rounds are prepared and completed on the stream
 processor's actor while the drain-and-commit runs on a per-partition io-bound actor, with the
@@ -169,9 +178,10 @@ the processing thread; the tip is materialized into a real segment only when a f
 needs a view-visible segment mid-round, or when the round fails. Captured bytes stay accounted in
 `bufferedBytes` until the round completes — capacity signals keep seeing pinned heap while a drain
 is in flight. The drain itself is paced per D2's anchor-last invariant: sub-batch slices of a
-configurable minimum size spread across `persistPacingTargetFraction × persistInterval`, with
-queued pipeline merges interleaving between slices, and a size trigger observed mid-round
-expediting the pacer so the drain finishes flat-out under memory pressure. Two consequences of
+configurable minimum size spread across the configured `persistPacingWindow` (only ladder
+start-rung rounds pace — flat-out-rung, pre-snapshot and scheduled-task rounds have a consumer
+waiting and drain unpaced), with queued pipeline merges interleaving between slices, and a rung
+observed mid-round expediting the pacer so the drain finishes flat-out under memory pressure. Two consequences of
 slicing are deliberate: (1) a *direct* reader of committed RocksDB (pass-through contexts such as
 the deprecated query path) can observe a torn intermediate cut while a round's slices land —
 layered readers never can (the captured state keeps shadowing the delegate until completion), and
@@ -182,8 +192,14 @@ restoring the full-cut invariant that partial slices may have suspended; abortin
 only for single-batch drains (the exporter domain's inline rounds). The last-processed position
 entry is designated as the anchor carrier at recovery, which is what pins it to a round's final
 slice. Phase C is in place: the exporter director registers an `exporter`
-ownership domain and drains its buffered positions at the persist cadence on its own actor, with
-the initial entries drained immediately so committed-state readers (snapshot selection, log
-compaction) never see an empty exporter column family while positions are buffered. The
-exported-position staleness this introduces is bounded by the persist cadence and conservative in
-direction — a lower committed position only makes retention keep more log.
+ownership domain and drains its buffered positions on demand, on its own actor, mirroring the
+engine domain's cadence-free design — the exporter domain participates in the same RocksDB
+snapshot and recovery resumes exporting from the snapshotted positions (at-least-once re-export),
+so intermediate persists buy nothing a crash can use. Two drains remain, matching exactly the
+moments committed-state readers consume the positions: the initial entries drain immediately so
+snapshot selection and log compaction never see an empty exporter column family while positions
+are buffered, and the snapshot director flushes the exporter domain right before every transient
+snapshot, so snapshot-index selection reads the current exporter reality instead of lagging one
+snapshot behind (over-retaining log). The exporter flush is best-effort by design: a failed drain
+leaves the committed positions lagging conservatively — retention only keeps more log — and must
+not block the snapshot.

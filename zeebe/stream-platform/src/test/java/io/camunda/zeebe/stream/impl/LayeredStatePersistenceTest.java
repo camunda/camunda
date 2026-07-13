@@ -40,7 +40,8 @@ import org.junit.jupiter.api.io.TempDir;
  * The asynchronous persist driver: rounds prepared on the owner thread, drained on an IO thread
  * while the owner keeps committing batches, and completed back on the owner thread; the
  * scheduled-task barrier and the pre-snapshot flush awaiting in-flight rounds by chaining futures;
- * failed rounds staying buffered and being retried.
+ * failed rounds staying buffered and being retried. There is no periodic trigger — rounds start on
+ * the buffer-pressure ladder, before snapshots and behind the scheduled-task barrier only.
  *
  * <p>The test plays both actors deterministically: the JUnit thread is the owner thread and drains
  * a queue standing in for the processor actor's job queue; a latch-gated single-thread executor
@@ -90,7 +91,7 @@ final class LayeredStatePersistenceTest {
     // given a buffered batch and an IO thread blocked inside the persist step
     commitBatch(1, 100);
     io.blockNextRound();
-    persistence.onPeriodicTick();
+    startRoundNow();
     io.awaitRoundEntered();
     assertThat(persistence.roundInFlight()).isTrue();
     assertThat(inFlightGauge()).isEqualTo(1.0);
@@ -113,46 +114,6 @@ final class LayeredStatePersistenceTest {
     assertThat(inFlightGauge()).isEqualTo(0.0);
   }
 
-  @Test
-  void shouldStartNextRoundOnTickAfterRoundCompleted() throws Exception {
-    // given a completed first round and a batch committed while it was in flight
-    io.blockNextRound();
-    commitBatch(1, 100);
-    persistence.onPeriodicTick();
-    io.awaitRoundEntered();
-    commitBatch(2, 200);
-    io.releaseRound();
-    runProcessorJobsUntil(() -> !persistence.roundInFlight());
-
-    // when the next tick fires
-    persistence.onPeriodicTick();
-    runProcessorJobsUntil(() -> !persistence.roundInFlight());
-
-    // then the late batch drained too
-    assertThat(passThroughGet(2)).isEqualTo(200);
-    assertThat(layered.defaultDomain().hasBufferedWrites()).isFalse();
-  }
-
-  @Test
-  void shouldSkipTickWhileRoundInFlight() throws Exception {
-    // given a round blocked on the IO thread
-    io.blockNextRound();
-    commitBatch(1, 100);
-    persistence.onPeriodicTick();
-    io.awaitRoundEntered();
-    commitBatch(2, 200);
-
-    // when further ticks fire while the round is in flight
-    persistence.onPeriodicTick();
-    persistence.onPeriodicTick();
-
-    // then no second round was started (a stacked round would throw in the coordinator) and the
-    // single in-flight round completes normally
-    io.releaseRound();
-    runProcessorJobsUntil(() -> !persistence.roundInFlight());
-    assertThat(io.roundsPersisted()).isEqualTo(1);
-  }
-
   // ------------------------------------------------------------------
   // Scheduled-task barrier
   // ------------------------------------------------------------------
@@ -166,10 +127,11 @@ final class LayeredStatePersistenceTest {
 
   @Test
   void shouldAwaitInFlightRoundAndDrainRemainderBeforeScheduledTask() throws Exception {
-    // given a round in flight on the IO thread and a batch committed during it
+    // given a ladder round in flight on the IO thread and a batch committed during it
+    recreateWithBatchFillFraction(1.0);
     io.blockNextRound();
     commitBatch(1, 100);
-    persistence.onPeriodicTick();
+    persistence.onBatchCommitted();
     io.awaitRoundEntered();
     commitBatch(2, 200);
 
@@ -231,7 +193,7 @@ final class LayeredStatePersistenceTest {
     // given a round in flight and a batch committed during it
     io.blockNextRound();
     commitBatch(1, 100);
-    persistence.onPeriodicTick();
+    startRoundNow();
     io.awaitRoundEntered();
     commitBatch(2, 200);
 
@@ -265,9 +227,11 @@ final class LayeredStatePersistenceTest {
     assertThat(flushed.isCompletedExceptionally()).isTrue();
     assertThat(layered.defaultDomain().hasBufferedWrites()).isTrue();
 
-    // and a later tick retries and drains
-    persistence.onPeriodicTick();
-    runProcessorJobsUntil(() -> !persistence.roundInFlight());
+    // and a later flush retries and drains the same segments
+    final CompletableActorFuture<Void> retried = new CompletableActorFuture<>();
+    persistence.flushForSnapshot(retried);
+    runProcessorJobsUntil(retried::isDone);
+    retried.join();
     assertThat(passThroughGet(1)).isEqualTo(100);
     assertThat(layered.defaultDomain().hasBufferedWrites()).isFalse();
   }
@@ -284,9 +248,9 @@ final class LayeredStatePersistenceTest {
     lastProcessedPosition.set(-1);
     context.runInTransaction(() -> put(1, 100));
 
-    // when the freeze cadence and a persist round run
+    // when the freeze barrier and a persist round run
     persistence.tryFreezeForScheduledTask();
-    persistence.onPeriodicTick();
+    startRoundNow();
     runProcessorJobsUntil(() -> !persistence.roundInFlight());
 
     // then the round's anchor — the newest frozen segment watermark — is the honest "nothing
@@ -300,11 +264,11 @@ final class LayeredStatePersistenceTest {
   // ------------------------------------------------------------------
 
   @Test
-  void shouldRetryFailedRoundOnNextTick() throws Exception {
+  void shouldRetryFailedRoundOnNextTrigger() throws Exception {
     // given a failing first round
     commitBatch(1, 100);
     io.failNextRound();
-    persistence.onPeriodicTick();
+    startRoundNow();
     runProcessorJobsUntil(() -> !persistence.roundInFlight());
 
     // then the failure was counted, nothing reached the durable store, the segments stayed
@@ -312,8 +276,8 @@ final class LayeredStatePersistenceTest {
     assertThat(passThroughGet(1)).isNull();
     assertThat(layered.defaultDomain().hasBufferedWrites()).isTrue();
 
-    // when the next tick retries
-    persistence.onPeriodicTick();
+    // when the next trigger retries
+    startRoundNow();
     runProcessorJobsUntil(() -> !persistence.roundInFlight());
 
     // then the retried round drained the same segments
@@ -426,10 +390,10 @@ final class LayeredStatePersistenceTest {
   @Test
   void shouldNoteOverCapacityDuringRoundAndFollowUpAfterwards() throws Exception {
     // given a round in flight and an over-capacity batch committed during it (the store budget is
-    // 256 bytes, the value below exceeds it on its own)
+    // 256 bytes, the batch below exceeds it on its own)
     io.blockNextRound();
     commitBatch(1, 100);
-    persistence.onPeriodicTick();
+    startRoundNow();
     io.awaitRoundEntered();
     commitBigBatch(2);
     persistence.onBatchCommitted();
@@ -452,12 +416,12 @@ final class LayeredStatePersistenceTest {
 
   @Test
   void shouldAwaitPacedRoundMidSlicesForSnapshotFlush() throws Exception {
-    // given a paced round frozen mid-drain: its first slice committed (partial state durable, no
-    // anchor) and the rest blocked on the IO thread
+    // given a sliced round frozen mid-drain: its first slice committed (partial state durable,
+    // no anchor) and the rest blocked on the IO thread
     commitBatch(1, 100);
     commitBatch(2, 200);
     io.blockNextRoundAfterFirstSlice();
-    persistence.onPeriodicTick();
+    startRoundNow();
     io.awaitRoundEntered();
     assertThat(passThroughGet(1)).isEqualTo(100); // the torn intermediate cut a paced drain
     assertThat(passThroughGet(2)).isNull(); // passes through — partial state, anchor pending
@@ -477,22 +441,23 @@ final class LayeredStatePersistenceTest {
   }
 
   @Test
-  void shouldExpeditePacedDrainOnSizeTriggerMidRound() throws Exception {
-    // given a long persist interval, so the round's pacing budget clearly exceeds the test runtime
-    recreate(new LayeredZeebeDbConfig(256, 0, true, 4, Duration.ofSeconds(60)));
+  void shouldExpeditePacedDrainOnOverCapacityMidRound() throws Exception {
+    // given a paced start-rung round in flight (60s pacing window, so the budget clearly exceeds
+    // the test runtime) over a store with a tiny 256-byte budget
+    recreateWithBatchFillFraction(0.8, 256);
     io.blockNextRound();
     commitBatch(1, 100);
-    persistence.onPeriodicTick();
+    persistence.onBatchCommitted();
     io.awaitRoundEntered();
 
-    // the pacer would make a fully progressed drain wait (48s budget, barely any elapsed)
+    // the pacer would make a fully progressed drain wait (60s budget, barely any elapsed)
     assertThat(io.lastPacer().delayNanos(1.0, System.nanoTime())).isPositive();
 
-    // when an over-capacity batch commits while the round is in flight
+    // when a per-store over-capacity batch commits while the round is in flight
     commitBigBatch(2);
     persistence.onBatchCommitted();
 
-    // then the trigger is noted AND the in-flight drain is expedited — no wait at any progress
+    // then the rung is noted AND the in-flight drain is expedited — no wait at any progress
     assertThat(io.lastPacer().delayNanos(1.0, System.nanoTime())).isZero();
     io.releaseRound();
     runProcessorJobsUntil(
@@ -545,18 +510,17 @@ final class LayeredStatePersistenceTest {
     io.awaitRoundEntered();
     assertThat(persistence.mergeInFlight()).isTrue();
 
-    // when -- the persist cadence fires while the merge is in flight
-    persistence.onPeriodicTick();
+    // when -- a round is requested while the merge is in flight
+    final ActorFuture<Void> ready = persistence.prepareForScheduledTask();
+    assertThat(ready).isNotNull();
 
     // then -- no round started (its captured segments could concurrently merge otherwise)
     assertThat(persistence.roundInFlight()).isFalse();
     assertThat(io.roundsPersisted()).isZero();
 
-    // when -- the merge completes, the next tick drains
+    // when -- the merge completes, the deferred round drains
     io.releaseRound();
-    runProcessorJobsUntil(() -> !persistence.mergeInFlight());
-    persistence.onPeriodicTick();
-    runProcessorJobsUntil(() -> !persistence.roundInFlight());
+    runProcessorJobsUntil(ready::isDone);
 
     // then
     assertThat(passThroughGet(1)).isEqualTo(100);
@@ -595,17 +559,30 @@ final class LayeredStatePersistenceTest {
 
   /**
    * Rebuilds the fixture with a total buffered-bytes budget sized so that one {@link
-   * #commitBatch(long, long)} fills the given fraction of it, and a pacing budget clearly exceeding
+   * #commitBatch(long, long)} fills the given fraction of it, and a pacing window clearly exceeding
    * the test runtime (so paced rounds visibly pace). The batch size is measured on the running
    * fixture instead of hard-coding entry-encoding assumptions.
    */
   private void recreateWithBatchFillFraction(final double fraction) {
+    recreateWithBatchFillFraction(fraction, 1024 * 1024);
+  }
+
+  private void recreateWithBatchFillFraction(final double fraction, final long maxBytesPerStore) {
     commitBatch(999, 0);
     final long batchBytes = layered.defaultDomain().bufferedBytes();
     assertThat(batchBytes).isPositive();
     recreate(
         new LayeredZeebeDbConfig(
-            1024 * 1024, Math.round(batchBytes / fraction), true, 4, Duration.ofSeconds(60)));
+            maxBytesPerStore, Math.round(batchBytes / fraction), true, 4, Duration.ofSeconds(60)));
+  }
+
+  /**
+   * Starts a round over everything buffered right now through the scheduled-task barrier — the
+   * fixture's generic on-demand trigger (there is no periodic one); the barrier future completes on
+   * the processor queue and is deliberately not awaited here.
+   */
+  private void startRoundNow() {
+    assertThat(persistence.prepareForScheduledTask()).isNotNull();
   }
 
   /** Tears the default fixture down and rebuilds it over the same directory with {@code config}. */

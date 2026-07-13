@@ -33,10 +33,11 @@ import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Acceptance coverage for the experimental layered state store flag
- * (zeebe.broker.experimental.engine.layeredState.enabled): with buffered state and periodic persist
- * rounds, timers still fire — promptly, through the asynchronous due-date checker scanning read
- * views refreshed at the freeze cadence — instances complete, snapshots contain a consistent cut
- * (the pre-snapshot persist round), and the broker recovers across a restart.
+ * (zeebe.broker.experimental.engine.layeredState.enabled): with buffered state and memory-driven
+ * (buffer-pressure ladder) persist rounds — there is no periodic persist cadence — timers still
+ * fire promptly, through the asynchronous due-date checker scanning read views refreshed before
+ * each execution; instances complete, snapshots contain a consistent cut (the pre-snapshot persist
+ * round), and the broker recovers across a restart.
  */
 @Timeout(300)
 @ZeebeIntegration
@@ -59,8 +60,9 @@ final class LayeredStateStandaloneBrokerTest {
             // keep the data directory across restarts so recovery is exercised for real
             .withWorkingDirectory(workingDirectory)
             .withProperty("zeebe.broker.experimental.engine.layeredState.enabled", "true")
-            // short interval so the test exercises several periodic persist rounds
-            .withProperty("zeebe.broker.experimental.engine.layeredState.persistInterval", "500ms")
+            // a tiny buffered-bytes budget so the test exercises several size-triggered
+            // (buffer-pressure ladder) persist rounds — there is no periodic persist cadence
+            .withProperty("zeebe.broker.experimental.engine.layeredState.maxBufferedBytes", "4KB")
             // tiny slices so every round exercises the paced multi-slice drain with its
             // anchor-carrying final slice, not just the single-batch degenerate case
             .withProperty(
@@ -120,12 +122,15 @@ final class LayeredStateStandaloneBrokerTest {
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    // then the timer fires promptly: the lateness is bounded by the freeze cadence (250ms) plus
-    // the checker's resolution (100ms) and scheduling slack — well under a second
+    // then the timer fires promptly: the buffered state is frozen into a fresh view right before
+    // the checker executes, so the lateness is bounded by the checker's resolution (100ms) plus
+    // the schedule service's poll interval (~1s) and scheduling slack. The bound guards the
+    // failure mode — a checker that lost view freshness would fire only after a barrier-forced
+    // drain, far beyond it — without tripping on ordinary scheduling jitter on a loaded machine
     final long lateness = triggered.getTimestamp() - triggered.getValue().getDueDate();
     assertThat(lateness)
         .describedAs("timer lateness (trigger time - due date) in ms")
-        .isBetween(0L, 1_000L);
+        .isBetween(0L, 2_000L);
     awaitInstanceCompleted(processInstanceKey);
   }
 

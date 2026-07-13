@@ -32,8 +32,8 @@ import org.jspecify.annotations.Nullable;
  * One single-owner durability domain of a {@link LayeredZeebeDb}: its own owner-thread {@link
  * #context()}, its own set of layered stores (a column family joins the domain by being created on
  * the domain's context — see {@link LayeredZeebeDb#createColumnFamily}), its own lazily built
- * {@link #coordinator()} with an independent persist cadence, and its own {@link #viewPublisher()}
- * fed by that coordinator.
+ * {@link #coordinator()} with independently triggered persist rounds, and its own {@link
+ * #viewPublisher()} fed by that coordinator.
  *
  * <p><b>No cross-domain atomicity:</b> each domain drains its persist rounds through its own inner
  * transaction, so the rounds of two domains commit independently — deliberately matching the

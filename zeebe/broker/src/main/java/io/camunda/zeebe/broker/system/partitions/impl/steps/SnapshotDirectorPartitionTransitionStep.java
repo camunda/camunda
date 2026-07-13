@@ -67,7 +67,17 @@ public final class SnapshotDirectorPartitionTransitionStep implements PartitionT
               processingMode,
               snapshotPeriod,
               flushLog,
-              new DbPositionSupplier(zeebeDb, continuousBackup));
+              new DbPositionSupplier(zeebeDb, continuousBackup),
+              // resolved per snapshot: the exporter director is installed by its own transition
+              // step and may be replaced across transitions; with the experimental layered-state
+              // flag on, its buffered positions must be committed before the snapshot's index
+              // selection reads them (a completed no-op otherwise)
+              () -> {
+                final var exporterDirector = context.getExporterDirector();
+                return exporterDirector == null
+                    ? CompletableActorFuture.<Void>completed(null)
+                    : exporterDirector.flushBufferedExporterState();
+              });
 
       // The returned future must not complete until the director has been published on the
       // context. Otherwise the next transition step (SnapshotAfterMigrationTransitionStep) can

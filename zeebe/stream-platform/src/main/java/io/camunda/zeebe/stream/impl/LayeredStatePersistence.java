@@ -16,7 +16,6 @@ import io.camunda.zeebe.db.layered.zdb.LayeredZeebeDb;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.function.LongSupplier;
@@ -24,18 +23,24 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 /**
- * Drives the persist cadence and the on-demand freezes of a {@link LayeredZeebeDb}'s engine domain
- * (experimental; only active when the layered-state flag is on). Rounds are prepared and completed
- * on the stream processor's actor, but their drain-and-commit step runs on a dedicated IO executor
- * (see {@link PersistIo}) so processing continues while buffered state moves to RocksDB. The drain
- * is <em>paced</em>: it commits sub-batch slices spread across {@code pacingTargetFraction ×
- * persistInterval} (see {@link DrainPacer}), smoothing the IO instead of dumping one large batch —
- * and a size trigger observed mid-round expedites the pacer, so the drain finishes flat-out while
- * memory is under pressure:
+ * Drives the memory- and snapshot-triggered persist rounds and the on-demand freezes of a {@link
+ * LayeredZeebeDb}'s engine domain (experimental; only active when the layered-state flag is on).
+ * Rounds are prepared and completed on the stream processor's actor, but their drain-and-commit
+ * step runs on a dedicated IO executor (see {@link PersistIo}) so processing continues while
+ * buffered state moves to RocksDB.
+ *
+ * <p><b>There is deliberately no periodic persist cadence.</b> Recovery after a crash restores from
+ * snapshots — the intermediate persists write a runtime directory a crash discards — so an
+ * age-based cadence bounds nothing an invariant needs. What actually needs a round is exactly what
+ * triggers one: buffered memory (the pressure ladder below, which also bounds the in-place takeover
+ * replay window), a snapshot about to checkpoint, and a sync scheduled task about to read persisted
+ * state. A start-rung round's drain is <em>paced</em>: it commits sub-batch slices spread across
+ * the configured pacing window (see {@link DrainPacer}) instead of dumping one large batch — the
+ * deadline only shapes disk amplitude, correctness never depends on it — while flat-out-rung,
+ * pre-snapshot and scheduled-task rounds drain unpaced (their completion is what a consumer is
+ * waiting for), and a rung observed mid-round expedites the pacer:
  *
  * <ul>
- *   <li>{@link #onPeriodicTick()} — the regular persist cadence, invoked at the configured persist
- *       interval; starts a round whenever anything is buffered and no round is in flight.
  *   <li>{@link #onBatchCommitted()} — invoked after every committed processing batch; reacts to
  *       buffer pressure on a graduated ladder (see {@link #onBatchCommitted()}): a paced round
  *       starts early at the configured start rung, an unpaced round at the flat-out rung (which a
@@ -75,9 +80,8 @@ import org.slf4j.Logger;
  *
  * <p>Neither rounds nor freezes <em>start</em> while a batch is in flight: a mid-batch cut would
  * have to include uncommitted staging writes. Completing a round while a batch is in flight is fine
- * (completion never touches staging contents). Periodic ticks simply skip and retry on their next
- * occasion; the pre-snapshot and pre-scheduled-task preparations re-check after the batch completed
- * by re-submitting themselves.
+ * (completion never touches staging contents). The pre-snapshot and pre-scheduled-task preparations
+ * re-check after the batch completed by re-submitting themselves.
  */
 final class LayeredStatePersistence {
 
@@ -87,15 +91,13 @@ final class LayeredStatePersistence {
   private final LongSupplier lastProcessedPosition;
   private final Executor processor;
   private final PersistIo io;
-  private final Duration persistInterval;
   private final long maxBufferedBytes;
   // the buffer-pressure ladder rungs, precomputed from the configured fractions of
   // maxBufferedBytes (zero when no budget is configured — the ladder is off then); at least one
   // byte so an empty buffer can never sit on a rung
   private final long ladderStartBytes;
   private final long ladderFlatOutBytes;
-  // the pacing budget of one round's sliced drain: pacingTargetFraction × persistInterval, so a
-  // paced round normally finishes before the next interval trigger would fire
+  // the pacing budget of a start-rung round's sliced drain: the configured pacing window
   private final long pacingBudgetNanos;
 
   /**
@@ -149,20 +151,14 @@ final class LayeredStatePersistence {
     this.processor = Objects.requireNonNull(processor, "processor");
     this.io = Objects.requireNonNull(io, "io");
     domain = db.defaultDomain();
-    persistInterval = db.config().persistInterval();
     maxBufferedBytes = db.config().maxBufferedBytes();
     ladderStartBytes = ladderRungBytes(db.config().ladderStartFraction());
     ladderFlatOutBytes = ladderRungBytes(db.config().ladderFlatOutFraction());
-    pacingBudgetNanos =
-        (long) (persistInterval.toNanos() * db.config().persistPacingTargetFraction());
+    pacingBudgetNanos = db.config().persistPacingWindow().toNanos();
     // build the coordinator eagerly: every layered column family must exist by now (they are all
     // created during recovery and record-processor init), and failing fast here beats failing on
     // the first persist round
     domain.coordinator();
-  }
-
-  Duration persistInterval() {
-    return persistInterval;
   }
 
   /** A ladder rung in bytes — at least one, so an empty buffer can never sit on a rung. */
@@ -190,17 +186,6 @@ final class LayeredStatePersistence {
    */
   private long watermark() {
     return Math.max(0, lastProcessedPosition.getAsLong());
-  }
-
-  /** The regular persist cadence; a failed round stays buffered and the next tick retries. */
-  void onPeriodicTick() {
-    if (roundInFlight()
-        || mergeInFlight()
-        || domain.batchInFlight()
-        || !domain.hasBufferedWrites()) {
-      return;
-    }
-    startRound(PersistTrigger.INTERVAL);
   }
 
   /**
@@ -243,7 +228,7 @@ final class LayeredStatePersistence {
    * @return null when the task may run right now (nothing buffered, no round in flight), otherwise
    *     a future completing — never exceptionally — once the drain attempt finished. A failed round
    *     keeps its segments buffered and the task still runs: a stale scan is preferable to blocking
-   *     all scheduled work while persistence is failing (the interval cadence retries).
+   *     all scheduled work while persistence is failing (the next trigger retries).
    */
   @Nullable ActorFuture<Void> prepareForScheduledTask() {
     if (!domain.batchInFlight() && !roundInFlight() && !domain.hasBufferedWrites()) {
@@ -418,8 +403,9 @@ final class LayeredStatePersistence {
     final PersistRound round = domain.preparePersist(watermark(), trigger);
     final CompletableActorFuture<Throwable> completed = new CompletableActorFuture<>();
     inFlightRound = completed;
-    // a flat-out-rung round paces nothing: memory pressure beats checkpoint spreading
-    final long budgetNanos = trigger == PersistTrigger.LADDER_90 ? 0 : pacingBudgetNanos;
+    // only start-rung rounds pace: a flat-out round drains under memory pressure, and the
+    // pre-snapshot and scheduled-task rounds have a consumer waiting on their completion
+    final long budgetNanos = trigger == PersistTrigger.LADDER_70 ? pacingBudgetNanos : 0;
     final DrainPacer pacer = new DrainPacer(budgetNanos, System.nanoTime());
     inFlightPacer = pacer;
     io.persist(round, pacer)
@@ -441,8 +427,8 @@ final class LayeredStatePersistence {
               sizeTriggerWhileInFlight = false;
               completed.complete(error);
               if (recheckSizeTrigger) {
-                // after a failed round the next batch commit or tick retries anyway — only a
-                // successful round needs the deferred size-trigger re-check
+                // after a failed round the next batch commit retries anyway — only a successful
+                // round needs the deferred rung re-check
                 processor.execute(this::onBatchCommitted);
               }
             },

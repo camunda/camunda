@@ -126,7 +126,6 @@ final class EngineCfgTest {
 
     // then
     assertThat(layeredState.isEnabled()).isFalse();
-    assertThat(layeredState.getPersistInterval()).isEqualTo(Duration.ofSeconds(1));
     assertThat(layeredState.getMaxBytesPerStore().toBytes()).isEqualTo(16 * 1024 * 1024L);
     // the total buffered-bytes budget defaults off: rounds run at the persist interval or on
     // per-store over-capacity only, keeping the pre-existing persist behavior
@@ -140,7 +139,9 @@ final class EngineCfgTest {
     assertThat(layeredState.isAbsorbDeletes()).isTrue();
     assertThat(layeredState.getPipelineSegmentLimit()).isEqualTo(4);
     assertThat(layeredState.getPersistMinSliceBytes().toBytes()).isEqualTo(1024 * 1024L);
-    assertThat(layeredState.getPersistPacingTargetFraction()).isEqualTo(0.8);
+    // there is no persist interval: spills are memory- (ladder) and snapshot-driven only, and the
+    // pacing window merely spreads a start-rung round's disk writes
+    assertThat(layeredState.getPersistPacingWindow()).isEqualTo(Duration.ofSeconds(30));
   }
 
   @Test
@@ -153,7 +154,6 @@ final class EngineCfgTest {
 
     // then
     assertThat(layeredState.isEnabled()).isTrue();
-    assertThat(layeredState.getPersistInterval()).isEqualTo(Duration.ofSeconds(5));
     assertThat(layeredState.getMaxBytesPerStore().toBytes()).isEqualTo(32 * 1024 * 1024L);
     assertThat(layeredState.getMaxBufferedBytes().toBytes()).isEqualTo(8 * 1024 * 1024L);
     assertThat(layeredState.getLadderStartFraction()).isEqualTo(0.6);
@@ -161,7 +161,7 @@ final class EngineCfgTest {
     assertThat(layeredState.isAbsorbDeletes()).isFalse();
     assertThat(layeredState.getPipelineSegmentLimit()).isEqualTo(8);
     assertThat(layeredState.getPersistMinSliceBytes().toBytes()).isEqualTo(2 * 1024 * 1024L);
-    assertThat(layeredState.getPersistPacingTargetFraction()).isEqualTo(0.5);
+    assertThat(layeredState.getPersistPacingWindow()).isEqualTo(Duration.ofSeconds(45));
   }
 
   void assertListenerCfg(

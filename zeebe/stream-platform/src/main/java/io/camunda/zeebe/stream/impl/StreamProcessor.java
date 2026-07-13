@@ -415,22 +415,13 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
                               .getLastSuccessfulProcessedRecordPosition(),
                       actor::submit,
                       layeredPersistIo);
+              // no periodic persist tick: spills are driven by the buffer-pressure ladder (the
+              // batch-committed hook covers the replay phase too, where the layered context
+              // buffers writes as well), the pre-snapshot flush and the scheduled-task barrier
               streamProcessorContext.batchCommittedListener(
                   layeredStatePersistence::onBatchCommitted);
-              // scheduled directly on the actor (not the processing schedule service) so the
-              // cadence also covers the replay phase, where the layered context buffers writes too
-              scheduleLayeredPersistTick();
             },
             actor);
-  }
-
-  private void scheduleLayeredPersistTick() {
-    actor.schedule(
-        layeredStatePersistence.persistInterval(),
-        () -> {
-          layeredStatePersistence.onPeriodicTick();
-          scheduleLayeredPersistTick();
-        });
   }
 
   /**
@@ -503,7 +494,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private long recoverFromSnapshot() {
     // with the experimental layered-state flag on, the processing context is the layered db's
     // engine-domain context: batch commits promote an in-memory layer instead of writing RocksDB,
-    // and LayeredStatePersistence drains the buffered state in periodic persist rounds
+    // and LayeredStatePersistence drains the buffered state in memory- and snapshot-driven
+    // persist rounds
     final TransactionContext transactionContext;
     if (zeebeDb instanceof final LayeredZeebeDb<?> layeredDb) {
       // the db (and thus the domain context) may be reused across stream processors, e.g. on a

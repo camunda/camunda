@@ -71,9 +71,15 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   /**
    * The ownership domain of the exporter runtime state on a layered database (experimental; only
    * used when the layered-state flag is on): exporter positions buffer in memory on this actor and
-   * drain to RocksDB at the persist cadence, independently of the engine domain — cross-domain
-   * atomicity is deliberately absent, matching the semantics the two consumers already have on the
-   * wrapped database.
+   * drain to RocksDB on demand, independently of the engine domain — cross-domain atomicity is
+   * deliberately absent, matching the semantics the two consumers already have on the wrapped
+   * database. There is no persist cadence, mirroring the engine domain: the exporter domain
+   * participates in the same RocksDB snapshot, and recovery resumes exporting from the snapshotted
+   * positions (at-least-once re-export), so intermediate persists buy nothing a crash can use. The
+   * drains that remain are the ones committed readers actually consume: the initial entries right
+   * after recovery (snapshot selection treats an empty committed exporter column family as "no
+   * exporters configured") and the {@link #flushBufferedExporterState() pre-snapshot flush}
+   * (snapshot-index selection and log compaction read the committed positions).
    */
   private static final String EXPORTER_DOMAIN_NAME = "exporter";
 
@@ -384,7 +390,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     if (layeredExporterDomain != null) {
       // drain the new exporter's initial entry right away: until it is committed, snapshot
       // selection and compaction cannot see the new exporter's position bound
-      persistLayeredExporterState();
+      persistLayeredExporterState(PersistTrigger.EXPORTER_INITIAL);
     }
     if (exporterMode == ExporterMode.ACTIVE) {
       container.openExporter();
@@ -442,7 +448,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     }
     // after the exporters initialized their runtime state (initMetadata above runs synchronously
     // in both modes), so the initial entries are part of the immediate first drain
-    startLayeredExporterStatePersistence();
+    drainInitialLayeredExporterState();
   }
 
   @Override
@@ -542,15 +548,16 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
    * The transaction context the exporter runtime state is written through. Pass-through by default;
    * with the experimental layered-state flag on it is the {@value #EXPORTER_DOMAIN_NAME} ownership
    * domain's context, so position updates buffer in memory on this actor and drain to RocksDB in
-   * this director's persist rounds (see {@link #persistLayeredExporterState()}).
+   * this director's persist rounds (see {@link #persistLayeredExporterState(PersistTrigger)}).
    *
    * <p><b>Staleness is bounded and safe by direction:</b> snapshot selection and log compaction
    * read the exported positions from committed RocksDB (via {@code DbPositionSupplier}), where a
    * buffered advance is invisible until persisted — the durable position only ever lags the real
    * one, so snapshots select older log indexes and retention keeps <em>more</em> log, never less
-   * than the exporters still need. Correspondingly, a snapshot's exporter positions lag by at most
-   * the persist cadence, widening the at-least-once re-export window after recovery by the same
-   * bound.
+   * than the exporters still need. The moments those readers consume the committed positions are
+   * exactly the moments a drain runs (the pre-snapshot {@link #flushBufferedExporterState()} and
+   * the initial-entry drain), so the snapshot's exporter positions are current at checkpoint time
+   * and the at-least-once re-export window after recovery stays as narrow as before.
    */
   private TransactionContext exporterStateContext() {
     if (!(zeebeDb instanceof final LayeredZeebeDb<?> layeredDb)) {
@@ -569,34 +576,53 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   /**
    * Drains buffered exporter positions to RocksDB, inline on this actor — the payload is a handful
    * of keys, so no IO hand-off is warranted. A failure keeps the positions buffered (and the
-   * committed, conservative values in place); the next tick retries.
+   * committed, conservative values in place); the next occasion retries.
    */
-  private void persistLayeredExporterState() {
+  private void persistLayeredExporterState(final PersistTrigger trigger) {
     if (!layeredExporterDomain.hasBufferedWrites() || layeredExporterDomain.batchInFlight()) {
       return;
     }
     try {
-      layeredExporterDomain.persistNow(
-          Math.max(0, state.getHighestPosition()), PersistTrigger.INTERVAL);
+      layeredExporterDomain.persistNow(Math.max(0, state.getHighestPosition()), trigger);
     } catch (final Exception e) {
       LOG.warn("Failed to persist the buffered exporter state; will retry", e);
     }
   }
 
   /**
-   * Starts the exporter domain's persist cadence and drains the initial exporter entries right
-   * away. The immediate first round is load-bearing: snapshot selection treats an empty committed
-   * EXPORTER column family as "no exporters configured" and then stops bounding compaction by the
-   * exported position — the initial entries must not linger in the buffer where that check cannot
-   * see them.
+   * Drains the exporter domain's buffered positions to committed RocksDB, on this director's actor;
+   * invoked by the snapshot director right before a snapshot checkpoint, so snapshot-index
+   * selection — which reads the committed positions only — sees the current exported positions
+   * instead of lagging one snapshot behind (over-retaining log). Completes immediately when the
+   * layered flag is off or this director already closed; never completes exceptionally for a failed
+   * drain — the positions stay buffered and the committed, conservative values only make retention
+   * keep more log, which must not block the snapshot.
    */
-  private void startLayeredExporterStatePersistence() {
+  public ActorFuture<Void> flushBufferedExporterState() {
+    if (actor.isClosed()) {
+      return CompletableActorFuture.completed(null);
+    }
+    return actor.call(
+        () -> {
+          if (layeredExporterDomain != null) {
+            persistLayeredExporterState(PersistTrigger.PRE_SNAPSHOT);
+          }
+          return null;
+        });
+  }
+
+  /**
+   * Drains the initial exporter entries right away — the exporter domain's only self-scheduled
+   * drain (there is no persist cadence; see {@link #EXPORTER_DOMAIN_NAME}). The immediate first
+   * round is load-bearing: snapshot selection treats an empty committed EXPORTER column family as
+   * "no exporters configured" and then stops bounding compaction by the exported position — the
+   * initial entries must not linger in the buffer where that check cannot see them.
+   */
+  private void drainInitialLayeredExporterState() {
     if (layeredExporterDomain == null) {
       return;
     }
-    persistLayeredExporterState();
-    final Duration persistInterval = ((LayeredZeebeDb<?>) zeebeDb).config().persistInterval();
-    actor.runAtFixedRate(persistInterval, this::persistLayeredExporterState);
+    persistLayeredExporterState(PersistTrigger.EXPORTER_INITIAL);
   }
 
   private ExporterEventFilter createEventFilter(final List<ExporterContainer> containers) {
