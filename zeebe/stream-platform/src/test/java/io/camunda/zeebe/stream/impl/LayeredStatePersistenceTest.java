@@ -67,9 +67,7 @@ final class LayeredStatePersistenceTest {
     inner = DefaultZeebeDbFactory.defaultFactory().createDb(dbDirectory);
     layered =
         new LayeredZeebeDb<>(
-            inner,
-            new LayeredZeebeDbConfig(
-                256, 0, true, 4, Duration.ofSeconds(1), Duration.ofMillis(250)));
+            inner, new LayeredZeebeDbConfig(256, 0, true, 4, Duration.ofSeconds(1)));
     context = layered.layeredContext();
     columnFamily =
         layered.createColumnFamily(ZbColumnFamilies.DEFAULT, context, new DbLong(), new DbLong());
@@ -99,7 +97,7 @@ final class LayeredStatePersistenceTest {
 
     // when the owner thread keeps committing and freezing while the round is in flight
     commitBatch(2, 200);
-    persistence.onFreezeTick();
+    persistence.tryFreezeForScheduledTask();
     commitBatch(3, 300);
 
     // then the new writes are visible to the owner immediately and the round completes on the
@@ -287,7 +285,7 @@ final class LayeredStatePersistenceTest {
     context.runInTransaction(() -> put(1, 100));
 
     // when the freeze cadence and a persist round run
-    persistence.onFreezeTick();
+    persistence.tryFreezeForScheduledTask();
     persistence.onPeriodicTick();
     runProcessorJobsUntil(() -> !persistence.roundInFlight());
 
@@ -342,9 +340,7 @@ final class LayeredStatePersistenceTest {
   void shouldStartRoundWhenBufferedBytesReachBudget() throws Exception {
     // given a total buffered-bytes budget any committed batch exceeds (while the per-store budget
     // stays out of reach, isolating the domain-total trigger)
-    recreate(
-        new LayeredZeebeDbConfig(
-            1024 * 1024, 1, true, 4, Duration.ofSeconds(1), Duration.ofMillis(250)));
+    recreate(new LayeredZeebeDbConfig(1024 * 1024, 1, true, 4, Duration.ofSeconds(1)));
     commitBatch(1, 100);
 
     // when the batch-commit hook fires
@@ -385,9 +381,7 @@ final class LayeredStatePersistenceTest {
 
   /** A pipeline segment limit of 1, so the second freeze makes a merge necessary. */
   private void recreateWithSegmentLimit1() {
-    recreate(
-        new LayeredZeebeDbConfig(
-            1024 * 1024, 0, true, 1, Duration.ofSeconds(1), Duration.ofMillis(250)));
+    recreate(new LayeredZeebeDbConfig(1024 * 1024, 0, true, 1, Duration.ofSeconds(1)));
   }
 
   @Test
@@ -395,12 +389,12 @@ final class LayeredStatePersistenceTest {
     // given -- two freezes pushing the pipeline over its segment limit
     recreateWithSegmentLimit1();
     commitBatch(1, 100);
-    persistence.onFreezeTick();
+    persistence.tryFreezeForScheduledTask();
     assertThat(persistence.mergeInFlight()).isFalse(); // within the limit, nothing to merge
     commitBatch(2, 200);
 
     // when -- the next freeze occasion detects the over-limit pipeline
-    persistence.onFreezeTick();
+    persistence.tryFreezeForScheduledTask();
     assertThat(persistence.mergeInFlight()).isTrue();
     runProcessorJobsUntil(() -> !persistence.mergeInFlight());
 
@@ -419,10 +413,10 @@ final class LayeredStatePersistenceTest {
     // given -- a merge blocked on the IO thread
     recreateWithSegmentLimit1();
     commitBatch(1, 100);
-    persistence.onFreezeTick();
+    persistence.tryFreezeForScheduledTask();
     commitBatch(2, 200);
     io.blockNextRound();
-    persistence.onFreezeTick();
+    persistence.tryFreezeForScheduledTask();
     io.awaitRoundEntered();
     assertThat(persistence.mergeInFlight()).isTrue();
 
@@ -450,10 +444,10 @@ final class LayeredStatePersistenceTest {
     // given -- a merge blocked on the IO thread
     recreateWithSegmentLimit1();
     commitBatch(1, 100);
-    persistence.onFreezeTick();
+    persistence.tryFreezeForScheduledTask();
     commitBatch(2, 200);
     io.blockNextRound();
-    persistence.onFreezeTick();
+    persistence.tryFreezeForScheduledTask();
     io.awaitRoundEntered();
 
     // when -- a pre-snapshot flush is requested mid-merge

@@ -31,26 +31,24 @@ import java.util.Objects;
  *     they are merged down, bounding read amplification
  * @param persistInterval the cadence at which the runtime driving a domain should run persist
  *     rounds; the store itself never schedules anything — this is carried here so the wiring that
- *     opens the database and the runtime that drives it agree on one value
- * @param freezeInterval the cadence at which the runtime driving a domain should freeze the active
- *     overlays into pipeline segments and republish read views; bounds the staleness asynchronous
- *     view readers observe. Like {@code persistInterval}, only carried here — the store never
- *     schedules anything itself
+ *     opens the database and the runtime that drives it agree on one value. There is deliberately
+ *     no freeze cadence: freezes happen on demand only — right before an asynchronous view reader
+ *     executes (which is the only freshness anyone consumes) and implicitly when a persist round
+ *     prepares — because freezing early forfeits the free in-place overwrite absorption of the
+ *     active overlay and turns it into pipeline-merge work
  */
 public record LayeredZeebeDbConfig(
     long maxBytesPerStore,
     long maxBufferedBytes,
     boolean absorbDeletes,
     int pipelineSegmentLimit,
-    Duration persistInterval,
-    Duration freezeInterval) {
+    Duration persistInterval) {
 
   private static final long DEFAULT_MAX_BYTES_PER_STORE = 16 * 1024 * 1024;
   private static final long DEFAULT_MAX_BUFFERED_BYTES = 0;
   private static final boolean DEFAULT_ABSORB_DELETES = true;
   private static final int DEFAULT_PIPELINE_SEGMENT_LIMIT = 4;
   private static final Duration DEFAULT_PERSIST_INTERVAL = Duration.ofSeconds(1);
-  private static final Duration DEFAULT_FREEZE_INTERVAL = Duration.ofMillis(250);
 
   public LayeredZeebeDbConfig {
     if (maxBytesPerStore <= 0) {
@@ -71,11 +69,6 @@ public record LayeredZeebeDbConfig(
       throw new IllegalArgumentException(
           "expected persistInterval to be positive, but was " + persistInterval);
     }
-    Objects.requireNonNull(freezeInterval, "freezeInterval");
-    if (freezeInterval.isZero() || freezeInterval.isNegative()) {
-      throw new IllegalArgumentException(
-          "expected freezeInterval to be positive, but was " + freezeInterval);
-    }
   }
 
   public static LayeredZeebeDbConfig defaults() {
@@ -84,7 +77,6 @@ public record LayeredZeebeDbConfig(
         DEFAULT_MAX_BUFFERED_BYTES,
         DEFAULT_ABSORB_DELETES,
         DEFAULT_PIPELINE_SEGMENT_LIMIT,
-        DEFAULT_PERSIST_INTERVAL,
-        DEFAULT_FREEZE_INTERVAL);
+        DEFAULT_PERSIST_INTERVAL);
   }
 }

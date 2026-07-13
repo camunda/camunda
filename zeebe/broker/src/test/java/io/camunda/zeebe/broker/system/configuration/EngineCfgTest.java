@@ -127,7 +127,6 @@ final class EngineCfgTest {
     // then
     assertThat(layeredState.isEnabled()).isFalse();
     assertThat(layeredState.getPersistInterval()).isEqualTo(Duration.ofSeconds(1));
-    assertThat(layeredState.getFreezeInterval()).isEqualTo(Duration.ofMillis(250));
     assertThat(layeredState.getMaxBytesPerStore().toBytes()).isEqualTo(16 * 1024 * 1024L);
     // the total buffered-bytes trigger defaults off: rounds run at the persist interval or on
     // per-store over-capacity only, keeping the pre-existing persist behavior
@@ -149,7 +148,6 @@ final class EngineCfgTest {
     // then
     assertThat(layeredState.isEnabled()).isTrue();
     assertThat(layeredState.getPersistInterval()).isEqualTo(Duration.ofSeconds(5));
-    assertThat(layeredState.getFreezeInterval()).isEqualTo(Duration.ofMillis(100));
     assertThat(layeredState.getMaxBytesPerStore().toBytes()).isEqualTo(32 * 1024 * 1024L);
     assertThat(layeredState.getMaxBufferedBytes().toBytes()).isEqualTo(8 * 1024 * 1024L);
     assertThat(layeredState.isAbsorbDeletes()).isFalse();

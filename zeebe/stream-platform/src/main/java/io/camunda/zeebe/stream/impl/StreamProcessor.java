@@ -414,9 +414,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
               streamProcessorContext.batchCommittedListener(
                   layeredStatePersistence::onBatchCommitted);
               // scheduled directly on the actor (not the processing schedule service) so the
-              // cadences also cover the replay phase, where the layered context buffers writes too
+              // cadence also covers the replay phase, where the layered context buffers writes too
               scheduleLayeredPersistTick();
-              scheduleLayeredFreezeTick();
             },
             actor);
   }
@@ -427,15 +426,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
         () -> {
           layeredStatePersistence.onPeriodicTick();
           scheduleLayeredPersistTick();
-        });
-  }
-
-  private void scheduleLayeredFreezeTick() {
-    actor.schedule(
-        layeredStatePersistence.freezeInterval(),
-        () -> {
-          layeredStatePersistence.onFreezeTick();
-          scheduleLayeredFreezeTick();
         });
   }
 

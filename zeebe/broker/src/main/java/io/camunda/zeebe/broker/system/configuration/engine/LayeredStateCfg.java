@@ -22,9 +22,11 @@ import org.springframework.util.unit.DataSize;
  * persist interval, so crash recovery replays a correspondingly larger window, and secondary
  * readers (e.g. the query API) observe state at persist-round freshness. The timer due-date,
  * message-TTL and job-timeout checkers run asynchronously on read views of the buffered state,
- * refreshed at the freeze interval and additionally right before each checker execution; the
- * remaining engine scheduled tasks run on the stream processor's thread behind a persist barrier so
- * their state scans keep observing every committed batch.
+ * refreshed right before each checker execution (there is no periodic freeze cadence — the
+ * pre-execution barrier is the only freshness anyone consumes, and freezing earlier would forfeit
+ * the free overwrite absorption of the active overlay); the remaining engine scheduled tasks run on
+ * the stream processor's thread behind a persist barrier so their state scans keep observing every
+ * committed batch.
  */
 public final class LayeredStateCfg implements ConfigurationEntry {
 
@@ -33,7 +35,6 @@ public final class LayeredStateCfg implements ConfigurationEntry {
 
   private boolean enabled = true;
   private Duration persistInterval = DEFAULTS.persistInterval();
-  private Duration freezeInterval = DEFAULTS.freezeInterval();
   private DataSize maxBytesPerStore = DataSize.ofBytes(DEFAULTS.maxBytesPerStore());
   private DataSize maxBufferedBytes = DataSize.ofBytes(DEFAULTS.maxBufferedBytes());
   private boolean absorbDeletes = DEFAULTS.absorbDeletes();
@@ -53,14 +54,6 @@ public final class LayeredStateCfg implements ConfigurationEntry {
 
   public void setPersistInterval(final Duration persistInterval) {
     this.persistInterval = persistInterval;
-  }
-
-  public Duration getFreezeInterval() {
-    return freezeInterval;
-  }
-
-  public void setFreezeInterval(final Duration freezeInterval) {
-    this.freezeInterval = freezeInterval;
   }
 
   public DataSize getMaxBytesPerStore() {
@@ -119,8 +112,7 @@ public final class LayeredStateCfg implements ConfigurationEntry {
         maxBufferedBytes.toBytes(),
         absorbDeletes,
         pipelineSegmentLimit,
-        persistInterval,
-        freezeInterval);
+        persistInterval);
   }
 
   @Override
@@ -130,8 +122,6 @@ public final class LayeredStateCfg implements ConfigurationEntry {
         + enabled
         + ", persistInterval="
         + persistInterval
-        + ", freezeInterval="
-        + freezeInterval
         + ", maxBytesPerStore="
         + maxBytesPerStore
         + ", maxBufferedBytes="

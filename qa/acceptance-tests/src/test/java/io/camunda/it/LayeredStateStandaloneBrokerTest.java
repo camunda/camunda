@@ -60,8 +60,7 @@ final class LayeredStateStandaloneBrokerTest {
             .withWorkingDirectory(workingDirectory)
             .withProperty("zeebe.broker.experimental.engine.layeredState.enabled", "true")
             // short interval so the test exercises several periodic persist rounds
-            .withProperty("zeebe.broker.experimental.engine.layeredState.persistInterval", "500ms")
-            .withProperty("zeebe.broker.experimental.engine.layeredState.freezeInterval", "250ms");
+            .withProperty("zeebe.broker.experimental.engine.layeredState.persistInterval", "500ms");
     broker.start().awaitCompleteTopology();
     client = newClient();
   }

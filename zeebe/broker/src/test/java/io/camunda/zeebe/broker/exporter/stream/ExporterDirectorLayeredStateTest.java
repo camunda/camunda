@@ -45,8 +45,7 @@ public final class ExporterDirectorLayeredStateTest {
           LayeredZeebeDbConfig.defaults().maxBufferedBytes(),
           LayeredZeebeDbConfig.defaults().absorbDeletes(),
           LayeredZeebeDbConfig.defaults().pipelineSegmentLimit(),
-          PERSIST_INTERVAL,
-          LayeredZeebeDbConfig.defaults().freezeInterval());
+          PERSIST_INTERVAL);
 
   @Rule public final ExporterRule rule = ExporterRule.activeExporter().withLayeredDb(layeredConfig);
 

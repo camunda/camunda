@@ -24,23 +24,14 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 /**
- * Drives the persist and freeze cadences of a {@link LayeredZeebeDb}'s engine domain (experimental;
- * only active when the layered-state flag is on). Rounds are prepared and completed on the stream
- * processor's actor, but their drain-and-commit step runs on a dedicated IO executor (see {@link
- * PersistIo}) so processing continues while buffered state moves to RocksDB:
+ * Drives the persist cadence and the on-demand freezes of a {@link LayeredZeebeDb}'s engine domain
+ * (experimental; only active when the layered-state flag is on). Rounds are prepared and completed
+ * on the stream processor's actor, but their drain-and-commit step runs on a dedicated IO executor
+ * (see {@link PersistIo}) so processing continues while buffered state moves to RocksDB:
  *
  * <ul>
  *   <li>{@link #onPeriodicTick()} — the regular persist cadence, invoked at the configured persist
  *       interval; starts a round whenever anything is buffered and no round is in flight.
- *   <li>{@link #onFreezeTick()} — the freeze cadence, invoked at the configured freeze interval;
- *       freezes the active overlays into pipeline segments and republishes the read view whenever
- *       new batches were committed, bounding the staleness asynchronous view readers observe to
- *       roughly the freeze interval. Every freeze occasion also checks whether a pipeline grew past
- *       its segment limit and, if so, hands a merge round to the IO executor — pipeline merges
- *       never run on the processing actor. A merge may overlap an in-flight persist round (it
- *       captures only non-persisting segments, and the IO executor serializes the two), but a new
- *       round is deferred while a merge is in flight — segments captured by a round must never
- *       concurrently merge.
  *   <li>{@link #onBatchCommitted()} — invoked after every committed processing batch; starts a
  *       round as soon as a size budget is exceeded (a single store over its own budget, or the
  *       domain's total buffered bytes over the configured {@code maxBufferedBytes}). While a round
@@ -55,6 +46,18 @@ import org.slf4j.Logger;
  *   <li>{@link #tryFreezeForScheduledTask()} — invoked before an asynchronous checker executes, so
  *       the view it acquires observes every batch committed before its execution.
  * </ul>
+ *
+ * <p><b>Freezes are on-demand only — there is deliberately no periodic freeze cadence.</b> The only
+ * consumers of view freshness are the asynchronous checkers, and they self-freshen through the
+ * pre-execution barrier above; the query API reads pass-through state and is deprecated besides.
+ * Freezing any earlier than someone needs the freshness is strictly worse: an overwrite landing in
+ * the active overlay deduplicates in place for free, while the same overwrite landing after a
+ * freeze creates a cross-segment version that only a pipeline merge can collapse. Every freeze
+ * occasion checks whether a pipeline grew past its segment limit and, if so, hands a merge round to
+ * the IO executor — pipeline merges never run on the processing actor. A merge may overlap an
+ * in-flight persist round (it captures only non-persisting segments, and the IO executor serializes
+ * the two), but a new round is deferred while a merge is in flight — segments captured by a round
+ * must never concurrently merge.
  *
  * <p><b>Threading and liveness:</b> every method runs on the stream processor's actor; only the
  * prepared round's {@link PersistRound#persist()} runs on the IO executor, and its completion is
@@ -80,7 +83,6 @@ final class LayeredStatePersistence {
   private final Executor processor;
   private final PersistIo io;
   private final Duration persistInterval;
-  private final Duration freezeInterval;
   private final long maxBufferedBytes;
 
   /**
@@ -121,7 +123,6 @@ final class LayeredStatePersistence {
     this.io = Objects.requireNonNull(io, "io");
     domain = db.defaultDomain();
     persistInterval = db.config().persistInterval();
-    freezeInterval = db.config().freezeInterval();
     maxBufferedBytes = db.config().maxBufferedBytes();
     // build the coordinator eagerly: every layered column family must exist by now (they are all
     // created during recovery and record-processor init), and failing fast here beats failing on
@@ -131,10 +132,6 @@ final class LayeredStatePersistence {
 
   Duration persistInterval() {
     return persistInterval;
-  }
-
-  Duration freezeInterval() {
-    return freezeInterval;
   }
 
   /** Whether a persist round is currently in flight on the IO executor. */
@@ -171,26 +168,13 @@ final class LayeredStatePersistence {
   }
 
   /**
-   * The regular freeze cadence: freezes the active overlays into pipeline segments and republishes
-   * the read view whenever batches were committed since the last freeze. Cheap — pointer swaps and
-   * flattens, no durable IO, safe while a round is in flight (freezes only touch the newest,
-   * non-persisting run of each pipeline). Skips while a batch is in flight (staging must be empty
-   * on a freeze) and when there is nothing new to freeze; the next tick catches up. Every tick
-   * additionally checks the merge condition, whether it froze or not — a merge deferred while
-   * another was in flight must be retried even when no new batches committed since.
-   */
-  void onFreezeTick() {
-    if (!domain.batchInFlight() && domain.hasActiveWrites()) {
-      domain.freezeNow(watermark());
-    }
-    maybeStartMerge();
-  }
-
-  /**
    * Freezes the active overlays right before an asynchronous checker executes, so the read view the
    * checker acquires observes every batch committed before its execution — the freshness that keeps
    * event-driven checkers from losing wake-ups (a scan that misses a committed-but-unfrozen timer
-   * could otherwise derive no next wake-up and never run again).
+   * could otherwise derive no next wake-up and never run again). This barrier and the implicit
+   * freeze of a preparing persist round are the only freeze sources (see the class javadoc for why
+   * no cadence exists); it also runs the post-freeze merge check, whether it froze or not — a merge
+   * deferred while another was in flight must be retried even when nothing new froze.
    *
    * @return false if a batch is in flight — its staging writes must never surface, so the caller
    *     retries once the batch completed (matching today's semantics, where a checker's scan sees

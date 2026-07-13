@@ -51,7 +51,6 @@ zeebe:
         layeredState:
           enabled: true
           persistInterval: 5s
-          freezeInterval: 100ms
           maxBytesPerStore: 32MB
           maxBufferedBytes: 8MB
           absorbDeletes: false

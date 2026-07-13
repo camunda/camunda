@@ -416,9 +416,7 @@ final class LayeredZeebeDbTest {
     // default facade, which owns closing it — so this one is deliberately never closed
     final var tiny =
         new LayeredZeebeDb<>(
-            inner,
-            new LayeredZeebeDbConfig(
-                1, 0, false, 4, Duration.ofSeconds(1), Duration.ofMillis(250)));
+            inner, new LayeredZeebeDbConfig(1, 0, false, 4, Duration.ofSeconds(1)));
     final TransactionContext tinyContext = tiny.layeredContext();
     final DbLong key = new DbLong();
     final DbLong value = new DbLong();
