@@ -26,6 +26,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerCheckScheduler;
 import io.camunda.zeebe.engine.state.conditional.ConditionalSubscription;
 import io.camunda.zeebe.engine.state.immutable.ConditionalSubscriptionState;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -73,6 +74,7 @@ public final class CatchEventBehavior {
   private final ProcessMessageSubscriptionState processMessageSubscriptionState;
   private final TimerInstanceState timerInstanceState;
   private final ProcessState processState;
+  private final ElementInstanceState elementInstanceState;
   private final SignalSubscriptionState signalSubscriptionState;
   private final ConditionalSubscriptionState conditionalSubscriptionState;
 
@@ -110,6 +112,7 @@ public final class CatchEventBehavior {
     timerInstanceState = processingState.getTimerState();
     processMessageSubscriptionState = processingState.getProcessMessageSubscriptionState();
     processState = processingState.getProcessState();
+    elementInstanceState = processingState.getElementInstanceState();
     signalSubscriptionState = processingState.getSignalSubscriptionState();
     conditionalSubscriptionState = processingState.getConditionalSubscriptionState();
 
@@ -120,6 +123,11 @@ public final class CatchEventBehavior {
     this.maxNameFieldLength = maxNameFieldLength;
     this.evaluateBoundaryEventCorrelationKeyInActivityScope =
         evaluateBoundaryEventCorrelationKeyInActivityScope;
+  }
+
+  private String getBusinessId(final long processInstanceKey) {
+    final var processInstance = elementInstanceState.getInstance(processInstanceKey);
+    return processInstance != null ? processInstance.getValue().getBusinessId() : "";
   }
 
   /**
@@ -383,8 +391,10 @@ public final class CatchEventBehavior {
     // Capture the process instance's businessId at subscription-open time and ship it with the
     // OPEN command so the message partition can apply business-id-based filtering locally at
     // correlation time. Reading PI state from another partition at correlation time would
-    // reintroduce the cross-partition chatter the design explicitly avoids.
-    final DirectBuffer businessId = wrapString(context.getBusinessId());
+    // reintroduce the cross-partition chatter the design explicitly avoids. The value is read from
+    // the process-scope element instance (not the subscribing element's record) so that a Business
+    // ID assigned late to a running instance is captured by subscriptions opened afterwards.
+    final DirectBuffer businessId = wrapString(getBusinessId(processInstanceKey));
 
     final int subscriptionPartitionId = routingInfo.partitionForCorrelationKey(correlationKey);
 
