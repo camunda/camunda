@@ -409,62 +409,76 @@ final class LayeredStoreCoordinatorTest {
     final Random random = new Random(42);
 
     for (int trial = 0; trial < 50; trial++) {
-      // given -- a fresh durability unit with pre-committed state and a randomized workload
-      final InMemoryDurableState trialState = new InMemoryDurableState();
-      final RecordingSink recordingSink = new RecordingSink(trialState.sink());
-      final Map<String, LayeredKeyValueStore> stores = new LinkedHashMap<>();
-      for (final String name : List.of(STORE_A, STORE_B)) {
-        for (int i = random.nextInt(4); i > 0; i--) {
-          trialState.store(name).put(bytes(random.nextInt(8)), bytes(random.nextInt(256)));
+      runDrainParityTrial(trial, random);
+    }
+  }
+
+  private static void runDrainParityTrial(final int trial, final Random random) throws Exception {
+    // given -- a fresh durability unit with pre-committed state and a randomized workload
+    final InMemoryDurableState trialState = new InMemoryDurableState();
+    final RecordingSink recordingSink = new RecordingSink(trialState.sink());
+    final Map<String, LayeredKeyValueStore> stores = new LinkedHashMap<>();
+    for (final String name : List.of(STORE_A, STORE_B)) {
+      stores.put(name, seededStore(name, trialState, random));
+    }
+    try (final LayeredStoreCoordinator coordinator =
+        new LayeredStoreCoordinator(
+            stores.values(),
+            recordingSink,
+            trialState.snapshotSource(),
+            view -> {},
+            LayeredStoreMetrics.noop())) {
+      long watermark = 0;
+      for (int freeze = 1 + random.nextInt(4); freeze > 0; freeze--) {
+        for (final LayeredKeyValueStore store : stores.values()) {
+          promoteRandomBatch(store, random);
         }
-        stores.put(
-            name, new LayeredKeyValueStore(name, trialState.store(name), 1024 * 1024, false, 2));
+        coordinator.freezeAll(++watermark);
       }
-      try (final LayeredStoreCoordinator coordinator =
-          new LayeredStoreCoordinator(
-              stores.values(),
-              recordingSink,
-              trialState.snapshotSource(),
-              view -> {},
-              LayeredStoreMetrics.noop())) {
-        long watermark = 0;
-        for (int freeze = 1 + random.nextInt(4); freeze > 0; freeze--) {
-          for (final LayeredKeyValueStore store : stores.values()) {
-            for (int op = random.nextInt(7); op > 0; op--) {
-              final byte[] key = bytes(random.nextInt(8));
-              switch (random.nextInt(4)) {
-                case 0 -> store.delete(key); // blind deletes probe the delegate for flushed
-                case 1 -> store.get(key); // read-through marks later writes of the key flushed
-                default -> store.put(key, bytes(random.nextInt(256)));
-              }
-            }
-            store.promote();
-          }
-          coordinator.freezeAll(++watermark);
-        }
 
-        // given -- the exact segment stacks the round will capture (actives are already frozen,
-        // so the prepare-freeze below is a no-op and captures precisely these)
-        final Map<String, List<FlatSegment>> capturedOldestFirst = new LinkedHashMap<>();
-        stores.forEach(
-            (name, store) -> {
-              final List<FlatSegment> oldestFirst = new ArrayList<>(store.segmentsNewestFirst());
-              Collections.reverse(oldestFirst);
-              capturedOldestFirst.put(name, oldestFirst);
-            });
-        final List<String> expectedOps = materializedDrainOracle(capturedOldestFirst);
+      // given -- the exact segment stacks the round will capture (actives are already frozen,
+      // so the prepare-freeze below is a no-op and captures precisely these)
+      final Map<String, List<FlatSegment>> capturedOldestFirst = new LinkedHashMap<>();
+      stores.forEach(
+          (name, store) -> {
+            final List<FlatSegment> oldestFirst = new ArrayList<>(store.segmentsNewestFirst());
+            Collections.reverse(oldestFirst);
+            capturedOldestFirst.put(name, oldestFirst);
+          });
+      final List<String> expectedOps = materializedDrainOracle(capturedOldestFirst);
 
-        // when
-        final PersistRound round = coordinator.prepareRound(watermark);
-        round.persist();
-        coordinator.completeRound(round, true);
+      // when
+      final PersistRound round = coordinator.prepareRound(watermark);
+      round.persist();
+      coordinator.completeRound(round, true);
 
-        // then
-        assertThat(recordingSink.operations)
-            .as("batch operations of trial %d", trial)
-            .containsExactlyElementsOf(expectedOps);
+      // then
+      assertThat(recordingSink.operations)
+          .as("batch operations of trial %d", trial)
+          .containsExactlyElementsOf(expectedOps);
+    }
+  }
+
+  /** Pre-commits a random handful of keys to the delegate, then opens the store over it. */
+  private static LayeredKeyValueStore seededStore(
+      final String name, final InMemoryDurableState trialState, final Random random) {
+    for (int i = random.nextInt(4); i > 0; i--) {
+      trialState.store(name).put(bytes(random.nextInt(8)), bytes(random.nextInt(256)));
+    }
+    return new LayeredKeyValueStore(name, trialState.store(name), 1024 * 1024, false, 2);
+  }
+
+  /** One randomized processing batch: mixed reads, blind deletes and overwrites, then promote. */
+  private static void promoteRandomBatch(final LayeredKeyValueStore store, final Random random) {
+    for (int op = random.nextInt(7); op > 0; op--) {
+      final byte[] key = bytes(random.nextInt(8));
+      switch (random.nextInt(4)) {
+        case 0 -> store.delete(key); // blind deletes probe the delegate for flushed
+        case 1 -> store.get(key); // read-through marks later writes of the key flushed
+        default -> store.put(key, bytes(random.nextInt(256)));
       }
     }
+    store.promote();
   }
 
   /** The old drain path — materialize the merged segment per store, then stream it. */

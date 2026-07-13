@@ -31,7 +31,7 @@ public final class LayeredStateCfg implements ConfigurationEntry {
   // the store library owns the defaults; this entry only overlays what the broker config sets
   private static final LayeredZeebeDbConfig DEFAULTS = LayeredZeebeDbConfig.defaults();
 
-  private boolean enabled = false;
+  private boolean enabled = true;
   private Duration persistInterval = DEFAULTS.persistInterval();
   private Duration freezeInterval = DEFAULTS.freezeInterval();
   private DataSize maxBytesPerStore = DataSize.ofBytes(DEFAULTS.maxBytesPerStore());

@@ -168,8 +168,6 @@ public final class InMemoryDurableState {
 
   private final class InMemoryBatch implements PersistBatch {
 
-    private record StagedWrite(String storeName, byte[] key, byte[] value) {}
-
     private final List<StagedWrite> writes = new ArrayList<>();
     private long stagedAnchor = -1;
     private boolean committed;
@@ -219,5 +217,7 @@ public final class InMemoryDurableState {
         writes.clear();
       }
     }
+
+    private record StagedWrite(String storeName, byte[] key, byte[] value) {}
   }
 }
