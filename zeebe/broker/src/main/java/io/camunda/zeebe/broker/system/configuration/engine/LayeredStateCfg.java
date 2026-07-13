@@ -37,6 +37,8 @@ public final class LayeredStateCfg implements ConfigurationEntry {
   private Duration persistInterval = DEFAULTS.persistInterval();
   private DataSize maxBytesPerStore = DataSize.ofBytes(DEFAULTS.maxBytesPerStore());
   private DataSize maxBufferedBytes = DataSize.ofBytes(DEFAULTS.maxBufferedBytes());
+  private double ladderStartFraction = DEFAULTS.ladderStartFraction();
+  private double ladderFlatOutFraction = DEFAULTS.ladderFlatOutFraction();
   private boolean absorbDeletes = DEFAULTS.absorbDeletes();
   private int pipelineSegmentLimit = DEFAULTS.pipelineSegmentLimit();
   private DataSize persistMinSliceBytes = DataSize.ofBytes(DEFAULTS.persistMinSliceBytes());
@@ -67,10 +69,11 @@ public final class LayeredStateCfg implements ConfigurationEntry {
   }
 
   /**
-   * Total buffered-bytes budget across all layered stores of the engine domain: when positive, a
-   * persist round starts as soon as the buffered (not yet persisted) writes reach it — bounding
+   * Total buffered-bytes budget across all layered stores of the engine domain: when positive, the
+   * buffered (not yet persisted) writes are drained on a graduated pressure ladder over this budget
+   * (see {@link #getLadderStartFraction()} and {@link #getLadderFlatOutFraction()}) — bounding
    * memory and the recovery replay window by size, independently of the persist interval. Zero (the
-   * default) disables the size trigger; rounds then run at the persist interval or on per-store
+   * default) disables the ladder; rounds then run at the persist interval or on per-store
    * over-capacity only.
    */
   public DataSize getMaxBufferedBytes() {
@@ -79,6 +82,33 @@ public final class LayeredStateCfg implements ConfigurationEntry {
 
   public void setMaxBufferedBytes(final DataSize maxBufferedBytes) {
     this.maxBufferedBytes = maxBufferedBytes;
+  }
+
+  /**
+   * The buffer-pressure ladder's start rung as a fraction of {@link #getMaxBufferedBytes()}: at
+   * this fill level a paced persist round starts early (or an in-flight one is expedited), so the
+   * buffer drains before pressure builds further.
+   */
+  public double getLadderStartFraction() {
+    return ladderStartFraction;
+  }
+
+  public void setLadderStartFraction(final double ladderStartFraction) {
+    this.ladderStartFraction = ladderStartFraction;
+  }
+
+  /**
+   * The buffer-pressure ladder's flat-out rung as a fraction of {@link #getMaxBufferedBytes()}: at
+   * this fill level a persist round starts immediately and drains unpaced; a single store over its
+   * own {@link #getMaxBytesPerStore()} budget feeds this rung too. Must be at least {@link
+   * #getLadderStartFraction()}.
+   */
+  public double getLadderFlatOutFraction() {
+    return ladderFlatOutFraction;
+  }
+
+  public void setLadderFlatOutFraction(final double ladderFlatOutFraction) {
+    this.ladderFlatOutFraction = ladderFlatOutFraction;
   }
 
   /**
@@ -139,6 +169,8 @@ public final class LayeredStateCfg implements ConfigurationEntry {
     return new LayeredZeebeDbConfig(
         maxBytesPerStore.toBytes(),
         maxBufferedBytes.toBytes(),
+        ladderStartFraction,
+        ladderFlatOutFraction,
         absorbDeletes,
         pipelineSegmentLimit,
         persistInterval,
@@ -157,6 +189,10 @@ public final class LayeredStateCfg implements ConfigurationEntry {
         + maxBytesPerStore
         + ", maxBufferedBytes="
         + maxBufferedBytes
+        + ", ladderStartFraction="
+        + ladderStartFraction
+        + ", ladderFlatOutFraction="
+        + ladderFlatOutFraction
         + ", absorbDeletes="
         + absorbDeletes
         + ", pipelineSegmentLimit="

@@ -53,6 +53,8 @@ zeebe:
           persistInterval: 5s
           maxBytesPerStore: 32MB
           maxBufferedBytes: 8MB
+          ladderStartFraction: 0.6
+          ladderFlatOutFraction: 0.8
           absorbDeletes: false
           pipelineSegmentLimit: 8
           persistMinSliceBytes: 2MB

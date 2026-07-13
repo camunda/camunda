@@ -53,7 +53,7 @@ public enum LayeredStateMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public String getDescription() {
-      return "Persist rounds started, by trigger (interval, over-capacity, buffered-bytes,"
+      return "Persist rounds started, by trigger (interval, the buffer-pressure ladder rungs,"
           + " pre-snapshot, scheduled-task)";
     }
 
@@ -194,6 +194,30 @@ public enum LayeredStateMetricsDoc implements ExtendedMeterDocumentation {
     @Override
     public String getDescription() {
       return "Key and value bytes drained to the durable store by persist rounds";
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return DOMAIN_ONLY;
+    }
+  },
+  /** Batch boundaries observed with the buffered bytes at (or over) the full budget */
+  ADMISSION_PRESSURE {
+    @Override
+    public String getName() {
+      return "zeebe.db.layered.admission.pressure";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.COUNTER;
+    }
+
+    @Override
+    public String getDescription() {
+      return "Batch boundaries at which the domain's buffered bytes had reached the full"
+          + " buffered-bytes budget — the buffer-pressure ladder's top rung, where admission"
+          + " slow-down would engage once a flow-control seam exists";
     }
 
     @Override

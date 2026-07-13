@@ -42,6 +42,7 @@ final class MicrometerLayeredStoreMetrics implements LayeredStoreMetrics {
   private final Counter pipelineMerges;
   private final Counter pipelineMergesSkipped;
   private final Counter[] roundsByTrigger;
+  private final Counter admissionPressure;
   private final Counter roundFailures;
   private final Timer roundDuration;
   private final Counter persistSlices;
@@ -80,6 +81,7 @@ final class MicrometerLayeredStoreMetrics implements LayeredStoreMetrics {
               .tag(LayeredStateKeyNames.TRIGGER.asString(), trigger.getLabel())
               .register(registry);
     }
+    admissionPressure = counter(LayeredStateMetricsDoc.ADMISSION_PRESSURE);
     roundFailures = counter(LayeredStateMetricsDoc.PERSIST_FAILURES);
     roundDuration =
         Timer.builder(LayeredStateMetricsDoc.PERSIST_DURATION.getName())
@@ -142,6 +144,11 @@ final class MicrometerLayeredStoreMetrics implements LayeredStoreMetrics {
   @Override
   public void countRound(final PersistTrigger trigger) {
     roundsByTrigger[trigger.ordinal()].increment();
+  }
+
+  @Override
+  public void countAdmissionPressure() {
+    admissionPressure.increment();
   }
 
   @Override

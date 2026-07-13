@@ -36,11 +36,12 @@ import org.slf4j.Logger;
  * <ul>
  *   <li>{@link #onPeriodicTick()} — the regular persist cadence, invoked at the configured persist
  *       interval; starts a round whenever anything is buffered and no round is in flight.
- *   <li>{@link #onBatchCommitted()} — invoked after every committed processing batch; starts a
- *       round as soon as a size budget is exceeded (a single store over its own budget, or the
- *       domain's total buffered bytes over the configured {@code maxBufferedBytes}). While a round
- *       is in flight the trigger is only noted — rounds never stack — and re-checked once the round
- *       completed.
+ *   <li>{@link #onBatchCommitted()} — invoked after every committed processing batch; reacts to
+ *       buffer pressure on a graduated ladder (see {@link #onBatchCommitted()}): a paced round
+ *       starts early at the configured start rung, an unpaced round at the flat-out rung (which a
+ *       single store over its own budget feeds too), and reaching the full budget is surfaced as
+ *       admission pressure. While a round is in flight a rung only expedites it — rounds never
+ *       stack — and is re-checked once the round completed.
  *   <li>{@link #flushForSnapshot(CompletableActorFuture)} — invoked before a snapshot checkpoint;
  *       completes once the durable store holds a cut at least as new as the position the snapshot
  *       will claim, awaiting any in-flight round first.
@@ -88,6 +89,11 @@ final class LayeredStatePersistence {
   private final PersistIo io;
   private final Duration persistInterval;
   private final long maxBufferedBytes;
+  // the buffer-pressure ladder rungs, precomputed from the configured fractions of
+  // maxBufferedBytes (zero when no budget is configured — the ladder is off then); at least one
+  // byte so an empty buffer can never sit on a rung
+  private final long ladderStartBytes;
+  private final long ladderFlatOutBytes;
   // the pacing budget of one round's sliced drain: pacingTargetFraction × persistInterval, so a
   // paced round normally finishes before the next interval trigger would fire
   private final long pacingBudgetNanos;
@@ -106,8 +112,15 @@ final class LayeredStatePersistence {
    */
   private CompletableActorFuture<Void> inFlightMerge;
 
-  /** A size trigger observed while a round or merge was in flight; re-checked on completion. */
+  /** A ladder rung observed while a round or merge was in flight; re-checked on completion. */
   private boolean sizeTriggerWhileInFlight;
+
+  /**
+   * Whether the full-budget admission warning was already logged for the current excursion above
+   * the budget; re-armed once the buffered bytes drop below it again (the meter counts every
+   * pressed batch boundary, the log only the excursion).
+   */
+  private boolean admissionPressureWarned;
 
   /**
    * The pacer of the single in-flight round, or null while none is — the owner's urgency hook: a
@@ -138,6 +151,8 @@ final class LayeredStatePersistence {
     domain = db.defaultDomain();
     persistInterval = db.config().persistInterval();
     maxBufferedBytes = db.config().maxBufferedBytes();
+    ladderStartBytes = ladderRungBytes(db.config().ladderStartFraction());
+    ladderFlatOutBytes = ladderRungBytes(db.config().ladderFlatOutFraction());
     pacingBudgetNanos =
         (long) (persistInterval.toNanos() * db.config().persistPacingTargetFraction());
     // build the coordinator eagerly: every layered column family must exist by now (they are all
@@ -148,6 +163,11 @@ final class LayeredStatePersistence {
 
   Duration persistInterval() {
     return persistInterval;
+  }
+
+  /** A ladder rung in bytes — at least one, so an empty buffer can never sit on a rung. */
+  private long ladderRungBytes(final double fraction) {
+    return maxBufferedBytes <= 0 ? 0 : Math.max(1, (long) (maxBufferedBytes * fraction));
   }
 
   /** Whether a persist round is currently in flight on the IO executor. */
@@ -264,24 +284,37 @@ final class LayeredStatePersistence {
   }
 
   /**
-   * Notes a size condition right after a batch commit and starts a round for it once none is in
-   * flight; triggers observed mid-round are re-checked on completion instead of stacking a second
-   * round. Two size conditions exist: a single store over its own byte budget, and — when a {@code
-   * maxBufferedBytes} budget is configured — the domain's total buffered bytes reaching it, which
-   * bounds memory and the recovery replay window by size independently of the persist interval
-   * (rounds fire on whichever of size or interval comes first).
+   * Reacts to buffer pressure right after a batch commit, on a graduated ladder over the domain's
+   * buffered bytes — which include the bytes captured by an in-flight round until it completes, so
+   * pressure never under-reads while a drain runs:
+   *
+   * <ul>
+   *   <li><b>Start rung</b> (configured fraction of {@code maxBufferedBytes}, default 70%): a paced
+   *       round starts early, spreading the drain's IO while pressure is still moderate.
+   *   <li><b>Flat-out rung</b> (default 90%): a round starts immediately and drains unpaced; a
+   *       single store over its own byte budget ({@code overCapacity}) feeds this rung too.
+   *   <li><b>Full budget</b> (100%): admission slow-down would engage here, but no clean seam into
+   *       the log stream's flow control exists yet (its write-rate limiter is config-owned and fed
+   *       by the exporting backlog only, and rejecting appends needs a per-context decision inside
+   *       {@code FlowControl}) — so the pressure is surfaced instead: counted on every pressed
+   *       batch boundary and warned once per excursion above the budget.
+   * </ul>
+   *
+   * <p>Rounds never stack: a rung observed while a round (or merge) is in flight expedites the
+   * in-flight drain via its pacer — memory pressure beats checkpoint spreading — and is re-checked
+   * once the round completed.
    */
   void onBatchCommitted() {
-    final PersistTrigger trigger = sizeTrigger();
-    if (trigger == null) {
+    noteAdmissionPressure();
+    final PersistTrigger rung = ladderRung();
+    if (rung == null) {
       return;
     }
     if (roundInFlight() || mergeInFlight()) {
       sizeTriggerWhileInFlight = true;
       if (inFlightPacer != null) {
-        // over budget while a round is already draining: stop pacing it — memory pressure beats
-        // checkpoint spreading, so the drain finishes flat-out and the follow-up round starts
-        // sooner
+        // on a rung while a round is already draining: stop pacing it, so the drain finishes
+        // flat-out and the follow-up round starts sooner
         inFlightPacer.expedite();
       }
       return;
@@ -289,16 +322,40 @@ final class LayeredStatePersistence {
     if (domain.batchInFlight()) {
       return;
     }
-    startRound(trigger);
+    startRound(rung);
   }
 
-  /** The size trigger a round should be started for right now, or null if none applies. */
-  private @Nullable PersistTrigger sizeTrigger() {
-    if (domain.overCapacity()) {
-      return PersistTrigger.OVER_CAPACITY;
+  /** Meters (each occasion) and warns (once per excursion) when the full budget is reached. */
+  private void noteAdmissionPressure() {
+    if (maxBufferedBytes <= 0 || domain.bufferedBytes() < maxBufferedBytes) {
+      admissionPressureWarned = false;
+      return;
     }
-    if (maxBufferedBytes > 0 && domain.bufferedBytes() >= maxBufferedBytes) {
-      return PersistTrigger.BUFFERED_BYTES;
+    domain.countAdmissionPressure();
+    if (!admissionPressureWarned) {
+      admissionPressureWarned = true;
+      LOG.warn(
+          "The buffered layered state reached its full budget of {} bytes; processing continues"
+              + " while the drain catches up flat-out, but no admission slow-down engages yet"
+              + " (no flow-control seam)",
+          maxBufferedBytes);
+    }
+  }
+
+  /** The ladder rung the buffered state sits on right now, or null while it is below the ladder. */
+  private @Nullable PersistTrigger ladderRung() {
+    if (domain.overCapacity()) {
+      return PersistTrigger.LADDER_90;
+    }
+    if (ladderFlatOutBytes <= 0) {
+      return null;
+    }
+    final long buffered = domain.bufferedBytes();
+    if (buffered >= ladderFlatOutBytes) {
+      return PersistTrigger.LADDER_90;
+    }
+    if (buffered >= ladderStartBytes) {
+      return PersistTrigger.LADDER_70;
     }
     return null;
   }
@@ -361,7 +418,9 @@ final class LayeredStatePersistence {
     final PersistRound round = domain.preparePersist(watermark(), trigger);
     final CompletableActorFuture<Throwable> completed = new CompletableActorFuture<>();
     inFlightRound = completed;
-    final DrainPacer pacer = new DrainPacer(pacingBudgetNanos, System.nanoTime());
+    // a flat-out-rung round paces nothing: memory pressure beats checkpoint spreading
+    final long budgetNanos = trigger == PersistTrigger.LADDER_90 ? 0 : pacingBudgetNanos;
+    final DrainPacer pacer = new DrainPacer(budgetNanos, System.nanoTime());
     inFlightPacer = pacer;
     io.persist(round, pacer)
         .onComplete(

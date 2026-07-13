@@ -51,6 +51,12 @@ public interface LayeredStoreMetrics {
   /** Counts a persist round started for the given trigger. */
   void countRound(PersistTrigger trigger);
 
+  /**
+   * Counts a batch boundary at which the domain's buffered bytes had reached the full
+   * buffered-bytes budget — the buffer-pressure ladder's top rung.
+   */
+  void countAdmissionPressure();
+
   /** Counts a failed persist round (its segments stay buffered and are retried). */
   void countRoundFailure();
 
@@ -134,6 +140,9 @@ public interface LayeredStoreMetrics {
 
     @Override
     public void countRound(final PersistTrigger trigger) {}
+
+    @Override
+    public void countAdmissionPressure() {}
 
     @Override
     public void countRoundFailure() {}

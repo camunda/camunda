@@ -11,10 +11,19 @@ package io.camunda.zeebe.db.layered;
 public enum PersistTrigger {
   /** The regular persist cadence found buffered writes. */
   INTERVAL("interval"),
-  /** The pinned bytes of a store exceeded its budget, forcing a round now. */
-  OVER_CAPACITY("overCapacity"),
-  /** The buffered bytes of a whole domain reached the configured budget, forcing a round now. */
-  BUFFERED_BYTES("bufferedBytes"),
+  /**
+   * The domain's buffered bytes climbed onto the buffer-pressure ladder's start rung (a configured
+   * fraction of the buffered-bytes budget), starting a paced round early. Labelled after the
+   * default rung fraction (70%).
+   */
+  LADDER_70("ladder70"),
+  /**
+   * The domain's buffered bytes climbed onto the buffer-pressure ladder's flat-out rung (a
+   * configured fraction of the buffered-bytes budget), or a single store exceeded its own byte
+   * budget: the round starts immediately and drains unpaced. Labelled after the default rung
+   * fraction (90%).
+   */
+  LADDER_90("ladder90"),
   /** A snapshot is about to be taken and needs a prefix-consistent durable cut first. */
   PRE_SNAPSHOT("preSnapshot"),
   /**

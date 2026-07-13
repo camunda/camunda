@@ -18,10 +18,18 @@ import java.util.Objects;
  * @param maxBytesPerStore soft byte budget per store; buffered (pinned) writes may exceed it, which
  *     {@link LayeredZeebeDb#overCapacity()} surfaces as the signal to run a persist round
  * @param maxBufferedBytes total buffered-bytes budget across a domain's stores; when positive, the
- *     runtime driving the domain should start a persist round as soon as the buffered (not yet
- *     persisted) bytes reach it — bounding memory and the recovery replay window by size,
- *     independently of the persist interval. Zero (the default) disables the size trigger: rounds
- *     then run at the persist interval or on per-store over-capacity only, exactly as before
+ *     runtime driving the domain reacts to the buffered (not yet persisted) bytes on a graduated
+ *     pressure ladder (see the ladder fractions below) — bounding memory and the recovery replay
+ *     window by size, independently of the persist interval. Zero (the default) disables the
+ *     ladder: rounds then run at the persist interval or on per-store over-capacity only, exactly
+ *     as before
+ * @param ladderStartFraction the buffer-pressure ladder's start rung, as a fraction of {@code
+ *     maxBufferedBytes}: at this fill level the runtime starts a paced persist round early (or
+ *     expedites the one already in flight), so the buffer drains before pressure builds further
+ * @param ladderFlatOutFraction the buffer-pressure ladder's flat-out rung, as a fraction of {@code
+ *     maxBufferedBytes}: at this fill level the runtime starts a round immediately and drains it
+ *     unpaced (a store exceeding its own {@code maxBytesPerStore} budget feeds this rung too); must
+ *     be at least {@code ladderStartFraction}
  * @param absorbDeletes whether a delete of a never-persisted put annihilates the pair in memory so
  *     neither write ever reaches RocksDB. On by default: exact flushed flags plus negative caching
  *     make absorption unconditionally sound (a pair only annihilates when the durable store
@@ -48,6 +56,8 @@ import java.util.Objects;
 public record LayeredZeebeDbConfig(
     long maxBytesPerStore,
     long maxBufferedBytes,
+    double ladderStartFraction,
+    double ladderFlatOutFraction,
     boolean absorbDeletes,
     int pipelineSegmentLimit,
     Duration persistInterval,
@@ -56,13 +66,15 @@ public record LayeredZeebeDbConfig(
 
   private static final long DEFAULT_MAX_BYTES_PER_STORE = 16 * 1024 * 1024;
   private static final long DEFAULT_MAX_BUFFERED_BYTES = 0;
+  private static final double DEFAULT_LADDER_START_FRACTION = 0.7;
+  private static final double DEFAULT_LADDER_FLAT_OUT_FRACTION = 0.9;
   private static final boolean DEFAULT_ABSORB_DELETES = true;
   private static final int DEFAULT_PIPELINE_SEGMENT_LIMIT = 4;
   private static final Duration DEFAULT_PERSIST_INTERVAL = Duration.ofSeconds(1);
   private static final long DEFAULT_PERSIST_MIN_SLICE_BYTES = 1024 * 1024;
   private static final double DEFAULT_PERSIST_PACING_TARGET_FRACTION = 0.8;
 
-  /** Convenience constructor defaulting the paced-drain knobs (slice size, pacing fraction). */
+  /** Convenience constructor defaulting the ladder rungs and the paced-drain knobs. */
   public LayeredZeebeDbConfig(
       final long maxBytesPerStore,
       final long maxBufferedBytes,
@@ -72,6 +84,8 @@ public record LayeredZeebeDbConfig(
     this(
         maxBytesPerStore,
         maxBufferedBytes,
+        DEFAULT_LADDER_START_FRACTION,
+        DEFAULT_LADDER_FLAT_OUT_FRACTION,
         absorbDeletes,
         pipelineSegmentLimit,
         persistInterval,
@@ -88,6 +102,17 @@ public record LayeredZeebeDbConfig(
       throw new IllegalArgumentException(
           "expected maxBufferedBytes to be zero (disabled) or positive, but was "
               + maxBufferedBytes);
+    }
+    if (ladderStartFraction <= 0 || ladderStartFraction > 1) {
+      throw new IllegalArgumentException(
+          "expected ladderStartFraction to be in (0, 1], but was " + ladderStartFraction);
+    }
+    if (ladderFlatOutFraction < ladderStartFraction || ladderFlatOutFraction > 1) {
+      throw new IllegalArgumentException(
+          "expected ladderFlatOutFraction to be in [ladderStartFraction, 1] = ["
+              + ladderStartFraction
+              + ", 1], but was "
+              + ladderFlatOutFraction);
     }
     if (pipelineSegmentLimit < 1) {
       throw new IllegalArgumentException(

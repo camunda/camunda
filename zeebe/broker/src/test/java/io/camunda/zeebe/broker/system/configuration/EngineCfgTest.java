@@ -128,9 +128,13 @@ final class EngineCfgTest {
     assertThat(layeredState.isEnabled()).isFalse();
     assertThat(layeredState.getPersistInterval()).isEqualTo(Duration.ofSeconds(1));
     assertThat(layeredState.getMaxBytesPerStore().toBytes()).isEqualTo(16 * 1024 * 1024L);
-    // the total buffered-bytes trigger defaults off: rounds run at the persist interval or on
+    // the total buffered-bytes budget defaults off: rounds run at the persist interval or on
     // per-store over-capacity only, keeping the pre-existing persist behavior
     assertThat(layeredState.getMaxBufferedBytes().toBytes()).isZero();
+    // the buffer-pressure ladder rungs default to 70% (start a paced round early) and 90%
+    // (drain flat-out) of the buffered-bytes budget
+    assertThat(layeredState.getLadderStartFraction()).isEqualTo(0.7);
+    assertThat(layeredState.getLadderFlatOutFraction()).isEqualTo(0.9);
     // delete absorption defaults on: exact flushed flags make it unconditionally sound, and the
     // put/delete churn it elides is the main write-savings lever of the layered store
     assertThat(layeredState.isAbsorbDeletes()).isTrue();
@@ -152,6 +156,8 @@ final class EngineCfgTest {
     assertThat(layeredState.getPersistInterval()).isEqualTo(Duration.ofSeconds(5));
     assertThat(layeredState.getMaxBytesPerStore().toBytes()).isEqualTo(32 * 1024 * 1024L);
     assertThat(layeredState.getMaxBufferedBytes().toBytes()).isEqualTo(8 * 1024 * 1024L);
+    assertThat(layeredState.getLadderStartFraction()).isEqualTo(0.6);
+    assertThat(layeredState.getLadderFlatOutFraction()).isEqualTo(0.8);
     assertThat(layeredState.isAbsorbDeletes()).isFalse();
     assertThat(layeredState.getPipelineSegmentLimit()).isEqualTo(8);
     assertThat(layeredState.getPersistMinSliceBytes().toBytes()).isEqualTo(2 * 1024 * 1024L);

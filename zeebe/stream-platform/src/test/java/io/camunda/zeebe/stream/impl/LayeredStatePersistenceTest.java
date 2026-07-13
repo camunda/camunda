@@ -324,7 +324,7 @@ final class LayeredStatePersistenceTest {
   @Test
   void shouldNotStartRoundOnBatchCommitWhileNoSizeBudgetIsExceeded() {
     // given a committed batch well below the per-store budget and no total buffered-bytes budget
-    // (the default) — the pre-existing behavior: only the interval cadence persists
+    // (the default) — the ladder is off: only the interval cadence persists
     commitBatch(1, 100);
 
     // when the batch-commit hook fires
@@ -337,19 +337,89 @@ final class LayeredStatePersistenceTest {
   }
 
   @Test
-  void shouldStartRoundWhenBufferedBytesReachBudget() throws Exception {
-    // given a total buffered-bytes budget any committed batch exceeds (while the per-store budget
-    // stays out of reach, isolating the domain-total trigger)
-    recreate(new LayeredZeebeDbConfig(1024 * 1024, 1, true, 4, Duration.ofSeconds(1)));
+  void shouldStartPacedRoundEarlyAtLadderStartRung() throws Exception {
+    // given a buffered-bytes budget one committed batch fills to 80% — on the start rung (70%),
+    // below the flat-out rung (90%) — and a pacing budget clearly exceeding the test runtime
+    recreateWithBatchFillFraction(0.8);
     commitBatch(1, 100);
 
     // when the batch-commit hook fires
     persistence.onBatchCommitted();
 
-    // then a buffered-bytes round drains the batch without waiting for the interval cadence
+    // then a start-rung round drains the batch early — paced, not flat-out (a fully progressed
+    // drain would still wait against the 48s budget)
+    assertThat(io.lastPacer().delayNanos(1.0, System.nanoTime())).isPositive();
     runProcessorJobsUntil(() -> !persistence.roundInFlight());
-    assertThat(roundCount("bufferedBytes")).isEqualTo(1.0);
+    assertThat(roundCount("ladder70")).isEqualTo(1.0);
     assertThat(passThroughGet(1)).isEqualTo(100);
+    assertThat(layered.defaultDomain().hasBufferedWrites()).isFalse();
+  }
+
+  @Test
+  void shouldExpediteInFlightRoundAtLadderStartRung() throws Exception {
+    // given a start-rung round in flight (blocked on the IO thread) and another batch committed
+    // during it, putting the buffered bytes back onto the ladder
+    recreateWithBatchFillFraction(0.8);
+    io.blockNextRound();
+    commitBatch(1, 100);
+    persistence.onBatchCommitted();
+    io.awaitRoundEntered();
+    assertThat(io.lastPacer().delayNanos(1.0, System.nanoTime())).isPositive();
+    commitBatch(2, 200);
+
+    // when the batch-commit hook fires mid-round
+    persistence.onBatchCommitted();
+
+    // then no second round stacks — the in-flight drain is expedited instead, and the noted rung
+    // is followed up once the round completed
+    assertThat(io.lastPacer().delayNanos(1.0, System.nanoTime())).isZero();
+    io.releaseRound();
+    runProcessorJobsUntil(
+        () -> !persistence.roundInFlight() && !layered.defaultDomain().hasBufferedWrites());
+    assertThat(passThroughGet(1)).isEqualTo(100);
+    assertThat(passThroughGet(2)).isEqualTo(200);
+  }
+
+  @Test
+  void shouldStartFlatOutRoundAtLadderFlatOutRung() throws Exception {
+    // given a buffered-bytes budget one committed batch fills completely (past the 90% rung)
+    recreateWithBatchFillFraction(1.0);
+    commitBatch(1, 100);
+
+    // when the batch-commit hook fires
+    persistence.onBatchCommitted();
+
+    // then a flat-out round drains the batch unpaced: no wait at any progress
+    assertThat(io.lastPacer().delayNanos(0.5, System.nanoTime())).isZero();
+    runProcessorJobsUntil(() -> !persistence.roundInFlight());
+    assertThat(roundCount("ladder90")).isEqualTo(1.0);
+    assertThat(passThroughGet(1)).isEqualTo(100);
+    assertThat(layered.defaultDomain().hasBufferedWrites()).isFalse();
+  }
+
+  @Test
+  void shouldCountAdmissionPressureAtFullBudget() throws Exception {
+    // given a buffered-bytes budget one committed batch fills to 50% only
+    recreateWithBatchFillFraction(0.5);
+    commitBatch(1, 100);
+
+    // when the batch-commit hook fires below the ladder
+    persistence.onBatchCommitted();
+
+    // then nothing is pressed and no round starts
+    assertThat(admissionPressureCount()).isZero();
+    assertThat(persistence.roundInFlight()).isFalse();
+
+    // when a second batch fills the budget completely — the ladder's top rung, where admission
+    // slow-down would engage if a flow-control seam existed
+    commitBatch(2, 200);
+    persistence.onBatchCommitted();
+
+    // then the pressure is surfaced as a meter (no admission seam exists yet — see the class
+    // javadoc of LayeredStatePersistence) while a flat-out round drains the buffer
+    assertThat(admissionPressureCount()).isEqualTo(1.0);
+    runProcessorJobsUntil(() -> !persistence.roundInFlight());
+    assertThat(roundCount("ladder90")).isEqualTo(1.0);
     assertThat(layered.defaultDomain().hasBufferedWrites()).isFalse();
   }
 
@@ -370,8 +440,9 @@ final class LayeredStatePersistenceTest {
     runProcessorJobsUntil(
         () -> !persistence.roundInFlight() && !layered.defaultDomain().hasBufferedWrites());
 
-    // then a follow-up over-capacity round drained the noted batch
-    assertThat(roundCount("overCapacity")).isEqualTo(1.0);
+    // then a follow-up round drained the noted batch — per-store over-capacity feeds the
+    // ladder's flat-out rung
+    assertThat(roundCount("ladder90")).isEqualTo(1.0);
     assertThat(passThroughGet(2)).isNotNull();
   }
 
@@ -522,6 +593,21 @@ final class LayeredStatePersistenceTest {
   // Owner-thread plumbing
   // ------------------------------------------------------------------
 
+  /**
+   * Rebuilds the fixture with a total buffered-bytes budget sized so that one {@link
+   * #commitBatch(long, long)} fills the given fraction of it, and a pacing budget clearly exceeding
+   * the test runtime (so paced rounds visibly pace). The batch size is measured on the running
+   * fixture instead of hard-coding entry-encoding assumptions.
+   */
+  private void recreateWithBatchFillFraction(final double fraction) {
+    commitBatch(999, 0);
+    final long batchBytes = layered.defaultDomain().bufferedBytes();
+    assertThat(batchBytes).isPositive();
+    recreate(
+        new LayeredZeebeDbConfig(
+            1024 * 1024, Math.round(batchBytes / fraction), true, 4, Duration.ofSeconds(60)));
+  }
+
   /** Tears the default fixture down and rebuilds it over the same directory with {@code config}. */
   private void recreate(final LayeredZeebeDbConfig config) {
     CloseHelper.quietCloseAll(io, layered);
@@ -618,6 +704,15 @@ final class LayeredStatePersistenceTest {
         .get("zeebe.db.layered.persist.rounds")
         .tag("domain", LayeredZeebeDb.DEFAULT_DOMAIN_NAME)
         .tag("trigger", trigger)
+        .counter()
+        .count();
+  }
+
+  private double admissionPressureCount() {
+    return inner
+        .getMeterRegistry()
+        .get("zeebe.db.layered.admission.pressure")
+        .tag("domain", LayeredZeebeDb.DEFAULT_DOMAIN_NAME)
         .counter()
         .count();
   }

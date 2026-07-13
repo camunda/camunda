@@ -85,6 +85,26 @@ final class LayeredZeebeDbRuntimeSurfaceTest {
   }
 
   @Test
+  void shouldKeepCapturedBytesInBufferedBytesUntilRoundCompletes() throws Exception {
+    // given a committed batch buffered in the domain
+    final LayeredDomain domain = layered.defaultDomain();
+    layered.layeredContext().runInTransaction(() -> put(1, 100));
+    final long bufferedBefore = domain.bufferedBytes();
+    assertThat(bufferedBefore).isPositive();
+
+    // when a persist round captures everything and even fully drains it
+    final var round = domain.preparePersist(1, PersistTrigger.LADDER_70);
+    assertThat(domain.bufferedBytes()).isEqualTo(bufferedBefore);
+    round.persist();
+
+    // then the captured bytes stay counted until the round completes — they are still pinned
+    // heap, and the buffer-pressure ladder must keep seeing them while a drain is in flight
+    assertThat(domain.bufferedBytes()).isEqualTo(bufferedBefore);
+    domain.completePersist(round, true);
+    assertThat(domain.bufferedBytes()).isZero();
+  }
+
+  @Test
   void shouldReportBatchInFlightWhileTransactionIsOpen() {
     // given
     final LayeredDomain domain = layered.defaultDomain();

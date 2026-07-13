@@ -173,9 +173,10 @@ public final class LayeredDomain {
 
   /**
    * Approximate heap footprint of all buffered (not yet persisted) writes across this domain's
-   * stores — what a persist round would drain. Compared against a total byte budget by the runtime
-   * to trigger size-based rounds; contrast with {@link #overCapacity()}, which is a per-store
-   * budget.
+   * stores — what a persist round would drain, including the bytes captured by an in-flight round
+   * until it completes (they are still pinned heap). Compared against the buffer-pressure ladder's
+   * rungs of a total byte budget by the runtime to trigger size-based rounds; contrast with {@link
+   * #overCapacity()}, which is a per-store budget.
    */
   public long bufferedBytes() {
     long bufferedBytes = 0;
@@ -183,6 +184,16 @@ public final class LayeredDomain {
       bufferedBytes += store.bufferedBytes();
     }
     return bufferedBytes;
+  }
+
+  /**
+   * Counts a batch boundary at which this domain's {@link #bufferedBytes()} had reached the full
+   * buffered-bytes budget — the buffer-pressure ladder's top rung, surfaced as a meter because no
+   * admission slow-down seam into the log stream's flow control exists yet (the runtime driving the
+   * domain logs and counts instead of throttling).
+   */
+  public void countAdmissionPressure() {
+    metrics.countAdmissionPressure();
   }
 
   /**
