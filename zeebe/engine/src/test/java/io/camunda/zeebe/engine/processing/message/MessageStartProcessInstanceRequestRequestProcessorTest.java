@@ -14,14 +14,17 @@ import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.MessageStartProcessInstanceRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -295,6 +298,92 @@ public final class MessageStartProcessInstanceRequestRequestProcessorTest {
     assertThat(startedPis)
         .as("messageDeadline == now must be treated as expired (inclusive <=)")
         .isZero();
+  }
+
+  @Test
+  public void shouldReplyNoSubscriptionRejectedWhenTargetDefinitionIsDraining() {
+    // given - a deployed process whose definition is then marked DRAINING
+    final var metadata =
+        engine
+            .deployment()
+            .withXmlResource(MESSAGE_START_PROCESS)
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .get(0);
+    final long subscriptionKey = waitForStartEventSubscriptionKey();
+    drain(metadata);
+
+    // when - a REQUEST arrives for the draining definition
+    engine.writeRecords(
+        RecordToWrite.command()
+            .key(subscriptionKey)
+            .messageStartProcessInstanceRequest(
+                MessageStartProcessInstanceRequestIntent.REQUEST,
+                requestWith(BUSINESS_ID, subscriptionKey, metadata.getProcessDefinitionKey())));
+
+    // then - it is rejected as "no subscription" and no PI is activated
+    final var reply =
+        firstReplyCommand(MessageStartProcessInstanceRequestIntent.REJECT_NO_SUBSCRIPTION);
+    assertThat(reply.getProcessDefinitionKey()).isEqualTo(metadata.getProcessDefinitionKey());
+    assertThat(reply.getProcessInstanceKey()).isEqualTo(-1L);
+
+    // no STARTED event is written for a phantom instance and no PROCESS is activated
+    final long startedEvents =
+        RecordingExporter.records()
+            .limit(
+                r ->
+                    r.getRecordType() == RecordType.COMMAND
+                        && r.getIntent()
+                            == MessageStartProcessInstanceRequestIntent.REJECT_NO_SUBSCRIPTION)
+            .filter(
+                r ->
+                    r.getRecordType() == RecordType.EVENT
+                        && r.getIntent() == MessageStartProcessInstanceRequestIntent.STARTED)
+            .count();
+    assertThat(startedEvents).as("no dedup/STARTED entry for a draining definition").isZero();
+
+    final long activatedProcesses =
+        RecordingExporter.records()
+            .limit(
+                r ->
+                    r.getRecordType() == RecordType.COMMAND
+                        && r.getIntent()
+                            == MessageStartProcessInstanceRequestIntent.REJECT_NO_SUBSCRIPTION)
+            .processInstanceRecords()
+            .withElementType(BpmnElementType.PROCESS)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .count();
+    assertThat(activatedProcesses).as("no PI is activated for a draining definition").isZero();
+
+    assertNoOtherReply(MessageStartProcessInstanceRequestIntent.REJECT_NO_SUBSCRIPTION);
+  }
+
+  /**
+   * Puts the given process definition into the {@code DRAINING} state. Since no processor writes
+   * the {@code DRAINING} event yet, the event is injected onto the log while the engine is stopped
+   * so it is applied to state on the next start (replay). TODO(#56978): drive draining via a real
+   * {@code RESOURCE_DELETION.DELETE} once that change lands, and remove this injection helper.
+   */
+  private void drain(final ProcessMetadataValue metadata) {
+    engine.stop();
+    engine.writeRecords(
+        RecordToWrite.event()
+            .key(metadata.getProcessDefinitionKey())
+            .process(
+                ProcessIntent.DRAINING,
+                new ProcessRecord()
+                    .setKey(metadata.getProcessDefinitionKey())
+                    .setBpmnProcessId(metadata.getBpmnProcessId())
+                    .setVersion(metadata.getVersion())
+                    .setResourceName(metadata.getResourceName())
+                    .setTenantId(metadata.getTenantId())));
+    engine.start();
+
+    RecordingExporter.processRecords()
+        .withIntent(ProcessIntent.DRAINING)
+        .withProcessDefinitionKey(metadata.getProcessDefinitionKey())
+        .await();
   }
 
   private MessageStartProcessInstanceRequestRecord request(
