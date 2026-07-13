@@ -330,6 +330,135 @@ final class LayeredStoreCoordinatorTest {
     assertThat(sink.readAnchor()).isEqualTo(10);
   }
 
+  // ------------------------------------------------------------------
+  // Paced (sliced) drains
+  // ------------------------------------------------------------------
+
+  @Test
+  void shouldDeferDesignatedAnchorEntryToFinalSlice() throws Exception {
+    // given a store whose key 9 carries the recovery anchor (the real wiring's last-processed
+    // position is a normal drained key, not a separate sink cell)
+    final InMemoryDurableState anchorState = new InMemoryDurableState();
+    final RecordingSink recordingSink = new RecordingSink(anchorState.sink());
+    final LayeredKeyValueStore store =
+        new LayeredKeyValueStore(STORE_A, anchorState.store(STORE_A), 1024 * 1024, false, 4);
+    try (final LayeredStoreCoordinator coordinator =
+        new LayeredStoreCoordinator(
+            List.of(store),
+            recordingSink,
+            anchorState.snapshotSource(),
+            view -> {},
+            LayeredStoreMetrics.noop())) {
+      coordinator.designateAnchorEntry(STORE_A, bytes(9));
+      for (int key = 1; key <= 5; key++) {
+        store.put(bytes(key), bytes(10 * key));
+      }
+      store.put(bytes(9), bytes(90));
+      store.promote();
+
+      // when the round drains in single-entry slices
+      final PersistRound round = coordinator.prepareRound(10);
+      while (!round.persistSlice(1)) {
+        // the anchor carrier must not have landed while data slices remain
+        assertThat(anchorState.committedValue(STORE_A, bytes(9))).isNull();
+      }
+      coordinator.completeRound(round, true);
+
+      // then the anchor carrier and the anchor rode together in the final slice, nothing else
+      final List<String> finalSlice =
+          recordingSink.committedBatches.get(recordingSink.committedBatches.size() - 1);
+      assertThat(finalSlice).containsExactly(putOp(STORE_A, bytes(9), bytes(90)), anchorOp(10));
+      assertThat(recordingSink.committedBatches).hasSizeGreaterThan(2);
+      assertThat(anchorState.committedValue(STORE_A, bytes(9))).containsExactly(bytes(90));
+      assertThat(anchorState.committedValue(STORE_A, bytes(5))).containsExactly(bytes(50));
+    }
+  }
+
+  @Test
+  void shouldRejectAnchorEntryDesignationForUnknownStore() {
+    // given
+    final LayeredStoreCoordinator coordinator = newCoordinator(newStore(STORE_A));
+
+    // when / then
+    assertThatThrownBy(() -> coordinator.designateAnchorEntry("no-such-store", bytes(1)))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("no-such-store");
+  }
+
+  @Test
+  void shouldConvergeToFullCutWhenSuccessorCompletesPartialDrainForward() throws Exception {
+    // given a paced drain that committed partial slices — state ahead of the anchor — before its
+    // owner died (a failing slice stands in for the death; the anchor never landed)
+    final LayeredKeyValueStore store = newStore(STORE_A);
+    final LayeredStoreCoordinator coordinator = newCoordinator(store);
+    for (int key = 1; key <= 5; key++) {
+      store.put(bytes(key), bytes(10 * key));
+    }
+    store.promote();
+    final PersistRound round = coordinator.prepareRound(10);
+    assertThat(round.persistSlice(1)).isFalse();
+    assertThat(state.committedSize(STORE_A)).isPositive();
+    assertThat(sink.readAnchor()).isEqualTo(-1);
+    state.failNextCommit();
+    assertThatThrownBy(() -> round.persistSlice(1)).isInstanceOf(IllegalStateException.class);
+
+    // when the successor completes the orphaned round forward
+    coordinator.completeOutstandingRoundForward();
+
+    // then the durable store holds the full cut — the re-drain rewrote the partially committed
+    // versions idempotently — the anchor landed, and nothing stayed buffered
+    assertThat(coordinator.roundOutstanding()).isFalse();
+    for (int key = 1; key <= 5; key++) {
+      assertThat(state.committedValue(STORE_A, bytes(key))).containsExactly(bytes(10 * key));
+    }
+    assertThat(sink.readAnchor()).isEqualTo(10);
+    assertThat(store.hasBufferedWrites()).isFalse();
+
+    // and completing forward without an outstanding round is a no-op
+    coordinator.completeOutstandingRoundForward();
+  }
+
+  @Test
+  void shouldKeepSegmentsBufferedWhenForwardCompletionFails() throws Exception {
+    // given an orphaned round whose forward re-drain fails too
+    final LayeredKeyValueStore store = newStore(STORE_A);
+    final LayeredStoreCoordinator coordinator = newCoordinator(store);
+    store.put(bytes(1), bytes(10));
+    store.promote();
+    final PersistRound round = coordinator.prepareRound(10);
+    state.failNextCommit();
+
+    // when / then -- the failure is rethrown and the round completed as failed
+    assertThatThrownBy(coordinator::completeOutstandingRoundForward)
+        .isInstanceOf(IllegalStateException.class);
+    assertThat(coordinator.roundOutstanding()).isFalse();
+    assertThat(store.hasBufferedWrites()).isTrue();
+    assertThat(sink.readAnchor()).isEqualTo(-1);
+
+    // and the successor's next round retries the same segments
+    final PersistRound retry = coordinator.prepareRound(11);
+    assertThat(retry.anchor()).isEqualTo(round.anchor());
+    retry.persist();
+    coordinator.completeRound(retry, true);
+    assertThat(state.committedValue(STORE_A, bytes(1))).containsExactly(bytes(10));
+  }
+
+  @Test
+  void shouldRejectSliceAfterFullDrain() throws Exception {
+    // given a fully drained round
+    final LayeredKeyValueStore store = newStore(STORE_A);
+    final LayeredStoreCoordinator coordinator = newCoordinator(store);
+    store.put(bytes(1), bytes(10));
+    store.promote();
+    final PersistRound round = coordinator.prepareRound(10);
+    assertThat(round.persistSlice(Long.MAX_VALUE)).isTrue();
+
+    // when / then
+    assertThatThrownBy(() -> round.persistSlice(1)).isInstanceOf(IllegalStateException.class);
+    coordinator.completeRound(round, true);
+    assertThat(state.committedValue(STORE_A, bytes(1))).containsExactly(bytes(10));
+  }
+
   @Test
   void shouldNeverPersistValueOfPairAnnihilatedAcrossFreezes() throws Exception {
     // given -- a put frozen at 10 and its delete frozen at 20, so both segments exist
@@ -522,11 +651,26 @@ final class LayeredStoreCoordinatorTest {
     final Random random = new Random(42);
 
     for (int trial = 0; trial < 50; trial++) {
-      runDrainParityTrial(trial, random);
+      runDrainParityTrial(trial, random, false);
     }
   }
 
-  private static void runDrainParityTrial(final int trial, final Random random) throws Exception {
+  /**
+   * Sliced-drain parity: splitting the same drain stream into paced sub-batch slices (each its own
+   * committed batch) must yield the identical operation sequence overall, with the anchor riding
+   * alone in the final slice — slicing only moves the commit boundaries, never an operation.
+   */
+  @Test
+  void shouldDrainInSlicesIdenticallyToSingleBatchOracle() throws Exception {
+    final Random random = new Random(4242);
+
+    for (int trial = 0; trial < 50; trial++) {
+      runDrainParityTrial(trial, random, true);
+    }
+  }
+
+  private static void runDrainParityTrial(
+      final int trial, final Random random, final boolean sliced) throws Exception {
     // given -- a fresh durability unit with pre-committed state and a randomized workload
     final InMemoryDurableState trialState = new InMemoryDurableState();
     final RecordingSink recordingSink = new RecordingSink(trialState.sink());
@@ -562,13 +706,33 @@ final class LayeredStoreCoordinatorTest {
 
       // when
       final PersistRound round = coordinator.prepareRound(watermark);
-      round.persist();
+      if (sliced) {
+        final long minSliceBytes = 1 + random.nextInt(64);
+        while (!round.persistSlice(minSliceBytes)) {
+          // keep slicing until the anchor-carrying final slice committed
+        }
+      } else {
+        round.persist();
+      }
       coordinator.completeRound(round, true);
 
-      // then
-      assertThat(recordingSink.operations)
+      // then -- identical operations in identical order, slicing or not
+      assertThat(recordingSink.committedOperations())
           .as("batch operations of trial %d", trial)
           .containsExactlyElementsOf(expectedOps);
+      if (sliced && !expectedOps.isEmpty()) {
+        // and the anchor rode only in the final slice — data slices never carry it, so a crash
+        // between slices can only leave state ahead of the anchor, never the anchor ahead of state
+        final int batches = recordingSink.committedBatches.size();
+        for (int i = 0; i < batches - 1; i++) {
+          assertThat(recordingSink.committedBatches.get(i))
+              .as("data slice %d of trial %d", i, trial)
+              .doesNotContain(anchorOp(round.anchor()));
+        }
+        assertThat(recordingSink.committedBatches.get(batches - 1))
+            .as("final slice of trial %d", trial)
+            .endsWith(anchorOp(round.anchor()));
+      }
     }
   }
 
@@ -645,19 +809,29 @@ final class LayeredStoreCoordinatorTest {
     return result;
   }
 
-  /** Records every batch operation in order on its way to the real sink, for parity assertions. */
+  /**
+   * Records every operation of every committed batch, in order, on its way to the real sink — for
+   * parity assertions over the flattened stream and slice assertions over the batch boundaries.
+   */
   private static final class RecordingSink implements PersistSink {
 
     private final PersistSink delegate;
-    private final List<String> operations = new ArrayList<>();
+    private final List<List<String>> committedBatches = new ArrayList<>();
 
     RecordingSink(final PersistSink delegate) {
       this.delegate = delegate;
     }
 
+    private List<String> committedOperations() {
+      final List<String> flattened = new ArrayList<>();
+      committedBatches.forEach(flattened::addAll);
+      return flattened;
+    }
+
     @Override
     public PersistBatch newBatch() {
       final PersistBatch batch = delegate.newBatch();
+      final List<String> operations = new ArrayList<>();
       return new PersistBatch() {
         @Override
         public void put(final String storeName, final byte[] key, final byte[] value) {
@@ -680,6 +854,7 @@ final class LayeredStoreCoordinatorTest {
         @Override
         public void commit() throws Exception {
           batch.commit();
+          committedBatches.add(operations);
         }
 
         @Override

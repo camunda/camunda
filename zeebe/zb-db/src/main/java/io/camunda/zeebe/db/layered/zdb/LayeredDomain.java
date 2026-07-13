@@ -67,6 +67,8 @@ public final class LayeredDomain {
   private final ChunkWriter chunkWriter;
 
   private LayeredStoreCoordinator coordinator;
+  // anchor-entry designations made before the coordinator exists, applied when it is built
+  private final Map<String, byte[]> pendingAnchorEntries = new LinkedHashMap<>();
 
   /**
    * @param snapshotReadContext the dedicated context of the unpinned fallback source; must be
@@ -127,9 +129,30 @@ public final class LayeredDomain {
       coordinator =
           new LayeredStoreCoordinator(
               storesByColumnFamily.values(), sink, snapshotSource, viewPublisher::publish, metrics);
+      pendingAnchorEntries.forEach(coordinator::designateAnchorEntry);
+      pendingAnchorEntries.clear();
       metrics.registerStoreGauges(storesByColumnFamily.values());
     }
     return coordinator;
+  }
+
+  /**
+   * Designates the entry {@code columnFamilyName}/{@code key} as the recovery anchor's carrier: a
+   * paced drain defers it to a round's final slice so no partial slice can ever commit an anchor
+   * ahead of the state it describes (see {@link
+   * LayeredStoreCoordinator#designateAnchorEntry(String, byte[])}). In this wiring the anchor is a
+   * normal drained key — e.g. the engine's last-processed position — not a separate sink cell (see
+   * {@link InnerPersistSink}). Owner thread; may be called before the coordinator is built (the
+   * designation is applied when it is), and re-designating on a reused database overwrites.
+   */
+  public void designateAnchorEntry(final String columnFamilyName, final byte[] key) {
+    if (coordinator != null) {
+      coordinator.designateAnchorEntry(columnFamilyName, key);
+    } else {
+      pendingAnchorEntries.put(
+          Objects.requireNonNull(columnFamilyName, "columnFamilyName"),
+          Objects.requireNonNull(key, "key").clone());
+    }
   }
 
   /**
@@ -334,6 +357,36 @@ public final class LayeredDomain {
   public void abortStaleRound() {
     if (coordinator != null) {
       coordinator.abortOutstandingRound();
+    }
+  }
+
+  /**
+   * Completes (by draining it) a persist round a previous owner left outstanding — the successor's
+   * recovery step for domains whose drains are <em>paced</em>: the orphaned round may have
+   * committed partial slices without the anchor, and re-draining it to completion (idempotent,
+   * newest-wins, anchor in the final slice) restores the durable anchor invariant before the
+   * successor starts processing. Contrast with {@link #abortStaleRound()}, which remains the right
+   * recovery for domains whose drains are all-or-nothing single batches (e.g. the exporter
+   * director's inline {@link #persistNow(long, PersistTrigger)}). Runs the drain inline on the
+   * calling owner thread; a no-op when no round is outstanding. Same precondition as {@link
+   * #abortStaleRound()}: the previous owner's persist IO must have terminated.
+   *
+   * @throws ZeebeDbException if the re-drain fails; the round is completed as failed instead — its
+   *     segments stay buffered, keep masking the partial slices from layered readers, and the
+   *     successor's next round retries them, so the caller may continue
+   */
+  public void completeStaleRoundForward() {
+    if (coordinator == null || !coordinator.roundOutstanding()) {
+      return;
+    }
+    try {
+      coordinator.completeOutstandingRoundForward();
+    } catch (final Exception e) {
+      throw new ZeebeDbException(
+          ("Failed to complete the persist round a previous owner of domain '%s' left"
+                  + " outstanding; its segments stay buffered and the next round retries them")
+              .formatted(name),
+          e);
     }
   }
 

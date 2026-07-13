@@ -123,8 +123,32 @@ public enum LayeredStateMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public String getDescription() {
-      return "Duration of the persist step of a round (draining all captured segments into one"
-          + " atomic batch and committing it)";
+      return "Duration of the persist step of a round, from the first drained entry to the final"
+          + " commit; a paced drain's duration includes its deliberate pacing waits between"
+          + " slices";
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return DOMAIN_ONLY;
+    }
+  },
+  /** Slice batches committed by persist rounds */
+  PERSIST_SLICES {
+    @Override
+    public String getName() {
+      return "zeebe.db.layered.persist.slices";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.COUNTER;
+    }
+
+    @Override
+    public String getDescription() {
+      return "Slice batches committed by persist rounds; an unpaced round commits exactly one,"
+          + " a paced drain one per sub-batch slice plus the anchor-carrying final slice";
     }
 
     @Override

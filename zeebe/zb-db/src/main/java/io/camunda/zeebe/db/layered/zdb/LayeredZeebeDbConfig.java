@@ -36,19 +36,48 @@ import java.util.Objects;
  *     executes (which is the only freshness anyone consumes) and implicitly when a persist round
  *     prepares — because freezing early forfeits the free in-place overwrite absorption of the
  *     active overlay and turns it into pipeline-merge work
+ * @param persistMinSliceBytes minimum consumed entry bytes per sub-batch slice of a paced persist
+ *     drain (see {@code LayeredStoreCoordinator.PersistRound#persistSlice}); the runtime spreads a
+ *     round's drain over slices of at least this size, each committed as its own inner transaction
+ * @param persistPacingTargetFraction the fraction of the persist interval a paced drain aims to
+ *     finish within (Postgres checkpoint-spreading style): after each slice the drain waits while
+ *     its progress fraction runs ahead of elapsed-time / (fraction × interval). Below 1 so a round
+ *     normally finishes before the next interval trigger fires; the runtime drops the pacing
+ *     (drains flat-out) when buffered state runs over capacity mid-round
  */
 public record LayeredZeebeDbConfig(
     long maxBytesPerStore,
     long maxBufferedBytes,
     boolean absorbDeletes,
     int pipelineSegmentLimit,
-    Duration persistInterval) {
+    Duration persistInterval,
+    long persistMinSliceBytes,
+    double persistPacingTargetFraction) {
 
   private static final long DEFAULT_MAX_BYTES_PER_STORE = 16 * 1024 * 1024;
   private static final long DEFAULT_MAX_BUFFERED_BYTES = 0;
   private static final boolean DEFAULT_ABSORB_DELETES = true;
   private static final int DEFAULT_PIPELINE_SEGMENT_LIMIT = 4;
   private static final Duration DEFAULT_PERSIST_INTERVAL = Duration.ofSeconds(1);
+  private static final long DEFAULT_PERSIST_MIN_SLICE_BYTES = 1024 * 1024;
+  private static final double DEFAULT_PERSIST_PACING_TARGET_FRACTION = 0.8;
+
+  /** Convenience constructor defaulting the paced-drain knobs (slice size, pacing fraction). */
+  public LayeredZeebeDbConfig(
+      final long maxBytesPerStore,
+      final long maxBufferedBytes,
+      final boolean absorbDeletes,
+      final int pipelineSegmentLimit,
+      final Duration persistInterval) {
+    this(
+        maxBytesPerStore,
+        maxBufferedBytes,
+        absorbDeletes,
+        pipelineSegmentLimit,
+        persistInterval,
+        DEFAULT_PERSIST_MIN_SLICE_BYTES,
+        DEFAULT_PERSIST_PACING_TARGET_FRACTION);
+  }
 
   public LayeredZeebeDbConfig {
     if (maxBytesPerStore <= 0) {
@@ -68,6 +97,15 @@ public record LayeredZeebeDbConfig(
     if (persistInterval.isZero() || persistInterval.isNegative()) {
       throw new IllegalArgumentException(
           "expected persistInterval to be positive, but was " + persistInterval);
+    }
+    if (persistMinSliceBytes < 1) {
+      throw new IllegalArgumentException(
+          "expected persistMinSliceBytes to be at least 1, but was " + persistMinSliceBytes);
+    }
+    if (persistPacingTargetFraction <= 0 || persistPacingTargetFraction > 1) {
+      throw new IllegalArgumentException(
+          "expected persistPacingTargetFraction to be in (0, 1], but was "
+              + persistPacingTargetFraction);
     }
   }
 

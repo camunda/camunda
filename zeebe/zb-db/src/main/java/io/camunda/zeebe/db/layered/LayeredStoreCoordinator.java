@@ -10,6 +10,7 @@ package io.camunda.zeebe.db.layered;
 import io.camunda.zeebe.db.layered.segment.FlatSegment;
 import io.camunda.zeebe.db.layered.segment.FlushedOrMergeIterator;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -34,6 +35,9 @@ import org.jspecify.annotations.Nullable;
  *       oldest first, newest version per key winning, into one {@link PersistBatch}; writes the
  *       recovery anchor (the newest drained watermark) into the <em>same</em> batch; commits.
  *       Touches only the immutable segments and the sink — never a store's mutable layers.
+ *       Alternatively the drain runs paced, in {@link PersistRound#persistSlice(long) sub-batch
+ *       slices} that each commit their own batch — see the anchor-last invariant on {@link
+ *       PersistRound}.
  *   <li>{@link #completeRound(PersistRound, boolean)} — owner thread. On success drops the drained
  *       segments in every store (the durable state is authoritative for them now; clean caches
  *       refill lazily via read-through), rotates the snapshot (take new, release the old view's
@@ -86,6 +90,8 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
   private final SnapshotSource snapshots;
   private final Consumer<ReadOnlyView> viewListener;
   private final LayeredStoreMetrics metrics;
+  // the designated anchor-carrying entries, deferred to a paced drain's final slice; owner thread
+  private final Map<String, byte[]> anchorEntries = new HashMap<>();
 
   private ReadOnlyView currentView;
   // volatile because the gauge callbacks read them from the metrics scrape thread (single writer:
@@ -165,6 +171,25 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
   }
 
   /**
+   * Designates the entry {@code storeName}/{@code key} as the recovery anchor's carrier in wirings
+   * where the anchor is a normal drained key rather than a separate sink cell (see {@link
+   * PersistBatch#putAnchor(long)}). A paced drain defers designated entries to the round's final
+   * slice, upholding the anchor-last invariant: no partial slice can ever commit an anchor ahead of
+   * the state it describes. Owner thread; re-designating (successor owners of a reused database do)
+   * overwrites.
+   *
+   * @throws IllegalArgumentException if no store of this durability unit has that name
+   */
+  public void designateAnchorEntry(final String storeName, final byte[] key) {
+    if (!stores.containsKey(storeName)) {
+      throw new IllegalArgumentException(
+          "Unknown store '%s' for the anchor entry; known stores: %s"
+              .formatted(storeName, stores.keySet()));
+    }
+    anchorEntries.put(storeName, Objects.requireNonNull(key, "key").clone());
+  }
+
+  /**
    * Starts a persist round over everything currently frozen, implicitly freezing first if the
    * active overlays hold anything at {@code watermark}. Owner thread.
    *
@@ -184,14 +209,18 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
     freezeAll(watermark);
     final Map<String, List<FlatSegment>> capturedOldestFirst = new LinkedHashMap<>();
     long anchor = -1;
+    long capturedBytes = 0;
     for (final LayeredKeyValueStore store : stores.values()) {
       final List<FlatSegment> oldestFirst = store.beginPersist();
       capturedOldestFirst.put(store.name(), oldestFirst);
       for (final FlatSegment segment : oldestFirst) {
         anchor = Math.max(anchor, segment.watermark());
+        capturedBytes += segment.byteSize();
       }
     }
-    outstandingRound = new PersistRound(sink, capturedOldestFirst, anchor, metrics);
+    outstandingRound =
+        new PersistRound(
+            sink, capturedOldestFirst, anchor, Map.copyOf(anchorEntries), capturedBytes, metrics);
     return outstandingRound;
   }
 
@@ -329,6 +358,13 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
    * retries them; if the orphaned round's atomic batch did commit before the owner died, the retry
    * merely rewrites the same versions, which is idempotent. A no-op when no round is outstanding.
    *
+   * <p>Only sound for wirings whose drains are all-or-nothing (a single {@link
+   * PersistRound#persist()} batch). An orphaned <em>paced</em> drain may have committed partial
+   * slices without the anchor; aborting leaves that torn durable cut in place — masked from layered
+   * readers by the retained segments, but visible to direct readers of the durable store until a
+   * later round succeeds. Successors of paced drains must use {@link
+   * #completeOutstandingRoundForward()} instead.
+   *
    * <p><b>Precondition:</b> the previous owner's persist IO must no longer be running (its IO
    * executor terminated) — otherwise the orphaned {@code persist()} could race a new round on the
    * shared sink.
@@ -337,6 +373,38 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
     if (outstandingRound != null) {
       completeRound(outstandingRound, false);
     }
+  }
+
+  /**
+   * Completes an outstanding round a previous owner left behind by draining it — recovery for a
+   * successor taking over stores whose previous owner died mid-round, replacing {@link
+   * #abortOutstandingRound()} where drains are paced: the orphaned round may have committed partial
+   * slices without the anchor, and completing it forward restores the durable anchor invariant
+   * (state@P with anchor=P) instead of leaving the torn cut in place. The re-drain starts from
+   * scratch over the round's immutable captured segments — rewriting versions a partial slice
+   * already committed is idempotent (newest-wins) — and commits the anchor in its final slice. Runs
+   * inline on the calling owner thread; a no-op when no round is outstanding.
+   *
+   * <p>On drain failure the round completes as failed and the failure is rethrown: the captured
+   * segments stay in their pipelines and keep shadowing the durable store — the partial slices stay
+   * masked from layered readers — and the successor's next round retries them.
+   *
+   * <p><b>Precondition:</b> as for {@link #abortOutstandingRound()}: the previous owner's persist
+   * IO must no longer be running. The orphaned drain cursor the dead owner's IO thread may have
+   * left behind is never read — {@link PersistRound#persist()} always drains from scratch.
+   */
+  public void completeOutstandingRoundForward() throws Exception {
+    if (outstandingRound == null) {
+      return;
+    }
+    final PersistRound orphaned = outstandingRound;
+    try {
+      orphaned.persist();
+    } catch (final Exception e) {
+      completeRound(orphaned, false);
+      throw e;
+    }
+    completeRound(orphaned, true);
   }
 
   /** The recovery anchor as last committed by a round, or -1; delegates to the sink. */
@@ -366,7 +434,23 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
 
   /**
    * One prepared persist round: the immutable segments captured from every store, drained on an IO
-   * thread by {@link #persist()}. Never touches a store's mutable layers.
+   * thread by {@link #persist()} — or paced, in sub-batch slices, by repeated {@link
+   * #persistSlice(long)} calls. Never touches a store's mutable layers.
+   *
+   * <p><b>Anchor-last invariant of a paced drain:</b> every slice commits its own batch, so a crash
+   * (or owner death) mid-round leaves partial slices committed. That is safe in exactly one
+   * direction — state may run ahead of the anchor (a re-drain rewrites the same versions,
+   * newest-wins, idempotently), the anchor must never run ahead of the state it describes.
+   * Therefore the anchor, and nothing else, rides only in the final slice: {@link
+   * PersistBatch#putAnchor(long)} is issued there, and entries {@link #designateAnchorEntry(String,
+   * byte[]) designated} as anchor carriers (wirings where the anchor is a normal drained key) are
+   * held back from the data slices and written in the final slice too.
+   *
+   * <p><b>Threading:</b> the drain cursor is confined to the single thread driving the drain (the
+   * IO thread, or the owner thread for inline drains and stale-round completion); {@link
+   * #persist()} always discards any previous cursor and drains from scratch, which is what makes it
+   * safe as the successor's re-drain of an orphaned round. {@link #progress()} may be read from
+   * another thread for pacing — it reads a volatile counter only.
    */
   public static final class PersistRound {
 
@@ -375,76 +459,183 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
     private final PersistSink sink;
     private final Map<String, List<FlatSegment>> capturedOldestFirst;
     private final long anchor;
+    private final Map<String, byte[]> anchorEntries;
+    private final long capturedBytes;
     private final LayeredStoreMetrics metrics;
+
+    private Drain drain;
+    // written by the drain thread, read by progress() callers — see the Threading javadoc
+    private volatile long drainedBytesVolatile;
 
     private PersistRound(
         final PersistSink sink,
         final Map<String, List<FlatSegment>> capturedOldestFirst,
         final long anchor,
+        final Map<String, byte[]> anchorEntries,
+        final long capturedBytes,
         final LayeredStoreMetrics metrics) {
       this.sink = sink;
       this.capturedOldestFirst = capturedOldestFirst;
       this.anchor = anchor;
+      this.anchorEntries = anchorEntries;
+      this.capturedBytes = capturedBytes;
       this.metrics = metrics;
     }
 
     /**
-     * Drains the captured segments into one atomic batch — entries plus anchor — and commits. The
-     * only coordinator operation allowed off the owner thread. Throws on failure; the caller
-     * reports the outcome via {@link #completeRound(PersistRound, boolean)} either way.
+     * Drains the captured segments into one atomic batch — entries plus anchor — and commits.
+     * Always drains from scratch, discarding any cursor a previous (possibly dead) driver left
+     * behind. Throws on failure; the caller reports the outcome via {@link
+     * #completeRound(PersistRound, boolean)} either way.
      */
     public void persist() throws Exception {
-      if (capturedOldestFirst.values().stream().allMatch(List::isEmpty)) {
-        return; // nothing captured — no state to persist, no anchor to advance
-      }
-      final long started = System.nanoTime();
-      try (final PersistBatch batch = sink.newBatch()) {
-        for (final Map.Entry<String, List<FlatSegment>> captured : capturedOldestFirst.entrySet()) {
-          drainStore(batch, captured.getKey(), captured.getValue());
+      drain = null;
+      persistSlice(Long.MAX_VALUE);
+    }
+
+    /**
+     * Drains the next slice of the captured segments — at least {@code minSliceBytes} of consumed
+     * entry bytes, or everything that remains — into a batch of its own and commits it. Returns
+     * true when the round is fully drained: the final slice carries the designated anchor entries
+     * and the {@link PersistBatch#putAnchor(long) anchor}, and nothing else (see the class javadoc
+     * for the anchor-last invariant). A slice throw ends the drain; the caller completes the round
+     * as failed and a retry re-drains from scratch.
+     *
+     * @return true once the final slice committed; false while data slices remain
+     * @throws IllegalStateException if the round was already fully drained (complete it instead)
+     */
+    public boolean persistSlice(final long minSliceBytes) throws Exception {
+      if (drain == null) {
+        if (capturedOldestFirst.values().stream().allMatch(List::isEmpty)) {
+          return true; // nothing captured — no state to persist, no anchor to advance
         }
-        if (anchor >= 0) {
-          batch.putAnchor(anchor);
+        drain = new Drain();
+      }
+      if (drain.finished) {
+        throw new IllegalStateException(
+            "expected an unfinished drain, but the round is already fully drained");
+      }
+      boolean committed = false;
+      try (final PersistBatch batch = sink.newBatch()) {
+        long sliceBytes = 0;
+        while (sliceBytes < minSliceBytes) {
+          final Entry entry = drain.nextEntry();
+          if (entry == null) {
+            // the stream is exhausted: this is the final slice — anchor carriers and anchor only
+            // (plus whatever data this slice consumed before exhausting, on the unpaced path)
+            for (final HeldAnchorWrite held : drain.heldAnchorWrites) {
+              write(batch, held.store(), held.entry());
+            }
+            if (anchor >= 0) {
+              batch.putAnchor(anchor);
+            }
+            batch.commit();
+            committed = true;
+            drain.finished = true;
+            metrics.countPersistSlice();
+            metrics.observeRoundDuration(System.nanoTime() - drain.startedNanos);
+            return true;
+          }
+          drain.consumed(entry);
+          final byte[] designated = anchorEntries.get(drain.currentStore);
+          if (designated != null && Arrays.equals(designated, entry.key())) {
+            // anchor carrier: held back so no data slice can commit an anchor ahead of the state
+            drain.heldAnchorWrites.add(new HeldAnchorWrite(drain.currentStore, entry));
+            continue;
+          }
+          sliceBytes += write(batch, drain.currentStore, entry);
         }
         batch.commit();
+        committed = true;
+        metrics.countPersistSlice();
+        return false;
       } finally {
-        metrics.observeRoundDuration(System.nanoTime() - started);
+        if (!committed) {
+          // a failed slice ends this drain attempt; measure the round up to the failure
+          metrics.observeRoundDuration(System.nanoTime() - drain.startedNanos);
+        }
       }
     }
 
-    private void drainStore(
-        final PersistBatch batch, final String storeName, final List<FlatSegment> oldestFirst) {
-      if (oldestFirst.isEmpty()) {
-        return;
+    /** Writes one merged entry into the batch and returns the bytes it added. */
+    private long write(final PersistBatch batch, final String storeName, final Entry entry) {
+      if (!entry.tombstone()) {
+        batch.put(storeName, entry.key(), entry.value());
+        metrics.countDrainedEntry(entry.key().length, entry.value().length);
+        return entry.key().length + entry.value().length;
       }
-      // Stream the merge instead of materializing it. The skip decision below needs the sticky
-      // flushed-OR across shadowed versions — "was ANY version of this key ever flushed" — which
-      // the FlushedOrMergeIterator computes on the fly while emitting the newest version per key.
-      // Draining therefore allocates no intermediate merged segment: memory stays bounded by the
-      // k stream cursors, independent of how much buffered state the round carries.
-      final List<Iterator<Entry>> newestFirst = new ArrayList<>(oldestFirst.size());
-      for (int i = oldestFirst.size() - 1; i >= 0; i--) {
-        newestFirst.add(oldestFirst.get(i).range(EMPTY_PREFIX));
+      if (entry.flushed()) {
+        batch.delete(storeName, entry.key());
+        metrics.countDrainedEntry(entry.key().length, 0);
+        return entry.key().length;
       }
-      final Iterator<Entry> entries = new FlushedOrMergeIterator(newestFirst);
-      while (entries.hasNext()) {
-        final Entry entry = entries.next();
-        if (!entry.tombstone()) {
-          batch.put(storeName, entry.key(), entry.value());
-          metrics.countDrainedEntry(entry.key().length, entry.value().length);
-        } else if (entry.flushed()) {
-          batch.delete(storeName, entry.key());
-          metrics.countDrainedEntry(entry.key().length, 0);
-        } else {
-          // a never-flushed tombstone is skipped entirely: the pair annihilated in memory and the
-          // durable store never held the key
-          metrics.countDrainSkippedTombstone();
-        }
+      // a never-flushed tombstone is skipped entirely: the pair annihilated in memory and the
+      // durable store never held the key
+      metrics.countDrainSkippedTombstone();
+      return 0;
+    }
+
+    /**
+     * The fraction of the captured entry bytes the drain has consumed so far, in [0, 1] — the
+     * progress a pacing driver compares against its deadline. Deduplicated (shadowed) versions
+     * count as consumed when their newest version is, so progress can only lag the true completion
+     * fraction — the safe direction for pacing (never slower than the deadline asks). Readable from
+     * any thread.
+     */
+    public double progress() {
+      if (capturedBytes <= 0) {
+        return 1.0;
       }
+      return Math.min(1.0, drainedBytesVolatile / (double) capturedBytes);
     }
 
     /** The anchor position this round will commit (newest captured watermark), or -1. */
     public long anchor() {
       return anchor;
+    }
+
+    /** An anchor-carrying entry held back for the final slice. */
+    private record HeldAnchorWrite(String store, Entry entry) {}
+
+    /**
+     * The cursor of one drain attempt: a per-store streamed merge (see {@link
+     * FlushedOrMergeIterator} for why the merge is streamed, not materialized — memory stays
+     * bounded by the k stream cursors), walked store by store across slice boundaries.
+     */
+    private final class Drain {
+
+      private final Iterator<Map.Entry<String, List<FlatSegment>>> stores =
+          capturedOldestFirst.entrySet().iterator();
+      private final List<HeldAnchorWrite> heldAnchorWrites = new ArrayList<>(1);
+      private final long startedNanos = System.nanoTime();
+      private String currentStore;
+      private Iterator<Entry> currentEntries;
+      private boolean finished;
+
+      /** The next merged entry across all stores, or null when every stream is exhausted. */
+      private Entry nextEntry() {
+        while (currentEntries == null || !currentEntries.hasNext()) {
+          if (!stores.hasNext()) {
+            return null;
+          }
+          final Map.Entry<String, List<FlatSegment>> captured = stores.next();
+          currentStore = captured.getKey();
+          currentEntries = mergedStream(captured.getValue());
+        }
+        return currentEntries.next();
+      }
+
+      private void consumed(final Entry entry) {
+        drainedBytesVolatile += entry.key().length + (entry.tombstone() ? 0 : entry.value().length);
+      }
+
+      private Iterator<Entry> mergedStream(final List<FlatSegment> oldestFirst) {
+        final List<Iterator<Entry>> newestFirst = new ArrayList<>(oldestFirst.size());
+        for (int i = oldestFirst.size() - 1; i >= 0; i--) {
+          newestFirst.add(oldestFirst.get(i).range(EMPTY_PREFIX));
+        }
+        return new FlushedOrMergeIterator(newestFirst);
+      }
     }
   }
 
