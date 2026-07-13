@@ -8,12 +8,14 @@
 package io.camunda.zeebe.dynamic.config.changes;
 
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionBootstrapApplier;
+import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionEnableExporterApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionForceReconfigureApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionJoinApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionLeaveApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionReconfigurePriorityApplier;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
@@ -50,6 +52,13 @@ public final class PartitionGroupConfigurationChangeAppliersImpl
       case final PartitionForceReconfigureOperation op ->
           new PartitionForceReconfigureApplier(
               op.memberId(), op.partitionId(), op.members(), partitionChangeExecutor);
+      case final PartitionEnableExporterOperation op ->
+          new PartitionEnableExporterApplier(
+              op.memberId(),
+              op.partitionId(),
+              op.exporterId(),
+              op.initializeFrom(),
+              partitionChangeExecutor);
       default ->
           throw new UnsupportedOperationException(
               "No new-model applier implemented yet for %s".formatted(operation));
