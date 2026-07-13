@@ -40,7 +40,7 @@ abstract class RestApiConfigurationTest extends RestControllerTest {
     when(serviceRegistry.topologyServices(any())).thenReturn(topologyServices);
     when(processInstanceServices.search(any(ProcessInstanceQuery.class), any()))
         .thenReturn(new Builder<ProcessInstanceEntity>().build());
-    when(topologyServices.getTopology())
+    when(topologyServices.describeTopology())
         .thenReturn(
             CompletableFuture.completedFuture(
                 new Topology(List.of(), "cluster-id", 1, 1, 1, "8.8.0", 0L)));

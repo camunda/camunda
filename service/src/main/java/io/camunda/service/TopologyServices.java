@@ -11,11 +11,11 @@ import io.atomix.cluster.BrokerMemberId;
 import io.atomix.utils.net.Address;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.service.exception.ErrorMapper;
-import io.camunda.service.exception.ServiceException;
-import io.camunda.service.exception.ServiceException.Status;
+import io.camunda.service.management.PhysicalTenantManagementService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
+import io.camunda.zeebe.broker.client.api.NoTopologyAvailableException;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.util.VersionUtil;
 import java.util.ArrayList;
@@ -27,7 +27,7 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class TopologyServices extends PhysicalTenantScopedApiServices<TopologyServices> {
+public final class TopologyServices extends PhysicalTenantManagementService<TopologyServices> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TopologyServices.class);
 
@@ -76,20 +76,19 @@ public final class TopologyServices extends PhysicalTenantScopedApiServices<Topo
             });
   }
 
-  public CompletableFuture<Topology> getTopology() {
+  public CompletableFuture<Topology> describeTopology() {
     try {
-      final var clusterState = brokerClient.getTopologyManager().getTopology(getPhysicalTenantId());
+      final var clusterState = getTopology();
       if (clusterState == null) {
         return CompletableFuture.failedFuture(
-            new ServiceException(
-                "Cluster topology is not yet available. The gateway has not received cluster state from any broker.",
-                Status.UNAVAILABLE));
+            new NoTopologyAvailableException(
+                "Cluster topology is not yet available. The gateway has not received cluster state from any broker."));
       }
 
       final var topology = Topology.Builder.create();
 
       final var gatewayVersion = VersionUtil.getVersion();
-      if (gatewayVersion != null && !gatewayVersion.isBlank()) {
+      if (!gatewayVersion.isBlank()) {
         topology.gatewayVersion(gatewayVersion);
       }
 
@@ -113,7 +112,7 @@ public final class TopologyServices extends PhysicalTenantScopedApiServices<Topo
 
       return CompletableFuture.completedFuture(topology.build());
     } catch (final Exception ex) {
-      return CompletableFuture.failedFuture(ErrorMapper.mapError(ex));
+      return CompletableFuture.failedFuture(ex);
     }
   }
 
@@ -175,9 +174,9 @@ public final class TopologyServices extends PhysicalTenantScopedApiServices<Topo
 
     if (brokerId.equals(partitionLeader)) {
       partition.role(Role.LEADER);
-    } else if (partitionFollowers != null && partitionFollowers.contains(brokerId)) {
+    } else if (partitionFollowers.contains(brokerId)) {
       partition.role(Role.FOLLOWER);
-    } else if (partitionInactives != null && partitionInactives.contains(brokerId)) {
+    } else if (partitionInactives.contains(brokerId)) {
       partition.role(Role.INACTIVE);
     } else {
       return false;

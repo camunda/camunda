@@ -232,7 +232,7 @@ public class TopologyServiceTest {
             1L);
 
     // when
-    final var topology = services.getTopology().join();
+    final var topology = services.describeTopology().join();
 
     // then
     Assertions.assertThat(topology).isEqualTo(expectedTopology);
@@ -244,7 +244,7 @@ public class TopologyServiceTest {
     Mockito.when(topologyManager.getTopology(PHYSICAL_TENANT_ID)).thenReturn(null);
 
     // when / then
-    Assertions.assertThatThrownBy(() -> services.getTopology().join())
+    Assertions.assertThatThrownBy(() -> services.describeTopology().join())
         .hasCauseInstanceOf(io.camunda.service.exception.ServiceException.class)
         .cause()
         .satisfies(

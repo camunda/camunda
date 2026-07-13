@@ -127,7 +127,7 @@ public class TopologyControllerTest extends RestControllerTest {
             3,
             version,
             1L);
-    Mockito.when(topologyServices.getTopology())
+    Mockito.when(topologyServices.describeTopology())
         .thenReturn(CompletableFuture.completedFuture(topology));
 
     // when / then
@@ -148,7 +148,7 @@ public class TopologyControllerTest extends RestControllerTest {
   @ValueSource(strings = {"/v1/topology", "/v2/topology"})
   void shouldReturn503WhenTopologyNotYetAvailable(final String baseUrl) {
     // given
-    Mockito.when(topologyServices.getTopology())
+    Mockito.when(topologyServices.describeTopology())
         .thenReturn(
             CompletableFuture.failedFuture(
                 new io.camunda.service.exception.ServiceException(

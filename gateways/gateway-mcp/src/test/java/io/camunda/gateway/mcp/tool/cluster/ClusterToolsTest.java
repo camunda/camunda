@@ -192,7 +192,7 @@ class ClusterToolsTest extends OperationalToolsTest {
               version,
               1L);
 
-      when(topologyServices.getTopology())
+      when(topologyServices.describeTopology())
           .thenReturn(CompletableFuture.completedFuture(topologyResponse));
 
       // when
@@ -211,7 +211,7 @@ class ClusterToolsTest extends OperationalToolsTest {
     @Test
     void shouldFailLoadingTopologyOnException() {
       // given
-      when(topologyServices.getTopology())
+      when(topologyServices.describeTopology())
           .thenReturn(
               CompletableFuture.failedFuture(
                   new ServiceException("Expected failure", Status.INVALID_STATE)));

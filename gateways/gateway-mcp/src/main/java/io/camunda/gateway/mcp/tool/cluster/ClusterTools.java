@@ -41,7 +41,7 @@ public class ClusterTools {
       annotations = @McpTool.McpAnnotations(readOnlyHint = true))
   public CallToolResult getTopology() {
     return CallToolResultMapper.from(
-        serviceRegistry.topologyServices(PhysicalTenantContext.current()).getTopology(),
+        serviceRegistry.topologyServices(PhysicalTenantContext.current()).describeTopology(),
         ResponseMapper::toTopologyResponse);
   }
 }

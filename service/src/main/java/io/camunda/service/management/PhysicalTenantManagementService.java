@@ -68,7 +68,7 @@ public abstract class PhysicalTenantManagementService<T extends PhysicalTenantMa
     final int knownPartitions = topology.getPartitions().size();
     if (expectedPartitionCount != knownPartitions) {
       throw new IncompleteTopologyException(
-          "Expected to send request to all %d partitions, but found only %d partitions in topology."
+          "Expected to find %d partitions, but found only %d partitions in topology."
               .formatted(expectedPartitionCount, knownPartitions));
     }
 

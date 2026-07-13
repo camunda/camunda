@@ -31,7 +31,7 @@ public final class TopologyController {
   public CompletableFuture<ResponseEntity<Object>> getTopology(
       @PhysicalTenantId final String physicalTenantId) {
     return RequestExecutor.executeServiceMethod(
-        serviceRegistry.topologyServices(physicalTenantId)::getTopology,
+        serviceRegistry.topologyServices(physicalTenantId)::describeTopology,
         ResponseMapper::toTopologyResponse,
         HttpStatus.OK);
   }
