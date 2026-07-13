@@ -1,7 +1,8 @@
 # description: Runs parallel endurance tests weekly against main (TTL: 28 days).
-#              Variants: realistic, rdbms-realistic (PostgreSQL), opensearch-realistic.
+#              Variants: realistic, rdbms-realistic (PostgreSQL), opensearch-realistic, ECS.
 #              Naming pattern: medic-y-YYYY-cw-WW-<sha>
-# calls: camunda-load-test.yml (3 parallel calls, one per scenario)
+# calls: camunda-load-test.yml (3 parallel calls, one per scenario) +
+#        camunda-ecs-weekly-load-test.yml (1 parallel call) — 4 load tests total
 # type: CI
 # owner: @camunda/reliability-testing
 name: Camunda weekly medic load test
