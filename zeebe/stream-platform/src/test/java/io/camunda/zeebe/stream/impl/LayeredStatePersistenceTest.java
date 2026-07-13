@@ -59,6 +59,8 @@ final class LayeredStatePersistenceTest {
   private TransactionContext context;
 
   private final AtomicLong lastProcessedPosition = new AtomicLong();
+  // the controlled monotonic source view freshness is tracked against — no real time in tests
+  private final AtomicLong monotonicNanos = new AtomicLong();
   private final LinkedBlockingQueue<Runnable> processorJobs = new LinkedBlockingQueue<>();
   private ControlledIo io;
   private LayeredStatePersistence persistence;
@@ -74,7 +76,8 @@ final class LayeredStatePersistenceTest {
         layered.createColumnFamily(ZbColumnFamilies.DEFAULT, context, new DbLong(), new DbLong());
     io = new ControlledIo();
     persistence =
-        new LayeredStatePersistence(layered, lastProcessedPosition::get, processorJobs::add, io);
+        new LayeredStatePersistence(
+            layered, lastProcessedPosition::get, processorJobs::add, io, monotonicNanos::get);
   }
 
   @AfterEach
@@ -98,7 +101,7 @@ final class LayeredStatePersistenceTest {
 
     // when the owner thread keeps committing and freezing while the round is in flight
     commitBatch(2, 200);
-    persistence.tryFreezeForScheduledTask();
+    persistence.tryFreezeForScheduledTask(null);
     commitBatch(3, 300);
 
     // then the new writes are visible to the owner immediately and the round completes on the
@@ -112,6 +115,80 @@ final class LayeredStatePersistenceTest {
     assertThat(passThroughGet(2)).isNull();
     assertThat(layered.defaultDomain().hasBufferedWrites()).isTrue();
     assertThat(inFlightGauge()).isEqualTo(0.0);
+  }
+
+  // ------------------------------------------------------------------
+  // View freshness for asynchronous checkers
+  // ------------------------------------------------------------------
+
+  @Test
+  void shouldReuseFreshViewForPollingChecker() {
+    // given a view made fresh at t=0 and a batch committed afterwards
+    assertThat(persistence.tryFreezeForScheduledTask(null)).isTrue();
+    commitBatch(1, 100);
+    assertThat(layered.defaultDomain().hasActiveWrites()).isTrue();
+
+    // when a polling checker prepares while the view is younger than its own period
+    monotonicNanos.set(Duration.ofSeconds(30).toNanos() - 1);
+    assertThat(persistence.tryFreezeForScheduledTask(Duration.ofSeconds(30))).isTrue();
+
+    // then no freeze happened — the committed batch stays in the active overlay (where
+    // overwrites keep deduplicating in place) and the checker reuses the published view
+    assertThat(layered.defaultDomain().hasActiveWrites()).isTrue();
+  }
+
+  @Test
+  void shouldFreezeForPollingCheckerOnceViewIsOlderThanTolerance() {
+    // given a view made fresh at t=0 and a batch committed afterwards
+    assertThat(persistence.tryFreezeForScheduledTask(null)).isTrue();
+    commitBatch(1, 100);
+
+    // when the polling checker prepares once the view's age reached its period
+    monotonicNanos.set(Duration.ofSeconds(30).toNanos());
+    assertThat(persistence.tryFreezeForScheduledTask(Duration.ofSeconds(30))).isTrue();
+
+    // then the staleness bound is honored: the buffered batch froze into a view-visible segment
+    assertThat(layered.defaultDomain().hasActiveWrites()).isFalse();
+  }
+
+  @Test
+  void shouldAlwaysFreezeForEventDrivenChecker() {
+    // given a perfectly fresh view and a batch committed right after it
+    assertThat(persistence.tryFreezeForScheduledTask(null)).isTrue();
+    commitBatch(1, 100);
+
+    // when an event-driven checker prepares immediately afterwards (no tolerance)
+    assertThat(persistence.tryFreezeForScheduledTask(null)).isTrue();
+
+    // then it froze regardless of the view's age — a missed committed entry is a lost wake-up
+    assertThat(layered.defaultDomain().hasActiveWrites()).isFalse();
+  }
+
+  @Test
+  void shouldFreezeForPollingCheckerWhileNoViewFreshnessIsTrackedYet() {
+    // given a committed batch and no freshness barrier ever run (right after recovery)
+    commitBatch(1, 100);
+
+    // when the first polling checker prepares
+    assertThat(persistence.tryFreezeForScheduledTask(Duration.ofSeconds(30))).isTrue();
+
+    // then it froze: the initial view predates the buffered recovery writes, so it must not be
+    // reused no matter how young the persistence driver itself is
+    assertThat(layered.defaultDomain().hasActiveWrites()).isFalse();
+  }
+
+  @Test
+  void shouldReuseFreshViewForPollingCheckerEvenWhileBatchInFlight() throws Exception {
+    // given a fresh view and an open batch on the owner thread
+    assertThat(persistence.tryFreezeForScheduledTask(null)).isTrue();
+    context.getCurrentTransaction().run(() -> put(1, 100));
+    assertThat(layered.defaultDomain().batchInFlight()).isTrue();
+
+    // when / then a polling checker may run right away — an open batch never invalidates an
+    // already-published view — while an event-driven checker must wait for the batch
+    assertThat(persistence.tryFreezeForScheduledTask(Duration.ofSeconds(30))).isTrue();
+    assertThat(persistence.tryFreezeForScheduledTask(null)).isFalse();
+    context.getCurrentTransaction().commit();
   }
 
   // ------------------------------------------------------------------
@@ -249,7 +326,7 @@ final class LayeredStatePersistenceTest {
     context.runInTransaction(() -> put(1, 100));
 
     // when the freeze barrier and a persist round run
-    persistence.tryFreezeForScheduledTask();
+    persistence.tryFreezeForScheduledTask(null);
     startRoundNow();
     runProcessorJobsUntil(() -> !persistence.roundInFlight());
 
@@ -479,12 +556,12 @@ final class LayeredStatePersistenceTest {
     // given -- two freezes pushing the pipeline over its segment limit
     recreateWithSegmentLimit1();
     commitBatch(1, 100);
-    persistence.tryFreezeForScheduledTask();
+    persistence.tryFreezeForScheduledTask(null);
     assertThat(persistence.mergeInFlight()).isFalse(); // within the limit, nothing to merge
     commitBatch(2, 200);
 
     // when -- the next freeze occasion detects the over-limit pipeline
-    persistence.tryFreezeForScheduledTask();
+    persistence.tryFreezeForScheduledTask(null);
     assertThat(persistence.mergeInFlight()).isTrue();
     runProcessorJobsUntil(() -> !persistence.mergeInFlight());
 
@@ -503,10 +580,10 @@ final class LayeredStatePersistenceTest {
     // given -- a merge blocked on the IO thread
     recreateWithSegmentLimit1();
     commitBatch(1, 100);
-    persistence.tryFreezeForScheduledTask();
+    persistence.tryFreezeForScheduledTask(null);
     commitBatch(2, 200);
     io.blockNextRound();
-    persistence.tryFreezeForScheduledTask();
+    persistence.tryFreezeForScheduledTask(null);
     io.awaitRoundEntered();
     assertThat(persistence.mergeInFlight()).isTrue();
 
@@ -533,10 +610,10 @@ final class LayeredStatePersistenceTest {
     // given -- a merge blocked on the IO thread
     recreateWithSegmentLimit1();
     commitBatch(1, 100);
-    persistence.tryFreezeForScheduledTask();
+    persistence.tryFreezeForScheduledTask(null);
     commitBatch(2, 200);
     io.blockNextRound();
-    persistence.tryFreezeForScheduledTask();
+    persistence.tryFreezeForScheduledTask(null);
     io.awaitRoundEntered();
 
     // when -- a pre-snapshot flush is requested mid-merge
@@ -595,7 +672,8 @@ final class LayeredStatePersistenceTest {
         layered.createColumnFamily(ZbColumnFamilies.DEFAULT, context, new DbLong(), new DbLong());
     io = new ControlledIo();
     persistence =
-        new LayeredStatePersistence(layered, lastProcessedPosition::get, processorJobs::add, io);
+        new LayeredStatePersistence(
+            layered, lastProcessedPosition::get, processorJobs::add, io, monotonicNanos::get);
   }
 
   private void commitBatch(final long key, final long value) {

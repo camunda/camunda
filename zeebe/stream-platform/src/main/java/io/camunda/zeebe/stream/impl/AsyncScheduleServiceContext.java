@@ -13,13 +13,15 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
 import io.camunda.zeebe.stream.api.scheduling.AsyncTaskGroup;
+import java.time.Duration;
 import java.util.EnumMap;
-import java.util.function.Supplier;
+import java.util.function.Function;
+import org.jspecify.annotations.Nullable;
 
 class AsyncScheduleServiceContext {
   private final ActorSchedulingService actorSchedulingService;
   private final ProcessingScheduleServiceFactory actorServiceFactory;
-  private final Supplier<ActorFuture<Void>> taskFreshnessPreparation;
+  private final Function<@Nullable Duration, ActorFuture<Void>> taskFreshnessPreparation;
   private final PartitionId partitionId;
 
   private final EnumMap<AsyncTaskGroup, AsyncProcessingScheduleServiceActor> asyncActors;
@@ -33,14 +35,15 @@ class AsyncScheduleServiceContext {
 
   /**
    * @param taskFreshnessPreparation when non-null, installed on every async actor's schedule
-   *     service so each task execution first awaits it — used by the experimental layered-state
-   *     wiring to freeze buffered state into a fresh read view before an async checker runs (see
-   *     {@link ProcessingScheduleServiceImpl#taskFreshnessPreparation})
+   *     service so each task execution first awaits it for the task's tolerated view staleness —
+   *     used by the experimental layered-state wiring to freeze buffered state into a fresh read
+   *     view before an async checker runs, or to reuse a fresh-enough view for polling checkers
+   *     (see {@link ProcessingScheduleServiceImpl#taskFreshnessPreparation})
    */
   public AsyncScheduleServiceContext(
       final ActorSchedulingService actorSchedulingService,
       final ProcessingScheduleServiceFactory actorServiceFactory,
-      final Supplier<ActorFuture<Void>> taskFreshnessPreparation,
+      final Function<@Nullable Duration, ActorFuture<Void>> taskFreshnessPreparation,
       final PartitionId partitionId) {
     this.actorSchedulingService = actorSchedulingService;
     this.actorServiceFactory = actorServiceFactory;

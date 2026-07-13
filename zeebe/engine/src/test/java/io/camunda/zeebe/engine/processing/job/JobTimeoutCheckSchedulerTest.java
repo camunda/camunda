@@ -210,4 +210,17 @@ final class JobTimeoutCheckSchedulerTest {
     verify(mockScheduleService, times(1)).runAtAsync(anyLong(), ArgumentMatchers.<Task>any());
     verify(mockScheduleService, never()).runAt(anyLong(), ArgumentMatchers.<Task>any());
   }
+
+  @Test
+  void shouldTolerateViewStalenessUpToItsOwnPollingInterval() {
+    // given a checker with its configured polling interval
+    final Duration pollingInterval = Duration.ofSeconds(7);
+    final var task =
+        new JobTimeoutCheckScheduler(jobState, pollingInterval, 3, InstantSource.system());
+
+    // when / then it declares itself a poller: every execution rescans the full timed-out range,
+    // so the layered-state view preparation may reuse a view younger than one period instead of
+    // freezing before every poll
+    assertThat(task.toleratedViewStaleness()).isEqualTo(pollingInterval);
+  }
 }

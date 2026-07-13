@@ -77,6 +77,20 @@ final class JobTimeoutCheckScheduler implements Task, StreamProcessorLifecycleAw
     }
   }
 
+  /**
+   * This checker is a poller: every execution rescans the full timed-out range from scratch, so an
+   * entry missed by one poll is picked up by the next — with the experimental layered-state flag
+   * on, the pre-execution view preparation may therefore reuse a published view younger than the
+   * polling interval instead of freezing before every poll (the observed staleness stays below one
+   * period, which a poller tolerates by construction). Contrast with the event-driven checkers
+   * (timer due-date, message TTL), which derive their next wake-up from the scan and keep the
+   * unconditional freeze.
+   */
+  @Override
+  public Duration toleratedViewStaleness() {
+    return pollingInterval;
+  }
+
   @Override
   public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
     LOG.trace("Job timeout checker running...");

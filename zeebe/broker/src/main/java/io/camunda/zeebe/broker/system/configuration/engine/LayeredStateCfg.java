@@ -24,9 +24,11 @@ import org.springframework.util.unit.DataSize;
  * {@link #getMaxBufferedBytes()}, a snapshot about to checkpoint, and sync scheduled tasks about to
  * read persisted state. Secondary readers (e.g. the query API) observe state at persist-round
  * freshness. The timer due-date, message-TTL and job-timeout checkers run asynchronously on read
- * views of the buffered state, refreshed right before each checker execution (there is no periodic
- * freeze cadence — the pre-execution barrier is the only freshness anyone consumes, and freezing
- * earlier would forfeit the free overwrite absorption of the active overlay); the remaining engine
+ * views of the buffered state: event-driven checkers (due-date, TTL — a missed committed entry is a
+ * lost wake-up) get a view refreshed right before each execution, while polling checkers (job
+ * timeout) reuse a view younger than their own polling interval (there is no periodic freeze
+ * cadence — the pre-execution barrier is the only freshness anyone consumes, and freezing earlier
+ * would forfeit the free overwrite absorption of the active overlay); the remaining engine
  * scheduled tasks run on the stream processor's thread behind a persist barrier so their state
  * scans keep observing every committed batch.
  */

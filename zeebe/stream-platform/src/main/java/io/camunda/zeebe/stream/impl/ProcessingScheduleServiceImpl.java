@@ -23,7 +23,9 @@ import java.time.InstantSource;
 import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.function.BooleanSupplier;
+import java.util.function.Function;
 import java.util.function.Supplier;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 /**
@@ -51,10 +53,11 @@ public class ProcessingScheduleServiceImpl
   // invoked on this service's actor right before a task executes; a non-null future defers the
   // task until the barrier's drain attempt finished (see taskExecutionBarrier(Supplier))
   private Supplier<ActorFuture<Void>> taskExecutionBarrier = () -> null;
-  // when set, every task execution first awaits the supplied future — used by the experimental
-  // layered-state wiring to freeze buffered state into a fresh read view before an async checker
-  // runs (see taskFreshnessPreparation(Supplier))
-  private Supplier<ActorFuture<Void>> taskFreshnessPreparation;
+  // when set, every task execution first awaits the future supplied for the task's tolerated
+  // view staleness — used by the experimental layered-state wiring to freeze buffered state into
+  // a fresh read view before an async checker runs, or to reuse a fresh-enough view for polling
+  // checkers (see taskFreshnessPreparation(Function))
+  private Function<@Nullable Duration, ActorFuture<Void>> taskFreshnessPreparation;
 
   public ProcessingScheduleServiceImpl(
       final Supplier<Phase> streamProcessorPhaseSupplier,
@@ -190,15 +193,17 @@ public class ProcessingScheduleServiceImpl
   }
 
   /**
-   * Installs a preparation step awaited on this service's actor right before every task execution.
-   * Used by the experimental layered-state wiring on the asynchronous schedule services: the
-   * supplied future completes once the stream processor froze its buffered state into a fresh read
-   * view, so a view acquired by the task observes every batch committed before the task ran —
-   * exactly the freshness the task's state scans have without the layered buffer. The task executes
-   * either way once the future completes; a failed preparation only means a staler view, which is
-   * preferable to blocking all scheduled work. Must be set before the service is opened.
+   * Installs a preparation step awaited on this service's actor right before every task execution,
+   * keyed by the task's {@link Task#toleratedViewStaleness()}. Used by the experimental
+   * layered-state wiring on the asynchronous schedule services: the supplied future completes once
+   * the stream processor froze its buffered state into a fresh read view — or immediately, for a
+   * polling task whose current published view is younger than its tolerance — so a view acquired by
+   * the task observes every batch committed before the task ran (event-driven tasks) or lags by
+   * less than the task's own period (polling tasks). The task executes either way once the future
+   * completes; a failed preparation only means a staler view, which is preferable to blocking all
+   * scheduled work. Must be set before the service is opened.
    */
-  void taskFreshnessPreparation(final Supplier<ActorFuture<Void>> preparation) {
+  void taskFreshnessPreparation(final Function<@Nullable Duration, ActorFuture<Void>> preparation) {
     taskFreshnessPreparation = Objects.requireNonNull(preparation);
   }
 
@@ -244,9 +249,11 @@ public class ProcessingScheduleServiceImpl
           return;
         }
         if (taskFreshnessPreparation != null) {
-          // run only after the buffered state was frozen into a fresh read view; on preparation
-          // failure the task still runs — a staler view beats blocking all scheduled work
-          actorControl.runOnCompletion(taskFreshnessPreparation.get(), (ok, error) -> task.run());
+          // a plain runnable carries no staleness tolerance: run only after the buffered state
+          // was frozen into a fresh read view; on preparation failure the task still runs — a
+          // staler view beats blocking all scheduled work
+          actorControl.runOnCompletion(
+              taskFreshnessPreparation.apply(null), (ok, error) -> task.run());
           return;
         }
 
@@ -307,10 +314,12 @@ public class ProcessingScheduleServiceImpl
       return;
     }
     if (taskFreshnessPreparation != null) {
-      // run only after the buffered state was frozen into a fresh read view; on preparation
+      // run only after view freshness was prepared for the task's staleness tolerance — a freeze
+      // for event-driven tasks, possibly a reused fresh view for polling ones; on preparation
       // failure the task still runs — a staler view beats blocking all scheduled work
       actorControl.runOnCompletion(
-          taskFreshnessPreparation.get(), (ok, error) -> executeTask(task));
+          taskFreshnessPreparation.apply(task.toleratedViewStaleness()),
+          (ok, error) -> executeTask(task));
       return;
     }
 

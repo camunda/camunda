@@ -16,6 +16,7 @@ import io.camunda.zeebe.db.layered.zdb.LayeredZeebeDb;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.function.LongSupplier;
@@ -53,8 +54,10 @@ import org.slf4j.Logger;
  *   <li>{@link #prepareForScheduledTask()} — invoked before a scheduled task executes on the stream
  *       processor's actor; returns a future after which the task's persisted-state reads observe
  *       everything committed before the preparation began.
- *   <li>{@link #tryFreezeForScheduledTask()} — invoked before an asynchronous checker executes, so
- *       the view it acquires observes every batch committed before its execution.
+ *   <li>{@link #tryFreezeForScheduledTask(Duration)} — invoked before an asynchronous checker
+ *       executes: event-driven checkers get a freeze, so the view they acquire observes every batch
+ *       committed before their execution; polling checkers reuse the current published view while
+ *       it is younger than their own period.
  * </ul>
  *
  * <p><b>Freezes are on-demand only — there is deliberately no periodic freeze cadence.</b> The only
@@ -91,6 +94,7 @@ final class LayeredStatePersistence {
   private final LongSupplier lastProcessedPosition;
   private final Executor processor;
   private final PersistIo io;
+  private final LongSupplier monotonicNanos;
   private final long maxBufferedBytes;
   // the buffer-pressure ladder rungs, precomputed from the configured fractions of
   // maxBufferedBytes (zero when no budget is configured — the ladder is off then); at least one
@@ -132,6 +136,17 @@ final class LayeredStatePersistence {
   private DrainPacer inFlightPacer;
 
   /**
+   * The {@link #monotonicNanos} instant up to which the published read views are known fresh: every
+   * batch committed before it is view-visible. Advanced by {@link
+   * #tryFreezeForScheduledTask(Duration)} after it froze (or found nothing to freeze) —
+   * single-threaded on the processor actor, so no commit can slip between the freeze and the stamp.
+   * Meaningful only while {@link #viewFreshnessTracked} is true.
+   */
+  private long viewFreshAsOfNanos;
+
+  private boolean viewFreshnessTracked;
+
+  /**
    * @param db the layered database the stream processor writes through
    * @param lastProcessedPosition supplies the watermark of a round: the highest log position whose
    *     effects the buffered state contains (the last successfully committed position)
@@ -140,16 +155,20 @@ final class LayeredStatePersistence {
    *     batch-in-flight re-checks must yield to the jobs completing the batch, or they would starve
    *     it
    * @param io runs the persist step of prepared rounds off the processor actor
+   * @param monotonicNanos the monotonic time source view freshness is tracked against (the actor
+   *     clock's nanos in production, a controlled source in tests); never used as wall-clock time
    */
   LayeredStatePersistence(
       final LayeredZeebeDb<?> db,
       final LongSupplier lastProcessedPosition,
       final Executor processor,
-      final PersistIo io) {
+      final PersistIo io,
+      final LongSupplier monotonicNanos) {
     this.lastProcessedPosition =
         Objects.requireNonNull(lastProcessedPosition, "lastProcessedPosition");
     this.processor = Objects.requireNonNull(processor, "processor");
     this.io = Objects.requireNonNull(io, "io");
+    this.monotonicNanos = Objects.requireNonNull(monotonicNanos, "monotonicNanos");
     domain = db.defaultDomain();
     maxBufferedBytes = db.config().maxBufferedBytes();
     ladderStartBytes = ladderRungBytes(db.config().ladderStartFraction());
@@ -189,25 +208,53 @@ final class LayeredStatePersistence {
   }
 
   /**
-   * Freezes the active overlays right before an asynchronous checker executes, so the read view the
-   * checker acquires observes every batch committed before its execution — the freshness that keeps
-   * event-driven checkers from losing wake-ups (a scan that misses a committed-but-unfrozen timer
-   * could otherwise derive no next wake-up and never run again). This barrier and the implicit
-   * freeze of a preparing persist round are the only freeze sources (see the class javadoc for why
-   * no cadence exists); it also runs the post-freeze merge check, whether it froze or not — a merge
-   * deferred while another was in flight must be retried even when nothing new froze.
+   * Prepares view freshness right before an asynchronous checker executes, split by the checker's
+   * semantics:
    *
-   * @return false if a batch is in flight — its staging writes must never surface, so the caller
-   *     retries once the batch completed (matching today's semantics, where a checker's scan sees
-   *     committed batches only)
+   * <ul>
+   *   <li><b>Event-driven checkers</b> ({@code toleratedStaleness} null) get an unconditional
+   *       freeze of the active overlays, so the read view they acquire observes every batch
+   *       committed before their execution — the freshness that keeps them from losing wake-ups (a
+   *       scan that misses a committed-but-unfrozen timer could otherwise derive no next wake-up
+   *       and never run again).
+   *   <li><b>Polling checkers</b> (a positive tolerance — their own polling period) reuse the
+   *       current published view while it is younger than the tolerance: they rescan their full
+   *       range every period, so an entry missed by one poll is picked up by the next, and the
+   *       observed staleness stays below one period. Every reused view is a freeze avoided, which
+   *       keeps overwrites deduplicating in place in the active overlay. The reuse check runs
+   *       before the batch-in-flight check on purpose — an open batch never invalidates an
+   *       already-published view.
+   * </ul>
+   *
+   * <p>This barrier and the implicit freeze of a preparing persist round are the only freeze
+   * sources (see the class javadoc for why no cadence exists); after a freeze (or when nothing
+   * needed freezing) it also runs the post-freeze merge check — a merge deferred while another was
+   * in flight must be retried even when nothing new froze. Polling reuses skip the merge check;
+   * freeze occasions still occur at least once per polling period.
+   *
+   * @param toleratedStaleness the checker's staleness tolerance (its own period), or null for
+   *     event-driven checkers that must observe every committed batch
+   * @return false if a batch is in flight and a freeze was needed — staging writes must never
+   *     surface, so the caller retries once the batch completed (matching today's semantics, where
+   *     a checker's scan sees committed batches only)
    */
-  boolean tryFreezeForScheduledTask() {
+  boolean tryFreezeForScheduledTask(final @Nullable Duration toleratedStaleness) {
+    if (toleratedStaleness != null
+        && viewFreshnessTracked
+        && monotonicNanos.getAsLong() - viewFreshAsOfNanos < toleratedStaleness.toNanos()) {
+      return true;
+    }
     if (domain.batchInFlight()) {
       return false;
     }
     if (domain.hasActiveWrites()) {
       domain.freezeNow(watermark());
     }
+    // stamp after the freeze: this method runs single-threaded on the processor actor, so no
+    // batch can commit between the freeze and the stamp — everything committed before this
+    // instant is now view-visible
+    viewFreshAsOfNanos = monotonicNanos.getAsLong();
+    viewFreshnessTracked = true;
     maybeStartMerge();
     return true;
   }

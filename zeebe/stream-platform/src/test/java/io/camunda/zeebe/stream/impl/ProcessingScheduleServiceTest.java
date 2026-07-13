@@ -41,6 +41,7 @@ import io.camunda.zeebe.util.Either;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.time.InstantSource;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
@@ -109,7 +110,7 @@ class ProcessingScheduleServiceTest {
             actorScheduler.getClock(),
             Duration.ofSeconds(1),
             ScheduledTaskMetrics.noop());
-    preparedServiceImpl.taskFreshnessPreparation(() -> preparation);
+    preparedServiceImpl.taskFreshnessPreparation(tolerated -> preparation);
     final var preparedService = new TestScheduleServiceActorDecorator(preparedServiceImpl);
     actorScheduler.submitActor(preparedService);
     actorScheduler.workUntilDone();
@@ -128,6 +129,46 @@ class ProcessingScheduleServiceTest {
 
     // then the task executed
     verify(mockedTask).execute(any());
+  }
+
+  @Test
+  void shouldPassTaskStalenessToleranceToFreshnessPreparation() {
+    // given a service whose task executions await a freshness preparation, and a polling task
+    // declaring the staleness its view reads tolerate (its own period)
+    final var observedTolerances = new ArrayList<Duration>();
+    final var preparedServiceImpl =
+        new ProcessingScheduleServiceImpl(
+            lifecycleSupplier,
+            lifecycleSupplier,
+            () -> testWriter,
+            commandCache,
+            actorScheduler.getClock(),
+            Duration.ofSeconds(1),
+            ScheduledTaskMetrics.noop());
+    preparedServiceImpl.taskFreshnessPreparation(
+        tolerated -> {
+          observedTolerances.add(tolerated);
+          return CompletableActorFuture.completed(null);
+        });
+    final var preparedService = new TestScheduleServiceActorDecorator(preparedServiceImpl);
+    actorScheduler.submitActor(preparedService);
+    actorScheduler.workUntilDone();
+    final var pollingTask =
+        new DummyTask() {
+          @Override
+          public Duration toleratedViewStaleness() {
+            return Duration.ofSeconds(30);
+          }
+        };
+
+    // when a polling and an event-driven (default) task execute
+    preparedService.runDelayed(Duration.ZERO, pollingTask);
+    preparedService.runDelayed(Duration.ZERO, new DummyTask());
+    actorScheduler.workUntilDone();
+
+    // then the preparation hook received each task's own tolerance — the polling task's period,
+    // and null for the event-driven default (which must observe every committed batch)
+    assertThat(observedTolerances).containsExactly(Duration.ofSeconds(30), null);
   }
 
   @Test
@@ -681,7 +722,8 @@ class ProcessingScheduleServiceTest {
     }
   }
 
-  private static final class DummyTask implements Task {
+  // non-final so tests can override the default staleness tolerance
+  private static class DummyTask implements Task {
     @Override
     public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
       return RecordBatch::empty;

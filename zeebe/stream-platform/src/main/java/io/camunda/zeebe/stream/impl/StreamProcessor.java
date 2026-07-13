@@ -414,7 +414,14 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
                               .getLastProcessedPositionState()
                               .getLastSuccessfulProcessedRecordPosition(),
                       actor::submit,
-                      layeredPersistIo);
+                      layeredPersistIo,
+                      // the actor clock's cached monotonic nanos, refreshed every actor
+                      // iteration — cheap and available wherever the persistence runs (always on
+                      // this actor); fall back to the system source off-actor (tests)
+                      () -> {
+                        final var clock = ActorClock.current();
+                        return clock != null ? clock.getNanoTime() : System.nanoTime();
+                      });
               // no periodic persist tick: spills are driven by the buffer-pressure ladder (the
               // batch-committed hook covers the replay phase too, where the layered context
               // buffers writes as well), the pre-snapshot flush and the scheduled-task barrier
@@ -425,27 +432,31 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   /**
-   * Freezes the layered db's buffered state into a fresh read view; installed as the async schedule
-   * services' task preparation, so a view acquired by a scheduled task after the returned future
-   * completed observes every batch committed before the task ran. Waits for an in-flight batch to
-   * complete before freezing; completes immediately while recovery has not built the layered
-   * persistence yet (nothing is buffered then).
+   * Prepares view freshness for a scheduled task about to execute on an async schedule actor;
+   * installed as those services' task preparation. For event-driven tasks ({@code
+   * toleratedViewStaleness} null) the layered db's buffered state is frozen into a fresh read view,
+   * so a view acquired after the returned future completed observes every batch committed before
+   * the task ran; polling tasks may instead reuse the current published view while it is younger
+   * than their tolerance (see {@link LayeredStatePersistence#tryFreezeForScheduledTask}). Waits for
+   * an in-flight batch to complete before freezing; completes immediately while recovery has not
+   * built the layered persistence yet (nothing is buffered then).
    */
-  private ActorFuture<Void> prepareViewForScheduledTask() {
+  private ActorFuture<Void> prepareViewForScheduledTask(final Duration toleratedViewStaleness) {
     final CompletableActorFuture<Void> frozen = new CompletableActorFuture<>();
-    actor.run(() -> tryFreezeForScheduledTask(frozen));
+    actor.run(() -> tryFreezeForScheduledTask(frozen, toleratedViewStaleness));
     return frozen;
   }
 
-  private void tryFreezeForScheduledTask(final CompletableActorFuture<Void> frozen) {
+  private void tryFreezeForScheduledTask(
+      final CompletableActorFuture<Void> frozen, final Duration toleratedViewStaleness) {
     try {
       if (layeredStatePersistence == null) {
         frozen.complete(null);
         return;
       }
-      if (!layeredStatePersistence.tryFreezeForScheduledTask()) {
+      if (!layeredStatePersistence.tryFreezeForScheduledTask(toleratedViewStaleness)) {
         // a batch is mid-flight on this actor; run again once it completed
-        actor.submit(() -> tryFreezeForScheduledTask(frozen));
+        actor.submit(() -> tryFreezeForScheduledTask(frozen, toleratedViewStaleness));
         return;
       }
       frozen.complete(null);

@@ -156,11 +156,16 @@ Phases 1 and 2 of the store itself are complete in `zeebe/zb-db`
 in `layered.zdb`), with the module's tests green. Broker wiring (Phase A of D6) is in place behind
 the experimental `layeredState` flag. Phase B is partially rolled out: the timer due-date,
 message-TTL and job-timeout checkers consume `ReadOnlyView`s pinned by a real RocksDB snapshot
-source (`io.camunda.zeebe.db.impl.rocksdb.transaction.RocksDbPinnedSnapshotSource`), with views frozen
-on demand right before each checker execution so no committed wake-up can be missed. There is
-deliberately no periodic freeze cadence: the pre-execution barrier is the only freshness anyone
-consumes, and freezing earlier forfeits the active overlay's free in-place overwrite absorption,
-turning it into pipeline-merge work. The remaining secondary readers (query service,
+source (`io.camunda.zeebe.db.impl.rocksdb.transaction.RocksDbPinnedSnapshotSource`). The
+pre-execution freshness barrier is split by checker semantics: event-driven checkers (due-date,
+TTL — they derive their next wake-up from the scan, so a missed committed entry is a lost
+wake-up) get the buffered state frozen into a fresh view before every execution, while polling
+checkers (job timeout — a full rescan every period tolerates staleness up to that period) reuse
+the current published view while it is younger than their own polling interval, each reuse
+keeping overwrites deduplicating in place in the active overlay. There is deliberately no
+periodic freeze cadence: the pre-execution barrier is the only freshness anyone consumes, and
+freezing earlier forfeits the active overlay's free in-place overwrite absorption, turning it
+into pipeline-merge work. The remaining secondary readers (query service,
 position supplier, other engine schedulers) still read pass-through contexts — the scheduled ones
 behind the sync drain barrier, the rest at persist-round freshness — correctness-safe, flipped in
 a later step. All remaining drain-barrier consumers run at multi-second cadences, so
