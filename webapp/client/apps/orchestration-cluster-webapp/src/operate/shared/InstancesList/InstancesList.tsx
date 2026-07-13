@@ -7,7 +7,7 @@
  */
 
 import React, {useEffect, useRef, useState} from 'react';
-import {ResizablePanel, SplitDirection} from '../ResizablePanel';
+import {ResizablePanel, SplitDirection} from '../ResizablePanel/ResizablePanel';
 import {Container, PanelContainer} from './styled';
 import {Frame, type FrameProps} from '../Frame/Frame';
 
