@@ -8,8 +8,10 @@
 package io.camunda.zeebe.dynamic.config.changes;
 
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionJoinApplier;
+import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionLeaveApplier;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 
 public final class PartitionGroupConfigurationChangeAppliersImpl
     implements PartitionGroupConfigurationChangeAppliers {
@@ -28,6 +30,12 @@ public final class PartitionGroupConfigurationChangeAppliersImpl
       case final PartitionJoinOperation op ->
           new PartitionJoinApplier(
               op.memberId(), op.partitionId(), op.priority(), partitionChangeExecutor);
+      case final PartitionLeaveOperation op ->
+          new PartitionLeaveApplier(
+              op.memberId(),
+              op.partitionId(),
+              op.minimumAllowedReplicas(),
+              partitionChangeExecutor);
       default ->
           throw new UnsupportedOperationException(
               "No new-model applier implemented yet for %s".formatted(operation));
