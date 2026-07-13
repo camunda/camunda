@@ -8,6 +8,8 @@
 package io.camunda.zeebe.db.layered;
 
 import io.camunda.zeebe.db.layered.segment.FlatSegment;
+import io.camunda.zeebe.db.layered.segment.FlushedOrMergeIterator;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -298,12 +300,16 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
       if (oldestFirst.isEmpty()) {
         return;
       }
-      // Pre-merging materializes one segment per store, but it is what computes the sticky
-      // flushed-OR across shadowed versions — the skip decision below needs "was ANY version of
-      // this key ever flushed", which the final version's flag alone cannot answer. In-memory
-      // pipeline compaction usually collapsed most of it already, so the materialization is small.
-      final FlatSegment merged = FlatSegment.merge(oldestFirst, false);
-      final Iterator<Entry> entries = merged.range(EMPTY_PREFIX);
+      // Stream the merge instead of materializing it. The skip decision below needs the sticky
+      // flushed-OR across shadowed versions — "was ANY version of this key ever flushed" — which
+      // the FlushedOrMergeIterator computes on the fly while emitting the newest version per key.
+      // Draining therefore allocates no intermediate merged segment: memory stays bounded by the
+      // k stream cursors, independent of how much buffered state the round carries.
+      final List<Iterator<Entry>> newestFirst = new ArrayList<>(oldestFirst.size());
+      for (int i = oldestFirst.size() - 1; i >= 0; i--) {
+        newestFirst.add(oldestFirst.get(i).range(EMPTY_PREFIX));
+      }
+      final Iterator<Entry> entries = new FlushedOrMergeIterator(newestFirst);
       while (entries.hasNext()) {
         final Entry entry = entries.next();
         if (!entry.tombstone()) {

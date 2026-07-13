@@ -11,9 +11,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.db.layered.LayeredStoreCoordinator.PersistRound;
+import io.camunda.zeebe.db.layered.segment.FlatSegment;
 import io.camunda.zeebe.db.layered.util.InMemoryDurableState;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import org.junit.jupiter.api.Test;
 
 /** Coordinator orchestration: view publication, persist rounds, anchor atomicity. */
@@ -387,12 +394,173 @@ final class LayeredStoreCoordinatorTest {
     assertThat(views).hasSize(publishedAfterPrepare);
   }
 
+  /**
+   * Parity property: the streamed drain must produce byte-identical batch operations — same puts,
+   * deletes and skips, in the same order — as the previous implementation, which materialized
+   * {@code FlatSegment.merge(oldestFirst, false)} per store and then streamed the merged segment.
+   * The old path is implemented locally below as the oracle, run over the exact segment stacks the
+   * round captures. Randomized workloads (fixed seed) mix pre-committed delegate keys, read-through
+   * reads (which mark later writes flushed), blind deletes, overwrites and multiple freezes, so the
+   * stacks carry shadowed versions with every flushed/tombstone combination the store can produce.
+   */
+  @Test
+  void shouldStreamDrainIdenticallyToMaterializedMergeOracle() throws Exception {
+    final Random random = new Random(42);
+
+    for (int trial = 0; trial < 50; trial++) {
+      // given -- a fresh durability unit with pre-committed state and a randomized workload
+      final InMemoryDurableState trialState = new InMemoryDurableState();
+      final RecordingSink recordingSink = new RecordingSink(trialState.sink());
+      final Map<String, LayeredKeyValueStore> stores = new LinkedHashMap<>();
+      for (final String name : List.of(STORE_A, STORE_B)) {
+        for (int i = random.nextInt(4); i > 0; i--) {
+          trialState.store(name).put(bytes(random.nextInt(8)), bytes(random.nextInt(256)));
+        }
+        stores.put(
+            name, new LayeredKeyValueStore(name, trialState.store(name), 1024 * 1024, false, 2));
+      }
+      try (final LayeredStoreCoordinator coordinator =
+          new LayeredStoreCoordinator(
+              stores.values(), recordingSink, trialState.snapshotSource(), view -> {})) {
+        long watermark = 0;
+        for (int freeze = 1 + random.nextInt(4); freeze > 0; freeze--) {
+          for (final LayeredKeyValueStore store : stores.values()) {
+            for (int op = random.nextInt(7); op > 0; op--) {
+              final byte[] key = bytes(random.nextInt(8));
+              switch (random.nextInt(4)) {
+                case 0 -> store.delete(key); // blind deletes probe the delegate for flushed
+                case 1 -> store.get(key); // read-through marks later writes of the key flushed
+                default -> store.put(key, bytes(random.nextInt(256)));
+              }
+            }
+            store.promote();
+          }
+          coordinator.freezeAll(++watermark);
+        }
+
+        // given -- the exact segment stacks the round will capture (actives are already frozen,
+        // so the prepare-freeze below is a no-op and captures precisely these)
+        final Map<String, List<FlatSegment>> capturedOldestFirst = new LinkedHashMap<>();
+        stores.forEach(
+            (name, store) -> {
+              final List<FlatSegment> oldestFirst = new ArrayList<>(store.segmentsNewestFirst());
+              Collections.reverse(oldestFirst);
+              capturedOldestFirst.put(name, oldestFirst);
+            });
+        final List<String> expectedOps = materializedDrainOracle(capturedOldestFirst);
+
+        // when
+        final PersistRound round = coordinator.prepareRound(watermark);
+        round.persist();
+        coordinator.completeRound(round, true);
+
+        // then
+        assertThat(recordingSink.operations)
+            .as("batch operations of trial %d", trial)
+            .containsExactlyElementsOf(expectedOps);
+      }
+    }
+  }
+
+  /** The old drain path — materialize the merged segment per store, then stream it. */
+  private static List<String> materializedDrainOracle(
+      final Map<String, List<FlatSegment>> capturedOldestFirst) {
+    final List<String> operations = new ArrayList<>();
+    long anchor = -1;
+    for (final Map.Entry<String, List<FlatSegment>> captured : capturedOldestFirst.entrySet()) {
+      final List<FlatSegment> oldestFirst = captured.getValue();
+      for (final FlatSegment segment : oldestFirst) {
+        anchor = Math.max(anchor, segment.watermark());
+      }
+      if (oldestFirst.isEmpty()) {
+        continue;
+      }
+      final FlatSegment merged = FlatSegment.merge(oldestFirst, false);
+      final Iterator<Entry> entries = merged.range(new byte[0]);
+      while (entries.hasNext()) {
+        final Entry entry = entries.next();
+        if (!entry.tombstone()) {
+          operations.add(putOp(captured.getKey(), entry.key(), entry.value()));
+        } else if (entry.flushed()) {
+          operations.add(deleteOp(captured.getKey(), entry.key()));
+        }
+        // a never-flushed tombstone is skipped: it must not appear in the batch at all
+      }
+    }
+    if (!operations.isEmpty() || anchor >= 0) {
+      operations.add(anchorOp(anchor));
+    }
+    return operations;
+  }
+
+  private static String putOp(final String storeName, final byte[] key, final byte[] value) {
+    return "put " + storeName + " " + Arrays.toString(key) + " -> " + Arrays.toString(value);
+  }
+
+  private static String deleteOp(final String storeName, final byte[] key) {
+    return "delete " + storeName + " " + Arrays.toString(key);
+  }
+
+  private static String anchorOp(final long position) {
+    return "anchor " + position;
+  }
+
   private static byte[] bytes(final int... values) {
     final byte[] result = new byte[values.length];
     for (int i = 0; i < values.length; i++) {
       result[i] = (byte) values[i];
     }
     return result;
+  }
+
+  /** Records every batch operation in order on its way to the real sink, for parity assertions. */
+  private static final class RecordingSink implements PersistSink {
+
+    private final PersistSink delegate;
+    private final List<String> operations = new ArrayList<>();
+
+    RecordingSink(final PersistSink delegate) {
+      this.delegate = delegate;
+    }
+
+    @Override
+    public PersistBatch newBatch() {
+      final PersistBatch batch = delegate.newBatch();
+      return new PersistBatch() {
+        @Override
+        public void put(final String storeName, final byte[] key, final byte[] value) {
+          operations.add(putOp(storeName, key, value));
+          batch.put(storeName, key, value);
+        }
+
+        @Override
+        public void delete(final String storeName, final byte[] key) {
+          operations.add(deleteOp(storeName, key));
+          batch.delete(storeName, key);
+        }
+
+        @Override
+        public void putAnchor(final long position) {
+          operations.add(anchorOp(position));
+          batch.putAnchor(position);
+        }
+
+        @Override
+        public void commit() throws Exception {
+          batch.commit();
+        }
+
+        @Override
+        public void close() {
+          batch.close();
+        }
+      };
+    }
+
+    @Override
+    public long readAnchor() {
+      return delegate.readAnchor();
+    }
   }
 
   /** Counts batches and writes on their way to the real sink, for annihilation assertions. */
