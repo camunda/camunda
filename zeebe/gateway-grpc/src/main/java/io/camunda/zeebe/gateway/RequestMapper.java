@@ -152,6 +152,9 @@ public final class RequestMapper extends RequestUtil {
       final UpdateJobRetriesRequest grpcRequest) {
     final var brokerRequest =
         new BrokerUpdateJobRetriesRequest(grpcRequest.getJobKey(), grpcRequest.getRetries());
+    if (grpcRequest.hasLeaseToken()) {
+      brokerRequest.setLeaseToken(grpcRequest.getLeaseToken());
+    }
     if (grpcRequest.hasOperationReference()) {
       brokerRequest.setOperationReference(grpcRequest.getOperationReference());
     }
@@ -179,6 +182,9 @@ public final class RequestMapper extends RequestUtil {
     }
     final var brokerRequest =
         new BrokerUpdateJobRequest(grpcRequest.getJobKey(), null, null, grpcRequest.getPriority());
+    if (grpcRequest.hasLeaseToken()) {
+      brokerRequest.setLeaseToken(grpcRequest.getLeaseToken());
+    }
     if (grpcRequest.hasOperationReference()) {
       brokerRequest.setOperationReference(grpcRequest.getOperationReference());
     }

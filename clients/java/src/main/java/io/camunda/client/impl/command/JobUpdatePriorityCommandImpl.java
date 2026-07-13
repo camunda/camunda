@@ -138,6 +138,16 @@ public final class JobUpdatePriorityCommandImpl
   }
 
   @Override
+  public UpdateJobPriorityCommandStep2 withLeaseToken(final String leaseToken) {
+    if (leaseToken == null) {
+      return this;
+    }
+    grpcRequestObjectBuilder.setLeaseToken(leaseToken);
+    httpRequestObject.setLeaseToken(leaseToken);
+    return this;
+  }
+
+  @Override
   public UpdateJobPriorityCommandStep1 useRest() {
     useRest = true;
     return this;
