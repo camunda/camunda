@@ -33,8 +33,9 @@ import java.util.function.Consumer;
  *       oldest first, newest version per key winning, into one {@link PersistBatch}; writes the
  *       recovery anchor (the newest drained watermark) into the <em>same</em> batch; commits.
  *       Touches only the immutable segments and the sink — never a store's mutable layers.
- *   <li>{@link #completeRound(PersistRound, boolean)} — owner thread. On success retires the
- *       drained segments in every store, rotates the snapshot (take new, release the old view's
+ *   <li>{@link #completeRound(PersistRound, boolean)} — owner thread. On success drops the drained
+ *       segments in every store (the durable state is authoritative for them now; clean caches
+ *       refill lazily via read-through), rotates the snapshot (take new, release the old view's
  *       reference) and publishes a fresh view. On failure the segments stay in their pipelines and
  *       the next round retries them; nothing needs merging back.
  * </ol>

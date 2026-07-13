@@ -55,7 +55,7 @@ final class LayeredStoreGaugeConcurrencyTest {
     assertThat(gauges).isNotEmpty();
 
     // when one thread polls every gauge in a tight loop while the owner thread freezes, merges,
-    // persists, retires and evicts (bounded iterations, no sleeps)
+    // persists, drops drained segments and evicts (bounded iterations, no sleeps)
     final AtomicBoolean ownerDone = new AtomicBoolean();
     final AtomicReference<Throwable> scrapeFailure = new AtomicReference<>();
     final Thread scraper =

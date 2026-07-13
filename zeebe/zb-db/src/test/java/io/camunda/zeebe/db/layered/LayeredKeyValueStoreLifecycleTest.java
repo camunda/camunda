@@ -162,7 +162,7 @@ final class LayeredKeyValueStoreLifecycleTest {
   }
 
   @Test
-  void shouldRetireSegmentsOnSuccessfulPersist() {
+  void shouldDropSegmentsOnSuccessfulPersist() {
     // given
     final LayeredKeyValueStore store = newStore();
     putPromoteFreeze(store, "key", "value", 1L);
@@ -179,23 +179,39 @@ final class LayeredKeyValueStoreLifecycleTest {
   }
 
   @Test
-  void shouldServeRetiredValueFromCleanCacheWithoutDelegateRead() {
+  void shouldDropPersistedSegmentsWithoutPopulatingCleanCache() {
     // given
-    final CountingBytesStore counting = new CountingBytesStore(state.store(STORE));
-    final LayeredKeyValueStore store =
-        new LayeredKeyValueStore(STORE, counting, 1024 * 1024, false, 10);
+    final LayeredKeyValueStore store = newStore();
     putPromoteFreeze(store, "key", "value", 1L);
     drainToDelegate(store.beginPersist());
 
     // when
     store.completePersist(true);
-    // the blind put in the setup cost one delegate point read (exact flushed computation);
-    // serving the retired value must not add another
-    final int getsAfterRetirement = counting.gets;
 
-    // then -- retirement moved the value into the clean cache
+    // then -- retirement is lazy: no owner-thread burst copies drained values into the clean
+    // cache; nothing stays buffered in any layer
+    assertThat(store.cleanEntryCount()).isZero();
+    assertThat(store.approximateBytes()).isZero();
+  }
+
+  @Test
+  void shouldRepopulateCleanCacheLazilyAfterPersist() {
+    // given -- a fully persisted key; lazy retirement leaves the clean cache empty
+    final CountingBytesStore counting = new CountingBytesStore(state.store(STORE));
+    final LayeredKeyValueStore store =
+        new LayeredKeyValueStore(STORE, counting, 1024 * 1024, false, 10);
+    putPromoteFreeze(store, "key", "value", 1L);
+    drainToDelegate(store.beginPersist());
+    store.completePersist(true);
+    final int getsAfterPersist = counting.gets;
+
+    // when -- the first read falls through to the delegate and caches the value
     assertThat(store.get(bytes("key"))).isEqualTo(bytes("value"));
-    assertThat(counting.gets).isEqualTo(getsAfterRetirement);
+
+    // then -- exactly one probe; the second read is served by the clean cache
+    assertThat(counting.gets).isEqualTo(getsAfterPersist + 1);
+    assertThat(store.get(bytes("key"))).isEqualTo(bytes("value"));
+    assertThat(counting.gets).isEqualTo(getsAfterPersist + 1);
   }
 
   @Test
@@ -229,13 +245,13 @@ final class LayeredKeyValueStoreLifecycleTest {
     putPromoteFreeze(store, "key", "value", 1L);
     drainToDelegate(store.beginPersist());
 
-    // when -- retirement moves the persisted value into the clean cache
+    // when -- the segments drop; the write already removed the stale negative at write time
     store.completePersist(true);
 
-    // then -- the retired value wins (no stale negative), without another delegate probe
-    final int getsAfterRetirement = counting.gets;
+    // then -- the persisted value is served (no stale negative) via one lazy read-through
+    final int getsAfterPersist = counting.gets;
     assertThat(store.get(bytes("key"))).isEqualTo(bytes("value"));
-    assertThat(counting.gets).isEqualTo(getsAfterRetirement);
+    assertThat(counting.gets).isEqualTo(getsAfterPersist + 1);
   }
 
   @Test
@@ -537,7 +553,8 @@ final class LayeredKeyValueStoreLifecycleTest {
     drainToDelegate(store.beginPersist());
     store.completePersist(true);
 
-    // then -- the retired entry is clean (evictable) and was trimmed to budget
+    // then -- the pinned bytes are gone (the drained segments dropped) and reads still resolve
+    // through the delegate
     assertThat(store.overCapacity()).isFalse();
     assertThat(store.get(bytes("key"))).isEqualTo(bytes("a-value-well-over-budget"));
   }

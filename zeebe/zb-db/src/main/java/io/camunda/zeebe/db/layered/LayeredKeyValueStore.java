@@ -15,14 +15,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.BiConsumer;
 
@@ -45,10 +43,12 @@ import java.util.function.BiConsumer;
  *       delete-absorption if enabled) when longer than the segment limit, so read amplification
  *       stays bounded no matter how long persistence is deferred.
  *   <li><em>Clean cache</em> — delegate-mirroring entries, LRU, the only evictable layer: values
- *       read through or retired from a persist round, plus known-absent sentinels for keys the
- *       delegate missed (negative caching, see {@link #NEGATIVE}). Never part of scan merges:
- *       positive entries are by definition in the delegate, so the delegate scan already returns
- *       them, and negative entries have nothing to emit.
+ *       read through the delegate, plus known-absent sentinels for keys the delegate missed
+ *       (negative caching, see {@link #NEGATIVE}). Repopulation after a persist round is lazy —
+ *       dropped segments are not copied here; the keys actually read again re-enter via normal
+ *       read-through. Never part of scan merges: positive entries are by definition in the
+ *       delegate, so the delegate scan already returns them, and negative entries have nothing to
+ *       emit.
  *   <li>The delegate — committed durable state, lagging the log by the persist cadence.
  * </ol>
  *
@@ -83,9 +83,9 @@ public final class LayeredKeyValueStore {
    * only through this store's own persist rounds (single owner per column family, enforced by the
    * domain registry), and every write to a key removes its clean entry first — there is no external
    * invalidation path that could make a cached negative stale. Sentinels are accounted at key bytes
-   * only (the shared sentinel array is empty), retirement overwrites them like any clean entry, and
-   * they are LRU-evictable exactly like positive entries — eviction merely costs a future re-probe.
-   * They can never leak into scans: the clean cache is not part of scan merges.
+   * only (the shared sentinel array is empty), and they are LRU-evictable exactly like positive
+   * entries — eviction merely costs a future re-probe. They can never leak into scans: the clean
+   * cache is not part of scan merges.
    */
   private static final byte[] NEGATIVE = new byte[0];
 
@@ -428,9 +428,19 @@ public final class LayeredKeyValueStore {
   }
 
   /**
-   * On success, retires the persisting segments: their live values move to the clean cache
-   * (delegate-backed now, evictable), tombstones drop, and the cache trims to budget. On failure,
-   * simply un-marks them — they stay in the pipeline and the next round retries them.
+   * On success, drops the persisting segments: the delegate now holds the newest persisted version
+   * of every drained key, so reads fall through to it and repopulate the clean cache lazily via
+   * normal read-through. Retirement is deliberately lazy — eagerly copying every drained live value
+   * into the clean cache made completion cost proportional to the round's entry count in one
+   * owner-thread burst; dropping is O(segments), and only the keys actually read again pay a
+   * delegate probe. On failure, simply un-marks the segments — they stay in the pipeline and the
+   * next round retries them.
+   *
+   * <p>Dropping without re-flagging newer overlay versions as flushed is sound: any staging or
+   * active version written over a persisting live put already carries {@code flushed=true}, because
+   * its write-time flushed check saw that live put in the pipeline (persisting segments stay in the
+   * pipeline until this call), and the layers are disjoint, so no clean-cache hit could have
+   * short-circuited that check.
    */
   public void completePersist(final boolean success) {
     if (!persisting) {
@@ -440,7 +450,6 @@ public final class LayeredKeyValueStore {
     if (success) {
       final List<FlatSegment> persisted =
           pipeline.subList(pipeline.size() - persistingCount, pipeline.size());
-      retire(persisted);
       for (final FlatSegment segment : persisted) {
         pipelineBytes -= segment.byteSize();
       }
@@ -449,9 +458,6 @@ public final class LayeredKeyValueStore {
     }
     persisting = false;
     persistingCount = 0;
-    if (success) {
-      evictIfNeeded();
-    }
   }
 
   /** Refreshes the volatile pipeline stat mirrors after a pipeline mutation (owner thread). */
@@ -463,75 +469,6 @@ public final class LayeredKeyValueStore {
     }
     pipelineEntries = entries;
     newestWatermark = pipeline.isEmpty() ? -1 : pipeline.get(0).watermark();
-  }
-
-  /**
-   * Moves the retiring segments' entries out of the pinned layers: the delegate now holds the
-   * newest persisted version of every key, so live values become clean (evictable) cache entries —
-   * unless a newer version above still shadows them — and tombstones simply drop.
-   */
-  private void retire(final List<FlatSegment> persistedNewestFirst) {
-    final Set<ByteBuffer> seen = new HashSet<>();
-    for (final FlatSegment segment : persistedNewestFirst) {
-      final Iterator<Entry> entries = segment.range(EMPTY_PREFIX);
-      while (entries.hasNext()) {
-        final Entry entry = entries.next();
-        final ByteBuffer mapKey = ByteBuffer.wrap(entry.key());
-        if (!seen.add(mapKey)) {
-          continue; // a newer persisted version won in the drained batch; this one never landed
-        }
-        if (entry.tombstone()) {
-          continue; // the delegate deleted the key — nothing to cache
-        }
-        if (shadowedByNewerVersion(mapKey, entry.key())) {
-          continue; // the newer version stays authoritative; the persisted value is stale
-        }
-        final byte[] replaced = clean.put(mapKey, entry.value());
-        cleanBytes += entry.key().length + entry.value().length;
-        if (replaced != null) {
-          cleanBytes -= entry.key().length + replaced.length;
-        }
-      }
-    }
-    cleanEntries = clean.size();
-  }
-
-  /**
-   * Whether a version newer than the just-persisted one exists in staging, active or a newer
-   * non-persisted segment. The delegate now holds the key, so a newer staging/active version is
-   * marked flushed — its final tombstone must reach the delegate. Newer versions held by immutable
-   * segments cannot be re-flagged; their flushed flag stays conservative, which only costs a
-   * potential redundant delete, never a missed one.
-   */
-  private boolean shadowedByNewerVersion(final ByteBuffer mapKey, final byte[] key) {
-    boolean shadowed = false;
-    final Entry stagingEntry = stagingByKey.get(mapKey);
-    if (stagingEntry != null) {
-      shadowed = true;
-      if (!stagingEntry.flushed()) {
-        final Entry updated = new Entry(stagingEntry.key(), stagingEntry.value(), true);
-        stagingByKey.put(mapKey, updated);
-        stagingSorted.put(updated.key(), updated);
-      }
-    }
-    final Entry activeEntry = activeByKey.get(mapKey);
-    if (activeEntry != null) {
-      shadowed = true;
-      if (!activeEntry.flushed()) {
-        final Entry updated = new Entry(activeEntry.key(), activeEntry.value(), true);
-        activeByKey.put(mapKey, updated);
-        activeSorted.put(updated.key(), updated);
-      }
-    }
-    if (!shadowed) {
-      final int nonPersisted = pipeline.size() - persistingCount;
-      for (int i = 0; i < nonPersisted; i++) {
-        if (pipeline.get(i).findEntry(key) != null) {
-          return true;
-        }
-      }
-    }
-    return shadowed;
   }
 
   /**
