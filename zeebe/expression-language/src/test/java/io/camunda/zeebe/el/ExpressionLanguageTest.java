@@ -8,6 +8,7 @@
 package io.camunda.zeebe.el;
 
 import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
+import static io.camunda.zeebe.test.util.MsgPackUtil.assertEquality;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
@@ -171,6 +172,26 @@ public class ExpressionLanguageTest {
     assertThat(expression.getVariableName()).contains("x");
     assertThat(evaluationResult.getFailureMessage()).isNull();
     assertThat(evaluationResult.getWarnings()).isEmpty();
+  }
+
+  @Test
+  public void shouldEvaluateNestedObjects() {
+    final var expressionString = "{\"a\": {\"b\": [[1, 2], 3] }, \"c\": { \"d\": \"e\" } }";
+    final var expression = expressionLanguage.parseExpression("=" + expressionString);
+    final var evaluationResult = expressionLanguage.evaluateExpression(expression, EMPTY_CONTEXT);
+
+    assertThat(evaluationResult.isFailure()).isFalse();
+    assertEquality(evaluationResult.toBuffer(), expressionString);
+  }
+
+  @Test
+  public void shouldEvaluateNestedArray() {
+    final var expressionString = "[[{\"a\": [1]}, {\"b\": \"c\"}], 3]";
+    final var expression = expressionLanguage.parseExpression("=" + expressionString);
+    final var evaluationResult = expressionLanguage.evaluateExpression(expression, EMPTY_CONTEXT);
+
+    assertThat(evaluationResult.isFailure()).isFalse();
+    assertEquality(evaluationResult.toBuffer(), expressionString);
   }
 
   @Test
