@@ -376,6 +376,60 @@ final class LayeredStatePersistenceTest {
   }
 
   // ------------------------------------------------------------------
+  // Paced drains
+  // ------------------------------------------------------------------
+
+  @Test
+  void shouldAwaitPacedRoundMidSlicesForSnapshotFlush() throws Exception {
+    // given a paced round frozen mid-drain: its first slice committed (partial state durable, no
+    // anchor) and the rest blocked on the IO thread
+    commitBatch(1, 100);
+    commitBatch(2, 200);
+    io.blockNextRoundAfterFirstSlice();
+    persistence.onPeriodicTick();
+    io.awaitRoundEntered();
+    assertThat(passThroughGet(1)).isEqualTo(100); // the torn intermediate cut a paced drain
+    assertThat(passThroughGet(2)).isNull(); // passes through — partial state, anchor pending
+
+    // when a pre-snapshot flush is requested mid-round
+    final CompletableActorFuture<Void> flushed = new CompletableActorFuture<>();
+    persistence.flushForSnapshot(flushed);
+
+    // then it must not complete on the torn cut — only once the round fully drained
+    assertThat(flushed.isDone()).isFalse();
+    io.releaseRound();
+    runProcessorJobsUntil(flushed::isDone);
+    flushed.join();
+    assertThat(passThroughGet(1)).isEqualTo(100);
+    assertThat(passThroughGet(2)).isEqualTo(200);
+    assertThat(layered.defaultDomain().hasBufferedWrites()).isFalse();
+  }
+
+  @Test
+  void shouldExpeditePacedDrainOnSizeTriggerMidRound() throws Exception {
+    // given a long persist interval, so the round's pacing budget clearly exceeds the test runtime
+    recreate(new LayeredZeebeDbConfig(256, 0, true, 4, Duration.ofSeconds(60)));
+    io.blockNextRound();
+    commitBatch(1, 100);
+    persistence.onPeriodicTick();
+    io.awaitRoundEntered();
+
+    // the pacer would make a fully progressed drain wait (48s budget, barely any elapsed)
+    assertThat(io.lastPacer().delayNanos(1.0, System.nanoTime())).isPositive();
+
+    // when an over-capacity batch commits while the round is in flight
+    commitBigBatch(2);
+    persistence.onBatchCommitted();
+
+    // then the trigger is noted AND the in-flight drain is expedited — no wait at any progress
+    assertThat(io.lastPacer().delayNanos(1.0, System.nanoTime())).isZero();
+    io.releaseRound();
+    runProcessorJobsUntil(
+        () -> !persistence.roundInFlight() && !layered.defaultDomain().hasBufferedWrites());
+    assertThat(passThroughGet(2)).isNotNull();
+  }
+
+  // ------------------------------------------------------------------
   // Off-thread pipeline merges
   // ------------------------------------------------------------------
 
@@ -587,9 +641,11 @@ final class LayeredStatePersistenceTest {
     private final ExecutorService ioThread =
         Executors.newSingleThreadExecutor(runnable -> new Thread(runnable, "layered-persist-io"));
     private final AtomicBoolean failNext = new AtomicBoolean();
+    private final AtomicBoolean partialFirstSlice = new AtomicBoolean();
     private final AtomicLong persisted = new AtomicLong();
     private final AtomicLong merged = new AtomicLong();
     private final AtomicLong lastRoundAnchor = new AtomicLong(Long.MIN_VALUE);
+    private volatile DrainPacer lastPacer;
     // consumed (nulled) by the IO thread so only the next round blocks
     private volatile CountDownLatch entered;
     private volatile CountDownLatch gate;
@@ -598,9 +654,15 @@ final class LayeredStatePersistenceTest {
     private volatile CountDownLatch enteredProbe;
 
     @Override
-    public ActorFuture<Void> persist(final PersistRound round) {
+    public ActorFuture<Void> persist(final PersistRound round, final DrainPacer pacer) {
       lastRoundAnchor.set(round.anchor());
+      lastPacer = pacer;
+      final IoStep preGate =
+          partialFirstSlice.getAndSet(false) ? () -> round.persistSlice(1) : null;
+      // the post-gate persist() drains from scratch — re-draining over a committed partial slice
+      // is idempotent, exactly like a successor's forward completion
       return runOnIoThread(
+          preGate,
           () -> {
             round.persist();
             persisted.incrementAndGet();
@@ -610,6 +672,7 @@ final class LayeredStatePersistenceTest {
     @Override
     public ActorFuture<Void> merge(final MergeRound round) {
       return runOnIoThread(
+          null,
           () -> {
             round.merge();
             merged.incrementAndGet();
@@ -617,11 +680,14 @@ final class LayeredStatePersistenceTest {
     }
 
     /** Runs the step on the IO thread, honoring the entered/gate latches and failure injection. */
-    private ActorFuture<Void> runOnIoThread(final IoStep step) {
+    private ActorFuture<Void> runOnIoThread(final IoStep preGate, final IoStep step) {
       final CompletableActorFuture<Void> done = new CompletableActorFuture<>();
       ioThread.execute(
           () -> {
             try {
+              if (preGate != null) {
+                preGate.run();
+              }
               final CountDownLatch enteredNow = entered;
               if (enteredNow != null) {
                 entered = null;
@@ -652,6 +718,21 @@ final class LayeredStatePersistenceTest {
       gate = new CountDownLatch(1);
       releasableGate = gate;
       enteredProbe = entered;
+    }
+
+    /**
+     * Blocks the next persist like {@link #blockNextRound()}, but only after one committed
+     * sub-batch slice — freezing the round in the torn intermediate state a paced drain passes
+     * through: partial state durable, no anchor.
+     */
+    void blockNextRoundAfterFirstSlice() {
+      partialFirstSlice.set(true);
+      blockNextRound();
+    }
+
+    /** The pacer of the round most recently handed to the IO thread. */
+    DrainPacer lastPacer() {
+      return lastPacer;
     }
 
     void awaitRoundEntered() throws InterruptedException {

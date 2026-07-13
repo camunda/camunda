@@ -13,11 +13,24 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.stream.api.state.MutableLastProcessedPositionState;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public final class DbLastProcessedPositionState implements MutableLastProcessedPositionState {
 
   private static final String LAST_PROCESSED_EVENT_KEY = "LAST_PROCESSED_EVENT_KEY";
   private static final long NO_EVENTS_PROCESSED = -1L;
+
+  /**
+   * The serialized bytes of the position key, exactly as the column family stores it — what the
+   * layered state store needs to designate the position entry as the recovery anchor's carrier.
+   */
+  public static byte[] serializedPositionKey() {
+    final DbString key = new DbString();
+    key.wrapString(LAST_PROCESSED_EVENT_KEY);
+    final byte[] bytes = new byte[key.getLength()];
+    key.write(new UnsafeBuffer(bytes), 0);
+    return bytes;
+  }
 
   private final DbString positionKey;
   private final LastProcessedPosition position = new LastProcessedPosition();
