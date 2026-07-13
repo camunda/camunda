@@ -242,4 +242,61 @@ public final class AssignProcessInstanceBusinessIdTest {
         .filteredOn(r -> r.getIntent() == ProcessInstanceBusinessIdIntent.ASSIGNED)
         .hasSize(1);
   }
+
+  @Test
+  public void shouldCarryAssignedBusinessIdOnCompletion() {
+    // given: a business id is assigned to a running instance
+    engine.deployment().withXmlResource(USER_TASK_PROCESS).deploy();
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .businessIdAssignment()
+        .withBusinessId("biz-1")
+        .assign();
+
+    // when: the instance completes
+    engine.userTask().ofInstance(processInstanceKey).complete();
+
+    // then: the process completion carries the late-assigned business id, which drives the existing
+    // uniqueness-index cleanup. The instance completing without error proves the index entry
+    // inserted on assignment is removed symmetrically (ADR 0006, D7).
+    final var completed =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst()
+            .getValue();
+    assertThat(completed.getBusinessId()).isEqualTo("biz-1");
+  }
+
+  @Test
+  public void shouldCarryAssignedBusinessIdOnTermination() {
+    // given: a business id is assigned to a running instance
+    engine.deployment().withXmlResource(USER_TASK_PROCESS).deploy();
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .businessIdAssignment()
+        .withBusinessId("biz-1")
+        .assign();
+
+    // when: the instance is canceled
+    engine.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then: the process termination carries the late-assigned business id, which drives the
+    // existing
+    // uniqueness-index cleanup. The instance terminating without error proves the index entry
+    // inserted on assignment is removed symmetrically (ADR 0006, D7).
+    final var terminated =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst()
+            .getValue();
+    assertThat(terminated.getBusinessId()).isEqualTo("biz-1");
+  }
 }
