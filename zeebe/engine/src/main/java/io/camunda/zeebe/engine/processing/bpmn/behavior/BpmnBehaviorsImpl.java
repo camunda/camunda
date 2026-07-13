@@ -280,7 +280,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             incidentBehavior,
             jobActivationBehavior,
             jobMetrics,
-            userTaskBehavior);
+            userTaskBehavior,
+            config.getMaxWorkerTypeLength());
 
     compensationSubscriptionBehaviour =
         new BpmnCompensationSubscriptionBehaviour(

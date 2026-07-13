@@ -123,6 +123,7 @@ public final class BpmnJobBehavior {
   private final JobProcessingMetrics jobMetrics;
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final BpmnUserTaskBehavior userTaskBehavior;
+  private final int maxJobTypeLength;
 
   public BpmnJobBehavior(
       final KeyGenerator keyGenerator,
@@ -135,7 +136,8 @@ public final class BpmnJobBehavior {
       final BpmnIncidentBehavior incidentBehavior,
       final BpmnJobActivationBehavior jobActivationBehavior,
       final JobProcessingMetrics jobMetrics,
-      final BpmnUserTaskBehavior userTaskBehavior) {
+      final BpmnUserTaskBehavior userTaskBehavior,
+      final int maxJobTypeLength) {
     this.keyGenerator = keyGenerator;
     this.jobState = jobState;
     this.expressionBehavior = expressionBehavior;
@@ -148,6 +150,7 @@ public final class BpmnJobBehavior {
     this.jobMetrics = jobMetrics;
     this.jobActivationBehavior = jobActivationBehavior;
     this.userTaskBehavior = userTaskBehavior;
+    this.maxJobTypeLength = maxJobTypeLength;
   }
 
   public Either<Failure, JobProperties> evaluateJobExpressions(
@@ -516,16 +519,27 @@ public final class BpmnJobBehavior {
     return expressionBehavior
         .evaluateStringExpression(type, scopeKey, tenantId)
         .flatMap(
-            result ->
-                Strings.isNullOrEmpty(result)
-                    ? Either.left(
-                        new Failure(
-                            String.format(
-                                "Expected result of the expression '%s' to be a not-empty string, but was an empty string.",
-                                type.getExpression()),
-                            ErrorType.EXTRACT_VALUE_ERROR,
-                            scopeKey))
-                    : Either.right(result));
+            result -> {
+              if (Strings.isNullOrEmpty(result)) {
+                return Either.left(
+                    new Failure(
+                        String.format(
+                            "Expected result of the expression '%s' to be a not-empty string, but was an empty string.",
+                            type.getExpression()),
+                        ErrorType.EXTRACT_VALUE_ERROR,
+                        scopeKey));
+              }
+              if (result.length() > maxJobTypeLength) {
+                return Either.left(
+                    new Failure(
+                        String.format(
+                            "Expected result of the expression '%s' to be a string with a maximum length of %d, but was a string with a length of %d.",
+                            type.getExpression(), maxJobTypeLength, result.length()),
+                        ErrorType.EXTRACT_VALUE_ERROR,
+                        scopeKey));
+              }
+              return Either.right(result);
+            });
   }
 
   private Either<Failure, Long> evalRetriesExp(
