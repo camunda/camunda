@@ -48,11 +48,6 @@ public record MetadataValueFilter(String key, List<UntypedOperation> valueOperat
       return this;
     }
 
-    public <T> Builder valueTypedOperations(final List<Operation<T>> operations) {
-      operations.forEach(operation -> valueOperations.add(UntypedOperation.of(operation)));
-      return this;
-    }
-
     @Override
     public MetadataValueFilter build() {
       return new MetadataValueFilter(Objects.requireNonNull(key), valueOperations);

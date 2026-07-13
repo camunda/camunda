@@ -127,8 +127,7 @@ public record ClusterVariableFilter(
       return this;
     }
 
-    @SafeVarargs
-    public final Builder metadataOperations(
+    public Builder metadataOperations(
         final MetadataValueFilter operation, final MetadataValueFilter... operations) {
       return metadataOperations(collectValues(operation, operations));
     }

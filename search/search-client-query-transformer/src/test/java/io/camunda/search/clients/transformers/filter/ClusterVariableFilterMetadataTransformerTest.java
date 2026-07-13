@@ -92,16 +92,8 @@ public final class ClusterVariableFilterMetadataTransformerTest extends Abstract
     final var inner = (SearchBoolQuery) nested.query().queryOption();
     assertThat(inner.must()).hasSize(2);
     assertIsTermQuery(inner.must().get(0), ClusterVariableIndex.METADATA_KEY, "kind");
-    final var existsBool = (SearchBoolQuery) inner.must().get(1).queryOption();
-    final var existsFields =
-        existsBool.should().stream()
-            .map(SearchQuery::queryOption)
-            .map(SearchExistsQuery.class::cast)
-            .map(SearchExistsQuery::field)
-            .toList();
-    assertThat(existsFields)
-        .containsExactlyInAnyOrder(
-            ClusterVariableIndex.METADATA_VALUE, ClusterVariableIndex.METADATA_VALUE_NUMBER);
+    final var existsQuery = (SearchExistsQuery) inner.must().get(1).queryOption();
+    assertThat(existsQuery.field()).matches(ClusterVariableIndex.METADATA_VALUE);
   }
 
   @Test

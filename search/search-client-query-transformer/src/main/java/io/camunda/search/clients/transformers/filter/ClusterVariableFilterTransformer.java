@@ -140,13 +140,6 @@ public final class ClusterVariableFilterTransformer
   }
 
   private SearchQuery toMetadataValueQuery(final UntypedOperation operation) {
-    if (operation.operator() == Operator.EXISTS) {
-      // the value of a metadata entry is stored in exactly one of the two fields depending on
-      // its type, so presence must be checked across both
-      return or(
-          exists(ClusterVariableIndex.METADATA_VALUE),
-          exists(ClusterVariableIndex.METADATA_VALUE_NUMBER));
-    }
     final var numeric =
         operation.type() == ValueTypeEnum.LONG || operation.type() == ValueTypeEnum.DOUBLE;
     final var field =
@@ -154,7 +147,7 @@ public final class ClusterVariableFilterTransformer
     return switch (operation.operator()) {
       case EQUALS -> term(field, TypedValue.toTypedValue(operation.value()));
       case NOT_EQUALS -> not(term(field, TypedValue.toTypedValue(operation.value())));
-      case EXISTS -> throw new IllegalStateException("EXISTS is handled above");
+      case EXISTS -> exists(field);
       case IN -> objectTerms(field, operation.values());
       case NOT_IN -> not(objectTerms(field, operation.values()));
       case GREATER_THAN -> gt(field, operation.value());
@@ -162,9 +155,7 @@ public final class ClusterVariableFilterTransformer
       case LOWER_THAN -> lt(field, operation.value());
       case LOWER_THAN_EQUALS -> lte(field, operation.value());
       case LIKE -> wildcardQuery(field, (String) operation.value());
-      case NOT_EXISTS ->
-          throw new IllegalStateException(
-              "NOT_EXISTS metadata operations are handled at the entry level");
+      case NOT_EXISTS -> not(exists(field));
     };
   }
 }
