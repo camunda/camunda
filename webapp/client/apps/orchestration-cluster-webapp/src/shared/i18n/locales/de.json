@@ -439,9 +439,12 @@
 				"filters": {
 					"processSection": "Prozess",
 					"name": "Name",
+					"searchByName": "Nach Prozessnamen suchen",
 					"version": "Version",
 					"selectVersion": "Prozessversion auswählen",
 					"allVersions": "Alle Versionen",
+					"element": "Element",
+					"searchByElement": "Nach Prozesselement suchen",
 					"instancesStates": "Instanzstatus",
 					"runningInstances": "Laufende Instanzen",
 					"finishedInstances": "Abgeschlossene Instanzen",

@@ -442,9 +442,12 @@
 				"filters": {
 					"processSection": "Processus",
 					"name": "Nom",
+					"searchByName": "Rechercher par nom de processus",
 					"version": "Version",
 					"selectVersion": "Sélectionner une version de processus",
 					"allVersions": "Toutes les versions",
+					"element": "Élément",
+					"searchByElement": "Rechercher par élément de processus",
 					"instancesStates": "États des instances",
 					"runningInstances": "Instances en cours",
 					"finishedInstances": "Instances terminées",

@@ -7,6 +7,7 @@
  */
 
 import {useMemo} from 'react';
+import {useTranslation} from 'react-i18next';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {useNavigate} from '@tanstack/react-router';
 import {Checkbox, ComboBox, Dropdown, Stack} from '@carbon/react';
@@ -29,7 +30,8 @@ type Props = {
 
 type ProcessItem = {id: string; label: string};
 
-const Processes: React.FC<Props> = ({process, version, active, incidents, completed, canceled}) => {
+const Processes: React.FC<Props> = ({process, version, elementId, active, incidents, completed, canceled}) => {
+	const {t} = useTranslation();
 	const navigate = useNavigate();
 	const {data} = useSuspenseQuery(queries.queryProcessDefinitions({}));
 
@@ -63,7 +65,8 @@ const Processes: React.FC<Props> = ({process, version, active, incidents, comple
 	const finishedChecked = completed && canceled;
 	const finishedIndeterminate = !finishedChecked && (completed || canceled);
 
-	const isResetDisabled = active && incidents && !completed && !canceled && !process;
+	const isResetDisabled =
+		active && incidents && !completed && !canceled && !process && version === undefined && elementId === undefined;
 
 	return (
 		<InstancesList
@@ -76,12 +79,12 @@ const Processes: React.FC<Props> = ({process, version, active, incidents, comple
 				>
 					<Stack gap={5}>
 						<div>
-							<Title>Process</Title>
+							<Title>{t('operate.processes.filters.processSection')}</Title>
 							<Stack gap={5}>
 								<ComboBox
 									id="process-name-filter"
-									titleText="Name"
-									placeholder="Search by Process Name"
+									titleText={t('operate.processes.filters.name')}
+									placeholder={t('operate.processes.filters.searchByName')}
 									items={processItems}
 									itemToString={(item) => item?.label ?? ''}
 									selectedItem={selectedProcess}
@@ -100,10 +103,12 @@ const Processes: React.FC<Props> = ({process, version, active, incidents, comple
 								/>
 								<Dropdown
 									id="process-version-filter"
-									titleText="Version"
-									label="Select a Process Version"
+									titleText={t('operate.processes.filters.version')}
+									label={t('operate.processes.filters.selectVersion')}
 									items={versionNumbers}
-									itemToString={(item) => (item === undefined || item === null ? 'All versions' : String(item))}
+									itemToString={(item) =>
+										item === undefined || item === null ? t('operate.processes.filters.allVersions') : String(item)
+									}
 									selectedItem={selectedVersion}
 									disabled={!process}
 									size="sm"
@@ -116,24 +121,24 @@ const Processes: React.FC<Props> = ({process, version, active, incidents, comple
 								/>
 								<ComboBox
 									id="process-element-filter"
-									titleText="Element"
-									placeholder="Search by Process Element"
+									titleText={t('operate.processes.filters.element')}
+									placeholder={t('operate.processes.filters.searchByElement')}
 									items={[]}
 									itemToString={(item: {label?: string} | null) => item?.label ?? ''}
 									selectedItem={null}
-									disabled={!process}
+									disabled
 									size="sm"
 									onChange={() => {}}
 								/>
 							</Stack>
 						</div>
 						<div>
-							<Title>Instances States</Title>
+							<Title>{t('operate.processes.filters.instancesStates')}</Title>
 							<Stack gap={3}>
 								<Stack gap={1}>
 									<Checkbox
 										id="filter-running-instances"
-										labelText="Running Instances"
+										labelText={t('operate.processes.filters.runningInstances')}
 										checked={runningChecked}
 										indeterminate={runningIndeterminate}
 										onChange={(_, {checked}) => {
@@ -146,7 +151,7 @@ const Processes: React.FC<Props> = ({process, version, active, incidents, comple
 											labelText={
 												<Stack orientation="horizontal" gap={3}>
 													<RadioButtonChecked size={20} />
-													<div>Active</div>
+													<div>{t('operate.processes.filters.active')}</div>
 												</Stack>
 											}
 											checked={active}
@@ -159,7 +164,7 @@ const Processes: React.FC<Props> = ({process, version, active, incidents, comple
 											labelText={
 												<Stack orientation="horizontal" gap={3}>
 													<WarningFilled size={20} />
-													<div>Incidents</div>
+													<div>{t('operate.processes.filters.incidents')}</div>
 												</Stack>
 											}
 											checked={incidents}
@@ -172,7 +177,7 @@ const Processes: React.FC<Props> = ({process, version, active, incidents, comple
 								<Stack gap={1}>
 									<Checkbox
 										id="filter-finished-instances"
-										labelText="Finished Instances"
+										labelText={t('operate.processes.filters.finishedInstances')}
 										checked={finishedChecked}
 										indeterminate={finishedIndeterminate}
 										onChange={(_, {checked}) => {
@@ -185,7 +190,7 @@ const Processes: React.FC<Props> = ({process, version, active, incidents, comple
 											labelText={
 												<Stack orientation="horizontal" gap={3}>
 													<CheckmarkOutline size={20} />
-													<div>Completed</div>
+													<div>{t('operate.processes.filters.completed')}</div>
 												</Stack>
 											}
 											checked={completed}
@@ -198,7 +203,7 @@ const Processes: React.FC<Props> = ({process, version, active, incidents, comple
 											labelText={
 												<Stack orientation="horizontal" gap={3}>
 													<CanceledIcon size={20} />
-													<div>Canceled</div>
+													<div>{t('operate.processes.filters.canceled')}</div>
 												</Stack>
 											}
 											checked={canceled}
