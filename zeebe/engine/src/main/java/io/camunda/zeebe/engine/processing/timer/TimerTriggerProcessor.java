@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -113,15 +114,21 @@ public final class TimerTriggerProcessor implements TypedRecordProcessor<TimerRe
             timer.getTargetElementIdBuffer(),
             ExecutableCatchEvent.class);
     if (isStartEvent(elementInstanceKey)) {
-      final long processInstanceKey = keyGenerator.nextKey();
-      timer.setProcessInstanceKey(processInstanceKey);
-      stateWriter.appendFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
-      eventHandle.activateProcessInstanceForStartEvent(
-          processDefinitionKey,
-          processInstanceKey,
-          timer.getTargetElementIdBuffer(),
-          NO_VARIABLES,
-          tenantId);
+      if (deployedProcess.getState() == PersistedProcessState.DRAINING) {
+        // The definition is draining: never spawn a new instance. Still mark the timer as
+        // triggered so the command is consumed
+        stateWriter.appendFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
+      } else {
+        final long processInstanceKey = keyGenerator.nextKey();
+        timer.setProcessInstanceKey(processInstanceKey);
+        stateWriter.appendFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
+        eventHandle.activateProcessInstanceForStartEvent(
+            processDefinitionKey,
+            processInstanceKey,
+            timer.getTargetElementIdBuffer(),
+            NO_VARIABLES,
+            tenantId);
+      }
     } else {
       final var elementInstance = elementInstanceState.getInstance(elementInstanceKey);
       if (!eventHandle.canTriggerElement(elementInstance, timer.getTargetElementIdBuffer())) {
