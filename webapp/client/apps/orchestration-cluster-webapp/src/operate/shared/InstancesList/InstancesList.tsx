@@ -9,7 +9,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {ResizablePanel, SplitDirection} from '../ResizablePanel';
 import {Container, PanelContainer} from './styled';
-import {Frame, type FrameProps} from '../Frame';
+import {Frame, type FrameProps} from '../Frame/Frame';
 
 type Props = {
 	leftPanel?: React.ReactNode;
