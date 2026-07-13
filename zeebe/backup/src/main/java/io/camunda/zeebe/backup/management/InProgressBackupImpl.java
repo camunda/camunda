@@ -319,7 +319,7 @@ final class InProgressBackupImpl implements InProgressBackup {
       final var errorMessage =
           "No valid snapshots found for backup:\n"
               + snapshotValidationErrorMessage(validationResults);
-      LOG.atError().addKeyValue("backup", backupId).log(errorMessage);
+      LOG.atWarn().addKeyValue("backup", backupId).log(errorMessage);
       return Either.left(errorMessage);
     } else {
       final var validSnapshotCount = validSnapshots.size();
