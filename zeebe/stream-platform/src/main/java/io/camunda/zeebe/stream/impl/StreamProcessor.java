@@ -14,6 +14,7 @@ import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.SchedulingHints;
@@ -29,6 +30,7 @@ import io.camunda.zeebe.stream.impl.metrics.ScheduledTaskMetrics;
 import io.camunda.zeebe.stream.impl.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
+import io.camunda.zeebe.stream.impl.state.DbLastProcessedPositionState;
 import io.camunda.zeebe.stream.impl.state.StreamProcessorDbState;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
@@ -386,9 +388,11 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       return;
     }
     // the persist step of a round runs on a dedicated io-bound actor so the blocking RocksDB
-    // batch commit never occupies this (cpu-bound) actor; the driver is created only once that
+    // batch commits never occupy this (cpu-bound) actor; the driver is created only once that
     // actor was submitted, so a prepared round can always be handed to it
-    layeredPersistIo = new LayeredPersistIoActor(streamProcessorContext.partitionId());
+    layeredPersistIo =
+        new LayeredPersistIoActor(
+            streamProcessorContext.partitionId(), layeredDb.config().persistMinSliceBytes());
     actorSchedulingService
         .submitActor(layeredPersistIo, SchedulingHints.ioBound())
         .onComplete(
@@ -505,13 +509,29 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       // the db (and thus the domain context) may be reused across stream processors, e.g. on a
       // follower-to-leader transition; a predecessor that died mid-batch left uncommitted staged
       // writes behind — discard them, replay rebuilds their effects from the log. A predecessor
-      // that died between preparing and completing a persist round (or a pipeline merge) left it
-      // outstanding — abort it (the segments stay buffered and this processor retries them); safe
-      // because the predecessor closed its persist IO actor before its close/failure completed,
-      // and a new stream processor only starts after its predecessor fully stopped
+      // that died between preparing and completing a pipeline merge left it outstanding — abort it
+      // (the runs stay unmerged and this processor's merges retry them). A persist round left
+      // outstanding is instead completed FORWARD: its paced drain may have committed partial
+      // slices without the anchor, and re-draining it to completion here (idempotent,
+      // newest-wins, anchor in the final slice) restores the full-cut invariant before replay
+      // starts on the reused database — aborting would leave the torn partial-slice state in
+      // RocksDB, masked from layered readers but poisonous to anything reading it directly. All
+      // of this is safe because the predecessor closed its persist IO actor before its
+      // close/failure completed, and a new stream processor only starts after its predecessor
+      // fully stopped.
       layeredDb.defaultDomain().discardOpenBatch();
-      layeredDb.defaultDomain().abortStaleRound();
       layeredDb.defaultDomain().abortStaleMerge();
+      try {
+        layeredDb.defaultDomain().completeStaleRoundForward();
+      } catch (final RuntimeException e) {
+        // recoverable by design: the round completed as failed, its segments stay buffered and
+        // keep masking the partial slices, and this processor's next round retries them
+        LOG.warn(
+            "Failed to complete the persist round a predecessor of partition {} left outstanding;"
+                + " its segments stay buffered and the next persist round retries them",
+            partitionId,
+            e);
+      }
       transactionContext = layeredDb.layeredContext();
     } else {
       transactionContext = zeebeDb.createContext();
@@ -524,6 +544,18 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
         new StreamProcessorDbState(zeebeDb, transactionContext);
     streamProcessorContext.lastProcessedPositionState(
         streamProcessorDbState.getLastProcessedPositionState());
+
+    if (zeebeDb instanceof final LayeredZeebeDb<?> layeredDb) {
+      // the last-processed position is the recovery anchor, stored as a normal key of the DEFAULT
+      // column family (see the layered-state ADR): designate it so a paced drain defers it to a
+      // round's final slice — no partial slice may ever commit an anchor ahead of the state it
+      // describes
+      layeredDb
+          .defaultDomain()
+          .designateAnchorEntry(
+              ZbColumnFamilies.DEFAULT.name(),
+              DbLastProcessedPositionState.serializedPositionKey());
+    }
 
     final long snapshotPosition =
         streamProcessorDbState

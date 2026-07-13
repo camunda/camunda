@@ -57,6 +57,9 @@ public interface LayeredStoreMetrics {
   /** Records the duration of a round's persist step. */
   void observeRoundDuration(long elapsedNanos);
 
+  /** Counts a committed slice batch of a persist round (an unpaced round commits exactly one). */
+  void countPersistSlice();
+
   /** Counts one entry drained to the durable store, with its key/value bytes. */
   void countDrainedEntry(int keyBytes, int valueBytes);
 
@@ -137,6 +140,9 @@ public interface LayeredStoreMetrics {
 
     @Override
     public void observeRoundDuration(final long elapsedNanos) {}
+
+    @Override
+    public void countPersistSlice() {}
 
     @Override
     public void countDrainedEntry(final int keyBytes, final int valueBytes) {}

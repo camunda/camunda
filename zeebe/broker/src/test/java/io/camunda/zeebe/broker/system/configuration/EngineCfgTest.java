@@ -135,6 +135,8 @@ final class EngineCfgTest {
     // put/delete churn it elides is the main write-savings lever of the layered store
     assertThat(layeredState.isAbsorbDeletes()).isTrue();
     assertThat(layeredState.getPipelineSegmentLimit()).isEqualTo(4);
+    assertThat(layeredState.getPersistMinSliceBytes().toBytes()).isEqualTo(1024 * 1024L);
+    assertThat(layeredState.getPersistPacingTargetFraction()).isEqualTo(0.8);
   }
 
   @Test
@@ -152,6 +154,8 @@ final class EngineCfgTest {
     assertThat(layeredState.getMaxBufferedBytes().toBytes()).isEqualTo(8 * 1024 * 1024L);
     assertThat(layeredState.isAbsorbDeletes()).isFalse();
     assertThat(layeredState.getPipelineSegmentLimit()).isEqualTo(8);
+    assertThat(layeredState.getPersistMinSliceBytes().toBytes()).isEqualTo(2 * 1024 * 1024L);
+    assertThat(layeredState.getPersistPacingTargetFraction()).isEqualTo(0.5);
   }
 
   void assertListenerCfg(

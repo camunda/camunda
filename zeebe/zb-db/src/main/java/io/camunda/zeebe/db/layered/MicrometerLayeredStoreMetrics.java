@@ -44,6 +44,7 @@ final class MicrometerLayeredStoreMetrics implements LayeredStoreMetrics {
   private final Counter[] roundsByTrigger;
   private final Counter roundFailures;
   private final Timer roundDuration;
+  private final Counter persistSlices;
   private final Counter drainedEntries;
   private final Counter drainedBytes;
   private final Counter viewRotations;
@@ -86,6 +87,7 @@ final class MicrometerLayeredStoreMetrics implements LayeredStoreMetrics {
             .serviceLevelObjectives(LayeredStateMetricsDoc.PERSIST_DURATION.getTimerSLOs())
             .tag(LayeredStateKeyNames.DOMAIN.asString(), domain)
             .register(registry);
+    persistSlices = counter(LayeredStateMetricsDoc.PERSIST_SLICES);
     drainedEntries = counter(LayeredStateMetricsDoc.DRAINED_ENTRIES);
     drainedBytes = counter(LayeredStateMetricsDoc.DRAINED_BYTES);
     viewRotations = counter(LayeredStateMetricsDoc.VIEW_ROTATIONS);
@@ -153,6 +155,11 @@ final class MicrometerLayeredStoreMetrics implements LayeredStoreMetrics {
   }
 
   @Override
+  public void countPersistSlice() {
+    persistSlices.increment();
+  }
+
+  @Override
   public void countDrainedEntry(final int keyBytes, final int valueBytes) {
     drainedEntries.increment();
     drainedBytes.increment(keyBytes + (double) valueBytes);
@@ -198,6 +205,11 @@ final class MicrometerLayeredStoreMetrics implements LayeredStoreMetrics {
         LayeredKeyValueStore::activeBytes);
     layerGauge(
         LayeredStateMetricsDoc.BUFFERED_BYTES,
+        Layer.CAPTURED,
+        stores,
+        LayeredKeyValueStore::capturedBytes);
+    layerGauge(
+        LayeredStateMetricsDoc.BUFFERED_BYTES,
         Layer.PIPELINE,
         stores,
         LayeredKeyValueStore::pipelineBytes);
@@ -216,6 +228,11 @@ final class MicrometerLayeredStoreMetrics implements LayeredStoreMetrics {
         Layer.ACTIVE,
         stores,
         LayeredKeyValueStore::activeEntryCount);
+    layerGauge(
+        LayeredStateMetricsDoc.BUFFERED_ENTRIES,
+        Layer.CAPTURED,
+        stores,
+        LayeredKeyValueStore::capturedEntryCount);
     layerGauge(
         LayeredStateMetricsDoc.BUFFERED_ENTRIES,
         Layer.PIPELINE,

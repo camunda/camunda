@@ -39,6 +39,8 @@ public final class LayeredStateCfg implements ConfigurationEntry {
   private DataSize maxBufferedBytes = DataSize.ofBytes(DEFAULTS.maxBufferedBytes());
   private boolean absorbDeletes = DEFAULTS.absorbDeletes();
   private int pipelineSegmentLimit = DEFAULTS.pipelineSegmentLimit();
+  private DataSize persistMinSliceBytes = DataSize.ofBytes(DEFAULTS.persistMinSliceBytes());
+  private double persistPacingTargetFraction = DEFAULTS.persistPacingTargetFraction();
 
   public boolean isEnabled() {
     return enabled;
@@ -105,6 +107,33 @@ public final class LayeredStateCfg implements ConfigurationEntry {
     this.pipelineSegmentLimit = pipelineSegmentLimit;
   }
 
+  /**
+   * Minimum entry bytes per sub-batch slice of a paced persist drain: a round's drain to RocksDB
+   * commits slices of at least this size instead of one monolithic batch, spread across the persist
+   * interval (see {@link #getPersistPacingTargetFraction()}).
+   */
+  public DataSize getPersistMinSliceBytes() {
+    return persistMinSliceBytes;
+  }
+
+  public void setPersistMinSliceBytes(final DataSize persistMinSliceBytes) {
+    this.persistMinSliceBytes = persistMinSliceBytes;
+  }
+
+  /**
+   * The fraction of the persist interval a paced drain aims to finish within (checkpoint-spreading
+   * style, in (0, 1]): after each slice the drain waits while its progress runs ahead of
+   * elapsed-time over this fraction of the interval. The pacing is dropped (the drain finishes
+   * flat-out) when buffered state runs over capacity mid-round.
+   */
+  public double getPersistPacingTargetFraction() {
+    return persistPacingTargetFraction;
+  }
+
+  public void setPersistPacingTargetFraction(final double persistPacingTargetFraction) {
+    this.persistPacingTargetFraction = persistPacingTargetFraction;
+  }
+
   /** The store-library configuration equivalent of this entry, validated on construction. */
   public LayeredZeebeDbConfig toDbConfig() {
     return new LayeredZeebeDbConfig(
@@ -112,7 +141,9 @@ public final class LayeredStateCfg implements ConfigurationEntry {
         maxBufferedBytes.toBytes(),
         absorbDeletes,
         pipelineSegmentLimit,
-        persistInterval);
+        persistInterval,
+        persistMinSliceBytes.toBytes(),
+        persistPacingTargetFraction);
   }
 
   @Override
@@ -130,6 +161,10 @@ public final class LayeredStateCfg implements ConfigurationEntry {
         + absorbDeletes
         + ", pipelineSegmentLimit="
         + pipelineSegmentLimit
+        + ", persistMinSliceBytes="
+        + persistMinSliceBytes
+        + ", persistPacingTargetFraction="
+        + persistPacingTargetFraction
         + '}';
   }
 }

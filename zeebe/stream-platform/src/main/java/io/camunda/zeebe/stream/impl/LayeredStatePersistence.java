@@ -27,7 +27,11 @@ import org.slf4j.Logger;
  * Drives the persist cadence and the on-demand freezes of a {@link LayeredZeebeDb}'s engine domain
  * (experimental; only active when the layered-state flag is on). Rounds are prepared and completed
  * on the stream processor's actor, but their drain-and-commit step runs on a dedicated IO executor
- * (see {@link PersistIo}) so processing continues while buffered state moves to RocksDB:
+ * (see {@link PersistIo}) so processing continues while buffered state moves to RocksDB. The drain
+ * is <em>paced</em>: it commits sub-batch slices spread across {@code pacingTargetFraction ×
+ * persistInterval} (see {@link DrainPacer}), smoothing the IO instead of dumping one large batch —
+ * and a size trigger observed mid-round expedites the pacer, so the drain finishes flat-out while
+ * memory is under pressure:
  *
  * <ul>
  *   <li>{@link #onPeriodicTick()} — the regular persist cadence, invoked at the configured persist
@@ -84,6 +88,9 @@ final class LayeredStatePersistence {
   private final PersistIo io;
   private final Duration persistInterval;
   private final long maxBufferedBytes;
+  // the pacing budget of one round's sliced drain: pacingTargetFraction × persistInterval, so a
+  // paced round normally finishes before the next interval trigger would fire
+  private final long pacingBudgetNanos;
 
   /**
    * The completion of the single in-flight round, or null while none is; completes on the processor
@@ -101,6 +108,13 @@ final class LayeredStatePersistence {
 
   /** A size trigger observed while a round or merge was in flight; re-checked on completion. */
   private boolean sizeTriggerWhileInFlight;
+
+  /**
+   * The pacer of the single in-flight round, or null while none is — the owner's urgency hook: a
+   * size trigger observed mid-round {@link DrainPacer#expedite() expedites} it, so the drain stops
+   * pacing and finishes flat-out while memory is under pressure.
+   */
+  private DrainPacer inFlightPacer;
 
   /**
    * @param db the layered database the stream processor writes through
@@ -124,6 +138,8 @@ final class LayeredStatePersistence {
     domain = db.defaultDomain();
     persistInterval = db.config().persistInterval();
     maxBufferedBytes = db.config().maxBufferedBytes();
+    pacingBudgetNanos =
+        (long) (persistInterval.toNanos() * db.config().persistPacingTargetFraction());
     // build the coordinator eagerly: every layered column family must exist by now (they are all
     // created during recovery and record-processor init), and failing fast here beats failing on
     // the first persist round
@@ -262,6 +278,12 @@ final class LayeredStatePersistence {
     }
     if (roundInFlight() || mergeInFlight()) {
       sizeTriggerWhileInFlight = true;
+      if (inFlightPacer != null) {
+        // over budget while a round is already draining: stop pacing it — memory pressure beats
+        // checkpoint spreading, so the drain finishes flat-out and the follow-up round starts
+        // sooner
+        inFlightPacer.expedite();
+      }
       return;
     }
     if (domain.batchInFlight()) {
@@ -339,12 +361,15 @@ final class LayeredStatePersistence {
     final PersistRound round = domain.preparePersist(watermark(), trigger);
     final CompletableActorFuture<Throwable> completed = new CompletableActorFuture<>();
     inFlightRound = completed;
-    io.persist(round)
+    final DrainPacer pacer = new DrainPacer(pacingBudgetNanos, System.nanoTime());
+    inFlightPacer = pacer;
+    io.persist(round, pacer)
         .onComplete(
             (ignored, error) -> {
               final boolean success = error == null;
               domain.completePersist(round, success);
               inFlightRound = null;
+              inFlightPacer = null;
               if (!success) {
                 // recoverable by design: the segments stay in their pipelines and the next round
                 // retries them, while the log remains the durable source of everything buffered
@@ -412,10 +437,11 @@ final class LayeredStatePersistence {
   interface PersistIo {
 
     /**
-     * Runs {@link PersistRound#persist()} on an IO thread; the returned future completes
-     * exceptionally when the drain failed or never ran.
+     * Runs the round's drain on an IO thread — paced against the given pacer, in sub-batch slices
+     * (see {@link LayeredPersistIoActor}); the returned future completes once the final
+     * (anchor-carrying) slice committed, and exceptionally when the drain failed or never ran.
      */
-    ActorFuture<Void> persist(PersistRound round);
+    ActorFuture<Void> persist(PersistRound round, DrainPacer pacer);
 
     /**
      * Runs {@link MergeRound#merge()} on an IO thread; the returned future completes exceptionally

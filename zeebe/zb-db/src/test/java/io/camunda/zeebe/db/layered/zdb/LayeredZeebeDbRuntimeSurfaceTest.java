@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.ScopedColumnFamily;
 import java.io.File;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.agrona.CloseHelper;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -216,6 +217,54 @@ final class LayeredZeebeDbRuntimeSurfaceTest {
   }
 
   @Test
+  void shouldCompleteRoundLeftOutstandingByPredecessorForward() throws Exception {
+    // given a paced persist round a predecessor prepared and partially drained — one slice
+    // committed, no anchor — before it died (its persist IO has terminated)
+    final LayeredDomain domain = layered.defaultDomain();
+    layered.layeredContext().runInTransaction(() -> put(1, 100));
+    layered.layeredContext().runInTransaction(() -> put(2, 200));
+    final var round = domain.preparePersist(2, PersistTrigger.INTERVAL);
+    assertThat(round.persistSlice(1)).isFalse();
+    assertThat(domain.roundInFlight()).isTrue();
+
+    // when the successor completes the stale round forward
+    domain.completeStaleRoundForward();
+
+    // then the durable store holds the full cut — replay on the reused database never sees the
+    // torn partial-slice state — and nothing stayed buffered
+    assertThat(domain.roundInFlight()).isFalse();
+    assertThat(domain.hasBufferedWrites()).isFalse();
+    assertThat(passThroughGet(1)).isEqualTo(100);
+    assertThat(passThroughGet(2)).isEqualTo(200);
+    // and completing forward without an outstanding round is a no-op
+    domain.completeStaleRoundForward();
+  }
+
+  @Test
+  void shouldDeferDesignatedAnchorEntryOfSlicedDomainDrainToFinalSlice() throws Exception {
+    // given the anchor-carrying entry designated before the coordinator exists (as the stream
+    // processor does for the last-processed position during recovery)
+    final LayeredDomain domain = layered.defaultDomain();
+    domain.designateAnchorEntry(ColumnFamilies.ONE.name(), serializedKey(9));
+    layered.layeredContext().runInTransaction(() -> put(1, 100));
+    layered.layeredContext().runInTransaction(() -> put(9, 900));
+
+    // when a paced drain commits its data slices
+    final var round = domain.preparePersist(2, PersistTrigger.INTERVAL);
+    boolean done = round.persistSlice(1);
+    while (!done) {
+      // the anchor carrier must never land while data slices remain
+      assertThat(passThroughGet(9)).isNull();
+      done = round.persistSlice(1);
+    }
+    domain.completePersist(round, true);
+
+    // then the anchor carrier landed only with the final slice
+    assertThat(passThroughGet(1)).isEqualTo(100);
+    assertThat(passThroughGet(9)).isEqualTo(900);
+  }
+
+  @Test
   void shouldGetOrRegisterDomainByName() {
     // given a named domain
     final LayeredDomain registered = layered.domain("exporter");
@@ -378,6 +427,15 @@ final class LayeredZeebeDbRuntimeSurfaceTest {
     } finally {
       domain.viewPublisher().release(view);
     }
+  }
+
+  /** The serialized key bytes as the layered store keys the entry — for anchor designation. */
+  private static byte[] serializedKey(final long key) {
+    final DbLong dbKey = new DbLong();
+    dbKey.wrapLong(key);
+    final byte[] bytes = new byte[dbKey.getLength()];
+    dbKey.write(new UnsafeBuffer(bytes), 0);
+    return bytes;
   }
 
   private Long passThroughGet(final long key) {

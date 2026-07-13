@@ -60,7 +60,11 @@ final class LayeredStateStandaloneBrokerTest {
             .withWorkingDirectory(workingDirectory)
             .withProperty("zeebe.broker.experimental.engine.layeredState.enabled", "true")
             // short interval so the test exercises several periodic persist rounds
-            .withProperty("zeebe.broker.experimental.engine.layeredState.persistInterval", "500ms");
+            .withProperty("zeebe.broker.experimental.engine.layeredState.persistInterval", "500ms")
+            // tiny slices so every round exercises the paced multi-slice drain with its
+            // anchor-carrying final slice, not just the single-batch degenerate case
+            .withProperty(
+                "zeebe.broker.experimental.engine.layeredState.persistMinSliceBytes", "64B");
     broker.start().awaitCompleteTopology();
     client = newClient();
   }

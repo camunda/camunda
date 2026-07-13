@@ -42,16 +42,20 @@ read-through LRU cache, and at the bottom the RocksDB *delegate* — the only du
 watermark stamped on each segment ties its contents to a log position, which is what makes the log
 the sole recovery authority.
 
-**D2. Persist rounds are single-flight and three-step; the recovery anchor drains with the data.**
-A persist round moves drained segments to RocksDB in three steps: *prepare* on the owner thread
-(select segments, build the drain set), *persist* on an IO thread — writing one atomic RocksDB
-`WriteBatch` spanning all column families — and *complete* on the owner thread (drop drained
-segments, rotate reader views per D3). At most one round is in flight. The recovery anchor
-(`lastProcessedPosition`, stored in the DEFAULT column family) is a normal key in the drain set,
-not a separately-written marker: anchor and state move to RocksDB as one atomic cut. Consequently
-no torn recovery state — replay double-applying events already persisted, or holes where state
-persisted ahead of its anchor — is representable; RocksDB always contains a prefix-consistent cut
-of the log, and replay from the persisted anchor reconstructs the rest.
+**D2. Persist rounds are single-flight and three-step; the recovery anchor drains with the data,
+anchor-last.** A persist round moves drained segments to RocksDB in three steps: *prepare* on the
+owner thread (select segments, build the drain set), *persist* on an IO thread, and *complete* on
+the owner thread (drop drained segments, rotate reader views per D3). At most one round is in
+flight. The recovery anchor (`lastProcessedPosition`, stored in the DEFAULT column family) is a
+normal key in the drain set, not a separately-written marker. The persist step commits either one
+atomic `WriteBatch` (inline drains) or a *paced* sequence of sub-batch slices, each its own
+commit, spread across a configurable fraction of the persist interval (Postgres
+checkpoint-spreading style). Slicing relaxes the all-or-nothing cut to the **anchor-last
+invariant**: the anchor — and any entry designated as its carrier — rides only in the final slice,
+so durable state may transiently run *ahead* of the anchor (re-drained idempotently, newest-wins),
+but the anchor can never run ahead of the state it describes. The torn recovery states — replay
+double-applying events already persisted, or holes where state persisted ahead of its anchor —
+remain unrepresentable: replay from the persisted anchor always reconstructs the rest.
 
 **D3. The owner thread reads live layers; every other reader gets an immutable ReadOnlyView.**
 The stream processor's owner thread reads through staging → active → pipeline → delegate and sees
@@ -159,7 +163,25 @@ domain's buffered bytes reach the budget, whichever of size or age comes first).
 The persist step of D2 runs asynchronously: rounds are prepared and completed on the stream
 processor's actor while the drain-and-commit runs on a per-partition io-bound actor, with the
 pre-snapshot flush and the scheduled-task barrier awaiting in-flight rounds by chaining futures
-(never blocking the actor). Phase C is in place: the exporter director registers an `exporter`
+(never blocking the actor). Round preparation is O(1) per store: the active overlay is swapped out
+whole as a raw *captured tip* the drain walks directly on the IO actor — nothing is flattened on
+the processing thread; the tip is materialized into a real segment only when a freeze barrier
+needs a view-visible segment mid-round, or when the round fails. Captured bytes stay accounted in
+`bufferedBytes` until the round completes — capacity signals keep seeing pinned heap while a drain
+is in flight. The drain itself is paced per D2's anchor-last invariant: sub-batch slices of a
+configurable minimum size spread across `persistPacingTargetFraction × persistInterval`, with
+queued pipeline merges interleaving between slices, and a size trigger observed mid-round
+expediting the pacer so the drain finishes flat-out under memory pressure. Two consequences of
+slicing are deliberate: (1) a *direct* reader of committed RocksDB (pass-through contexts such as
+the deprecated query path) can observe a torn intermediate cut while a round's slices land —
+layered readers never can (the captured state keeps shadowing the delegate until completion), and
+the pre-snapshot flush awaits full round completion so snapshots never checkpoint a torn cut; (2)
+a successor taking over a reused database no longer aborts a predecessor's outstanding round — it
+*completes it forward* (re-drains it from scratch, anchor in the final slice) during recovery,
+restoring the full-cut invariant that partial slices may have suspended; aborting remains correct
+only for single-batch drains (the exporter domain's inline rounds). The last-processed position
+entry is designated as the anchor carrier at recovery, which is what pins it to a round's final
+slice. Phase C is in place: the exporter director registers an `exporter`
 ownership domain and drains its buffered positions at the persist cadence on its own actor, with
 the initial entries drained immediately so committed-state readers (snapshot selection, log
 compaction) never see an empty exporter column family while positions are buffered. The

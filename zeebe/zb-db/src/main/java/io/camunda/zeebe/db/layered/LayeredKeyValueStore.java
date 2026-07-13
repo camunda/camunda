@@ -26,6 +26,7 @@ import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.TreeMap;
 import java.util.function.BiConsumer;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A bytes-bounded, log-first layered store over a durable {@link BytesStore} delegate. Writes never
@@ -41,6 +42,11 @@ import java.util.function.BiConsumer;
  *       discards one batch — never previously committed state.
  *   <li><em>Active overlay</em> — everything promoted since the last {@link #freeze(long)}.
  *       Mutable, owner-thread only. Everything here is already durable in the log.
+ *   <li><em>Captured tip</em> — the active overlay an in-flight persist round swapped out in O(1)
+ *       (see {@link #beginPersist(long)}): immutable from the swap on, drained directly off the
+ *       owner thread without ever being flattened, readable here until the round completes.
+ *       Materialized into a real pipeline segment only when a freeze occasion needs a view-visible
+ *       segment mid-round (or when the round fails).
  *   <li><em>Pipeline</em> — frozen {@link FlatSegment}s, newest first. Immutable; safe to share
  *       with the persist IO thread and reader views. Freezing copies the entry bytes into pooled
  *       chunks (see {@link FlatSegment} for the lifetime rule: the pipeline retains its segments,
@@ -97,9 +103,9 @@ import java.util.function.BiConsumer;
  * #newestSegmentWatermark()}, {@link #approximateBytes()}) may additionally be polled by a metrics
  * scrape thread. They read only {@code volatile} mirrors the owner updates at its mutation points —
  * a scrape sees tear-free point-in-time values and never walks the owner-mutable structures.
- * Cross-thread access to the data itself happens only through immutable segments handed out by
- * {@link #beginPersist()} and {@link #segmentsNewestFirst()} — never through this class's mutable
- * layers.
+ * Cross-thread access to the data itself happens only through the immutable structures handed out
+ * by {@link #beginPersist(long)} (segments and the raw captured tip, whose map is never mutated
+ * after the swap) and {@link #segmentsNewestFirst()} — never through this class's mutable layers.
  */
 public final class LayeredKeyValueStore {
 
@@ -150,11 +156,22 @@ public final class LayeredKeyValueStore {
   private byte[] drainedKeyWatermark;
 
   // staging and active each pair a hash index (point lookups) with a sorted index (scans); the
-  // two indexes of a layer share the same Entry objects
+  // two indexes of a layer share the same Entry objects. The active maps are swapped out whole
+  // by beginPersist (O(1) capture), so they are not final.
   private final Map<ByteBuffer, Entry> stagingByKey = new HashMap<>();
   private final TreeMap<byte[], Entry> stagingSorted = new TreeMap<>(Arrays::compareUnsigned);
-  private final Map<ByteBuffer, Entry> activeByKey = new HashMap<>();
-  private final TreeMap<byte[], Entry> activeSorted = new TreeMap<>(Arrays::compareUnsigned);
+  private Map<ByteBuffer, Entry> activeByKey = new HashMap<>();
+  private TreeMap<byte[], Entry> activeSorted = new TreeMap<>(Arrays::compareUnsigned);
+
+  // the captured tip: the active overlay swapped out by an outstanding persist round (see
+  // beginPersist). Immutable from the swap on — the round's drain cursor walks the sorted map
+  // directly on the IO thread while reads here keep resolving it between the active overlay and
+  // the pipeline. Null when no raw tip exists; a freeze materializes it into a real pipeline
+  // segment first (views need segments), and completePersist drops or materializes it.
+  // Invariant: while the tip is raw, every pipeline segment is persisting.
+  private Map<ByteBuffer, Entry> capturedByKey;
+  private TreeMap<byte[], Entry> capturedSorted;
+  private long capturedWatermark = -1;
 
   // newest first; the segments of an outstanding persist round are the oldest ones — the last
   // persistingCount elements
@@ -177,10 +194,12 @@ public final class LayeredKeyValueStore {
   // owner-mutable maps or the pipeline list (see the Threading javadoc)
   private volatile long stagingBytes;
   private volatile long activeBytes;
+  private volatile long capturedBytes;
   private volatile long pipelineBytes;
   private volatile long cleanBytes;
   private volatile long stagingEntries;
   private volatile long activeEntries;
+  private volatile long capturedEntries;
   private volatile long pipelineEntries;
   private volatile long cleanEntries;
   private volatile int pipelineSegments;
@@ -337,6 +356,14 @@ public final class LayeredKeyValueStore {
       // a never-flushed active put does not count: it may still annihilate with a later delete
       return activeEntry.flushed();
     }
+    if (capturedByKey != null) {
+      final Entry captured = capturedByKey.get(mapKey);
+      if (captured != null) {
+        // captured by a persist round, so a live put reaches the delegate (drained now, or — after
+        // a failed round — from the pipeline later): the same rule as a frozen segment below
+        return !captured.tombstone() || captured.flushed();
+      }
+    }
     for (final FlatSegment segment : pipeline) {
       final int index = segment.indexOfKey(key);
       if (index >= 0) {
@@ -426,6 +453,11 @@ public final class LayeredKeyValueStore {
     if (entry == null) {
       entry = activeByKey.get(mapKey);
     }
+    if (entry == null && capturedByKey != null) {
+      // the raw captured tip sits between the active overlay and the pipeline: newer than every
+      // pipeline segment (all persisting while the tip is raw), older than post-capture writes
+      entry = capturedByKey.get(mapKey);
+    }
     if (entry != null) {
       return entry.value(); // null for a tombstone — which must not fall through
     }
@@ -479,9 +511,14 @@ public final class LayeredKeyValueStore {
    * tolerated there is well-defined here.
    */
   public void prefixScan(final byte[] prefix, final BiConsumer<byte[], byte[]> visitor) {
-    final List<Iterator<Entry>> layers = new ArrayList<>(2 + pipeline.size());
+    final List<Iterator<Entry>> layers = new ArrayList<>(3 + pipeline.size());
     layers.add(List.copyOf(prefixSelection(stagingSorted, prefix).values()).iterator());
     layers.add(List.copyOf(prefixSelection(activeSorted, prefix).values()).iterator());
+    if (capturedSorted != null) {
+      // immutable since its swap, so no point-in-time copy is needed: visitor writes land in
+      // staging and can never mutate the captured tip mid-scan
+      layers.add(prefixSelection(capturedSorted, prefix).values().iterator());
+    }
     for (final FlatSegment segment : pipeline) {
       layers.add(segment.range(prefix));
     }
@@ -508,7 +545,9 @@ public final class LayeredKeyValueStore {
    * and installs a fresh active overlay. Pointer swaps and one flatten — no delegate IO, and no
    * merging: the lifecycle driver checks {@link #mergeNeeded()} after freezes and runs the merge
    * (possibly off the owner thread). Staging must be empty (no batch in flight). A no-op if the
-   * active overlay is empty.
+   * active overlay is empty — except that a raw captured tip (see {@link #beginPersist(long)}) is
+   * always materialized into a real segment first, freeze occasions being exactly the moments a
+   * view is about to be published and views resolve segments only.
    */
   public void freeze(final long watermark) {
     if (!stagingByKey.isEmpty()) {
@@ -519,6 +558,7 @@ public final class LayeredKeyValueStore {
               + stagingByKey.size()
               + " write(s) is in flight");
     }
+    materializeCapturedTip();
     if (activeByKey.isEmpty()) {
       return;
     }
@@ -530,6 +570,42 @@ public final class LayeredKeyValueStore {
     activeBytes = 0;
     activeEntries = 0;
     refreshPipelineStats();
+  }
+
+  /**
+   * Flattens a raw captured tip into a real pipeline segment (owner thread; the round's drain
+   * cursor keeps walking the — immutable — map it captured, unaffected). The segment joins the
+   * round's persisting tail, so a successful completion drops it and a failed one leaves it as a
+   * normal frozen segment. A no-op when no raw tip exists.
+   */
+  private void materializeCapturedTip() {
+    if (capturedSorted == null) {
+      return;
+    }
+    if (pipeline.size() != persistingCount) {
+      // beginPersist marked every segment persisting and this method runs before any freeze
+      // prepends a newer one, so a raw tip implies an all-persisting pipeline
+      throw new IllegalStateException(
+          "expected every pipeline segment of store '"
+              + name
+              + "' to be persisting while its captured tip is raw, but "
+              + (pipeline.size() - persistingCount)
+              + " segment(s) are not");
+    }
+    final FlatSegment segment = FlatSegment.of(capturedSorted, capturedWatermark, chunkWriter);
+    pipeline.add(0, segment);
+    persistingCount++;
+    pipelineBytes += segment.byteSize();
+    clearCapturedTip();
+    refreshPipelineStats();
+  }
+
+  private void clearCapturedTip() {
+    capturedByKey = null;
+    capturedSorted = null;
+    capturedWatermark = -1;
+    capturedBytes = 0;
+    capturedEntries = 0;
   }
 
   /**
@@ -565,7 +641,7 @@ public final class LayeredKeyValueStore {
    * execute off the owner thread over the immutable segments. Merges are single-flight per store,
    * and mutually exclusive with persist rounds in one direction: a merge may start while a round is
    * outstanding (the captured run excludes the round's persisting tail by construction), but {@link
-   * #beginPersist()} refuses to start while a merge is outstanding — a round captures every
+   * #beginPersist(long)} refuses to start while a merge is outstanding — a round captures every
    * pipeline segment, and segments captured by a round must never concurrently merge.
    *
    * @throws IllegalStateException if a merge is already outstanding, or the non-persisting run has
@@ -647,14 +723,26 @@ public final class LayeredKeyValueStore {
   }
 
   /**
-   * Marks every current pipeline segment as persisting and returns them oldest-first for draining.
-   * The segments stay in the pipeline — readable and shadowing the delegate — until {@link
-   * #completePersist(boolean)}. Throws {@link IllegalStateException} if a persist is already
-   * outstanding (persist rounds are single-flight) or a merge is outstanding (a round captures
-   * every pipeline segment, and segments captured by a round must never concurrently merge — see
-   * {@link #beginMerge()}).
+   * Captures everything buffered for a persist round, in O(1): swaps the active overlay out whole
+   * as the round's raw <em>captured tip</em> — no flatten; the round's drain cursor walks the
+   * sorted map directly, off the owner thread — and marks every current pipeline segment as
+   * persisting. Tip and segments stay readable here (the tip between active overlay and pipeline)
+   * and shadow the delegate until {@link #completePersist(boolean)}. Staging must be empty (no
+   * batch in flight).
+   *
+   * <p>The captured bytes remain part of {@link #bufferedBytes()} (and thus {@link
+   * #approximateBytes()} / {@link #overCapacity()}) until the round completes successfully — they
+   * are still pinned heap, and a capacity signal computed while a round is in flight must keep
+   * seeing them.
+   *
+   * @param watermark the highest log position whose effects the active overlay contains — the
+   *     captured tip's freeze stamp
+   * @throws IllegalStateException if a persist is already outstanding (persist rounds are
+   *     single-flight), a merge is outstanding (a round captures every pipeline segment, and
+   *     segments captured by a round must never concurrently merge — see {@link #beginMerge()}), or
+   *     a batch is in flight (staging writes are not part of any durable cut yet)
    */
-  public List<FlatSegment> beginPersist() {
+  public PersistCapture beginPersist(final long watermark) {
     if (persisting) {
       throw new IllegalStateException(
           "expected no outstanding persist round for store '"
@@ -666,6 +754,14 @@ public final class LayeredKeyValueStore {
           "expected no outstanding merge for store '"
               + name
               + "' when starting a persist round, but one is in flight");
+    }
+    if (!stagingByKey.isEmpty()) {
+      throw new IllegalStateException(
+          "expected staging of store '"
+              + name
+              + "' to be empty when starting a persist round, but a batch with "
+              + stagingByKey.size()
+              + " write(s) is in flight");
     }
     persisting = true;
     persistingCount = pipeline.size();
@@ -687,22 +783,53 @@ public final class LayeredKeyValueStore {
     }
     final List<FlatSegment> oldestFirst = new ArrayList<>(pipeline);
     Collections.reverse(oldestFirst);
-    return List.copyOf(oldestFirst);
+    NavigableMap<byte[], Entry> tip = null;
+    long tipBytes = 0;
+    if (!activeByKey.isEmpty()) {
+      capturedByKey = activeByKey;
+      capturedSorted = activeSorted;
+      capturedWatermark = watermark;
+      activeByKey = new HashMap<>();
+      activeSorted = new TreeMap<>(Arrays::compareUnsigned);
+      capturedBytes = activeBytes;
+      capturedEntries = activeEntries;
+      activeBytes = 0;
+      activeEntries = 0;
+      // the tip is the newest frozen-equivalent state: keep the watermark mirror honest for the
+      // anchor-lag gauge (watermarks are monotonic, the max only guards degenerate stamps)
+      newestWatermark = Math.max(newestWatermark, watermark);
+      tip = capturedSorted;
+      tipBytes = capturedBytes;
+    }
+    return new PersistCapture(tip, tipBytes, List.copyOf(oldestFirst));
   }
 
   /**
-   * On success, drops the persisting segments: the delegate now holds the newest persisted version
-   * of every drained key, so reads fall through to it and repopulate the clean cache lazily via
-   * normal read-through. Retirement is deliberately lazy — eagerly copying every drained live value
-   * into the clean cache made completion cost proportional to the round's entry count in one
-   * owner-thread burst; dropping is O(segments), and only the keys actually read again pay a
-   * delegate probe. On failure, simply un-marks the segments — they stay in the pipeline and the
-   * next round retries them.
+   * What {@link #beginPersist(long)} captured: the raw tip (the swapped-out active overlay's sorted
+   * index, immutable from the swap on; null when the overlay was empty) and the pipeline segments,
+   * oldest first. The tip map may be read from the drain thread — the hand-off of this record to it
+   * must be a safe publication.
+   */
+  public record PersistCapture(
+      @Nullable NavigableMap<byte[], Entry> tip,
+      long tipBytes,
+      List<FlatSegment> segmentsOldestFirst) {}
+
+  /**
+   * On success, drops the persisting segments and the captured tip (raw or already materialized):
+   * the delegate now holds the newest persisted version of every drained key, so reads fall through
+   * to it and repopulate the clean cache lazily via normal read-through. Retirement is deliberately
+   * lazy — eagerly copying every drained live value into the clean cache made completion cost
+   * proportional to the round's entry count in one owner-thread burst; dropping is O(segments), and
+   * only the keys actually read again pay a delegate probe. On failure, un-marks the segments —
+   * they stay in the pipeline and the next round retries them — and a still-raw captured tip is
+   * materialized into a normal frozen segment, so the retry (and every freeze and view in between)
+   * treats it uniformly.
    *
    * <p>Dropping without re-flagging newer overlay versions as flushed is sound: any staging or
    * active version written over a persisting live put already carries {@code flushed=true}, because
-   * its write-time flushed check saw that live put in the pipeline (persisting segments stay in the
-   * pipeline until this call), and the layers are disjoint, so no clean-cache hit could have
+   * its write-time flushed check saw that live put in the pipeline or the captured tip (both stay
+   * readable until this call), and the layers are disjoint, so no clean-cache hit could have
    * short-circuited that check.
    */
   public void completePersist(final boolean success) {
@@ -711,6 +838,8 @@ public final class LayeredKeyValueStore {
           "expected an outstanding persist round for store '" + name + "', but there is none");
     }
     if (success) {
+      // the raw tip drained with the round; its bytes leave bufferedBytes only now
+      clearCapturedTip();
       final List<FlatSegment> persisted =
           pipeline.subList(pipeline.size() - persistingCount, pipeline.size());
       for (final FlatSegment segment : persisted) {
@@ -721,6 +850,10 @@ public final class LayeredKeyValueStore {
       }
       persisted.clear();
       refreshPipelineStats();
+    } else {
+      // while persistingCount still upholds the raw-tip invariant, flatten the tip into a normal
+      // frozen segment (it joins the tail, which is un-marked just below)
+      materializeCapturedTip();
     }
     persisting = false;
     persistingCount = 0;
@@ -751,30 +884,39 @@ public final class LayeredKeyValueStore {
   // Accounting
   // ------------------------------------------------------------------
 
-  /** Approximate heap footprint of staging + active + pipeline + clean together. */
+  /** Approximate heap footprint of staging + active + captured tip + pipeline + clean together. */
   public long approximateBytes() {
-    return stagingBytes + activeBytes + pipelineBytes + cleanBytes;
+    return stagingBytes + activeBytes + capturedBytes + pipelineBytes + cleanBytes;
   }
 
   /**
    * Approximate heap footprint of the pinned (not yet persisted) layers only: staging + active +
-   * pipeline, excluding the evictable read cache — the writes a persist round would drain.
+   * captured tip + pipeline, excluding the evictable read cache — the writes a persist round would
+   * (or currently does) drain. Deliberately includes the bytes captured by an in-flight round until
+   * it completes successfully: they are still pinned heap, and capacity signals (the future
+   * capacity ladder included) must keep seeing them while the drain runs.
    */
   public long bufferedBytes() {
-    return stagingBytes + activeBytes + pipelineBytes;
-  }
-
-  /** Whether any pinned layer (staging, active, pipeline) holds writes not yet persisted. */
-  public boolean hasBufferedWrites() {
-    return !stagingByKey.isEmpty() || !activeByKey.isEmpty() || !pipeline.isEmpty();
+    return stagingBytes + activeBytes + capturedBytes + pipelineBytes;
   }
 
   /**
-   * Whether the active overlay holds committed writes a {@link #freeze(long)} would capture —
-   * writes committed since the last freeze that read views cannot see yet.
+   * Whether any pinned layer (staging, active, captured tip, pipeline) holds writes not yet
+   * persisted.
+   */
+  public boolean hasBufferedWrites() {
+    return !stagingByKey.isEmpty()
+        || !activeByKey.isEmpty()
+        || capturedSorted != null
+        || !pipeline.isEmpty();
+  }
+
+  /**
+   * Whether a {@link #freeze(long)} would change what read views can see: committed writes in the
+   * active overlay, or a raw captured tip a freeze would materialize into a view-visible segment.
    */
   public boolean hasActiveWrites() {
-    return !activeByKey.isEmpty();
+    return !activeByKey.isEmpty() || capturedSorted != null;
   }
 
   /** The watermark of the newest frozen segment, or -1 if the pipeline is empty. */
@@ -788,6 +930,11 @@ public final class LayeredKeyValueStore {
 
   public long activeBytes() {
     return activeBytes;
+  }
+
+  /** Bytes of the raw captured tip of an in-flight persist round (see {@link #beginPersist}). */
+  public long capturedBytes() {
+    return capturedBytes;
   }
 
   public long pipelineBytes() {
@@ -804,6 +951,11 @@ public final class LayeredKeyValueStore {
 
   public long activeEntryCount() {
     return activeEntries;
+  }
+
+  /** Entries of the raw captured tip of an in-flight persist round (see {@link #beginPersist}). */
+  public long capturedEntryCount() {
+    return capturedEntries;
   }
 
   public long pipelineEntryCount() {
