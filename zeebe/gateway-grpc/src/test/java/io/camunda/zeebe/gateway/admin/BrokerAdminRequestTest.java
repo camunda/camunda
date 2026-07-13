@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.admin;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.BrokerMemberId;
+import io.camunda.zeebe.broker.client.api.dto.BrokerAdminRequest;
 import org.junit.jupiter.api.Test;
 
 class BrokerAdminRequestTest {
