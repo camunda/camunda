@@ -34,16 +34,6 @@ test.beforeAll(async ({request}) => {
   ]);
 
   const singleInstance = await createSingleInstance('operationsProcessA', 1);
-  // The demo operations only exist to populate the Operations panel (used by the
-  // "Infinite scrolling" test). Keep them on a dedicated instance so they do not
-  // contend with the single instance that the retry/cancel test operates on:
-  // 50 queued operations on that same instance otherwise saturate operation
-  // processing and the importer, delaying the cancel operation's success count
-  // and the instance's canceled state past the retry budget and causing flakes.
-  const demoOperationsInstance = await createSingleInstance(
-    'operationsProcessA',
-    1,
-  );
   const batchInstances = await createInstances('operationsProcessB', 1, 10);
 
   initialData = {
@@ -56,13 +46,6 @@ test.beforeAll(async ({request}) => {
       bpmnProcessId: 'operationsProcessB',
     })),
   };
-  await sleep(2500);
-  await waitForIncidents(request, demoOperationsInstance.processInstanceKey);
-  await createDemoOperations(
-    request,
-    demoOperationsInstance.processInstanceKey,
-    50,
-  );
   await sleep(1000);
   await waitForIncidents(
     request,
@@ -70,42 +53,19 @@ test.beforeAll(async ({request}) => {
   );
 });
 
+test.beforeEach(async ({page, loginPage, operateHomePage}) => {
+  await navigateToApp(page, 'operate');
+  await loginPage.login('demo', 'demo');
+  await expect(operateHomePage.operateBanner).toBeVisible();
+  await operateHomePage.clickProcessesTab();
+});
+
+test.afterEach(async ({page}, testInfo) => {
+  await captureScreenshot(page, testInfo);
+  await captureFailureVideo(page, testInfo);
+});
+
 test.describe('Operations', () => {
-  test.beforeEach(async ({page, loginPage, operateHomePage}) => {
-    await navigateToApp(page, 'operate');
-    await loginPage.login('demo', 'demo');
-    await expect(operateHomePage.operateBanner).toBeVisible();
-    await operateHomePage.clickProcessesTab();
-  });
-
-  test.afterEach(async ({page}, testInfo) => {
-    await captureScreenshot(page, testInfo);
-    await captureFailureVideo(page, testInfo);
-  });
-
-  test('Infinite scrolling', async ({operateOperationPanelPage}) => {
-    await test.step('Expand operations panel and verify initial batch loaded', async () => {
-      await operateOperationPanelPage.expandOperationIdField();
-
-      await expect
-        .poll(async () => {
-          return operateOperationPanelPage.getAllOperationEntries().count();
-        })
-        .toBe(20);
-    });
-
-    await test.step('Scroll to bottom and verify more operations loaded', async () => {
-      await operateOperationPanelPage
-        .getAllOperationEntries()
-        .nth(19)
-        .scrollIntoViewIfNeeded();
-
-      await expect(
-        operateOperationPanelPage.getAllOperationEntries(),
-      ).toHaveCount(40, {timeout: 30000});
-    });
-  });
-
   test('Retry and cancel single instance', async ({
     page,
     operateProcessesPage,
@@ -319,6 +279,53 @@ test.describe('Operations', () => {
           ).toBeVisible({timeout: 120000}),
         ),
       );
+    });
+  });
+});
+
+test.describe('Operations panel scrolling', () => {
+  // The 50 demo operations exist solely to populate the Operations panel for the
+  // "Infinite scrolling" test. They are RESOLVE_INCIDENT operations on an
+  // operationsProcessA instance whose unhandled-error incident cannot be cleared,
+  // so they perpetually requeue and permanently saturate Operate's shared
+  // operation-executor and importer. Creating them in a dedicated describe that
+  // runs AFTER the retry/cancel tests keeps that saturation from delaying the
+  // operations those tests assert on, which was the root cause of their flakiness.
+  test.beforeAll(async ({request}) => {
+    const demoOperationsInstance = await createSingleInstance(
+      'operationsProcessA',
+      1,
+    );
+    await sleep(2500);
+    await waitForIncidents(request, demoOperationsInstance.processInstanceKey);
+    await createDemoOperations(
+      request,
+      demoOperationsInstance.processInstanceKey,
+      50,
+    );
+    await sleep(1000);
+  });
+
+  test('Infinite scrolling', async ({operateOperationPanelPage}) => {
+    await test.step('Expand operations panel and verify initial batch loaded', async () => {
+      await operateOperationPanelPage.expandOperationIdField();
+
+      await expect
+        .poll(async () => {
+          return operateOperationPanelPage.getAllOperationEntries().count();
+        })
+        .toBe(20);
+    });
+
+    await test.step('Scroll to bottom and verify more operations loaded', async () => {
+      await operateOperationPanelPage
+        .getAllOperationEntries()
+        .nth(19)
+        .scrollIntoViewIfNeeded();
+
+      await expect(
+        operateOperationPanelPage.getAllOperationEntries(),
+      ).toHaveCount(40, {timeout: 30000});
     });
   });
 });
