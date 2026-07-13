@@ -18,6 +18,7 @@ import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionJoinApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionLeaveApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionReconfigurePriorityApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.StartPartitionScaleUpApplier;
+import io.camunda.zeebe.dynamic.config.changes.appliers.UpdateRoutingStateApplier;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
@@ -31,6 +32,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOper
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRedistributionCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRelocationCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.StartPartitionScaleUp;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
 
 public final class PartitionGroupConfigurationChangeAppliersImpl
     implements PartitionGroupConfigurationChangeAppliers {
@@ -92,6 +94,8 @@ public final class PartitionGroupConfigurationChangeAppliersImpl
             case final AwaitRelocationCompletion relocation ->
                 new AwaitRelocationCompletionApplier(partitionScalingChangeExecutor, relocation);
           };
+      case final UpdateRoutingState op ->
+          new UpdateRoutingStateApplier(op, partitionScalingChangeExecutor);
       default ->
           throw new UnsupportedOperationException(
               "No new-model applier implemented yet for %s".formatted(operation));
