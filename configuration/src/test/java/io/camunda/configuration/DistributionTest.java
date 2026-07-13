@@ -32,6 +32,7 @@ public class DistributionTest {
       properties = {
         "camunda.processing.engine.distribution.max-backoff-duration=10m",
         "camunda.processing.engine.distribution.redistribution-interval=20s",
+        "camunda.processing.engine.distribution.pause-command-distribution=true",
       })
   class WithOnlyUnifiedConfigSet {
     final BrokerBasedProperties brokerCfg;
@@ -44,7 +45,8 @@ public class DistributionTest {
     void shouldSetDistribution() {
       assertThat(brokerCfg.getExperimental().getEngine().getDistribution())
           .returns(Duration.ofMinutes(10), DistributionCfg::getMaxBackoffDuration)
-          .returns(Duration.ofSeconds(20), DistributionCfg::getRedistributionInterval);
+          .returns(Duration.ofSeconds(20), DistributionCfg::getRedistributionInterval)
+          .returns(true, DistributionCfg::isPauseCommandDistribution);
     }
   }
 
@@ -52,7 +54,8 @@ public class DistributionTest {
   @TestPropertySource(
       properties = {
         "zeebe.broker.experimental.engine.distribution.maxBackoffDuration=10m",
-        "zeebe.broker.experimental.engine.distribution.redistributionInterval=20s"
+        "zeebe.broker.experimental.engine.distribution.redistributionInterval=20s",
+        "zeebe.broker.experimental.engine.distribution.pauseCommandDistribution=true"
       })
   class WithOnlyLegacySet {
     final BrokerBasedProperties brokerCfg;
@@ -65,7 +68,8 @@ public class DistributionTest {
     void shouldSetDistributionFromLegacy() {
       assertThat(brokerCfg.getExperimental().getEngine().getDistribution())
           .returns(Duration.ofMinutes(10), DistributionCfg::getMaxBackoffDuration)
-          .returns(Duration.ofSeconds(20), DistributionCfg::getRedistributionInterval);
+          .returns(Duration.ofSeconds(20), DistributionCfg::getRedistributionInterval)
+          .returns(true, DistributionCfg::isPauseCommandDistribution);
     }
   }
 
@@ -75,9 +79,11 @@ public class DistributionTest {
         // new
         "camunda.processing.engine.distribution.max-backoff-duration=10m",
         "camunda.processing.engine.distribution.redistribution-interval=20s",
+        "camunda.processing.engine.distribution.pause-command-distribution=true",
         // legacy
         "zeebe.broker.experimental.engine.distribution.maxBackoffDuration=99m",
-        "zeebe.broker.experimental.engine.distribution.redistributionInterval=99s"
+        "zeebe.broker.experimental.engine.distribution.redistributionInterval=99s",
+        "zeebe.broker.experimental.engine.distribution.pauseCommandDistribution=false"
       })
   class WithNewAndLegacySet {
     final BrokerBasedProperties brokerCfg;
@@ -90,7 +96,8 @@ public class DistributionTest {
     void shouldSetDistributionFromNew() {
       assertThat(brokerCfg.getExperimental().getEngine().getDistribution())
           .returns(Duration.ofMinutes(10), DistributionCfg::getMaxBackoffDuration)
-          .returns(Duration.ofSeconds(20), DistributionCfg::getRedistributionInterval);
+          .returns(Duration.ofSeconds(20), DistributionCfg::getRedistributionInterval)
+          .returns(true, DistributionCfg::isPauseCommandDistribution);
     }
   }
 }
