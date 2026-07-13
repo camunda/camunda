@@ -89,11 +89,11 @@ public class PhysicalTenantWebappClientConfigRewriteAdvice implements ResponseBo
     }
     final String prefix = PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT + physicalTenantId;
     final String contextPath = servletRequest.getServletRequest().getContextPath();
-    return prefixField(
-        prefixField(body, CONTEXT_PATH, contextPath, prefix), BASE_NAME, contextPath, prefix);
+    return rewritePathField(
+        rewritePathField(body, CONTEXT_PATH, contextPath, prefix), BASE_NAME, contextPath, prefix);
   }
 
-  private static String prefixField(
+  private static String rewritePathField(
       final String body,
       final Pattern field,
       final String contextPath,
@@ -102,17 +102,18 @@ public class PhysicalTenantWebappClientConfigRewriteAdvice implements ResponseBo
     if (!matcher.find()) {
       return body;
     }
-    final String existingPath = matcher.group(2);
-    final String afterContextPath =
-        existingPath.startsWith(contextPath)
-            ? existingPath.substring(contextPath.length())
-            : existingPath;
+    final String rewrittenPath =
+        insertAfterContextPath(matcher.group(2), contextPath, physicalTenantPrefix);
     return matcher.replaceFirst(
-        Matcher.quoteReplacement(
-            matcher.group(1)
-                + contextPath
-                + physicalTenantPrefix
-                + afterContextPath
-                + matcher.group(3)));
+        Matcher.quoteReplacement(matcher.group(1) + rewrittenPath + matcher.group(3)));
+  }
+
+  /** Inserts the physical-tenant segment right after the servlet context path. */
+  private static String insertAfterContextPath(
+      final String path, final String contextPath, final String physicalTenantPrefix) {
+    if (!path.startsWith(contextPath)) {
+      return physicalTenantPrefix + path;
+    }
+    return contextPath + physicalTenantPrefix + path.substring(contextPath.length());
   }
 }
