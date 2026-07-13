@@ -44,7 +44,7 @@ final class LayeredViewLifecycleTest {
 
   private LayeredStoreCoordinator newCoordinator(final LayeredKeyValueStore... stores) {
     return new LayeredStoreCoordinator(
-        List.of(stores), state.sink(), snapshots, publisher::publish);
+        List.of(stores), state.sink(), snapshots, publisher::publish, LayeredStoreMetrics.noop());
   }
 
   private void runRound(final LayeredStoreCoordinator coordinator, final long watermark)

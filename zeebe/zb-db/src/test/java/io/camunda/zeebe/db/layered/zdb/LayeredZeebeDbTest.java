@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.ColumnFamilyScope;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.protocol.ScopedColumnFamily;
 import java.io.File;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import org.agrona.CloseHelper;
@@ -322,7 +323,7 @@ final class LayeredZeebeDbTest {
         });
 
     // when a full persist round runs
-    final var coordinator = layered.coordinator();
+    final var coordinator = layered.defaultDomain().coordinator();
     final var round = coordinator.prepareRound(42);
     round.persist();
     coordinator.completeRound(round, true);
@@ -355,7 +356,7 @@ final class LayeredZeebeDbTest {
           upsertOne(1, 100);
           upsertPosition(42);
         });
-    final var coordinator = layered.coordinator();
+    final var coordinator = layered.defaultDomain().coordinator();
     final var round = coordinator.prepareRound(42);
     round.persist();
     coordinator.completeRound(round, true);
@@ -396,7 +397,7 @@ final class LayeredZeebeDbTest {
     layeredContext.runInTransaction(() -> upsertOne(1, 100));
 
     // when
-    final var coordinator = layered.coordinator();
+    final var coordinator = layered.defaultDomain().coordinator();
     final var round = coordinator.prepareRound(1);
     round.persist();
     coordinator.completeRound(round, true);
@@ -413,13 +414,16 @@ final class LayeredZeebeDbTest {
   void shouldReportOverCapacityWithTinyBudget() {
     // given a facade whose stores hold at most one byte; it shares the inner database with the
     // default facade, which owns closing it — so this one is deliberately never closed
-    final var tiny = new LayeredZeebeDb<>(inner, new LayeredZeebeDbConfig(1, false, 4));
+    final var tiny =
+        new LayeredZeebeDb<>(
+            inner,
+            new LayeredZeebeDbConfig(1, false, 4, Duration.ofSeconds(1), Duration.ofMillis(250)));
     final TransactionContext tinyContext = tiny.layeredContext();
     final DbLong key = new DbLong();
     final DbLong value = new DbLong();
     final ColumnFamily<DbLong, DbLong> tinyColumnFamily =
         tiny.createColumnFamily(ColumnFamilies.TWO, tinyContext, key, value);
-    assertThat(tiny.overCapacity()).isFalse();
+    assertThat(tiny.defaultDomain().overCapacity()).isFalse();
 
     // when a committed write pins more bytes than the budget
     tinyContext.runInTransaction(
@@ -430,13 +434,13 @@ final class LayeredZeebeDbTest {
         });
 
     // then
-    assertThat(tiny.overCapacity()).isTrue();
+    assertThat(tiny.defaultDomain().overCapacity()).isTrue();
   }
 
   @Test
   void shouldRejectNewLayeredColumnFamilyAfterCoordinatorIsBuilt() {
     // given
-    layered.coordinator();
+    layered.defaultDomain().coordinator();
 
     // when / then
     assertThatThrownBy(

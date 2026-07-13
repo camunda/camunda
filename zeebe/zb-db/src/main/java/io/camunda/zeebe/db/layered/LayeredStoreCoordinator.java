@@ -81,14 +81,6 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
   private volatile PersistRound outstandingRound;
   private volatile long lastPersistedAnchor = -1;
 
-  public LayeredStoreCoordinator(
-      final Collection<LayeredKeyValueStore> stores,
-      final PersistSink sink,
-      final SnapshotSource snapshots,
-      final Consumer<ReadOnlyView> viewListener) {
-    this(stores, sink, snapshots, viewListener, LayeredStoreMetrics.noop());
-  }
-
   /**
    * @param stores the stores forming the durability unit; names must be unique
    * @param sink creates the atomic persist batches and reads the anchor at recovery
@@ -96,7 +88,8 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
    * @param viewListener receives every newly published view; the coordinator releases its reference
    *     on the previous view once the new one is published, so the previous snapshot closes when
    *     its last reader releases (see the class javadoc's view lifecycle)
-   * @param metrics receives the persist-round and view instrumentation of this durability unit
+   * @param metrics receives the persist-round and view instrumentation of this durability unit (use
+   *     {@link LayeredStoreMetrics#noop()} for uninstrumented wirings)
    */
   public LayeredStoreCoordinator(
       final Collection<LayeredKeyValueStore> stores,

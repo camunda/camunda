@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Consumer;
 
 /**
  * One single-owner durability domain of a {@link LayeredZeebeDb}: its own owner-thread {@link
@@ -120,33 +119,6 @@ public final class LayeredDomain {
               storesByColumnFamily.values(), sink, snapshotSource, viewPublisher::publish, metrics);
       metrics.registerStoreGauges(storesByColumnFamily.values());
     }
-    return coordinator;
-  }
-
-  /**
-   * The coordinator driving this domain's freezes and persist rounds, with the given listener
-   * receiving every published {@link ReadOnlyView} in addition to {@link #viewPublisher()}. Must be
-   * the domain's first {@code coordinator} call.
-   */
-  public LayeredStoreCoordinator coordinator(final Consumer<ReadOnlyView> viewListener) {
-    Objects.requireNonNull(viewListener, "viewListener");
-    if (coordinator != null) {
-      throw new IllegalStateException(
-          ("expected the view listener of domain '%s' to be registered before the coordinator is"
-                  + " built, but one already exists")
-              .formatted(name));
-    }
-    coordinator =
-        new LayeredStoreCoordinator(
-            storesByColumnFamily.values(),
-            sink,
-            snapshotSource,
-            view -> {
-              viewPublisher.publish(view);
-              viewListener.accept(view);
-            },
-            metrics);
-    metrics.registerStoreGauges(storesByColumnFamily.values());
     return coordinator;
   }
 

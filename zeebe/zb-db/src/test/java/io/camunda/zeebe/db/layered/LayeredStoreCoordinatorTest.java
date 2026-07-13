@@ -38,7 +38,8 @@ final class LayeredStoreCoordinatorTest {
   }
 
   private LayeredStoreCoordinator newCoordinator(final LayeredKeyValueStore... stores) {
-    return new LayeredStoreCoordinator(List.of(stores), sink, state.snapshotSource(), views::add);
+    return new LayeredStoreCoordinator(
+        List.of(stores), sink, state.snapshotSource(), views::add, LayeredStoreMetrics.noop());
   }
 
   @Test
@@ -421,7 +422,11 @@ final class LayeredStoreCoordinatorTest {
       }
       try (final LayeredStoreCoordinator coordinator =
           new LayeredStoreCoordinator(
-              stores.values(), recordingSink, trialState.snapshotSource(), view -> {})) {
+              stores.values(),
+              recordingSink,
+              trialState.snapshotSource(),
+              view -> {},
+              LayeredStoreMetrics.noop())) {
         long watermark = 0;
         for (int freeze = 1 + random.nextInt(4); freeze > 0; freeze--) {
           for (final LayeredKeyValueStore store : stores.values()) {

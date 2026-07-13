@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.ColumnFamilyScope;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.protocol.ScopedColumnFamily;
 import java.io.File;
+import java.time.Duration;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -151,7 +152,10 @@ final class LayeredZeebeDbDomainsTest {
   void shouldReportOverCapacityPerDomain() {
     // given a facade whose stores hold at most one byte; it shares the inner database with the
     // default facade, which owns closing it — so this one is deliberately never closed
-    final var tiny = new LayeredZeebeDb<>(inner, new LayeredZeebeDbConfig(1, false, 4));
+    final var tiny =
+        new LayeredZeebeDb<>(
+            inner,
+            new LayeredZeebeDbConfig(1, false, 4, Duration.ofSeconds(1), Duration.ofMillis(250)));
     final LayeredDomain domainA = tiny.registerDomain("a");
     final LayeredDomain domainB = tiny.registerDomain("b");
     final ColumnFamily<DbLong, DbLong> oneInA =
@@ -161,10 +165,9 @@ final class LayeredZeebeDbDomainsTest {
     // when only domain A pins more bytes than the budget
     domainA.context().runInTransaction(() -> put(oneInA, 1, -1));
 
-    // then the signal is per domain, and the facade-wide signal aggregates over all domains
+    // then the signal is per domain — each domain schedules its own persist rounds
     assertThat(domainA.overCapacity()).isTrue();
     assertThat(domainB.overCapacity()).isFalse();
-    assertThat(tiny.overCapacity()).isTrue();
   }
 
   @Test
@@ -223,7 +226,7 @@ final class LayeredZeebeDbDomainsTest {
 
     // when / then the convenience surface resolves to the very same domain
     assertThat(layered.layeredContext()).isSameAs(engine.context());
-    assertThat(layered.coordinator()).isSameAs(engine.coordinator());
+    assertThat(layered.defaultDomain()).isSameAs(engine);
   }
 
   @Test

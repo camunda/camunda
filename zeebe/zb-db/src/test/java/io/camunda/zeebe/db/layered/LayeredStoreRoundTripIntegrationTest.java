@@ -66,7 +66,11 @@ final class LayeredStoreRoundTripIntegrationTest {
     final LayeredKeyValueStore storeB = newStore(STORE_B);
     coordinator =
         new LayeredStoreCoordinator(
-            List.of(storeA, storeB), backing.sink(), backing.snapshotSource(), view -> {});
+            List.of(storeA, storeB),
+            backing.sink(),
+            backing.snapshotSource(),
+            view -> {},
+            LayeredStoreMetrics.noop());
 
     storeA.put(bytes(1), bytes(10));
     storeB.put(bytes(2), bytes(20));
@@ -116,7 +120,11 @@ final class LayeredStoreRoundTripIntegrationTest {
     final LayeredKeyValueStore storeA = newStore(STORE_A);
     coordinator =
         new LayeredStoreCoordinator(
-            List.of(storeA), backing.sink(), backing.snapshotSource(), view -> {});
+            List.of(storeA),
+            backing.sink(),
+            backing.snapshotSource(),
+            view -> {},
+            LayeredStoreMetrics.noop());
     storeA.put(bytes(1), bytes(10));
     storeA.promote();
     final PersistRound round = coordinator.prepareRound(42);
@@ -157,7 +165,8 @@ final class LayeredStoreRoundTripIntegrationTest {
               synchronized (handoff) {
                 latestView.set(view);
               }
-            });
+            },
+            LayeredStoreMetrics.noop());
     final AtomicBoolean writerDone = new AtomicBoolean();
 
     // when -- the writer loops rounds while the reader continuously re-grabs the latest view

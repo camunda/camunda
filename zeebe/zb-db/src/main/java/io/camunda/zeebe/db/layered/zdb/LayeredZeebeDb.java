@@ -16,7 +16,6 @@ import io.camunda.zeebe.db.impl.DbBytes;
 import io.camunda.zeebe.db.layered.LayeredKeyValueStore;
 import io.camunda.zeebe.db.layered.LayeredStoreCoordinator;
 import io.camunda.zeebe.db.layered.LayeredStoreMetrics;
-import io.camunda.zeebe.db.layered.ReadOnlyView;
 import io.camunda.zeebe.db.layered.SnapshotSource;
 import io.camunda.zeebe.db.layered.typed.LayeredColumnFamily;
 import io.camunda.zeebe.protocol.EnumValue;
@@ -28,7 +27,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
 
 /**
  * A decorator making the layered state store usable through the existing {@link ZeebeDb} surface,
@@ -51,10 +49,9 @@ import java.util.function.Consumer;
  * in a domain's atomic persist rounds; rounds of different domains are separate inner transactions,
  * so <b>cross-domain atomicity is intentionally not provided</b> (see {@link LayeredDomain}).
  *
- * <p><b>Default domain:</b> {@link #layeredContext()}, {@link #coordinator()} and {@link
- * #coordinator(Consumer)} are conveniences over a default domain named {@value
- * #DEFAULT_DOMAIN_NAME}, registered on first use — single-domain wirings need never touch the
- * registry.
+ * <p><b>Default domain:</b> {@link #layeredContext()} and {@link #defaultDomain()} are conveniences
+ * over a default domain named {@value #DEFAULT_DOMAIN_NAME}, registered on first use —
+ * single-domain wirings need never touch the registry.
  *
  * <p><b>Lifecycle:</b> create all of a domain's layered column families before that domain's first
  * {@code coordinator()} call — the coordinator captures the store set, so creating a <em>new</em>
@@ -241,33 +238,6 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType
    */
   public TransactionContext layeredContext() {
     return defaultDomain().context();
-  }
-
-  /**
-   * The default domain's coordinator; see {@link LayeredDomain#coordinator()}. Convenience over
-   * {@link #registerDomain(String)} for single-domain wirings.
-   */
-  public LayeredStoreCoordinator coordinator() {
-    return defaultDomain().coordinator();
-  }
-
-  /**
-   * The default domain's coordinator with a view listener; see {@link
-   * LayeredDomain#coordinator(Consumer)}.
-   */
-  public LayeredStoreCoordinator coordinator(final Consumer<ReadOnlyView> viewListener) {
-    return defaultDomain().coordinator(viewListener);
-  }
-
-  /**
-   * Whether any domain's layered stores hold more pinned (un-evictable) bytes than their budget —
-   * the signal to schedule a persist round now. Per-domain scheduling should prefer {@link
-   * LayeredDomain#overCapacity()}.
-   */
-  public boolean overCapacity() {
-    synchronized (domainRegistrationLock) {
-      return domainsByName.values().stream().anyMatch(LayeredDomain::overCapacity);
-    }
   }
 
   /** The configuration all of this facade's layered stores were created with. */

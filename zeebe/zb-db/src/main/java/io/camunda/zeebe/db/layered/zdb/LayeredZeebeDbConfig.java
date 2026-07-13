@@ -66,29 +66,6 @@ public record LayeredZeebeDbConfig(
     }
   }
 
-  public LayeredZeebeDbConfig(
-      final long maxBytesPerStore, final boolean absorbDeletes, final int pipelineSegmentLimit) {
-    this(
-        maxBytesPerStore,
-        absorbDeletes,
-        pipelineSegmentLimit,
-        DEFAULT_PERSIST_INTERVAL,
-        DEFAULT_FREEZE_INTERVAL);
-  }
-
-  public LayeredZeebeDbConfig(
-      final long maxBytesPerStore,
-      final boolean absorbDeletes,
-      final int pipelineSegmentLimit,
-      final Duration persistInterval) {
-    this(
-        maxBytesPerStore,
-        absorbDeletes,
-        pipelineSegmentLimit,
-        persistInterval,
-        DEFAULT_FREEZE_INTERVAL);
-  }
-
   public static LayeredZeebeDbConfig defaults() {
     return new LayeredZeebeDbConfig(
         DEFAULT_MAX_BYTES_PER_STORE,
