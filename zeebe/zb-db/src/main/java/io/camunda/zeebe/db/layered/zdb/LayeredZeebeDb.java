@@ -95,6 +95,11 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType
   private final Map<String, LayeredDomain> domainsByName = new LinkedHashMap<>();
   private final Map<String, LayeredDomain> ownerByColumnFamily = new ConcurrentHashMap<>();
 
+  // column families ever handed out through a pass-through context: such an accessor can write
+  // the wrapped database outside persist rounds, so the layered store's absence watermark (whose
+  // claims assume the delegate gains keys only through drains) must not run for them
+  private final Map<String, Boolean> passThroughColumnFamilies = new ConcurrentHashMap<>();
+
   /** Creates a facade whose coordinator views read through the unpinned fallback source. */
   public LayeredZeebeDb(final ZeebeDb<ColumnFamilyType> inner, final LayeredZeebeDbConfig config) {
     this(inner, config, null);
@@ -127,6 +132,17 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType
           final ValueType valueInstance) {
     final LayeredDomain domain = domainOf(context);
     if (domain == null) {
+      // the pass-through accessor may write the wrapped database directly, behind the back of a
+      // layered store on the same column family — provable-absence claims are unsound from here
+      // on, whichever order the accessors were created in
+      passThroughColumnFamilies.put(columnFamily.name(), Boolean.TRUE);
+      final LayeredDomain owner = ownerByColumnFamily.get(columnFamily.name());
+      if (owner != null) {
+        final LayeredKeyValueStore store = owner.stores().get(columnFamily.name());
+        if (store != null) {
+          store.disableAbsenceWatermark();
+        }
+      }
       return inner.createColumnFamily(columnFamily, context, keyInstance, valueInstance);
     }
     final String name = columnFamily.name();
@@ -312,6 +328,12 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType
         config.absorbDeletes(),
         config.pipelineSegmentLimit(),
         domain.metrics(),
-        domain.chunkWriter());
+        domain.chunkWriter(),
+        // an empty delegate column family (a fresh database) with no pass-through accessor
+        // enables the absence watermark; after a restart over existing state it stays disabled —
+        // the wrapped database then holds keys this store never drained, which no drained-key
+        // bound can cover
+        !passThroughColumnFamilies.containsKey(name)
+            && inner.isEmpty(columnFamily, domain.delegateReadContext()));
   }
 }

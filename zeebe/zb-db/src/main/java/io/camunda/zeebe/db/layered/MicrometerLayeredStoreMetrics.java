@@ -37,6 +37,8 @@ final class MicrometerLayeredStoreMetrics implements LayeredStoreMetrics {
   private final Counter cleanCacheHits;
   private final Counter delegateReadThroughs;
   private final Counter[] flushedPointReadsByKind;
+  private final Counter[] flushedProbesElidedByKind;
+  private final Counter absenceWatermarkReads;
   private final Counter pipelineMerges;
   private final Counter pipelineMergesSkipped;
   private final Counter[] roundsByTrigger;
@@ -59,10 +61,14 @@ final class MicrometerLayeredStoreMetrics implements LayeredStoreMetrics {
     delegateReadThroughs = readCounter(LayeredStateMetricsDoc.READS, ReadSource.DELEGATE);
     final WriteKind[] writeKinds = WriteKind.values();
     flushedPointReadsByKind = new Counter[writeKinds.length];
+    flushedProbesElidedByKind = new Counter[writeKinds.length];
     for (final WriteKind kind : writeKinds) {
       flushedPointReadsByKind[kind.ordinal()] =
           writeKindCounter(LayeredStateMetricsDoc.FLUSHED_POINT_READS, kind);
+      flushedProbesElidedByKind[kind.ordinal()] =
+          writeKindCounter(LayeredStateMetricsDoc.FLUSHED_PROBES_ELIDED, kind);
     }
+    absenceWatermarkReads = readCounter(LayeredStateMetricsDoc.READS, ReadSource.ABSENCE_WATERMARK);
     pipelineMerges = counter(LayeredStateMetricsDoc.PIPELINE_MERGES);
     pipelineMergesSkipped = counter(LayeredStateMetricsDoc.PIPELINE_MERGES_SKIPPED);
     final PersistTrigger[] triggers = PersistTrigger.values();
@@ -109,6 +115,16 @@ final class MicrometerLayeredStoreMetrics implements LayeredStoreMetrics {
   @Override
   public void countFlushedPointRead(final WriteKind kind) {
     flushedPointReadsByKind[kind.ordinal()].increment();
+  }
+
+  @Override
+  public void countFlushedProbeElided(final WriteKind kind) {
+    flushedProbesElidedByKind[kind.ordinal()].increment();
+  }
+
+  @Override
+  public void countAbsenceWatermarkRead() {
+    absenceWatermarkReads.increment();
   }
 
   @Override

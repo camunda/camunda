@@ -33,6 +33,12 @@ public interface LayeredStoreMetrics {
   /** Counts a delegate point read made to compute an exact flushed flag at write time. */
   void countFlushedPointRead(LayeredStateMetricsDoc.WriteKind kind);
 
+  /** Counts a write-time flushed probe elided by the absence watermark. */
+  void countFlushedProbeElided(LayeredStateMetricsDoc.WriteKind kind);
+
+  /** Counts a point read answered by the absence watermark (provably never persisted). */
+  void countAbsenceWatermarkRead();
+
   /** Counts an in-memory merge collapsing a pipeline back under its segment limit. */
   void countPipelineMerge();
 
@@ -110,6 +116,12 @@ public interface LayeredStoreMetrics {
 
     @Override
     public void countFlushedPointRead(final LayeredStateMetricsDoc.WriteKind kind) {}
+
+    @Override
+    public void countFlushedProbeElided(final LayeredStateMetricsDoc.WriteKind kind) {}
+
+    @Override
+    public void countAbsenceWatermarkRead() {}
 
     @Override
     public void countPipelineMerge() {}

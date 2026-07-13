@@ -11,12 +11,15 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.db.layered.segment.ChunkPool;
+import io.camunda.zeebe.db.layered.segment.ChunkWriter;
 import io.camunda.zeebe.db.layered.segment.FlatSegment;
+import io.camunda.zeebe.db.layered.util.CountingBytesStore;
 import io.camunda.zeebe.db.layered.util.InMemoryDurableState;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.BiConsumer;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -368,15 +371,15 @@ final class LayeredKeyValueStoreLifecycleTest {
     putPromoteFreeze(store, "key", "value", 1L);
     drainToDelegate(store.beginPersist());
     store.completePersist(true);
-    final int getsAfterPersist = counting.gets;
+    final int getsAfterPersist = counting.gets();
 
     // when -- the first read falls through to the delegate and caches the value
     assertThat(store.get(bytes("key"))).isEqualTo(bytes("value"));
 
     // then -- exactly one probe; the second read is served by the clean cache
-    assertThat(counting.gets).isEqualTo(getsAfterPersist + 1);
+    assertThat(counting.gets()).isEqualTo(getsAfterPersist + 1);
     assertThat(store.get(bytes("key"))).isEqualTo(bytes("value"));
-    assertThat(counting.gets).isEqualTo(getsAfterPersist + 1);
+    assertThat(counting.gets()).isEqualTo(getsAfterPersist + 1);
   }
 
   @Test
@@ -393,7 +396,7 @@ final class LayeredKeyValueStoreLifecycleTest {
     store.freeze(1L);
 
     // then -- one delegate probe total, and the insert carries exactly flushed=false
-    assertThat(counting.gets).isEqualTo(1);
+    assertThat(counting.gets()).isEqualTo(1);
     final Entry entry = store.segmentsNewestFirst().get(0).findEntry(bytes("key"));
     assertThat(entry).isNotNull();
     assertThat(entry.tombstone()).isFalse();
@@ -440,9 +443,9 @@ final class LayeredKeyValueStoreLifecycleTest {
     store.completePersist(true);
 
     // then -- the persisted value is served (no stale negative) via one lazy read-through
-    final int getsAfterPersist = counting.gets;
+    final int getsAfterPersist = counting.gets();
     assertThat(store.get(bytes("key"))).isEqualTo(bytes("value"));
-    assertThat(counting.gets).isEqualTo(getsAfterPersist + 1);
+    assertThat(counting.gets()).isEqualTo(getsAfterPersist + 1);
   }
 
   @Test
@@ -564,7 +567,7 @@ final class LayeredKeyValueStoreLifecycleTest {
     store.promote();
 
     // then -- only the initial probe was paid; nothing buffered, nothing reaches the delegate
-    assertThat(counting.gets).isEqualTo(1);
+    assertThat(counting.gets()).isEqualTo(1);
     assertThat(store.approximateBytes()).isZero();
     store.freeze(1L);
     assertThat(store.segmentsNewestFirst()).isEmpty();
@@ -702,11 +705,11 @@ final class LayeredKeyValueStoreLifecycleTest {
 
     // then -- eldest (k1) evicted, k3 still cached
     assertThat(store.approximateBytes()).isLessThanOrEqualTo(40);
-    assertThat(counting.gets).isEqualTo(3);
+    assertThat(counting.gets()).isEqualTo(3);
     assertThat(store.get(bytes("k3"))).isEqualTo(value);
-    assertThat(counting.gets).isEqualTo(3);
+    assertThat(counting.gets()).isEqualTo(3);
     assertThat(store.get(bytes("k1"))).isEqualTo(value);
-    assertThat(counting.gets).isEqualTo(4);
+    assertThat(counting.gets()).isEqualTo(4);
   }
 
   @Test
@@ -725,9 +728,9 @@ final class LayeredKeyValueStoreLifecycleTest {
 
     // then -- eviction only costs a re-probe: the next read of the absent key asks the delegate
     assertThat(store.approximateBytes()).isLessThanOrEqualTo(36);
-    assertThat(counting.gets).isEqualTo(3);
+    assertThat(counting.gets()).isEqualTo(3);
     assertThat(store.get(bytes("gone"))).isNull();
-    assertThat(counting.gets).isEqualTo(4);
+    assertThat(counting.gets()).isEqualTo(4);
   }
 
   @Test
@@ -803,39 +806,182 @@ final class LayeredKeyValueStoreLifecycleTest {
     }
   }
 
-  private static byte[] bytes(final String value) {
-    return value.getBytes(UTF_8);
+  // ------------------------------------------------------------------
+  // absence watermark (delegate empty at open)
+  // ------------------------------------------------------------------
+
+  @Test
+  void shouldElideFlushedProbesAboveAbsenceWatermark() {
+    // given -- an empty-at-open store whose largest drained key is "b"
+    final CountingBytesStore counting = new CountingBytesStore(state.store(STORE));
+    final LayeredKeyValueStore store = newEmptyAtOpenStore(counting);
+    putPromoteFreeze(store, "b", "value", 1L);
+    drainToDelegate(store.beginPersist());
+    store.completePersist(true);
+    final int getsAfterDrain = counting.gets();
+
+    // when -- blind writes of keys strictly above the watermark
+    store.put(bytes("c"), bytes("v"));
+    store.delete(bytes("d"));
+    store.promote();
+    store.freeze(2L);
+
+    // then -- no delegate probes, and the flushed flags are exactly false
+    assertThat(counting.gets()).isEqualTo(getsAfterDrain);
+    final FlatSegment segment = store.segmentsNewestFirst().get(0);
+    assertThat(segment.findEntry(bytes("c")).flushed()).isFalse();
+    assertThat(segment.findEntry(bytes("d")).flushed()).isFalse();
+    assertThat(segment.findEntry(bytes("d")).tombstone()).isTrue();
   }
 
-  /** Counts delegate point reads, to prove which reads the clean cache absorbs. */
-  private static final class CountingBytesStore implements BytesStore {
+  @Test
+  void shouldProbeAtOrBelowAbsenceWatermark() {
+    // given -- the largest drained key is "m"
+    final CountingBytesStore counting = new CountingBytesStore(state.store(STORE));
+    final LayeredKeyValueStore store = newEmptyAtOpenStore(counting);
+    putPromoteFreeze(store, "m", "value", 1L);
+    drainToDelegate(store.beginPersist());
+    store.completePersist(true);
+    final int getsAfterDrain = counting.gets();
 
-    private final BytesStore delegate;
-    private int gets;
+    // when -- blind writes at and below the watermark (e.g. a fresh key under an old prefix)
+    store.put(bytes("a"), bytes("v"));
+    store.put(bytes("m"), bytes("v2"));
+    store.promote();
+    store.freeze(2L);
 
-    private CountingBytesStore(final BytesStore delegate) {
-      this.delegate = delegate;
-    }
+    // then -- one probe each, and the drained key's overwrite carries flushed=true
+    assertThat(counting.gets()).isEqualTo(getsAfterDrain + 2);
+    final FlatSegment segment = store.segmentsNewestFirst().get(0);
+    assertThat(segment.findEntry(bytes("a")).flushed()).isFalse();
+    assertThat(segment.findEntry(bytes("m")).flushed()).isTrue();
+  }
 
-    @Override
-    public byte[] get(final byte[] key) {
-      gets++;
-      return delegate.get(key);
-    }
+  @Test
+  void shouldAnswerReadsAboveAbsenceWatermarkWithoutDelegateProbe() {
+    // given -- before anything was captured for draining, every key is provably absent
+    final CountingBytesStore counting = new CountingBytesStore(state.store(STORE));
+    final LayeredKeyValueStore store = newEmptyAtOpenStore(counting);
+    assertThat(store.get(bytes("z"))).isNull();
+    assertThat(counting.gets()).isZero();
+    putPromoteFreeze(store, "m", "value", 1L);
+    drainToDelegate(store.beginPersist());
+    store.completePersist(true);
+    final int getsAfterDrain = counting.gets();
 
-    @Override
-    public void put(final byte[] key, final byte[] value) {
-      delegate.put(key, value);
-    }
+    // when / then -- above the watermark: answered for free; at or below: read through
+    assertThat(store.get(bytes("z"))).isNull();
+    assertThat(counting.gets()).isEqualTo(getsAfterDrain);
+    assertThat(store.get(bytes("a"))).isNull();
+    assertThat(counting.gets()).isEqualTo(getsAfterDrain + 1);
+    assertThat(store.get(bytes("m"))).isEqualTo(bytes("value"));
+    assertThat(counting.gets()).isEqualTo(getsAfterDrain + 2);
+  }
 
-    @Override
-    public void delete(final byte[] key) {
-      delegate.delete(key);
-    }
+  @Test
+  void shouldSkipDelegateScanForPrefixAboveAbsenceWatermark() {
+    // given -- drained "b1"; a buffered write above the watermark
+    final CountingBytesStore counting = new CountingBytesStore(state.store(STORE));
+    final LayeredKeyValueStore store = newEmptyAtOpenStore(counting);
+    putPromoteFreeze(store, "b1", "v1", 1L);
+    drainToDelegate(store.beginPersist());
+    store.completePersist(true);
+    putPromoteFreeze(store, "c1", "v2", 2L);
 
-    @Override
-    public void prefixScan(final byte[] prefix, final BiConsumer<byte[], byte[]> visitor) {
-      delegate.prefixScan(prefix, visitor);
-    }
+    // when -- scanning above the watermark, then across it
+    final List<String> above = new ArrayList<>();
+    store.prefixScan(bytes("c"), (k, v) -> above.add(new String(k, UTF_8)));
+    final int scansAbove = counting.scans();
+    final List<String> all = new ArrayList<>();
+    store.prefixScan(bytes(""), (k, v) -> all.add(new String(k, UTF_8)));
+
+    // then -- the above-watermark scan never opened a delegate stream, the full scan did
+    assertThat(above).containsExactly("c1");
+    assertThat(scansAbove).isZero();
+    assertThat(counting.scans()).isEqualTo(1);
+    assertThat(all).containsExactly("b1", "c1");
+  }
+
+  @Test
+  void shouldKeepAbsenceClaimsAcrossFailedPersistRounds() {
+    // given -- a round captured "b" (advancing the watermark) but failed to commit
+    final CountingBytesStore counting = new CountingBytesStore(state.store(STORE));
+    final LayeredKeyValueStore store = newEmptyAtOpenStore(counting);
+    putPromoteFreeze(store, "b", "v1", 1L);
+    store.beginPersist();
+    store.completePersist(false);
+
+    // when -- a blind write above the captured maximum
+    store.put(bytes("c"), bytes("v2"));
+    store.promote();
+    store.freeze(2L);
+
+    // then -- still elided (the watermark may only over-cover the delegate), and the retry
+    // drains both keys
+    assertThat(counting.gets()).isZero();
+    drainToDelegate(store.beginPersist());
+    store.completePersist(true);
+    assertThat(state.committedValue(STORE, bytes("b"))).isEqualTo(bytes("v1"));
+    assertThat(state.committedValue(STORE, bytes("c"))).isEqualTo(bytes("v2"));
+  }
+
+  @Test
+  void shouldCountElidedProbesAndWatermarkReads() {
+    // given -- a metered empty-at-open store
+    final var registry = new SimpleMeterRegistry();
+    final LayeredKeyValueStore store =
+        new LayeredKeyValueStore(
+            STORE,
+            state.store(STORE),
+            1024 * 1024,
+            false,
+            10,
+            LayeredStoreMetrics.of(registry, "t"),
+            new ChunkWriter(new ChunkPool()),
+            true);
+
+    // when -- a read, a blind put and a blind delete, all provably absent
+    store.get(bytes("read"));
+    store.put(bytes("fresh-put"), bytes("v"));
+    store.delete(bytes("blind-delete"));
+
+    // then -- everything elided, nothing probed
+    assertThat(watermarkReads(registry)).isEqualTo(1);
+    assertThat(elidedProbes(registry, "put")).isEqualTo(1);
+    assertThat(elidedProbes(registry, "delete")).isEqualTo(1);
+    assertThat(flushedProbes(registry, "put")).isZero();
+    assertThat(flushedProbes(registry, "delete")).isZero();
+  }
+
+  private static double watermarkReads(final SimpleMeterRegistry registry) {
+    return registry
+        .get("zeebe.db.layered.reads")
+        .tag("source", "absenceWatermark")
+        .counter()
+        .count();
+  }
+
+  private static double elidedProbes(final SimpleMeterRegistry registry, final String kind) {
+    return registry
+        .get("zeebe.db.layered.flushed.point.reads.elided")
+        .tag("kind", kind)
+        .counter()
+        .count();
+  }
+
+  private LayeredKeyValueStore newEmptyAtOpenStore(final BytesStore delegate) {
+    return new LayeredKeyValueStore(
+        STORE,
+        delegate,
+        1024 * 1024,
+        false,
+        10,
+        LayeredStoreMetrics.noop(),
+        new ChunkWriter(new ChunkPool()),
+        true);
+  }
+
+  private static byte[] bytes(final String value) {
+    return value.getBytes(UTF_8);
   }
 }

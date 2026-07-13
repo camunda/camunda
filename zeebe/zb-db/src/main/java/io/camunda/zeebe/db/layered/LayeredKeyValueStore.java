@@ -70,6 +70,21 @@ import java.util.function.BiConsumer;
  * annihilates when the delegate provably never held the key; no behavioral contract is required of
  * callers, and scans can never resurrect an absorbed key.
  *
+ * <p><b>Absence watermark</b> (opt-in, only sound when the delegate is empty at store open): the
+ * delegate gains keys exclusively through this store's persist rounds, so once it starts empty, the
+ * largest key ever captured for draining bounds every key the delegate can ever hold. A write or
+ * read of a key strictly greater in unsigned order is then a provable delegate miss: its write-time
+ * flushed probe and its read-through are answered without touching the delegate, and a prefix scan
+ * whose prefix sorts above the watermark skips the delegate stream entirely (every key it could
+ * contribute sorts at or above the prefix). Keys at or below the watermark — e.g. fresh keys under
+ * an already-drained composite prefix — simply keep probing; the watermark advances at capture time
+ * on the owner thread, before the round's drain commits, so it can only over-cover the delegate and
+ * every absence claim stays conservative. Over a non-empty delegate (a restarted partition's
+ * database) the watermark must stay disabled: the delegate then holds keys this store never
+ * drained, which no drained-key bound can cover. The same holds once any writer can reach the
+ * delegate outside persist rounds — the wiring must call {@link #disableAbsenceWatermark()} the
+ * moment such a path opens (e.g. a pass-through accessor on the same column family).
+ *
  * <p><b>Byte budget:</b> staging, active and pipeline entries are pinned — evicting or persisting
  * them outside a persist round would put durable state ahead of the recovery anchor. Only clean
  * entries evict, so the budget is soft while buffered writes exist; {@link #overCapacity()} signals
@@ -125,6 +140,14 @@ public final class LayeredKeyValueStore {
   private final int pipelineSegmentLimit;
   private final LayeredStoreMetrics metrics;
   private final ChunkWriter chunkWriter;
+
+  // provable-absence watermark (see the class javadoc): enabled iff the delegate held no keys at
+  // store open and nothing can write it outside persist rounds; volatile because the wiring may
+  // disable it from another thread when a pass-through write path opens (the watermark itself is
+  // owner-thread only). null while nothing was captured for draining yet, which with an
+  // empty-at-open delegate means every key is provably absent
+  private volatile boolean absenceWatermarkEnabled;
+  private byte[] drainedKeyWatermark;
 
   // staging and active each pair a hash index (point lookups) with a sorted index (scans); the
   // two indexes of a layer share the same Entry objects
@@ -189,11 +212,6 @@ public final class LayeredKeyValueStore {
         new ChunkWriter(new ChunkPool()));
   }
 
-  /**
-   * @param chunkWriter the bump allocator freezes copy entry bytes through; share one writer (and
-   *     thus one chunk pool) across all stores of an owner thread so small segments pack into
-   *     common chunks — the convenience constructors give each store a private writer instead
-   */
   public LayeredKeyValueStore(
       final String name,
       final BytesStore delegate,
@@ -202,6 +220,28 @@ public final class LayeredKeyValueStore {
       final int pipelineSegmentLimit,
       final LayeredStoreMetrics metrics,
       final ChunkWriter chunkWriter) {
+    this(
+        name, delegate, maxBytes, absorbDeletes, pipelineSegmentLimit, metrics, chunkWriter, false);
+  }
+
+  /**
+   * @param chunkWriter the bump allocator freezes copy entry bytes through; share one writer (and
+   *     thus one chunk pool) across all stores of an owner thread so small segments pack into
+   *     common chunks — the convenience constructors give each store a private writer instead
+   * @param delegateEmptyAtOpen whether the delegate provably holds no keys right now; enables the
+   *     absence watermark (see the class javadoc). Must only be true when the delegate is genuinely
+   *     empty — a false claim would skew flushed flags, losing tombstones or absorbing writes of
+   *     keys the delegate still holds
+   */
+  public LayeredKeyValueStore(
+      final String name,
+      final BytesStore delegate,
+      final long maxBytes,
+      final boolean absorbDeletes,
+      final int pipelineSegmentLimit,
+      final LayeredStoreMetrics metrics,
+      final ChunkWriter chunkWriter,
+      final boolean delegateEmptyAtOpen) {
     this.chunkWriter = Objects.requireNonNull(chunkWriter, "chunkWriter");
     this.name = Objects.requireNonNull(name, "name");
     this.metrics = Objects.requireNonNull(metrics, "metrics");
@@ -216,6 +256,7 @@ public final class LayeredKeyValueStore {
     this.maxBytes = maxBytes;
     this.absorbDeletes = absorbDeletes;
     this.pipelineSegmentLimit = pipelineSegmentLimit;
+    absenceWatermarkEnabled = delegateEmptyAtOpen;
   }
 
   /** The store name, used to route persist-batch writes and view reads. */
@@ -226,6 +267,17 @@ public final class LayeredKeyValueStore {
   /** Whether pipeline merges of this store absorb annihilated put/delete pairs. */
   boolean absorbsDeletes() {
     return absorbDeletes;
+  }
+
+  /**
+   * Permanently disables the absence watermark — required the moment any writer can reach the
+   * delegate outside this store's persist rounds (e.g. a pass-through accessor on the same column
+   * family), because external writes break the drained-key bound the watermark's absence claims
+   * rest on. Safe from any thread; existing negative claims are unaffected (keys already written
+   * carry their exact flushed flags), only future claims stop.
+   */
+  public void disableAbsenceWatermark() {
+    absenceWatermarkEnabled = false;
   }
 
   // ------------------------------------------------------------------
@@ -291,8 +343,23 @@ public final class LayeredKeyValueStore {
         return !segment.tombstoneAt(index) || segment.flushedAt(index);
       }
     }
+    if (provablyNeverPersisted(key)) {
+      metrics.countFlushedProbeElided(kind);
+      return false;
+    }
     metrics.countFlushedPointRead(kind);
     return delegate.get(key) != null;
+  }
+
+  /**
+   * Whether the absence watermark proves the delegate never held {@code key}: the delegate started
+   * empty, gains keys only through this store's persist rounds, and every key ever captured for
+   * draining sorts at or below the watermark — so a key strictly above it (or any key while nothing
+   * was captured yet) is a guaranteed delegate miss, and its probe can be skipped.
+   */
+  private boolean provablyNeverPersisted(final byte[] key) {
+    return absenceWatermarkEnabled
+        && (drainedKeyWatermark == null || Arrays.compareUnsigned(key, drainedKeyWatermark) > 0);
   }
 
   /**
@@ -373,6 +440,12 @@ public final class LayeredKeyValueStore {
       metrics.countCleanCacheHit();
       return cached == NEGATIVE ? null : cached;
     }
+    if (provablyNeverPersisted(key)) {
+      // a guaranteed delegate miss, answered without probing and without caching a negative —
+      // the watermark keeps answering reads of this key for free
+      metrics.countAbsenceWatermarkRead();
+      return null;
+    }
     metrics.countDelegateReadThrough();
     final byte[] committed = delegate.get(key);
     // a miss is cached too (negative caching, sound per NEGATIVE): repeated reads of an absent key
@@ -413,9 +486,12 @@ public final class LayeredKeyValueStore {
       layers.add(segment.range(prefix));
     }
     // the clean cache is intentionally absent: its entries mirror the delegate, which the
-    // delegate stream below already returns
+    // delegate stream below already returns; every key prefixed by the prefix sorts at or above
+    // the prefix itself, so a prefix above the absence watermark proves the delegate stream empty
     ShadowingZipper.merge(
-        new KWayMergeIterator(layers), scan -> delegate.prefixScan(prefix, scan), visitor);
+        new KWayMergeIterator(layers),
+        provablyNeverPersisted(prefix) ? scan -> {} : scan -> delegate.prefixScan(prefix, scan),
+        visitor);
   }
 
   public void forEach(final BiConsumer<byte[], byte[]> visitor) {
@@ -593,6 +669,22 @@ public final class LayeredKeyValueStore {
     }
     persisting = true;
     persistingCount = pipeline.size();
+    // advance the absence watermark over the captured keys now, on the owner thread and before
+    // any drain IO: a watermark ahead of the delegate only weakens absence claims (never wrong),
+    // and covering the round's keys before its commit needs no ordering with the IO thread —
+    // recomputing on a retried round is idempotent
+    if (absenceWatermarkEnabled) {
+      for (final FlatSegment segment : pipeline) {
+        if (segment.isEmpty()) {
+          continue;
+        }
+        final byte[] largestKey = segment.keyAt(segment.entryCount() - 1);
+        if (drainedKeyWatermark == null
+            || Arrays.compareUnsigned(largestKey, drainedKeyWatermark) > 0) {
+          drainedKeyWatermark = largestKey;
+        }
+      }
+    }
     final List<FlatSegment> oldestFirst = new ArrayList<>(pipeline);
     Collections.reverse(oldestFirst);
     return List.copyOf(oldestFirst);

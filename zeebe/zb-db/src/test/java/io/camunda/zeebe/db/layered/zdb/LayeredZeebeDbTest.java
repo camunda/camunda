@@ -392,6 +392,80 @@ final class LayeredZeebeDbTest {
   }
 
   @Test
+  void shouldServeLatePassThroughWritesWhenAccessorPredatesLayeredStore() {
+    // given -- a pass-through accessor created before the layered store on the same (still
+    // empty) column family: the store must not claim provable absence for keys the accessor
+    // may write later
+    final TransactionContext passThroughContext = layered.createContext();
+    final DbLong passThroughKey = new DbLong();
+    final DbLong passThroughValue = new DbLong();
+    final ColumnFamily<DbLong, DbLong> passThroughTwo =
+        layered.createColumnFamily(
+            ColumnFamilies.TWO, passThroughContext, passThroughKey, passThroughValue);
+    final ColumnFamily<DbLong, DbLong> layeredTwo =
+        layered.createColumnFamily(ColumnFamilies.TWO, layeredContext, new DbLong(), new DbLong());
+
+    // when -- the pass-through write lands after the store opened
+    passThroughContext.runInTransaction(
+        () -> {
+          passThroughKey.wrapLong(7);
+          passThroughValue.wrapLong(77);
+          passThroughTwo.upsert(passThroughKey, passThroughValue);
+        });
+
+    // then -- the layered read falls through to the wrapped database
+    passThroughKey.wrapLong(7);
+    assertThat(layeredTwo.get(passThroughKey).getValue()).isEqualTo(77);
+  }
+
+  @Test
+  void shouldDrainBlindDeleteOfPersistedKeyAfterReopen() throws Exception {
+    // given -- a persisted key, snapshotted and reopened as a fresh layered database (the
+    // recovery path); the store now opens over a non-empty delegate, so the absence watermark
+    // must stay disabled — an enabled one would mark the blind delete below as never-flushed
+    // and absorb its tombstone, resurrecting the durable row
+    layeredContext.runInTransaction(() -> upsertOne(1, 100));
+    final var coordinator = layered.defaultDomain().coordinator();
+    final var round = coordinator.prepareRound(1);
+    round.persist();
+    coordinator.completeRound(round, true);
+    final File snapshotDir = new File(snapshotParentDirectory, "snapshot");
+    layered.createSnapshot(snapshotDir);
+    layered.close();
+    layered = null;
+    inner = null;
+    final var relayered =
+        new LayeredZeebeDb<>(dbFactory.createDb(snapshotDir), LayeredZeebeDbConfig.defaults());
+    try {
+      final TransactionContext relayeredContext = relayered.layeredContext();
+      final DbLong reopenedKey = new DbLong();
+      final ColumnFamily<DbLong, DbLong> reopenedOne =
+          relayered.createColumnFamily(
+              ColumnFamilies.ONE, relayeredContext, reopenedKey, new DbLong());
+
+      // when -- a blind delete of the persisted key runs through a full persist round
+      relayeredContext.runInTransaction(
+          () -> {
+            reopenedKey.wrapLong(1);
+            reopenedOne.deleteIfExists(reopenedKey);
+          });
+      final var reopenedCoordinator = relayered.defaultDomain().coordinator();
+      final var deleteRound = reopenedCoordinator.prepareRound(2);
+      deleteRound.persist();
+      reopenedCoordinator.completeRound(deleteRound, true);
+
+      // then -- the tombstone reached the wrapped database: the key is gone from durable state
+      final ColumnFamily<DbLong, DbLong> passThroughOne =
+          relayered.createColumnFamily(
+              ColumnFamilies.ONE, relayered.createContext(), new DbLong(), new DbLong());
+      reopenedKey.wrapLong(1);
+      assertThat(passThroughOne.exists(reopenedKey)).isFalse();
+    } finally {
+      relayered.close();
+    }
+  }
+
+  @Test
   void shouldStillServeLayeredReadsAfterPersistRound() throws Exception {
     // given
     layeredContext.runInTransaction(() -> upsertOne(1, 100));

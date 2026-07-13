@@ -264,7 +264,8 @@ public enum LayeredStateMetricsDoc implements ExtendedMeterDocumentation {
     @Override
     public String getDescription() {
       return "Point reads that fell below the pinned in-memory layers, answered by the clean"
-          + " read-through cache or by a durable-store (delegate) read";
+          + " read-through cache, by a durable-store (delegate) read, or by the absence"
+          + " watermark proving the key was never persisted";
     }
 
     @Override
@@ -290,6 +291,31 @@ public enum LayeredStateMetricsDoc implements ExtendedMeterDocumentation {
     public String getDescription() {
       return "Durable-store point reads made at write time to compute the exact flushed flag of"
           + " a key unknown to every in-memory layer, by the kind of write that paid the probe";
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {
+        LayeredStateKeyNames.DOMAIN, LayeredStateKeyNames.WRITE_KIND,
+      };
+    }
+  },
+  /** Write-time flushed probes elided by the absence watermark */
+  FLUSHED_PROBES_ELIDED {
+    @Override
+    public String getName() {
+      return "zeebe.db.layered.flushed.point.reads.elided";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.COUNTER;
+    }
+
+    @Override
+    public String getDescription() {
+      return "Write-time flushed-flag delegate probes elided because the absence watermark"
+          + " proved the key was never persisted, by the kind of write that avoided the probe";
     }
 
     @Override
@@ -516,7 +542,8 @@ public enum LayeredStateMetricsDoc implements ExtendedMeterDocumentation {
   /** Values of the {@link LayeredStateKeyNames#READ_SOURCE} tag. */
   public enum ReadSource {
     CLEAN_CACHE("cleanCache"),
-    DELEGATE("delegate");
+    DELEGATE("delegate"),
+    ABSENCE_WATERMARK("absenceWatermark");
 
     private final String label;
 

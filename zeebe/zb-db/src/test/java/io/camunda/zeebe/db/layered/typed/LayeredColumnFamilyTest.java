@@ -15,6 +15,10 @@ import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.layered.LayeredKeyValueStore;
+import io.camunda.zeebe.db.layered.LayeredStoreMetrics;
+import io.camunda.zeebe.db.layered.segment.ChunkPool;
+import io.camunda.zeebe.db.layered.segment.ChunkWriter;
+import io.camunda.zeebe.db.layered.util.CountingBytesStore;
 import io.camunda.zeebe.db.layered.util.InMemoryDurableState;
 import java.util.ArrayList;
 import java.util.List;
@@ -113,6 +117,54 @@ final class LayeredColumnFamilyTest {
 
     // then
     assertThat(get(23L)).isEqualTo("foo");
+  }
+
+  @Test
+  void shouldProbeDelegateExactlyOnceOnInsertOfFreshKey() {
+    // given -- a probe-counting delegate under a store without the absence watermark
+    final CountingBytesStore counting = new CountingBytesStore(durable.store(STORE_NAME));
+    final LayeredKeyValueStore countingStore =
+        new LayeredKeyValueStore(STORE_NAME, counting, 1_000_000, false, 4);
+    final LayeredColumnFamily<DbLong, DbString> countingColumnFamily =
+        new LayeredColumnFamily<>(countingStore, key, value);
+    key.wrapLong(7L);
+    value.wrapString("fresh");
+
+    // when -- the insert's exists check pays the only probe and caches the negative, which then
+    // answers the write-time flushed check without a second probe
+    countingColumnFamily.insert(key, value);
+
+    // then
+    assertThat(counting.gets()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldNotProbeDelegateOnInsertOfFreshKeyUnderAbsenceWatermark() {
+    // given -- an empty-at-open store: every key is provably absent until something drains
+    final CountingBytesStore counting = new CountingBytesStore(durable.store(STORE_NAME));
+    final LayeredKeyValueStore countingStore =
+        new LayeredKeyValueStore(
+            STORE_NAME,
+            counting,
+            1_000_000,
+            false,
+            4,
+            LayeredStoreMetrics.noop(),
+            new ChunkWriter(new ChunkPool()),
+            true);
+    final LayeredColumnFamily<DbLong, DbString> countingColumnFamily =
+        new LayeredColumnFamily<>(countingStore, key, value);
+    key.wrapLong(7L);
+    value.wrapString("fresh");
+
+    // when -- neither the exists check nor the write's flushed check touches the delegate
+    countingColumnFamily.insert(key, value);
+
+    // then -- and the consistency check still trips on a duplicate, probe-free
+    assertThat(counting.gets()).isZero();
+    assertThatThrownBy(() -> countingColumnFamily.insert(key, value))
+        .isInstanceOf(ZeebeDbInconsistentException.class);
+    assertThat(counting.gets()).isZero();
   }
 
   @Test
