@@ -91,9 +91,13 @@ final class PartitionTransitionProcess {
           stepStartedAtMs = ActorClock.currentTimeMillis();
           LOG.debug(
               "Transition to {} on term {} - transitioning {}", role, term, nextStep.getName());
-          nextStep
-              .transitionTo(context, term, role)
-              .onComplete((ok, error) -> onStepCompletion(future, error));
+          try {
+            nextStep
+                .transitionTo(context, term, role)
+                .onComplete((ok, error) -> onStepCompletion(future, error));
+          } catch (final Exception e) {
+            onStepCompletion(future, e);
+          }
         });
   }
 
@@ -147,9 +151,14 @@ final class PartitionTransitionProcess {
               newTerm,
               nextPrepareStep.getName());
 
-          nextPrepareStep
-              .prepareTransition(context, newTerm, newRole)
-              .onComplete((ok, error) -> onPrepareStepCompletion(future, error, newTerm, newRole));
+          try {
+            nextPrepareStep
+                .prepareTransition(context, newTerm, newRole)
+                .onComplete(
+                    (ok, error) -> onPrepareStepCompletion(future, error, newTerm, newRole));
+          } catch (final Exception e) {
+            onPrepareStepCompletion(future, e, newTerm, newRole);
+          }
         });
   }
 
