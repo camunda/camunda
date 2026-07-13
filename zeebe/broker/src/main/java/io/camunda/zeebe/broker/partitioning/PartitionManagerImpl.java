@@ -37,7 +37,6 @@ import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
-import io.camunda.zeebe.engine.processing.secret.SecretCache;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -105,7 +104,6 @@ public final class PartitionManagerImpl
       final MeterRegistry meterRegistry,
       final BrokerClient brokerClient,
       final RocksDbResources rocksDbResources,
-      final SecretCache secretCache,
       final EngineSecurityConfig securityConfig,
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
@@ -149,8 +147,7 @@ public final class PartitionManagerImpl
                 : null,
             brokerRequestAuthorizationConverter,
             clusterConfigurationService,
-            rocksDbResources,
-            secretCache != null ? secretCache.withPhysicalTenant(partitionGroup) : null);
+            rocksDbResources);
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());

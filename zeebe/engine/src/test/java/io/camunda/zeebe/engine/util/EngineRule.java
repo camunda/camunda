@@ -19,7 +19,6 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
-import io.camunda.zeebe.engine.processing.secret.InMemorySecretCache;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
@@ -375,8 +374,7 @@ public final class EngineRule extends ExternalResource {
                         featureFlags,
                         jobStreamer,
                         searchClientsProxy,
-                        brokerRequestAuthorizationConverter,
-                        new InMemorySecretCache())
+                        brokerRequestAuthorizationConverter)
                     .withListener(
                         new ProcessingExporterTransistor(
                             environmentRule.getLogStream(partitionId)));

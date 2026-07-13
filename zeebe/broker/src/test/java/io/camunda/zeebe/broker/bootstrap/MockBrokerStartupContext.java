@@ -39,7 +39,6 @@ import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
-import io.camunda.zeebe.engine.processing.secret.SecretCache;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -78,7 +77,6 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   private final Map<String, JobStreamService> jobStreamServices = new LinkedHashMap<>();
   private final Map<String, PartitionManager> partitionManagers = new LinkedHashMap<>();
   private RocksDbResources sharedRocksDbResources;
-  private SecretCache secretCache;
   private BrokerAdminServiceImpl brokerAdminService = mock(BrokerAdminServiceImpl.class);
   private ClusterConfigurationService clusterConfigurationService =
       mock(ClusterConfigurationService.class);
@@ -279,16 +277,6 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   @Override
   public void setRocksDbResources(final RocksDbResources sharedRocksDbResources) {
     this.sharedRocksDbResources = sharedRocksDbResources;
-  }
-
-  @Override
-  public SecretCache getSecretCache() {
-    return secretCache;
-  }
-
-  @Override
-  public void setSecretCache(final SecretCache secretCache) {
-    this.secretCache = secretCache;
   }
 
   @Override
