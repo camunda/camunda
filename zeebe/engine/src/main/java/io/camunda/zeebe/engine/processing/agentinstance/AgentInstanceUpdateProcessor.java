@@ -34,15 +34,14 @@ import java.util.Set;
 public final class AgentInstanceUpdateProcessor
     implements TypedRecordProcessor<AgentInstanceRecord> {
 
-  static final String ATTR_STATUS = "status";
-  static final String ATTR_METRICS = "metrics";
-  static final String ATTR_TOOLS = "tools";
-
   // Iteration order matters: it determines the order of names in the emitted changedAttributes
   // list and must be stable across JVMs and replays. Used both as the allow-list for incoming
   // changedAttributes and as the iteration order for applying the patch.
   private static final List<String> ALLOWED_ATTRIBUTES =
-      List.of(ATTR_STATUS, ATTR_METRICS, ATTR_TOOLS);
+      List.of(
+          AgentInstanceRecord.ATTR_STATUS,
+          AgentInstanceRecord.ATTR_METRICS,
+          AgentInstanceRecord.ATTR_TOOLS);
 
   private static final String ERROR_MSG_NOT_FOUND =
       "Expected to update agent instance with key '%d', but no such agent instance was found.";
@@ -194,7 +193,8 @@ public final class AgentInstanceUpdateProcessor
       return;
     }
 
-    if (changed.contains(ATTR_METRICS) && !hasAllowedMetricDeltas(commandValue.getMetrics())) {
+    if (changed.contains(AgentInstanceRecord.ATTR_METRICS)
+        && !hasAllowedMetricDeltas(commandValue.getMetrics())) {
       final var metrics = commandValue.getMetrics();
       writeRejection(
           command,
@@ -207,7 +207,7 @@ public final class AgentInstanceUpdateProcessor
       return;
     }
 
-    if (changed.contains(ATTR_STATUS)) {
+    if (changed.contains(AgentInstanceRecord.ATTR_STATUS)) {
       final var from = current.getStatus();
       final var to = commandValue.getStatus();
       if (!isAllowedTransition(from, to)) {
@@ -253,21 +253,21 @@ public final class AgentInstanceUpdateProcessor
         continue;
       }
       switch (attr) {
-        case ATTR_STATUS -> {
+        case AgentInstanceRecord.ATTR_STATUS -> {
           if (!delta.getStatus().equals(current.getStatus())) {
-            effective.add(ATTR_STATUS);
+            effective.add(AgentInstanceRecord.ATTR_STATUS);
           }
           current.setStatus(delta.getStatus());
         }
-        case ATTR_METRICS -> {
+        case AgentInstanceRecord.ATTR_METRICS -> {
           if (applyMetricDeltas(current.getMetrics(), delta.getMetrics())) {
-            effective.add(ATTR_METRICS);
+            effective.add(AgentInstanceRecord.ATTR_METRICS);
           }
         }
-        case ATTR_TOOLS -> {
+        case AgentInstanceRecord.ATTR_TOOLS -> {
           if (!toolsEqual(current.getTools(), delta.getTools())) {
             current.setTools(delta.getTools());
-            effective.add(ATTR_TOOLS);
+            effective.add(AgentInstanceRecord.ATTR_TOOLS);
           }
         }
       }

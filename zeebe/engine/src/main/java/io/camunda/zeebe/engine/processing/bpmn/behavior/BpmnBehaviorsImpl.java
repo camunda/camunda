@@ -68,6 +68,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final BpmnConditionalBehavior conditionalBehavior;
   private final ExpressionBehavior expressionBehavior;
   private final ExpressionLanguage expressionLanguage;
+  private final AgentInstanceBehavior agentInstanceBehavior;
 
   public BpmnBehaviorsImpl(
       final MutableProcessingState processingState,
@@ -294,6 +295,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             stateBehavior,
             variableBehavior,
             processingState);
+
+    agentInstanceBehavior = new AgentInstanceBehavior(processingState, writers);
   }
 
   @Override
@@ -409,6 +412,11 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public BpmnAdHocSubProcessBehavior adHocSubProcessBehavior() {
     return adHocSubProcessBehavior;
+  }
+
+  @Override
+  public AgentInstanceBehavior agentInstanceBehavior() {
+    return agentInstanceBehavior;
   }
 
   public ExpressionBehavior expressionBehavior() {

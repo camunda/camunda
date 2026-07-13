@@ -34,5 +34,9 @@ public final class AgentInstanceProcessors {
         ValueType.AGENT_INSTANCE,
         AgentInstanceIntent.UPDATE,
         new AgentInstanceUpdateProcessor(writers, processingState, authCheckBehavior));
+    typedRecordProcessors.onCommand(
+        ValueType.AGENT_INSTANCE,
+        AgentInstanceIntent.COMPLETE,
+        new AgentInstanceCompleteProcessor(writers, processingState));
   }
 }

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.agentinstance;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
 import io.camunda.zeebe.engine.state.mutable.MutableAgentInstanceState;
@@ -78,5 +79,96 @@ public final class AgentInstanceStateTest {
                       .setStatus(AgentInstanceStatus.THINKING));
             })
         .isInstanceOf(ZeebeDbInconsistentException.class);
+  }
+
+  @Test
+  public void shouldReturnAllKeysByProcessInstanceKey() {
+    // given
+    final long processInstanceKey = 100L;
+    final long firstAgentInstanceKey = 1L;
+    final long secondAgentInstanceKey = 2L;
+    agentInstanceState.insert(
+        firstAgentInstanceKey,
+        new AgentInstanceRecord()
+            .setAgentInstanceKey(firstAgentInstanceKey)
+            .setProcessInstanceKey(processInstanceKey)
+            .setStatus(AgentInstanceStatus.INITIALIZING));
+    agentInstanceState.insert(
+        secondAgentInstanceKey,
+        new AgentInstanceRecord()
+            .setAgentInstanceKey(secondAgentInstanceKey)
+            .setProcessInstanceKey(processInstanceKey)
+            .setStatus(AgentInstanceStatus.INITIALIZING));
+
+    // when
+    final var keys =
+        agentInstanceState.getAgentInstanceKeysByProcessInstanceKey(processInstanceKey);
+
+    // then
+    assertThat(keys).containsExactlyInAnyOrder(firstAgentInstanceKey, secondAgentInstanceKey);
+  }
+
+  @Test
+  public void shouldNotReturnKeysOfOtherProcessInstance() {
+    // given
+    final long processInstanceKey = 100L;
+    final long otherProcessInstanceKey = 200L;
+    final long agentInstanceKey = 1L;
+    final long otherAgentInstanceKey = 2L;
+    agentInstanceState.insert(
+        agentInstanceKey,
+        new AgentInstanceRecord()
+            .setAgentInstanceKey(agentInstanceKey)
+            .setProcessInstanceKey(processInstanceKey)
+            .setStatus(AgentInstanceStatus.INITIALIZING));
+    agentInstanceState.insert(
+        otherAgentInstanceKey,
+        new AgentInstanceRecord()
+            .setAgentInstanceKey(otherAgentInstanceKey)
+            .setProcessInstanceKey(otherProcessInstanceKey)
+            .setStatus(AgentInstanceStatus.INITIALIZING));
+
+    // when
+    final var keys =
+        agentInstanceState.getAgentInstanceKeysByProcessInstanceKey(processInstanceKey);
+
+    // then
+    assertThat(keys).containsExactly(agentInstanceKey);
+  }
+
+  @Test
+  public void shouldReturnEmptyListWhenNoKeysForProcessInstanceKey() {
+    // given / when
+    final var keys = agentInstanceState.getAgentInstanceKeysByProcessInstanceKey(9999L);
+
+    // then
+    assertThat(keys).isEmpty();
+  }
+
+  @Test
+  public void shouldDeleteRecordAndSecondaryIndex() {
+    // given
+    final long processInstanceKey = 100L;
+    final long agentInstanceKey = 1L;
+    agentInstanceState.insert(
+        agentInstanceKey,
+        new AgentInstanceRecord()
+            .setAgentInstanceKey(agentInstanceKey)
+            .setProcessInstanceKey(processInstanceKey)
+            .setStatus(AgentInstanceStatus.INITIALIZING));
+
+    // when
+    agentInstanceState.delete(agentInstanceKey);
+
+    // then
+    assertThat(agentInstanceState.getRecord(agentInstanceKey)).isNull();
+    assertThat(agentInstanceState.getAgentInstanceKeysByProcessInstanceKey(processInstanceKey))
+        .isEmpty();
+  }
+
+  @Test
+  public void shouldNoOpOnDeleteOfMissingRecord() {
+    // given / when / then
+    assertThatCode(() -> agentInstanceState.delete(9999L)).doesNotThrowAnyException();
   }
 }

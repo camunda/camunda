@@ -63,6 +63,22 @@ public final class AgentInstanceClient {
                   .withSourceRecordPosition(position)
                   .getFirst();
 
+  private static final Function<Long, Record<AgentInstanceRecordValue>> COMPLETED_EXPECTATION =
+      (position) ->
+          RecordingExporter.agentInstanceRecords()
+              .withIntent(AgentInstanceIntent.COMPLETED)
+              .withSourceRecordPosition(position)
+              .getFirst();
+
+  private static final Function<Long, Record<AgentInstanceRecordValue>>
+      COMPLETE_REJECTION_EXPECTATION =
+          (position) ->
+              RecordingExporter.agentInstanceRecords()
+                  .onlyCommandRejections()
+                  .withIntent(AgentInstanceIntent.COMPLETE)
+                  .withSourceRecordPosition(position)
+                  .getFirst();
+
   private final CommandWriter writer;
   private final AgentInstanceRecord record = new AgentInstanceRecord();
   private final LinkedHashSet<String> autoChangedAttributes = new LinkedHashSet<>();
@@ -187,6 +203,21 @@ public final class AgentInstanceClient {
             record,
             authorizedTenantIds.toArray(new String[0]));
     return (expectRejection ? UPDATE_REJECTION_EXPECTATION : UPDATED_EXPECTATION).apply(position);
+  }
+
+  /**
+   * Drives {@code AGENT_INSTANCE:COMPLETE} directly against {@link #withAgentInstanceKey}, without
+   * requiring a ProcessProcessor-driven process instance lifecycle.
+   */
+  public Record<AgentInstanceRecordValue> complete() {
+    final long position =
+        writer.writeCommand(
+            record.getAgentInstanceKey(),
+            AgentInstanceIntent.COMPLETE,
+            record,
+            authorizedTenantIds.toArray(new String[0]));
+    return (expectRejection ? COMPLETE_REJECTION_EXPECTATION : COMPLETED_EXPECTATION)
+        .apply(position);
   }
 
   private void applyChangedAttributes() {
