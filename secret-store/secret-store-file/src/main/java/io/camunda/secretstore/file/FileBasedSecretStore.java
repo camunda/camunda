@@ -14,9 +14,9 @@ import io.camunda.secretstore.SecretResolutionResult;
 import io.camunda.secretstore.SecretStore;
 import io.camunda.secretstore.SecretStoreUnavailableException;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,8 +32,9 @@ import org.slf4j.LoggerFactory;
  * <p>This mirrors how Kubernetes projects a mounted Secret volume — one file per key — so it plugs
  * into k8s, External Secrets Operator, and Secrets Store CSI setups with no transformation. Hidden
  * entries (names starting with {@code .}, such as the {@code ..data} symlink k8s creates for atomic
- * updates) and non-regular files are ignored when listing. Files are read on every call, so rotated
- * values are picked up without a restart.
+ * updates) and non-regular files are treated as non-secrets in both {@link #list()} and {@link
+ * #resolve(Set)}. Symlinks are followed when reading a value. Files are read on every call, so
+ * rotated values are picked up without a restart.
  */
 public final class FileBasedSecretStore implements SecretStore<FileBasedSecretReference> {
 
@@ -63,7 +64,12 @@ public final class FileBasedSecretStore implements SecretStore<FileBasedSecretRe
     try (final DirectoryStream<Path> entries =
         Files.newDirectoryStream(directory, FileBasedSecretStore::isVisibleRegularFile)) {
       for (final Path entry : entries) {
-        refs.add(new FileBasedSecretReference(entry.getFileName().toString()));
+        final var name = entry.getFileName().toString();
+        if (FileBasedSecretReference.isValid(name)) {
+          refs.add(new FileBasedSecretReference(name));
+        } else {
+          LOG.warn("Skipping file with invalid secret name '{}' in '{}'", name, directory);
+        }
       }
     } catch (final IOException e) {
       throw new SecretStoreUnavailableException(
@@ -74,17 +80,20 @@ public final class FileBasedSecretStore implements SecretStore<FileBasedSecretRe
   }
 
   private SecretResolutionResult resolveOne(final FileBasedSecretReference ref) {
-    // ref.name() is validated to be a single path segment, so this is always a direct child.
-    final var file = directory.resolve(ref.name());
-    if (!Files.isRegularFile(file)) {
-      return new SecretResolutionResult.Failed(NOT_FOUND, "Secret not found: " + ref.name(), null);
+    final var name = ref.name();
+    // name is validated to a single path segment, so this is always a direct child.
+    final var file = directory.resolve(name);
+    if (isHidden(name) || !Files.isRegularFile(file)) {
+      return notFound(name);
     }
     try {
       return new SecretResolutionResult.Resolved(readValue(file));
+    } catch (final NoSuchFileException e) {
+      // deleted between the check above and the read (e.g. rotation): treat as not found
+      return notFound(name);
     } catch (final IOException e) {
       throw new SecretStoreUnavailableException(
-          "Failed to read secret '" + ref.name() + "' in '" + directory + "': " + e.getMessage(),
-          e);
+          "Failed to read secret '" + name + "' in '" + directory + "': " + e.getMessage(), e);
     }
   }
 
@@ -95,14 +104,21 @@ public final class FileBasedSecretStore implements SecretStore<FileBasedSecretRe
     }
   }
 
+  private static SecretResolutionResult notFound(final String name) {
+    return new SecretResolutionResult.Failed(NOT_FOUND, "Secret not found: " + name, null);
+  }
+
   private static boolean isVisibleRegularFile(final Path path) {
-    final var name = path.getFileName().toString();
-    return !name.startsWith(".") && Files.isRegularFile(path);
+    return !isHidden(path.getFileName().toString()) && Files.isRegularFile(path);
+  }
+
+  private static boolean isHidden(final String name) {
+    return name.startsWith(".");
   }
 
   private static String readValue(final Path file) throws IOException {
-    final var raw = new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
-    return stripSingleTrailingNewline(raw);
+    // readString decodes as UTF-8 and throws on malformed input instead of silently substituting.
+    return stripSingleTrailingNewline(Files.readString(file));
   }
 
   private static String stripSingleTrailingNewline(final String value) {

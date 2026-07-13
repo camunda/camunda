@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -30,8 +31,7 @@ class FileBasedSecretStoreTest {
   @TempDir Path secretsDir;
 
   private static String resolvedValue(
-      final java.util.Map<FileBasedSecretReference, SecretResolutionResult> result,
-      final String name) {
+      final Map<FileBasedSecretReference, SecretResolutionResult> result, final String name) {
     final var entry = result.get(new FileBasedSecretReference(name));
     assertThat(entry).isInstanceOf(SecretResolutionResult.Resolved.class);
     return ((SecretResolutionResult.Resolved) entry).value();
@@ -247,6 +247,45 @@ class FileBasedSecretStoreTest {
 
     // then
     assertThat(resolvedValue(result, "token")).isEqualTo("café-中文");
+  }
+
+  @Test
+  void shouldReturnNotFoundForHiddenName() throws IOException {
+    // given — a hidden file is k8s plumbing, not a listable/resolvable secret
+    writeSecret(".env", "hidden");
+    final var store = new FileBasedSecretStore(secretsDir);
+
+    // when
+    final var entry =
+        store
+            .resolve(Set.of(new FileBasedSecretReference(".env")))
+            .get(new FileBasedSecretReference(".env"));
+
+    // then — resolve is symmetric with list(), which also skips hidden entries
+    assertThat(entry).isInstanceOf(SecretResolutionResult.Failed.class);
+    assertThat(((SecretResolutionResult.Failed) entry).code()).isEqualTo(SecretErrorCode.NOT_FOUND);
+  }
+
+  @Test
+  void shouldThrowWhenSecretIsNotValidUtf8() throws IOException {
+    // given — bytes that are not decodable as UTF-8 (0xC3 expects a continuation byte)
+    Files.write(secretsDir.resolve("bad"), new byte[] {(byte) 0xC3, (byte) 0x28});
+    final var store = new FileBasedSecretStore(secretsDir);
+
+    // when / then — surfaced loudly rather than silently substituting U+FFFD
+    assertThatThrownBy(() -> store.resolve(Set.of(new FileBasedSecretReference("bad"))))
+        .isInstanceOf(SecretStoreUnavailableException.class);
+  }
+
+  @Test
+  void shouldSkipFilesWithInvalidNameInList() throws IOException {
+    // given — a backslash is a legal file-name char on POSIX but not a valid secret name
+    writeSecret("valid", "1");
+    Files.writeString(secretsDir.resolve("in\\valid"), "x", StandardCharsets.UTF_8);
+    final var store = new FileBasedSecretStore(secretsDir);
+
+    // when / then — the stray file is skipped, not propagated as an exception
+    assertThat(store.list()).containsExactly(new FileBasedSecretReference("valid"));
   }
 
   @Test
