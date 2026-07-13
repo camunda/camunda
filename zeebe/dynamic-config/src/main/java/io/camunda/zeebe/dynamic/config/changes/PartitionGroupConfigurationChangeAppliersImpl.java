@@ -15,6 +15,7 @@ import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionForceReconfigur
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionJoinApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionLeaveApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionReconfigurePriorityApplier;
+import io.camunda.zeebe.dynamic.config.changes.appliers.StartPartitionScaleUpApplier;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
@@ -24,15 +25,20 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.StartPartitionScaleUp;
 
 public final class PartitionGroupConfigurationChangeAppliersImpl
     implements PartitionGroupConfigurationChangeAppliers {
 
   private final PartitionChangeExecutor partitionChangeExecutor;
+  private final PartitionScalingChangeExecutor partitionScalingChangeExecutor;
 
   public PartitionGroupConfigurationChangeAppliersImpl(
-      final PartitionChangeExecutor partitionChangeExecutor) {
+      final PartitionChangeExecutor partitionChangeExecutor,
+      final PartitionScalingChangeExecutor partitionScalingChangeExecutor) {
     this.partitionChangeExecutor = partitionChangeExecutor;
+    this.partitionScalingChangeExecutor = partitionScalingChangeExecutor;
   }
 
   @Override
@@ -69,6 +75,17 @@ public final class PartitionGroupConfigurationChangeAppliersImpl
       case final PartitionDeleteExporterOperation op ->
           new PartitionDeleteExporterApplier(
               op.memberId(), op.partitionId(), op.exporterId(), partitionChangeExecutor);
+      case final ScaleUpOperation op ->
+          switch (op) {
+            case StartPartitionScaleUp(
+                    final var ignoredMemberId,
+                    final var desiredPartitionCount) ->
+                new StartPartitionScaleUpApplier(
+                    partitionScalingChangeExecutor, desiredPartitionCount);
+            default ->
+                throw new UnsupportedOperationException(
+                    "No new-model applier implemented yet for %s".formatted(op));
+          };
       default ->
           throw new UnsupportedOperationException(
               "No new-model applier implemented yet for %s".formatted(operation));
