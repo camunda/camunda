@@ -32,6 +32,7 @@ import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
@@ -55,6 +56,7 @@ import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
@@ -99,6 +101,7 @@ class IncidentUpdateTaskIT {
     exporterMetrics = new CamundaExporterMetrics(context.getMeterRegistry());
     executor = Executors.newSingleThreadExecutor();
     incidentNotifier = mock(IncidentNotifier.class);
+    when(incidentNotifier.notifyAsync(any())).thenReturn(CompletableFuture.completedFuture(null));
     exporterMetadata = new ExporterMetadata(TestObjectMapper.objectMapper());
   }
 
@@ -314,8 +317,7 @@ class IncidentUpdateTaskIT {
                   .setId(String.valueOf(flowNodeInstanceKey))
                   .setPartitionId(PARTITION_ID)
                   .setKey(flowNodeInstanceKey)
-                  .setProcessInstanceKey(processInstance.getKey())
-                  .setRootProcessInstanceKey(processInstance.getKey());
+                  .setProcessInstanceKey(processInstance.getKey());
           listViewFlowNodeInstance.getJoinRelation().setParent(processInstance.getKey());
           store(listViewTemplate, client, processInstance, listViewFlowNodeInstance);
 
@@ -327,8 +329,7 @@ class IncidentUpdateTaskIT {
                   .setId(String.valueOf(flowNodeInstanceKey))
                   .setPartitionId(PARTITION_ID)
                   .setKey(flowNodeInstanceKey)
-                  .setProcessInstanceKey(processInstance.getKey())
-                  .setRootProcessInstanceKey(processInstance.getKey());
+                  .setProcessInstanceKey(processInstance.getKey());
           store(flowNodeInstanceTemplate, client, flowNodeInstance);
 
           client.refresh(listViewTemplate.getFullQualifiedName());
@@ -418,8 +419,7 @@ class IncidentUpdateTaskIT {
                   .setId(String.valueOf(flowNodeInstanceKey))
                   .setPartitionId(PARTITION_ID)
                   .setKey(flowNodeInstanceKey)
-                  .setProcessInstanceKey(processInstance.getKey())
-                  .setRootProcessInstanceKey(processInstance.getKey());
+                  .setProcessInstanceKey(processInstance.getKey());
           listViewFlowNodeInstance.getJoinRelation().setParent(processInstance.getKey());
           store(listViewTemplate, client, processInstance, listViewFlowNodeInstance);
 
@@ -431,8 +431,7 @@ class IncidentUpdateTaskIT {
                   .setId(String.valueOf(flowNodeInstanceKey))
                   .setPartitionId(PARTITION_ID)
                   .setKey(flowNodeInstanceKey)
-                  .setProcessInstanceKey(processInstance.getKey())
-                  .setRootProcessInstanceKey(processInstance.getKey());
+                  .setProcessInstanceKey(processInstance.getKey());
           store(flowNodeInstanceTemplate, client, flowNodeInstance);
 
           client.refresh(listViewTemplate.getFullQualifiedName());
@@ -599,7 +598,6 @@ class IncidentUpdateTaskIT {
                   .setPartitionId(PARTITION_ID)
                   .setKey(flowNodeInstanceKey)
                   .setProcessInstanceKey(processInstance.getKey())
-                  .setRootProcessInstanceKey(processInstance.getKey())
                   .setIncident(true);
           listViewFlowNodeInstance.getJoinRelation().setParent(processInstance.getKey());
           store(listViewTemplate, client, processInstance, listViewFlowNodeInstance);
@@ -613,7 +611,6 @@ class IncidentUpdateTaskIT {
                   .setPartitionId(PARTITION_ID)
                   .setKey(flowNodeInstanceKey)
                   .setProcessInstanceKey(processInstance.getKey())
-                  .setRootProcessInstanceKey(processInstance.getKey())
                   .setIncident(true);
           store(flowNodeInstanceTemplate, client, flowNodeInstance);
 
@@ -745,15 +742,14 @@ class IncidentUpdateTaskIT {
 
   private ExporterResourceProvider exporterResourceProvider(final ExporterConfiguration config) {
     final var cacheProvider = mock(ExporterEntityCacheProvider.class);
-    when(cacheProvider.getProcessCacheLoader(anyString(), any())).thenReturn(k -> null);
+    when(cacheProvider.getProcessCacheLoader(anyString())).thenReturn(k -> null);
     when(cacheProvider.getBatchOperationCacheLoader(anyString())).thenReturn(k -> null);
-    when(cacheProvider.getDecisionRequirementsCacheLoader(anyString())).thenReturn(k -> null);
     when(cacheProvider.getFormCacheLoader(anyString())).thenReturn(k -> null);
     final var resourceProvider = new DefaultExporterResourceProvider();
     resourceProvider.init(
         config,
         cacheProvider,
-        context,
+        context.getMeterRegistry(),
         new ExporterMetadata(TestObjectMapper.objectMapper()),
         TestObjectMapper.objectMapper());
     return resourceProvider;
@@ -773,6 +769,8 @@ class IncidentUpdateTaskIT {
     final var operationTemplate =
         resourceProvider.getIndexTemplateDescriptor(OperationTemplate.class);
     final var isElasticsearch = ConnectionTypes.isElasticSearch(config.getConnect().getType());
+    final var importPositionIndex =
+        new ImportPositionIndex(config.getConnect().getIndexPrefix(), isElasticsearch);
     if (isElasticsearch) {
       return closeLater(
           new ElasticsearchIncidentUpdateRepository(
@@ -784,6 +782,7 @@ class IncidentUpdateTaskIT {
               listViewTemplate.getFullQualifiedName(),
               flowNodeTemplate.getAlias(),
               operationTemplate.getAlias(),
+              importPositionIndex.getFullQualifiedName(),
               createAsyncESClient(config),
               executor,
               LOGGER));
@@ -798,6 +797,7 @@ class IncidentUpdateTaskIT {
               listViewTemplate.getFullQualifiedName(),
               flowNodeTemplate.getAlias(),
               operationTemplate.getAlias(),
+              importPositionIndex.getFullQualifiedName(),
               createOSAsyncClient(config),
               executor,
               LOGGER));
