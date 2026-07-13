@@ -20,6 +20,7 @@ import io.camunda.document.api.DocumentReference;
 import io.camunda.document.api.DocumentStore;
 import io.camunda.document.store.InputStreamHashCalculator;
 import io.camunda.zeebe.util.Either;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -485,7 +486,11 @@ public class AwsDocumentStore implements DocumentStore {
       client.putObject(putObjectRequest, RequestBody.fromFile(temp));
       return hash;
     } finally {
-      Files.deleteIfExists(temp);
+      try {
+        Files.deleteIfExists(temp);
+      } catch (final IOException e) {
+        LOGGER.warn("Failed to delete temp file {}", temp, e);
+      }
     }
   }
 
