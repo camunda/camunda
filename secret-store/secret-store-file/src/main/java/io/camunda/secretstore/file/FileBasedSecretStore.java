@@ -71,7 +71,7 @@ public final class FileBasedSecretStore implements SecretStore<FileBasedSecretRe
           LOG.warn("Skipping file with invalid secret name '{}' in '{}'", name, directory);
         }
       }
-    } catch (final IOException e) {
+    } catch (final IOException | SecurityException e) {
       throw new SecretStoreUnavailableException(
           "Failed to list secrets in '" + directory + "': " + e.getMessage(), e);
     }
@@ -83,22 +83,29 @@ public final class FileBasedSecretStore implements SecretStore<FileBasedSecretRe
     final var name = ref.name();
     // name is validated to a single path segment, so this is always a direct child.
     final var file = directory.resolve(name);
-    if (isHidden(name) || !Files.isRegularFile(file)) {
-      return notFound(name);
-    }
     try {
+      if (isHidden(name) || !Files.isRegularFile(file)) {
+        return notFound(name);
+      }
       return new SecretResolutionResult.Resolved(readValue(file));
     } catch (final NoSuchFileException e) {
       // deleted between the check above and the read (e.g. rotation): treat as not found
       return notFound(name);
-    } catch (final IOException e) {
+    } catch (final IOException | SecurityException e) {
       throw new SecretStoreUnavailableException(
           "Failed to read secret '" + name + "' in '" + directory + "': " + e.getMessage(), e);
     }
   }
 
   private void requireDirectory() {
-    if (!Files.isDirectory(directory)) {
+    final boolean isDirectory;
+    try {
+      isDirectory = Files.isDirectory(directory);
+    } catch (final SecurityException e) {
+      throw new SecretStoreUnavailableException(
+          "Cannot access secrets directory '" + directory + "': " + e.getMessage(), e);
+    }
+    if (!isDirectory) {
       throw new SecretStoreUnavailableException(
           "Secrets directory does not exist or is not a directory: " + directory);
     }

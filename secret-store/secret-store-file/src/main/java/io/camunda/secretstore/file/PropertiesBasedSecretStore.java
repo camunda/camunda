@@ -77,7 +77,7 @@ public final class PropertiesBasedSecretStore
     final var props = new Properties();
     try (final var reader = Files.newBufferedReader(filePath, StandardCharsets.UTF_8)) {
       props.load(reader);
-    } catch (final IOException e) {
+    } catch (final IOException | SecurityException e) {
       throw new SecretStoreUnavailableException(
           "Failed to load secrets file '" + filePath + "': " + e.getMessage(), e);
     } catch (final IllegalArgumentException e) {
