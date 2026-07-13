@@ -225,9 +225,9 @@ public class CCSMTokenService {
       return false;
     }
     final String lower = host.toLowerCase(Locale.ROOT);
-    return lower.equals("login.microsoftonline.com")
+    return "login.microsoftonline.com".equals(lower)
         || lower.endsWith(".login.microsoftonline.com")
-        || lower.equals("sts.windows.net")
+        || "sts.windows.net".equals(lower)
         || lower.endsWith(".sts.windows.net");
   }
 
