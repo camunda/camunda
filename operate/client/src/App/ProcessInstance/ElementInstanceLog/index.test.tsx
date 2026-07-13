@@ -367,7 +367,6 @@ const mockSearchResponse = {
 describe('ElementInstanceLog — search flow', () => {
   beforeEach(() => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchElementInstancesStatistics().withSuccess({items: []});
     mockFetchProcessDefinitionXml().withSuccess('');
     mockQueryBatchOperationItems().withSuccess({
