@@ -18,7 +18,10 @@ import java.util.Objects;
  * @param maxBytesPerStore soft byte budget per store; buffered (pinned) writes may exceed it, which
  *     {@link LayeredZeebeDb#overCapacity()} surfaces as the signal to run a persist round
  * @param absorbDeletes whether a delete of a never-persisted put annihilates the pair in memory so
- *     neither write ever reaches RocksDB
+ *     neither write ever reaches RocksDB. On by default: exact flushed flags plus negative caching
+ *     make absorption unconditionally sound (a pair only annihilates when the durable store
+ *     provably never held the key), and short-lived put/delete churn is exactly what the layered
+ *     store exists to elide
  * @param pipelineSegmentLimit maximum number of non-persisting frozen segments per store before
  *     they are merged down, bounding read amplification
  * @param persistInterval the cadence at which the runtime driving a domain should run persist
@@ -37,6 +40,7 @@ public record LayeredZeebeDbConfig(
     Duration freezeInterval) {
 
   private static final long DEFAULT_MAX_BYTES_PER_STORE = 16 * 1024 * 1024;
+  private static final boolean DEFAULT_ABSORB_DELETES = true;
   private static final int DEFAULT_PIPELINE_SEGMENT_LIMIT = 4;
   private static final Duration DEFAULT_PERSIST_INTERVAL = Duration.ofSeconds(1);
   private static final Duration DEFAULT_FREEZE_INTERVAL = Duration.ofMillis(250);
@@ -88,7 +92,7 @@ public record LayeredZeebeDbConfig(
   public static LayeredZeebeDbConfig defaults() {
     return new LayeredZeebeDbConfig(
         DEFAULT_MAX_BYTES_PER_STORE,
-        false,
+        DEFAULT_ABSORB_DELETES,
         DEFAULT_PIPELINE_SEGMENT_LIMIT,
         DEFAULT_PERSIST_INTERVAL,
         DEFAULT_FREEZE_INTERVAL);

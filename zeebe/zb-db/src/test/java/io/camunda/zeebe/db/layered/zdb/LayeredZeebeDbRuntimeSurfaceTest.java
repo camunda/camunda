@@ -150,6 +150,29 @@ final class LayeredZeebeDbRuntimeSurfaceTest {
         .isGreaterThan(0.0);
   }
 
+  @Test
+  void shouldElideCreateThenDeleteCyclesByDefault() {
+    // given a db built with the default configuration — delete absorption is on by default — and
+    // a create-then-delete cycle across two committed batches
+    layered.layeredContext().runInTransaction(() -> put(1, 100));
+    layered.layeredContext().runInTransaction(() -> delete(1));
+
+    // when the buffer drains
+    layered.defaultDomain().persistNow(2, PersistTrigger.INTERVAL);
+
+    // then the pair annihilated in memory — the elision meter moved and neither write ever
+    // reached RocksDB
+    final var annihilated =
+        inner
+            .getMeterRegistry()
+            .get("zeebe.db.layered.writes.elided")
+            .tag("domain", LayeredZeebeDb.DEFAULT_DOMAIN_NAME)
+            .tag("reason", "annihilated")
+            .counter();
+    assertThat(annihilated.count()).isEqualTo(2.0);
+    assertThat(passThroughGet(1)).isNull();
+  }
+
   // ------------------------------------------------------------------
   // Successor takeover on a reused database
   // ------------------------------------------------------------------
@@ -328,6 +351,12 @@ final class LayeredZeebeDbRuntimeSurfaceTest {
     dbKey.wrapLong(key);
     dbValue.wrapLong(value);
     layeredColumnFamily.upsert(dbKey, dbValue);
+  }
+
+  private void delete(final long key) {
+    final DbLong dbKey = new DbLong();
+    dbKey.wrapLong(key);
+    layeredColumnFamily.deleteExisting(dbKey);
   }
 
   private Long get(final long key) {

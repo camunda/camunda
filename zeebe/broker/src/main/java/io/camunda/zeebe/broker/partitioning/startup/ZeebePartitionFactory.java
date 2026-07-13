@@ -255,7 +255,7 @@ public final class ZeebePartitionFactory {
         zeebeFactory,
         new LayeredZeebeDbConfig(
             layeredState.getMaxBytesPerStore().toBytes(),
-            layeredDefaults.absorbDeletes(),
+            layeredState.isAbsorbDeletes(),
             layeredDefaults.pipelineSegmentLimit(),
             layeredState.getPersistInterval(),
             layeredState.getFreezeInterval()),

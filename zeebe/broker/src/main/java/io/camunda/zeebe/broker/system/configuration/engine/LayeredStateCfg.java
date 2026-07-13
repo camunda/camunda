@@ -31,10 +31,13 @@ public final class LayeredStateCfg implements ConfigurationEntry {
   private static final Duration DEFAULT_FREEZE_INTERVAL = Duration.ofMillis(250);
   private static final DataSize DEFAULT_MAX_BYTES_PER_STORE = DataSize.ofMegabytes(16);
 
+  private static final boolean DEFAULT_ABSORB_DELETES = true;
+
   private boolean enabled = false;
   private Duration persistInterval = DEFAULT_PERSIST_INTERVAL;
   private Duration freezeInterval = DEFAULT_FREEZE_INTERVAL;
   private DataSize maxBytesPerStore = DEFAULT_MAX_BYTES_PER_STORE;
+  private boolean absorbDeletes = DEFAULT_ABSORB_DELETES;
 
   public boolean isEnabled() {
     return enabled;
@@ -68,6 +71,20 @@ public final class LayeredStateCfg implements ConfigurationEntry {
     this.maxBytesPerStore = maxBytesPerStore;
   }
 
+  /**
+   * Whether a delete of a never-persisted put annihilates the pair in memory so neither write ever
+   * reaches RocksDB. On by default — the store's exact flushed flags make absorption
+   * unconditionally sound, and short-lived put/delete churn is the dominant write pattern the
+   * layered store exists to elide.
+   */
+  public boolean isAbsorbDeletes() {
+    return absorbDeletes;
+  }
+
+  public void setAbsorbDeletes(final boolean absorbDeletes) {
+    this.absorbDeletes = absorbDeletes;
+  }
+
   @Override
   public String toString() {
     return "LayeredStateCfg{"
@@ -79,6 +96,8 @@ public final class LayeredStateCfg implements ConfigurationEntry {
         + freezeInterval
         + ", maxBytesPerStore="
         + maxBytesPerStore
+        + ", absorbDeletes="
+        + absorbDeletes
         + '}';
   }
 }
