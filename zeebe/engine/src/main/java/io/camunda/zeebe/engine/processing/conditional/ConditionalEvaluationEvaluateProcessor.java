@@ -116,14 +116,19 @@ public class ConditionalEvaluationEvaluateProcessor
     for (final var match : matchedStartEvents) {
       final long processInstanceKey = keyGenerator.nextKey();
 
-      eventHandle.activateProcessInstanceForStartEvent(
-          match.processDefinitionKey(),
-          processInstanceKey,
-          match.startEventId(),
-          record.getVariablesBuffer(),
-          record.getTenantId());
+      final var activated =
+          eventHandle.activateProcessInstanceForStartEvent(
+              match.processDefinitionKey(),
+              processInstanceKey,
+              match.startEventId(),
+              record.getVariablesBuffer(),
+              record.getTenantId());
 
-      record.addStartedProcessInstance(match.processDefinitionKey(), processInstanceKey);
+      if (activated) {
+        // Only report instances that were actually started; a draining definition is skipped and
+        // must not appear in the EVALUATED event or the response.
+        record.addStartedProcessInstance(match.processDefinitionKey(), processInstanceKey);
+      }
     }
 
     final long eventKey = keyGenerator.nextKey();
