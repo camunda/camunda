@@ -36,15 +36,31 @@ import {ReactQueryProvider} from 'modules/react-query/ReactQueryProvider';
 import {PageErrorBoundary} from 'modules/components/PageErrorBoundary';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {useWaitStateStatistics} from 'modules/queries/waitStateStatistics/useWaitStateStatistics';
+import {hasProcessLevelWaitState} from 'modules/utils/waitStates';
 
 const DefaultTabRedirect: React.FC = () => {
   const location = useLocation();
-  const {data: processInstance} = useProcessInstance();
+  const {data: processInstance, isLoading: isProcessInstanceLoading} =
+    useProcessInstance();
   const {hasSelection} = useProcessInstanceElementSelection();
+  const {data: waitStateStatistics, isLoading: isWaitStateLoading} =
+    useWaitStateStatistics({
+      enabled: getClientConfig().waitStatesEnabled,
+    });
+
+  if (isProcessInstanceLoading || isWaitStateLoading) {
+    return null;
+  }
+
+  const isProcessLevelWaiting = hasProcessLevelWaitState(
+    waitStateStatistics,
+    processInstance?.processDefinitionId,
+  );
   const pathname =
     processInstance?.hasIncident === true
       ? 'incidents'
-      : hasSelection
+      : hasSelection || isProcessLevelWaiting
         ? 'details'
         : 'variables';
   return <Navigate to={{pathname, search: location.search}} replace />;
