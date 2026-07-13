@@ -56,8 +56,7 @@ public class PhysicalTenantWebSessionUnprotectedApiIT {
   @MultiDbTestApplication
   private static final TestCamundaApplication CAMUNDA =
       new TestCamundaApplication()
-          .withAuthorizationsEnabled()
-          .withAdditionalProfile("consolidated-auth")
+          .withBasicAuth()
           .withProperty("camunda.security.session.persistent.enabled", true)
           .withSecurityConfig(
               sc -> {
