@@ -212,8 +212,14 @@ public final class SegmentedJournal implements Journal {
   @Override
   public void close() {
     flush();
-    segments.close();
-    open = false;
+
+    final var stamp = rwlock.writeLock();
+    try {
+      open = false;
+      segments.close();
+    } finally {
+      rwlock.unlockWrite(stamp);
+    }
   }
 
   /**
