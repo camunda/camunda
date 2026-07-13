@@ -985,7 +985,7 @@ jobs:
             }
       - name: Send success Slack notification
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && needs.github.outputs.releaseBodyUpdateOutcome != 'failure' }}
-        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+        uses: slackapi/slack-github-action@fc46ded2fc4d7f11bfa62864526f920cf1a1167d # v3.0.4
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
           webhook-type: incoming-webhook
@@ -1005,7 +1005,7 @@ jobs:
 
       - name: Send success Slack notification with manual follow-up
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun && needs.github.outputs.releaseBodyUpdateOutcome == 'failure' }}
-        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+        uses: slackapi/slack-github-action@fc46ded2fc4d7f11bfa62864526f920cf1a1167d # v3.0.4
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
           webhook-type: incoming-webhook
@@ -1137,7 +1137,7 @@ jobs:
             }
       - name: Send failure Slack notification
         if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
-        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+        uses: slackapi/slack-github-action@fc46ded2fc4d7f11bfa62864526f920cf1a1167d # v3.0.4
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
           webhook-type: incoming-webhook
