@@ -39,22 +39,18 @@ public class JobWorkerManager {
   private final JobWorkerFactory jobWorkerFactory;
 
   /**
-   * Managed workers keyed by a composite {@code (client identity, type)} key so the same job type
-   * can be registered independently on multiple clients (one per configured multi-client). For a
+   * Managed workers keyed by a composite {@code (client, type)} key so the same job type can be
+   * registered independently on multiple clients (one per configured multi-client). For a
    * single-client application this holds exactly one entry per type.
    */
-  private final Map<String, InternalManagedJobWorker> managedJobWorkers = new ConcurrentHashMap<>();
+  private final Map<WorkerKey, InternalManagedJobWorker> managedJobWorkers =
+      new ConcurrentHashMap<>();
 
   public JobWorkerManager(
       final List<JobWorkerValueCustomizer> jobWorkerValueCustomizers,
       final JobWorkerFactory jobWorkerFactory) {
     this.jobWorkerValueCustomizers = jobWorkerValueCustomizers;
     this.jobWorkerFactory = jobWorkerFactory;
-  }
-
-  /** Distinguishes the same job type registered on different client instances. */
-  private static String workerKey(final CamundaClient client, final String type) {
-    return System.identityHashCode(client) + ":" + type;
   }
 
   public void createJobWorker(
@@ -70,20 +66,19 @@ public class JobWorkerManager {
     final JobWorkerValue jobWorkerValue = managedJobWorker.jobWorkerValue();
     jobWorkerValueCustomizers.forEach(customizer -> customizer.customize(jobWorkerValue));
     final String type = jobWorkerValue.getType().value();
-    final String key = workerKey(client, type);
-    final InternalManagedJobWorker internalManagedJobWorker;
-    if (managedJobWorkers.containsKey(key)) {
-      internalManagedJobWorker = managedJobWorkers.get(key);
-    } else {
-      internalManagedJobWorker = new InternalManagedJobWorker();
-      internalManagedJobWorker.setSource(source);
-      internalManagedJobWorker.setCurrent(jobWorkerValue);
-      internalManagedJobWorker.setCamundaClient(client);
-      internalManagedJobWorker.setJobHandlerFactory(managedJobWorker.jobHandlerFactory());
-      internalManagedJobWorker.setType(type);
-      internalManagedJobWorker.setClientName(clientName);
-      managedJobWorkers.put(key, internalManagedJobWorker);
-    }
+    final InternalManagedJobWorker internalManagedJobWorker =
+        managedJobWorkers.computeIfAbsent(
+            new WorkerKey(client, type),
+            key -> {
+              final InternalManagedJobWorker worker = new InternalManagedJobWorker();
+              worker.setSource(source);
+              worker.setCurrent(jobWorkerValue);
+              worker.setCamundaClient(client);
+              worker.setJobHandlerFactory(managedJobWorker.jobHandlerFactory());
+              worker.setType(type);
+              worker.setClientName(clientName);
+              return worker;
+            });
     upsertWorker(internalManagedJobWorker, new CreateChangeSet());
   }
 
@@ -135,13 +130,17 @@ public class JobWorkerManager {
     removeWorkers(e -> Objects.equals(e.getValue().getSource(), source));
   }
 
-  private void removeWorkers(final Predicate<Map.Entry<String, InternalManagedJobWorker>> filter) {
-    final List<String> keysToRemove =
+  private void removeWorkers(
+      final Predicate<Map.Entry<WorkerKey, InternalManagedJobWorker>> filter) {
+    final List<WorkerKey> keysToRemove =
         managedJobWorkers.entrySet().stream().filter(filter).map(Map.Entry::getKey).toList();
     keysToRemove.forEach(
         key -> {
-          upsertWorker(managedJobWorkers.get(key), new CloseChangeSet());
-          managedJobWorkers.remove(key);
+          // remove first so a concurrent removal cannot leave us upserting a null worker
+          final InternalManagedJobWorker worker = managedJobWorkers.remove(key);
+          if (worker != null) {
+            upsertWorker(worker, new CloseChangeSet());
+          }
         });
   }
 
@@ -199,6 +198,37 @@ public class JobWorkerManager {
                   "%s with type %s",
                   internalManagedJobWorker.getCurrent().getName().value(),
                   internalManagedJobWorker.getCurrent().getType().value()));
+    }
+  }
+
+  /**
+   * Composite key distinguishing the same job type registered on different client instances. The
+   * client is compared by reference identity so two distinct client instances never share an entry
+   * (unlike encoding {@link System#identityHashCode(Object)} into the key, which can collide).
+   */
+  private static final class WorkerKey {
+    private final CamundaClient client;
+    private final String type;
+
+    private WorkerKey(final CamundaClient client, final String type) {
+      this.client = client;
+      this.type = type;
+    }
+
+    @Override
+    public int hashCode() {
+      return 31 * System.identityHashCode(client) + type.hashCode();
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof final WorkerKey other)) {
+        return false;
+      }
+      return client == other.client && type.equals(other.type);
     }
   }
 
