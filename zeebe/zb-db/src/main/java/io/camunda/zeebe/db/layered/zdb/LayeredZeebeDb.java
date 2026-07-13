@@ -263,8 +263,18 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType
    * every call returns the same instance.
    */
   public LayeredDomain defaultDomain() {
-    final LayeredDomain existing = domainsByName.get(DEFAULT_DOMAIN_NAME);
-    return existing != null ? existing : registerDomain(DEFAULT_DOMAIN_NAME);
+    return domain(DEFAULT_DOMAIN_NAME);
+  }
+
+  /**
+   * The domain with the given name, registered on first use; every call returns the same instance.
+   * The get-or-register semantics are what successive owners of a reused database rely on (e.g. a
+   * new exporter director after a leader transition): the first owner registers the domain, every
+   * successor gets it back with its stores — and any buffered state — intact.
+   */
+  public LayeredDomain domain(final String name) {
+    final LayeredDomain existing = domainsByName.get(name);
+    return existing != null ? existing : registerDomain(name);
   }
 
   private LayeredDomain domainOf(final TransactionContext context) {

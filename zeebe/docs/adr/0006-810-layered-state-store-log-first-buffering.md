@@ -148,4 +148,14 @@ message-TTL checkers consume `ReadOnlyView`s pinned by a real RocksDB snapshot s
 at a configurable freeze cadence and additionally frozen right before each checker execution so no
 committed wake-up can be missed. The remaining secondary readers (query service, position
 supplier, other engine schedulers) still read pass-through contexts at persist-round freshness —
-correctness-safe, flipped in a later step. Phase C (exporter domain) is follow-up work.
+correctness-safe, flipped in a later step.
+
+The persist step of D2 runs asynchronously: rounds are prepared and completed on the stream
+processor's actor while the drain-and-commit runs on a per-partition io-bound actor, with the
+pre-snapshot flush and the scheduled-task barrier awaiting in-flight rounds by chaining futures
+(never blocking the actor). Phase C is in place: the exporter director registers an `exporter`
+ownership domain and drains its buffered positions at the persist cadence on its own actor, with
+the initial entries drained immediately so committed-state readers (snapshot selection, log
+compaction) never see an empty exporter column family while positions are buffered. The
+exported-position staleness this introduces is bounded by the persist cadence and conservative in
+direction — a lower committed position only makes retention keep more log.

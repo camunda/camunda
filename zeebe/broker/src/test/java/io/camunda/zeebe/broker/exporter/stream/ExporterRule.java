@@ -17,6 +17,8 @@ import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.ExporterM
 import io.camunda.zeebe.broker.system.partitions.PartitionMessagingService;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.db.layered.zdb.LayeredZeebeDbConfig;
+import io.camunda.zeebe.db.layered.zdb.LayeredZeebeDbFactory;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.util.TestStreams;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -30,6 +32,7 @@ import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.io.File;
 import java.time.Duration;
 import java.util.List;
 import java.util.Set;
@@ -59,6 +62,7 @@ public final class ExporterRule implements TestRule {
 
   private final ZeebeDbFactory zeebeDbFactory;
   private final ExporterMode exporterMode;
+  private LayeredZeebeDbConfig layeredDbConfig;
   private ZeebeDb<ZbColumnFamilies> capturedZeebeDb;
 
   private TestStreams streams;
@@ -84,6 +88,16 @@ public final class ExporterRule implements TestRule {
 
   public static ExporterRule passiveExporter() {
     return new ExporterRule(ExporterMode.PASSIVE);
+  }
+
+  /**
+   * Wraps the runtime database in a {@code LayeredZeebeDb} (the experimental layered-state flag's
+   * wiring), so the director writes exporter positions through the exporter ownership domain and
+   * drains them at the given config's persist cadence.
+   */
+  public ExporterRule withLayeredDb(final LayeredZeebeDbConfig config) {
+    layeredDbConfig = config;
+    return this;
   }
 
   public ExporterRule withPartitionMessageService(
@@ -128,7 +142,39 @@ public final class ExporterRule implements TestRule {
       final Function<RecordExporter, RecordExporter> recordExporter) {
     final var stream = streams.getLogStream(STREAM_NAME);
     final var runtimeFolder = streams.createRuntimeFolder(stream);
-    capturedZeebeDb = spy(zeebeDbFactory.createDb(runtimeFolder.toFile(), false));
+    capturedZeebeDb = createRuntimeDb(runtimeFolder.toFile());
+    startExporterDirectorOnDb(exporterDescriptors, phase, recordExporter, capturedZeebeDb);
+  }
+
+  /**
+   * Starts a new director on the database of the previous one — a leader transition on a reused
+   * runtime database — without recreating the database. The previous director must be stopped first
+   * (see {@link #stopExporterDirector()}).
+   */
+  public void startExporterDirectorOnSameDb(final List<ExporterDescriptor> exporterDescriptors) {
+    startExporterDirectorOnDb(
+        exporterDescriptors, ExporterPhase.EXPORTING, Function.identity(), capturedZeebeDb);
+  }
+
+  @SuppressWarnings("unchecked")
+  private ZeebeDb<ZbColumnFamilies> createRuntimeDb(final File runtimeFolder) {
+    if (layeredDbConfig != null) {
+      // no spy: the layered decorator is final, and the layered tests assert on behavior
+      return LayeredZeebeDbFactory.of(
+              (ZeebeDbFactory<ZbColumnFamilies>) zeebeDbFactory,
+              layeredDbConfig,
+              ZbColumnFamilies.class)
+          .createDb(runtimeFolder, false);
+    }
+    return spy((ZeebeDb<ZbColumnFamilies>) zeebeDbFactory.createDb(runtimeFolder, false));
+  }
+
+  private void startExporterDirectorOnDb(
+      final List<ExporterDescriptor> exporterDescriptors,
+      final ExporterPhase phase,
+      final Function<RecordExporter, RecordExporter> recordExporter,
+      final ZeebeDb<ZbColumnFamilies> zeebeDb) {
+    final var stream = streams.getLogStream(STREAM_NAME);
 
     final var descriptorsWithInitializationInfo =
         exporterDescriptors.stream()
@@ -144,7 +190,7 @@ public final class ExporterRule implements TestRule {
             .id(EXPORTER_PROCESSOR_ID)
             .logStream(stream)
             .clock(StreamClock.system())
-            .zeebeDb(capturedZeebeDb)
+            .zeebeDb(zeebeDb)
             .exporterMode(exporterMode)
             .distributionInterval(distributionInterval)
             .partitionMessagingService(partitionMessagingService)
@@ -196,6 +242,11 @@ public final class ExporterRule implements TestRule {
     director.stopAsync().join();
     capturedZeebeDb.close();
     capturedZeebeDb = null;
+  }
+
+  /** Stops the director but keeps the database open, so a successor can take it over. */
+  public void stopExporterDirector() {
+    director.stopAsync().join();
   }
 
   private class SetupRule extends ExternalResource {

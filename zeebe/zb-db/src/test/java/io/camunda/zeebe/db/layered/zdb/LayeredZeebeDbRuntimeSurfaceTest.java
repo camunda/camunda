@@ -172,6 +172,40 @@ final class LayeredZeebeDbRuntimeSurfaceTest {
   }
 
   @Test
+  void shouldAbortRoundLeftOutstandingByPredecessor() {
+    // given a persist round a predecessor prepared but never completed (it died in between; its
+    // persist IO has terminated)
+    final LayeredDomain domain = layered.defaultDomain();
+    layered.layeredContext().runInTransaction(() -> put(1, 100));
+    domain.preparePersist(1, PersistTrigger.INTERVAL);
+    assertThat(domain.roundInFlight()).isTrue();
+
+    // when the successor aborts the stale round
+    domain.abortStaleRound();
+
+    // then the segments stayed buffered and the successor's own round drains them
+    assertThat(domain.roundInFlight()).isFalse();
+    assertThat(domain.hasBufferedWrites()).isTrue();
+    domain.persistNow(2, PersistTrigger.INTERVAL);
+    assertThat(passThroughGet(1)).isEqualTo(100);
+    // and aborting without an outstanding round is a no-op
+    domain.abortStaleRound();
+  }
+
+  @Test
+  void shouldGetOrRegisterDomainByName() {
+    // given a named domain
+    final LayeredDomain registered = layered.domain("exporter");
+
+    // when asked again by name
+    final LayeredDomain resolved = layered.domain("exporter");
+
+    // then the same instance is returned — successor owners of a reused database rely on it
+    assertThat(resolved).isSameAs(registered);
+    assertThat(resolved).isNotSameAs(layered.defaultDomain());
+  }
+
+  @Test
   void shouldDiscardBatchLeftOpenByPredecessor() {
     // given a batch left open (a predecessor died mid-batch, its staged write uncommitted)
     final var transaction = layered.layeredContext().getCurrentTransaction();

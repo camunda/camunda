@@ -85,6 +85,10 @@ final class LayeredStateStandaloneBrokerTest {
     // then the timer fires and the instance completes although state commits are buffered
     awaitInstanceCompleted(firstInstanceKey);
 
+    // and the exporter position advances although it is written through the exporter ownership
+    // domain (buffered on the exporter director's actor, drained by its persist cadence)
+    awaitExportedPositionAdvanced();
+
     // when a snapshot is forced (drains the buffered state in a pre-snapshot persist round)
     // and the broker restarts from that snapshot plus log replay
     takeSnapshot();
@@ -93,9 +97,11 @@ final class LayeredStateStandaloneBrokerTest {
     broker.start().awaitCompleteTopology();
     client = newClient();
 
-    // then the recovered state still serves the deployed process and new instances complete
+    // then the recovered state still serves the deployed process, new instances complete, and
+    // the exporter resumes from the recovered (persisted) position and advances again
     final long secondInstanceKey = createInstance();
     awaitInstanceCompleted(secondInstanceKey);
+    awaitExportedPositionAdvanced();
   }
 
   @Test
@@ -156,6 +162,17 @@ final class LayeredStateStandaloneBrokerTest {
                             .withElementType(BpmnElementType.PROCESS)
                             .exists())
                     .isTrue());
+  }
+
+  private void awaitExportedPositionAdvanced() {
+    final PartitionsActuator partitions = PartitionsActuator.of(broker);
+    Awaitility.await("until the exported position advanced")
+        .atMost(Duration.ofSeconds(60))
+        .untilAsserted(
+            () -> {
+              final Long exportedPosition = partitions.query().get(1).exportedPosition();
+              assertThat(exportedPosition).isNotNull().isPositive();
+            });
   }
 
   private void takeSnapshot() {

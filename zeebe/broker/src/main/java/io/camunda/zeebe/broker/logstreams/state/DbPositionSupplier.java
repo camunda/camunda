@@ -11,6 +11,16 @@ import io.camunda.zeebe.backup.processing.state.DbCheckpointState;
 import io.camunda.zeebe.broker.exporter.stream.ExportersState;
 import io.camunda.zeebe.db.ZeebeDb;
 
+/**
+ * Reads the exported/backup positions that bound snapshot selection and log compaction from
+ * committed RocksDB, through a pass-through context.
+ *
+ * <p>With the experimental layered-state flag on, the exporter director buffers position updates in
+ * its own ownership domain and drains them at the persist cadence; those buffered advances are
+ * invisible here until persisted. That staleness is safe by direction: a lower exported position
+ * makes snapshot selection pick an older log index and retention keep <em>more</em> log — never
+ * less than the exporters still need — bounded by the persist cadence.
+ */
 public final class DbPositionSupplier implements StatePositionSupplier {
 
   private final boolean continuousBackup;
