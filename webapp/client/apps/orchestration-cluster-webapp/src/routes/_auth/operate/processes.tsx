@@ -15,6 +15,7 @@ const processesSearchSchema = z.object({
 	process: z.string().optional(),
 	version: z.number().int().positive().optional(),
 	elementId: z.string().optional(),
+	errorMessage: z.string().optional(),
 	active: z.boolean().default(true),
 	incidents: z.boolean().default(true),
 	completed: z.boolean().default(false),

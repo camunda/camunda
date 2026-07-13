@@ -16,10 +16,11 @@ import {Li, LinkWrapper} from '../styled';
 
 type Props = {
 	errorHashCode: number;
+	errorMessage: string;
 	tabIndex?: number;
 };
 
-const IncidentsByErrorDefinitions: React.FC<Props> = ({errorHashCode, tabIndex}) => {
+const IncidentsByErrorDefinitions: React.FC<Props> = ({errorHashCode, errorMessage, tabIndex}) => {
 	const {t} = useTranslation();
 	const {data} = useSuspenseQuery(incidentsByErrorDefinitionsQuery(errorHashCode));
 
@@ -35,6 +36,7 @@ const IncidentsByErrorDefinitions: React.FC<Props> = ({errorHashCode, tabIndex})
 							search={{
 								process: item.processDefinitionId,
 								version: item.processDefinitionVersion,
+								errorMessage,
 								incidents: true,
 								active: false,
 								completed: false,

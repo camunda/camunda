@@ -57,7 +57,13 @@ const IncidentsByError: React.FC = () => {
 				incident: (
 					<LinkWrapper
 						to="/operate/processes"
-						search={{incidents: true, active: false, completed: false, canceled: false}}
+						search={{
+							errorMessage: item.errorMessage,
+							incidents: true,
+							active: false,
+							completed: false,
+							canceled: false,
+						}}
 						title={item.errorMessage}
 						onClick={() => {
 							tracking.track({
@@ -91,7 +97,7 @@ const IncidentsByError: React.FC = () => {
 								</LoadingRow>
 							}
 						>
-							<IncidentsByErrorDefinitions errorHashCode={item.errorHashCode} />
+							<IncidentsByErrorDefinitions errorHashCode={item.errorHashCode} errorMessage={item.errorMessage} />
 						</Suspense>
 					</ErrorBoundary>
 				);

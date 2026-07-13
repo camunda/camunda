@@ -123,7 +123,10 @@ describe('<IncidentsByError />', () => {
 		await expect.element(screen.getByText('Alpha Connection Timeout')).toBeVisible();
 		await expect
 			.element(screen.getByText('Alpha Connection Timeout').element().closest('a')!)
-			.toHaveAttribute('href', '/operate/processes?incidents=true&active=false&completed=false&canceled=false');
+			.toHaveAttribute(
+				'href',
+				'/operate/processes?errorMessage=Alpha+Connection+Timeout&incidents=true&active=false&completed=false&canceled=false',
+			);
 	});
 
 	it('should show an error state when the request fails', async ({worker}) => {
