@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.config.changes;
 
+import io.camunda.zeebe.dynamic.config.changes.appliers.AwaitRedistributionCompletionApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionBootstrapApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionDeleteExporterApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionDisableExporterApplier;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRedistributionCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.StartPartitionScaleUp;
 
 public final class PartitionGroupConfigurationChangeAppliersImpl
@@ -82,6 +84,9 @@ public final class PartitionGroupConfigurationChangeAppliersImpl
                     final var desiredPartitionCount) ->
                 new StartPartitionScaleUpApplier(
                     partitionScalingChangeExecutor, desiredPartitionCount);
+            case final AwaitRedistributionCompletion awaitRedistributionCompletion ->
+                new AwaitRedistributionCompletionApplier(
+                    partitionScalingChangeExecutor, awaitRedistributionCompletion);
             default ->
                 throw new UnsupportedOperationException(
                     "No new-model applier implemented yet for %s".formatted(op));
