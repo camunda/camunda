@@ -45,7 +45,8 @@ import org.jspecify.annotations.Nullable;
  *       segments and tips in every store (the durable state is authoritative for them now; clean
  *       caches refill lazily via read-through), rotates the snapshot (take new, release the old
  *       view's reference) and publishes a fresh view. On failure the segments stay in their
- *       pipelines — a raw tip becomes a normal frozen segment — and the next round retries them;
+ *       pipelines — a raw tip becomes a normal frozen segment, and a refreshed view is published
+ *       over the unchanged snapshot so readers can resolve it — and the next round retries them;
  *       nothing needs merging back.
  * </ol>
  *
@@ -164,9 +165,17 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
     for (final LayeredKeyValueStore store : stores.values()) {
       store.freeze(watermark);
     }
-    // the durable state has not moved (persist rounds are its only writer), so the current
-    // snapshot still matches the new segment set: the new view retains the same snapshot, then
-    // the previous view's reference is released — net count unchanged, the snapshot survives
+    republishWithSharedSnapshot();
+  }
+
+  /**
+   * Publishes a refreshed view over the current segment sets while reusing the current view's
+   * snapshot — for segment-only changes (freezes, a failed round's re-homed tip) where the durable
+   * state has not moved (persist rounds are its only writer), so the snapshot still matches: the
+   * new view retains the same snapshot, then the previous view's reference is released — net count
+   * unchanged, the snapshot survives across view generations.
+   */
+  private void republishWithSharedSnapshot() {
     final ReadOnlyView previous = currentView;
     final RefCountedSnapshot shared = previous.snapshotRef();
     shared.retain();
@@ -270,10 +279,16 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
       previous.release();
       metrics.countViewRotation();
     } else {
+      // the failed round re-homed any raw captured tip into a normal pipeline segment (see
+      // LayeredKeyValueStore#completePersist) — state the current view cannot resolve, because
+      // views see segments only and the tip was invisible active state when the view published.
+      // Republish so readers observe it: segments changed, the durable state did not move, so
+      // the snapshot is shared exactly like a freezeAll republish. Without this, a quiescent
+      // store reports no active writes, freeze barriers skip, and an event-driven checker scans
+      // a view missing committed entries — a lost wake-up
+      republishWithSharedSnapshot();
       metrics.countRoundFailure();
     }
-    // on failure the segments stayed in their pipelines and the durable state did not move, so
-    // the current view is still valid — nothing to republish
   }
 
   /**

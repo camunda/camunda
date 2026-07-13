@@ -671,7 +671,8 @@ final class LayeredStoreCoordinatorTest {
     assertThat(views).containsExactly(initial, afterFreeze, afterComplete);
     assertThat(views.get(views.size() - 1)).isSameAs(coordinator.currentView());
 
-    // when -- a failed round publishes nothing at all
+    // when -- a failed round republishes exactly once (the raw tip it captured was re-homed into
+    // a segment the pre-round view cannot resolve)
     store.put(bytes(2), bytes(20));
     store.promote();
     state.failNextCommit();
@@ -681,7 +682,37 @@ final class LayeredStoreCoordinatorTest {
     coordinator.completeRound(failing, false);
 
     // then
-    assertThat(views).hasSize(publishedAfterPrepare);
+    assertThat(views).hasSize(publishedAfterPrepare + 1);
+    assertThat(views.get(views.size() - 1)).isSameAs(coordinator.currentView());
+  }
+
+  @Test
+  void shouldRepublishViewOverReHomedTipAfterFailedRound() {
+    // given -- a batch captured raw by a round (no freeze in between: the entries live only in
+    // the round's captured tip, invisible to the pre-round view)
+    final LayeredKeyValueStore store = newStore(STORE_A);
+    final LayeredStoreCoordinator coordinator = newCoordinator(store);
+    store.put(bytes(1), bytes(10));
+    store.promote();
+    state.failNextCommit();
+    final PersistRound round = coordinator.prepareRound(10);
+    final ReadOnlyView preRoundView = coordinator.currentView();
+    assertThat(preRoundView.get(STORE_A, bytes(1))).isNull();
+
+    // when -- the round fails and completion re-homes the tip into a pipeline segment
+    assertThatThrownBy(round::persist).isInstanceOf(IllegalStateException.class);
+    coordinator.completeRound(round, false);
+
+    // then -- a refreshed view resolves the re-homed entries (a checker scanning the stale view
+    // would miss committed state — a lost wake-up); the store is quiescent, so no later freeze
+    // would repair the staleness
+    assertThat(store.hasActiveWrites()).isFalse();
+    final ReadOnlyView republished = coordinator.currentView();
+    assertThat(republished).isNotSameAs(preRoundView);
+    assertThat(republished.get(STORE_A, bytes(1))).containsExactly(bytes(10));
+
+    // and -- the durable state did not move, so the republished view shares the snapshot
+    assertThat(republished.snapshotRef()).isSameAs(preRoundView.snapshotRef());
   }
 
   /**

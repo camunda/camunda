@@ -15,6 +15,8 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.layered.LayeredStoreCoordinator.MergeRound;
 import io.camunda.zeebe.db.layered.LayeredStoreCoordinator.PersistRound;
+import io.camunda.zeebe.db.layered.ReadOnlyView;
+import io.camunda.zeebe.db.layered.ViewPublisher;
 import io.camunda.zeebe.db.layered.zdb.LayeredZeebeDb;
 import io.camunda.zeebe.db.layered.zdb.LayeredZeebeDbConfig;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -31,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.CloseHelper;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -162,6 +165,41 @@ final class LayeredStatePersistenceTest {
 
     // then it froze regardless of the view's age — a missed committed entry is a lost wake-up
     assertThat(layered.defaultDomain().hasActiveWrites()).isFalse();
+  }
+
+  @Test
+  void shouldExposeReHomedSegmentToEventDrivenCheckerAfterFailedRound() throws Exception {
+    // given a committed batch captured raw by a failing round on a then-quiescent partition:
+    // completion re-homes the raw tip into a pipeline segment and no active writes remain
+    commitBatch(1, 100);
+    io.failNextRound();
+    startRoundNow();
+    runProcessorJobsUntil(() -> !persistence.roundInFlight());
+    assertThat(layered.defaultDomain().hasActiveWrites()).isFalse();
+    assertThat(layered.defaultDomain().hasBufferedWrites()).isTrue();
+
+    // when an event-driven checker prepares — nothing is active, so no freeze happens
+    assertThat(persistence.tryFreezeForScheduledTask(null)).isTrue();
+
+    // then the view it acquires must contain the re-homed segment's entries: a committed timer
+    // missing from this scan would derive no next wake-up and never fire — a lost wake-up
+    final ViewPublisher views = layered.defaultDomain().viewPublisher();
+    final ReadOnlyView view = views.acquireLatest();
+    try {
+      assertThat(view.get(ZbColumnFamilies.DEFAULT.name(), serializedLong(1)))
+          .containsExactly(serializedLong(100));
+    } finally {
+      views.release(view);
+    }
+  }
+
+  /** The raw store bytes of a {@link DbLong} key or value, as the layered store holds them. */
+  private static byte[] serializedLong(final long value) {
+    final DbLong dbLong = new DbLong();
+    dbLong.wrapLong(value);
+    final byte[] bytes = new byte[dbLong.getLength()];
+    dbLong.write(new UnsafeBuffer(bytes), 0);
+    return bytes;
   }
 
   @Test
