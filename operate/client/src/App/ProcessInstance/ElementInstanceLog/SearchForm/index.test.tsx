@@ -7,7 +7,13 @@
  */
 
 import {render, screen, waitFor} from 'modules/testing-library';
-import {MemoryRouter, Route, Routes, useLocation} from 'react-router-dom';
+import {
+  MemoryRouter,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom';
 import {SearchForm} from './index';
 import {Paths} from 'modules/Routes';
 
@@ -19,6 +25,15 @@ const LocationSpy: React.FC<{onLocation: (search: string) => void}> = ({
   const location = useLocation();
   onLocation(location.search);
   return null;
+};
+
+const BackButton: React.FC = () => {
+  const navigate = useNavigate();
+  return (
+    <button type="button" onClick={() => navigate(-1)}>
+      Go back
+    </button>
+  );
 };
 
 const Wrapper = ({
@@ -86,6 +101,40 @@ describe('<SearchForm />', () => {
     expect(
       screen.getByRole('searchbox', {name: 'Search instance history'}),
     ).toHaveValue('order task');
+  });
+
+  it('syncs the input when the elementSearch param changes via browser back navigation', async () => {
+    const {user} = render(
+      <>
+        <SearchForm />
+        <BackButton />
+      </>,
+      {
+        wrapper: ({children}) => (
+          <MemoryRouter
+            initialEntries={[
+              `${Paths.processInstance(PROCESS_INSTANCE_KEY)}?elementSearch=order`,
+              `${Paths.processInstance(PROCESS_INSTANCE_KEY)}?elementSearch=order+task`,
+            ]}
+            initialIndex={1}
+          >
+            <Routes>
+              <Route path={Paths.processInstance()} element={children} />
+            </Routes>
+          </MemoryRouter>
+        ),
+      },
+    );
+
+    expect(
+      screen.getByRole('searchbox', {name: 'Search instance history'}),
+    ).toHaveValue('order task');
+
+    await user.click(screen.getByRole('button', {name: 'Go back'}));
+
+    expect(
+      screen.getByRole('searchbox', {name: 'Search instance history'}),
+    ).toHaveValue('order');
   });
 
   it('removes the URL param when the input is cleared', async () => {
