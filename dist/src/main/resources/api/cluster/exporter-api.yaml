@@ -139,5 +139,5 @@ components:
       properties:
         initializeFrom:
           type: string
-          description: Id of the exporter to initialize from
+          description: Id of the exporter to initialize from. This property is optional.
           example: "exporter-1"
