@@ -29,6 +29,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.ImportRequestDto;
 import io.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import io.camunda.optimize.dto.optimize.RequestType;
+import io.camunda.optimize.service.AgentCostRateService;
 import io.camunda.optimize.service.db.helper.ImportRequestDtoFactory;
 import io.camunda.optimize.service.db.repository.IndexRepository;
 import io.camunda.optimize.service.db.repository.ProcessInstanceRepository;
@@ -46,21 +47,25 @@ public class ProcessInstanceWriter {
   private static final String NEW_INSTANCE = "instance";
   private static final String FORMATTER = "dateFormatPattern";
   private static final String SOURCE_EXPORT_INDEX = "sourceExportIndex";
+  private static final String AGENT_COST_RATES = "agentCostRates";
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(ProcessInstanceWriter.class);
   private final IndexRepository indexRepository;
   private final ObjectMapper objectMapper;
   private final ImportRequestDtoFactory importRequestDtoFactory;
   private final ProcessInstanceRepository processInstanceRepository;
+  private final AgentCostRateService agentCostRateService;
 
   public ProcessInstanceWriter(
       final IndexRepository indexRepository,
       final ObjectMapper objectMapper,
       final ImportRequestDtoFactory importRequestDtoFactory,
-      final ProcessInstanceRepository processInstanceRepository) {
+      final ProcessInstanceRepository processInstanceRepository,
+      final AgentCostRateService agentCostRateService) {
     this.indexRepository = indexRepository;
     this.objectMapper = objectMapper;
     this.importRequestDtoFactory = importRequestDtoFactory;
     this.processInstanceRepository = processInstanceRepository;
+    this.agentCostRateService = agentCostRateService;
   }
 
   public List<ImportRequestDto> generateProcessInstanceImports(
@@ -74,6 +79,11 @@ public class ProcessInstanceWriter {
             .map(ProcessInstanceDto::getProcessDefinitionKey)
             .collect(Collectors.toSet()));
 
+    // Snapshot the current per-model cost rates once per batch (cached, no ES round-trip per
+    // instance). The update script uses these to stamp agentTotalCost — see
+    // ZeebeProcessInstanceScriptFactory#createUpdateAgentInstancesScript.
+    final Map<String, Map<String, Double>> agentCostRates = agentCostRateService.getRateSnapshot();
+
     return processInstances.stream()
         .map(
             procInst -> {
@@ -82,6 +92,7 @@ public class ProcessInstanceWriter {
               params.put(FORMATTER, OPTIMIZE_DATE_FORMAT);
               params.put(SOURCE_EXPORT_INDEX, sourceExportIndex);
               params.put(FLOW_NODE_INSTANCES, procInst.getFlowNodeInstances());
+              params.put(AGENT_COST_RATES, agentCostRates);
               return ImportRequestDto.builder()
                   .importName(importItemName)
                   .type(RequestType.UPDATE)

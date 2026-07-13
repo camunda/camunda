@@ -67,6 +67,7 @@ public class ProcessInstanceDto implements OptimizeDto {
   private Long agentTotalModelCalls;
   private Long agentTotalToolCalls;
   private Long agentTotalTokens;
+  private Double agentTotalCost;
   private DataSourceDto dataSource;
   private String tenantId;
 
@@ -138,6 +139,7 @@ public class ProcessInstanceDto implements OptimizeDto {
     agentTotalModelCalls = b.agentTotalModelCalls;
     agentTotalToolCalls = b.agentTotalToolCalls;
     agentTotalTokens = b.agentTotalTokens;
+    agentTotalCost = b.agentTotalCost;
     dataSource = b.dataSource;
     tenantId = b.tenantId;
   }
@@ -293,6 +295,14 @@ public class ProcessInstanceDto implements OptimizeDto {
     this.agentTotalTokens = agentTotalTokens;
   }
 
+  public Double getAgentTotalCost() {
+    return agentTotalCost;
+  }
+
+  public void setAgentTotalCost(final Double agentTotalCost) {
+    this.agentTotalCost = agentTotalCost;
+  }
+
   public DataSourceDto getDataSource() {
     return dataSource;
   }
@@ -334,6 +344,7 @@ public class ProcessInstanceDto implements OptimizeDto {
         agentTotalModelCalls,
         agentTotalToolCalls,
         agentTotalTokens,
+        agentTotalCost,
         dataSource,
         tenantId);
   }
@@ -365,6 +376,7 @@ public class ProcessInstanceDto implements OptimizeDto {
         && Objects.equals(agentTotalModelCalls, that.agentTotalModelCalls)
         && Objects.equals(agentTotalToolCalls, that.agentTotalToolCalls)
         && Objects.equals(agentTotalTokens, that.agentTotalTokens)
+        && Objects.equals(agentTotalCost, that.agentTotalCost)
         && Objects.equals(dataSource, that.dataSource)
         && Objects.equals(tenantId, that.tenantId);
   }
@@ -407,6 +419,8 @@ public class ProcessInstanceDto implements OptimizeDto {
         + getAgentTotalToolCalls()
         + ", agentTotalTokens="
         + getAgentTotalTokens()
+        + ", agentTotalCost="
+        + getAgentTotalCost()
         + ", dataSource="
         + getDataSource()
         + ", tenantId="
@@ -455,6 +469,7 @@ public class ProcessInstanceDto implements OptimizeDto {
     public static final String agentTotalModelCalls = "agentTotalModelCalls";
     public static final String agentTotalToolCalls = "agentTotalToolCalls";
     public static final String agentTotalTokens = "agentTotalTokens";
+    public static final String agentTotalCost = "agentTotalCost";
     public static final String dataSource = "dataSource";
     public static final String tenantId = "tenantId";
   }
@@ -484,6 +499,7 @@ public class ProcessInstanceDto implements OptimizeDto {
     private Long agentTotalModelCalls;
     private Long agentTotalToolCalls;
     private Long agentTotalTokens;
+    private Double agentTotalCost;
     private DataSourceDto dataSource;
     private String tenantId;
 
@@ -578,6 +594,11 @@ public class ProcessInstanceDto implements OptimizeDto {
 
     public B agentTotalTokens(final Long agentTotalTokens) {
       this.agentTotalTokens = agentTotalTokens;
+      return self();
+    }
+
+    public B agentTotalCost(final Double agentTotalCost) {
+      this.agentTotalCost = agentTotalCost;
       return self();
     }
 

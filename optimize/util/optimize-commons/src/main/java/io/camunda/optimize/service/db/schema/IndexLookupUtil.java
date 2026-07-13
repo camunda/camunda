@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.db.schema;
 
+import io.camunda.optimize.service.db.es.schema.index.AgentCostRateIndexES;
 import io.camunda.optimize.service.db.es.schema.index.AlertIndexES;
 import io.camunda.optimize.service.db.es.schema.index.BusinessKeyIndexES;
 import io.camunda.optimize.service.db.es.schema.index.CollectionIndexES;
@@ -30,6 +31,7 @@ import io.camunda.optimize.service.db.es.schema.index.index.TimestampBasedImport
 import io.camunda.optimize.service.db.es.schema.index.report.CombinedReportIndexES;
 import io.camunda.optimize.service.db.es.schema.index.report.SingleDecisionReportIndexES;
 import io.camunda.optimize.service.db.es.schema.index.report.SingleProcessReportIndexES;
+import io.camunda.optimize.service.db.os.schema.index.AgentCostRateIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.AlertIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.BusinessKeyIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.CollectionIndexOS;
@@ -118,6 +120,7 @@ public class IndexLookupUtil {
     lookupMap.put(
         ProcessDefinitionIndexES.class.getSimpleName(), index -> new ProcessDefinitionIndexOS());
     lookupMap.put(SettingsIndexES.class.getSimpleName(), index -> new SettingsIndexOS());
+    lookupMap.put(AgentCostRateIndexES.class.getSimpleName(), index -> new AgentCostRateIndexOS());
     lookupMap.put(TenantIndexES.class.getSimpleName(), index -> new TenantIndexOS());
     lookupMap.put(ReportShareIndexES.class.getSimpleName(), index -> new ReportShareIndexOS());
     lookupMap.put(
@@ -167,6 +170,7 @@ public class IndexLookupUtil {
     lookupMap.put(
         ProcessDefinitionIndexOS.class.getSimpleName(), index -> new ProcessDefinitionIndexES());
     lookupMap.put(SettingsIndexOS.class.getSimpleName(), index -> new SettingsIndexES());
+    lookupMap.put(AgentCostRateIndexOS.class.getSimpleName(), index -> new AgentCostRateIndexES());
     lookupMap.put(TenantIndexOS.class.getSimpleName(), index -> new TenantIndexES());
     lookupMap.put(ReportShareIndexOS.class.getSimpleName(), index -> new ReportShareIndexES());
     lookupMap.put(

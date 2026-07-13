@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.dto.optimize.query.report.single;
 
+import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_COST_PROPERTY;
 import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_DURATION_PROPERTY;
 import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_FREQUENCY_PROPERTY;
 import static io.camunda.optimize.dto.optimize.ReportConstants.VIEW_INPUT_TOKENS_PROPERTY;
@@ -38,6 +39,7 @@ public class ViewProperty implements Combinable {
   public static final ViewProperty OUTPUT_TOKENS = new ViewProperty(VIEW_OUTPUT_TOKENS_PROPERTY);
   public static final ViewProperty TOOL_CALLS = new ViewProperty(VIEW_TOOL_CALLS_PROPERTY);
   public static final ViewProperty TOTAL_TOKENS = new ViewProperty(VIEW_TOTAL_TOKENS_PROPERTY);
+  public static final ViewProperty COST = new ViewProperty(VIEW_COST_PROPERTY);
   private final TypedViewPropertyDto viewPropertyDto;
 
   @JsonCreator
@@ -82,10 +84,13 @@ public class ViewProperty implements Combinable {
 
   @JsonIgnore
   public boolean isAgentToken() {
+    // Also covers the agent COST metric: like the token metrics, it produces one measure per
+    // aggregation type (SUM/AVG) in CompositeCommandResult.
     return INPUT_TOKENS.equals(this)
         || OUTPUT_TOKENS.equals(this)
         || TOOL_CALLS.equals(this)
-        || TOTAL_TOKENS.equals(this);
+        || TOTAL_TOKENS.equals(this)
+        || COST.equals(this);
   }
 
   protected boolean canEqual(final Object other) {

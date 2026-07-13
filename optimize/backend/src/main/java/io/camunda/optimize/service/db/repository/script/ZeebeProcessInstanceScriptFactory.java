@@ -193,12 +193,30 @@ public interface ZeebeProcessInstanceScriptFactory {
         }
         existingInstance.agentInstances = agentsById.values();
         long totalInput = 0; long totalOutput = 0; long totalModel = 0; long totalTool = 0;
+        // agentTotalCost is a forward-only, current-rate stamp: the totals are fully recomputed on
+        // every instance update using the cost-rate snapshot in params.agentCostRates (model ->
+        // {input, output} price per 1000 tokens), so an instance is priced at the rates in effect
+        // at its most recent update. It stays null when no rate matches, so unpriced instances are
+        // excluded from cost SUM/AVG aggregations.
+        def rates = params.agentCostRates;
+        double totalCost = 0; boolean anyCost = false;
         for (def a : existingInstance.agentInstances) {
           if (a.metrics != null) {
             if (a.metrics.inputTokens != null) { totalInput += a.metrics.inputTokens; }
             if (a.metrics.outputTokens != null) { totalOutput += a.metrics.outputTokens; }
             if (a.metrics.modelCalls != null) { totalModel += a.metrics.modelCalls; }
             if (a.metrics.toolCalls != null) { totalTool += a.metrics.toolCalls; }
+            if (rates != null && a.definition != null && a.definition.model != null) {
+              def rate = rates.get(a.definition.model);
+              if (rate != null) {
+                if (a.metrics.inputTokens != null && rate.get('input') != null) {
+                  totalCost += a.metrics.inputTokens / 1000.0 * rate.get('input'); anyCost = true;
+                }
+                if (a.metrics.outputTokens != null && rate.get('output') != null) {
+                  totalCost += a.metrics.outputTokens / 1000.0 * rate.get('output'); anyCost = true;
+                }
+              }
+            }
           }
         }
         existingInstance.agentTotalInputTokens = totalInput;
@@ -206,6 +224,8 @@ public interface ZeebeProcessInstanceScriptFactory {
         existingInstance.agentTotalModelCalls = totalModel;
         existingInstance.agentTotalToolCalls = totalTool;
         existingInstance.agentTotalTokens = totalInput + totalOutput;
+        if (anyCost) { existingInstance.agentTotalCost = totalCost; }
+        else { existingInstance.agentTotalCost = null; }
       }
       """;
   }

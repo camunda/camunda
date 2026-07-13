@@ -1591,7 +1591,9 @@
       "businessValueCompletedNoIncident": "Completed Instances Without Incident",
       "businessValueCompletedWithUserTasksNoIncident": "Completed Instances With User Tasks and Without Incident",
       "businessValueWorstInstancesName": "Worst-Performing Instances",
-      "businessValueWorstInstancesDescription": "The completed instances with the longest duration in the selected period, with the slowest step in each."
+      "businessValueWorstInstancesDescription": "The completed instances with the longest duration in the selected period, with the slowest step in each.",
+      "businessValueAgentCostName": "Agent Cost",
+      "businessValueAgentCostDescription": "Total and average LLM cost of agent activity in the selected period, using the configured per-model token rates stamped at import time."
     }
   },
   "agenticControl": {

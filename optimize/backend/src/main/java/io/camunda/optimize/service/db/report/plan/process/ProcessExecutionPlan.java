@@ -41,6 +41,7 @@ import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_USER_TASK_START_DATE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_VARIABLE;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_INCIDENT_GROUP_BY_NONE;
+import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_COST;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_INPUT_TOKENS;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_OUTPUT_TOKENS;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessView.PROCESS_VIEW_AGENT_TOOL_CALLS;
@@ -682,7 +683,9 @@ public enum ProcessExecutionPlan implements ExecutionPlan {
       PROCESS_DISTRIBUTED_BY_NONE,
       MAP),
   PROCESS_AGENT_TOTAL_TOKENS_GROUP_BY_NONE(
-      PROCESS_VIEW_AGENT_TOTAL_TOKENS, PROCESS_GROUP_BY_NONE, PROCESS_DISTRIBUTED_BY_NONE, NUMBER);
+      PROCESS_VIEW_AGENT_TOTAL_TOKENS, PROCESS_GROUP_BY_NONE, PROCESS_DISTRIBUTED_BY_NONE, NUMBER),
+  PROCESS_AGENT_COST_GROUP_BY_NONE(
+      PROCESS_VIEW_AGENT_COST, PROCESS_GROUP_BY_NONE, PROCESS_DISTRIBUTED_BY_NONE, NUMBER);
 
   private final ProcessView view;
   private final ProcessGroupBy groupBy;

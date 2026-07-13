@@ -99,6 +99,7 @@ public abstract class ProcessInstanceIndex<TBuilder> extends AbstractInstanceInd
       ProcessInstanceDto.Fields.agentTotalModelCalls;
   public static final String AGENT_TOTAL_TOOL_CALLS = ProcessInstanceDto.Fields.agentTotalToolCalls;
   public static final String AGENT_TOTAL_TOKENS = ProcessInstanceDto.Fields.agentTotalTokens;
+  public static final String AGENT_TOTAL_COST = ProcessInstanceDto.Fields.agentTotalCost;
 
   public static final String AGENT_INSTANCE_ID = AgentInstanceDto.Fields.agentInstanceId;
   public static final String AGENT_INSTANCE_FLOW_NODE_ID = AgentInstanceDto.Fields.flowNodeId;
@@ -321,6 +322,9 @@ public abstract class ProcessInstanceIndex<TBuilder> extends AbstractInstanceInd
         .properties(AGENT_TOTAL_MODEL_CALLS, p -> p.long_(k -> k.nullValue(0L)))
         .properties(AGENT_TOTAL_TOOL_CALLS, p -> p.long_(k -> k.nullValue(0L)))
         .properties(AGENT_TOTAL_TOKENS, p -> p.long_(k -> k.nullValue(0L)))
+        // Stamped at import from the per-model cost rates; left null when the instance has no
+        // priced agent activity, so it is naturally excluded from SUM/AVG aggregations.
+        .properties(AGENT_TOTAL_COST, p -> p.double_(k -> k))
         .properties(
             AGENT_INSTANCES,
             p ->

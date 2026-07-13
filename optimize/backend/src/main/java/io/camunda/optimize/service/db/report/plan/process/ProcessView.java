@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.db.report.plan.process;
 
+import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.COST;
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.DURATION;
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.FREQUENCY;
 import static io.camunda.optimize.dto.optimize.query.report.single.ViewProperty.INPUT_TOKENS;
@@ -43,7 +44,8 @@ public enum ProcessView {
   PROCESS_VIEW_AGENT_INPUT_TOKENS(new ProcessViewDto(AGENT_INSTANCE, INPUT_TOKENS)),
   PROCESS_VIEW_AGENT_OUTPUT_TOKENS(new ProcessViewDto(AGENT_INSTANCE, OUTPUT_TOKENS)),
   PROCESS_VIEW_AGENT_TOOL_CALLS(new ProcessViewDto(AGENT_INSTANCE, TOOL_CALLS)),
-  PROCESS_VIEW_AGENT_TOTAL_TOKENS(new ProcessViewDto(AGENT_INSTANCE, TOTAL_TOKENS));
+  PROCESS_VIEW_AGENT_TOTAL_TOKENS(new ProcessViewDto(AGENT_INSTANCE, TOTAL_TOKENS)),
+  PROCESS_VIEW_AGENT_COST(new ProcessViewDto(AGENT_INSTANCE, COST));
 
   private final ProcessViewDto processViewDto;
   private final ProcessPartDto processPartDto;

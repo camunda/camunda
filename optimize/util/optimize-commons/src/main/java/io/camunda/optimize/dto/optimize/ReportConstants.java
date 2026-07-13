@@ -29,6 +29,7 @@ public final class ReportConstants {
   public static final String VIEW_OUTPUT_TOKENS_PROPERTY = "outputTokens";
   public static final String VIEW_TOOL_CALLS_PROPERTY = "toolCalls";
   public static final String VIEW_TOTAL_TOKENS_PROPERTY = "totalTokens";
+  public static final String VIEW_COST_PROPERTY = "cost";
 
   public static final String GROUP_BY_FLOW_NODES_TYPE = "flowNodes";
   public static final String GROUP_BY_USER_TASKS_TYPE = "userTasks";

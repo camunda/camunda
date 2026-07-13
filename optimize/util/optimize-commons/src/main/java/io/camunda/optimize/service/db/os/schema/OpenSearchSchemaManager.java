@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Iterables;
 import io.camunda.optimize.service.db.os.MappingMetadataUtilOS;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
+import io.camunda.optimize.service.db.os.schema.index.AgentCostRateIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.AlertIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.BusinessKeyIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.CollectionIndexOS;
@@ -557,6 +558,7 @@ public class OpenSearchSchemaManager
         new ProcessDefinitionIndexOS(),
         new ReportShareIndexOS(),
         new SettingsIndexOS(),
+        new AgentCostRateIndexOS(),
         new TerminatedUserSessionIndexOS(),
         new TenantIndexOS(),
         new TimestampBasedImportIndexOS(),
