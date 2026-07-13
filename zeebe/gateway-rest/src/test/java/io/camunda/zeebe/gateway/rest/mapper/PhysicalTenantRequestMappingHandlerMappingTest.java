@@ -78,6 +78,8 @@ class PhysicalTenantRequestMappingHandlerMappingTest {
         Arguments.of("/admin/users", EXPECTED_PREFIX + "/admin/users"),
         Arguments.of("/webapp", EXPECTED_PREFIX + "/webapp"),
         Arguments.of("/webapp/some-route", EXPECTED_PREFIX + "/webapp/some-route"),
+        // post-logout landing gets a per-tenant sibling so scoped OIDC logout can return to it
+        Arguments.of("/post-logout", EXPECTED_PREFIX + "/post-logout"),
         // non-matching: different prefix
         Arguments.of("/v1/widgets", null),
         // non-matching: word boundary guards (no trailing slash → not a root)
@@ -134,7 +136,12 @@ class PhysicalTenantRequestMappingHandlerMappingTest {
             "plain webapp controller /tasklist/tasks keeps original and adds prefixed sibling",
             new PlainController(),
             "/tasklist/tasks",
-            List.of("/tasklist/tasks", EXPECTED_PREFIX + "/tasklist/tasks")));
+            List.of("/tasklist/tasks", EXPECTED_PREFIX + "/tasklist/tasks")),
+        Arguments.of(
+            "plain /post-logout controller keeps original and adds prefixed sibling",
+            new PlainController(),
+            "/post-logout",
+            List.of("/post-logout", EXPECTED_PREFIX + "/post-logout")));
   }
 
   @ParameterizedTest(name = "[{index}] {0}")

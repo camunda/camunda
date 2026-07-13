@@ -96,6 +96,9 @@ public class OidcLogoutSuccessHandlerWiringTest extends AbstractWebSecurityConfi
             URLDecoder.decode(
                 Objects.requireNonNull(query.getFirst("logout_hint")), StandardCharsets.UTF_8))
         .isEqualTo(LOGIN_HINT);
+    // CSL builds the primary chain's handler from SecurityPathAdapter#postLogoutRedirectPath (empty
+    // prefix), so the IdP is told to send the browser back to the host's post-logout route.
+    assertPrimaryPostLogoutRedirectUri(query);
   }
 
   @Test
@@ -119,6 +122,7 @@ public class OidcLogoutSuccessHandlerWiringTest extends AbstractWebSecurityConfi
     final MultiValueMap<String, String> query =
         queryParams(location, "idp.example.com", "/protocol/openid-connect/logout");
     assertThat(query.getFirst("id_token_hint")).isNotBlank();
+    assertPrimaryPostLogoutRedirectUri(query);
   }
 
   private static MultiValueMap<String, String> queryParams(
@@ -128,6 +132,18 @@ public class OidcLogoutSuccessHandlerWiringTest extends AbstractWebSecurityConfi
     assertThat(parsed.getHost()).isEqualTo(expectedHost);
     assertThat(parsed.getPath()).isEqualTo(expectedPath);
     return parsed.getQueryParams();
+  }
+
+  private static void assertPrimaryPostLogoutRedirectUri(
+      final MultiValueMap<String, String> query) {
+    final UriComponents redirect =
+        UriComponentsBuilder.fromUriString(
+                URLDecoder.decode(
+                    Objects.requireNonNull(query.getFirst("post_logout_redirect_uri")),
+                    StandardCharsets.UTF_8))
+            .build();
+    assertThat(redirect.getHost()).isEqualTo("localhost");
+    assertThat(redirect.getPath()).isEqualTo("/post-logout");
   }
 
   /**
