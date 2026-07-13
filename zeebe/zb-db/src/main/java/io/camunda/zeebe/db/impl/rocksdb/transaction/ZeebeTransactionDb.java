@@ -23,6 +23,7 @@ import io.camunda.zeebe.db.impl.rocksdb.Loggers;
 import io.camunda.zeebe.db.impl.rocksdb.PrefixReadOptions;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.metrics.RocksDBMetricExporter;
+import io.camunda.zeebe.db.layered.SnapshotSource;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.camunda.zeebe.protocol.ScopedColumnFamily;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
@@ -173,6 +174,18 @@ public class ZeebeTransactionDb<
         keyInstance,
         valueInstance,
         metrics);
+  }
+
+  /**
+   * A pinning {@link SnapshotSource} over this database for the layered state store: snapshots
+   * taken from it pin this database's committed state via {@code db.getSnapshot()}, routed per
+   * logical column family exactly like this database's own key encoding. Pass this database's own
+   * column family enum. The source itself holds no resources, but each taken snapshot does —
+   * callers own the snapshots' lifecycle, and all of them must be closed before this database is.
+   */
+  public <ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue>
+      SnapshotSource pinnedSnapshotSource(final Class<ColumnFamilyType> columnFamilyType) {
+    return RocksDbPinnedSnapshotSource.of(rocksDB, defaultHandle, columnFamilyType);
   }
 
   @Override
