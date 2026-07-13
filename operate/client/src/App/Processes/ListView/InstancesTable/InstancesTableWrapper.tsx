@@ -83,11 +83,16 @@ const InstancesTableWrapper: React.FC = observer(() => {
       )
       .map((instance) => instance.processInstanceKey);
 
+    const visibleIncidentIds = processInstances
+      .filter((instance) => instance.hasIncident)
+      .map((instance) => instance.processInstanceKey);
+
     processInstancesSelectionStore.setRuntime({
       totalCount,
       visibleIds,
       visibleRunningIds,
       visibleFinishedIds,
+      visibleIncidentIds,
     });
   }, [processInstances, totalCount]);
 
