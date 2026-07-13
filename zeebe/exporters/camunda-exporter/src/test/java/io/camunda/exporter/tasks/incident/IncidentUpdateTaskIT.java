@@ -10,7 +10,6 @@ package io.camunda.exporter.tasks.incident;
 import static io.camunda.exporter.utils.CamundaExporterSchemaUtils.createSchemas;
 import static io.camunda.search.test.utils.SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -32,6 +31,7 @@ import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
@@ -745,7 +745,7 @@ class IncidentUpdateTaskIT {
 
   private ExporterResourceProvider exporterResourceProvider(final ExporterConfiguration config) {
     final var cacheProvider = mock(ExporterEntityCacheProvider.class);
-    when(cacheProvider.getProcessCacheLoader(anyString(), any())).thenReturn(k -> null);
+    when(cacheProvider.getProcessCacheLoader(anyString())).thenReturn(k -> null);
     when(cacheProvider.getBatchOperationCacheLoader(anyString())).thenReturn(k -> null);
     when(cacheProvider.getDecisionRequirementsCacheLoader(anyString())).thenReturn(k -> null);
     when(cacheProvider.getFormCacheLoader(anyString())).thenReturn(k -> null);
@@ -773,6 +773,8 @@ class IncidentUpdateTaskIT {
     final var operationTemplate =
         resourceProvider.getIndexTemplateDescriptor(OperationTemplate.class);
     final var isElasticsearch = ConnectionTypes.isElasticSearch(config.getConnect().getType());
+    final var importPositionIndex =
+        new ImportPositionIndex(config.getConnect().getIndexPrefix(), isElasticsearch);
     if (isElasticsearch) {
       return closeLater(
           new ElasticsearchIncidentUpdateRepository(
@@ -784,6 +786,7 @@ class IncidentUpdateTaskIT {
               listViewTemplate.getFullQualifiedName(),
               flowNodeTemplate.getAlias(),
               operationTemplate.getAlias(),
+              importPositionIndex.getFullQualifiedName(),
               createAsyncESClient(config),
               executor,
               LOGGER));
@@ -798,6 +801,7 @@ class IncidentUpdateTaskIT {
               listViewTemplate.getFullQualifiedName(),
               flowNodeTemplate.getAlias(),
               operationTemplate.getAlias(),
+              importPositionIndex.getFullQualifiedName(),
               createOSAsyncClient(config),
               executor,
               LOGGER));
