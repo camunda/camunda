@@ -389,6 +389,14 @@ public final class LayeredKeyValueStore {
         && (drainedKeyWatermark == null || Arrays.compareUnsigned(key, drainedKeyWatermark) > 0);
   }
 
+  /** Raises the drained-key watermark to {@code largestKey} if it sorts above it (owner thread). */
+  private void advanceDrainedKeyWatermark(final byte[] largestKey) {
+    if (drainedKeyWatermark == null
+        || Arrays.compareUnsigned(largestKey, drainedKeyWatermark) > 0) {
+      drainedKeyWatermark = largestKey;
+    }
+  }
+
   /**
    * Folds the staging layer into the active overlay — called when the batch's records were
    * successfully written to the log. A staging entry supersedes an active entry for the same key;
@@ -768,17 +776,17 @@ public final class LayeredKeyValueStore {
     // advance the absence watermark over the captured keys now, on the owner thread and before
     // any drain IO: a watermark ahead of the delegate only weakens absence claims (never wrong),
     // and covering the round's keys before its commit needs no ordering with the IO thread —
-    // recomputing on a retried round is idempotent
+    // recomputing on a retried round is idempotent. The raw captured tip drains with the round
+    // exactly like the segments, so its largest key must advance the watermark too — otherwise a
+    // tip key above the watermark would be claimed absent the moment the round drops the tip
     if (absenceWatermarkEnabled) {
       for (final FlatSegment segment : pipeline) {
-        if (segment.isEmpty()) {
-          continue;
+        if (!segment.isEmpty()) {
+          advanceDrainedKeyWatermark(segment.keyAt(segment.entryCount() - 1));
         }
-        final byte[] largestKey = segment.keyAt(segment.entryCount() - 1);
-        if (drainedKeyWatermark == null
-            || Arrays.compareUnsigned(largestKey, drainedKeyWatermark) > 0) {
-          drainedKeyWatermark = largestKey;
-        }
+      }
+      if (!activeSorted.isEmpty()) {
+        advanceDrainedKeyWatermark(activeSorted.lastKey());
       }
     }
     final List<FlatSegment> oldestFirst = new ArrayList<>(pipeline);

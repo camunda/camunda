@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -984,7 +983,7 @@ final class LayeredKeyValueStoreLifecycleTest {
     final CountingBytesStore counting = new CountingBytesStore(state.store(STORE));
     final LayeredKeyValueStore store = newEmptyAtOpenStore(counting);
     putPromoteFreeze(store, "b", "value", 1L);
-    drainToDelegate(store.beginPersist());
+    drainToDelegate(beginPersist(store));
     store.completePersist(true);
     final int getsAfterDrain = counting.gets();
 
@@ -1008,7 +1007,7 @@ final class LayeredKeyValueStoreLifecycleTest {
     final CountingBytesStore counting = new CountingBytesStore(state.store(STORE));
     final LayeredKeyValueStore store = newEmptyAtOpenStore(counting);
     putPromoteFreeze(store, "m", "value", 1L);
-    drainToDelegate(store.beginPersist());
+    drainToDelegate(beginPersist(store));
     store.completePersist(true);
     final int getsAfterDrain = counting.gets();
 
@@ -1033,7 +1032,7 @@ final class LayeredKeyValueStoreLifecycleTest {
     assertThat(store.get(bytes("z"))).isNull();
     assertThat(counting.gets()).isZero();
     putPromoteFreeze(store, "m", "value", 1L);
-    drainToDelegate(store.beginPersist());
+    drainToDelegate(beginPersist(store));
     store.completePersist(true);
     final int getsAfterDrain = counting.gets();
 
@@ -1052,7 +1051,7 @@ final class LayeredKeyValueStoreLifecycleTest {
     final CountingBytesStore counting = new CountingBytesStore(state.store(STORE));
     final LayeredKeyValueStore store = newEmptyAtOpenStore(counting);
     putPromoteFreeze(store, "b1", "v1", 1L);
-    drainToDelegate(store.beginPersist());
+    drainToDelegate(beginPersist(store));
     store.completePersist(true);
     putPromoteFreeze(store, "c1", "v2", 2L);
 
@@ -1076,7 +1075,7 @@ final class LayeredKeyValueStoreLifecycleTest {
     final CountingBytesStore counting = new CountingBytesStore(state.store(STORE));
     final LayeredKeyValueStore store = newEmptyAtOpenStore(counting);
     putPromoteFreeze(store, "b", "v1", 1L);
-    store.beginPersist();
+    beginPersist(store);
     store.completePersist(false);
 
     // when -- a blind write above the captured maximum
@@ -1087,10 +1086,33 @@ final class LayeredKeyValueStoreLifecycleTest {
     // then -- still elided (the watermark may only over-cover the delegate), and the retry
     // drains both keys
     assertThat(counting.gets()).isZero();
-    drainToDelegate(store.beginPersist());
+    drainToDelegate(beginPersist(store));
     store.completePersist(true);
     assertThat(state.committedValue(STORE, bytes("b"))).isEqualTo(bytes("v1"));
     assertThat(state.committedValue(STORE, bytes("c"))).isEqualTo(bytes("v2"));
+  }
+
+  @Test
+  void shouldAdvanceAbsenceWatermarkOverTheRawCapturedTip() {
+    // given -- an empty-at-open store whose only committed write is captured as a raw tip (no
+    // freeze), so no pipeline segment carries its key
+    final CountingBytesStore counting = new CountingBytesStore(state.store(STORE));
+    final LayeredKeyValueStore store = newEmptyAtOpenStore(counting);
+    store.put(bytes("b"), bytes("value"));
+    store.promote();
+
+    // when -- the round drains the tip and completes
+    final LayeredKeyValueStore.PersistCapture capture = store.beginPersist(1L);
+    drainTipToDelegate(capture);
+    store.completePersist(true);
+
+    // then -- the drained key sits at the watermark: the read probes the delegate and finds it,
+    // instead of claiming absence for a key the delegate now holds
+    assertThat(store.get(bytes("b"))).isEqualTo(bytes("value"));
+    assertThat(counting.gets()).isEqualTo(1);
+    // and a key strictly above it is still answered for free
+    assertThat(store.get(bytes("c"))).isNull();
+    assertThat(counting.gets()).isEqualTo(1);
   }
 
   @Test
