@@ -44,6 +44,7 @@ jobs:
             || github.event.label.name == 'component/document-handling'
             || github.event.label.name == 'component/webapp'
             || github.event.label.name == 'component/mcp'
+            || github.event.label.name == 'component/camunda-process-test'
         name: Add to Core Features project
         uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
         with:
@@ -54,7 +55,7 @@ jobs:
             component/tasklist, component/optimize, component/c8-api,
             component/engine, component/camunda, component/backend, component/frontend,
             component/batch-operation, component/document-handling,
-            component/webapp, component/mcp
+            component/webapp, component/mcp, component/camunda-process-test
 
       # Distributed Systems / ZDP (#92)
       # component/zeebe routes here as a fallback when neither zeebe-engine nor zeebe-platform is set
@@ -196,7 +197,6 @@ jobs:
           github.event.action != 'labeled'
             || github.event.label.name == 'component/clients'
             || github.event.label.name == 'component/spring-boot-starter'
-            || github.event.label.name == 'component/camunda-process-test'
             || github.event.label.name == 'component/c8-api'
         name: Add to CamundaEx Team project
         uses: actions/add-to-project@5afcf98fcd03f1c2f92c3c83f58ae24323cc57fd # v2.0.0
@@ -205,7 +205,7 @@ jobs:
           github-token: ${{ steps.github-token.outputs.token }}
           labeled: >
             component/clients, component/spring-boot-starter,
-            component/camunda-process-test, component/c8-api
+            component/c8-api
 
       # QA Issue Board (#162)
       - id: add-to-qa
