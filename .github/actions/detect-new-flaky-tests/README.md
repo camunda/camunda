@@ -128,10 +128,10 @@ across every kind of subsequent run, so a genuinely fixed test clears by
 re-running CI — no empty commits. It also removed the artifact entirely
 (no retention window, no `actions:` permission).
 
-Trade-offs (accepted for a pilot advisory gate):
+Trade-offs (accepted):
 
 - **Visibility / tamper** — the base64 state is present in the comment source;
-  a maintainer could edit it. The gate is advisory and already has a
+  a maintainer could edit it. The gate already has a
   `ci:flaky-test-bypass` label escape hatch, so this is not a new trust
   boundary.
 - **Concurrency** — two runs finishing at once do last-writer-wins on the
