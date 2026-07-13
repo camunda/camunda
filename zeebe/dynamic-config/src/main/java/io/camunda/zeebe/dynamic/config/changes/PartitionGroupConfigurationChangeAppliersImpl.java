@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.config.changes;
 
+import io.camunda.zeebe.dynamic.config.changes.appliers.AwaitModeChangeApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.AwaitRedistributionCompletionApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.AwaitRelocationCompletionApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.DeleteHistoryApplier;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.dynamic.config.changes.appliers.StartPartitionScaleUpApp
 import io.camunda.zeebe.dynamic.config.changes.appliers.UpdateIncarnationNumberApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.UpdateRoutingStateApplier;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.DeleteHistoryOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
@@ -116,9 +118,8 @@ public final class PartitionGroupConfigurationChangeAppliersImpl
             case RECOVERING -> new EnterRecoveryApplier(op.memberId(), modeChangeExecutor);
             case PROCESSING -> new ExitRecoveryApplier(op.memberId(), modeChangeExecutor);
           };
-      default ->
-          throw new UnsupportedOperationException(
-              "No new-model applier implemented yet for %s".formatted(operation));
+      case final AwaitModeChangeOperation op ->
+          new AwaitModeChangeApplier(op.mode(), modeChangeExecutor);
     };
   }
 }
