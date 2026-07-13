@@ -6,20 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Button} from '@carbon/react';
+import {Button, Tooltip} from '@carbon/react';
 import {Download} from '@carbon/react/icons';
 import type {DocumentInfo} from '../DocumentValueCell/parseDocumentVariable';
+import {TooltipTrigger} from './styled';
 import {tracking} from 'modules/tracking';
 
-function getTooltipText(document: DocumentInfo): string {
-  switch (true) {
-    case document.isExpired:
-      return 'Document has expired';
-    case document.link === null:
-      return 'Download not available for this document';
-    default:
-      return 'Download';
-  }
+function getDisabledTooltipText(document: DocumentInfo): string {
+  return document.isExpired ? 'Document has expired' : 'Download unavailable';
 }
 
 type Props = {
@@ -29,9 +23,8 @@ type Props = {
 
 const DownloadDocumentButton: React.FC<Props> = ({document, variableName}) => {
   const isDisabled = document.link === null || document.isExpired;
-  const tooltipText = getTooltipText(document);
 
-  return (
+  const button = (
     <Button
       as={isDisabled ? undefined : 'a'}
       href={document.link ?? undefined}
@@ -41,11 +34,9 @@ const DownloadDocumentButton: React.FC<Props> = ({document, variableName}) => {
       size="sm"
       hasIconOnly
       renderIcon={Download}
-      iconDescription={tooltipText}
+      iconDescription="Download"
       tooltipPosition="top"
       tooltipAlignment="end"
-      // @ts-expect-error - Solves rendering issues in `DocumentListModal`. Not exposed through TS but used at runtime.
-      autoAlign={true}
       aria-label={`Download document for variable ${variableName}`}
       disabled={isDisabled}
       onClick={() => {
@@ -57,6 +48,22 @@ const DownloadDocumentButton: React.FC<Props> = ({document, variableName}) => {
         });
       }}
     />
+  );
+
+  if (!isDisabled) {
+    return button;
+  }
+
+  return (
+    <Tooltip
+      label={getDisabledTooltipText(document)}
+      align="top-end"
+      enterDelayMs={0}
+      leaveDelayMs={0}
+      className="cds--icon-tooltip"
+    >
+      <TooltipTrigger tabIndex={0}>{button}</TooltipTrigger>
+    </Tooltip>
   );
 };
 

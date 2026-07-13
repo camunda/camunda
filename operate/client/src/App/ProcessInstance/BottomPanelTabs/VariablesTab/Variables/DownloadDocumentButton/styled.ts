@@ -8,25 +8,6 @@
 
 import styled from 'styled-components';
 
-const PreviewImg = styled.img`
-  display: block;
-  max-width: 100%;
-  max-height: 80vh;
-  object-fit: contain;
-  margin: 0 auto;
-`;
-
-const PreviewPdf = styled.iframe`
-  display: block;
-  width: 100%;
-  height: 80vh;
-  border: none;
-`;
-
-const PreviewJSONContainer = styled.div`
-  min-height: 80vh;
-`;
-
 const TooltipTrigger = styled.span`
   display: inline-flex;
   cursor: not-allowed;
@@ -36,4 +17,4 @@ const TooltipTrigger = styled.span`
   }
 `;
 
-export {PreviewImg, PreviewPdf, PreviewJSONContainer, TooltipTrigger};
+export {TooltipTrigger};

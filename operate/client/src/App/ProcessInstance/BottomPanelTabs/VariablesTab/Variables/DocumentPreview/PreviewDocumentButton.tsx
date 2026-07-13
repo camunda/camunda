@@ -6,23 +6,22 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Button} from '@carbon/react';
+import {Button, Tooltip} from '@carbon/react';
 import {View} from '@carbon/react/icons';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
 import type {DocumentInfo} from '../DocumentValueCell/parseDocumentVariable';
 import {DocumentPreviewModal} from './DocumentPreviewModal';
+import {TooltipTrigger} from './styled';
 import {tracking} from 'modules/tracking';
 
-function getTooltipText(document: DocumentInfo): string {
+function getDisabledTooltipText(document: DocumentInfo): string {
   switch (true) {
     case document.isExpired:
       return 'Document has expired';
     case document.link === null:
-      return 'Preview not available for this document';
-    case document.type === 'unknown':
-      return 'Preview not available for this document type';
+      return 'Preview unavailable';
     default:
-      return 'Preview';
+      return 'Unsupported file type';
   }
 }
 
@@ -34,33 +33,48 @@ type Props = {
 const PreviewDocumentButton: React.FC<Props> = ({document, variableName}) => {
   const isDisabled =
     document.link === null || document.isExpired || document.type === 'unknown';
-  const tooltipText = getTooltipText(document);
 
   return (
     <ModalStateManager
-      renderLauncher={({setOpen}) => (
-        <Button
-          kind="ghost"
-          size="sm"
-          hasIconOnly
-          renderIcon={View}
-          iconDescription={tooltipText}
-          tooltipPosition="top"
-          // @ts-expect-error - Solves rendering issues in `DocumentListModal`. Not exposed through TS but used at runtime.
-          autoAlign={true}
-          aria-label={`Preview document for variable ${variableName}`}
-          disabled={isDisabled}
-          onClick={() => {
-            tracking.track({
-              eventName: 'document-previewed',
-              documentType: document.type,
-              contentType: document.contentType,
-              size: document.size,
-            });
-            setOpen(true);
-          }}
-        />
-      )}
+      renderLauncher={({setOpen}) => {
+        const button = (
+          <Button
+            kind="ghost"
+            size="sm"
+            hasIconOnly
+            renderIcon={View}
+            iconDescription="Preview"
+            tooltipPosition="top"
+            aria-label={`Preview document for variable ${variableName}`}
+            disabled={isDisabled}
+            onClick={() => {
+              tracking.track({
+                eventName: 'document-previewed',
+                documentType: document.type,
+                contentType: document.contentType,
+                size: document.size,
+              });
+              setOpen(true);
+            }}
+          />
+        );
+
+        if (!isDisabled) {
+          return button;
+        }
+
+        return (
+          <Tooltip
+            label={getDisabledTooltipText(document)}
+            align="top-end"
+            enterDelayMs={0}
+            leaveDelayMs={0}
+            className="cds--icon-tooltip"
+          >
+            <TooltipTrigger tabIndex={0}>{button}</TooltipTrigger>
+          </Tooltip>
+        );
+      }}
     >
       {({open, setOpen}) => (
         <DocumentPreviewModal

@@ -11,7 +11,9 @@ import styled from 'styled-components';
 const DocumentList = styled.ul`
   list-style: none;
   margin: 0;
-  padding: 0;
+  /* Top padding gives the first row's top-aligned tooltip room so it isn't
+  hidden behind the modal header. */
+  padding: var(--cds-spacing-03) 0 0;
   display: flex;
   flex-direction: column;
 `;

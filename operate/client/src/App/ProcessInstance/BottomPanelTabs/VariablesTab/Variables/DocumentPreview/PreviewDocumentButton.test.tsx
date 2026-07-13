@@ -102,9 +102,7 @@ describe('<PreviewDocumentButton />', () => {
       'Preview document for variable myArchive',
     );
     expect(button).toBeDisabled();
-    expect(
-      screen.getByText('Preview not available for this document type'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Unsupported file type')).toBeInTheDocument();
   });
 
   it('should open the modal with the pdf when clicked', async () => {
@@ -225,9 +223,7 @@ describe('<PreviewDocumentButton />', () => {
 
     const button = screen.getByLabelText('Preview document for variable myDoc');
     expect(button).toBeDisabled();
-    expect(
-      screen.getByText('Preview not available for this document'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Preview unavailable')).toBeInTheDocument();
   });
 
   it('should track "document-previewed" events', async () => {
