@@ -6,13 +6,20 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {expect, request, APIRequestContext} from '@playwright/test';
+import {expect, request} from '@playwright/test';
 
+// Populates the Operations panel with one batch operation per instance so the
+// "Infinite scrolling" test has enough entries to page through. The operation
+// type is CANCEL_PROCESS_INSTANCE, one per dedicated throwaway instance: each
+// cancel completes and terminates its instance, so the operations settle
+// instead of perpetually requeuing on Operate's shared operation-executor.
+// RESOLVE_INCIDENT on a single unresolvable-incident instance was used before;
+// it never completed and saturated the executor for the whole session, starving
+// operation-success assertions in unrelated specs.
 export async function createDemoOperations(
-  _request: APIRequestContext,
-  processInstanceKey: string,
-  count: number,
+  processInstanceKeys: string[],
 ): Promise<void> {
+  const count = processInstanceKeys.length;
   const baseURL =
     process.env.CORE_APPLICATION_OPERATE_URL ?? 'http://localhost:8081';
   const username = process.env.TEST_USERNAME || 'demo';
@@ -25,37 +32,38 @@ export async function createDemoOperations(
   });
 
   try {
-    // Wait until the process instance is indexed in Operate before creating operations
-    await expect
-      .poll(
-        async () => {
-          const response = await apiContext.get(
-            `/v1/process-instances/${processInstanceKey}`,
-          );
-          return response.status();
-        },
-        {timeout: 60000},
-      )
-      .toBe(200);
+    // Wait until each instance is indexed in Operate before creating operations.
+    for (const processInstanceKey of processInstanceKeys) {
+      await expect
+        .poll(
+          async () => {
+            const response = await apiContext.get(
+              `/v1/process-instances/${processInstanceKey}`,
+            );
+            return response.status();
+          },
+          {timeout: 60000},
+        )
+        .toBe(200);
+    }
 
-    for (let index = 0; index < count; index++) {
+    for (const processInstanceKey of processInstanceKeys) {
       const response = await apiContext.post(
         `/api/process-instances/${processInstanceKey}/operation`,
         {
-          data: {operationType: 'RESOLVE_INCIDENT'},
+          data: {operationType: 'CANCEL_PROCESS_INSTANCE'},
         },
       );
       if (!response.ok()) {
         const errorBody = await response.text();
         console.error(
-          `Failed to create operation ${index + 1}/${count}: ${response.status()} ${response.statusText()}`,
+          `Failed to create operation for ${processInstanceKey}: ${response.status()} ${response.statusText()}`,
         );
-        console.error(`Process Instance Key: ${processInstanceKey}`);
         console.error(`Response body: ${errorBody}`);
       }
       expect(
         response.ok(),
-        `Operation ${index + 1}/${count} failed: ${response.status()} ${response.statusText()}`,
+        `Operation for ${processInstanceKey} failed: ${response.status()} ${response.statusText()}`,
       ).toBeTruthy();
     }
 

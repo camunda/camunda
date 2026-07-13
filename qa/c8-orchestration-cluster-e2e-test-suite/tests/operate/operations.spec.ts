@@ -285,25 +285,18 @@ test.describe('Operations', () => {
 
 test.describe('Operations panel scrolling', () => {
   // The 50 demo operations exist solely to populate the Operations panel for the
-  // "Infinite scrolling" test. They are RESOLVE_INCIDENT operations on an
-  // operationsProcessA instance whose unhandled-error incident cannot be cleared,
-  // so they perpetually requeue and permanently saturate Operate's shared
-  // operation-executor and importer. Creating them in a dedicated describe that
-  // runs AFTER the retry/cancel tests keeps that saturation from delaying the
-  // operations those tests assert on, which was the root cause of their flakiness.
-  test.beforeAll(async ({request}) => {
-    const demoOperationsInstance = await createSingleInstance(
-      'operationsProcessA',
-      1,
-    );
-    await sleep(2500);
-    await waitForIncidents(request, demoOperationsInstance.processInstanceKey);
+  // "Infinite scrolling" test. They are CANCEL_PROCESS_INSTANCE operations, one
+  // per dedicated throwaway instance, so each completes and terminates its
+  // instance rather than requeuing. This keeps Operate's shared
+  // operation-executor from being saturated, which previously starved the
+  // operation-success assertions in the retry/cancel tests here and in other
+  // specs (e.g. process instance migration). The describe still runs after the
+  // retry/cancel tests so the transient cancel burst cannot interfere with them.
+  test.beforeAll(async () => {
+    const demoInstances = await createInstances('operationsProcessA', 1, 50);
     await createDemoOperations(
-      request,
-      demoOperationsInstance.processInstanceKey,
-      50,
+      demoInstances.map((instance) => instance.processInstanceKey),
     );
-    await sleep(1000);
   });
 
   test('Infinite scrolling', async ({operateOperationPanelPage}) => {
