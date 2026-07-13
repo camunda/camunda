@@ -813,6 +813,112 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.6"
 
+  /process-instances/{processInstanceKey}/suspension:
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Process instance
+      operationId: suspendProcessInstance
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: SUSPEND_PROCESS_INSTANCE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Suspend process instance
+      description: |
+        Suspends a running process instance, pausing further processing until it is resumed.
+        Only process instances in the ACTIVE state can be suspended.
+      parameters:
+        - name: processInstanceKey
+          in: path
+          required: true
+          description: The key of the process instance to suspend.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuspendProcessInstanceRequest'
+      responses:
+        "204":
+          description: The process instance is suspended.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "404":
+          description: The process instance is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "409":
+          description: |
+            The process instance is not in the ACTIVE state and cannot be suspended.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.10"
+
+  /process-instances/{processInstanceKey}/resumption:
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Process instance
+      operationId: resumeProcessInstance
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: SUSPEND_PROCESS_INSTANCE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Resume process instance
+      description: |
+        Resumes a suspended process instance, returning it to the ACTIVE state and continuing processing.
+        Only process instances in the SUSPENDED state can be resumed.
+      parameters:
+        - name: processInstanceKey
+          in: path
+          required: true
+          description: The key of the process instance to resume.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResumeProcessInstanceRequest'
+      responses:
+        "204":
+          description: The process instance is resumed.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "404":
+          description: The process instance is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "409":
+          description: |
+            The process instance is not in the SUSPENDED state and cannot be resumed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.10"
+
   /process-instances/{processInstanceKey}/call-hierarchy:
     get:
       x-eventually-consistent: true
@@ -1580,6 +1686,22 @@ components:
           $ref: 'keys.yaml#/components/schemas/OperationReference'
 
     DeleteProcessInstanceRequest:
+      type: object
+      nullable: true
+      additionalProperties: false
+      properties:
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
+
+    SuspendProcessInstanceRequest:
+      type: object
+      nullable: true
+      additionalProperties: false
+      properties:
+        operationReference:
+          $ref: 'keys.yaml#/components/schemas/OperationReference'
+
+    ResumeProcessInstanceRequest:
       type: object
       nullable: true
       additionalProperties: false
