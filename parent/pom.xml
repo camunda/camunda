@@ -2818,6 +2818,9 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
           <version>${plugin.version.dependency}</version>
+          <configuration>
+            <excludeGroupIds>org.eclipse.m2e</excludeGroupIds>
+          </configuration>
           <!-- To run with Java 11 - https://issues.apache.org/jira/browse/MDEP-613-->
           <dependencies>
             <dependency>
