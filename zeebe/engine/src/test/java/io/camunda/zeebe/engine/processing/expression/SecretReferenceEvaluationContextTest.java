@@ -180,6 +180,23 @@ final class SecretReferenceEvaluationContextTest {
         .isEqualTo("eu-1");
   }
 
+  @Test
+  void shouldResolveAgainstRealCamundaSecretsObjectVariable() {
+    // given - a variable modeled as an object at camunda.secrets.<name> (the injection edge)
+    final var context =
+        new SecretReferenceEvaluationContext(
+            new InMemoryVariableEvaluationContext(
+                Map.of("camunda", Map.of("secrets", Map.of("token", "from-variable")))));
+
+    // when - the real variable takes precedence, so it is returned rather than the placeholder
+    final var result =
+        expressionLanguage.evaluateExpression(
+            expressionLanguage.parseExpression("=camunda.secrets.token"), context);
+
+    // then
+    assertThat(result.getString()).isEqualTo("from-variable");
+  }
+
   private EvaluationResult evaluate(final String expression) {
     return expressionLanguage.evaluateExpression(
         expressionLanguage.parseExpression(expression), secretAware);
