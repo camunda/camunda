@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.camunda.zeebe.engine.processing.deployment.model.element.InputMappings;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
@@ -62,7 +63,8 @@ public final class BpmnVariableMappingBehavior {
       final BpmnElementContext context, final ExecutableFlowNode element) {
     final long scopeKey = context.getElementInstanceKey();
     final String tenantId = context.getTenantId();
-    final Optional<Expression> inputMappingExpression = element.getInputMappings();
+    final Optional<Expression> inputMappingExpression =
+        element.getInputMappings().map(InputMappings::expression);
 
     if (inputMappingExpression.isPresent()) {
       return expressionProcessor

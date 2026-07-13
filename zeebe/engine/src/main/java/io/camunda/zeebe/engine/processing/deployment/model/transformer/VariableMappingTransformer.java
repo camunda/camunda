@@ -11,13 +11,18 @@ import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.impl.NullExpression;
 import io.camunda.zeebe.el.impl.StaticExpression;
+import io.camunda.zeebe.engine.processing.deployment.model.element.InputMappings;
+import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference;
+import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference.DetectedSecret;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeMapping;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
@@ -74,7 +79,11 @@ public final class VariableMappingTransformer {
 
   private static final String EXPRESSION_MARKER = "=";
 
-  public Expression transformInputMappings(
+  /**
+   * Transforms the input mappings into the FEEL expression that produces the local variables and,
+   * in the same pass, detects the secret references they use (see {@link #detectSecretReferences}).
+   */
+  public InputMappings transformInputMappings(
       final Collection<? extends ZeebeMapping> inputMappings,
       final ExpressionLanguage expressionLanguage) {
 
@@ -82,7 +91,8 @@ public final class VariableMappingTransformer {
     final var context = asContext(mappings);
     final var contextExpression =
         asFeelContextExpression(context, (contextValue, contextPath) -> contextValue);
-    return parseExpression(contextExpression, expressionLanguage);
+    final var expression = parseExpression(contextExpression, expressionLanguage);
+    return new InputMappings(expression, detectSecretReferences(context));
   }
 
   public Expression transformOutputMappings(
@@ -93,6 +103,91 @@ public final class VariableMappingTransformer {
     final var context = asContext(mappings);
     final var contextExpression = asFeelContextExpression(context, this::mergeContextExpression);
     return parseExpression(contextExpression, expressionLanguage);
+  }
+
+  /**
+   * Detects the secrets referenced by the built mapping context, keyed by the JSON pointer (RFC
+   * 6901) of the leaf each secret belongs to — the leaf's target path plus the reference's FEEL
+   * context path. Examples: {@code "Bearer " + camunda.secrets.token -> tokens.t} gives {@code
+   * /tokens/t}; {@code {x2: camunda.secrets.x} -> foo} gives {@code /foo/x2}. The pointer lets job
+   * activation replace the reference in the job variables via a Jackson {@code JsonPointer}; the
+   * conversion happens once, here at deploy time.
+   *
+   * <p>Walking the built context (not the raw mappings) means overridden targets are already
+   * resolved: a target overwritten by a later mapping contributes no secret. Mappings with no
+   * reference are omitted (see {@link SecretReference} for what counts).
+   *
+   * <p>The pointer is leaf-precise only for references in literal FEEL contexts. A reference inside
+   * a context produced by another expression (e.g. an {@code if} that returns a context) is keyed
+   * at the enclosing target, not the exact leaf — see {@link SecretReference} for this limitation.
+   */
+  private static Map<String, Set<SecretReference>> detectSecretReferences(
+      final MappingContext context) {
+    final var secretsByPointer = new LinkedHashMap<String, Set<SecretReference>>();
+    for (final var detected : context.visit(secretCollector())) {
+      secretsByPointer
+          .computeIfAbsent(toJsonPointer(detected.path()), key -> new LinkedHashSet<>())
+          .add(detected.secret());
+    }
+    return secretsByPointer;
+  }
+
+  /**
+   * Visitor that collects the secrets of a mapping context as a flat list, each carrying the path
+   * segments of its leaf: the target path (built up from the context keys as the visit descends)
+   * plus the reference's FEEL context path within the source. A nested context is descended; a leaf
+   * holds the source expression to scan.
+   */
+  private static MappingContextVisitor<List<DetectedSecret>> secretCollector() {
+    return new MappingContextVisitor<>() {
+      @Override
+      public List<DetectedSecret> onEntry(final String targetKey, final Expression source) {
+        return SecretReference.parse(source).stream()
+            .map(detected -> prependKey(targetKey, detected))
+            .collect(Collectors.toList());
+      }
+
+      @Override
+      public List<DetectedSecret> onContext(final List<List<DetectedSecret>> entries) {
+        return entries.stream().flatMap(List::stream).collect(Collectors.toList());
+      }
+
+      @Override
+      public List<DetectedSecret> onContextEntry(
+          final String targetKey,
+          final List<DetectedSecret> contextValue,
+          final List<String> contextPath) {
+        return contextValue.stream()
+            .map(detected -> prependKey(targetKey, detected))
+            .collect(Collectors.toList());
+      }
+    };
+  }
+
+  private static DetectedSecret prependKey(final String key, final DetectedSecret detected) {
+    final var path = new ArrayList<String>();
+    path.add(key);
+    path.addAll(detected.path());
+    return new DetectedSecret(path, detected.secret());
+  }
+
+  /**
+   * Builds the RFC 6901 JSON pointer of a secret's leaf from its path segments (target path plus
+   * the reference's FEEL context path), so job activation can address it directly in the
+   * job-variables document. Examples: {@code [tokens, token]} → {@code /tokens/token}; {@code [foo,
+   * x2]} → {@code /foo/x2}.
+   *
+   * <p>{@code ~} and {@code /} are escaped ({@code ~} → {@code ~0}, {@code /} → {@code ~1}) because
+   * both are reserved in a pointer: an unescaped {@code /} inside a segment (e.g. a backtick FEEL
+   * name like {@code `a/b`}) would be read as a separator and wrongly split it. {@code ~} is
+   * replaced first, otherwise the {@code ~1} produced for {@code /} would be escaped again.
+   */
+  private static String toJsonPointer(final List<String> segments) {
+    final var pointer = new StringBuilder();
+    for (final String segment : segments) {
+      pointer.append('/').append(segment.replace("~", "~0").replace("/", "~1"));
+    }
+    return pointer.toString();
   }
 
   private List<Mapping> toMappings(
