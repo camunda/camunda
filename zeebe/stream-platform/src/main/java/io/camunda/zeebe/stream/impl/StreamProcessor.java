@@ -178,6 +178,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
               streamProcessorContext.getScheduledTaskCheckInterval(),
               scheduledTaskMetrics);
 
+      // FREEZE-barrier: async tasks (AsyncProcessingScheduleServiceActor, e.g. the timer/message
+      // checkers reading views) only need the buffered state frozen into a fresh view — cheap, no
+      // IO; contrast with the DRAIN-barrier below for sync tasks reading persisted state
       asyncScheduleServiceContext =
           new AsyncScheduleServiceContext(
               actorSchedulingService,
@@ -188,10 +191,12 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       processorActorService = actorServiceFactory.create();
 
       if (zeebeDb instanceof LayeredZeebeDb) {
-        // drain the buffered state before every scheduled task runs on this actor, so its
-        // persisted-state reads observe every batch committed before the task's preparation; a
-        // null barrier result lets the task run right away (nothing buffered, or recovery has not
-        // built the persistence driver yet — nothing to drain then either)
+        // DRAIN-barrier: sync tasks (ProcessingScheduleServiceImpl jobs on this actor) read
+        // persisted state, so the buffer is drained to RocksDB before every task runs and its
+        // reads observe every batch committed before the task's preparation; contrast with the
+        // cheap FREEZE-barrier above for view-reading async tasks. A null barrier result lets the
+        // task run right away (nothing buffered, or recovery has not built the persistence driver
+        // yet — nothing to drain then either)
         processorActorService.taskExecutionBarrier(
             () ->
                 layeredStatePersistence == null
