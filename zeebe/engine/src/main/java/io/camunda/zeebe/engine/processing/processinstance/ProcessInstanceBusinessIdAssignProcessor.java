@@ -40,6 +40,8 @@ public class ProcessInstanceBusinessIdAssignProcessor
       "Expected to assign a business id to process instance with key '%d', but the element with this key is not a process instance";
   private static final String ERROR_CHILD_INSTANCE =
       "Expected to assign a business id to process instance with key '%d', but it is a child process instance; a business id can only be assigned to root process instances";
+  private static final String ERROR_NOT_ACTIVE =
+      "Expected to assign a business id to process instance with key '%d', but it is not active; a business id can only be assigned to active process instances";
   private static final String ERROR_UNIQUENESS_ENABLED =
       "Expected to assign a business id to process instance with key '%d', but business id assignment is not allowed while business id uniqueness is enabled";
   private static final String ERROR_EMPTY =
@@ -98,6 +100,12 @@ public class ProcessInstanceBusinessIdAssignProcessor
       enrichRejectionCommand(command, processInstanceRecord);
       reject(
           command, RejectionType.INVALID_STATE, ERROR_CHILD_INSTANCE.formatted(processInstanceKey));
+      return;
+    }
+
+    if (!processInstance.isActive()) {
+      enrichRejectionCommand(command, processInstanceRecord);
+      reject(command, RejectionType.INVALID_STATE, ERROR_NOT_ACTIVE.formatted(processInstanceKey));
       return;
     }
 

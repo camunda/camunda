@@ -136,6 +136,43 @@ public final class AssignProcessInstanceBusinessIdTest {
   }
 
   @Test
+  public void shouldRejectWhenProcessInstanceIsNotActive() {
+    // given: a process with a process-level end execution listener that holds the root process
+    // instance in the (non-active) COMPLETING state until the listener job completes
+    final String endListenerType = "end-listener";
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .zeebeExecutionListener(el -> el.end().type(endListenerType))
+                .startEvent()
+                .manualTask()
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // wait until the process instance is completing (i.e. no longer active)
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETING)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.PROCESS)
+        .getFirst();
+
+    // when
+    final var rejection =
+        engine
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .businessIdAssignment()
+            .withBusinessId("biz-1")
+            .expectRejection()
+            .assign();
+
+    // then
+    assertThat(rejection).hasRejectionType(RejectionType.INVALID_STATE);
+  }
+
+  @Test
   public void shouldRejectWhenBusinessIdIsEmpty() {
     // given
     engine.deployment().withXmlResource(USER_TASK_PROCESS).deploy();
