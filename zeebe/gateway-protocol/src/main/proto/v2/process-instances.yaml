@@ -1371,6 +1371,7 @@ components:
             - endDate
             - suspendedDate
             - state
+            - suspended
             - hasIncident
             - tenantId
             - businessId
