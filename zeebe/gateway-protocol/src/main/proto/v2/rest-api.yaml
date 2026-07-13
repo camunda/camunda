@@ -338,8 +338,12 @@ paths:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1migration'
   /process-instances/modification:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1modification'
+  /process-instances/resumption:
+    $ref: 'process-instances.yaml#/paths/~1process-instances~1resumption'
   /process-instances/search:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1search'
+  /process-instances/suspension:
+    $ref: 'process-instances.yaml#/paths/~1process-instances~1suspension'
   /process-instances/{processInstanceKey}:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}'
   /process-instances/{processInstanceKey}/call-hierarchy:
