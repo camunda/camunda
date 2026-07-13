@@ -31,7 +31,15 @@ const IncidentsByErrorDefinitions: React.FC<Props> = ({errorHashCode, tabIndex})
 				return (
 					<Li key={`${item.processDefinitionKey}:${item.tenantId}`}>
 						<LinkWrapper
-							to="/"
+							to="/operate/processes"
+							search={{
+								process: item.processDefinitionId,
+								version: item.processDefinitionVersion,
+								incidents: true,
+								active: false,
+								completed: false,
+								canceled: false,
+							}}
 							tabIndex={tabIndex ?? 0}
 							title={labelText}
 							onClick={() => {

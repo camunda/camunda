@@ -56,11 +56,20 @@ const InstancesByProcess: React.FC = () => {
 					: 'operate.dashboard.instancesInOneVersion';
 				const labelText = `${item.latestProcessDefinitionName || item.processDefinitionId} – ${t(versionKey, {count: total})}`;
 
+				const isEmpty = total === 0;
+
 				return {
 					id: `${item.processDefinitionId}:${item.tenantId}`,
 					instance: (
 						<LinkWrapper
-							to="/"
+							to="/operate/processes"
+							search={{
+								process: item.processDefinitionId,
+								active: true,
+								incidents: true,
+								completed: isEmpty,
+								canceled: isEmpty,
+							}}
 							title={labelText}
 							onClick={() => {
 								tracking.track({

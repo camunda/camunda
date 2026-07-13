@@ -56,7 +56,8 @@ const IncidentsByError: React.FC = () => {
 				id: String(item.errorHashCode),
 				incident: (
 					<LinkWrapper
-						to="/"
+						to="/operate/processes"
+						search={{incidents: true, active: false, completed: false, canceled: false}}
 						title={item.errorMessage}
 						onClick={() => {
 							tracking.track({

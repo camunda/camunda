@@ -31,10 +31,20 @@ const InstancesByProcessVersions: React.FC<Props> = ({processDefinitionId, tenan
 				const total = version.activeInstancesWithoutIncidentCount + version.activeInstancesWithIncidentCount;
 				const labelText = `${name} – ${t('operate.dashboard.instancesInVersion', {count: total, version: version.processDefinitionVersion})}`;
 
+				const isEmpty = total === 0;
+
 				return (
 					<Li key={`${version.processDefinitionKey}:${version.tenantId}`}>
 						<LinkWrapper
-							to="/"
+							to="/operate/processes"
+							search={{
+								process: version.processDefinitionId,
+								version: version.processDefinitionVersion,
+								active: true,
+								incidents: true,
+								completed: isEmpty,
+								canceled: isEmpty,
+							}}
 							tabIndex={tabIndex ?? 0}
 							title={labelText}
 							onClick={() => {

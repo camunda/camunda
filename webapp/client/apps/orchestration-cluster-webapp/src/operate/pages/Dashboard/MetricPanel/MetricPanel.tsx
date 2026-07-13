@@ -23,12 +23,14 @@ type Props = {
 
 const MetricPanel: React.FC<Props> = ({count}) => {
 	const {t} = useTranslation();
+	const isEmpty = count.total === 0;
 
 	return (
 		<>
 			<Title
 				data-testid="total-instances-link"
-				to="/"
+				to="/operate/processes"
+				search={{active: true, incidents: true, completed: isEmpty, canceled: isEmpty}}
 				onClick={() => {
 					tracking.track({
 						eventName: 'operate:navigation',
@@ -42,7 +44,8 @@ const MetricPanel: React.FC<Props> = ({count}) => {
 			<LabelContainer>
 				<Label
 					data-testid="incident-instances-link"
-					to="/"
+					to="/operate/processes"
+					search={{active: false, incidents: true, completed: false, canceled: false}}
 					onClick={() => {
 						tracking.track({
 							eventName: 'operate:navigation',
@@ -54,7 +57,8 @@ const MetricPanel: React.FC<Props> = ({count}) => {
 				</Label>
 				<Label
 					data-testid="active-instances-link"
-					to="/"
+					to="/operate/processes"
+					search={{active: true, incidents: false, completed: false, canceled: false}}
 					onClick={() => {
 						tracking.track({
 							eventName: 'operate:navigation',
