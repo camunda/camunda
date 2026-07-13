@@ -13,9 +13,7 @@ import {TooltipTrigger} from './styled';
 import {tracking} from 'modules/tracking';
 
 function getDisabledTooltipText(document: DocumentInfo): string {
-  return document.isExpired
-    ? 'Document has expired'
-    : 'Download not available for this document';
+  return document.isExpired ? 'Document has expired' : 'Download unavailable';
 }
 
 type Props = {
@@ -62,7 +60,8 @@ const DownloadDocumentButton: React.FC<Props> = ({document, variableName}) => {
     <Tooltip
       label={getDisabledTooltipText(document)}
       align="top-end"
-      autoAlign
+      enterDelayMs={0}
+      leaveDelayMs={0}
       className="cds--icon-tooltip"
     >
       <TooltipTrigger tabIndex={0}>{button}</TooltipTrigger>

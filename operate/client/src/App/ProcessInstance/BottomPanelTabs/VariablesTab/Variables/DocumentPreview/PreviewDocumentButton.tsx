@@ -19,9 +19,9 @@ function getDisabledTooltipText(document: DocumentInfo): string {
     case document.isExpired:
       return 'Document has expired';
     case document.link === null:
-      return 'Preview not available for this document';
+      return 'Preview unavailable';
     default:
-      return 'Preview not available for this document type';
+      return 'Unsupported file type';
   }
 }
 
@@ -68,8 +68,9 @@ const PreviewDocumentButton: React.FC<Props> = ({document, variableName}) => {
         return (
           <Tooltip
             label={getDisabledTooltipText(document)}
-            align="top"
-            autoAlign
+            align="top-end"
+            enterDelayMs={0}
+            leaveDelayMs={0}
             className="cds--icon-tooltip"
           >
             <TooltipTrigger tabIndex={0}>{button}</TooltipTrigger>
