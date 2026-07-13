@@ -1589,7 +1589,9 @@
       "businessValueCompletedCount": "Completed Instances",
       "businessValueCompletedWithUserTasks": "Completed Instances With User Tasks",
       "businessValueCompletedNoIncident": "Completed Instances Without Incident",
-      "businessValueCompletedWithUserTasksNoIncident": "Completed Instances With User Tasks and Without Incident"
+      "businessValueCompletedWithUserTasksNoIncident": "Completed Instances With User Tasks and Without Incident",
+      "businessValueWorstInstancesName": "Worst-Performing Instances",
+      "businessValueWorstInstancesDescription": "The completed instances with the longest duration in the selected period, with the slowest step in each."
     }
   },
   "agenticControl": {

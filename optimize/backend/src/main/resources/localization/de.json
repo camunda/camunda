@@ -1589,7 +1589,9 @@
       "businessValueCompletedCount": "Abgeschlossene Instanzen",
       "businessValueCompletedWithUserTasks": "Abgeschlossene Instanzen mit Benutzeraufgaben",
       "businessValueCompletedNoIncident": "Abgeschlossene Instanzen ohne Vorfall",
-      "businessValueCompletedWithUserTasksNoIncident": "Abgeschlossene Instanzen mit Benutzeraufgaben und ohne Vorfall"
+      "businessValueCompletedWithUserTasksNoIncident": "Abgeschlossene Instanzen mit Benutzeraufgaben und ohne Vorfall",
+      "businessValueWorstInstancesName": "Langsamste Instanzen",
+      "businessValueWorstInstancesDescription": "Die abgeschlossenen Instanzen mit der längsten Laufzeit im ausgewählten Zeitraum, jeweils mit dem langsamsten Schritt."
     }
   },
   "agenticControl": {

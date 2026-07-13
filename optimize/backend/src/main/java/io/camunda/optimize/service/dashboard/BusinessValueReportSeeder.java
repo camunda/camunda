@@ -18,6 +18,9 @@ import io.camunda.optimize.dto.optimize.query.report.single.process.filter.util.
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
+import io.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
+import io.camunda.optimize.dto.optimize.query.sorting.SortOrder;
+import io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex;
 import io.camunda.optimize.service.db.writer.ReportWriter;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.nio.charset.StandardCharsets;
@@ -57,10 +60,25 @@ public class BusinessValueReportSeeder {
   // LocalizationService (system-generated reports share that localization category).
   public static final String CYCLE_TIME_NAME = "businessValueCycleTimeName";
   public static final String CYCLE_TIME_DESCRIPTION = "businessValueCycleTimeDescription";
+  public static final String WORST_INSTANCES_NAME = "businessValueWorstInstancesName";
+  public static final String WORST_INSTANCES_DESCRIPTION = "businessValueWorstInstancesDescription";
+  public static final String AGENT_COST_NAME = "businessValueAgentCostName";
+  public static final String AGENT_COST_DESCRIPTION = "businessValueAgentCostDescription";
 
   // Deterministic report ids — same seed always produces the same UUID (UUID v3 / name-based), so
   // ids are identical across restarts and across every cluster's Optimize.
   public static final String CYCLE_TIME_REPORT_ID = reportId("bv-cycle-time");
+
+  // Agent cost report powering the "Agentic Adoption & Cost" tiles. Carries two measures over the
+  // per-instance agentTotalCost (stamped at import from the configured per-model rates):
+  //   Total Agent Cost      = SUM(agentTotalCost)
+  //   Avg Agent Cost per Run = AVG(agentTotalCost)
+  public static final String AGENT_COST_REPORT_ID = reportId("bv-agent-cost");
+
+  // Raw-data report powering the Worst-Performing Instances tile. The Hub evaluates it with a small
+  // page size (the report is pre-sorted by descending instance duration) and derives the "slowest
+  // step" per instance from the returned flow-node durations.
+  public static final String WORST_INSTANCES_REPORT_ID = reportId("bv-worst-instances");
 
   // Frequency (count) reports powering the Automation Rate + Straight-Through tiles. The Hub
   // evaluates these and computes the ratios (Optimize can't divide two aggregates at query time).
@@ -99,6 +117,8 @@ public class BusinessValueReportSeeder {
     // Always upsert so config changes are applied on every restart. Ids are deterministic, so
     // upserts are safe and never create duplicates.
     seedCycleTimeReport();
+    seedWorstInstancesReport();
+    seedAgentCostReport();
     // Count reports for Automation Rate + Straight-Through (Hub computes the ratios).
     seedCountReport(COMPLETED_COUNT_REPORT_ID, "businessValueCompletedCount", false, false);
     seedCountReport(
@@ -165,6 +185,65 @@ public class BusinessValueReportSeeder {
             .build();
     reportWriter.createOrUpdateSingleProcessReport(
         CYCLE_TIME_REPORT_ID, null, reportData, CYCLE_TIME_NAME, CYCLE_TIME_DESCRIPTION, null);
+  }
+
+  /**
+   * Seeds a raw-data report of completed instances pre-sorted by descending duration. The Hub reads
+   * only the first page (the slowest N instances) to render the Worst-Performing Instances tile.
+   */
+  private void seedWorstInstancesReport() {
+    final ProcessReportDataDto reportData =
+        ProcessReportDataDto.builder()
+            .definitions(Collections.emptyList())
+            // Raw-data reports carry NO view entity — the registered command is
+            // `rawData_none_none_...`.
+            // Setting PROCESS_INSTANCE here yields `processInstance-rawData_...`, which Optimize
+            // rejects.
+            .view(new ProcessViewDto(ViewProperty.RAW_DATA))
+            .groupBy(new NoneGroupByDto())
+            .distributedBy(new NoneDistributedByDto())
+            .visualization(ProcessVisualization.TABLE)
+            .configuration(
+                SingleReportConfigurationDto.builder()
+                    .sorting(new ReportSortingDto(ProcessInstanceIndex.DURATION, SortOrder.DESC))
+                    .build())
+            .filter(ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList())
+            .businessValueReport(true)
+            .build();
+    reportWriter.createOrUpdateSingleProcessReport(
+        WORST_INSTANCES_REPORT_ID,
+        null,
+        reportData,
+        WORST_INSTANCES_NAME,
+        WORST_INSTANCES_DESCRIPTION,
+        null);
+  }
+
+  /**
+   * Seeds the agent cost report with two measures (SUM + AVG) over the per-instance {@code
+   * agentTotalCost}. The Hub reads both measures to render the Total and Avg Agent Cost tiles — no
+   * Hub-side arithmetic, no group-by-model (per-model pricing is resolved at import time).
+   */
+  private void seedAgentCostReport() {
+    final ProcessReportDataDto reportData =
+        ProcessReportDataDto.builder()
+            .definitions(Collections.emptyList())
+            .view(new ProcessViewDto(ProcessViewEntity.AGENT_INSTANCE, ViewProperty.COST))
+            .groupBy(new NoneGroupByDto())
+            .distributedBy(new NoneDistributedByDto())
+            .visualization(ProcessVisualization.NUMBER)
+            .configuration(
+                SingleReportConfigurationDto.builder()
+                    .aggregationTypes(
+                        new LinkedHashSet<>(
+                            List.of(
+                                new AggregationDto(AggregationType.SUM),
+                                new AggregationDto(AggregationType.AVERAGE))))
+                    .build())
+            .businessValueReport(true)
+            .build();
+    reportWriter.createOrUpdateSingleProcessReport(
+        AGENT_COST_REPORT_ID, null, reportData, AGENT_COST_NAME, AGENT_COST_DESCRIPTION, null);
   }
 
   private static String reportId(final String seed) {
