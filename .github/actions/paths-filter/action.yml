@@ -157,8 +157,6 @@ outputs:
     description: Output whether dependency manifests (pom.xml, lock files) changed, triggering PR vulnerability scanning
     value: >-
       ${{ steps.filter-dep-manifests.outputs.dep-manifest-change == 'true' }}
-<<<<<<< HEAD
-=======
   fossa-changes:
     description: Output whether FOSSA license analysis should be run based on GitHub event and files changed (dependency manifests or the license CI itself)
     value: >-
@@ -193,7 +191,6 @@ outputs:
         steps.ci-github-actions.outputs.ci-relevant == 'true' ||
         steps.filter-scripts.outputs.scripts-change == 'true'
       }}
->>>>>>> bc45b6dc (ci: conditionally run check licences based on dependency changes only for PRs)
 
 runs:
   using: composite
