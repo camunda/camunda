@@ -20,6 +20,9 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.ZeebeJobWorkerElementBuilder;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -208,6 +211,30 @@ public class JobWorkerElementIncidentTest {
         .isTrue();
 
     assertThat(incidentResolved.getKey()).isEqualTo(incidentCreated.getKey());
+  }
+
+  @Test
+  public void shouldRejectDeploymentIfStaticJobTypeExceedsMaxLength() {
+    // given - a static job type literal longer than the configured max length
+    final var tooLongJobType = "a".repeat(EngineConfiguration.DEFAULT_MAX_WORKER_TYPE_LENGTH + 1);
+
+    // when
+    final var rejectedDeployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(process(t -> t.zeebeJobType(tooLongJobType)))
+            .expectRejection()
+            .deploy();
+
+    // then - the deployment is rejected instead of allowing an over-long job type
+    Assertions.assertThat(rejectedDeployment)
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeployment.getRejectionReason())
+        .contains(
+            "Worker types must not be longer than the configured max-worker-type-length of %s characters"
+                .formatted(EngineConfiguration.DEFAULT_MAX_WORKER_TYPE_LENGTH));
   }
 
   @Test
