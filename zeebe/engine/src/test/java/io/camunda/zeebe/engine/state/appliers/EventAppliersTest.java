@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import java.io.IOException;
@@ -178,7 +179,11 @@ public class EventAppliersTest {
             .flatMap(c -> Arrays.stream(c.getEnumConstants()))
             .filter(Intent::isEvent)
             // CheckpointIntent is not handled by the engine
-            .filter(intent -> !(intent instanceof CheckpointIntent));
+            .filter(intent -> !(intent instanceof CheckpointIntent))
+            // todo delete these filters after the suspend/resume appliers are implemented
+            //  (https://github.com/camunda/camunda/issues/57506)
+            .filter(intent -> intent != ProcessInstanceIntent.SUSPENDED)
+            .filter(intent -> intent != ProcessInstanceIntent.RESUMED);
 
     // when
     eventAppliers.registerEventAppliers(mock(MutableProcessingState.class));
