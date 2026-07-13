@@ -7,137 +7,44 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
-import static io.camunda.exporter.utils.CamundaExporterSchemaUtils.createSchemas;
-import static io.camunda.search.test.utils.SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
-import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
-import io.camunda.exporter.DefaultExporterResourceProvider;
-import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.ExporterResourceProvider;
-import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
-import io.camunda.exporter.metrics.CamundaExporterMetrics;
-import io.camunda.exporter.utils.CamundaExporterITTemplateExtension;
-import io.camunda.search.connect.es.ElasticsearchConnector;
-import io.camunda.search.connect.os.OpensearchConnector;
+import io.camunda.exporter.tasks.BackgroundTaskIT;
 import io.camunda.search.test.utils.SearchClientAdapter;
-import io.camunda.search.test.utils.SearchDBExtension;
-import io.camunda.search.test.utils.TestObjectMapper;
-import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.entities.ExporterEntity;
-import io.camunda.zeebe.exporter.api.context.Context;
-import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import java.io.IOException;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.InstantSource;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
-import org.agrona.CloseHelper;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.TestTemplate;
-import org.junit.jupiter.api.extension.RegisterExtension;
-import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
-  protected static final Logger LOGGER = LoggerFactory.getLogger(ArchiverJobIT.class);
-  protected static final int PARTITION_ID = 1;
-  protected static final AtomicLong ID_GENERATOR = new AtomicLong(1);
-  protected static final Instant NOW = Instant.parse("2026-05-01T10:26:00Z");
-  protected static final Duration ARCHIVE_TIMEOUT = Duration.ofSeconds(30L);
-
-  @RegisterExtension private static SearchDBExtension searchDB = SearchDBExtension.create();
-
-  @RegisterExtension
-  private static CamundaExporterITTemplateExtension templateExtension =
-      new CamundaExporterITTemplateExtension(searchDB);
-
-  protected CamundaExporterMetrics exporterMetrics;
-  protected ExecutorService executor;
-  protected Context context;
-  protected String testPrefix;
-
-  private final List<AutoCloseable> resourcesToClose = new ArrayList<>();
+public abstract class ArchiverJobIT<T extends ArchiverJob<?>> extends BackgroundTaskIT<T> {
   private LifecyclePolicyNameVerifier lifecyclePolicyNameVerifier;
 
+  @Override
   @BeforeEach
-  void setup() {
-    context =
-        new ExporterTestContext().setPartitionId(PARTITION_ID).setClock(InstantSource.fixed(NOW));
-    exporterMetrics = new CamundaExporterMetrics(context.getMeterRegistry());
-    executor = Executors.newSingleThreadExecutor();
+  protected void setup() {
+    super.setup();
     lifecyclePolicyNameVerifier = new LifecyclePolicyNameVerifier();
-    testPrefix = RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
   }
 
-  @AfterEach
-  void teardown() throws Exception {
-    final var openSearchAwsInstanceUrl =
-        Optional.ofNullable(System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL)).orElse("");
-    if (openSearchAwsInstanceUrl.isEmpty()) {
-      searchDB.esClient().indices().delete(req -> req.index(testPrefix + "*"));
-    }
-    searchDB.osClient().indices().delete(req -> req.index(testPrefix + "*"));
-
-    if (executor != null) {
-      executor.shutdown();
-      executor = null;
-    }
-
-    CloseHelper.quietCloseAll(resourcesToClose);
-    resourcesToClose.clear();
+  @Override
+  protected T createBackgroundTask(
+      final ExporterConfiguration config, final ExporterResourceProvider resourceProvider) {
+    final var repository = createArchiverRepository(config, resourceProvider);
+    return createArchiveJob(config, resourceProvider, repository);
   }
 
-  @TestTemplate
-  void shouldExecuteWithoutErrorsWhenNothingToArchive(
-      final ExporterConfiguration config, final SearchClientAdapter ignored) throws Exception {
-    // just a basic smoke test to verify that the job runs and creates well-formed queries etc
-    // when there's nothing to actually archive
-    withArchiverJob(
-        config,
-        (job, resources) -> {
-          // when
-          final var archived = job.execute();
-
-          // then
-          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(0);
-        });
-  }
-
-  void withArchiverJob(final ExporterConfiguration config, final ArchiveJobConsumer<T> jobConsumer)
-      throws Exception {
+  @Override
+  protected void updateConfig(final ExporterConfiguration config) {
     config.getHistory().getRetention().setEnabled(true);
     config.getHistory().getRetention().setPolicyName(testPrefix + "-camunda-retention-policy");
-    config.getConnect().setIndexPrefix(testPrefix);
-    config.getIndex().setNumberOfShards(3);
-    config.getIndex().setNumberOfReplicas(0);
-    createSchemas(config);
-
-    final ExporterResourceProvider exporterResourceProvider = exporterResourceProvider(config);
-
-    final var repository = createArchiverRepository(config, exporterResourceProvider);
-    try (final T job = createArchiveJob(config, exporterResourceProvider, repository)) {
-      jobConsumer.accept(job, exporterResourceProvider);
-    }
   }
 
   protected <E extends ExporterEntity<E>> E create(final Supplier<E> constructor) {
@@ -145,23 +52,6 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
     final var entity = constructor.get();
     entity.setId(String.valueOf(id));
     return entity;
-  }
-
-  protected void store(
-      final IndexDescriptor indexDescriptor,
-      final SearchClientAdapter client,
-      final ExporterEntity<?> entity)
-      throws IOException {
-    client.index(entity.getId(), indexDescriptor.getFullQualifiedName(), entity);
-  }
-
-  protected void store(
-      final IndexDescriptor indexDescriptor,
-      final SearchClientAdapter client,
-      final ExporterEntity<?> parent,
-      final ExporterEntity<?> child)
-      throws IOException {
-    client.index(child.getId(), parent.getId(), indexDescriptor.getFullQualifiedName(), child);
   }
 
   protected void verifyMoved(
@@ -247,22 +137,6 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
     return testPrefix + "-camunda-retention-policy";
   }
 
-  private ExporterResourceProvider exporterResourceProvider(final ExporterConfiguration config) {
-    final var cacheProvider = mock(ExporterEntityCacheProvider.class);
-    when(cacheProvider.getProcessCacheLoader(anyString())).thenReturn(k -> null);
-    when(cacheProvider.getBatchOperationCacheLoader(anyString())).thenReturn(k -> null);
-    when(cacheProvider.getDecisionRequirementsCacheLoader(anyString())).thenReturn(k -> null);
-    when(cacheProvider.getFormCacheLoader(anyString())).thenReturn(k -> null);
-    final var resourceProvider = new DefaultExporterResourceProvider();
-    resourceProvider.init(
-        config,
-        cacheProvider,
-        context,
-        new ExporterMetadata(TestObjectMapper.objectMapper()),
-        TestObjectMapper.objectMapper());
-    return resourceProvider;
-  }
-
   private ArchiverRepository createArchiverRepository(
       final ExporterConfiguration config, final ExporterResourceProvider resourceProvider) {
     final var isElasticsearch = ConnectionTypes.isElasticSearch(config.getConnect().getType());
@@ -294,21 +168,6 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
     }
   }
 
-  protected ElasticsearchAsyncClient createAsyncESClient(final ExporterConfiguration config) {
-    final var connector = new ElasticsearchConnector(config.getConnect());
-    return connector.createAsyncClient();
-  }
-
-  protected OpenSearchAsyncClient createOSAsyncClient(final ExporterConfiguration config) {
-    final var connector = new OpensearchConnector(config.getConnect());
-    return connector.createAsyncClient();
-  }
-
-  protected <R extends AutoCloseable> R closeLater(final R resource) {
-    resourcesToClose.add(resource);
-    return resource;
-  }
-
   abstract T createArchiveJob(
       final ExporterConfiguration config,
       final ExporterResourceProvider resourceProvider,
@@ -324,7 +183,7 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
         return;
       }
       Awaitility.await()
-          .atMost(ARCHIVE_TIMEOUT)
+          .atMost(EXECUTE_TIMEOUT)
           .untilAsserted(
               () -> {
                 final var policy = client.getLifecyclePolicyNameForIndex(indexName);
@@ -332,9 +191,5 @@ public abstract class ArchiverJobIT<T extends ArchiverJob<?>> {
               });
       alreadyVerifiedIndexes.add(indexName);
     }
-  }
-
-  interface ArchiveJobConsumer<T> {
-    void accept(T job, ExporterResourceProvider resourceProvider) throws Exception;
   }
 }
