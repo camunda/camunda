@@ -25,6 +25,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWr
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.analyzers.CatchEventAnalyzer;
 import io.camunda.zeebe.engine.state.analyzers.CatchEventAnalyzer.CatchEventTuple;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
@@ -86,6 +87,7 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
   private final IncidentMetrics incidentMetrics;
+  private final VariableBehavior variableBehavior;
 
   public JobThrowErrorProcessor(
       final ProcessingState state,
@@ -94,7 +96,8 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
       final JobProcessingMetrics jobMetrics,
       final AuthorizationCheckBehavior authCheckBehavior,
       final Writers writers,
-      final IncidentMetrics incidentMetrics) {
+      final IncidentMetrics incidentMetrics,
+      final VariableBehavior variableBehavior) {
     this.keyGenerator = keyGenerator;
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
@@ -120,6 +123,8 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
     this.eventPublicationBehavior = eventPublicationBehavior;
     this.jobMetrics = jobMetrics;
     this.incidentMetrics = incidentMetrics;
+
+    this.variableBehavior = variableBehavior;
   }
 
   @Override
@@ -127,6 +132,11 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
     preconditionChecker
         .check(record)
         .flatMap(job -> checkAuthorization(record, job))
+        .flatMap(
+            job ->
+                variableBehavior
+                    .validateVariables(record.getValue().getVariablesBuffer())
+                    .map(unused -> job))
         .ifRightOrLeft(
             job -> throwError(record, job),
             rejection -> {

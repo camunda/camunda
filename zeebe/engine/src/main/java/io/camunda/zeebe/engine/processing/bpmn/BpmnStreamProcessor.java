@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
@@ -402,14 +403,21 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
                         ? context.getElementInstanceKey()
                         : context.getFlowScopeKey();
 
-                variableBehavior.mergeLocalDocument(
-                    scopeKey,
-                    context.getProcessDefinitionKey(),
-                    context.getProcessInstanceKey(),
-                    context.getRootProcessInstanceKey(),
-                    context.getBpmnProcessId(),
-                    context.getTenantId(),
-                    eventTrigger.getVariables());
+                try {
+                  variableBehavior.mergeLocalDocument(
+                      scopeKey,
+                      context.getProcessDefinitionKey(),
+                      context.getProcessInstanceKey(),
+                      context.getRootProcessInstanceKey(),
+                      context.getBpmnProcessId(),
+                      context.getTenantId(),
+                      eventTrigger.getVariables());
+                } catch (final ValidationException e) {
+                  throw new IllegalArgumentException(
+                      "Failed to merge variables produced by execution listener into scope "
+                          + scopeKey,
+                      e);
+                }
               }
 
               eventTriggerBehavior.processEventTriggered(

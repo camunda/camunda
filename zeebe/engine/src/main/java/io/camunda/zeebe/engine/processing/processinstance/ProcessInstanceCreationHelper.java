@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSeq
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
+import io.camunda.zeebe.engine.processing.variable.VariableValidationException;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
@@ -238,8 +239,8 @@ public class ProcessInstanceCreationHelper {
   }
 
   public void setVariablesFromDocument(
-      final ProcessInstanceRecord processInstance, final DirectBuffer variablesBuffer) {
-
+      final ProcessInstanceRecord processInstance, final DirectBuffer variablesBuffer)
+      throws VariableValidationException {
     variableBehavior.mergeLocalDocument(
         processInstance.getProcessInstanceKey(),
         processInstance.getProcessDefinitionKey(),

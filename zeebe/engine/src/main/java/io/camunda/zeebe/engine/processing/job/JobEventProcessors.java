@@ -88,7 +88,8 @@ public final class JobEventProcessors {
                 jobMetrics,
                 authCheckBehavior,
                 writers,
-                incidentMetrics))
+                incidentMetrics,
+                bpmnBehaviors.variableBehavior()))
         .onCommand(
             ValueType.JOB,
             JobIntent.TIME_OUT,

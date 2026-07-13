@@ -170,7 +170,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             writers,
             processingState,
             stateBehavior,
-            conditionalBehavior);
+            variableBehavior);
 
     bpmnDecisionBehavior =
         new BpmnDecisionBehavior(

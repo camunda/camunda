@@ -16,10 +16,12 @@ import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCh
 import io.camunda.zeebe.engine.processing.identity.authorization.exception.ForbiddenException;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -51,6 +53,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
   private final ProcessState processState;
   private final ElementInstanceState elementInstanceState;
   private final AuthorizationCheckBehavior authCheckBehavior;
+  private final VariableBehavior variableBehavior;
 
   public SignalBroadcastProcessor(
       final Writers writers,
@@ -59,7 +62,8 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
       final BpmnStateBehavior stateBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final VariableBehavior variableBehavior) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
@@ -69,6 +73,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
     this.commandDistributionBehavior = commandDistributionBehavior;
     elementInstanceState = processingState.getElementInstanceState();
     this.authCheckBehavior = authCheckBehavior;
+    this.variableBehavior = variableBehavior;
     eventHandle =
         new EventHandle(
             keyGenerator,
@@ -94,6 +99,17 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
                 .formatted(signalRecord.getTenantId());
         rejectionWriter.appendRejection(command, RejectionType.FORBIDDEN, message);
         responseWriter.writeRejectionOnCommand(command, RejectionType.FORBIDDEN, message);
+        return;
+      }
+    }
+
+    final var variables = signalRecord.getVariablesBuffer();
+    if (variables.capacity() > 0) {
+      final var validation = variableBehavior.validateVariables(variables);
+      if (validation.isLeft()) {
+        final String reason = validation.getLeft().reason();
+        rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, reason);
+        responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_ARGUMENT, reason);
         return;
       }
     }

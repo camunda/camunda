@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.common;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
-import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnConditionalBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
@@ -50,7 +49,7 @@ public class EventTriggerBehavior {
       final Writers writers,
       final ProcessingState processingState,
       final BpmnStateBehavior stateBehavior,
-      final BpmnConditionalBehavior conditionalBehavior) {
+      final VariableBehavior variableBehavior) {
     this.keyGenerator = keyGenerator;
     this.catchEventBehavior = catchEventBehavior;
     commandWriter = writers.command();
@@ -59,9 +58,7 @@ public class EventTriggerBehavior {
     elementInstanceState = processingState.getElementInstanceState();
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
 
-    variableBehavior =
-        new VariableBehavior(
-            processingState.getVariableState(), writers.state(), conditionalBehavior, keyGenerator);
+    this.variableBehavior = variableBehavior;
     this.stateBehavior = stateBehavior;
   }
 
@@ -256,16 +253,24 @@ public class EventTriggerBehavior {
         eventInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATED, eventRecord);
 
     if (variables.capacity() > 0) {
-      // set as local variables of the element instance to use them for the variable output
-      // mapping
-      variableBehavior.mergeLocalDocument(
-          eventInstanceKey,
-          elementRecord.getProcessDefinitionKey(),
-          elementRecord.getProcessInstanceKey(),
-          elementRecord.getRootProcessInstanceKey(),
-          elementRecord.getBpmnProcessIdBuffer(),
-          elementRecord.getTenantId(),
-          variables);
+      try {
+        // set as local variables of the element instance to use them for the variable output
+        // mapping
+        variableBehavior.mergeLocalDocument(
+            eventInstanceKey,
+            elementRecord.getProcessDefinitionKey(),
+            elementRecord.getProcessInstanceKey(),
+            elementRecord.getRootProcessInstanceKey(),
+            elementRecord.getBpmnProcessIdBuffer(),
+            elementRecord.getTenantId(),
+            variables);
+      } catch (final ValidationException e) {
+        throw new IllegalArgumentException(
+            String.format(
+                "Variable validation failed for triggered event '%s' with key '%d': %s",
+                triggeredEvent.getId(), eventInstanceKey, e.getMessage()),
+            e);
+      }
     }
 
     commandWriter.appendFollowUpCommand(

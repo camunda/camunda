@@ -86,7 +86,8 @@ public final class MessageEventProcessors {
                 routingInfo,
                 elementInstanceState,
                 bannedInstanceState,
-                businessIdUniquenessEnabled))
+                businessIdUniquenessEnabled,
+                bpmnBehaviors.variableBehavior()))
         .onCommand(
             ValueType.MESSAGE_BATCH,
             MessageBatchIntent.EXPIRE,
