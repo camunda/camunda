@@ -12,6 +12,7 @@ import type {ProcessDefinitionInstanceVersionStatistics} from '@camunda/camunda-
 import {tracking} from '#/shared/tracking';
 import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
 import {instancesByProcessVersionsQuery} from './instancesByProcess.queries';
+import {runningOrAllInstancesFilter} from '../processesLinkFilters';
 import {Li, LinkWrapper} from '../styled';
 
 type Props = {
@@ -31,8 +32,6 @@ const InstancesByProcessVersions: React.FC<Props> = ({processDefinitionId, tenan
 				const total = version.activeInstancesWithoutIncidentCount + version.activeInstancesWithIncidentCount;
 				const labelText = `${name} – ${t('operate.dashboard.instancesInVersion', {count: total, version: version.processDefinitionVersion})}`;
 
-				const isEmpty = total === 0;
-
 				return (
 					<Li key={`${version.processDefinitionKey}:${version.tenantId}`}>
 						<LinkWrapper
@@ -40,10 +39,7 @@ const InstancesByProcessVersions: React.FC<Props> = ({processDefinitionId, tenan
 							search={{
 								process: version.processDefinitionId,
 								version: version.processDefinitionVersion,
-								active: true,
-								incidents: true,
-								completed: isEmpty,
-								canceled: isEmpty,
+								...runningOrAllInstancesFilter(total),
 							}}
 							tabIndex={tabIndex ?? 0}
 							title={labelText}

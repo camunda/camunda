@@ -17,6 +17,7 @@ import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
 import {ExpandableList} from '../ExpandableList';
 import {ExpandedRowErrorFallback} from '../ExpandedRowErrorFallback';
 import {useDashboardScrollPagination} from '../useDashboardScrollPagination';
+import {runningOrAllInstancesFilter} from '../processesLinkFilters';
 import {LinkWrapper, LoadingRow} from '../styled';
 import {instancesByProcessInfiniteQuery, PAGE_SIZE} from './instancesByProcess.queries';
 import {InstancesByProcessVersions} from './InstancesByProcessVersions';
@@ -56,20 +57,12 @@ const InstancesByProcess: React.FC = () => {
 					: 'operate.dashboard.instancesInOneVersion';
 				const labelText = `${item.latestProcessDefinitionName || item.processDefinitionId} – ${t(versionKey, {count: total})}`;
 
-				const isEmpty = total === 0;
-
 				return {
 					id: `${item.processDefinitionId}:${item.tenantId}`,
 					instance: (
 						<LinkWrapper
 							to="/operate/processes"
-							search={{
-								process: item.processDefinitionId,
-								active: true,
-								incidents: true,
-								completed: isEmpty,
-								canceled: isEmpty,
-							}}
+							search={{process: item.processDefinitionId, ...runningOrAllInstancesFilter(total)}}
 							title={labelText}
 							onClick={() => {
 								tracking.track({

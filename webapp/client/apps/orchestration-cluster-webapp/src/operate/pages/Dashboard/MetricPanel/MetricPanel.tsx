@@ -9,6 +9,7 @@
 import {useTranslation} from 'react-i18next';
 import {tracking} from '#/shared/tracking';
 import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
+import {runningOrAllInstancesFilter} from '../processesLinkFilters';
 import {Title, LabelContainer, Label} from './styled';
 
 type RunningInstancesCount = {
@@ -23,14 +24,13 @@ type Props = {
 
 const MetricPanel: React.FC<Props> = ({count}) => {
 	const {t} = useTranslation();
-	const isEmpty = count.total === 0;
 
 	return (
 		<>
 			<Title
 				data-testid="total-instances-link"
 				to="/operate/processes"
-				search={{active: true, incidents: true, completed: isEmpty, canceled: isEmpty}}
+				search={runningOrAllInstancesFilter(count.total)}
 				onClick={() => {
 					tracking.track({
 						eventName: 'operate:navigation',

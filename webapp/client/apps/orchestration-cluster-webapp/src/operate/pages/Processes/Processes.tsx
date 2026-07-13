@@ -33,7 +33,7 @@ type ProcessItem = {id: string; label: string};
 const Processes: React.FC<Props> = ({process, version, elementId, active, incidents, completed, canceled}) => {
 	const {t} = useTranslation();
 	const navigate = useNavigate();
-	const {data} = useSuspenseQuery(queries.queryProcessDefinitions({}));
+	const {data} = useSuspenseQuery(queries.queryProcessDefinitions({page: {limit: 1000}}));
 
 	const processItems = useMemo<ProcessItem[]>(() => {
 		const seen = new Set<string>();
@@ -58,7 +58,7 @@ const Processes: React.FC<Props> = ({process, version, elementId, active, incide
 	}, [data, process]);
 
 	const selectedProcess = processItems.find((i) => i.id === process) ?? null;
-	const selectedVersion = version ?? undefined;
+	const selectedVersion = version;
 
 	const runningChecked = active && incidents;
 	const runningIndeterminate = !runningChecked && (active || incidents);

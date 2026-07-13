@@ -24,7 +24,8 @@ const processesSearchSchema = z.object({
 
 export const Route = createFileRoute('/_auth/operate/processes')({
 	validateSearch: processesSearchSchema,
-	loader: ({context: {queryClient}}) => queryClient.ensureQueryData(queries.queryProcessDefinitions({})),
+	loader: ({context: {queryClient}}) =>
+		queryClient.ensureQueryData(queries.queryProcessDefinitions({page: {limit: 1000}})),
 	component: function ProcessesRoute() {
 		const search = Route.useSearch();
 		return <Processes {...search} />;
