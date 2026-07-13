@@ -147,7 +147,14 @@ public abstract class PhysicalTenantManagementService<T extends PhysicalTenantMa
   }
 
   private <R> CompletableFuture<Set<R>> broadcast(final Stream<BrokerRequest<R>> requests) {
-    final var responses = requests.map(brokerClient::sendRequestWithRetry).toList();
+    final var responses =
+        requests
+            .map(
+                request -> {
+                  request.setPartitionGroup(getPhysicalTenantId());
+                  return brokerClient.sendRequestWithRetry(request);
+                })
+            .toList();
     return CompletableFuture.allOf(responses.toArray(CompletableFuture[]::new))
         .thenApply(
             ignored ->
