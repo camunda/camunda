@@ -297,19 +297,24 @@ public class DrainingProcessDefinitionTest {
 
   @Test
   public void shouldNotSpawnInstanceForDrainingDefinitionOnTimerStartEvent() {
-    // given
+    // given - a repeating timer start event so the trigger also reschedules
     final var processId = helper.getBpmnProcessId();
-    final var metadata = deployWithStartEvent(processId, start -> start.timerWithCycle("R1/PT1S"));
+    final var metadata = deployWithStartEvent(processId, start -> start.timerWithCycle("R2/PT1S"));
     drain(metadata);
 
     // when - the timer start event fires
     engine.increaseTime(Duration.ofHours(1));
-    RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
-        .withProcessDefinitionKey(metadata.getProcessDefinitionKey())
-        .await();
+    final var triggered =
+        RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+            .withProcessDefinitionKey(metadata.getProcessDefinitionKey())
+            .getFirst();
 
-    // then
+    // then - no instance is spawned and no phantom process instance key leaks into the TRIGGERED
+    // event
     assertNoInstanceSpawned(metadata.getProcessDefinitionKey());
+    Assertions.assertThat(triggered.getValue().getProcessInstanceKey())
+        .describedAs("TRIGGERED timer of a draining definition carries no phantom instance key")
+        .isEqualTo(-1L);
   }
 
   @Test
