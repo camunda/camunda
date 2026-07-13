@@ -7,11 +7,14 @@
  */
 package io.camunda.operate.property;
 
-public class OperateElasticsearchProperties extends ElasticsearchProperties {
+public class OperateElasticsearchProperties {
 
   public static final String DEFAULT_INDEX_PREFIX = "";
 
   private String indexPrefix = DEFAULT_INDEX_PREFIX;
+
+  /** Indicates whether operate does a proper health check for ES clusters. */
+  private boolean healthCheckEnabled = true;
 
   public String getIndexPrefix() {
     return indexPrefix;
@@ -19,5 +22,13 @@ public class OperateElasticsearchProperties extends ElasticsearchProperties {
 
   public void setIndexPrefix(final String indexPrefix) {
     this.indexPrefix = indexPrefix;
+  }
+
+  public boolean isHealthCheckEnabled() {
+    return healthCheckEnabled;
+  }
+
+  public void setHealthCheckEnabled(final boolean healthCheckEnabled) {
+    this.healthCheckEnabled = healthCheckEnabled;
   }
 }

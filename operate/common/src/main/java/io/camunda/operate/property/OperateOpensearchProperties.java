@@ -7,13 +7,15 @@
  */
 package io.camunda.operate.property;
 
-public class OperateOpensearchProperties extends OpensearchProperties {
+public class OperateOpensearchProperties {
 
   public static final String DEFAULT_INDEX_PREFIX = "";
   private static final int DEFAULT_NUMBER_OF_SHARDS = 1;
 
   private String indexPrefix = DEFAULT_INDEX_PREFIX;
-  private int numberOfShards = DEFAULT_NUMBER_OF_SHARDS;
+
+  /** Indicates whether operate does a proper health check for ES/OS clusters. */
+  private boolean healthCheckEnabled = true;
 
   public String getIndexPrefix() {
     return indexPrefix;
@@ -23,7 +25,11 @@ public class OperateOpensearchProperties extends OpensearchProperties {
     this.indexPrefix = indexPrefix;
   }
 
-  public int getNumberOfShards() {
-    return numberOfShards;
+  public boolean isHealthCheckEnabled() {
+    return healthCheckEnabled;
+  }
+
+  public void setHealthCheckEnabled(final boolean healthCheckEnabled) {
+    this.healthCheckEnabled = healthCheckEnabled;
   }
 }

@@ -5,15 +5,16 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate;
+package io.camunda.operate.data.util;
 
-import org.junit.platform.suite.api.SelectPackages;
-import org.junit.platform.suite.api.Suite;
+public class ThreadUtil {
 
-@Suite
-@SelectPackages({
-  "io.camunda.operate.connect",
-  "io.camunda.operate.opensearch",
-  "io.camunda.operate.zeebeimport"
-})
-public class OperateDataLayerTestSuite {}
+  public static long sleepFor(final long milliseconds) {
+    try {
+      Thread.sleep(milliseconds);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
+    return milliseconds;
+  }
+}

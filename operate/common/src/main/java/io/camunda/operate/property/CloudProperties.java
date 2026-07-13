@@ -18,27 +18,6 @@ public class CloudProperties {
 
   private String mixpanelAPIHost;
 
-  private String permissionUrl;
-
-  private String permissionAudience;
-  private String consoleUrl;
-
-  public String getPermissionUrl() {
-    return permissionUrl;
-  }
-
-  public void setPermissionUrl(final String permissionUrl) {
-    this.permissionUrl = permissionUrl;
-  }
-
-  public String getPermissionAudience() {
-    return permissionAudience;
-  }
-
-  public void setPermissionAudience(final String permissionAudience) {
-    this.permissionAudience = permissionAudience;
-  }
-
   public String getOrganizationId() {
     return organizationId;
   }
@@ -72,15 +51,6 @@ public class CloudProperties {
 
   public CloudProperties setMixpanelAPIHost(final String mixpanelAPIHost) {
     this.mixpanelAPIHost = mixpanelAPIHost;
-    return this;
-  }
-
-  public String getConsoleUrl() {
-    return consoleUrl;
-  }
-
-  public CloudProperties setConsoleUrl(final String consoleUrl) {
-    this.consoleUrl = consoleUrl;
     return this;
   }
 }
