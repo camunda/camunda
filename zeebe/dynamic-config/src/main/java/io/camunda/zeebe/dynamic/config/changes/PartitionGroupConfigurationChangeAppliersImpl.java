@@ -7,9 +7,11 @@
  */
 package io.camunda.zeebe.dynamic.config.changes;
 
+import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionBootstrapApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionJoinApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionLeaveApplier;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 
@@ -36,6 +38,8 @@ public final class PartitionGroupConfigurationChangeAppliersImpl
               op.partitionId(),
               op.minimumAllowedReplicas(),
               partitionChangeExecutor);
+      case final PartitionBootstrapOperation op ->
+          new PartitionBootstrapApplier(op, partitionChangeExecutor);
       default ->
           throw new UnsupportedOperationException(
               "No new-model applier implemented yet for %s".formatted(operation));
