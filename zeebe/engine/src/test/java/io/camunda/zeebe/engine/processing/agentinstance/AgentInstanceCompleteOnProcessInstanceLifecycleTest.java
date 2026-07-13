@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
@@ -44,7 +45,7 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
   @Rule public final RecordingExporterTestWatcher watcher = new RecordingExporterTestWatcher();
 
   @Test
-  public void shouldCompleteAgentInstanceWhenProcessInstanceCompletes() {
+  public void shouldCompleteAgentInstanceOfServiceTaskWhenProcessInstanceCompletes() {
     // given
     ENGINE
         .deployment()
@@ -68,17 +69,89 @@ public class AgentInstanceCompleteOnProcessInstanceLifecycleTest {
     // when
     ENGINE.job().ofInstance(processInstanceKey).withType(AGENT_JOB_TYPE).complete();
 
-    // then
-    assertThat(
-            RecordingExporter.agentInstanceRecords(AgentInstanceIntent.COMPLETED)
-                .withRecordKey(agentInstanceKey)
-                .exists())
-        .describedAs("Agent instance is completed when the process instance completes")
-        .isTrue();
+    // then — AGENT_INSTANCE:COMPLETE is emitted as a follow-up to PROCESS:COMPLETE_ELEMENT
+    final var agentInstanceCompleteCommand =
+        RecordingExporter.agentInstanceRecords(AgentInstanceIntent.COMPLETE)
+            .withRecordKey(agentInstanceKey)
+            .getFirst();
+    final var processCompleteElementCommand =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.COMPLETE_ELEMENT)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst();
+
+    assertThat(agentInstanceCompleteCommand.getPosition())
+        .describedAs(
+            "AGENT_INSTANCE:COMPLETE is a follow-up to PROCESS:COMPLETE_ELEMENT, "
+                + "so it must appear after it in the log")
+        .isGreaterThan(processCompleteElementCommand.getPosition());
   }
 
   @Test
-  public void shouldCompleteAgentInstanceWhenProcessInstanceCanceled() {
+  public void shouldCompleteAgentInstanceOfAdHocSubProcessWhenProcessInstanceCompletes() {
+    // given
+    final String processId = "ad-hoc-agent-process";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .adHocSubProcess(
+                    AGENT_TASK_ID,
+                    ahsp -> {
+                      ahsp.task("tool");
+                      ahsp.zeebeJobType(AGENT_JOB_TYPE);
+                    })
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    final long adHocSubProcessInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS)
+            .getFirst()
+            .getKey();
+    final long agentInstanceKey =
+        ENGINE
+            .agentInstances()
+            .withElementInstanceKey(adHocSubProcessInstanceKey)
+            .create()
+            .getKey();
+
+    // when — the agentic job completes; the ad-hoc sub-process and the process instance both end
+    final var jobResult = new JobResult();
+    jobResult.setCompletionConditionFulfilled(true);
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(AGENT_JOB_TYPE)
+        .withResult(jobResult)
+        .complete();
+
+    // then — AGENT_INSTANCE:COMPLETE is emitted as a follow-up to the PROCESS:COMPLETE_ELEMENT
+    // command, confirming cleanup is triggered by process-instance end, not element-level
+    // completion
+    final var agentInstanceCompleteCommand =
+        RecordingExporter.agentInstanceRecords(AgentInstanceIntent.COMPLETE)
+            .withRecordKey(agentInstanceKey)
+            .getFirst();
+    final var processCompleteElementCommand =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.COMPLETE_ELEMENT)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst();
+
+    assertThat(agentInstanceCompleteCommand.getPosition())
+        .describedAs(
+            "AGENT_INSTANCE:COMPLETE is a follow-up to PROCESS:COMPLETE_ELEMENT, "
+                + "so it must appear after it in the log")
+        .isGreaterThan(processCompleteElementCommand.getPosition());
+  }
+
+  @Test
+  public void shouldCompleteAgentInstanceOfServiceTaskWhenProcessInstanceCanceled() {
     // given
     ENGINE
         .deployment()
