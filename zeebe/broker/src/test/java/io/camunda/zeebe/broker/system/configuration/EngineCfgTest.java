@@ -132,6 +132,7 @@ final class EngineCfgTest {
     // delete absorption defaults on: exact flushed flags make it unconditionally sound, and the
     // put/delete churn it elides is the main write-savings lever of the layered store
     assertThat(layeredState.isAbsorbDeletes()).isTrue();
+    assertThat(layeredState.getPipelineSegmentLimit()).isEqualTo(4);
   }
 
   @Test
@@ -148,6 +149,7 @@ final class EngineCfgTest {
     assertThat(layeredState.getFreezeInterval()).isEqualTo(Duration.ofMillis(100));
     assertThat(layeredState.getMaxBytesPerStore().toBytes()).isEqualTo(32 * 1024 * 1024L);
     assertThat(layeredState.isAbsorbDeletes()).isFalse();
+    assertThat(layeredState.getPipelineSegmentLimit()).isEqualTo(8);
   }
 
   void assertListenerCfg(

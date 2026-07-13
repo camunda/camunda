@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.system.configuration.engine;
 
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
+import io.camunda.zeebe.db.layered.zdb.LayeredZeebeDbConfig;
 import java.time.Duration;
 import org.springframework.util.unit.DataSize;
 
@@ -27,17 +28,15 @@ import org.springframework.util.unit.DataSize;
  */
 public final class LayeredStateCfg implements ConfigurationEntry {
 
-  private static final Duration DEFAULT_PERSIST_INTERVAL = Duration.ofSeconds(1);
-  private static final Duration DEFAULT_FREEZE_INTERVAL = Duration.ofMillis(250);
-  private static final DataSize DEFAULT_MAX_BYTES_PER_STORE = DataSize.ofMegabytes(16);
-
-  private static final boolean DEFAULT_ABSORB_DELETES = true;
+  // the store library owns the defaults; this entry only overlays what the broker config sets
+  private static final LayeredZeebeDbConfig DEFAULTS = LayeredZeebeDbConfig.defaults();
 
   private boolean enabled = false;
-  private Duration persistInterval = DEFAULT_PERSIST_INTERVAL;
-  private Duration freezeInterval = DEFAULT_FREEZE_INTERVAL;
-  private DataSize maxBytesPerStore = DEFAULT_MAX_BYTES_PER_STORE;
-  private boolean absorbDeletes = DEFAULT_ABSORB_DELETES;
+  private Duration persistInterval = DEFAULTS.persistInterval();
+  private Duration freezeInterval = DEFAULTS.freezeInterval();
+  private DataSize maxBytesPerStore = DataSize.ofBytes(DEFAULTS.maxBytesPerStore());
+  private boolean absorbDeletes = DEFAULTS.absorbDeletes();
+  private int pipelineSegmentLimit = DEFAULTS.pipelineSegmentLimit();
 
   public boolean isEnabled() {
     return enabled;
@@ -85,6 +84,28 @@ public final class LayeredStateCfg implements ConfigurationEntry {
     this.absorbDeletes = absorbDeletes;
   }
 
+  /**
+   * Maximum number of non-persisting frozen segments per store before they are merged down,
+   * bounding the read amplification of buffered state.
+   */
+  public int getPipelineSegmentLimit() {
+    return pipelineSegmentLimit;
+  }
+
+  public void setPipelineSegmentLimit(final int pipelineSegmentLimit) {
+    this.pipelineSegmentLimit = pipelineSegmentLimit;
+  }
+
+  /** The store-library configuration equivalent of this entry, validated on construction. */
+  public LayeredZeebeDbConfig toDbConfig() {
+    return new LayeredZeebeDbConfig(
+        maxBytesPerStore.toBytes(),
+        absorbDeletes,
+        pipelineSegmentLimit,
+        persistInterval,
+        freezeInterval);
+  }
+
   @Override
   public String toString() {
     return "LayeredStateCfg{"
@@ -98,6 +119,8 @@ public final class LayeredStateCfg implements ConfigurationEntry {
         + maxBytesPerStore
         + ", absorbDeletes="
         + absorbDeletes
+        + ", pipelineSegmentLimit="
+        + pipelineSegmentLimit
         + '}';
   }
 }

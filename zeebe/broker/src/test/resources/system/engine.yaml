@@ -54,3 +54,4 @@ zeebe:
           freezeInterval: 100ms
           maxBytesPerStore: 32MB
           absorbDeletes: false
+          pipelineSegmentLimit: 8

@@ -59,7 +59,6 @@ import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotCopy;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
-import io.camunda.zeebe.db.layered.zdb.LayeredZeebeDbConfig;
 import io.camunda.zeebe.db.layered.zdb.LayeredZeebeDbFactory;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
@@ -250,16 +249,8 @@ public final class ZeebePartitionFactory {
     if (!layeredState.isEnabled()) {
       return zeebeFactory;
     }
-    final LayeredZeebeDbConfig layeredDefaults = LayeredZeebeDbConfig.defaults();
     return LayeredZeebeDbFactory.of(
-        zeebeFactory,
-        new LayeredZeebeDbConfig(
-            layeredState.getMaxBytesPerStore().toBytes(),
-            layeredState.isAbsorbDeletes(),
-            layeredDefaults.pipelineSegmentLimit(),
-            layeredState.getPersistInterval(),
-            layeredState.getFreezeInterval()),
-        ZbColumnFamilies.class);
+        zeebeFactory, layeredState.toDbConfig(), ZbColumnFamilies.class);
   }
 
   private StateController createStateController(
