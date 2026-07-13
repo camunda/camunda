@@ -63,9 +63,14 @@ import java.util.function.BiConsumer;
  * entries evict, so the budget is soft while buffered writes exist; {@link #overCapacity()} signals
  * the runtime to schedule a persist round now.
  *
- * <p><b>Threading:</b> every method runs on the owner thread. Cross-thread access happens only
- * through immutable segments handed out by {@link #beginPersist()} and {@link
- * #segmentsNewestFirst()} — never through this class's mutable layers.
+ * <p><b>Threading:</b> every method runs on the owner thread, with one read-only exception: the
+ * stat accessors ({@code *Bytes()}, {@code *EntryCount()}, {@link #pipelineDepth()}, {@link
+ * #newestSegmentWatermark()}, {@link #approximateBytes()}) may additionally be polled by a metrics
+ * scrape thread. They read only {@code volatile} mirrors the owner updates at its mutation points —
+ * a scrape sees tear-free point-in-time values and never walks the owner-mutable structures.
+ * Cross-thread access to the data itself happens only through immutable segments handed out by
+ * {@link #beginPersist()} and {@link #segmentsNewestFirst()} — never through this class's mutable
+ * layers.
  */
 public final class LayeredKeyValueStore {
 
@@ -106,10 +111,19 @@ public final class LayeredKeyValueStore {
 
   private final LinkedHashMap<ByteBuffer, byte[]> clean = new LinkedHashMap<>(16, 0.75f, true);
 
-  private long stagingBytes;
-  private long activeBytes;
-  private long pipelineBytes;
-  private long cleanBytes;
+  // volatile so a metrics scrape thread reads tear-free values (single writer: the owner thread);
+  // the entry-count/pipeline mirrors below exist for the same reason — gauges must never walk the
+  // owner-mutable maps or the pipeline list (see the Threading javadoc)
+  private volatile long stagingBytes;
+  private volatile long activeBytes;
+  private volatile long pipelineBytes;
+  private volatile long cleanBytes;
+  private volatile long stagingEntries;
+  private volatile long activeEntries;
+  private volatile long pipelineEntries;
+  private volatile long cleanEntries;
+  private volatile int pipelineSegments;
+  private volatile long newestWatermark = -1;
 
   public LayeredKeyValueStore(
       final String name,
@@ -167,6 +181,7 @@ public final class LayeredKeyValueStore {
     final byte[] cleanHit = clean.remove(mapKey);
     if (cleanHit != null) {
       cleanBytes -= key.length + cleanHit.length;
+      cleanEntries = clean.size();
     }
     final Entry replacedStaging = stagingByKey.get(mapKey);
     // a negative clean hit proves the delegate does not hold the key (see NEGATIVE): flushed is
@@ -180,6 +195,7 @@ public final class LayeredKeyValueStore {
     stagingByKey.put(mapKey, entry);
     stagingSorted.put(key, entry);
     stagingBytes += entrySize(entry) - (replacedStaging == null ? 0 : entrySize(replacedStaging));
+    stagingEntries = stagingByKey.size();
     evictIfNeeded();
   }
 
@@ -244,9 +260,11 @@ public final class LayeredKeyValueStore {
       activeSorted.put(promoted.key(), promoted);
       activeBytes += entrySize(promoted) - (existing == null ? 0 : entrySize(existing));
     }
+    activeEntries = activeByKey.size();
     stagingByKey.clear();
     stagingSorted.clear();
     stagingBytes = 0;
+    stagingEntries = 0;
   }
 
   /**
@@ -258,6 +276,7 @@ public final class LayeredKeyValueStore {
     stagingByKey.clear();
     stagingSorted.clear();
     stagingBytes = 0;
+    stagingEntries = 0;
   }
 
   // ------------------------------------------------------------------
@@ -291,6 +310,7 @@ public final class LayeredKeyValueStore {
     // and the flushed check of a later write to it are served without another delegate probe
     clean.put(mapKey, committed == null ? NEGATIVE : committed);
     cleanBytes += key.length + (committed == null ? 0 : committed.length);
+    cleanEntries = clean.size();
     evictIfNeeded();
     return committed;
   }
@@ -362,7 +382,9 @@ public final class LayeredKeyValueStore {
     activeByKey.clear();
     activeSorted.clear();
     activeBytes = 0;
+    activeEntries = 0;
     mergePipelineIfNeeded();
+    refreshPipelineStats();
   }
 
   private void mergePipelineIfNeeded() {
@@ -423,12 +445,24 @@ public final class LayeredKeyValueStore {
         pipelineBytes -= segment.byteSize();
       }
       persisted.clear();
+      refreshPipelineStats();
     }
     persisting = false;
     persistingCount = 0;
     if (success) {
       evictIfNeeded();
     }
+  }
+
+  /** Refreshes the volatile pipeline stat mirrors after a pipeline mutation (owner thread). */
+  private void refreshPipelineStats() {
+    pipelineSegments = pipeline.size();
+    long entries = 0;
+    for (final FlatSegment segment : pipeline) {
+      entries += segment.entryCount();
+    }
+    pipelineEntries = entries;
+    newestWatermark = pipeline.isEmpty() ? -1 : pipeline.get(0).watermark();
   }
 
   /**
@@ -459,6 +493,7 @@ public final class LayeredKeyValueStore {
         }
       }
     }
+    cleanEntries = clean.size();
   }
 
   /**
@@ -531,7 +566,7 @@ public final class LayeredKeyValueStore {
 
   /** The watermark of the newest frozen segment, or -1 if the pipeline is empty. */
   public long newestSegmentWatermark() {
-    return pipeline.isEmpty() ? -1 : pipeline.get(0).watermark();
+    return newestWatermark;
   }
 
   public long stagingBytes() {
@@ -551,28 +586,24 @@ public final class LayeredKeyValueStore {
   }
 
   public long stagingEntryCount() {
-    return stagingByKey.size();
+    return stagingEntries;
   }
 
   public long activeEntryCount() {
-    return activeByKey.size();
+    return activeEntries;
   }
 
   public long pipelineEntryCount() {
-    long entries = 0;
-    for (final FlatSegment segment : pipeline) {
-      entries += segment.entryCount();
-    }
-    return entries;
+    return pipelineEntries;
   }
 
   public long cleanEntryCount() {
-    return clean.size();
+    return cleanEntries;
   }
 
   /** The number of frozen segments currently in the pipeline. */
   public int pipelineDepth() {
-    return pipeline.size();
+    return pipelineSegments;
   }
 
   /**
@@ -590,6 +621,7 @@ public final class LayeredKeyValueStore {
       cleanBytes -= eldest.getKey().remaining() + eldest.getValue().length;
       eldestFirst.remove();
     }
+    cleanEntries = clean.size();
   }
 
   private static long entrySize(final Entry entry) {

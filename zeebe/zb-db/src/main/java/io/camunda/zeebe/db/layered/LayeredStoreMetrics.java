@@ -63,7 +63,11 @@ public interface LayeredStoreMetrics {
    */
   void registerRoundInFlight(LongSupplier inFlight);
 
-  /** Registers the per-layer byte/entry and pipeline-depth gauges over the given stores. */
+  /**
+   * Registers the per-layer byte/entry and pipeline-depth gauges over the given stores. The gauges
+   * are polled from the metrics scrape thread; they only touch the stores' tear-free volatile stat
+   * accessors (see the {@link LayeredKeyValueStore} Threading javadoc), never owner-mutable state.
+   */
   void registerStoreGauges(Collection<LayeredKeyValueStore> stores);
 
   /** A no-op implementation for wirings without a meter registry (e.g. tests). */

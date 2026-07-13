@@ -63,7 +63,9 @@ import java.util.function.Consumer;
  * thread, views to readers) must happen through a safe publication mechanism — wire the view
  * listener to a {@link ViewPublisher} and let readers pair {@link ViewPublisher#acquireLatest()}
  * with {@link ViewPublisher#release(ReadOnlyView)}. The coordinator itself contains no internal
- * locking.
+ * locking. The gauge callbacks registered on the metrics (anchor lag, round in flight) are the one
+ * further exception: a metrics scrape thread may poll them at any time, so they read only {@code
+ * volatile} fields and the stores' volatile stat mirrors — never the owner-mutable structures.
  */
 public final class LayeredStoreCoordinator implements AutoCloseable {
 
@@ -74,8 +76,10 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
   private final LayeredStoreMetrics metrics;
 
   private ReadOnlyView currentView;
-  private PersistRound outstandingRound;
-  private long lastPersistedAnchor = -1;
+  // volatile because the gauge callbacks read them from the metrics scrape thread (single writer:
+  // the owner thread) — see the Threading javadoc
+  private volatile PersistRound outstandingRound;
+  private volatile long lastPersistedAnchor = -1;
 
   public LayeredStoreCoordinator(
       final Collection<LayeredKeyValueStore> stores,
@@ -120,7 +124,9 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
 
   /**
    * How many log positions the durable state trails the buffered state: newest frozen segment
-   * watermark minus the anchor of the last successful round, zero when nothing is frozen.
+   * watermark minus the anchor of the last successful round, zero when nothing is frozen. Runs on
+   * the metrics scrape thread — reads only volatiles ({@code stores} is immutable after
+   * construction, {@link LayeredKeyValueStore#newestSegmentWatermark()} is a volatile mirror).
    */
   private long anchorLag() {
     long newestFrozen = -1;
