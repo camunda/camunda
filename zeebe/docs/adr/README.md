@@ -15,4 +15,5 @@ process-execution data path). These are module-scoped decisions; see the
 | [0003](0003-810-business-id-call-activity-propagation.md)           | Call activity child Business ID: single `businessId` attribute on `zeebe:calledElement`                       |
 | [0004](0004-810-physical-tenant-job-streaming.md)                   | Physical-tenant-aware job streaming: per-group broker services, group-scoped control topics, 8.9-compatible   |
 | [0005](0005-810-job-lease.md)                                       | Job lease: opt-in random opaque fencing token per activation, monotonic, fencing worker lifecycle commands    |
+| [0006](0006-810-late-business-id-assignment.md)                     | Late Business ID assignment: one irreversible forward-only assignment on a running instance (uniqueness off)  |
 
