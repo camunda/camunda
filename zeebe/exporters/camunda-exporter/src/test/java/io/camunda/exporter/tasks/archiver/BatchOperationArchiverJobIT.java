@@ -19,7 +19,6 @@ import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogEntityType;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity.BatchOperationState;
-import java.time.Duration;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
@@ -66,13 +65,13 @@ public class BatchOperationArchiverJobIT extends ArchiverJobIT<BatchOperationArc
 
           store(batchOpTemplate, client, batchOp);
           store(auditLogTemplate, client, auditLog);
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
           verifyMoved(batchOpTemplate, client, batchOp, "2020-01-01");
           verifyMoved(auditLogTemplate, client, auditLog, "2020-01-01");
         });
@@ -96,13 +95,13 @@ public class BatchOperationArchiverJobIT extends ArchiverJobIT<BatchOperationArc
 
           store(batchOpTemplate, client, batchOp);
           store(auditLogTemplate, client, auditLog);
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when - should complete without number_format_exception
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(1);
+          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(1);
           verifyMoved(batchOpTemplate, client, batchOp, "2020-01-01");
           verifyNotMoved(auditLogTemplate, client, auditLog);
         });
@@ -130,13 +129,13 @@ public class BatchOperationArchiverJobIT extends ArchiverJobIT<BatchOperationArc
           store(batchOpTemplate, client, guidBatchOp);
           store(auditLogTemplate, client, matchingAuditLog);
           store(auditLogTemplate, client, unrelatedAuditLog);
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when - should complete without error, GUID filtered out for dependant query
           final var archived = job.execute();
 
           // then
-          assertThat(archived).succeedsWithin(Duration.ofSeconds(5L)).isEqualTo(2);
+          assertThat(archived).succeedsWithin(ARCHIVE_TIMEOUT).isEqualTo(2);
           verifyMoved(batchOpTemplate, client, numericBatchOp, "2020-01-01");
           verifyMoved(batchOpTemplate, client, guidBatchOp, "2020-01-01");
           verifyMoved(auditLogTemplate, client, matchingAuditLog, "2020-01-01");
