@@ -147,4 +147,12 @@ public class MemberId extends NodeId {
       return null;
     }
   }
+
+  @Override
+  public int compareTo(final NodeId that) {
+    if (that instanceof final MemberId memberId) {
+      return ID_COMPARATOR.compare(this, memberId);
+    }
+    return super.compareTo(that);
+  }
 }
