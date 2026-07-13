@@ -33,6 +33,7 @@ final class JobTimeoutCheckScheduler implements Task, StreamProcessorLifecycleAw
   private DeadlineIndex startAtIndex = null;
 
   private final JobState state;
+  private final boolean scheduleAsync;
   private ReadonlyStreamProcessorContext processingContext;
   private final Duration pollingInterval;
   private final int batchLimit;
@@ -43,15 +44,36 @@ final class JobTimeoutCheckScheduler implements Task, StreamProcessorLifecycleAw
       final Duration pollingInterval,
       final int batchLimit,
       final InstantSource clock) {
+    this(state, false, pollingInterval, batchLimit, clock);
+  }
+
+  /**
+   * Variant with an explicit async decision — used by the experimental layered-state wiring, which
+   * runs the checker asynchronously on read views instead of synchronously behind the stream
+   * processor's persist barrier.
+   */
+  public JobTimeoutCheckScheduler(
+      final JobState state,
+      final boolean scheduleAsync,
+      final Duration pollingInterval,
+      final int batchLimit,
+      final InstantSource clock) {
     this.state = state;
+    this.scheduleAsync = scheduleAsync;
     this.pollingInterval = pollingInterval;
     this.batchLimit = batchLimit;
     this.clock = clock;
   }
 
   public void schedule(final Duration idleInterval) {
-    if (shouldReschedule) {
-      processingContext.getScheduleService().runAt(clock.millis() + idleInterval.toMillis(), this);
+    if (!shouldReschedule) {
+      return;
+    }
+    final long timestamp = clock.millis() + idleInterval.toMillis();
+    if (scheduleAsync) {
+      processingContext.getScheduleService().runAtAsync(timestamp, this);
+    } else {
+      processingContext.getScheduleService().runAt(timestamp, this);
     }
   }
 

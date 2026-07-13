@@ -42,6 +42,7 @@ public final class ExporterDirectorLayeredStateTest {
   private final LayeredZeebeDbConfig layeredConfig =
       new LayeredZeebeDbConfig(
           LayeredZeebeDbConfig.defaults().maxBytesPerStore(),
+          LayeredZeebeDbConfig.defaults().maxBufferedBytes(),
           LayeredZeebeDbConfig.defaults().absorbDeletes(),
           LayeredZeebeDbConfig.defaults().pipelineSegmentLimit(),
           PERSIST_INTERVAL,

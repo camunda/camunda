@@ -142,13 +142,17 @@ implicitly.
 Phases 1 and 2 of the store itself are complete in `zeebe/zb-db`
 (`io.camunda.zeebe.db.layered`: layer model, segment pipeline, persist rounds, views, decorator
 in `layered.zdb`), with the module's tests green. Broker wiring (Phase A of D6) is in place behind
-the experimental `layeredState` flag. Phase B is partially rolled out: the timer due-date and
-message-TTL checkers consume `ReadOnlyView`s pinned by a real RocksDB snapshot source
-(`io.camunda.zeebe.db.impl.rocksdb.transaction.RocksDbPinnedSnapshotSource`), with views refreshed
-at a configurable freeze cadence and additionally frozen right before each checker execution so no
-committed wake-up can be missed. The remaining secondary readers (query service, position
-supplier, other engine schedulers) still read pass-through contexts at persist-round freshness —
-correctness-safe, flipped in a later step.
+the experimental `layeredState` flag. Phase B is partially rolled out: the timer due-date,
+message-TTL and job-timeout checkers consume `ReadOnlyView`s pinned by a real RocksDB snapshot
+source (`io.camunda.zeebe.db.impl.rocksdb.transaction.RocksDbPinnedSnapshotSource`), with views
+refreshed at a configurable freeze cadence and additionally frozen right before each checker
+execution so no committed wake-up can be missed. The remaining secondary readers (query service,
+position supplier, other engine schedulers) still read pass-through contexts — the scheduled ones
+behind the sync drain barrier, the rest at persist-round freshness — correctness-safe, flipped in
+a later step. All remaining drain-barrier consumers run at multi-second cadences, so
+barrier-forced persist rounds are rare and the effective persist window is governed by the
+interval and, when configured, the `maxBufferedBytes` size trigger (a round starts as soon as the
+domain's buffered bytes reach the budget, whichever of size or age comes first).
 
 The persist step of D2 runs asynchronously: rounds are prepared and completed on the stream
 processor's actor while the drain-and-commit runs on a per-partition io-bound actor, with the

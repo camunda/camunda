@@ -20,11 +20,11 @@ import org.springframework.util.unit.DataSize;
  * <p><b>Experimental — unsafe to enable in production.</b> When disabled (the default), the broker
  * behaves exactly as before. When enabled, the runtime RocksDB state trails the log by up to the
  * persist interval, so crash recovery replays a correspondingly larger window, and secondary
- * readers (e.g. the query API) observe state at persist-round freshness. The timer due-date and
- * message-TTL checkers run asynchronously on read views of the buffered state, refreshed at the
- * freeze interval and additionally right before each checker execution; the remaining engine
- * scheduled tasks run on the stream processor's thread behind a persist barrier so their state
- * scans keep observing every committed batch.
+ * readers (e.g. the query API) observe state at persist-round freshness. The timer due-date,
+ * message-TTL and job-timeout checkers run asynchronously on read views of the buffered state,
+ * refreshed at the freeze interval and additionally right before each checker execution; the
+ * remaining engine scheduled tasks run on the stream processor's thread behind a persist barrier so
+ * their state scans keep observing every committed batch.
  */
 public final class LayeredStateCfg implements ConfigurationEntry {
 
@@ -35,6 +35,7 @@ public final class LayeredStateCfg implements ConfigurationEntry {
   private Duration persistInterval = DEFAULTS.persistInterval();
   private Duration freezeInterval = DEFAULTS.freezeInterval();
   private DataSize maxBytesPerStore = DataSize.ofBytes(DEFAULTS.maxBytesPerStore());
+  private DataSize maxBufferedBytes = DataSize.ofBytes(DEFAULTS.maxBufferedBytes());
   private boolean absorbDeletes = DEFAULTS.absorbDeletes();
   private int pipelineSegmentLimit = DEFAULTS.pipelineSegmentLimit();
 
@@ -71,6 +72,21 @@ public final class LayeredStateCfg implements ConfigurationEntry {
   }
 
   /**
+   * Total buffered-bytes budget across all layered stores of the engine domain: when positive, a
+   * persist round starts as soon as the buffered (not yet persisted) writes reach it — bounding
+   * memory and the recovery replay window by size, independently of the persist interval. Zero (the
+   * default) disables the size trigger; rounds then run at the persist interval or on per-store
+   * over-capacity only.
+   */
+  public DataSize getMaxBufferedBytes() {
+    return maxBufferedBytes;
+  }
+
+  public void setMaxBufferedBytes(final DataSize maxBufferedBytes) {
+    this.maxBufferedBytes = maxBufferedBytes;
+  }
+
+  /**
    * Whether a delete of a never-persisted put annihilates the pair in memory so neither write ever
    * reaches RocksDB. On by default — the store's exact flushed flags make absorption
    * unconditionally sound, and short-lived put/delete churn is the dominant write pattern the
@@ -100,6 +116,7 @@ public final class LayeredStateCfg implements ConfigurationEntry {
   public LayeredZeebeDbConfig toDbConfig() {
     return new LayeredZeebeDbConfig(
         maxBytesPerStore.toBytes(),
+        maxBufferedBytes.toBytes(),
         absorbDeletes,
         pipelineSegmentLimit,
         persistInterval,
@@ -117,6 +134,8 @@ public final class LayeredStateCfg implements ConfigurationEntry {
         + freezeInterval
         + ", maxBytesPerStore="
         + maxBytesPerStore
+        + ", maxBufferedBytes="
+        + maxBufferedBytes
         + ", absorbDeletes="
         + absorbDeletes
         + ", pipelineSegmentLimit="

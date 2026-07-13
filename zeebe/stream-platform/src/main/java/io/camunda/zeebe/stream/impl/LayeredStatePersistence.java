@@ -36,8 +36,10 @@ import org.slf4j.Logger;
  *       new batches were committed, bounding the staleness asynchronous view readers observe to
  *       roughly the freeze interval.
  *   <li>{@link #onBatchCommitted()} — invoked after every committed processing batch; starts a
- *       round as soon as the buffered bytes exceed their budget. While a round is in flight the
- *       trigger is only noted — rounds never stack — and re-checked once the round completed.
+ *       round as soon as a size budget is exceeded (a single store over its own budget, or the
+ *       domain's total buffered bytes over the configured {@code maxBufferedBytes}). While a round
+ *       is in flight the trigger is only noted — rounds never stack — and re-checked once the round
+ *       completed.
  *   <li>{@link #flushForSnapshot(CompletableActorFuture)} — invoked before a snapshot checkpoint;
  *       completes once the durable store holds a cut at least as new as the position the snapshot
  *       will claim, awaiting any in-flight round first.
@@ -73,6 +75,7 @@ final class LayeredStatePersistence {
   private final PersistIo io;
   private final Duration persistInterval;
   private final Duration freezeInterval;
+  private final long maxBufferedBytes;
 
   /**
    * The completion of the single in-flight round, or null while none is; completes on the processor
@@ -81,8 +84,8 @@ final class LayeredStatePersistence {
    */
   private CompletableActorFuture<Throwable> inFlightRound;
 
-  /** An over-capacity trigger observed while a round was in flight; re-checked on completion. */
-  private boolean overCapacityWhileInFlight;
+  /** A size trigger observed while a round was in flight; re-checked on completion. */
+  private boolean sizeTriggerWhileInFlight;
 
   /**
    * @param db the layered database the stream processor writes through
@@ -106,6 +109,7 @@ final class LayeredStatePersistence {
     domain = db.defaultDomain();
     persistInterval = db.config().persistInterval();
     freezeInterval = db.config().freezeInterval();
+    maxBufferedBytes = db.config().maxBufferedBytes();
     // build the coordinator eagerly: every layered column family must exist by now (they are all
     // created during recovery and record-processor init), and failing fast here beats failing on
     // the first persist round
@@ -230,22 +234,37 @@ final class LayeredStatePersistence {
   }
 
   /**
-   * Notes an over-capacity condition right after a batch commit and starts a round for it once none
-   * is in flight; triggers observed mid-round are re-checked on completion instead of stacking a
-   * second round.
+   * Notes a size condition right after a batch commit and starts a round for it once none is in
+   * flight; triggers observed mid-round are re-checked on completion instead of stacking a second
+   * round. Two size conditions exist: a single store over its own byte budget, and — when a {@code
+   * maxBufferedBytes} budget is configured — the domain's total buffered bytes reaching it, which
+   * bounds memory and the recovery replay window by size independently of the persist interval
+   * (rounds fire on whichever of size or interval comes first).
    */
   void onBatchCommitted() {
-    if (!domain.overCapacity()) {
+    final PersistTrigger trigger = sizeTrigger();
+    if (trigger == null) {
       return;
     }
     if (roundInFlight()) {
-      overCapacityWhileInFlight = true;
+      sizeTriggerWhileInFlight = true;
       return;
     }
     if (domain.batchInFlight()) {
       return;
     }
-    startRound(PersistTrigger.OVER_CAPACITY);
+    startRound(trigger);
+  }
+
+  /** The size trigger a round should be started for right now, or null if none applies. */
+  private @Nullable PersistTrigger sizeTrigger() {
+    if (domain.overCapacity()) {
+      return PersistTrigger.OVER_CAPACITY;
+    }
+    if (maxBufferedBytes > 0 && domain.bufferedBytes() >= maxBufferedBytes) {
+      return PersistTrigger.BUFFERED_BYTES;
+    }
+    return null;
   }
 
   /**
@@ -315,12 +334,12 @@ final class LayeredStatePersistence {
                     trigger,
                     error);
               }
-              final boolean recheckCapacity = overCapacityWhileInFlight && success;
-              overCapacityWhileInFlight = false;
+              final boolean recheckSizeTrigger = sizeTriggerWhileInFlight && success;
+              sizeTriggerWhileInFlight = false;
               completed.complete(error);
-              if (recheckCapacity) {
+              if (recheckSizeTrigger) {
                 // after a failed round the next batch commit or tick retries anyway — only a
-                // successful round needs the deferred over-capacity re-check
+                // successful round needs the deferred size-trigger re-check
                 processor.execute(this::onBatchCommitted);
               }
             },

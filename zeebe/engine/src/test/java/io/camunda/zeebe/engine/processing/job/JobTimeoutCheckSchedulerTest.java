@@ -12,16 +12,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.engine.util.ProcessingStateRule;
+import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
@@ -31,25 +33,26 @@ import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import java.time.Duration;
 import java.time.InstantSource;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 
-public class JobTimeoutCheckSchedulerTest {
-  public static final int NUMBER_OF_ACTIVE_JOBS = 10;
-  @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
+@ExtendWith(ProcessingStateExtension.class)
+final class JobTimeoutCheckSchedulerTest {
+  private static final int NUMBER_OF_ACTIVE_JOBS = 10;
 
+  @SuppressWarnings("unused") // injected by the extension
   private MutableProcessingState processingState;
+
   private MutableJobState jobState;
   private ReadonlyStreamProcessorContext mockContext;
   private ProcessingScheduleService mockScheduleService;
   private TaskResultBuilder mockTaskResultBuilder;
 
-  @Before
-  public void setUp() {
-    processingState = stateRule.getProcessingState();
+  @BeforeEach
+  void setUp() {
     jobState = processingState.getJobState();
 
     for (int i = 1; i <= NUMBER_OF_ACTIVE_JOBS; i++) {
@@ -80,7 +83,7 @@ public class JobTimeoutCheckSchedulerTest {
   }
 
   @Test
-  public void shouldRescheduleWithPollingIntervalAfterSuccessfulExecution() {
+  void shouldRescheduleWithPollingIntervalAfterSuccessfulExecution() {
     // Given
     when(mockTaskResultBuilder.appendCommandRecord(anyLong(), any(), any())).thenReturn(true);
     final ArgumentCaptor<Long> timestampCaptor = ArgumentCaptor.forClass(Long.class);
@@ -111,7 +114,7 @@ public class JobTimeoutCheckSchedulerTest {
   }
 
   @Test
-  public void shouldRescheduleImmediatelyIfYieldedDueToBatchLimit() {
+  void shouldRescheduleImmediatelyIfYieldedDueToBatchLimit() {
     // Given
     when(mockTaskResultBuilder.appendCommandRecord(anyLong(), any(), any())).thenReturn(true);
     final ArgumentCaptor<Long> timestampCaptor = ArgumentCaptor.forClass(Long.class);
@@ -153,7 +156,7 @@ public class JobTimeoutCheckSchedulerTest {
   }
 
   @Test
-  public void shouldRescheduleImmediatelyIfFailedToAppendTimeoutCommand() {
+  void shouldRescheduleImmediatelyIfFailedToAppendTimeoutCommand() {
     // Given
     when(mockTaskResultBuilder.appendCommandRecord(anyLong(), any(), any()))
         .thenReturn(true)
@@ -182,5 +185,29 @@ public class JobTimeoutCheckSchedulerTest {
     verify(mockScheduleService, times(1))
         .runAt(timestampCaptor.capture(), ArgumentMatchers.<Task>any());
     assertThat(timestampCaptor.getValue()).isLessThanOrEqualTo(ActorClock.currentTimeMillis());
+  }
+
+  @Test
+  void shouldRescheduleAsynchronouslyWhenConstructedForAsyncExecution() {
+    // given the layered-state variant, which runs the checker on an async actor over read views
+    when(mockTaskResultBuilder.appendCommandRecord(anyLong(), any(), any())).thenReturn(true);
+
+    final var task =
+        new JobTimeoutCheckScheduler(
+            jobState,
+            true,
+            EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL,
+            Integer.MAX_VALUE,
+            InstantSource.system());
+    task.setProcessingContext(mockContext);
+    task.setShouldReschedule(true);
+
+    // when
+    task.execute(mockTaskResultBuilder);
+
+    // then the next execution is scheduled through the async API, never the sync one — the sync
+    // path would put the checker back behind the stream processor's persist barrier
+    verify(mockScheduleService, times(1)).runAtAsync(anyLong(), ArgumentMatchers.<Task>any());
+    verify(mockScheduleService, never()).runAt(anyLong(), ArgumentMatchers.<Task>any());
   }
 }
