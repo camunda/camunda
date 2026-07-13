@@ -431,7 +431,7 @@ final class FlatSegmentTest {
     for (final Entry entry : entries) {
       sorted.put(entry.key(), entry);
     }
-    return FlatSegment.of(sorted, watermark);
+    return FlatSegment.of(sorted, watermark, new ChunkWriter(new ChunkPool()));
   }
 
   private static Entry put(final byte[] key, final byte[] value, final boolean flushed) {

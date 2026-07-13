@@ -16,7 +16,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  * An immutable, point-in-time bundle handed to asynchronous readers (e.g. the timer due-date and
@@ -32,13 +34,15 @@ import java.util.function.BiConsumer;
  * rotating the snapshot only when a persist round completes, at the same instant the drained
  * segments leave new views.
  *
- * <p><b>Threading and lifecycle:</b> safe to read from any thread. Views are reference-counted
- * through their pinned snapshot: every view owns one reference for its own lifetime (taken at
- * construction), and each reader adds one via {@link #retain()} — normally through {@link
- * ViewPublisher#acquireLatest()} — and drops it via {@link #release()} when done. The snapshot
- * closes exactly once, when the last holder (coordinator or reader) releases; a rotation therefore
- * never pulls a snapshot from under a reader mid-scan. Double release throws. Everything reachable
- * from a view is immutable.
+ * <p><b>Threading and lifecycle:</b> safe to read from any thread. Views are reference-counted: the
+ * creator owns one reference (the coordinator holds it for the current view), and each reader adds
+ * one via {@link #retain()} — normally through {@link ViewPublisher#acquireLatest()} — and drops it
+ * via {@link #release()} when done. A view retains its segments (keeping their chunk slices valid)
+ * and owns one reference on its pinned snapshot; the last release drops both, so the snapshot
+ * closes exactly once — when the last view holding it is itself done — and segment chunks recycle
+ * only after every reader let go. A rotation therefore never pulls a snapshot or a segment's bytes
+ * from under a reader mid-scan; conversely, a view must not be read after the caller's own release.
+ * Double release throws. Everything reachable from a view is immutable.
  *
  * <p><b>Freshness:</b> a view reflects the state as of the last freeze it includes — readers act on
  * slightly stale data by design, and their output must round-trip as commands validated against
@@ -48,6 +52,7 @@ public final class ReadOnlyView {
 
   private final Map<String, List<FlatSegment>> segmentsNewestFirstByStore;
   private final RefCountedSnapshot snapshotRef;
+  private final AtomicInteger references = new AtomicInteger(1);
 
   /** Wraps the snapshot in a fresh reference count owned by this view. */
   public ReadOnlyView(
@@ -58,7 +63,8 @@ public final class ReadOnlyView {
 
   /**
    * Takes ownership of one already-counted reference on {@code snapshotRef} — the caller must have
-   * retained it for this view (or pass a freshly created count).
+   * retained it for this view (or pass a freshly created count) — and retains every segment, which
+   * requires the caller to still hold them alive (e.g. in the store pipelines they came from).
    */
   ReadOnlyView(
       final Map<String, List<FlatSegment>> segmentsNewestFirstByStore,
@@ -68,14 +74,15 @@ public final class ReadOnlyView {
     segmentsNewestFirstByStore.forEach((name, segments) -> copy.put(name, List.copyOf(segments)));
     this.segmentsNewestFirstByStore = Map.copyOf(copy);
     this.snapshotRef = Objects.requireNonNull(snapshotRef, "snapshotRef");
+    forEachSegment(FlatSegment::retain);
   }
 
   /** The visible value for {@code key} in store {@code storeName}, or null. */
   public byte[] get(final String storeName, final byte[] key) {
     for (final FlatSegment segment : segmentsOf(storeName)) {
-      final Entry entry = segment.findEntry(key);
-      if (entry != null) {
-        return entry.value(); // null for a tombstone — which must not fall through
+      final int index = segment.indexOfKey(key);
+      if (index >= 0) {
+        return segment.valueAt(index); // null for a tombstone — which must not fall through
       }
     }
     return snapshotRef.snapshot().get(storeName, key);
@@ -127,25 +134,54 @@ public final class ReadOnlyView {
   }
 
   /**
-   * Adds one reference on the view's pinned snapshot, keeping it alive past the coordinator's next
-   * rotation. Safe from any thread, but see {@link RefCountedSnapshot#retain()} for the
-   * caller-holds-a-reference precondition; readers should acquire through {@link
+   * Adds one reference on this view, keeping its segments and pinned snapshot alive past the
+   * coordinator's next rotation. Safe from any thread, but only race-free while the caller already
+   * holds a reference (directly or via a publication lock); readers should acquire through {@link
    * ViewPublisher#acquireLatest()} instead of calling this directly.
    *
-   * @throws IllegalStateException if the snapshot was already released to zero
+   * @throws IllegalStateException if the view was already released to zero
    */
   public void retain() {
-    snapshotRef.retain();
+    while (true) {
+      final int current = references.get();
+      if (current == 0) {
+        throw new IllegalStateException(
+            "expected a live view to retain, but it was already released to zero");
+      }
+      if (references.compareAndSet(current, current + 1)) {
+        return;
+      }
+    }
   }
 
   /**
-   * Drops one reference; the pinned snapshot closes when the last holder releases. The view must
-   * not be read after the caller's own release.
+   * Drops one reference; the last release releases the view's segments (recycling chunks no other
+   * holder references) and its snapshot reference (the pinned snapshot closes when the last view
+   * holding it is done). The view must not be read after the caller's own release.
    *
    * @throws IllegalStateException on a double release
    */
   public void release() {
-    snapshotRef.release();
+    while (true) {
+      final int current = references.get();
+      if (current == 0) {
+        throw new IllegalStateException(
+            "expected a live view to release, but it was already released to zero");
+      }
+      if (references.compareAndSet(current, current - 1)) {
+        if (current == 1) {
+          forEachSegment(FlatSegment::release);
+          snapshotRef.release();
+        }
+        return;
+      }
+    }
+  }
+
+  private void forEachSegment(final Consumer<FlatSegment> action) {
+    for (final List<FlatSegment> segments : segmentsNewestFirstByStore.values()) {
+      segments.forEach(action);
+    }
   }
 
   /** The shared snapshot count, exposed for the coordinator's rotation and republish. */

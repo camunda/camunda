@@ -17,6 +17,7 @@ import io.camunda.zeebe.db.layered.LayeredKeyValueStore;
 import io.camunda.zeebe.db.layered.LayeredStoreCoordinator;
 import io.camunda.zeebe.db.layered.LayeredStoreMetrics;
 import io.camunda.zeebe.db.layered.SnapshotSource;
+import io.camunda.zeebe.db.layered.segment.ChunkPool;
 import io.camunda.zeebe.db.layered.typed.LayeredColumnFamily;
 import io.camunda.zeebe.protocol.EnumValue;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -83,6 +84,9 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType
   private final LayeredZeebeDbConfig config;
   private final SnapshotSource snapshotSource;
   private final boolean fallbackSnapshots;
+  // one chunk pool per database: persist rounds of any domain retire whole chunks into it and the
+  // next freezes (of any domain) reuse them; the pool is thread-safe, domains' writers are not
+  private final ChunkPool chunkPool = new ChunkPool();
 
   // guards domainsByName: registration happens on each domain's owner thread (engine and exporter
   // actors), while lookups (domainOf, close) may run on other threads concurrently — registration
@@ -225,6 +229,7 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType
               inner.createContext(),
               fallbackSnapshots ? inner.createContext() : null,
               snapshotSource,
+              chunkPool,
               LayeredStoreMetrics.of(inner.getMeterRegistry(), name));
       domainsByName.put(name, domain);
       return domain;
@@ -306,6 +311,7 @@ public final class LayeredZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType
         config.maxBytesPerStore(),
         config.absorbDeletes(),
         config.pipelineSegmentLimit(),
-        domain.metrics());
+        domain.metrics(),
+        domain.chunkWriter());
   }
 }

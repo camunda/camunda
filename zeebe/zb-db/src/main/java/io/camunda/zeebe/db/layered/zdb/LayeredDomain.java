@@ -19,6 +19,8 @@ import io.camunda.zeebe.db.layered.PersistTrigger;
 import io.camunda.zeebe.db.layered.ReadOnlyView;
 import io.camunda.zeebe.db.layered.SnapshotSource;
 import io.camunda.zeebe.db.layered.ViewPublisher;
+import io.camunda.zeebe.db.layered.segment.ChunkPool;
+import io.camunda.zeebe.db.layered.segment.ChunkWriter;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -60,6 +62,7 @@ public final class LayeredDomain {
   private final InnerPersistSink sink;
   private final LayeredStoreMetrics metrics;
   private final ViewPublisher viewPublisher;
+  private final ChunkWriter chunkWriter;
 
   private LayeredStoreCoordinator coordinator;
 
@@ -68,6 +71,9 @@ public final class LayeredDomain {
    *     non-null exactly when {@code sharedSnapshotSource} is null
    * @param sharedSnapshotSource the pinning source shared across domains (store names are globally
    *     unique because a column family has one owning domain), or null for the fallback
+   * @param chunkPool the database-wide pool freeze chunks come from and retire to; the domain owns
+   *     one writer over it (all of a domain's stores freeze on the domain's owner thread, so small
+   *     segments pack into shared chunks)
    * @param metrics receives this domain's instrumentation; never null (use the no-op)
    */
   LayeredDomain(
@@ -76,7 +82,9 @@ public final class LayeredDomain {
       final TransactionContext persistContext,
       final TransactionContext snapshotReadContext,
       final SnapshotSource sharedSnapshotSource,
+      final ChunkPool chunkPool,
       final LayeredStoreMetrics metrics) {
+    chunkWriter = new ChunkWriter(Objects.requireNonNull(chunkPool, "chunkPool"));
     this.name = Objects.requireNonNull(name, "name");
     this.delegateReadContext = Objects.requireNonNull(delegateReadContext, "delegateReadContext");
     this.persistContext = Objects.requireNonNull(persistContext, "persistContext");
@@ -299,6 +307,10 @@ public final class LayeredDomain {
 
   Map<String, LayeredKeyValueStore> stores() {
     return storesByColumnFamily;
+  }
+
+  ChunkWriter chunkWriter() {
+    return chunkWriter;
   }
 
   LayeredStoreMetrics metrics() {

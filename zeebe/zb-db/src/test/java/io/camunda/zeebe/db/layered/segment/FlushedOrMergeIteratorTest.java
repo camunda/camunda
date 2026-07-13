@@ -238,7 +238,7 @@ final class FlushedOrMergeIteratorTest {
         final byte[] value = random.nextBoolean() ? null : bytes(random.nextInt(256));
         sorted.put(key, new Entry(key, value, random.nextBoolean()));
       }
-      oldestFirst.add(FlatSegment.of(sorted, s));
+      oldestFirst.add(FlatSegment.of(sorted, s, new ChunkWriter(new ChunkPool())));
     }
     return oldestFirst;
   }

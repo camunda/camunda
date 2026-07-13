@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.db.layered;
 
+import io.camunda.zeebe.db.layered.segment.ChunkPool;
+import io.camunda.zeebe.db.layered.segment.ChunkWriter;
 import io.camunda.zeebe.db.layered.segment.FlatSegment;
 import io.camunda.zeebe.db.layered.segment.KWayMergeIterator;
 import io.camunda.zeebe.db.layered.segment.ShadowingZipper;
@@ -39,13 +41,15 @@ import java.util.function.BiConsumer;
  *   <li><em>Active overlay</em> — everything promoted since the last {@link #freeze(long)}.
  *       Mutable, owner-thread only. Everything here is already durable in the log.
  *   <li><em>Pipeline</em> — frozen {@link FlatSegment}s, newest first. Immutable; safe to share
- *       with the persist IO thread and reader views. Merged down (newest-wins, with
- *       delete-absorption if enabled) when longer than the segment limit, so read amplification
- *       stays bounded no matter how long persistence is deferred. Merging is adaptive: while the
- *       last merge annihilated too few entries (no key overlap to deduplicate, no pairs to absorb),
- *       over-limit merges are skipped and the pipeline may overshoot to a hard cap of {@link
- *       #MERGE_OVERSHOOT_FACTOR} × the limit, where a merge is forced and the ratio re-measured —
- *       so read amplification stays bounded either way.
+ *       with the persist IO thread and reader views. Freezing copies the entry bytes into pooled
+ *       chunks (see {@link FlatSegment} for the lifetime rule: the pipeline retains its segments,
+ *       and dropping or merging away a segment releases it, recycling chunks no holder references
+ *       anymore). Merged down (newest-wins, with delete-absorption if enabled) when longer than the
+ *       segment limit, so read amplification stays bounded no matter how long persistence is
+ *       deferred. Merging is adaptive: while the last merge annihilated too few entries (no key
+ *       overlap to deduplicate, no pairs to absorb), over-limit merges are skipped and the pipeline
+ *       may overshoot to a hard cap of {@link #MERGE_OVERSHOOT_FACTOR} × the limit, where a merge
+ *       is forced and the ratio re-measured — so read amplification stays bounded either way.
  *   <li><em>Clean cache</em> — delegate-mirroring entries, LRU, the only evictable layer: values
  *       read through the delegate, plus known-absent sentinels for keys the delegate missed
  *       (negative caching, see {@link #NEGATIVE}). Repopulation after a persist round is lazy —
@@ -65,7 +69,9 @@ import java.util.function.BiConsumer;
  * <p><b>Byte budget:</b> staging, active and pipeline entries are pinned — evicting or persisting
  * them outside a persist round would put durable state ahead of the recovery anchor. Only clean
  * entries evict, so the budget is soft while buffered writes exist; {@link #overCapacity()} signals
- * the runtime to schedule a persist round now.
+ * the runtime to schedule a persist round now. Accounted bytes are live entry bytes: chunk-level
+ * memory can transiently exceed them (open-chunk tails, and bytes of merged-away versions pinned
+ * until their chunks recycle), bounded by the persist cadence that retires whole chunks.
  *
  * <p><b>Threading:</b> every method runs on the owner thread, with one read-only exception: the
  * stat accessors ({@code *Bytes()}, {@code *EntryCount()}, {@link #pipelineDepth()}, {@link
@@ -114,6 +120,7 @@ public final class LayeredKeyValueStore {
   private final boolean absorbDeletes;
   private final int pipelineSegmentLimit;
   private final LayeredStoreMetrics metrics;
+  private final ChunkWriter chunkWriter;
 
   // staging and active each pair a hash index (point lookups) with a sorted index (scans); the
   // two indexes of a layer share the same Entry objects
@@ -164,6 +171,30 @@ public final class LayeredKeyValueStore {
       final boolean absorbDeletes,
       final int pipelineSegmentLimit,
       final LayeredStoreMetrics metrics) {
+    this(
+        name,
+        delegate,
+        maxBytes,
+        absorbDeletes,
+        pipelineSegmentLimit,
+        metrics,
+        new ChunkWriter(new ChunkPool()));
+  }
+
+  /**
+   * @param chunkWriter the bump allocator freezes copy entry bytes through; share one writer (and
+   *     thus one chunk pool) across all stores of an owner thread so small segments pack into
+   *     common chunks — the convenience constructors give each store a private writer instead
+   */
+  public LayeredKeyValueStore(
+      final String name,
+      final BytesStore delegate,
+      final long maxBytes,
+      final boolean absorbDeletes,
+      final int pipelineSegmentLimit,
+      final LayeredStoreMetrics metrics,
+      final ChunkWriter chunkWriter) {
+    this.chunkWriter = Objects.requireNonNull(chunkWriter, "chunkWriter");
     this.name = Objects.requireNonNull(name, "name");
     this.metrics = Objects.requireNonNull(metrics, "metrics");
     this.delegate = Objects.requireNonNull(delegate, "delegate");
@@ -240,9 +271,9 @@ public final class LayeredKeyValueStore {
       return activeEntry.flushed();
     }
     for (final FlatSegment segment : pipeline) {
-      final Entry entry = segment.findEntry(key);
-      if (entry != null) {
-        return !entry.tombstone() || entry.flushed();
+      final int index = segment.indexOfKey(key);
+      if (index >= 0) {
+        return !segment.tombstoneAt(index) || segment.flushedAt(index);
       }
     }
     metrics.countFlushedPointRead();
@@ -317,9 +348,9 @@ public final class LayeredKeyValueStore {
       return entry.value(); // null for a tombstone — which must not fall through
     }
     for (final FlatSegment segment : pipeline) {
-      final Entry segmentEntry = segment.findEntry(key);
-      if (segmentEntry != null) {
-        return segmentEntry.value();
+      final int index = segment.indexOfKey(key);
+      if (index >= 0) {
+        return segment.valueAt(index); // null for a tombstone — which must not fall through
       }
     }
     final byte[] cached = clean.get(mapKey);
@@ -400,7 +431,7 @@ public final class LayeredKeyValueStore {
     if (activeByKey.isEmpty()) {
       return;
     }
-    final FlatSegment segment = FlatSegment.of(activeSorted, watermark);
+    final FlatSegment segment = FlatSegment.of(activeSorted, watermark, chunkWriter);
     pipeline.add(0, segment);
     pipelineBytes += segment.byteSize();
     activeByKey.clear();
@@ -436,6 +467,11 @@ public final class LayeredKeyValueStore {
     }
     final FlatSegment merged = FlatSegment.merge(oldestFirst, absorbDeletes);
     run.clear();
+    // release the pipeline's reference on the merged-away inputs only after the merged segment
+    // took its chunk references; views still holding the inputs keep them (and their chunks) alive
+    for (final FlatSegment input : oldestFirst) {
+      input.release();
+    }
     pipeline.add(0, merged);
     pipelineBytes += merged.byteSize();
     lastMergeAnnihilation = entriesIn == 0 ? 1.0 : 1.0 - merged.entryCount() / (double) entriesIn;
@@ -487,6 +523,9 @@ public final class LayeredKeyValueStore {
           pipeline.subList(pipeline.size() - persistingCount, pipeline.size());
       for (final FlatSegment segment : persisted) {
         pipelineBytes -= segment.byteSize();
+        // the pipeline's reference; a view still holding the segment keeps its chunks alive, and
+        // the last release returns the chunks to the pool for the next freezes
+        segment.release();
       }
       persisted.clear();
       refreshPipelineStats();
@@ -508,7 +547,9 @@ public final class LayeredKeyValueStore {
 
   /**
    * The current pipeline segments, newest first — the immutable share of this store's state for a
-   * {@link ReadOnlyView}. Includes segments currently persisting.
+   * {@link ReadOnlyView}. Includes segments currently persisting. The returned segments are
+   * guaranteed alive only while the pipeline still holds them: a holder that outlives the next
+   * pipeline mutation (a view, most notably) must {@link FlatSegment#retain()} them first.
    */
   public List<FlatSegment> segmentsNewestFirst() {
     return List.copyOf(pipeline);
