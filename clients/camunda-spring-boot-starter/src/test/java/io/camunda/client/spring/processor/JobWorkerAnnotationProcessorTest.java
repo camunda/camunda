@@ -18,6 +18,7 @@ package io.camunda.client.spring.processor;
 import static io.camunda.client.spring.testsupport.BeanInfoUtil.beanInfo;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -54,23 +55,25 @@ public class JobWorkerAnnotationProcessorTest {
   public void shouldClearManagedJobWorkersOnStop() {
     // given - simulate two lifecycle rounds (as with @RepeatedTest)
     jobWorkerAnnotationProcessor.configureFor(beanInfo(new WithJobWorker()));
-    jobWorkerAnnotationProcessor.start(client);
+    jobWorkerAnnotationProcessor.start(client, null);
 
     // verify first round created exactly one job worker
     verify(jobWorkerManager, times(1))
-        .createJobWorker(eq(client), any(ManagedJobWorker.class), eq(jobWorkerAnnotationProcessor));
+        .createJobWorker(
+            eq(client), any(ManagedJobWorker.class), eq(jobWorkerAnnotationProcessor), isNull());
 
     // when - stop should clear the managed job workers
-    jobWorkerAnnotationProcessor.stop(client);
+    jobWorkerAnnotationProcessor.stop(client, null);
 
     // configure and start again (second test run)
     jobWorkerAnnotationProcessor.configureFor(beanInfo(new WithJobWorker()));
-    jobWorkerAnnotationProcessor.start(client);
+    jobWorkerAnnotationProcessor.start(client, null);
 
     // then - createJobWorker should have been called exactly once per lifecycle round (2 total),
     // not accumulating (which would be 3 if the list wasn't cleared)
     verify(jobWorkerManager, times(2))
-        .createJobWorker(eq(client), any(ManagedJobWorker.class), eq(jobWorkerAnnotationProcessor));
+        .createJobWorker(
+            eq(client), any(ManagedJobWorker.class), eq(jobWorkerAnnotationProcessor), isNull());
   }
 
   private static final class WithJobWorker {

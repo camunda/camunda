@@ -35,12 +35,41 @@ public abstract class AbstractCamundaAnnotationProcessor
 
   protected abstract void configureFor(final BeanInfo beanInfo);
 
-  protected abstract void start(CamundaClient client);
+  /**
+   * Starts the processor for a client. Subclasses override this (or the {@link
+   * #start(CamundaClient, String)} overload). Defaults to a no-op.
+   */
+  protected void start(final CamundaClient client) {}
 
-  protected abstract void stop(CamundaClient client);
+  /**
+   * Stops the processor for a client. Subclasses override this (or the {@link #stop(CamundaClient,
+   * String)} overload). Defaults to a no-op.
+   */
+  protected void stop(final CamundaClient client) {}
+
+  /**
+   * Starts the processor for a client, carrying its configured name in multi-client mode. Defaults
+   * to the single-client {@link #start(CamundaClient)} for backwards compatibility.
+   */
+  protected void start(final CamundaClient client, final String clientName) {
+    start(client);
+  }
+
+  /**
+   * Stops the processor for a client, carrying its configured name in multi-client mode. Defaults
+   * to the single-client {@link #stop(CamundaClient)} for backwards compatibility.
+   */
+  protected void stop(final CamundaClient client, final String clientName) {
+    stop(client);
+  }
 
   @Override
   public void onStart(final CamundaClient client) {
+    onStart(client, null);
+  }
+
+  @Override
+  public void onStart(final CamundaClient client, final String clientName) {
     for (final String beanName : applicationContext.getBeanDefinitionNames()) {
       final Class<?> beanType = applicationContext.getType(beanName, false);
       if (beanType != null) {
@@ -56,11 +85,16 @@ public abstract class AbstractCamundaAnnotationProcessor
         }
       }
     }
-    start(client);
+    start(client, clientName);
   }
 
   @Override
   public void onStop(final CamundaClient client) {
-    stop(client);
+    onStop(client, null);
+  }
+
+  @Override
+  public void onStop(final CamundaClient client, final String clientName) {
+    stop(client, clientName);
   }
 }

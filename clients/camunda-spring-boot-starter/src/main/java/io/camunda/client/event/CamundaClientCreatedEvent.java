@@ -31,4 +31,11 @@ import io.camunda.client.CamundaClient;
  */
 public interface CamundaClientCreatedEvent {
   CamundaClient getClient();
+
+  /**
+   * The configured name of the client in multi-client mode, or {@code null} in single-client mode.
+   */
+  default String getClientName() {
+    return null;
+  }
 }

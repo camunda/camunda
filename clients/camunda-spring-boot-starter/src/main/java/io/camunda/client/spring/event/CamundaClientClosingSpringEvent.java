@@ -28,14 +28,26 @@ public class CamundaClientClosingSpringEvent extends ApplicationEvent
     implements CamundaClientClosingEvent {
 
   public final CamundaClient client;
+  private final String clientName;
 
   public CamundaClientClosingSpringEvent(final Object source, final CamundaClient client) {
+    this(source, client, null);
+  }
+
+  public CamundaClientClosingSpringEvent(
+      final Object source, final CamundaClient client, final String clientName) {
     super(source);
     this.client = client;
+    this.clientName = clientName;
   }
 
   @Override
   public CamundaClient getClient() {
     return client;
+  }
+
+  @Override
+  public String getClientName() {
+    return clientName;
   }
 }
