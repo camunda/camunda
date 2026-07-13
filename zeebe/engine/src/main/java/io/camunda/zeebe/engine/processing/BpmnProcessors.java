@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionDele
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBatchActivateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBatchTerminateProcessor;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBusinessIdAssignProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCancelProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationCreateWithAwaitingResultProcessor;
@@ -49,6 +50,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
 import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
@@ -134,6 +136,8 @@ public final class BpmnProcessors {
         routingInfo,
         authCheckBehavior,
         keyGenerator);
+    addProcessInstanceBusinessIdStreamProcessors(
+        typedRecordProcessors, processingState, writers, authCheckBehavior, config);
     addProcessInstanceBatchStreamProcessors(typedRecordProcessors, processingState, writers);
     addAdHocSubProcessActivityStreamProcessors(
         typedRecordProcessors, processingState, writers, authCheckBehavior, bpmnBehaviors);
@@ -332,6 +336,19 @@ public final class BpmnProcessors {
             routingInfo,
             authCheckBehavior,
             keyGenerator));
+  }
+
+  private static void addProcessInstanceBusinessIdStreamProcessors(
+      final TypedRecordProcessors typedRecordProcessors,
+      final ProcessingState processingState,
+      final Writers writers,
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final EngineConfiguration config) {
+    typedRecordProcessors.onCommand(
+        ValueType.PROCESS_INSTANCE_BUSINESS_ID,
+        ProcessInstanceBusinessIdIntent.ASSIGN,
+        new ProcessInstanceBusinessIdAssignProcessor(
+            writers, processingState, authCheckBehavior, config.isBusinessIdUniquenessEnabled()));
   }
 
   private static void addProcessInstanceBatchStreamProcessors(

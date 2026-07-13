@@ -42,6 +42,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionInte
 import io.camunda.zeebe.protocol.record.intent.MessageStartProcessInstanceRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
@@ -101,6 +102,7 @@ import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecor
 import io.camunda.zeebe.protocol.record.value.MessageStartProcessInstanceRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceBusinessIdRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
@@ -504,6 +506,17 @@ public final class RecordingExporter implements Exporter {
   public static ProcessInstanceMigrationRecordStream processInstanceMigrationRecords(
       final ProcessInstanceMigrationIntent intent) {
     return processInstanceMigrationRecords().withIntent(intent);
+  }
+
+  public static ProcessInstanceBusinessIdRecordStream processInstanceBusinessIdRecords() {
+    return new ProcessInstanceBusinessIdRecordStream(
+        records(
+            ValueType.PROCESS_INSTANCE_BUSINESS_ID, ProcessInstanceBusinessIdRecordValue.class));
+  }
+
+  public static ProcessInstanceBusinessIdRecordStream processInstanceBusinessIdRecords(
+      final ProcessInstanceBusinessIdIntent intent) {
+    return processInstanceBusinessIdRecords().withIntent(intent);
   }
 
   public static ProcessInstanceResultRecordStream processInstanceResultRecords() {
