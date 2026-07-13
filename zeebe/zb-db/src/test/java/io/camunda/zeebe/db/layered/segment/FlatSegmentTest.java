@@ -51,6 +51,63 @@ final class FlatSegmentTest {
   }
 
   @Test
+  void shouldReturnNullForKeysOutsideMinMaxRange() {
+    // given -- min 0x10, max 0x20
+    final FlatSegment segment =
+        segment(1, put(bytes(0x10), bytes(0x0A), false), put(bytes(0x20), bytes(0x0B), false));
+
+    // when / then -- probes below min and above max miss; the boundary keys themselves hit
+    assertThat(segment.findEntry(bytes(0x05))).isNull();
+    assertThat(segment.findEntry(bytes(0x30))).isNull();
+    assertThat(segment.findEntry(bytes(0x10))).isNotNull();
+    assertThat(segment.findEntry(bytes(0x20))).isNotNull();
+  }
+
+  @Test
+  void shouldReturnNothingFromEmptySegmentProbes() {
+    // given
+    final FlatSegment segment = segment(1);
+
+    // when / then
+    assertThat(segment.findEntry(bytes(0x01))).isNull();
+    assertThat(keysOf(segment.range(bytes(0x01)))).isEmpty();
+    assertThat(keysOf(segment.range(bytes()))).isEmpty();
+  }
+
+  @Test
+  void shouldReturnEmptyRangeForPrefixOutsideKeyRange() {
+    // given -- keys under the 0x10 prefix only
+    final FlatSegment segment =
+        segment(
+            1,
+            put(bytes(0x10, 0x01), bytes(0x0A), false),
+            put(bytes(0x10, 0x02), bytes(0x0B), false));
+
+    // when / then -- prefixes sorting below min and above max match nothing
+    assertThat(keysOf(segment.range(bytes(0x05)))).isEmpty();
+    assertThat(keysOf(segment.range(bytes(0x20)))).isEmpty();
+  }
+
+  @Test
+  void shouldIterateRangeForPrefixesTouchingTheRangeBoundaries() {
+    // given -- boundary keys both longer and shorter than the probed prefixes
+    final FlatSegment segment =
+        segment(
+            1,
+            put(bytes(0x10, 0x01), bytes(0x0A), false),
+            put(bytes(0x11), bytes(0x0B), false),
+            put(bytes(0x12, 0x05), bytes(0x0C), false));
+
+    // when / then -- prefixes of the min and max keys match exactly those keys ...
+    assertThat(keysOf(segment.range(bytes(0x10)))).containsExactly(bytes(0x10, 0x01));
+    assertThat(keysOf(segment.range(bytes(0x12)))).containsExactly(bytes(0x12, 0x05));
+    // ... a prefix longer than the max key matches nothing ...
+    assertThat(keysOf(segment.range(bytes(0x12, 0x05, 0x01)))).isEmpty();
+    // ... and an in-range prefix with no matching key stays empty
+    assertThat(keysOf(segment.range(bytes(0x11, 0x01)))).isEmpty();
+  }
+
+  @Test
   void shouldFindTombstoneEntry() {
     // given
     final FlatSegment segment = segment(1, tombstone(bytes(0x01), true));

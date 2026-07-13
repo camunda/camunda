@@ -9,6 +9,7 @@ package io.camunda.zeebe.db.layered.segment;
 
 import io.camunda.zeebe.db.layered.Entry;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NavigableMap;
@@ -19,6 +20,10 @@ import java.util.NoSuchElementException;
  * as parallel arrays for binary-search point lookups and contiguous prefix ranges. Frozen once at
  * construction, then never modified — which is the single property that makes segments safe to hand
  * across threads (persist IO thread, async reader views) without locks.
+ *
+ * <p>The sorted layout doubles as a min/max key range ({@code keys[0]} … {@code keys[n-1]}): point
+ * lookups and prefix ranges first check the probe against it and bail out on a miss for the cost of
+ * two compares — deep pipelines stay cheap for keys most segments cannot hold.
  *
  * <p>Each segment carries a {@code watermark}: the highest log position whose effects it contains,
  * stamped at freeze time. A persist round that drains segments writes the newest drained watermark
@@ -139,6 +144,9 @@ public final class FlatSegment {
 
   /** The entry for {@code key}, or {@code null} if this segment has no version of it. */
   public Entry findEntry(final byte[] key) {
+    if (excludesKey(key)) {
+      return null;
+    }
     final int index = Arrays.binarySearch(keys, key, Arrays::compareUnsigned);
     if (index < 0) {
       return null;
@@ -146,12 +154,23 @@ public final class FlatSegment {
     return new Entry(keys[index], values[index], flushed[index]);
   }
 
+  /** Whether {@code key} lies outside this segment's min/max key range — two compares. */
+  private boolean excludesKey(final byte[] key) {
+    return keys.length == 0
+        || Arrays.compareUnsigned(key, keys[0]) < 0
+        || Arrays.compareUnsigned(key, keys[keys.length - 1]) > 0;
+  }
+
   /**
    * Iterates the entries whose key starts with {@code prefix}, in key order. Prefix-matching keys
    * are contiguous in the sorted arrays, so this is a binary search plus a linear walk over exactly
-   * the matches. An empty prefix iterates everything.
+   * the matches — preceded by a min/max range check that rejects a foreign prefix for two bounded
+   * compares. An empty prefix iterates everything.
    */
   public Iterator<Entry> range(final byte[] prefix) {
+    if (excludesPrefix(prefix)) {
+      return Collections.emptyIterator();
+    }
     int start = Arrays.binarySearch(keys, prefix, Arrays::compareUnsigned);
     if (start < 0) {
       start = -start - 1;
@@ -175,6 +194,29 @@ public final class FlatSegment {
         return entry;
       }
     };
+  }
+
+  /**
+   * Whether no key of this segment can start with {@code prefix}. Truncating a key to the prefix
+   * length is weakly order-preserving, so if even the largest key truncates below the prefix, or
+   * the smallest key truncates above it, the prefix range and the segment's min/max range are
+   * disjoint — two bounded compares, no allocation.
+   */
+  private boolean excludesPrefix(final byte[] prefix) {
+    if (keys.length == 0) {
+      return true;
+    }
+    if (prefix.length == 0) {
+      return false;
+    }
+    final byte[] min = keys[0];
+    final byte[] max = keys[keys.length - 1];
+    return Arrays.compareUnsigned(
+                max, 0, Math.min(max.length, prefix.length), prefix, 0, prefix.length)
+            < 0
+        || Arrays.compareUnsigned(
+                min, 0, Math.min(min.length, prefix.length), prefix, 0, prefix.length)
+            > 0;
   }
 
   private static boolean startsWith(final byte[] key, final byte[] prefix) {
