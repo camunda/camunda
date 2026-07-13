@@ -1,0 +1,473 @@
+.widget {
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 24px 0;
+  font-family: var(--ifm-font-family-base);
+}
+
+/* ── Controls ─────────────────────────────────────────────── */
+.controls {
+  background: var(--ifm-background-surface-color);
+  border-bottom: 1px solid var(--ifm-color-emphasis-300);
+  padding: 16px 20px;
+  display: flex;
+  gap: 28px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.ctrl {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ctrlLabel {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ifm-color-content-secondary);
+  margin-bottom: 0;
+}
+
+.ctrlRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ctrlRow input[type='range'] {
+  width: 110px;
+  accent-color: var(--ifm-color-primary);
+  cursor: pointer;
+}
+
+.ctrlVal {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--ifm-color-primary);
+  min-width: 26px;
+  text-align: right;
+}
+
+.ctrlCap {
+  font-size: 0.7rem;
+  color: var(--ifm-color-content-secondary);
+}
+
+.ctrlDivider {
+  width: 1px;
+  background: var(--ifm-color-emphasis-300);
+  align-self: stretch;
+  margin: 0 4px;
+}
+
+/* ── Priority toggle ──────────────────────────────────────── */
+.toggleWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.toggleLabel {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ifm-color-content-secondary);
+}
+
+.toggleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.toggle {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.toggleTrack {
+  position: absolute;
+  inset: 0;
+  background: var(--ifm-color-emphasis-300);
+  border-radius: 22px;
+  transition: background 0.2s;
+}
+
+.toggle input:checked + .toggleTrack {
+  background: var(--ifm-color-primary);
+}
+
+.toggleKnob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s;
+  pointer-events: none;
+}
+
+.toggle input:checked ~ .toggleKnob {
+  transform: translateX(18px);
+}
+
+.toggleDesc {
+  font-size: 0.9rem;
+  color: var(--ifm-color-content);
+}
+
+/* ── Tabs ─────────────────────────────────────────────────── */
+.tabs {
+  display: flex;
+  border-bottom: 2px solid var(--ifm-color-emphasis-300);
+  background: var(--ifm-background-color);
+}
+
+.tab {
+  padding: 11px 22px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ifm-color-content-secondary);
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  background: transparent;
+  font-family: var(--ifm-font-family-base);
+  transition: color 0.15s;
+}
+
+.tab:hover {
+  color: var(--ifm-color-content);
+}
+
+.tabActive {
+  color: var(--ifm-color-primary);
+  border-bottom-color: var(--ifm-color-primary);
+}
+
+/* ── Shared panel ─────────────────────────────────────────── */
+.panel {
+  padding: 18px 20px;
+  background: var(--ifm-background-color);
+}
+
+.sep {
+  border: none;
+  border-top: 1px solid var(--ifm-color-emphasis-300);
+  margin: 0;
+}
+
+.sectionLabel {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ifm-color-content-secondary);
+  padding: 12px 20px 8px;
+}
+
+/* ── Matrix Table ─────────────────────────────────────────── */
+.matrixScroll {
+  overflow-x: auto;
+}
+
+.scrollHint {
+  font-size: 0.82rem;
+  color: var(--ifm-color-content-secondary);
+  font-style: italic;
+  margin-bottom: 10px;
+}
+
+.matrix {
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.matrix th {
+  padding: 7px 12px;
+  text-align: center;
+  background: var(--ifm-background-surface-color);
+  border: 1px solid var(--ifm-color-emphasis-300);
+  font-size: 0.78rem;
+  color: var(--ifm-color-content-secondary);
+  font-weight: 700;
+}
+
+.rl {
+  padding: 5px 14px 5px 8px !important;
+  text-align: right !important;
+  background: var(--ifm-background-surface-color) !important;
+  border: 1px solid var(--ifm-color-emphasis-300) !important;
+  font-size: 0.78rem !important;
+  color: var(--ifm-color-content-secondary) !important;
+  font-weight: 700 !important;
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 1 !important;
+}
+
+.matrix td {
+  border: 1px solid var(--ifm-color-emphasis-300);
+  padding: 5px 8px;
+  text-align: center;
+  background: var(--ifm-background-color);
+}
+
+.cellLeader {
+  display: inline-block;
+  background: var(--viz-leader);
+  color: white;
+  border-radius: 4px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 3px 8px;
+}
+
+.cellFollower {
+  display: inline-block;
+  background: var(--viz-leader-light);
+  color: var(--viz-leader);
+  border-radius: 4px;
+  font-size: 0.76rem;
+  padding: 3px 8px;
+  border: 1px solid var(--viz-follower-border);
+}
+
+.cellPri {
+  font-size: 0.66rem;
+  font-weight: 800;
+  opacity: 0.8;
+  margin-left: 3px;
+}
+
+.legend {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ifm-color-emphasis-300);
+  flex-wrap: wrap;
+}
+
+.legItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: var(--ifm-color-content-secondary);
+}
+
+/* ── Partition Cards ──────────────────────────────────────── */
+.pcards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pcard {
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 6px;
+  overflow: hidden;
+  flex: 0 0 auto;
+  width: 110px;
+}
+
+.pcardHead {
+  background: var(--viz-leader);
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 6px 8px;
+  text-align: center;
+}
+
+.pcardBody {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  background: var(--ifm-background-color);
+}
+
+.roleRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rbadgeLeader {
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 2px 5px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  background: var(--viz-leader);
+  color: white;
+}
+
+.rbadgeFollower {
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 2px 5px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  background: var(--viz-leader-light);
+  color: var(--viz-leader);
+  border: 1px solid var(--viz-follower-border);
+}
+
+.bname {
+  font-size: 0.78rem;
+  color: var(--ifm-color-content);
+}
+
+.priVal {
+  font-size: 0.68rem;
+  color: var(--ifm-color-content-secondary);
+  margin-left: auto;
+}
+
+/* ── Broker Statistics ────────────────────────────────────── */
+.statsGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.statCard {
+  flex: 1 1 76px;
+  min-width: 70px;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.statHead {
+  background: var(--viz-broker-head);
+  color: white;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 6px 8px;
+  text-align: center;
+}
+
+.statBody {
+  padding: 10px;
+  background: var(--ifm-background-color);
+}
+
+.bar {
+  height: 9px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--ifm-background-surface-color);
+  display: flex;
+  margin-bottom: 8px;
+}
+
+.barLeader {
+  background: var(--viz-leader);
+  transition: width 0.3s;
+}
+
+.barFollower {
+  background: var(--viz-follower-border);
+  transition: width 0.3s;
+}
+
+.statRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.74rem;
+  margin-bottom: 3px;
+}
+
+.statLbl {
+  color: var(--ifm-color-content-secondary);
+}
+
+.statVal {
+  font-weight: 700;
+  color: var(--ifm-color-content);
+}
+
+/* ── Summary strip ────────────────────────────────────────── */
+.summary {
+  padding: 14px 20px;
+  border-top: 1px solid var(--ifm-color-emphasis-300);
+  display: flex;
+  gap: 28px;
+  flex-wrap: wrap;
+  background: var(--ifm-background-surface-color);
+}
+
+.summItem {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.summLabel {
+  font-size: 0.72rem;
+  color: var(--ifm-color-content-secondary);
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.summVal {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--ifm-color-content);
+}
+
+.balChip {
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 10px;
+  display: inline-block;
+}
+
+.balOk {
+  background: #e6f4ea;
+  color: #137333;
+}
+
+.balWarn {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+:global([data-theme='dark']) .balOk {
+  background: #0d3320;
+  color: #81c995;
+}
+
+:global([data-theme='dark']) .balWarn {
+  background: #2d1b00;
+  color: #ffb74d;
+}
