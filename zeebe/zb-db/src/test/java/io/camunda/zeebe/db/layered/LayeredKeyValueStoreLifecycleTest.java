@@ -15,14 +15,17 @@ import io.camunda.zeebe.db.layered.segment.FlatSegment;
 import io.camunda.zeebe.db.layered.util.InMemoryDurableState;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiConsumer;
 import org.junit.jupiter.api.Test;
 
 /**
  * Freeze/persist lifecycle, delete absorption and byte-budget behavior. The store never writes the
  * delegate itself — the coordinator does — so tests simulate a persist round by draining the
- * segments returned from {@link LayeredKeyValueStore#beginPersist()} into the delegate manually.
+ * segments returned from {@link LayeredKeyValueStore#beginPersist(long)} into the delegate
+ * manually.
  */
 final class LayeredKeyValueStoreLifecycleTest {
 
@@ -106,7 +109,7 @@ final class LayeredKeyValueStoreLifecycleTest {
     final LayeredKeyValueStore store = newStore(1024 * 1024, false, 2);
     putPromoteFreeze(store, "old1", "v", 1L);
     putPromoteFreeze(store, "old2", "v", 2L);
-    store.beginPersist();
+    beginPersist(store);
 
     // when -- three more freezes exceed the limit for the non-persisting run
     putPromoteFreeze(store, "new1", "v", 3L);
@@ -219,7 +222,7 @@ final class LayeredKeyValueStoreLifecycleTest {
     // given -- a persisting tail plus a captured non-persisting run
     final LayeredKeyValueStore store = newStore(1024 * 1024, false, 1);
     putPromoteFreezeRaw(store, "old", "v0", 1L);
-    final List<FlatSegment> draining = store.beginPersist();
+    final List<FlatSegment> draining = beginPersist(store);
     putPromoteFreezeRaw(store, "a", "v1", 2L);
     putPromoteFreezeRaw(store, "b", "v2", 3L);
     final List<FlatSegment> oldestFirst = store.beginMerge();
@@ -266,11 +269,11 @@ final class LayeredKeyValueStoreLifecycleTest {
     final List<FlatSegment> oldestFirst = store.beginMerge();
 
     // when / then -- a round captures every pipeline segment, so it must not start now
-    assertThatThrownBy(store::beginPersist).isInstanceOf(IllegalStateException.class);
+    assertThatThrownBy(() -> beginPersist(store)).isInstanceOf(IllegalStateException.class);
 
     // and once the merge completed, the round proceeds
     store.completeMerge(FlatSegment.merge(oldestFirst, store.absorbsDeletes()), true);
-    assertThat(store.beginPersist()).hasSize(1);
+    assertThat(beginPersist(store)).hasSize(1);
   }
 
   @Test
@@ -298,7 +301,7 @@ final class LayeredKeyValueStoreLifecycleTest {
     putPromoteFreeze(store, "key2", "v2", 2L);
 
     // when
-    final List<FlatSegment> draining = store.beginPersist();
+    final List<FlatSegment> draining = beginPersist(store);
 
     // then
     assertThat(draining).hasSize(2);
@@ -311,10 +314,10 @@ final class LayeredKeyValueStoreLifecycleTest {
     // given
     final LayeredKeyValueStore store = newStore();
     putPromoteFreeze(store, "key", "value", 1L);
-    store.beginPersist();
+    beginPersist(store);
 
     // when / then
-    assertThatThrownBy(store::beginPersist).isInstanceOf(IllegalStateException.class);
+    assertThatThrownBy(() -> beginPersist(store)).isInstanceOf(IllegalStateException.class);
   }
 
   @Test
@@ -331,7 +334,7 @@ final class LayeredKeyValueStoreLifecycleTest {
     // given
     final LayeredKeyValueStore store = newStore();
     putPromoteFreeze(store, "key", "value", 1L);
-    final List<FlatSegment> draining = store.beginPersist();
+    final List<FlatSegment> draining = beginPersist(store);
     drainToDelegate(draining);
 
     // when
@@ -348,7 +351,7 @@ final class LayeredKeyValueStoreLifecycleTest {
     // given
     final LayeredKeyValueStore store = newStore();
     putPromoteFreeze(store, "key", "value", 1L);
-    drainToDelegate(store.beginPersist());
+    drainToDelegate(beginPersist(store));
 
     // when
     store.completePersist(true);
@@ -366,7 +369,7 @@ final class LayeredKeyValueStoreLifecycleTest {
     final LayeredKeyValueStore store =
         new LayeredKeyValueStore(STORE, counting, 1024 * 1024, false, 10);
     putPromoteFreeze(store, "key", "value", 1L);
-    drainToDelegate(store.beginPersist());
+    drainToDelegate(beginPersist(store));
     store.completePersist(true);
     final int getsAfterPersist = counting.gets;
 
@@ -408,7 +411,7 @@ final class LayeredKeyValueStoreLifecycleTest {
         new LayeredKeyValueStore(STORE, counting, 1024 * 1024, false, 10);
     assertThat(store.get(bytes("key"))).isNull();
     putPromoteFreeze(store, "key", "value", 1L);
-    drainToDelegate(store.beginPersist());
+    drainToDelegate(beginPersist(store));
 
     // when -- the segments drop; the write already removed the stale negative at write time
     store.completePersist(true);
@@ -425,7 +428,7 @@ final class LayeredKeyValueStoreLifecycleTest {
     final LayeredKeyValueStore store = newStore();
     putPromoteFreeze(store, "key1", "v1", 1L);
     putPromoteFreeze(store, "key2", "v2", 2L);
-    store.beginPersist();
+    beginPersist(store);
 
     // when -- the round fails without draining anything
     store.completePersist(false);
@@ -434,7 +437,7 @@ final class LayeredKeyValueStoreLifecycleTest {
     assertThat(store.segmentsNewestFirst()).hasSize(2);
     assertThat(store.get(bytes("key1"))).isEqualTo(bytes("v1"));
     assertThat(state.committedSize(STORE)).isZero();
-    final List<FlatSegment> retry = store.beginPersist();
+    final List<FlatSegment> retry = beginPersist(store);
     assertThat(retry).hasSize(2);
     assertThat(retry.get(0).watermark()).isEqualTo(1L);
     assertThat(retry.get(1).watermark()).isEqualTo(2L);
@@ -445,7 +448,7 @@ final class LayeredKeyValueStoreLifecycleTest {
     // given -- a newer version promoted while the persist round is outstanding
     final LayeredKeyValueStore store = newStore();
     putPromoteFreeze(store, "key", "old", 1L);
-    final List<FlatSegment> draining = store.beginPersist();
+    final List<FlatSegment> draining = beginPersist(store);
     store.put(bytes("key"), bytes("new"));
     store.promote();
     drainToDelegate(draining);
@@ -463,7 +466,7 @@ final class LayeredKeyValueStoreLifecycleTest {
     // given -- key reaches the delegate, then a newer version and finally a delete
     final LayeredKeyValueStore store = newStore(1024 * 1024, true, 10);
     putPromoteFreeze(store, "key", "old", 1L);
-    drainToDelegate(store.beginPersist());
+    drainToDelegate(beginPersist(store));
     store.completePersist(true);
     store.put(bytes("key"), bytes("new"));
     store.promote();
@@ -472,7 +475,7 @@ final class LayeredKeyValueStoreLifecycleTest {
     store.freeze(2L);
 
     // when -- despite delete absorption the tombstone must survive: the delegate holds the key
-    drainToDelegate(store.beginPersist());
+    drainToDelegate(beginPersist(store));
     store.completePersist(true);
 
     // then
@@ -500,7 +503,7 @@ final class LayeredKeyValueStoreLifecycleTest {
     assertThat(store.get(bytes("key"))).isNull();
     store.freeze(1L);
     assertThat(store.segmentsNewestFirst()).isEmpty();
-    assertThat(store.beginPersist()).isEmpty();
+    assertThat(beginPersist(store)).isEmpty();
     store.completePersist(true);
     assertThat(state.committedSize(STORE)).isZero();
   }
@@ -550,7 +553,7 @@ final class LayeredKeyValueStoreLifecycleTest {
     // given -- the key reached the delegate and sits in the clean cache
     final LayeredKeyValueStore store = newStore(1024 * 1024, true, 10);
     putPromoteFreeze(store, "key", "value", 1L);
-    drainToDelegate(store.beginPersist());
+    drainToDelegate(beginPersist(store));
     store.completePersist(true);
 
     // when -- deleting a flushed key must produce a durable tombstone, not an absorption
@@ -567,7 +570,7 @@ final class LayeredKeyValueStoreLifecycleTest {
     assertThat(tombstone.flushed()).isTrue();
 
     // when -- the next round drains it
-    drainToDelegate(store.beginPersist());
+    drainToDelegate(beginPersist(store));
     store.completePersist(true);
 
     // then
@@ -594,7 +597,7 @@ final class LayeredKeyValueStoreLifecycleTest {
     assertThat(tombstone.flushed()).isTrue();
 
     // when
-    drainToDelegate(store.beginPersist());
+    drainToDelegate(beginPersist(store));
     store.completePersist(true);
 
     // then
@@ -619,12 +622,155 @@ final class LayeredKeyValueStoreLifecycleTest {
     assertThat(tombstone.flushed()).isTrue();
 
     // when
-    drainToDelegate(store.beginPersist());
+    drainToDelegate(beginPersist(store));
     store.completePersist(true);
 
     // then -- the old version is gone, not resurrected
     assertThat(state.committedValue(STORE, bytes("key"))).isNull();
     assertThat(store.get(bytes("key"))).isNull();
+  }
+
+  // ------------------------------------------------------------------
+  // captured tip (flatten-free persist capture)
+  // ------------------------------------------------------------------
+
+  @Test
+  void shouldCaptureActiveOverlayAsRawTipWithoutFlattening() {
+    // given committed writes still in the active overlay
+    final LayeredKeyValueStore store = newStore();
+    store.put(bytes("key"), bytes("value"));
+    store.promote();
+    final long bufferedBefore = store.bufferedBytes();
+
+    // when a persist round captures the store
+    final LayeredKeyValueStore.PersistCapture capture = store.beginPersist(5L);
+
+    // then the overlay was swapped out whole — no segment was flattened — and stays readable
+    assertThat(capture.segmentsOldestFirst()).isEmpty();
+    assertThat(capture.tip()).isNotNull();
+    assertThat(capture.tip().values()).hasSize(1);
+    assertThat(store.segmentsNewestFirst()).isEmpty();
+    assertThat(store.get(bytes("key"))).isEqualTo(bytes("value"));
+    assertThat(store.hasBufferedWrites()).isTrue();
+    // the captured bytes remain buffered (and mirrored) until the round completes
+    assertThat(store.activeBytes()).isZero();
+    assertThat(store.capturedBytes()).isEqualTo(bufferedBefore);
+    assertThat(store.bufferedBytes()).isEqualTo(bufferedBefore);
+    assertThat(store.newestSegmentWatermark()).isEqualTo(5L);
+
+    // when the round completes successfully (the drain read the tip map directly)
+    drainTipToDelegate(capture);
+    store.completePersist(true);
+
+    // then the tip dropped and its bytes left the buffer
+    assertThat(store.capturedBytes()).isZero();
+    assertThat(store.bufferedBytes()).isZero();
+    assertThat(store.hasBufferedWrites()).isFalse();
+    assertThat(store.get(bytes("key"))).isEqualTo(bytes("value"));
+    assertThat(state.committedValue(STORE, bytes("key"))).isEqualTo(bytes("value"));
+  }
+
+  @Test
+  void shouldScanRawTipBetweenActiveAndPipeline() {
+    // given a persisting segment, a captured tip shadowing part of it, and newer active writes
+    final LayeredKeyValueStore store = newStore();
+    store.put(bytes("a"), bytes("segment"));
+    store.put(bytes("b"), bytes("segment"));
+    store.promote();
+    store.freeze(1L);
+    store.put(bytes("b"), bytes("tip"));
+    store.put(bytes("c"), bytes("tip"));
+    store.promote();
+    store.beginPersist(2L);
+    store.put(bytes("c"), bytes("active"));
+    store.promote();
+
+    // when
+    final Map<String, String> scanned = new LinkedHashMap<>();
+    store.forEach((key, value) -> scanned.put(new String(key, UTF_8), new String(value, UTF_8)));
+
+    // then the tip shadows the segment and is shadowed by the newer active overlay
+    assertThat(scanned)
+        .containsExactly(
+            Map.entry("a", "segment"), Map.entry("b", "tip"), Map.entry("c", "active"));
+    store.completePersist(false);
+  }
+
+  @Test
+  void shouldMaterializeRawTipOnFreezeMidRound() {
+    // given a raw captured tip of an in-flight round
+    final LayeredKeyValueStore store = newStore();
+    store.put(bytes("captured"), bytes("v1"));
+    store.promote();
+    final LayeredKeyValueStore.PersistCapture capture = store.beginPersist(5L);
+    assertThat(capture.tip()).isNotNull();
+
+    // when a freeze occasion (a view barrier) hits mid-round
+    store.put(bytes("fresh"), bytes("v2"));
+    store.promote();
+    store.freeze(6L);
+
+    // then the tip became a real (persisting) segment below the fresh one, so views resolve it
+    final List<FlatSegment> segments = store.segmentsNewestFirst();
+    assertThat(segments).hasSize(2);
+    assertThat(segments.get(0).watermark()).isEqualTo(6L);
+    assertThat(segments.get(1).watermark()).isEqualTo(5L);
+    assertThat(segments.get(1).findEntry(bytes("captured"))).isNotNull();
+    assertThat(store.capturedBytes()).isZero();
+    assertThat(store.get(bytes("captured"))).isEqualTo(bytes("v1"));
+
+    // when the round completes successfully (the drain kept walking the captured map)
+    drainTipToDelegate(capture);
+    store.completePersist(true);
+
+    // then only the round's share dropped: the materialized tip retired, the fresh segment stayed
+    assertThat(store.segmentsNewestFirst()).hasSize(1);
+    assertThat(store.segmentsNewestFirst().get(0).watermark()).isEqualTo(6L);
+    assertThat(store.get(bytes("captured"))).isEqualTo(bytes("v1"));
+    assertThat(store.get(bytes("fresh"))).isEqualTo(bytes("v2"));
+  }
+
+  @Test
+  void shouldMaterializeRawTipOnFailedRound() {
+    // given a raw captured tip of a round that fails
+    final LayeredKeyValueStore store = newStore();
+    store.put(bytes("key"), bytes("value"));
+    store.promote();
+    store.beginPersist(5L);
+
+    // when
+    store.completePersist(false);
+
+    // then the tip became a normal frozen segment: readable, mergeable, retried by the next round
+    final List<FlatSegment> segments = store.segmentsNewestFirst();
+    assertThat(segments).hasSize(1);
+    assertThat(segments.get(0).watermark()).isEqualTo(5L);
+    assertThat(store.capturedBytes()).isZero();
+    assertThat(store.get(bytes("key"))).isEqualTo(bytes("value"));
+    final LayeredKeyValueStore.PersistCapture retry = store.beginPersist(6L);
+    assertThat(retry.tip()).isNull();
+    assertThat(retry.segmentsOldestFirst()).hasSize(1);
+  }
+
+  @Test
+  void shouldMarkWriteOverCapturedTipPutFlushed() {
+    // given a put captured into a raw tip (it will reach the delegate: drained now, or from the
+    // pipeline after a failed round)
+    final LayeredKeyValueStore store = newStore();
+    store.put(bytes("key"), bytes("old"));
+    store.promote();
+    store.beginPersist(1L);
+
+    // when a newer version is written mid-round and frozen
+    store.put(bytes("key"), bytes("new"));
+    store.promote();
+    store.freeze(2L);
+
+    // then the newer version carries flushed=true — dropping the drained tip without re-flagging
+    // stays sound exactly because the write-time check saw the captured put
+    final Entry entry = store.segmentsNewestFirst().get(0).findEntry(bytes("key"));
+    assertThat(entry).isNotNull();
+    assertThat(entry.flushed()).isTrue();
   }
 
   // ------------------------------------------------------------------
@@ -715,7 +861,7 @@ final class LayeredKeyValueStoreLifecycleTest {
     assertThat(store.overCapacity()).isTrue();
 
     // when -- a persist round drains the pinned bytes
-    drainToDelegate(store.beginPersist());
+    drainToDelegate(beginPersist(store));
     store.completePersist(true);
 
     // then -- the pinned bytes are gone (the drained segments dropped) and reads still resolve
@@ -758,6 +904,27 @@ final class LayeredKeyValueStoreLifecycleTest {
     if (store.mergeNeeded()) {
       final List<FlatSegment> oldestFirst = store.beginMerge();
       store.completeMerge(FlatSegment.merge(oldestFirst, store.absorbsDeletes()), true);
+    }
+  }
+
+  /**
+   * Captures a persist round over everything frozen. The active overlays of this test's stores are
+   * empty at every capture (the tests freeze explicitly first), so the returned capture never
+   * carries a tip — the segment list is the whole capture.
+   */
+  private static List<FlatSegment> beginPersist(final LayeredKeyValueStore store) {
+    return store.beginPersist(store.newestSegmentWatermark()).segmentsOldestFirst();
+  }
+
+  /** Simulates the coordinator's drain of a raw captured tip: walks the swapped map directly. */
+  private void drainTipToDelegate(final LayeredKeyValueStore.PersistCapture capture) {
+    final BytesStore delegate = state.store(STORE);
+    for (final Entry entry : capture.tip().values()) {
+      if (entry.tombstone()) {
+        delegate.delete(entry.key());
+      } else {
+        delegate.put(entry.key(), entry.value());
+      }
     }
   }
 

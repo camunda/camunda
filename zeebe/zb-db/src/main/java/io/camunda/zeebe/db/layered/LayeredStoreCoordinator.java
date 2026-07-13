@@ -17,6 +17,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.function.Consumer;
 import org.jspecify.annotations.Nullable;
@@ -29,20 +30,23 @@ import org.jspecify.annotations.Nullable;
  * <p>The persist protocol splits into three steps so only the cheap one runs on the owner thread:
  *
  * <ol>
- *   <li>{@link #prepareRound(long)} — owner thread. Marks every store's pipeline segments as
- *       persisting (they stay readable) and captures them into a {@link PersistRound}.
- *   <li>{@link PersistRound#persist()} — may run on an IO thread. Drains all captured segments,
- *       oldest first, newest version per key winning, into one {@link PersistBatch}; writes the
- *       recovery anchor (the newest drained watermark) into the <em>same</em> batch; commits.
- *       Touches only the immutable segments and the sink — never a store's mutable layers.
- *       Alternatively the drain runs paced, in {@link PersistRound#persistSlice(long) sub-batch
- *       slices} that each commit their own batch — see the anchor-last invariant on {@link
- *       PersistRound}.
+ *   <li>{@link #prepareRound(long)} — owner thread, O(1) per store. Swaps every store's active
+ *       overlay out as its raw captured tip (no flatten — see {@link
+ *       LayeredKeyValueStore#beginPersist(long)}), marks the pipeline segments as persisting (tip
+ *       and segments stay readable) and captures both into a {@link PersistRound}.
+ *   <li>{@link PersistRound#persist()} — may run on an IO thread. Drains all captured state — the
+ *       raw tips walked directly as sorted maps, the segments via their ranges — oldest first,
+ *       newest version per key winning, into one {@link PersistBatch}; writes the recovery anchor
+ *       (the newest drained watermark) into the <em>same</em> batch; commits. Touches only the
+ *       immutable captured structures and the sink — never a store's mutable layers. Alternatively
+ *       the drain runs paced, in {@link PersistRound#persistSlice(long) sub-batch slices} that each
+ *       commit their own batch — see the anchor-last invariant on {@link PersistRound}.
  *   <li>{@link #completeRound(PersistRound, boolean)} — owner thread. On success drops the drained
- *       segments in every store (the durable state is authoritative for them now; clean caches
- *       refill lazily via read-through), rotates the snapshot (take new, release the old view's
- *       reference) and publishes a fresh view. On failure the segments stay in their pipelines and
- *       the next round retries them; nothing needs merging back.
+ *       segments and tips in every store (the durable state is authoritative for them now; clean
+ *       caches refill lazily via read-through), rotates the snapshot (take new, release the old
+ *       view's reference) and publishes a fresh view. On failure the segments stay in their
+ *       pipelines — a raw tip becomes a normal frozen segment — and the next round retries them;
+ *       nothing needs merging back.
  * </ol>
  *
  * <p>Rounds are single-flight: {@link #prepareRound(long)} throws while a round is outstanding. The
@@ -190,10 +194,16 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
   }
 
   /**
-   * Starts a persist round over everything currently frozen, implicitly freezing first if the
-   * active overlays hold anything at {@code watermark}. Owner thread.
+   * Starts a persist round over everything buffered at {@code watermark}. O(1) per store on the
+   * owner thread: active overlays are swapped out whole as raw captured tips — never flattened
+   * here; the drain walks the swapped sorted maps directly on the IO thread — and the pipeline
+   * segments are marked persisting. Deliberately publishes no view: capturing moves nothing that a
+   * view could already see (views resolve segments, and the tips were invisible active state), and
+   * the freshness consumers self-freshen through {@link #freezeAll(long)} barriers, which
+   * materialize raw tips into view-visible segments first.
    *
-   * @throws IllegalStateException if a round is already outstanding
+   * @throws IllegalStateException if a round or a merge is already outstanding, or a store's
+   *     staging layer is not empty (a batch is in flight)
    */
   public PersistRound prepareRound(final long watermark) {
     if (outstandingRound != null) {
@@ -206,21 +216,25 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
           "expected no outstanding merge when preparing a persist round, but one is in flight"
               + " (segments captured by a round must never concurrently merge)");
     }
-    freezeAll(watermark);
-    final Map<String, List<FlatSegment>> capturedOldestFirst = new LinkedHashMap<>();
+    final Map<String, PersistRound.CapturedStore> captured = new LinkedHashMap<>();
     long anchor = -1;
     long capturedBytes = 0;
     for (final LayeredKeyValueStore store : stores.values()) {
-      final List<FlatSegment> oldestFirst = store.beginPersist();
-      capturedOldestFirst.put(store.name(), oldestFirst);
-      for (final FlatSegment segment : oldestFirst) {
+      final LayeredKeyValueStore.PersistCapture capture = store.beginPersist(watermark);
+      for (final FlatSegment segment : capture.segmentsOldestFirst()) {
         anchor = Math.max(anchor, segment.watermark());
         capturedBytes += segment.byteSize();
       }
+      if (capture.tip() != null) {
+        anchor = Math.max(anchor, watermark);
+        capturedBytes += capture.tipBytes();
+      }
+      captured.put(
+          store.name(),
+          new PersistRound.CapturedStore(capture.tip(), capture.segmentsOldestFirst()));
     }
     outstandingRound =
-        new PersistRound(
-            sink, capturedOldestFirst, anchor, Map.copyOf(anchorEntries), capturedBytes, metrics);
+        new PersistRound(sink, captured, anchor, Map.copyOf(anchorEntries), capturedBytes, metrics);
     return outstandingRound;
   }
 
@@ -457,7 +471,7 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
     private static final byte[] EMPTY_PREFIX = new byte[0];
 
     private final PersistSink sink;
-    private final Map<String, List<FlatSegment>> capturedOldestFirst;
+    private final Map<String, CapturedStore> captured;
     private final long anchor;
     private final Map<String, byte[]> anchorEntries;
     private final long capturedBytes;
@@ -469,13 +483,13 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
 
     private PersistRound(
         final PersistSink sink,
-        final Map<String, List<FlatSegment>> capturedOldestFirst,
+        final Map<String, PersistRound.CapturedStore> captured,
         final long anchor,
         final Map<String, byte[]> anchorEntries,
         final long capturedBytes,
         final LayeredStoreMetrics metrics) {
       this.sink = sink;
-      this.capturedOldestFirst = capturedOldestFirst;
+      this.captured = captured;
       this.anchor = anchor;
       this.anchorEntries = anchorEntries;
       this.capturedBytes = capturedBytes;
@@ -506,7 +520,7 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
      */
     public boolean persistSlice(final long minSliceBytes) throws Exception {
       if (drain == null) {
-        if (capturedOldestFirst.values().stream().allMatch(List::isEmpty)) {
+        if (captured.values().stream().allMatch(CapturedStore::isEmpty)) {
           return true; // nothing captured — no state to persist, no anchor to advance
         }
         drain = new Drain();
@@ -598,14 +612,27 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
     private record HeldAnchorWrite(String store, Entry entry) {}
 
     /**
+     * One store's captured share of a round: the raw tip (the swapped-out active overlay, the
+     * newest layer of the drain merge — never flattened; the drain walks the sorted map directly)
+     * and the pipeline segments, oldest first.
+     */
+    private record CapturedStore(
+        @Nullable NavigableMap<byte[], Entry> tip, List<FlatSegment> segmentsOldestFirst) {
+
+      private boolean isEmpty() {
+        return tip == null && segmentsOldestFirst.isEmpty();
+      }
+    }
+
+    /**
      * The cursor of one drain attempt: a per-store streamed merge (see {@link
      * FlushedOrMergeIterator} for why the merge is streamed, not materialized — memory stays
      * bounded by the k stream cursors), walked store by store across slice boundaries.
      */
     private final class Drain {
 
-      private final Iterator<Map.Entry<String, List<FlatSegment>>> stores =
-          capturedOldestFirst.entrySet().iterator();
+      private final Iterator<Map.Entry<String, CapturedStore>> stores =
+          captured.entrySet().iterator();
       private final List<HeldAnchorWrite> heldAnchorWrites = new ArrayList<>(1);
       private final long startedNanos = System.nanoTime();
       private String currentStore;
@@ -618,9 +645,9 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
           if (!stores.hasNext()) {
             return null;
           }
-          final Map.Entry<String, List<FlatSegment>> captured = stores.next();
-          currentStore = captured.getKey();
-          currentEntries = mergedStream(captured.getValue());
+          final Map.Entry<String, CapturedStore> next = stores.next();
+          currentStore = next.getKey();
+          currentEntries = mergedStream(next.getValue());
         }
         return currentEntries.next();
       }
@@ -629,8 +656,13 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
         drainedBytesVolatile += entry.key().length + (entry.tombstone() ? 0 : entry.value().length);
       }
 
-      private Iterator<Entry> mergedStream(final List<FlatSegment> oldestFirst) {
-        final List<Iterator<Entry>> newestFirst = new ArrayList<>(oldestFirst.size());
+      private Iterator<Entry> mergedStream(final CapturedStore store) {
+        final List<FlatSegment> oldestFirst = store.segmentsOldestFirst();
+        final List<Iterator<Entry>> newestFirst = new ArrayList<>(1 + oldestFirst.size());
+        if (store.tip() != null) {
+          // the raw tip is the newest layer of the merge (it holds every post-freeze version)
+          newestFirst.add(store.tip().values().iterator());
+        }
         for (int i = oldestFirst.size() - 1; i >= 0; i--) {
           newestFirst.add(oldestFirst.get(i).range(EMPTY_PREFIX));
         }

@@ -183,6 +183,11 @@ final class MicrometerLayeredStoreMetrics implements LayeredStoreMetrics {
         LayeredKeyValueStore::activeBytes);
     layerGauge(
         LayeredStateMetricsDoc.BUFFERED_BYTES,
+        Layer.CAPTURED,
+        stores,
+        LayeredKeyValueStore::capturedBytes);
+    layerGauge(
+        LayeredStateMetricsDoc.BUFFERED_BYTES,
         Layer.PIPELINE,
         stores,
         LayeredKeyValueStore::pipelineBytes);
@@ -201,6 +206,11 @@ final class MicrometerLayeredStoreMetrics implements LayeredStoreMetrics {
         Layer.ACTIVE,
         stores,
         LayeredKeyValueStore::activeEntryCount);
+    layerGauge(
+        LayeredStateMetricsDoc.BUFFERED_ENTRIES,
+        Layer.CAPTURED,
+        stores,
+        LayeredKeyValueStore::capturedEntryCount);
     layerGauge(
         LayeredStateMetricsDoc.BUFFERED_ENTRIES,
         Layer.PIPELINE,

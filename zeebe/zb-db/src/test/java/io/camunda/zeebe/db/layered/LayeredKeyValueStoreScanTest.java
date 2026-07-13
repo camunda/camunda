@@ -144,7 +144,7 @@ final class LayeredKeyValueStoreScanTest {
     store.put(bytes("persisting"), bytes("v1"));
     store.promote();
     store.freeze(1L);
-    store.beginPersist();
+    store.beginPersist(1L);
     store.put(bytes("fresh"), bytes("v2"));
     store.promote();
     store.freeze(2L);

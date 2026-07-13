@@ -609,22 +609,23 @@ final class LayeredStoreCoordinatorTest {
     final ReadOnlyView initial = coordinator.currentView();
     assertThat(views).containsExactly(initial);
 
-    // when -- a freeze, then a full round (whose prepare freezes again)
+    // when -- a freeze, then a full round (whose O(1) prepare publishes nothing: capturing moves
+    // nothing a view could already see, and barriers self-freshen through freezeAll)
     store.put(bytes(1), bytes(10));
     store.promote();
     coordinator.freezeAll(10);
     final ReadOnlyView afterFreeze = coordinator.currentView();
     final PersistRound round = coordinator.prepareRound(20);
-    final ReadOnlyView afterPrepare = coordinator.currentView();
+    assertThat(coordinator.currentView()).isSameAs(afterFreeze);
     round.persist();
     coordinator.completeRound(round, true);
     final ReadOnlyView afterComplete = coordinator.currentView();
 
     // then
-    assertThat(views).containsExactly(initial, afterFreeze, afterPrepare, afterComplete);
+    assertThat(views).containsExactly(initial, afterFreeze, afterComplete);
     assertThat(views.get(views.size() - 1)).isSameAs(coordinator.currentView());
 
-    // when -- a failed round publishes nothing beyond its own prepare-freeze
+    // when -- a failed round publishes nothing at all
     store.put(bytes(2), bytes(20));
     store.promote();
     state.failNextCommit();
@@ -694,7 +695,7 @@ final class LayeredStoreCoordinatorTest {
       }
 
       // given -- the exact segment stacks the round will capture (actives are already frozen,
-      // so the prepare-freeze below is a no-op and captures precisely these)
+      // so the capture below carries no tip and consists of precisely these segments)
       final Map<String, List<FlatSegment>> capturedOldestFirst = new LinkedHashMap<>();
       stores.forEach(
           (name, store) -> {

@@ -482,6 +482,8 @@ public enum LayeredStateMetricsDoc implements ExtendedMeterDocumentation {
   public enum Layer {
     STAGING("staging"),
     ACTIVE("active"),
+    /** The raw captured tip of an in-flight persist round (the swapped-out active overlay) */
+    CAPTURED("captured"),
     PIPELINE("pipeline"),
     CLEAN("clean");
 
