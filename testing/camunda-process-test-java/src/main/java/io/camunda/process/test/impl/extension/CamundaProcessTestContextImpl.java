@@ -31,7 +31,6 @@ import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.filter.JobFilter;
-import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Incident;
@@ -307,7 +306,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     // completing the job inside the await block to handle the eventual consistency of the API
     awaitJob(
         jobSelector,
-        client,
         job -> {
           final String logPrefix =
               String.format(
@@ -399,7 +397,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
     awaitJob(
         jobSelector,
-        client,
         job -> {
           LOGGER.debug(
               "Mock: Throw BPMN error [{}, jobKey: '{}'] with error code {} and variables {}",
@@ -458,7 +455,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     // completing the user task inside the await block to handle the eventual consistency of the API
     awaitUserTask(
         userTaskSelector,
-        client,
         userTask -> {
           final String logPrefix =
               String.format(
@@ -557,7 +553,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
     awaitIncident(
         incidentSelector,
-        client,
         incident -> {
           final long incidentKey = incident.getIncidentKey();
 
@@ -590,7 +585,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     // completing the job inside the await block to handle the eventual consistency of the API
     awaitJob(
         JobSelectors.byJobKind(JobKind.AD_HOC_SUB_PROCESS).and(jobSelector),
-        client,
         job -> {
           LOGGER.debug(
               "Mock: Complete ad-hoc sub-process job [{}, jobKey: '{}'] with variables {}",
@@ -620,7 +614,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
     awaitProcessInstance(
         processInstanceSelector,
-        client,
         pi -> {
           LOGGER.debug(
               "Update variables for process instance [{}, processInstanceKey: '{}'] with variables {}",
@@ -661,12 +654,10 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
     awaitProcessInstance(
         processInstanceSelector,
-        client,
         pi ->
             awaitElementInstance(
                 pi.getProcessInstanceKey(),
                 elementSelector,
-                client,
                 ei -> {
                   LOGGER.debug(
                       "{} variables for element [{}, elementInstanceKey: '{}'] in process instance [processInstanceKey: '{}'] with variables {}",
@@ -693,7 +684,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     // completing the job inside the await block to handle the eventual consistency of the API
     awaitJob(
         JobSelectors.byJobKind(JobKind.TASK_LISTENER).and(jobSelector),
-        client,
         job -> {
           LOGGER.debug(
               "Mock: Complete user task listener job [{}, jobKey: '{}']",
@@ -725,7 +715,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
       final Function<Job, Map<String, Object>> variableResolver) {
     awaitJob(
         jobSelector,
-        client,
         job -> {
           final Map<String, Object> outputVariables = variableResolver.apply(job);
           LOGGER.debug(
@@ -744,7 +733,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
       final Function<UserTask, Map<String, Object>> variableResolver) {
     awaitUserTask(
         userTaskSelector,
-        client,
         userTask -> {
           final Map<String, Object> outputVariables = variableResolver.apply(userTask);
           LOGGER.debug(
@@ -761,9 +749,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   private void awaitUserTask(
-      final UserTaskSelector userTaskSelector,
-      final CamundaClient client,
-      final Consumer<UserTask> userTaskConsumer) {
+      final UserTaskSelector userTaskSelector, final Consumer<UserTask> userTaskConsumer) {
 
     awaitBehaviorSupplier
         .get()
@@ -788,8 +774,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
         .findFirst();
   }
 
-  private void awaitJob(
-      final JobSelector jobSelector, final CamundaClient client, final Consumer<Job> jobConsumer) {
+  private void awaitJob(final JobSelector jobSelector, final Consumer<Job> jobConsumer) {
 
     awaitBehaviorSupplier
         .get()
@@ -890,9 +875,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   private void awaitIncident(
-      final IncidentSelector incidentSelector,
-      final CamundaClient client,
-      final Consumer<Incident> incidentConsumer) {
+      final IncidentSelector incidentSelector, final Consumer<Incident> incidentConsumer) {
 
     awaitBehaviorSupplier
         .get()
@@ -919,8 +902,10 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
   private Optional<ProcessInstance> findProcessInstance(
       final ProcessInstanceSelector processInstanceSelector) {
-    final Consumer<ProcessInstanceFilter> filter = processInstanceSelector::applyFilter;
-    return dataSourceSupplier.get().findProcessInstances(filter).stream()
+    return dataSourceSupplier
+        .get()
+        .findProcessInstances(processInstanceSelector::applyFilter)
+        .stream()
         .filter(processInstanceSelector::test)
         .findFirst();
   }
@@ -938,7 +923,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
   private void awaitProcessInstance(
       final ProcessInstanceSelector processInstanceSelector,
-      final CamundaClient client,
       final Consumer<ProcessInstance> processInstanceConsumer) {
 
     awaitBehaviorSupplier
@@ -959,7 +943,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   private void awaitElementInstance(
       final long processInstanceKey,
       final ElementSelector elementSelector,
-      final CamundaClient client,
       final Consumer<ElementInstance> elementInstanceConsumer) {
 
     awaitBehaviorSupplier
