@@ -790,7 +790,7 @@ message UpdateJobRetriesRequest {
   // updates of leased jobs; this differs from lifecycle commands like complete, fail, and
   // throw-error, which always require a token for leased jobs. A job that was activated without a
   // lease requires no token.
-  string leaseToken = 4;
+  optional string leaseToken = 4;
 }
 
 message UpdateJobRetriesResponse {
@@ -832,7 +832,7 @@ message UpdateJobPriorityRequest {
   // updates of leased jobs; this differs from lifecycle commands like complete, fail, and
   // throw-error, which always require a token for leased jobs. A job that was activated without a
   // lease requires no token.
-  string leaseToken = 4;
+  optional string leaseToken = 4;
 }
 
 message UpdateJobPriorityResponse {
