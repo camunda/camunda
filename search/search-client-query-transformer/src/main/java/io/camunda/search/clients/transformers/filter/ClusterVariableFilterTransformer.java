@@ -154,7 +154,8 @@ public final class ClusterVariableFilterTransformer
       case GREATER_THAN_EQUALS -> gte(field, operation.value());
       case LOWER_THAN -> lt(field, operation.value());
       case LOWER_THAN_EQUALS -> lte(field, operation.value());
-      case LIKE -> wildcardQuery(field, (String) operation.value());
+      // LIKE operators only work for string fields i.e. only on METADATA_VALUE
+      case LIKE -> wildcardQuery(ClusterVariableIndex.METADATA_VALUE, (String) operation.value());
       case NOT_EXISTS -> not(exists(field));
     };
   }
