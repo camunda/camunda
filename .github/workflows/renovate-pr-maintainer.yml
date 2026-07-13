@@ -114,7 +114,7 @@ jobs:
 
     - name: Send stuck-PR Slack notification
       if: env.IS_WEEKLY_DIGEST == 'true' && steps.stuck.outputs.count != '0'
-      uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+      uses: slackapi/slack-github-action@fc46ded2fc4d7f11bfa62864526f920cf1a1167d # v3.0.4
       with:
         webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPOCI_WEBHOOK_URL }}
         webhook-type: incoming-webhook
@@ -181,7 +181,7 @@ jobs:
           secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPOCI_WEBHOOK_URL;
 
     - name: Send failure Slack notification
-      uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+      uses: slackapi/slack-github-action@fc46ded2fc4d7f11bfa62864526f920cf1a1167d # v3.0.4
       with:
         webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPOCI_WEBHOOK_URL }}
         webhook-type: incoming-webhook
