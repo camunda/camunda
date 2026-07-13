@@ -18,6 +18,8 @@ package io.camunda.zeebe.journal.file;
 import static io.camunda.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.spy;
 
 import io.camunda.zeebe.journal.JournalException.InvalidAsqn;
 import io.camunda.zeebe.journal.JournalException.OutOfDiskSpace;
@@ -918,6 +920,36 @@ class SegmentedJournalTest {
     assertThatThrownBy(() -> journal.append(4, journalFactory.entry()))
         .isInstanceOf(OutOfDiskSpace.class)
         .hasMessage("Nope, no free space.");
+  }
+
+  @Test
+  void shouldCloseSegmentsWhileHoldingWriteLock() {
+    // given
+    journalFactory = new TestJournalFactory("test", 2);
+    final var segments = spy(journalFactory.segmentsManager(directory));
+    final var barrier = new Phaser(2);
+    doAnswer(
+            invocation -> {
+              barrier.arriveAndAwaitAdvance(); // signal we are inside segments.close()
+              barrier.arriveAndAwaitAdvance(); // wait for the test to inspect the lock
+              return invocation.callRealMethod();
+            })
+        .when(segments)
+        .close();
+    journal = journalFactory.journal(segments);
+    journal.append(journalFactory.entry());
+
+    // when
+    final var closed = CompletableFuture.runAsync(() -> journal.close());
+
+    // then
+    barrier.arriveAndAwaitAdvance();
+    assertThat(journal.rwlock().isWriteLocked()).isTrue();
+    assertThat(journal.rwlock().tryReadLock())
+        .describedAs("a reader cannot acquire the read lock while close() unmaps segments")
+        .isZero();
+    barrier.arrive();
+    assertThat(closed).succeedsWithin(Duration.ofSeconds(5));
   }
 
   private SegmentedJournal openJournal(final int entriesPerSegment) {
