@@ -813,17 +813,6 @@ public final class LayeredKeyValueStore {
   }
 
   /**
-   * What {@link #beginPersist(long)} captured: the raw tip (the swapped-out active overlay's sorted
-   * index, immutable from the swap on; null when the overlay was empty) and the pipeline segments,
-   * oldest first. The tip map may be read from the drain thread — the hand-off of this record to it
-   * must be a safe publication.
-   */
-  public record PersistCapture(
-      @Nullable NavigableMap<byte[], Entry> tip,
-      long tipBytes,
-      List<FlatSegment> segmentsOldestFirst) {}
-
-  /**
    * On success, drops the persisting segments and the captured tip (raw or already materialized):
    * the delegate now holds the newest persisted version of every drained key, so reads fall through
    * to it and repopulate the clean cache lazily via normal read-through. Retirement is deliberately
@@ -888,14 +877,14 @@ public final class LayeredKeyValueStore {
     return List.copyOf(pipeline);
   }
 
-  // ------------------------------------------------------------------
-  // Accounting
-  // ------------------------------------------------------------------
-
   /** Approximate heap footprint of staging + active + captured tip + pipeline + clean together. */
   public long approximateBytes() {
     return stagingBytes + activeBytes + capturedBytes + pipelineBytes + cleanBytes;
   }
+
+  // ------------------------------------------------------------------
+  // Accounting
+  // ------------------------------------------------------------------
 
   /**
    * Approximate heap footprint of the pinned (not yet persisted) layers only: staging + active +
@@ -1001,10 +990,6 @@ public final class LayeredKeyValueStore {
     return entry.key().length + (entry.tombstone() ? 0 : entry.value().length);
   }
 
-  // ------------------------------------------------------------------
-  // Scan-merge helpers
-  // ------------------------------------------------------------------
-
   private static NavigableMap<byte[], Entry> prefixSelection(
       final TreeMap<byte[], Entry> sorted, final byte[] prefix) {
     if (prefix.length == 0) {
@@ -1013,6 +998,10 @@ public final class LayeredKeyValueStore {
     final byte[] upper = prefixSuccessor(prefix);
     return upper == null ? sorted.tailMap(prefix, true) : sorted.subMap(prefix, true, upper, false);
   }
+
+  // ------------------------------------------------------------------
+  // Scan-merge helpers
+  // ------------------------------------------------------------------
 
   /** The smallest key greater than every key prefixed by {@code prefix}; null for all-0xFF. */
   private static byte[] prefixSuccessor(final byte[] prefix) {
@@ -1025,4 +1014,15 @@ public final class LayeredKeyValueStore {
     }
     return null;
   }
+
+  /**
+   * What {@link #beginPersist(long)} captured: the raw tip (the swapped-out active overlay's sorted
+   * index, immutable from the swap on; null when the overlay was empty) and the pipeline segments,
+   * oldest first. The tip map may be read from the drain thread — the hand-off of this record to it
+   * must be a safe publication.
+   */
+  public record PersistCapture(
+      @Nullable NavigableMap<byte[], Entry> tip,
+      long tipBytes,
+      List<FlatSegment> segmentsOldestFirst) {}
 }

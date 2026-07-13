@@ -128,6 +128,31 @@ final class LayeredPersistIoActorTest {
   }
 
   @Test
+  void shouldResumePacedWaitPromptlyOnExpedite() {
+    // given a paced round parked between slices on a pacing wait spanning most of the window —
+    // on the controlled clock, which is never advanced, the timer alone would never fire
+    commitBatch(1, 100);
+    commitBatch(2, 200);
+    final PersistRound round = layered.defaultDomain().preparePersist(2, PersistTrigger.LADDER_70);
+    final DrainPacer pacer = new DrainPacer(Duration.ofHours(1).toNanos(), System.nanoTime());
+    final ActorFuture<Void> done = io.persist(round, pacer);
+    scheduler.workUntilDone();
+    assertThat(done.isDone()).isFalse();
+    assertThat(passThroughGet(2)).isNull();
+
+    // when the owner expedites mid-wait (memory pressure, or a snapshot/task awaiting the round)
+    pacer.expedite();
+    scheduler.workUntilDone();
+
+    // then the scheduled wait is cancelled and the drain resumes right away, flat-out — it must
+    // not sit out the pacing budget while someone waits on its completion
+    assertThat(done.isDone()).isTrue();
+    assertThat(done.isCompletedExceptionally()).isFalse();
+    layered.defaultDomain().completePersist(round, true);
+    assertThat(passThroughGet(2)).isEqualTo(200);
+  }
+
+  @Test
   void shouldFailInFlightRoundWhenClosingMidRound() {
     // given a paced round parked between slices on a long pacing wait
     commitBatch(1, 100);

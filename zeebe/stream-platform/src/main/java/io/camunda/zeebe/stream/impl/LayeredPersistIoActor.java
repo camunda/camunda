@@ -12,6 +12,7 @@ import io.camunda.zeebe.db.layered.LayeredStoreCoordinator.MergeRound;
 import io.camunda.zeebe.db.layered.LayeredStoreCoordinator.PersistRound;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.stream.impl.LayeredStatePersistence.PersistIo;
@@ -30,9 +31,12 @@ import org.slf4j.Logger;
  * configured minimum bytes commits its own batch as one actor job. Between slices the loop yields —
  * it re-submits itself to the <em>end</em> of this actor's queue when the pacer asks for no wait,
  * so a queued merge job interleaves between slices instead of waiting for the whole round, and it
- * re-schedules itself after the pacer's delay otherwise. Nothing ever blocks the actor thread. A
- * merge interleaving a round is safe: the merge's captured run is disjoint from the round's
- * segments, and both still execute on this single actor, never concurrently.
+ * re-schedules itself after the pacer's delay otherwise. A scheduled wait is held as a cancellable
+ * timer and wired as the pacer's {@link DrainPacer#onExpedite(Runnable) expedite hook}: one wait
+ * can span most of the pacing window, so an expedite cancels it and resumes the drain immediately
+ * instead of merely zeroing the budget of the <em>next</em> delay computation. Nothing ever blocks
+ * the actor thread. A merge interleaving a round is safe: the merge's captured run is disjoint from
+ * the round's segments, and both still execute on this single actor, never concurrently.
  *
  * <p>Safe off the owner thread by the round contracts: {@code persistSlice} and {@link
  * MergeRound#merge()} touch only the immutable captured structures (plus, for persists, the round's
@@ -51,6 +55,10 @@ final class LayeredPersistIoActor extends Actor implements PersistIo {
 
   private final long minSliceBytes;
   private CompletableActorFuture<Void> inFlightPersist;
+  // the pending pacing wait of the in-flight persist and its continuation, or null while none is
+  // pending; actor thread only — an expedite crosses threads through actor.run, never directly
+  private ScheduledTimer pacingWait;
+  private Runnable pacingResume;
 
   LayeredPersistIoActor(final PartitionId partitionId, final long minSliceBytes) {
     super("LayeredPersistIo", partitionId);
@@ -69,6 +77,10 @@ final class LayeredPersistIoActor extends Actor implements PersistIo {
     actor.call(
         () -> {
           inFlightPersist = done;
+          // an expedite must not sit out a wait this drain already scheduled: hop onto this
+          // actor (the hook fires on the owner thread) and cancel-and-resume it. Registered
+          // before the first slice, so no wait can ever be scheduled without the hook in place
+          pacer.onExpedite(() -> actor.run(this::skipPacingWait));
           drainSlice(round, pacer, done);
         });
     return done;
@@ -90,12 +102,45 @@ final class LayeredPersistIoActor extends Actor implements PersistIo {
         // end-of-queue on purpose: a queued merge job gets to run between two slices
         actor.submit(() -> drainSlice(round, pacer, done));
       } else {
-        actor.schedule(Duration.ofNanos(delayNanos), () -> drainSlice(round, pacer, done));
+        // held cancellable: an expedite arriving mid-wait resumes the drain via skipPacingWait.
+        // The resume is guarded by identity because cancel() is a no-op on a timer that already
+        // expired — an expedite racing the expiry could otherwise run the queued timer job on
+        // top of the already-resumed drain
+        final Runnable resume =
+            new Runnable() {
+              @Override
+              public void run() {
+                if (pacingResume != this) {
+                  return; // this wait was already resumed (expedited); ignore the late timer job
+                }
+                pacingWait = null;
+                pacingResume = null;
+                drainSlice(round, pacer, done);
+              }
+            };
+        pacingResume = resume;
+        pacingWait = actor.schedule(Duration.ofNanos(delayNanos), resume);
       }
     } catch (final Exception e) {
       inFlightPersist = null;
       done.completeExceptionally(e);
     }
+  }
+
+  /**
+   * Cancels a pending pacing wait and resumes the drain right away — the actor-side half of the
+   * pacer's expedite hook. A no-op while no wait is pending (the drain is mid-slice, already
+   * resumed, or the round is done), which also absorbs repeated expedites.
+   */
+  private void skipPacingWait() {
+    if (pacingWait == null) {
+      return;
+    }
+    final ScheduledTimer cancelled = pacingWait;
+    final Runnable resume = pacingResume;
+    cancelled.cancel();
+    // clears pacingWait/pacingResume itself before draining the next slice
+    resume.run();
   }
 
   /**
@@ -114,6 +159,11 @@ final class LayeredPersistIoActor extends Actor implements PersistIo {
 
   @Override
   protected void onActorClosing() {
+    if (pacingWait != null) {
+      pacingWait.cancel();
+      pacingWait = null;
+      pacingResume = null;
+    }
     if (inFlightPersist != null && !inFlightPersist.isDone()) {
       // a paced round's next slice would never run on a closed actor; fail the round now so the
       // driver completes it (segments stay buffered) while the processing actor is still alive

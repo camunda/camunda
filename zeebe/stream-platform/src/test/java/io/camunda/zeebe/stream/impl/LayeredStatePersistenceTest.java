@@ -656,6 +656,51 @@ final class LayeredStatePersistenceTest {
     assertThat(passThroughGet(2)).isNotNull();
   }
 
+  @Test
+  void shouldExpediteInFlightPacedRoundForSnapshotFlush() throws Exception {
+    // given a paced start-rung round in flight (60s pacing window — the budget clearly exceeds
+    // the test runtime, so an unexpedited drain would still be pacing)
+    recreateWithBatchFillFraction(0.8);
+    io.blockNextRound();
+    commitBatch(1, 100);
+    persistence.onBatchCommitted();
+    io.awaitRoundEntered();
+    assertThat(io.lastPacer().delayNanos(1.0, System.nanoTime())).isPositive();
+
+    // when a pre-snapshot flush starts awaiting the in-flight round
+    final CompletableActorFuture<Void> flushed = new CompletableActorFuture<>();
+    persistence.flushForSnapshot(flushed);
+
+    // then the drain is expedited — no wait at any progress — instead of making the snapshot
+    // sit out the pacing budget
+    assertThat(io.lastPacer().delayNanos(1.0, System.nanoTime())).isZero();
+    io.releaseRound();
+    runProcessorJobsUntil(flushed::isDone);
+    flushed.join();
+    assertThat(passThroughGet(1)).isEqualTo(100);
+  }
+
+  @Test
+  void shouldExpediteInFlightPacedRoundForScheduledTaskBarrier() throws Exception {
+    // given a paced start-rung round in flight (60s pacing window)
+    recreateWithBatchFillFraction(0.8);
+    io.blockNextRound();
+    commitBatch(1, 100);
+    persistence.onBatchCommitted();
+    io.awaitRoundEntered();
+    assertThat(io.lastPacer().delayNanos(1.0, System.nanoTime())).isPositive();
+
+    // when a scheduled task starts awaiting the in-flight round
+    final ActorFuture<Void> ready = persistence.prepareForScheduledTask();
+    assertThat(ready).isNotNull();
+
+    // then the drain is expedited — the task must not sit out the pacing budget
+    assertThat(io.lastPacer().delayNanos(1.0, System.nanoTime())).isZero();
+    io.releaseRound();
+    runProcessorJobsUntil(ready::isDone);
+    assertThat(passThroughGet(1)).isEqualTo(100);
+  }
+
   // ------------------------------------------------------------------
   // Off-thread pipeline merges
   // ------------------------------------------------------------------
@@ -1023,11 +1068,6 @@ final class LayeredStatePersistenceTest {
       return merged.get();
     }
 
-    @FunctionalInterface
-    private interface IoStep {
-      void run() throws Exception;
-    }
-
     /** The anchor (newest frozen watermark) of the round most recently handed to the IO thread. */
     long lastRoundAnchor() {
       return lastRoundAnchor.get();
@@ -1039,6 +1079,11 @@ final class LayeredStatePersistenceTest {
         releasableGate.countDown();
       }
       ioThread.shutdownNow();
+    }
+
+    @FunctionalInterface
+    private interface IoStep {
+      void run() throws Exception;
     }
   }
 }

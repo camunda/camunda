@@ -19,19 +19,6 @@ public final class DbLastProcessedPositionState implements MutableLastProcessedP
 
   private static final String LAST_PROCESSED_EVENT_KEY = "LAST_PROCESSED_EVENT_KEY";
   private static final long NO_EVENTS_PROCESSED = -1L;
-
-  /**
-   * The serialized bytes of the position key, exactly as the column family stores it — what the
-   * layered state store needs to designate the position entry as the recovery anchor's carrier.
-   */
-  public static byte[] serializedPositionKey() {
-    final DbString key = new DbString();
-    key.wrapString(LAST_PROCESSED_EVENT_KEY);
-    final byte[] bytes = new byte[key.getLength()];
-    key.write(new UnsafeBuffer(bytes), 0);
-    return bytes;
-  }
-
   private final DbString positionKey;
   private final LastProcessedPosition position = new LastProcessedPosition();
   private final ColumnFamily<DbString, LastProcessedPosition> positionColumnFamily;
@@ -43,6 +30,18 @@ public final class DbLastProcessedPositionState implements MutableLastProcessedP
     positionColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.DEFAULT, transactionContext, positionKey, position);
+  }
+
+  /**
+   * The serialized bytes of the position key, exactly as the column family stores it — what the
+   * layered state store needs to designate the position entry as the recovery anchor's carrier.
+   */
+  public static byte[] serializedPositionKey() {
+    final DbString key = new DbString();
+    key.wrapString(LAST_PROCESSED_EVENT_KEY);
+    final byte[] bytes = new byte[key.getLength()];
+    key.write(new UnsafeBuffer(bytes), 0);
+    return bytes;
   }
 
   @Override

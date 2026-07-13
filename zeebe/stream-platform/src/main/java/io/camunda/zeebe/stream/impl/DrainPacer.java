@@ -20,16 +20,24 @@ package io.camunda.zeebe.stream.impl;
  *
  * <p><b>Urgency hook:</b> {@link #expedite()} shortens the budget to zero mid-round, turning every
  * subsequent {@link #delayNanos(double, long)} into "no wait" — the owner pulls it when buffered
- * state runs over capacity while the round is in flight, so the drain finishes flat-out instead of
- * leisurely pacing while memory is under pressure.
+ * state runs over capacity while the round is in flight, or when a consumer (snapshot flush,
+ * scheduled-task barrier) starts awaiting the round's completion, so the drain finishes flat-out
+ * instead of leisurely pacing while someone needs it done. Shortening the budget alone cannot
+ * interrupt a wait the drain <em>already</em> scheduled — one wait can span most of the pacing
+ * window — so {@link #expedite()} additionally fires the driver's {@link #onExpedite(Runnable)}
+ * hook, which cancels the pending wait and resumes the drain right away.
  *
- * <p><b>Threading:</b> the drain thread calls {@link #delayNanos(double, long)}, the owner thread
- * may call {@link #expedite()} at any time; the budget is the only shared state and is volatile.
+ * <p><b>Threading:</b> the drain thread calls {@link #delayNanos(double, long)} and registers the
+ * {@link #onExpedite(Runnable)} hook, the owner thread may call {@link #expedite()} at any time;
+ * budget and hook are the only shared state and both are volatile. An expedite that races the
+ * hook's registration is never lost: the budget drops first, so a driver registering afterwards
+ * computes every delay against the zero budget and schedules no wait to begin with.
  */
 final class DrainPacer {
 
   private final long startNanos;
   private volatile long budgetNanos;
+  private volatile Runnable expediteListener;
 
   /**
    * @param budgetNanos the time budget of the whole drain, from {@code startNanos} on — typically
@@ -60,8 +68,25 @@ final class DrainPacer {
     return Math.max(0, resumeAt - elapsed);
   }
 
-  /** Drops the budget to zero: every subsequent delay is zero and the drain runs flat-out. */
+  /**
+   * Registers the drain driver's wake-up hook, invoked on every {@link #expedite()} so a pacing
+   * wait the driver already scheduled can be cancelled instead of sat out. May be invoked from the
+   * owner thread at any time, possibly more than once and possibly while no wait is pending — the
+   * hook must tolerate both (a resume with nothing pending is a no-op).
+   */
+  void onExpedite(final Runnable listener) {
+    expediteListener = listener;
+  }
+
+  /**
+   * Drops the budget to zero — every subsequent delay is zero and the drain runs flat-out — and
+   * wakes the driver so an already-scheduled wait is cancelled rather than sat out.
+   */
   void expedite() {
     budgetNanos = 0;
+    final Runnable listener = expediteListener;
+    if (listener != null) {
+      listener.run();
+    }
   }
 }

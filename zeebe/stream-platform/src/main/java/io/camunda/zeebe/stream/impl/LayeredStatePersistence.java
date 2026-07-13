@@ -322,7 +322,10 @@ final class LayeredStatePersistence {
       return;
     }
     if (roundInFlight()) {
-      // await the round already in flight before (or instead of) starting our own
+      // await the round already in flight before (or instead of) starting our own — expedited:
+      // the task is waiting on its completion, so a paced drain must stop pacing now instead of
+      // sitting out a wait that can span most of the pacing window
+      expediteInFlightRound();
       inFlightRound.onComplete(
           (failure, ignored) -> continueScheduledTaskPreparation(ready, roundRan), processor);
       return;
@@ -471,6 +474,9 @@ final class LayeredStatePersistence {
       return;
     }
     if (roundInFlight()) {
+      // the snapshot is waiting on the round's completion, so a paced drain must stop pacing
+      // now instead of sitting out a wait that can span most of the pacing window
+      expediteInFlightRound();
       inFlightRound.onComplete((failure, ignored) -> continueSnapshotFlush(flushed), processor);
       return;
     }
