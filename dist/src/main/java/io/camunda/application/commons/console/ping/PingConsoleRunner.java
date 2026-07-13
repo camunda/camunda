@@ -12,7 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.console.ping.PingConsoleRunner.ConsolePingConfiguration;
 import io.camunda.application.commons.console.ping.PingConsoleTask.LicensePayload;
-import io.camunda.service.ManagementServices;
+import io.camunda.service.LicenseService;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.util.Either;
@@ -47,7 +47,7 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
   private static final Logger LOGGER = LoggerFactory.getLogger(PingConsoleRunner.class);
   private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ISO_DATE_TIME;
   private final ConsolePingConfiguration pingConfiguration;
-  private final ManagementServices managementServices;
+  private final LicenseService licenseService;
   private Either<Exception, String> licensePayload;
   private final BrokerTopologyManager brokerTopologyManager;
   private final ApplicationContext applicationContext;
@@ -55,11 +55,11 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
   @Autowired
   public PingConsoleRunner(
       final ConsolePingConfiguration pingConfigurationProperties,
-      final ManagementServices managementServices,
+      final LicenseService licenseService,
       final ApplicationContext applicationContext,
       final BrokerTopologyManager brokerTopologyManager) {
     pingConfiguration = pingConfigurationProperties;
-    this.managementServices = managementServices;
+    this.licenseService = licenseService;
     this.applicationContext = applicationContext;
     this.brokerTopologyManager = brokerTopologyManager;
   }
@@ -174,12 +174,12 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
     final ObjectMapper objectMapper = new ObjectMapper();
     final LicensePayload.License license =
         new LicensePayload.License(
-            managementServices.isCamundaLicenseValid(),
-            managementServices.getCamundaLicenseType().toString(),
-            managementServices.isCommercialCamundaLicense(),
-            managementServices.getCamundaLicenseExpiresAt() == null
+            licenseService.isCamundaLicenseValid(),
+            licenseService.getCamundaLicenseType().toString(),
+            licenseService.isCommercialCamundaLicense(),
+            licenseService.getCamundaLicenseExpiresAt() == null
                 ? null
-                : DATE_TIME_FORMATTER.format(managementServices.getCamundaLicenseExpiresAt()));
+                : DATE_TIME_FORMATTER.format(licenseService.getCamundaLicenseExpiresAt()));
     final LicensePayload payload =
         new LicensePayload(
             license,

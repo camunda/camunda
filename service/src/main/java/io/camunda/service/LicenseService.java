@@ -11,11 +11,11 @@ import io.camunda.service.license.CamundaLicense;
 import io.camunda.service.license.LicenseType;
 import java.time.OffsetDateTime;
 
-public final class ManagementServices {
+public final class LicenseService {
 
   private final CamundaLicense license;
 
-  public ManagementServices(final CamundaLicense license) {
+  public LicenseService(final CamundaLicense license) {
     this.license = license;
   }
 

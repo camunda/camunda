@@ -27,7 +27,7 @@ import io.camunda.service.GlobalListenerServices;
 import io.camunda.service.GroupServices;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.JobServices;
-import io.camunda.service.ManagementServices;
+import io.camunda.service.LicenseService;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.MessageServices;
 import io.camunda.service.MessageSubscriptionServices;
@@ -124,5 +124,5 @@ public interface ServiceRegistry {
 
   // -- cluster-wide --
 
-  ManagementServices managementServices();
+  LicenseService licenseService();
 }

@@ -9,23 +9,23 @@
 package io.camunda.application.commons.service;
 
 import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.service.ManagementServices;
+import io.camunda.service.LicenseService;
 import io.camunda.service.license.CamundaLicense;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class ManagementServicesConfiguration {
+public class LicenseServiceConfiguration {
 
   private final UnifiedConfiguration unifiedConfiguration;
 
-  public ManagementServicesConfiguration(final UnifiedConfiguration unifiedConfiguration) {
+  public LicenseServiceConfiguration(final UnifiedConfiguration unifiedConfiguration) {
     this.unifiedConfiguration = unifiedConfiguration;
   }
 
   @Bean
-  public ManagementServices managementServices() {
-    return new ManagementServices(camundaLicense());
+  public LicenseService managementServices() {
+    return new LicenseService(camundaLicense());
   }
 
   @Bean

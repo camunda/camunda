@@ -16,7 +16,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.application.commons.console.ping.PingConsoleRunner.ConsolePingConfiguration;
-import io.camunda.service.ManagementServices;
+import io.camunda.service.LicenseService;
 import io.camunda.service.license.LicenseType;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -41,7 +41,7 @@ import org.springframework.core.env.Environment;
 @ExtendWith(MockitoExtension.class)
 class PingConsoleConfigurationTest {
 
-  private static final ManagementServices MANAGEMENT_SERVICES = mock(ManagementServices.class);
+  private static final LicenseService MANAGEMENT_SERVICES = mock(LicenseService.class);
   private static final Environment ENVIRONMENT = mock(Environment.class);
   private static final ApplicationContext APPLICATION_CONTEXT = mock(ApplicationContext.class);
   private static final BrokerTopologyManager BROKER_TOPOLOGY_MANAGER =

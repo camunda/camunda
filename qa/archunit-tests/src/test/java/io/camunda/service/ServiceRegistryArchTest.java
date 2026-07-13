@@ -63,7 +63,7 @@ public final class ServiceRegistryArchTest {
           .should(haveSingleStringParamOnAllTenantScopedAccessors())
           .because("tenant-scoped service accessors must be keyed by physicalTenantId");
 
-  static final Set<String> CLUSTER_WIDE_SERVICES = Set.of(ManagementServices.class.getName());
+  static final Set<String> CLUSTER_WIDE_SERVICES = Set.of(LicenseService.class.getName());
 
   // -- conditions --
 

@@ -27,7 +27,7 @@ import io.camunda.service.GlobalListenerServices;
 import io.camunda.service.GroupServices;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.JobServices;
-import io.camunda.service.ManagementServices;
+import io.camunda.service.LicenseService;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.MessageServices;
 import io.camunda.service.MessageSubscriptionServices;
@@ -86,7 +86,7 @@ public record DefaultServiceRegistry(
     Map<String, UserServices> userByTenant,
     Map<String, UserTaskServices> userTaskByTenant,
     Map<String, VariableServices> variableByTenant,
-    ManagementServices managementServices)
+    LicenseService licenseService)
     implements ServiceRegistry {
 
   private static <S> S byTenant(final Map<String, S> byTenant, final String physicalTenantId) {
@@ -270,8 +270,8 @@ public record DefaultServiceRegistry(
   }
 
   @Override
-  public ManagementServices managementServices() {
-    return managementServices;
+  public LicenseService licenseService() {
+    return licenseService;
   }
 
   /** Creates a {@link DefaultServiceRegistry} using the fluent {@link Builder} API. */
@@ -347,7 +347,7 @@ public record DefaultServiceRegistry(
     private final Map<String, UserServices> userByTenant = new HashMap<>();
     private final Map<String, UserTaskServices> userTaskByTenant = new HashMap<>();
     private final Map<String, VariableServices> variableByTenant = new HashMap<>();
-    private ManagementServices managementServices;
+    private LicenseService licenseService;
 
     public Builder adHocSubProcessActivityServices(
         final String tenantId, final AdHocSubProcessActivityServices service) {
@@ -532,8 +532,8 @@ public record DefaultServiceRegistry(
       return this;
     }
 
-    public Builder managementServices(final ManagementServices service) {
-      managementServices = service;
+    public Builder licenseServices(final LicenseService service) {
+      licenseService = service;
       return this;
     }
 
@@ -573,7 +573,7 @@ public record DefaultServiceRegistry(
           Map.copyOf(userByTenant),
           Map.copyOf(userTaskByTenant),
           Map.copyOf(variableByTenant),
-          managementServices);
+          licenseService);
     }
   }
 }

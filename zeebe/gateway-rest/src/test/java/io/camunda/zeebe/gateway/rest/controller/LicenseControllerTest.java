@@ -10,7 +10,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.service.ManagementServices;
+import io.camunda.service.LicenseService;
 import io.camunda.service.license.LicenseType;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
@@ -44,15 +44,15 @@ public class LicenseControllerTest extends RestControllerTest {
           "expiresAt": null
       }""";
 
-  @MockitoBean ManagementServices managementServices;
+  @MockitoBean LicenseService licenseService;
 
   @Test
   void shouldReturnProperSaaSResponse() {
     // given
-    when(managementServices.isCamundaLicenseValid()).thenReturn(true);
-    when(managementServices.getCamundaLicenseType()).thenReturn(LicenseType.SAAS);
-    when(managementServices.isCommercialCamundaLicense()).thenReturn(true);
-    when(managementServices.getCamundaLicenseExpiresAt())
+    when(licenseService.isCamundaLicenseValid()).thenReturn(true);
+    when(licenseService.getCamundaLicenseType()).thenReturn(LicenseType.SAAS);
+    when(licenseService.isCommercialCamundaLicense()).thenReturn(true);
+    when(licenseService.getCamundaLicenseExpiresAt())
         .thenReturn(OffsetDateTime.parse("2024-10-29T15:14:13Z"));
 
     // when / then
@@ -68,19 +68,19 @@ public class LicenseControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_LICENSE_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(managementServices).isCamundaLicenseValid();
-    verify(managementServices).getCamundaLicenseType();
-    verify(managementServices).isCommercialCamundaLicense();
-    verify(managementServices).getCamundaLicenseExpiresAt();
+    verify(licenseService).isCamundaLicenseValid();
+    verify(licenseService).getCamundaLicenseType();
+    verify(licenseService).isCommercialCamundaLicense();
+    verify(licenseService).getCamundaLicenseExpiresAt();
   }
 
   @Test
   void shouldReturnLicenseForPhysicalTenantPath() {
     // given
-    when(managementServices.isCamundaLicenseValid()).thenReturn(true);
-    when(managementServices.getCamundaLicenseType()).thenReturn(LicenseType.SAAS);
-    when(managementServices.isCommercialCamundaLicense()).thenReturn(true);
-    when(managementServices.getCamundaLicenseExpiresAt())
+    when(licenseService.isCamundaLicenseValid()).thenReturn(true);
+    when(licenseService.getCamundaLicenseType()).thenReturn(LicenseType.SAAS);
+    when(licenseService.isCommercialCamundaLicense()).thenReturn(true);
+    when(licenseService.getCamundaLicenseExpiresAt())
         .thenReturn(OffsetDateTime.parse("2024-10-29T15:14:13Z"));
 
     // when / then
@@ -96,19 +96,19 @@ public class LicenseControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_LICENSE_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(managementServices).isCamundaLicenseValid();
-    verify(managementServices).getCamundaLicenseType();
-    verify(managementServices).isCommercialCamundaLicense();
-    verify(managementServices).getCamundaLicenseExpiresAt();
+    verify(licenseService).isCamundaLicenseValid();
+    verify(licenseService).getCamundaLicenseType();
+    verify(licenseService).isCommercialCamundaLicense();
+    verify(licenseService).getCamundaLicenseExpiresAt();
   }
 
   @Test
   void shouldReturnWithoutExpirationDateWhenThereIsNoExpirationOnLicense() {
     // given
-    when(managementServices.isCamundaLicenseValid()).thenReturn(true);
-    when(managementServices.getCamundaLicenseType()).thenReturn(LicenseType.SAAS);
-    when(managementServices.isCommercialCamundaLicense()).thenReturn(true);
-    when(managementServices.getCamundaLicenseExpiresAt()).thenReturn(null);
+    when(licenseService.isCamundaLicenseValid()).thenReturn(true);
+    when(licenseService.getCamundaLicenseType()).thenReturn(LicenseType.SAAS);
+    when(licenseService.isCommercialCamundaLicense()).thenReturn(true);
+    when(licenseService.getCamundaLicenseExpiresAt()).thenReturn(null);
 
     // when / then
     webClient
@@ -123,9 +123,9 @@ public class LicenseControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_LICENSE_RESPONSE_NO_EXPIRATION, JsonCompareMode.STRICT);
 
-    verify(managementServices).isCamundaLicenseValid();
-    verify(managementServices).getCamundaLicenseType();
-    verify(managementServices).isCommercialCamundaLicense();
-    verify(managementServices).getCamundaLicenseExpiresAt();
+    verify(licenseService).isCamundaLicenseValid();
+    verify(licenseService).getCamundaLicenseType();
+    verify(licenseService).isCommercialCamundaLicense();
+    verify(licenseService).getCamundaLicenseExpiresAt();
   }
 }

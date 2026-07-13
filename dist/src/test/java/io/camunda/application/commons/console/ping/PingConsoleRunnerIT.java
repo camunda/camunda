@@ -22,7 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import io.camunda.application.commons.console.ping.PingConsoleRunner.ConsolePingConfiguration;
-import io.camunda.service.ManagementServices;
+import io.camunda.service.LicenseService;
 import io.camunda.service.license.LicenseType;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -47,7 +47,7 @@ public class PingConsoleRunnerIT {
       mock(ClusterConfiguration.class);
   private ApplicationContext applicationContext;
   private WireMockServer wireMockServer;
-  private ManagementServices managementServices;
+  private LicenseService licenseService;
 
   @BeforeEach
   void setup() {
@@ -89,10 +89,10 @@ public class PingConsoleRunnerIT {
 
     applicationContext = mock(ApplicationContext.class);
     final Environment environment = mock(Environment.class);
-    managementServices = mock(ManagementServices.class);
-    when(managementServices.getCamundaLicenseType()).thenReturn(LicenseType.SAAS);
-    when(managementServices.isCommercialCamundaLicense()).thenReturn(true);
-    when(managementServices.isCamundaLicenseValid()).thenReturn(true);
+    licenseService = mock(LicenseService.class);
+    when(licenseService.getCamundaLicenseType()).thenReturn(LicenseType.SAAS);
+    when(licenseService.isCommercialCamundaLicense()).thenReturn(true);
+    when(licenseService.isCamundaLicenseValid()).thenReturn(true);
     when(applicationContext.getEnvironment()).thenReturn(environment);
     when(environment.getActiveProfiles())
         .thenReturn(new String[] {"gateway", "broker", "identity"});
@@ -102,8 +102,7 @@ public class PingConsoleRunnerIT {
             true, URI.create(mockUrl), "test-cluster-name", pingPeriod, retryConfig, null);
 
     final PingConsoleRunner pingConsoleRunner =
-        new PingConsoleRunner(
-            config, managementServices, applicationContext, BROKER_TOPOLOGY_MANAGER);
+        new PingConsoleRunner(config, licenseService, applicationContext, BROKER_TOPOLOGY_MANAGER);
 
     // when
     pingConsoleRunner.run(null);

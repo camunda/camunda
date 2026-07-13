@@ -40,7 +40,7 @@ import io.camunda.service.GlobalListenerServices;
 import io.camunda.service.GroupServices;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.JobServices;
-import io.camunda.service.ManagementServices;
+import io.camunda.service.LicenseService;
 import io.camunda.service.MappingRuleServices;
 import io.camunda.service.MessageServices;
 import io.camunda.service.MessageSubscriptionServices;
@@ -121,7 +121,7 @@ public class CamundaServicesConfiguration {
       final BrokerTopologyManager brokerTopologyManager,
       final MeterRegistry meterRegistry,
       final Environment environment,
-      final ManagementServices managementServices,
+      final LicenseService licenseService,
       final ApiServicesExecutorProvider executor) {
 
     final int maxNameFieldLength = gatewayRestConfiguration.getMaxNameFieldLength();
@@ -129,7 +129,7 @@ public class CamundaServicesConfiguration {
         DatabaseTypeUtils.isSecondaryStorageEnabled(environment);
 
     final var builder = new DefaultServiceRegistry.Builder();
-    builder.managementServices(managementServices);
+    builder.licenseServices(licenseService);
 
     physicalTenantResolver
         .getAll()
