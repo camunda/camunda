@@ -7,6 +7,8 @@
  */
 
 import {render, screen} from 'modules/testing-library';
+import {waitFor} from '@testing-library/react';
+import {act} from 'react';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {ErrorBoundary} from 'react-error-boundary';
@@ -139,6 +141,47 @@ describe('<FilteredElementInstancesList />', () => {
 
     expect(await screen.findByText('No matching elements')).toBeInTheDocument();
     expect(screen.getByText('Try a different name or ID')).toBeInTheDocument();
+  });
+
+  it('does not blank the results-count live region while a background poll is in flight', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+
+    mockSearchElementInstances().withSuccess(
+      mockResponse([createMockElementInstance({elementInstanceKey: '100'})], 2),
+    );
+
+    render(
+      <FilteredElementInstancesList
+        searchText="order"
+        processInstanceKey={PROCESS_INSTANCE_KEY}
+        businessObjects={businessObjects}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('status')).toHaveTextContent(
+        '2 matching elements',
+      );
+    });
+
+    mockSearchElementInstances().withDelay(
+      mockResponse([createMockElementInstance({elementInstanceKey: '100'})], 3),
+    );
+
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+
+    expect(screen.getByRole('status')).toHaveTextContent('2 matching elements');
+
+    await waitFor(() => {
+      expect(screen.getByRole('status')).toHaveTextContent(
+        '3 matching elements',
+      );
+    });
+
+    vi.useRealTimers();
   });
 
   it('renders an error message on a non-permissions error', async () => {
