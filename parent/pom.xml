@@ -164,6 +164,7 @@
     <version.sqlformatter>2.0.5</version.sqlformatter>
     <version.caffeine>3.2.4</version.caffeine>
     <version.commons-collections>20040616</version.commons-collections>
+    <version.picocli>4.7.7</version.picocli>
 
     <version.commons-io>2.20.0</version.commons-io>
     <version.thymeleaf>3.1.5.RELEASE</version.thymeleaf>
@@ -2309,6 +2310,12 @@
         <groupId>io.camunda.migration</groupId>
         <artifactId>task-migration</artifactId>
         <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>info.picocli</groupId>
+        <artifactId>picocli</artifactId>
+        <version>${version.picocli}</version>
       </dependency>
 
     </dependencies>
