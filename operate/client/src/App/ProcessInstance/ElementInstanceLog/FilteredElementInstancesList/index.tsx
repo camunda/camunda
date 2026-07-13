@@ -25,7 +25,7 @@ import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {tracking} from 'modules/tracking';
 import {useElementInstancesSearchPaginated} from 'modules/queries/elementInstances/useElementInstancesSearchPaginated';
 import {flattenPaginatedPages} from 'modules/queries/flattenPaginatedPages';
-import {useDashboardScrollPagination} from 'App/Dashboard/useDashboardScrollPagination';
+import {useDashboardScrollPagination} from 'modules/hooks/useDashboardScrollPagination';
 import {escapeLikePattern} from 'modules/utils/escapeLikePattern';
 import {isRequestError} from 'modules/request';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';

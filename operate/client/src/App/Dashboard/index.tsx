@@ -22,7 +22,7 @@ import {
   PAGE_LIMIT as INCIDENT_PAGE_LIMIT,
 } from 'modules/queries/incidentStatistics/useIncidentProcessInstanceStatisticsByErrorPaginated';
 import {NoInstancesEmptyState} from './NoInstancesEmptyState';
-import {useDashboardScrollPagination} from './useDashboardScrollPagination';
+import {useDashboardScrollPagination} from 'modules/hooks/useDashboardScrollPagination';
 import {flattenPaginatedPages} from 'modules/queries/flattenPaginatedPages';
 
 const Dashboard: React.FC = () => {
