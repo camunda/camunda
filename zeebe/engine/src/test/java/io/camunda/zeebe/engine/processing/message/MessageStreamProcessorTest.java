@@ -112,6 +112,7 @@ public final class MessageStreamProcessorTest {
               typedRecordProcessors,
               processingState,
               scheduledTaskState,
+              null,
               spySubscriptionCommandSender,
               processingContext.getWriters(),
               DEFAULT_ENGINE_CONFIGURATION,

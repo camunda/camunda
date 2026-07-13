@@ -9,6 +9,7 @@ package io.camunda.zeebe.db.layered.typed;
 
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
+import io.camunda.zeebe.db.KeyValuePairVisitor;
 import io.camunda.zeebe.db.layered.ReadOnlyView;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -25,6 +26,8 @@ import java.util.function.BiConsumer;
  * storing.
  */
 public final class LayeredViewReader<KeyType extends DbKey, ValueType extends DbValue> {
+
+  private static final byte[] EMPTY_PREFIX = {};
 
   private final ReadOnlyView view;
   private final String storeName;
@@ -66,6 +69,36 @@ public final class LayeredViewReader<KeyType extends DbKey, ValueType extends Db
         TypedBytes.serialize(keyPrefix),
         (keyBytes, valueBytes) ->
             visitor.accept(
+                TypedBytes.wrapInto(keyInstance, keyBytes),
+                TypedBytes.wrapInto(valueInstance, valueBytes)));
+  }
+
+  /**
+   * Visits every visible entry in unsigned-byte key order until the visitor returns {@code false} —
+   * the view counterpart of {@link io.camunda.zeebe.db.ColumnFamily#whileTrue}. Key and value
+   * flyweights are re-wrapped per entry — copy before storing.
+   */
+  public void whileTrue(final KeyValuePairVisitor<KeyType, ValueType> visitor) {
+    whileEqualPrefix(EMPTY_PREFIX, visitor);
+  }
+
+  /**
+   * Visits every visible entry whose key starts with {@code keyPrefix}, in unsigned-byte key order,
+   * until the visitor returns {@code false}. Key and value flyweights are re-wrapped per entry —
+   * copy before storing.
+   */
+  public void whileEqualPrefix(
+      final DbKey keyPrefix, final KeyValuePairVisitor<KeyType, ValueType> visitor) {
+    whileEqualPrefix(TypedBytes.serialize(keyPrefix), visitor);
+  }
+
+  private void whileEqualPrefix(
+      final byte[] prefixBytes, final KeyValuePairVisitor<KeyType, ValueType> visitor) {
+    view.prefixScanWhileTrue(
+        storeName,
+        prefixBytes,
+        (keyBytes, valueBytes) ->
+            visitor.visit(
                 TypedBytes.wrapInto(keyInstance, keyBytes),
                 TypedBytes.wrapInto(valueInstance, valueBytes)));
   }

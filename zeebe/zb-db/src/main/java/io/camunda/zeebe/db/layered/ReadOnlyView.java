@@ -104,6 +104,29 @@ public final class ReadOnlyView {
   }
 
   /**
+   * Like {@link #prefixScan(String, byte[], BiConsumer)}, but the visitor may stop the scan early
+   * by returning {@code false} — the counterpart of the owner path's {@code whileTrue} iteration
+   * for view readers (e.g. a due-date scan that stops at the first not-yet-due entry). Early
+   * termination uses a cached, stackless sentinel exception because the underlying push-based
+   * streams cannot be stopped from a visitor.
+   */
+  public void prefixScanWhileTrue(
+      final String storeName, final byte[] prefix, final ScanVisitor visitor) {
+    try {
+      prefixScan(
+          storeName,
+          prefix,
+          (key, value) -> {
+            if (!visitor.visit(key, value)) {
+              throw StopVisitation.INSTANCE;
+            }
+          });
+    } catch (final StopVisitation stop) {
+      // the visitor requested termination; the scan state is local, nothing to unwind
+    }
+  }
+
+  /**
    * Adds one reference on the view's pinned snapshot, keeping it alive past the coordinator's next
    * rotation. Safe from any thread, but see {@link RefCountedSnapshot#retain()} for the
    * caller-holds-a-reference precondition; readers should acquire through {@link
@@ -138,5 +161,20 @@ public final class ReadOnlyView {
               .formatted(storeName, segmentsNewestFirstByStore.keySet()));
     }
     return segments;
+  }
+
+  /** A scan visitor that may stop the iteration early by returning {@code false}. */
+  @FunctionalInterface
+  public interface ScanVisitor {
+    boolean visit(byte[] key, byte[] value);
+  }
+
+  /** Cached, stackless control-flow sentinel — never observable outside this class. */
+  private static final class StopVisitation extends RuntimeException {
+    private static final StopVisitation INSTANCE = new StopVisitation();
+
+    private StopVisitation() {
+      super(null, null, false, false);
+    }
   }
 }

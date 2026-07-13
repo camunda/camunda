@@ -19,18 +19,21 @@ import org.springframework.util.unit.DataSize;
  * <p><b>Experimental — unsafe to enable in production.</b> When disabled (the default), the broker
  * behaves exactly as before. When enabled, the runtime RocksDB state trails the log by up to the
  * persist interval, so crash recovery replays a correspondingly larger window, and secondary
- * readers (e.g. the query API) observe state at persist-round freshness. Engine scheduled tasks
- * (timer/job checkers) are forced onto the stream processor's thread behind a persist barrier so
- * their state scans keep observing every committed batch; enabling the experimental async checker
- * feature flags together with this flag is unsupported.
+ * readers (e.g. the query API) observe state at persist-round freshness. The timer due-date and
+ * message-TTL checkers run asynchronously on read views of the buffered state, refreshed at the
+ * freeze interval and additionally right before each checker execution; the remaining engine
+ * scheduled tasks run on the stream processor's thread behind a persist barrier so their state
+ * scans keep observing every committed batch.
  */
 public final class LayeredStateCfg implements ConfigurationEntry {
 
   private static final Duration DEFAULT_PERSIST_INTERVAL = Duration.ofSeconds(1);
+  private static final Duration DEFAULT_FREEZE_INTERVAL = Duration.ofMillis(250);
   private static final DataSize DEFAULT_MAX_BYTES_PER_STORE = DataSize.ofMegabytes(16);
 
   private boolean enabled = false;
   private Duration persistInterval = DEFAULT_PERSIST_INTERVAL;
+  private Duration freezeInterval = DEFAULT_FREEZE_INTERVAL;
   private DataSize maxBytesPerStore = DEFAULT_MAX_BYTES_PER_STORE;
 
   public boolean isEnabled() {
@@ -49,6 +52,14 @@ public final class LayeredStateCfg implements ConfigurationEntry {
     this.persistInterval = persistInterval;
   }
 
+  public Duration getFreezeInterval() {
+    return freezeInterval;
+  }
+
+  public void setFreezeInterval(final Duration freezeInterval) {
+    this.freezeInterval = freezeInterval;
+  }
+
   public DataSize getMaxBytesPerStore() {
     return maxBytesPerStore;
   }
@@ -64,6 +75,8 @@ public final class LayeredStateCfg implements ConfigurationEntry {
         + enabled
         + ", persistInterval="
         + persistInterval
+        + ", freezeInterval="
+        + freezeInterval
         + ", maxBytesPerStore="
         + maxBytesPerStore
         + '}';

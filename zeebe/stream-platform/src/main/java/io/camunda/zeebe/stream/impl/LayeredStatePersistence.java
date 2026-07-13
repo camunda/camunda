@@ -17,23 +17,29 @@ import java.util.function.LongSupplier;
 import org.slf4j.Logger;
 
 /**
- * Drives the persist cadence of a {@link LayeredZeebeDb}'s engine domain on the stream processor's
- * actor thread (experimental; only active when the layered-state flag is on). All rounds run inline
- * and synchronously on that thread:
+ * Drives the persist and freeze cadences of a {@link LayeredZeebeDb}'s engine domain on the stream
+ * processor's actor thread (experimental; only active when the layered-state flag is on). All
+ * rounds run inline and synchronously on that thread:
  *
  * <ul>
- *   <li>{@link #onPeriodicTick()} — the regular cadence, invoked at the configured persist
+ *   <li>{@link #onPeriodicTick()} — the regular persist cadence, invoked at the configured persist
  *       interval; drains whenever anything is buffered.
+ *   <li>{@link #onFreezeTick()} — the freeze cadence, invoked at the configured freeze interval;
+ *       freezes the active overlays into pipeline segments and republishes the read view whenever
+ *       new batches were committed, bounding the staleness asynchronous view readers observe to
+ *       roughly the freeze interval.
  *   <li>{@link #onBatchCommitted()} — invoked after every committed processing batch; forces a
  *       round as soon as the buffered bytes exceed their budget.
  *   <li>{@link #tryPersistForSnapshot()} — invoked before a snapshot checkpoint so the durable
  *       store holds a cut at least as new as the position the snapshot will claim.
+ *   <li>{@link #tryFreezeForScheduledTask()} — invoked before an asynchronous checker executes, so
+ *       the view it acquires observes every batch committed before its execution.
  * </ul>
  *
- * <p>Rounds never run while a batch is in flight: a mid-batch freeze would have to include
- * uncommitted staging writes in a durable cut. Periodic and over-capacity rounds simply skip and
- * retry on their next occasion; the pre-snapshot round reports the conflict so the caller can retry
- * once the batch completed.
+ * <p>Neither rounds nor freezes run while a batch is in flight: a mid-batch cut would have to
+ * include uncommitted staging writes. Periodic ticks simply skip and retry on their next occasion;
+ * the pre-snapshot and pre-scheduled-task variants report the conflict so the caller can retry once
+ * the batch completed.
  */
 final class LayeredStatePersistence {
 
@@ -42,6 +48,7 @@ final class LayeredStatePersistence {
   private final LayeredDomain domain;
   private final LongSupplier lastProcessedPosition;
   private final Duration persistInterval;
+  private final Duration freezeInterval;
 
   /**
    * @param db the layered database the stream processor writes through
@@ -53,6 +60,7 @@ final class LayeredStatePersistence {
         Objects.requireNonNull(lastProcessedPosition, "lastProcessedPosition");
     domain = db.defaultDomain();
     persistInterval = db.config().persistInterval();
+    freezeInterval = db.config().freezeInterval();
     // build the coordinator eagerly: every layered column family must exist by now (they are all
     // created during recovery and record-processor init), and failing fast here beats failing on
     // the first persist round
@@ -63,12 +71,49 @@ final class LayeredStatePersistence {
     return persistInterval;
   }
 
+  Duration freezeInterval() {
+    return freezeInterval;
+  }
+
   /** The regular persist cadence; never throws — a failed round stays buffered and is retried. */
   void onPeriodicTick() {
     if (domain.batchInFlight() || !domain.hasBufferedWrites()) {
       return;
     }
     tryPersist(PersistTrigger.INTERVAL);
+  }
+
+  /**
+   * The regular freeze cadence: freezes the active overlays into pipeline segments and republishes
+   * the read view whenever batches were committed since the last freeze. Cheap — pointer swaps and
+   * flattens, no durable IO. Skips while a batch is in flight (staging must be empty on a freeze)
+   * and when there is nothing new to freeze; the next tick catches up.
+   */
+  void onFreezeTick() {
+    if (domain.batchInFlight() || !domain.hasActiveWrites()) {
+      return;
+    }
+    domain.freezeNow(lastProcessedPosition.getAsLong());
+  }
+
+  /**
+   * Freezes the active overlays right before an asynchronous checker executes, so the read view the
+   * checker acquires observes every batch committed before its execution — the freshness that keeps
+   * event-driven checkers from losing wake-ups (a scan that misses a committed-but-unfrozen timer
+   * could otherwise derive no next wake-up and never run again).
+   *
+   * @return false if a batch is in flight — its staging writes must never surface, so the caller
+   *     retries once the batch completed (matching today's semantics, where a checker's scan sees
+   *     committed batches only)
+   */
+  boolean tryFreezeForScheduledTask() {
+    if (domain.batchInFlight()) {
+      return false;
+    }
+    if (domain.hasActiveWrites()) {
+      domain.freezeNow(lastProcessedPosition.getAsLong());
+    }
+    return true;
   }
 
   /**

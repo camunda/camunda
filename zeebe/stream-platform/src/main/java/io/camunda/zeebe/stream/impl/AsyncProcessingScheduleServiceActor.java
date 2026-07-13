@@ -12,6 +12,7 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService;
+import java.util.function.Supplier;
 
 final class AsyncProcessingScheduleServiceActor extends Actor {
 
@@ -21,9 +22,13 @@ final class AsyncProcessingScheduleServiceActor extends Actor {
   public AsyncProcessingScheduleServiceActor(
       final String name,
       final ProcessingScheduleServiceFactory scheduleServiceFactory,
+      final Supplier<ActorFuture<Void>> taskFreshnessPreparation,
       final PartitionId partitionId) {
     super(name, partitionId);
     scheduleService = scheduleServiceFactory.create();
+    if (taskFreshnessPreparation != null) {
+      scheduleService.taskFreshnessPreparation(taskFreshnessPreparation);
+    }
   }
 
   @Override

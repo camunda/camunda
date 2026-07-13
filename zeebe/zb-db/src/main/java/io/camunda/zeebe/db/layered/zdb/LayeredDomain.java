@@ -166,6 +166,31 @@ public final class LayeredDomain {
     return storesByColumnFamily.values().stream().anyMatch(LayeredKeyValueStore::overCapacity);
   }
 
+  /**
+   * Whether any of this domain's stores holds committed writes in its active overlay — writes a
+   * {@link #freezeNow(long)} would make visible to read views.
+   */
+  public boolean hasActiveWrites() {
+    for (final LayeredKeyValueStore store : storesByColumnFamily.values()) {
+      if (store.hasActiveWrites()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Freezes every store's active overlay into a segment stamped {@code watermark} and republishes
+   * this domain's read view, making everything committed up to the watermark visible to view
+   * readers. Cheap — pointer swaps and flattens, no durable IO. Owner thread only; must not be
+   * called while {@link #batchInFlight()} is true (staging must be empty on a freeze).
+   *
+   * @param watermark the highest log position whose effects the active overlays contain
+   */
+  public void freezeNow(final long watermark) {
+    coordinator().freezeAll(watermark);
+  }
+
   /** Whether any of this domain's stores holds buffered writes not yet persisted. */
   public boolean hasBufferedWrites() {
     for (final LayeredKeyValueStore store : storesByColumnFamily.values()) {

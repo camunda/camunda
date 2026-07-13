@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
+import io.camunda.zeebe.db.layered.ViewPublisher;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
@@ -15,6 +16,7 @@ import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSen
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
+import io.camunda.zeebe.engine.state.message.LayeredViewMessageState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageCorrelationState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
@@ -42,6 +44,7 @@ public final class MessageEventProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final MutableProcessingState processingState,
       final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
+      final ViewPublisher stateViewPublisher,
       final SubscriptionCommandSender subscriptionCommandSender,
       final Writers writers,
       final EngineConfiguration config,
@@ -218,11 +221,19 @@ public final class MessageEventProcessors {
             MessageStartCorrelationKeyLockReleaseIntent.RELEASE,
             new MessageStartCorrelationKeyLockReleaseReleaseProcessor(
                 messageState, bpmnBehaviors.bufferedMessageStartEventBehavior(), writers))
+        // with the experimental layered-state flag on, the TTL checker runs asynchronously and
+        // scans read views of the buffered state — a separate transaction context would only see
+        // the persisted state and could delay expiry by the persist cadence
         .withListener(
-            new MessageTimeToLiveCheckScheduler(
-                config.getMessagesTtlCheckerInterval(),
-                featureFlags.enableMessageTTLCheckerAsync(),
-                scheduledTaskStateFactory.get().getMessageState()))
+            stateViewPublisher != null
+                ? new MessageTimeToLiveCheckScheduler(
+                    config.getMessagesTtlCheckerInterval(),
+                    true,
+                    new LayeredViewMessageState(stateViewPublisher))
+                : new MessageTimeToLiveCheckScheduler(
+                    config.getMessagesTtlCheckerInterval(),
+                    featureFlags.enableMessageTTLCheckerAsync(),
+                    scheduledTaskStateFactory.get().getMessageState()))
         .withListener(
             new PendingMessageSubscriptionCheckScheduler(
                 subscriptionCommandSender,

@@ -141,5 +141,11 @@ implicitly.
 
 Phases 1 and 2 of the store itself are complete in `zeebe/zb-db`
 (`io.camunda.zeebe.db.layered`: layer model, segment pipeline, persist rounds, views, decorator
-in `layered.zdb`), with the module's 686 tests green. Broker wiring (Phase A of D6) is follow-up
-work.
+in `layered.zdb`), with the module's tests green. Broker wiring (Phase A of D6) is in place behind
+the experimental `layeredState` flag. Phase B is partially rolled out: the timer due-date and
+message-TTL checkers consume `ReadOnlyView`s pinned by a real RocksDB snapshot source
+(`io.camunda.zeebe.db.impl.rocksdb.transaction.RocksDbPinnedSnapshotSource`), with views refreshed
+at a configurable freeze cadence and additionally frozen right before each checker execution so no
+committed wake-up can be missed. The remaining secondary readers (query service, position
+supplier, other engine schedulers) still read pass-through contexts at persist-round freshness —
+correctness-safe, flipped in a later step. Phase C (exporter domain) is follow-up work.

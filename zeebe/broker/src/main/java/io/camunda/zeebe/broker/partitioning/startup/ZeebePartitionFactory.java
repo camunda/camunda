@@ -239,8 +239,10 @@ public final class ZeebePartitionFactory {
    * The factory for the partition's runtime database. With the experimental layered-state flag on,
    * runtime databases are wrapped in a {@code LayeredZeebeDb}: the stream processor's writes are
    * buffered in memory and drained to RocksDB in periodic persist rounds, while all other consumers
-   * keep their pass-through behavior. Snapshot handling is unaffected — the wrapper checkpoints the
-   * wrapped RocksDB, and the snapshot director drains the buffer first.
+   * keep their pass-through behavior. Asynchronous checkers read views of the buffered state, so
+   * the factory receives the column family class to build a pinning snapshot source over the
+   * wrapped RocksDB. Snapshot handling is unaffected — the wrapper checkpoints the wrapped RocksDB,
+   * and the snapshot director drains the buffer first.
    */
   private ZeebeDbFactory<ZbColumnFamilies> runtimeDbFactory(
       final ZeebeDbFactory<ZbColumnFamilies> zeebeFactory) {
@@ -255,7 +257,9 @@ public final class ZeebePartitionFactory {
             layeredState.getMaxBytesPerStore().toBytes(),
             layeredDefaults.absorbDeletes(),
             layeredDefaults.pipelineSegmentLimit(),
-            layeredState.getPersistInterval()));
+            layeredState.getPersistInterval(),
+            layeredState.getFreezeInterval()),
+        ZbColumnFamilies.class);
   }
 
   private StateController createStateController(

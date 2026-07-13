@@ -51,6 +51,10 @@ public class ProcessingScheduleServiceImpl
   // invoked on this service's actor right before a task executes; returning false defers the
   // task until after the current processing batch (see taskExecutionBarrier(BooleanSupplier))
   private BooleanSupplier taskExecutionBarrier = () -> true;
+  // when set, every task execution first awaits the supplied future — used by the experimental
+  // layered-state wiring to freeze buffered state into a fresh read view before an async checker
+  // runs (see taskFreshnessPreparation(Supplier))
+  private Supplier<ActorFuture<Void>> taskFreshnessPreparation;
 
   public ProcessingScheduleServiceImpl(
       final Supplier<Phase> streamProcessorPhaseSupplier,
@@ -181,6 +185,19 @@ public class ProcessingScheduleServiceImpl
     taskExecutionBarrier = Objects.requireNonNull(barrier);
   }
 
+  /**
+   * Installs a preparation step awaited on this service's actor right before every task execution.
+   * Used by the experimental layered-state wiring on the asynchronous schedule services: the
+   * supplied future completes once the stream processor froze its buffered state into a fresh read
+   * view, so a view acquired by the task observes every batch committed before the task ran —
+   * exactly the freshness the task's state scans have without the layered buffer. The task executes
+   * either way once the future completes; a failed preparation only means a staler view, which is
+   * preferable to blocking all scheduled work. Must be set before the service is opened.
+   */
+  void taskFreshnessPreparation(final Supplier<ActorFuture<Void>> preparation) {
+    taskFreshnessPreparation = Objects.requireNonNull(preparation);
+  }
+
   Runnable guardRunnable(final Runnable task) {
     return new Runnable() {
       @Override
@@ -202,6 +219,13 @@ public class ProcessingScheduleServiceImpl
           // committed state cannot be made visible to the task right now (a processing batch is
           // in flight on this actor); run again once the batch completed
           actorControl.submit(this);
+          return;
+        }
+
+        if (taskFreshnessPreparation != null) {
+          // run only after the buffered state was frozen into a fresh read view; on preparation
+          // failure the task still runs — a staler view beats blocking all scheduled work
+          actorControl.runOnCompletion(taskFreshnessPreparation.get(), (ok, error) -> task.run());
           return;
         }
 
@@ -242,46 +266,61 @@ public class ProcessingScheduleServiceImpl
         return;
       }
 
-      final var stagedCache = commandCache.stage();
-      final var builder =
-          new BufferedTaskResultBuilder(logStreamWriter::canWriteEvents, stagedCache);
-      final var result = task.execute(builder);
-      final var recordBatch = result.getRecordBatch();
+      if (taskFreshnessPreparation != null) {
+        // run only after the buffered state was frozen into a fresh read view; on preparation
+        // failure the task still runs — a staler view beats blocking all scheduled work
+        actorControl.runOnCompletion(
+            taskFreshnessPreparation.get(), (ok, error) -> executeTask(task));
+        return;
+      }
 
-      // Persist before writing to ensure that we add to the cache before processing can remove it
-      // again.
-      stagedCache.persist();
-
-      // we need to retry the writing if the dispatcher return zero or negative position (this means
-      // it was full during writing)
-      // it will be freed from the LogStorageAppender concurrently, which means we might be able to
-      // write later
-      final var writeFuture =
-          writeRetryStrategy.runWithRetry(
-              () -> {
-                LOG.trace("Write scheduled TaskResult to dispatcher!");
-                if (recordBatch.isEmpty()) {
-                  return true;
-                }
-
-                return logStreamWriter
-                    .tryWrite(WriteContext.scheduled(), recordBatch.entries())
-                    .isRight();
-              },
-              abortCondition);
-
-      writeFuture.onComplete(
-          (v, t) -> {
-            if (t != null) {
-              stagedCache.rollback();
-              // todo handle error;
-              //   can happen if we tried to write a too big batch of records
-              //   this should resolve if we use the buffered writer were we detect these errors
-              //   earlier
-              LOG.warn("Writing of scheduled TaskResult failed!", t);
-            }
-          });
+      executeTask(task);
     };
+  }
+
+  private void executeTask(final Task task) {
+    if (abortCondition.getAsBoolean()) {
+      // it might be that we are closing, then we should just stop
+      return;
+    }
+    final var stagedCache = commandCache.stage();
+    final var builder = new BufferedTaskResultBuilder(logStreamWriter::canWriteEvents, stagedCache);
+    final var result = task.execute(builder);
+    final var recordBatch = result.getRecordBatch();
+
+    // Persist before writing to ensure that we add to the cache before processing can remove it
+    // again.
+    stagedCache.persist();
+
+    // we need to retry the writing if the dispatcher return zero or negative position (this means
+    // it was full during writing)
+    // it will be freed from the LogStorageAppender concurrently, which means we might be able to
+    // write later
+    final var writeFuture =
+        writeRetryStrategy.runWithRetry(
+            () -> {
+              LOG.trace("Write scheduled TaskResult to dispatcher!");
+              if (recordBatch.isEmpty()) {
+                return true;
+              }
+
+              return logStreamWriter
+                  .tryWrite(WriteContext.scheduled(), recordBatch.entries())
+                  .isRight();
+            },
+            abortCondition);
+
+    writeFuture.onComplete(
+        (v, t) -> {
+          if (t != null) {
+            stagedCache.rollback();
+            // todo handle error;
+            //   can happen if we tried to write a too big batch of records
+            //   this should resolve if we use the buffered writer were we detect these errors
+            //   earlier
+            LOG.warn("Writing of scheduled TaskResult failed!", t);
+          }
+        });
   }
 
   /** Note: this class has a natural ordering that is inconsistent with equals. */

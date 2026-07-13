@@ -521,6 +521,14 @@ public final class LayeredKeyValueStore {
     return !stagingByKey.isEmpty() || !activeByKey.isEmpty() || !pipeline.isEmpty();
   }
 
+  /**
+   * Whether the active overlay holds committed writes a {@link #freeze(long)} would capture —
+   * writes committed since the last freeze that read views cannot see yet.
+   */
+  public boolean hasActiveWrites() {
+    return !activeByKey.isEmpty();
+  }
+
   /** The watermark of the newest frozen segment, or -1 if the pipeline is empty. */
   public long newestSegmentWatermark() {
     return pipeline.isEmpty() ? -1 : pipeline.get(0).watermark();

@@ -127,6 +127,7 @@ final class EngineCfgTest {
     // then
     assertThat(layeredState.isEnabled()).isFalse();
     assertThat(layeredState.getPersistInterval()).isEqualTo(Duration.ofSeconds(1));
+    assertThat(layeredState.getFreezeInterval()).isEqualTo(Duration.ofMillis(250));
     assertThat(layeredState.getMaxBytesPerStore().toBytes()).isEqualTo(16 * 1024 * 1024L);
   }
 
@@ -141,6 +142,7 @@ final class EngineCfgTest {
     // then
     assertThat(layeredState.isEnabled()).isTrue();
     assertThat(layeredState.getPersistInterval()).isEqualTo(Duration.ofSeconds(5));
+    assertThat(layeredState.getFreezeInterval()).isEqualTo(Duration.ofMillis(100));
     assertThat(layeredState.getMaxBytesPerStore().toBytes()).isEqualTo(32 * 1024 * 1024L);
   }
 

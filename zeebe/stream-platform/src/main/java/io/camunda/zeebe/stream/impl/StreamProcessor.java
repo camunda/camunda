@@ -154,9 +154,11 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       final long snapshotPosition = recoverFromSnapshot();
 
       if (zeebeDb instanceof LayeredZeebeDb) {
-        // scheduled tasks read persisted state; with buffered (layered) state they must run on
-        // this actor behind a persist barrier (see initLayeredStatePersistence) so their scans
-        // observe every committed batch — otherwise event-driven checkers can lose wake-ups
+        // tasks scheduled through the sync API read persisted state, so they must run on this
+        // actor behind a persist barrier (see below) to observe every committed batch — otherwise
+        // event-driven checkers can lose wake-ups. Tasks scheduled through the async API run on
+        // their own actors behind a freeze preparation instead: buffered state is frozen into a
+        // fresh read view before each execution, giving view-reading checkers the same freshness
         streamProcessorContext.setEnableAsyncScheduledTasks(false);
       }
 
@@ -175,7 +177,10 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
       asyncScheduleServiceContext =
           new AsyncScheduleServiceContext(
-              actorSchedulingService, actorServiceFactory, streamProcessorContext.partitionId());
+              actorSchedulingService,
+              actorServiceFactory,
+              zeebeDb instanceof LayeredZeebeDb ? this::prepareViewForScheduledTask : null,
+              streamProcessorContext.partitionId());
 
       processorActorService = actorServiceFactory.create();
 
@@ -358,9 +363,10 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
                     .getLastProcessedPositionState()
                     .getLastSuccessfulProcessedRecordPosition());
     streamProcessorContext.batchCommittedListener(layeredStatePersistence::onBatchCommitted);
-    // scheduled directly on the actor (not the processing schedule service) so the cadence also
-    // covers the replay phase, where the layered context buffers writes too
+    // scheduled directly on the actor (not the processing schedule service) so the cadences also
+    // cover the replay phase, where the layered context buffers writes too
     scheduleLayeredPersistTick();
+    scheduleLayeredFreezeTick();
   }
 
   private void scheduleLayeredPersistTick() {
@@ -370,6 +376,45 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
           layeredStatePersistence.onPeriodicTick();
           scheduleLayeredPersistTick();
         });
+  }
+
+  private void scheduleLayeredFreezeTick() {
+    actor.schedule(
+        layeredStatePersistence.freezeInterval(),
+        () -> {
+          layeredStatePersistence.onFreezeTick();
+          scheduleLayeredFreezeTick();
+        });
+  }
+
+  /**
+   * Freezes the layered db's buffered state into a fresh read view; installed as the async schedule
+   * services' task preparation, so a view acquired by a scheduled task after the returned future
+   * completed observes every batch committed before the task ran. Waits for an in-flight batch to
+   * complete before freezing; completes immediately while recovery has not built the layered
+   * persistence yet (nothing is buffered then).
+   */
+  private ActorFuture<Void> prepareViewForScheduledTask() {
+    final CompletableActorFuture<Void> frozen = new CompletableActorFuture<>();
+    actor.run(() -> tryFreezeForScheduledTask(frozen));
+    return frozen;
+  }
+
+  private void tryFreezeForScheduledTask(final CompletableActorFuture<Void> frozen) {
+    try {
+      if (layeredStatePersistence == null) {
+        frozen.complete(null);
+        return;
+      }
+      if (!layeredStatePersistence.tryFreezeForScheduledTask()) {
+        // a batch is mid-flight on this actor; run again once it completed
+        actor.submit(() -> tryFreezeForScheduledTask(frozen));
+        return;
+      }
+      frozen.complete(null);
+    } catch (final Exception e) {
+      frozen.completeExceptionally(e);
+    }
   }
 
   /**
