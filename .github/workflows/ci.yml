@@ -2161,6 +2161,9 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   openapi-lint:
+    # Owner: CamundaEx
+    # Support: @camunda-ex-medic
+    # Slack team: #team-camunda-ex
     name: "Lint / C8 REST OpenAPI"
     if: needs.detect-changes.outputs.openapi-changes == 'true'
     needs: [ detect-changes ]
