@@ -45,8 +45,6 @@ const PreviewDocumentButton: React.FC<Props> = ({document, variableName}) => {
             renderIcon={View}
             iconDescription="Preview"
             tooltipPosition="top"
-            // @ts-expect-error - Solves rendering issues in `DocumentListModal`. Not exposed through TS but used at runtime.
-            autoAlign={true}
             aria-label={`Preview document for variable ${variableName}`}
             disabled={isDisabled}
             onClick={() => {

@@ -37,8 +37,6 @@ const DownloadDocumentButton: React.FC<Props> = ({document, variableName}) => {
       iconDescription="Download"
       tooltipPosition="top"
       tooltipAlignment="end"
-      // @ts-expect-error - Solves rendering issues in `DocumentListModal`. Not exposed through TS but used at runtime.
-      autoAlign={true}
       aria-label={`Download document for variable ${variableName}`}
       disabled={isDisabled}
       onClick={() => {
