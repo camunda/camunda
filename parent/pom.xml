@@ -180,6 +180,7 @@
     <version.commons-collections>20040616</version.commons-collections>
     <version.reflections>0.10.2</version.reflections>
     <version.hikari-cp>7.1.0</version.hikari-cp>
+    <version.picocli>4.7.7</version.picocli>
 
     <version.commons-io>2.22.0</version.commons-io>
     <version.thymeleaf>3.1.5.RELEASE</version.thymeleaf>
@@ -2318,6 +2319,12 @@
         <groupId>com.zaxxer</groupId>
         <artifactId>HikariCP</artifactId>
         <version>${version.hikari-cp}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>info.picocli</groupId>
+        <artifactId>picocli</artifactId>
+        <version>${version.picocli}</version>
       </dependency>
 
     </dependencies>

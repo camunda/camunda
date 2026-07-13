@@ -7,6 +7,7 @@ used by Camunda components, in particular related to Zeebe component.
 ## Scope
 
 - Inspect and print Camunda cluster topology files (e.g., `.topology.meta`)
+- Recover lost secondary-storage data (ES/OS) from a Zeebe primary-storage snapshot
 - Designed for advanced users, operators, and developers
 
 ## Usage
@@ -108,6 +109,64 @@ alias debug-cli="java -jar target/cdbg-${version}.jar"
   The full cluster runbook, including scripts to generate the Kubernetes Jobs that apply the fix
   to all broker PVCs, lives in
   [scripts/reset-incident-position](./scripts/reset-incident-position/README.md).
+
+#### `recover`
+
+- **Description:**
+  Recover secondary-storage (Elasticsearch/OpenSearch) data from Zeebe primary storage (a RocksDB
+  snapshot), for disaster recovery when secondary-storage documents have been lost.
+
+##### `recover process-definitions`
+
+- **Description:**
+  Re-export **ACTIVE** process definitions (and their embedded start forms) from a **partition-1**
+  snapshot into secondary storage. Partition 1 is the deployment partition, so its process state is
+  a complete superset of all deployments across all tenants, and every process-definition key is the
+  id of the corresponding secondary-storage document. The command drives the *real* exporter
+  handlers, so the recovered documents are identical to normally-exported ones.
+
+  The snapshot is read strictly read-only (copied into a throwaway runtime first), so the command can
+  be run **in-pod on a live broker** that hosts a partition-1 replica, leader or follower — **no
+  outage required**.
+  Definitions already present are skipped unless `--override` is given, so the command is idempotent
+  and safe to re-run. Standalone forms and DMN decisions are out of scope.
+
+- **Read options:**
+
+  - `-r`, `--root`: Path of the partition-1 directory (the folder containing `snapshots/`), e.g.
+    `<data>/raft-partition/partitions/1`.
+  - `-s`, `--snapshot`: Id of the snapshot directory to read (a sub-directory of `<root>/snapshots/`).
+  - `--runtime`: Optional temporary runtime directory the snapshot is copied into before reading. A
+    fresh temp directory is created and deleted automatically if omitted.
+- **Connection options** (default from the container env vars shown in parentheses):
+  - `--connect-type`: `elasticsearch`|`opensearch` (`CAMUNDA_DATABASE_TYPE`, default
+    `elasticsearch`).
+  - `--connect-url`: Secondary storage URL (`CAMUNDA_DATABASE_URL`, default `http://localhost:9200`).
+  - `--connect-username` / `--connect-password` (`CAMUNDA_DATABASE_USERNAME` /
+    `CAMUNDA_DATABASE_PASSWORD`).
+  - `--index-prefix`: Index prefix of the target installation (`CAMUNDA_DATABASE_INDEXPREFIX`). **This
+    is the main footgun** — a wrong prefix targets a non-existent index; the command **fails fast** if
+    the target process index does not already exist.
+  - TLS: `--connect-security-enabled`, `--connect-security-certificate-path`,
+    `--connect-security-verify-hostname`, `--connect-security-self-signed`.
+- **Behavior options:**
+  - `--override`: Rewrite definitions that already exist (default: only write missing ones).
+  - `--dry-run`: Compute and report the diff without writing anything.
+  - `--batch-size`: Definitions per bulk request (default `50`).
+- **Output:** human-readable progress and the final summary go to **stderr**; a machine-readable
+  summary line (`total=.. present=.. written=.. skipped=.. failed=..`) goes to **stdout**. Exit code
+  `0` on success, `2` if any definition failed to recover, `1` on a configuration/validation error.
+- **Example (in-pod, connection defaulted from the container env):**
+
+  ```
+  # find the latest partition-1 snapshot id
+  ls /usr/local/camunda/data/raft-partition/partitions/1/snapshots/
+
+  debug-cli recover process-definitions \
+    -r /usr/local/camunda/data/raft-partition/partitions/1 \
+    -s <snapshot-id> --dry-run
+  ```
+- **Note:** RDBMS secondary storage is not yet supported (Elasticsearch/OpenSearch only).
 
 #### `help`
 
