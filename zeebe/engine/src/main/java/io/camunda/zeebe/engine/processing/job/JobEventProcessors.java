@@ -12,7 +12,7 @@ import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
@@ -34,7 +34,7 @@ public final class JobEventProcessors {
       final JobProcessingMetrics jobMetrics,
       final EngineConfiguration config,
       final InstantSource clock,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final CslAuthorizationCheck cslCheck,
       final IncidentMetrics incidentMetrics) {
 
     final var keyGenerator = processingState.getKeyGenerator();
@@ -59,7 +59,7 @@ public final class JobEventProcessors {
                 writers,
                 jobMetrics,
                 eventHandle,
-                authCheckBehavior,
+                cslCheck,
                 bpmnBehaviors.variableBehavior(),
                 config.isIncludeVariablesInJobCompletedEvent()))
         .onCommand(
@@ -72,12 +72,12 @@ public final class JobEventProcessors {
                 jobMetrics,
                 jobBackoffChecker,
                 bpmnBehaviors,
-                authCheckBehavior,
+                cslCheck,
                 incidentMetrics))
         .onCommand(
             ValueType.JOB,
             JobIntent.YIELD,
-            new JobYieldProcessor(processingState, bpmnBehaviors, writers, authCheckBehavior))
+            new JobYieldProcessor(processingState, bpmnBehaviors, writers, cslCheck))
         .onCommand(
             ValueType.JOB,
             JobIntent.THROW_ERROR,
@@ -86,7 +86,7 @@ public final class JobEventProcessors {
                 bpmnBehaviors.eventPublicationBehavior(),
                 keyGenerator,
                 jobMetrics,
-                authCheckBehavior,
+                cslCheck,
                 writers,
                 incidentMetrics,
                 bpmnBehaviors.variableBehavior()))
@@ -124,7 +124,7 @@ public final class JobEventProcessors {
                 processingState,
                 processingState.getKeyGenerator(),
                 jobMetrics,
-                authCheckBehavior,
+                cslCheck,
                 clock,
                 incidentMetrics))
         .withListener(

@@ -8,12 +8,11 @@
 package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.security.configuration.EngineSecurityConfig;
-import io.camunda.security.core.authz.LazyTokenClaimsConverter;
-import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.adapter.AuthorizationScopeStateAdapter;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -52,8 +51,7 @@ public class AuthorizationCreateProcessor
       final KeyGenerator keyGenerator,
       final ProcessingState processingState,
       final CommandDistributionBehavior distributionBehavior,
-      final AuthorizationCheckPort authCheckPort,
-      final LazyTokenClaimsConverter claimsConverter,
+      final CslAuthorizationCheck cslCheck,
       final AuthorizationCheckBehavior authCheckBehavior,
       final EngineSecurityConfig securityConfig,
       final AuthorizationScopeStateAdapter authorizationScopeStateAdapter) {
@@ -64,8 +62,7 @@ public class AuthorizationCreateProcessor
     rejectionWriter = writers.rejection();
     sideEffectWriter = writers.sideEffect();
     authorizationCheckBehavior = authCheckBehavior;
-    permissionsBehavior =
-        new PermissionsBehavior(processingState, authCheckPort, claimsConverter, securityConfig);
+    permissionsBehavior = new PermissionsBehavior(processingState, cslCheck);
     authorizationEntityChecker = new AuthorizationEntityValidator(processingState, securityConfig);
     this.authorizationScopeStateAdapter = authorizationScopeStateAdapter;
   }

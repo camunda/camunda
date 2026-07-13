@@ -10,12 +10,12 @@ package io.camunda.zeebe.engine.processing;
 import static io.camunda.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.security.api.context.PropertyAuthorizationEvaluator;
+import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
-import io.camunda.security.core.authz.AuthorizationChecker;
-import io.camunda.security.core.authz.AuthorizationService;
-import io.camunda.security.core.authz.LazyTokenClaimsConverter;
-import io.camunda.security.core.authz.PropertyAuthorizationEvaluatorRegistry;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.security.core.authz.AuthorizationPortsFactory;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
@@ -62,6 +62,7 @@ import io.camunda.zeebe.engine.processing.identity.RoleProcessors;
 import io.camunda.zeebe.engine.processing.identity.adapter.AuthorizationScopeStateAdapter;
 import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
 import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
@@ -175,6 +176,74 @@ public final class EngineProcessors {
         new AsyncRequestBehavior(processingState.getKeyGenerator(), writers.state());
     final var transientProcessMessageSubscriptionState =
         typedRecordProcessorContext.getTransientProcessMessageSubscriptionState();
+
+    // Build CSL authorization ports for identity, UserTask, and Job domain processors
+    final var membershipStateAdapter =
+        new MembershipStateAdapter(
+            processingState.getMappingRuleState(), processingState.getMembershipState(), config);
+    final var authorizationScopeStateAdapter =
+        new AuthorizationScopeStateAdapter(processingState.getAuthorizationState(), config);
+    final var ports =
+        AuthorizationPortsFactory.create(
+            authorizationScopeStateAdapter,
+            membershipStateAdapter,
+            List.of(
+                new PropertyAuthorizationEvaluator<UserTaskRecord>() {
+                  @Override
+                  public String propertyName() {
+                    return RequiredAuthorization.PROP_ASSIGNEE;
+                  }
+
+                  @Override
+                  public boolean isAuthorized(
+                      final CamundaAuthentication auth, final UserTaskRecord ctx) {
+                    final String assignee = ctx.getAssignee();
+                    return assignee != null
+                        && !assignee.isEmpty()
+                        && assignee.equals(auth.authenticatedUsername());
+                  }
+                },
+                new PropertyAuthorizationEvaluator<UserTaskRecord>() {
+                  @Override
+                  public String propertyName() {
+                    return RequiredAuthorization.PROP_CANDIDATE_USERS;
+                  }
+
+                  @Override
+                  public boolean isAuthorized(
+                      final CamundaAuthentication auth, final UserTaskRecord ctx) {
+                    final var candidateUsers = ctx.getCandidateUsersList();
+                    return candidateUsers != null
+                        && candidateUsers.contains(auth.authenticatedUsername());
+                  }
+                },
+                new PropertyAuthorizationEvaluator<UserTaskRecord>() {
+                  @Override
+                  public String propertyName() {
+                    return RequiredAuthorization.PROP_CANDIDATE_GROUPS;
+                  }
+
+                  @Override
+                  public boolean isAuthorized(
+                      final CamundaAuthentication auth, final UserTaskRecord ctx) {
+                    final var candidateGroups = ctx.getCandidateGroupsList();
+                    if (candidateGroups == null || candidateGroups.isEmpty()) {
+                      return false;
+                    }
+                    final var groupIds = auth.authenticatedGroupIds();
+                    return groupIds != null
+                        && groupIds.stream().anyMatch(candidateGroups::contains);
+                  }
+                }),
+            securityConfig.isAuthorizationsEnabled(),
+            securityConfig.isMultiTenancyChecksEnabled(),
+            Authorization.AUTHORIZED_USERNAME,
+            Authorization.AUTHORIZED_CLIENT_ID,
+            false);
+    final var authzService = ports.checkPort();
+    final var claimsConverter = ports.claimsResolver();
+    final var cslCheck = new CslAuthorizationCheck(authzService, claimsConverter, securityConfig);
+
     final BpmnBehaviorsImpl bpmnBehaviors =
         createBehaviors(
             processingState,
@@ -191,7 +260,8 @@ public final class EngineProcessors {
             expressionLanguageMetrics,
             config,
             incidentMetrics,
-            featureFlags.evaluateBoundaryEventCorrelationKeyInActivityScope());
+            featureFlags.evaluateBoundaryEventCorrelationKeyInActivityScope(),
+            cslCheck);
 
     typedRecordProcessors.withListener(bpmnBehaviors.incidentBehavior());
 
@@ -270,12 +340,12 @@ public final class EngineProcessors {
         jobMetrics,
         config,
         clock,
-        authCheckBehavior,
+        cslCheck,
         incidentMetrics);
 
     final var userTaskProcessor =
         createUserTaskProcessor(
-            processingState, bpmnBehaviors, writers, asyncRequestBehavior, authCheckBehavior);
+            processingState, bpmnBehaviors, writers, asyncRequestBehavior, cslCheck);
     addUserTaskProcessors(typedRecordProcessors, userTaskProcessor);
 
     addIncidentProcessors(
@@ -313,28 +383,7 @@ public final class EngineProcessors {
         partitionsCount,
         config);
 
-    final var membershipStateAdapter =
-        new MembershipStateAdapter(
-            processingState.getMappingRuleState(), processingState.getMembershipState(), config);
-    final var authorizationScopeStateAdapter =
-        new AuthorizationScopeStateAdapter(processingState.getAuthorizationState(), config);
-    final var authorizationChecker = new AuthorizationChecker(authorizationScopeStateAdapter);
-    final var claimsConverter =
-        new LazyTokenClaimsConverter(
-            Authorization.AUTHORIZED_USERNAME,
-            Authorization.AUTHORIZED_CLIENT_ID,
-            false,
-            membershipStateAdapter);
-    final var propertyEvaluatorRegistry = new PropertyAuthorizationEvaluatorRegistry(List.of());
-    final var authzService =
-        new AuthorizationService(
-            authorizationChecker,
-            propertyEvaluatorRegistry,
-            securityConfig.isAuthorizationsEnabled(),
-            securityConfig.isMultiTenancyChecksEnabled(),
-            claimsConverter);
-    final var permissionsBehavior =
-        new PermissionsBehavior(processingState, authzService, claimsConverter, securityConfig);
+    final var permissionsBehavior = new PermissionsBehavior(processingState, cslCheck);
 
     UserProcessors.addUserProcessors(
         keyGenerator,
@@ -360,8 +409,7 @@ public final class EngineProcessors {
         commandDistributionBehavior,
         authCheckBehavior,
         securityConfig,
-        authzService,
-        claimsConverter,
+        cslCheck,
         authorizationScopeStateAdapter);
 
     ScalingProcessors.addScalingProcessors(
@@ -461,9 +509,9 @@ public final class EngineProcessors {
   }
 
   /**
-   * Wires the identity/authorization subsystem: builds the CSL {@link AuthorizationService}
-   * together with its supporting state adapters and claims converter, then registers the
-   * authorization command processors on the given {@link TypedRecordProcessors}.
+   * Wires the identity/authorization subsystem: builds the CSL authorization graph via {@link
+   * AuthorizationPortsFactory} and registers the authorization command processors on the given
+   * {@link TypedRecordProcessors}.
    */
   private static void addIdentityProcessors(
       final KeyGenerator keyGenerator,
@@ -473,8 +521,7 @@ public final class EngineProcessors {
       final CommandDistributionBehavior commandDistributionBehavior,
       final AuthorizationCheckBehavior authCheckBehavior,
       final EngineSecurityConfig securityConfig,
-      final AuthorizationService authzService,
-      final LazyTokenClaimsConverter claimsConverter,
+      final CslAuthorizationCheck cslCheck,
       final AuthorizationScopeStateAdapter authorizationScopeStateAdapter) {
     AuthorizationProcessors.addAuthorizationProcessors(
         keyGenerator,
@@ -482,8 +529,7 @@ public final class EngineProcessors {
         processingState,
         writers,
         commandDistributionBehavior,
-        authzService,
-        claimsConverter,
+        cslCheck,
         authCheckBehavior,
         securityConfig,
         authorizationScopeStateAdapter);
@@ -491,8 +537,7 @@ public final class EngineProcessors {
     GroupProcessors.addGroupProcessors(
         typedRecordProcessors,
         processingState,
-        authzService,
-        claimsConverter,
+        cslCheck,
         keyGenerator,
         writers,
         commandDistributionBehavior,
@@ -501,8 +546,7 @@ public final class EngineProcessors {
     RoleProcessors.addRoleProcessors(
         typedRecordProcessors,
         processingState,
-        authzService,
-        claimsConverter,
+        cslCheck,
         keyGenerator,
         writers,
         commandDistributionBehavior,
@@ -511,12 +555,10 @@ public final class EngineProcessors {
     MappingRuleProcessors.addMappingRuleProcessors(
         typedRecordProcessors,
         processingState,
-        authzService,
-        claimsConverter,
+        cslCheck,
         keyGenerator,
         writers,
-        commandDistributionBehavior,
-        securityConfig);
+        commandDistributionBehavior);
   }
 
   private static TypedRecordProcessor<UserTaskRecord> createUserTaskProcessor(
@@ -524,7 +566,7 @@ public final class EngineProcessors {
       final BpmnBehaviorsImpl bpmnBehaviors,
       final Writers writers,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final CslAuthorizationCheck cslCheck) {
     return new UserTaskProcessor(
         processingState,
         processingState.getUserTaskState(),
@@ -532,7 +574,7 @@ public final class EngineProcessors {
         bpmnBehaviors,
         writers,
         asyncRequestBehavior,
-        authCheckBehavior);
+        cslCheck);
   }
 
   private static BpmnBehaviorsImpl createBehaviors(
@@ -550,7 +592,8 @@ public final class EngineProcessors {
       final ExpressionLanguageMetrics expressionLanguageMetrics,
       final EngineConfiguration config,
       final IncidentMetrics incidentMetrics,
-      final boolean evaluateBoundaryEventCorrelationKeyInActivityScope) {
+      final boolean evaluateBoundaryEventCorrelationKeyInActivityScope,
+      final CslAuthorizationCheck cslCheck) {
     return new BpmnBehaviorsImpl(
         processingState,
         writers,
@@ -566,7 +609,8 @@ public final class EngineProcessors {
         expressionLanguageMetrics,
         config,
         incidentMetrics,
-        evaluateBoundaryEventCorrelationKeyInActivityScope);
+        evaluateBoundaryEventCorrelationKeyInActivityScope,
+        cslCheck);
   }
 
   private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(

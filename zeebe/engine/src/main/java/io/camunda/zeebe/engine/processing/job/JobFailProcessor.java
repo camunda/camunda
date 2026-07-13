@@ -11,6 +11,7 @@ import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MAX_ERROR_MESS
 import static io.camunda.zeebe.util.StringUtil.limitString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
@@ -19,8 +20,8 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.common.ValidationException;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -37,10 +38,8 @@ import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
@@ -61,7 +60,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
   private final JobBackoffCheckScheduler jobBackoffChecker;
   private final VariableBehavior variableBehavior;
   private final BpmnJobActivationBehavior jobActivationBehavior;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
   private final SideEffectWriter sideEffectWriter;
   private final JobCommandPreconditionValidator preconditionChecker;
   private final ElementInstanceState elementInstanceState;
@@ -75,7 +74,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
       final JobProcessingMetrics jobMetrics,
       final JobBackoffCheckScheduler jobBackoffChecker,
       final BpmnBehaviors bpmnBehaviors,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final CslAuthorizationCheck cslCheck,
       final IncidentMetrics incidentMetrics) {
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
@@ -86,7 +85,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
     sideEffectWriter = writers.sideEffect();
     variableBehavior = bpmnBehaviors.variableBehavior();
     jobActivationBehavior = bpmnBehaviors.jobActivationBehavior();
-    this.authCheckBehavior = authCheckBehavior;
+    this.cslCheck = cslCheck;
     preconditionChecker =
         new JobCommandPreconditionValidator(
             jobState,
@@ -94,7 +93,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
             "fail",
             List.of(State.ACTIVATABLE, State.ACTIVATED),
             List.of(JobLeaseFencingCheck.forLifecycleCommand()),
-            authCheckBehavior);
+            cslCheck);
     this.keyGenerator = keyGenerator;
     this.jobBackoffChecker = jobBackoffChecker;
     this.jobMetrics = jobMetrics;
@@ -223,14 +222,11 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
 
   private Either<Rejection, JobRecord> checkAuthorization(
       final TypedRecord<JobRecord> command, final JobRecord job) {
-    final var request =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
-            .tenantId(job.getTenantId())
-            .addResourceId(job.getBpmnProcessId())
-            .build();
-    return authCheckBehavior.isAuthorizedOrInternalCommand(request).map(unused -> job);
+    return cslCheck.check(
+        command,
+        RequiredAuthorization.of(
+            b -> b.processDefinition().updateProcessInstance().resourceId(job.getBpmnProcessId())),
+        job,
+        AuthorizationRejectionMapper.noPrincipal());
   }
 }

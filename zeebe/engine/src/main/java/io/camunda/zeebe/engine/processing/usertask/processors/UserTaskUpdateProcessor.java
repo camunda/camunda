@@ -7,13 +7,14 @@
  */
 package io.camunda.zeebe.engine.processing.usertask.processors;
 
-import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationHelper.buildProcessDefinitionRequest;
-import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationHelper.buildUserTaskRequest;
+import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationCheck.TaskProperties.ALL;
+import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationCheck.processDefinition;
+import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationCheck.userTask;
 
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.ValidationException;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -47,35 +48,36 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
   private final TypedResponseWriter responseWriter;
   private final VariableBehavior variableBehavior;
   private final AsyncRequestBehavior asyncRequestBehavior;
-  private final AuthorizationCheckBehavior authCheckBehavior;
   private final UserTaskCommandPreconditionValidator commandChecker;
+  private final UserTaskAuthorizationCheck userTaskAuth;
 
   public UserTaskUpdateProcessor(
       final ProcessingState state,
       final Writers writers,
       final VariableBehavior variableBehavior,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final CslAuthorizationCheck cslCheck,
+      final UserTaskAuthorizationCheck userTaskAuth) {
     stateWriter = writers.state();
     variableState = state.getVariableState();
     asyncRequestState = state.getAsyncRequestState();
     this.variableBehavior = variableBehavior;
     this.asyncRequestBehavior = asyncRequestBehavior;
-    this.authCheckBehavior = authCheckBehavior;
+    this.userTaskAuth = userTaskAuth;
     responseWriter = writers.response();
     commandChecker =
         new UserTaskCommandPreconditionValidator(
             List.of(LifecycleState.CREATED),
             "update",
             state.getUserTaskState(),
-            authCheckBehavior,
+            cslCheck,
             state.getBannedInstanceState());
   }
 
   @Override
   public Either<Rejection, UserTaskRecord> validateCommand(
       final TypedRecord<UserTaskRecord> command) {
-    return commandChecker.validate(command, userTask -> checkAuthorization(command, userTask));
+    return commandChecker.validate(command, task -> checkAuthorization(command, task));
   }
 
   @Override
@@ -186,11 +188,11 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
 
   private Either<Rejection, UserTaskRecord> checkAuthorization(
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord persistedUserTask) {
-    return authCheckBehavior
-        .isAnyAuthorizedOrInternalCommand(
-            buildProcessDefinitionRequest(
-                command, persistedUserTask, PermissionType.UPDATE_USER_TASK),
-            buildUserTaskRequest(command, persistedUserTask, PermissionType.UPDATE))
-        .map(ignored -> persistedUserTask);
+    // PD.UPDATE_USER_TASK OR UT.UPDATE (by id or task property)
+    return userTaskAuth.check(
+        command,
+        persistedUserTask,
+        processDefinition(PermissionType.UPDATE_USER_TASK),
+        userTask(PermissionType.UPDATE, ALL));
   }
 }

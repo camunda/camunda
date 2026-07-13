@@ -7,13 +7,10 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.core.auth.RequiredAuthorization;
-import io.camunda.security.core.authz.LazyTokenClaimsConverter;
-import io.camunda.security.core.port.in.AuthorizationCheckPort;
-import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.state.authorization.PersistedAuthorization;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -46,19 +43,12 @@ public class PermissionsBehavior {
   private static final Logger LOG = Loggers.ENGINE_IDENTITY_LOGGER;
 
   private final AuthorizationState authorizationState;
-  private final AuthorizationCheckPort authCheckPort;
-  private final LazyTokenClaimsConverter claimsConverter;
-  private final EngineSecurityConfig securityConfig;
+  private final CslAuthorizationCheck cslCheck;
 
   public PermissionsBehavior(
-      final ProcessingState processingState,
-      final AuthorizationCheckPort authCheckPort,
-      final LazyTokenClaimsConverter claimsConverter,
-      final EngineSecurityConfig securityConfig) {
+      final ProcessingState processingState, final CslAuthorizationCheck cslCheck) {
     authorizationState = processingState.getAuthorizationState();
-    this.authCheckPort = authCheckPort;
-    this.claimsConverter = claimsConverter;
-    this.securityConfig = securityConfig;
+    this.cslCheck = cslCheck;
   }
 
   public Either<Rejection, AuthorizationRecord> isAuthorized(
@@ -83,59 +73,21 @@ public class PermissionsBehavior {
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType,
       final String resourceId) {
-    if (command.isInternalCommand()) {
-      LOG.trace("Skipping authorization check for internal command {}", command.getIntent());
-      return Either.right(command.getValue());
-    }
-    final var authorizations = command.getAuthorizations();
-    if (Boolean.TRUE.equals(authorizations.get(Authorization.AUTHORIZED_ANONYMOUS_USER))) {
-      LOG.trace(
-          "Skipping authorization check for anonymous user on command {}", command.getIntent());
-      return Either.right(command.getValue());
-    }
-    if (!securityConfig.isAuthorizationsEnabled()
-        && !securityConfig.isMultiTenancyChecksEnabled()) {
-      LOG.trace(
-          "Skipping authorization check for command {}: security disabled", command.getIntent());
-      return Either.right(command.getValue());
-    }
-    if (authorizations.get(Authorization.AUTHORIZED_USERNAME) == null
-        && authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) == null) {
-      // No principal identity present: the CSL claims converter would throw. Mirror main's
-      // non-throwing contract — authorize when authorization checks are disabled (these identity
-      // resources are not tenant-owned, so the multi-tenancy check is a no-op), otherwise reject.
-      if (!securityConfig.isAuthorizationsEnabled()) {
-        return Either.right(command.getValue());
-      }
-      LOG.debug(
-          "Rejecting command {}: neither username nor clientId claim is present",
-          command.getIntent());
-      return Either.left(AuthorizationRejectionMapper.forbidden(permissionType, resourceType));
-    }
     LOG.trace(
         "Checking {} permission on {} resource for command {}",
         permissionType,
         resourceType,
         command.getIntent());
-    final var auth = claimsConverter.convert(authorizations);
     final var cslPermType = AuthzModelMapper.fromProtocol(permissionType);
     final var cslResourceType = AuthzModelMapper.fromProtocol(resourceType);
-    final var result =
-        authCheckPort.check(
-            auth,
-            RequiredAuthorization.of(
-                b ->
-                    b.resourceType(cslResourceType)
-                        .permissionType(cslPermType)
-                        .resourceId(resourceId)));
-    if (result.isLeft()) {
-      LOG.debug(
-          "Authorization check rejected for command {}: {}",
-          command.getIntent(),
-          result.leftValue());
-      return Either.left(AuthorizationRejectionMapper.toRejection(result.leftValue()));
-    }
-    return Either.right(command.getValue());
+    return cslCheck.check(
+        command,
+        RequiredAuthorization.of(
+            b ->
+                b.resourceType(cslResourceType).permissionType(cslPermType).resourceId(resourceId)),
+        command.getValue(),
+        AuthorizationRejectionMapper.forbidden(permissionType, resourceType),
+        AuthorizationRejectionMapper::toBareRejection);
   }
 
   public Either<Rejection, PersistedAuthorization> authorizationExists(

@@ -20,6 +20,18 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <!--
       Test-jar dependencies so arch rules can scan test classes from other modules:
       - camunda-qa-acceptance-tests-tests.jar: classes annotated with @MultiDbTest
