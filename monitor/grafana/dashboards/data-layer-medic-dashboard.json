@@ -1121,367 +1121,6 @@
         "x": 0,
         "y": 60
       },
-      "id": 286,
-      "panels": [],
-      "title": "Latency Load Tests",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "red",
-                "value": 5
-              }
-            ]
-          },
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 11,
-        "w": 8,
-        "x": 0,
-        "y": 61
-      },
-      "id": 327,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "max"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.4.1",
-      "targets": [
-        {
-          "adhocFilters": [],
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.99,sum by (le, namespace) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"$prefix.*-latency\"}[$__rate_interval])))",
-          "fromExploreMetrics": true,
-          "interval": "",
-          "legendFormat": "{{namespace}}",
-          "range": true,
-          "refId": "starter_data_availability_latency_seconds_bucket-p99-histogram_quantile"
-        }
-      ],
-      "title": "Data availability latency p99",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 11,
-        "w": 8,
-        "x": 8,
-        "y": 61
-      },
-      "id": 333,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "max"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.4.1",
-      "targets": [
-        {
-          "adhocFilters": [],
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.9,sum by (le, namespace) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"$prefix.*-latency\"}[$__rate_interval])))",
-          "fromExploreMetrics": true,
-          "interval": "",
-          "legendFormat": "{{namespace}}",
-          "range": true,
-          "refId": "starter_data_availability_latency_seconds_bucket-p90-histogram_quantile"
-        }
-      ],
-      "title": "Data availability latency p90",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 11,
-        "w": 8,
-        "x": 16,
-        "y": 61
-      },
-      "id": 319,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "max"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.4.1",
-      "targets": [
-        {
-          "adhocFilters": [],
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "editorMode": "code",
-          "expr": "histogram_quantile(0.5,sum by (le, namespace) (rate(starter_data_availability_latency_seconds_bucket{namespace=~\"$prefix.*-latency\"}[$__rate_interval])))",
-          "fromExploreMetrics": true,
-          "interval": "",
-          "legendFormat": "{{namespace}}",
-          "range": true,
-          "refId": "starter_data_availability_latency_seconds_bucket-p50-histogram_quantile"
-        }
-      ],
-      "title": "Data availability latency p50",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": 0
-              },
-              {
-                "color": "green",
-                "value": 0.9
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 72
-      },
-      "id": 330,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "mean"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.4.1",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "editorMode": "code",
-          "expr": "sum(rate(zeebe_camunda_exporter_archiver_process_instances_total{namespace=~\"$prefix.*-latency\", state=\"archived\"}[$__rate_interval])) by (namespace)",
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Archiving rate",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 72
-      },
-      "id": 331,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "percentChangeColorMode": "standard",
-        "reduceOptions": {
-          "calcs": [
-            "mean"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "showPercentChange": false,
-        "textMode": "auto",
-        "wideLayout": true
-      },
-      "pluginVersion": "12.4.1",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"$prefix.*-latency\", action=\"completed\", type=\"PROCESS\"}[$__rate_interval])) by (namespace)",
-          "legendFormat": "__auto",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "PI Completion rate",
-      "type": "stat"
-    },
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 80
-      },
       "id": 284,
       "panels": [],
       "title": "Medic Load Tests Health",
@@ -1521,7 +1160,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 81
+        "y": 61
       },
       "id": 39,
       "options": {
@@ -1564,7 +1203,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 90
+        "y": 70
       },
       "id": 290,
       "panels": [],
@@ -1603,7 +1242,7 @@
         "h": 11,
         "w": 8,
         "x": 0,
-        "y": 91
+        "y": 71
       },
       "id": 332,
       "options": {
@@ -1675,7 +1314,7 @@
         "h": 11,
         "w": 8,
         "x": 8,
-        "y": 91
+        "y": 71
       },
       "id": 323,
       "options": {
@@ -1747,7 +1386,7 @@
         "h": 11,
         "w": 8,
         "x": 16,
-        "y": 91
+        "y": 71
       },
       "id": 335,
       "options": {
@@ -1818,7 +1457,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 102
+        "y": 82
       },
       "id": 334,
       "options": {
@@ -1882,7 +1521,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 102
+        "y": 82
       },
       "id": 336,
       "options": {
