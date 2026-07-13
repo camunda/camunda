@@ -11,6 +11,7 @@ import io.camunda.zeebe.db.layered.LayeredStateMetricsDoc.ElisionReason;
 import io.camunda.zeebe.db.layered.LayeredStateMetricsDoc.Layer;
 import io.camunda.zeebe.db.layered.LayeredStateMetricsDoc.LayeredStateKeyNames;
 import io.camunda.zeebe.db.layered.LayeredStateMetricsDoc.ReadSource;
+import io.camunda.zeebe.db.layered.LayeredStateMetricsDoc.WriteKind;
 import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
@@ -35,7 +36,7 @@ final class MicrometerLayeredStoreMetrics implements LayeredStoreMetrics {
   private final Counter drainSkippedTombstones;
   private final Counter cleanCacheHits;
   private final Counter delegateReadThroughs;
-  private final Counter flushedPointReads;
+  private final Counter[] flushedPointReadsByKind;
   private final Counter pipelineMerges;
   private final Counter pipelineMergesSkipped;
   private final Counter[] roundsByTrigger;
@@ -56,7 +57,12 @@ final class MicrometerLayeredStoreMetrics implements LayeredStoreMetrics {
         elisionCounter(LayeredStateMetricsDoc.WRITES_ELIDED, ElisionReason.DRAIN_SKIPPED);
     cleanCacheHits = readCounter(LayeredStateMetricsDoc.READS, ReadSource.CLEAN_CACHE);
     delegateReadThroughs = readCounter(LayeredStateMetricsDoc.READS, ReadSource.DELEGATE);
-    flushedPointReads = counter(LayeredStateMetricsDoc.FLUSHED_POINT_READS);
+    final WriteKind[] writeKinds = WriteKind.values();
+    flushedPointReadsByKind = new Counter[writeKinds.length];
+    for (final WriteKind kind : writeKinds) {
+      flushedPointReadsByKind[kind.ordinal()] =
+          writeKindCounter(LayeredStateMetricsDoc.FLUSHED_POINT_READS, kind);
+    }
     pipelineMerges = counter(LayeredStateMetricsDoc.PIPELINE_MERGES);
     pipelineMergesSkipped = counter(LayeredStateMetricsDoc.PIPELINE_MERGES_SKIPPED);
     final PersistTrigger[] triggers = PersistTrigger.values();
@@ -101,8 +107,8 @@ final class MicrometerLayeredStoreMetrics implements LayeredStoreMetrics {
   }
 
   @Override
-  public void countFlushedPointRead() {
-    flushedPointReads.increment();
+  public void countFlushedPointRead(final WriteKind kind) {
+    flushedPointReadsByKind[kind.ordinal()].increment();
   }
 
   @Override
@@ -250,6 +256,12 @@ final class MicrometerLayeredStoreMetrics implements LayeredStoreMetrics {
   private Counter elisionCounter(final ExtendedMeterDocumentation doc, final ElisionReason reason) {
     return counterBuilder(doc)
         .tag(LayeredStateKeyNames.ELISION_REASON.asString(), reason.getLabel())
+        .register(registry);
+  }
+
+  private Counter writeKindCounter(final ExtendedMeterDocumentation doc, final WriteKind kind) {
+    return counterBuilder(doc)
+        .tag(LayeredStateKeyNames.WRITE_KIND.asString(), kind.getLabel())
         .register(registry);
   }
 

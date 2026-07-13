@@ -31,7 +31,7 @@ public interface LayeredStoreMetrics {
   void countDelegateReadThrough();
 
   /** Counts a delegate point read made to compute an exact flushed flag at write time. */
-  void countFlushedPointRead();
+  void countFlushedPointRead(LayeredStateMetricsDoc.WriteKind kind);
 
   /** Counts an in-memory merge collapsing a pipeline back under its segment limit. */
   void countPipelineMerge();
@@ -109,7 +109,7 @@ public interface LayeredStoreMetrics {
     public void countDelegateReadThrough() {}
 
     @Override
-    public void countFlushedPointRead() {}
+    public void countFlushedPointRead(final LayeredStateMetricsDoc.WriteKind kind) {}
 
     @Override
     public void countPipelineMerge() {}

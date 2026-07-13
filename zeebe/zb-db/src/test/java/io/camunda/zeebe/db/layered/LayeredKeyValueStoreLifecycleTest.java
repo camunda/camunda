@@ -401,6 +401,32 @@ final class LayeredKeyValueStoreLifecycleTest {
   }
 
   @Test
+  void shouldBreakDownFlushedProbesByWriteKind() {
+    // given -- a metered store over an empty delegate
+    final var registry = new SimpleMeterRegistry();
+    final LayeredKeyValueStore store =
+        new LayeredKeyValueStore(
+            STORE,
+            state.store(STORE),
+            1024 * 1024,
+            false,
+            10,
+            LayeredStoreMetrics.of(registry, "t"));
+
+    // when -- a blind put and a blind delete of keys unknown to every in-memory layer
+    store.put(bytes("fresh-put"), bytes("v"));
+    store.delete(bytes("blind-delete"));
+
+    // then -- each paid one flushed probe, attributed to its write kind
+    assertThat(flushedProbes(registry, "put")).isEqualTo(1);
+    assertThat(flushedProbes(registry, "delete")).isEqualTo(1);
+  }
+
+  private static double flushedProbes(final SimpleMeterRegistry registry, final String kind) {
+    return registry.get("zeebe.db.layered.flushed.point.reads").tag("kind", kind).counter().count();
+  }
+
+  @Test
   void shouldServePersistedValueAfterEarlierCachedNegative() {
     // given -- a read miss cached a negative, then the key is written and fully persisted
     final CountingBytesStore counting = new CountingBytesStore(state.store(STORE));

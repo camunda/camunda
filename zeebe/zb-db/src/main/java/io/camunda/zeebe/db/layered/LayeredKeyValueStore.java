@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.db.layered;
 
+import io.camunda.zeebe.db.layered.LayeredStateMetricsDoc.WriteKind;
 import io.camunda.zeebe.db.layered.segment.ChunkPool;
 import io.camunda.zeebe.db.layered.segment.ChunkWriter;
 import io.camunda.zeebe.db.layered.segment.FlatSegment;
@@ -256,7 +257,8 @@ public final class LayeredKeyValueStore {
         cleanHit != null
             ? cleanHit != NEGATIVE
             : (replacedStaging != null && replacedStaging.flushed())
-                || flushedBelowStaging(mapKey, key);
+                || flushedBelowStaging(
+                    mapKey, key, value == null ? WriteKind.DELETE : WriteKind.PUT);
     final Entry entry = new Entry(key, value, flushed);
     stagingByKey.put(mapKey, entry);
     stagingSorted.put(key, entry);
@@ -276,7 +278,8 @@ public final class LayeredKeyValueStore {
    * sound without any read-before-delete contract on callers; in practice the layers above absorb
    * the cost, since keys are typically read (and clean-cached) before being mutated.
    */
-  private boolean flushedBelowStaging(final ByteBuffer mapKey, final byte[] key) {
+  private boolean flushedBelowStaging(
+      final ByteBuffer mapKey, final byte[] key, final WriteKind kind) {
     final Entry activeEntry = activeByKey.get(mapKey);
     if (activeEntry != null) {
       // a never-flushed active put does not count: it may still annihilate with a later delete
@@ -288,7 +291,7 @@ public final class LayeredKeyValueStore {
         return !segment.tombstoneAt(index) || segment.flushedAt(index);
       }
     }
-    metrics.countFlushedPointRead();
+    metrics.countFlushedPointRead(kind);
     return delegate.get(key) != null;
   }
 

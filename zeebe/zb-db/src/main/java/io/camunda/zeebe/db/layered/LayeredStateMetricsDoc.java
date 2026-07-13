@@ -289,12 +289,14 @@ public enum LayeredStateMetricsDoc implements ExtendedMeterDocumentation {
     @Override
     public String getDescription() {
       return "Durable-store point reads made at write time to compute the exact flushed flag of"
-          + " a key unknown to every in-memory layer";
+          + " a key unknown to every in-memory layer, by the kind of write that paid the probe";
     }
 
     @Override
     public KeyName[] getKeyNames() {
-      return DOMAIN_ONLY;
+      return new KeyName[] {
+        LayeredStateKeyNames.DOMAIN, LayeredStateKeyNames.WRITE_KIND,
+      };
     }
   },
   /** Deepest segment pipeline across the domain's stores */
@@ -451,6 +453,13 @@ public enum LayeredStateMetricsDoc implements ExtendedMeterDocumentation {
       public String asString() {
         return "source";
       }
+    },
+    /** The kind of write that needed a flushed flag, one of {@link WriteKind} */
+    WRITE_KIND {
+      @Override
+      public String asString() {
+        return "kind";
+      }
     }
   }
 
@@ -480,6 +489,22 @@ public enum LayeredStateMetricsDoc implements ExtendedMeterDocumentation {
     private final String label;
 
     ElisionReason(final String label) {
+      this.label = label;
+    }
+
+    public String getLabel() {
+      return label;
+    }
+  }
+
+  /** Values of the {@link LayeredStateKeyNames#WRITE_KIND} tag. */
+  public enum WriteKind {
+    PUT("put"),
+    DELETE("delete");
+
+    private final String label;
+
+    WriteKind(final String label) {
       this.label = label;
     }
 
