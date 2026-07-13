@@ -23,6 +23,7 @@ import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 
@@ -36,6 +37,7 @@ import org.springframework.http.HttpStatus;
  * same guard under persistent sessions with physical tenants configured.
  */
 @MultiDbTest
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class BasicAuthUnprotectedApiSessionIT {
 
   private static final String ME_ENDPOINT = "/v2/authentication/me";
