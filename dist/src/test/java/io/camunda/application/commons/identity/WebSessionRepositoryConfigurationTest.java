@@ -14,7 +14,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
 import io.camunda.authentication.config.spi.PhysicalTenantScopedSessionStorePortProvider;
-import io.camunda.authentication.config.spi.PhysicalTenantSessionStoreAdapter;
+import io.camunda.authentication.config.spi.SessionStoreAdapter;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.db.rdbms.sql.PersistentWebSessionMapper;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
@@ -82,7 +82,7 @@ class WebSessionRepositoryConfigurationTest {
               assertThat(ctx).hasSingleBean(PhysicalTenantScopedPersistentWebSessionClient.class);
               assertThat(ctx)
                   .getBean(SessionStorePort.class)
-                  .isInstanceOf(PhysicalTenantSessionStoreAdapter.class);
+                  .isInstanceOf(SessionStoreAdapter.class);
               final var provider =
                   ctx.getBean(PhysicalTenantScopedPersistentWebSessionClient.class);
               assertThat(provider.withPhysicalTenant(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
@@ -142,7 +142,7 @@ class WebSessionRepositoryConfigurationTest {
               assertThat(ctx).hasSingleBean(PhysicalTenantScopedPersistentWebSessionClient.class);
               assertThat(ctx)
                   .getBean(SessionStorePort.class)
-                  .isInstanceOf(PhysicalTenantSessionStoreAdapter.class);
+                  .isInstanceOf(SessionStoreAdapter.class);
               final var provider =
                   ctx.getBean(PhysicalTenantScopedPersistentWebSessionClient.class);
               assertThat(provider.withPhysicalTenant(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))

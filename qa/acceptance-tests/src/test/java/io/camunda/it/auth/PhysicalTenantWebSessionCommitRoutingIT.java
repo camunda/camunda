@@ -91,9 +91,11 @@ public class PhysicalTenantWebSessionCommitRoutingIT {
               });
 
   @Test
-  void defaultPathSessionIsCommittedReusedAndInvalidatedOnLogout() {
+  void shouldCommitReuseAndInvalidateDefaultPathSessionOnLogout() {
+    // given
     try (final var loggedIn =
         CAMUNDA.newWebappClient().logIn(DEFAULT_USER_USERNAME, DEFAULT_USER_PASSWORD)) {
+      // when / then
       assertAuthenticated(loggedIn, "first request must commit the session to the default store");
       assertAuthenticated(
           loggedIn, "second request must reuse the committed default-store session");
@@ -105,7 +107,8 @@ public class PhysicalTenantWebSessionCommitRoutingIT {
   }
 
   @Test
-  void physicalTenantSessionIsCommittedReusedAndInvalidatedOnLogout() {
+  void shouldCommitReuseAndInvalidatePhysicalTenantSessionOnLogout() {
+    // given / when / then
     assertPhysicalTenantSessionLifecycle(TENANT_A);
     assertPhysicalTenantSessionLifecycle(TENANT_B);
   }
@@ -126,13 +129,16 @@ public class PhysicalTenantWebSessionCommitRoutingIT {
   }
 
   @Test
-  void sessionFromOnePhysicalTenantIsRejectedOnAnotherPhysicalTenant() {
+  void shouldRejectSessionFromOnePhysicalTenantOnAnotherPhysicalTenant() {
+    // given
     try (final var loggedInA = logInUnderPhysicalTenant(TENANT_A)) {
       assertAuthenticated(loggedInA, "sanity check: tenant A's session must work under tenant A");
-
       final var sessionIdValue = findCookie(loggedInA, cookieNameFor(TENANT_A)).getValue();
+
+      // when
       final var response = sendWithForgedCookie(TENANT_B, cookieNameFor(TENANT_B), sessionIdValue);
 
+      // then
       assertThat(response.statusCode())
           .as(
               "tenant A's session id must not be honoured under tenant B's store — they are"
@@ -142,11 +148,15 @@ public class PhysicalTenantWebSessionCommitRoutingIT {
   }
 
   @Test
-  void sessionFromPhysicalTenantIsRejectedOnDefaultPath() {
+  void shouldRejectSessionFromPhysicalTenantOnDefaultPath() {
+    // given
     try (final var loggedInA = logInUnderPhysicalTenant(TENANT_A)) {
       final var sessionIdValue = findCookie(loggedInA, cookieNameFor(TENANT_A)).getValue();
+
+      // when
       final var response = sendWithForgedCookie(null, DEFAULT_SESSION_COOKIE, sessionIdValue);
 
+      // then
       assertThat(response.statusCode())
           .as("tenant A's session id must not be honoured under the default store")
           .isEqualTo(HttpStatus.UNAUTHORIZED.value());
