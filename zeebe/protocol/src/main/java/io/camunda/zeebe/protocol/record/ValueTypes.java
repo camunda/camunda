@@ -34,6 +34,7 @@ public final class ValueTypes {
           ValueType.PROCESS_INSTANCE_CREATION,
           ValueType.DECISION_EVALUATION,
           ValueType.PROCESS_INSTANCE_MODIFICATION,
+          ValueType.PROCESS_INSTANCE_BUSINESS_ID,
           ValueType.SIGNAL,
           ValueType.COMMAND_DISTRIBUTION,
           ValueType.PROCESS_INSTANCE_BATCH,

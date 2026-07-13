@@ -139,6 +139,9 @@ final class IntentEncodingDecodingTest {
         buildParameterSets(ProcessInstanceResultIntent.class, ProcessInstanceResultIntent::from));
     result.addAll(
         buildParameterSets(
+            ProcessInstanceBusinessIdIntent.class, ProcessInstanceBusinessIdIntent::from));
+    result.addAll(
+        buildParameterSets(
             ProcessMessageSubscriptionIntent.class, ProcessMessageSubscriptionIntent::from));
     result.addAll(buildParameterSets(ResourceIntent.class, ResourceIntent::from));
     result.addAll(buildParameterSets(ResourceDeletionIntent.class, ResourceDeletionIntent::from));

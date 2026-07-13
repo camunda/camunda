@@ -77,6 +77,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscri
 import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
 import io.camunda.zeebe.protocol.impl.record.value.multiinstance.MultiInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBusinessIdRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
@@ -3110,6 +3111,57 @@ final class JsonSerializableToJsonTest {
                   "processInstanceKey": 123,
                   "targetProcessDefinitionKey": 456,
                   "mappingInstructions": [],
+                  "rootProcessInstanceKey": -1,
+                  "processDefinitionKey": -1,
+                  "bpmnProcessId": "",
+                  "elementInstanceKey": -1
+                }
+                """
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////// ProcessInstanceBusinessIdRecord
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // ///////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ProcessInstanceBusinessIdRecord",
+        (Supplier<UnifiedRecordValue>)
+            () ->
+                new ProcessInstanceBusinessIdRecord()
+                    .setTenantId("tenantId")
+                    .setProcessInstanceKey(123L)
+                    .setBusinessId("order-42")
+                    .setRootProcessInstanceKey(321L)
+                    .setProcessDefinitionKey(234L)
+                    .setBpmnProcessId("bpmnProcessId"),
+        """
+                {
+                  "tenantId": "tenantId",
+                  "processInstanceKey": 123,
+                  "businessId": "order-42",
+                  "rootProcessInstanceKey": 321,
+                  "processDefinitionKey": 234,
+                  "bpmnProcessId": "bpmnProcessId",
+                  "elementInstanceKey": -1
+                }
+                """
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////// Empty ProcessInstanceBusinessIdRecord
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // /////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty ProcessInstanceBusinessIdRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> new ProcessInstanceBusinessIdRecord().setProcessInstanceKey(123L),
+        """
+                {
+                  "tenantId": "<default>",
+                  "processInstanceKey": 123,
+                  "businessId": "",
                   "rootProcessInstanceKey": -1,
                   "processDefinitionKey": -1,
                   "bpmnProcessId": "",
