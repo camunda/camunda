@@ -31,6 +31,8 @@ const config: KnipConfig = {
 		'src/operate/shared/FiltersPanel/**',
 		// TODO(#55642): remove when BatchOperation detail page is migrated
 		'src/operate/shared/PaginatedSortableTable/**',
+		'src/operate/shared/ResizablePanel/**',
+		'src/operate/shared/InstancesList/**',
 	],
 	ignoreDependencies: ['@vitest/browser', '@devbookhq/splitter'],
 	typescript: {
