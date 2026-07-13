@@ -120,11 +120,13 @@ final class LongDecisionChainEvaluationTest {
             },
             "stack-size-test-thread",
             stackSizeBytes);
+    thread.setDaemon(true);
 
     thread.start();
     thread.join(Duration.ofSeconds(30).toMillis());
 
     if (thread.isAlive()) {
+      thread.interrupt();
       throw new AssertionError(
           "stack-size-test-thread did not terminate within 30 seconds; assuming it hung "
               + "rather than waiting indefinitely");
