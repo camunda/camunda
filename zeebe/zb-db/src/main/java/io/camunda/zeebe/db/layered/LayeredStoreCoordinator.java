@@ -497,10 +497,10 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
     }
 
     /**
-     * Drains the captured segments into one atomic batch — entries plus anchor — and commits.
-     * Always drains from scratch, discarding any cursor a previous (possibly dead) driver left
-     * behind. Throws on failure; the caller reports the outcome via {@link
-     * #completeRound(PersistRound, boolean)} either way.
+     * Drains the captured state into one atomic batch — entries plus anchor — and commits. Always
+     * drains from scratch, discarding any cursor a previous (possibly dead) driver left behind.
+     * Throws on failure; the caller reports the outcome via {@link #completeRound(PersistRound,
+     * boolean)} either way.
      */
     public void persist() throws Exception {
       drain = null;
@@ -508,12 +508,13 @@ public final class LayeredStoreCoordinator implements AutoCloseable {
     }
 
     /**
-     * Drains the next slice of the captured segments — at least {@code minSliceBytes} of consumed
+     * Drains the next slice of the captured state — at least {@code minSliceBytes} of consumed
      * entry bytes, or everything that remains — into a batch of its own and commits it. Returns
-     * true when the round is fully drained: the final slice carries the designated anchor entries
-     * and the {@link PersistBatch#putAnchor(long) anchor}, and nothing else (see the class javadoc
-     * for the anchor-last invariant). A slice throw ends the drain; the caller completes the round
-     * as failed and a retry re-drains from scratch.
+     * true when the round is fully drained. The {@link PersistBatch#putAnchor(long) anchor} and
+     * the designated anchor-carrying entries ride only in the final slice — never in a data slice
+     * (see the class javadoc for the anchor-last invariant); the final slice additionally carries
+     * whatever tail of data its batch consumed before the stream exhausted. A slice throw ends the
+     * drain; the caller completes the round as failed and a retry re-drains from scratch.
      *
      * @return true once the final slice committed; false while data slices remain
      * @throws IllegalStateException if the round was already fully drained (complete it instead)
