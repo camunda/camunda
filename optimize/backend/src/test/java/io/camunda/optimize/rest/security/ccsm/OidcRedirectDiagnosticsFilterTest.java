@@ -139,6 +139,107 @@ class OidcRedirectDiagnosticsFilterTest {
     assertThat(response.getStatus()).isEqualTo(302);
   }
 
+  // --- splitHostPort ---
+
+  @Test
+  void shouldSplitHostWithNumericPort() {
+    final String[] parts = OidcRedirectDiagnosticsFilter.splitHostPort("example.com:8443");
+    assertThat(parts[0]).isEqualTo("example.com");
+    assertThat(parts[1]).isEqualTo("8443");
+  }
+
+  @Test
+  void shouldReturnNullPortWhenNoPort() {
+    final String[] parts = OidcRedirectDiagnosticsFilter.splitHostPort("example.com");
+    assertThat(parts[0]).isEqualTo("example.com");
+    assertThat(parts[1]).isNull();
+  }
+
+  @Test
+  void shouldNotMisidentifyColonInIPv6AsPort() {
+    // IPv6 without port — last "colon" segment is not all digits
+    final String[] parts = OidcRedirectDiagnosticsFilter.splitHostPort("[::1]");
+    assertThat(parts[0]).isEqualTo("[::1]");
+    assertThat(parts[1]).isNull();
+  }
+
+  @Test
+  void shouldSplitBracketedIPv6WithPort() {
+    final String[] parts = OidcRedirectDiagnosticsFilter.splitHostPort("[::1]:8080");
+    assertThat(parts[0]).isEqualTo("[::1]");
+    assertThat(parts[1]).isEqualTo("8080");
+  }
+
+  // --- buildExpectedCallbackUrl via doFilter ---
+
+  @Test
+  void shouldUseFirstValueFromCommaListInXForwardedPort() throws Exception {
+    // given — proxy sends X-Forwarded-Port as a comma-separated list
+    final var request = new MockHttpServletRequest("GET", CALLBACK_PATH);
+    request.setRequestURI(CALLBACK_PATH);
+    request.addHeader("X-Forwarded-Proto", "https");
+    request.addHeader("X-Forwarded-Host", "optimize.example.com");
+    request.addHeader("X-Forwarded-Port", "443, 8443");
+    request.setScheme("https");
+    request.setServerName("optimize.example.com");
+    request.setServerPort(443);
+    final var response = new MockHttpServletResponse();
+
+    // when — no exception; URL derived from first port value "443" matches (default, suppressed),
+    // so Tomcat URL and expected URL both resolve to https://optimize.example.com/..., no WARN
+    filter.doFilter(request, response, noopChain());
+  }
+
+  @Test
+  void shouldExtractPortEmbeddedInXForwardedHost() throws Exception {
+    // given — X-Forwarded-Host includes a non-default port
+    final var request = new MockHttpServletRequest("GET", CALLBACK_PATH);
+    request.setRequestURI(CALLBACK_PATH);
+    request.addHeader("X-Forwarded-Proto", "https");
+    request.addHeader("X-Forwarded-Host", "optimize.example.com:8443");
+    // no X-Forwarded-Port header
+    request.setScheme("https");
+    request.setServerName("optimize.example.com");
+    request.setServerPort(8443);
+    final var response = new MockHttpServletResponse();
+
+    // when — no exception; expected URL includes :8443, Tomcat URL also includes :8443 → no WARN
+    filter.doFilter(request, response, noopChain());
+  }
+
+  @Test
+  void shouldSuppressDefaultPortEmbeddedInXForwardedHost() throws Exception {
+    // given — X-Forwarded-Host includes the default HTTPS port
+    final var request = new MockHttpServletRequest("GET", CALLBACK_PATH);
+    request.setRequestURI(CALLBACK_PATH);
+    request.addHeader("X-Forwarded-Proto", "https");
+    request.addHeader("X-Forwarded-Host", "optimize.example.com:443");
+    request.setScheme("https");
+    request.setServerName("optimize.example.com");
+    request.setServerPort(443);
+    final var response = new MockHttpServletResponse();
+
+    // when — default port must be suppressed so no double-colon URL is built
+    filter.doFilter(request, response, noopChain());
+  }
+
+  @Test
+  void shouldPreferXForwardedPortOverPortEmbeddedInHost() throws Exception {
+    // given — both X-Forwarded-Host:port and X-Forwarded-Port are present; Port header wins
+    final var request = new MockHttpServletRequest("GET", CALLBACK_PATH);
+    request.setRequestURI(CALLBACK_PATH);
+    request.addHeader("X-Forwarded-Proto", "https");
+    request.addHeader("X-Forwarded-Host", "optimize.example.com:9999");
+    request.addHeader("X-Forwarded-Port", "8443");
+    request.setScheme("https");
+    request.setServerName("optimize.example.com");
+    request.setServerPort(8443);
+    final var response = new MockHttpServletResponse();
+
+    // when — no exception; X-Forwarded-Port=8443 overrides embedded 9999
+    filter.doFilter(request, response, noopChain());
+  }
+
   private static FilterChain noopChain() {
     return (req, res) -> {};
   }

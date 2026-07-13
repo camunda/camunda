@@ -155,18 +155,32 @@ public class OidcRedirectDiagnosticsFilter extends OncePerRequestFilter {
 
   private String buildExpectedCallbackUrl(final HttpServletRequest request) {
     final String proto = firstHeaderOrFallback(request, X_FORWARDED_PROTO, request.getScheme());
-    final String host = firstHeaderOrFallback(request, X_FORWARDED_HOST, request.getServerName());
-    final String portHeader = request.getHeader(X_FORWARDED_PORT);
+    // X-Forwarded-Host may embed a port (e.g. "example.com:8443"); split it out
+    final String rawHost =
+        firstHeaderOrFallback(request, X_FORWARDED_HOST, request.getServerName());
+    final String[] hostParts = splitHostPort(rawHost);
+    final String host = hostParts[0];
+
+    // X-Forwarded-Port, if present, overrides any port embedded in X-Forwarded-Host.
+    // Take the first value — proxies sometimes send comma-separated lists.
+    final String portRaw = request.getHeader(X_FORWARDED_PORT);
+    final String effectivePort;
+    if (portRaw != null && !portRaw.isBlank()) {
+      final int comma = portRaw.indexOf(',');
+      effectivePort = (comma >= 0 ? portRaw.substring(0, comma) : portRaw).trim();
+    } else {
+      effectivePort = hostParts[1]; // port embedded in X-Forwarded-Host, or null
+    }
+
     final String prefix = request.getHeader(X_FORWARDED_PREFIX);
 
     final StringBuilder sb = new StringBuilder(proto).append("://").append(host);
-
-    if (portHeader != null && !portHeader.isBlank()) {
+    if (effectivePort != null) {
       final boolean isDefaultPort =
-          ("https".equals(proto) && "443".equals(portHeader.trim()))
-              || ("http".equals(proto) && "80".equals(portHeader.trim()));
+          ("https".equals(proto) && "443".equals(effectivePort))
+              || ("http".equals(proto) && "80".equals(effectivePort));
       if (!isDefaultPort) {
-        sb.append(':').append(portHeader.trim());
+        sb.append(':').append(effectivePort);
       }
     }
     if (prefix != null && !prefix.isBlank()) {
@@ -174,6 +188,23 @@ public class OidcRedirectDiagnosticsFilter extends OncePerRequestFilter {
     }
     sb.append(request.getContextPath()).append(callbackPath);
     return sb.toString();
+  }
+
+  /**
+   * Splits {@code "host"} or {@code "host:port"} into a two-element array {@code [host, port]}. The
+   * port element is {@code null} when no numeric port suffix is present. Works for bare hostnames,
+   * IPv4 addresses, and bracketed IPv6 addresses (e.g. {@code "[::1]:8080"}).
+   */
+  static String[] splitHostPort(final String hostValue) {
+    final int colon = hostValue.lastIndexOf(':');
+    if (colon < 0) {
+      return new String[] {hostValue, null};
+    }
+    final String possiblePort = hostValue.substring(colon + 1);
+    if (possiblePort.isEmpty() || !possiblePort.chars().allMatch(Character::isDigit)) {
+      return new String[] {hostValue, null};
+    }
+    return new String[] {hostValue.substring(0, colon), possiblePort};
   }
 
   private static String firstHeaderOrFallback(
