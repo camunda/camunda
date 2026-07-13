@@ -13,6 +13,8 @@ public enum PersistTrigger {
   INTERVAL("interval"),
   /** The pinned bytes of a store exceeded its budget, forcing a round now. */
   OVER_CAPACITY("overCapacity"),
+  /** The buffered bytes of a whole domain reached the configured budget, forcing a round now. */
+  BUFFERED_BYTES("bufferedBytes"),
   /** A snapshot is about to be taken and needs a prefix-consistent durable cut first. */
   PRE_SNAPSHOT("preSnapshot"),
   /**

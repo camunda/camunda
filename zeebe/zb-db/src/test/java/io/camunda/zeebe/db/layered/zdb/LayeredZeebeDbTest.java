@@ -417,7 +417,8 @@ final class LayeredZeebeDbTest {
     final var tiny =
         new LayeredZeebeDb<>(
             inner,
-            new LayeredZeebeDbConfig(1, false, 4, Duration.ofSeconds(1), Duration.ofMillis(250)));
+            new LayeredZeebeDbConfig(
+                1, 0, false, 4, Duration.ofSeconds(1), Duration.ofMillis(250)));
     final TransactionContext tinyContext = tiny.layeredContext();
     final DbLong key = new DbLong();
     final DbLong value = new DbLong();

@@ -17,6 +17,11 @@ import java.util.Objects;
  *
  * @param maxBytesPerStore soft byte budget per store; buffered (pinned) writes may exceed it, which
  *     {@link LayeredZeebeDb#overCapacity()} surfaces as the signal to run a persist round
+ * @param maxBufferedBytes total buffered-bytes budget across a domain's stores; when positive, the
+ *     runtime driving the domain should start a persist round as soon as the buffered (not yet
+ *     persisted) bytes reach it — bounding memory and the recovery replay window by size,
+ *     independently of the persist interval. Zero (the default) disables the size trigger: rounds
+ *     then run at the persist interval or on per-store over-capacity only, exactly as before
  * @param absorbDeletes whether a delete of a never-persisted put annihilates the pair in memory so
  *     neither write ever reaches RocksDB. On by default: exact flushed flags plus negative caching
  *     make absorption unconditionally sound (a pair only annihilates when the durable store
@@ -34,12 +39,14 @@ import java.util.Objects;
  */
 public record LayeredZeebeDbConfig(
     long maxBytesPerStore,
+    long maxBufferedBytes,
     boolean absorbDeletes,
     int pipelineSegmentLimit,
     Duration persistInterval,
     Duration freezeInterval) {
 
   private static final long DEFAULT_MAX_BYTES_PER_STORE = 16 * 1024 * 1024;
+  private static final long DEFAULT_MAX_BUFFERED_BYTES = 0;
   private static final boolean DEFAULT_ABSORB_DELETES = true;
   private static final int DEFAULT_PIPELINE_SEGMENT_LIMIT = 4;
   private static final Duration DEFAULT_PERSIST_INTERVAL = Duration.ofSeconds(1);
@@ -49,6 +56,11 @@ public record LayeredZeebeDbConfig(
     if (maxBytesPerStore <= 0) {
       throw new IllegalArgumentException(
           "expected maxBytesPerStore to be positive, but was " + maxBytesPerStore);
+    }
+    if (maxBufferedBytes < 0) {
+      throw new IllegalArgumentException(
+          "expected maxBufferedBytes to be zero (disabled) or positive, but was "
+              + maxBufferedBytes);
     }
     if (pipelineSegmentLimit < 1) {
       throw new IllegalArgumentException(
@@ -69,6 +81,7 @@ public record LayeredZeebeDbConfig(
   public static LayeredZeebeDbConfig defaults() {
     return new LayeredZeebeDbConfig(
         DEFAULT_MAX_BYTES_PER_STORE,
+        DEFAULT_MAX_BUFFERED_BYTES,
         DEFAULT_ABSORB_DELETES,
         DEFAULT_PIPELINE_SEGMENT_LIMIT,
         DEFAULT_PERSIST_INTERVAL,

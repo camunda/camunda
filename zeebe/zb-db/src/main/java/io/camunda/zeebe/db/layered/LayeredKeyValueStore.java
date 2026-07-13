@@ -551,6 +551,14 @@ public final class LayeredKeyValueStore {
     return stagingBytes + activeBytes + pipelineBytes + cleanBytes;
   }
 
+  /**
+   * Approximate heap footprint of the pinned (not yet persisted) layers only: staging + active +
+   * pipeline, excluding the evictable read cache — the writes a persist round would drain.
+   */
+  public long bufferedBytes() {
+    return stagingBytes + activeBytes + pipelineBytes;
+  }
+
   /** Whether any pinned layer (staging, active, pipeline) holds writes not yet persisted. */
   public boolean hasBufferedWrites() {
     return !stagingByKey.isEmpty() || !activeByKey.isEmpty() || !pipeline.isEmpty();

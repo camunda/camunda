@@ -155,7 +155,8 @@ final class LayeredZeebeDbDomainsTest {
     final var tiny =
         new LayeredZeebeDb<>(
             inner,
-            new LayeredZeebeDbConfig(1, false, 4, Duration.ofSeconds(1), Duration.ofMillis(250)));
+            new LayeredZeebeDbConfig(
+                1, 0, false, 4, Duration.ofSeconds(1), Duration.ofMillis(250)));
     final LayeredDomain domainA = tiny.registerDomain("a");
     final LayeredDomain domainB = tiny.registerDomain("b");
     final ColumnFamily<DbLong, DbLong> oneInA =

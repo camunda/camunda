@@ -67,7 +67,8 @@ final class LayeredStatePersistenceTest {
     layered =
         new LayeredZeebeDb<>(
             inner,
-            new LayeredZeebeDbConfig(256, true, 4, Duration.ofSeconds(1), Duration.ofMillis(250)));
+            new LayeredZeebeDbConfig(
+                256, 0, true, 4, Duration.ofSeconds(1), Duration.ofMillis(250)));
     context = layered.layeredContext();
     columnFamily =
         layered.createColumnFamily(ZbColumnFamilies.DEFAULT, context, new DbLong(), new DbLong());
@@ -322,6 +323,40 @@ final class LayeredStatePersistenceTest {
   }
 
   @Test
+  void shouldNotStartRoundOnBatchCommitWhileNoSizeBudgetIsExceeded() {
+    // given a committed batch well below the per-store budget and no total buffered-bytes budget
+    // (the default) — the pre-existing behavior: only the interval cadence persists
+    commitBatch(1, 100);
+
+    // when the batch-commit hook fires
+    persistence.onBatchCommitted();
+
+    // then no round starts and the batch stays buffered for the next interval tick
+    assertThat(persistence.roundInFlight()).isFalse();
+    assertThat(io.roundsPersisted()).isZero();
+    assertThat(layered.defaultDomain().hasBufferedWrites()).isTrue();
+  }
+
+  @Test
+  void shouldStartRoundWhenBufferedBytesReachBudget() throws Exception {
+    // given a total buffered-bytes budget any committed batch exceeds (while the per-store budget
+    // stays out of reach, isolating the domain-total trigger)
+    recreate(
+        new LayeredZeebeDbConfig(
+            1024 * 1024, 1, true, 4, Duration.ofSeconds(1), Duration.ofMillis(250)));
+    commitBatch(1, 100);
+
+    // when the batch-commit hook fires
+    persistence.onBatchCommitted();
+
+    // then a buffered-bytes round drains the batch without waiting for the interval cadence
+    runProcessorJobsUntil(() -> !persistence.roundInFlight());
+    assertThat(roundCount("bufferedBytes")).isEqualTo(1.0);
+    assertThat(passThroughGet(1)).isEqualTo(100);
+    assertThat(layered.defaultDomain().hasBufferedWrites()).isFalse();
+  }
+
+  @Test
   void shouldNoteOverCapacityDuringRoundAndFollowUpAfterwards() throws Exception {
     // given a round in flight and an over-capacity batch committed during it (the store budget is
     // 256 bytes, the value below exceeds it on its own)
@@ -346,6 +381,19 @@ final class LayeredStatePersistenceTest {
   // ------------------------------------------------------------------
   // Owner-thread plumbing
   // ------------------------------------------------------------------
+
+  /** Tears the default fixture down and rebuilds it over the same directory with {@code config}. */
+  private void recreate(final LayeredZeebeDbConfig config) {
+    CloseHelper.quietCloseAll(io, layered);
+    inner = DefaultZeebeDbFactory.defaultFactory().createDb(dbDirectory);
+    layered = new LayeredZeebeDb<>(inner, config);
+    context = layered.layeredContext();
+    columnFamily =
+        layered.createColumnFamily(ZbColumnFamilies.DEFAULT, context, new DbLong(), new DbLong());
+    io = new ControlledIo();
+    persistence =
+        new LayeredStatePersistence(layered, lastProcessedPosition::get, processorJobs::add, io);
+  }
 
   private void commitBatch(final long key, final long value) {
     context.runInTransaction(() -> put(key, value));

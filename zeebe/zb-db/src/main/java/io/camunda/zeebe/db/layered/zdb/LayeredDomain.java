@@ -139,6 +139,20 @@ public final class LayeredDomain {
   }
 
   /**
+   * Approximate heap footprint of all buffered (not yet persisted) writes across this domain's
+   * stores — what a persist round would drain. Compared against a total byte budget by the runtime
+   * to trigger size-based rounds; contrast with {@link #overCapacity()}, which is a per-store
+   * budget.
+   */
+  public long bufferedBytes() {
+    long bufferedBytes = 0;
+    for (final LayeredKeyValueStore store : storesByColumnFamily.values()) {
+      bufferedBytes += store.bufferedBytes();
+    }
+    return bufferedBytes;
+  }
+
+  /**
    * Whether any of this domain's stores holds committed writes in its active overlay — writes a
    * {@link #freezeNow(long)} would make visible to read views.
    */

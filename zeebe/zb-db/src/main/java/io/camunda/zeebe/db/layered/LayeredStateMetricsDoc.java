@@ -53,8 +53,8 @@ public enum LayeredStateMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public String getDescription() {
-      return "Persist rounds started, by trigger (interval, over-capacity, pre-snapshot,"
-          + " scheduled-task)";
+      return "Persist rounds started, by trigger (interval, over-capacity, buffered-bytes,"
+          + " pre-snapshot, scheduled-task)";
     }
 
     @Override
