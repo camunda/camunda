@@ -256,6 +256,20 @@ public record CurrentClusterConfiguration(
   }
 
   /**
+   * Returns the number of members in the cluster that are not {@link BrokerState.State#LEFT} or
+   * {@link BrokerState.State#UNINITIALIZED}.
+   */
+  public int clusterSize() {
+    return (int)
+        globalConfiguration.members().entrySet().stream()
+            .filter(
+                entry ->
+                    entry.getValue().state() != BrokerState.State.LEFT
+                        && entry.getValue().state() != BrokerState.State.UNINITIALIZED)
+            .count();
+  }
+
+  /**
    * Activates the plan's current phase by copying its operations into the affected sub-config(s): a
    * {@link GlobalPhase} starts a configuration change on {@link GlobalConfiguration} only; a {@link
    * PartitionGroupParallelPhase} starts one on each named partition group only.

@@ -9,19 +9,24 @@ package io.camunda.zeebe.dynamic.config.changes;
 
 import io.camunda.zeebe.dynamic.config.changes.appliers.MemberJoinApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.MemberLeaveApplier;
+import io.camunda.zeebe.dynamic.config.changes.appliers.PreScalingApplier;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberRemoveOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PreScalingOperation;
 
 public final class GlobalConfigurationChangeAppliersImpl
     implements GlobalConfigurationChangeAppliers {
 
   private final ClusterMembershipChangeExecutor clusterMembershipChangeExecutor;
+  private final ClusterChangeExecutor clusterChangeExecutor;
 
   public GlobalConfigurationChangeAppliersImpl(
-      final ClusterMembershipChangeExecutor clusterMembershipChangeExecutor) {
+      final ClusterMembershipChangeExecutor clusterMembershipChangeExecutor,
+      final ClusterChangeExecutor clusterChangeExecutor) {
     this.clusterMembershipChangeExecutor = clusterMembershipChangeExecutor;
+    this.clusterChangeExecutor = clusterChangeExecutor;
   }
 
   @Override
@@ -35,6 +40,8 @@ public final class GlobalConfigurationChangeAppliersImpl
           // Reuse MemberLeaveApplier, only difference is that the member applying the operation is
           // not the member that is leaving
           new MemberLeaveApplier(op.memberToRemove(), clusterMembershipChangeExecutor);
+      case final PreScalingOperation op ->
+          new PreScalingApplier(op.memberId(), op.clusterMembers(), clusterChangeExecutor);
       default ->
           throw new UnsupportedOperationException(
               "No new-model applier implemented yet for %s".formatted(operation));
