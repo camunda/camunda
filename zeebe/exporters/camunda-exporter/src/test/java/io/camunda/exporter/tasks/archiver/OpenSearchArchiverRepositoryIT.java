@@ -57,7 +57,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.http.HttpHost;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
@@ -81,8 +80,6 @@ import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.opensearch.client.opensearch.generic.Request;
 import org.opensearch.client.opensearch.generic.Requests;
-import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
-import org.opensearch.client.opensearch.indices.DeleteIndexRequest.Builder;
 import org.opensearch.client.transport.aws.AwsSdk2Transport;
 import org.opensearch.client.transport.aws.AwsSdk2TransportOptions;
 import org.opensearch.client.transport.rest_client.RestClientTransport;
@@ -102,24 +99,22 @@ final class OpenSearchArchiverRepositoryIT {
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final ConnectConfiguration connectConfiguration = new ConnectConfiguration();
   private final RetentionConfiguration retention = new RetentionConfiguration();
-  private String archiverBlockedIndex;
-  private HistoryConfiguration config;
-  private String processInstanceIndex;
-  private String batchOperationIndex;
   private final OpenSearchClient testClient = createOpenSearchClient();
-  private final String zeebeIndexPrefix = "zeebe-record";
-  private final String zeebeIndex = zeebeIndexPrefix + "-" + UUID.randomUUID();
-  private TestExporterResourceProvider resourceProvider;
-  private String indexPrefix;
-  private final ObjectMapper objectMapper = TestObjectMapper.objectMapper();
   @AutoClose private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
-  @AfterEach
-  void afterEach() throws IOException {
-    final DeleteIndexRequest deleteRequest = new Builder().index("*").build();
-    testClient.indices().delete(deleteRequest);
+  private final String testUniqueId = UUID.randomUUID().toString();
+  private final String zeebeIndexPrefix = "zeebe-record";
+  private final String zeebeIndex = zeebeIndexPrefix + "-" + testUniqueId;
 
-    // delete all policies created during the tests
+  private TestExporterResourceProvider resourceProvider;
+  private HistoryConfiguration config;
+  private String archiverBlockedIndex;
+  private String processInstanceIndex;
+  private String batchOperationIndex;
+
+  @AfterEach
+  void afterEach() {
+    deleteTestIndices();
     deleteAllTestPolicies();
     resetIndexStateManagementJobInterval();
   }
@@ -127,9 +122,13 @@ final class OpenSearchArchiverRepositoryIT {
   @BeforeEach
   void beforeEach() {
     config = new HistoryConfiguration();
+
+    // Scope policy names to this test run so cleanup doesn't affect other tests
+    retention.setPolicyName(testUniqueId + "-default-policy");
+    retention.setUsageMetricsPolicyName(testUniqueId + "-usage-metrics-policy");
     config.setRetention(retention);
-    indexPrefix = RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
-    resourceProvider = new TestExporterResourceProvider(indexPrefix, false);
+
+    resourceProvider = new TestExporterResourceProvider(testUniqueId, false);
     processInstanceIndex =
         resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class).getFullQualifiedName();
     batchOperationIndex =
@@ -226,15 +225,15 @@ final class OpenSearchArchiverRepositoryIT {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"", "test"})
+  @ValueSource(booleans = {true, false})
   @DisabledIfSystemProperty(
       named = TEST_INTEGRATION_OPENSEARCH_AWS_URL,
       matches = "^(?=\\s*\\S).*$",
       disabledReason = "Excluding from AWS OS IT CI - policy modification not allowed")
-  void shouldSetIndexLifeCycleOnAllValidIndexes(final String prefix) throws IOException {
+  void shouldSetIndexLifeCycleOnAllValidIndexes(final boolean withPrefix) throws IOException {
     // given
-    final var indexPrefix = RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
-    resourceProvider = new TestExporterResourceProvider(indexPrefix, true);
+    final var prefix = withPrefix ? testUniqueId : "";
+    resourceProvider = new TestExporterResourceProvider(prefix, true);
     processInstanceIndex =
         resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class).getFullQualifiedName();
     batchOperationIndex =
@@ -270,9 +269,15 @@ final class OpenSearchArchiverRepositoryIT {
     indices.addAll(usageMetricsIndices);
     indices.addAll(untouchedIndices);
 
+    final String customPolicyName =
+        withPrefix ? testUniqueId + "-custom-default-policy" : "custom-default-policy";
+
+    final String customUsageMetricsPolicyName =
+        withPrefix ? testUniqueId + "-custom-usage-metrics-policy" : "custom-usage-metrics-policy";
+
     retention.setEnabled(true);
-    retention.setPolicyName("default-policy");
-    retention.setUsageMetricsPolicyName("custom-usage-metrics-policy");
+    retention.setPolicyName(customPolicyName);
+    retention.setUsageMetricsPolicyName(customUsageMetricsPolicyName);
 
     createLifeCyclePolicies();
     for (final var index : indices) {
@@ -287,16 +292,16 @@ final class OpenSearchArchiverRepositoryIT {
     // verify that the usage metrics policy was applied to all usage metric indices
     for (final var index : usageMetricsIndices) {
       assertThat(fetchPolicyForIndexWithAwait(index))
-          .as("Expected 'custom-usage-metrics-policy' policy to be applied for %s", index)
+          .as("Expected '%s' policy to be applied for %s", customUsageMetricsPolicyName, index)
           .isNotNull()
-          .isEqualTo("custom-usage-metrics-policy");
+          .isEqualTo(customUsageMetricsPolicyName);
     }
     // verify that the default policy was applied to all other indices
     for (final var index : historicalIndices) {
       assertThat(fetchPolicyForIndexWithAwait(index))
-          .as("Expected 'default-policy' policy to be applied for %s", index)
+          .as("Expected '%s' policy to be applied for %s", customPolicyName, index)
           .isNotNull()
-          .isEqualTo("default-policy");
+          .isEqualTo(customPolicyName);
     }
 
     for (final var index : untouchedIndices) {
@@ -994,7 +999,7 @@ final class OpenSearchArchiverRepositoryIT {
     // ensure all templates are created
     startupSchema();
     // create indices for all templates with a date in the index name
-    final var searchClientAdapter = new SearchClientAdapter(testClient, objectMapper);
+    final var searchClientAdapter = new SearchClientAdapter(testClient, MAPPER);
     final String date = "2026-01-10";
     for (final var indexTemplate : resourceProvider.getIndexTemplateDescriptors()) {
       searchClientAdapter.createIndex(indexTemplate.getIndexPattern().replace("*", date), 0);
@@ -1061,8 +1066,7 @@ final class OpenSearchArchiverRepositoryIT {
                                 .build())
                         .get();
 
-                final var json =
-                    objectMapper.readTree(response.getBody().orElseThrow().bodyAsString());
+                final var json = MAPPER.readTree(response.getBody().orElseThrow().bodyAsString());
                 // Check runtime index (should not have ISM policy)
                 assertThat(
                         json.get(template.getFullQualifiedName())
@@ -1496,9 +1500,9 @@ final class OpenSearchArchiverRepositoryIT {
   }
 
   private void startupSchema() {
-    final var searchEngineClient = new OpensearchEngineClient(testClient, objectMapper);
+    final var searchEngineClient = new OpensearchEngineClient(testClient, MAPPER);
     final var connectConfig = new ConnectConfiguration();
-    connectConfig.setIndexPrefix(indexPrefix);
+    connectConfig.setIndexPrefix(testUniqueId);
     connectConfig.setUrl(SEARCH_DB.esUrl());
     connectConfig.setType(DatabaseType.OPENSEARCH.toString());
     final var schemaManagerConfig = new SchemaManagerConfiguration();
@@ -1515,7 +1519,7 @@ final class OpenSearchArchiverRepositoryIT {
             resourceProvider.getIndexDescriptors(),
             resourceProvider.getIndexTemplateDescriptors(),
             searchEngineConfiguration,
-            objectMapper)
+            MAPPER)
         .startup();
   }
 
@@ -1788,6 +1792,42 @@ final class OpenSearchArchiverRepositoryIT {
     }
   }
 
+  private void deleteTestIndices() {
+    // Delete only indices that were created by this test class. Criteria:
+    //  - start with dynamic testPrefix (runtime & historical indices created via templates)
+    //  - start with ZEEBE_INDEX_PREFIX (simulated existing zeebe indices used in tests)
+    //  - start with ARCHIVER_IDX_PREFIX (ad‑hoc indices for generic operations tests)
+    final var indicesToDelete = new ArrayList<String>();
+    try {
+      indicesToDelete.addAll(
+          testClient
+              .indices()
+              .get(
+                  g ->
+                      g.index(testUniqueId + "*", zeebeIndexPrefix + "*", ARCHIVER_IDX_PREFIX + "*")
+                          .ignoreUnavailable(true)
+                          .allowNoIndices(true))
+              .result()
+              .keySet());
+    } catch (final Exception e) {
+      LOGGER.error("Error during retrieving indices", e);
+    }
+
+    if (indicesToDelete.isEmpty()) {
+      LOGGER.debug("No indices found to delete");
+      return;
+    }
+
+    for (final var index : indicesToDelete) {
+      try {
+        testClient.indices().delete(d -> d.index(index).ignoreUnavailable(true));
+        LOGGER.debug("Deleted test index: {}", index);
+      } catch (final Exception e) {
+        LOGGER.warn("Failed to delete index {}: {}", index, e.getMessage());
+      }
+    }
+  }
+
   private void deleteAllTestPolicies() {
     final var genericClient =
         new OpenSearchGenericClient(testClient._transport(), testClient._transportOptions());
@@ -1799,13 +1839,17 @@ final class OpenSearchArchiverRepositoryIT {
       final var jsonString = listResponse.getBody().orElseThrow().bodyAsString();
       final var json = MAPPER.readTree(jsonString);
 
-      // Extract policy names and delete each one
+      // Extract policy names and delete each one that start with the test prefix
       final var policies = json.get("policies");
       if (policies != null && policies.isArray()) {
         for (final var policy : policies) {
           final var policyId = policy.get("_id");
           if (policyId != null) {
             final var policyName = policyId.asText();
+            if (!policyName.startsWith(testUniqueId)) {
+              continue;
+            }
+
             try {
               final var deleteRequest =
                   Requests.builder()
