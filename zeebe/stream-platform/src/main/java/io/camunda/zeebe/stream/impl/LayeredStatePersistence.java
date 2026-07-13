@@ -125,6 +125,18 @@ final class LayeredStatePersistence {
     return inFlightRound != null;
   }
 
+  /**
+   * The watermark for freezes and persist rounds: the last successfully processed position, clamped
+   * to 0 while none exists yet. During replay the position state is fed by the replayed batches
+   * themselves, so it is already the correct source — but before the first batch marks a position
+   * (e.g. buffered migration writes on a fresh partition) it reports its UNSET sentinel (-1), which
+   * must not leak into segment watermarks or round anchors; 0 is the honest "nothing processed yet"
+   * stamp (log positions start above it) and keeps watermarks monotonic.
+   */
+  private long watermark() {
+    return Math.max(0, lastProcessedPosition.getAsLong());
+  }
+
   /** The regular persist cadence; a failed round stays buffered and the next tick retries. */
   void onPeriodicTick() {
     if (roundInFlight() || domain.batchInFlight() || !domain.hasBufferedWrites()) {
@@ -144,7 +156,7 @@ final class LayeredStatePersistence {
     if (domain.batchInFlight() || !domain.hasActiveWrites()) {
       return;
     }
-    domain.freezeNow(lastProcessedPosition.getAsLong());
+    domain.freezeNow(watermark());
   }
 
   /**
@@ -162,7 +174,7 @@ final class LayeredStatePersistence {
       return false;
     }
     if (domain.hasActiveWrites()) {
-      domain.freezeNow(lastProcessedPosition.getAsLong());
+      domain.freezeNow(watermark());
     }
     return true;
   }
@@ -286,7 +298,7 @@ final class LayeredStatePersistence {
    * consistently.
    */
   private ActorFuture<Throwable> startRound(final PersistTrigger trigger) {
-    final PersistRound round = domain.preparePersist(lastProcessedPosition.getAsLong(), trigger);
+    final PersistRound round = domain.preparePersist(watermark(), trigger);
     final CompletableActorFuture<Throwable> completed = new CompletableActorFuture<>();
     inFlightRound = completed;
     io.persist(round)

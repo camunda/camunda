@@ -273,6 +273,29 @@ final class LayeredStatePersistenceTest {
   }
 
   // ------------------------------------------------------------------
+  // Replay watermark
+  // ------------------------------------------------------------------
+
+  @Test
+  void shouldStampWatermarkWithZeroWhileNoPositionWasProcessed() throws Exception {
+    // given writes committed before any position was marked processed (e.g. buffered migration
+    // writes on a fresh partition during replay) — the position state reports its UNSET
+    // sentinel (-1) then
+    lastProcessedPosition.set(-1);
+    context.runInTransaction(() -> put(1, 100));
+
+    // when the freeze cadence and a persist round run
+    persistence.onFreezeTick();
+    persistence.onPeriodicTick();
+    runProcessorJobsUntil(() -> !persistence.roundInFlight());
+
+    // then the round's anchor — the newest frozen segment watermark — is the honest "nothing
+    // processed yet" 0, never the -1 sentinel, and the buffered write still drained
+    assertThat(io.lastRoundAnchor()).isZero();
+    assertThat(passThroughGet(1)).isEqualTo(100);
+  }
+
+  // ------------------------------------------------------------------
   // Failure and over-capacity handling
   // ------------------------------------------------------------------
 
@@ -431,6 +454,7 @@ final class LayeredStatePersistenceTest {
         Executors.newSingleThreadExecutor(runnable -> new Thread(runnable, "layered-persist-io"));
     private final AtomicBoolean failNext = new AtomicBoolean();
     private final AtomicLong persisted = new AtomicLong();
+    private final AtomicLong lastRoundAnchor = new AtomicLong(Long.MIN_VALUE);
     // consumed (nulled) by the IO thread so only the next round blocks
     private volatile CountDownLatch entered;
     private volatile CountDownLatch gate;
@@ -440,6 +464,7 @@ final class LayeredStatePersistenceTest {
 
     @Override
     public ActorFuture<Void> persist(final PersistRound round) {
+      lastRoundAnchor.set(round.anchor());
       final CompletableActorFuture<Void> done = new CompletableActorFuture<>();
       ioThread.execute(
           () -> {
@@ -495,6 +520,11 @@ final class LayeredStatePersistenceTest {
 
     long roundsPersisted() {
       return persisted.get();
+    }
+
+    /** The anchor (newest frozen watermark) of the round most recently handed to the IO thread. */
+    long lastRoundAnchor() {
+      return lastRoundAnchor.get();
     }
 
     @Override
