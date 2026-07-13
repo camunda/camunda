@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import io.camunda.zeebe.db.layered.ViewPublisher;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
@@ -16,6 +17,7 @@ import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizatio
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
+import io.camunda.zeebe.engine.state.instance.LayeredViewJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
@@ -29,6 +31,7 @@ public final class JobEventProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final MutableProcessingState processingState,
       final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
+      final ViewPublisher stateViewPublisher,
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers,
       final JobProcessingMetrics jobMetrics,
@@ -127,12 +130,23 @@ public final class JobEventProcessors {
                 cslCheck,
                 clock,
                 incidentMetrics))
+        // with the experimental layered-state flag on, the job-timeout checker runs asynchronously
+        // and scans read views of the buffered state — a separate transaction context would only
+        // see the persisted state, and running it synchronously would force a persist round (the
+        // drain barrier) before every poll
         .withListener(
-            new JobTimeoutCheckScheduler(
-                scheduledTaskStateFactory.get().getJobState(),
-                config.getJobsTimeoutCheckerPollingInterval(),
-                config.getJobsTimeoutCheckerBatchLimit(),
-                clock))
+            stateViewPublisher != null
+                ? new JobTimeoutCheckScheduler(
+                    new LayeredViewJobState(stateViewPublisher),
+                    true,
+                    config.getJobsTimeoutCheckerPollingInterval(),
+                    config.getJobsTimeoutCheckerBatchLimit(),
+                    clock)
+                : new JobTimeoutCheckScheduler(
+                    scheduledTaskStateFactory.get().getJobState(),
+                    config.getJobsTimeoutCheckerPollingInterval(),
+                    config.getJobsTimeoutCheckerBatchLimit(),
+                    clock))
         .withListener(jobBackoffChecker);
   }
 }

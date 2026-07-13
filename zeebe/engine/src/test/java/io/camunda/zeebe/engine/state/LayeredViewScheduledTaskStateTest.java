@@ -16,12 +16,16 @@ import io.camunda.zeebe.db.layered.zdb.LayeredDomain;
 import io.camunda.zeebe.db.layered.zdb.LayeredZeebeDb;
 import io.camunda.zeebe.db.layered.zdb.LayeredZeebeDbConfig;
 import io.camunda.zeebe.db.layered.zdb.LayeredZeebeDbFactory;
+import io.camunda.zeebe.engine.state.immutable.JobState.DeadlineIndex;
+import io.camunda.zeebe.engine.state.instance.DbJobState;
 import io.camunda.zeebe.engine.state.instance.DbTimerInstanceState;
+import io.camunda.zeebe.engine.state.instance.LayeredViewJobState;
 import io.camunda.zeebe.engine.state.instance.LayeredViewTimerInstanceState;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.engine.state.message.DbMessageState;
 import io.camunda.zeebe.engine.state.message.LayeredViewMessageState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import java.io.File;
 import java.util.ArrayList;
@@ -35,8 +39,9 @@ import org.junit.jupiter.api.io.TempDir;
 /**
  * Encoding parity between the owner-side Db states and the view-backed states the asynchronous
  * checkers use when the layered-state flag is on: what the engine writes through its layered
- * context must be visible — after a freeze — through {@link LayeredViewTimerInstanceState} and
- * {@link LayeredViewMessageState}, which re-derive the same keys against the same stores.
+ * context must be visible — after a freeze — through {@link LayeredViewTimerInstanceState}, {@link
+ * LayeredViewMessageState} and {@link LayeredViewJobState}, which re-derive the same keys against
+ * the same stores.
  */
 final class LayeredViewScheduledTaskStateTest {
 
@@ -48,6 +53,7 @@ final class LayeredViewScheduledTaskStateTest {
   private LayeredDomain domain;
   private DbTimerInstanceState timerState;
   private DbMessageState messageState;
+  private DbJobState jobState;
 
   @BeforeEach
   void setUp() {
@@ -61,6 +67,7 @@ final class LayeredViewScheduledTaskStateTest {
     context = layered.layeredContext();
     timerState = new DbTimerInstanceState(layered, context);
     messageState = new DbMessageState(layered, context, 1);
+    jobState = new DbJobState(layered, context);
     domain = layered.defaultDomain();
     domain.coordinator();
   }
@@ -173,15 +180,110 @@ final class LayeredViewScheduledTaskStateTest {
   }
 
   @Test
+  void shouldSeeCommittedJobDeadlinesAfterFreeze() {
+    // given committed activated jobs buffered in the layered store (not yet persisted)
+    context.runInTransaction(
+        () -> {
+          storeActivatedJob(11L, 1_000L);
+          storeActivatedJob(22L, 2_000L);
+          storeActivatedJob(33L, 5_000L);
+        });
+    domain.freezeNow(1L);
+
+    // when scanning through a read view
+    final var viewState = new LayeredViewJobState(domain.viewPublisher());
+    final List<Long> visitedJobKeys = new ArrayList<>();
+    final DeadlineIndex lastVisited =
+        viewState.forEachTimedOutEntry(
+            3_000L,
+            null,
+            (key, record) -> {
+              visitedJobKeys.add(key);
+              return true;
+            });
+
+    // then the timed-out jobs are visited in deadline order and the scan ran to completion
+    assertThat(visitedJobKeys).containsExactly(11L, 22L);
+    assertThat(lastVisited).isNull();
+  }
+
+  @Test
+  void shouldResumeJobDeadlineScanAtTheYieldedIndex() {
+    // given committed activated jobs and a scan that yielded (e.g. the task result was full)
+    context.runInTransaction(
+        () -> {
+          storeActivatedJob(11L, 1_000L);
+          storeActivatedJob(22L, 2_000L);
+          storeActivatedJob(33L, 2_500L);
+        });
+    domain.freezeNow(1L);
+    final var viewState = new LayeredViewJobState(domain.viewPublisher());
+    final DeadlineIndex yieldedAt =
+        viewState.forEachTimedOutEntry(3_000L, null, (key, record) -> key != 22L);
+    assertThat(yieldedAt).isEqualTo(new DeadlineIndex(2_000L, 22L));
+
+    // when resuming from the yielded index
+    final List<Long> visitedJobKeys = new ArrayList<>();
+    final DeadlineIndex lastVisited =
+        viewState.forEachTimedOutEntry(
+            3_000L,
+            yieldedAt,
+            (key, record) -> {
+              visitedJobKeys.add(key);
+              return true;
+            });
+
+    // then the scan re-visits the yielded entry (resume is inclusive, matching the owner path's
+    // seek) and continues to the end without re-visiting earlier entries
+    assertThat(visitedJobKeys).containsExactly(22L, 33L);
+    assertThat(lastVisited).isNull();
+  }
+
+  @Test
+  void shouldNotSeeJobDeadlinesCommittedAfterTheFreeze() {
+    // given
+    context.runInTransaction(() -> storeActivatedJob(11L, 1_000L));
+    domain.freezeNow(1L);
+    context.runInTransaction(() -> storeActivatedJob(22L, 1_500L));
+
+    // when scanning through a read view built from the first freeze
+    final var viewState = new LayeredViewJobState(domain.viewPublisher());
+    final List<Long> visitedJobKeys = new ArrayList<>();
+    viewState.forEachTimedOutEntry(
+        3_000L,
+        null,
+        (key, record) -> {
+          visitedJobKeys.add(key);
+          return true;
+        });
+
+    // then only the frozen job is visible; the next freeze makes the second one visible
+    assertThat(visitedJobKeys).containsExactly(11L);
+    domain.freezeNow(2L);
+    visitedJobKeys.clear();
+    viewState.forEachTimedOutEntry(
+        3_000L,
+        null,
+        (key, record) -> {
+          visitedJobKeys.add(key);
+          return true;
+        });
+    assertThat(visitedJobKeys).containsExactly(11L, 22L);
+  }
+
+  @Test
   void shouldRejectReadsTheCheckersNeverIssue() {
     // given
     final var timerViewState = new LayeredViewTimerInstanceState(domain.viewPublisher());
     final var messageViewState = new LayeredViewMessageState(domain.viewPublisher());
+    final var jobViewState = new LayeredViewJobState(domain.viewPublisher());
 
     // when / then
     assertThatThrownBy(() -> timerViewState.get(1L, 2L))
         .isInstanceOf(UnsupportedOperationException.class);
     assertThatThrownBy(() -> messageViewState.getMessage(1L))
+        .isInstanceOf(UnsupportedOperationException.class);
+    assertThatThrownBy(() -> jobViewState.getJob(1L))
         .isInstanceOf(UnsupportedOperationException.class);
   }
 
@@ -191,6 +293,13 @@ final class LayeredViewScheduledTaskStateTest {
     timer.setKey(timerKey);
     timer.setDueDate(dueDate);
     timerState.store(timer);
+  }
+
+  private void storeActivatedJob(final long jobKey, final long deadline) {
+    final JobRecord job =
+        new JobRecord().setType("order-shipment").setRetries(2).setDeadline(deadline);
+    jobState.create(jobKey, job);
+    jobState.activate(jobKey, job);
   }
 
   private MessageRecord createMessage(final long deadline) {

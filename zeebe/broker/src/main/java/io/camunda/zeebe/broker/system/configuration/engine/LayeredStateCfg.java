@@ -20,11 +20,11 @@ import org.springframework.util.unit.DataSize;
  * <p><b>Experimental — unsafe to enable in production.</b> When disabled (the default), the broker
  * behaves exactly as before. When enabled, the runtime RocksDB state trails the log by up to the
  * persist interval, so crash recovery replays a correspondingly larger window, and secondary
- * readers (e.g. the query API) observe state at persist-round freshness. The timer due-date and
- * message-TTL checkers run asynchronously on read views of the buffered state, refreshed at the
- * freeze interval and additionally right before each checker execution; the remaining engine
- * scheduled tasks run on the stream processor's thread behind a persist barrier so their state
- * scans keep observing every committed batch.
+ * readers (e.g. the query API) observe state at persist-round freshness. The timer due-date,
+ * message-TTL and job-timeout checkers run asynchronously on read views of the buffered state,
+ * refreshed at the freeze interval and additionally right before each checker execution; the
+ * remaining engine scheduled tasks run on the stream processor's thread behind a persist barrier so
+ * their state scans keep observing every committed batch.
  */
 public final class LayeredStateCfg implements ConfigurationEntry {
 

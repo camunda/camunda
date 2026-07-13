@@ -345,6 +345,7 @@ public final class EngineProcessors {
         typedRecordProcessors,
         processingState,
         scheduledTaskStateFactory,
+        stateViewPublisher,
         bpmnBehaviors,
         writers,
         jobMetrics,
