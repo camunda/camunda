@@ -88,16 +88,32 @@ public class PhysicalTenantWebappClientConfigRewriteAdvice implements ResponseBo
       return body;
     }
     final String prefix = PhysicalTenantContext.PHYSICAL_TENANTS_PATH_SEGMENT + physicalTenantId;
-    return prefixField(prefixField(body, CONTEXT_PATH, prefix), BASE_NAME, prefix);
+    final String contextPath = servletRequest.getServletRequest().getContextPath();
+    return rewritePathField(
+        rewritePathField(body, CONTEXT_PATH, contextPath, prefix), BASE_NAME, contextPath, prefix);
   }
 
-  private static String prefixField(final String body, final Pattern field, final String prefix) {
+  private static String rewritePathField(
+      final String body,
+      final Pattern field,
+      final String contextPath,
+      final String physicalTenantPrefix) {
     final Matcher matcher = field.matcher(body);
     if (!matcher.find()) {
       return body;
     }
-    // Re-emit the matched field with the captured value verbatim, prefix-prepended.
+    final String rewrittenPath =
+        insertAfterContextPath(matcher.group(2), contextPath, physicalTenantPrefix);
     return matcher.replaceFirst(
-        Matcher.quoteReplacement(matcher.group(1) + prefix + matcher.group(2) + matcher.group(3)));
+        Matcher.quoteReplacement(matcher.group(1) + rewrittenPath + matcher.group(3)));
+  }
+
+  /** Inserts the physical-tenant segment right after the servlet context path. */
+  private static String insertAfterContextPath(
+      final String path, final String contextPath, final String physicalTenantPrefix) {
+    if (!path.startsWith(contextPath)) {
+      return physicalTenantPrefix + path;
+    }
+    return contextPath + physicalTenantPrefix + path.substring(contextPath.length());
   }
 }
