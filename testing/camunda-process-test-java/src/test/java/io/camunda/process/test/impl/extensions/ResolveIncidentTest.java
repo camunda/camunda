@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.extensions;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -107,6 +108,8 @@ public class ResolveIncidentTest {
       when(camundaClient
               .newIncidentSearchRequest()
               .filter(incidentFilterCaptor.capture())
+              .sort(any(Consumer.class))
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())
@@ -231,6 +234,8 @@ public class ResolveIncidentTest {
       when(camundaClient
               .newIncidentSearchRequest()
               .filter(incidentFilterCaptor.capture())
+              .sort(any(Consumer.class))
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())
@@ -287,6 +292,8 @@ public class ResolveIncidentTest {
       when(camundaClient
               .newIncidentSearchRequest()
               .filter(incidentFilterCaptor.capture())
+              .sort(any(Consumer.class))
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())

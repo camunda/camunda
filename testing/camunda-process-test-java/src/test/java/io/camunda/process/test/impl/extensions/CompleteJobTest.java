@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.extensions;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -128,6 +129,7 @@ public class CompleteJobTest {
       when(camundaClient
               .newJobSearchRequest()
               .filter(jobFilterCaptor.capture())
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())
@@ -208,6 +210,7 @@ public class CompleteJobTest {
       when(camundaClient
               .newJobSearchRequest()
               .filter(jobFilterCaptor.capture())
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())
@@ -266,6 +269,7 @@ public class CompleteJobTest {
       when(camundaClient
               .newJobSearchRequest()
               .filter(jobFilterCaptor.capture())
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())
@@ -284,6 +288,7 @@ public class CompleteJobTest {
       when(camundaClient
               .newJobSearchRequest()
               .filter(jobFilterCaptor.capture())
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())
@@ -307,6 +312,7 @@ public class CompleteJobTest {
       when(camundaClient
               .newJobSearchRequest()
               .filter(jobFilterCaptor.capture())
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())
@@ -350,6 +356,7 @@ public class CompleteJobTest {
       when(camundaClient
               .newJobSearchRequest()
               .filter(jobFilterCaptor.capture())
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())
@@ -432,6 +439,7 @@ public class CompleteJobTest {
       when(camundaClient
               .newJobSearchRequest()
               .filter(jobFilterCaptor.capture())
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())
@@ -499,6 +507,7 @@ public class CompleteJobTest {
       when(camundaClient
               .newJobSearchRequest()
               .filter(jobFilterCaptor.capture())
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())
@@ -565,6 +574,7 @@ public class CompleteJobTest {
       when(camundaClient
               .newJobSearchRequest()
               .filter(jobFilterCaptor.capture())
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())
@@ -630,6 +640,7 @@ public class CompleteJobTest {
       when(camundaClient
               .newJobSearchRequest()
               .filter(jobFilterCaptor.capture())
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())
@@ -812,6 +823,7 @@ public class CompleteJobTest {
       when(camundaClient
               .newJobSearchRequest()
               .filter(jobFilterCaptor.capture())
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())
@@ -828,6 +840,7 @@ public class CompleteJobTest {
       when(camundaClient
               .newJobSearchRequest()
               .filter(jobFilterCaptor.capture())
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())
@@ -929,6 +942,7 @@ public class CompleteJobTest {
       when(camundaClient
               .newJobSearchRequest()
               .filter(jobFilterCaptor.capture())
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())

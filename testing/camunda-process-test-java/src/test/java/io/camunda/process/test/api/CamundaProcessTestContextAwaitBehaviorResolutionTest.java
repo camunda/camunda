@@ -111,7 +111,13 @@ class CamundaProcessTestContextAwaitBehaviorResolutionTest {
   @Test
   void shouldUseOverriddenAwaitBehaviorWhenCompletingJobInsideConditionalEngine() {
     // given
-    when(camundaClient.newJobSearchRequest().filter(any(Consumer.class)).send().join().items())
+    when(camundaClient
+            .newJobSearchRequest()
+            .filter(any(Consumer.class))
+            .page(any(Consumer.class))
+            .send()
+            .join()
+            .items())
         .thenReturn(Collections.singletonList(job));
     when(job.getJobKey()).thenReturn(JOB_KEY);
     when(job.getType()).thenReturn(JOB_TYPE);
@@ -126,7 +132,14 @@ class CamundaProcessTestContextAwaitBehaviorResolutionTest {
   @Test
   void shouldUseOverriddenAwaitBehaviorWhenCompletingUserTaskInsideConditionalEngine() {
     // given
-    when(camundaClient.newUserTaskSearchRequest().filter(any(Consumer.class)).send().join().items())
+    when(camundaClient
+            .newUserTaskSearchRequest()
+            .filter(any(Consumer.class))
+            .sort(any(Consumer.class))
+            .page(any(Consumer.class))
+            .send()
+            .join()
+            .items())
         .thenReturn(Collections.singletonList(userTask));
     when(userTask.getUserTaskKey()).thenReturn(USER_TASK_KEY);
     when(userTask.getElementId()).thenReturn(USER_TASK_ELEMENT_ID);

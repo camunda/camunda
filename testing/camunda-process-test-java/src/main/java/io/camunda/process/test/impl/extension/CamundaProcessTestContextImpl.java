@@ -64,7 +64,6 @@ import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -769,7 +768,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     awaitBehaviorSupplier
         .get()
         .untilAsserted(
-            () -> findUserTask(userTaskSelector, client),
+            () -> findUserTask(userTaskSelector),
             userTask -> {
               assertThat(userTask)
                   .withFailMessage(
@@ -781,16 +780,10 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
             });
   }
 
-  private Optional<UserTask> findUserTask(
-      final UserTaskSelector userTaskSelector, final CamundaClient client) {
-    Consumer<UserTaskFilter> filter =
+  private Optional<UserTask> findUserTask(final UserTaskSelector userTaskSelector) {
+    final Consumer<UserTaskFilter> filter =
         DEFAULT_USER_TASK_COMPLETION_FILTER.andThen(userTaskSelector::applyFilter);
-    final OffsetDateTime startTime = dataSourceSupplier.get().getTestCaseStartTime();
-    if (startTime != null) {
-      filter =
-          ((Consumer<UserTaskFilter>) f -> f.creationDate(b -> b.gte(startTime))).andThen(filter);
-    }
-    return client.newUserTaskSearchRequest().filter(filter).send().join().items().stream()
+    return dataSourceSupplier.get().findUserTasks(filter).stream()
         .filter(userTaskSelector::test)
         .findFirst();
   }
@@ -801,7 +794,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     awaitBehaviorSupplier
         .get()
         .untilAsserted(
-            () -> findJob(jobSelector, client),
+            () -> findJob(jobSelector),
             job -> {
               assertThat(job)
                   .withFailMessage(
@@ -890,15 +883,10 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     return result;
   }
 
-  private Optional<Job> findJob(final JobSelector jobSelector, final CamundaClient client) {
-    Consumer<JobFilter> filter = DEFAULT_JOB_COMPLETION_FILTER.andThen(jobSelector::applyFilter);
-    final OffsetDateTime startTime = dataSourceSupplier.get().getTestCaseStartTime();
-    if (startTime != null) {
-      filter = ((Consumer<JobFilter>) f -> f.creationTime(b -> b.gte(startTime))).andThen(filter);
-    }
-    return client.newJobSearchRequest().filter(filter).send().join().items().stream()
-        .filter(jobSelector::test)
-        .findFirst();
+  private Optional<Job> findJob(final JobSelector jobSelector) {
+    final Consumer<JobFilter> filter =
+        DEFAULT_JOB_COMPLETION_FILTER.andThen(jobSelector::applyFilter);
+    return dataSourceSupplier.get().findJobs(filter).stream().filter(jobSelector::test).findFirst();
   }
 
   private void awaitIncident(
@@ -909,7 +897,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     awaitBehaviorSupplier
         .get()
         .untilAsserted(
-            () -> findIncident(incidentSelector, client),
+            () -> findIncident(incidentSelector),
             incident -> {
               assertThat(incident)
                   .withFailMessage(
@@ -921,49 +909,29 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
             });
   }
 
-  private Optional<Incident> findIncident(
-      final IncidentSelector incidentSelector, final CamundaClient client) {
-    Consumer<IncidentFilter> filter =
+  private Optional<Incident> findIncident(final IncidentSelector incidentSelector) {
+    final Consumer<IncidentFilter> filter =
         DEFAULT_INCIDENT_RESOLUTION_FILTER.andThen(incidentSelector::applyFilter);
-    final OffsetDateTime startTime = dataSourceSupplier.get().getTestCaseStartTime();
-    if (startTime != null) {
-      filter =
-          ((Consumer<IncidentFilter>) f -> f.creationTime(b -> b.gte(startTime))).andThen(filter);
-    }
-    return client.newIncidentSearchRequest().filter(filter).send().join().items().stream()
+    return dataSourceSupplier.get().findIncidents(filter).stream()
         .filter(incidentSelector::test)
         .findFirst();
   }
 
   private Optional<ProcessInstance> findProcessInstance(
-      final ProcessInstanceSelector processInstanceSelector, final CamundaClient client) {
-    Consumer<ProcessInstanceFilter> filter = processInstanceSelector::applyFilter;
-    final OffsetDateTime startTime = dataSourceSupplier.get().getTestCaseStartTime();
-    if (startTime != null) {
-      filter =
-          ((Consumer<ProcessInstanceFilter>) f -> f.startDate(b -> b.gte(startTime)))
-              .andThen(filter);
-    }
-    return client.newProcessInstanceSearchRequest().filter(filter).send().join().items().stream()
+      final ProcessInstanceSelector processInstanceSelector) {
+    final Consumer<ProcessInstanceFilter> filter = processInstanceSelector::applyFilter;
+    return dataSourceSupplier.get().findProcessInstances(filter).stream()
         .filter(processInstanceSelector::test)
         .findFirst();
   }
 
   private Optional<ElementInstance> findElementInstance(
-      final long processInstanceKey,
-      final ElementSelector elementSelector,
-      final CamundaClient client) {
-    Consumer<ElementInstanceFilter> filter =
+      final long processInstanceKey, final ElementSelector elementSelector) {
+    final Consumer<ElementInstanceFilter> filter =
         DEFAULT_ELEMENT_INSTANCE_FILTER
             .andThen(f -> f.processInstanceKey(processInstanceKey))
             .andThen(elementSelector::applyFilter);
-    final OffsetDateTime startTime = dataSourceSupplier.get().getTestCaseStartTime();
-    if (startTime != null) {
-      filter =
-          ((Consumer<ElementInstanceFilter>) f -> f.startDate(b -> b.gte(startTime)))
-              .andThen(filter);
-    }
-    return client.newElementInstanceSearchRequest().filter(filter).send().join().items().stream()
+    return dataSourceSupplier.get().findElementInstances(filter).stream()
         .filter(elementSelector::test)
         .findFirst();
   }
@@ -976,7 +944,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     awaitBehaviorSupplier
         .get()
         .untilAsserted(
-            () -> findProcessInstance(processInstanceSelector, client),
+            () -> findProcessInstance(processInstanceSelector),
             processInstance -> {
               assertThat(processInstance)
                   .withFailMessage(
@@ -997,7 +965,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     awaitBehaviorSupplier
         .get()
         .untilAsserted(
-            () -> findElementInstance(processInstanceKey, elementSelector, client),
+            () -> findElementInstance(processInstanceKey, elementSelector),
             elementInstance -> {
               assertThat(elementInstance)
                   .withFailMessage(

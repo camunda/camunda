@@ -99,7 +99,6 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   private CamundaProcessTestResultCollector processTestResultCollector;
   private CamundaProcessTestContext camundaProcessTestContext;
   private CamundaManagementClient camundaManagementClient;
-  private Instant testCaseStartTime;
   private CamundaDataSource dataSource;
   private boolean clockResetEnabled = true;
   private boolean dataDeletionEnabled = true;
@@ -186,7 +185,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
         .publishEvent(new CamundaClientCreatedSpringEvent(this, client));
 
     // initialize assertions
-    testCaseStartTime = readCurrentRuntimeTime();
+    final Instant testCaseStartTime = readCurrentRuntimeTime();
     dataSource = new CamundaDataSource(client, testCaseStartTime);
     CamundaAssert.initialize(dataSource);
 

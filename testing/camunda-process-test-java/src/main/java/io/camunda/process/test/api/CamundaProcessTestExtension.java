@@ -126,7 +126,6 @@ public class CamundaProcessTestExtension
   private JsonMapper jsonMapper;
 
   private CamundaManagementClient camundaManagementClient;
-  private Instant testCaseStartTime;
   private CamundaDataSource dataSource;
   private boolean clockResetEnabled = CamundaProcessTestRuntimeDefaults.CLOCK_RESET_ENABLED;
   private boolean dataDeletionEnabled = CamundaProcessTestRuntimeDefaults.DATA_DELETION_ENABLED;
@@ -318,7 +317,7 @@ public class CamundaProcessTestExtension
     }
 
     // initialize assertions
-    testCaseStartTime = readCurrentRuntimeTime();
+    final Instant testCaseStartTime = readCurrentRuntimeTime();
     dataSource = new CamundaDataSource(camundaProcessTestContext.createClient(), testCaseStartTime);
     CamundaAssert.initialize(dataSource);
 

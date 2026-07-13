@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.extensions;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -120,6 +121,8 @@ public class UpdateVariablesTest {
       when(camundaClient
               .newProcessInstanceSearchRequest()
               .filter(processInstanceFilterCaptor.capture())
+              .sort(any(Consumer.class))
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())
@@ -142,6 +145,8 @@ public class UpdateVariablesTest {
       when(camundaClient
               .newProcessInstanceSearchRequest()
               .filter(processInstanceFilterCaptor.capture())
+              .sort(any(Consumer.class))
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())
@@ -153,6 +158,8 @@ public class UpdateVariablesTest {
       when(camundaClient
               .newElementInstanceSearchRequest()
               .filter(elementInstanceFilterCaptor.capture())
+              .sort(any(Consumer.class))
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())
@@ -220,6 +227,8 @@ public class UpdateVariablesTest {
       when(camundaClient
               .newProcessInstanceSearchRequest()
               .filter(processInstanceFilterCaptor.capture())
+              .sort(any(Consumer.class))
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())
@@ -244,6 +253,8 @@ public class UpdateVariablesTest {
       when(camundaClient
               .newProcessInstanceSearchRequest()
               .filter(processInstanceFilterCaptor.capture())
+              .sort(any(Consumer.class))
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())
@@ -275,6 +286,8 @@ public class UpdateVariablesTest {
       when(camundaClient
               .newProcessInstanceSearchRequest()
               .filter(processInstanceFilterCaptor.capture())
+              .sort(any(Consumer.class))
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())
@@ -289,6 +302,8 @@ public class UpdateVariablesTest {
       when(camundaClient
               .newElementInstanceSearchRequest()
               .filter(elementInstanceFilterCaptor.capture())
+              .sort(any(Consumer.class))
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())
@@ -332,6 +347,8 @@ public class UpdateVariablesTest {
       when(camundaClient
               .newProcessInstanceSearchRequest()
               .filter(processInstanceFilterCaptor.capture())
+              .sort(any(Consumer.class))
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())
@@ -356,6 +373,8 @@ public class UpdateVariablesTest {
       when(camundaClient
               .newProcessInstanceSearchRequest()
               .filter(processInstanceFilterCaptor.capture())
+              .sort(any(Consumer.class))
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())
@@ -367,6 +386,8 @@ public class UpdateVariablesTest {
       when(camundaClient
               .newElementInstanceSearchRequest()
               .filter(elementInstanceFilterCaptor.capture())
+              .sort(any(Consumer.class))
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())
