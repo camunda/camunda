@@ -1988,7 +1988,6 @@ jobs:
     needs: [ detect-changes, pr-maven-snapshot ]
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    continue-on-error: true # pilot phase: observe without blocking merges
     permissions:
       contents: read
       pull-requests: write
