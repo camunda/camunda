@@ -1,0 +1,61 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.application.commons.secrets;
+
+import io.camunda.configuration.Camunda;
+import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
+import io.camunda.secretstore.NoopSecretStore;
+import io.camunda.secretstore.SecretStore;
+import io.camunda.secretstore.file.FileBasedSecretStore;
+import java.nio.file.Path;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import org.jspecify.annotations.NullMarked;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+/** Registers a {@link SecretStoreRegistry} bean populated from the per-physical-tenant config. */
+@Configuration(proxyBeanMethods = false)
+@NullMarked
+public class SecretStoreConfiguration {
+
+  private static final NoopSecretStore NOOP_STORE = new NoopSecretStore();
+
+  @Bean
+  public SecretStoreRegistry secretStoreRegistry(final PhysicalTenantResolver resolver) {
+    final Map<String, Map<String, SecretStore<?>>> storesByTenant = new LinkedHashMap<>();
+    resolver
+        .mapValues(Camunda::getSecrets)
+        .forEach(
+            (tenantId, secrets) -> {
+              final Map<String, SecretStore<?>> stores = new LinkedHashMap<>();
+              secrets
+                  .getStores()
+                  .getFile()
+                  .forEach(
+                      (storeId, fileStore) -> {
+                        final var path = fileStore.getPath();
+                        if (path.isBlank()) {
+                          throw new IllegalStateException(
+                              "File store '"
+                                  + storeId
+                                  + "' for physical tenant '"
+                                  + tenantId
+                                  + "' has no path configured");
+                        }
+                        stores.put(
+                            storeId.trim().toLowerCase(), new FileBasedSecretStore(Path.of(path)));
+                      });
+              if (stores.isEmpty()) {
+                stores.put("default", NOOP_STORE);
+              }
+              storesByTenant.put(tenantId, Map.copyOf(stores));
+            });
+    return new SecretStoreRegistry(Map.copyOf(storesByTenant));
+  }
+}
