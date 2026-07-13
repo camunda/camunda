@@ -357,11 +357,11 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   private Instant readCurrentRuntimeTime() {
     try {
       return camundaManagementClient.getCurrentTime();
-    } catch (final Throwable t) {
+    } catch (final Exception e) {
       LOG.warn(
           "Failed to read the current runtime time. Test case isolation by start time will be "
               + "disabled for this test case.",
-          t);
+          e);
       return null;
     }
   }
