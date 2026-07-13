@@ -185,7 +185,7 @@ public interface ActivatedJob {
 
   /**
    * The lease token identifying this activation. Pass it along to commands (e.g. complete, fail,
-   * throw-error) to fence them against superseded activations of the same job.
+   * throw-error, update-timeout) to fence them against superseded activations of the same job.
    *
    * @return the lease token, or {@code null} if the job was activated without a lease
    */

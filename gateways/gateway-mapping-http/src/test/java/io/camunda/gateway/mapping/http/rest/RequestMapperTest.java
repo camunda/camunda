@@ -14,6 +14,9 @@ import io.camunda.gateway.protocol.model.AdvancedStringFilter;
 import io.camunda.gateway.protocol.model.DeleteResourceRequest;
 import io.camunda.gateway.protocol.model.JobActivationRequest;
 import io.camunda.gateway.protocol.model.JobChangeset;
+import io.camunda.gateway.protocol.model.JobCompletionRequest;
+import io.camunda.gateway.protocol.model.JobErrorRequest;
+import io.camunda.gateway.protocol.model.JobFailRequest;
 import io.camunda.gateway.protocol.model.JobUpdateRequest;
 import io.camunda.gateway.protocol.model.MigrateProcessInstanceMappingInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceFilter;
@@ -684,6 +687,114 @@ class RequestMapperTest {
       assertThat(result.isLeft()).isTrue();
       assertThat(result.getLeft().getStatus()).isEqualTo(400);
       assertThat(result.getLeft().getDetail()).contains("retries", "timeout", "priority");
+    }
+  }
+
+  @Nested
+  class LeaseTokenMappingTest {
+
+    @Test
+    void shouldMapLeaseTokenOnJobCompletion() {
+      // given
+      final var request = JobCompletionRequest.Builder.create().leaseToken("lease-1").build();
+
+      // when
+      final var result = RequestMapper.toJobCompletionRequest(request, 1L);
+
+      // then
+      assertThat(result.leaseToken()).isEqualTo("lease-1");
+    }
+
+    @Test
+    void shouldMapAbsentLeaseTokenOnJobCompletion() {
+      // given
+      final var request = JobCompletionRequest.Builder.create().build();
+
+      // when
+      final var result = RequestMapper.toJobCompletionRequest(request, 1L);
+
+      // then
+      assertThat(result.leaseToken()).isNull();
+    }
+
+    @Test
+    void shouldMapLeaseTokenOnJobFail() {
+      // given
+      final var request = JobFailRequest.Builder.create().leaseToken("lease-1").build();
+
+      // when
+      final var result = RequestMapper.toJobFailRequest(request, 1L);
+
+      // then
+      assertThat(result.leaseToken()).isEqualTo("lease-1");
+    }
+
+    @Test
+    void shouldMapAbsentLeaseTokenOnJobFail() {
+      // given
+      final var request = JobFailRequest.Builder.create().build();
+
+      // when
+      final var result = RequestMapper.toJobFailRequest(request, 1L);
+
+      // then
+      assertThat(result.leaseToken()).isNull();
+    }
+
+    @Test
+    void shouldMapLeaseTokenOnJobError() {
+      // given
+      final var request =
+          JobErrorRequest.Builder.create().errorCode("error-1").leaseToken("lease-1").build();
+
+      // when
+      final var result = RequestMapper.toJobErrorRequest(request, 1L);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      assertThat(result.get().leaseToken()).isEqualTo("lease-1");
+    }
+
+    @Test
+    void shouldMapAbsentLeaseTokenOnJobError() {
+      // given
+      final var request = JobErrorRequest.Builder.create().errorCode("error-1").build();
+
+      // when
+      final var result = RequestMapper.toJobErrorRequest(request, 1L);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      assertThat(result.get().leaseToken()).isNull();
+    }
+
+    @Test
+    void shouldMapLeaseTokenOnJobUpdate() {
+      // given
+      final var changeset = JobChangeset.Builder.create().priority(80).build();
+      final var request =
+          JobUpdateRequest.Builder.create().changeset(changeset).leaseToken("lease-1").build();
+
+      // when
+      final var result = RequestMapper.toJobUpdateRequest(request, 1L);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      assertThat(result.get().leaseToken()).isEqualTo("lease-1");
+    }
+
+    @Test
+    void shouldMapAbsentLeaseTokenOnJobUpdate() {
+      // given
+      final var changeset = JobChangeset.Builder.create().priority(80).build();
+      final var request = JobUpdateRequest.Builder.create().changeset(changeset).build();
+
+      // when
+      final var result = RequestMapper.toJobUpdateRequest(request, 1L);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      assertThat(result.get().leaseToken()).isNull();
     }
   }
 }

@@ -559,7 +559,7 @@ components:
           type: integer
           format: int32
         leaseToken:
-          description: |
+          description: >
             The lease token identifying this activation. This is `null` when the job was
             activated without a lease.
           nullable: true
@@ -1035,6 +1035,23 @@ components:
             associated task.
           type: object
           additionalProperties: true
+        leaseToken:
+          description: >
+            The token identifying a leased job's activation, obtained from
+            `ActivatedJobResult.leaseToken`.
+
+            For a leased job, the matching token must be supplied to prove the command comes from
+            the worker that holds the current lease; a command with no token is rejected. A command
+            carrying a stale token is likewise rejected, fencing the job against a superseded
+            activation (for example, after the job timed out or failed and was re-activated by
+            another worker).
+
+            A job that was activated without a lease requires no token.
+          type: string
+          nullable: true
+      x-properties-added-in-version:
+        - propertyName: leaseToken
+          addedInVersion: "8.10"
 
     JobErrorRequest:
       type: object
@@ -1055,8 +1072,25 @@ components:
             JSON object that will instantiate the variables at the local scope of the error catch event that catches the thrown error.
           type: object
           nullable: true
+        leaseToken:
+          description: >
+            The token identifying a leased job's activation, obtained from
+            `ActivatedJobResult.leaseToken`.
+
+            For a leased job, the matching token must be supplied to prove the command comes from
+            the worker that holds the current lease; a command with no token is rejected. A command
+            carrying a stale token is likewise rejected, fencing the job against a superseded
+            activation (for example, after the job timed out or failed and was re-activated by
+            another worker).
+
+            A job that was activated without a lease requires no token.
+          type: string
+          nullable: true
       required:
         - errorCode
+      x-properties-added-in-version:
+        - propertyName: leaseToken
+          addedInVersion: "8.10"
 
     JobCompletionRequest:
       type: object
@@ -1069,9 +1103,25 @@ components:
           nullable: true
         result:
           $ref: '#/components/schemas/JobResult'
+        leaseToken:
+          description: >
+            The token identifying a leased job's activation, obtained from
+            `ActivatedJobResult.leaseToken`.
+
+            For a leased job, the matching token must be supplied to prove the command comes from
+            the worker that holds the current lease; a command with no token is rejected. A command
+            carrying a stale token is likewise rejected, fencing the job against a superseded
+            activation (for example, after the job timed out or failed and was re-activated by
+            another worker).
+
+            A job that was activated without a lease requires no token.
+          type: string
+          nullable: true
       x-properties-added-in-version:
         - propertyName: result
           addedInVersion: "8.8"
+        - propertyName: leaseToken
+          addedInVersion: "8.10"
 
     JobResult:
       description: >
@@ -1213,11 +1263,30 @@ components:
           $ref: '#/components/schemas/JobChangeset'
         operationReference:
           $ref: "keys.yaml#/components/schemas/OperationReference"
+        leaseToken:
+          description: >
+            The token identifying a leased job's activation, obtained from
+            `ActivatedJobResult.leaseToken`.
+
+            For a leased job, a supplied token is validated to prove the command comes from the
+            worker that holds the current lease; a command carrying a stale token is rejected,
+            fencing the job against a superseded activation (for example, after the job timed out or
+            failed and was re-activated by another worker).
+
+            An update without a token always applies to support operator and bulk updates of
+            leased jobs. Note that this is different from lifecycle requests like complete, fail, and
+            throw-error that always require a token for leased jobs.
+
+            A job that was activated without a lease requires no token.
+          type: string
+          nullable: true
       required:
         - changeset
       x-properties-added-in-version:
         - propertyName: operationReference
           addedInVersion: "8.8"
+        - propertyName: leaseToken
+          addedInVersion: "8.10"
 
     JobChangeset:
       description: JSON object with changed job attribute values. The job cannot be completed or failed with this endpoint, use the complete job or fail job endpoints instead.

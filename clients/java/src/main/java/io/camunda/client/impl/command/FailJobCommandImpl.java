@@ -93,6 +93,16 @@ public final class FailJobCommandImpl extends CommandWithVariables<FailJobComman
   }
 
   @Override
+  public FailJobCommandStep2 withLeaseToken(final String leaseToken) {
+    if (leaseToken == null) {
+      return this;
+    }
+    grpcRequestObjectBuilder.setLeaseToken(leaseToken);
+    httpRequestObject.setLeaseToken(leaseToken);
+    return this;
+  }
+
+  @Override
   public FailJobCommandStep2 setVariablesInternal(final String variables) {
     grpcRequestObjectBuilder.setVariables(variables);
     // This check is mandatory. Without it, gRPC requests can fail unnecessarily.

@@ -85,6 +85,64 @@ public final class CompleteJobTest extends ClientTest {
   }
 
   @Test
+  public void shouldCompleteJobWithLeaseToken() {
+    // given
+    final long jobKey = 12;
+    final String leaseToken = "lease-token";
+
+    // when
+    client.newCompleteCommand(jobKey).withLeaseToken(leaseToken).send().join();
+
+    // then
+    final CompleteJobRequest request = gatewayService.getLastRequest();
+    assertThat(request.getLeaseToken()).isEqualTo(leaseToken);
+  }
+
+  @Test
+  public void shouldCarryLeaseTokenFromActivatedJob() {
+    // given
+    final String leaseToken = "lease-token";
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+    Mockito.when(job.getLeaseToken()).thenReturn(leaseToken);
+
+    // when
+    client.newCompleteCommand(job).send().join();
+
+    // then
+    final CompleteJobRequest request = gatewayService.getLastRequest();
+    assertThat(request.getLeaseToken()).isEqualTo(leaseToken);
+  }
+
+  @Test
+  public void shouldNotCarryLeaseTokenFromActivatedJobWithoutOne() {
+    // given
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+    Mockito.when(job.getLeaseToken()).thenReturn(null);
+
+    // when
+    client.newCompleteCommand(job).send().join();
+
+    // then
+    final CompleteJobRequest request = gatewayService.getLastRequest();
+    assertThat(request.getLeaseToken()).isEmpty();
+  }
+
+  @Test
+  public void shouldNotCarryLeaseTokenByJobKey() {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client.newCompleteCommand(jobKey).send().join();
+
+    // then
+    final CompleteJobRequest request = gatewayService.getLastRequest();
+    assertThat(request.getLeaseToken()).isEmpty();
+  }
+
+  @Test
   public void shouldCompleteWithJsonStringVariables() {
     // given
     final long jobKey = 12;

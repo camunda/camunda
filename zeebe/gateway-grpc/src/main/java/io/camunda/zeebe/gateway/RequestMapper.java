@@ -162,6 +162,9 @@ public final class RequestMapper extends RequestUtil {
       final UpdateJobTimeoutRequest grpcRequest) {
     final var brokerRequest =
         new BrokerUpdateJobTimeoutRequest(grpcRequest.getJobKey(), grpcRequest.getTimeout());
+    if (grpcRequest.hasLeaseToken()) {
+      brokerRequest.setLeaseToken(grpcRequest.getLeaseToken());
+    }
     if (grpcRequest.hasOperationReference()) {
       brokerRequest.setOperationReference(grpcRequest.getOperationReference());
     }
@@ -183,26 +186,41 @@ public final class RequestMapper extends RequestUtil {
   }
 
   public static BrokerFailJobRequest toFailJobRequest(final FailJobRequest grpcRequest) {
-    return new BrokerFailJobRequest(
-            grpcRequest.getJobKey(), grpcRequest.getRetries(), grpcRequest.getRetryBackOff())
-        .setErrorMessage(grpcRequest.getErrorMessage())
-        .setVariables(ensureJsonSet(grpcRequest.getVariables()));
+    final var brokerRequest =
+        new BrokerFailJobRequest(
+                grpcRequest.getJobKey(), grpcRequest.getRetries(), grpcRequest.getRetryBackOff())
+            .setErrorMessage(grpcRequest.getErrorMessage())
+            .setVariables(ensureJsonSet(grpcRequest.getVariables()));
+    if (grpcRequest.hasLeaseToken()) {
+      brokerRequest.setLeaseToken(grpcRequest.getLeaseToken());
+    }
+    return brokerRequest;
   }
 
   public static BrokerThrowErrorRequest toThrowErrorRequest(final ThrowErrorRequest grpcRequest) {
-    return new BrokerThrowErrorRequest(grpcRequest.getJobKey(), grpcRequest.getErrorCode())
-        .setErrorMessage(grpcRequest.getErrorMessage())
-        .setVariables(ensureJsonSet(grpcRequest.getVariables()));
+    final var brokerRequest =
+        new BrokerThrowErrorRequest(grpcRequest.getJobKey(), grpcRequest.getErrorCode())
+            .setErrorMessage(grpcRequest.getErrorMessage())
+            .setVariables(ensureJsonSet(grpcRequest.getVariables()));
+    if (grpcRequest.hasLeaseToken()) {
+      brokerRequest.setLeaseToken(grpcRequest.getLeaseToken());
+    }
+    return brokerRequest;
   }
 
   public static BrokerCompleteJobRequest toCompleteJobRequest(
       final CompleteJobRequest grpcRequest) {
 
-    return new BrokerCompleteJobRequest(
-        grpcRequest.getJobKey(),
-        ensureJsonSet(grpcRequest.getVariables()),
-        getJobResultOrDefault(grpcRequest),
-        maxVariableNameLength);
+    final var brokerRequest =
+        new BrokerCompleteJobRequest(
+            grpcRequest.getJobKey(),
+            ensureJsonSet(grpcRequest.getVariables()),
+            getJobResultOrDefault(grpcRequest),
+            maxVariableNameLength);
+    if (grpcRequest.hasLeaseToken()) {
+      brokerRequest.setLeaseToken(grpcRequest.getLeaseToken());
+    }
+    return brokerRequest;
   }
 
   private static JobResult getJobResultOrDefault(final CompleteJobRequest request) {

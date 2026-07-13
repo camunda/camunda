@@ -123,11 +123,15 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final String errorMessage,
       final Long retryBackOff,
       final Map<String, Object> variables,
+      final String leaseToken,
       final CamundaAuthentication authentication) {
     final var request =
         new BrokerFailJobRequest(jobKey, retries, retryBackOff)
             .setVariables(getDocumentOrEmpty(variables))
             .setErrorMessage(errorMessage);
+    if (leaseToken != null) {
+      request.setLeaseToken(leaseToken);
+    }
     return sendBrokerRequest(request, authentication);
   }
 
@@ -136,11 +140,15 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final String errorCode,
       final String errorMessage,
       final Map<String, Object> variables,
+      final String leaseToken,
       final CamundaAuthentication authentication) {
     final var request =
         new BrokerThrowErrorRequest(jobKey, errorCode)
             .setErrorMessage(errorMessage)
             .setVariables(getDocumentOrEmpty(variables));
+    if (leaseToken != null) {
+      request.setLeaseToken(leaseToken);
+    }
     return sendBrokerRequest(request, authentication);
   }
 
@@ -148,23 +156,31 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final long jobKey,
       final Map<String, Object> variables,
       final JobResult result,
+      final String leaseToken,
       final CamundaAuthentication authentication) {
-    return sendBrokerRequest(
+    final var request =
         new BrokerCompleteJobRequest(
-            jobKey, getDocumentOrEmpty(variables), result, maxVariableNameLength),
-        authentication);
+            jobKey, getDocumentOrEmpty(variables), result, maxVariableNameLength);
+    if (leaseToken != null) {
+      request.setLeaseToken(leaseToken);
+    }
+    return sendBrokerRequest(request, authentication);
   }
 
   public CompletableFuture<JobRecord> updateJob(
       final long jobKey,
       final Long operationReference,
       final UpdateJobChangeset changeset,
+      final String leaseToken,
       final CamundaAuthentication authentication) {
     final var brokerRequest =
         new BrokerUpdateJobRequest(
             jobKey, changeset.retries(), changeset.timeout(), changeset.priority());
     if (operationReference != null) {
       brokerRequest.setOperationReference(operationReference);
+    }
+    if (leaseToken != null) {
+      brokerRequest.setLeaseToken(leaseToken);
     }
     return sendBrokerRequest(brokerRequest, authentication);
   }

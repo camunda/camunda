@@ -86,6 +86,16 @@ public final class ThrowErrorCommandImpl extends CommandWithVariables<ThrowError
   }
 
   @Override
+  public ThrowErrorCommandStep2 withLeaseToken(final String leaseToken) {
+    if (leaseToken == null) {
+      return this;
+    }
+    grpcRequestObjectBuilder.setLeaseToken(leaseToken);
+    httpRequestObject.setLeaseToken(leaseToken);
+    return this;
+  }
+
+  @Override
   public ThrowErrorCommandStep2 setVariablesInternal(final String variables) {
     grpcRequestObjectBuilder.setVariables(variables);
     // This check is mandatory. Without it, gRPC requests can fail unnecessarily.
