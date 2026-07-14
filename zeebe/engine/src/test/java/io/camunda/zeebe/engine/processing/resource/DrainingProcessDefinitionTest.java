@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.resource;
 
 import static io.camunda.zeebe.protocol.record.RecordAssert.assertThat;
 
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationHelper;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -68,8 +69,8 @@ public class DrainingProcessDefinitionTest {
     assertThat(rejection)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-            "Expected to create instance of process with ID '%s' and version %d (key %d), but it is being deleted"
-                .formatted(processId, metadata.getVersion(), metadata.getProcessDefinitionKey()));
+            ProcessInstanceCreationHelper.ERROR_MESSAGE_PROCESS_IS_DRAINING.formatted(
+                processId, metadata.getVersion(), metadata.getProcessDefinitionKey()));
   }
 
   @Test
@@ -88,8 +89,8 @@ public class DrainingProcessDefinitionTest {
     assertThat(rejection)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-            "Expected to create instance of process with ID '%s' and version %d (key %d), but it is being deleted"
-                .formatted(processId, metadata.getVersion(), metadata.getProcessDefinitionKey()));
+            ProcessInstanceCreationHelper.ERROR_MESSAGE_PROCESS_IS_DRAINING.formatted(
+                processId, metadata.getVersion(), metadata.getProcessDefinitionKey()));
   }
 
   @Test
@@ -111,8 +112,8 @@ public class DrainingProcessDefinitionTest {
     assertThat(rejection)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-            "Expected to create instance of process with ID '%s' and version %d (key %d), but it is being deleted"
-                .formatted(processId, metadata.getVersion(), metadata.getProcessDefinitionKey()));
+            ProcessInstanceCreationHelper.ERROR_MESSAGE_PROCESS_IS_DRAINING.formatted(
+                processId, metadata.getVersion(), metadata.getProcessDefinitionKey()));
   }
 
   @Test
@@ -136,8 +137,8 @@ public class DrainingProcessDefinitionTest {
     assertThat(rejection)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-            "Expected to create instance of process with ID '%s' and version %d (key %d), but it is being deleted"
-                .formatted(processId, metadata.getVersion(), metadata.getProcessDefinitionKey()));
+            ProcessInstanceCreationHelper.ERROR_MESSAGE_PROCESS_IS_DRAINING.formatted(
+                processId, metadata.getVersion(), metadata.getProcessDefinitionKey()));
   }
 
   @Test
@@ -163,7 +164,7 @@ public class DrainingProcessDefinitionTest {
     final long parentInstanceKey = engine.processInstance().ofBpmnProcessId(parentId).create();
 
     // then
-    assertCalledElementIncident(parentInstanceKey, childId);
+    assertCalledElementIncident(parentInstanceKey, child);
   }
 
   @Test
@@ -199,7 +200,7 @@ public class DrainingProcessDefinitionTest {
     final long parentInstanceKey = engine.processInstance().ofBpmnProcessId(parentId).create();
 
     // then
-    assertCalledElementIncident(parentInstanceKey, childId);
+    assertCalledElementIncident(parentInstanceKey, child);
   }
 
   @Test
@@ -240,10 +241,11 @@ public class DrainingProcessDefinitionTest {
     final long parentInstanceKey = engine.processInstance().ofBpmnProcessId(parentId).create();
 
     // then
-    assertCalledElementIncident(parentInstanceKey, childId);
+    assertCalledElementIncident(parentInstanceKey, child);
   }
 
-  private void assertCalledElementIncident(final long parentInstanceKey, final String childId) {
+  private void assertCalledElementIncident(
+      final long parentInstanceKey, final ProcessMetadataValue child) {
     final var incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
             .withProcessInstanceKey(parentInstanceKey)
@@ -252,8 +254,9 @@ public class DrainingProcessDefinitionTest {
         .isEqualTo(ErrorType.CALLED_ELEMENT_ERROR);
     Assertions.assertThat(incident.getValue().getErrorMessage())
         .isEqualTo(
-            "Expected to call process with BPMN process id '%s', but it is being deleted."
-                .formatted(childId));
+            "Expected to call process with BPMN process id '%s' and version %d (key %d), but it is being deleted."
+                .formatted(
+                    child.getBpmnProcessId(), child.getVersion(), child.getProcessDefinitionKey()));
   }
 
   @Test
@@ -440,8 +443,8 @@ public class DrainingProcessDefinitionTest {
     assertThat(rejection)
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasRejectionReason(
-            "Expected to create instance of process with ID '%s' and version %d (key %d), but it is being deleted"
-                .formatted(processId, metadata.getVersion(), metadata.getProcessDefinitionKey()));
+            ProcessInstanceCreationHelper.ERROR_MESSAGE_PROCESS_IS_DRAINING.formatted(
+                processId, metadata.getVersion(), metadata.getProcessDefinitionKey()));
     assertNoInstanceSpawned(metadata.getProcessDefinitionKey());
   }
 

@@ -24,7 +24,6 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
 import io.camunda.zeebe.engine.processing.processinstance.BusinessIdValidator;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
-import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
@@ -442,8 +441,10 @@ public final class CallActivityProcessor
       return Either.left(
           new Failure(
               String.format(
-                  "Expected to call process with BPMN process id '%s', but it is being deleted.",
-                  BufferUtil.bufferAsString(process.getBpmnProcessId())),
+                  "Expected to call process with BPMN process id '%s' and version %d (key %d), but it is being deleted.",
+                  BufferUtil.bufferAsString(process.getBpmnProcessId()),
+                  process.getVersion(),
+                  process.getKey()),
               ErrorType.CALLED_ELEMENT_ERROR));
     }
     return Either.right(process);
