@@ -751,6 +751,95 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
         });
   }
 
+  // regression test for https://github.com/camunda/camunda/issues/54279
+  @TestTemplate
+  void shouldClearStaleIncidentFlagWhenCreatedAndResolvedInSameBatch(
+      final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
+    withTask(
+        config,
+        (job, resources) -> {
+          final var listViewTemplate = resources.getIndexTemplateDescriptor(ListViewTemplate.class);
+          final var incidentTemplate = resources.getIndexTemplateDescriptor(IncidentTemplate.class);
+          final var postImporterTemplate =
+              resources.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
+
+          // the incident document is still PENDING: the CREATED update will be dropped because
+          // RESOLVED is present in the same batch, so it never transitions to ACTIVE
+          final var key = ID_GENERATOR.getAndIncrement();
+          final IncidentEntity incidentEntity =
+              new IncidentEntity()
+                  .setId(String.valueOf(key))
+                  .setPartitionId(PARTITION_ID)
+                  .setKey(key)
+                  .setState(IncidentState.PENDING)
+                  .setErrorMessage("An error happened")
+                  .setProcessInstanceKey(key)
+                  .setFlowNodeInstanceKey(key)
+                  .setFlowNodeId(String.valueOf(key));
+          store(incidentTemplate, client, incidentEntity);
+          client.refresh(incidentTemplate.getFullQualifiedName());
+
+          // the process instance is already displaying an incident (incident=true) in the list
+          // view
+          final ProcessInstanceForListViewEntity processInstance =
+              new ProcessInstanceForListViewEntity()
+                  .setId(String.valueOf(key))
+                  .setPartitionId(PARTITION_ID)
+                  .setKey(key)
+                  .setProcessDefinitionKey(9999L)
+                  .setBpmnProcessId("process-1")
+                  .setTreePath("PI_" + key)
+                  .setIncident(true);
+          store(listViewTemplate, client, processInstance);
+          client.refresh(listViewTemplate.getFullQualifiedName());
+
+          // a CREATED + RESOLVED pair for the same incident in the same post-importer-queue batch
+          store(
+              postImporterTemplate,
+              client,
+              new PostImporterQueueEntity()
+                  .setId("queue-1")
+                  .setPartitionId(PARTITION_ID)
+                  .setActionType(PostImporterActionType.INCIDENT)
+                  .setIntent("CREATED")
+                  .setKey(key)
+                  .setProcessInstanceKey(key)
+                  .setPosition(1L));
+          store(
+              postImporterTemplate,
+              client,
+              new PostImporterQueueEntity()
+                  .setId("queue-2")
+                  .setPartitionId(PARTITION_ID)
+                  .setActionType(PostImporterActionType.INCIDENT)
+                  .setIntent("RESOLVED")
+                  .setKey(key)
+                  .setProcessInstanceKey(key)
+                  .setPosition(2L));
+          client.refresh(postImporterTemplate.getFullQualifiedName());
+
+          // when
+          final var updated = job.execute();
+
+          // then - the task advances the position unconditionally past the whole batch
+          assertThat(updated).succeedsWithin(EXECUTE_TIMEOUT);
+          assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(2L);
+
+          client.refresh(testPrefix);
+
+          // the incident document is updated to RESOLVED
+          final var updatedIncident = getFromIndex(incidentTemplate, client, incidentEntity);
+          assertThat(updatedIncident.getState()).isEqualTo(IncidentState.RESOLVED);
+
+          // the list-view process instance must no longer be marked as having an incident,
+          // otherwise operate-list-view-* stays permanently inconsistent with the now-RESOLVED
+          // incident document
+          final var updatedProcessInstance =
+              getFromIndex(listViewTemplate, client, processInstance);
+          assertThat(updatedProcessInstance.isIncident()).isFalse();
+        });
+  }
+
   private <T extends ExporterEntity<T>> T getFromIndex(
       final IndexTemplateDescriptor templateDescriptor,
       final SearchClientAdapter client,
