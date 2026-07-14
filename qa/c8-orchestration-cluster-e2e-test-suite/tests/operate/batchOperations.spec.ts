@@ -225,36 +225,20 @@ test.describe('Batch Operations', () => {
     );
     await operateOperationsDetailsPage.goto(batchKey);
 
-    await test.step('Wait for active state and click Suspend', async () => {
-      await waitForAssertion({
-        assertion: async () => {
-          await expect(operateOperationsDetailsPage.suspendButton).toBeVisible({
-            timeout: 20000,
-          });
-          await expect(
-            operateOperationsDetailsPage.suspendButton,
-          ).toBeEnabled();
-        },
-        onFailure: async () => {
-          await page.reload();
-        },
-      });
-      await operateOperationsDetailsPage.suspendButton.click();
+    await test.step('Suspend the batch once the command is accepted', async () => {
+      await operateOperationsDetailsPage.suspendUntilCommandAccepted();
     });
 
-    await test.step('Reload the page and verify state shows Suspended', async () => {
-      await waitForAssertion({
-        assertion: async () => {
-          await page.reload();
-          await expect(operateOperationsDetailsPage.state).toContainText(
-            'Suspended',
-            {timeout: 20000},
-          );
-        },
-        onFailure: async () => {
-          await page.reload();
-        },
-      });
+    await test.step('Verify the suspend reached the engine and persists', async () => {
+      // Cross-check the backend directly, not just the UI: the command must have
+      // reached the engine and moved the batch to SUSPENDED.
+      await expectBatchState(request, batchKey, 'SUSPENDED');
+
+      await page.reload();
+      await expect(operateOperationsDetailsPage.state).toContainText(
+        'Suspended',
+        {timeout: 20000},
+      );
       await expect(operateOperationsDetailsPage.resumeButton).toBeVisible();
       await expect(operateOperationsDetailsPage.suspendButton).toBeHidden();
     });

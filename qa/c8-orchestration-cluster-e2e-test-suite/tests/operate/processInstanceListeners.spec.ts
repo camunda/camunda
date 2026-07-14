@@ -128,13 +128,13 @@ test.describe('Process Instance Listeners', () => {
         id: processInstanceKey,
       });
 
-      await operateProcessInstancePage.diagramHelper.clickFlowNode(
+      await operateProcessInstancePage.selectFlowNodeWhenSelectable(
         'Service Task B',
       );
       await operateProcessInstancePage.openListenersTab();
       await expect(
         operateProcessInstancePage.getListenerRows('execution'),
-      ).toHaveCount(1);
+      ).toHaveCount(1, {timeout: 15000});
     });
 
     await test.step('Add a new flow node instance', async () => {
@@ -155,7 +155,7 @@ test.describe('Process Instance Listeners', () => {
         })
         .toBe(2);
 
-      await operateProcessInstancePage.diagramHelper.clickFlowNode(
+      await operateProcessInstancePage.selectFlowNodeWhenSelectable(
         'Service Task B',
       );
       await operateProcessInstancePage.openListenersTab();
@@ -164,13 +164,18 @@ test.describe('Process Instance Listeners', () => {
         assertion: async () => {
           await expect(
             operateProcessInstancePage.getListenerRows('execution'),
-          ).toHaveCount(2, {timeout: 5000});
+          ).toHaveCount(2, {timeout: 15000});
         },
         onFailure: async () => {
+          // The flow-node selection is stored in the `elementId` URL param, so it
+          // survives a reload — the element stays selected. Do NOT click the node
+          // again: a second click on an already-selected element deselects it and
+          // reverts the query to the process root (0 listeners). Just wait for the
+          // diagram to become selectable again and re-open the Listeners tab.
           await page.reload();
-          await operateProcessInstancePage.diagramHelper.clickFlowNode(
-            'Service Task B',
-          );
+          await expect(
+            operateProcessInstancePage.getDiagramFlowNode('Service Task B'),
+          ).toHaveClass(/op-selectable/, {timeout: 30000});
           await operateProcessInstancePage.openListenersTab();
         },
       });
@@ -184,7 +189,7 @@ test.describe('Process Instance Listeners', () => {
       await operateProcessInstancePage.openListenersTab();
       await expect(
         operateProcessInstancePage.getListenerRows('execution'),
-      ).toHaveCount(1);
+      ).toHaveCount(1, {timeout: 15000});
     });
   });
 

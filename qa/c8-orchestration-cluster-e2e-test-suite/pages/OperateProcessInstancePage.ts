@@ -519,11 +519,24 @@ class OperateProcessInstancePage {
   }
 
   async clickFlowNode(flowNodeName: string) {
-    await this.diagram
+    await this.getDiagramFlowNode(flowNodeName).click({timeout: 20000});
+  }
+
+  getDiagramFlowNode(flowNodeName: string): Locator {
+    return this.diagram
       .locator('.djs-element[data-element-id]')
       .filter({hasText: new RegExp(`${flowNodeName}`, 'i')})
-      .first()
-      .click({timeout: 20000});
+      .first();
+  }
+
+  async selectFlowNodeWhenSelectable(flowNodeName: string): Promise<void> {
+    const flowNode = this.getDiagramFlowNode(flowNodeName);
+    // The diagram renders (and looks interactive) before the element-instance
+    // statistics load, and BpmnJS ignores element clicks until then — it adds
+    // the `op-selectable` marker only once the statistics resolve. Wait for it
+    // so the click actually selects the element instead of being a silent no-op.
+    await expect(flowNode).toHaveClass(/op-selectable/, {timeout: 30000});
+    await flowNode.click({timeout: 20000});
   }
 
   async navigateToRootScope() {
