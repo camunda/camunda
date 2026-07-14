@@ -10,10 +10,10 @@ package io.camunda.webapps.schema.descriptors.index;
 import static io.camunda.webapps.schema.descriptors.ComponentNames.OPERATE;
 
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
-import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
+import io.camunda.webapps.schema.descriptors.backup.Prio1Backup;
 import java.util.Optional;
 
-public class DecisionIndex extends AbstractIndexDescriptor implements Prio4Backup {
+public class DecisionIndex extends AbstractIndexDescriptor implements Prio1Backup {
 
   public static final String INDEX_NAME = "decision";
   public static final String ID = "id";
