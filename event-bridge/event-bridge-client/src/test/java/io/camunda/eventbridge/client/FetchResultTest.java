@@ -8,6 +8,7 @@
 package io.camunda.eventbridge.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 import io.camunda.eventbridge.batch.BatchBuilder;
 import io.camunda.eventbridge.batch.BatchReader;
@@ -96,6 +97,49 @@ final class FetchResultTest {
 
     // then: the previously returned copy is unaffected
     assertThat(new String(valueCopy, StandardCharsets.UTF_8)).isEqualTo("value");
+  }
+
+  @Test
+  void shouldVisitTheSameEntriesTheListIterationReturns() {
+    // given: a fetch body whose first batch begins before the requested start offset
+    final byte[] batch =
+        new BatchBuilder()
+            .add("k0", "v0".getBytes(StandardCharsets.UTF_8))
+            .add("k1", "v1".getBytes(StandardCharsets.UTF_8))
+            .add("k2", "v2".getBytes(StandardCharsets.UTF_8))
+            .build();
+    final var result = FetchResult.parse(fetchBody(0L, 2L, 42L, batch));
+    final long startOffset = 1L;
+    final List<BatchReader.Entry> listed = result.entries(startOffset);
+
+    // when: visiting entries in place from the same start offset
+    final List<Long> positions = new ArrayList<>();
+    final List<String> values = new ArrayList<>();
+    result.forEachEntry(
+        startOffset,
+        (position, data, valueOffset, valueLength) -> {
+          positions.add(position);
+          values.add(new String(data, valueOffset, valueLength, StandardCharsets.UTF_8));
+        });
+
+    // then: the cursor visits exactly the listed tail — same positions and values, same skipping
+    assertThat(positions)
+        .containsExactlyElementsOf(listed.stream().map(BatchReader.Entry::position).toList());
+    assertThat(values)
+        .containsExactlyElementsOf(
+            listed.stream().map(e -> new String(e.value(), StandardCharsets.UTF_8)).toList());
+    assertThat(positions).containsExactly(1L, 2L);
+  }
+
+  @Test
+  void shouldVisitNothingOnAnEmptyResult() {
+    // given
+    final var result = FetchResult.empty(7L);
+
+    // when / then: the cursor is a safe no-op on a result without data
+    result.forEachEntry(
+        Long.MIN_VALUE,
+        (position, data, valueOffset, valueLength) -> fail("no entry should be visited"));
   }
 
   @Test

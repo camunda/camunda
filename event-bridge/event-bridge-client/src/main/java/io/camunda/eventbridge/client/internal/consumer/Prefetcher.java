@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.client.internal.consumer;
 
+import io.camunda.eventbridge.batch.BatchReader;
 import io.camunda.eventbridge.client.Event;
 import io.camunda.eventbridge.client.FetchResult;
 import io.camunda.eventbridge.client.TopicPartition;
@@ -147,20 +148,14 @@ public final class Prefetcher {
               }
               if (result != null && result.isSuccess()) {
                 emptyPartitionNoted.remove(tp);
-                long next = fromPosition;
-                boolean any = false;
-                for (final var entry : result.entries(fromPosition)) {
-                  buffer.add(
-                      tp, new Event(entry.position(), tp.topic(), tp.partition(), entry.value()));
-                  next = entry.position() + 1;
-                  any = true;
-                }
-                if (!any) {
+                final BufferingVisitor buffered = new BufferingVisitor(tp, fromPosition);
+                result.forEachEntry(fromPosition, buffered);
+                if (!buffered.any) {
                   // Parked long-poll returned empty (still at the tip) — re-arm immediately; the
                   // emptiness already cost LONG_POLL_MS of server-side waiting, so this is no spin.
                   return Rearm.RETRY_NOW;
                 }
-                subscription.setNextPosition(tp, next);
+                subscription.setNextPosition(tp, buffered.nextPosition);
                 buffer.signal();
                 return Rearm.NONE;
               }
@@ -203,6 +198,39 @@ public final class Prefetcher {
       kick();
     } else if (rearm == Rearm.RETRY_DELAYED && !closed.getAsBoolean()) {
       executor.schedule(this::kick, FETCH_ERROR_BACKOFF_MS, TimeUnit.MILLISECONDS);
+    }
+  }
+
+  /**
+   * Per-fetch cursor that buffers each visited entry as an {@link Event} straight off the shared
+   * response array — one object per fetch instead of an entry list plus an entry object per record.
+   * The value bytes are deliberately still copied per record: an {@link Event} must own its payload
+   * (it outlives the response array while parked in the {@link PrefetchBuffer}), and the buffer's
+   * byte accounting is based on that owned payload.
+   */
+  private final class BufferingVisitor implements BatchReader.EntryVisitor {
+
+    private final TopicPartition tp;
+
+    /** Position the next fetch should start from: one past the last buffered entry. */
+    private long nextPosition;
+
+    /** Whether the fetch carried at least one entry at or after the requested position. */
+    private boolean any;
+
+    private BufferingVisitor(final TopicPartition tp, final long fromPosition) {
+      this.tp = tp;
+      nextPosition = fromPosition;
+    }
+
+    @Override
+    public void visit(
+        final long position, final byte[] data, final int valueOffset, final int valueLength) {
+      final byte[] value = new byte[valueLength];
+      System.arraycopy(data, valueOffset, value, 0, valueLength);
+      buffer.add(tp, new Event(position, tp.topic(), tp.partition(), value));
+      nextPosition = position + 1;
+      any = true;
     }
   }
 }

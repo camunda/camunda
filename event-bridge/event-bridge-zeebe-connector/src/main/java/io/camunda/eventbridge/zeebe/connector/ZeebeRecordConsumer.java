@@ -8,9 +8,11 @@
 package io.camunda.eventbridge.zeebe.connector;
 
 import io.camunda.eventbridge.client.Consumer;
+import io.camunda.eventbridge.client.Event;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.client.TopicPartition;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -47,17 +49,24 @@ public final class ZeebeRecordConsumer implements AutoCloseable {
 
   /**
    * Fetches up to {@code maxRecords} records, blocking at most {@code timeout} for them to arrive.
+   *
+   * <p>Every fetched payload is deserialized eagerly: this consumer exposes no record-type filter,
+   * so there is nothing to gate a decode-on-demand peek ({@link ZeebeRecordCodec#accepts}) on —
+   * callers that only want a subset filter on the reconstructed record.
    */
   public List<ZeebeRecord> poll(final int maxRecords, final Duration timeout) {
-    return consumer.poll(maxRecords, timeout).stream()
-        .map(
-            event ->
-                new ZeebeRecord(
-                    event.topic(),
-                    event.partitionId(),
-                    event.position(),
-                    codec.deserialize(event.payload())))
-        .toList();
+    final List<Event> events = consumer.poll(maxRecords, timeout);
+    final List<ZeebeRecord> records = new ArrayList<>(events.size());
+    for (int i = 0; i < events.size(); i++) {
+      final Event event = events.get(i);
+      records.add(
+          new ZeebeRecord(
+              event.topic(),
+              event.partitionId(),
+              event.position(),
+              codec.deserialize(event.payload())));
+    }
+    return records;
   }
 
   /**

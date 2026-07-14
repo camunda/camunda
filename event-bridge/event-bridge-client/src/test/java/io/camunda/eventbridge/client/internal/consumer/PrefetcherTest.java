@@ -15,6 +15,7 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import io.camunda.eventbridge.batch.BatchBuilder;
+import io.camunda.eventbridge.client.Event;
 import io.camunda.eventbridge.client.FetchResult;
 import io.camunda.eventbridge.client.OffsetResetPolicy;
 import io.camunda.eventbridge.client.TopicPartition;
@@ -132,6 +133,58 @@ final class PrefetcherTest {
     assertThat(buffer.drain(10, 0L, () -> false)).isEmpty();
     buffer.runLocked(() -> buffer.resume(tp));
     assertThat(buffer.drain(10, 0L, () -> false)).hasSize(1);
+  }
+
+  @Test
+  void shouldBufferEveryFetchedEntryAndAdvanceTheFetchCursor() {
+    // given: a fetcher that records each requested position and hands out controllable futures
+    final List<Long> requestedPositions = new ArrayList<>();
+    final List<CompletableFuture<FetchResult>> fetches = new ArrayList<>();
+    final Fetcher fetcher =
+        (topic, partition, offset, maxBytes, minBytes, maxWaitMs) -> {
+          requestedPositions.add(offset);
+          final CompletableFuture<FetchResult> fetch = new CompletableFuture<>();
+          fetches.add(fetch);
+          return fetch;
+        };
+    final SubscriptionState subscription =
+        new SubscriptionState(fetcher, OffsetResetPolicy.EARLIEST);
+    final PrefetchBuffer buffer = new PrefetchBuffer(1);
+    final TopicPartition tp = new TopicPartition("t1", 1);
+    buffer.runLocked(
+        () -> {
+          subscription.applyOwnedPartitions(List.of(tp));
+          subscription.setNextPosition(tp, 0L);
+        });
+    final Prefetcher prefetcher =
+        new Prefetcher(fetcher, executor, subscription, buffer, () -> false, 1 << 20, 0, 5_000L);
+    prefetcher.kick();
+
+    // when: the fetch lands with one batch of three entries
+    fetches
+        .get(0)
+        .complete(
+            FetchResult.parse(
+                fetchBody(
+                    0L,
+                    0L,
+                    3L,
+                    new BatchBuilder()
+                        .add("v0".getBytes(UTF_8))
+                        .add("v1".getBytes(UTF_8))
+                        .add("v2".getBytes(UTF_8))
+                        .build())));
+
+    // then: every entry was buffered as its own event, in order, each owning its payload copy
+    final List<Event> drained = buffer.drain(10, 0L, () -> false);
+    assertThat(drained).extracting(Event::position).containsExactly(0L, 1L, 2L);
+    assertThat(drained)
+        .extracting(event -> new String(event.payload(), UTF_8))
+        .containsExactly("v0", "v1", "v2");
+
+    // and: the next fetch resumes one past the last buffered entry
+    prefetcher.kick();
+    assertThat(requestedPositions).containsExactly(0L, 3L);
   }
 
   @Test

@@ -181,6 +181,16 @@ public final class FetchResult {
     return entries(Long.MIN_VALUE);
   }
 
+  /**
+   * Visits each entry at or after {@code startOffset} in place — the cursor counterpart of {@link
+   * #entries(long)} for the hot fetch path: no list and no per-entry object are allocated; the
+   * visitor reads position and value coordinates directly against the shared response array and
+   * must copy the value itself if it retains it.
+   */
+  public void forEachEntry(final long startOffset, final BatchReader.EntryVisitor visitor) {
+    BatchReader.forEachSkippingKeys(body, dataOffset, dataLength, startOffset, visitor);
+  }
+
   private static long readLong(final byte[] data, final int offset) {
     return ((long) readInt(data, offset)) << 32 | (readInt(data, offset + 4) & 0xFFFFFFFFL);
   }

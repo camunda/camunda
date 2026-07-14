@@ -30,6 +30,23 @@ public final class BatchReader {
   public record Entry(long position, byte[] key, byte[] value) {}
 
   /**
+   * Receives each entry in place during a {@link #forEachSkippingKeys} scan: its log position and
+   * the coordinates of its value bytes inside the shared {@code data} array. Nothing is allocated
+   * per entry — a visitor that retains the value must copy {@code data[valueOffset,
+   * valueOffset+valueLength)} itself, since the array is the (reused) fetch response.
+   */
+  @FunctionalInterface
+  public interface EntryVisitor {
+    void visit(long position, byte[] data, int valueOffset, int valueLength);
+  }
+
+  /** Receives each entry's full in-place coordinates during the shared scan. */
+  @FunctionalInterface
+  private interface EntryScanVisitor {
+    void visit(long position, int keyOffset, int keyLength, int valueOffset, int valueLength);
+  }
+
+  /**
    * Reads every entry at or after {@code fromPosition} from the batches in {@code data[offset,
    * offset+length)}. Batches whose version is unsupported, or that run past the region, stop the
    * scan (a partial trailing batch is ignored rather than throwing).
@@ -49,6 +66,28 @@ public final class BatchReader {
     return read(data, offset, length, fromPosition, false);
   }
 
+  /**
+   * Visits every entry at or after {@code fromPosition} in place, in on-wire order — the cursor
+   * counterpart of {@link #readSkippingKeys(byte[], int, int, long)} for hot consume paths: no
+   * {@link Entry}, no list and no value copy are allocated per entry; the visitor decides what to
+   * materialize. The same malformed-input rules apply (an unsupported version or a truncated
+   * trailing batch stops the scan).
+   */
+  public static void forEachSkippingKeys(
+      final byte[] data,
+      final int offset,
+      final int length,
+      final long fromPosition,
+      final EntryVisitor visitor) {
+    scan(
+        data,
+        offset,
+        length,
+        fromPosition,
+        (position, keyOffset, keyLength, valueOffset, valueLength) ->
+            visitor.visit(position, data, valueOffset, valueLength));
+  }
+
   private static List<Entry> read(
       final byte[] data,
       final int offset,
@@ -56,6 +95,33 @@ public final class BatchReader {
       final long fromPosition,
       final boolean copyKeys) {
     final List<Entry> out = new ArrayList<>();
+    scan(
+        data,
+        offset,
+        length,
+        fromPosition,
+        (position, keyOffset, keyLength, valueOffset, valueLength) -> {
+          final byte[] key;
+          if (copyKeys) {
+            key = new byte[keyLength];
+            System.arraycopy(data, keyOffset, key, 0, keyLength);
+          } else {
+            key = NO_KEY;
+          }
+          final byte[] value = new byte[valueLength];
+          System.arraycopy(data, valueOffset, value, 0, valueLength);
+          out.add(new Entry(position, key, value));
+        });
+    return out;
+  }
+
+  /** The single block → batch → entry walk both the list and the cursor APIs decode through. */
+  private static void scan(
+      final byte[] data,
+      final int offset,
+      final int length,
+      final long fromPosition,
+      final EntryScanVisitor visitor) {
     final int end = offset + length;
     int batchOffset = offset;
 
@@ -94,21 +160,11 @@ public final class BatchReader {
 
         final long position = batchPosition + i;
         if (position >= fromPosition) {
-          final byte[] key;
-          if (copyKeys) {
-            key = new byte[keyLength];
-            System.arraycopy(data, keyOffset, key, 0, keyLength);
-          } else {
-            key = NO_KEY;
-          }
-          final byte[] value = new byte[valueLength];
-          System.arraycopy(data, valueOffset, value, 0, valueLength);
-          out.add(new Entry(position, key, value));
+          visitor.visit(position, keyOffset, keyLength, valueOffset, valueLength);
         }
         entryOffset += BatchFormat.ENTRY_LENGTH_SIZE + entryLength;
       }
       batchOffset += totalSize;
     }
-    return out;
   }
 }
