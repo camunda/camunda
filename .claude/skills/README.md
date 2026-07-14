@@ -36,6 +36,7 @@ When a skill exists for a recurring operation, use it rather than improvising st
 |--------------------------------|-----------------------------------------------------------------------------------------------|
 | `analytics-exporter`           | Add a new event handler or metric to the analytics exporter (`zeebe/exporters/analytics-exporter/`) |
 | `babysit-pr`                   | Self-driving loop to shepherd one or more PRs (incl. backports) to merged: rerun flaky CI, enqueue, re-enqueue |
+| `ci-flood-triage`              | Orient fast when a flood of CI incidents opens at once — find the shared pattern, flag outliers |
 | `ci-push-workflow-health`      | Analyze CI failure patterns for push-triggered workflow jobs on main and stable/* branches    |
 | `ci-runner-utilization`        | Detect CI runner underutilization and give downsizing recommendations for cost savings        |
 | `ci-scheduled-workflow-health` | Generate an HTML health report for all scheduled GitHub Actions workflows                     |
