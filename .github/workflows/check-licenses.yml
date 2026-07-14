@@ -76,7 +76,7 @@ jobs:
             -Dquickly=true
             -DskipQaBuild=true
     steps:
-    - uses: camunda/infra-global-github-actions/start-build-monitor@5d7013fb2ad2393bb85af96581cb4936faeef055 # main
+    - uses: camunda/infra-global-github-actions/start-build-monitor@1505e9e943f5f3b59803cdcf6b56a1fabb8d507a # main
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
     # Import FOSSA_API_KEY secret from Vault
