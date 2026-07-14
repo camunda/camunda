@@ -311,6 +311,70 @@ final class RdbmsPushdownTest {
     assertThat(row.measures().get("p")).isNull();
   }
 
+  @Test
+  void shouldPushDownMinMaxRollupAcrossWindows() {
+    // given two windows of durations for one process, on a cube with standalone min + max meters
+    final CompiledDataset cube =
+        cube(
+            builder("pi-extrema")
+                .meter(Meter.of("fastest", MeterCatalog.MIN, "durationMs"))
+                .meter(Meter.of("slowest", MeterCatalog.MAX, "durationMs")));
+    store.schemaManager().ensure(cube);
+    write(cube, "fastest", key(cube, "orders"), 0L, durations(100L, 300L));
+    write(cube, "fastest", key(cube, "orders"), MINUTE, durations(50L, 200L));
+    store.writer().flush();
+
+    // when rolled up across both windows
+    final AggregatedRow row =
+        single(
+            client()
+                .fetchAggregated(
+                    new AggregatedFetch(
+                        cube,
+                        MINUTE,
+                        0L,
+                        2 * MINUTE,
+                        List.of(),
+                        List.of("fastest", "slowest"),
+                        List.of("bpmnProcessId"),
+                        2 * MINUTE,
+                        ReadStrategy.PUSH_DOWN)));
+
+    // then MIN and MAX push down as native column aggregates across the windows
+    assertThat(row.measures().get("fastest")).isEqualTo(50L);
+    assertThat(row.measures().get("slowest")).isEqualTo(300L);
+  }
+
+  @Test
+  void shouldPushDownStdDevRollupAcrossWindows() {
+    // given the classic population example split across two windows: {2,4,4,4} and {5,5,7,9}
+    final CompiledDataset cube =
+        cube(builder("pi-spread").meter(Meter.of("spread", MeterCatalog.STDDEV, "durationMs")));
+    store.schemaManager().ensure(cube);
+    write(cube, "spread", key(cube, "orders"), 0L, durations(2L, 4L, 4L, 4L));
+    write(cube, "spread", key(cube, "orders"), MINUTE, durations(5L, 5L, 7L, 9L));
+    store.writer().flush();
+
+    // when rolled up across both windows (SUMmed count/sum/sumSq moments, recomposed on read)
+    final AggregatedRow row =
+        single(
+            client()
+                .fetchAggregated(
+                    new AggregatedFetch(
+                        cube,
+                        MINUTE,
+                        0L,
+                        2 * MINUTE,
+                        List.of(),
+                        List.of("spread"),
+                        List.of("bpmnProcessId"),
+                        2 * MINUTE,
+                        ReadStrategy.PUSH_DOWN)));
+
+    // then the population standard deviation over all 8 observations is exact: mean 5, variance 4
+    assertThat(row.measures().get("spread")).isEqualTo(2.0);
+  }
+
   private static DatasetDeclaration.Builder builder(final String name) {
     return DatasetDeclaration.builder(name, FactType.PROCESS_INSTANCE)
         .dimension("bpmnProcessId", DimensionType.STRING);

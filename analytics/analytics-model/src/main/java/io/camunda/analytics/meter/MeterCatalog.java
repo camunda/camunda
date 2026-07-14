@@ -14,6 +14,9 @@ import io.camunda.analytics.metric.ExecutionTimeAggregateFunction;
 import io.camunda.analytics.metric.ExecutionTimeResult;
 import io.camunda.analytics.metric.ExecutionTimeSummaryAggregateFunction;
 import io.camunda.analytics.metric.ExecutionTimeSummaryValue;
+import io.camunda.analytics.metric.ExtremumAccumulator;
+import io.camunda.analytics.metric.ExtremumAccumulatorValue;
+import io.camunda.analytics.metric.ExtremumAggregateFunction;
 import io.camunda.analytics.metric.HistogramAggregateFunction;
 import io.camunda.analytics.metric.HistogramValue;
 import io.camunda.analytics.metric.LifecycleSummaryAggregateFunction;
@@ -22,6 +25,9 @@ import io.camunda.analytics.metric.RatioAccumulator;
 import io.camunda.analytics.metric.RatioAccumulatorValue;
 import io.camunda.analytics.metric.RatioAggregateFunction;
 import io.camunda.analytics.metric.RatioResult;
+import io.camunda.analytics.metric.StdDevAccumulator;
+import io.camunda.analytics.metric.StdDevAccumulatorValue;
+import io.camunda.analytics.metric.StdDevAggregateFunction;
 import io.camunda.analytics.sketch.DistinctCountAggregateFunction;
 import io.camunda.analytics.sketch.HllSketchValue;
 import io.camunda.analytics.sketch.ItemsSketchValue;
@@ -47,8 +53,10 @@ import org.agrona.collections.MutableLong;
  *
  * <ul>
  *   <li><b>additive</b> — {@link #COUNT}, {@link #SUM}, {@link #LEVEL} (a running level = sum of
- *       signed ±1 deltas; covers counters and level-gauges), {@link #EXECUTION_TIME} (count/total/
- *       min/max, average derived on read), {@link #HISTOGRAM} (bucket counts over thresholds);
+ *       signed ±1 deltas; covers counters and level-gauges), {@link #MIN}/{@link #MAX} (standalone
+ *       extrema), {@link #STDDEV} (population standard deviation from additive count/sum/sumSq
+ *       moments), {@link #EXECUTION_TIME} (count/total/ min/max, average derived on read), {@link
+ *       #HISTOGRAM} (bucket counts over thresholds);
  *   <li><b>mergeable-sketch</b> — {@link #PERCENTILE} (KLL), {@link #DISTINCT} (HLL), {@link
  *       #TOP_K} (frequent-items);
  *   <li><b>ratio</b> — {@link #RATIO} (matched/total under a threshold predicate), the generic
@@ -62,6 +70,9 @@ public final class MeterCatalog {
   public static final String COUNT = "count";
   public static final String SUM = "sum";
   public static final String LEVEL = "level";
+  public static final String MIN = "min";
+  public static final String MAX = "max";
+  public static final String STDDEV = "stddev";
   public static final String EXECUTION_TIME = "execution_time";
 
   /**
@@ -143,6 +154,28 @@ public final class MeterCatalog {
                 m -> new SumAggregateFunction<>(m.requireMeasure()::asLong),
                 m -> new MutableLongRecordValue(),
                 sumSpec()))
+        .register(
+            new MeterType<>(
+                MIN,
+                m ->
+                    new ExtremumAggregateFunction<>(
+                        m.requireMeasure()::asLong, ExtremumAggregateFunction.Direction.MIN),
+                m -> new ExtremumAccumulatorValue(),
+                extremumSpec(Agg.MIN)))
+        .register(
+            new MeterType<>(
+                MAX,
+                m ->
+                    new ExtremumAggregateFunction<>(
+                        m.requireMeasure()::asLong, ExtremumAggregateFunction.Direction.MAX),
+                m -> new ExtremumAccumulatorValue(),
+                extremumSpec(Agg.MAX)))
+        .register(
+            new MeterType<>(
+                STDDEV,
+                m -> new StdDevAggregateFunction<>(m.requireMeasure()::asLong),
+                m -> new StdDevAccumulatorValue(),
+                stdDevSpec()))
         .register(
             new MeterType<>(
                 EXECUTION_TIME,
@@ -259,6 +292,38 @@ public final class MeterCatalog {
         List.of(new PushdownColumn("", DimensionType.LONG, Agg.SUM)),
         acc -> List.of(acc.value),
         cols -> asLong(cols, 0));
+  }
+
+  /**
+   * The pushdown for the standalone {@code min}/{@code max} meters: a {@code count} ({@code SUM})
+   * column beside the extremum ({@code MIN}/{@code MAX}) column. The count distinguishes an empty
+   * roll-up (recomposed to {@code 0}, mirroring {@link ExtremumAggregateFunction#getResult}) from a
+   * legitimate extremum; an empty slot's stored sentinel never wins the store aggregate, exactly
+   * like an empty slot never wins the app merge.
+   */
+  private static PushdownSpec<ExtremumAccumulator, Long> extremumSpec(final Agg agg) {
+    return new PushdownSpec<>(
+        List.of(
+            new PushdownColumn("count", DimensionType.LONG, Agg.SUM),
+            new PushdownColumn("value", DimensionType.LONG, agg)),
+        acc -> List.of(acc.count(), acc.extremum()),
+        cols -> asLong(cols, 0) == 0L ? 0L : asLong(cols, 1));
+  }
+
+  /**
+   * The pushdown for {@code stddev}: the three additive moments ({@code count}, {@code sum}, {@code
+   * sumSq}) as {@code SUM} columns, recomposed to the population standard deviation through the
+   * same {@link StdDevAccumulator#populationStdDev} derivation the app-merge read uses.
+   */
+  private static PushdownSpec<StdDevAccumulator, Double> stdDevSpec() {
+    return new PushdownSpec<>(
+        List.of(
+            new PushdownColumn("count", DimensionType.LONG, Agg.SUM),
+            new PushdownColumn("sum", DimensionType.LONG, Agg.SUM),
+            new PushdownColumn("sumsq", DimensionType.LONG, Agg.SUM)),
+        acc -> List.of(acc.count(), acc.sum(), acc.sumSq()),
+        cols ->
+            StdDevAccumulator.populationStdDev(asLong(cols, 0), asLong(cols, 1), asLong(cols, 2)));
   }
 
   /**

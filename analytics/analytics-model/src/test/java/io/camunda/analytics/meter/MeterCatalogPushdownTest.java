@@ -9,10 +9,14 @@ package io.camunda.analytics.meter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.analytics.fact.Fact;
+import io.camunda.analytics.fact.FactType;
 import io.camunda.analytics.metric.ExecutionTimeAccumulator;
 import io.camunda.analytics.metric.ExecutionTimeResult;
+import io.camunda.analytics.metric.ExtremumAccumulator;
 import io.camunda.analytics.metric.RatioAccumulator;
 import io.camunda.analytics.metric.RatioResult;
+import io.camunda.analytics.metric.StdDevAccumulator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +37,9 @@ final class MeterCatalogPushdownTest {
     assertThat(bind(MeterCatalog.COUNT, null).pushdown()).isPresent();
     assertThat(bind(MeterCatalog.SUM, "durationMs").pushdown()).isPresent();
     assertThat(bind(MeterCatalog.LEVEL, "delta").pushdown()).isPresent();
+    assertThat(bind(MeterCatalog.MIN, "durationMs").pushdown()).isPresent();
+    assertThat(bind(MeterCatalog.MAX, "durationMs").pushdown()).isPresent();
+    assertThat(bind(MeterCatalog.STDDEV, "durationMs").pushdown()).isPresent();
     assertThat(bind(MeterCatalog.EXECUTION_TIME, "durationMs").pushdown()).isPresent();
     assertThat(ratio().pushdown()).isPresent();
   }
@@ -90,6 +97,85 @@ final class MeterCatalogPushdownTest {
     assertThat(result.matched()).isEqualTo(4L);
     assertThat(result.total()).isEqualTo(6L);
     assertThat(result.ratio()).isEqualTo(4.0 / 6.0);
+  }
+
+  @Test
+  void shouldRoundTripMinAndMaxThroughAStoreAggregate() {
+    // given two partial extrema, one side folded from real observations, the other empty — the
+    // empty side's identity sentinel must never win the store aggregate
+    assertRoundTrips(
+        bind(MeterCatalog.MIN, "durationMs"),
+        new ExtremumAccumulator(2L, 100L),
+        ExtremumAccumulator.emptyMin());
+    assertRoundTrips(
+        bind(MeterCatalog.MAX, "durationMs"),
+        new ExtremumAccumulator(2L, 300L),
+        ExtremumAccumulator.emptyMax());
+    assertRoundTrips(
+        bind(MeterCatalog.MIN, "durationMs"),
+        new ExtremumAccumulator(2L, 100L),
+        new ExtremumAccumulator(3L, 50L));
+    assertRoundTrips(
+        bind(MeterCatalog.MAX, "durationMs"),
+        new ExtremumAccumulator(2L, 300L),
+        new ExtremumAccumulator(3L, 400L));
+  }
+
+  @Test
+  void shouldRecomposeEmptyMinMaxRollupToZero() {
+    // given an empty roll-up (no matched rows: zero count, null columns)
+    for (final String type : List.of(MeterCatalog.MIN, MeterCatalog.MAX)) {
+      @SuppressWarnings("unchecked")
+      final PushdownSpec<Object, Object> spec =
+          (PushdownSpec<Object, Object>) bind(type, "durationMs").pushdown().orElseThrow();
+
+      // when / then — the count gate reads 0, never the identity sentinel
+      assertThat(spec.recompose().apply(java.util.Arrays.asList(0L, null))).isEqualTo(0L);
+      assertThat(spec.recompose().apply(java.util.Arrays.asList(0L, Long.MAX_VALUE))).isEqualTo(0L);
+    }
+  }
+
+  @Test
+  void shouldRoundTripStdDevThroughAStoreAggregate() {
+    // given the classic population example split across two partials: {2,4,4,4} and {5,5,7,9}
+    final StdDevAccumulator a = fold(2L, 4L, 4L, 4L);
+    final StdDevAccumulator b = fold(5L, 5L, 7L, 9L);
+    assertRoundTrips(bind(MeterCatalog.STDDEV, "durationMs"), a, b);
+
+    // and the recomposed population standard deviation is exact: n=8, mean=5, variance=4
+    @SuppressWarnings("unchecked")
+    final PushdownSpec<Object, Object> spec =
+        (PushdownSpec<Object, Object>)
+            bind(MeterCatalog.STDDEV, "durationMs").pushdown().orElseThrow();
+    assertThat(spec.recompose().apply(List.of(8L, 40L, 232L))).isEqualTo(2.0);
+  }
+
+  @Test
+  void shouldGuardDegenerateStdDevRollups() {
+    @SuppressWarnings("unchecked")
+    final PushdownSpec<Object, Object> spec =
+        (PushdownSpec<Object, Object>)
+            bind(MeterCatalog.STDDEV, "durationMs").pushdown().orElseThrow();
+
+    // an empty roll-up (n=0) reads 0, and a single observation (n=1) is exactly 0 (population)
+    assertThat(spec.recompose().apply(java.util.Arrays.asList(0L, null, null))).isEqualTo(0.0);
+    assertThat(spec.recompose().apply(List.of(1L, 7L, 49L))).isEqualTo(0.0);
+  }
+
+  /** Folds values through the stddev aggregate the way Stage 1 would. */
+  private StdDevAccumulator fold(final long... values) {
+    @SuppressWarnings("unchecked")
+    final BoundMeter<StdDevAccumulator, Double> bound =
+        (BoundMeter<StdDevAccumulator, Double>) bind(MeterCatalog.STDDEV, "durationMs");
+    StdDevAccumulator acc = bound.aggregate().createAccumulator();
+    for (final long value : values) {
+      acc = bound.aggregate().add(fact(value), acc);
+    }
+    return acc;
+  }
+
+  private static Fact fact(final long durationMs) {
+    return Fact.builder(FactType.PROCESS_INSTANCE).field("durationMs", durationMs).build();
   }
 
   @Test
