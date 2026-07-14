@@ -7,6 +7,7 @@
  */
 package io.camunda.authentication.pt;
 
+import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toMap;
 
 import io.camunda.security.api.context.MembershipResolutionContextPropagator;
@@ -14,6 +15,7 @@ import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.security.core.port.out.MembershipPort;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,9 +39,13 @@ public final class PhysicalTenantOidcProviders {
   private PhysicalTenantOidcProviders() {}
 
   /**
-   * Flattens the named OIDC providers of every physical tenant into a map keyed by registration id.
-   * The unnamed default slot ({@code authentication.oidc.*}) is not a named provider and is
-   * therefore absent, so the root registration keeps the default converter.
+   * Flattens the named OIDC providers of every physical tenant into an unmodifiable map keyed by
+   * registration id. The unnamed default slot ({@code authentication.oidc.*}) is not a named
+   * provider and is therefore absent, so the root registration keeps the default converter.
+   *
+   * <p>A registration id can legitimately appear in more than one tenant (a shared cluster provider
+   * is merged into every tenant), so entries are merged last-wins rather than rejected as
+   * duplicates.
    */
   public static Map<String, OidcConfiguration> providersByRegistrationId(
       final Environment environment) {
@@ -48,7 +54,7 @@ public final class PhysicalTenantOidcProviders {
         .map(AuthenticationConfiguration::getProviders)
         .filter(providers -> providers != null && providers.getOidc() != null)
         .forEach(providers -> providersByRegistrationId.putAll(providers.getOidc()));
-    return providersByRegistrationId;
+    return Collections.unmodifiableMap(providersByRegistrationId);
   }
 
   /**
@@ -61,17 +67,19 @@ public final class PhysicalTenantOidcProviders {
       final MembershipResolutionContextPropagator membershipResolutionContextPropagator) {
     return providersByRegistrationId(environment).entrySet().stream()
         .collect(
-            toMap(
-                Map.Entry::getKey,
-                entry -> {
-                  final var config = entry.getValue();
-                  return new LazyTokenClaimsConverter(
-                      config.getUsernameClaim(),
-                      config.getClientIdClaim(),
-                      config.isPreferUsernameClaim(),
-                      membershipPort,
-                      membershipResolutionContextPropagator);
-                }));
+            collectingAndThen(
+                toMap(
+                    Map.Entry::getKey,
+                    entry -> {
+                      final var config = entry.getValue();
+                      return new LazyTokenClaimsConverter(
+                          config.getUsernameClaim(),
+                          config.getClientIdClaim(),
+                          config.isPreferUsernameClaim(),
+                          membershipPort,
+                          membershipResolutionContextPropagator);
+                    }),
+                Collections::unmodifiableMap));
   }
 
   /**
@@ -82,7 +90,10 @@ public final class PhysicalTenantOidcProviders {
   public static Map<String, List<String>> identityClaimsByRegistrationId(
       final Environment environment) {
     return providersByRegistrationId(environment).entrySet().stream()
-        .collect(toMap(Map.Entry::getKey, entry -> identityClaims(entry.getValue())));
+        .collect(
+            collectingAndThen(
+                toMap(Map.Entry::getKey, entry -> identityClaims(entry.getValue())),
+                Collections::unmodifiableMap));
   }
 
   /**
