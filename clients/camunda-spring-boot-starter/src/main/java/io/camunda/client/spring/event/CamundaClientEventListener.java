@@ -33,12 +33,14 @@ public class CamundaClientEventListener {
   @EventListener
   public void handleStart(final CamundaClientCreatedEvent evt) {
     camundaClientLifecycleAwareSet.forEach(
-        camundaClientLifecycleAware -> camundaClientLifecycleAware.onStart(evt.getClient()));
+        camundaClientLifecycleAware ->
+            camundaClientLifecycleAware.onStart(evt.getClient(), evt.getClientName()));
   }
 
   @EventListener
   public void handleStop(final CamundaClientClosingEvent evt) {
     camundaClientLifecycleAwareSet.forEach(
-        camundaClientLifecycleAware -> camundaClientLifecycleAware.onStop(evt.getClient()));
+        camundaClientLifecycleAware ->
+            camundaClientLifecycleAware.onStop(evt.getClient(), evt.getClientName()));
   }
 }

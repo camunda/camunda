@@ -17,6 +17,7 @@ package io.camunda.client.spring.event;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.event.CamundaClientClosingEvent;
+import io.camunda.client.event.CamundaClientCreatedEvent;
 import org.springframework.context.ApplicationEvent;
 
 /**
@@ -28,14 +29,26 @@ public class CamundaClientClosingSpringEvent extends ApplicationEvent
     implements CamundaClientClosingEvent {
 
   public final CamundaClient client;
+  private final String clientName;
 
   public CamundaClientClosingSpringEvent(final Object source, final CamundaClient client) {
+    this(source, client, CamundaClientCreatedEvent.DEFAULT_CLIENT_NAME);
+  }
+
+  public CamundaClientClosingSpringEvent(
+      final Object source, final CamundaClient client, final String clientName) {
     super(source);
     this.client = client;
+    this.clientName = clientName;
   }
 
   @Override
   public CamundaClient getClient() {
     return client;
+  }
+
+  @Override
+  public String getClientName() {
+    return clientName;
   }
 }

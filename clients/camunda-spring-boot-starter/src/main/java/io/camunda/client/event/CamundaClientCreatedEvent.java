@@ -30,5 +30,20 @@ import io.camunda.client.CamundaClient;
  * <p>Furthermore, when `camunda.client.enabled=false`, the event might not be fired ever
  */
 public interface CamundaClientCreatedEvent {
+
+  /**
+   * Logical name used for the single (default) client when no explicit {@code
+   * camunda.clients.<name>} name is configured, so consumers always receive a non-null client name.
+   */
+  String DEFAULT_CLIENT_NAME = "default";
+
   CamundaClient getClient();
+
+  /**
+   * The configured name of the client; the per-client name in multi-client mode, or {@link
+   * #DEFAULT_CLIENT_NAME} in single-client mode.
+   */
+  default String getClientName() {
+    return DEFAULT_CLIENT_NAME;
+  }
 }
