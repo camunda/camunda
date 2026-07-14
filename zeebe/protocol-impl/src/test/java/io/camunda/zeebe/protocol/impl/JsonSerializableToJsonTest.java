@@ -117,6 +117,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.protocol.record.value.ExpressionType;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import io.camunda.zeebe.protocol.record.value.JobResultType;
@@ -669,24 +670,28 @@ final class JsonSerializableToJsonTest {
             () -> {
               final ExpressionRecord record = new ExpressionRecord();
               record
-                  .setExpression("=10 + 5")
+                  .setExpression("> 10")
                   .setResultValue(wrapString("15"))
                   .setScopeKey(1)
                   .setTenantId("test-tenant")
                   .setWarnings(List.of("warning1", "warning2"))
-                  .setVariables(VARIABLES_MSGPACK);
+                  .setVariables(VARIABLES_MSGPACK)
+                  .setInput("=x")
+                  .setType(ExpressionType.UNARY);
               return record;
             },
         """
                 {
                   "tenantId":"test-tenant",
-                  "expression":"=10 + 5",
+                  "expression":"> 10",
                   "resultValue":49,
                   "scopeKey":1,
                   "warnings":["warning1","warning2"],
                   "variables":{
                     "foo":"bar"
-                  }
+                  },
+                  "input":"=x",
+                  "type":"UNARY"
                 }
                 """
       },
