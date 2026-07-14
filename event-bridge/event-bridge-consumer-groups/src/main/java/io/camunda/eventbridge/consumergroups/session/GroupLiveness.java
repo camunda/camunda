@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * An immutable snapshot of a group's <em>ephemeral</em> liveness — each member's last heartbeat and
@@ -34,15 +35,23 @@ public record GroupLiveness(Instant rebalanceStartedAt, Map<String, MemberLivene
   /**
    * The members to evict for this group on a tick: those in the roster whose session has lapsed (no
    * heartbeat within {@code sessionTimeout}), plus — when a rebalance has stalled past {@code
-   * rebalanceTimeout} — those that never confirmed the current target. A roster member with no
-   * liveness yet (freshly joined, not heartbeated) is left alone by the expiry check (a grace
-   * period), but counts as non-converged for a stalled rebalance.
+   * rebalanceTimeout} — those that never confirmed the current target.
+   *
+   * <p>A roster member with no liveness at all (never heartbeated on this leader) is evicted only
+   * once {@code unseenSince} — when the sweep first observed it — lies a full session timeout in
+   * the past. Evicting it immediately would make a freshly joined member indistinguishable from a
+   * corpse: with a stalled rebalance on the books, every joiner would be evicted before its first
+   * heartbeat could land, each eviction re-arming the rebalance it was blamed for — the group could
+   * never rebuild (the rejoin-storm wedge). The grace lets a live joiner heartbeat (creating its
+   * liveness) while a true corpse — joined, died, never spoke — still expires one session timeout
+   * later.
    */
   public List<String> membersToEvict(
       final GroupSnapshot group,
       final Instant now,
       final Duration sessionTimeout,
-      final Duration rebalanceTimeout) {
+      final Duration rebalanceTimeout,
+      final Function<String, Instant> unseenSince) {
     final var deadline = now.minus(sessionTimeout);
     final var evict = new LinkedHashSet<String>();
 
@@ -61,7 +70,12 @@ public record GroupLiveness(Instant rebalanceStartedAt, Map<String, MemberLivene
           .forEach(
               memberId -> {
                 final var liveness = members.get(memberId);
-                if (liveness == null || liveness.confirmedEpoch() != group.assignmentEpoch()) {
+                if (liveness == null) {
+                  final var firstSeen = unseenSince.apply(memberId);
+                  if (firstSeen != null && firstSeen.isBefore(deadline)) {
+                    evict.add(memberId);
+                  }
+                } else if (liveness.confirmedEpoch() != group.assignmentEpoch()) {
                   evict.add(memberId);
                 }
               });

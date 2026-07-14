@@ -17,8 +17,11 @@ import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.InstantSource;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 
 /**
  * Evicts dead consumer sessions — the leader-only liveness sweep, registered as a {@link
@@ -44,6 +47,14 @@ public final class SessionEvictionTask implements Task, StreamProcessorLifecycle
   private final MemberLivenessMirror liveness;
   private final InstantSource clock;
 
+  /**
+   * When the sweep first observed a roster member with no liveness (keyed {@code group#member}) —
+   * the grace baseline for evicting never-heartbeated members during a stalled rebalance.
+   * Task-local like the sweep itself, and dropped with the other ephemeral state when the node
+   * stops leading.
+   */
+  private final Map<String, Instant> unseenSince = new HashMap<>();
+
   public SessionEvictionTask(
       final Duration interval,
       final Duration sessionTimeout,
@@ -68,22 +79,26 @@ public final class SessionEvictionTask implements Task, StreamProcessorLifecycle
   @Override
   public void onClose() {
     liveness.clear();
+    unseenSince.clear();
   }
 
   @Override
   public void onFailed() {
     liveness.clear();
+    unseenSince.clear();
   }
 
   @Override
   public void onPaused() {
     liveness.clear();
+    unseenSince.clear();
   }
 
   @Override
   public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
     final var now = clock.instant();
     final var liveGroups = new HashSet<String>();
+    final var currentlyUnseen = new HashSet<String>();
 
     for (final var groupId : liveness.groupIds()) {
       final var group = state.groupSnapshot(groupId);
@@ -95,8 +110,22 @@ public final class SessionEvictionTask implements Task, StreamProcessorLifecycle
       if (groupLiveness == null) {
         continue;
       }
+      // Record when a roster member without liveness was first observed — the grace baseline for
+      // the stalled-rebalance eviction of members that never heartbeated on this leader.
+      for (final var memberId : group.members().keySet()) {
+        if (!groupLiveness.members().containsKey(memberId)) {
+          final var key = unseenKey(group.groupId(), memberId);
+          currentlyUnseen.add(key);
+          unseenSince.putIfAbsent(key, now);
+        }
+      }
       for (final var memberId :
-          groupLiveness.membersToEvict(group, now, sessionTimeout, rebalanceTimeout)) {
+          groupLiveness.membersToEvict(
+              group,
+              now,
+              sessionTimeout,
+              rebalanceTimeout,
+              memberId -> unseenSince.get(unseenKey(group.groupId(), memberId)))) {
         final var member = group.members().get(memberId);
         if (member == null) {
           continue;
@@ -111,6 +140,11 @@ public final class SessionEvictionTask implements Task, StreamProcessorLifecycle
     }
 
     liveness.retain(liveGroups);
+    unseenSince.keySet().retainAll(currentlyUnseen);
     return taskResultBuilder.build();
+  }
+
+  private static String unseenKey(final String groupId, final String memberId) {
+    return groupId + "#" + memberId;
   }
 }
