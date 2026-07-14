@@ -1049,6 +1049,36 @@ class SegmentedJournalTest {
         .hasMessage("Nope, no free space.");
   }
 
+  @Test
+  void shouldCloseSegmentsWhileHoldingWriteLock() {
+    // given
+    journalFactory = new TestJournalFactory("test", 2);
+    final var segments = spy(journalFactory.segmentsManager(directory));
+    final var barrier = new Phaser(2);
+    doAnswer(
+            invocation -> {
+              barrier.arriveAndAwaitAdvance(); // signal we are inside segments.close()
+              barrier.arriveAndAwaitAdvance(); // wait for the test to inspect the lock
+              return invocation.callRealMethod();
+            })
+        .when(segments)
+        .close();
+    journal = journalFactory.journal(segments);
+    journal.append(journalFactory.entry());
+
+    // when
+    final var closed = CompletableFuture.runAsync(() -> journal.close());
+
+    // then
+    barrier.arriveAndAwaitAdvance();
+    assertThat(journal.rwlock().isWriteLocked()).isTrue();
+    assertThat(journal.rwlock().tryReadLock())
+        .describedAs("a reader cannot acquire the read lock while close() unmaps segments")
+        .isZero();
+    barrier.arrive();
+    assertThat(closed).succeedsWithin(Duration.ofSeconds(5));
+  }
+
   private SegmentedJournal openJournal(final int entriesPerSegment) {
     return openJournal("test", entriesPerSegment);
   }
