@@ -15,10 +15,12 @@ import io.camunda.analytics.serving.spi.AggregatedFetch;
 import io.camunda.analytics.serving.spi.DatasetFetch;
 import io.camunda.analytics.serving.spi.ReadStrategy;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Decides <b>how</b> to answer a {@link ReportQuery}: which tier to read per meter, what to fetch
@@ -26,20 +28,25 @@ import java.util.Optional;
  * only about the {@link CompiledDataset}'s grain, meters, and available tiers, never about SQL or
  * an index.
  *
- * <p>Per meter it picks the <em>coarsest</em> tier whose window divides the requested granularity
- * (so a daily bucket is built from the 1d tier, not re-summed from 1m), falling back to the finest
- * tier when none divides evenly. It then picks a {@link ReadStrategy} per meter: an additive meter
- * (with a {@link PushdownSpec}) reads {@code DIRECT} when the read is 1:1 with cells (granularity
- * == the tier and group-by == the full grain), else {@code PUSH_DOWN}; a sketch/summary always
- * {@code STREAM_MERGE}s (its finalized value is not combinable). Meters sharing a {@code (tier,
- * strategy)} share one fetch: additive meters an {@link AggregatedFetch} the store reduces, sketch
- * meters a {@link DatasetFetch} the executor streams and app-merges.
+ * <p>The granularity must be a multiple of the finest tier — otherwise stored windows would
+ * straddle bucket boundaries and be attributed whole to the bucket of their start (per-bucket
+ * values silently wrong while totals still add up), so such a query is rejected. Per meter it picks
+ * the <em>coarsest</em> tier whose window divides the requested granularity (so a daily bucket is
+ * built from the 1d tier, not re-summed from 1m). It then picks a {@link ReadStrategy} per meter:
+ * an additive meter (with a {@link PushdownSpec}) reads {@code DIRECT} when the read is 1:1 with
+ * cells (granularity == the tier and group-by == the full grain), else {@code PUSH_DOWN}; a
+ * sketch/summary always {@code STREAM_MERGE}s (its finalized value is not combinable). Meters
+ * sharing a {@code (tier, strategy)} share one fetch: additive meters an {@link AggregatedFetch}
+ * the store reduces, sketch meters a {@link DatasetFetch} the executor streams and app-merges.
  */
 public final class DatasetQueryPlanner {
 
   public QueryPlan plan(final ReportQuery query, final CompiledDataset dataset) {
+    validateGranularity(query, dataset);
     validateGroupBy(query, dataset);
 
+    // Sound as a size check: the group-by is validated duplicate-free and within the grain, so
+    // matching sizes means the exact grain set.
     final boolean fullGrain = query.groupBy().size() == dataset.grain().columns().size();
 
     // Sketch/blob meters grouped by tier (streamed); additive meters grouped by (tier, strategy).
@@ -107,15 +114,30 @@ public final class DatasetQueryPlanner {
       final String meter, final CompiledDataset dataset, final long granularityMs) {
     requireMeter(meter, dataset);
     // Tiers are a property of the cube (ADR 0009): every meter materialises at every tier, so the
-    // choice is per dataset — the coarsest tier that divides the query granularity, else finest.
-    long coarsestDividing = -1L;
+    // choice is per dataset — the coarsest tier that divides the query granularity. The finest
+    // tier always divides it (validated in plan()), so there is always one.
+    long coarsestDividing = dataset.finestTier().windowMs();
     for (final CompiledTier tier : dataset.tiers()) {
       final long windowMs = tier.windowMs();
       if (windowMs <= granularityMs && granularityMs % windowMs == 0) {
         coarsestDividing = Math.max(coarsestDividing, windowMs);
       }
     }
-    return coarsestDividing > 0 ? coarsestDividing : dataset.finestTier().windowMs();
+    return coarsestDividing;
+  }
+
+  private static void validateGranularity(final ReportQuery query, final CompiledDataset dataset) {
+    final long finestMs = dataset.finestTier().windowMs();
+    if (query.granularityMs() % finestMs != 0) {
+      throw new IllegalArgumentException(
+          "granularity "
+              + query.granularityMs()
+              + " ms must be a multiple of the finest tier of '"
+              + dataset.name()
+              + "' ("
+              + finestMs
+              + " ms) — otherwise stored windows straddle bucket boundaries");
+    }
   }
 
   private static void requireMeter(final String meter, final CompiledDataset dataset) {
@@ -129,10 +151,17 @@ public final class DatasetQueryPlanner {
   }
 
   private static void validateGroupBy(final ReportQuery query, final CompiledDataset dataset) {
+    final Set<String> seen = new HashSet<>();
     for (final String dim : query.groupBy()) {
       if (dataset.grain().indexOf(dim) < 0) {
         throw new IllegalArgumentException(
             "group-by dimension '" + dim + "' is not in the grain of '" + dataset.name() + "'");
+      }
+      // A duplicate would fake a "full grain" (a size comparison) and flip the read to DIRECT,
+      // whose one-row-per-cell contract the duplicated key breaks (rows overwrite, undercount).
+      if (!seen.add(dim)) {
+        throw new IllegalArgumentException(
+            "duplicate group-by dimension '" + dim + "' in query on '" + dataset.name() + "'");
       }
     }
   }

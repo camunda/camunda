@@ -8,6 +8,7 @@
 package io.camunda.analytics.query;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.analytics.dataset.CompiledDataset;
 import io.camunda.analytics.dataset.CompiledMeter;
@@ -147,6 +148,38 @@ final class DatasetQueryExecutorTest {
     assertThat(plan.aggregatedFetches())
         .singleElement()
         .satisfies(fetch -> assertThat(fetch.strategy()).isEqualTo(ReadStrategy.DIRECT));
+  }
+
+  @Test
+  void shouldRejectAGranularityTheFinestTierDoesNotDivide() {
+    // given a 90s granularity over a cube whose only tier is 1m: both the [0,1m) and [1m,2m)
+    // windows would align down to bucket 0, silently misattributing the second window's overlap
+    final ReportQuery query =
+        new ReportQuery(
+            List.of("bpmnProcessId"), 0L, 3 * MINUTE, 90_000L, List.of(), List.of("count"));
+
+    // then the planner rejects it instead of returning per-bucket values that are quietly wrong
+    assertThatThrownBy(() -> new DatasetQueryPlanner().plan(query, dataset))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("multiple of the finest tier");
+  }
+
+  @Test
+  void shouldRejectADuplicateGroupByDimension() {
+    // given a duplicated group-by dimension, which would fake a full grain by size and flip the
+    // read to DIRECT, where equal group keys overwrite instead of summing
+    final ReportQuery query =
+        new ReportQuery(
+            List.of("bpmnProcessId", "bpmnProcessId"),
+            0L,
+            MINUTE,
+            MINUTE,
+            List.of(),
+            List.of("count"));
+
+    assertThatThrownBy(() -> new DatasetQueryPlanner().plan(query, dataset))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("duplicate group-by dimension");
   }
 
   private byte[] p95(final long... durationsMs) {

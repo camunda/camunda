@@ -23,9 +23,11 @@ import java.util.function.Function;
  * per {@link ReportSource} — with the report's shared group-by, time range, and granularity plus
  * that source's meters and filters — and stacks the resulting {@link ReportRow}s on the shared
  * {@code (dimensions, windowStart)} key, <b>namespacing each source's measures by its dataset
- * name</b> ({@code dataset.meter}) so same-named meters from different datasets never collide. This
- * adds no backend work: each source rides the full single-dataset read path (tiering, pushdown,
- * streaming); only the cross-source merge on the group key is new.
+ * name</b> ({@code dataset.meter}) so same-named meters from different datasets never collide. When
+ * a report reads the same dataset more than once (e.g. comparing two filters side by side), later
+ * occurrences are suffixed with their ordinal ({@code dataset#2.meter}) so the sources never
+ * overwrite each other. This adds no backend work: each source rides the full single-dataset read
+ * path (tiering, pushdown, streaming); only the cross-source merge on the group key is new.
  *
  * <p>{@link Combination#JOIN} (cross-grain alignment) is not yet supported — see ADR 0006.
  */
@@ -65,11 +67,17 @@ public final class ReportExecutor {
 
     // (group-by values, time bucket) -> dataset-namespaced measures, in first-seen order.
     final Map<RowKey, Map<String, Object>> byKey = new LinkedHashMap<>();
+    final Map<String, Integer> occurrences = new LinkedHashMap<>();
     for (final ReportSource source : report.sources()) {
       final CompiledDataset dataset = datasetResolver.apply(source.datasetName());
       if (dataset == null) {
         throw new IllegalArgumentException("unknown dataset '" + source.datasetName() + "'");
       }
+      // The first source of a dataset keeps the plain name (the stable common case); repeats get
+      // their ordinal so two sources over one dataset (compare-filters) never collide.
+      final int occurrence = occurrences.merge(source.datasetName(), 1, Integer::sum);
+      final String namespace =
+          occurrence == 1 ? source.datasetName() : source.datasetName() + "#" + occurrence;
       final ReportQuery query =
           new ReportQuery(
               report.groupBy(),
@@ -82,8 +90,7 @@ public final class ReportExecutor {
         final Map<String, Object> measures =
             byKey.computeIfAbsent(
                 new RowKey(row.dimensions(), row.windowStart()), k -> new LinkedHashMap<>());
-        row.measures()
-            .forEach((meter, value) -> measures.put(source.datasetName() + "." + meter, value));
+        row.measures().forEach((meter, value) -> measures.put(namespace + "." + meter, value));
       }
     }
 

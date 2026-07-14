@@ -199,7 +199,7 @@ public class AnalyticsRepository {
             List.of("elementId"),
             0L,
             toMs,
-            toMs,
+            singleBucketGranularity(dataset, toMs),
             List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
             List.of("duration"));
     final List<HeatmapCell> cells = new ArrayList<>();
@@ -222,6 +222,21 @@ public class AnalyticsRepository {
   private static ReportQuery total(
       final CompiledDataset dataset, final String groupBy, final String meter) {
     final long toMs = System.currentTimeMillis() + ONE_HOUR_MS;
-    return new ReportQuery(List.of(groupBy), 0L, toMs, toMs, List.of(), List.of(meter));
+    return new ReportQuery(
+        List.of(groupBy),
+        0L,
+        toMs,
+        singleBucketGranularity(dataset, toMs),
+        List.of(),
+        List.of(meter));
+  }
+
+  /**
+   * A granularity at-or-above {@code toMs} yields a single total bucket (every fetched cell aligns
+   * down to 0); rounded up to the cube's finest tier, which the planner requires it to divide by.
+   */
+  private static long singleBucketGranularity(final CompiledDataset dataset, final long toMs) {
+    final long finestMs = dataset.finestTier().windowMs();
+    return ((toMs + finestMs - 1) / finestMs) * finestMs;
   }
 }

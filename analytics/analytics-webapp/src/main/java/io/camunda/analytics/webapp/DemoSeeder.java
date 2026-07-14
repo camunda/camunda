@@ -85,8 +85,13 @@ public class DemoSeeder implements CommandLineRunner {
   private boolean alreadySeeded() {
     final CompiledDataset dataset = catalog.require("process-instances");
     final long toMs = System.currentTimeMillis() + 3_600_000L;
+    // Single total bucket: toMs rounded up to the finest tier, which the planner requires the
+    // granularity to divide by.
+    final long finestMs = dataset.finestTier().windowMs();
+    final long granularityMs = ((toMs + finestMs - 1) / finestMs) * finestMs;
     final ReportQuery query =
-        new ReportQuery(List.of("bpmnProcessId"), 0L, toMs, toMs, List.of(), List.of("lifecycle"));
+        new ReportQuery(
+            List.of("bpmnProcessId"), 0L, toMs, granularityMs, List.of(), List.of("lifecycle"));
     return !executor.execute(query, dataset).rows().isEmpty();
   }
 

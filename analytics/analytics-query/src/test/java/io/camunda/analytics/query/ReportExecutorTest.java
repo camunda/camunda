@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.analytics.dataset.CompiledDataset;
 import io.camunda.analytics.dataset.DatasetCompiler;
 import io.camunda.analytics.dataset.DatasetDeclaration;
+import io.camunda.analytics.dataset.FilterPredicate;
 import io.camunda.analytics.dimension.DimensionType;
 import io.camunda.analytics.fact.FactType;
 import io.camunda.analytics.meter.InMemoryMeterIdStore;
@@ -95,6 +96,36 @@ final class ReportExecutorTest {
                 Map.of("bpmnProcessId", "order"), Map.of("throughput.count", 3L)),
             org.assertj.core.groups.Tuple.tuple(
                 Map.of("bpmnProcessId", "refund"), Map.of("incidents.count", 1L)));
+  }
+
+  @Test
+  void shouldKeepBothSourcesWhenAReportReadsTheSameDatasetTwice() {
+    // given a compare-filters report: the same dataset twice, distinguished only by filters
+    final ReportExecutor.SourceQuery sourceQuery =
+        (query, dataset) ->
+            new ReportResult(List.of(row("invoice", query.filters().isEmpty() ? 5L : 2L)));
+    final ReportExecutor executor = new ReportExecutor(sourceQuery, name -> throughput);
+
+    // when both sources read "count"
+    final ReportResult result =
+        executor.execute(
+            unionOf(
+                new ReportSource("throughput", List.of("count"), List.of()),
+                new ReportSource(
+                    "throughput",
+                    List.of("count"),
+                    List.of(FilterPredicate.equals("bpmnProcessId", "invoice")))),
+            0L,
+            60_000L);
+
+    // then the second source is suffixed with its ordinal instead of overwriting the first
+    assertThat(result.rows())
+        .singleElement()
+        .satisfies(
+            row ->
+                assertThat(row.measures())
+                    .containsExactlyInAnyOrderEntriesOf(
+                        Map.of("throughput.count", 5L, "throughput#2.count", 2L)));
   }
 
   @Test

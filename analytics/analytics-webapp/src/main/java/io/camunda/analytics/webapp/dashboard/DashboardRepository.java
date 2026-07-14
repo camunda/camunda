@@ -685,8 +685,9 @@ public class DashboardRepository {
   }
 
   /**
-   * Single total row: a granularity of {@code toMs} guarantees one bucket, since every fetched cell
-   * has {@code window_start < toMs} and so aligns down to bucket 0.
+   * Single total row: a granularity at-or-above {@code toMs} guarantees one bucket, since every
+   * fetched cell has {@code window_start < toMs} and so aligns down to bucket 0. It is {@code toMs}
+   * rounded up to the cube's finest tier, which the planner requires the granularity to divide by.
    */
   private List<ReportRow> total(
       final String name,
@@ -701,9 +702,12 @@ public class DashboardRepository {
         key -> {
           final CompiledDataset dataset = catalog.require(name);
           final long toMs = toMs(toWindow);
+          final long finestMs = finestTier(dataset);
+          final long granularityMs = ((toMs + finestMs - 1) / finestMs) * finestMs;
           return executor
               .execute(
-                  new ReportQuery(groupBy, fromMs(fromWindow), toMs, toMs, filters, meters),
+                  new ReportQuery(
+                      groupBy, fromMs(fromWindow), toMs, granularityMs, filters, meters),
                   dataset)
               .rows();
         });
