@@ -165,6 +165,7 @@ public final class ProcessingStateMachine {
   private final ScheduledCommandCache scheduledCommandCache;
   private volatile ErrorHandlingPhase errorHandlingPhase = ErrorHandlingPhase.NO_ERROR;
   private final ControllableStreamClock clock;
+  private final Runnable batchCommittedListener;
   private final EventDescription currentStateDescription = new EventDescription("idle");
 
   public ProcessingStateMachine(
@@ -203,6 +204,7 @@ public final class ProcessingStateMachine {
     processingFilter =
         commandFilter.and(record -> !record.shouldSkipProcessing()).and(context.processingFilter());
     clock = context.getClock();
+    batchCommittedListener = context.getBatchCommittedListener();
   }
 
   String describeCurrentState() {
@@ -691,6 +693,9 @@ public final class ProcessingStateMachine {
             throw new UncommittedStateException(throwable);
           } else {
             scheduledCommandCache.remove(metadata.getIntent(), currentRecord.getKey());
+            // the batch's transaction is committed and none is open — the only safe point for the
+            // layered-state wiring to run an over-capacity persist round inline
+            batchCommittedListener.run();
             executeSideEffects();
           }
         });

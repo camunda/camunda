@@ -48,3 +48,13 @@ zeebe:
           businessIdUniquenessEnabled: true
         startup:
           rpaReexportMigrationEnabled: false
+        layeredState:
+          enabled: true
+          maxBytesPerStore: 32MB
+          maxBufferedBytes: 8MB
+          ladderStartFraction: 0.6
+          ladderFlatOutFraction: 0.8
+          absorbDeletes: false
+          pipelineSegmentLimit: 8
+          persistMinSliceBytes: 2MB
+          persistPacingWindow: 45s

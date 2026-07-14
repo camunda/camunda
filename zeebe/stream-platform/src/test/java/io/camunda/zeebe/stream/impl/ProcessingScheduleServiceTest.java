@@ -23,6 +23,7 @@ import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.NoopScheduledCommandCache;
@@ -40,6 +41,7 @@ import io.camunda.zeebe.util.Either;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.time.InstantSource;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
@@ -92,6 +94,81 @@ class ProcessingScheduleServiceTest {
 
     // then
     verify(mockedTask).execute(any());
+  }
+
+  @Test
+  void shouldAwaitFreshnessPreparationBeforeExecutingTask() {
+    // given a service whose task executions await a freshness preparation (the experimental
+    // layered-state wiring freezes buffered state into a fresh read view this way)
+    final var preparation = new CompletableActorFuture<Void>();
+    final var preparedServiceImpl =
+        new ProcessingScheduleServiceImpl(
+            lifecycleSupplier,
+            lifecycleSupplier,
+            () -> testWriter,
+            commandCache,
+            actorScheduler.getClock(),
+            Duration.ofSeconds(1),
+            ScheduledTaskMetrics.noop());
+    preparedServiceImpl.taskFreshnessPreparation(tolerated -> preparation);
+    final var preparedService = new TestScheduleServiceActorDecorator(preparedServiceImpl);
+    actorScheduler.submitActor(preparedService);
+    actorScheduler.workUntilDone();
+    final var mockedTask = spy(new DummyTask());
+
+    // when the task is due but the preparation has not completed
+    preparedService.runDelayed(Duration.ZERO, mockedTask);
+    actorScheduler.workUntilDone();
+
+    // then the task did not execute yet
+    verify(mockedTask, never()).execute(any());
+
+    // when the preparation completes
+    preparation.complete(null);
+    actorScheduler.workUntilDone();
+
+    // then the task executed
+    verify(mockedTask).execute(any());
+  }
+
+  @Test
+  void shouldPassTaskStalenessToleranceToFreshnessPreparation() {
+    // given a service whose task executions await a freshness preparation, and a polling task
+    // declaring the staleness its view reads tolerate (its own period)
+    final var observedTolerances = new ArrayList<Duration>();
+    final var preparedServiceImpl =
+        new ProcessingScheduleServiceImpl(
+            lifecycleSupplier,
+            lifecycleSupplier,
+            () -> testWriter,
+            commandCache,
+            actorScheduler.getClock(),
+            Duration.ofSeconds(1),
+            ScheduledTaskMetrics.noop());
+    preparedServiceImpl.taskFreshnessPreparation(
+        tolerated -> {
+          observedTolerances.add(tolerated);
+          return CompletableActorFuture.completed(null);
+        });
+    final var preparedService = new TestScheduleServiceActorDecorator(preparedServiceImpl);
+    actorScheduler.submitActor(preparedService);
+    actorScheduler.workUntilDone();
+    final var pollingTask =
+        new DummyTask() {
+          @Override
+          public Duration toleratedViewStaleness() {
+            return Duration.ofSeconds(30);
+          }
+        };
+
+    // when a polling and an event-driven (default) task execute
+    preparedService.runDelayed(Duration.ZERO, pollingTask);
+    preparedService.runDelayed(Duration.ZERO, new DummyTask());
+    actorScheduler.workUntilDone();
+
+    // then the preparation hook received each task's own tolerance — the polling task's period,
+    // and null for the event-driven default (which must observe every committed batch)
+    assertThat(observedTolerances).containsExactly(Duration.ofSeconds(30), null);
   }
 
   @Test
@@ -645,7 +722,8 @@ class ProcessingScheduleServiceTest {
     }
   }
 
-  private static final class DummyTask implements Task {
+  // non-final so tests can override the default staleness tolerance
+  private static class DummyTask implements Task {
     @Override
     public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
       return RecordBatch::empty;

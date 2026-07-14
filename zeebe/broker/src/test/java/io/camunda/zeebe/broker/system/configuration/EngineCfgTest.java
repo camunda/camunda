@@ -116,6 +116,54 @@ final class EngineCfgTest {
     assertThat(configuration.isCandidateGroupNameResolution()).isFalse();
   }
 
+  @Test
+  void shouldDisableLayeredStateByDefault() {
+    // given
+    final BrokerCfg cfg = TestConfigReader.readConfig("empty", environment);
+
+    // when
+    final var layeredState = cfg.getExperimental().getEngine().getLayeredState();
+
+    // then
+    assertThat(layeredState.isEnabled()).isFalse();
+    assertThat(layeredState.getMaxBytesPerStore().toBytes()).isEqualTo(16 * 1024 * 1024L);
+    // the total buffered-bytes budget defaults off: rounds run at the persist interval or on
+    // per-store over-capacity only, keeping the pre-existing persist behavior
+    assertThat(layeredState.getMaxBufferedBytes().toBytes()).isZero();
+    // the buffer-pressure ladder rungs default to 70% (start a paced round early) and 90%
+    // (drain flat-out) of the buffered-bytes budget
+    assertThat(layeredState.getLadderStartFraction()).isEqualTo(0.7);
+    assertThat(layeredState.getLadderFlatOutFraction()).isEqualTo(0.9);
+    // delete absorption defaults on: exact flushed flags make it unconditionally sound, and the
+    // put/delete churn it elides is the main write-savings lever of the layered store
+    assertThat(layeredState.isAbsorbDeletes()).isTrue();
+    assertThat(layeredState.getPipelineSegmentLimit()).isEqualTo(4);
+    assertThat(layeredState.getPersistMinSliceBytes().toBytes()).isEqualTo(1024 * 1024L);
+    // there is no persist interval: spills are memory- (ladder) and snapshot-driven only, and the
+    // pacing window merely spreads a start-rung round's disk writes
+    assertThat(layeredState.getPersistPacingWindow()).isEqualTo(Duration.ofSeconds(30));
+  }
+
+  @Test
+  void shouldReadLayeredStateFromConfig() {
+    // given
+    final BrokerCfg cfg = TestConfigReader.readConfig("engine", environment);
+
+    // when
+    final var layeredState = cfg.getExperimental().getEngine().getLayeredState();
+
+    // then
+    assertThat(layeredState.isEnabled()).isTrue();
+    assertThat(layeredState.getMaxBytesPerStore().toBytes()).isEqualTo(32 * 1024 * 1024L);
+    assertThat(layeredState.getMaxBufferedBytes().toBytes()).isEqualTo(8 * 1024 * 1024L);
+    assertThat(layeredState.getLadderStartFraction()).isEqualTo(0.6);
+    assertThat(layeredState.getLadderFlatOutFraction()).isEqualTo(0.8);
+    assertThat(layeredState.isAbsorbDeletes()).isFalse();
+    assertThat(layeredState.getPipelineSegmentLimit()).isEqualTo(8);
+    assertThat(layeredState.getPersistMinSliceBytes().toBytes()).isEqualTo(2 * 1024 * 1024L);
+    assertThat(layeredState.getPersistPacingWindow()).isEqualTo(Duration.ofSeconds(45));
+  }
+
   void assertListenerCfg(
       final GlobalListenerConfiguration config,
       final String type,

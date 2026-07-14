@@ -33,6 +33,7 @@ final class JobTimeoutCheckScheduler implements Task, StreamProcessorLifecycleAw
   private DeadlineIndex startAtIndex = null;
 
   private final JobState state;
+  private final boolean scheduleAsync;
   private ReadonlyStreamProcessorContext processingContext;
   private final Duration pollingInterval;
   private final int batchLimit;
@@ -43,16 +44,51 @@ final class JobTimeoutCheckScheduler implements Task, StreamProcessorLifecycleAw
       final Duration pollingInterval,
       final int batchLimit,
       final InstantSource clock) {
+    this(state, false, pollingInterval, batchLimit, clock);
+  }
+
+  /**
+   * Variant with an explicit async decision — used by the experimental layered-state wiring, which
+   * runs the checker asynchronously on read views instead of synchronously behind the stream
+   * processor's persist barrier.
+   */
+  public JobTimeoutCheckScheduler(
+      final JobState state,
+      final boolean scheduleAsync,
+      final Duration pollingInterval,
+      final int batchLimit,
+      final InstantSource clock) {
     this.state = state;
+    this.scheduleAsync = scheduleAsync;
     this.pollingInterval = pollingInterval;
     this.batchLimit = batchLimit;
     this.clock = clock;
   }
 
   public void schedule(final Duration idleInterval) {
-    if (shouldReschedule) {
-      processingContext.getScheduleService().runAt(clock.millis() + idleInterval.toMillis(), this);
+    if (!shouldReschedule) {
+      return;
     }
+    final long timestamp = clock.millis() + idleInterval.toMillis();
+    if (scheduleAsync) {
+      processingContext.getScheduleService().runAtAsync(timestamp, this);
+    } else {
+      processingContext.getScheduleService().runAt(timestamp, this);
+    }
+  }
+
+  /**
+   * This checker is a poller: every execution rescans the full timed-out range from scratch, so an
+   * entry missed by one poll is picked up by the next — with the experimental layered-state flag
+   * on, the pre-execution view preparation may therefore reuse a published view younger than the
+   * polling interval instead of freezing before every poll (the observed staleness stays below one
+   * period, which a poller tolerates by construction). Contrast with the event-driven checkers
+   * (timer due-date, message TTL), which derive their next wake-up from the scan and keep the
+   * unconditional freeze.
+   */
+  @Override
+  public Duration toleratedViewStaleness() {
+    return pollingInterval;
   }
 
   @Override

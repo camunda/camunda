@@ -31,10 +31,22 @@ public class DueDateTimerCheckScheduler implements StreamProcessorLifecycleAware
       final TimerInstanceState timerInstanceState,
       final FeatureFlags featureFlags,
       final InstantSource clock) {
+    this(timerInstanceState, featureFlags.enableTimerDueDateCheckerAsync(), featureFlags, clock);
+  }
+
+  /**
+   * Variant with an explicit async decision, overriding the feature flag — used by the experimental
+   * layered-state wiring, which runs the checker asynchronously on read views.
+   */
+  public DueDateTimerCheckScheduler(
+      final TimerInstanceState timerInstanceState,
+      final boolean scheduleAsync,
+      final FeatureFlags featureFlags,
+      final InstantSource clock) {
     dueDateChecker =
         new DueDateCheckScheduler(
             TIMER_RESOLUTION,
-            featureFlags.enableTimerDueDateCheckerAsync(),
+            scheduleAsync,
             new TriggerTimersSideEffect(
                 timerInstanceState, clock, featureFlags.yieldingDueDateChecker()),
             clock);

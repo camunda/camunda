@@ -20,6 +20,7 @@ import io.camunda.zeebe.broker.logstreams.state.DbPositionSupplier;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.engine.LayeredStateCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.PartitionStartupAndTransitionContextImpl;
@@ -58,6 +59,7 @@ import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotCopy;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.camunda.zeebe.db.layered.zdb.LayeredZeebeDbFactory;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
@@ -172,7 +174,8 @@ public final class ZeebePartitionFactory {
             () -> MicrometerUtil.wrap(partitionMeterRegistry, PartitionKeyNames.tags(partitionId)),
             rocksDbResources);
     final StateController stateController =
-        createStateController(raftPartition, zeebeFactory, snapshotStore, snapshotStore);
+        createStateController(
+            raftPartition, runtimeDbFactory(zeebeFactory), snapshotStore, snapshotStore);
 
     final var snapshotCopy = new RocksDBSnapshotCopy(zeebeFactory);
     final var context =
@@ -229,6 +232,25 @@ public final class ZeebePartitionFactory {
         new ExporterDirectorPartitionTransitionStep(),
         new BackupApiRequestHandlerStep(),
         new AdminApiRequestHandlerStep());
+  }
+
+  /**
+   * The factory for the partition's runtime database. With the experimental layered-state flag on,
+   * runtime databases are wrapped in a {@code LayeredZeebeDb}: the stream processor's writes are
+   * buffered in memory and drained to RocksDB in periodic persist rounds, while all other consumers
+   * keep their pass-through behavior. Asynchronous checkers read views of the buffered state, so
+   * the factory receives the column family class to build a pinning snapshot source over the
+   * wrapped RocksDB. Snapshot handling is unaffected — the wrapper checkpoints the wrapped RocksDB,
+   * and the snapshot director drains the buffer first.
+   */
+  private ZeebeDbFactory<ZbColumnFamilies> runtimeDbFactory(
+      final ZeebeDbFactory<ZbColumnFamilies> zeebeFactory) {
+    final LayeredStateCfg layeredState = brokerCfg.getExperimental().getEngine().getLayeredState();
+    if (!layeredState.isEnabled()) {
+      return zeebeFactory;
+    }
+    return LayeredZeebeDbFactory.of(
+        zeebeFactory, layeredState.toDbConfig(), ZbColumnFamilies.class);
   }
 
   private StateController createStateController(

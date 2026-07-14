@@ -9,12 +9,15 @@ package io.camunda.zeebe.stream.impl;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.layered.zdb.LayeredZeebeDb;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -27,7 +30,9 @@ import io.camunda.zeebe.stream.impl.metrics.ScheduledTaskMetrics;
 import io.camunda.zeebe.stream.impl.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
+import io.camunda.zeebe.stream.impl.state.DbLastProcessedPositionState;
 import io.camunda.zeebe.stream.impl.state.StreamProcessorDbState;
+import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
@@ -81,6 +86,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   public static final long UNSET_POSITION = -1L;
   public static final Duration HEALTH_CHECK_TICK_DURATION = Duration.ofSeconds(5);
 
+  /** The guard {@link #flushBufferedState()} hands out when the layered-state flag is off. */
+  private static final CloseableSilently NOOP_SNAPSHOT_GUARD = () -> {};
+
   private static final String ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED =
       "Expected to find event with the snapshot position %s in log stream, but nothing was found. Failed to recover '%s'.";
   private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
@@ -111,6 +119,10 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private final List<RecordProcessor> recordProcessors = new ArrayList<>();
   private AsyncScheduleServiceContext asyncScheduleServiceContext;
   private ProcessingScheduleServiceImpl processorActorService;
+  // set once in onActorStarted iff the db is layered (experimental flag); null otherwise; the
+  // persistence driver is created only once its IO actor was submitted to the scheduler
+  private LayeredStatePersistence layeredStatePersistence;
+  private LayeredPersistIoActor layeredPersistIo;
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
     super("StreamProcessor", processorBuilder.getProcessingContext().partitionId());
@@ -150,6 +162,15 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       LOG.debug("Recovering state of partition {} from snapshot", partitionId);
       final long snapshotPosition = recoverFromSnapshot();
 
+      if (zeebeDb instanceof LayeredZeebeDb) {
+        // tasks scheduled through the sync API read persisted state, so they must run on this
+        // actor behind a persist barrier (see below) to observe every committed batch — otherwise
+        // event-driven checkers can lose wake-ups. Tasks scheduled through the async API run on
+        // their own actors behind a freeze preparation instead: buffered state is frozen into a
+        // fresh read view before each execution, giving view-reading checkers the same freshness
+        streamProcessorContext.setEnableAsyncScheduledTasks(false);
+      }
+
       final var scheduledTaskMetrics =
           ScheduledTaskMetrics.of(streamProcessorContext.getMeterRegistry());
 
@@ -163,11 +184,37 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
               streamProcessorContext.getScheduledTaskCheckInterval(),
               scheduledTaskMetrics);
 
+      // FREEZE-barrier: async tasks (AsyncProcessingScheduleServiceActor, e.g. the timer,
+      // message-TTL and job-timeout checkers reading views) only need the buffered state frozen
+      // into a fresh view — cheap, no IO; contrast with the DRAIN-barrier below for sync tasks
+      // reading persisted state
       asyncScheduleServiceContext =
           new AsyncScheduleServiceContext(
-              actorSchedulingService, actorServiceFactory, streamProcessorContext.partitionId());
+              actorSchedulingService,
+              actorServiceFactory,
+              zeebeDb instanceof LayeredZeebeDb ? this::prepareViewForScheduledTask : null,
+              streamProcessorContext.partitionId());
 
       processorActorService = actorServiceFactory.create();
+
+      if (zeebeDb instanceof LayeredZeebeDb) {
+        // DRAIN-barrier: sync tasks (ProcessingScheduleServiceImpl jobs on this actor) read
+        // persisted state, so the buffer is drained to RocksDB before every task runs and its
+        // reads observe every batch committed before the task's preparation; contrast with the
+        // cheap FREEZE-barrier above for view-reading async tasks. Still required: the job
+        // backoff checker is event-driven over persisted-state scans (a missed committed entry
+        // is a lost wake-up), and the redistribution/message schedulers read pass-through
+        // contexts too — but all remaining sync consumers run at multi-second cadences, so
+        // barrier-forced rounds are rare (the frequent pollers — due-date, TTL, job timeout —
+        // read views instead). A null barrier result lets the task run right away (nothing
+        // buffered, or recovery has not built the persistence driver yet — nothing to drain then
+        // either)
+        processorActorService.taskExecutionBarrier(
+            () ->
+                layeredStatePersistence == null
+                    ? null
+                    : layeredStatePersistence.prepareForScheduledTask());
+      }
 
       final var processingScheduleService =
           new ExtendedProcessingScheduleServiceImpl(
@@ -177,6 +224,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       streamProcessorContext.scheduleService(processingScheduleService);
 
       initRecordProcessors();
+
+      initLayeredStatePersistence();
 
       healthCheckTick();
 
@@ -241,10 +290,25 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   @Override
   public ActorFuture<Void> closeAsync() {
     if (isOpened.getAndSet(false)) {
-      actor.run(() -> asyncScheduleServiceContext.closeActors(actor).andThen(actor::close, actor));
+      // the layered persist IO actor closes before this actor: its close awaits an in-flight
+      // persist job, whose completion callback then still finds this actor alive to complete the
+      // round — afterwards no persist IO can touch the database anymore, so the owner of this
+      // partition's database may safely close or take it over
+      actor.run(
+          () ->
+              asyncScheduleServiceContext
+                  .closeActors(actor)
+                  .andThen(this::closeLayeredPersistIo, actor)
+                  .andThen(actor::close, actor));
     }
 
     return closeFuture;
+  }
+
+  private ActorFuture<Void> closeLayeredPersistIo() {
+    return layeredPersistIo == null
+        ? CompletableActorFuture.completed(null)
+        : layeredPersistIo.closeAsync();
   }
 
   @Override
@@ -323,8 +387,199 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     lifecycleAwareListeners.addAll(processorContext.getLifecycleListeners());
   }
 
+  private void initLayeredStatePersistence() {
+    if (!(zeebeDb instanceof final LayeredZeebeDb<?> layeredDb)) {
+      return;
+    }
+    // the persist step of a round runs on a dedicated io-bound actor so the blocking RocksDB
+    // batch commits never occupy this (cpu-bound) actor; the driver is created only once that
+    // actor was submitted, so a prepared round can always be handed to it
+    layeredPersistIo =
+        new LayeredPersistIoActor(
+            streamProcessorContext.partitionId(), layeredDb.config().persistMinSliceBytes());
+    actorSchedulingService
+        .submitActor(layeredPersistIo, SchedulingHints.ioBound())
+        .onComplete(
+            (ok, error) -> {
+              if (error != null) {
+                // never successfully scheduled, so there is nothing to close on failure
+                layeredPersistIo = null;
+                onFailure(error);
+                return;
+              }
+              // all layered column families exist now (created during recovery and
+              // record-processor init), so the persist driver can capture the engine domain's
+              // store set
+              layeredStatePersistence =
+                  new LayeredStatePersistence(
+                      layeredDb,
+                      () ->
+                          streamProcessorContext
+                              .getLastProcessedPositionState()
+                              .getLastSuccessfulProcessedRecordPosition(),
+                      actor::submit,
+                      layeredPersistIo,
+                      // the actor clock's cached monotonic nanos, refreshed every actor
+                      // iteration — cheap and available wherever the persistence runs (always on
+                      // this actor); fall back to the system source off-actor (tests)
+                      () -> {
+                        final var clock = ActorClock.current();
+                        return clock != null ? clock.getNanoTime() : System.nanoTime();
+                      });
+              // no periodic persist tick: spills are driven by the buffer-pressure ladder (the
+              // batch-committed hook covers the replay phase too, where the layered context
+              // buffers writes as well), the pre-snapshot flush and the scheduled-task barrier
+              streamProcessorContext.batchCommittedListener(
+                  layeredStatePersistence::onBatchCommitted);
+            },
+            actor);
+  }
+
+  /**
+   * Prepares view freshness for a scheduled task about to execute on an async schedule actor;
+   * installed as those services' task preparation. For event-driven tasks ({@code
+   * toleratedViewStaleness} null) the layered db's buffered state is frozen into a fresh read view,
+   * so a view acquired after the returned future completed observes every batch committed before
+   * the task ran; polling tasks may instead reuse the current published view while it is younger
+   * than their tolerance (see {@link LayeredStatePersistence#tryFreezeForScheduledTask}). Waits for
+   * an in-flight batch to complete before freezing; completes immediately while recovery has not
+   * built the layered persistence yet (nothing is buffered then).
+   */
+  private ActorFuture<Void> prepareViewForScheduledTask(final Duration toleratedViewStaleness) {
+    final CompletableActorFuture<Void> frozen = new CompletableActorFuture<>();
+    actor.run(() -> tryFreezeForScheduledTask(frozen, toleratedViewStaleness));
+    return frozen;
+  }
+
+  private void tryFreezeForScheduledTask(
+      final CompletableActorFuture<Void> frozen, final Duration toleratedViewStaleness) {
+    try {
+      if (layeredStatePersistence == null) {
+        frozen.complete(null);
+        return;
+      }
+      if (!layeredStatePersistence.tryFreezeForScheduledTask(toleratedViewStaleness)) {
+        // a batch is mid-flight on this actor; run again once it completed
+        actor.submit(() -> tryFreezeForScheduledTask(frozen, toleratedViewStaleness));
+        return;
+      }
+      frozen.complete(null);
+    } catch (final Exception e) {
+      frozen.completeExceptionally(e);
+    }
+  }
+
+  /**
+   * Drains the layered db's buffered state to RocksDB so a subsequent {@code createSnapshot}
+   * checkpoints a durable cut at least as new as the caller's last-processed position. Completes
+   * immediately when the experimental layered-state flag is off; awaits an in-flight persist round
+   * and any in-flight batch before draining otherwise (all waiting is future-chained on this actor,
+   * never blocking).
+   *
+   * <p>The returned guard keeps new persist rounds latched until it is closed: a paced round
+   * commits data slices before its anchor, so a RocksDB checkpoint taken while one runs would
+   * capture state ahead of its anchor — torn once restored, because the heap-only masking segments
+   * do not travel with a snapshot. The caller <b>must</b> close the guard once the transient
+   * snapshot's checkpoint completed, on success and on failure alike; closing is idempotent and
+   * safe from any thread. With the flag off the guard is a no-op.
+   */
+  public ActorFuture<CloseableSilently> flushBufferedState() {
+    if (!(zeebeDb instanceof LayeredZeebeDb)) {
+      return CompletableActorFuture.completed(NOOP_SNAPSHOT_GUARD);
+    }
+    final CompletableActorFuture<CloseableSilently> flushed = new CompletableActorFuture<>();
+    actor.run(() -> tryFlushBufferedState(flushed));
+    return flushed;
+  }
+
+  private void tryFlushBufferedState(final CompletableActorFuture<CloseableSilently> flushed) {
+    try {
+      if (layeredStatePersistence == null) {
+        if (actor.isClosed() || isFailed()) {
+          // the persistence driver will never be built anymore; nothing durable can be promised
+          flushed.completeExceptionally(
+              new IllegalStateException(
+                  "Cannot flush buffered state, stream processor is closed or failed"));
+          return;
+        }
+        // recovery has not built the persistence driver yet (its IO actor is still being
+        // submitted); re-check once it exists — writes may already be buffered by then
+        actor.submit(() -> tryFlushBufferedState(flushed));
+        return;
+      }
+      final CompletableActorFuture<Void> drained = new CompletableActorFuture<>();
+      layeredStatePersistence.flushForSnapshot(drained);
+      drained.onComplete(
+          (ok, error) -> {
+            if (error != null) {
+              // a failed flush released its guard itself — no checkpoint follows
+              flushed.completeExceptionally(error);
+            } else {
+              flushed.complete(newSnapshotGuardLease());
+            }
+          },
+          actor);
+    } catch (final Exception e) {
+      flushed.completeExceptionally(e);
+    }
+  }
+
+  /**
+   * The release handle of the snapshot guard a successful flush left latched: closing marshals the
+   * release onto this actor. Idempotent — the guard is counted once per flush and must be released
+   * exactly once, no matter how often the caller's failure handling closes.
+   */
+  private CloseableSilently newSnapshotGuardLease() {
+    final AtomicBoolean released = new AtomicBoolean();
+    return () -> {
+      if (released.compareAndSet(false, true)) {
+        actor.run(
+            () -> {
+              if (layeredStatePersistence != null) {
+                layeredStatePersistence.releaseSnapshotGuard();
+              }
+            });
+      }
+    };
+  }
+
   private long recoverFromSnapshot() {
-    final TransactionContext transactionContext = zeebeDb.createContext();
+    // with the experimental layered-state flag on, the processing context is the layered db's
+    // engine-domain context: batch commits promote an in-memory layer instead of writing RocksDB,
+    // and LayeredStatePersistence drains the buffered state in memory- and snapshot-driven
+    // persist rounds
+    final TransactionContext transactionContext;
+    if (zeebeDb instanceof final LayeredZeebeDb<?> layeredDb) {
+      // the db (and thus the domain context) may be reused across stream processors, e.g. on a
+      // follower-to-leader transition; a predecessor that died mid-batch left uncommitted staged
+      // writes behind — discard them, replay rebuilds their effects from the log. A predecessor
+      // that died between preparing and completing a pipeline merge left it outstanding — abort it
+      // (the runs stay unmerged and this processor's merges retry them). A persist round left
+      // outstanding is instead completed FORWARD: its paced drain may have committed partial
+      // slices without the anchor, and re-draining it to completion here (idempotent,
+      // newest-wins, anchor in the final slice) restores the full-cut invariant before replay
+      // starts on the reused database — aborting would leave the torn partial-slice state in
+      // RocksDB, masked from layered readers but poisonous to anything reading it directly. All
+      // of this is safe because the predecessor closed its persist IO actor before its
+      // close/failure completed, and a new stream processor only starts after its predecessor
+      // fully stopped.
+      layeredDb.defaultDomain().discardOpenBatch();
+      layeredDb.defaultDomain().abortStaleMerge();
+      try {
+        layeredDb.defaultDomain().completeStaleRoundForward();
+      } catch (final RuntimeException e) {
+        // recoverable by design: the round completed as failed, its segments stay buffered and
+        // keep masking the partial slices, and this processor's next round retries them
+        LOG.warn(
+            "Failed to complete the persist round a predecessor of partition {} left outstanding;"
+                + " its segments stay buffered and the next persist round retries them",
+            partitionId,
+            e);
+      }
+      transactionContext = layeredDb.layeredContext();
+    } else {
+      transactionContext = zeebeDb.createContext();
+    }
     streamProcessorContext.transactionContext(transactionContext);
     streamProcessorContext.keyGeneratorControls(
         new DbKeyGenerator(partitionId, zeebeDb, transactionContext));
@@ -333,6 +588,18 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
         new StreamProcessorDbState(zeebeDb, transactionContext);
     streamProcessorContext.lastProcessedPositionState(
         streamProcessorDbState.getLastProcessedPositionState());
+
+    if (zeebeDb instanceof final LayeredZeebeDb<?> layeredDb) {
+      // the last-processed position is the recovery anchor, stored as a normal key of the DEFAULT
+      // column family (see the layered-state ADR): designate it so a paced drain defers it to a
+      // round's final slice — no partial slice may ever commit an anchor ahead of the state it
+      // describes
+      layeredDb
+          .defaultDomain()
+          .designateAnchorEntry(
+              ZbColumnFamilies.DEFAULT.name(),
+              DbLastProcessedPositionState.serializedPositionKey());
+    }
 
     final long snapshotPosition =
         streamProcessorDbState
@@ -376,8 +643,12 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private void onFailure(final Throwable throwable) {
     LOG.error("Actor {} failed in phase {}.", getName(), actor.getLifecyclePhase(), throwable);
 
+    // close the layered persist IO actor before failing this actor, so an in-flight persist
+    // round finished (its completion callback still runs on this actor) and no persist IO can
+    // race a successor taking over the partition's database
     asyncScheduleServiceContext
         .closeActors(actor)
+        .andThen(this::closeLayeredPersistIo, actor)
         .onComplete(
             (v, t) -> {
               actor.fail(throwable);

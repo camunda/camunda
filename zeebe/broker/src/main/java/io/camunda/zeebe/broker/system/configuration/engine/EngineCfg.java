@@ -26,6 +26,7 @@ public final class EngineCfg implements ConfigurationEntry {
   private ExpressionCfg expression = new ExpressionCfg();
   private ProcessInstanceCreationCfg processInstanceCreation = new ProcessInstanceCreationCfg();
   private StartupCfg startup = new StartupCfg();
+  private LayeredStateCfg layeredState = new LayeredStateCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -147,6 +148,14 @@ public final class EngineCfg implements ConfigurationEntry {
     startup = startupCfg;
   }
 
+  public LayeredStateCfg getLayeredState() {
+    return layeredState;
+  }
+
+  public void setLayeredState(final LayeredStateCfg layeredState) {
+    this.layeredState = layeredState;
+  }
+
   @Override
   public String toString() {
     return "EngineCfg{"
@@ -176,6 +185,8 @@ public final class EngineCfg implements ConfigurationEntry {
         + processInstanceCreation
         + ", startup="
         + startup
+        + ", layeredState="
+        + layeredState
         + '}';
   }
 

@@ -17,6 +17,7 @@ import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.core.authz.AuthorizationPortsFactory;
 import io.camunda.zeebe.auth.Authorization;
+import io.camunda.zeebe.db.layered.ViewPublisher;
 import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.el.impl.ExpressionLanguageMetricsImpl;
@@ -87,6 +88,7 @@ import io.camunda.zeebe.engine.processing.user.UserProcessors;
 import io.camunda.zeebe.engine.processing.usertask.UserTaskProcessor;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
+import io.camunda.zeebe.engine.state.instance.LayeredViewTimerInstanceState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
@@ -141,9 +143,16 @@ public final class EngineProcessors {
     final var config = typedRecordProcessorContext.getConfig();
     final var securityConfig = typedRecordProcessorContext.getSecurityConfig();
 
+    // with the experimental layered-state flag on, the due-date checker runs asynchronously and
+    // scans read views of the buffered state — a separate transaction context would only see the
+    // persisted state and could miss committed timers (a lost wake-up)
+    final var stateViewPublisher = typedRecordProcessorContext.getStateViewPublisher();
     final DueDateTimerCheckScheduler timerChecker =
-        new DueDateTimerCheckScheduler(
-            scheduledTaskStateFactory.get().getTimerState(), featureFlags, clock);
+        stateViewPublisher != null
+            ? new DueDateTimerCheckScheduler(
+                new LayeredViewTimerInstanceState(stateViewPublisher), true, featureFlags, clock)
+            : new DueDateTimerCheckScheduler(
+                scheduledTaskStateFactory.get().getTimerState(), featureFlags, clock);
 
     final var jobMetrics = new JobProcessingMetrics(typedRecordProcessorContext.getMeterRegistry());
     final var processEngineMetrics =
@@ -300,6 +309,7 @@ public final class EngineProcessors {
         subscriptionCommandSender,
         processingState,
         scheduledTaskStateFactory,
+        stateViewPublisher,
         typedRecordProcessors,
         writers,
         config,
@@ -335,6 +345,7 @@ public final class EngineProcessors {
         typedRecordProcessors,
         processingState,
         scheduledTaskStateFactory,
+        stateViewPublisher,
         bpmnBehaviors,
         writers,
         jobMetrics,
@@ -734,6 +745,7 @@ public final class EngineProcessors {
       final SubscriptionCommandSender subscriptionCommandSender,
       final MutableProcessingState processingState,
       final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
+      final ViewPublisher stateViewPublisher,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final EngineConfiguration config,
@@ -748,6 +760,7 @@ public final class EngineProcessors {
         typedRecordProcessors,
         processingState,
         scheduledTaskStateFactory,
+        stateViewPublisher,
         subscriptionCommandSender,
         writers,
         config,

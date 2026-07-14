@@ -9,6 +9,8 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.layered.ViewPublisher;
+import io.camunda.zeebe.db.layered.zdb.LayeredZeebeDb;
 import io.camunda.zeebe.el.impl.ExpressionLanguageMetricsImpl;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -109,6 +111,14 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
             transientProcessMessageSubscriptionState,
             transientAskState,
             clock);
+  }
+
+  @Override
+  public ViewPublisher getStateViewPublisher() {
+    if (zeebeDb instanceof final LayeredZeebeDb<?> layeredDb) {
+      return layeredDb.defaultDomain().viewPublisher();
+    }
+    return null;
   }
 
   @Override
