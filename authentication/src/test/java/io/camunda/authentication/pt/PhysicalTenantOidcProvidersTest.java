@@ -121,7 +121,7 @@ class PhysicalTenantOidcProvidersTest {
         SCOPED_PREFIX + ".client-id-claim", "https://camunda.com/claims/client_id");
     environment.setProperty(SCOPED_PREFIX + ".prefer-username-claim", "true");
     environment.setProperty(
-        "camunda.physical-tenants.tenanta.security.authentication.providers.assigned", "auth0");
+        "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]", "auth0");
     return environment;
   }
 }
