@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Cluster ID as the source of truth for exporters, and secondary storage validation | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-57662/architecture/components/orchestration-cluster/adr/0008-810-cluster-id-secondary-storage-validation/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Cluster ID as the source of truth for exporters, and secondary storage validation | Camunda Platform"><meta data-rh="true" name="description" content="DRI: Josh Windels"><meta data-rh="true" property="og:description" content="DRI: Josh Windels"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-57662/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-57662/architecture/components/orchestration-cluster/adr/0008-810-cluster-id-secondary-storage-validation/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-57662/architecture/components/orchestration-cluster/adr/0008-810-cluster-id-secondary-storage-validation/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-57662/architecture/components/orchestration-cluster/adr/0008-810-cluster-id-secondary-storage-validation/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-57662/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-57662/assets/js/runtime~main.51dd3fae.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-57662/assets/js/main.c46fa69a.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-57662/assets/js/runtime~main.45a64a39.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-57662/assets/js/main.9a092e8e.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -84,6 +84,12 @@ path to reason about, compared to a single-lifecycle-point check.</li>
 equivalent bookkeeping mechanism exists there yet.</li>
 <li class="">The cluster ID is not regenerated on cluster purge or backup restore, so this detects &quot;pointed at
 a different cluster&#x27;s storage,&quot; not &quot;same cluster, storage restored from an older backup.&quot;</li>
+<li class="">The check&#x27;s isolation granularity matches whatever storage isolation already exists per backend,
+and no more: RDBMS already scopes storage per physical tenant, so <code>rdbms-exporter</code> validates and
+records the cluster ID per physical tenant too — one tenant&#x27;s mismatch doesn&#x27;t affect another&#x27;s.
+ES/OS has no per-physical-tenant storage isolation today (every tenant&#x27;s exporter instance shares
+one index prefix/connection), so <code>camunda-exporter</code>&#x27;s cluster-ID record is similarly shared across
+tenants — the same limitation the existing schema-version record already has, not a new one.</li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="source">Source<a href="#source" class="hash-link" aria-label="Direct link to Source" title="Direct link to Source" translate="no">​</a></h2>
 <ul>
