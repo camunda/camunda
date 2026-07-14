@@ -5,30 +5,48 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.dynamic.config.api;
+package io.camunda.zeebe.restore.validation;
 
+import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestValidator;
 import io.camunda.zeebe.util.Preconditions;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Validates the parameters of a restore. A backup ID and a time range (from/to) are mutually
- * exclusive, and when both bounds of the time range are given, {@code from} must be before {@code
- * to}. Providing neither is allowed (e.g. restoring the latest backup). A time range is only
- * accepted when {@code continuousBackups} is {@code true} (e.g. the configured secondary storage
- * supports it).
- *
- * <p>Shared by the standalone restore application and the cluster-configuration restore request so
- * both enforce the same rules with the same error messages.
+ * Validates {@link RestoreRequest}s submitted through the cluster-configuration API while a broker
+ * is in recovery mode.
  */
-public final class RestoreParameterValidator {
+public final class RestoreValidator
+    implements ClusterConfigurationRequestValidator<RestoreRequest> {
 
-  private RestoreParameterValidator() {}
+  private final @Nullable BackupStore backupStore;
 
-  public static void validate(final RestoreRequest request) {
+  public RestoreValidator(final @Nullable BackupStore backupStore) {
+    this.backupStore = backupStore;
+  }
+
+  @Override
+  public Class<RestoreRequest> requestType() {
+    return RestoreRequest.class;
+  }
+
+  @Override
+  public void validate(final ClusterConfigurationManagementRequest request) {
+    if (backupStore == null) {
+      throw new IllegalArgumentException(
+          "Cannot restore: no backup store is configured on this broker.");
+    }
+    validateParameters((RestoreRequest) request);
+  }
+
+  @VisibleForTesting
+  static void validateParameters(final RestoreRequest request) {
     final var instantFrom = parseTimestamp(request.from(), "from");
     final var instantTo = parseTimestamp(request.to(), "to");
     final var hasTimeRange = hasTimeRange(instantFrom, instantTo);
