@@ -25,7 +25,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.springframework.http.HttpHeaders;
@@ -39,10 +38,7 @@ import org.springframework.http.HttpStatus;
  *
  * <p>Covers two surfaces: the default (non-PT) path, and the physical tenant's own scoped path
  * ({@code /physical-tenants/<id>/...}), whose unprotected API variant is built via {@code
- * ScopedApiSecurityChainBuilder#buildUnprotectedScopedApiChain}. The scoped case is {@link
- * Disabled @Disabled} until this repo bumps CSL to the release carrying its session-filter fix
- * (camunda-security-library#521); until then that chain installs no session filter and the scoped
- * {@code /v2/authentication/me} returns 401.
+ * ScopedApiSecurityChainBuilder#buildUnprotectedScopedApiChain}.
  */
 @MultiDbTest
 @MultiDbPhysicalTenants({PhysicalTenantWebSessionUnprotectedApiIT.TENANT_A})
@@ -95,11 +91,6 @@ public class PhysicalTenantWebSessionUnprotectedApiIT {
   }
 
   @Test
-  @Disabled(
-      "Enable once this repo bumps CSL to the release carrying the scoped unprotected"
-          + " session-filter fix (camunda-security-library#521); until then the PT-scoped"
-          + " unprotected chain installs no session filter and /physical-tenants/<id>"
-          + "/v2/authentication/me returns 401.")
   void shouldRecognizeAndInvalidatePhysicalTenantScopedSessionOnUnprotectedApiChain()
       throws Exception {
     final String base = CAMUNDA.restAddress().toString().replaceAll("/+$", "");
