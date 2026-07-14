@@ -9,7 +9,7 @@ package io.camunda.authentication.config;
 
 import static java.util.stream.Collectors.toMap;
 
-import io.camunda.authentication.pt.PhysicalTenantAuthConfigurations;
+import io.camunda.authentication.pt.PhysicalTenantOidcProviders;
 import io.camunda.authentication.service.PhysicalTenantMembershipContextPropagator;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.context.MembershipResolutionContextPropagator;
@@ -37,11 +37,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
@@ -206,9 +203,9 @@ public class OidcOverrideBeansConfiguration {
         request,
         buildAdditionalJwkSetUrisByIssuer(oidcProviderRepository),
         buildPreferIdTokenClaimsByRegistrationId(oidcProviderRepository),
-        buildTokenClaimsConvertersByRegistrationId(
-            membershipPort, membershipResolutionContextPropagator, environment),
-        buildIdentityClaimsByRegistrationId(environment));
+        PhysicalTenantOidcProviders.tokenClaimsConvertersByRegistrationId(
+            environment, membershipPort, membershipResolutionContextPropagator),
+        PhysicalTenantOidcProviders.identityClaimsByRegistrationId(environment));
   }
 
   @Bean
@@ -286,50 +283,6 @@ public class OidcOverrideBeansConfiguration {
     return oidcProviderRepository.getOidcAuthenticationConfigurations().entrySet().stream()
         .filter(entry -> entry.getValue().isPreferIdTokenClaims())
         .collect(toMap(Map.Entry::getKey, entry -> Boolean.TRUE));
-  }
-
-  private Map<String, LazyTokenClaimsConverter> buildTokenClaimsConvertersByRegistrationId(
-      final MembershipPort membershipPort,
-      final MembershipResolutionContextPropagator membershipResolutionContextPropagator,
-      final Environment environment) {
-    final Map<String, OidcConfiguration> providersByRegistrationId = new LinkedHashMap<>();
-    PhysicalTenantAuthConfigurations.forAllPhysicalTenants(environment).values().stream()
-        .map(authentication -> authentication.getProviders())
-        .filter(providers -> providers != null && providers.getOidc() != null)
-        .forEach(providers -> providersByRegistrationId.putAll(providers.getOidc()));
-    return providersByRegistrationId.entrySet().stream()
-        .collect(
-            toMap(
-                Map.Entry::getKey,
-                entry -> {
-                  final var config = entry.getValue();
-                  return new LazyTokenClaimsConverter(
-                      config.getUsernameClaim(),
-                      config.getClientIdClaim(),
-                      config.isPreferUsernameClaim(),
-                      membershipPort,
-                      membershipResolutionContextPropagator);
-                }));
-  }
-
-  private Map<String, List<String>> buildIdentityClaimsByRegistrationId(
-      final Environment environment) {
-    final Map<String, List<String>> claimsByRegistrationId = new LinkedHashMap<>();
-    PhysicalTenantAuthConfigurations.forAllPhysicalTenants(environment).values().stream()
-        .map(authentication -> authentication.getProviders())
-        .filter(providers -> providers != null && providers.getOidc() != null)
-        .forEach(
-            providers ->
-                providers
-                    .getOidc()
-                    .forEach(
-                        (registrationId, config) ->
-                            claimsByRegistrationId.put(
-                                registrationId,
-                                Stream.of(config.getUsernameClaim(), config.getClientIdClaim())
-                                    .filter(Objects::nonNull)
-                                    .toList())));
-    return claimsByRegistrationId;
   }
 
   @Bean
