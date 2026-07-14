@@ -78,6 +78,21 @@ final class DatasetDeclarationTest {
   }
 
   @Test
+  void shouldRejectATextDimensionOnAnAggregatedDataset() {
+    // given / when / then: TEXT is a large payload column type (e.g. BPMN XML), never a grouping
+    // key — as a grain column it cannot be indexed and its driver values break key equality
+    assertThatThrownBy(
+            () ->
+                DatasetDeclaration.builder("text-grain", FactType.PROCESS_INSTANCE)
+                    .dimension("payload", DimensionType.TEXT)
+                    .meter(Meter.of("count", MeterCatalog.COUNT))
+                    .window(60_000L)
+                    .build())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("cannot be a grouping key");
+  }
+
+  @Test
   void shouldRejectDuplicateDimensionNames() {
     assertThatThrownBy(
             () ->

@@ -108,6 +108,18 @@ public record DatasetDeclaration(
       if (windowSizesMs.isEmpty()) {
         throw new IllegalArgumentException("dataset '" + name + "' declares no window tiers");
       }
+      for (final DimensionSpec dimension : dimensions) {
+        // In a cube every dimension is a grouping key (grain column, serving-row key, index
+        // member); TEXT is a large unindexable payload type — a TABLE column, never a key.
+        if (dimension.type() == DimensionType.TEXT) {
+          throw new IllegalArgumentException(
+              "dataset '"
+                  + name
+                  + "' dimension '"
+                  + dimension.name()
+                  + "' is TEXT — a large payload type cannot be a grouping key; use STRING");
+        }
+      }
       requireValidTiers(name, windowSizesMs);
       requireValidSnapshots(name, windowSizesMs, snapshotEveryMs);
     }

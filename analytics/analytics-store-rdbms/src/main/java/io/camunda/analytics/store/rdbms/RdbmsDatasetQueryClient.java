@@ -147,8 +147,10 @@ public final class RdbmsDatasetQueryClient implements DatasetQueryClient {
         while (resultSet.next()) {
           int index = 1;
           final List<Object> keyValues = new ArrayList<>(grain.size());
-          for (int i = 0; i < grain.size(); i++) {
-            keyValues.add(resultSet.getObject(index++));
+          // Coerce like every other read path: a raw driver value (e.g. an H2 Clob, which has
+          // identity equality) would never group a key's baseline with its range points.
+          for (final DimensionColumn column : grain) {
+            keyValues.add(coerceRead(column.type(), resultSet.getObject(index++)));
           }
           final long sampleTime = resultSet.getLong(index++);
           final Map<String, Object> measures = new LinkedHashMap<>();
@@ -242,8 +244,13 @@ public final class RdbmsDatasetQueryClient implements DatasetQueryClient {
       groupByColumns.add(column);
     }
     // Group by the bucket's SELECT alias (both dialects accept it) rather than repeating the
-    // bind-parameter expression, which H2 will not match against the projected expression.
-    selectColumns.add("(window_start - MOD(window_start, #{granularity})) AS " + BUCKET_ALIAS);
+    // bind-parameter expression, which H2 will not match against the projected expression. The
+    // double MOD makes SQL's sign-following remainder a floor-mod, so a negative window_start
+    // (pre-1970 event time) buckets like the executor's Math.floorMod, not one bucket too high.
+    selectColumns.add(
+        "(window_start - MOD(MOD(window_start, #{granularity}) + #{granularity}, #{granularity}))"
+            + " AS "
+            + BUCKET_ALIAS);
     groupByColumns.add(BUCKET_ALIAS);
     for (final String meter : fetch.meters()) {
       final PushdownSpec<?, ?> spec = requireSpec(dataset, meter, fetch.windowSize());
@@ -362,9 +369,13 @@ public final class RdbmsDatasetQueryClient implements DatasetQueryClient {
         }
         measures.put(meter, spec.get().recompose().apply(columns));
       } else {
-        // DIRECT on a non-pushable meter: serve the denormalized scalar (never PUSH_DOWN).
+        // DIRECT on a non-pushable meter: serve the denormalized scalar (never PUSH_DOWN). A
+        // NULL scalar means "no observations": the measure stays absent (a row's measure map
+        // cannot hold null) — never 0, which is a legitimate value.
         final Object value = row.get(RdbmsNames.valueColumn(meter).toLowerCase(Locale.ROOT));
-        measures.put(meter, value == null ? 0.0 : ((Number) value).doubleValue());
+        if (value != null) {
+          measures.put(meter, ((Number) value).doubleValue());
+        }
       }
     }
     return measures;

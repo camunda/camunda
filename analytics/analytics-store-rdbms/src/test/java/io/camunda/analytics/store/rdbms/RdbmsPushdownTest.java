@@ -96,6 +96,40 @@ final class RdbmsPushdownTest {
   }
 
   @Test
+  void shouldBucketNegativeWindowStartsLikeFloorMod() {
+    // given a pre-1970 window [-1m, 0) and an epoch window [0, 1m)
+    final CompiledDataset cube =
+        cube(builder("pi-neg").meter(Meter.of("count", MeterCatalog.COUNT)));
+    store.schemaManager().ensure(cube);
+    write(cube, "count", key(cube, "orders"), -MINUTE, counts(3));
+    write(cube, "count", key(cube, "orders"), 0L, counts(2));
+    store.writer().flush();
+
+    // when rolled up at a 2-minute granularity spanning both
+    final List<AggregatedRow> rows =
+        client()
+            .fetchAggregated(
+                new AggregatedFetch(
+                    cube,
+                    MINUTE,
+                    -2 * MINUTE,
+                    2 * MINUTE,
+                    List.of(),
+                    List.of("count"),
+                    List.of("bpmnProcessId"),
+                    2 * MINUTE,
+                    ReadStrategy.PUSH_DOWN));
+
+    // then the negative window floors to bucket -2m (like Math.floorMod in the executor and the
+    // document backend's histogram) — SQL's sign-following MOD would have put it in bucket 0
+    assertThat(rows)
+        .extracting(
+            r -> r.groupValues().get(0), AggregatedRow::bucket, r -> r.measures().get("count"))
+        .containsExactlyInAnyOrder(
+            Tuple.tuple("orders", -2 * MINUTE, 3L), Tuple.tuple("orders", 0L, 2L));
+  }
+
+  @Test
   void shouldPushDownExecutionTimeRollupWithSumMinMax() {
     // given two windows of durations for one process
     final CompiledDataset cube =
@@ -202,6 +236,79 @@ final class RdbmsPushdownTest {
     // then the finalized scalar is the distinct estimate (3), with no blob on the wire
     assertThat(row.groupValues().get(0)).isEqualTo("<default>");
     assertThat((Double) row.measures().get("distinct")).isEqualTo(3.0);
+  }
+
+  @Test
+  void shouldDirectReadAQuantileHeadlineAsItsFirstDeclaredRank() {
+    // given five durations in one window for a percentile meter (default ranks — p50 first)
+    final CompiledDataset cube =
+        cube(builder("pi-p").meter(Meter.of("p", MeterCatalog.PERCENTILE, "durationMs")));
+    store.schemaManager().ensure(cube);
+    write(cube, "p", key(cube, "orders"), 0L, durations(100L, 200L, 300L, 400L, 500L));
+    store.writer().flush();
+
+    // when a matching-granularity DIRECT read fetches the denormalized _value column
+    final AggregatedRow row =
+        single(
+            client()
+                .fetchAggregated(
+                    new AggregatedFetch(
+                        cube,
+                        MINUTE,
+                        0L,
+                        MINUTE,
+                        List.of(),
+                        List.of("p"),
+                        List.of("bpmnProcessId"),
+                        MINUTE,
+                        ReadStrategy.DIRECT)));
+
+    // then the headline is the first declared rank's value (the median, 300) — a percentile the
+    // meter was declared for, not the observation count
+    assertThat((Double) row.measures().get("p")).isEqualTo(300.0);
+  }
+
+  @Test
+  void shouldStoreANullQuantileHeadlineWhenTheMeterHasNoObservations() {
+    // given a composite written before the percentile meter was declared (the evolution seam):
+    // its slot is absent, so the writer stores the meter's empty accumulator
+    final CompiledDataset countOnly =
+        cube(builder("pi-p-empty").meter(Meter.of("count", MeterCatalog.COUNT)));
+    final CompiledDataset cube =
+        cube(
+            builder("pi-p-empty")
+                .meter(Meter.of("count", MeterCatalog.COUNT))
+                .meter(Meter.of("p", MeterCatalog.PERCENTILE, "durationMs")));
+    store.schemaManager().ensure(cube);
+    store
+        .writer()
+        .upsertCell(
+            cube,
+            key(cube, "orders"),
+            0L,
+            cube.finestTier().windowMs(),
+            fold(countOnly, counts(2)),
+            WriteVersion.SEED);
+    store.writer().flush();
+
+    // when the quantile's denormalized _value is read DIRECT
+    final AggregatedRow row =
+        single(
+            client()
+                .fetchAggregated(
+                    new AggregatedFetch(
+                        cube,
+                        MINUTE,
+                        0L,
+                        MINUTE,
+                        List.of(),
+                        List.of("p"),
+                        List.of("bpmnProcessId"),
+                        MINUTE,
+                        ReadStrategy.DIRECT)));
+
+    // then "no observations" reads as null — never 0, which is a legitimate percentile
+    assertThat(row.measures().get("p")).isNull();
   }
 
   private static DatasetDeclaration.Builder builder(final String name) {

@@ -139,9 +139,9 @@ public final class RdbmsDatasetWriter implements VersionedDatasetWriter {
         meterCols.add(RdbmsNames.quotedValueColumn(meter.meterName()));
         meterColTypes.add(dialect.doubleType());
         final byte[] blob = slotBytes == null ? emptySlot(meter.bound()) : slotBytes;
-        final double scalar = finalizedValue(meter.bound(), blob);
+        final Double scalar = finalizedValue(meter.bound(), blob);
         binds.add((statement, index) -> statement.setBytes(index, blob));
-        binds.add((statement, index) -> statement.setDouble(index, scalar));
+        binds.add((statement, index) -> statement.setObject(index, scalar, Types.DOUBLE));
       }
     }
 
@@ -296,9 +296,12 @@ public final class RdbmsDatasetWriter implements VersionedDatasetWriter {
     return bound.accumulatorCodec().toBytes(bound.aggregate().createAccumulator());
   }
 
-  /** The cell's finalized scalar for a non-pushable meter (the denormalized {@code _value}). */
+  /**
+   * The cell's finalized scalar for a non-pushable meter (the denormalized {@code _value}); {@code
+   * null} when the meter has no observations in this cell.
+   */
   @SuppressWarnings("unchecked")
-  private static double finalizedValue(final BoundMeter<?, ?> boundRaw, final byte[] bytes) {
+  private static Double finalizedValue(final BoundMeter<?, ?> boundRaw, final byte[] bytes) {
     final BoundMeter<Object, Object> bound = (BoundMeter<Object, Object>) boundRaw;
     final Object accumulator = bound.accumulatorCodec().fromBytes(bytes);
     return SketchScalar.of(bound.aggregate().getResult(accumulator));
