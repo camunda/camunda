@@ -37,9 +37,14 @@ import java.util.Map;
  */
 public final class CubeMergeProcessor implements Processor<ShuffleEnvelope, Void> {
 
-  /** Decodes and merges one cell delta into its meter's running cell. */
+  /**
+   * Decodes and merges one cell delta into its meter's running cell. {@code sourcePartition} is the
+   * Stage-1 producer partition the delta came from — the source identity the mergers'
+   * min-of-sources stream-time clock is keyed by (a fast source must not close a slow source's
+   * still-in-flight windows).
+   */
   public interface CellApplier {
-    void apply(byte[] keyBytes, long windowStart, byte[] accBytes);
+    void apply(int sourcePartition, byte[] keyBytes, long windowStart, byte[] accBytes);
   }
 
   /**
@@ -104,7 +109,7 @@ public final class CubeMergeProcessor implements Processor<ShuffleEnvelope, Void
       if (!merge) {
         continue; // this stream already merged this batch — a duplicate or producer re-emit
       }
-      applier.apply(cell.key(), cell.windowStart(), cell.payload());
+      applier.apply(sourcePartition, cell.key(), cell.windowStart(), cell.payload());
     }
   }
 

@@ -18,7 +18,10 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.function.LongSupplier;
 import java.util.function.Predicate;
+import org.agrona.collections.Long2LongHashMap;
+import org.agrona.collections.Long2LongHashMap.KeyIterator;
 
 /**
  * Merges immutable segment deltas into <b>one running accumulator per cell</b> and converges an
@@ -44,10 +47,39 @@ import java.util.function.Predicate;
  * delete only for an evicted cell some completed cut actually wrote — a cell born and evicted
  * between two cuts never had a durable row and leaves no delete.
  *
+ * <p><b>Stream-time clock.</b> One operator multiplexes deltas from many upstream sources whose
+ * event times are not mutually monotonic, so the clock that closes windows — the late-delta guard
+ * in {@link #merge} and the checkpoint finalization watermark — is the MIN over each live source's
+ * own max event time ({@link #merge(Windowed, Object, long, int)} attributes every delta to a
+ * source): no window closes while any live source might still ship deltas for it. A source that has
+ * shipped nothing for the idle timeout ({@link #sourceIdleness}) is excluded from the min until it
+ * speaks again, so a silent source cannot stall the clock forever; if it re-enters behind the
+ * clock, its late deltas drop into the {@link LateDropListener}. When <em>every</em> source is idle
+ * the clock simply holds — no data is flowing, and finalization resumes with the next delta. The
+ * clock is clamped monotonically non-decreasing: the raw min moves backwards when a source joins
+ * behind it, and a regressing watermark would break downstream consumers ({@link
+ * FinalizationListener#onWatermark}). Callers without source identity use the delegating overloads
+ * (one implicit source), which makes the clock the plain max of the hints — today's single-source
+ * behavior, unchanged.
+ *
+ * <p><b>Recovery.</b> A restart loses the per-source structure, so the clock restarts unknown and
+ * waits for sources to speak: recovered cells alone never close windows (adopting the max recovered
+ * window end immediately would let a source that recovered ahead finalize a slower source's
+ * still-in-flight windows before it re-registers). To keep recovered-but-never-spoken state from
+ * stalling finalization forever (an upstream that is drained and gone), the max recovered window
+ * end is adopted as the clock once no source has spoken for a full idle timeout after the first
+ * clock evaluation — the same escape hatch as an idle source.
+ *
  * @param <K> the grouping key type
  * @param <ACC> the accumulator type
  */
 public final class SegmentMergingAggregation<K, ACC> {
+
+  /** How long a source may stay silent before it stops gating the stream-time clock. */
+  public static final long DEFAULT_IDLE_TIMEOUT_MS = 60_000L;
+
+  /** The source every source-less {@link #merge} overload attributes its deltas to. */
+  private static final int DEFAULT_SOURCE = 0;
 
   private final AggregateFunction<?, ACC, ?> aggregate;
   private final Windows windows;
@@ -75,12 +107,14 @@ public final class SegmentMergingAggregation<K, ACC> {
   /**
    * Observes a delta the closed-window guard dropped: its window ended more than the grace before
    * the stream-time clock and was finalized/evicted, so folding it would resurrect the cell. Every
-   * drop is data missing from a finalized value — the alarm signal that an upstream source lags
-   * behind the clock (which is MAX-based over everything multiplexed onto this partition).
+   * drop is data missing from a finalized value. The clock is the min over the live sources' own
+   * max event times, so a drop means the source lagged <em>itself</em> past the grace, re-entered
+   * behind the clock after an idle timeout, or replayed a straggler — never merely that a sibling
+   * source ran ahead.
    */
   @FunctionalInterface
   public interface LateDropListener<K> {
-    void onLateDrop(Windowed<K> cell, long eventTimeHint, long maxEventTime);
+    void onLateDrop(Windowed<K> cell, long eventTimeHint, long clock);
   }
 
   private FinalizationListener<K, ACC> finalizationListener = (cell, value) -> {};
@@ -94,7 +128,19 @@ public final class SegmentMergingAggregation<K, ACC> {
   // cache only bridges flush -> checkpoint, so freeze() steals the whole map (installing a fresh
   // one) rather than shadowing every open cell's accumulator with a second serialized copy.
   private Map<Windowed<K>, byte[]> serializedSinceFlush = new HashMap<>();
-  private long maxEventTime = Long.MIN_VALUE;
+
+  // Stream-time clock (see the class javadoc): each source's own max event-time hint and the wall
+  // clock it last shipped a delta; the published clock is the min over the non-idle maxes, clamped
+  // monotonically non-decreasing. All hot-path state is primitive — the fold stays garbage-free.
+  private final Long2LongHashMap sourceMaxEventTime = new Long2LongHashMap(Long.MIN_VALUE);
+  private final Long2LongHashMap sourceLastSeenMs = new Long2LongHashMap(Long.MIN_VALUE);
+  private long clock = Long.MIN_VALUE;
+  // The max recovered window end — the pre-restart clock's lower bound, adopted only by the
+  // recovery escape hatch (no source spoke for a full idle timeout after the first evaluation).
+  private long recoveredEventTime = Long.MIN_VALUE;
+  private long firstClockEvaluationMs = Long.MIN_VALUE;
+  private LongSupplier nowMs = System::currentTimeMillis;
+  private long idleTimeoutMs = DEFAULT_IDLE_TIMEOUT_MS;
   // The cells whose durable row exists right now — written by a completed cut (or recovered) and
   // not yet deleted by one. It gates the cut's deletes: an evicted cell with no durable row (born
   // and evicted between two cuts, or written only by a failed cut) needs no delete. Mutated only
@@ -151,28 +197,52 @@ public final class SegmentMergingAggregation<K, ACC> {
     lateDropListener = listener;
   }
 
+  /**
+   * Wires the wall clock and the source idle timeout (before processing starts). {@code nowMs}
+   * feeds only the idleness bookkeeping — event time never derives from it.
+   */
+  public void sourceIdleness(final LongSupplier nowMs, final long idleTimeoutMs) {
+    this.nowMs = nowMs;
+    this.idleTimeoutMs = idleTimeoutMs;
+  }
+
   /** Folds one (deduped) segment delta into {@code cell}'s running total and marks it changed. */
   public void merge(final Windowed<K> cell, final ACC delta) {
     merge(cell, delta, windowEnd(cell));
   }
 
   /**
-   * Folds one (deduped) segment delta into {@code cell}'s running total and marks it changed.
-   *
-   * <p>{@code eventTimeHint} is an upper bound on the event times the delta covers, driving this
-   * operator's stream-time clock. For a finest-granularity cell that is its own window end (the
-   * two-arg overload). A caller rolling finer deltas up into a <em>coarser</em> window must pass
-   * the finer window's end instead: using the coarse window's end would leap stream time a whole
-   * coarse window ahead on the tier's first delta, eroding every sibling cell's grace by up to one
-   * window size and finalizing them early — late finer deltas would then be dropped and the coarse
-   * tier would undercount relative to the finest.
+   * Folds one (deduped) segment delta into {@code cell}'s running total and marks it changed,
+   * attributing the delta to one implicit source — for callers whose input is single-source, where
+   * the min-of-sources clock collapses to the plain max of the hints.
    */
   public void merge(final Windowed<K> cell, final ACC delta, final long eventTimeHint) {
+    merge(cell, delta, eventTimeHint, DEFAULT_SOURCE);
+  }
+
+  /**
+   * Folds one (deduped) segment delta into {@code cell}'s running total and marks it changed,
+   * attributing it to {@code sourceId} for the min-of-sources stream-time clock (see the class
+   * javadoc).
+   *
+   * <p>{@code eventTimeHint} is an upper bound on the event times the delta covers, driving the
+   * source's slot of this operator's stream-time clock. For a finest-granularity cell that is its
+   * own window end (the two-arg overload). A caller rolling finer deltas up into a <em>coarser</em>
+   * window must pass the finer window's end instead: using the coarse window's end would leap
+   * stream time a whole coarse window ahead on the tier's first delta, eroding every sibling cell's
+   * grace by up to one window size and finalizing them early — late finer deltas would then be
+   * dropped and the coarse tier would undercount relative to the finest.
+   */
+  public void merge(
+      final Windowed<K> cell, final ACC delta, final long eventTimeHint, final int sourceId) {
     // Drop deltas for a window that already closed and was evicted: folding one would resurrect the
     // cell and the idempotent sink would overwrite its finalized value. Never silent — the
-    // listener is how a lagging source's losses become visible.
-    if (maxEventTime != Long.MIN_VALUE && windowEnd(cell) + windows.graceMs() <= maxEventTime) {
-      lateDropListener.onLateDrop(cell, eventTimeHint, maxEventTime);
+    // listener is how a lagging source's losses become visible. The dropped delta still registers
+    // its source as live (and records its progress): a lagging source must keep gating the clock
+    // so its still-open later windows are not closed early too.
+    if (clock != Long.MIN_VALUE && windowEnd(cell) + windows.graceMs() <= clock) {
+      lateDropListener.onLateDrop(cell, eventTimeHint, clock);
+      observeSource(sourceId, eventTimeHint);
       return;
     }
     // The running total is always an accumulator this operator owns: the first delta is folded
@@ -190,7 +260,51 @@ public final class SegmentMergingAggregation<K, ACC> {
     }
     open.markChanged(cell);
     serializedSinceFlush.remove(cell); // the cached serialized form (if any) is stale now
-    maxEventTime = Math.max(maxEventTime, eventTimeHint);
+    observeSource(sourceId, eventTimeHint);
+    advanceClock();
+  }
+
+  /** Records a delta from {@code sourceId}: its event-time progress and that it is alive now. */
+  private void observeSource(final int sourceId, final long eventTimeHint) {
+    if (eventTimeHint > sourceMaxEventTime.get(sourceId)) {
+      sourceMaxEventTime.put(sourceId, eventTimeHint);
+    }
+    sourceLastSeenMs.put(sourceId, nowMs.getAsLong());
+  }
+
+  /**
+   * Re-evaluates the stream-time clock: the min over the non-idle sources' max event times, clamped
+   * monotonically non-decreasing (a source joining behind the clock, or idleness changing the min's
+   * membership, must never regress the published watermark). With every known source idle the clock
+   * holds. The recovery escape hatch lives here too: recovered-but-never-spoken state adopts the
+   * max recovered window end once no source has spoken for a full idle timeout, so a
+   * drained-and-gone upstream cannot stall finalization forever.
+   */
+  private void advanceClock() {
+    final long now = nowMs.getAsLong();
+    if (firstClockEvaluationMs == Long.MIN_VALUE) {
+      firstClockEvaluationMs = now;
+    }
+    if (sourceMaxEventTime.isEmpty()) {
+      if (recoveredEventTime != Long.MIN_VALUE && now - firstClockEvaluationMs >= idleTimeoutMs) {
+        clock = Math.max(clock, recoveredEventTime);
+      }
+      return;
+    }
+    long min = Long.MAX_VALUE;
+    boolean anyLive = false;
+    final KeyIterator sources = sourceMaxEventTime.keySet().iterator();
+    while (sources.hasNext()) {
+      final long sourceId = sources.nextValue();
+      if (now - sourceLastSeenMs.get(sourceId) >= idleTimeoutMs) {
+        continue; // idle: excluded from the min until it speaks again
+      }
+      anyLive = true;
+      min = Math.min(min, sourceMaxEventTime.get(sourceId));
+    }
+    if (anyLive) {
+      clock = Math.max(clock, min);
+    }
   }
 
   /** Wall-clock tick: converge the serving view for the cells changed since the last flush. */
@@ -345,14 +459,17 @@ public final class SegmentMergingAggregation<K, ACC> {
   }
 
   private void finalizeClosedWindows() {
-    if (maxEventTime == Long.MIN_VALUE) {
+    // Idleness is re-evaluated here, not only on merges: a silent source stops gating the clock at
+    // the next checkpoint even when no delta arrives to trigger the re-evaluation.
+    advanceClock();
+    if (clock == Long.MIN_VALUE) {
       return;
     }
-    final long watermark = maxEventTime - windows.graceMs();
+    final long watermark = clock - windows.graceMs();
     // Only cells whose window has ended are candidates — a closed window (past the watermark)
     // finalizes unconditionally, an ended-but-in-grace one only once its accumulator has drained.
     open.evictDue(
-        maxEventTime,
+        clock,
         (windowEnd, cell, value) -> {
           if (windowEnd > watermark && !drained.test(value)) {
             return false;
@@ -380,7 +497,9 @@ public final class SegmentMergingAggregation<K, ACC> {
           open.put(cell, total);
           open.index(cell, windowEnd(cell));
           durablyWritten.add(cell);
-          maxEventTime = Math.max(maxEventTime, windowEnd(cell));
+          // Not adopted as the clock: recovered cells only bound where the pre-restart clock could
+          // have been. The escape hatch in advanceClock() adopts it if no source ever speaks.
+          recoveredEventTime = Math.max(recoveredEventTime, windowEnd(cell));
         });
   }
 

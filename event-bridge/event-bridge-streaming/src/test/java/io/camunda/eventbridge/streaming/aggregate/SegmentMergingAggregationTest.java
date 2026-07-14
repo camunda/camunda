@@ -151,6 +151,136 @@ final class SegmentMergingAggregationTest {
   }
 
   @Test
+  void shouldKeepASlowSourcesWindowOpenWhileAFastSourceRunsAhead() {
+    // given two upstream sources multiplexed onto one operator (window 1s, grace 1s)
+    final InMemoryResultSink<Windowed<String>, Long> sink = new InMemoryResultSink<>();
+    final KeyValueStore<DbBytes, DbBytes> store =
+        new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes());
+    final SegmentMergingAggregation<String, Long> merger =
+        merger(store, sink, TumblingWindows.ofSizeAndGrace(1_000L, 1_000L));
+    final List<Windowed<String>> dropped = new ArrayList<>();
+    merger.onLateDrop((cell, eventTimeHint, clock) -> dropped.add(cell));
+    final Windowed<String> slowCell = new Windowed<>("slow", 0L);
+
+    // when the fast source runs far ahead of the slow source's open window and a checkpoint runs
+    merger.merge(slowCell, 3L, 1_000L, 1);
+    merger.merge(new Windowed<>("fast", 9_000L), 1L, 10_000L, 2);
+    merger.checkpoint();
+
+    // then the clock is the min over both sources, so the slow window was NOT finalized — both
+    // cells are still open in the durable store
+    assertThat(storedWindowStarts(store)).containsExactlyInAnyOrder(0L, 9_000L);
+
+    // and the slow source's follow-up delta still folds — no late drop
+    merger.merge(slowCell, 4L, 1_000L, 1);
+    merger.flush();
+    assertThat(dropped).isEmpty();
+    assertThat(sink.get(slowCell)).hasValue(7L);
+  }
+
+  @Test
+  void shouldExcludeAnIdleSourceFromTheClockAfterTheIdleTimeout() {
+    // given two sources and a manually driven wall clock with a 60s idle timeout
+    final long[] now = {0L};
+    final InMemoryResultSink<Windowed<String>, Long> sink = new InMemoryResultSink<>();
+    final KeyValueStore<DbBytes, DbBytes> store =
+        new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes());
+    final SegmentMergingAggregation<String, Long> merger =
+        merger(store, sink, TumblingWindows.ofSizeAndGrace(1_000L, 1_000L));
+    merger.sourceIdleness(() -> now[0], 60_000L);
+    final List<Windowed<String>> dropped = new ArrayList<>();
+    merger.onLateDrop((cell, eventTimeHint, clock) -> dropped.add(cell));
+    final Windowed<String> slowCell = new Windowed<>("slow", 0L);
+    final Windowed<String> fastCell = new Windowed<>("fast", 9_000L);
+    merger.merge(slowCell, 3L, 1_000L, 1); // the slow source speaks once ... then goes silent
+    merger.merge(fastCell, 1L, 10_000L, 2);
+    merger.checkpoint();
+    assertThat(storedWindowStarts(store))
+        .as("while the slow source is live, its window gates the clock")
+        .containsExactlyInAnyOrder(0L, 9_000L);
+
+    // when the slow source stays silent past the idle timeout while the fast source keeps speaking
+    now[0] = 61_000L;
+    merger.merge(fastCell, 1L, 10_000L, 2);
+    merger.checkpoint();
+
+    // then the clock advanced on the fast source alone and the stale window finalized
+    assertThat(sink.get(slowCell)).hasValue(3L);
+    assertThat(storedWindowStarts(store)).containsExactly(9_000L);
+
+    // and the idle source re-entering behind the clock has its late delta dropped, not resurrected
+    merger.merge(slowCell, 100L, 1_000L, 1);
+    merger.flush();
+    assertThat(dropped).containsExactly(slowCell);
+    assertThat(sink.get(slowCell)).hasValue(3L);
+  }
+
+  @Test
+  void shouldNotRegressTheWatermarkWhenASourceJoinsBehindTheClock() {
+    // given a finalization listener recording every published watermark (grace 1s)
+    final InMemoryResultSink<Windowed<String>, Long> sink = new InMemoryResultSink<>();
+    final SegmentMergingAggregation<String, Long> merger =
+        merger(
+            new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes()),
+            sink,
+            TumblingWindows.ofSizeAndGrace(1_000L, 1_000L));
+    final List<Long> watermarks = new ArrayList<>();
+    merger.onFinalization(
+        new SegmentMergingAggregation.FinalizationListener<>() {
+          @Override
+          public void onFinal(final Windowed<String> cell, final Long value) {}
+
+          @Override
+          public void onWatermark(final long watermark) {
+            watermarks.add(watermark);
+          }
+        });
+    merger.merge(new Windowed<>("k1", 9_000L), 1L, 10_000L, 1);
+    merger.checkpoint();
+
+    // when a source joins behind the current clock (its max is below the published watermark base)
+    merger.merge(new Windowed<>("k2", 9_000L), 1L, 9_500L, 2);
+    merger.checkpoint();
+
+    // then the published watermark held — clamped, never regressed by the lower raw min
+    assertThat(watermarks).containsExactly(9_000L, 9_000L);
+  }
+
+  @Test
+  void shouldAdoptTheRecoveredEventTimeOnlyAfterTheRecoveryIdleTimeout() {
+    // given two sources' open cells checkpointed by a previous incarnation (window 1s, grace 1s)
+    final KeyValueStore<DbBytes, DbBytes> store =
+        new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes());
+    final Windows windows = TumblingWindows.ofSizeAndGrace(1_000L, 1_000L);
+    final Windowed<String> slowCell = new Windowed<>("slow", 0L);
+    final Windowed<String> fastCell = new Windowed<>("fast", 9_000L);
+    final SegmentMergingAggregation<String, Long> before =
+        merger(store, new InMemoryResultSink<>(), windows);
+    before.merge(slowCell, 3L, 1_000L, 1);
+    before.merge(fastCell, 4L, 10_000L, 2);
+    before.checkpoint();
+    assertThat(storedWindowStarts(store)).containsExactlyInAnyOrder(0L, 9_000L);
+
+    // when a fresh operator recovers and checkpoints while no source has spoken yet
+    final long[] now = {0L};
+    final InMemoryResultSink<Windowed<String>, Long> sink = new InMemoryResultSink<>();
+    final SegmentMergingAggregation<String, Long> after = merger(store, sink, windows);
+    after.sourceIdleness(() -> now[0], 60_000L);
+    after.checkpoint();
+
+    // then recovered cells alone close nothing — the clock waits for sources to speak
+    assertThat(sink.get(slowCell)).isEmpty();
+    assertThat(storedWindowStarts(store)).containsExactlyInAnyOrder(0L, 9_000L);
+
+    // and once no source spoke for a full idle timeout, the max recovered window end is adopted
+    // (the escape hatch: a drained-and-gone upstream cannot stall finalization forever)
+    now[0] = 60_000L;
+    after.checkpoint();
+    assertThat(sink.get(slowCell)).hasValue(3L);
+    assertThat(storedWindowStarts(store)).containsExactly(9_000L);
+  }
+
+  @Test
   void shouldRecoverRunningTotalsFromTheStore() {
     // given a running total checkpointed to a shared store
     final KeyValueStore<DbBytes, DbBytes> store =

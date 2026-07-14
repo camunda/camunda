@@ -363,7 +363,7 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
                     dedup.admit(
                         group.sourcePartition(), group.streamId(), group.segment(), group.chunk()));
         if (merge) {
-          applier.apply(delta.key(), delta.windowStart(), delta.payload());
+          applier.apply(delta.sourcePartition(), delta.key(), delta.windowStart(), delta.payload());
         }
         drained++;
       } else {
@@ -500,18 +500,22 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
     final CompositeAccumulatorValue deltaCodec = new CompositeAccumulatorValue(bounds);
     final long finestWindowMs = compiled.finestTier().windowMs();
     final CellApplier applier =
-        (keyBytes, windowStart, accBytes) -> {
+        (sourcePartition, keyBytes, windowStart, accBytes) -> {
           final DimensionKey key = keyCodec.fromBytes(keyBytes);
           final Object[] delta = deltaCodec.fromBytesForMerge(accBytes);
           // The delta's windowStart is finest-aligned (Stage 1 ships only the finest tier), so
           // the finest window's end bounds the delta's event times — the stream-time hint every
           // tier's merger advances by. Advancing by the coarse window's own end instead would
           // erode sibling cells' grace by up to a coarse window (early finalize → dropped late
-          // deltas → coarse tiers undercounting relative to the finest).
+          // deltas → coarse tiers undercounting relative to the finest). The producer partition is
+          // the source the mergers' min-of-sources clock is keyed by: a facts partition
+          // multiplexes many Stage-1 producers, and a fast one must not close a slow one's
+          // still-in-flight windows.
           final long eventTimeHint = windowStart + finestWindowMs;
           for (final TierMerger tier : tierMergers) {
             final long tierWindowStart = windowStart - Math.floorMod(windowStart, tier.windowMs());
-            tier.merger().merge(new Windowed<>(key, tierWindowStart), delta, eventTimeHint);
+            tier.merger()
+                .merge(new Windowed<>(key, tierWindowStart), delta, eventTimeHint, sourcePartition);
           }
         };
     return new CubeWiring(applier, List.copyOf(mergers), sampler);

@@ -45,9 +45,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * The late-drop alarm: a delta whose window closed before it arrived (a lagging source behind the
- * MAX-based partition clock) is dropped by the merge guard — and that loss is counted, never
- * silent.
+ * The late-drop alarm: a delta whose window closed before it arrived is dropped by the merge guard
+ * — and that loss is counted, never silent. Both envelopes here carry the same producer partition,
+ * so the source lags <em>itself</em>: the min-of-sources clock is that one source's own max and
+ * legitimately still closes the window (only a sibling source running ahead no longer does).
  */
 final class AggregationStageTaskLateDropTest {
 
