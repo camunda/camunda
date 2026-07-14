@@ -1,7 +1,7 @@
 # Elasticsearch values for Camunda Platform Chart.
 # https://github.com/camunda/camunda-platform-helm
 #
-# This configures Elasticsearch when it's used fr Optimize, but NOT as the Camunda secondary storage.
+# This configures Elasticsearch when it's used for Optimize, but NOT as the Camunda secondary storage.
 # storage.
 #
 # For the Elasticsearch as secondary storage configuration, see the
