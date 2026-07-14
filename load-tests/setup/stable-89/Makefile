@@ -74,12 +74,20 @@ ifneq ($(enable_optimize),true)
 	ifneq ($(filter $(secondary_storage),postgresql mysql mariadb mssql oracle),)
 		platform_values += --set elasticsearch.enabled=false
 	endif
+else ifeq ($(secondary_storage), opensearch)
+	# When deploying the OpenSearch secondary storage, Optimize is
+	# configured via the camunda-platform-values-opensearch.yaml file.
+	#
+	# We need to apply specific Optimize related opensearch configs
+	platform_values += -f camunda-platform-values-optimize-opensearch.yaml
 else
-	# Optimize needs Elasticsearch or OpenSearch, so enable Elasticsearch if
-	# we are not already creating a cluster for secondary storage.
-	ifeq ($(filter $(secondary_storage),elasticsearch opensearch),)
-		platform_values += -f camunda-platform-values-optimize-elasticsearch.yaml
-	endif
+	# If we are not using OpenSearch as a secondary storage, Optimize will
+	# be configured with the Elasticsearch backend, either:
+	# * Using the same Elasticsearch cluster as the secondary storage, if
+	#   the secondary storage is also Elasticsearch.
+	# * Or using its dedicated Elasticsearch cluster, different from the
+	#   configured secondary storage.
+	platform_values += -f camunda-platform-values-optimize-elasticsearch.yaml
 endif
 
 # Platform values with stable configuration

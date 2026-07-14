@@ -169,12 +169,18 @@ if [[ "$enable_optimize" == "true" ]]; then
   # OS should have been configured as part of the secondary storage
   # configuration before, otherwise.
   case "$secondaryStorage" in
-    elasticsearch|opensearch)
-      # Nothing to do here: Optimize will use the configured OpenSearch/Elasticsearch for secondary storage.
+    opensearch)
+      # Secondary storage is OS: configures Optimize to use OpenSearch properly.
+      cp -v "values/camunda-platform-values-optimize-opensearch.yaml" "$TARGET_DIRECTORY/"
+      ;;
+
+    elasticsearch)
+      # Secondary storage is ES: configures Optimize to use Elasticsearch properly.
+      cp -v "values/camunda-platform-values-optimize-elasticsearch.yaml" "$TARGET_DIRECTORY/"
       ;;
 
     *)
-      # For the other secondary storage (not OpenSearch): this forcefully
+      # For the other secondary storage (not ES nor OS): this forcefully
       # configures Optimize to use Elasticsearch.
       elasticsearchEnabled=true
       echo "Forcefully enabling Elasticsearch for Optimize"
