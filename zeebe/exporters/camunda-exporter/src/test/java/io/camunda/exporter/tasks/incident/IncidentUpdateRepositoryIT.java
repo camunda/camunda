@@ -712,7 +712,7 @@ abstract class IncidentUpdateRepositoryIT {
       final var bulk = new IncidentBulkUpdate();
 
       // when
-      bulk.incidentRequests().put("2", new DocumentUpdate("2", "doesn't-exist", Map.of(), "3"));
+      bulk.incidentRequests().add(new DocumentUpdate("2", "doesn't-exist", Map.of(), "3"));
       final var result = repository.bulkUpdate(bulk);
 
       // then
@@ -744,16 +744,14 @@ abstract class IncidentUpdateRepositoryIT {
 
       // when
       bulk.incidentRequests()
-          .put(
-              "1",
+          .add(
               new DocumentUpdate(
                   "1",
                   incidentTemplate.getFullQualifiedName(),
                   Map.of(IncidentTemplate.STATE, IncidentState.ACTIVE),
                   "1"));
       bulk.incidentRequests()
-          .put(
-              "2",
+          .add(
               new DocumentUpdate(
                   "2",
                   incidentTemplate.getFullQualifiedName(),
@@ -794,16 +792,14 @@ abstract class IncidentUpdateRepositoryIT {
 
       // when
       bulk.listViewRequests()
-          .put(
-              "1",
+          .add(
               new DocumentUpdate(
                   "1",
                   listViewTemplate.getFullQualifiedName(),
                   Map.of(ListViewTemplate.INCIDENT, true),
                   "1"));
       bulk.listViewRequests()
-          .put(
-              "2",
+          .add(
               new DocumentUpdate(
                   "2",
                   listViewTemplate.getFullQualifiedName(),
@@ -845,16 +841,14 @@ abstract class IncidentUpdateRepositoryIT {
 
       // when
       bulk.flowNodeInstanceRequests()
-          .put(
-              "1",
+          .add(
               new DocumentUpdate(
                   "1",
                   flowNodeInstanceTemplate.getFullQualifiedName(),
                   Map.of(FlowNodeInstanceTemplate.INCIDENT, true),
                   "1"));
       bulk.flowNodeInstanceRequests()
-          .put(
-              "2",
+          .add(
               new DocumentUpdate(
                   "2",
                   flowNodeInstanceTemplate.getFullQualifiedName(),
