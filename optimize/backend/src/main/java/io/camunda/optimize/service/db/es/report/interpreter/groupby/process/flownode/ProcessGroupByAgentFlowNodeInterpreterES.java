@@ -91,13 +91,22 @@ public class ProcessGroupByAgentFlowNodeInterpreterES extends AbstractProcessGro
     // Only add the (extra) flow-node-instance aggregation used to break an ad-hoc subprocess down
     // into per-tool heat when the model actually contains ad-hoc subprocess tool nodes. Reports
     // without them keep the exact same aggregation as before.
-    if (helper.resolveAdHocSubProcessStructure(context).childIds().isEmpty()) {
+    final Set<String> adHocSubProcessToolIds =
+        helper.resolveAdHocSubProcessStructure(context).childIds();
+    if (adHocSubProcessToolIds.isEmpty()) {
       return Map.of(AGENT_INSTANCES_AGG, nestedBuilder);
     }
 
+    // Restrict the terms aggregation to the known tool IDs so low-frequency tools are not pushed
+    // out of the top-N buckets by unrelated, higher-frequency flow nodes also nested under
+    // FLOW_NODE_INSTANCES.
     final Aggregation.Builder.ContainerBuilder flowNodeTermsBuilder =
         new Aggregation.Builder()
-            .terms(t -> t.size(bucketLimit).field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID));
+            .terms(
+                t ->
+                    t.size(bucketLimit)
+                        .field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID)
+                        .include(i -> i.terms(adHocSubProcessToolIds.stream().toList())));
     final Aggregation.Builder.ContainerBuilder flowNodeNestedBuilder =
         new Aggregation.Builder()
             .nested(n -> n.path(FLOW_NODE_INSTANCES))

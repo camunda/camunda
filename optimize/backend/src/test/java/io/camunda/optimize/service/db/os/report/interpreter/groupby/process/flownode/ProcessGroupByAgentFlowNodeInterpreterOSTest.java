@@ -131,6 +131,11 @@ class ProcessGroupByAgentFlowNodeInterpreterOSTest {
     assertThat(byFlowNodeInstanceId.terms().field())
         .isEqualTo(FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID);
 
+    // and the terms aggregation is restricted to the resolved ad-hoc subprocess tool IDs, so
+    // low-frequency tools cannot be pushed out of the top-N buckets by unrelated flow nodes
+    assertThat(byFlowNodeInstanceId.terms().include().terms())
+        .containsExactlyInAnyOrder("tool-a", "tool-b");
+
     // and the original agent aggregation is still present
     assertThat(result).containsKey(AGENT_INSTANCES_AGG);
   }
