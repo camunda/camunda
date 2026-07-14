@@ -82,14 +82,17 @@ public final class PhysicalTenantOidcProviders {
   public static Map<String, List<String>> identityClaimsByRegistrationId(
       final Environment environment) {
     return providersByRegistrationId(environment).entrySet().stream()
-        .collect(
-            toMap(
-                Map.Entry::getKey,
-                entry ->
-                    Stream.of(
-                            entry.getValue().getUsernameClaim(),
-                            entry.getValue().getClientIdClaim())
-                        .filter(Objects::nonNull)
-                        .toList()));
+        .collect(toMap(Map.Entry::getKey, entry -> identityClaims(entry.getValue())));
+  }
+
+  /**
+   * Returns the configured identity claim names (username and client-id, omitting the unset ones)
+   * for a single provider. These are the claims the provider-aware converter normalizes to strings
+   * before conversion.
+   */
+  public static List<String> identityClaims(final OidcConfiguration config) {
+    return Stream.of(config.getUsernameClaim(), config.getClientIdClaim())
+        .filter(Objects::nonNull)
+        .toList();
   }
 }

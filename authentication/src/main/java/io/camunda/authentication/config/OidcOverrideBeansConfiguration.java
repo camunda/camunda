@@ -37,6 +37,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -205,7 +206,20 @@ public class OidcOverrideBeansConfiguration {
         buildPreferIdTokenClaimsByRegistrationId(oidcProviderRepository),
         PhysicalTenantOidcProviders.tokenClaimsConvertersByRegistrationId(
             environment, membershipPort, membershipResolutionContextPropagator),
-        PhysicalTenantOidcProviders.identityClaimsByRegistrationId(environment));
+        buildIdentityClaimsByRegistrationId(environment));
+  }
+
+  private Map<String, List<String>> buildIdentityClaimsByRegistrationId(
+      final Environment environment) {
+    final Map<String, List<String>> identityClaims =
+        new LinkedHashMap<>(
+            PhysicalTenantOidcProviders.identityClaimsByRegistrationId(environment));
+    // The root default slot is not a named provider, so normalize its URI-valued identity claims
+    // (e.g. iss) under the default registration id too, matching the scoped registrations.
+    identityClaims.put(
+        OidcConfiguration.DEFAULT_REGISTRATION_ID,
+        PhysicalTenantOidcProviders.identityClaims(cslProperties.getAuthentication().getOidc()));
+    return identityClaims;
   }
 
   @Bean
