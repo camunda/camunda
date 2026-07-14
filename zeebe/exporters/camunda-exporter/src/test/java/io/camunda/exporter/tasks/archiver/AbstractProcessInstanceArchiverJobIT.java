@@ -76,7 +76,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
 
           store(listViewTemplate, client, processInstance);
 
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
@@ -112,7 +112,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
             store(listViewTemplate, client, processInstance);
           }
 
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
@@ -147,7 +147,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
           store(listViewTemplate, client, finishedInstance);
           store(listViewTemplate, client, unfinishedInstance);
 
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
@@ -179,7 +179,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
           store(listViewTemplate, client, finishedInstance);
           store(listViewTemplate, client, notOldEnoughInstance);
 
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
@@ -217,7 +217,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
             store(listViewTemplate, client, processInstance, child);
           }
 
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
@@ -259,7 +259,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
             store(listViewTemplate, client, processInstance, child);
           }
 
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
@@ -313,7 +313,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
             store(listViewTemplate, client, unfinishedInstance, child);
           }
 
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
@@ -369,7 +369,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
             }
           }
 
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
@@ -417,7 +417,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
             }
           }
 
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
@@ -455,7 +455,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
               store(dependent.template(), client, entity);
             }
           }
-          client.refresh();
+          client.refresh(testPrefix);
 
           // and - every dated destination index is pre-created with a write block, so the reindex
           // step cannot copy any document. Elasticsearch will report the rejected writes in
@@ -473,7 +473,7 @@ public abstract class AbstractProcessInstanceArchiverJobIT<T extends ProcessInst
           Awaitility.await("until the archive job has finished")
               .atMost(ARCHIVE_TIMEOUT)
               .until(result::isDone);
-          client.refresh();
+          client.refresh(testPrefix);
 
           // then - nothing was copied to the write-blocked dated indices, so no source document may
           // have been deleted: the reindex failure must never lead to silent data loss
