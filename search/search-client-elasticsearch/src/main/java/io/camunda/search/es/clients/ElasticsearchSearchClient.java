@@ -11,6 +11,8 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.WriteResponseBase;
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.DeleteRequest;
 import co.elastic.clients.elasticsearch.core.GetRequest;
 import co.elastic.clients.elasticsearch.core.GetResponse;
@@ -25,6 +27,8 @@ import io.camunda.search.clients.DocumentBasedSchemaClient;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.DocumentBasedWriteClient;
 import io.camunda.search.clients.aggregator.SearchAggregator;
+import io.camunda.search.clients.core.SearchBulkIndexRequest;
+import io.camunda.search.clients.core.SearchBulkResponse;
 import io.camunda.search.clients.core.SearchDeleteRequest;
 import io.camunda.search.clients.core.SearchGetRequest;
 import io.camunda.search.clients.core.SearchGetResponse;
@@ -34,6 +38,8 @@ import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.search.clients.core.SearchWriteResponse;
 import io.camunda.search.clients.transformers.SearchTransfomer;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
+import io.camunda.search.es.transformers.search.SearchBulkIndexRequestTransformer;
+import io.camunda.search.es.transformers.search.SearchBulkResponseTransformer;
 import io.camunda.search.es.transformers.search.SearchDeleteRequestTransformer;
 import io.camunda.search.es.transformers.search.SearchGetRequestTransformer;
 import io.camunda.search.es.transformers.search.SearchGetResponseTransformer;
@@ -231,6 +237,25 @@ public class ElasticsearchSearchClient
   }
 
   @Override
+  public <T> SearchBulkResponse bulk(final SearchBulkIndexRequest<T> bulkRequest) {
+    try {
+      final SearchBulkIndexRequestTransformer<T> requestTransformer =
+          getSearchBulkIndexRequestTransformer();
+      final var request = requestTransformer.apply(bulkRequest);
+      final var rawBulkResponse = client.bulk(request);
+      // item-level outcomes (including per-item version conflicts) are carried in the response,
+      // never thrown — the transformer maps them to the neutral per-item results
+      final SearchBulkResponseTransformer<T> responseTransformer =
+          getSearchBulkResponseTransformer();
+      return responseTransformer.apply(Tuple.of(bulkRequest, rawBulkResponse));
+    } catch (final IOException | ElasticsearchException e) {
+      LOGGER.warn(ErrorMessages.ERROR_FAILED_BULK_REQUEST, e);
+      throw new CamundaSearchException(
+          ErrorMessages.ERROR_FAILED_BULK_REQUEST, e, searchExceptionToReason(e));
+    }
+  }
+
+  @Override
   public SearchWriteResponse delete(final SearchDeleteRequest deleteRequest) {
     try {
       final var requestTransformer = getSearchDeleteRequestTransformer();
@@ -289,6 +314,18 @@ public class ElasticsearchSearchClient
     final SearchTransfomer<SearchIndexRequest<T>, IndexRequest<T>> transformer =
         transformers.getTransformer(SearchIndexRequest.class);
     return (SearchIndexRequestTransformer<T>) transformer;
+  }
+
+  private <T> SearchBulkIndexRequestTransformer<T> getSearchBulkIndexRequestTransformer() {
+    final SearchTransfomer<SearchBulkIndexRequest<T>, BulkRequest> transformer =
+        transformers.getTransformer(SearchBulkIndexRequest.class);
+    return (SearchBulkIndexRequestTransformer<T>) transformer;
+  }
+
+  private <T> SearchBulkResponseTransformer<T> getSearchBulkResponseTransformer() {
+    final SearchTransfomer<Tuple<SearchBulkIndexRequest<T>, BulkResponse>, SearchBulkResponse>
+        transformer = transformers.getTransformer(SearchBulkResponse.class);
+    return (SearchBulkResponseTransformer<T>) transformer;
   }
 
   private SearchDeleteRequestTransformer getSearchDeleteRequestTransformer() {

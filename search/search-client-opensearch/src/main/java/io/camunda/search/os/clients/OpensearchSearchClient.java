@@ -10,6 +10,8 @@ package io.camunda.search.os.clients;
 import io.camunda.search.clients.DocumentBasedSchemaClient;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.DocumentBasedWriteClient;
+import io.camunda.search.clients.core.SearchBulkIndexRequest;
+import io.camunda.search.clients.core.SearchBulkResponse;
 import io.camunda.search.clients.core.SearchDeleteRequest;
 import io.camunda.search.clients.core.SearchGetRequest;
 import io.camunda.search.clients.core.SearchGetResponse;
@@ -21,6 +23,8 @@ import io.camunda.search.clients.transformers.SearchTransfomer;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.os.transformers.OpensearchTransformers;
+import io.camunda.search.os.transformers.search.SearchBulkIndexRequestTransformer;
+import io.camunda.search.os.transformers.search.SearchBulkResponseTransformer;
 import io.camunda.search.os.transformers.search.SearchDeleteRequestTransformer;
 import io.camunda.search.os.transformers.search.SearchGetRequestTransformer;
 import io.camunda.search.os.transformers.search.SearchGetResponseTransformer;
@@ -42,6 +46,8 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.WriteResponseBase;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
+import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.BulkResponse;
 import org.opensearch.client.opensearch.core.DeleteRequest;
 import org.opensearch.client.opensearch.core.GetRequest;
 import org.opensearch.client.opensearch.core.GetResponse;
@@ -230,6 +236,25 @@ public class OpensearchSearchClient
   }
 
   @Override
+  public <T> SearchBulkResponse bulk(final SearchBulkIndexRequest<T> bulkRequest) {
+    try {
+      final SearchBulkIndexRequestTransformer<T> requestTransformer =
+          getSearchBulkIndexRequestTransformer();
+      final var request = requestTransformer.apply(bulkRequest);
+      final var rawBulkResponse = client.bulk(request);
+      // item-level outcomes (including per-item version conflicts) are carried in the response,
+      // never thrown — the transformer maps them to the neutral per-item results
+      final SearchBulkResponseTransformer<T> responseTransformer =
+          getSearchBulkResponseTransformer();
+      return responseTransformer.apply(Tuple.of(bulkRequest, rawBulkResponse));
+    } catch (final IOException | OpenSearchException e) {
+      LOGGER.warn(ErrorMessages.ERROR_FAILED_BULK_REQUEST, e);
+      throw new CamundaSearchException(
+          ErrorMessages.ERROR_FAILED_BULK_REQUEST, e, searchExceptionToReason(e));
+    }
+  }
+
+  @Override
   public SearchWriteResponse delete(final SearchDeleteRequest deleteRequest) {
     try {
       final var requestTransformer = getSearchDeleteRequestTransformer();
@@ -286,6 +311,18 @@ public class OpensearchSearchClient
     final SearchTransfomer<SearchIndexRequest<T>, IndexRequest<T>> transformer =
         transformers.getTransformer(SearchIndexRequest.class);
     return (SearchIndexRequestTransformer<T>) transformer;
+  }
+
+  private <T> SearchBulkIndexRequestTransformer<T> getSearchBulkIndexRequestTransformer() {
+    final SearchTransfomer<SearchBulkIndexRequest<T>, BulkRequest> transformer =
+        transformers.getTransformer(SearchBulkIndexRequest.class);
+    return (SearchBulkIndexRequestTransformer<T>) transformer;
+  }
+
+  private <T> SearchBulkResponseTransformer<T> getSearchBulkResponseTransformer() {
+    final SearchTransfomer<Tuple<SearchBulkIndexRequest<T>, BulkResponse>, SearchBulkResponse>
+        transformer = transformers.getTransformer(SearchBulkResponse.class);
+    return (SearchBulkResponseTransformer<T>) transformer;
   }
 
   private SearchDeleteRequestTransformer getSearchDeleteRequestTransformer() {

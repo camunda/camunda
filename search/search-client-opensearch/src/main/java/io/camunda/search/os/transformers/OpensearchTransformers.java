@@ -20,6 +20,8 @@ import io.camunda.search.clients.aggregator.SearchParentAggregator;
 import io.camunda.search.clients.aggregator.SearchSumAggregator;
 import io.camunda.search.clients.aggregator.SearchTermsAggregator;
 import io.camunda.search.clients.aggregator.SearchTopHitsAggregator;
+import io.camunda.search.clients.core.SearchBulkIndexRequest;
+import io.camunda.search.clients.core.SearchBulkResponse;
 import io.camunda.search.clients.core.SearchDeleteRequest;
 import io.camunda.search.clients.core.SearchGetRequest;
 import io.camunda.search.clients.core.SearchGetResponse;
@@ -77,6 +79,8 @@ import io.camunda.search.os.transformers.query.RangeQueryTransformer;
 import io.camunda.search.os.transformers.query.TermQueryTransformer;
 import io.camunda.search.os.transformers.query.TermsQueryTransformer;
 import io.camunda.search.os.transformers.query.WildcardQueryTransformer;
+import io.camunda.search.os.transformers.search.SearchBulkIndexRequestTransformer;
+import io.camunda.search.os.transformers.search.SearchBulkResponseTransformer;
 import io.camunda.search.os.transformers.search.SearchDeleteRequestTransformer;
 import io.camunda.search.os.transformers.search.SearchGetRequestTransformer;
 import io.camunda.search.os.transformers.search.SearchGetResponseTransformer;
@@ -130,6 +134,8 @@ public final class OpensearchTransformers {
 
     // write request/response
     mappers.put(SearchIndexRequest.class, new SearchIndexRequestTransformer(mappers));
+    mappers.put(SearchBulkIndexRequest.class, new SearchBulkIndexRequestTransformer(mappers));
+    mappers.put(SearchBulkResponse.class, new SearchBulkResponseTransformer(mappers));
     mappers.put(SearchDeleteRequest.class, new SearchDeleteRequestTransformer(mappers));
     mappers.put(SearchWriteResponse.class, new SearchWriteResponseTransformer(mappers));
 
