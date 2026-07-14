@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.it.cluster.backup;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.backup.client.api.BackupRequestHandler;
@@ -146,7 +147,10 @@ class BackupReplicatedPartitionTest {
   }
 
   private void backup(final long backupId) {
-    assertThat(backupRequestHandler.takeBackup(backupId).toCompletableFuture())
+    assertThat(
+            backupRequestHandler
+                .takeBackup(DEFAULT_PHYSICAL_TENANT_ID, backupId)
+                .toCompletableFuture())
         .succeedsWithin(Duration.ofSeconds(30));
   }
 
@@ -165,6 +169,9 @@ class BackupReplicatedPartitionTest {
 
   private BackupStatus getBackupStatus(final long backupId)
       throws InterruptedException, ExecutionException, TimeoutException {
-    return backupRequestHandler.getStatus(backupId).toCompletableFuture().get(30, TimeUnit.SECONDS);
+    return backupRequestHandler
+        .getStatus(DEFAULT_PHYSICAL_TENANT_ID, backupId)
+        .toCompletableFuture()
+        .get(30, TimeUnit.SECONDS);
   }
 }
