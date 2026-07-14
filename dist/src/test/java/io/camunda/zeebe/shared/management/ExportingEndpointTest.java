@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.shared.management;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.from;
 import static org.mockito.Mockito.mock;
@@ -27,9 +28,9 @@ final class ExportingEndpointTest {
     final var endpoint = new ExportingEndpoint(service);
 
     // when
-    when(service.pauseExporting()).thenThrow(new RuntimeException());
-    when(service.resumeExporting()).thenThrow(new RuntimeException());
-    when(service.softPauseExporting()).thenThrow(new RuntimeException());
+    when(service.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID)).thenThrow(new RuntimeException());
+    when(service.resumeExporting(DEFAULT_PHYSICAL_TENANT_ID)).thenThrow(new RuntimeException());
+    when(service.softPauseExporting(DEFAULT_PHYSICAL_TENANT_ID)).thenThrow(new RuntimeException());
 
     // then
     assertThat(endpoint.post(operation, false))
@@ -45,11 +46,11 @@ final class ExportingEndpointTest {
     final var endpoint = new ExportingEndpoint(service);
 
     // when
-    when(service.pauseExporting())
+    when(service.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID))
         .thenReturn(CompletableFuture.failedFuture(new RuntimeException()));
-    when(service.resumeExporting())
+    when(service.resumeExporting(DEFAULT_PHYSICAL_TENANT_ID))
         .thenReturn(CompletableFuture.failedFuture(new RuntimeException()));
-    when(service.softPauseExporting())
+    when(service.softPauseExporting(DEFAULT_PHYSICAL_TENANT_ID))
         .thenReturn(CompletableFuture.failedFuture(new RuntimeException()));
 
     // then
@@ -66,9 +67,12 @@ final class ExportingEndpointTest {
     final var endpoint = new ExportingEndpoint(service);
 
     // when
-    when(service.pauseExporting()).thenReturn(CompletableFuture.completedFuture(null));
-    when(service.resumeExporting()).thenReturn(CompletableFuture.completedFuture(null));
-    when(service.softPauseExporting()).thenReturn(CompletableFuture.completedFuture(null));
+    when(service.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID))
+        .thenReturn(CompletableFuture.completedFuture(null));
+    when(service.resumeExporting(DEFAULT_PHYSICAL_TENANT_ID))
+        .thenReturn(CompletableFuture.completedFuture(null));
+    when(service.softPauseExporting(DEFAULT_PHYSICAL_TENANT_ID))
+        .thenReturn(CompletableFuture.completedFuture(null));
 
     // then
     assertThat(endpoint.post(operation, false))

@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.shared.management;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+
 import io.camunda.zeebe.gateway.admin.exporting.ExportingControlApi;
 import java.util.concurrent.CompletionException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,11 +40,11 @@ public final class ExportingEndpoint {
       final boolean softPause = soft;
       final var result =
           switch (operationKey) {
-            case RESUME -> exportingService.resumeExporting();
+            case RESUME -> exportingService.resumeExporting(DEFAULT_PHYSICAL_TENANT_ID);
             case PAUSE ->
                 softPause
-                    ? exportingService.softPauseExporting()
-                    : exportingService.pauseExporting();
+                    ? exportingService.softPauseExporting(DEFAULT_PHYSICAL_TENANT_ID)
+                    : exportingService.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID);
             default -> throw new UnsupportedOperationException();
           };
       result.join();
