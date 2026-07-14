@@ -289,7 +289,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
 
     instances.forEach(
         instance -> {
-          state.processInstanceIndices().put(instance.id(), instance.index());
+          state.addProcessInstance(instance.id(), instance.index());
           // An imported process instance may have a null/empty treePath (e.g. migrated 8.7 data, or
           // a partial list-view document re-created via upsert after archival, where
           // ListViewProcessInstanceFromProcessInstanceHandler only writes treePath when non-null).
@@ -548,9 +548,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
               .thenApply(
                   processInstances -> {
                     for (final var processInstance : processInstances) {
-                      state
-                          .processInstanceIndices()
-                          .put(processInstance.id(), processInstance.index());
+                      state.addProcessInstance(processInstance.id(), processInstance.index());
                     }
                     return null;
                   });
@@ -559,9 +557,9 @@ public final class IncidentUpdateTask implements BackgroundTask {
     return fetchMissingProcessInstances.thenComposeAsync(
         ignored -> {
           for (final var piId : piIds) {
-            final var index = state.processInstanceIndices().get(piId);
-            if (index != null) {
-              createProcessInstanceUpdate(state, incident.id(), newState, piId, updates, index);
+            final var indexes = state.processInstanceIndices().get(piId);
+            if (indexes != null) {
+              createProcessInstanceUpdate(state, incident.id(), newState, piId, updates, indexes);
             } else {
               if (!ignoreMissingData) {
                 return CompletableFuture.failedFuture(
@@ -592,7 +590,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
       final IncidentState newState,
       final String piId,
       final IncidentBulkUpdate updates,
-      final String index) {
+      final List<String> indexes) {
     final var hasIncident = IncidentState.ACTIVE == newState;
     final boolean changedState;
     if (hasIncident) {
@@ -600,9 +598,10 @@ public final class IncidentUpdateTask implements BackgroundTask {
     } else {
       changedState = state.removeIncidentIdByPiId(piId, incidentId);
     }
-
     if (changedState) {
-      updates.listViewRequests().add(newListViewInstanceUpdate(piId, index, hasIncident, piId));
+      for (final var index : indexes) {
+        updates.listViewRequests().add(newListViewInstanceUpdate(piId, index, hasIncident, piId));
+      }
     }
   }
 
