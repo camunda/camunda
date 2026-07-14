@@ -7,6 +7,8 @@
  */
 package io.camunda.analytics.query;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -19,7 +21,9 @@ public record ReportRow(
     Map<String, Object> dimensions, long windowStart, Map<String, Object> measures) {
 
   public ReportRow {
-    dimensions = Map.copyOf(dimensions);
+    // not Map.copyOf: a null dimension value (the "unknown" bucket, e.g. the store's NULL group)
+    // must survive the defensive copy
+    dimensions = Collections.unmodifiableMap(new LinkedHashMap<>(dimensions));
     measures = Map.copyOf(measures);
   }
 }

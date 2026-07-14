@@ -35,6 +35,7 @@ import io.camunda.analytics.serving.spi.TableRow;
 import io.camunda.analytics.sketch.DistinctCountResult;
 import io.camunda.analytics.sketch.QuantileResult;
 import io.camunda.eventbridge.streaming.aggregate.AggregateFunction;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -148,6 +149,56 @@ final class DatasetQueryExecutorTest {
     assertThat(plan.aggregatedFetches())
         .singleElement()
         .satisfies(fetch -> assertThat(fetch.strategy()).isEqualTo(ReadStrategy.DIRECT));
+  }
+
+  @Test
+  void shouldCarryANullGroupValueAsTheUnknownBucket() {
+    // given a store returning the NULL group beside a named one (a first-class grouped-read
+    // output: SQL GROUP BY over NULL dims, or a composite missing bucket)
+    final DatasetQueryClient client =
+        new DatasetQueryClient() {
+          @Override
+          public List<Cell> fetch(final DatasetFetch fetch) {
+            return List.of();
+          }
+
+          @Override
+          public List<AggregatedRow> fetchAggregated(final AggregatedFetch fetch) {
+            final List<Object> nullGroup = new ArrayList<>();
+            nullGroup.add(null);
+            return List.of(
+                new AggregatedRow(nullGroup, 0L, Map.of("count", 5L)),
+                new AggregatedRow(List.of("orders"), 0L, Map.of("count", 3L)));
+          }
+
+          @Override
+          public void streamCells(final DatasetFetch fetch, final Consumer<Cell> sink) {}
+
+          @Override
+          public List<TableRow> fetchRows(final TableFetch fetch) {
+            return List.of();
+          }
+
+          @Override
+          public void close() {}
+        };
+    final DatasetQueryExecutor executor =
+        new DatasetQueryExecutor(new DatasetQueryPlanner(), client);
+
+    // when the grouped report runs
+    final ReportResult result =
+        executor.execute(
+            new ReportQuery(
+                List.of("bpmnProcessId"), 0L, MINUTE, MINUTE, List.of(), List.of("count")),
+            dataset);
+
+    // then the unknown bucket survives into the report row instead of NPE-ing the read
+    assertThat(result.rows())
+        .extracting(
+            row -> row.dimensions().get("bpmnProcessId"), row -> row.measures().get("count"))
+        .containsExactlyInAnyOrder(
+            org.assertj.core.groups.Tuple.tuple(null, 5L),
+            org.assertj.core.groups.Tuple.tuple("orders", 3L));
   }
 
   @Test
