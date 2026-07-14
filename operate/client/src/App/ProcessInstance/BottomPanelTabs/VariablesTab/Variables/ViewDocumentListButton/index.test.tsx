@@ -11,8 +11,8 @@ import {render, screen, within} from 'modules/testing-library';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockGetVariable} from 'modules/mocks/api/v2/variables/getVariable';
 import {createVariable} from 'modules/testUtils';
-import {ViewDocumentListButton} from './ViewDocumentListButton';
-import type {DocumentInfo} from '../documentInfo';
+import {ViewDocumentListButton} from './index';
+import type {DocumentInfo} from 'App/ProcessInstance/DocumentsView/documentInfo';
 import type {DocumentReference} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const VARIABLE_KEY = 'variable-key-123';
@@ -127,56 +127,6 @@ describe('<ViewDocumentListButton />', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should show a list row for each document with filename and size', async () => {
-    const {user} = render(
-      <ViewDocumentListButton
-        documents={preparsedDocuments}
-        isLowerBound={false}
-        variableKey={VARIABLE_KEY}
-        variableName="files"
-      />,
-      {wrapper: createWrapper()},
-    );
-
-    await user.click(
-      screen.getByLabelText('View documents for variable files'),
-    );
-
-    const dialog = within(screen.getByRole('dialog'));
-    const photoItem = dialog.getByRole('listitem', {name: 'photo.png'});
-    expect(photoItem).toBeInTheDocument();
-    expect(photoItem).toHaveTextContent('1 KiB');
-    const reportItem = dialog.getByRole('listitem', {name: 'report.pdf'});
-    expect(reportItem).toBeInTheDocument();
-    expect(reportItem).toHaveTextContent('2 KiB');
-    const notesItem = dialog.getByRole('listitem', {name: 'notes.txt'});
-    expect(notesItem).toBeInTheDocument();
-  });
-
-  it('should render preview and download buttons per document row', async () => {
-    const {user} = render(
-      <ViewDocumentListButton
-        documents={preparsedDocuments}
-        isLowerBound={false}
-        variableKey={VARIABLE_KEY}
-        variableName="files"
-      />,
-      {wrapper: createWrapper()},
-    );
-
-    await user.click(
-      screen.getByLabelText('View documents for variable files'),
-    );
-
-    const dialog = within(screen.getByRole('dialog'));
-    expect(
-      dialog.getAllByLabelText('Preview document for variable files'),
-    ).toHaveLength(3);
-    expect(
-      dialog.getAllByLabelText('Download document for variable files'),
-    ).toHaveLength(3);
-  });
-
   it('should show the truncated document list first, then replace it with the full list once loaded', async () => {
     mockGetVariable().withDelay(
       createVariable({variableKey: VARIABLE_KEY, value: fullVariableValue}),
@@ -260,99 +210,5 @@ describe('<ViewDocumentListButton />', () => {
     expect(
       dialog.queryByText(/Loading the full variable value.../),
     ).not.toBeInTheDocument();
-  });
-
-  it('should middle-truncate long file names inside the list', async () => {
-    const longFileName = 'a'.repeat(40) + 'original-middle' + 'z'.repeat(40);
-    const {user} = render(
-      <ViewDocumentListButton
-        documents={[
-          {
-            link: '/v2/documents/long',
-            fileName: longFileName,
-            type: 'unknown',
-            contentType: 'application/octet-stream',
-            size: 1024,
-            isExpired: false,
-          },
-        ]}
-        isLowerBound={false}
-        variableKey={VARIABLE_KEY}
-        variableName="files"
-      />,
-      {wrapper: createWrapper()},
-    );
-
-    await user.click(
-      screen.getByLabelText('View documents for variable files'),
-    );
-
-    const dialog = within(screen.getByRole('dialog'));
-    const fileNameEl = dialog.getByTitle(longFileName);
-    expect(fileNameEl.textContent).toContain('\u2026');
-    expect(fileNameEl.textContent).not.toContain('original-middle');
-    expect(fileNameEl.textContent).not.toBe(longFileName);
-  });
-
-  it('should mark an expired document row and disable its preview and download buttons', async () => {
-    const documentsWithExpired: DocumentInfo[] = [
-      {
-        link: '/v2/documents/active',
-        fileName: 'active.png',
-        type: 'image',
-        contentType: 'image/png',
-        size: 1024,
-        isExpired: false,
-      },
-      {
-        link: '/v2/documents/expired',
-        fileName: 'expired.png',
-        type: 'image',
-        contentType: 'image/png',
-        size: 2048,
-        isExpired: true,
-      },
-    ];
-
-    const {user} = render(
-      <ViewDocumentListButton
-        documents={documentsWithExpired}
-        isLowerBound={false}
-        variableKey={VARIABLE_KEY}
-        variableName="files"
-      />,
-      {wrapper: createWrapper()},
-    );
-
-    await user.click(
-      screen.getByLabelText('View documents for variable files'),
-    );
-
-    const dialog = within(screen.getByRole('dialog'));
-
-    const expiredItem = within(
-      dialog.getByRole('listitem', {name: 'expired.png'}),
-    );
-    expect(expiredItem.getByText('Expired')).toBeInTheDocument();
-    expect(
-      expiredItem.getByLabelText('Preview document for variable files'),
-    ).toBeDisabled();
-    expect(
-      expiredItem.getByLabelText('Download document for variable files'),
-    ).toBeDisabled();
-
-    const activeItem = within(
-      dialog.getByRole('listitem', {name: 'active.png'}),
-    );
-    expect(activeItem.queryByText('Expired')).not.toBeInTheDocument();
-    expect(
-      activeItem.getByLabelText('Preview document for variable files'),
-    ).toBeEnabled();
-    const activeDownloadLink = activeItem.getByLabelText(
-      'Download document for variable files',
-    );
-    expect(activeDownloadLink).toBeEnabled();
-    expect(activeDownloadLink).toHaveAttribute('href', '/v2/documents/active');
-    expect(activeDownloadLink).toHaveAttribute('download', 'active.png');
   });
 });

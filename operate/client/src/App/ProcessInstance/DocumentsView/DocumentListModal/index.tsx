@@ -6,11 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMemo} from 'react';
 import {Modal, Tag} from '@carbon/react';
 import type {StateProps} from 'modules/components/ModalStateManager';
-import {useVariable} from 'modules/queries/variables/useVariable';
-import {parseDocumentVariable} from 'App/ProcessInstance/BottomPanelTabs/VariablesTab/Variables/parseDocumentVariable';
 import type {DocumentInfo} from '../documentInfo';
 import {toHumanReadableBytes} from '../humanReadableBytes';
 import {middleTruncate} from '../middleTruncate';
@@ -27,8 +24,9 @@ import {
 
 type Props = {
   documents: DocumentInfo[];
-  isLowerBound: boolean;
-  variableKey: string;
+  isFullyLoaded: boolean;
+  isLoading: boolean;
+  isError: boolean;
   variableName: string;
 };
 
@@ -36,30 +34,12 @@ const DocumentListModal: React.FC<StateProps & Props> = ({
   open,
   setOpen,
   documents,
-  isLowerBound,
-  variableKey,
+  isFullyLoaded,
+  isLoading,
+  isError,
   variableName,
 }) => {
-  const {data, isSuccess, isError, isLoading} = useVariable(variableKey, {
-    enabled: open && isLowerBound,
-  });
-
-  // eslint-disable-next-line react-hooks/preserve-manual-memoization
-  const resolvedDocuments = useMemo(() => {
-    if (data?.value === undefined) {
-      return documents;
-    }
-
-    const result = parseDocumentVariable(data.value, false);
-    if (result === null) {
-      return documents;
-    }
-
-    return result.type === 'list' ? result.documents : [result.document];
-  }, [data?.value, documents]);
-
-  const isFullyLoaded = !isLowerBound || isSuccess;
-  const count = resolvedDocuments.length;
+  const count = documents.length;
   const prefix = isFullyLoaded ? `${count}` : `${count}+`;
   const suffix = count !== 1 ? 'documents' : 'document';
 
@@ -72,7 +52,7 @@ const DocumentListModal: React.FC<StateProps & Props> = ({
       passiveModal
     >
       <DocumentList>
-        {resolvedDocuments.map((document, index) => (
+        {documents.map((document, index) => (
           <DocumentListItem
             aria-labelledby={`document-item-${index}`}
             key={index}

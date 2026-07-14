@@ -39,7 +39,7 @@ import {VariableValueCell} from './VariableValueCell';
 import {parseDocumentVariable} from './parseDocumentVariable';
 import {DownloadDocumentButton} from 'App/ProcessInstance/DocumentsView/DownloadDocumentButton';
 import {PreviewDocumentButton} from 'App/ProcessInstance/DocumentsView/DocumentPreview/PreviewDocumentButton';
-import {ViewDocumentListButton} from 'App/ProcessInstance/DocumentsView/DocumentList/ViewDocumentListButton';
+import {ViewDocumentListButton} from './ViewDocumentListButton';
 
 type Props = {
   scopeId: string | null;

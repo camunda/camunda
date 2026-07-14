@@ -9,8 +9,8 @@
 import {Button} from '@carbon/react';
 import {View} from '@carbon/react/icons';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
-import type {DocumentInfo} from '../documentInfo';
-import {DocumentListModal} from './DocumentListModal';
+import type {DocumentInfo} from 'App/ProcessInstance/DocumentsView/documentInfo';
+import {VariableDocumentListModal} from './VariableDocumentListModal';
 
 type Props = {
   documents: DocumentInfo[];
@@ -42,7 +42,7 @@ const ViewDocumentListButton: React.FC<Props> = ({
       )}
     >
       {({open, setOpen}) => (
-        <DocumentListModal
+        <VariableDocumentListModal
           open={open}
           setOpen={setOpen}
           documents={documents}
