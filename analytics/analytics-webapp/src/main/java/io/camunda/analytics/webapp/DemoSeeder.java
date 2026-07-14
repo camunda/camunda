@@ -91,7 +91,7 @@ public class DemoSeeder implements CommandLineRunner {
     final long granularityMs = ((toMs + finestMs - 1) / finestMs) * finestMs;
     final ReportQuery query =
         new ReportQuery(
-            List.of("bpmnProcessId"), 0L, toMs, granularityMs, List.of(), List.of("lifecycle"));
+            List.of("bpmnProcessId"), 0L, toMs, granularityMs, List.of(), List.of("activated"));
     return !executor.execute(query, dataset).rows().isEmpty();
   }
 

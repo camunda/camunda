@@ -10,8 +10,7 @@ package io.camunda.analytics.webapp.dashboard;
 import io.camunda.analytics.dataset.CompiledDataset;
 import io.camunda.analytics.dataset.CompiledMeter;
 import io.camunda.analytics.dataset.FilterPredicate;
-import io.camunda.analytics.metric.ExecutionTimeSummaryResult;
-import io.camunda.analytics.metric.LifecycleSummaryResult;
+import io.camunda.analytics.metric.ExecutionTimeResult;
 import io.camunda.analytics.metric.RatioResult;
 import io.camunda.analytics.query.DatasetQueryExecutor;
 import io.camunda.analytics.query.ReportQuery;
@@ -53,6 +52,18 @@ import org.springframework.stereotype.Repository;
 public class DashboardRepository {
 
   private static final long ONE_HOUR_MS = 3_600_000L;
+
+  /**
+   * The process-instances cube's primitive lifecycle meters (per-transition counts composed via
+   * per-meter filters, replacing the deprecated {@code lifecycle_summary} bundle) plus the
+   * completion-time histogram. One shared meter list for every lifecycle-derived widget, so the
+   * render memo collapses them onto a single serving query.
+   */
+  private static final List<String> LIFECYCLE_SERIES_METERS =
+      List.of("activated", "completed", "terminated", "duration_bands");
+
+  private static final List<String> LIFECYCLE_TOTAL_METERS =
+      List.of("activated", "completed", "terminated");
 
   private final DatasetQueryExecutor executor;
   private final DatasetCatalog catalog;
@@ -105,7 +116,7 @@ public class DashboardRepository {
             null,
             null,
             List.of(),
-            List.of("lifecycle"),
+            List.of("activated"),
             newMemo())) {
       final Object id = row.dimensions().get("bpmnProcessId");
       if (id != null) {
@@ -338,10 +349,10 @@ public class DashboardRepository {
             fromWindow,
             toWindow,
             List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
-            List.of("duration"),
+            List.of("duration", "duration_p"),
             memo)) {
-      final ExecutionTimeSummaryResult d =
-          (ExecutionTimeSummaryResult) row.measures().get("duration");
+      final ExecutionTimeResult d = (ExecutionTimeResult) row.measures().get("duration");
+      final QuantileResult q = (QuantileResult) row.measures().get("duration_p");
       final Object elementId = row.dimensions().get("elementId");
       out.add(
           new ElementDuration(
@@ -349,8 +360,8 @@ public class DashboardRepository {
               "", // element type is not modeled as a dimension in the cube
               d.count(),
               Math.round(d.averageMs()),
-              quantileMs(d, 0.5),
-              quantileMs(d, 0.9),
+              quantileMs(q, 0.5),
+              quantileMs(q, 0.9),
               d.maxMs()));
     }
     out.sort(Comparator.comparingLong(ElementDuration::executedCount).reversed());
@@ -368,7 +379,7 @@ public class DashboardRepository {
       final Long fromWindow,
       final Long toWindow,
       final Map<QueryKey, List<ReportRow>> memo) {
-    final LifecycleSummaryResult lifecycle = lifecycle(bpmnProcessId, fromWindow, toWindow, memo);
+    final LifecycleCounts lifecycle = lifecycle(bpmnProcessId, fromWindow, toWindow, memo);
     return lifecycle == null ? 0L : lifecycle.activated();
   }
 
@@ -380,14 +391,11 @@ public class DashboardRepository {
 
   private long activeInstances(
       final String bpmnProcessId, final Map<QueryKey, List<ReportRow>> memo) {
-    final LifecycleSummaryResult lifecycle = lifecycle(bpmnProcessId, null, null, memo);
-    if (lifecycle == null) {
-      return 0L;
-    }
-    return Math.max(0L, lifecycle.activated() - lifecycle.completed() - lifecycle.terminated());
+    final LifecycleCounts lifecycle = lifecycle(bpmnProcessId, null, null, memo);
+    return lifecycle == null ? 0L : lifecycle.open();
   }
 
-  private LifecycleSummaryResult lifecycle(
+  private LifecycleCounts lifecycle(
       final String bpmnProcessId,
       final Long fromWindow,
       final Long toWindow,
@@ -399,9 +407,33 @@ public class DashboardRepository {
             fromWindow,
             toWindow,
             List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
-            List.of("lifecycle"),
+            LIFECYCLE_TOTAL_METERS,
             memo);
-    return rows.isEmpty() ? null : (LifecycleSummaryResult) rows.get(0).measures().get("lifecycle");
+    return rows.isEmpty() ? null : lifecycleCounts(rows.get(0));
+  }
+
+  /** The per-transition counts of one process-instances row (a missing measure reads 0). */
+  private static LifecycleCounts lifecycleCounts(final ReportRow row) {
+    return new LifecycleCounts(
+        measureAsLong(row, "activated"),
+        measureAsLong(row, "completed"),
+        measureAsLong(row, "terminated"));
+  }
+
+  private static long measureAsLong(final ReportRow row, final String meter) {
+    return row.measures().get(meter) instanceof final Number n ? n.longValue() : 0L;
+  }
+
+  /**
+   * Per-transition instance counts, composed from the count-with-filter primitive meters that
+   * replaced the {@code lifecycle_summary} bundle.
+   */
+  private record LifecycleCounts(long activated, long completed, long terminated) {
+
+    /** Still running: started but neither completed nor terminated (never negative). */
+    long open() {
+      return Math.max(0L, activated - completed - terminated);
+    }
   }
 
   /** Currently-open incident count for a process (sum of the ±1 delta level over the grain). */
@@ -493,8 +525,8 @@ public class DashboardRepository {
     lifecycleByWindow(bpmnProcessId, fromWindow, toWindow, memo)
         .forEach(
             (windowStart, lc) -> {
-              final long started = lc.activated();
-              final long open = Math.max(0L, started - lc.completed() - lc.terminated());
+              final long started = lc.counts().activated();
+              final long open = lc.counts().open();
               final RatioPoint p = settled.get(windowStart);
               final long met = p == null ? 0L : p.matched();
               // The remainder of the settled instances: completed-but-missed plus terminated.
@@ -529,8 +561,8 @@ public class DashboardRepository {
     lifecycleByWindow(bpmnProcessId, fromWindow, toWindow, memo)
         .forEach(
             (windowStart, lc) -> {
-              final long started = lc.activated();
-              final long open = Math.max(0L, started - lc.completed() - lc.terminated());
+              final long started = lc.counts().activated();
+              final long open = lc.counts().open();
               final RatioPoint p = settled.get(windowStart);
               final long clean = p == null ? 0L : p.matched();
               final long withIncident = Math.max(0L, started - clean - open);
@@ -543,16 +575,17 @@ public class DashboardRepository {
   }
 
   /**
-   * Per-window lifecycle summaries for a process keyed by window start — the authoritative
-   * "started" cohort set (one entry per window in which any instance was activated). Shared by the
-   * cohort widgets and the duration buckets; the render memo makes it one query per render.
+   * Per-window lifecycle counts + completion-time bands for a process keyed by window start — the
+   * authoritative "started" cohort set (one entry per window in which any instance was activated).
+   * One shared meter list ({@link #LIFECYCLE_SERIES_METERS}) for the cohort widgets and the
+   * duration buckets, so the render memo makes it one query per render.
    */
-  private Map<Long, LifecycleSummaryResult> lifecycleByWindow(
+  private Map<Long, LifecyclePoint> lifecycleByWindow(
       final String bpmnProcessId,
       final Long fromWindow,
       final Long toWindow,
       final Map<QueryKey, List<ReportRow>> memo) {
-    final Map<Long, LifecycleSummaryResult> byWindow = new LinkedHashMap<>();
+    final Map<Long, LifecyclePoint> byWindow = new LinkedHashMap<>();
     for (final ReportRow row :
         series(
             "process-instances",
@@ -560,19 +593,24 @@ public class DashboardRepository {
             fromWindow,
             toWindow,
             List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
-            List.of("lifecycle"),
+            LIFECYCLE_SERIES_METERS,
             memo)) {
-      if (row.measures().get("lifecycle") instanceof final LifecycleSummaryResult lc) {
-        byWindow.put(row.windowStart(), lc);
-      }
+      final long[] bands =
+          row.measures().get("duration_bands") instanceof final long[] histogram
+              ? histogram
+              : new long[0];
+      byWindow.put(row.windowStart(), new LifecyclePoint(lifecycleCounts(row), bands));
     }
     return byWindow;
   }
 
+  /** One process-instances window: the per-transition counts and the completion-time bands. */
+  private record LifecyclePoint(LifecycleCounts counts, long[] bands) {}
+
   /**
-   * Completion-time histogram per window: for each window of the process-instances cube, split the
-   * completed instances across the fixed duration bands (from the lifecycle summary's duration
-   * sketch) and report how many were still open ({@code activated − completed − terminated}).
+   * Completion-time histogram per window: for each window of the process-instances cube, the exact
+   * duration-band counts of the completed instances (the {@code duration_bands} histogram meter)
+   * and how many were still open ({@code activated − completed − terminated}).
    */
   public List<DurationBucketPoint> durationBuckets(
       final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
@@ -587,12 +625,10 @@ public class DashboardRepository {
     final List<DurationBucketPoint> out = new ArrayList<>();
     lifecycleByWindow(bpmnProcessId, fromWindow, toWindow, memo)
         .forEach(
-            (windowStart, lc) -> {
-              final long open = Math.max(0L, lc.activated() - lc.completed() - lc.terminated());
-              out.add(
-                  new DurationBucketPoint(
-                      windowStart, lc.activated(), lc.duration().durationBands(), open));
-            });
+            (windowStart, lc) ->
+                out.add(
+                    new DurationBucketPoint(
+                        windowStart, lc.counts().activated(), lc.bands(), lc.counts().open())));
     out.sort(Comparator.comparingLong(DurationBucketPoint::windowStart));
     return out;
   }
@@ -624,14 +660,12 @@ public class DashboardRepository {
     return id == null ? "" : id.toString();
   }
 
-  private static long quantileMs(final ExecutionTimeSummaryResult result, final double rank) {
-    final double[] ranks = result.ranks();
-    for (int i = 0; i < ranks.length; i++) {
-      if (ranks[i] == rank) {
-        return Math.round(result.quantilesMs()[i]);
-      }
+  private static long quantileMs(final QuantileResult result, final double rank) {
+    if (result == null || result.count() == 0L) {
+      return 0L;
     }
-    return 0L;
+    final double value = result.valueAt(rank);
+    return Double.isNaN(value) ? 0L : Math.round(value);
   }
 
   private static long finestTier(final CompiledDataset dataset) {

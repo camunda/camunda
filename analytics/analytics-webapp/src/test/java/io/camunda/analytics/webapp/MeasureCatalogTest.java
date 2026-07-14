@@ -65,7 +65,7 @@ final class MeasureCatalogTest {
         .singleElement()
         .satisfies(
             m -> {
-              assertThat(m.type()).isEqualTo(MeterCatalog.EXECUTION_TIME_SUMMARY);
+              assertThat(m.type()).isEqualTo(MeterCatalog.EXECUTION_TIME);
               assertThat(m.measureField()).isEqualTo("durationMs");
             });
     assertThat(declaration.windowSizesMs()).contains(DAY);

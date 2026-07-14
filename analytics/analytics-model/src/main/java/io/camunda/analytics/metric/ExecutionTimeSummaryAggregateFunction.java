@@ -17,8 +17,11 @@ import java.util.function.ToLongFunction;
  * by a duration extractor and the percentile ranks to report. Every component merge is
  * commutative/associative, so it pre-aggregates across partitions.
  *
+ * @deprecated the {@code execution_time_summary} bundle predates per-meter filters; declare the
+ *     primitive meters (execution-time + percentile) instead. Kept for existing declarations.
  * @param <F> the fact type
  */
+@Deprecated
 public final class ExecutionTimeSummaryAggregateFunction<F>
     implements AggregateFunction<F, ExecutionTimeSummary, ExecutionTimeSummaryResult> {
 

@@ -63,8 +63,28 @@ public final class MeterCatalog {
   public static final String SUM = "sum";
   public static final String LEVEL = "level";
   public static final String EXECUTION_TIME = "execution_time";
-  public static final String EXECUTION_TIME_SUMMARY = "execution_time_summary";
-  public static final String LIFECYCLE_SUMMARY = "lifecycle_summary";
+
+  /**
+   * Pre-composite duration bundle (count/total/min/max + a KLL sketch in one slot).
+   *
+   * @deprecated declare the primitives instead — {@link #EXECUTION_TIME} for count/avg/min/max plus
+   *     {@link #PERCENTILE} (and {@link #HISTOGRAM} for fixed bands) over the same measure, each
+   *     with per-meter filters as needed (see {@link Meter#filtered}). Kept registered so existing
+   *     declarations keep compiling; no new declaration should use it.
+   */
+  @Deprecated public static final String EXECUTION_TIME_SUMMARY = "execution_time_summary";
+
+  /**
+   * Pre-composite lifecycle bundle (activated/completed/terminated counts + duration stats in one
+   * slot).
+   *
+   * @deprecated declare the primitives instead — one {@link #COUNT} per transition (filtered {@code
+   *     transition = …}) plus the duration family over {@code NOT_NULL(measure)} facts (see {@link
+   *     Meter#filtered}). Kept registered so existing declarations keep compiling; no new
+   *     declaration should use it.
+   */
+  @Deprecated public static final String LIFECYCLE_SUMMARY = "lifecycle_summary";
+
   public static final String HISTOGRAM = "histogram";
   public static final String PERCENTILE = "percentile";
   public static final String DISTINCT = "distinct";

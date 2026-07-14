@@ -9,7 +9,8 @@ package io.camunda.analytics.webapp.dashboard;
 
 /**
  * Completion-time distribution for one start cohort: of {@code started} instances, how many
- * finished in each duration band ({@code bands} = [≤10s, ≤30s, ≤60s, ≤120s, &gt;120s]); {@code
- * open} are still running (started − Σ bands).
+ * finished in each duration band ({@code bands} = [&lt;10s, &lt;30s, &lt;60s, &lt;120s, ≥120s],
+ * exact counts from the {@code duration_bands} histogram meter); {@code open} are still running
+ * (started − Σ bands).
  */
 public record DurationBucketPoint(long windowStart, long started, long[] bands, long open) {}
