@@ -33,7 +33,7 @@ public class AddMembersTransformer implements ConfigurationChangeRequest {
       return Either.left(
           new InvalidRequest(
               "Members without a zone cannot be added to a zone-aware cluster: "
-                  + members.stream().filter(MemberId::isBare).toList()));
+                  + members.stream().filter(MemberId::isBare).sorted().toList()));
     }
     final var operations =
         members.stream()

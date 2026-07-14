@@ -50,8 +50,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
 import org.springframework.http.HttpStatusCode;
@@ -71,7 +69,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Component
 @RestControllerEndpoint(id = "cluster")
 public class ClusterEndpoint {
-  private static final Logger LOG = LoggerFactory.getLogger(ClusterEndpoint.class);
   private static final Set<String> ALLOWED_QUERY_PARAMETERS =
       Set.of("dryRun", "force", "replicationFactor", "mode");
 

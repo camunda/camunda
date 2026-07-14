@@ -98,12 +98,12 @@ class AddMembersTransformerTest {
   }
 
   @Test
-  void shouldReturnErrorForZonedIdInFullyZonedCluster() {
+  void shouldReturnErrorForBareIdInFullyZonedCluster() {
     final MemberId existingMember = MemberId.from("1");
     final var addRequest = new AddMembersTransformer(Set.of(existingMember));
     final var zonedConfiguration =
         ClusterConfiguration.builder()
-            .members(Map.of(MemberId.from("zon-a", 0), MemberState.uninitialized()))
+            .members(Map.of(MemberId.from("zone-a", 0), MemberState.uninitialized()))
             .partitionDistributorConfig(
                 Optional.of(new ZoneAwareConfig(List.of(new ZoneSpec("zone-a", 1, 1)))))
             .build();
