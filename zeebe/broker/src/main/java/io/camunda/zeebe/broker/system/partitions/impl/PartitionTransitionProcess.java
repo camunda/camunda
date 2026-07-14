@@ -17,6 +17,7 @@ import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.health.HealthIssue;
 import java.time.Duration;
 import java.time.Instant;
@@ -91,13 +92,9 @@ final class PartitionTransitionProcess {
           stepStartedAtMs = ActorClock.currentTimeMillis();
           LOG.debug(
               "Transition to {} on term {} - transitioning {}", role, term, nextStep.getName());
-          try {
-            nextStep
-                .transitionTo(context, term, role)
-                .onComplete((ok, error) -> onStepCompletion(future, error));
-          } catch (final Exception e) {
-            onStepCompletion(future, e);
-          }
+
+          CompletableActorFuture.catching(() -> nextStep.transitionTo(context, term, role))
+              .onComplete((ok, error) -> onStepCompletion(future, error));
         });
   }
 
@@ -151,14 +148,9 @@ final class PartitionTransitionProcess {
               newTerm,
               nextPrepareStep.getName());
 
-          try {
-            nextPrepareStep
-                .prepareTransition(context, newTerm, newRole)
-                .onComplete(
-                    (ok, error) -> onPrepareStepCompletion(future, error, newTerm, newRole));
-          } catch (final Exception e) {
-            onPrepareStepCompletion(future, e, newTerm, newRole);
-          }
+          CompletableActorFuture.catching(
+                  () -> nextPrepareStep.prepareTransition(context, newTerm, newRole))
+              .onComplete((ok, error) -> onPrepareStepCompletion(future, error, newTerm, newRole));
         });
   }
 
