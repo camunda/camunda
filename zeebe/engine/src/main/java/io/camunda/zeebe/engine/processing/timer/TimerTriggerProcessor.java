@@ -114,7 +114,7 @@ public final class TimerTriggerProcessor implements TypedRecordProcessor<TimerRe
             timer.getTargetElementIdBuffer(),
             ExecutableCatchEvent.class);
     if (isStartEvent(elementInstanceKey)) {
-      if (deployedProcess.getState() == PersistedProcessState.DRAINING) {
+      if (deployedProcess.isDraining()) {
         // The definition is draining: never spawn a new instance. Still mark the timer as
         // triggered so the command is consumed
         stateWriter.appendFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);

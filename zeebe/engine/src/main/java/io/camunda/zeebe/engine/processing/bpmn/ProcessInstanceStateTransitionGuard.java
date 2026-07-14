@@ -14,7 +14,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationHelper;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
-import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -238,7 +237,7 @@ public final class ProcessInstanceStateTransitionGuard {
     }
     return stateBehavior
         .getProcess(context.getProcessDefinitionKey(), context.getTenantId())
-        .filter(process -> process.getState() == PersistedProcessState.DRAINING)
+        .filter(DeployedProcess::isDraining)
         .<Either<String, ?>>map(
             process ->
                 Either.left(

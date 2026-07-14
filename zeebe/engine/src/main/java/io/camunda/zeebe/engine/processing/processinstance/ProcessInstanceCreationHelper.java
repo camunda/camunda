@@ -22,7 +22,6 @@ import io.camunda.zeebe.engine.processing.identity.authorization.request.Authori
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.processing.variable.VariableValidationException;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
-import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
 import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
@@ -112,12 +111,11 @@ public class ProcessInstanceCreationHelper {
   }
 
   /**
-   * A process definition that is being deleted is kept in state (as {@link
-   * PersistedProcessState#DRAINING}) so its already-running instances can finish, but no new
-   * instances may be created for it.
+   * A process definition that is being deleted is kept in state so its already-running instances
+   * can finish, but no new instances may be created for it.
    */
   private Either<Rejection, DeployedProcess> rejectIfDraining(final DeployedProcess process) {
-    if (process.getState() == PersistedProcessState.DRAINING) {
+    if (process.isDraining()) {
       return Either.left(
           new Rejection(
               RejectionType.INVALID_STATE,
