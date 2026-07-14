@@ -24,6 +24,7 @@ import static org.mockito.Mockito.when;
 
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransition.CancelledPartitionTransition;
+import io.camunda.zeebe.broker.system.partitions.PartitionTransition.FailedPartitionTransitionPreparation;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorTransitionStep;
@@ -416,6 +417,65 @@ class PartitionTransitionImplTest {
 
     verify(mockStreamProcessor1).closeAsync();
     verify(mockStreamProcessor2, never()).closeAsync();
+  }
+
+  @Test
+  void shouldFailPreparationAndSkipTransitionIfPreparationStepThrowsSynchronously() {
+    // given
+    final var secondTerm = 2L;
+    final var secondRole = Role.FOLLOWER;
+    final var testException = new IllegalStateException("TEST_EXCEPTION");
+
+    when(mockStep1.transitionTo(any(), anyLong(), any()))
+        .thenReturn(TEST_CONCURRENCY_CONTROL.completedFuture(null));
+    when(mockStep2.transitionTo(any(), anyLong(), any()))
+        .thenReturn(TEST_CONCURRENCY_CONTROL.completedFuture(null));
+
+    when(mockStep2.prepareTransition(mockContext, secondTerm, secondRole))
+        .thenReturn(TEST_CONCURRENCY_CONTROL.completedFuture(null));
+    when(mockStep1.prepareTransition(mockContext, secondTerm, secondRole)).thenThrow(testException);
+
+    final var sut = new PartitionTransitionImpl(of(mockStep1, mockStep2));
+    sut.setConcurrencyControl(TEST_CONCURRENCY_CONTROL);
+    sut.updateTransitionContext(mockContext);
+
+    sut.transitionTo(DEFAULT_TERM, DEFAULT_ROLE).join();
+
+    // when
+    final var transitionFuture = sut.transitionTo(secondTerm, secondRole);
+
+    // then
+    verify(mockStep1, never()).transitionTo(mockContext, secondTerm, secondRole);
+    verify(mockStep2, never()).transitionTo(mockContext, secondTerm, secondRole);
+
+    assertThatThrownBy(transitionFuture::join)
+        .isInstanceOf(ExecutionException.class)
+        .cause()
+        .isInstanceOf(FailedPartitionTransitionPreparation.class)
+        .rootCause()
+        .isSameAs(testException);
+  }
+
+  @Test
+  void shouldFailTransitionAndSkipRemainingStepsIfTransitionStepThrowsSynchronously() {
+    // given
+    final var testException = new IllegalStateException("TEST_EXCEPTION");
+    when(mockStep1.transitionTo(mockContext, DEFAULT_TERM, DEFAULT_ROLE)).thenThrow(testException);
+
+    final var sut = new PartitionTransitionImpl(of(mockStep1, mockStep2));
+    sut.setConcurrencyControl(TEST_CONCURRENCY_CONTROL);
+    sut.updateTransitionContext(mockContext);
+
+    // when
+    final var transitionFuture = sut.transitionTo(DEFAULT_TERM, DEFAULT_ROLE);
+
+    // then
+    verify(mockStep2, never()).transitionTo(mockContext, DEFAULT_TERM, DEFAULT_ROLE);
+
+    assertThatThrownBy(transitionFuture::join)
+        .isInstanceOf(ExecutionException.class)
+        .rootCause()
+        .isSameAs(testException);
   }
 
   private final class WaitingTransitionStep implements PartitionTransitionStep {
