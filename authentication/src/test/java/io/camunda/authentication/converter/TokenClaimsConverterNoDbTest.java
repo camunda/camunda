@@ -181,6 +181,36 @@ public class TokenClaimsConverterNoDbTest {
   }
 
   @Test
+  void shouldAcceptEntraV1AccessTokenWhenVersionCheckDisabled() {
+    // given - the safety hatch is disabled, so a v1.0 token must be let through
+    final var oidcConfig = new OidcAuthenticationConfiguration();
+    oidcConfig.setUsernameClaim("preferred_username");
+    oidcConfig.setClientIdClaim("azp");
+    oidcConfig.setEntraTokenVersionCheckEnabled(false);
+    final var authConfig = new AuthenticationConfiguration();
+    authConfig.setOidc(oidcConfig);
+    final var config = new SecurityConfiguration();
+    config.setAuthentication(authConfig);
+
+    final var converter = new TokenClaimsConverter(config, membershipService);
+    final Map<String, Object> claims =
+        Map.of(
+            "preferred_username",
+            "testuser",
+            "iss",
+            "https://sts.windows.net/9188040d-6c67-4c5b-b112-36a304b66dad/",
+            "ver",
+            "1.0");
+
+    // when
+    final var result = converter.convert(claims);
+
+    // then
+    assertThat(result).isNotNull();
+    assertThat(result.authenticatedUsername()).isEqualTo("testuser");
+  }
+
+  @Test
   void shouldNotApplyEntraGuardToNonMicrosoftIssuer() {
     // given - a non-Microsoft issuer (e.g. Keycloak) with no ver claim
     final Map<String, Object> claims =

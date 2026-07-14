@@ -35,6 +35,7 @@ public class TokenClaimsConverter {
   private final String usernameClaim;
   private final String clientIdClaim;
   private final boolean preferUsernameClaim;
+  private final boolean entraTokenVersionCheckEnabled;
   private final MembershipService membershipService;
 
   public TokenClaimsConverter(
@@ -45,11 +46,15 @@ public class TokenClaimsConverter {
     clientIdClaim = securityConfiguration.getAuthentication().getOidc().getClientIdClaim();
     preferUsernameClaim =
         securityConfiguration.getAuthentication().getOidc().isPreferUsernameClaim();
+    entraTokenVersionCheckEnabled =
+        securityConfiguration.getAuthentication().getOidc().isEntraTokenVersionCheckEnabled();
     oidcPrincipalLoader = new OidcPrincipalLoader(usernameClaim, clientIdClaim);
   }
 
   public CamundaAuthentication convert(final Map<String, Object> tokenClaims) {
-    validateEntraTokenVersion(tokenClaims);
+    if (entraTokenVersionCheckEnabled) {
+      validateEntraTokenVersion(tokenClaims);
+    }
 
     final var principals = oidcPrincipalLoader.load(tokenClaims);
     final var username = principals.username();
@@ -99,6 +104,10 @@ public class TokenClaimsConverter {
    * surface as {@code iss=sts.windows.net}, {@code ver=1.0}, fail downstream validation, and
    * typically manifest as a silent redirect loop back to Entra. Detecting the mismatch here turns
    * that into a clear, actionable failure for operators.
+   *
+   * <p>Can be disabled via {@code
+   * camunda.security.authentication.oidc.entraTokenVersionCheckEnabled} as a safety hatch, in case
+   * this check incorrectly rejects a previously-working v1 authentication.
    */
   private void validateEntraTokenVersion(final Map<String, Object> tokenClaims) {
     final Object issuer = tokenClaims.get(ISSUER_CLAIM);

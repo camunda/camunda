@@ -58,6 +58,7 @@ public class OidcAuthenticationConfiguration {
   private Duration clockSkew = DEFAULT_CLOCK_SKEW;
   private boolean idpLogoutEnabled = true;
   private boolean userInfoEnabled = true;
+  private boolean entraTokenVersionCheckEnabled = true;
   private OidcUserInfoAugmentationConfiguration userInfoAugmentation =
       new OidcUserInfoAugmentationConfiguration();
   private OidcDiagnosticsConfiguration diagnostics = new OidcDiagnosticsConfiguration();
@@ -289,6 +290,14 @@ public class OidcAuthenticationConfiguration {
     this.userInfoEnabled = userInfoEnabled;
   }
 
+  public boolean isEntraTokenVersionCheckEnabled() {
+    return entraTokenVersionCheckEnabled;
+  }
+
+  public void setEntraTokenVersionCheckEnabled(final boolean entraTokenVersionCheckEnabled) {
+    this.entraTokenVersionCheckEnabled = entraTokenVersionCheckEnabled;
+  }
+
   public OidcUserInfoAugmentationConfiguration getUserInfoAugmentation() {
     return userInfoAugmentation;
   }
@@ -374,6 +383,7 @@ public class OidcAuthenticationConfiguration {
     private Duration clockSkew = DEFAULT_CLOCK_SKEW;
     private boolean idpLogoutEnabled = true;
     private boolean userInfoEnabled = true;
+    private boolean entraTokenVersionCheckEnabled = true;
     private OidcUserInfoAugmentationConfiguration userInfoAugmentation =
         new OidcUserInfoAugmentationConfiguration();
     private OidcDiagnosticsConfiguration diagnostics = new OidcDiagnosticsConfiguration();
@@ -510,6 +520,11 @@ public class OidcAuthenticationConfiguration {
       return this;
     }
 
+    public Builder entraTokenVersionCheckEnabled(final boolean entraTokenVersionCheckEnabled) {
+      this.entraTokenVersionCheckEnabled = entraTokenVersionCheckEnabled;
+      return this;
+    }
+
     public Builder userInfoAugmentation(
         final OidcUserInfoAugmentationConfiguration userInfoAugmentation) {
       this.userInfoAugmentation = userInfoAugmentation;
@@ -549,6 +564,7 @@ public class OidcAuthenticationConfiguration {
       config.setClockSkew(clockSkew);
       config.setIdpLogoutEnabled(idpLogoutEnabled);
       config.setUserInfoEnabled(userInfoEnabled);
+      config.setEntraTokenVersionCheckEnabled(entraTokenVersionCheckEnabled);
       config.setUserInfoAugmentation(userInfoAugmentation);
       config.setDiagnostics(diagnostics);
       return config;
