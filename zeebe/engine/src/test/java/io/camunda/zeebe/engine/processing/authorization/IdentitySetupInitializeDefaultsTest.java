@@ -125,7 +125,8 @@ public class IdentitySetupInitializeDefaultsTest {
                         PermissionType.COMPLETE_USER_TASK,
                         PermissionType.CANCEL_PROCESS_INSTANCE,
                         PermissionType.MODIFY_PROCESS_INSTANCE,
-                        PermissionType.DELETE_PROCESS_INSTANCE),
+                        PermissionType.DELETE_PROCESS_INSTANCE,
+                        PermissionType.SUSPEND_PROCESS_INSTANCE),
             auth ->
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION)
@@ -191,6 +192,7 @@ public class IdentitySetupInitializeDefaultsTest {
                         PermissionType.CREATE_BATCH_OPERATION_DELETE_DECISION_INSTANCE,
                         PermissionType.CREATE_BATCH_OPERATION_DELETE_DECISION_DEFINITION,
                         PermissionType.CREATE_BATCH_OPERATION_DELETE_PROCESS_DEFINITION,
+                        PermissionType.CREATE_BATCH_OPERATION_SUSPEND_PROCESS_INSTANCE,
                         PermissionType.CREATE_BATCH_OPERATION_UPDATE_JOB,
                         PermissionType.UPDATE,
                         PermissionType.READ),

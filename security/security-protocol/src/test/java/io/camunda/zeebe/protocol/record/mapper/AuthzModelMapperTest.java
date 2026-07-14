@@ -62,6 +62,19 @@ class AuthzModelMapperTest {
   }
 
   @Test
+  void shouldRoundTripSuspendProcessInstancePermissionTypes() {
+    final Set<PermissionType> permissions =
+        new HashSet<>(
+            Arrays.asList(
+                PermissionType.SUSPEND_PROCESS_INSTANCE,
+                PermissionType.CREATE_BATCH_OPERATION_SUSPEND_PROCESS_INSTANCE));
+    assertThat(
+            AuthzModelMapper.fromProtocolPermissionTypes(
+                AuthzModelMapper.toProtocolPermissionTypes(permissions)))
+        .containsExactlyInAnyOrderElementsOf(permissions);
+  }
+
+  @Test
   void shouldRoundTripAuthorizationScope() {
     final AuthorizationScope scope =
         new AuthorizationScope(AuthorizationResourceMatcher.PROPERTY, "", "tenantId");
