@@ -47,6 +47,22 @@ class OidcTokenEndpointCustomizerTest {
   }
 
   @Test
+  void shouldCopySingleResourceFromAuthorizationRequest() {
+    // given
+    final var customizer =
+        new OidcTokenEndpointCustomizer(assertionJwkProvider, RestClient.create());
+    final var request = grantRequest("resource-a");
+
+    // when
+    final var parameters = customizer.createResourceParameterConverter().convert(request);
+
+    // then
+    assertThat(parameters)
+        .isNotNull()
+        .containsEntry(OAuth2ParameterNames.RESOURCE, List.of("resource-a"));
+  }
+
+  @Test
   void shouldNotAddResourceWhenAuthorizationRequestHasNone() {
     // given
     final var customizer =
@@ -60,7 +76,7 @@ class OidcTokenEndpointCustomizerTest {
     assertThat(parameters).isNull();
   }
 
-  private static OAuth2AuthorizationCodeGrantRequest grantRequest(final List<String> resources) {
+  private static OAuth2AuthorizationCodeGrantRequest grantRequest(final Object resources) {
     final var registration =
         ClientRegistration.withRegistrationId("custom")
             .clientId("client")

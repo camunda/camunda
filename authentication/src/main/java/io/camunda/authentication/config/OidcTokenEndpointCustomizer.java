@@ -83,6 +83,11 @@ public class OidcTokenEndpointCustomizer
             value -> parametersToAdd.add(OAuth2ParameterNames.RESOURCE, value.toString()));
         return parametersToAdd;
       }
+      if (resource instanceof final String resourceValue && !resourceValue.isBlank()) {
+        final MultiValueMap<String, String> parametersToAdd = new LinkedMultiValueMap<>();
+        parametersToAdd.add(OAuth2ParameterNames.RESOURCE, resourceValue);
+        return parametersToAdd;
+      }
       return null;
     };
   }
