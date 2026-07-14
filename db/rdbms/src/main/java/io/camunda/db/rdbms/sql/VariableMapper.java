@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.sql;
 
 import io.camunda.db.rdbms.read.domain.VariableDbQuery;
+import io.camunda.db.rdbms.read.domain.VariableNameDbQuery;
 import io.camunda.db.rdbms.write.domain.ProcessDefinitionVariableNameLookupDbModel;
 import io.camunda.db.rdbms.write.domain.VariableDbModel;
 import io.camunda.db.rdbms.write.queue.BatchInsertDto;
@@ -38,6 +39,12 @@ public interface VariableMapper extends ProcessInstanceDependantMapper {
 
   /** Returns all variable names recorded for the given process definition key. */
   List<String> findLookupVariableNames(@Param("processDefinitionKey") long processDefinitionKey);
+
+  /**
+   * Returns distinct variable names for the given process definition, narrowed by the query's name
+   * filter, ordered alphabetically and capped at the query's limit.
+   */
+  List<String> findVariableNames(VariableNameDbQuery query);
 
   /** Deletes all lookup entries for the given process definition keys. */
   void deleteLookupByProcessDefinitionKeys(List<Long> processDefinitionKeys, int limit);

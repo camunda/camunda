@@ -35,6 +35,7 @@ import io.camunda.gateway.protocol.model.ClusterVariableSearchQueryFilterRequest
 import io.camunda.gateway.protocol.model.ElementInstanceFilterFields;
 import io.camunda.gateway.protocol.model.GlobalTaskListenerSearchQueryFilterRequest;
 import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinitionFilter;
+import io.camunda.gateway.protocol.model.ProcessDefinitionVariableNameFilter;
 import io.camunda.gateway.protocol.model.ProcessInstanceFilterFields;
 import io.camunda.gateway.protocol.model.ResourceFilter;
 import io.camunda.gateway.protocol.model.StringFilterProperty;
@@ -357,6 +358,17 @@ public class SearchQueryFilterMapper {
     return validationErrors.isEmpty()
         ? Either.right(builder.build())
         : Either.left(validationErrors);
+  }
+
+  static Either<List<String>, VariableFilter> toVariableNameFilter(
+      final long processDefinitionKey, final @Nullable ProcessDefinitionVariableNameFilter filter) {
+    final var builder = FilterBuilders.variable().processDefinitionKeys(processDefinitionKey);
+
+    if (filter != null) {
+      ofNullable(filter.getName()).map(mapToStringOperations()).ifPresent(builder::nameOperations);
+    }
+
+    return Either.right(builder.build());
   }
 
   static ClusterVariableFilter toClusterVariableFilter(

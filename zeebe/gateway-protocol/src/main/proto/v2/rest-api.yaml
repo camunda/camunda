@@ -318,6 +318,8 @@ paths:
     $ref: 'process-definitions.yaml#/paths/~1process-definitions~1{processDefinitionKey}~1form'
   /process-definitions/{processDefinitionKey}/statistics/element-instances:
     $ref: 'process-definitions.yaml#/paths/~1process-definitions~1{processDefinitionKey}~1statistics~1element-instances'
+  /process-definitions/{processDefinitionKey}/variable-names/search:
+    $ref: 'process-definitions.yaml#/paths/~1process-definitions~1{processDefinitionKey}~1variable-names~1search'
   /process-definitions/{processDefinitionKey}/xml:
     $ref: 'process-definitions.yaml#/paths/~1process-definitions~1{processDefinitionKey}~1xml'
   /process-definitions/statistics/process-instances-by-version:

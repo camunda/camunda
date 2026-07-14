@@ -57,6 +57,7 @@ import io.camunda.search.query.TypedSearchQueryBuilder;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
+import io.camunda.search.query.VariableNameQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.search.sort.SortOption;
 import io.camunda.search.sort.SortOptionBuilders;
@@ -665,6 +666,22 @@ public final class SearchQueryRequestMapper {
             SearchQuerySortRequestMapper::applyVariableSortField);
     final var filter = SearchQueryFilterMapper.toVariableFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::variableSearchQuery);
+  }
+
+  public static Either<ProblemDetail, VariableNameQuery> toVariableNameQuery(
+      final long processDefinitionKey,
+      final @Nullable ProcessDefinitionVariableNameSearchQuery request) {
+    if (request == null) {
+      return Either.right(
+          SearchQueryBuilders.variableNameSearchQuery()
+              .filter(FilterBuilders.variable().processDefinitionKeys(processDefinitionKey).build())
+              .build());
+    }
+    final var page = toSearchQueryPage(request.getPage());
+    final var filter =
+        SearchQueryFilterMapper.toVariableNameFilter(processDefinitionKey, request.getFilter());
+    return buildSearchQuery(
+        filter, Either.right(null), page, SearchQueryBuilders::variableNameSearchQuery);
   }
 
   public static Either<ProblemDetail, ClusterVariableQuery> toClusterVariableQuery(
