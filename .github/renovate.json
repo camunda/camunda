@@ -188,7 +188,7 @@
         ".github/workflows/copilot-setup-steps.yml"
       ],
       "matchPackageNames": [
-        "github/gh-aw-actions"
+        "/^github/gh-aw-actions(/.+)?$/"
       ],
       "enabled": false
     },
