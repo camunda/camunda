@@ -17,12 +17,22 @@ help:
 	@echo "  update-golden  Regenerate golden files after an intentional change,"
 	@echo "                 then review 'git diff golden/' before committing"
 	@echo "  clean          Remove leftover scaffolded namespace directories"
+	@echo ""
+	@echo "Scope test/update-golden to one setup version with PATTERN=, e.g.:"
+	@echo "  make update-golden PATTERN=stable-89"
 
 # Each scenario scaffolds a namespace, which clones camunda-platform-helm and
 # runs `helm dependency build`. Cap parallelism so many simultaneous clones / OCI
 # pulls don't exhaust helm's timeouts on high-core machines (the default is
 # GOMAXPROCS). Override with `make test PARALLEL=N`.
 PARALLEL ?= 4
+
+# Optional: scope test/update-golden to one setup version (e.g. PATTERN=stable-89).
+# Leave unset to run/update every version listed in golden_test.go.
+PATTERN ?=
+ifneq ($(PATTERN),)
+run_filter := -run '.*$(PATTERN).*'
+endif
 
 build:
 	go build ./...
@@ -34,10 +44,10 @@ helm-repos:
 	helm repo update
 
 test: helm-repos
-	go test -v -timeout 50m -parallel $(PARALLEL) ./...
+	go test -v -timeout 50m -parallel $(PARALLEL) $(run_filter) ./...
 
 update-golden: helm-repos
-	go test -v -timeout 50m -parallel $(PARALLEL) -update-golden ./...
+	go test -v -timeout 50m -parallel $(PARALLEL) $(run_filter) -update-golden ./...
 
 clean:
 	rm -rf ../c8-golden-*
