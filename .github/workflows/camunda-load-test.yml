@@ -79,6 +79,11 @@ on:
         type: boolean
         required: false
         default: false
+      physical-tenants:
+        description: 'Deploy a second physical tenant (testfoo) with its own load tester. Requires an rdbms secondary-storage-type.'
+        type: boolean
+        required: false
+        default: false
       enable-optimize-report-metrics:
         description: 'Enable the load-tester Optimize report-evaluation meter (requires Optimize backend)'
         type: boolean
@@ -184,6 +189,11 @@ on:
         type: boolean
         required: false
         default: false
+      physical-tenants:
+        description: 'Deploy a second physical tenant (testfoo) with its own load tester. Requires an rdbms secondary-storage-type.'
+        type: boolean
+        required: false
+        default: false
       enable-optimize-report-metrics:
         description: 'Enable the load-tester Optimize report-evaluation meter (requires Optimize backend)'
         type: boolean
@@ -246,6 +256,7 @@ env:
   OPTIMIZE_TAG: ${{ inputs.optimize-tag }}
   ORCHESTRATION_TAG: ${{ inputs.orchestration-tag }}
   PERFORM_READ_BENCHMARKS: ${{ inputs.perform-read-benchmarks }}
+  PHYSICAL_TENANTS: ${{ inputs.physical-tenants }}
   PLATFORM_HELM_VALUES: ${{ inputs.platform-helm-values }}
   REF: ${{ inputs.ref }}
   REUSE_TAG: ${{ inputs.reuse-tag}}
@@ -290,6 +301,7 @@ jobs:
           | Enable Optimize | \`${ENABLE_OPTIMIZE}\` |
           | Enable Optimize report metrics | \`${ENABLE_OPTIMIZE_METRICS}\` |
           | Enable chaos | \`${ENABLE_CHAOS}\` |
+          | Physical tenants | \`${PHYSICAL_TENANTS}\` |
           | Build frontend | \`${BUILD_FRONTEND}\` |
           | Perform read benchmarks | \`${PERFORM_READ_BENCHMARKS}\` |
           | Optimize tag | \`${OPTIMIZE_TAG:-—}\` |
@@ -703,6 +715,7 @@ jobs:
             secondary_storage="${SECONDARY_STORAGE_TYPE}" \
             enable_optimize="${ENABLE_OPTIMIZE}" \
             chaos="${ENABLE_CHAOS}" \
+            physical_tenants="${PHYSICAL_TENANTS}" \
             additional_platform_configuration="$additional_platform_config" \
             additional_load_test_configuration="$load_test_config" \
             additional_load_test_setup_configuration="$additional_load_test_setup_configuration"

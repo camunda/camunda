@@ -27,13 +27,17 @@ var update = flag.Bool("update-golden", false,
 // load-test-setup chart only — used to test opt-in chart features that have a
 // dedicated make target (e.g. template-load-test-setup-chaos). This avoids
 // duplicating the full storage matrix for features that are orthogonal to storage.
+//
+// PhysicalTenants, when true, passes physical_tenants=true to the platform
+// template target. Only supported for rdbms secondary_storage (main version only).
 type scenario struct {
-	Name        string
-	Storage     string // elasticsearch | opensearch | postgresql | none
-	Optimize    bool
-	Stable      bool
-	Workload    string // "" = default profile; e.g. "max", "realistic"
-	SetupTarget string // named make target for template-load-test-setup variants
+	Name            string
+	Storage         string // elasticsearch | opensearch | postgresql | none
+	Optimize        bool
+	Stable          bool
+	Workload        string // "" = default profile; e.g. "max", "realistic"
+	SetupTarget     string // named make target for template-load-test-setup variants
+	PhysicalTenants bool
 }
 
 // versionedScenario defines a scenario with a specific version
@@ -67,6 +71,9 @@ var defaultScenarios = []scenario{
 	// Makefile target, verifying opt-in chart features without duplicating the
 	// full storage matrix.
 	{Name: "chaos-killer", Storage: "elasticsearch", Optimize: false, SetupTarget: "template-load-test-setup-chaos"},
+	// physical_tenants=true deploys a second tenant alongside the default on a
+	// shared RDBMS (table-prefix isolation). Only supported for rdbms storage.
+	{Name: "rdbms-physical-tenants", Storage: "postgresql", Optimize: false, PhysicalTenants: true},
 }
 
 // versions lists the setup directories under test, each the name of a directory
@@ -107,6 +114,11 @@ func generateScenarios(versions []string, scenarios []scenario) []versionedScena
 					// Only elasticsearch is supported on 8.7
 					continue
 				}
+			}
+
+			// physical_tenants=true is only implemented in the main Makefile.
+			if s.PhysicalTenants && v != "main" {
+				continue
 			}
 
 			scenario := versionedScenario{
@@ -157,8 +169,13 @@ func TestGoldenFiles(t *testing.T) {
 				platformTarget = "template-stable"
 			}
 
-			renderAndAssert(t, s.Version, s.Name, "platform", ns, platformTarget, "")
-			renderAndAssert(t, s.Version, s.Name, "load-test-setup", ns, "template-load-test-setup", "")
+			var extraVars []string
+			if s.PhysicalTenants {
+				extraVars = append(extraVars, "physical_tenants=true")
+			}
+
+			renderAndAssert(t, s.Version, s.Name, "platform", ns, platformTarget, "", extraVars...)
+			renderAndAssert(t, s.Version, s.Name, "load-test-setup", ns, "template-load-test-setup", "", extraVars...)
 		})
 	}
 }
@@ -210,10 +227,11 @@ func TestInstallLoadTestSetupKeepsMakefileFlagsWhenAdditionalConfigurationIsProv
 
 // renderAndAssert renders a chart via the scaffolded Makefile's make target and
 // compares (or writes) the resulting manifest tree against the golden directory.
-func renderAndAssert(t *testing.T, version, scenario, chartName string, ns *ScaffoldedNamespace, makeTarget, workload string) {
+// extraVars are additional make variable assignments forwarded to Render.
+func renderAndAssert(t *testing.T, version, scenario, chartName string, ns *ScaffoldedNamespace, makeTarget, workload string, extraVars ...string) {
 	t.Helper()
 
-	srcDir := ns.Render(t, makeTarget, workload)
+	srcDir := ns.Render(t, makeTarget, workload, extraVars...)
 	assertGoldenDir(t, version, scenario, chartName, srcDir, *update)
 }
 

@@ -70,10 +70,11 @@ func Scaffold(t *testing.T, setupDirName, namespace, storage, optimize string) *
 // per chart template, mirroring the chart structure). When workload is non-empty
 // it is passed as `scenario=<workload>` (e.g. max, realistic), selecting the
 // Makefile's workload profile flags — exactly as `make install scenario=<workload>`.
+// extraVars are additional make variable assignments (e.g. "physical_tenants=true").
 //
 // The template targets pin --namespace $(namespace), so .Release.Namespace matches
 // what `make install` produces and is deterministic across machines.
-func (ns *ScaffoldedNamespace) Render(t *testing.T, target, workload string) string {
+func (ns *ScaffoldedNamespace) Render(t *testing.T, target, workload string, extraVars ...string) string {
 	t.Helper()
 
 	// Render into an isolated, auto-cleaned dir via the Makefile's
@@ -83,6 +84,7 @@ func (ns *ScaffoldedNamespace) Render(t *testing.T, target, workload string) str
 	if workload != "" {
 		args = append(args, "scenario="+workload)
 	}
+	args = append(args, extraVars...)
 	cmd := exec.Command("make", args...)
 	cmd.Dir = ns.Dir
 	out, err := cmd.CombinedOutput()

@@ -345,6 +345,45 @@ make template-load-test-setup-chaos
 
 In the GitHub workflow, set the `enable-chaos` input to `true`.
 
+#### Optional second physical tenant
+
+A load test can exercise **two physical tenants** (`default` and `testfoo`) on a single cluster that
+share one RDBMS, isolated by table prefix (`DEFAULT_` / `TESTFOO_`). This validates physical-tenant
+isolation and independent load per tenant.
+
+Because physical tenants are isolated by RDBMS table prefix, this only works with an rdbms
+`secondary_storage` (`postgresql`, `mysql`, `mariadb`, `mssql`, `oracle`); any other value fails fast.
+
+```sh
+make install physical_tenants=true secondary_storage=postgresql scenario=typical
+```
+
+When enabled, the Makefile:
+
+- Applies `camunda-platform-two-physical-tenants-shared-rdbms.yaml` (a copy of
+  `camunda-platform-values-rdbms.yaml` that also declares the `testfoo` tenant: its `TESTFOO_` prefix,
+  OIDC provider assignment, and orchestration-client authorizations) instead of the plain rdbms values.
+- Clones the generated `load-test-credentials` secret into `load-test-credentials-testfoo`, overriding
+  only the REST address to the tenant path `http://camunda:8080/physical-tenants/testfoo`.
+- Renders the `starter`/`worker` from the same chart, values, scenario and **image** as the default
+  tester, renames them to `starter-testfoo`/`worker-testfoo`, and applies them. The testfoo tester uses
+  REST (`global.preferRest.enabled=true`) because gRPC only routes to the default physical tenant.
+
+A second Helm release is not used because the `camunda-load-tests` subchart hardcodes the
+`starter`/`worker` resource names, which would collide in the same namespace.
+
+In the GitHub workflow, set the `physical-tenants` input to `true` (with an rdbms
+`secondary-storage-type`).
+
+Verify both tenants receive writes:
+
+```sh
+kubectl exec -n <namespace> postgresql-0 -- env PGPASSWORD=camunda \
+  psql -U camunda -d camunda -c "
+SELECT 'default' AS tenant, COUNT(*) FROM default_process_instance
+UNION ALL SELECT 'testfoo', COUNT(*) FROM testfoo_process_instance;"
+```
+
 This will deploy the full Camunda Platform (including `orchestration cluster`, `elasticsearch`, `optimize`, `connectors`, `identity` and `keycloak`) and load test applications (e.g. `starter` and `worker`).
 
 ### Running specific scenarios

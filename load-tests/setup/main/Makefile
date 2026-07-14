@@ -5,6 +5,10 @@ enable_optimize ?= __ENABLE_OPTIMIZE__
 # Enable the chaos-killer CronJob (randomly deletes one matching pod per run).
 # Use named targets (make install-chaos) or pass directly: make install chaos=true
 chaos ?= false
+# Deploy a second physical tenant (testfoo) alongside the default one, sharing the
+# same RDBMS but isolated by table prefix. Requires an rdbms secondary_storage.
+# Pass directly: make install physical_tenants=true secondary_storage=postgresql
+physical_tenants ?= false
 prometheus_elasticsearch_exporter_chart_version ?= 7.2.1
 # Optional: additional Helm configuration for the Camunda Platform release.
 # Use this to pass extra `--set`/`-f` flags, for example:
@@ -59,9 +63,23 @@ _load_test_setup_flags :=
 # The Docker image tag for the load test metrics exporter
 metrics_exporter_image_tag := latest
 
+# Physical tenants are isolated by RDBMS table prefix, so they only make sense with
+# an rdbms secondary storage. Fail fast on any other combination.
+# (Nested conditionals are left-aligned: a leading tab would make `$(error ...)` look like a recipe.)
+ifeq ($(physical_tenants),true)
+ifeq ($(filter $(secondary_storage),postgresql mysql mariadb mssql oracle),)
+$(error physical_tenants=true requires an rdbms secondary_storage (postgresql|mysql|mariadb|mssql|oracle), got '$(secondary_storage)')
+endif
+endif
+
 # Add secondary storage values
 ifneq ($(filter $(secondary_storage),postgresql mysql mariadb mssql oracle),)
-	platform_values += -f camunda-platform-values-rdbms.yaml
+	ifeq ($(physical_tenants),true)
+		# Same as camunda-platform-values-rdbms.yaml, plus a second physical tenant (testfoo).
+		platform_values += -f camunda-platform-two-physical-tenants-shared-rdbms.yaml
+	else
+		platform_values += -f camunda-platform-values-rdbms.yaml
+	endif
 else ifeq ($(secondary_storage),none)
 	_load_test_setup_flags += --set global.extraConfig.load-tester.monitor-data-availability=false
 endif
@@ -126,6 +144,13 @@ install: check-deadline install-load-test-setup install-storage install-platform
 
 .PHONY: install-stable
 install-stable: check-deadline install-load-test-setup install-storage install-platform-stable install-elasticsearch-exporter
+
+# When physical_tenants=true, also deploy the second (testfoo) load tester. Appended as the
+# last prerequisite so it runs after the platform is up and the load-test-credentials secret exists.
+ifeq ($(physical_tenants),true)
+install: install-load-test-physical-tenant
+install-stable: install-load-test-physical-tenant
+endif
 
 # Fail fast if the namespace TTL deadline (read from load-test-setup-values.yaml,
 # the single source of truth) is today or in the past — the TTL cleanup
@@ -220,6 +245,31 @@ ifeq ($(install_es_prom_exporter),true)
 else
 	@echo "Skipping Elasticsearch Prometheus Exporter installation (secondary_storage=$(secondary_storage))"
 endif
+
+# Deploy a second load tester that drives the `testfoo` physical tenant.
+# The camunda-load-tests subchart hardcodes the starter/worker resource names, so a second
+# Helm release would collide. Instead we render only those two templates from the same chart,
+# values, scenario and image as the default tester, rename them to *-testfoo, and apply.
+# REST is required because gRPC only routes to the default physical tenant.
+.PHONY: install-load-test-physical-tenant
+install-load-test-physical-tenant:
+	@echo "Deploying the testfoo physical-tenant load tester for namespace $(namespace)..."
+	@# Clone the generated load-test-credentials secret, overriding only the REST address to the
+	@# testfoo tenant path. Inherits every real credential value (clientId/secret, authServer, audience).
+	kubectl get secret load-test-credentials -n $(namespace) -o json \
+	  | jq '.data.zeebeRestAddress = ("http://camunda:8080/physical-tenants/testfoo" | @base64) | .metadata.name = "load-test-credentials-testfoo" | del(.metadata.uid,.metadata.resourceVersion,.metadata.creationTimestamp,.metadata.ownerReferences,.metadata.managedFields)' \
+	  | kubectl apply -n $(namespace) -f -
+	@# Render only the subchart starter+worker, rename to *-testfoo, and apply.
+	helm template load-test-setup $(helm_chart_load_test_setup) \
+	    --namespace $(namespace) \
+	    -s charts/load-tester/templates/starter.yaml \
+	    -s charts/load-tester/templates/workers.yaml \
+	    $(load_test_setup_flags) \
+	    --set load-tester.enabled=true \
+	    --set global.preferRest.enabled=true \
+	    --set load-tester.saas.credentials.existingSecret=load-test-credentials-testfoo \
+	  | sed -E 's/: starter$$/: starter-testfoo/; s/: worker$$/: worker-testfoo/' \
+	  | kubectl apply -n $(namespace) -f -
 
 # Install/upgrade Camunda Platform helm chart
 .PHONY: install-platform
