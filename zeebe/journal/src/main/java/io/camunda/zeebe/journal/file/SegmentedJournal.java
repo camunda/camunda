@@ -242,8 +242,14 @@ public final class SegmentedJournal implements Journal {
     } catch (final FlushException e) {
       LOGGER.warn("Failed to flush when closing", e);
     }
-    segments.close();
-    open = false;
+
+    final var stamp = rwlock.writeLock();
+    try {
+      open = false;
+      segments.close();
+    } finally {
+      rwlock.unlockWrite(stamp);
+    }
   }
 
   /**
