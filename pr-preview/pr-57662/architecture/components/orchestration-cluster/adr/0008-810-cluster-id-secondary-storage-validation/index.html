@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Cluster ID as the source of truth for exporters, and secondary storage validation | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-57662/architecture/components/orchestration-cluster/adr/0008-810-cluster-id-secondary-storage-validation/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Cluster ID as the source of truth for exporters, and secondary storage validation | Camunda Platform"><meta data-rh="true" name="description" content="DRI: Josh Windels"><meta data-rh="true" property="og:description" content="DRI: Josh Windels"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-57662/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-57662/architecture/components/orchestration-cluster/adr/0008-810-cluster-id-secondary-storage-validation/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-57662/architecture/components/orchestration-cluster/adr/0008-810-cluster-id-secondary-storage-validation/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-57662/architecture/components/orchestration-cluster/adr/0008-810-cluster-id-secondary-storage-validation/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-57662/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-57662/assets/js/runtime~main.45a64a39.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-57662/assets/js/main.dcfa5ae4.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-57662/assets/js/runtime~main.2aae0e85.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-57662/assets/js/main.558244c8.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -45,14 +45,11 @@ is even resolved. No previous value recorded bootstraps it, so no existing insta
 upgrade; an unchanged value is left alone (no redundant write); a mismatch fails startup by default,
 with a configurable escape hatch for legitimate operator-driven re-pointing. A mismatch is scoped to
 the affected partition&#x27;s exporter, not the whole broker.</p>
-<p><strong>D3. <code>rdbms-exporter</code> validates its cluster ID the same way, but the DDL that backs it lives at a
-different point in the startup lifecycle.</strong> The RDBMS schema (including the new column that backs
-this check) is still created during the existing early schema-initialization step, since that is
-pure DDL and unaffected by timing. The comparison itself runs as its own step, called directly by
-the exporter once it opens - the same shape as D2, and for the same reason: the broker-wide
-schema-initialization step runs before any exporter&#x27;s cluster ID is resolved, so the comparison
-cannot live there. Same fail-fast/escape-hatch/no-redundant-write behavior as camunda-exporter,
-without reordering RDBMS startup.</p>
+<p><strong>D3. <code>rdbms-exporter</code> validates the same way as D2, but its DDL lifecycle differs.</strong> The RDBMS
+schema (including the new <code>CLUSTER_ID</code> column) is created during the existing early schema-init
+step - pure DDL, timing-agnostic. The comparison itself is deferred to the exporter&#x27;s own
+<code>configure()</code> call, for the same reason as D2: the broker-wide schema-init step runs before any
+exporter&#x27;s cluster ID is resolved.</p>
 <p><strong>D4. Every cluster-ID write and every successful match is logged at INFO.</strong> This lets an operator
 trace, from application logs alone, when the recorded cluster ID last changed and when it was last
 confirmed consistent, without a dedicated timestamp field.</p>
@@ -90,6 +87,10 @@ records the cluster ID per physical tenant too — one tenant&#x27;s mismatch do
 ES/OS has no per-physical-tenant storage isolation today (every tenant&#x27;s exporter instance shares
 one index prefix/connection), so <code>camunda-exporter</code>&#x27;s cluster-ID record is similarly shared across
 tenants — the same limitation the existing schema-version record already has, not a new one.</li>
+<li class="">The check only runs when auto-DDL is enabled for RDBMS. It reuses the same <code>RDBMS_SCHEMA_VERSION</code>
+bookkeeping table as the pre-existing schema-version check, which already skips entirely under
+<code>NoopSchemaManager</code> (externally-managed schema, auto-DDL disabled) — not a new limitation,
+inherited from the mechanism being extended.</li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="source">Source<a href="#source" class="hash-link" aria-label="Direct link to Source" title="Direct link to Source" translate="no">​</a></h2>
 <ul>
