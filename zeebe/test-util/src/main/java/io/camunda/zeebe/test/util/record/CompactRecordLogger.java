@@ -340,6 +340,13 @@ public class CompactRecordLogger {
     valueLoggers.put(RESOURCE_REEXPORT, this::summarizeResourceReexport);
     valueLoggers.put(ValueType.AGENT_INSTANCE, this::summarizeAgentInstance);
     valueLoggers.put(ValueType.AGENT_HISTORY, this::summarizeAgentHistory);
+    // Event-bridge control-plane records have no dedicated summarizer yet; the generic value
+    // rendering keeps their tests loggable.
+    valueLoggers.put(ValueType.EVENT_BRIDGE_MEMBERSHIP, this::summarizeMiscValue);
+    valueLoggers.put(ValueType.EVENT_BRIDGE_OFFSET, this::summarizeMiscValue);
+    valueLoggers.put(ValueType.EVENT_BRIDGE_REBALANCE, this::summarizeMiscValue);
+    valueLoggers.put(ValueType.EVENT_BRIDGE_TOPIC, this::summarizeMiscValue);
+    valueLoggers.put(ValueType.EVENT_BRIDGE_BROKER, this::summarizeMiscValue);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
