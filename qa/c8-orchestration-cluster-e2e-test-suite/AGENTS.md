@@ -312,14 +312,36 @@ git log --since=<YYYY-MM-DD> --oneline -- <module-path>   # e.g. operate/ identi
 gh search code --repo camunda/camunda "<aria-label / data-testid / endpoint>" --limit 5 --json path
 ```
 
-Bound the window with when the test first went red. Name a plausible commit (or documented behavior
-change) when you can — it goes in `suspect_commit` and the Slack thread. **If you cannot pin a
-specific commit but Gate A and Gate C clearly hold** (deterministic failure, test still correct, the
-app is visibly misbehaving), still escalate as a product bug with `suspect_commit: "not pinned"` and
-note what you ruled out — i.e. complete the full product-bug escalation (file/reuse the ticket +
-annotated `test.skip(...)` + skip PR). Do NOT instead mask the failure (viewport/timeout/selector
-tweak or a weakened assertion), and do NOT do a bare `test.skip()` without a filed/linked ticket.
-Only re-examine for a test-side cause if Gate A or Gate C is genuinely in doubt.
+Bound the window with when the test first went red, and inspect the **entire** pass→fail commit
+range for a functional product change:
+
+```bash
+git log <last-green-sha>..<first-red-sha> --oneline -- <module-path>   # e.g. operate/ identity/
+```
+
+**Pinning a specific commit (or a documented behavior change) is REQUIRED for a product-bug verdict
+— this is the confidence gate. A `suspect_commit` of `"not pinned"` is no longer acceptable.** A real
+regression has a cause you can point at. If the pass→fail window contains **no functional product
+change** — e.g. only `deps:` dependency bumps, CI, or docs commits — then there is nothing to pin and
+the green→red flip is almost certainly environmental / load-driven, not a product defect.
+"Deterministic + test looks correct" (Gates A and C) is **not** sufficient on its own: without a
+pinned change, confidence is too low to charge the product team with a bug. When you cannot pin the
+change, do NOT file a bug — instead, in order:
+
+1. **Harden the test** for the actual failure mode and ship that fix — no bug, no skip. Model it on
+   any retry/backoff budget the suite already documents for that surface (e.g. re-drive a command
+   through a documented eventual-consistency window, add a proper wait, mirror an existing request
+   helper's retry). This is the default outcome for an unpinnable green→red flip.
+2. **If the test is already hardened** as much as it reasonably can be — the failure mode is already
+   retried/waited and it still fails with no pinnable cause — do NOT file a speculative bug and do
+   NOT `test.skip()`. Escalate for **manual / human intervention**: write `{"prs": []}` with a
+   `manual_intervention` note in the manifest (root cause unknown, what you ruled out, what hardening
+   already exists) and flag it in the Slack thread for a human to investigate.
+
+Only proceed to file a product bug when Gate B is satisfied (change pinned) AND Gates A and C hold.
+Never mask the failure with a viewport/timeout/selector tweak or a weakened assertion, and never do a
+bare `test.skip()` without a filed/linked ticket. Only re-examine for a test-side cause if Gate A or
+Gate C is genuinely in doubt.
 
 **Gate C — Confirm the test is still correct.** The assertion must still match intended behavior,
 the selector must target a real element, and the test must not be stale. If the test itself is wrong
@@ -631,7 +653,7 @@ skipping.
 
 - **Allowed tools:** `gh`, `git`, `grep`, `rg`, `cat`, `find`, `jq`, `sed`, `awk`, `unzip`, `npx prettier`, `npx eslint`, `npm run responses:regenerate`.
 - **Forbidden:** `make`, `mvn`, `./mvnw`, `docker`, `kubectl`, `helm`, `npm install`, `npm run build`, `npm run test`, `npx playwright test`. The fix agent does **not** execute tests — it fixes from artifact evidence only. Verification is delegated to the on-demand workflows triggered by the calling workflow.
-- **Skipping is forbidden EXCEPT for a confirmed product bug:** the ONLY sanctioned use of `test.skip()` is a product regression that passes all three gates in `## Product-Bug Escalation` and has a filed/linked ticket — there you skip with the mandatory `// Skipped due to bug #<number>: <url>` annotation and open one skip PR. For flakiness, can't-determine, or any other reason, `test.skip()` / `test.fixme()` / `test.only` remain **absolutely forbidden** — never leave a bare `{"prs":[]}` with no issue filed either.
+- **Skipping is forbidden EXCEPT for a confirmed product bug:** the ONLY sanctioned use of `test.skip()` is a product regression that passes all three gates in `## Product-Bug Escalation` and has a filed/linked ticket — there you skip with the mandatory `// Skipped due to bug #<number>: <url>` annotation and open one skip PR. For flakiness, can't-determine, or any other reason, `test.skip()` / `test.fixme()` / `test.only` remain **absolutely forbidden**. A bare `{"prs":[]}` is sanctioned ONLY for the Gate B manual-intervention case (an unpinnable green→red flip on a test that is already hardened) and must carry a `manual_intervention` note; never leave `{"prs":[]}` with no note and no issue filed for any other reason.
 - **Never edit `json-body-assertions/_generated/responses.json` by hand.** This file is auto-generated. If an API response changes, regenerate it with `npm run responses:regenerate` and commit the result. Manual edits will be overwritten and produce misleading diffs.
 - **Minimal diff:** no refactoring, no dependency bumps, no unrelated edits, no formatting sweeps on untouched files.
 - **PR title type must be `test:`** — commitlint rejects `fix:` for test-only changes (see Commit / PR Conventions above).
