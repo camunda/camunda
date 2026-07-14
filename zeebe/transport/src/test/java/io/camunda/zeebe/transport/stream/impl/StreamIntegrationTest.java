@@ -311,7 +311,7 @@ final class StreamIntegrationTest {
       awaitStreamAdded(streamType, streamId, server1, server2);
 
       // when
-      client.streamService.onServerRemoved(server1.memberId());
+      client.streamService.onServerRemoved(server1.memberId(), DEFAULT_PHYSICAL_TENANT_ID);
 
       // then
       awaitStreamOnClient(
@@ -327,7 +327,7 @@ final class StreamIntegrationTest {
       // given
       final var streamType = BufferUtil.wrapString("foo");
       final var properties = new TestSerializableData();
-      client.streamService.onServerRemoved(server1.memberId());
+      client.streamService.onServerRemoved(server1.memberId(), DEFAULT_PHYSICAL_TENANT_ID);
       final var streamId =
           clientStreamer
               .add(
@@ -402,7 +402,7 @@ final class StreamIntegrationTest {
               .join();
       awaitStreamAdded(streamType, streamId, server1, server2);
       server1.close();
-      client.streamService.onServerRemoved(server1.memberId());
+      client.streamService.onServerRemoved(server1.memberId(), DEFAULT_PHYSICAL_TENANT_ID);
       awaitStreamOnClient(
           streamId,
           stream ->

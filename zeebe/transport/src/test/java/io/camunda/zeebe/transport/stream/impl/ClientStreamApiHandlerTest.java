@@ -7,11 +7,14 @@
  */
 package io.camunda.zeebe.transport.stream.impl;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.stream.api.ClientStreamBlockedException;
 import io.camunda.zeebe.transport.stream.api.NoSuchStreamException;
@@ -22,14 +25,31 @@ import io.camunda.zeebe.transport.stream.impl.messages.ErrorResponse;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
 import java.time.Duration;
 import java.util.stream.Stream;
+import org.agrona.collections.ArrayUtil;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Named;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 
 final class ClientStreamApiHandlerTest {
   private final ClientStreamManager<?> clientStreamManager = mock(ClientStreamManager.class);
+
+  @Test
+  void shouldRemoveThenRejoinServerForTheSignalingPhysicalTenantOnRestart() {
+    // given
+    final var apiHandler = new ClientStreamApiHandler(clientStreamManager, Runnable::run);
+    final var sender = MemberId.from("1");
+
+    // when
+    apiHandler.handleRestartRequest(sender, DEFAULT_PHYSICAL_TENANT_ID, ArrayUtil.EMPTY_BYTE_ARRAY);
+
+    // then - only the signaling physical tenant is torn down and re-registered, in that order
+    final var inOrder = inOrder(clientStreamManager);
+    inOrder.verify(clientStreamManager).onServerRemoved(sender, DEFAULT_PHYSICAL_TENANT_ID);
+    inOrder.verify(clientStreamManager).onServerJoined(sender, DEFAULT_PHYSICAL_TENANT_ID);
+  }
 
   @ParameterizedTest
   @MethodSource("provideExceptionToErrorMap")

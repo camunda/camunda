@@ -42,10 +42,11 @@ public interface ClientStreamService<M extends BufferWriter> extends AsyncClosab
   void onServerJoined(final MemberId memberId, final String physicalTenantId);
 
   /**
-   * A callback to be invoked when a new streaming server is removed. Implementations should be
-   * idempotent.
+   * A callback to be invoked when a streaming server is confirmed removed from a specific partition
+   * group. Only registrations for streams whose physical tenant matches {@code physicalTenantId}
+   * are torn down for {@code memberId}. Implementations should be idempotent.
    */
-  void onServerRemoved(final MemberId memberId);
+  void onServerRemoved(final MemberId memberId, final String physicalTenantId);
 
   /** Returns the managed {@link ClientStreamer} associated with this service. */
   ClientStreamer<M> streamer();

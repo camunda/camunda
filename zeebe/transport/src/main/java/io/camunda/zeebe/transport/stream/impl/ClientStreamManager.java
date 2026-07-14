@@ -31,9 +31,6 @@ final class ClientStreamManager<M extends BufferWriter> {
   /** physicalTenantId → set of broker member IDs serving that physical tenant */
   private final Map<String, Set<MemberId>> serversByPhysicalTenantId = new HashMap<>();
 
-  /** broker member ID → set of physicalTenantIds it serves (for RESTART lookup) */
-  private final Map<MemberId, Set<String>> physicalTenantsByServer = new HashMap<>();
-
   private final ClientStreamRegistry<M> registry;
   private final ClientStreamRequestManager<M> requestManager;
   private final Function<String, ClientStreamMetrics> metricsFactory;
@@ -60,7 +57,6 @@ final class ClientStreamManager<M extends BufferWriter> {
     final var servers =
         serversByPhysicalTenantId.computeIfAbsent(physicalTenantId, id -> new HashSet<>());
     servers.add(serverId);
-    physicalTenantsByServer.computeIfAbsent(serverId, id -> new HashSet<>()).add(physicalTenantId);
     metricsFactory.apply(physicalTenantId).serverCount(servers.size());
 
     registry.list().stream()
@@ -68,43 +64,30 @@ final class ClientStreamManager<M extends BufferWriter> {
         .forEach(c -> requestManager.add(c, serverId));
   }
 
-  void onServerRemoved(final MemberId serverId) {
-    final var physicalTenantIds = physicalTenantsByServer.remove(serverId);
-    if (physicalTenantIds != null) {
-      physicalTenantIds.forEach(
-          physicalTenantId -> {
-            final var servers = serversByPhysicalTenantId.get(physicalTenantId);
-            if (servers != null) {
-              servers.remove(serverId);
-              if (servers.isEmpty()) {
-                serversByPhysicalTenantId.remove(physicalTenantId);
-              }
-            }
-            metricsFactory
-                .apply(physicalTenantId)
-                .serverCount(
-                    serversByPhysicalTenantId
-                        .getOrDefault(physicalTenantId, Collections.emptySet())
-                        .size());
-          });
-    }
-    requestManager.onServerRemoved(serverId);
-  }
-
   /**
-   * Called when a server that was already in the topology sends a RESTART_STREAMS signal. Resets
-   * its registrations and re-registers all streams belonging to its known physical tenants —
-   * without touching the topology maps.
+   * Called when a server is confirmed removed from a specific partition group. Only the topology
+   * and registrations for {@code physicalTenantId} are affected; the server may still be known to
+   * serve other physical tenants.
+   *
+   * @param serverId the removed server
+   * @param physicalTenantId the physical tenant the server no longer serves
    */
-  void onServerRestarted(final MemberId serverId) {
-    requestManager.onServerRemoved(serverId);
-    physicalTenantsByServer
-        .getOrDefault(serverId, Collections.emptySet())
-        .forEach(
-            physicalTenantId ->
-                registry.list().stream()
-                    .filter(c -> physicalTenantId.equals(c.physicalTenantId()))
-                    .forEach(c -> requestManager.add(c, serverId)));
+  void onServerRemoved(final MemberId serverId, final String physicalTenantId) {
+    final var servers = serversByPhysicalTenantId.get(physicalTenantId);
+    if (servers != null) {
+      servers.remove(serverId);
+      if (servers.isEmpty()) {
+        serversByPhysicalTenantId.remove(physicalTenantId);
+      }
+    }
+
+    metricsFactory
+        .apply(physicalTenantId)
+        .serverCount(
+            serversByPhysicalTenantId
+                .getOrDefault(physicalTenantId, Collections.emptySet())
+                .size());
+    requestManager.onServerRemoved(serverId, physicalTenantId);
   }
 
   ClientStreamId add(

@@ -47,7 +47,7 @@ public final class JobStreamClientImpl implements JobStreamClient {
 
   @Override
   public void brokerRemoved(final BrokerMemberId memberId, final String physicalTenantId) {
-    streamService.onServerRemoved(memberId.memberId());
+    streamService.onServerRemoved(memberId.memberId(), physicalTenantId);
   }
 
   @Override

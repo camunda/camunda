@@ -124,8 +124,8 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
   }
 
   @Override
-  public void onServerRemoved(final MemberId memberId) {
-    actor.run(() -> clientStreamManager.onServerRemoved(memberId));
+  public void onServerRemoved(final MemberId memberId, final String physicalTenantId) {
+    actor.run(() -> clientStreamManager.onServerRemoved(memberId, physicalTenantId));
   }
 
   @Override
@@ -154,7 +154,7 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
       communicationService.replyTo(
           StreamTopics.RESTART_STREAMS.topic(physicalTenantId),
           Function.identity(),
-          apiHandler::handleRestartRequest,
+          (sender, payload) -> apiHandler.handleRestartRequest(sender, physicalTenantId, payload),
           Function.identity(),
           actor::run);
     }
