@@ -14,6 +14,7 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
@@ -191,6 +192,53 @@ final class ZeebeRecordCodecTest {
     assertThat(codec.accepts(completed, (type, intent) -> intent == JobIntent.CREATED)).isFalse();
     assertThat(codec.accepts(created, (type, intent) -> intent == JobIntent.CREATED)).isTrue();
     assertThat(codec.timestamp(created)).isEqualTo(1234L);
+  }
+
+  @Test
+  void shouldNotLeakOptionalMetadataAcrossSerializeCallsWithTheReusedMetadata() {
+    // given a record whose metadata carries optional fields, and a plain record — the codec
+    // reuses one write-side RecordMetadata across calls, resetting it per record
+    final Record<JobRecord> rejected =
+        new CopiedRecord<>(
+            new JobRecord().setType("payment"),
+            new RecordMetadata()
+                .recordType(RecordType.COMMAND_REJECTION)
+                .valueType(ValueType.JOB)
+                .intent(JobIntent.COMPLETE)
+                .rejectionType(RejectionType.INVALID_STATE)
+                .rejectionReason("job is not activated")
+                .operationReference(77L),
+            42L,
+            1,
+            100L,
+            99L,
+            1234L);
+    final Record<JobRecord> plain =
+        new CopiedRecord<>(
+            new JobRecord().setType("shipping"),
+            new RecordMetadata()
+                .recordType(RecordType.EVENT)
+                .valueType(ValueType.JOB)
+                .intent(JobIntent.CREATED),
+            43L,
+            1,
+            101L,
+            99L,
+            5678L);
+
+    // when the same codec serializes both back-to-back, then the first again
+    final byte[] rejectedPayload = codec.serialize(rejected);
+    final byte[] plainPayload = codec.serialize(plain);
+    final byte[] rejectedAgain = codec.serialize(rejected);
+
+    // then every payload is byte-identical to what a fresh codec produces — no optional field
+    // (rejection reason, operation reference) leaks from one record into the next
+    assertThat(plainPayload).isEqualTo(new ZeebeRecordCodec().serialize(plain));
+    assertThat(rejectedPayload).isEqualTo(new ZeebeRecordCodec().serialize(rejected));
+    assertThat(rejectedAgain).isEqualTo(rejectedPayload);
+    assertThat(codec.deserialize(plainPayload).getRejectionReason()).isEmpty();
+    assertThat(codec.deserialize(rejectedPayload).getRejectionReason())
+        .isEqualTo("job is not activated");
   }
 
   @Test

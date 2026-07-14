@@ -22,6 +22,9 @@ import java.util.zip.CRC32C;
  */
 public final class BatchBuilder {
 
+  /** Shared empty key for keyless entries — mirrors {@code BatchReader.NO_KEY}. */
+  private static final byte[] NO_KEY = new byte[0];
+
   private record Entry(byte[] key, byte[] value) {}
 
   private final List<Entry> entries = new ArrayList<>();
@@ -50,7 +53,7 @@ public final class BatchBuilder {
     if (value == null) {
       throw new IllegalArgumentException("Entry value must not be null");
     }
-    final byte[] k = key == null ? new byte[0] : key;
+    final byte[] k = key == null ? NO_KEY : key;
     entries.add(new Entry(k, value));
     entriesLength += BatchFormat.entryTotalSize(k.length, value.length);
     return this;

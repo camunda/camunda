@@ -27,10 +27,12 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Records are serialized with {@link ZeebeRecordCodec} as they are exported (the codec copies
  * the value, so it is safe against the exporter's reused record buffer) and accumulated into a
- * batch. The batch is flushed when it reaches {@code batchSize} or after {@code flushIntervalMs};
- * only once a flush is acknowledged is {@link Controller#updateLastExportedRecordPosition(long)}
- * advanced, so delivery is at-least-once. One exporter instance runs per source partition, so by
- * default all its records go to the Event Bridge partition matching the source partition id.
+ * batch as keyless entries — the record key is already carried inside the codec payload, so an
+ * entry key would duplicate it on the wire for consumers that never read it. The batch is flushed
+ * when it reaches {@code batchSize} or after {@code flushIntervalMs}; only once a flush is
+ * acknowledged is {@link Controller#updateLastExportedRecordPosition(long)} advanced, so delivery
+ * is at-least-once. One exporter instance runs per source partition, so by default all its records
+ * go to the Event Bridge partition matching the source partition id.
  *
  * <p>The target partition can be pinned with {@code targetPartition}: when set to a positive value,
  * every record is routed to that Event Bridge partition regardless of its source partition. This
@@ -108,7 +110,10 @@ public final class ZeebeRecordExporter implements Exporter {
 
   @Override
   public void export(final Record<?> record) {
-    batch.add(Long.toString(record.getKey()), codec.serialize(record));
+    // Keyless on purpose: the record key already travels inside the codec payload (the frame
+    // carries a key field), and consumers decode the payload rather than the entry key — a
+    // per-record entry key would only be serialized, shipped, and skipped.
+    batch.add(codec.serialize(record));
     batchPartition = config.targetPartition > 0 ? config.targetPartition : record.getPartitionId();
     batchLastPosition = record.getPosition();
     batchCount++;

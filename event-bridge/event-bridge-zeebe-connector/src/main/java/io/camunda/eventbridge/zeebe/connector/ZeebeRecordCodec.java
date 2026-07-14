@@ -46,12 +46,13 @@ import org.agrona.concurrent.UnsafeBuffer;
  * </pre>
  *
  * <p><b>Threading.</b> A codec instance is <em>not</em> thread-safe: it reuses internal buffer
- * wrappers (and, for {@link #accepts}, a metadata flyweight) across calls to keep the per-record
- * paths allocation-free. Confine each instance to a single thread — e.g. the exporter thread on the
- * serialize side, or the stream runtime's source thread on the consume side. The <em>results</em>
- * are safe to hand off: {@link #serialize} returns a fresh array and {@link #deserialize} builds
- * its record from per-call metadata/value objects, so a decoded record may outlive the call (e.g.
- * buffered in a partition queue) without aliasing codec state.
+ * wrappers (and metadata flyweights on both the {@link #serialize} and {@link #accepts} paths)
+ * across calls to keep the per-record paths allocation-free. Confine each instance to a single
+ * thread — e.g. the exporter thread on the serialize side, or the stream runtime's source thread on
+ * the consume side. The <em>results</em> are safe to hand off: {@link #serialize} returns a fresh
+ * array and {@link #deserialize} builds its record from per-call metadata/value objects, so a
+ * decoded record may outlive the call (e.g. buffered in a partition queue) without aliasing codec
+ * state.
  */
 public final class ZeebeRecordCodec {
 
@@ -78,6 +79,15 @@ public final class ZeebeRecordCodec {
    * RecordMetadata} instead, because the returned {@link CopiedRecord} retains it.
    */
   private final RecordMetadata peekMetadata = new RecordMetadata();
+
+  /**
+   * Reusable metadata instance for the {@link #serialize} write side. A {@link RecordMetadata} owns
+   * internal SBE codecs and expandable buffers, so building one per record would be the dominant
+   * serialize-side allocation; instead it is {@link RecordMetadata#reset() reset} per call (the
+   * constructor itself resets, so a reset instance is state-identical to a fresh one). Nothing of
+   * it escapes: {@link #serialize} copies its encoded form into the returned payload.
+   */
+  private final RecordMetadata writeMetadata = new RecordMetadata();
 
   /** Serializes a record's metadata and value into a single Event Bridge payload. */
   public byte[] serialize(final Record<?> record) {
@@ -181,9 +191,10 @@ public final class ZeebeRecordCodec {
     return filter.test(peekMetadata.getValueType(), peekMetadata.getIntent());
   }
 
-  private static RecordMetadata toMetadata(final Record<?> record) {
+  private RecordMetadata toMetadata(final Record<?> record) {
     final RecordMetadata metadata =
-        new RecordMetadata()
+        writeMetadata
+            .reset()
             .recordType(record.getRecordType())
             .valueType(record.getValueType())
             .rejectionType(record.getRejectionType())

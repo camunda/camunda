@@ -79,7 +79,9 @@ public final class ZeebeRecordProducer {
       final int partition, final List<Record<?>> records) {
     final BatchPublisher batch = client.newBatch();
     for (final Record<?> record : records) {
-      batch.add(Long.toString(record.getKey()), codec.serialize(record));
+      // Keyless on purpose: the record key already travels inside the codec payload, and
+      // consumers decode the payload rather than the entry key.
+      batch.add(codec.serialize(record));
     }
     return batch.publishToTopic(topic, partition);
   }

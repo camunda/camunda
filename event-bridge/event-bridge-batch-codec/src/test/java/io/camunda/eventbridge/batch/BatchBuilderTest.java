@@ -44,6 +44,22 @@ final class BatchBuilderTest {
     assertThat(builder.sizeBytes()).isEqualTo(builder.build().length);
   }
 
+  @Test
+  void shouldRoundTripKeylessEntriesWithEmptyKeysAndIntactValues() {
+    // given a batch of keyless entries (the producer's allocation-free path)
+    final byte[] built = newBatch().add(bytes("v1")).add(bytes("v2")).build();
+
+    // when the batch is read back
+    final List<BatchReader.Entry> entries = BatchReader.read(built, 0, built.length, 0);
+
+    // then every entry has an empty key and its value intact
+    assertThat(entries).hasSize(2);
+    assertThat(entries.get(0).key()).isEmpty();
+    assertThat(entries.get(0).value()).isEqualTo(bytes("v1"));
+    assertThat(entries.get(1).key()).isEmpty();
+    assertThat(entries.get(1).value()).isEqualTo(bytes("v2"));
+  }
+
   private static BatchBuilder newBatch() {
     return new BatchBuilder();
   }
