@@ -116,7 +116,8 @@ test.describe('Process Instance Listeners', () => {
     });
   });
 
-  test('Listeners list filtered by flow node instance', async ({
+  // Skipped due to bug #57666: https://github.com/camunda/camunda/issues/57666
+  test.skip('Listeners list filtered by flow node instance', async ({
     operateProcessInstancePage,
     page,
   }) => {

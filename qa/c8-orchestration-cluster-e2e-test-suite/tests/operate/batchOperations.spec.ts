@@ -225,36 +225,38 @@ test.describe('Batch Operations', () => {
     );
     await operateOperationsDetailsPage.goto(batchKey);
 
-    await test.step('Wait for active state and click Suspend', async () => {
-      await waitForAssertion({
-        assertion: async () => {
-          await expect(operateOperationsDetailsPage.suspendButton).toBeVisible({
-            timeout: 20000,
-          });
-          await expect(
-            operateOperationsDetailsPage.suspendButton,
-          ).toBeEnabled();
-        },
-        onFailure: async () => {
-          await page.reload();
-        },
+    // The Suspend button is driven by the read model, so it can become
+    // clickable before the just-created batch is visible to the suspend
+    // command. A single click can therefore 404 during the command
+    // eventual-consistency window (documented in
+    // batch-operation-requestHelpers.ts, which retries 404 -> 204 for up to
+    // 240s). Mirror that here: re-click Suspend until the engine accepts the
+    // command and the suspended state persists across a reload.
+    await test.step('Click Suspend until the engine accepts the command', async () => {
+      await expect(async () => {
+        const suspendable =
+          (await operateOperationsDetailsPage.suspendButton.isVisible()) &&
+          (await operateOperationsDetailsPage.suspendButton.isEnabled());
+        if (suspendable) {
+          await operateOperationsDetailsPage.suspendButton.click();
+        }
+        await page.reload();
+        await expect(operateOperationsDetailsPage.state).toContainText(
+          'Suspended',
+          {timeout: 20000},
+        );
+      }).toPass({
+        intervals: [5_000, 10_000, 10_000, 15_000, 20_000, 30_000, 45_000],
+        timeout: 240_000,
       });
-      await operateOperationsDetailsPage.suspendButton.click();
     });
 
-    await test.step('Reload the page and verify state shows Suspended', async () => {
-      await waitForAssertion({
-        assertion: async () => {
-          await page.reload();
-          await expect(operateOperationsDetailsPage.state).toContainText(
-            'Suspended',
-            {timeout: 20000},
-          );
-        },
-        onFailure: async () => {
-          await page.reload();
-        },
-      });
+    await test.step('Verify suspended state persists after reload', async () => {
+      await page.reload();
+      await expect(operateOperationsDetailsPage.state).toContainText(
+        'Suspended',
+        {timeout: 20000},
+      );
       await expect(operateOperationsDetailsPage.resumeButton).toBeVisible();
       await expect(operateOperationsDetailsPage.suspendButton).toBeHidden();
     });
