@@ -8,7 +8,7 @@
 
 import {Modal} from '@carbon/react';
 import type {StateProps} from 'modules/components/ModalStateManager';
-import type {DocumentInfo} from '../DocumentValueCell/parseDocumentVariable';
+import type {DocumentInfo} from '../documentInfo';
 import {PreviewImage} from './PreviewImage';
 import {PreviewPdf} from './styled';
 import {PreviewJson} from './PreviewJson';

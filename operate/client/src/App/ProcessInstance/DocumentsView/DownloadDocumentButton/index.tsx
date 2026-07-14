@@ -8,7 +8,7 @@
 
 import {Button, Tooltip} from '@carbon/react';
 import {Download} from '@carbon/react/icons';
-import type {DocumentInfo} from '../DocumentValueCell/parseDocumentVariable';
+import type {DocumentInfo} from '../documentInfo';
 import {TooltipTrigger} from './styled';
 import {tracking} from 'modules/tracking';
 

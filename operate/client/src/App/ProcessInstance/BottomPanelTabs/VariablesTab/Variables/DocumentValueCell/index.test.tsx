@@ -8,7 +8,7 @@
 
 import {render, screen} from 'modules/testing-library';
 import {DocumentValueCell} from './index';
-import type {DocumentParseResult} from './parseDocumentVariable';
+import type {DocumentParseResult} from '../parseDocumentVariable';
 
 describe('<DocumentValueCell />', () => {
   it('should render a single document with filename and size', () => {

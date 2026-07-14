@@ -7,10 +7,7 @@
  */
 
 import type {DocumentReference} from '@camunda/camunda-api-zod-schemas/8.10';
-import {
-  parseDocumentVariable,
-  toHumanReadableBytes,
-} from './parseDocumentVariable';
+import {parseDocumentVariable} from './parseDocumentVariable';
 import * as clientConfig from 'modules/utils/getClientConfig';
 
 const makeDocRef = (
@@ -382,39 +379,5 @@ describe('parseDocumentVariable', () => {
     const result = parseDocumentVariable(value, false);
 
     expect(result).toBeNull();
-  });
-});
-
-describe('toHumanReadableBytes', () => {
-  it('should handle zero bytes', () => {
-    expect(toHumanReadableBytes(0)).toBe('0 B');
-  });
-
-  it('should handle invalid input', () => {
-    expect(toHumanReadableBytes(NaN)).toBe('N/A');
-    expect(toHumanReadableBytes(Infinity)).toBe('N/A');
-  });
-
-  it('should format bytes correctly', () => {
-    expect(toHumanReadableBytes(1024)).toBe('1 KiB');
-    expect(toHumanReadableBytes(1024 * 1024)).toBe('1 MiB');
-    expect(toHumanReadableBytes(1024 * 1024 * 1024)).toBe('1 GiB');
-  });
-
-  it('should format decimals correctly', () => {
-    expect(toHumanReadableBytes(1536)).toBe('1.5 KiB');
-    expect(toHumanReadableBytes(2560)).toBe('2.5 KiB');
-    expect(toHumanReadableBytes(1536 * 1024)).toBe('1.5 MiB');
-    expect(toHumanReadableBytes(1280)).toBe('1.25 KiB');
-  });
-
-  it('should handle small values', () => {
-    expect(toHumanReadableBytes(1)).toBe('1 B');
-    expect(toHumanReadableBytes(512)).toBe('512 B');
-  });
-
-  it('should cap large values at GiB', () => {
-    const largeValue = Math.pow(1024, 4);
-    expect(toHumanReadableBytes(largeValue)).toBe('1024 GiB');
   });
 });

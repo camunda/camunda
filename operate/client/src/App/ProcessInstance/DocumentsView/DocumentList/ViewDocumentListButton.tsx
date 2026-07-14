@@ -9,7 +9,7 @@
 import {Button} from '@carbon/react';
 import {View} from '@carbon/react/icons';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
-import type {DocumentInfo} from '../DocumentValueCell/parseDocumentVariable';
+import type {DocumentInfo} from '../documentInfo';
 import {DocumentListModal} from './DocumentListModal';
 
 type Props = {

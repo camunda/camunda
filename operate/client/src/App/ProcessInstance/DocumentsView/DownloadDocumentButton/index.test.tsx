@@ -8,7 +8,7 @@
 
 import {render, screen} from 'modules/testing-library';
 import {DownloadDocumentButton} from '.';
-import type {DocumentInfo} from '../DocumentValueCell/parseDocumentVariable';
+import type {DocumentInfo} from '../documentInfo';
 import {tracking} from 'modules/tracking';
 
 const pdfDocument: DocumentInfo = {

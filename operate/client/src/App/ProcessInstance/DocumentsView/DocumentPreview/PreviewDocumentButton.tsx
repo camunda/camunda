@@ -9,7 +9,7 @@
 import {Button, Tooltip} from '@carbon/react';
 import {View} from '@carbon/react/icons';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
-import type {DocumentInfo} from '../DocumentValueCell/parseDocumentVariable';
+import type {DocumentInfo} from '../documentInfo';
 import {DocumentPreviewModal} from './DocumentPreviewModal';
 import {TooltipTrigger} from './styled';
 import {tracking} from 'modules/tracking';

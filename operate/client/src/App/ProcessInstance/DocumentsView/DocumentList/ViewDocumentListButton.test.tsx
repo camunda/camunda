@@ -12,7 +12,7 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockGetVariable} from 'modules/mocks/api/v2/variables/getVariable';
 import {createVariable} from 'modules/testUtils';
 import {ViewDocumentListButton} from './ViewDocumentListButton';
-import type {DocumentInfo} from '../DocumentValueCell/parseDocumentVariable';
+import type {DocumentInfo} from '../documentInfo';
 import type {DocumentReference} from '@camunda/camunda-api-zod-schemas/8.10';
 
 const VARIABLE_KEY = 'variable-key-123';

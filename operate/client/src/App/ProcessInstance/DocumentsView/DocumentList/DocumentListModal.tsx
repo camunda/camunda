@@ -10,12 +10,10 @@ import {useMemo} from 'react';
 import {Modal, Tag} from '@carbon/react';
 import type {StateProps} from 'modules/components/ModalStateManager';
 import {useVariable} from 'modules/queries/variables/useVariable';
-import {
-  parseDocumentVariable,
-  toHumanReadableBytes,
-  type DocumentInfo,
-} from '../DocumentValueCell/parseDocumentVariable';
-import {middleTruncate} from '../DocumentValueCell/middleTruncate';
+import {parseDocumentVariable} from 'App/ProcessInstance/BottomPanelTabs/VariablesTab/Variables/parseDocumentVariable';
+import type {DocumentInfo} from '../documentInfo';
+import {toHumanReadableBytes} from '../humanReadableBytes';
+import {middleTruncate} from '../middleTruncate';
 import {PreviewDocumentButton} from '../DocumentPreview/PreviewDocumentButton';
 import {DownloadDocumentButton} from '../DownloadDocumentButton';
 import {
