@@ -10,10 +10,7 @@ package io.camunda.exporter.tasks.archiver;
 import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
 
-@TestInstance(Lifecycle.PER_CLASS)
 public class BatchOperationArchiverJobIT extends ArchiverJobIT<BatchOperationArchiverJob> {
 
   @Override
