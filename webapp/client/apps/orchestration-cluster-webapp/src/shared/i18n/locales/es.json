@@ -492,6 +492,14 @@
 					"ids": "La clave debe ser un número de 16 a 19 dígitos, separado por un espacio o una coma",
 					"parentInstanceId": "La clave debe ser un número de 16 a 19 dígitos",
 					"batchOperationKey": "La clave debe ser un número de 16 a 19 dígitos o un UUID"
+				},
+				"tenantField": {
+					"selectTenant": "Seleccionar un Arrendatario",
+					"tenant": "Arrendatario",
+					"allTenants": "Todos los arrendatarios"
+				},
+				"optionalFiltersMenu": {
+					"moreFilters": "Más filtros"
 				}
 			}
 		}
