@@ -30,6 +30,13 @@ public class TestApiController {
   public static final String DUMMY_UNHANDLED_ENDPOINT = "/non-existent-endpoint";
 
   /**
+   * Cluster-admin dummy endpoint at the real {@code /cluster/v2/topology} path, so the
+   * cluster-admin chain is exercised here (its real controller is in another module, off this
+   * slice's classpath).
+   */
+  public static final String DUMMY_CLUSTER_ADMIN_ENDPOINT = "/cluster/v2/topology";
+
+  /**
    * Isolated, additive endpoint used only by {@code SessionAuthenticationRefreshTest} to force a
    * real, Spring-Session-backed session to exist before the request under test runs. With CSL
    * ADR-0031's per-chain {@code SessionRepositoryFilter}, nothing creates a session for a request
@@ -122,6 +129,16 @@ public class TestApiController {
 
   @PostMapping(DUMMY_V2_API_ENDPOINT)
   public @ResponseBody String dummyV2ApiPostEndpoint() {
+    return DEFAULT_RESPONSE;
+  }
+
+  @RequestMapping(DUMMY_CLUSTER_ADMIN_ENDPOINT)
+  public @ResponseBody String dummyClusterAdminEndpoint() {
+    return DEFAULT_RESPONSE;
+  }
+
+  @PostMapping(DUMMY_CLUSTER_ADMIN_ENDPOINT)
+  public @ResponseBody String dummyClusterAdminPostEndpoint() {
     return DEFAULT_RESPONSE;
   }
 }
