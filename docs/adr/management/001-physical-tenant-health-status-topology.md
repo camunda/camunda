@@ -2,7 +2,12 @@
 
 **DRI**: Lena Schönburg
 
-**Status**: Draft (8.10)
+**Status**: Accepted (8.10)
+
+**Deciders**
+- Lena Schönburg
+- Deepthi Akkoorath
+- Houssain Barouni
 
 **Purpose**: Define what health, readiness, and liveness mean when one orchestration cluster hosts multiple physical tenants, specify the new cluster-wide `/cluster/v2/status` and `/cluster/v2/topology` endpoints, and derive the code-level consequences (probe groups, schema initialization, gateway health indicators).
 

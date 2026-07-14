@@ -2,7 +2,12 @@
 
 **DRI**: Lena Schönburg
 
-**Status**: Draft (8.10)
+**Status**: Accepted (8.10)
+
+**Deciders**
+- Lena Schönburg
+- Deepthi Akkoorath
+- Houssain Barouni
 
 **Purpose**: The authoritative list of management endpoints in 8.10.
 
