@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assumptions.assumeThat;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.JobWorkerElementBuilder;
 import io.camunda.zeebe.engine.util.JobWorkerElementBuilderProvider;
@@ -19,6 +20,9 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.ZeebeJobWorkerElementBuilder;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -199,6 +203,118 @@ public class JobWorkerElementIncidentTest {
             .resolve();
 
     // then
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(TASK_ELEMENT_ID)
+                .exists())
+        .isTrue();
+
+    assertThat(incidentResolved.getKey()).isEqualTo(incidentCreated.getKey());
+  }
+
+  @Test
+  public void shouldRejectDeploymentIfStaticJobTypeExceedsMaxLength() {
+    // given - a static job type literal longer than the configured max length
+    final var tooLongJobType = "a".repeat(EngineConfiguration.DEFAULT_MAX_WORKER_TYPE_LENGTH + 1);
+
+    // when
+    final var rejectedDeployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(process(t -> t.zeebeJobType(tooLongJobType)))
+            .expectRejection()
+            .deploy();
+
+    // then - the deployment is rejected instead of allowing an over-long job type
+    Assertions.assertThat(rejectedDeployment)
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeployment.getRejectionReason())
+        .contains(
+            "Worker types must not be longer than the configured max-worker-type-length of %s characters"
+                .formatted(EngineConfiguration.DEFAULT_MAX_WORKER_TYPE_LENGTH));
+  }
+
+  @Test
+  public void shouldCreateIncidentIfJobTypeExpressionResultExceedsMaxLength() {
+    // given - a FEEL expression producing a string longer than the configured max length
+    final var tooLongResultExpression =
+        "string join(for i in 1.."
+            + (EngineConfiguration.DEFAULT_MAX_WORKER_TYPE_LENGTH + 1)
+            + " return \"a\")";
+    ENGINE
+        .deployment()
+        .withXmlResource(process(t -> t.zeebeJobTypeExpression(tooLongResultExpression)))
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var recordThatLeadsToIncident =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(elementBuilder.getElementType())
+            .getFirst();
+
+    // then - a resolvable incident is raised instead of an oversized job record
+    final var incidentCreated =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(incidentCreated.getValue())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            String.format(
+                "Expected result of the expression '%s' to be a string with a maximum length of %d, but was a string with a length of %d.",
+                tooLongResultExpression,
+                EngineConfiguration.DEFAULT_MAX_WORKER_TYPE_LENGTH,
+                EngineConfiguration.DEFAULT_MAX_WORKER_TYPE_LENGTH + 1))
+        .hasElementId(TASK_ELEMENT_ID)
+        .hasElementInstanceKey(recordThatLeadsToIncident.getKey())
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+        .hasJobKey(-1L)
+        .hasVariableScopeKey(recordThatLeadsToIncident.getKey());
+  }
+
+  @Test
+  public void shouldResolveIncidentAfterJobTypeExpressionResultExceededMaxLength() {
+    // given - a job type variable that resolves to a value longer than the maximum
+    ENGINE
+        .deployment()
+        .withXmlResource(process(t -> t.zeebeJobTypeExpression("jobTypeVar")))
+        .deploy();
+
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(
+                "jobTypeVar", "a".repeat(EngineConfiguration.DEFAULT_MAX_WORKER_TYPE_LENGTH + 1))
+            .create();
+
+    final var incidentCreated =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when - the variable is corrected to a valid value and the incident is resolved
+    ENGINE
+        .variables()
+        .ofScope(incidentCreated.getValue().getElementInstanceKey())
+        .withDocument(Maps.of(entry("jobTypeVar", "test")))
+        .update();
+
+    final var incidentResolved =
+        ENGINE
+            .incident()
+            .ofInstance(processInstanceKey)
+            .withKey(incidentCreated.getKey())
+            .resolve();
+
+    // then - the job is created with the now-valid job type
     assertThat(
             RecordingExporter.jobRecords(JobIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
