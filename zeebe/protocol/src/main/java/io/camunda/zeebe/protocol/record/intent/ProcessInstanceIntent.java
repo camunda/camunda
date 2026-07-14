@@ -67,9 +67,15 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
    *
    * <p>This event is not applied to the state, but is used for auditing reasons.
    */
-  CANCELING((short) 16);
+  CANCELING((short) 16),
 
-  private static final Set<ProcessInstanceIntent> PROCESS_INSTANCE_COMMANDS = EnumSet.of(CANCEL);
+  SUSPEND((short) 17, false),
+  SUSPENDED((short) 18),
+  RESUME((short) 19, false),
+  RESUMED((short) 20);
+
+  private static final Set<ProcessInstanceIntent> PROCESS_INSTANCE_COMMANDS =
+      EnumSet.of(CANCEL, SUSPEND, RESUME);
   private static final Set<ProcessInstanceIntent> BPMN_ELEMENT_COMMANDS =
       EnumSet.of(
           ACTIVATE_ELEMENT,
@@ -130,6 +136,14 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
         return SEQUENCE_FLOW_DELETED;
       case 16:
         return CANCELING;
+      case 17:
+        return SUSPEND;
+      case 18:
+        return SUSPENDED;
+      case 19:
+        return RESUME;
+      case 20:
+        return RESUMED;
       default:
         return Intent.UNKNOWN;
     }
@@ -154,6 +168,8 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
       case ANCESTOR_MIGRATED:
       case SEQUENCE_FLOW_DELETED:
       case CANCELING:
+      case SUSPENDED:
+      case RESUMED:
         return true;
       default:
         return false;
