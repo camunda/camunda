@@ -56,23 +56,16 @@ jobs:
           BRANCH: ${{ github.head_ref }}
         run: |
           set -euo pipefail
-          for attempt in 1 2 3; do
-            git fetch origin "$BRANCH"
-            git reset --hard "origin/$BRANCH"
-            make -C load-tests/setup/test update-golden
-            git add load-tests/setup/test/golden/
-            if git diff --cached --quiet; then
-              echo "No golden file changes to commit."
-              exit 0
-            fi
-            git commit -m "test: update golden files"
-            if git push origin HEAD:"$BRANCH"; then
-              exit 0
-            fi
-            echo "Push rejected (attempt $attempt/3) — retrying with a fresh sync."
-          done
-          echo "::error::Failed to push golden file updates after 3 attempts."
-          exit 1
+          git fetch origin "$BRANCH"
+          git reset --hard "origin/$BRANCH"
+          make -C load-tests/setup/test update-golden
+          git add load-tests/setup/test/golden/
+          if git diff --cached --quiet; then
+            echo "No golden file changes to commit."
+            exit 0
+          fi
+          git commit -m "test: update golden files"
+          git push origin HEAD:"$BRANCH"
 
       - name: Observe build status
         if: always()
