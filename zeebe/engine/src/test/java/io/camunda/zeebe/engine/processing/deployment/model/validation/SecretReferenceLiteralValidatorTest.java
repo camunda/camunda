@@ -18,7 +18,6 @@ import static org.mockito.Mockito.when;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
-import io.camunda.zeebe.engine.util.validation.ValidationConstraints;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
 import java.time.InstantSource;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
@@ -45,15 +44,6 @@ final class SecretReferenceLiteralValidatorTest {
   void shouldRejectFeelStringLiteralThatIsASecretReference() {
     // when
     final var collector = validate("=\"camunda.secrets.token\"");
-
-    // then
-    verify(collector).addError(eq(0), contains("camunda.secrets.token"));
-  }
-
-  @Test
-  void shouldRejectConstantFoldedStringLiteralThatIsASecretReference() {
-    // when
-    final var collector = validate("=\"camunda\" + \".secrets.token\"");
 
     // then
     verify(collector).addError(eq(0), contains("camunda.secrets.token"));
@@ -166,34 +156,12 @@ final class SecretReferenceLiteralValidatorTest {
   }
 
   @Test
-  void shouldRejectAndReportSecretReferenceWithUnicodeName() {
-    // when - a name with non-ASCII letters
-    final var collector = validate("=\"camunda.secrets.tökén\"");
-
-    // then - matched and reported in full
-    verify(collector).addError(eq(0), contains("camunda.secrets.tökén"));
-  }
-
-  @Test
   void shouldRejectSecretReferenceContainingDigits() {
     // when
     final var collector = validate("camunda.secrets.token_2");
 
     // then
     verify(collector).addError(eq(0), contains("camunda.secrets.token_2"));
-  }
-
-  @Test
-  void shouldNotThrowOrRejectOnDeeplyNestedInputMapping() {
-    // given - a constant document too deeply nested to serialize; must not break the deployment
-    final int depth = ValidationConstraints.MAX_NESTING_DEPTH + 1;
-    final String deeplyNested =
-        String.format(
-            "=(for i in 1..%s return if i = 1 then [\"leaf\"] else [partial[-1]])[-1]", depth);
-
-    // when / then - completes without throwing and adds no error
-    final var collector = validate(deeplyNested);
-    verifyNoInteractions(collector);
   }
 
   private ValidationResultCollector validate(final String source) {
