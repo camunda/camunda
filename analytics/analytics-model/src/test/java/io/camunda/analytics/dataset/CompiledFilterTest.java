@@ -5,11 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.analytics.aggregation;
+package io.camunda.analytics.dataset;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.analytics.dataset.FilterPredicate;
 import io.camunda.analytics.fact.Fact;
 import io.camunda.analytics.fact.FactType;
 import java.util.List;

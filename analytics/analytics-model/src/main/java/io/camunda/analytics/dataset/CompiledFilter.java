@@ -5,11 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.analytics.aggregation;
+package io.camunda.analytics.dataset;
 
-import io.camunda.analytics.dataset.FilterPredicate;
+import io.camunda.analytics.dimension.FactRow;
 import io.camunda.analytics.dimension.Utf8View;
-import io.camunda.analytics.fact.Fact;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -42,7 +41,7 @@ import java.util.Set;
  *       rendering, since a non-canonical element can never equal one). Other types fall back to
  *       string membership of their canonical rendering.
  *   <li>{@code IS_NULL/NOT_NULL} — pure field-presence checks (absent and null coincide in a {@link
- *       Fact}).
+ *       io.camunda.analytics.fact.Fact}).
  * </ul>
  */
 public final class CompiledFilter {
@@ -135,7 +134,7 @@ public final class CompiledFilter {
   }
 
   /** Whether the fact satisfies this predicate (see {@link FilterPredicate} for the semantics). */
-  public boolean matches(final Fact fact) {
+  public boolean matches(final FactRow fact) {
     final Object value = fact.get(filter.field());
     return switch (operator) {
       case EQUALS -> value != null && valueEquals(value);
