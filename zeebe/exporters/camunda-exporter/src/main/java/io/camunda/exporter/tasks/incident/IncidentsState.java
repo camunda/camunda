@@ -25,7 +25,7 @@ public record IncidentsState(
     Map<String, List<String>> flowNodeInstanceInListViewIndices,
     Map<Long, String> processInstanceTreePaths,
     Map<String, String> incidentTreePaths,
-    Map<String, String> processInstanceIndices,
+    Map<String, List<String>> processInstanceIndices,
     Map<String, Set<String>> piIdsWithIncidentIds,
     Map<String, Set<String>> fniIdsWithIncidentIds) {
   public IncidentsState() {
@@ -69,6 +69,10 @@ public record IncidentsState(
 
   public boolean removeIncidentIdByFniId(final String fniId, final String incidentId) {
     return deleteIncidentIdByInstance(fniIdsWithIncidentIds, fniId, incidentId);
+  }
+
+  public void addProcessInstance(final String id, final String index) {
+    processInstanceIndices.computeIfAbsent(id, k -> new ArrayList<>()).add(index);
   }
 
   public void addFlowNodeInstanceInListView(final String id, final String index) {
