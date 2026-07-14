@@ -26,9 +26,10 @@ public interface CamundaClientClosingEvent {
   CamundaClient getClient();
 
   /**
-   * The configured name of the client in multi-client mode, or {@code null} in single-client mode.
+   * The configured name of the client; the per-client name in multi-client mode, or {@link
+   * CamundaClientCreatedEvent#DEFAULT_CLIENT_NAME} in single-client mode.
    */
   default String getClientName() {
-    return null;
+    return CamundaClientCreatedEvent.DEFAULT_CLIENT_NAME;
   }
 }

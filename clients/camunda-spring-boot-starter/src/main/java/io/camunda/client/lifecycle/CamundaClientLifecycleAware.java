@@ -23,20 +23,24 @@ public interface CamundaClientLifecycleAware {
   void onStop(CamundaClient client);
 
   /**
-   * Called when a client is started, carrying its configured name in multi-client mode.
+   * Called when a client is started, carrying its configured name.
    *
    * @param client the client that was started
-   * @param clientName the configured client name, or {@code null} in single-client mode
+   * @param clientName the per-client name in multi-client mode, or {@link
+   *     io.camunda.client.event.CamundaClientCreatedEvent#DEFAULT_CLIENT_NAME} in single-client
+   *     mode
    */
   default void onStart(final CamundaClient client, final String clientName) {
     onStart(client);
   }
 
   /**
-   * Called when a client is about to stop, carrying its configured name in multi-client mode.
+   * Called when a client is about to stop, carrying its configured name.
    *
    * @param client the client that is stopping
-   * @param clientName the configured client name, or {@code null} in single-client mode
+   * @param clientName the per-client name in multi-client mode, or {@link
+   *     io.camunda.client.event.CamundaClientCreatedEvent#DEFAULT_CLIENT_NAME} in single-client
+   *     mode
    */
   default void onStop(final CamundaClient client, final String clientName) {
     onStop(client);

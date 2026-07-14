@@ -38,7 +38,7 @@ public class CamundaClientCreatedSpringEvent extends ApplicationEvent
   private final String clientName;
 
   public CamundaClientCreatedSpringEvent(final Object source, final CamundaClient client) {
-    this(source, client, null);
+    this(source, client, DEFAULT_CLIENT_NAME);
   }
 
   public CamundaClientCreatedSpringEvent(

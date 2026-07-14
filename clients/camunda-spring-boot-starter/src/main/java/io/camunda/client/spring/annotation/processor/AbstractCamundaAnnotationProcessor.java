@@ -17,6 +17,7 @@ package io.camunda.client.spring.annotation.processor;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.bean.BeanInfo;
+import io.camunda.client.event.CamundaClientCreatedEvent;
 import io.camunda.client.lifecycle.CamundaClientLifecycleAware;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -74,7 +75,7 @@ public abstract class AbstractCamundaAnnotationProcessor
 
   @Override
   public void onStart(final CamundaClient client) {
-    onStart(client, null);
+    onStart(client, CamundaClientCreatedEvent.DEFAULT_CLIENT_NAME);
   }
 
   @Override
@@ -102,7 +103,7 @@ public abstract class AbstractCamundaAnnotationProcessor
 
   @Override
   public void onStop(final CamundaClient client) {
-    onStop(client, null);
+    onStop(client, CamundaClientCreatedEvent.DEFAULT_CLIENT_NAME);
   }
 
   @Override
