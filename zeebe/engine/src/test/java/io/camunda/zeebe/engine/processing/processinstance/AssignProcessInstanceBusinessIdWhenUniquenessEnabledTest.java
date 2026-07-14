@@ -60,6 +60,10 @@ public final class AssignProcessInstanceBusinessIdWhenUniquenessEnabledTest {
             .assign();
 
     // then
-    assertThat(rejection).hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            "Expected to assign a business id to process instance with key '%d', but business id assignment is not allowed while business id uniqueness is enabled"
+                .formatted(processInstanceKey));
   }
 }

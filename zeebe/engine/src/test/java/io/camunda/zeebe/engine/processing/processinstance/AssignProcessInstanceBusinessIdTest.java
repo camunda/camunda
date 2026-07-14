@@ -90,7 +90,11 @@ public final class AssignProcessInstanceBusinessIdTest {
             .assign();
 
     // then
-    assertThat(rejection).hasRejectionType(RejectionType.NOT_FOUND);
+    assertThat(rejection)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to assign a business id to process instance with key '%d', but no such process instance was found"
+                .formatted(unknownKey));
   }
 
   @Test
@@ -132,7 +136,11 @@ public final class AssignProcessInstanceBusinessIdTest {
             .assign();
 
     // then
-    assertThat(rejection).hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            "Expected to assign a business id to process instance with key '%d', but it is a child process instance; a business id can only be assigned to root process instances"
+                .formatted(childKey));
   }
 
   @Test
@@ -169,7 +177,11 @@ public final class AssignProcessInstanceBusinessIdTest {
             .assign();
 
     // then
-    assertThat(rejection).hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            "Expected to assign a business id to process instance with key '%d', but it is not active; a business id can only be assigned to active process instances"
+                .formatted(processInstanceKey));
   }
 
   @Test
@@ -189,7 +201,11 @@ public final class AssignProcessInstanceBusinessIdTest {
             .assign();
 
     // then
-    assertThat(rejection).hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Expected to assign a business id to process instance with key '%d', but the provided business id is empty"
+                .formatted(processInstanceKey));
   }
 
   @Test
@@ -211,7 +227,11 @@ public final class AssignProcessInstanceBusinessIdTest {
             .assign();
 
     // then
-    assertThat(rejection).hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            "Expected to assign a business id to process instance with key '%d', but the business id exceeds the max length of %d"
+                .formatted(processInstanceKey, BusinessIdValidator.MAX_BUSINESS_ID_LENGTH));
   }
 
   @Test
@@ -238,7 +258,11 @@ public final class AssignProcessInstanceBusinessIdTest {
             .assign();
 
     // then
-    assertThat(rejection).hasRejectionType(RejectionType.INVALID_STATE);
+    assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            "Expected to assign a business id to process instance with key '%d', but it already has a business id assigned"
+                .formatted(processInstanceKey));
   }
 
   @Test
