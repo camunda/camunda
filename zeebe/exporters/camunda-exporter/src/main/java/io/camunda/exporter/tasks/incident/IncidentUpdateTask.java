@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -154,11 +153,11 @@ public final class IncidentUpdateTask implements BackgroundTask {
     }
 
     state
-        .incidents()
+        .getIncidentDocuments()
         .forEach(
-            (key, incidentDocument) -> {
+            (incidentDocument) -> {
               if (incidentDocument.incident().getTreePath() == null) {
-                final var treePath = state.incidentTreePaths().get(key);
+                final var treePath = state.incidentTreePaths().get(incidentDocument.id());
                 incidentDocument.incident().setTreePath(treePath);
               }
             });
@@ -183,22 +182,20 @@ public final class IncidentUpdateTask implements BackgroundTask {
   }
 
   private InstancesCheck searchForInstances(final IncidentsState state) {
-    final var incidents = state.incidents().values();
-
-    queryData(incidents, state);
-    if (checkDataAndCollectParentTreePaths(incidents, state, false) != InstancesCheck.OK) {
+    queryData(state);
+    if (checkDataAndCollectParentTreePaths(state, false) != InstancesCheck.OK) {
       // if it failed once we want to give it a chance and to import more data
       // next failure will fail in case ignoring of missing data is not configured
       uncheckedThreadSleep();
-      queryData(incidents, state);
-      final var check = checkDataAndCollectParentTreePaths(incidents, state, ignoreMissingData);
+      queryData(state);
+      final var check = checkDataAndCollectParentTreePaths(state, ignoreMissingData);
       if (check != InstancesCheck.OK) {
         return check;
       }
     }
 
     final var flowNodeKeys =
-        incidents.stream()
+        state.getIncidentDocuments().stream()
             .map(IncidentDocument::incident)
             .map(IncidentEntity::getFlowNodeInstanceKey)
             .map(String::valueOf)
@@ -213,12 +210,10 @@ public final class IncidentUpdateTask implements BackgroundTask {
   }
 
   private InstancesCheck checkDataAndCollectParentTreePaths(
-      final Collection<IncidentDocument> incidents,
-      final IncidentsState state,
-      final boolean forceIgnoreMissingData) {
-
+      final IncidentsState state, final boolean forceIgnoreMissingData) {
+    final var incidentDocuments = state.getIncidentDocuments();
     final Set<Long> processInstanceKeys =
-        incidents.stream()
+        incidentDocuments.stream()
             .map(IncidentDocument::incident)
             .map(IncidentEntity::getProcessInstanceKey)
             .collect(Collectors.toSet());
@@ -226,8 +221,8 @@ public final class IncidentUpdateTask implements BackgroundTask {
     final Set<Long> deletedProcessInstances =
         repository.deletedProcessInstances(processInstanceKeys).toCompletableFuture().join();
 
-    for (final Iterator<IncidentDocument> iterator = incidents.iterator(); iterator.hasNext(); ) {
-      final IncidentEntity incident = iterator.next().incident();
+    for (final var incidentDocument : incidentDocuments) {
+      final IncidentEntity incident = incidentDocument.incident();
       String piTreePath = state.processInstanceTreePaths().get(incident.getProcessInstanceKey());
       if (piTreePath == null || piTreePath.isEmpty()) {
         if (deletedProcessInstances.contains(incident.getProcessInstanceKey())) {
@@ -238,8 +233,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
               incident.getProcessInstanceKey(),
               incident.getId());
 
-          // Concurrent modify operation: the underlying map is concurrent
-          iterator.remove();
+          state.skipIncident(incidentDocument);
           continue;
         }
         if (!forceIgnoreMissingData) {
@@ -279,7 +273,8 @@ public final class IncidentUpdateTask implements BackgroundTask {
     return InstancesCheck.OK;
   }
 
-  private void queryData(final Collection<IncidentDocument> incidents, final IncidentsState state) {
+  private void queryData(final IncidentsState state) {
+    final var incidents = state.getIncidentDocuments();
     final var processInstanceIds =
         incidents.stream()
             .map(IncidentDocument::incident)
@@ -331,20 +326,21 @@ public final class IncidentUpdateTask implements BackgroundTask {
             ignored ->
                 // processIncident one at a time, stopping if an error is raised
                 FuturesUtil.traverseIgnoring(
-                    state.incidents().values(),
+                    state.getIncidentDocuments(),
                     incident -> processIncidentInBatch(state, incident, batch, bulkUpdate),
                     executor),
             executor)
         .thenCompose(ignored -> repository.bulkUpdate(bulkUpdate))
         .thenCompose(
             updatedIds ->
-                notifyIncidents(updatedIds, bulkUpdate.incidentRequests(), state.incidents()))
+                notifyIncidents(
+                    updatedIds, bulkUpdate.incidentRequests(), state.getIncidentDocuments()))
         .join();
   }
 
   private void seedResolvedIncidentsAsActive(
       final IncidentsState state, final IncidentUpdateRepository.PendingIncidentUpdateBatch batch) {
-    for (final var incident : state.incidents().values()) {
+    for (final var incident : state.getIncidentDocuments()) {
       final var newState = batch.newIncidentStates().get(incident.incident().getKey());
       if (newState != IncidentState.RESOLVED) {
         continue;
@@ -615,13 +611,17 @@ public final class IncidentUpdateTask implements BackgroundTask {
   private CompletableFuture<Integer> notifyIncidents(
       final List<String> updatedIds,
       final Map<String, DocumentUpdate> incidentUpdates,
-      final Map<String, IncidentDocument> incidents) {
+      final Collection<IncidentDocument> incidentDocuments) {
+    final var incidentsById =
+        incidentDocuments.stream()
+            .map(IncidentDocument::incident)
+            .collect(Collectors.groupingBy(IncidentEntity::getId));
     final var incidentsToNotify =
         updatedIds.stream()
             .filter(incidentUpdates::containsKey)
             .filter(id -> shouldNotifyAboutUpdate(incidentUpdates.get(id)))
-            .map(incidents::get)
-            .map(IncidentDocument::incident)
+            .map(incidentsById::get)
+            .map(List::getFirst)
             .toList();
     if (incidentsToNotify.isEmpty()) {
       return CompletableFuture.completedFuture(updatedIds.size());
@@ -707,7 +707,9 @@ public final class IncidentUpdateTask implements BackgroundTask {
         pendingIncidentsBatch.newIncidentStates().keySet().stream().map(String::valueOf).toList();
     final Map<String, IncidentDocument> incidents =
         repository.getIncidentDocuments(incidentIds).toCompletableFuture().join();
-    state.incidents().putAll(incidents);
+    for (final var incident : incidents.values()) {
+      state.addIncidentDocument(incident);
+    }
 
     if (pendingIncidentsBatch.newIncidentStates().size() > incidents.size()) {
       final var absentIncidents = new HashSet<>(pendingIncidentsBatch.newIncidentStates().keySet());
