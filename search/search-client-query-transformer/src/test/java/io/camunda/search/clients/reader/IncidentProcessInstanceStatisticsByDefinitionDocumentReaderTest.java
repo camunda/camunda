@@ -67,7 +67,8 @@ class IncidentProcessInstanceStatisticsByDefinitionDocumentReaderTest {
             1,
             null,
             "tenant1",
-            null);
+            null,
+            false);
 
     when(executor.search(
             any(ProcessDefinitionQuery.class),

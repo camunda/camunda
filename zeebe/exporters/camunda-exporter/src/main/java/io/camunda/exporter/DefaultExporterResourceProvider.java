@@ -54,6 +54,7 @@ import io.camunda.exporter.handlers.MessageSubscriptionFromMessageStartEventSubs
 import io.camunda.exporter.handlers.MessageSubscriptionFromProcessMessageSubscriptionHandler;
 import io.camunda.exporter.handlers.MigratedVariableHandler;
 import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
+import io.camunda.exporter.handlers.ProcessDeletedHandler;
 import io.camunda.exporter.handlers.ProcessHandler;
 import io.camunda.exporter.handlers.ResourceCreatedHandler;
 import io.camunda.exporter.handlers.ResourceDeletedHandler;
@@ -295,6 +296,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(ProcessIndex.class).getFullQualifiedName(),
                 processCache,
                 configuration.getExtensionProperties()),
+            new ProcessDeletedHandler(
+                indexDescriptors.get(ProcessIndex.class).getFullQualifiedName()),
             new EmbeddedFormHandler(indexDescriptors.get(FormIndex.class).getFullQualifiedName()),
             new FormHandler(
                 indexDescriptors.get(FormIndex.class).getFullQualifiedName(), formCache),
@@ -446,6 +449,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName(),
             ErrorHandlers.IGNORE_DOCUMENT_DOES_NOT_EXIST,
             indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
+            ErrorHandlers.IGNORE_DOCUMENT_DOES_NOT_EXIST,
+            indexDescriptors.get(ProcessIndex.class).getFullQualifiedName(),
             ErrorHandlers.IGNORE_DOCUMENT_DOES_NOT_EXIST);
   }
 

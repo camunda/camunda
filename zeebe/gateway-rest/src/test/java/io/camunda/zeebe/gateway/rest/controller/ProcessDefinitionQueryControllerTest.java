@@ -77,7 +77,8 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
           5,
           "alpha",
           "<default>",
-          "formId");
+          "formId",
+          false);
   static final String PROCESS_DEFINITION_ENTITY_JSON =
       """
       {
@@ -88,7 +89,8 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
           "version": 5,
           "versionTag": "alpha",
           "tenantId": "<default>",
-          "hasStartForm": true
+          "hasStartForm": true,
+          "isDeleted": false
       }""";
   static final String EXPECTED_SEARCH_RESPONSE =
       """
@@ -102,7 +104,8 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
                   "version": 5,
                   "versionTag": "alpha",
                   "tenantId": "<default>",
-                  "hasStartForm": true
+                  "hasStartForm": true,
+                  "isDeleted": false
               }
           ],
           "page": {
@@ -126,7 +129,8 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
                       5,
                       "alpha",
                       "<default>",
-                      "formId")))
+                      "formId",
+                      false)))
           .startCursor("f")
           .endCursor("v")
           .build();

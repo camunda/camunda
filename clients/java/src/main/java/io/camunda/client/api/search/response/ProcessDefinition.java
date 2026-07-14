@@ -56,4 +56,10 @@ public interface ProcessDefinition {
    * @return whether the start event of the process has an associated form key
    */
   Boolean getHasStartForm();
+
+  /**
+   * @return whether the process definition has been deleted from the engine but is still retained
+   *     in secondary storage
+   */
+  Boolean isDeleted();
 }

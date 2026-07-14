@@ -27,6 +27,7 @@ public class ProcessDefinitionBuilder implements ProcessDefinition {
   private String processDefinitionId;
   private String tenantId;
   private Boolean hasStartForm;
+  private Boolean isDeleted;
 
   @Override
   public long getProcessDefinitionKey() {
@@ -105,6 +106,16 @@ public class ProcessDefinitionBuilder implements ProcessDefinition {
 
   public ProcessDefinitionBuilder setHasStartForm(final Boolean hasStartForm) {
     this.hasStartForm = hasStartForm;
+    return this;
+  }
+
+  @Override
+  public Boolean isDeleted() {
+    return isDeleted;
+  }
+
+  public ProcessDefinitionBuilder setIsDeleted(final boolean isDeleted) {
+    this.isDeleted = isDeleted;
     return this;
   }
 

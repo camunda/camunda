@@ -37,7 +37,8 @@ class ProcessDefinitionWriterTest {
             "1.0",
             1,
             "<bpmn>...</bpmn>",
-            "form1");
+            "form1",
+            false);
 
     writer.create(model);
 
@@ -50,5 +51,22 @@ class ProcessDefinitionWriterTest {
                     model.processDefinitionKey(),
                     "io.camunda.db.rdbms.sql.ProcessDefinitionMapper.insert",
                     model)));
+  }
+
+  @Test
+  void shouldMarkProcessDefinitionDeleted() {
+    final Long processDefinitionKey = 123L;
+
+    writer.markDeleted(processDefinitionKey);
+
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.PROCESS_DEFINITION,
+                    WriteStatementType.UPDATE,
+                    processDefinitionKey,
+                    "io.camunda.db.rdbms.sql.ProcessDefinitionMapper.markDeleted",
+                    processDefinitionKey)));
   }
 }

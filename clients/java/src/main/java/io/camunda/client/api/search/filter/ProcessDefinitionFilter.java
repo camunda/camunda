@@ -108,4 +108,14 @@ public interface ProcessDefinitionFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   ProcessDefinitionFilter hasStartForm(final boolean hasStartForm);
+
+  /**
+   * Filters process definitions by whether they have been deleted from the engine but are still
+   * retained in secondary storage. When not set, both deleted and non-deleted definitions are
+   * returned.
+   *
+   * @param isDeleted {@code true} to return only deleted definitions, {@code false} to exclude them
+   * @return the updated filter
+   */
+  ProcessDefinitionFilter isDeleted(final boolean isDeleted);
 }

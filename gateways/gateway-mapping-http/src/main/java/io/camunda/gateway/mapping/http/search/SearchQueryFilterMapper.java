@@ -606,6 +606,7 @@ public class SearchQueryFilterMapper {
           .ifPresent(builder::processDefinitionIdOperations);
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
       ofNullable(filter.getHasStartForm()).ifPresent(builder::hasStartForm);
+      ofNullable(filter.getIsDeleted()).ifPresent(builder::isDeleted);
     }
     return validationErrors.isEmpty()
         ? Either.right(builder.build())
