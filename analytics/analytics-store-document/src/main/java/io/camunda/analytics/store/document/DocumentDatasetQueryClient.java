@@ -22,6 +22,7 @@ import io.camunda.analytics.serving.spi.AggregatedRow;
 import io.camunda.analytics.serving.spi.Cell;
 import io.camunda.analytics.serving.spi.DatasetFetch;
 import io.camunda.analytics.serving.spi.DatasetQueryClient;
+import io.camunda.analytics.serving.spi.SnapshotPoint;
 import io.camunda.analytics.serving.spi.TableFetch;
 import io.camunda.analytics.serving.spi.TableRow;
 import io.camunda.search.clients.DocumentBasedSearchClient;
@@ -39,6 +40,7 @@ import io.camunda.search.sort.SortOptionsBuilders;
 import io.camunda.search.sort.SortOrder;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -231,6 +233,122 @@ public final class DocumentDatasetQueryClient implements DatasetQueryClient {
   }
 
   @Override
+  public List<SnapshotPoint> snapshotBaseline(final CompiledDataset dataset, final long atMs) {
+    final List<DimensionColumn> grain = dataset.grain().columns();
+    final String index = DocumentCubeNames.snapshotIndex(dataset.cubeId());
+    final SearchQuery query = SearchQueryBuilders.lte(DocumentCubeNames.SAMPLE_TIME, atMs);
+
+    if (grain.isEmpty()) {
+      // One global key: its baseline is simply the newest row at-or-before the time.
+      final SearchQueryResponse<Map> response =
+          searchClient.search(
+              RequestBuilders.searchRequest(
+                  r ->
+                      r.index(index)
+                          .query(query)
+                          .size(1)
+                          .sort(
+                              List.of(
+                                  SortOptionsBuilders.sortOptions(
+                                      DocumentCubeNames.SAMPLE_TIME, SortOrder.DESC)))),
+              Map.class);
+      final List<SnapshotPoint> points = new ArrayList<>(1);
+      for (final var hit : response.hits()) {
+        final Map<String, Object> source = source(hit.source());
+        if (source != null) {
+          points.add(toSnapshotPoint(dataset, source));
+        }
+      }
+      return points;
+    }
+
+    // Per key, the newest sample_time <= atMs — O(keys), never O(history): a paged composite over
+    // the grain (missing_bucket, so null-dimension keys survive) with a max(sample_time)
+    // sub-aggregation, then one bounded id-lookup per page for the actual rows (the snapshot doc
+    // id is deterministic over key + boundary, so the winning rows are addressable directly).
+    final List<SearchAggregator> subAggs =
+        List.of(
+            SearchAggregatorBuilders.max(
+                subAggName(DocumentCubeNames.SAMPLE_TIME), DocumentCubeNames.SAMPLE_TIME));
+    final List<SearchAggregator> sources = new ArrayList<>(grain.size());
+    for (final DimensionColumn column : grain) {
+      final String field = DocumentCubeNames.field(column.name());
+      sources.add(SearchAggregatorBuilders.terms(field, field, true));
+    }
+
+    final List<SnapshotPoint> points = new ArrayList<>();
+    String after = null;
+    while (true) {
+      final String cursor = after;
+      final SearchCompositeAggregator composite =
+          SearchAggregatorBuilders.composite()
+              .name(COMPOSITE_NAME)
+              .size(PAGE_SIZE)
+              .sources(sources)
+              .aggregations(subAggs)
+              .after(cursor)
+              .build();
+      final SearchQueryResponse<Map> response =
+          searchClient.search(
+              RequestBuilders.searchRequest(
+                  r -> r.index(index).query(query).size(0).aggregations(composite)),
+              Map.class);
+      final AggregationResult result =
+          response.aggregations() == null ? null : response.aggregations().get(COMPOSITE_NAME);
+      final Map<String, AggregationResult> buckets = result == null ? null : result.aggregations();
+      if (buckets == null || buckets.isEmpty()) {
+        break;
+      }
+      final List<String> docIds = new ArrayList<>(buckets.size());
+      for (final AggregationResult bucket : buckets.values()) {
+        final Map<String, Object> keyValues = bucket.keyValues();
+        final List<Object> values = new ArrayList<>(grain.size());
+        for (final DimensionColumn column : grain) {
+          values.add(column.type().coerce(keyValues.get(DocumentCubeNames.field(column.name()))));
+        }
+        final long newest = metricLong(bucket, subAggName(DocumentCubeNames.SAMPLE_TIME));
+        docIds.add(
+            DocumentCubeNames.snapshotDocId(DimensionKey.of(dataset.grain(), values), newest));
+      }
+      final SearchQueryResponse<Map> winners =
+          searchClient.search(
+              RequestBuilders.searchRequest(
+                  r -> r.index(index).query(SearchQueryBuilders.ids(docIds)).size(docIds.size())),
+              Map.class);
+      for (final var hit : winners.hits()) {
+        final Map<String, Object> source = source(hit.source());
+        if (source != null) {
+          points.add(toSnapshotPoint(dataset, source));
+        }
+      }
+      after = result.endCursor();
+      if (after == null) {
+        break;
+      }
+    }
+    return points;
+  }
+
+  @Override
+  public List<SnapshotPoint> snapshotRange(
+      final CompiledDataset dataset, final long fromMs, final long toMs) {
+    final String index = DocumentCubeNames.snapshotIndex(dataset.cubeId());
+    final SearchQuery query =
+        SearchQueryBuilders.and(
+            SearchQueryBuilders.gt(DocumentCubeNames.SAMPLE_TIME, fromMs),
+            SearchQueryBuilders.lte(DocumentCubeNames.SAMPLE_TIME, toMs));
+
+    final List<SnapshotPoint> points = new ArrayList<>();
+    forEachPage(index, query, source -> points.add(toSnapshotPoint(dataset, source)));
+    // Ordered by key then time (the contract shared with the RDBMS backend, whose ORDER BY does
+    // this in the store); nulls group first so a null-dimension key stays one contiguous run.
+    points.sort(
+        Comparator.comparing(SnapshotPoint::keyValues, DocumentDatasetQueryClient::compareKeys)
+            .thenComparingLong(SnapshotPoint::sampleTime));
+    return points;
+  }
+
+  @Override
   @SuppressWarnings("unchecked")
   public List<TableRow> fetchRows(final TableFetch fetch) {
     final CompiledTable table = fetch.table();
@@ -339,6 +457,28 @@ public final class DocumentDatasetQueryClient implements DatasetQueryClient {
     return new Cell(DimensionKey.of(dataset.grain(), values), windowStart, accumulators);
   }
 
+  /** One snapshot row from one document (ADR 0010): key values, boundary, recomposed measures. */
+  private static SnapshotPoint toSnapshotPoint(
+      final CompiledDataset dataset, final Map<String, Object> source) {
+    final List<DimensionColumn> grain = dataset.grain().columns();
+    final List<Object> keyValues = new ArrayList<>(grain.size());
+    for (final DimensionColumn column : grain) {
+      keyValues.add(column.type().coerce(source.get(DocumentCubeNames.field(column.name()))));
+    }
+    final long sampleTime = longField(source, DocumentCubeNames.SAMPLE_TIME);
+    final Map<String, Object> measures = new LinkedHashMap<>();
+    for (final CompiledMeter meter : dataset.meters()) {
+      final PushdownSpec<?, ?> spec = meter.pushdown().orElseThrow();
+      final List<Object> columns = new ArrayList<>(spec.columns().size());
+      for (final PushdownColumn column : spec.columns()) {
+        columns.add(
+            source.get(DocumentCubeNames.pushdownField(meter.meterName(), column.suffix())));
+      }
+      measures.put(meter.meterName(), recompose(spec, columns));
+    }
+    return new SnapshotPoint(keyValues, sampleTime, measures);
+  }
+
   /** search_after pages over the unique doc key, feeding each hit's source to the consumer. */
   @SuppressWarnings("unchecked")
   private void forEachPage(
@@ -383,6 +523,12 @@ public final class DocumentDatasetQueryClient implements DatasetQueryClient {
 
   private static long longField(final Map<String, Object> source, final String field) {
     return ((Number) source.get(field)).longValue();
+  }
+
+  /** A metric sub-aggregation's value as an exact long (e.g. a max over epoch-millis longs). */
+  private static long metricLong(final AggregationResult bucket, final String name) {
+    final AggregationResult metric = bucket.aggregations().get(name);
+    return metric.value() != null ? (long) (double) metric.value() : metric.docCount();
   }
 
   /** A metric sub-aggregation's numeric value, preferring the exact double over the rounding. */
@@ -471,5 +617,27 @@ public final class DocumentDatasetQueryClient implements DatasetQueryClient {
       case LONG, INT -> SearchQueryBuilders.term(field, Long.parseLong(value));
       case BOOLEAN -> SearchQueryBuilders.term(field, Boolean.parseBoolean(value));
     };
+  }
+
+  /** Key-then-time ordering support: per-dimension natural order, a null dimension first. */
+  private static int compareKeys(final List<Object> a, final List<Object> b) {
+    for (int i = 0; i < a.size(); i++) {
+      final int comparison = compareValues(a.get(i), b.get(i));
+      if (comparison != 0) {
+        return comparison;
+      }
+    }
+    return 0;
+  }
+
+  @SuppressWarnings("unchecked")
+  private static int compareValues(final Object a, final Object b) {
+    if (a == null) {
+      return b == null ? 0 : -1;
+    }
+    if (b == null) {
+      return 1;
+    }
+    return ((Comparable<Object>) a).compareTo(b);
   }
 }

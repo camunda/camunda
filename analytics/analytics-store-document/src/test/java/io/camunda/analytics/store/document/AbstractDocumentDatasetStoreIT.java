@@ -25,6 +25,7 @@ import io.camunda.analytics.meter.MeterIdRegistry;
 import io.camunda.analytics.serving.spi.AggregatedFetch;
 import io.camunda.analytics.serving.spi.AggregatedRow;
 import io.camunda.analytics.serving.spi.ReadStrategy;
+import io.camunda.analytics.serving.spi.SnapshotPoint;
 import io.camunda.analytics.serving.spi.WriteVersion;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -103,6 +104,89 @@ abstract class AbstractDocumentDatasetStoreIT {
     refresh();
     assertThat(servedCount(cube)).isEqualTo(11L);
     assertThat(writer.fencedWrites()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldServeSnapshotBaselineAndRangeReads() {
+    // given a sparse snapshot history for two keys: "order" changes at 1m and 5m; "claim" at 2m
+    final CompiledDataset cube = snapshotCube(102L);
+    store().schemaManager().ensure(cube);
+    writeSnapshot(cube, "order", MINUTE, 3);
+    writeSnapshot(cube, "order", 5 * MINUTE, 7);
+    writeSnapshot(cube, "claim", 2 * MINUTE, 1);
+    refresh();
+
+    // when the baseline is fetched between order's two change points
+    final List<SnapshotPoint> baseline = store().queryClient().snapshotBaseline(cube, 3 * MINUTE);
+
+    // then each key contributes its newest row at-or-before that time — however far back
+    assertThat(baseline)
+        .extracting(
+            p -> p.keyValues().get(0), SnapshotPoint::sampleTime, p -> p.measures().get("active"))
+        .containsExactlyInAnyOrder(
+            Tuple.tuple("order", MINUTE, 3L), Tuple.tuple("claim", 2 * MINUTE, 1L));
+
+    // when the range after 1m up to 5m is fetched
+    final List<SnapshotPoint> range = store().queryClient().snapshotRange(cube, MINUTE, 5 * MINUTE);
+
+    // then only the change points inside the range appear, ordered by key then time
+    assertThat(range)
+        .extracting(
+            p -> p.keyValues().get(0), SnapshotPoint::sampleTime, p -> p.measures().get("active"))
+        .containsExactly(
+            Tuple.tuple("claim", 2 * MINUTE, 1L), Tuple.tuple("order", 5 * MINUTE, 7L));
+  }
+
+  @Test
+  void shouldFenceAStaleSnapshotWrite() {
+    // given a snapshot row written at (epoch 1, offset = sample time)
+    final CompiledDataset cube = snapshotCube(103L);
+    store().schemaManager().ensure(cube);
+    writeSnapshot(cube, "order", MINUTE, 3);
+    refresh();
+
+    // when a fenced zombie re-writes an older absolute for the existing sample
+    final DocumentDatasetWriter writer = (DocumentDatasetWriter) store().writer();
+    writer.upsertSnapshotRow(
+        cube,
+        DimensionKey.of(cube.grain(), "order"),
+        MINUTE,
+        levelAbsolute(cube, 999),
+        new WriteVersion(0, 5));
+    refresh();
+
+    // then the row is untouched and the rejection was counted
+    final List<SnapshotPoint> baseline = store().queryClient().snapshotBaseline(cube, MINUTE);
+    assertThat(baseline).extracting(p -> p.measures().get("active")).containsExactly(3L);
+    assertThat(writer.fencedWrites()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldIncludeNullDimensionKeysInSnapshotReads() {
+    // given snapshot rows for a named key and for the null-dimension key
+    final CompiledDataset cube = snapshotCube(104L);
+    store().schemaManager().ensure(cube);
+    writeSnapshot(cube, "order", MINUTE, 2);
+    writeSnapshot(cube, null, MINUTE, 4);
+    writeSnapshot(cube, null, 2 * MINUTE, 5);
+    refresh();
+
+    // when the baseline is fetched after both keys' newest points
+    final List<SnapshotPoint> baseline = store().queryClient().snapshotBaseline(cube, 3 * MINUTE);
+
+    // then the null-dimension key is a first-class key with its own newest row
+    assertThat(baseline)
+        .extracting(
+            p -> p.keyValues().get(0), SnapshotPoint::sampleTime, p -> p.measures().get("active"))
+        .containsExactlyInAnyOrder(
+            Tuple.tuple("order", MINUTE, 2L), Tuple.tuple(null, 2 * MINUTE, 5L));
+
+    // and the range keeps it as one contiguous run
+    final List<SnapshotPoint> range = store().queryClient().snapshotRange(cube, 0L, 3 * MINUTE);
+    assertThat(range)
+        .extracting(p -> p.keyValues().get(0), SnapshotPoint::sampleTime)
+        .containsExactly(
+            Tuple.tuple(null, MINUTE), Tuple.tuple(null, 2 * MINUTE), Tuple.tuple("order", MINUTE));
   }
 
   @Test
@@ -308,6 +392,18 @@ abstract class AbstractDocumentDatasetStoreIT {
                 .build());
   }
 
+  private CompiledDataset snapshotCube(final long cubeId) {
+    return compiler()
+        .compile(
+            cubeId,
+            DatasetDeclaration.builder("active-instances-" + cubeId, FactType.PROCESS_INSTANCE)
+                .dimension("bpmnProcessId", DimensionType.STRING)
+                .meter(Meter.of("active", MeterCatalog.LEVEL, "delta"))
+                .window(MINUTE)
+                .snapshots(MINUTE)
+                .build());
+  }
+
   private void writeCell(
       final CompiledDataset cube,
       final String process,
@@ -322,6 +418,24 @@ abstract class AbstractDocumentDatasetStoreIT {
             MINUTE,
             fold(cube, facts),
             WriteVersion.SEED);
+  }
+
+  private void writeSnapshot(
+      final CompiledDataset cube, final String process, final long sampleTime, final int level) {
+    store()
+        .writer()
+        .upsertSnapshotRow(
+            cube,
+            DimensionKey.of(cube.grain(), Collections.singletonList(process)),
+            sampleTime,
+            levelAbsolute(cube, level),
+            new WriteVersion(1, sampleTime));
+  }
+
+  /** The cumulative absolute a snapshot row stores, folded as one signed delta. */
+  private static byte[] levelAbsolute(final CompiledDataset cube, final long level) {
+    return fold(
+        cube, List.of(Fact.builder(FactType.PROCESS_INSTANCE).field("delta", level).build()));
   }
 
   /** Folds the facts into the cube's composite accumulator — every meter slot at once. */
