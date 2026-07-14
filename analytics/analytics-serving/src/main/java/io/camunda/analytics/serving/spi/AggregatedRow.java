@@ -7,6 +7,8 @@
  */
 package io.camunda.analytics.serving.spi;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -16,12 +18,14 @@ import java.util.Map;
  * measures} per meter — already reduced and finalized by the store (recomposed additive columns, or
  * the sketch's denormalized {@code _value} for a {@code DIRECT} read). The {@link
  * DatasetQueryExecutor} unions these with the streamed sketch rows on {@code (groupValues,
- * bucket)}.
+ * bucket)}. A group value may be {@code null} — the store's NULL/missing group, a first-class
+ * output of a grouped read.
  */
 public record AggregatedRow(List<Object> groupValues, long bucket, Map<String, Object> measures) {
 
   public AggregatedRow {
-    groupValues = List.copyOf(groupValues);
+    // not List.copyOf: a null group value (the NULL group) must survive the defensive copy
+    groupValues = Collections.unmodifiableList(new ArrayList<>(groupValues));
     measures = Map.copyOf(measures);
   }
 }

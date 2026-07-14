@@ -62,6 +62,15 @@ public final class SearchAggregatorBuilders {
     return terms().name(name).field(field).build();
   }
 
+  /**
+   * A terms aggregator for use as a composite source: {@code missingBucket} controls whether
+   * documents without the field surface as an explicit {@code null}-keyed group.
+   */
+  public static SearchTermsAggregator terms(
+      final String name, final String field, final boolean missingBucket) {
+    return terms().name(name).field(field).missingBucket(missingBucket).build();
+  }
+
   public static <T> SearchTopHitsAggregator.Builder<T> topHits() {
     return new SearchTopHitsAggregator.Builder<>();
   }

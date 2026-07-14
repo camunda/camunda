@@ -24,9 +24,10 @@ public enum DimensionType {
    * Coerces a value read back from a serving store to the Java type this dimension's values take
    * (the type {@link DimensionKey} expects for the column): stores return loose representations —
    * JSON numbers deserialize as {@code Integer}, JDBC drivers return dialect-specific numerics, a
-   * boolean may arrive as text — and every backend needs the identical normalization. A backend
-   * with a store-specific wrapper (e.g. a JDBC CLOB) normalizes that to a plain value first and
-   * passes the result in.
+   * numeric or boolean may arrive as text (e.g. a bucket key stringified by an aggregation
+   * transport) — and every backend needs the identical normalization. A backend with a
+   * store-specific wrapper (e.g. a JDBC CLOB) normalizes that to a plain value first and passes the
+   * result in.
    */
   public Object coerce(final Object value) {
     if (value == null) {
@@ -34,8 +35,10 @@ public enum DimensionType {
     }
     return switch (this) {
       case STRING, TEXT -> value.toString();
-      case LONG -> ((Number) value).longValue();
-      case INT -> ((Number) value).intValue();
+      case LONG ->
+          value instanceof final Number n ? n.longValue() : Long.parseLong(value.toString());
+      case INT ->
+          value instanceof final Number n ? n.intValue() : Integer.parseInt(value.toString());
       case BOOLEAN -> value instanceof final Boolean b ? b : Boolean.parseBoolean(value.toString());
     };
   }

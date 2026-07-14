@@ -9,8 +9,8 @@ package io.camunda.search.es.transformers.aggregator;
 
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import io.camunda.search.clients.transformers.SearchTransfomer;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class AggregationCursorTransformer
@@ -18,11 +18,16 @@ public class AggregationCursorTransformer
 
   @Override
   public Map<String, FieldValue> apply(final Object[] value) {
-    return Stream.of(value)
+    final Map<String, FieldValue> cursorValues = new HashMap<>();
+    Stream.of(value)
         .filter(item -> item instanceof Map<?, ?>)
         .flatMap(item -> ((Map<?, ?>) item).entrySet().stream())
-        .collect(
-            Collectors.toMap(
-                entry -> entry.getKey().toString(), entry -> FieldValue.of(entry.getValue())));
+        // a null after-value (a composite missing_bucket source) must stay a typed null
+        .forEach(
+            entry ->
+                cursorValues.put(
+                    entry.getKey().toString(),
+                    entry.getValue() == null ? FieldValue.NULL : FieldValue.of(entry.getValue())));
+    return cursorValues;
   }
 }

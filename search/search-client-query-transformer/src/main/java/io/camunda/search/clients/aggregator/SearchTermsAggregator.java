@@ -12,6 +12,11 @@ import io.camunda.util.ObjectBuilder;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * @param missingBucket only honored as a composite-aggregation source: when {@code true}, documents
+ *     without the field group into an explicit {@code null}-keyed bucket instead of being dropped.
+ *     {@code null} (the default) keeps the store's default of dropping them.
+ */
 public record SearchTermsAggregator(
     String name,
     String field,
@@ -19,6 +24,7 @@ public record SearchTermsAggregator(
     Integer minDocCount,
     String script,
     String lang,
+    Boolean missingBucket,
     List<FieldSorting> sorting,
     List<SearchAggregator> aggregations)
     implements SearchAggregator {
@@ -41,6 +47,7 @@ public record SearchTermsAggregator(
     private Integer minDocCount = 1; // Default to showing at least 1 document
     private String script;
     private String lang;
+    private Boolean missingBucket;
     private List<FieldSorting> sorting;
 
     @Override
@@ -85,6 +92,11 @@ public record SearchTermsAggregator(
       return this;
     }
 
+    public Builder missingBucket(final Boolean value) {
+      missingBucket = value;
+      return this;
+    }
+
     private void validateFieldOrScript(final String field, final String script) {
       final boolean fieldProvided = field != null && !field.isBlank();
       final boolean scriptProvided = script != null && !script.isBlank();
@@ -110,6 +122,7 @@ public record SearchTermsAggregator(
           minDocCount,
           script,
           lang,
+          missingBucket,
           sorting,
           aggregations);
     }

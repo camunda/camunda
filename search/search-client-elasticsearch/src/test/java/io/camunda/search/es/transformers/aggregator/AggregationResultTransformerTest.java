@@ -64,12 +64,13 @@ public class AggregationResultTransformerTest {
         Arguments.arguments(
             "{'filter#agg1': {'doc_count': 4, 'children#agg2': {'doc_count': 4}}}",
             "{'agg1':{'docCount':4,'aggregations':{'agg2':{'docCount':4}}}}"),
-        // sum aggregation
+        // sum aggregation: docCount keeps the long rounding, value the exact metric double
         Arguments.arguments(
-            "{'sum#totalCount': {'value': 42.0}}", "{'totalCount':{'docCount':42}}"),
+            "{'sum#totalCount': {'value': 42.0}}", "{'totalCount':{'docCount':42,'value':42.0}}"),
         // max aggregation
         Arguments.arguments(
-            "{'max#maxValue': {'value': 1234567890.0}}", "{'maxValue':{'docCount':1234567890}}"),
+            "{'max#maxValue': {'value': 1234567890.0}}",
+            "{'maxValue':{'docCount':1234567890,'value':1.23456789E9}}"),
         // filter with sum and max sub-aggregations
         Arguments.arguments(
             """
@@ -86,8 +87,8 @@ public class AggregationResultTransformerTest {
               "created": {
                 "docCount": 10,
                 "aggregations": {
-                  "lastUpdatedAt": {"docCount": 1706800000000},
-                  "count": {"docCount": 100}
+                  "lastUpdatedAt": {"docCount": 1706800000000, "value": 1.7068E12},
+                  "count": {"docCount": 100, "value": 100.0}
                 }
               }
             }
@@ -212,6 +213,45 @@ public class AggregationResultTransformerTest {
     // then
     Assertions.assertThat(byProcessId.aggregations().keySet())
         .containsExactlyElementsOf(PROCESS_IDS);
+  }
+
+  @Test
+  public void shouldCarryTheCompositeBucketKeyStructured() {
+    // given a composite bucket over three sources, one of them a missing_bucket null
+    final Map<String, Aggregate> aggregations =
+        Map.of(
+            "by_key",
+            new Aggregate.Builder()
+                .composite(
+                    c ->
+                        c.buckets(
+                            buckets ->
+                                buckets.array(
+                                    List.of(
+                                        CompositeBucket.of(
+                                            cb ->
+                                                cb.key(
+                                                        Map.of(
+                                                            "processId",
+                                                            FieldValue.of("order"),
+                                                            "wbucket",
+                                                            FieldValue.of(60000L),
+                                                            "tenant",
+                                                            FieldValue.NULL))
+                                                    .docCount(3))))))
+                .build());
+
+    // when
+    final var result = new SearchAggregationResultTransformer<>(null, null).apply(aggregations);
+    final var bucket = result.get("by_key").aggregations().values().iterator().next();
+
+    // then each source's raw value survives — typed, and null for the missing bucket — so a
+    // consumer never parses them out of the joined string key (where a value containing the
+    // delimiter would misalign)
+    Assertions.assertThat(bucket.keyValues())
+        .containsEntry("processId", "order")
+        .containsEntry("wbucket", 60000L)
+        .containsEntry("tenant", null);
   }
 
   private List<CompositeBucket> createCompositeBuckets() {
