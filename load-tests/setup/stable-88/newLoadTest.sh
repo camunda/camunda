@@ -160,7 +160,11 @@ if [[ "$enable_optimize" == "true" ]]; then
   # We only request and configure Elasticsearch in this fallback case ; ES or
   # OS should have been configured as part of the secondary storage
   # configuration before, otherwise.
-  if [[ ! "$secondaryStorage" =~ ^(elasticsearch|opensearch)$ ]]; then
+  if [[ "$secondaryStorage" =~ ^(none)$ ]]; then
+    # Optimize requires a secondary storage backend; it cannot run at all
+    # when secondary storage is disabled entirely.
+    echo "Optimize requires a secondary storage backend; ignoring enable_optimize=true because secondaryStorage=none"
+  elif [[ ! "$secondaryStorage" =~ ^(elasticsearch|opensearch)$ ]]; then
     # Secondary storage is not ES nor OS: forcefully configures Optimize to
     # use Elasticsearch.
     elasticsearchEnabled=true
