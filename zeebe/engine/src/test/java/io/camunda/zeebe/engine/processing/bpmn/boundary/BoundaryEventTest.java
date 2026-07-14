@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -30,6 +31,7 @@ import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.record.ProcessInstances;
@@ -43,7 +45,11 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public final class BoundaryEventTest {
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withFeatureFlags(ff -> ff.setEvaluateBoundaryEventCorrelationKeyInActivityScope(true));
+
   private static final String PROCESS_ID = "process";
   private static final BpmnModelInstance MULTIPLE_SEQUENCE_FLOWS =
       Bpmn.createExecutableProcess(PROCESS_ID)
@@ -314,9 +320,9 @@ public final class BoundaryEventTest {
   }
 
   @Test
-  public void shouldUseScopeToExtractCorrelationKeys() {
+  public void shouldEvaluateCorrelationKeyInActivityScope() {
     // given
-    final String processId = "shouldHaveScopeKeyIfBoundaryEvent";
+    final String processId = "boundaryCorrelationScope";
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent()
@@ -337,17 +343,13 @@ public final class BoundaryEventTest {
             .ofBpmnProcessId(processId)
             .withVariables("{'foo':1,'bar':2}")
             .create();
-    ENGINE.message().withName("message").withCorrelationKey("1").publish();
 
     // then
-    // if correlation key was extracted from the task, then foo in the task scope would be 2 and
-    // the boundary event would not be triggered
-    assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementType(BpmnElementType.BOUNDARY_EVENT)
-                .getFirst())
-        .isNotNull();
+    final Record<MessageSubscriptionRecordValue> subscription =
+        RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(subscription.getValue().getCorrelationKey()).isEqualTo("2");
   }
 
   @Test
@@ -388,7 +390,47 @@ public final class BoundaryEventTest {
         .hasElementId("task")
         .hasElementInstanceKey(failureEvent.getKey())
         .hasJobKey(-1L)
-        .hasVariableScopeKey(processInstanceKey);
+        .hasVariableScopeKey(failureEvent.getKey());
+  }
+
+  @Test
+  public void shouldEvaluateBoundaryEventCorrelationKeyInSubProcessScope() {
+    // given
+    final String processId = "boundarySubProcessCorrelationScope";
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .subProcess(
+                "sub",
+                sub ->
+                    sub.zeebeInputExpression("bar", "foo")
+                        .embeddedSubProcess()
+                        .startEvent()
+                        .serviceTask("task", task -> task.zeebeJobType("type"))
+                        .endEvent())
+            .boundaryEvent(
+                "event",
+                b -> b.message(m -> m.zeebeCorrelationKeyExpression("foo").name("message")))
+            .endEvent()
+            .moveToActivity("sub")
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariables("{'foo':1,'bar':2}")
+            .create();
+
+    // then
+    final Record<MessageSubscriptionRecordValue> subscription =
+        RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    assertThat(subscription.getValue().getCorrelationKey()).isEqualTo("2");
   }
 
   @Test

@@ -69,6 +69,32 @@ Both prevent diverging states because old brokers will stop processing or replay
 > [!WARNING]
 > We currently have no mechanism to enforce that event behavior is not modified so we rely on developer awareness.
 
+### Feature Flags
+
+Some processing changes use a feature flag as a kill-switch to allow operators to opt into new
+behavior during a rolling update or upgrade. The `evaluateBoundaryEventCorrelationKeyInActivityScope`
+flag is one such example: when enabled, a message boundary event evaluates its correlation key in
+the attached activity scope instead of the flow scope, which aligns it with other boundary-event
+expressions and fixes incident resolution for activity-local variables. On this branch the flag is
+**disabled by default**, preserving the legacy flow-scope behavior.
+
+Users who want the new behavior can enable the flag cluster-wide and restart the brokers. In
+`broker.yaml`:
+
+```yaml
+zeebe:
+  broker:
+    experimental:
+      features:
+        evaluateBoundaryEventCorrelationKeyInActivityScope: true
+```
+
+Or via environment variable:
+
+```
+ZEEBE_BROKER_EXPERIMENTAL_FEATURES_EVALUATEBOUNDARYEVENTCORRELATIONKEYINACTIVITYSCOPE=true
+```
+
 ## Data migrations
 
 Data migrations are applied every time a new version opens a snapshot taken by an old version.
@@ -97,4 +123,3 @@ We accept this cost because it is difficult to assess the potential impact on di
 ## Testing
 
 You can find a description of the rolling update tests in our testing guide [here](/docs/testing/acceptance.md#rolling-update-tests).
-

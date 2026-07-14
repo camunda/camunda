@@ -185,4 +185,39 @@ final class FeatureFlagsCfgTest {
     // then
     assertThat(featureFlagsCfg.isEnableMessageBodyOnExpired()).isFalse();
   }
+
+  @Test
+  void shouldDisableEvaluateBoundaryEventCorrelationKeyInActivityScopeByDefault() {
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("empty", environment);
+    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
+
+    // then
+    assertThat(featureFlagsCfg.isEvaluateBoundaryEventCorrelationKeyInActivityScope()).isFalse();
+  }
+
+  @Test
+  void shouldSetEvaluateBoundaryEventCorrelationKeyInActivityScopeFromConfig() {
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("feature-flags-cfg", environment);
+    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
+
+    // then
+    assertThat(featureFlagsCfg.isEvaluateBoundaryEventCorrelationKeyInActivityScope()).isTrue();
+  }
+
+  @Test
+  void shouldSetEvaluateBoundaryEventCorrelationKeyInActivityScopeFromEnv() {
+    // given
+    environment.put(
+        "zeebe.broker.experimental.features.evaluateBoundaryEventCorrelationKeyInActivityScope",
+        "true");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("empty", environment);
+    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
+
+    // then
+    assertThat(featureFlagsCfg.isEvaluateBoundaryEventCorrelationKeyInActivityScope()).isTrue();
+  }
 }
