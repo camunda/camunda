@@ -11,6 +11,8 @@ import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestValidator;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
@@ -39,6 +41,10 @@ public interface ClusterConfigurationService extends AsyncClosable {
   void registerInconsistentConfigurationListener(InconsistentConfigurationListener listener);
 
   void removeInconsistentConfigurationListener();
+
+  void registerRequestValidator(ClusterConfigurationRequestValidator<?> validator);
+
+  void removeRequestValidator(Class<? extends ClusterConfigurationManagementRequest> requestType);
 
   default List<PartitionMetadata> getMemberPartitions(final MemberId memberId) {
     final var partitionDistribution = getPartitionDistribution();

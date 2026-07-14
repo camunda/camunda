@@ -34,12 +34,14 @@ import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.Co
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry.RequestValidator;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Handles the requests for the configuration management. This is expected be running on the
@@ -50,14 +52,17 @@ public final class ClusterConfigurationManagementRequestsHandler
   private final ConfigurationChangeCoordinator coordinator;
   private final ConcurrencyControl executor;
   private final MemberId localMemberId;
+  private final RequestValidator requestValidator;
 
   public ClusterConfigurationManagementRequestsHandler(
       final ConfigurationChangeCoordinator coordinator,
       final MemberId localMemberId,
-      final ConcurrencyControl executor) {
+      final ConcurrencyControl executor,
+      final RequestValidator requestValidator) {
     this.coordinator = coordinator;
     this.executor = executor;
     this.localMemberId = localMemberId;
+    this.requestValidator = requestValidator;
   }
 
   @Override
@@ -241,7 +246,32 @@ public final class ClusterConfigurationManagementRequestsHandler
 
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> restore(final RestoreRequest request) {
-    return handleRequest(request.dryRun(), new RestoreRequestTransformer(request));
+    return validated(
+        request, () -> handleRequest(request.dryRun(), new RestoreRequestTransformer(request)));
+  }
+
+  /**
+   * Runs the (optional, blocking) validator registered for the request type before delegating to
+   * {@code onValid}. A validation failure is mapped to a failed future carrying the validator's
+   * error message so it propagates to the caller.
+   */
+  private ActorFuture<ClusterConfigurationChangeResponse> validated(
+      final ClusterConfigurationManagementRequest request,
+      final Supplier<ActorFuture<ClusterConfigurationChangeResponse>> onValid) {
+    try {
+      requestValidator.validate(request);
+    } catch (final IllegalArgumentException e) {
+      return failedFuture(new InvalidRequest(e.getMessage()));
+    } catch (final RuntimeException e) {
+      return failedFuture(e);
+    }
+    return onValid.get();
+  }
+
+  private ActorFuture<ClusterConfigurationChangeResponse> failedFuture(final Throwable error) {
+    final var failed = executor.<ClusterConfigurationChangeResponse>createFuture();
+    failed.completeExceptionally(error);
+    return failed;
   }
 
   @Override
