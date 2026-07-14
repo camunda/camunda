@@ -38,7 +38,7 @@ final class SecretReferenceLiteralValidator implements ModelElementValidator<Zee
 
   // unicode-aware so names with non-ASCII letters/digits are matched (and reported) in full
   private static final Pattern SECRET_REFERENCE =
-      Pattern.compile("camunda\\.secrets\\.[\\p{L}\\p{N}_]+");
+      Pattern.compile("camunda\\.secrets\\.[\\p{Alnum}_]+");
 
   private final ExpressionLanguage expressionLanguage;
 
@@ -66,9 +66,17 @@ final class SecretReferenceLiteralValidator implements ModelElementValidator<Zee
     }
 
     // a literal constant-folds without a variable context; an expression path resolves to null
-    final EvaluationResult result =
-        expressionLanguage.evaluateExpression(expression, variable -> Either.left(null));
-    final String constant = constantText(result);
+    final String constant;
+    try {
+      final EvaluationResult result =
+          expressionLanguage.evaluateExpression(expression, variable -> Either.left(null));
+      constant = constantText(result);
+    } catch (final RuntimeException e) {
+      // a source that cannot be evaluated or serialized to a scannable constant (e.g. a document
+      // too deeply nested to serialize) is never a shallow secret-reference literal; skip it rather
+      // than fail the deployment. The runtime nesting-depth guard still applies at execution.
+      return;
+    }
     if (constant == null) {
       return;
     }
