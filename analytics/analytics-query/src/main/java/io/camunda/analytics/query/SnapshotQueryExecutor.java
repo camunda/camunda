@@ -62,13 +62,23 @@ public final class SnapshotQueryExecutor {
     if (query.toMs() <= query.fromMs()) {
       throw new IllegalArgumentException("empty snapshot range");
     }
+    // Trim the range to the last full bucket: every emitted point lies on the granularity grid
+    // anchored at fromMs (uniform bucket width is the series' contract — a trailing partial
+    // bucket would be a differently-sized bucket in the same series), so points past the last
+    // grid boundary can never influence the output and fetching them would be pure waste.
+    final long lastBucket =
+        query.fromMs()
+            + ((query.toMs() - query.fromMs()) / query.granularityMs()) * query.granularityMs();
+    if (lastBucket == query.fromMs()) {
+      return List.of(); // the range is shorter than one bucket — there is no grid point to emit
+    }
 
     // The opening balance per key, then the sparse change points — both ordered by key.
     final Map<List<Object>, List<SnapshotPoint>> byKey = new LinkedHashMap<>();
     for (final SnapshotPoint point : client.snapshotBaseline(dataset, query.fromMs())) {
       byKey.computeIfAbsent(point.keyValues(), key -> new ArrayList<>()).add(point);
     }
-    for (final SnapshotPoint point : client.snapshotRange(dataset, query.fromMs(), query.toMs())) {
+    for (final SnapshotPoint point : client.snapshotRange(dataset, query.fromMs(), lastBucket)) {
       byKey.computeIfAbsent(point.keyValues(), key -> new ArrayList<>()).add(point);
     }
 

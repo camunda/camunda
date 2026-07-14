@@ -49,6 +49,7 @@ import io.camunda.eventbridge.streaming.state.rocksdb.StoreTuning;
 import io.camunda.zeebe.db.impl.DbBytes;
 import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
+import io.micrometer.core.instrument.FunctionCounter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.util.ArrayList;
@@ -237,6 +238,15 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
     final KeyValueStore<DbInt, DbLong> appliedPositions =
         provider.keyValueStore(
             AnalyticsColumnFamilies.ZEEBE_APPLIED_POSITION, new DbInt(), new DbLong());
+    final VersionedDatasetWriter servingWriter = datasetStore.writer();
+    // The write fence's observability: rejections are the fence working (zero outside
+    // rebalances/replays), so they are exposed as a counter rather than logged as errors.
+    FunctionCounter.builder(
+            "analytics.serving.fenced.writes", servingWriter, VersionedDatasetWriter::fencedWrites)
+        .description("Serving writes rejected by the version fence (stale by arrival)")
+        .tag("stage", "projection")
+        .tag("partition", String.valueOf(partition))
+        .register(meterRegistry);
     return new ProjectionStageTask(
         partition,
         epoch,
@@ -246,7 +256,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
         segmentStride,
         schemaVersion,
         datasetStore,
-        datasetStore.writer(),
+        servingWriter,
         provider,
         openSegments,
         offsets,
@@ -334,7 +344,13 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
       // segment on the heap — no re-recover prefix scan); construct only a newly-added one's.
       final CubeWiring wiring =
           wiringByStreamId.computeIfAbsent(
-              streamId, id -> cubeWiring(cube, segmentStride, openSegments, provider));
+              streamId,
+              id -> {
+                final CubeWiring created = cubeWiring(cube, segmentStride, openSegments, provider);
+                // Expose the new cube's gate counters + silent-empty alarm (once per wiring).
+                metrics.registerCubeGate(created.processor());
+                return created;
+              });
       activeStreamIds.add(streamId);
       aggregations.add(wiring.aggregation());
       builder.processor(node, wiring.processor(), "dispatch");
@@ -481,6 +497,11 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
 
   @Override
   public CommitCut freezeCut(final long offset) {
+    // Silent-empty-cube check at the commit boundary (two long reads per cube, never per fact):
+    // a cube whose filters matched nothing across this many folds warns once — see the processor.
+    for (final CubeWiring wiring : wiringByStreamId.values()) {
+      wiring.processor().warnIfSilent();
+    }
     // Liveness: seal every segment the source has fully advanced past (the committed offset is the
     // watermark), so sparse cells — e.g. an incident meter that then goes quiet — reach the shuffle
     // even without a natural boundary crossing. The seal forwards SegmentCells into the shuffle

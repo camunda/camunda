@@ -57,6 +57,15 @@ public interface VersionedDatasetWriter extends AutoCloseable {
   /** Batch boundary: make buffered writes durable. */
   void flush();
 
+  /**
+   * Writes rejected by the version fence since this writer opened — the fence working, not an error
+   * (zero outside rebalances/replays). Exposed here so the pipeline can meter it uniformly across
+   * backends; a backend that cannot observe rejections reports 0.
+   */
+  default long fencedWrites() {
+    return 0L;
+  }
+
   @Override
   void close();
 }

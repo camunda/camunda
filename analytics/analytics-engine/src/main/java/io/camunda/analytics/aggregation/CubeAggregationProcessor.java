@@ -12,11 +12,14 @@ import io.camunda.analytics.dataset.FilterPredicate;
 import io.camunda.analytics.dataset.RegisteredDataset;
 import io.camunda.analytics.fact.Fact;
 import io.camunda.analytics.fact.FactType;
+import io.camunda.analytics.projection.ProjectionMetrics;
 import io.camunda.eventbridge.streaming.aggregate.SegmentSealingAggregation;
 import io.camunda.eventbridge.streaming.processor.Processor;
 import io.camunda.eventbridge.streaming.processor.ProcessorContext;
 import io.camunda.eventbridge.streaming.shuffle.SegmentCell;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * One cube as a Stage-1 windowed-aggregate {@link Processor} node (ADR 0009): it gates the shared
@@ -34,13 +37,32 @@ import java.util.List;
  * in-flight partial; the sealed deltas reach the shuffle sink synchronously as they are emitted,
  * and that node publishes them on {@code flush()}.
  */
-public final class CubeAggregationProcessor implements Processor<Fact, SegmentCell> {
+public final class CubeAggregationProcessor
+    implements Processor<Fact, SegmentCell>, ProjectionMetrics.CubeGateStats {
+
+  /**
+   * Admitted facts a cube must have seen with <em>zero</em> folds before the silent-empty-cube
+   * alarm trips: a real dataset whose filters legitimately match nothing rarely sees this many
+   * type-matched, activation-admitted facts, while a misdeclared filter (the incident: a
+   * subprocess-scoped variable filter that can never be visible on the fact) crosses it quickly.
+   */
+  public static final long SILENT_FACT_THRESHOLD = 1_000L;
+
+  private static final Logger LOG = LoggerFactory.getLogger(CubeAggregationProcessor.class);
 
   private final FactType factType;
   private final RegisteredDataset dataset;
+  private final List<FilterPredicate> declaredFilters;
   private final List<CompiledFilter> filters;
   private final SegmentSealingAggregation<Fact, ?, ?> aggregation;
   private final ForwardingSegmentSink<?> sink;
+
+  // Plain longs on purpose: single-writer (the partition's actor thread), checked at commit
+  // boundaries, exposed through racy-read gauges where staleness is harmless. No allocation and
+  // no volatile store on the per-fact hot path.
+  private long factsInspected;
+  private long factsFolded;
+  private boolean silenceWarned;
 
   public CubeAggregationProcessor(
       final FactType factType,
@@ -50,6 +72,7 @@ public final class CubeAggregationProcessor implements Processor<Fact, SegmentCe
       final ForwardingSegmentSink<?> sink) {
     this.factType = factType;
     this.dataset = dataset;
+    declaredFilters = List.copyOf(filters);
     this.filters = filters.stream().map(CompiledFilter::new).toList();
     this.aggregation = aggregation;
     this.sink = sink;
@@ -69,11 +92,60 @@ public final class CubeAggregationProcessor implements Processor<Fact, SegmentCe
 
   @Override
   public void process(final Fact fact) {
-    if (fact.factType() == factType
-        && dataset.admits(fact.sourcePartition(), fact.sourcePosition(), fact.eventTime())
-        && matchesFilters(fact)) {
+    if (fact.factType() != factType
+        || !dataset.admits(fact.sourcePartition(), fact.sourcePosition(), fact.eventTime())) {
+      return;
+    }
+    // Inspected = type-matched and activation-admitted, so the silent alarm measures exactly what
+    // the declared filters rejected — not the activation gap of a freshly-provisioned cube.
+    factsInspected++;
+    if (matchesFilters(fact)) {
+      factsFolded++;
       aggregation.accept(fact);
     }
+  }
+
+  @Override
+  public String datasetName() {
+    return dataset.declaration().name();
+  }
+
+  @Override
+  public long factsInspected() {
+    return factsInspected;
+  }
+
+  @Override
+  public long factsFolded() {
+    return factsFolded;
+  }
+
+  @Override
+  public boolean silent() {
+    return factsFolded == 0 && factsInspected >= SILENT_FACT_THRESHOLD;
+  }
+
+  /**
+   * Commit-boundary check (never per fact): WARN once when this cube has inspected a meaningful
+   * number of admitted facts and folded <em>none</em> — a dataset whose filters match nothing stays
+   * empty with zero signal otherwise (a real past incident: a filter on a subprocess-scoped
+   * variable that is never visible at the fact's root scope silently matched nothing). The matching
+   * gauge ({@code analytics.projection.cube.silent}) stays up until a fold happens.
+   */
+  public void warnIfSilent() {
+    if (silenceWarned || !silent()) {
+      return;
+    }
+    silenceWarned = true;
+    LOG.warn(
+        "Cube '{}' (id {}) inspected {} admitted {} facts and folded NONE — its declared filters"
+            + " match nothing (e.g. a filter on a variable that is not visible at this fact's"
+            + " scope). The cube stays silently empty until its declaration is fixed. Filters: {}",
+        datasetName(),
+        dataset.cubeId(),
+        factsInspected,
+        factType,
+        declaredFilters);
   }
 
   @Override

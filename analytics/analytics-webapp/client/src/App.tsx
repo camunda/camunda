@@ -164,7 +164,7 @@ export default function App() {
       <main className="mx-auto max-w-6xl px-6 py-6">
         {GLOBAL_ROUTES.has(route) ? (
           route === "datasets" ? (
-            <DatasetsPage />
+            <DatasetsPage range={range} />
           ) : (
             <ReportsPage range={range} />
           )

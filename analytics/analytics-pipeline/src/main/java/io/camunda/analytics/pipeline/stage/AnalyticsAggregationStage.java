@@ -16,6 +16,7 @@ import io.camunda.eventbridge.streaming.StreamRuntime;
 import io.camunda.eventbridge.streaming.shuffle.ShuffleEnvelope;
 import io.camunda.eventbridge.streaming.shuffle.ShuffleEnvelopeCodec;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.List;
@@ -50,23 +51,26 @@ public final class AnalyticsAggregationStage {
     final ActorScheduler scheduler = PipelineRuntimes.startScheduler();
     // This stage cuts per facts partition, so the sink pool is sized by the facts topic.
     final ExecutorService sinkExecutor = PipelineRuntimes.newSinkExecutor(config.factsPartitions());
-    final StreamRuntime<ShuffleEnvelope> runtime = buildRuntime(client, scheduler, sinkExecutor);
+    final StreamRuntime<ShuffleEnvelope> runtime =
+        buildRuntime(client, scheduler, sinkExecutor, new SimpleMeterRegistry());
     PipelineRuntimes.run(
         client, scheduler, sinkExecutor, List.of(new PipelineRuntimes.Member("stage2", runtime)));
   }
 
   /**
-   * Builds (but does not run) the Stage 2 runtime on the given shared client, actor scheduler, and
-   * sink executor, so a single stage process or the consolidated launcher can run it. Reads its
-   * configuration from system properties and provisions the metadata plane.
+   * Builds (but does not run) the Stage 2 runtime on the given shared client, actor scheduler, sink
+   * executor and meter registry (the embedding application's registry, so the stage's meters —
+   * late-drop counters, fenced writes, RocksDB gauges, commit-cut timers — surface on its
+   * management endpoint; the standalone launcher passes a throwaway {@link SimpleMeterRegistry}).
+   * Reads its configuration from system properties and provisions the metadata plane.
    */
   public static StreamRuntime<ShuffleEnvelope> buildRuntime(
       final EventBridgeClient client,
       final ActorScheduler scheduler,
-      final ExecutorService sinkExecutor) {
+      final ExecutorService sinkExecutor,
+      final MeterRegistry meterRegistry) {
     final AnalyticsPipelineConfig config = AnalyticsPipelineConfig.fromSystemProperties("stage2");
 
-    final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
     final AnalyticsBackend backend = AnalyticsBackends.fromSystemProperties();
 
     // Load the same specs Stage 1 bootstrapped from the metadata plane (migrate + bootstrap are
@@ -107,6 +111,7 @@ public final class AnalyticsAggregationStage {
             .errorBackoff(ERROR_BACKOFF)
             .actorScheduler(scheduler)
             .sinkExecutor(sinkExecutor)
+            .meterRegistry(meterRegistry)
             .build();
 
     LOG.info(

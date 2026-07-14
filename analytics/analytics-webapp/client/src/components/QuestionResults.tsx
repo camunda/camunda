@@ -9,6 +9,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Legend,
   Line,
   LineChart,
   ResponsiveContainer,
@@ -37,7 +38,61 @@ function measureColumns(report: Report, data: ReportData | null): string[] {
     }
     return [...keys].sort();
   }
-  return report.sources.flatMap((s) => s.meters.map((m) => `${s.datasetName}.${m}`)).sort();
+  return [...sourceNamespaces(report).entries()]
+    .flatMap(([ns, s]) => s.meters.map((m) => `${ns}.${m}`))
+    .sort();
+}
+
+/**
+ * Each source's measure namespace, replicating the executor's rule: the first source of a dataset
+ * keeps the plain dataset name, repeats get their ordinal ("dataset#2") — that is how a
+ * compare-report's two slices of one dataset stay distinct in the result's measure keys.
+ */
+function sourceNamespaces(report: Report): Map<string, Report["sources"][number]> {
+  const occurrences = new Map<string, number>();
+  const byNamespace = new Map<string, Report["sources"][number]>();
+  for (const source of report.sources) {
+    const n = (occurrences.get(source.datasetName) ?? 0) + 1;
+    occurrences.set(source.datasetName, n);
+    byNamespace.set(n === 1 ? source.datasetName : `${source.datasetName}#${n}`, source);
+  }
+  return byNamespace;
+}
+
+/**
+ * Human-readable label per measure key: the meter name, qualified by the owning source's filter
+ * summary when the report reads the same dataset more than once ("count — status is CANCELLED"
+ * vs "count — all"). Matches on the longest namespace prefix, since dataset names may contain
+ * dots (e.g. derived question datasets grouping by "var.type").
+ */
+function measureLabels(report: Report, keys: string[]): Record<string, string> {
+  const namespaces = sourceNamespaces(report);
+  const comparing = report.sources.length > 1;
+  const labels: Record<string, string> = {};
+  for (const key of keys) {
+    let matched: string | null = null;
+    for (const ns of namespaces.keys()) {
+      if (key.startsWith(`${ns}.`) && (matched == null || ns.length > matched.length)) {
+        matched = ns;
+      }
+    }
+    if (matched == null) {
+      const dot = key.indexOf(".");
+      labels[key] = dot >= 0 ? key.slice(dot + 1) : key;
+      continue;
+    }
+    const meter = key.slice(matched.length + 1);
+    if (!comparing) {
+      labels[key] = meter;
+      continue;
+    }
+    const source = namespaces.get(matched);
+    const summary = source?.filters.length
+      ? source.filters.map((f) => `${f.field} is ${f.value}`).join(", ")
+      : "all";
+    labels[key] = `${meter} — ${summary}`;
+  }
+  return labels;
 }
 
 /** Best-effort numeric extraction: a number, a numeric string, or the first numeric field. */
@@ -59,12 +114,6 @@ function numericOf(value: unknown): number | null {
   return null;
 }
 
-/** A friendly measure label: strips the internal "<dataset>.<meter>" namespace. */
-function measureLabel(key: string): string {
-  const dot = key.indexOf(".");
-  return dot >= 0 ? key.slice(dot + 1) : key;
-}
-
 function toDisplay(value: unknown): string {
   if (value == null) {
     return "—";
@@ -82,6 +131,7 @@ function toDisplay(value: unknown): string {
 function DataTable({ report, data }: { report: Report; data: ReportData }) {
   const rows = data.rows;
   const measures = measureColumns(report, data);
+  const labels = measureLabels(report, measures);
   const dims = report.groupBy;
   return (
     <div className="overflow-x-auto">
@@ -96,7 +146,7 @@ function DataTable({ report, data }: { report: Report; data: ReportData }) {
             ))}
             {measures.map((m) => (
               <th key={m} className="py-2 pr-4 text-right font-medium">
-                {measureLabel(m)}
+                {labels[m] ?? m}
               </th>
             ))}
           </tr>
@@ -134,16 +184,34 @@ function DataTable({ report, data }: { report: Report; data: ReportData }) {
 }
 
 function TrendChart({ report, data, kind }: { report: Report; data: ReportData; kind: "line" | "bar" }) {
+  // One series per measure column, so a compare report renders its slices side by side with
+  // their filter-summary labels rather than silently charting only the first measure.
   const measures = measureColumns(report, data);
-  const first = measures[0];
-  const chartData = [...data.rows]
-    .sort((a, b) => a.windowStart - b.windowStart)
-    .map((r) => ({ label: formatWindow(r.windowStart), value: numericOf(r.measures[first]) }))
-    .filter((d): d is { label: string; value: number } => d.value != null);
+  const labels = measureLabels(report, measures);
+  const byWindow = new Map<number, Record<string, number | string>>();
+  for (const r of [...data.rows].sort((a, b) => a.windowStart - b.windowStart)) {
+    let entry = byWindow.get(r.windowStart);
+    if (!entry) {
+      entry = { label: formatWindow(r.windowStart) };
+      byWindow.set(r.windowStart, entry);
+    }
+    for (const m of measures) {
+      const v = numericOf(r.measures[m]);
+      if (v != null) {
+        entry[m] = v;
+      }
+    }
+  }
+  const chartData = [...byWindow.values()];
+  const charted = measures.filter((m) => chartData.some((d) => typeof d[m] === "number"));
 
-  if (chartData.length === 0) {
+  if (chartData.length === 0 || charted.length === 0) {
     return <p className="text-sm text-neutral-foreground-muted">Nothing to chart in this range.</p>;
   }
+  const tooltip = (value: number, key: string) => [
+    value.toLocaleString("en-US"),
+    labels[key] ?? key,
+  ];
   return (
     <div className="h-64 w-full">
       <ResponsiveContainer width="100%" height="100%">
@@ -152,16 +220,29 @@ function TrendChart({ report, data, kind }: { report: Report; data: ReportData; 
             <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border, #e5e7eb)" />
             <XAxis dataKey="label" tick={{ fontSize: 12 }} />
             <YAxis width={56} tick={{ fontSize: 12 }} />
-            <Tooltip formatter={(value: number) => [value.toLocaleString("en-US"), measureLabel(first)]} />
-            <Line type="monotone" dataKey="value" stroke={chartColor(0)} strokeWidth={2} dot={false} />
+            <Tooltip formatter={tooltip} />
+            {charted.length > 1 ? <Legend formatter={(key: string) => labels[key] ?? key} /> : null}
+            {charted.map((m, i) => (
+              <Line
+                key={m}
+                type="monotone"
+                dataKey={m}
+                stroke={chartColor(i)}
+                strokeWidth={2}
+                dot={false}
+              />
+            ))}
           </LineChart>
         ) : (
           <BarChart data={chartData} margin={{ top: 8, right: 16, bottom: 4, left: 8 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border, #e5e7eb)" />
             <XAxis dataKey="label" tick={{ fontSize: 12 }} />
             <YAxis width={56} tick={{ fontSize: 12 }} />
-            <Tooltip formatter={(value: number) => [value.toLocaleString("en-US"), measureLabel(first)]} />
-            <Bar dataKey="value" fill={chartColor(0)} radius={[4, 4, 0, 0]} />
+            <Tooltip formatter={tooltip} />
+            {charted.length > 1 ? <Legend formatter={(key: string) => labels[key] ?? key} /> : null}
+            {charted.map((m, i) => (
+              <Bar key={m} dataKey={m} fill={chartColor(i)} radius={[4, 4, 0, 0]} />
+            ))}
           </BarChart>
         )}
       </ResponsiveContainer>
@@ -171,6 +252,7 @@ function TrendChart({ report, data, kind }: { report: Report; data: ReportData; 
 
 function BigNumber({ report, data }: { report: Report; data: ReportData }) {
   const measures = measureColumns(report, data);
+  const labels = measureLabels(report, measures);
   const first = measures[0];
   const latest = [...data.rows].sort((a, b) => b.windowStart - a.windowStart)[0];
   const value = latest ? numericOf(latest.measures[first]) : null;
@@ -180,7 +262,7 @@ function BigNumber({ report, data }: { report: Report; data: ReportData }) {
         {value != null ? value.toLocaleString("en-US") : "—"}
       </span>
       <span className="text-xs text-neutral-foreground-muted">
-        {measureLabel(first)}
+        {labels[first] ?? first}
         {latest ? ` · latest (${formatWindow(latest.windowStart)})` : ""}
       </span>
     </div>

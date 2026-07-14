@@ -64,6 +64,13 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
     </dependency>
+    <!-- Management endpoint (/actuator/metrics): the pipeline's Micrometer meters (projection
+         alarms, cube gates, late drops, fenced writes, RocksDB gauges, cut timers) register on
+         the Spring registry and are served here. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-jdbc</artifactId>

@@ -17,6 +17,7 @@ import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.streaming.StreamRuntime;
 import io.camunda.eventbridge.streaming.shuffle.ShuffleEnvelope;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import org.slf4j.Logger;
@@ -51,7 +52,13 @@ public class AnalyticsPipelineLifecycle implements SmartLifecycle {
 
   private static final Logger LOG = LoggerFactory.getLogger(AnalyticsPipelineLifecycle.class);
 
+  private final MeterRegistry meterRegistry;
+
   private RunningPipeline pipeline;
+
+  public AnalyticsPipelineLifecycle(final MeterRegistry meterRegistry) {
+    this.meterRegistry = meterRegistry;
+  }
 
   @Override
   public synchronized void start() {
@@ -66,10 +73,13 @@ public class AnalyticsPipelineLifecycle implements SmartLifecycle {
         PipelineRuntimes.newSinkExecutor(
             PipelineRuntimes.topicPartitions(client, config.sourceTopic())
                 + config.factsPartitions());
+    // The stages register their meters (projection alarms, cube gates, late drops, fenced writes,
+    // RocksDB gauges, commit-cut timers) on the application's registry, so they surface on the
+    // Spring management endpoint (/actuator/metrics) instead of a throwaway private registry.
     final StreamRuntime<SourceRecord> stage1 =
-        AnalyticsProjectionStage.buildRuntime(client, scheduler, sinkExecutor);
+        AnalyticsProjectionStage.buildRuntime(client, scheduler, sinkExecutor, meterRegistry);
     final StreamRuntime<ShuffleEnvelope> stage2 =
-        AnalyticsAggregationStage.buildRuntime(client, scheduler, sinkExecutor);
+        AnalyticsAggregationStage.buildRuntime(client, scheduler, sinkExecutor, meterRegistry);
     LOG.info("Starting the analytics pipeline in-process: Stage 1 + Stage 2 on a shared scheduler");
     pipeline =
         PipelineRuntimes.start(
