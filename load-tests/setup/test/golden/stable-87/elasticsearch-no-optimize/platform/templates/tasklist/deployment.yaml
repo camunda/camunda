@@ -1,0 +1,176 @@
+---
+# Source: camunda-platform/templates/tasklist/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tasklist
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: c8-golden-stable-87-elasticsearch-no-optimize
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    camunda.io/created-by: golden-test
+    camunda.io/purpose: load-test
+
+    app.kubernetes.io/component: tasklist
+
+  annotations:
+    {}
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: camunda-platform
+      app.kubernetes.io/name: camunda-platform
+      app.kubernetes.io/instance: c8-golden-stable-87-elasticsearch-no-optimize
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/part-of: camunda-platform
+      app.kubernetes.io/component: tasklist
+  template:
+    metadata:
+      labels:
+        app: camunda-platform
+        app.kubernetes.io/name: camunda-platform
+        app.kubernetes.io/instance: c8-golden-stable-87-elasticsearch-no-optimize
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/part-of: camunda-platform
+        camunda.io/created-by: golden-test
+        camunda.io/purpose: load-test
+
+        app.kubernetes.io/component: tasklist
+
+      annotations:
+
+    spec:
+      imagePullSecrets:
+        - name: harbor-registry
+      initContainers:
+        []
+      containers:
+        - name: tasklist
+          image: camunda/tasklist:8.7.29
+          imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1001
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            - name: CAMUNDA_LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: c8-golden-stable-87-elasticsearch-no-optimize-camunda-platform-license
+                  key: CAMUNDA_LICENSE_KEY
+            - name: CAMUNDA_IDENTITY_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: c8-golden-stable-87-elasticsearch-no-optimize-tasklist-identity-secret
+                  key: identity-tasklist-client-token
+            - name: ZEEBE_CLIENT_ID
+              value: "zeebe"
+            - name: ZEEBE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: camunda-credentials
+                  key: identity-zeebe-client-token
+            - name: ZEEBE_AUTHORIZATION_SERVER_URL
+              value: "http://keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"
+            - name: ZEEBE_TOKEN_AUDIENCE
+              value: "zeebe-api"
+            - name: HOME
+              value: /parent
+            - name: ZEEBE_CLIENT_CONFIG_PATH
+              value: /tmp/zeebe_auth_cache
+            # the host name of Operate that is used when connecting with the Zeebe cluster
+            # via atomix-cluster (SWIM)
+            - name: ZEEBE_GATEWAY_CLUSTER_HOST
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP
+            # the unique member id (in this case the pod name) that is used as identifier inside the SWIM cluster
+            - name: ZEEBE_GATEWAY_CLUSTER_MEMBERID
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            # the name of the atomix cluster (SWIM) to connect to (must be the same as for the Zeebe cluster)
+            - name: ZEEBE_GATEWAY_CLUSTER_CLUSTERNAME
+              value: zeebe
+            # the port the service expects requests/messages from the atomix cluster (must be exposed internally)
+            - name: ZEEBE_GATEWAY_CLUSTER_PORT
+              value: "26502"
+            # the initial contact point to join the SWIM (atomix) cluster
+            - name: ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS
+              value: zeebe:26502
+            - name: TASKLIST_LOG_APPENDER
+              value: Stackdriver
+            - name: CAMUNDA_TASKLIST_ELASTICSEARCH_NUMBER_OF_REPLICAS
+              value: "1"
+          envFrom:
+            - configMapRef:
+                name: c8-golden-stable-87-elasticsearch-no-optimize-camunda-platform-identity-env-vars
+            - configMapRef:
+                name: c8-golden-stable-87-elasticsearch-no-optimize-camunda-platform-documentstore-env-vars
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 2Gi
+            requests:
+              cpu: 400m
+              memory: 1Gi
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+            - containerPort: 9600
+              name: management
+            - containerPort: 26502
+              name: internal
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              scheme: HTTP
+              port: management
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            successThreshold: 1
+            failureThreshold: 5
+            timeoutSeconds: 5
+          volumeMounts:
+            - name: config
+              mountPath: /usr/local/tasklist/config/application.yaml
+              subPath: application.yaml
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /camunda
+              name: camunda
+      volumes:
+        - name: config
+          configMap:
+            name: tasklist-configuration
+            defaultMode: 484
+        - name: tmp
+          emptyDir: {}
+        - name: camunda
+          emptyDir: {}
+      serviceAccountName: tasklist
+      securityContext:
+        fsGroup: 1001
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      nodeSelector:
+        topology.kubernetes.io/zone: europe-west1-b
+      tolerations:
+        - effect: NoSchedule
+          key: nodepool
+          operator: Equal
+          value: n2-standard-4

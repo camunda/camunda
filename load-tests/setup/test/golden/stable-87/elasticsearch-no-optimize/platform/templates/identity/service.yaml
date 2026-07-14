@@ -1,0 +1,36 @@
+---
+# Source: camunda-platform/templates/identity/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: identity
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: c8-golden-stable-87-elasticsearch-no-optimize
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    camunda.io/created-by: golden-test
+    camunda.io/purpose: load-test
+
+    app.kubernetes.io/component: identity
+
+  annotations:
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      name: http
+      targetPort: 8080
+      protocol: TCP
+    - port: 82
+      name: metrics
+      targetPort: 8082
+      protocol: TCP
+  selector:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: c8-golden-stable-87-elasticsearch-no-optimize
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    app.kubernetes.io/component: identity

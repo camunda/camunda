@@ -54,6 +54,7 @@ type versionedScenario struct {
 // regenerated when that file changes.
 var defaultScenarios = []scenario{
 	{Name: "elasticsearch", Storage: "elasticsearch", Optimize: true, Stable: false},
+	{Name: "elasticsearch-no-optimize", Storage: "elasticsearch", Optimize: false, Stable: false},
 	{Name: "opensearch", Storage: "opensearch", Optimize: true, Stable: false},
 	{Name: "rdbms", Storage: "postgresql", Optimize: false, Stable: false},
 	{Name: "rdbms-optimize", Storage: "postgresql", Optimize: true, Stable: false},
