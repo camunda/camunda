@@ -228,6 +228,9 @@ final class AggregationStageTaskDedupPersistenceTest {
     cells.prefixScan(
         prefix,
         (key, value) -> {
+          if (key.getBytes().length == Integer.BYTES) {
+            return; // the group's meta row (the merger's persisted clock), not a cell
+          }
           final Object[] accumulator = codec.fromBytes(value.getBytes());
           totals.add(((Number) aggregate.getResult(accumulator)[0]).longValue());
         });

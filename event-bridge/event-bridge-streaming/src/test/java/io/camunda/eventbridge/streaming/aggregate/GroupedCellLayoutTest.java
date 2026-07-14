@@ -24,8 +24,9 @@ import org.junit.jupiter.api.Test;
 /**
  * Golden wire-format test for the durable grouped-cell layout the segment aggregations persist:
  * cell rows keyed {@code group(int) ++ windowStart(long) ++ keyCodec(key)} (big-endian framing) and
- * the sealing aggregation's meta row keyed by the bare 4-byte {@code group} with a {@code
- * openSegment(long) ++ sourcePartition(int)} value.
+ * the meta rows keyed by the bare 4-byte {@code group} — the sealing aggregation's {@code
+ * openSegment(long) ++ sourcePartition(int)} value and the merging aggregation's stream-time clock
+ * (one big-endian long).
  *
  * <p>The layout is <b>durable identity</b>: deployed state was written under exactly these bytes,
  * so recovery depends on them bit-for-bit. The key codec's own bytes are pinned by the golden tests
@@ -78,14 +79,17 @@ final class GroupedCellLayoutTest {
     merger.merge(new Windowed<>("order", 3_600_000L), 7L);
     merger.checkpoint();
 
-    // then the one durable cell is keyed group(42) ++ windowStart(3_600_000) ++ codec("order"),
-    // big-endian — the framing bytes are durable identity and must never change
-    final List<byte[]> keys = new ArrayList<>();
-    store.forEach((key, value) -> keys.add(key.getBytes().clone()));
+    // then the durable cell is keyed group(42) ++ windowStart(3_600_000) ++ codec("order") and the
+    // clock row by the bare 4-byte group with the published clock (the window end, 3_601_000) as
+    // one big-endian long — the framing bytes are durable identity and must never change
+    final Map<List<Byte>, byte[]> rows = new LinkedHashMap<>();
+    store.forEach((key, value) -> rows.put(boxed(key.getBytes()), value.getBytes().clone()));
+    final byte[] metaKey = {0, 0, 0, 42};
     final byte[] framing = {0, 0, 0, 42, 0, 0, 0, 0, 0, 0x36, (byte) 0xEE, (byte) 0x80};
-    assertThat(keys)
-        .singleElement()
-        .isEqualTo(concat(framing, new StringRecordValue().toBytes("order")));
+    final byte[] cellKey = concat(framing, new StringRecordValue().toBytes("order"));
+    assertThat(rows.keySet()).containsExactlyInAnyOrder(boxed(metaKey), boxed(cellKey));
+    assertThat(rows.get(boxed(metaKey)))
+        .isEqualTo(new byte[] {0, 0, 0, 0, 0, 0x36, (byte) 0xF2, 0x68});
   }
 
   @Test

@@ -7,6 +7,7 @@
  */
 package io.camunda.analytics.aggregation;
 
+import io.camunda.analytics.dataset.CompiledFilter;
 import io.camunda.analytics.dataset.FilterPredicate;
 import io.camunda.analytics.dataset.RegisteredDataset;
 import io.camunda.analytics.fact.Fact;
