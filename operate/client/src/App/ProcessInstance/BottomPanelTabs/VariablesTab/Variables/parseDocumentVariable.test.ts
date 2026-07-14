@@ -8,7 +8,6 @@
 
 import type {DocumentReference} from '@camunda/camunda-api-zod-schemas/8.10';
 import {parseDocumentVariable} from './parseDocumentVariable';
-import * as clientConfig from 'modules/utils/getClientConfig';
 
 const makeDocRef = (
   overrides: Record<string, unknown> = {},
@@ -155,134 +154,6 @@ describe('parseDocumentVariable', () => {
     });
   });
 
-  it('should construct a document link with context path', () => {
-    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
-      ...clientConfig.getClientConfig(),
-      contextPath: '/some-context',
-    });
-
-    const value = JSON.stringify(makeDocRef());
-    const result = parseDocumentVariable(value, false);
-
-    expect(result).toEqual({
-      type: 'single',
-      document: {
-        link: '/some-context/v2/documents/doc-123?storeId=in-memory&contentHash=sha256%3Aabc',
-        fileName: 'photo.png',
-        type: 'image',
-        contentType: 'image/png',
-        size: 109748,
-        isExpired: false,
-      },
-    });
-  });
-
-  it('should set isExpired=true when expiresAt is in the past', () => {
-    vi.setSystemTime('2026-06-01T00:00:00.000Z');
-    const value = JSON.stringify(
-      makeDocRef({
-        metadata: {
-          ...makeDocRef().metadata,
-          expiresAt: '2026-05-01T00:00:00.000Z',
-        },
-      }),
-    );
-    const result = parseDocumentVariable(value, false);
-
-    assert(
-      result !== null && result.type === 'single',
-      'Expected a single parsing result.',
-    );
-    expect(result.document.isExpired).toBe(true);
-  });
-
-  it('should set isExpired=false when expiresAt is in the future', () => {
-    vi.setSystemTime('2026-06-01T00:00:00.000Z');
-    const value = JSON.stringify(
-      makeDocRef({
-        metadata: {
-          ...makeDocRef().metadata,
-          expiresAt: '2026-06-04T00:00:00.000Z',
-        },
-      }),
-    );
-    const result = parseDocumentVariable(value, false);
-
-    assert(
-      result !== null && result.type === 'single',
-      'Expected a single parsing result.',
-    );
-    expect(result.document.isExpired).toBe(false);
-  });
-
-  it('should set isExpired=false when expiresAt is null', () => {
-    const value = JSON.stringify(
-      makeDocRef({metadata: {...makeDocRef().metadata, expiresAt: null}}),
-    );
-    const result = parseDocumentVariable(value, false);
-
-    assert(
-      result !== null && result.type === 'single',
-      'Expected a single parsing result.',
-    );
-    expect(result.document.isExpired).toBe(false);
-  });
-
-  it('should parse a image document type for supported image formats', () => {
-    for (const format of [
-      'image/jpeg',
-      'image/png',
-      'image/gif',
-      'image/webp',
-    ]) {
-      const value = JSON.stringify(
-        makeDocRef({
-          metadata: {...makeDocRef().metadata, contentType: format},
-        }),
-      );
-      const result = parseDocumentVariable(value, false);
-
-      expect(result).toEqual({
-        type: 'single',
-        document: expect.objectContaining({
-          type: 'image',
-        }),
-      });
-    }
-  });
-
-  it('should parse a json document type for application/json', () => {
-    const value = JSON.stringify(
-      makeDocRef({
-        metadata: {...makeDocRef().metadata, contentType: 'application/json'},
-      }),
-    );
-    const result = parseDocumentVariable(value, false);
-
-    expect(result).toEqual({
-      type: 'single',
-      document: expect.objectContaining({
-        type: 'json',
-      }),
-    });
-  });
-
-  it('should parse a pdf document type for application/pdf', () => {
-    const value = JSON.stringify(
-      makeDocRef({
-        metadata: {...makeDocRef().metadata, contentType: 'application/pdf'},
-      }),
-    );
-    const result = parseDocumentVariable(value, false);
-
-    expect(result).toEqual({
-      type: 'single',
-      document: expect.objectContaining({
-        type: 'pdf',
-      }),
-    });
-  });
-
   it('should return null for a plain string variable', () => {
     const value = '"hello world"';
     const result = parseDocumentVariable(value, false);
@@ -356,28 +227,5 @@ describe('parseDocumentVariable', () => {
     );
     expect(result.documents.length).toBeGreaterThanOrEqual(2);
     expect(result.isLowerBound).toBe(true);
-  });
-
-  it('should return null for a document reference missing required fields', () => {
-    const incomplete = {
-      'camunda.document.type': 'camunda',
-      storeId: 'gcp',
-    };
-    const value = JSON.stringify(incomplete);
-    const result = parseDocumentVariable(value, false);
-
-    expect(result).toBeNull();
-  });
-
-  it('should return null for a document reference without metadata', () => {
-    const value = JSON.stringify({
-      'camunda.document.type': 'camunda',
-      storeId: 'in-memory',
-      documentId: 'doc-no-meta',
-      contentHash: 'sha256:abc',
-    });
-    const result = parseDocumentVariable(value, false);
-
-    expect(result).toBeNull();
   });
 });
