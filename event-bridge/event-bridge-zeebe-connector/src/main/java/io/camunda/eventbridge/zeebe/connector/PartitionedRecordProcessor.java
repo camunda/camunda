@@ -9,6 +9,7 @@ package io.camunda.eventbridge.zeebe.connector;
 
 import io.camunda.eventbridge.client.TopicPartition;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -31,6 +32,14 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Handlers may run concurrently for records of <em>different</em> partitions, so handlers that
  * share mutable state across partitions must be thread-safe.
+ *
+ * <p><b>Failure semantics:</b> a record whose handler throws is <em>not</em> recorded as completed,
+ * and neither is any later record of that partition — the partition's committed offset freezes at
+ * the last success, so the failed record and everything after it are redelivered to a consumer
+ * resuming from the committed offsets (at-least-once) instead of being silently dropped. Other
+ * partitions keep processing and committing. Subsequent records of a failed partition are drained
+ * without dispatching (their permits are released) since their handler effects could never be
+ * committed by this processor anyway.
  */
 final class PartitionedRecordProcessor implements AutoCloseable {
 
@@ -46,6 +55,12 @@ final class PartitionedRecordProcessor implements AutoCloseable {
 
   /** Latest record whose handler has completed, per partition. Written by worker threads. */
   private final Map<TopicPartition, ZeebeRecord> completed = new ConcurrentHashMap<>();
+
+  /**
+   * Partitions with a failed record: their completed offset must never advance past the last
+   * success, so later records are drained without dispatching. Written by worker threads.
+   */
+  private final Set<TopicPartition> failed = ConcurrentHashMap.newKeySet();
 
   PartitionedRecordProcessor(
       final RecordDispatcher dispatcher, final int workerCount, final int maxInFlight) {
@@ -68,11 +83,22 @@ final class PartitionedRecordProcessor implements AutoCloseable {
         tail.handleAsync(
             (ignored, previousError) -> {
               try {
-                dispatcher.dispatch(record.record());
-              } catch (final RuntimeException e) {
-                LOG.warn("Handler failed for record at offset {}", record.offset(), e);
+                if (!failed.contains(partition)) {
+                  try {
+                    dispatcher.dispatch(record.record());
+                    completed.put(partition, record);
+                  } catch (final RuntimeException e) {
+                    failed.add(partition);
+                    LOG.warn(
+                        "Handler failed for {} at offset {}; the partition's committed offset"
+                            + " stays at the last success, so this record and everything after it"
+                            + " are redelivered to a consumer resuming from the committed offsets",
+                        partition,
+                        record.offset(),
+                        e);
+                  }
+                }
               } finally {
-                completed.put(partition, record);
                 inFlight.release();
               }
               return null;

@@ -73,6 +73,65 @@ final class PartitionedRecordProcessorTest {
     }
   }
 
+  @Test
+  void shouldNotAdvanceAPartitionsCompletedOffsetPastAFailedRecord() throws Exception {
+    // given: partition 1's handler throws at seq 2; partition 2 always succeeds. A sentinel record
+    // on partition 2 parks its lane once everything before it completed, giving a fixed point to
+    // assert at (a partition's records run in order, so all earlier offsets are recorded by then).
+    final List<Integer> dispatchedOnPartition1 = new CopyOnWriteArrayList<>();
+    final CountDownLatch partition1Failed = new CountDownLatch(1);
+    final CountDownLatch partition2Settled = new CountDownLatch(1);
+    final CountDownLatch release = new CountDownLatch(1);
+
+    final RecordDispatcher dispatcher = new RecordDispatcher();
+    dispatcher.onAny(
+        record -> {
+          final int seq = Integer.parseInt(((JobRecordValue) record.getValue()).getType());
+          if (record.getPartitionId() == 1) {
+            dispatchedOnPartition1.add(seq);
+            if (seq == 2) {
+              partition1Failed.countDown();
+              throw new IllegalStateException("boom");
+            }
+          } else if (seq == 5) {
+            partition2Settled.countDown();
+            awaitUninterruptibly(release);
+          }
+        });
+
+    // when: five records per partition plus the sentinel, interleaved across partitions
+    try (var processor = new PartitionedRecordProcessor(dispatcher, 2, 100)) {
+      for (int seq = 0; seq < 5; seq++) {
+        processor.submit(record(1, seq));
+        processor.submit(record(2, seq));
+      }
+      processor.submit(record(2, 5));
+      assertThat(partition1Failed.await(10, TimeUnit.SECONDS)).isTrue();
+      assertThat(partition2Settled.await(10, TimeUnit.SECONDS)).isTrue();
+
+      // then: partition 1's committable offset froze at the last success before the failure —
+      // neither the failed record nor anything after it may ever be committed
+      final Map<TopicPartition, ZeebeRecord> completed = processor.completedOffsets();
+      assertThat(completed.get(new TopicPartition(TOPIC, 1)).offset()).isEqualTo(1L);
+
+      // and: partition 1's records after the failure were never dispatched
+      assertThat(dispatchedOnPartition1).containsExactly(0, 1, 2);
+
+      // while partition 2 kept processing and recording its offsets
+      assertThat(completed.get(new TopicPartition(TOPIC, 2)).offset()).isEqualTo(4L);
+      release.countDown();
+    }
+  }
+
+  private static void awaitUninterruptibly(final CountDownLatch latch) {
+    try {
+      latch.await();
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new IllegalStateException(e);
+    }
+  }
+
   private static ZeebeRecord record(final int partition, final int seq) {
     final JobRecord value = new JobRecord().setType(Integer.toString(seq));
     final RecordMetadata metadata =
