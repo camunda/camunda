@@ -270,8 +270,8 @@
     WHERE PROCESS_DEFINITION_KEY = #{processDefinitionKey}
   </select>
 
-  <!-- Returns distinct, prefix-narrowed, authorized variable names, ordered alphabetically and capped at the limit. -->
-  <select id="findVariableNamesByPrefix" parameterType="io.camunda.db.rdbms.read.domain.VariableNameDbQuery"
+  <!-- Returns distinct, name-narrowed, authorized variable names, ordered alphabetically and capped at the limit. -->
+  <select id="findVariableNames" parameterType="io.camunda.db.rdbms.read.domain.VariableNameDbQuery"
     resultType="java.lang.String">
     SELECT DISTINCT l.VAR_NAME
     FROM ${prefix}PROCESS_DEF_VAR_NAME_LOOKUP l

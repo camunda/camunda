@@ -41,10 +41,10 @@ public interface VariableMapper extends ProcessInstanceDependantMapper {
   List<String> findLookupVariableNames(@Param("processDefinitionKey") long processDefinitionKey);
 
   /**
-   * Returns distinct variable names for the given process definition, narrowed by the filter's name
-   * prefix, ordered alphabetically and capped at the query's limit.
+   * Returns distinct variable names for the given process definition, narrowed by the query's name
+   * filter, ordered alphabetically and capped at the query's limit.
    */
-  List<String> findVariableNamesByPrefix(VariableNameDbQuery query);
+  List<String> findVariableNames(VariableNameDbQuery query);
 
   /** Deletes all lookup entries for the given process definition keys. */
   void deleteLookupByProcessDefinitionKeys(List<Long> processDefinitionKeys, int limit);

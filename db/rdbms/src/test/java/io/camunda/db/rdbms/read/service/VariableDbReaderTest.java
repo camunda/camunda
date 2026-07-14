@@ -81,7 +81,7 @@ class VariableDbReaderTest {
     final var names = variableDbReader.searchVariableNames(query, resourceAccessChecks);
 
     assertThat(names).isEmpty();
-    verify(variableMapper, never()).findVariableNamesByPrefix(any());
+    verify(variableMapper, never()).findVariableNames(any());
   }
 
   @Test
@@ -97,13 +97,13 @@ class VariableDbReaderTest {
     final var names = variableDbReader.searchVariableNames(query, resourceAccessChecks);
 
     assertThat(names).isEmpty();
-    verify(variableMapper, never()).findVariableNamesByPrefix(any());
+    verify(variableMapper, never()).findVariableNames(any());
   }
 
   @Test
   void shouldInjectAuthorizedProcessDefinitionIdsIntoNameQuery() {
     final var authorizedIds = List.of("process-a", "process-b");
-    when(variableMapper.findVariableNamesByPrefix(any())).thenReturn(List.of("amount", "total"));
+    when(variableMapper.findVariableNames(any())).thenReturn(List.of("amount", "total"));
 
     final VariableNameQuery query =
         VariableNameQuery.of(b -> b.filter(f -> f.processDefinitionKeys(1L)).page(p -> p.size(5)));
@@ -118,7 +118,7 @@ class VariableDbReaderTest {
 
     assertThat(names).containsExactly("amount", "total");
     verify(variableMapper)
-        .findVariableNamesByPrefix(
+        .findVariableNames(
             argThat(
                 (VariableNameDbQuery q) ->
                     q.authorizedResourceIds().equals(authorizedIds) && q.limit() == 5));

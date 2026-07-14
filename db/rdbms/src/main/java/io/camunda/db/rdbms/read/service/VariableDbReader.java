@@ -103,7 +103,7 @@ public class VariableDbReader extends AbstractEntityReader<VariableEntity>
         resourceAccessChecks
             .getAuthorizedResourceIdsByType()
             .getOrDefault(AuthorizationResourceType.PROCESS_DEFINITION.name(), List.of());
-    return variableMapper.findVariableNamesByPrefix(
+    return variableMapper.findVariableNames(
         new VariableNameDbQuery(
             query.filter(),
             authorizedResourceIds,
