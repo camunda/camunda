@@ -316,9 +316,20 @@ test.describe('Operations panel scrolling', () => {
         .nth(19)
         .scrollIntoViewIfNeeded();
 
-      await expect(
-        operateOperationPanelPage.getAllOperationEntries(),
-      ).toHaveCount(40, {timeout: 30000});
+      // Scrolling loads the next page (20 more) via cursor pagination, while the
+      // operations store also polls the top `20 * page` operations every second
+      // as long as any operation is still running. The two result sets are merged
+      // by id, and because operations are still mutating (sort order drifts as the
+      // demo cancels complete) the merged distinct set can slightly exceed a clean
+      // multiple of the page size. Assert that at least a second batch loaded
+      // rather than an exact count, which is inherently racy under that merge.
+      await expect
+        .poll(
+          async () =>
+            operateOperationPanelPage.getAllOperationEntries().count(),
+          {timeout: 30000},
+        )
+        .toBeGreaterThanOrEqual(40);
     });
   });
 });
