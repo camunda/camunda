@@ -11,6 +11,7 @@ import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
 import java.util.LinkedHashSet;
+import java.util.regex.MatchResult;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
@@ -35,6 +36,16 @@ final class SecretReferenceLiteralValidator implements ModelElementValidator<Zee
 
   private static final Pattern SECRET_REFERENCE =
       Pattern.compile("camunda\\.secrets\\.[\\p{Alnum}_]+");
+
+  // Matches one whole double-quoted string literal, so only quoted text is scanned for a reference.
+  // As a regex (after Java unescaping): "(?:\\.|[^"\\])*"
+  //   "        an opening double quote
+  //   (?: )*   zero or more of, in order:
+  //     \\.      a backslash escape (backslash + any char), so \" does not end the literal
+  //     [^"\\]   any character that is not a double quote or a backslash
+  //   "        a closing double quote
+  // e.g. it matches "ab" and "a\"b".
+  private static final Pattern STRING_LITERAL = Pattern.compile("\"(?:\\\\.|[^\"\\\\])*\"");
 
   private final ExpressionLanguage expressionLanguage;
 
@@ -84,29 +95,15 @@ final class SecretReferenceLiteralValidator implements ModelElementValidator<Zee
   }
 
   /**
-   * The concatenated contents of every double-quoted string literal in a FEEL expression body,
-   * separated so adjacent literals cannot form a spurious match. Text outside string literals (such
-   * as a {@code camunda.secrets.token} path expression) is skipped.
+   * Every double-quoted string literal in a FEEL expression body, joined by a separator so adjacent
+   * literals cannot fuse into a spurious match. Text outside string literals (such as a {@code
+   * camunda.secrets.token} path expression) is not matched, so only quoted usage is flagged.
    */
   private static String stringLiterals(final String feelBody) {
-    final StringBuilder literals = new StringBuilder();
-    boolean insideString = false;
-    for (int i = 0; i < feelBody.length(); i++) {
-      final char c = feelBody.charAt(i);
-      if (insideString) {
-        if (c == '\\' && i + 1 < feelBody.length()) {
-          // keep the escaped character as-is; enough to scan for a reference
-          literals.append(feelBody.charAt(++i));
-        } else if (c == '"') {
-          insideString = false;
-          literals.append('\n');
-        } else {
-          literals.append(c);
-        }
-      } else if (c == '"') {
-        insideString = true;
-      }
-    }
-    return literals.toString();
+    return STRING_LITERAL
+        .matcher(feelBody)
+        .results()
+        .map(MatchResult::group)
+        .collect(Collectors.joining("\n"));
   }
 }
