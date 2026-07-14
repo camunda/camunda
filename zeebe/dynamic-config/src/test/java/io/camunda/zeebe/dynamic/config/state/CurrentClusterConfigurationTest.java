@@ -91,7 +91,7 @@ class CurrentClusterConfigurationTest {
               .build();
 
       // when
-      final var migrated = CurrentClusterConfiguration.ofDefault(legacy);
+      final var migrated = CurrentClusterConfiguration.fromLegacy(legacy);
 
       // then — every member is in the global config with its lifecycle state
       assertThat(migrated.globalConfiguration().members()).containsOnlyKeys(MEMBER_0, MEMBER_1);
@@ -120,7 +120,7 @@ class CurrentClusterConfigurationTest {
           ClusterConfiguration.builder().version(1).members(Map.of(MEMBER_0, recovering)).build();
 
       // when
-      final var migrated = CurrentClusterConfiguration.ofDefault(legacy);
+      final var migrated = CurrentClusterConfiguration.fromLegacy(legacy);
 
       // then — lifecycle is ACTIVE, per-group mode is RECOVERING
       assertThat(migrated.globalConfiguration().getMember(MEMBER_0).state())
@@ -151,7 +151,7 @@ class CurrentClusterConfigurationTest {
               .build();
 
       // when
-      final var migrated = CurrentClusterConfiguration.ofDefault(legacy);
+      final var migrated = CurrentClusterConfiguration.fromLegacy(legacy);
 
       // then — the ops become three phases in order: [global], [default: 2 partition ops], [global]
       final var plan = migrated.phasedChangeState().pending().orElseThrow();
@@ -184,7 +184,7 @@ class CurrentClusterConfigurationTest {
               .build();
 
       // when
-      final var migrated = CurrentClusterConfiguration.ofDefault(legacy);
+      final var migrated = CurrentClusterConfiguration.fromLegacy(legacy);
 
       // then — the last change moves to the PhasedChangeState, status preserved
       final var lastChange = migrated.phasedChangeState().lastChange().orElseThrow();
@@ -209,7 +209,7 @@ class CurrentClusterConfigurationTest {
               .build();
 
       // when / then
-      assertThatThrownBy(() -> CurrentClusterConfiguration.ofDefault(legacy))
+      assertThatThrownBy(() -> CurrentClusterConfiguration.fromLegacy(legacy))
           .isInstanceOf(IllegalStateException.class);
     }
 
@@ -219,7 +219,7 @@ class CurrentClusterConfigurationTest {
       final var legacy = ClusterConfiguration.init();
 
       // when
-      final var migrated = CurrentClusterConfiguration.ofDefault(legacy);
+      final var migrated = CurrentClusterConfiguration.fromLegacy(legacy);
 
       // then — an empty global config and an empty default group
       assertThat(migrated.globalConfiguration().members()).isEmpty();
@@ -240,7 +240,7 @@ class CurrentClusterConfigurationTest {
               .build();
 
       // when — migration must not fail on the non-positive id
-      final var migrated = CurrentClusterConfiguration.ofDefault(legacy);
+      final var migrated = CurrentClusterConfiguration.fromLegacy(legacy);
 
       // then — the pending plan id is normalized to a positive value
       final var plan = migrated.phasedChangeState().pending().orElseThrow();
@@ -260,7 +260,7 @@ class CurrentClusterConfigurationTest {
               .build();
 
       // when
-      final var migrated = CurrentClusterConfiguration.ofDefault(legacy);
+      final var migrated = CurrentClusterConfiguration.fromLegacy(legacy);
 
       // then — the last change id is clamped to non-negative, so a new plan can still be started
       assertThat(migrated.phasedChangeState().lastChange().orElseThrow().id()).isEqualTo(0);
@@ -282,7 +282,7 @@ class CurrentClusterConfigurationTest {
               .build();
 
       // when
-      final var migrated = CurrentClusterConfiguration.ofDefault(legacy);
+      final var migrated = CurrentClusterConfiguration.fromLegacy(legacy);
 
       // then — a single GlobalPhase holds both, in order
       assertThat(migrated.phasedChangeState().pending().orElseThrow().phases())
@@ -302,7 +302,7 @@ class CurrentClusterConfigurationTest {
               .build();
 
       // when
-      final var migrated = CurrentClusterConfiguration.ofDefault(legacy);
+      final var migrated = CurrentClusterConfiguration.fromLegacy(legacy);
 
       // then — a single default-group phase holds both, in order
       assertThat(migrated.phasedChangeState().pending().orElseThrow().phases())
@@ -326,7 +326,7 @@ class CurrentClusterConfigurationTest {
               .build();
 
       // when
-      final var migrated = CurrentClusterConfiguration.ofDefault(legacy);
+      final var migrated = CurrentClusterConfiguration.fromLegacy(legacy);
 
       // then — the status maps to the matching PhasedChangePlanStatus
       assertThat(migrated.phasedChangeState().lastChange().orElseThrow().status())
@@ -360,7 +360,7 @@ class CurrentClusterConfigurationTest {
               .build();
 
       // when
-      final var migrated = CurrentClusterConfiguration.ofDefault(legacy);
+      final var migrated = CurrentClusterConfiguration.fromLegacy(legacy);
 
       // then — startedAt of the pending plan and both timestamps of the last change are preserved
       assertThat(migrated.phasedChangeState().pending().orElseThrow().startedAt())
@@ -381,7 +381,7 @@ class CurrentClusterConfigurationTest {
               .build();
 
       // when
-      final var migrated = CurrentClusterConfiguration.ofDefault(legacy);
+      final var migrated = CurrentClusterConfiguration.fromLegacy(legacy);
 
       // then — no pending phased plan is produced
       assertThat(migrated.phasedChangeState().pending()).isEmpty();

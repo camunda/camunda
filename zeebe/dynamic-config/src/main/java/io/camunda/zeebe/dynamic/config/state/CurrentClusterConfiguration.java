@@ -93,7 +93,7 @@ public record CurrentClusterConfiguration(
    *
    * @throws IllegalStateException if the legacy {@code lastChange} has {@code IN_PROGRESS} status
    */
-  public static CurrentClusterConfiguration ofDefault(final ClusterConfiguration legacy) {
+  public static CurrentClusterConfiguration fromLegacy(final ClusterConfiguration legacy) {
     final long version = legacy.version();
 
     final Map<MemberId, BrokerState> brokerStates =
