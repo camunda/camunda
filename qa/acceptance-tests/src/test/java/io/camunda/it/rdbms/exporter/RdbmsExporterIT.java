@@ -245,6 +245,30 @@ class RdbmsExporterIT {
   }
 
   @Test
+  public void shouldUpdateBusinessIdOnLateAssignment() {
+    // given - a running process instance is exported
+    final var startedRecord = FIXTURES.getProcessInstanceStartedRecord();
+    exporter.export(startedRecord);
+    final var key = ((ProcessInstanceRecordValue) startedRecord.getValue()).getProcessInstanceKey();
+    final var before = rdbmsService.getProcessInstanceReader().findOne(key);
+    assertThat(before).isNotEmpty();
+
+    // when - a business id is assigned late to that running instance
+    final var assignedRecord =
+        FIXTURES.getProcessInstanceBusinessIdAssignedRecord(key, "late-business-id");
+    exporter.export(assignedRecord);
+
+    // then - only the business id of the existing row changed, nothing else
+    final var after = rdbmsService.getProcessInstanceReader().findOne(key);
+    assertThat(after).isNotEmpty();
+    assertThat(after.get().businessId()).isEqualTo("late-business-id");
+    assertThat(after.get().state()).isEqualTo(before.get().state());
+    assertThat(after.get().processDefinitionId()).isEqualTo(before.get().processDefinitionId());
+    assertThat(after.get().processDefinitionKey()).isEqualTo(before.get().processDefinitionKey());
+    assertThat(after.get().startDate()).isEqualTo(before.get().startDate());
+  }
+
+  @Test
   public void shouldExportProcessDefinition() {
     // given
     final var processDefinitionRecord = FIXTURES.getProcessDefinitionCreatedRecord();
