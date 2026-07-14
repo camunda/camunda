@@ -37,7 +37,6 @@ import static java.util.Optional.ofNullable;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.filter.Operation;
-import io.camunda.search.filter.Operator;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.security.core.auth.RequiredAuthorization;
@@ -188,14 +187,14 @@ public final class ProcessInstanceFilterTransformer
       case EXISTS -> existsAnyLevel();
       case NOT_EXISTS -> not(existsAnyLevel());
       case IN ->
-          or(operation.values().stream()
-              .map(ProcessInstanceFilterTransformer::matchAnyLevel)
-              .toList());
+          or(
+              operation.values().stream()
+                  .map(ProcessInstanceFilterTransformer::matchAnyLevel)
+                  .toList());
       case LIKE -> wildcardAnyLevel(Objects.requireNonNull(operation.value()).toLowerCase());
       default ->
           throw new IllegalStateException(
-              "Unsupported operator %s for errorMessage filter"
-                  .formatted(operation.operator()));
+              "Unsupported operator %s for errorMessage filter".formatted(operation.operator()));
     };
   }
 
