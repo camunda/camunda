@@ -93,13 +93,22 @@ need it — not the whole flood. That's normally:
 2. Every incident that looks like an outlier (there are usually few)
 
 Call these in parallel. From each response, extract:
-- Alert payload run URLs / run IDs
-- Any existing investigation content
+- Alert payload run URLs / run IDs — **and** the specific job name / workflow step within that run
+  (e.g. `integration-tests/zeebe-opensearch-exporter` vs `integration-tests/camunda-exporter`).
+  Two incidents can share a run URL while testing entirely different components — a shared run ID
+  is a much weaker signal than a shared job/test name. See the run-ID caveat in
+  `references/flood-patterns.md` before treating a shared run as enough to group on.
+- Any existing investigation content — but scope a stated root cause to the incident that stated
+  it. Do not extend one incident's "already tracked under issue #X" claim to a sibling that shares
+  only a run ID or name prefix with it; confirm the sibling's own failure independently.
 
-If a specific incident is still unclear after `incident_show` — thin alert payload, no shared run
-ID, genuinely ambiguous — invoke `/ci-incident <ID>` for that one incident to pull its full
-investigation context (Slack thread, matched runbook) before deciding where it belongs. Scope this
-to the incidents that actually need it; don't run it broadly across the flood.
+If a specific incident's alert payload is thin (e.g. "unsuccessful test cases: none captured") and
+you're relying on it to justify grouping, that's a blocker, not a detail to skip past — a sibling's
+confidence is not a substitute for this incident's own evidence. Before deciding where it belongs:
+pull the actual GHA job log (`gh run view <run_id> --log-failed`) if you have shell access, or
+invoke `/ci-incident <ID>` for that one incident to pull its full investigation context (Slack
+thread, matched runbook). Scope this to the incidents that actually need it; don't run it broadly
+across the flood.
 
 Use all of this to confirm or refute the grouping hypothesis.
 
@@ -151,5 +160,9 @@ directly — they should copy-paste from the output above.
   in Step 5 is a recommendation, not an action.
 - Always show draft wording and get confirmation before any `incident_update` call.
 - Never assume an incident has been investigated — ask or check.
+- Never group an incident into a shared-cause bucket on a shared run ID or name prefix alone, and
+  never let one incident's stated root cause/dedup claim cover a sibling that hasn't been checked
+  independently — especially when that sibling's own alert payload is thin. See "Correlation
+  Pitfalls" in `references/flood-patterns.md`.
 - If the snapshot is a partial picture (flood still growing), say so and suggest re-running in
   5–10 minutes.

@@ -23,6 +23,16 @@ The alerting fires one incident per job — so one root cause becomes 30 inciden
 **Key correlation signal:** shared GHA run IDs in alert payloads. If 25 of 30 incidents reference
 the same 3 runs, it's almost certainly one cause.
 
+**Caveat — run ID alone is not proof:** a shared run ID means the incidents came from the same CI
+*invocation*, not that they share a cause. This heuristic is strongest here, in a merge-queue batch,
+because a single broken commit really does poison every job in that batch. It is much weaker for a
+scheduled/nightly workflow (see Pattern B) — one nightly run fans out into many independent
+per-component jobs that all legitimately carry the same run URL by construction, whether or not
+their failures are related. Before grouping on run-ID alone, compare the job name segment (e.g.
+`integration-tests/zeebe-opensearch-exporter` vs `integration-tests/camunda-exporter`) — different
+job names sharing one run are a stronger signal of *different* causes than the shared run ID is a
+signal of the same cause. Confirm with the actual failing test/class name when it's available.
+
 **Right response:**
 1. Identify the dominant run IDs
 2. Find the common failure in those runs (compile error → look at Java Checks / Maven; infra →
@@ -43,6 +53,9 @@ failure message — investigate separately via `/ci-incident`.
 - Incident names contain `nightly`, `scheduled`, `manualscheduled`, or `unsuccessful-job`
 - Different workflows, different teams, no obvious shared run IDs
 - Some jobs may have been failing for days
+- A single nightly/scheduled run can trigger several incidents at once — one per failing job in
+  its matrix — that all share the same run URL. That's normal fan-out, not evidence those jobs
+  share a root cause (see the run-ID caveat under Pattern A)
 
 **Why it happens (two sub-cases):**
 
@@ -84,3 +97,23 @@ archetype cleanly, pull `incident_show` on a representative sample and look for:
 - Whether the flood started at an unusual hour (silence expiry tends to happen at fixed times)
 
 State your uncertainty explicitly in the triage output rather than forcing a pattern.
+
+---
+
+## Correlation Pitfalls
+
+Two failure modes have actually caused mis-grouping in practice — check for both before finalizing
+any group of more than one incident:
+
+- **Don't let one incident's narrative anchor its siblings.** If incident A's summary says
+  "already tracked under issue #X," that claim covers incident A's own failure. It does not
+  automatically extend to incident B just because B shares a run ID, workflow-name prefix, or
+  timing with A. Confirm each incident's own failing job/test independently before folding it into
+  A's group — a confident sibling is not evidence about an unrelated one.
+- **A thin alert payload blocks grouping, not just outlier status.** If an alert's "unsuccessful
+  test cases" came back empty or uncaptured, you don't know what actually failed. Don't assume it
+  matches the group's dominant cause just because the surrounding metadata (run ID, name prefix)
+  looks similar — that's exactly the situation where superficial signals get mistaken for a shared
+  cause. Pull the real failing test/job (the GHA job log, e.g. `gh run view <run_id> --log-failed`)
+  or escalate via `/ci-incident` before including it.
+
