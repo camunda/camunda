@@ -9,9 +9,12 @@ package io.camunda.optimize.rest.security.ccsm;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.github.netmikey.logunit.api.LogCapturer;
 import jakarta.servlet.FilterChain;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.slf4j.event.Level;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockHttpSession;
@@ -19,6 +22,10 @@ import org.springframework.mock.web.MockHttpSession;
 class OidcRedirectDiagnosticsFilterTest {
 
   private static final String CALLBACK_PATH = "/api/authentication/callback";
+
+  @RegisterExtension
+  final LogCapturer logs =
+      LogCapturer.create().captureForType(OidcRedirectDiagnosticsFilter.class, Level.DEBUG);
 
   private OidcRedirectDiagnosticsFilter filter;
 
@@ -32,26 +39,30 @@ class OidcRedirectDiagnosticsFilterTest {
     // given
     final var request = new MockHttpServletRequest("GET", "/api/dashboard");
     final var response = new MockHttpServletResponse();
-    final var chain = noopChain();
 
     // when
-    filter.doFilter(request, response, chain);
+    filter.doFilter(request, response, noopChain());
 
-    // then — no exception, chain completed
+    // then
     assertThat(response.getStatus()).isEqualTo(200);
+    assertNoWarnLogged();
   }
 
   @Test
   void shouldPassThroughCallbackWithoutError() throws Exception {
-    // given — callback with code and valid session
+    // given — callback with code and valid session, no forwarded headers
     final var request = new MockHttpServletRequest("GET", CALLBACK_PATH);
     request.addParameter("code", "auth-code-value");
     request.addParameter("state", "state-value");
     request.setSession(new MockHttpSession());
     final var response = new MockHttpServletResponse();
 
-    // when — no exception
+    // when
     filter.doFilter(request, response, noopChain());
+
+    // then — chain completed, no diagnostic WARN
+    assertThat(response.getStatus()).isEqualTo(200);
+    assertNoWarnLogged();
   }
 
   @Test
@@ -62,11 +73,14 @@ class OidcRedirectDiagnosticsFilterTest {
     // no session — getSession(false) returns null
     final var response = new MockHttpServletResponse();
 
-    // when — no exception (logs a WARN)
+    // when
     filter.doFilter(request, response, noopChain());
 
-    // then — request completed, downstream chain was called
+    // then — request completed and WARN emitted about the missing session
     assertThat(response.getStatus()).isEqualTo(200);
+    logs.assertContains(
+        e -> e.getLevel() == Level.WARN && e.getMessage().contains("no valid HTTP session"),
+        "expected WARN about missing HTTP session on callback");
   }
 
   @Test
@@ -76,26 +90,33 @@ class OidcRedirectDiagnosticsFilterTest {
     request.addParameter("error", "access_denied");
     final var response = new MockHttpServletResponse();
 
-    // when — no exception
+    // when
     filter.doFilter(request, response, noopChain());
+
+    // then — no session WARN because there is no authorization code to exchange
+    assertThat(response.getStatus()).isEqualTo(200);
+    assertNoWarnLogged();
   }
 
   @Test
-  void shouldLogMismatchWhenForwardedHeadersDifferFromTomcatUrl() throws Exception {
+  void shouldWarnWhenForwardedHeadersDifferFromTomcatUrl() throws Exception {
     // given — reverse proxy sets X-Forwarded-Proto/Host, but Tomcat uses its own scheme/host
     final var request = new MockHttpServletRequest("GET", CALLBACK_PATH);
     request.setScheme("http");
     request.setServerName("internal-host");
     request.setServerPort(8090);
     request.setRequestURI(CALLBACK_PATH);
-    // Simulate a plain StringBuffer for getRequestURL (MockHttpServletRequest builds it from
-    // scheme/host/port)
     request.addHeader("X-Forwarded-Proto", "https");
     request.addHeader("X-Forwarded-Host", "optimize.example.com");
     final var response = new MockHttpServletResponse();
 
-    // when — no exception; a WARN is logged because URLs differ
+    // when
     filter.doFilter(request, response, noopChain());
+
+    // then — WARN naming both the raw Tomcat URL and the expected external URL
+    logs.assertContains(
+        e -> e.getLevel() == Level.WARN && e.getMessage().contains("mismatch"),
+        "expected WARN about callback URL mismatch");
   }
 
   @Test
@@ -110,12 +131,19 @@ class OidcRedirectDiagnosticsFilterTest {
     request.addHeader("X-Forwarded-Host", "optimize.example.com");
     final var response = new MockHttpServletResponse();
 
-    // when — no exception, no WARN (URLs match)
+    // when
     filter.doFilter(request, response, noopChain());
+
+    // then — DEBUG entry logged but no WARN
+    assertThat(response.getStatus()).isEqualTo(200);
+    assertNoWarnLogged();
+    logs.assertContains(
+        e -> e.getLevel() == Level.DEBUG && e.getMessage().contains("OIDC callback received"),
+        "expected DEBUG entry for callback");
   }
 
   @Test
-  void shouldLogIdentityRedirectDiagnosticsOnMismatch() throws Exception {
+  void shouldWarnOnIdentityRedirectWithMismatchedRedirectUri() throws Exception {
     // given — chain redirects to Identity with a redirect_uri that doesn't match forwarded headers
     final var request = new MockHttpServletRequest("GET", "/api/dashboard");
     request.addHeader("X-Forwarded-Proto", "https");
@@ -133,10 +161,14 @@ class OidcRedirectDiagnosticsFilterTest {
           ((MockHttpServletResponse) res).setStatus(302);
         };
 
-    // when — no exception; a WARN is logged about the redirect_uri mismatch
+    // when
     filter.doFilter(request, response, chain);
 
+    // then — redirect went through AND WARN naming the mismatched redirect_uri was emitted
     assertThat(response.getStatus()).isEqualTo(302);
+    logs.assertContains(
+        e -> e.getLevel() == Level.WARN && e.getMessage().contains("redirect_uri"),
+        "expected WARN about mismatched redirect_uri in Identity authorize redirect");
   }
 
   // --- splitHostPort ---
@@ -170,11 +202,11 @@ class OidcRedirectDiagnosticsFilterTest {
     assertThat(parts[1]).isEqualTo("8080");
   }
 
-  // --- buildExpectedCallbackUrl via doFilter ---
+  // --- URL construction via doFilter: assert no WARN when URLs match ---
 
   @Test
   void shouldUseFirstValueFromCommaListInXForwardedPort() throws Exception {
-    // given — proxy sends X-Forwarded-Port as a comma-separated list
+    // given — proxy sends X-Forwarded-Port as a comma-separated list; first value "443" is default
     final var request = new MockHttpServletRequest("GET", CALLBACK_PATH);
     request.setRequestURI(CALLBACK_PATH);
     request.addHeader("X-Forwarded-Proto", "https");
@@ -185,9 +217,12 @@ class OidcRedirectDiagnosticsFilterTest {
     request.setServerPort(443);
     final var response = new MockHttpServletResponse();
 
-    // when — no exception; URL derived from first port value "443" matches (default, suppressed),
-    // so Tomcat URL and expected URL both resolve to https://optimize.example.com/..., no WARN
+    // when
     filter.doFilter(request, response, noopChain());
+
+    // then — first port value "443" is the HTTPS default; both URLs agree, no WARN
+    assertThat(response.getStatus()).isEqualTo(200);
+    assertNoWarnLogged();
   }
 
   @Test
@@ -203,8 +238,12 @@ class OidcRedirectDiagnosticsFilterTest {
     request.setServerPort(8443);
     final var response = new MockHttpServletResponse();
 
-    // when — no exception; expected URL includes :8443, Tomcat URL also includes :8443 → no WARN
+    // when
     filter.doFilter(request, response, noopChain());
+
+    // then — port 8443 extracted from host; Tomcat URL also has :8443; no WARN
+    assertThat(response.getStatus()).isEqualTo(200);
+    assertNoWarnLogged();
   }
 
   @Test
@@ -219,8 +258,12 @@ class OidcRedirectDiagnosticsFilterTest {
     request.setServerPort(443);
     final var response = new MockHttpServletResponse();
 
-    // when — default port must be suppressed so no double-colon URL is built
+    // when
     filter.doFilter(request, response, noopChain());
+
+    // then — port 443 suppressed from both sides; URLs agree, no WARN
+    assertThat(response.getStatus()).isEqualTo(200);
+    assertNoWarnLogged();
   }
 
   @Test
@@ -236,8 +279,19 @@ class OidcRedirectDiagnosticsFilterTest {
     request.setServerPort(8443);
     final var response = new MockHttpServletResponse();
 
-    // when — no exception; X-Forwarded-Port=8443 overrides embedded 9999
+    // when
     filter.doFilter(request, response, noopChain());
+
+    // then — X-Forwarded-Port=8443 overrides embedded 9999; Tomcat :8443 matches; no WARN
+    assertThat(response.getStatus()).isEqualTo(200);
+    assertNoWarnLogged();
+  }
+
+  // --- helpers ---
+
+  private void assertNoWarnLogged() {
+    logs.assertDoesNotContain(
+        e -> e.getLevel() == Level.WARN, "unexpected WARN logged by diagnostics filter");
   }
 
   private static FilterChain noopChain() {
