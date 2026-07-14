@@ -36,7 +36,10 @@ export function formatPercent(ratio: number): string {
   return `${Math.round(ratio * 100)}%`;
 }
 
-/** A count with thousands separators. */
-export function formatCount(n: number): string {
-  return n.toLocaleString("en-US");
+/**
+ * A count with thousands separators. Tolerates a missing value (an in-flight deploy can briefly
+ * serve a response shape the bundle does not expect) — a dash beats crashing the whole page.
+ */
+export function formatCount(n: number | null | undefined): string {
+  return n == null ? "–" : n.toLocaleString("en-US");
 }
