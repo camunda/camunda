@@ -14,7 +14,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -42,8 +41,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class OidcRedirectDiagnosticsFilter extends OncePerRequestFilter {
 
   private static final Logger LOG = LoggerFactory.getLogger(OidcRedirectDiagnosticsFilter.class);
-
-  private static final Set<String> REDACTED_PARAMS = Set.of("code", "client_secret", "password");
 
   private static final String X_FORWARDED_PROTO = "X-Forwarded-Proto";
   private static final String X_FORWARDED_HOST = "X-Forwarded-Host";
