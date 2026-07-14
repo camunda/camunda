@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.shared.management;
 
+import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.service.ExportingServices;
 import io.camunda.service.registry.ServiceRegistry;
@@ -22,6 +23,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 @Component
 @RestControllerEndpoint(id = "exporting")
+// Only load where the ServiceRegistry bean it depends on exists (i.e. when an HTTP gateway is
+// enabled); otherwise the endpoint fails to construct and breaks broker/gRPC-only startup.
+@ConditionalOnAnyHttpGatewayEnabled
 public final class ExportingEndpoint {
   static final String PAUSE = "pause";
   static final String RESUME = "resume";
