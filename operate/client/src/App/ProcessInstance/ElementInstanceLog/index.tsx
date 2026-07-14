@@ -7,21 +7,31 @@
  */
 
 import {observer} from 'mobx-react';
-import {Container, PanelHeader, ErrorMessage} from './styled';
+import {useSearchParams} from 'react-router-dom';
+import {ErrorBoundary} from 'react-error-boundary';
+import {Container, PanelHeader, ErrorMessage, PanelBody} from './styled';
 import {TimeStampPill} from './TimeStampPill';
 import {modificationsStore} from 'modules/stores/modifications';
 import {Stack} from '@carbon/react';
 import {Skeleton} from './Skeleton';
 import {ExecutionCountToggle} from './ExecutionCountToggle';
 import {ElementInstancesTree} from './ElementInstancesTree';
+import {FilteredElementInstancesList} from './FilteredElementInstancesList';
+import {SearchForm, SEARCH_PARAM_KEY} from './SearchForm';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {isRequestError} from 'modules/request';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {getForbiddenPermissionsError} from 'modules/constants/permissions';
 
-const Layout: React.FC<{children: React.ReactNode; isPanel: boolean}> =
-  observer(({children, isPanel}) => {
+type LayoutProps = {
+  children: React.ReactNode;
+  isPanel: boolean;
+  searchInput?: React.ReactNode;
+};
+
+const Layout: React.FC<LayoutProps> = observer(
+  ({children, isPanel, searchInput}) => {
     if (!isPanel) {
       return children;
     }
@@ -36,10 +46,12 @@ const Layout: React.FC<{children: React.ReactNode; isPanel: boolean}> =
             </Stack>
           )}
         </PanelHeader>
+        {!modificationsStore.isModificationModeEnabled && searchInput}
         {children}
       </Container>
     );
-  });
+  },
+);
 
 const INSTANCE_HISTORY_FORBIDDEN = getForbiddenPermissionsError(
   'Instance History',
@@ -58,6 +70,17 @@ const ElementInstanceLog: React.FC<{isPanel?: boolean}> = observer(
       status: businessObjectsStatus,
       error: businessObjectsError,
     } = useBusinessObjects();
+
+    const [searchParams] = useSearchParams();
+
+    const isModificationModeEnabled =
+      modificationsStore.isModificationModeEnabled;
+
+    // The submitted search value lives in the URL so the filtered view is
+    // shareable. Reads the param directly so a fresh page load with
+    // ?elementSearch=foo shows the filtered list immediately.
+    const submittedSearch = searchParams.get(SEARCH_PARAM_KEY) ?? '';
+    const isFiltered = submittedSearch.trim().length > 0;
 
     if ([processInstanceStatus, businessObjectsStatus].includes('pending')) {
       return (
@@ -93,14 +116,43 @@ const ElementInstanceLog: React.FC<{isPanel?: boolean}> = observer(
     }
 
     return (
-      <Layout isPanel={isPanel}>
-        <ElementInstancesTree
-          processInstance={processInstance!}
-          businessObjects={businessObjects!}
-          errorMessage={
-            <ErrorMessage message="Instance History could not be fetched" />
-          }
-        />
+      <Layout isPanel={isPanel} searchInput={<SearchForm />}>
+        <PanelBody>
+          <ErrorBoundary
+            fallbackRender={({error}) => (
+              <ErrorMessage
+                message={
+                  isRequestError(error) &&
+                  error?.response?.status === HTTP_STATUS_FORBIDDEN
+                    ? INSTANCE_HISTORY_FORBIDDEN.message
+                    : 'Instance History could not be fetched'
+                }
+                additionalInfo={
+                  isRequestError(error) &&
+                  error?.response?.status === HTTP_STATUS_FORBIDDEN
+                    ? INSTANCE_HISTORY_FORBIDDEN.additionalInfo
+                    : 'Refresh the page to try again'
+                }
+              />
+            )}
+          >
+            {isFiltered && !isModificationModeEnabled ? (
+              <FilteredElementInstancesList
+                searchText={submittedSearch.trim()}
+                processInstanceKey={processInstance!.processInstanceKey}
+                businessObjects={businessObjects!}
+              />
+            ) : (
+              <ElementInstancesTree
+                processInstance={processInstance!}
+                businessObjects={businessObjects!}
+                errorMessage={
+                  <ErrorMessage message="Instance History could not be fetched" />
+                }
+              />
+            )}
+          </ErrorBoundary>
+        </PanelBody>
       </Layout>
     );
   },

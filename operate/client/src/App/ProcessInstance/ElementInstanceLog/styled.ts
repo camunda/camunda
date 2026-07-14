@@ -37,4 +37,12 @@ const ErrorMessage = styled(BaseErrorMessage)`
   margin: auto;
 `;
 
-export {PanelHeader, Container, ErrorMessage};
+const PanelBody = styled.div`
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  position: relative;
+`;
+
+export {PanelHeader, Container, ErrorMessage, PanelBody};
