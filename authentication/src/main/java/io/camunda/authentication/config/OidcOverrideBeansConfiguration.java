@@ -40,6 +40,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
@@ -324,9 +326,8 @@ public class OidcOverrideBeansConfiguration {
                         (registrationId, config) ->
                             claimsByRegistrationId.put(
                                 registrationId,
-                                java.util.stream.Stream.of(
-                                        config.getUsernameClaim(), config.getClientIdClaim())
-                                    .filter(java.util.Objects::nonNull)
+                                Stream.of(config.getUsernameClaim(), config.getClientIdClaim())
+                                    .filter(Objects::nonNull)
                                     .toList())));
     return claimsByRegistrationId;
   }
