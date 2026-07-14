@@ -625,7 +625,7 @@ paths:
       description: |
         Suspends multiple running process instances.
         Since only ACTIVE root instances can be suspended, any given
-        filters for state, suspended, and suspendedDate are ignored and overridden during this batch operation.
+        filters for state, parentProcessInstanceKey, suspended, and suspendedDate are ignored and overridden during this batch operation.
         This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
         required: true
@@ -673,7 +673,7 @@ paths:
       description: |
         Resumes multiple suspended process instances.
         Since only SUSPENDED root instances can be resumed, any given
-        filters for state, suspended, and suspendedDate are ignored and overridden during this batch operation.
+        filters for state, parentProcessInstanceKey, suspended, and suspendedDate are ignored and overridden during this batch operation.
         This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
         required: true
@@ -1422,7 +1422,9 @@ components:
         suspendedDate:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
-          description: The time this process instance most recently entered the SUSPENDED state.
+          description: |
+            The time this process instance most recently entered the SUSPENDED state.
+            This is cleared (null) again once the process instance is resumed.
         tenantId:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
