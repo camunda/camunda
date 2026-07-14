@@ -1,7 +1,7 @@
 ---
 name: Common paths filter for camunda/camunda
 
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 
 description: |
   Common filters to detect and group changes against a base branch

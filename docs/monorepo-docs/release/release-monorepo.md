@@ -239,7 +239,7 @@ Changes to the release process are done in these steps:
   * If testable in isolation/with dry run: demonstrate that change works
   * If not testable with dry run: wait for next release
 * Review:
-  * Get a peer review from a Monorepo DevOps team member or C8 engineer familiar with the process
+  * Get a peer review from a Engineering Operations team member or C8 engineer familiar with the process
 * Rollout:
   * Merge the Pull Request
   * If necessary, migrate currently running process instances in [Operate](#runtime) to new version of the process

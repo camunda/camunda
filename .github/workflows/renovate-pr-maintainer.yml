@@ -1,6 +1,6 @@
 # description: Keeps open Renovate PRs fresh and unstuck (rebaseWhen=conflicted companion).
 # type: CI Helper
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 
 ---
 name: Renovate PR maintainer

@@ -13,12 +13,12 @@ There you'll find anything to get started using Camunda 8, best practices, and r
 
 ### Collaboration
 
-**[Monorepo DevOps Team Processes](./monorepo-devops-team-processes.md)** - Internal processes and policies for the Monorepo DevOps team, including code review policy and the 4-eye principle.
+**[Engineering Operations Team Processes](./eng-ops-processes.md)** - Internal processes and policies for the Engineering Operations team, including code review policy and the 4-eye principle.
 
 **[Collaboration guidelines](./collaboration-guidelines.md)** - Guidelines for collaborating on CI/CD, releases, and monorepo infrastructure. All teams are welcome to contribute and improve these processes:
 
 - Core collaboration principles and ownership boundaries
-- When and how to reach out to the Monorepo DevOps team for support
+- When and how to reach out to the Engineering Operations team for support
 - Heads-Up Pattern for scoping and requests
 - Code review and integration expectations
 - How all teams can independently own and maintain their workflows

@@ -64,41 +64,41 @@ buf.yaml                    @camunda/orchestration-cluster
 /spring-utils/              @camunda/core-features
 
 ################################
-## @camunda/monorepo-devops-team
+## @camunda/engineering-operations
 ################################
 
-/.claude/skills/act-testing/ @camunda/monorepo-devops-team
-/.claude/skills/agentic-workflows/ @camunda/monorepo-devops-team
-/.claude/skills/ci-fix-failure/ @camunda/monorepo-devops-team
-/.claude/skills/ci-incident/ @camunda/monorepo-devops-team
-/.claude/skills/ci-push-workflow-health/ @camunda/monorepo-devops-team
-/.claude/skills/ci-scheduled-workflow-health/ @camunda/monorepo-devops-team
-/.claude/skills/ci-runner-utilization/ @camunda/monorepo-devops-team
-/.claude/skills/ci-security-compliance/ @camunda/monorepo-devops-team
-/.claude/skills/ci-validation/ @camunda/monorepo-devops-team
-/.claude/skills/ci-workflow-authoring/ @camunda/monorepo-devops-team
+/.claude/skills/act-testing/ @camunda/engineering-operations
+/.claude/skills/agentic-workflows/ @camunda/engineering-operations
+/.claude/skills/ci-fix-failure/ @camunda/engineering-operations
+/.claude/skills/ci-incident/ @camunda/engineering-operations
+/.claude/skills/ci-push-workflow-health/ @camunda/engineering-operations
+/.claude/skills/ci-scheduled-workflow-health/ @camunda/engineering-operations
+/.claude/skills/ci-runner-utilization/ @camunda/engineering-operations
+/.claude/skills/ci-security-compliance/ @camunda/engineering-operations
+/.claude/skills/ci-validation/ @camunda/engineering-operations
+/.claude/skills/ci-workflow-authoring/ @camunda/engineering-operations
 
-/.ci/                       @camunda/monorepo-devops-team
-/.github/                   @camunda/monorepo-devops-team
-/.mvn/                      @camunda/monorepo-devops-team
-/cmd/                       @camunda/monorepo-devops-team
-/pom.xml                    @camunda/monorepo-devops-team
-/library-parent/            @camunda/monorepo-devops-team
-/parent/                    @camunda/monorepo-devops-team
-/bom/                       @camunda/monorepo-devops-team
-/bom-deprecated/            @camunda/monorepo-devops-team
-/scripts/                   @camunda/monorepo-devops-team
-/monorepo-docs-site/        @camunda/monorepo-devops-team
+/.ci/                       @camunda/engineering-operations
+/.github/                   @camunda/engineering-operations
+/.mvn/                      @camunda/engineering-operations
+/cmd/                       @camunda/engineering-operations
+/pom.xml                    @camunda/engineering-operations
+/library-parent/            @camunda/engineering-operations
+/parent/                    @camunda/engineering-operations
+/bom/                       @camunda/engineering-operations
+/bom-deprecated/            @camunda/engineering-operations
+/scripts/                   @camunda/engineering-operations
+/monorepo-docs-site/        @camunda/engineering-operations
 
-.fossa.yml                  @camunda/monorepo-devops-team
-.hadolint.yaml              @camunda/monorepo-devops-team
-.snyk                       @camunda/monorepo-devops-team
-.supressions.xml            @camunda/monorepo-devops-team
-/maven-settings.xml         @camunda/monorepo-devops-team
-mvnw*                       @camunda/monorepo-devops-team
+.fossa.yml                  @camunda/engineering-operations
+.hadolint.yaml              @camunda/engineering-operations
+.snyk                       @camunda/engineering-operations
+.supressions.xml            @camunda/engineering-operations
+/maven-settings.xml         @camunda/engineering-operations
+mvnw*                       @camunda/engineering-operations
 
-Makefile                    @camunda/monorepo-devops-team
-mwnw*                       @camunda/monorepo-devops-team
+Makefile                    @camunda/engineering-operations
+mwnw*                       @camunda/engineering-operations
 
 ################################
 ## @camunda/qa-engineering
@@ -432,7 +432,7 @@ optimize.Dockerfile         @camunda/core-features
 /.github/workflows/c8-orchestration-cluster-request-validation-nightly.yml @camunda/core-features
 /.github/workflows/ci-database-integration-tests-reusable.yml @camunda/data-layer
 /.github/workflows/frontend-sbom-snyk-nightly.yml @camunda/hub-frontend
-/.github/workflows/zeebe-release-stable-dry-run.yml @camunda/monorepo-devops-team
+/.github/workflows/zeebe-release-stable-dry-run.yml @camunda/engineering-operations
 /.github/workflows/c8-orchestration-cluster-e2e-nightly-close-stale-fix-prs.yml    @camunda/test-automation-team
 /.github/workflows/c8-orchestration-cluster-nightly-8.7-api-es.yml                 @camunda/test-automation-team
 /.github/workflows/c8-orchestration-cluster-nightly-8.7-e2e.yml                    @camunda/test-automation-team

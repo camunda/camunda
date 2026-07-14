@@ -51,7 +51,7 @@ lookupTeamMedic["@camunda/qa-engineering"]=$qaMedic
 
 # @monorepo-ci-medic
 monorepoCIMedic="<!subteam^S07D6C6B18T|monorepo-ci-medic>"
-lookupTeamMedic["@camunda/monorepo-devops-team"]=$monorepoCIMedic
+lookupTeamMedic["@camunda/engineering-operations"]=$monorepoCIMedic
 
 # failure in QA test
 lookupTeamMedic["QA"]="QA Acceptance Test, requires investigation"

@@ -1,4 +1,4 @@
-# Monorepo DevOps Team Processes
+# Engineering Operations Team Processes
 
 ## Code Reviews
 

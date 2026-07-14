@@ -1,7 +1,7 @@
 # description: Tracks stale backport PRs and notifies authors via GitHub comments and Slack.
 # Runs every hours on weekdays, on manual dispatch, and can be called by other workflows.
 # type: CI Helper
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 ---
 name: Stale Backport Tracker
 
@@ -82,7 +82,7 @@ defaults:
 permissions: {}
 
 env:
-  TEST_OWNER: '@camunda/monorepo-devops-team'
+  TEST_OWNER: '@camunda/engineering-operations'
 
 jobs:
   collect-stale-backports:
@@ -204,10 +204,10 @@ jobs:
           vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           vault-url: ${{ secrets.VAULT_ADDR }}
           repositories: "camunda,zeebe-process-test"
-  
+
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-  
+
       - name: Notify stale backport PRs
         env:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
@@ -394,7 +394,7 @@ jobs:
           response=$(curl -s -X POST "https://slack.com/api/pins.add" \
             -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" \
             -H "Content-Type: application/json" \
-            -d "{\"channel\":\"${SLACK_CHANNEL}\",\"timestamp\":\"${MESSAGE_TS}\"}") 
+            -d "{\"channel\":\"${SLACK_CHANNEL}\",\"timestamp\":\"${MESSAGE_TS}\"}")
           ok=$(echo "$response" | jq -r '.ok')
           err=$(echo "$response" | jq -r '.error // "none"')
           echo "pins.add ok: $ok, error: $err" >&2
@@ -426,7 +426,7 @@ jobs:
             resp=$(curl -s -X POST "https://slack.com/api/pins.remove" \
               -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" \
               -H "Content-Type: application/json" \
-              -d "{\"channel\":\"${SLACK_CHANNEL}\",\"timestamp\":\"${ts}\"}") 
+              -d "{\"channel\":\"${SLACK_CHANNEL}\",\"timestamp\":\"${ts}\"}")
             echo "pins.remove ok: $(echo "$resp" | jq -r '.ok'), error: $(echo "$resp" | jq -r '.error // "none"')" >&2
           done
 
@@ -459,7 +459,7 @@ jobs:
           response=$(curl -s -X POST "https://slack.com/api/pins.add" \
             -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" \
             -H "Content-Type: application/json" \
-            -d "{\"channel\":\"${SLACK_CHANNEL}\",\"timestamp\":\"${message_ts}\"}") 
+            -d "{\"channel\":\"${SLACK_CHANNEL}\",\"timestamp\":\"${message_ts}\"}")
           ok=$(echo "$response" | jq -r '.ok')
           err=$(echo "$response" | jq -r '.error // "none"')
           echo "pins.add ok: $ok, error: $err" >&2

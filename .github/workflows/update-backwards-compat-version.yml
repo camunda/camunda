@@ -1,5 +1,5 @@
 # type: CI Helper - Post-release
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 name: Update Backwards Compat Version
 
 on:

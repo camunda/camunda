@@ -1,5 +1,5 @@
 # type: Preview Environment
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 ---
 name: Preview Environment Build and Deploy
 
