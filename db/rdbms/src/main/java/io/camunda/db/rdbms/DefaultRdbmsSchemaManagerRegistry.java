@@ -72,4 +72,20 @@ public class DefaultRdbmsSchemaManagerRegistry
     final var schemaManager = schemaManagers.get(physicalTenantId);
     return schemaManager != null && schemaManager.isInitialized();
   }
+
+  @Override
+  public void validateClusterId(
+      final String physicalTenantId,
+      final String clusterId,
+      final boolean clusterIdCheckRestrictionEnabled) {
+    final var schemaManager = schemaManagers.get(physicalTenantId);
+    if (schemaManager == null) {
+      LOG.debug(
+          "[RDBMS Schema] No schema manager for unknown physical tenant '{}', skipping cluster ID "
+              + "check.",
+          physicalTenantId);
+      return;
+    }
+    schemaManager.validateClusterId(clusterId, clusterIdCheckRestrictionEnabled);
+  }
 }

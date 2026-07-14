@@ -25,4 +25,10 @@ public class NoopSchemaManager implements RdbmsSchemaManager {
   public boolean isInitialized() {
     return true;
   }
+
+  @Override
+  public void validateClusterId(
+      final String clusterId, final boolean clusterIdCheckRestrictionEnabled) {
+    // no-op: the schema is managed externally, so we have no bookkeeping to validate against
+  }
 }

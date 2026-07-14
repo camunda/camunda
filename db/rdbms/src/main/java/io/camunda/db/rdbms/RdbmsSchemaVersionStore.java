@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms;
 
+import io.camunda.db.rdbms.exception.RdbmsClusterIdIncompatibleException;
 import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIncompatibleException;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -207,6 +208,137 @@ public class RdbmsSchemaVersionStore {
       throw new IllegalStateException(
           "[RDBMS Schema] Failed to update schema version in " + tableName + ". Startup aborted.",
           e);
+    }
+  }
+
+  /**
+   * Unlike {@link #checkCompatibility()}, this is called lazily by the RDBMS exporter itself, not
+   * during the Liquibase migration: only the exporter has access to the resolved cluster ID.
+   *
+   * @return {@code true} if the caller should (re-)record {@code clusterId}: no previous value
+   *     existed, or a mismatch was detected but ignored per configuration.
+   */
+  public boolean checkClusterIdCompatibility(
+      final String clusterId, final boolean restrictionEnabled) {
+    if (clusterId == null || clusterId.isBlank()) {
+      LOG.debug(
+          "[RDBMS Schema] No local cluster ID available, skipping cluster ID compatibility check "
+              + "for prefix '{}'.",
+          prefix);
+      return false;
+    }
+
+    final String previousClusterId;
+    try (final var connection = dataSource.getConnection()) {
+      previousClusterId = readClusterId(connection, prefix);
+    } catch (final Exception e) {
+      LOG.error(
+          "[RDBMS Schema] Failed to determine current cluster ID for prefix '{}'. Startup aborted.",
+          prefix,
+          e);
+      throw new IllegalStateException(
+          "[RDBMS Schema] Failed to determine current cluster ID for prefix '" + prefix + "'.", e);
+    }
+
+    if (previousClusterId == null) {
+      LOG.debug(
+          "[RDBMS Schema] No cluster ID recorded yet for prefix '{}', assuming a fresh "
+              + "installation.",
+          prefix);
+      return true;
+    }
+    if (previousClusterId.equals(clusterId)) {
+      LOG.info(
+          "[RDBMS Schema] Cluster ID '{}' matches the one recorded for prefix '{}'",
+          clusterId,
+          prefix);
+      return false;
+    }
+
+    if (restrictionEnabled) {
+      throw new RdbmsClusterIdIncompatibleException(previousClusterId, clusterId);
+    }
+    LOG.warn(
+        "[RDBMS Schema] Detected cluster ID mismatch for prefix '{}': schema was previously "
+            + "initialized by cluster '{}', but this cluster's ID is '{}'. Ignoring as configured.",
+        prefix,
+        previousClusterId,
+        clusterId);
+    return true;
+  }
+
+  /**
+   * No-op if {@code clusterId} is blank. Requires the single {@code RDBMS_SCHEMA_VERSION} row to
+   * already exist; if not (e.g. an unparseable {@link #applicationVersion}), logs a warning instead
+   * of claiming success.
+   */
+  public void recordClusterId(final String clusterId) {
+    if (clusterId == null || clusterId.isBlank()) {
+      return;
+    }
+
+    final var tableName = prefix + SCHEMA_VERSION_TABLE;
+    try (final var connection = dataSource.getConnection()) {
+      final var autoCommit = connection.getAutoCommit();
+      connection.setAutoCommit(false);
+      try {
+        final var updatedRows = updateClusterIdById(connection, tableName, clusterId);
+        connection.commit();
+        if (updatedRows == 0) {
+          LOG.warn(
+              "[RDBMS Schema] Could not record cluster ID for prefix '{}': no row exists yet in "
+                  + "{}. This is expected if the application version is not a parseable semantic "
+                  + "version (e.g. local development); cluster ID compatibility will not be "
+                  + "tracked until a real version is recorded.",
+              prefix,
+              tableName);
+          return;
+        }
+        LOG.info("[RDBMS Schema] Updated cluster ID to {} for prefix '{}'.", clusterId, prefix);
+      } catch (final SQLException e) {
+        connection.rollback();
+        throw e;
+      } finally {
+        connection.setAutoCommit(autoCommit);
+      }
+    } catch (final Exception e) {
+      LOG.error(
+          "[RDBMS Schema] Failed to update cluster ID in {} for prefix '{}'. Startup aborted.",
+          tableName,
+          prefix,
+          e);
+      throw new IllegalStateException(
+          "[RDBMS Schema] Failed to update cluster ID in " + tableName + ". Startup aborted.", e);
+    }
+  }
+
+  /**
+   * Reads the recorded cluster ID from {@code RDBMS_SCHEMA_VERSION}. Returns {@code null} if the
+   * table does not exist, contains no rows, or the column is {@code NULL} (e.g. upgrading from
+   * before this check existed).
+   */
+  @VisibleForTesting
+  protected String readClusterId(final Connection connection, final String prefix)
+      throws SQLException {
+    final var tableName = prefix + SCHEMA_VERSION_TABLE;
+    if (!tableExists(connection, tableName)) {
+      return null;
+    }
+    try (final var stmt = connection.prepareStatement("SELECT CLUSTER_ID FROM " + tableName)) {
+      stmt.setMaxRows(1);
+      try (final var rs = stmt.executeQuery()) {
+        return rs.next() ? rs.getString(1) : null;
+      }
+    }
+  }
+
+  private int updateClusterIdById(
+      final Connection connection, final String tableName, final String clusterId)
+      throws SQLException {
+    try (final var updateStmt =
+        connection.prepareStatement("UPDATE " + tableName + " SET CLUSTER_ID = ? WHERE ID = 1")) {
+      updateStmt.setString(1, clusterId);
+      return updateStmt.executeUpdate();
     }
   }
 

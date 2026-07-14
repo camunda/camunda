@@ -140,6 +140,7 @@ public class CamundaExporter implements Exporter {
       searchEngineClient = clientAdapter.getSearchEngineClient();
 
       try (final var schemaManager = createSchemaManager()) {
+        schemaManager.validateClusterId();
         if (!schemaManager.isSchemaReadyForUse()) {
           throw new ExporterException("Schema is not ready for use");
         }
@@ -294,17 +295,20 @@ public class CamundaExporter implements Exporter {
   private SchemaManager createSchemaManager() {
     final var schemaManagerConfiguration = new SchemaManagerConfiguration();
     schemaManagerConfiguration.setCreateSchema(configuration.isCreateSchema());
+    schemaManagerConfiguration.setClusterIdCheckRestrictionEnabled(
+        configuration.isClusterIdCheckRestrictionEnabled());
     return new SchemaManager(
-        searchEngineClient,
-        provider.getIndexDescriptors(),
-        provider.getIndexTemplateDescriptors(),
-        SearchEngineConfiguration.of(
-            b ->
-                b.connect(configuration.getConnect())
-                    .index(configuration.getIndex())
-                    .retention(configuration.getHistory().getRetention())
-                    .schemaManager(schemaManagerConfiguration)),
-        clientAdapter.objectMapper());
+            searchEngineClient,
+            provider.getIndexDescriptors(),
+            provider.getIndexTemplateDescriptors(),
+            SearchEngineConfiguration.of(
+                b ->
+                    b.connect(configuration.getConnect())
+                        .index(configuration.getIndex())
+                        .retention(configuration.getHistory().getRetention())
+                        .schemaManager(schemaManagerConfiguration)),
+            clientAdapter.objectMapper())
+        .withClusterId(context.getClusterId());
   }
 
   private List<String> prefixedNames(final String... names) {

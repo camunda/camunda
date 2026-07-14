@@ -69,6 +69,29 @@ class DefaultRdbmsSchemaManagerRegistryTest {
   }
 
   @Test
+  void shouldDelegateValidateClusterIdToPerTenantManager() {
+    // given
+    final var managerA = mock(RdbmsSchemaManager.class);
+    final var registry = new DefaultRdbmsSchemaManagerRegistry(Map.of(TENANT_A, managerA));
+
+    // when
+    registry.validateClusterId(TENANT_A, "this-cluster", true);
+
+    // then
+    verify(managerA).validateClusterId("this-cluster", true);
+  }
+
+  @Test
+  void shouldSkipValidateClusterIdForUnknownTenant() {
+    // given
+    final var registry =
+        new DefaultRdbmsSchemaManagerRegistry(Map.of(TENANT_A, mock(RdbmsSchemaManager.class)));
+
+    // when / then - no exception
+    registry.validateClusterId("unknown", "this-cluster", true);
+  }
+
+  @Test
   void shouldFailFastWhenAnyTenantInitializationFails() throws Exception {
     // given - A succeeds, B fails. LinkedHashMap preserves iteration order (A then B).
     final var managerA = mock(RdbmsSchemaManager.class);

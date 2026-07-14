@@ -9,6 +9,7 @@ package io.camunda.db.rdbms;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -80,6 +81,40 @@ class LiquibaseSchemaManagerTest {
     verify(versionStore).checkCompatibility();
     verify(versionStore).recordCurrentVersion();
     assertThat(schemaManager.isInitialized()).isTrue();
+  }
+
+  // ---- validateClusterId ----
+
+  @Test
+  void shouldDelegateValidateClusterIdToVersionStore() {
+    // given - validateClusterId is called lazily by the RDBMS exporter, not during initialize()
+    final var versionStore = mock(RdbmsSchemaVersionStore.class);
+    when(versionStore.checkClusterIdCompatibility("this-cluster", true)).thenReturn(true);
+    final var schemaManager =
+        new TestLiquibaseSchemaManager(autoDdlConfig(), "8.10.0", versionStore);
+
+    // when
+    schemaManager.validateClusterId("this-cluster", true);
+
+    // then
+    verify(versionStore).checkClusterIdCompatibility("this-cluster", true);
+    verify(versionStore).recordClusterId("this-cluster");
+  }
+
+  @Test
+  void shouldSkipRecordingClusterIdWhenNoWriteIsNeeded() {
+    // given - e.g. the previous value already matches, so checkClusterIdCompatibility signals no
+    // write is needed
+    final var versionStore = mock(RdbmsSchemaVersionStore.class);
+    when(versionStore.checkClusterIdCompatibility("this-cluster", true)).thenReturn(false);
+    final var schemaManager =
+        new TestLiquibaseSchemaManager(autoDdlConfig(), "8.10.0", versionStore);
+
+    // when
+    schemaManager.validateClusterId("this-cluster", true);
+
+    // then
+    verify(versionStore, never()).recordClusterId(anyString());
   }
 
   // ---- stale lock (mock-based) ----

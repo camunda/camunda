@@ -9,10 +9,13 @@ package io.camunda.exporter;
 
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.CacheLoader;
@@ -23,9 +26,11 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.search.schema.SearchEngineClient;
+import io.camunda.search.schema.exceptions.IncompatibleClusterIdException;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.index.AuditLogCleanupIndex;
 import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
+import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.exporter.common.cache.decisionRequirements.CachedDecisionRequirementsEntity;
@@ -40,6 +45,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.InstantSource;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
@@ -228,6 +234,60 @@ final class CamundaExporterTest {
       assertThat(metadata.getLastIncidentUpdatePosition()).isEqualTo(3);
       assertThat(metadata.getFirstUserTaskKey(TaskImplementation.JOB_WORKER)).isEqualTo(5);
       assertThat(metadata.getFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK)).isEqualTo(5);
+    }
+
+    @Test
+    void shouldThrowOnOpenWhenClusterIdMismatchIsDetectedAndRestrictionEnabled() {
+      // given
+      testContext.setClusterId("cluster-b");
+      mockPreviouslyRecordedClusterId("cluster-a");
+      exporter =
+          new CamundaExporter(
+              resourceProvider, new ExporterMetadata(TestObjectMapper.objectMapper()));
+
+      // when
+      exporter.configure(testContext);
+
+      // then — open() must invoke createSchemaManager().withClusterId(context.getClusterId())
+      // followed by schemaManager.validateClusterId(), surfacing the mismatch as a hard failure
+      assertThatThrownBy(() -> exporter.open(testController))
+          .isInstanceOf(IncompatibleClusterIdException.class);
+    }
+
+    @Test
+    void shouldNotThrowOnOpenWhenClusterIdMismatchIsDetectedButRestrictionDisabled() {
+      // given
+      testContext.setClusterId("cluster-b");
+      mockPreviouslyRecordedClusterId("cluster-a");
+      configuration.setClusterIdCheckRestrictionEnabled(false);
+      exporter =
+          new CamundaExporter(
+              resourceProvider, new ExporterMetadata(TestObjectMapper.objectMapper()));
+
+      // when
+      exporter.configure(testContext);
+
+      // then — with the restriction disabled, the mismatch is only logged, not thrown
+      assertThatCode(() -> exporter.open(testController)).doesNotThrowAnyException();
+    }
+
+    /**
+     * Stubs the mocked {@link SearchEngineClient} used by {@link StubClientAdapter} so that the
+     * metadata index already exists and holds a previously recorded cluster ID, mirroring what
+     * {@link io.camunda.search.schema.SchemaManager#validateClusterId()} would read on a real
+     * cluster that was previously bootstrapped with a different cluster ID.
+     */
+    private void mockPreviouslyRecordedClusterId(final String previousClusterId) {
+      final var metadataIndex =
+          new MetadataIndex(
+              configuration.getConnect().getIndexPrefix(),
+              configuration.getConnect().getTypeEnum().isElasticSearch());
+      final var searchEngineClient = stubbedClientAdapterInUse.getSearchEngineClient();
+      when(searchEngineClient.indexExists(metadataIndex.getFullQualifiedName())).thenReturn(true);
+      // "cluster-id" is the document id SchemaMetadataStore uses to store/read the cluster ID
+      when(searchEngineClient.getDocument(metadataIndex.getFullQualifiedName(), "cluster-id"))
+          .thenReturn(
+              Map.of(MetadataIndex.ID, "cluster-id", MetadataIndex.VALUE, previousClusterId));
     }
   }
 

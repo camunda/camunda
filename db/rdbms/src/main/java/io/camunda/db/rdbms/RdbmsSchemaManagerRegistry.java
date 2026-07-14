@@ -23,4 +23,11 @@ public interface RdbmsSchemaManagerRegistry {
    * or has failed.
    */
   boolean isInitialized(String physicalTenantId);
+
+  /**
+   * Delegates to the tenant's {@link RdbmsSchemaManager#validateClusterId(String, boolean)}; no-op
+   * for unknown tenants.
+   */
+  void validateClusterId(
+      String physicalTenantId, String clusterId, boolean clusterIdCheckRestrictionEnabled);
 }

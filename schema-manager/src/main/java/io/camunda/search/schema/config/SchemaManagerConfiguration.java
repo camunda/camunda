@@ -15,6 +15,7 @@ public class SchemaManagerConfiguration {
   private boolean isCreateSchema = true;
   private SchemaManagerRetryConfiguration retry = new SchemaManagerRetryConfiguration();
   private boolean versionCheckRestrictionEnabled = true;
+  private boolean clusterIdCheckRestrictionEnabled = true;
   private boolean performCleanup = false;
 
   public boolean isCreateSchema() {
@@ -39,6 +40,14 @@ public class SchemaManagerConfiguration {
 
   public void setVersionCheckRestrictionEnabled(final boolean versionCheckRestrictionEnabled) {
     this.versionCheckRestrictionEnabled = versionCheckRestrictionEnabled;
+  }
+
+  public boolean isClusterIdCheckRestrictionEnabled() {
+    return clusterIdCheckRestrictionEnabled;
+  }
+
+  public void setClusterIdCheckRestrictionEnabled(final boolean clusterIdCheckRestrictionEnabled) {
+    this.clusterIdCheckRestrictionEnabled = clusterIdCheckRestrictionEnabled;
   }
 
   public boolean isPerformCleanup() {

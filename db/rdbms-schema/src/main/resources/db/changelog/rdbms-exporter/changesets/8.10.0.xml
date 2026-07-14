@@ -660,4 +660,15 @@
     </addColumn>
   </changeSet>
 
+  <changeSet id="add_rdbms_schema_version_cluster_id_column" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}RDBMS_SCHEMA_VERSION" columnName="CLUSTER_ID"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}RDBMS_SCHEMA_VERSION">
+      <column name="CLUSTER_ID" type="VARCHAR(255)"/>
+    </addColumn>
+  </changeSet>
+
 </databaseChangeLog>
