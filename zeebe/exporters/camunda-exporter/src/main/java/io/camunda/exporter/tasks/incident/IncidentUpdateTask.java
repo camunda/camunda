@@ -403,9 +403,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
 
     return future.thenApplyAsync(
         unused -> {
-          bulkUpdate
-              .incidentRequests()
-              .put(incident.id(), newIncidentUpdate(incident, newState, treePath));
+          bulkUpdate.incidentRequests().add(newIncidentUpdate(incident, newState, treePath));
           return null;
         },
         executor);
@@ -524,12 +522,12 @@ public final class IncidentUpdateTask implements BackgroundTask {
           index ->
               updates
                   .flowNodeInstanceRequests()
-                  .put(fniId, newFlowNodeInstanceUpdate(fniId, index, hasIncident)));
+                  .add(newFlowNodeInstanceUpdate(fniId, index, hasIncident)));
       listViewIndices.forEach(
           index ->
               updates
                   .listViewRequests()
-                  .put(fniId, newListViewInstanceUpdate(fniId, index, hasIncident, routing)));
+                  .add(newListViewInstanceUpdate(fniId, index, hasIncident, routing)));
     }
   }
 
@@ -602,24 +600,24 @@ public final class IncidentUpdateTask implements BackgroundTask {
     }
 
     if (changedState) {
-      updates
-          .listViewRequests()
-          .put(piId, newListViewInstanceUpdate(piId, index, hasIncident, piId));
+      updates.listViewRequests().add(newListViewInstanceUpdate(piId, index, hasIncident, piId));
     }
   }
 
   private CompletableFuture<Integer> notifyIncidents(
       final List<String> updatedIds,
-      final Map<String, DocumentUpdate> incidentUpdates,
+      final Collection<DocumentUpdate> incidentUpdates,
       final Collection<IncidentDocument> incidentDocuments) {
     final var incidentsById =
         incidentDocuments.stream()
             .map(IncidentDocument::incident)
             .collect(Collectors.groupingBy(IncidentEntity::getId));
+    final var incidentUpdatesById =
+        incidentUpdates.stream().collect(Collectors.groupingBy(DocumentUpdate::id));
     final var incidentsToNotify =
         updatedIds.stream()
-            .filter(incidentUpdates::containsKey)
-            .filter(id -> shouldNotifyAboutUpdate(incidentUpdates.get(id)))
+            .filter(incidentUpdatesById::containsKey)
+            .filter(id -> shouldNotifyAboutUpdate(incidentUpdatesById.get(id).getFirst()))
             .map(incidentsById::get)
             .map(List::getFirst)
             .toList();
