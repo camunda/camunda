@@ -288,6 +288,9 @@ export interface QuestionInput {
   params: Record<string, number>;
   groupBy: { field: string; variable?: boolean }[];
   filters: { field: string; value: string }[];
+  /** Optional same-dataset comparison: a second read-time-filtered source next to the baseline.
+   * Each field must also appear in groupBy (only grain dimensions are filterable on the cube). */
+  compare?: { field: string; value: string }[];
   granularityMs: number;
   viz: string;
 }
@@ -391,7 +394,7 @@ export const api = {
   // Semantic-layer (question) endpoints powering the Metabase-style builder.
   getMeasures: () => getJson<MeasuresCatalog>("/api/measures"),
   createReportFromQuestion: (question: QuestionInput) =>
-    postJson<{ report: Report }>("/api/reports/from-question", question),
+    postJson<Report>("/api/reports/from-question", question),
   runReport: (id: number, fromMs: number, toMs: number) =>
     getJson<ReportData>(`/api/reports/${id}/data?fromMs=${fromMs}&toMs=${toMs}`),
 };

@@ -14,3 +14,12 @@ spring:
   sql:
     init:
       mode: always
+
+# Expose the pipeline's meters (analytics.projection.*, analytics.aggregation.late.dropped,
+# analytics.serving.fenced.writes, eb.streaming.cut.*, RocksDB store gauges) on
+# /actuator/metrics — the stages register on the application's MeterRegistry.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus

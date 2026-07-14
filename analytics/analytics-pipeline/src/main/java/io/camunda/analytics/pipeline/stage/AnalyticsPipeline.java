@@ -12,6 +12,8 @@ import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.streaming.StreamRuntime;
 import io.camunda.eventbridge.streaming.shuffle.ShuffleEnvelope;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import org.slf4j.Logger;
@@ -44,10 +46,12 @@ public final class AnalyticsPipeline {
             PipelineRuntimes.topicPartitions(client, config.sourceTopic())
                 + config.factsPartitions());
 
+    // Standalone process: no management endpoint, so both stages meter into one local registry.
+    final MeterRegistry meterRegistry = new SimpleMeterRegistry();
     final StreamRuntime<SourceRecord> stage1 =
-        AnalyticsProjectionStage.buildRuntime(client, scheduler, sinkExecutor);
+        AnalyticsProjectionStage.buildRuntime(client, scheduler, sinkExecutor, meterRegistry);
     final StreamRuntime<ShuffleEnvelope> stage2 =
-        AnalyticsAggregationStage.buildRuntime(client, scheduler, sinkExecutor);
+        AnalyticsAggregationStage.buildRuntime(client, scheduler, sinkExecutor, meterRegistry);
 
     LOG.info(
         "Analytics pipeline: running Stage 1 + Stage 2 on a shared client and actor scheduler");

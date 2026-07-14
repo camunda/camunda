@@ -28,6 +28,7 @@ import io.camunda.analytics.serving.catalog.StandardDatasets;
 import io.camunda.analytics.serving.spi.DatasetSpecQuery;
 import io.camunda.analytics.serving.spi.MetadataStore;
 import io.camunda.analytics.webapp.model.HeatmapCell;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -88,16 +89,25 @@ public class AnalyticsController {
    * Creates a report from a question in business language: compile it to a dataset declaration,
    * find-or-provision the backing cube, then persist a report reading the measure over the shared
    * group-by. The dataset is managed behind the report (report-first).
+   *
+   * <p>A question may additionally carry {@code compare} filters: the report then reads the same
+   * dataset <em>twice</em> — the unfiltered baseline plus a read-time-filtered slice — and {@link
+   * ReportExecutor} namespaces the repeat as {@code dataset#2.meter} so the two series render side
+   * by side. Each compare field joins the derived cube's <em>grain</em> (the read-time filter needs
+   * a dimension column to hit) but stays out of the report's group-by, so the baseline aggregates
+   * over it and both sources emit one comparable row per group and bucket.
    */
   @PostMapping("/reports/from-question")
   @ResponseStatus(HttpStatus.CREATED)
   public ReportDefinition createReportFromQuestion(@RequestBody final QuestionRequest request) {
+    final List<MeasureCatalog.QuestionFilter> compare =
+        request.compare() == null ? List.of() : request.compare();
     final MeasureCatalog.CompiledQuestion compiled =
         measureCatalog.compile(
             request.entity(),
             request.measure(),
             request.params(),
-            request.groupBy(),
+            withCompareDimensions(request.groupBy(), compare),
             request.filters(),
             request.granularityMs());
     // Reuse an existing dataset with the same derived declaration, else provision a new one.
@@ -111,17 +121,48 @@ public class AnalyticsController {
         request.groupBy() == null
             ? List.of()
             : request.groupBy().stream().map(MeasureCatalog.QuestionGroupBy::field).toList();
+    final List<ReportSource> sources = new ArrayList<>();
+    sources.add(new ReportSource(compiled.datasetName(), List.of(compiled.meterName()), List.of()));
+    if (!compare.isEmpty()) {
+      sources.add(
+          new ReportSource(
+              compiled.datasetName(),
+              List.of(compiled.meterName()),
+              compare.stream()
+                  .map(filter -> FilterPredicate.equals(filter.field(), filter.value()))
+                  .toList()));
+    }
     final ReportDefinition report =
         new ReportDefinition(
             0L,
             request.name(),
-            List.of(
-                new ReportSource(compiled.datasetName(), List.of(compiled.meterName()), List.of())),
+            sources,
             groupByFields,
             request.granularityMs(),
             Combination.UNION,
             request.viz());
     return metadataStore.reportSpecStore().create(report);
+  }
+
+  /**
+   * The question's group-by plus one dimension per compare field not already grouped by — the
+   * compiled declaration's dimension set, which is what makes a compare field filterable at read
+   * time on the pre-aggregated cube.
+   */
+  private static List<MeasureCatalog.QuestionGroupBy> withCompareDimensions(
+      final List<MeasureCatalog.QuestionGroupBy> groupBy,
+      final List<MeasureCatalog.QuestionFilter> compare) {
+    if (compare.isEmpty()) {
+      return groupBy;
+    }
+    final List<MeasureCatalog.QuestionGroupBy> dimensions =
+        groupBy == null ? new ArrayList<>() : new ArrayList<>(groupBy);
+    for (final MeasureCatalog.QuestionFilter filter : compare) {
+      if (dimensions.stream().noneMatch(dim -> dim.field().equals(filter.field()))) {
+        dimensions.add(new MeasureCatalog.QuestionGroupBy(filter.field(), false));
+      }
+    }
+    return dimensions;
   }
 
   // --- datasets --------------------------------------------------------------------------------
@@ -246,7 +287,11 @@ public class AnalyticsController {
         registered.activationTimestampMs());
   }
 
-  /** Request body for a question-shaped report (the friendly, report-first surface). */
+  /**
+   * Request body for a question-shaped report (the friendly, report-first surface). {@code compare}
+   * (optional) turns it into a same-dataset comparison: a second read-time-filtered source next to
+   * the unfiltered baseline; each compare field must also be a group-by field.
+   */
   public record QuestionRequest(
       String name,
       String entity,
@@ -254,6 +299,7 @@ public class AnalyticsController {
       Map<String, Double> params,
       List<MeasureCatalog.QuestionGroupBy> groupBy,
       List<MeasureCatalog.QuestionFilter> filters,
+      List<MeasureCatalog.QuestionFilter> compare,
       long granularityMs,
       String viz) {}
 

@@ -9,22 +9,30 @@ package io.camunda.analytics.pipeline.stage;
 
 import io.camunda.analytics.projection.ProjectionMetrics;
 import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.FunctionCounter;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 
 /**
  * The base projection's correctness signals as Micrometer counters, one set per source partition.
  * {@code analytics.projection.duplicate.skipped} is expected traffic (exporter retries absorbed by
  * the pre-fold watermark, ADR 0007); {@code fold.row.missing} and {@code fact.dropped} must stay at
- * zero — see {@link ProjectionMetrics}.
+ * zero — see {@link ProjectionMetrics}. Per cube it additionally exposes the gate counters ({@code
+ * analytics.projection.cube.facts.inspected}/{@code .folded}) and the silent-empty-cube alarm gauge
+ * ({@code analytics.projection.cube.silent} — 1 while a cube has inspected many admitted facts and
+ * folded none).
  */
 public final class MicrometerProjectionMetrics implements ProjectionMetrics {
 
+  private final MeterRegistry registry;
+  private final String partitionTag;
   private final Counter duplicateSkipped;
   private final Counter foldRowMissing;
   private final Counter factDropped;
 
   public MicrometerProjectionMetrics(final MeterRegistry registry, final int partition) {
-    final String partitionTag = String.valueOf(partition);
+    this.registry = registry;
+    partitionTag = String.valueOf(partition);
     duplicateSkipped =
         Counter.builder("analytics.projection.duplicate.skipped")
             .description(
@@ -56,5 +64,33 @@ public final class MicrometerProjectionMetrics implements ProjectionMetrics {
   @Override
   public void factDropped() {
     factDropped.increment();
+  }
+
+  /**
+   * Racy-read exposure over the cube's single-writer gate counters. Registered once per constructed
+   * wiring; a cube that is removed and re-added on a live reload keeps its first registration (the
+   * counters simply stop moving), which is fine for advisory meters.
+   */
+  @Override
+  public void registerCubeGate(final CubeGateStats stats) {
+    FunctionCounter.builder(
+            "analytics.projection.cube.facts.inspected", stats, CubeGateStats::factsInspected)
+        .description("Type-matched, activation-admitted facts the cube's gate inspected")
+        .tag("partition", partitionTag)
+        .tag("dataset", stats.datasetName())
+        .register(registry);
+    FunctionCounter.builder(
+            "analytics.projection.cube.facts.folded", stats, CubeGateStats::factsFolded)
+        .description("Inspected facts that passed the declared filters and were folded")
+        .tag("partition", partitionTag)
+        .tag("dataset", stats.datasetName())
+        .register(registry);
+    Gauge.builder("analytics.projection.cube.silent", stats, s -> s.silent() ? 1 : 0)
+        .description(
+            "1 while the cube has inspected many admitted facts and folded none — its declared"
+                + " filters match nothing")
+        .tag("partition", partitionTag)
+        .tag("dataset", stats.datasetName())
+        .register(registry);
   }
 }

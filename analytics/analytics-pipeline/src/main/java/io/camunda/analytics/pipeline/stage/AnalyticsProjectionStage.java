@@ -17,6 +17,7 @@ import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.streaming.StreamRuntime;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecordCodec;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.List;
@@ -53,23 +54,26 @@ public final class AnalyticsProjectionStage {
     final ExecutorService sinkExecutor =
         PipelineRuntimes.newSinkExecutor(
             PipelineRuntimes.topicPartitions(client, config.sourceTopic()));
-    final StreamRuntime<SourceRecord> runtime = buildRuntime(client, scheduler, sinkExecutor);
+    final StreamRuntime<SourceRecord> runtime =
+        buildRuntime(client, scheduler, sinkExecutor, new SimpleMeterRegistry());
     PipelineRuntimes.run(
         client, scheduler, sinkExecutor, List.of(new PipelineRuntimes.Member("stage1", runtime)));
   }
 
   /**
-   * Builds (but does not run) the Stage 1 runtime on the given shared client, actor scheduler, and
-   * sink executor, so a single stage process or the consolidated launcher can run it. Reads its
+   * Builds (but does not run) the Stage 1 runtime on the given shared client, actor scheduler, sink
+   * executor and meter registry (the embedding application's registry, so the stage's meters —
+   * projection alarms, cube gates, RocksDB gauges, commit-cut timers — surface on its management
+   * endpoint; the standalone launcher passes a throwaway {@link SimpleMeterRegistry}). Reads its
    * configuration from system properties and provisions the facts topic and metadata plane.
    */
   public static StreamRuntime<SourceRecord> buildRuntime(
       final EventBridgeClient client,
       final ActorScheduler scheduler,
-      final ExecutorService sinkExecutor) {
+      final ExecutorService sinkExecutor,
+      final MeterRegistry meterRegistry) {
     final AnalyticsPipelineConfig config = AnalyticsPipelineConfig.fromSystemProperties("stage1");
 
-    final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
     try {
       client.createTopic(config.factsTopic(), config.factsPartitions(), 1).join();
     } catch (final Exception existing) {
@@ -136,6 +140,7 @@ public final class AnalyticsProjectionStage {
             .errorBackoff(ERROR_BACKOFF)
             .actorScheduler(scheduler)
             .sinkExecutor(sinkExecutor)
+            .meterRegistry(meterRegistry)
             .build();
 
     LOG.info(

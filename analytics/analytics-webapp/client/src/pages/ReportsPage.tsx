@@ -141,6 +141,9 @@ export function ReportsPage({ range }: { range: TimeRange | null }) {
   const [groupByRows, setGroupByRows] = useState<GroupByRow[]>([]);
   const [addGb, setAddGb] = useState("");
   const [filterRows, setFilterRows] = useState<FilterRow[]>([]);
+  // Same-dataset comparison: a second, read-time-filtered slice next to the baseline series.
+  const [compareField, setCompareField] = useState("");
+  const [compareValue, setCompareValue] = useState("");
   const [granularityMs, setGranularityMs] = useState<number>(0);
   const [viz, setViz] = useState<string>("line");
 
@@ -200,6 +203,8 @@ export function ReportsPage({ range }: { range: TimeRange | null }) {
     setGroupByRows([]);
     setFilterRows([]);
     setAddGb("");
+    setCompareField("");
+    setCompareValue("");
   }
 
   function selectMeasure(id: string) {
@@ -219,6 +224,8 @@ export function ReportsPage({ range }: { range: TimeRange | null }) {
     setGroupByRows([]);
     setFilterRows([]);
     setAddGb("");
+    setCompareField("");
+    setCompareValue("");
 
     const entityForTemplate =
       catalog.entities.find((e) => e.id === t.entityId) ?? catalog.entities[0];
@@ -255,21 +262,25 @@ export function ReportsPage({ range }: { range: TimeRange | null }) {
   );
 
   function buildQuestion(): QuestionInput {
+    const groupBy = groupByRows
+      .filter((r) => !r.variable || r.varName.trim())
+      .map((r) =>
+        r.variable
+          ? { field: `var.${r.varName.trim()}`, variable: true }
+          : { field: r.gbId, variable: false },
+      );
+    // The compare field becomes a grain dimension server-side; it does not join the group-by.
+    const comparing = compareField && compareValue.trim() !== "";
     return {
       name: name.trim(),
       entity: entityId,
       measure: measureId,
       params: param ? { [param.key]: paramValue } : {},
-      groupBy: groupByRows
-        .filter((r) => !r.variable || r.varName.trim())
-        .map((r) =>
-          r.variable
-            ? { field: `var.${r.varName.trim()}`, variable: true }
-            : { field: r.gbId, variable: false },
-        ),
+      groupBy,
       filters: filterRows
         .filter((f) => f.field && f.value !== "")
         .map((f) => ({ field: f.field, value: f.value })),
+      ...(comparing ? { compare: [{ field: compareField, value: compareValue.trim() }] } : {}),
       granularityMs,
       viz,
     };
@@ -302,6 +313,10 @@ export function ReportsPage({ range }: { range: TimeRange | null }) {
         })
         .join(" and ");
       parts.push(`where ${asText}`);
+    }
+    if (compareField && compareValue.trim() !== "") {
+      const attr = filterableAttributes.find((a) => a.id === compareField);
+      parts.push(`comparing ${attr?.label ?? compareField} is ${compareValue.trim()} against all`);
     }
     parts.push(`shown as ${VIZ_LABELS[viz] ?? viz}`);
     return parts.join(", ") + ".";
@@ -338,7 +353,7 @@ export function ReportsPage({ range }: { range: TimeRange | null }) {
     setSaving(true);
     api
       .createReportFromQuestion(buildQuestion())
-      .then(({ report }) => {
+      .then((report) => {
         setSavedReport(report);
         refreshReports();
         runInto(report, setSavedRun);
@@ -588,6 +603,47 @@ export function ReportsPage({ range }: { range: TimeRange | null }) {
                 </Button>
               </div>
             ))}
+          </section>
+
+          {/* Compare — a second slice of the same dataset next to the baseline */}
+          <section className="flex flex-col gap-2">
+            <Label>Compare</Label>
+            <div className="flex flex-wrap items-center gap-2">
+              <Select
+                value={compareField || "NONE"}
+                onValueChange={(v) => setCompareField(v === "NONE" ? "" : v)}
+              >
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="attribute" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="NONE">No comparison</SelectItem>
+                  {filterableAttributes.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>
+                      {a.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {compareField ? (
+                <>
+                  <span className="text-sm text-neutral-foreground-muted">is</span>
+                  <Input
+                    className="w-48"
+                    value={compareValue}
+                    placeholder="value"
+                    onChange={(e) => setCompareValue(e.target.value)}
+                  />
+                  <span className="text-sm text-neutral-foreground-muted">versus all</span>
+                </>
+              ) : null}
+            </div>
+            {compareField ? (
+              <p className="text-xs text-neutral-foreground-muted">
+                Adds a second series over the same data, filtered to this value, next to the
+                unfiltered baseline.
+              </p>
+            ) : null}
           </section>
 
           {/* Show as */}
