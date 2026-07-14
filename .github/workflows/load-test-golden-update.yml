@@ -14,7 +14,6 @@ on:
       - "load-tests/setup/**"
 
 # Limit workflow to 1 concurrent run per PR: new commit -> old runs are canceled to save costs.
-# No main-branch exception needed — this workflow only triggers on pull_request.
 concurrency:
   cancel-in-progress: true
   group: ${{ format('{0}-{1}', github.workflow, github.ref) }}
