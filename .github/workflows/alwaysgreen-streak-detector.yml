@@ -375,7 +375,7 @@ jobs:
         if: |
           steps.streak.outputs.is_streak == 'true' &&
           steps.find-message.outputs.existing_ts == ''
-        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         with:
           method: chat.postMessage
           token: ${{ steps.slack-secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
@@ -414,7 +414,7 @@ jobs:
         if: |
           steps.streak.outputs.is_streak == 'true' &&
           steps.find-message.outputs.existing_ts != ''
-        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         with:
           method: chat.update
           token: ${{ steps.slack-secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
@@ -454,7 +454,7 @@ jobs:
         if: |
           steps.streak.outputs.latest_success == 'true' &&
           steps.find-message.outputs.existing_ts != ''
-        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         with:
           method: chat.update
           token: ${{ steps.slack-secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
