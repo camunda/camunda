@@ -89,11 +89,16 @@ class UpdatePartitionDistributionTransformerTest {
 
   @Test
   void shouldPrependConfigOpAndEmitLeaveOpsWhenRfDecreases() {
-    // given: initial RF=2, new RF=1 (remove zone-b, keep only zone-a)
-    // The single-zone distributor recomputes the placement after the config change. In the current
-    // layout P2 stays on zone-a_1 and only the zone-b replica leaves.
-    final var currentTopology = buildTopology(INITIAL_CONFIG, MEMBERS);
-    final var newConfig = new ZoneAwareConfig(List.of(new ZoneSpec(ZONE_A, 1, 1000)));
+    // given: initial RF=3 (zone-a x2, zone-b x1), new RF=2 (zone-a x1, zone-b x1)
+    // Each partition drops its second zone-a replica; the remaining zone-a and zone-b replicas
+    // stay in place with only their priority adjusted.
+    final var currentTopology =
+        buildTopology(
+            new ZoneAwareConfig(
+                List.of(new ZoneSpec(ZONE_A, 2, 1000), new ZoneSpec(ZONE_B, 1, 500))),
+            MEMBERS);
+    final var newConfig =
+        new ZoneAwareConfig(List.of(new ZoneSpec(ZONE_A, 1, 1000), new ZoneSpec(ZONE_B, 1, 500)));
 
     // when
     final var result =
@@ -104,12 +109,12 @@ class UpdatePartitionDistributionTransformerTest {
     assertThat(result.get())
         .containsExactly(
             new UpdatePartitionDistributorConfigOperation(COORDINATOR, newConfig),
-            new PartitionLeaveOperation(ZONE_B_0, 1, 1),
-            new PartitionReconfigurePriorityOperation(ZONE_A_0, 1, 1),
-            new PartitionLeaveOperation(ZONE_A_1, 2, 1),
-            new PartitionJoinOperation(ZONE_A_1, 3, 1),
-            new PartitionLeaveOperation(ZONE_A_0, 3, 1),
-            new PartitionLeaveOperation(ZONE_B_0, 3, 1));
+            new PartitionLeaveOperation(ZONE_A_1, 1, 1),
+            new PartitionReconfigurePriorityOperation(ZONE_A_0, 1, 2),
+            new PartitionLeaveOperation(ZONE_A_0, 2, 1),
+            new PartitionReconfigurePriorityOperation(ZONE_A_1, 2, 2),
+            new PartitionLeaveOperation(ZONE_A_1, 3, 1),
+            new PartitionReconfigurePriorityOperation(ZONE_A_0, 3, 2));
   }
 
   @Test
