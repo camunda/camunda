@@ -98,6 +98,23 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
     return new CompletableActorFuture<>(throwable);
   }
 
+  /**
+   * Executes a supplier that provides an {@code ActorFuture} and catches any synchronous
+   * exceptions, wrapping them in the returned future.
+   *
+   * @param <A> The type of the result provided by the {@code ActorFuture}.
+   * @param supplier A supplier that provides an {@code ActorFuture}.
+   * @return The {@code ActorFuture} provided by the supplier, or an exceptionally-completed {@code
+   *     ActorFuture} if an exception was thrown by the supplier.
+   */
+  public static <A> ActorFuture<A> catching(final Supplier<ActorFuture<A>> supplier) {
+    try {
+      return supplier.get();
+    } catch (final Throwable e) {
+      return CompletableActorFuture.completedExceptionally(e);
+    }
+  }
+
   @Override
   public boolean cancel(final boolean mayInterruptIfRunning) {
     throw new UnsupportedOperationException();
