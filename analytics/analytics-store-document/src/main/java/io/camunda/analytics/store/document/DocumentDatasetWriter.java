@@ -22,25 +22,42 @@ import io.camunda.analytics.serving.spi.WriteVersion;
 import io.camunda.analytics.serving.support.SketchScalar;
 import io.camunda.search.clients.DocumentBasedWriteClient;
 import io.camunda.search.clients.core.RequestBuilders;
+import io.camunda.search.clients.core.SearchIndexRequest;
+import io.camunda.search.clients.core.SearchWriteResponse;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.LongAdder;
 
 /**
  * The document serving {@link DatasetWriter}: each write is a full {@code index()} of the current
  * value with a deterministic id, which is an idempotent overwrite (the serving store holds current
- * values, not deltas). A cube cell arrives as one composite accumulator (ADR 0009) and fans out
- * into one document per meter, keyed by {@code (dims, window, tier, meter)}; a projected row writes
- * one document keyed by its row key. Meters of the same cell are independent documents, so setting
- * one never clobbers another.
+ * values, not deltas). A cube cell is <b>one document</b> carrying every meter's serving columns
+ * from the composite accumulator (ADR 0009 — one writer per row, one atomic upsert, never torn): an
+ * additive meter's pushdown columns as native numeric fields, a sketch's app-mergeable blob plus
+ * its finalized scalar. Snapshot rows and projected rows are likewise one document each.
+ *
+ * <p>The write fence is the store's external versioning: every write carries the {@link
+ * WriteVersion} packed into one order-preserving {@code long} (see {@link DocumentVersions}) with
+ * {@code external_gte} semantics, so the store itself rejects a fenced zombie's stale overwrite —
+ * an equal-or-newer version applies (idempotent replay), an older one affects nothing and is
+ * counted, not errored (the shared client reports it as {@code NOOP}).
  */
 public final class DocumentDatasetWriter implements VersionedDatasetWriter {
 
   private final DocumentBasedWriteClient writeClient;
 
+  /** Writes rejected by the version fence — stale by the time they reached the store. */
+  private final LongAdder fencedWrites = new LongAdder();
+
   public DocumentDatasetWriter(final DocumentBasedWriteClient writeClient) {
     this.writeClient = writeClient;
+  }
+
+  /** Writes rejected by the version fence since this writer opened (zero outside rebalances). */
+  public long fencedWrites() {
+    return fencedWrites.sum();
   }
 
   @Override
@@ -51,27 +68,6 @@ public final class DocumentDatasetWriter implements VersionedDatasetWriter {
       final long windowSize,
       final byte[] compositeAccumulator,
       final WriteVersion version) {
-    // The composite carries every meter's slot (ADR 0009). The document layout stays one document
-    // per meter for now — the writer fans the composite out — so the read path (which regroups
-    // meter documents into cells) is untouched; collapsing to one document per cell (and a native
-    // external-version write fence) is the documented follow-up.
-    final List<CompiledMeter> meters = dataset.meters();
-    final List<byte[]> slots =
-        CompositeAccumulatorValue.slotBytes(compositeAccumulator, meters.size());
-    for (int slot = 0; slot < meters.size(); slot++) {
-      upsertMeterDocument(
-          dataset, key, windowStart, windowSize, meters.get(slot), slots.get(slot), version);
-    }
-  }
-
-  private void upsertMeterDocument(
-      final CompiledDataset dataset,
-      final DimensionKey key,
-      final long windowStart,
-      final long windowSize,
-      final CompiledMeter meter,
-      final byte[] slotBytes,
-      final WriteVersion version) {
     final Map<String, Object> doc = new LinkedHashMap<>();
     final List<DimensionColumn> grain = dataset.grain().columns();
     for (int i = 0; i < grain.size(); i++) {
@@ -79,36 +75,107 @@ public final class DocumentDatasetWriter implements VersionedDatasetWriter {
     }
     doc.put(DocumentCubeNames.WINDOW_START, windowStart);
     doc.put(DocumentCubeNames.WINDOW_SIZE, windowSize);
-    doc.put(DocumentCubeNames.METER_NAME, meter.meterName());
+    putMeterFields(doc, dataset, compositeAccumulator);
 
-    // An additive meter writes its native numeric fields only (the composite aggregation reduces
-    // them). A sketch/summary writes its app-mergeable blob (streamed + merged) plus a finalized
-    // scalar for the DIRECT fast path — no blob for additive, which is never streamed.
-    final Optional<PushdownSpec<?, ?>> spec = meter.pushdown();
-    if (spec.isPresent()) {
-      final List<Object> values = decompose(meter.bound(), slotBytes);
-      final List<PushdownColumn> columns = spec.get().columns();
-      for (int i = 0; i < columns.size(); i++) {
-        doc.put(DocumentCubeNames.pushdownField(columns.get(i).suffix()), values.get(i));
-      }
-    } else {
-      final byte[] blob = slotBytes == null ? emptySlot(meter.bound()) : slotBytes;
-      doc.put(DocumentCubeNames.ACCUMULATOR, DocumentCubeNames.encode(blob));
-      doc.put(DocumentCubeNames.VALUE, SketchScalar.of(finalized(meter.bound(), blob)));
+    final String id = DocumentCubeNames.cellDocId(key, windowStart, windowSize);
+    index(DocumentCubeNames.datasetIndex(dataset.cubeId()), id, doc, version);
+  }
+
+  @Override
+  public void upsertSnapshotRow(
+      final CompiledDataset dataset,
+      final DimensionKey key,
+      final long sampleTime,
+      final byte[] compositeAccumulator,
+      final WriteVersion version) {
+    // Snapshot cubes are additive-only (validated at compile time), so every slot decomposes into
+    // native numeric fields — the row carries the key's cumulative absolutes as of sample_time.
+    final Map<String, Object> doc = new LinkedHashMap<>();
+    final List<DimensionColumn> grain = dataset.grain().columns();
+    for (int i = 0; i < grain.size(); i++) {
+      doc.put(DocumentCubeNames.field(grain.get(i).name()), key.get(i));
     }
+    doc.put(DocumentCubeNames.SAMPLE_TIME, sampleTime);
+    putMeterFields(doc, dataset, compositeAccumulator);
 
-    final String id = DocumentCubeNames.cellDocId(key, windowStart, windowSize, meter.meterName());
+    final String id = DocumentCubeNames.snapshotDocId(key, sampleTime);
+    index(DocumentCubeNames.snapshotIndex(dataset.cubeId()), id, doc, version);
+  }
+
+  @Override
+  public void upsertRow(
+      final CompiledTable table,
+      final String rowKey,
+      final List<Object> values,
+      final WriteVersion version) {
+    final Map<String, Object> doc = new LinkedHashMap<>();
+    final List<DimensionColumn> columns = table.columns();
+    for (int i = 0; i < columns.size(); i++) {
+      doc.put(DocumentCubeNames.field(columns.get(i).name()), values.get(i));
+    }
+    index(DocumentCubeNames.rowIndex(table.cubeId()), rowKey, doc, version);
+  }
+
+  /**
+   * Adds every meter's serving fields from the composite accumulator (ADR 0009 — all slots of the
+   * row in one document). A pushable (additive) meter decomposes its slot into native numeric
+   * fields (the composite aggregation reduces them); a sketch/summary writes its app-mergeable blob
+   * (streamed + merged) plus a finalized scalar for the DIRECT fast path. An absent slot (older
+   * layout) writes the meter's empty accumulator.
+   */
+  private static void putMeterFields(
+      final Map<String, Object> doc,
+      final CompiledDataset dataset,
+      final byte[] compositeAccumulator) {
+    final List<CompiledMeter> meters = dataset.meters();
+    final List<byte[]> slots =
+        CompositeAccumulatorValue.slotBytes(compositeAccumulator, meters.size());
+    for (int slot = 0; slot < meters.size(); slot++) {
+      final CompiledMeter meter = meters.get(slot);
+      final byte[] slotBytes = slots.get(slot);
+      final Optional<PushdownSpec<?, ?>> spec = meter.pushdown();
+      if (spec.isPresent()) {
+        final List<Object> values = decompose(meter.bound(), slotBytes);
+        final List<PushdownColumn> columns = spec.get().columns();
+        for (int i = 0; i < columns.size(); i++) {
+          doc.put(
+              DocumentCubeNames.pushdownField(meter.meterName(), columns.get(i).suffix()),
+              values.get(i));
+        }
+      } else {
+        final byte[] blob = slotBytes == null ? emptySlot(meter.bound()) : slotBytes;
+        doc.put(DocumentCubeNames.blobField(meter.meterName()), DocumentCubeNames.encode(blob));
+        doc.put(
+            DocumentCubeNames.valueField(meter.meterName()),
+            SketchScalar.of(finalized(meter.bound(), blob)));
+      }
+    }
+  }
+
+  /** The fenced upsert every document write goes through: external_gte on the packed version. */
+  private void index(
+      final String index,
+      final String id,
+      final Map<String, Object> doc,
+      final WriteVersion version) {
     doc.put(DocumentCubeNames.DOC_KEY, id); // sortable copy of the id, for search_after streaming
-    // The write fence is carried as fields for now: the shared search-client index request has no
-    // external-version support yet, so a stale write is not REJECTED here — enforcement needs
-    // either that API (version_type=external_gte with the pair packed into ES's single long) or
-    // the one-document-per-cell layout follow-up. Recording the version keeps documents
-    // diagnosable and the layout forward-compatible in the meantime.
+    // The version fields are also stored as plain fields so documents stay diagnosable — the
+    // enforcing copy is the packed external version on the request.
     doc.put(DocumentCubeNames.VER_EPOCH, version.epoch());
     doc.put(DocumentCubeNames.VER_OFFSET, version.offset());
-    writeClient.index(
-        RequestBuilders.<Map<String, Object>>indexRequest(
-            r -> r.index(DocumentCubeNames.datasetIndex(dataset.cubeId())).id(id).document(doc)));
+    final SearchWriteResponse response =
+        writeClient.index(
+            RequestBuilders.<Map<String, Object>>indexRequest(
+                r ->
+                    r.index(index)
+                        .id(id)
+                        .document(doc)
+                        .version(DocumentVersions.pack(version))
+                        .versionType(SearchIndexRequest.VersionType.EXTERNAL_GTE)));
+    if (response.result() == SearchWriteResponse.Result.NOOP) {
+      // The fence working, not an error: the store already holds an equal-or-newer row.
+      fencedWrites.increment();
+    }
   }
 
   @SuppressWarnings("unchecked")
@@ -132,61 +199,6 @@ public final class DocumentDatasetWriter implements VersionedDatasetWriter {
   private static Object finalized(final BoundMeter<?, ?> boundRaw, final byte[] bytes) {
     final BoundMeter<Object, Object> bound = (BoundMeter<Object, Object>) boundRaw;
     return bound.aggregate().getResult(bound.accumulatorCodec().fromBytes(bytes));
-  }
-
-  @Override
-  public void upsertSnapshotRow(
-      final CompiledDataset dataset,
-      final DimensionKey key,
-      final long sampleTime,
-      final byte[] compositeAccumulator,
-      final WriteVersion version) {
-    // Snapshot cubes are additive-only, so every slot writes native numeric fields — the key's
-    // cumulative absolutes as of sample_time — into the cube's dedicated _snapshots index.
-    final List<CompiledMeter> meters = dataset.meters();
-    final List<byte[]> slots =
-        CompositeAccumulatorValue.slotBytes(compositeAccumulator, meters.size());
-    for (int slot = 0; slot < meters.size(); slot++) {
-      final CompiledMeter meter = meters.get(slot);
-      final Map<String, Object> doc = new LinkedHashMap<>();
-      final List<DimensionColumn> grain = dataset.grain().columns();
-      for (int i = 0; i < grain.size(); i++) {
-        doc.put(DocumentCubeNames.field(grain.get(i).name()), key.get(i));
-      }
-      doc.put(DocumentCubeNames.SAMPLE_TIME, sampleTime);
-      doc.put(DocumentCubeNames.METER_NAME, meter.meterName());
-      final List<Object> values = decompose(meter.bound(), slots.get(slot));
-      final List<PushdownColumn> columns = meter.pushdown().orElseThrow().columns();
-      for (int i = 0; i < columns.size(); i++) {
-        doc.put(DocumentCubeNames.pushdownField(columns.get(i).suffix()), values.get(i));
-      }
-      doc.put(DocumentCubeNames.VER_EPOCH, version.epoch());
-      doc.put(DocumentCubeNames.VER_OFFSET, version.offset());
-      final String id = DocumentCubeNames.snapshotDocId(key, sampleTime, meter.meterName());
-      doc.put(DocumentCubeNames.DOC_KEY, id);
-      writeClient.index(
-          RequestBuilders.<Map<String, Object>>indexRequest(
-              r ->
-                  r.index(DocumentCubeNames.snapshotIndex(dataset.cubeId())).id(id).document(doc)));
-    }
-  }
-
-  @Override
-  public void upsertRow(
-      final CompiledTable table,
-      final String rowKey,
-      final List<Object> values,
-      final WriteVersion version) {
-    final Map<String, Object> doc = new LinkedHashMap<>();
-    final List<DimensionColumn> columns = table.columns();
-    for (int i = 0; i < columns.size(); i++) {
-      doc.put(DocumentCubeNames.field(columns.get(i).name()), values.get(i));
-    }
-    doc.put(DocumentCubeNames.VER_EPOCH, version.epoch());
-    doc.put(DocumentCubeNames.VER_OFFSET, version.offset());
-    writeClient.index(
-        RequestBuilders.<Map<String, Object>>indexRequest(
-            r -> r.index(DocumentCubeNames.rowIndex(table.cubeId())).id(rowKey).document(doc)));
   }
 
   @Override

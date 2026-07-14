@@ -48,9 +48,10 @@ import java.util.function.Consumer;
 /**
  * The document serving {@link DatasetQueryClient}: transforms a neutral {@link DatasetFetch} into a
  * filtered search over the cube's {@code dataset_<id>} index (term on the tier, range on {@code
- * window_start}, term per grain-column filter), then groups the per-meter documents back into
- * {@link Cell}s (grain {@link DimensionKey} + window + the requested meters' still-encoded
- * accumulators). The executor does the merge/finalize, so this stays a filter-and-fetch.
+ * window_start}, term per grain-column filter). A document is one whole cell (ADR 0009), so a hit
+ * maps straight to a {@link Cell} (grain {@link DimensionKey} + window + the requested meters'
+ * still-encoded accumulators). The executor does the merge/finalize, so this stays a
+ * filter-and-fetch.
  */
 public final class DocumentDatasetQueryClient implements DatasetQueryClient {
 
@@ -64,23 +65,9 @@ public final class DocumentDatasetQueryClient implements DatasetQueryClient {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   public List<Cell> fetch(final DatasetFetch fetch) {
     final CompiledDataset dataset = fetch.dataset();
-    final List<DimensionColumn> grain = dataset.grain().columns();
-
-    final List<SearchQuery> filters = new ArrayList<>();
-    filters.add(SearchQueryBuilders.term(DocumentCubeNames.WINDOW_SIZE, fetch.windowSize()));
-    filters.add(SearchQueryBuilders.gte(DocumentCubeNames.WINDOW_START, fetch.fromMs()));
-    filters.add(SearchQueryBuilders.lt(DocumentCubeNames.WINDOW_START, fetch.toMs()));
-    for (final FilterPredicate filter : fetch.filters()) {
-      final int index = dataset.grain().indexOf(filter.field());
-      if (index >= 0) {
-        filters.add(
-            term(DocumentCubeNames.field(filter.field()), grain.get(index).type(), filter.value()));
-      }
-    }
-    final SearchQuery query = SearchQueryBuilders.and(filters);
+    final SearchQuery query = SearchQueryBuilders.and(cellFilters(fetch));
     final String index = DocumentCubeNames.datasetIndex(dataset.cubeId());
 
     final SearchQueryResponse<Map> response =
@@ -88,41 +75,159 @@ public final class DocumentDatasetQueryClient implements DatasetQueryClient {
             RequestBuilders.searchRequest(r -> r.index(index).query(query).size(MAX_HITS)),
             Map.class);
 
-    // Each hit is one meter-document; group them back into cells by (grain values, window).
-    final Map<CellKey, Map<String, byte[]>> cells = new LinkedHashMap<>();
-    final Map<CellKey, List<Object>> keyValues = new LinkedHashMap<>();
+    final List<Cell> cells = new ArrayList<>(response.hits().size());
     for (final var hit : response.hits()) {
-      final Map<String, Object> source = (Map<String, Object>) hit.source();
-      if (source == null) {
-        continue;
+      final Map<String, Object> source = source(hit.source());
+      if (source != null) {
+        cells.add(toCell(dataset, fetch.meters(), source));
       }
-      final String meter = String.valueOf(source.get(DocumentCubeNames.METER_NAME));
-      if (!fetch.meters().contains(meter)) {
-        continue;
+    }
+    return cells;
+  }
+
+  @Override
+  public void streamCells(final DatasetFetch fetch, final Consumer<Cell> sink) {
+    final CompiledDataset dataset = fetch.dataset();
+    final SearchQuery query = SearchQueryBuilders.and(cellFilters(fetch));
+    final String index = DocumentCubeNames.datasetIndex(dataset.cubeId());
+
+    // search_after paging (stateless): sort on the unique doc key, resume from the last page's
+    // sort value. One document = one whole cell, so each hit emits one complete Cell.
+    forEachPage(index, query, source -> sink.accept(toCell(dataset, fetch.meters(), source)));
+  }
+
+  private static final String COMPOSITE_NAME = "cube";
+  private static final String BUCKET_SOURCE = "wbucket";
+
+  /**
+   * The pushed-down / direct read on the document backend (mirroring the RDBMS client): {@code
+   * PUSH_DOWN} runs one paged {@code composite} aggregation — a {@code terms} source per group-by
+   * dimension (with {@code missing_bucket}, so a null-dimension group surfaces like SQL's NULL
+   * group) plus a {@code date_histogram} on {@code window_start} at the granularity — with the
+   * meters' {@code sum}/{@code min}/{@code max} column sub-aggregations. {@code DIRECT} fetches the
+   * cell documents themselves with no aggregation — one row per cell, a sketch meter serving its
+   * denormalized finalized value. Each meter's columns are recomposed into its read-facing result.
+   */
+  @Override
+  public List<AggregatedRow> fetchAggregated(final AggregatedFetch fetch) {
+    return switch (fetch.strategy()) {
+      case PUSH_DOWN -> pushDown(fetch);
+      case DIRECT -> direct(fetch);
+      case STREAM_MERGE ->
+          throw new IllegalArgumentException("STREAM_MERGE streams cells, not an AggregatedFetch");
+    };
+  }
+
+  private List<AggregatedRow> pushDown(final AggregatedFetch fetch) {
+    final CompiledDataset dataset = fetch.dataset();
+    final String index = DocumentCubeNames.datasetIndex(dataset.cubeId());
+    final SearchQuery query = SearchQueryBuilders.and(aggregatedFilters(fetch));
+
+    // One composite pass serves every meter: a cell document carries all meter columns (ADR 0009),
+    // so the sub-aggregations are simply the union of the requested meters' columns.
+    final List<SearchAggregator> subAggs = new ArrayList<>();
+    for (final String meter : fetch.meters()) {
+      final PushdownSpec<?, ?> spec = requireSpec(dataset, meter, fetch.windowSize());
+      for (final PushdownColumn column : spec.columns()) {
+        final String field = DocumentCubeNames.pushdownField(meter, column.suffix());
+        subAggs.add(metricAgg(subAggName(field), field, column.agg()));
       }
-      final List<Object> values = new ArrayList<>(grain.size());
-      for (final DimensionColumn column : grain) {
-        values.add(column.type().coerce(source.get(DocumentCubeNames.field(column.name()))));
-      }
-      final long windowStart = ((Number) source.get(DocumentCubeNames.WINDOW_START)).longValue();
-      final CellKey cellKey = new CellKey(values, windowStart);
-      keyValues.putIfAbsent(cellKey, values);
-      cells
-          .computeIfAbsent(cellKey, k -> new LinkedHashMap<>())
-          .put(
-              meter,
-              DocumentCubeNames.decode(String.valueOf(source.get(DocumentCubeNames.ACCUMULATOR))));
     }
 
-    final List<Cell> result = new ArrayList<>(cells.size());
-    cells.forEach(
-        (cellKey, accumulators) ->
-            result.add(
-                new Cell(
-                    DimensionKey.of(dataset.grain(), keyValues.get(cellKey)),
-                    cellKey.windowStart(),
-                    accumulators)));
-    return result;
+    final List<AggregatedRow> rows = new ArrayList<>();
+    String after = null;
+    while (true) {
+      final String cursor = after;
+      final SearchCompositeAggregator composite =
+          SearchAggregatorBuilders.composite()
+              .name(COMPOSITE_NAME)
+              .size(PAGE_SIZE)
+              .sources(compositeSources(fetch.groupBy(), fetch.granularityMs()))
+              .aggregations(subAggs)
+              .after(cursor)
+              .build();
+      final SearchQueryResponse<Map> response =
+          searchClient.search(
+              RequestBuilders.searchRequest(
+                  r -> r.index(index).query(query).size(0).aggregations(composite)),
+              Map.class);
+      final AggregationResult result =
+          response.aggregations() == null ? null : response.aggregations().get(COMPOSITE_NAME);
+      final Map<String, AggregationResult> buckets = result == null ? null : result.aggregations();
+      if (buckets == null || buckets.isEmpty()) {
+        break;
+      }
+      for (final AggregationResult bucket : buckets.values()) {
+        // The composite bucket's structured key carries each source's raw value — the time
+        // bucket as a number and each dimension as its own entry (null for a missing bucket) —
+        // so nothing is parsed out of a joined string.
+        final Map<String, Object> keyValues = bucket.keyValues();
+        final long bucketStart = ((Number) keyValues.get(BUCKET_SOURCE)).longValue();
+        final List<Object> group = new ArrayList<>(fetch.groupBy().size());
+        for (final String dim : fetch.groupBy()) {
+          final int dimIndex = dataset.grain().indexOf(dim);
+          final DimensionType type = dataset.grain().columns().get(dimIndex).type();
+          group.add(type.coerce(keyValues.get(DocumentCubeNames.field(dim))));
+        }
+        final Map<String, Object> measures = new LinkedHashMap<>();
+        for (final String meter : fetch.meters()) {
+          final PushdownSpec<?, ?> spec = requireSpec(dataset, meter, fetch.windowSize());
+          final List<Object> columns = new ArrayList<>(spec.columns().size());
+          for (final PushdownColumn column : spec.columns()) {
+            columns.add(subValue(bucket, DocumentCubeNames.pushdownField(meter, column.suffix())));
+          }
+          measures.put(meter, recompose(spec, columns));
+        }
+        rows.add(new AggregatedRow(group, bucketStart, measures));
+      }
+      after = result.endCursor();
+      if (after == null) {
+        break;
+      }
+    }
+    return rows;
+  }
+
+  private List<AggregatedRow> direct(final AggregatedFetch fetch) {
+    final CompiledDataset dataset = fetch.dataset();
+    final String index = DocumentCubeNames.datasetIndex(dataset.cubeId());
+    final SearchQuery query = SearchQueryBuilders.and(aggregatedFilters(fetch));
+
+    // No aggregation: one row per cell document, the bucket derived like the executor derives it.
+    final List<AggregatedRow> rows = new ArrayList<>();
+    forEachPage(
+        index,
+        query,
+        source -> {
+          final long windowStart = longField(source, DocumentCubeNames.WINDOW_START);
+          final long bucket = windowStart - Math.floorMod(windowStart, fetch.granularityMs());
+          final List<Object> group = new ArrayList<>(fetch.groupBy().size());
+          for (final String dim : fetch.groupBy()) {
+            final int dimIndex = dataset.grain().indexOf(dim);
+            final DimensionType type = dataset.grain().columns().get(dimIndex).type();
+            group.add(type.coerce(source.get(DocumentCubeNames.field(dim))));
+          }
+          final Map<String, Object> measures = new LinkedHashMap<>();
+          for (final String meter : fetch.meters()) {
+            final Optional<PushdownSpec<?, ?>> spec = specFor(dataset, meter, fetch.windowSize());
+            if (spec.isPresent()) {
+              final List<Object> columns = new ArrayList<>(spec.get().columns().size());
+              for (final PushdownColumn column : spec.get().columns()) {
+                columns.add(source.get(DocumentCubeNames.pushdownField(meter, column.suffix())));
+              }
+              measures.put(meter, recompose(spec.get(), columns));
+            } else {
+              // DIRECT on a non-pushable meter: serve the denormalized scalar. A null scalar
+              // means "no observations": the measure stays absent — never 0, a legitimate value.
+              final Object value = source.get(DocumentCubeNames.valueField(meter));
+              if (value != null) {
+                measures.put(meter, ((Number) value).doubleValue());
+              }
+            }
+          }
+          rows.add(new AggregatedRow(group, bucket, measures));
+        });
+    return rows;
   }
 
   @Override
@@ -161,7 +266,7 @@ public final class DocumentDatasetQueryClient implements DatasetQueryClient {
       if (rows.size() >= limit) {
         break;
       }
-      final Map<String, Object> source = (Map<String, Object>) hit.source();
+      final Map<String, Object> source = source(hit.source());
       if (source == null) {
         continue;
       }
@@ -176,40 +281,70 @@ public final class DocumentDatasetQueryClient implements DatasetQueryClient {
     return rows;
   }
 
-  private static DimensionColumn column(final List<DimensionColumn> columns, final String name) {
-    for (final DimensionColumn column : columns) {
-      if (column.name().equals(name)) {
-        return column;
-      }
-    }
-    return null;
+  @Override
+  public void close() {
+    // the client is owned by the store
   }
 
-  @Override
-  @SuppressWarnings("unchecked")
-  public void streamCells(final DatasetFetch fetch, final Consumer<Cell> sink) {
-    final CompiledDataset dataset = fetch.dataset();
-    final List<DimensionColumn> grain = dataset.grain().columns();
+  /** The tier + window-range + grain-filter query shared by the cell reads. */
+  private static List<SearchQuery> cellFilters(final DatasetFetch fetch) {
+    return cellFilters(
+        fetch.dataset(), fetch.windowSize(), fetch.fromMs(), fetch.toMs(), fetch.filters());
+  }
 
+  private static List<SearchQuery> aggregatedFilters(final AggregatedFetch fetch) {
+    return cellFilters(
+        fetch.dataset(), fetch.windowSize(), fetch.fromMs(), fetch.toMs(), fetch.filters());
+  }
+
+  private static List<SearchQuery> cellFilters(
+      final CompiledDataset dataset,
+      final long windowSize,
+      final long fromMs,
+      final long toMs,
+      final List<FilterPredicate> predicates) {
+    final List<DimensionColumn> grain = dataset.grain().columns();
     final List<SearchQuery> filters = new ArrayList<>();
-    filters.add(SearchQueryBuilders.term(DocumentCubeNames.WINDOW_SIZE, fetch.windowSize()));
-    filters.add(SearchQueryBuilders.gte(DocumentCubeNames.WINDOW_START, fetch.fromMs()));
-    filters.add(SearchQueryBuilders.lt(DocumentCubeNames.WINDOW_START, fetch.toMs()));
-    for (final FilterPredicate filter : fetch.filters()) {
+    filters.add(SearchQueryBuilders.term(DocumentCubeNames.WINDOW_SIZE, windowSize));
+    filters.add(SearchQueryBuilders.gte(DocumentCubeNames.WINDOW_START, fromMs));
+    filters.add(SearchQueryBuilders.lt(DocumentCubeNames.WINDOW_START, toMs));
+    for (final FilterPredicate filter : predicates) {
       final int index = dataset.grain().indexOf(filter.field());
       if (index >= 0) {
         filters.add(
             term(DocumentCubeNames.field(filter.field()), grain.get(index).type(), filter.value()));
       }
     }
-    final SearchQuery query = SearchQueryBuilders.and(filters);
-    final String index = DocumentCubeNames.datasetIndex(dataset.cubeId());
+    return filters;
+  }
+
+  /** One whole cell from one document: coerced grain values, window, requested meter blobs. */
+  private static Cell toCell(
+      final CompiledDataset dataset, final List<String> meters, final Map<String, Object> source) {
+    final List<DimensionColumn> grain = dataset.grain().columns();
+    final List<Object> values = new ArrayList<>(grain.size());
+    for (final DimensionColumn column : grain) {
+      values.add(column.type().coerce(source.get(DocumentCubeNames.field(column.name()))));
+    }
+    final long windowStart = longField(source, DocumentCubeNames.WINDOW_START);
+    // Only sketch/summary meters store a blob (the STREAM_MERGE representation); an additive
+    // meter is pushdown-only, so there is nothing to decode for it here (as on the RDBMS backend).
+    final Map<String, byte[]> accumulators = new LinkedHashMap<>();
+    for (final String meter : meters) {
+      final Object blob = source.get(DocumentCubeNames.blobField(meter));
+      if (blob != null) {
+        accumulators.put(meter, DocumentCubeNames.decode(blob.toString()));
+      }
+    }
+    return new Cell(DimensionKey.of(dataset.grain(), values), windowStart, accumulators);
+  }
+
+  /** search_after pages over the unique doc key, feeding each hit's source to the consumer. */
+  @SuppressWarnings("unchecked")
+  private void forEachPage(
+      final String index, final SearchQuery query, final Consumer<Map<String, Object>> consumer) {
     final List<SearchSortOptions> sort =
         List.of(SortOptionsBuilders.sortOptions(DocumentCubeNames.DOC_KEY, SortOrder.ASC));
-
-    // search_after paging (stateless): sort on the unique doc key, resume from the last page's sort
-    // value. One document = one meter of one cell → emit a single-meter Cell; the executor merges
-    // per (group, meter), so no cross-page grouping is needed.
     Object[] after = null;
     while (true) {
       final Object[] resumeFrom = after;
@@ -229,24 +364,10 @@ public final class DocumentDatasetQueryClient implements DatasetQueryClient {
         break;
       }
       for (final var hit : hits) {
-        final Map<String, Object> source = (Map<String, Object>) hit.source();
-        if (source == null) {
-          continue;
+        final Map<String, Object> source = source(hit.source());
+        if (source != null) {
+          consumer.accept(source);
         }
-        final String meter = String.valueOf(source.get(DocumentCubeNames.METER_NAME));
-        if (!fetch.meters().contains(meter)) {
-          continue;
-        }
-        final List<Object> values = new ArrayList<>(grain.size());
-        for (final DimensionColumn column : grain) {
-          values.add(column.type().coerce(source.get(DocumentCubeNames.field(column.name()))));
-        }
-        final long windowStart = ((Number) source.get(DocumentCubeNames.WINDOW_START)).longValue();
-        final byte[] accumulator =
-            DocumentCubeNames.decode(String.valueOf(source.get(DocumentCubeNames.ACCUMULATOR)));
-        sink.accept(
-            new Cell(
-                DimensionKey.of(dataset.grain(), values), windowStart, Map.of(meter, accumulator)));
       }
       after = hits.get(hits.size() - 1).sortValues();
       if (hits.size() < PAGE_SIZE) {
@@ -255,165 +376,30 @@ public final class DocumentDatasetQueryClient implements DatasetQueryClient {
     }
   }
 
-  private static final String COMPOSITE_NAME = "cube";
-  private static final String BUCKET_SOURCE = "wbucket";
-
-  /**
-   * The pushed-down / direct read on the document backend: one paged {@code composite} aggregation
-   * per meter (documents are one-per-meter, so each meter is filtered by {@code meter_name} and
-   * carries its own numeric fields). The composite sources are a {@code terms} per group-by
-   * dimension plus a {@code date_histogram} on {@code window_start} at the granularity; the sub-
-   * aggregations are the meter's {@code sum}/{@code min}/{@code max} columns (additive) or a {@code
-   * sum} over its {@code _value} (a sketch's DIRECT scalar). Rows are unioned across meters on
-   * {@code (group, bucket)} and each meter's columns recomposed into its result.
-   */
-  @Override
   @SuppressWarnings("unchecked")
-  public List<AggregatedRow> fetchAggregated(final AggregatedFetch fetch) {
-    final CompiledDataset dataset = fetch.dataset();
-    final Map<GroupBucket, Map<String, Object>> merged = new LinkedHashMap<>();
-    final Map<GroupBucket, List<Object>> groupValues = new LinkedHashMap<>();
-    final String index = DocumentCubeNames.datasetIndex(dataset.cubeId());
-    final List<String> sourceNames = sourceNames(fetch.groupBy());
-
-    for (final String meter : fetch.meters()) {
-      final Optional<PushdownSpec<?, ?>> spec = specFor(dataset, meter, fetch.windowSize());
-      final SearchQuery query = SearchQueryBuilders.and(meterFilters(fetch, meter));
-      final List<SearchAggregator> subAggs = subAggregations(spec);
-
-      String after = null;
-      while (true) {
-        final String cursor = after;
-        final SearchCompositeAggregator composite =
-            SearchAggregatorBuilders.composite()
-                .name(COMPOSITE_NAME)
-                .size(PAGE_SIZE)
-                .sources(compositeSources(fetch.groupBy(), fetch.granularityMs()))
-                .aggregations(subAggs)
-                .after(cursor)
-                .build();
-        final SearchQueryResponse<Map> response =
-            searchClient.search(
-                RequestBuilders.searchRequest(
-                    r -> r.index(index).query(query).size(0).aggregations(composite)),
-                Map.class);
-        final AggregationResult result =
-            response.aggregations() == null ? null : response.aggregations().get(COMPOSITE_NAME);
-        final Map<String, AggregationResult> buckets =
-            result == null ? null : result.aggregations();
-        if (buckets == null || buckets.isEmpty()) {
-          break;
-        }
-        buckets.forEach(
-            (key, bucket) -> {
-              final Map<String, String> keyValues =
-                  SearchCompositeAggregator.splitKeyValues(key, sourceNames.toArray(new String[0]));
-              final long bucketStart = Long.parseLong(keyValues.get(BUCKET_SOURCE));
-              final List<Object> group = new ArrayList<>(fetch.groupBy().size());
-              for (final String dim : fetch.groupBy()) {
-                final int dimIndex = dataset.grain().indexOf(dim);
-                group.add(
-                    dataset
-                        .grain()
-                        .columns()
-                        .get(dimIndex)
-                        .type()
-                        .coerce(keyValues.get(DocumentCubeNames.field(dim))));
-              }
-              final GroupBucket gb = new GroupBucket(group, bucketStart);
-              groupValues.putIfAbsent(gb, group);
-              merged
-                  .computeIfAbsent(gb, g -> new LinkedHashMap<>())
-                  .put(meter, measure(spec, bucket));
-            });
-        after = result.endCursor();
-        if (after == null) {
-          break;
-        }
-      }
-    }
-
-    final List<AggregatedRow> rows = new ArrayList<>(merged.size());
-    merged.forEach(
-        (gb, measures) -> rows.add(new AggregatedRow(groupValues.get(gb), gb.bucket(), measures)));
-    return rows;
+  private static Map<String, Object> source(final Object raw) {
+    return (Map<String, Object>) raw;
   }
 
-  /** The base filters plus the per-meter {@code meter_name} term. */
-  private static List<SearchQuery> meterFilters(final AggregatedFetch fetch, final String meter) {
-    final CompiledDataset dataset = fetch.dataset();
-    final List<DimensionColumn> grain = dataset.grain().columns();
-    final List<SearchQuery> filters = new ArrayList<>();
-    filters.add(SearchQueryBuilders.term(DocumentCubeNames.WINDOW_SIZE, fetch.windowSize()));
-    filters.add(SearchQueryBuilders.gte(DocumentCubeNames.WINDOW_START, fetch.fromMs()));
-    filters.add(SearchQueryBuilders.lt(DocumentCubeNames.WINDOW_START, fetch.toMs()));
-    filters.add(SearchQueryBuilders.term(DocumentCubeNames.METER_NAME, meter));
-    for (final FilterPredicate filter : fetch.filters()) {
-      final int index = dataset.grain().indexOf(filter.field());
-      if (index >= 0) {
-        filters.add(
-            term(DocumentCubeNames.field(filter.field()), grain.get(index).type(), filter.value()));
-      }
-    }
-    return filters;
+  private static long longField(final Map<String, Object> source, final String field) {
+    return ((Number) source.get(field)).longValue();
   }
 
-  /** The composite sources: a terms per group-by dimension, then the time bucket. */
-  private static List<SearchAggregator> compositeSources(
-      final List<String> groupBy, final long granularityMs) {
-    final List<SearchAggregator> sources = new ArrayList<>();
-    for (final String dim : groupBy) {
-      final String field = DocumentCubeNames.field(dim);
-      sources.add(SearchAggregatorBuilders.terms(field, field));
-    }
-    sources.add(
-        SearchAggregatorBuilders.dateHistogram(
-            BUCKET_SOURCE,
-            DocumentCubeNames.WINDOW_START,
-            new DateHistogramInterval.Fixed(Duration.ofMillis(granularityMs))));
-    return sources;
-  }
-
-  /**
-   * The per-column {@code sum}/{@code min}/{@code max} (additive) or {@code sum(_value)} (sketch).
-   */
-  private static List<SearchAggregator> subAggregations(final Optional<PushdownSpec<?, ?>> spec) {
-    final List<SearchAggregator> subs = new ArrayList<>();
-    if (spec.isPresent()) {
-      for (final PushdownColumn column : spec.get().columns()) {
-        final String field = DocumentCubeNames.pushdownField(column.suffix());
-        subs.add(metricAgg(subAggName(field), field, column.agg()));
-      }
-    } else {
-      subs.add(
-          SearchAggregatorBuilders.sum(
-              subAggName(DocumentCubeNames.VALUE), DocumentCubeNames.VALUE));
-    }
-    return subs;
-  }
-
-  private Object measure(final Optional<PushdownSpec<?, ?>> spec, final AggregationResult bucket) {
-    if (spec.isPresent()) {
-      final List<Object> columns = new ArrayList<>();
-      for (final PushdownColumn column : spec.get().columns()) {
-        columns.add(subValue(bucket, DocumentCubeNames.pushdownField(column.suffix())));
-      }
-      return recompose(spec.get(), columns);
-    }
-    final Object value = subValue(bucket, DocumentCubeNames.VALUE);
-    return value == null ? 0.0 : ((Number) value).doubleValue();
-  }
-
+  /** A metric sub-aggregation's numeric value, preferring the exact double over the rounding. */
   private static Object subValue(final AggregationResult bucket, final String field) {
     if (bucket.aggregations() == null) {
       return null;
     }
     final AggregationResult metric = bucket.aggregations().get(subAggName(field));
-    return metric == null ? null : metric.docCount();
+    if (metric == null) {
+      return null;
+    }
+    return metric.value() != null ? metric.value() : metric.docCount();
   }
 
+  @SuppressWarnings("unchecked")
   private static Object recompose(final PushdownSpec<?, ?> spec, final List<Object> columns) {
-    return spec.recompose().apply(columns);
+    return ((PushdownSpec<Object, Object>) spec).recompose().apply(columns);
   }
 
   private static String subAggName(final String field) {
@@ -428,13 +414,24 @@ public final class DocumentDatasetQueryClient implements DatasetQueryClient {
     };
   }
 
-  private static List<String> sourceNames(final List<String> groupBy) {
-    final List<String> names = new ArrayList<>();
+  /**
+   * The composite sources: a terms per group-by dimension — with {@code missing_bucket}, so cells
+   * whose dimension is null form their own group instead of silently vanishing (the RDBMS GROUP BY
+   * returns the NULL group) — then the time bucket.
+   */
+  private static List<SearchAggregator> compositeSources(
+      final List<String> groupBy, final long granularityMs) {
+    final List<SearchAggregator> sources = new ArrayList<>();
     for (final String dim : groupBy) {
-      names.add(DocumentCubeNames.field(dim));
+      final String field = DocumentCubeNames.field(dim);
+      sources.add(SearchAggregatorBuilders.terms(field, field, true));
     }
-    names.add(BUCKET_SOURCE);
-    return names;
+    sources.add(
+        SearchAggregatorBuilders.dateHistogram(
+            BUCKET_SOURCE,
+            DocumentCubeNames.WINDOW_START,
+            new DateHistogramInterval.Fixed(Duration.ofMillis(granularityMs))));
+    return sources;
   }
 
   private static Optional<PushdownSpec<?, ?>> specFor(
@@ -450,13 +447,22 @@ public final class DocumentDatasetQueryClient implements DatasetQueryClient {
         "no compiled meter '" + meter + "' in '" + dataset.name() + "'");
   }
 
-  @Override
-  public void close() {
-    // the client is owned by the store
+  private static PushdownSpec<?, ?> requireSpec(
+      final CompiledDataset dataset, final String meter, final long windowSize) {
+    return specFor(dataset, meter, windowSize)
+        .orElseThrow(
+            () ->
+                new IllegalArgumentException("meter '" + meter + "' is not pushable (PUSH_DOWN)"));
   }
 
-  /** A value-equal (group values, time bucket) key to union rows across per-meter composites. */
-  private record GroupBucket(List<Object> group, long bucket) {}
+  private static DimensionColumn column(final List<DimensionColumn> columns, final String name) {
+    for (final DimensionColumn column : columns) {
+      if (column.name().equals(name)) {
+        return column;
+      }
+    }
+    return null;
+  }
 
   private static SearchQuery term(
       final String field, final DimensionType type, final String value) {
@@ -466,7 +472,4 @@ public final class DocumentDatasetQueryClient implements DatasetQueryClient {
       case BOOLEAN -> SearchQueryBuilders.term(field, Boolean.parseBoolean(value));
     };
   }
-
-  /** A value-equal grouping key over the grain values and the window, to reassemble cells. */
-  private record CellKey(List<Object> dimensions, long windowStart) {}
 }
