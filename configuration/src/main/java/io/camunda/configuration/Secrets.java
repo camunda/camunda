@@ -39,7 +39,7 @@ public class Secrets {
 
   public static class Stores {
 
-    @NestedConfigurationProperty private Map<String, FileStore> file = new LinkedHashMap<>();
+    private Map<String, FileStore> file = new LinkedHashMap<>();
 
     public Map<String, FileStore> getFile() {
       return file;
