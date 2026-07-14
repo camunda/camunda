@@ -59,7 +59,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -201,12 +200,12 @@ abstract class IncidentUpdateRepositoryIT {
       // then
       assertThat(documents)
           .succeedsWithin(REQUEST_TIMEOUT)
-          .asInstanceOf(InstanceOfAssertFactories.map(Long.class, IncidentDocument.class))
+          .asInstanceOf(InstanceOfAssertFactories.collection(IncidentDocument.class))
           .isEmpty();
     }
 
     @Test
-    void shouldReturnIncidentByIds() throws PersistenceException {
+    void shouldReturnIncidentDocuments() throws PersistenceException {
       // given
       final var repository = createRepository();
       final var expected = createIncident(1L);
@@ -218,10 +217,9 @@ abstract class IncidentUpdateRepositoryIT {
       // then
       assertThat(documents)
           .succeedsWithin(REQUEST_TIMEOUT)
-          .asInstanceOf(InstanceOfAssertFactories.map(String.class, IncidentDocument.class))
+          .asInstanceOf(InstanceOfAssertFactories.collection(IncidentDocument.class))
           .hasSize(1)
-          .containsEntry(
-              "1", new IncidentDocument("1", incidentTemplate.getFullQualifiedName(), expected));
+          .contains(new IncidentDocument("1", incidentTemplate.getFullQualifiedName(), expected));
     }
 
     @RegressionTest("https://github.com/camunda/camunda/issues/25968")
@@ -229,12 +227,12 @@ abstract class IncidentUpdateRepositoryIT {
       // given
       final var repository = createRepository();
       final List<String> ids = new ArrayList<>();
-      final Map<String, IncidentDocument> expected = new HashMap<>();
+      final List<IncidentDocument> expected = new ArrayList<>();
       for (int i = 0; i < 20; i++) {
         final var id = String.valueOf(i);
         final var entity = createIncident(i);
         ids.add(id);
-        expected.put(id, new IncidentDocument(id, incidentTemplate.getFullQualifiedName(), entity));
+        expected.add(new IncidentDocument(id, incidentTemplate.getFullQualifiedName(), entity));
       }
 
       // when
@@ -243,9 +241,9 @@ abstract class IncidentUpdateRepositoryIT {
       // then
       assertThat(documents)
           .succeedsWithin(REQUEST_TIMEOUT)
-          .asInstanceOf(InstanceOfAssertFactories.map(String.class, IncidentDocument.class))
+          .asInstanceOf(InstanceOfAssertFactories.collection(IncidentDocument.class))
           .hasSize(20)
-          .containsExactlyEntriesOf(expected);
+          .containsExactlyInAnyOrderElementsOf(expected);
     }
 
     private IncidentEntity createIncident(final long key) throws PersistenceException {

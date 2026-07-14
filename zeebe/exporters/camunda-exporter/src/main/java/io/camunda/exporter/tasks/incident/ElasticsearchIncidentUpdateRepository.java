@@ -112,13 +112,14 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
   }
 
   @Override
-  public CompletionStage<Map<String, IncidentDocument>> getIncidentDocuments(
+  public CompletionStage<Collection<IncidentDocument>> getIncidentDocuments(
       final List<String> incidentIds) {
     final var request = createIncidentDocumentsRequest(incidentIds);
 
-    return client
-        .search(request, IncidentEntity.class)
-        .thenApplyAsync(this::createIncidentDocuments, executor);
+    return fetchUnboundedDocumentCollection(
+        request,
+        IncidentEntity.class,
+        hit -> new IncidentDocument(hit.id(), hit.index(), hit.source()));
   }
 
   @Override
@@ -322,7 +323,7 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
         ._toBulkOperation();
   }
 
-  private SearchRequest createIncidentDocumentsRequest(final List<String> incidentIds) {
+  private SearchRequest.Builder createIncidentDocumentsRequest(final List<String> incidentIds) {
     final var idQ = QueryBuilders.ids(i -> i.values(incidentIds));
     final var partitionQ =
         QueryBuilders.term(t -> t.field(IncidentTemplate.PARTITION_ID).value(partitionId));
@@ -331,19 +332,7 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
         .query(q -> q.bool(b -> b.must(idQ, partitionQ)))
         .allowNoIndices(true)
         .ignoreUnavailable(true)
-        .sort(s -> s.field(f -> f.field(IncidentTemplate.KEY)))
-        .size(incidentIds.size())
-        .build();
-  }
-
-  private Map<String, IncidentDocument> createIncidentDocuments(
-      final SearchResponse<IncidentEntity> response) {
-    final Map<String, IncidentDocument> documents = new HashMap<>();
-    for (final var hit : response.hits().hits()) {
-      documents.put(hit.id(), new IncidentDocument(hit.id(), hit.index(), hit.source()));
-    }
-
-    return documents;
+        .sort(s -> s.field(f -> f.field(IncidentTemplate.KEY)));
   }
 
   private SearchRequest createPendingIncidentsBatchRequest(final int size, final Query query) {

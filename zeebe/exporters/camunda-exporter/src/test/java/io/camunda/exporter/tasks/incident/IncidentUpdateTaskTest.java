@@ -191,7 +191,7 @@ final class IncidentUpdateTaskTest {
                       highestPosition,
                       Map.of(incident.incident().getKey(), IncidentState.ACTIVE))));
       when(repository.getIncidentDocuments(any()))
-          .thenReturn(CompletableFuture.completedFuture(Map.of(incident.id(), incident)));
+          .thenReturn(CompletableFuture.completedFuture(List.of(incident)));
       when(repository.getFlowNodesInListView(any()))
           .thenReturn(
               CompletableFuture.completedFuture(
@@ -265,7 +265,7 @@ final class IncidentUpdateTaskTest {
               LOGGER,
               Duration.ZERO);
       when(repository.getIncidentDocuments(any()))
-          .thenReturn(CompletableFuture.completedFuture(Map.of()));
+          .thenReturn(CompletableFuture.completedFuture(List.of()));
 
       // when
       final var result = task.execute();
