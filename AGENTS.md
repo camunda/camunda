@@ -295,7 +295,23 @@ Load extra context on demand — only when relevant, only if the files exist.
 - Describe why the changes are necessary and note alternatives considered
 - Keep descriptions brief and concise
 - For bug fixes: ask the engineer whether the fix needs backporting to stable branches before
-  opening the PR. If yes, add the appropriate `backport stable/X.Y` label(s) when creating it.
+  opening the PR. If yes, add the appropriate `backport stable/X.Y` label(s) when creating it
+  (see "Backporting" below).
+
+### Backporting
+
+Automated by a GitHub Action (`korthout/backport-action`, see `.github/workflows/backport.yml`;
+human docs in `CONTRIBUTING.md`). **Never create backport PRs, branches, or cherry-picks yourself,
+and never offer to.** Start a backport only by labelling.
+
+- **Start:** add one `backport stable/X.Y` label per target branch (e.g. `backport stable/8.7`).
+  Not-yet-merged PR → runs on merge. Already-merged PR → comment `/backport`. Multiple labels →
+  multiple backport PRs.
+- **Success:** action opens the backport PR; a bot approves and merges it once CI passes.
+- **Conflicts:** action opens a **draft** PR with conflict markers committed as-is plus a comment
+  with resolution steps. You may resolve them (check out the branch, fix conflicts and markers) —
+  but only on a draft PR the action already opened. When asked to backport, first check whether
+  such a draft PR exists.
 
 ### Git workflow
 
