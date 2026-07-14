@@ -77,7 +77,7 @@
     <version.identity>8.10.0-alpha3</version.identity>
     <version.instancio>5.6.0</version.instancio>
     <version.jackson>2.22.1</version.jackson>
-    <version.jackson3>3.2.0</version.jackson3>
+    <version.jackson3>3.2.1</version.jackson3>
     <version.json-base>3.0.0</version.json-base>
     <version.json-flattener>0.18.2</version.json-flattener>
     <version.jspecify>1.0.0</version.jspecify>
