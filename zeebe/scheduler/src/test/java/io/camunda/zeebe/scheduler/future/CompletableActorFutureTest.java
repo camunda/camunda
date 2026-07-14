@@ -27,6 +27,64 @@ public class CompletableActorFutureTest {
   @AutoClose private static final ExecutorService EXECUTOR = Executors.newWorkStealingPool();
 
   @Nested
+  class CompletionTimestamps {
+    @Test
+    public void shouldRecordCompletionTimestampForSuccessfulStaticFuture() {
+      // given
+      final var before = System.nanoTime();
+
+      // when
+      final var future = CompletableActorFuture.completed("value");
+      final var after = System.nanoTime();
+
+      // then
+      assertThat(future.getCompletedAt()).isBetween(before, after);
+    }
+
+    @Test
+    public void shouldRecordCompletionTimestampForFailedStaticFuture() {
+      // given
+      final var before = System.nanoTime();
+
+      // when
+      final var future =
+          CompletableActorFuture.completedExceptionally(new RuntimeException("Expected"));
+      final var after = System.nanoTime();
+
+      // then
+      assertThat(future.getCompletedAt()).isBetween(before, after);
+    }
+
+    @Test
+    public void shouldRecordCompletionTimestampBeforeSuccessfulFutureIsDone() {
+      // given
+      final var future = new CompletableActorFuture<String>();
+      final var before = System.nanoTime();
+
+      // when
+      future.complete("value");
+      final var after = System.nanoTime();
+
+      // then
+      assertThat(future.getCompletedAt()).isBetween(before, after);
+    }
+
+    @Test
+    public void shouldRecordCompletionTimestampBeforeFailedFutureIsDone() {
+      // given
+      final var future = new CompletableActorFuture<String>();
+      final var before = System.nanoTime();
+
+      // when
+      future.completeExceptionally(new RuntimeException("Expected"));
+      final var after = System.nanoTime();
+
+      // then
+      assertThat(future.getCompletedAt()).isBetween(before, after);
+    }
+  }
+
+  @Nested
   class VoidContinuations {
     @Test
     public void shouldConsumeFutureResult() {

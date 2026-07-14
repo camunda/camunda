@@ -70,6 +70,7 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
 
   private CompletableActorFuture(final V value) {
     this.value = value;
+    completedAt = System.nanoTime();
     state = COMPLETED;
   }
 
@@ -77,6 +78,7 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
     ensureValidThrowable(throwable);
     failure = throwable.getMessage();
     failureCause = throwable;
+    completedAt = System.nanoTime();
     state = COMPLETED_EXCEPTIONALLY;
   }
 
@@ -87,6 +89,7 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
   }
 
   public void setAwaitingResult() {
+    completedAt = 0;
     state = AWAITING_RESULT;
     isDoneCondition = completionLock.newCondition();
   }
@@ -192,8 +195,8 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
   public void complete(final V value) {
     if (UnsafeApi.compareAndSetInt(this, STATE_OFFSET, AWAITING_RESULT, COMPLETING)) {
       this.value = value;
-      state = COMPLETED;
       completedAt = System.nanoTime();
+      state = COMPLETED;
       notifyAllBlocked();
     } else {
       final String err =
@@ -214,6 +217,7 @@ public final class CompletableActorFuture<V extends @Nullable Object> implements
     if (UnsafeApi.compareAndSetInt(this, STATE_OFFSET, AWAITING_RESULT, COMPLETING)) {
       this.failure = failure;
       failureCause = throwable;
+      completedAt = System.nanoTime();
       state = COMPLETED_EXCEPTIONALLY;
       notifyAllBlocked();
     } else {

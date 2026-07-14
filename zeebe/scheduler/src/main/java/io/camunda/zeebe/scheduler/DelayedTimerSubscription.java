@@ -99,7 +99,7 @@ public final class DelayedTimerSubscription implements TimerSubscription {
   public void onTimerExpired(final TimeUnit timeUnit, final long now) {
     if (!isCanceled) {
       isDone = true;
-      timerExpiredAt = timeUnit.toNanos(now);
+      timerExpiredAt = System.nanoTime();
       task.tryWakeup();
     }
   }
