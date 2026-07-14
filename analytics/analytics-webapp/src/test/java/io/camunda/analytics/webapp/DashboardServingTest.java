@@ -152,6 +152,10 @@ final class DashboardServingTest {
     // then the per-transition counts compose the same numbers the bundle used to report
     assertThat(activated).isEqualTo(5L);
     assertThat(activeNow).isEqualTo(1L); // 5 started − 3 completed − 1 terminated
+    // and the overview's Ended tile counts completed AND terminated — reading the duration
+    // summary instead (the COMPLETED-filtered cube) would silently drop the terminated instance
+    // from the books: started − ended would no longer reconcile with in-progress
+    assertThat(repository.overview(PROCESS, TENANT, null, null).ended()).isEqualTo(4L);
     assertThat(buckets)
         .singleElement()
         .satisfies(

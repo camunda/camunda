@@ -49,7 +49,7 @@ export function OverviewPage({
           accent={chartColor(0)}
         />
         <StatTile label="Started" value={formatCount(data.activated)} hint="in range" />
-        <StatTile label="Ended" value={formatCount(data.summary.observationCount)} hint="in range" />
+        <StatTile label="Ended" value={formatCount(data.ended)} hint="in range" />
         <StatTile
           label="Open incidents"
           value={formatCount(data.openIncidents)}
@@ -59,11 +59,11 @@ export function OverviewPage({
       </div>
 
       <CountTrend
-        title="Instances ended over time"
-        description="Completed instances per window"
+        title="Instances completed over time"
+        description="Completed instances per window (terminated instances count toward Ended only)"
         points={endedOverTime}
         color={chartColor(0)}
-        seriesName="Ended"
+        seriesName="Completed"
       />
 
       <ProcessHeatmap process={process} elements={data.elements} />

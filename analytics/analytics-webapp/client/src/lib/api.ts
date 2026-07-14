@@ -325,6 +325,7 @@ export interface DashboardOverview {
   openIncidents: number;
   activeNow: number;
   activated: number;
+  ended: number;
 }
 
 async function getJson<T>(url: string): Promise<T> {

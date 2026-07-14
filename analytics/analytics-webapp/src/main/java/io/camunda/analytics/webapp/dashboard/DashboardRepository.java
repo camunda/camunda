@@ -106,7 +106,8 @@ public class DashboardRepository {
         incidents(bpmnProcessId, fromWindow, toWindow, memo),
         openIncidents(bpmnProcessId, memo),
         activeInstances(bpmnProcessId, memo),
-        activatedInstances(bpmnProcessId, fromWindow, toWindow, memo));
+        activatedInstances(bpmnProcessId, fromWindow, toWindow, memo),
+        endedInstances(bpmnProcessId, fromWindow, toWindow, memo));
   }
 
   /** Process ids the process-instances cube has data for (for the process picker). */
@@ -413,6 +414,20 @@ public class DashboardRepository {
       final Map<QueryKey, List<ReportRow>> memo) {
     final LifecycleCounts lifecycle = lifecycle(bpmnProcessId, fromWindow, toWindow, memo);
     return lifecycle == null ? 0L : lifecycle.activated();
+  }
+
+  /**
+   * Instances ended (completed OR terminated) for a process over the range — NOT the duration
+   * summary's observation count, which reads the COMPLETED-filtered duration cube and would
+   * silently drop terminated instances from the books.
+   */
+  private long endedInstances(
+      final String bpmnProcessId,
+      final Long fromWindow,
+      final Long toWindow,
+      final Map<QueryKey, List<ReportRow>> memo) {
+    final LifecycleCounts lifecycle = lifecycle(bpmnProcessId, fromWindow, toWindow, memo);
+    return lifecycle == null ? 0L : lifecycle.completed() + lifecycle.terminated();
   }
 
   /** Current in-flight instance count for a process (activated − completed − terminated). */

@@ -29,4 +29,5 @@ public record DashboardOverview(
     List<IncidentFlowNode> incidents,
     long openIncidents,
     long activeNow,
-    long activated) {}
+    long activated,
+    long ended) {}
