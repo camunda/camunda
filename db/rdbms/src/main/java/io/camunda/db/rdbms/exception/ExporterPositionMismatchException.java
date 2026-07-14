@@ -16,25 +16,11 @@ package io.camunda.db.rdbms.exception;
  */
 public final class ExporterPositionMismatchException extends RuntimeException {
 
-  private final long expectedPosition;
-  private final long actualPosition;
-
   public ExporterPositionMismatchException(
       final int partitionId, final long expectedPosition, final long actualPosition) {
     super(
         String.format(
             "Exporter position mismatch for partition %d: expected %d but found %d in the database.",
             partitionId, expectedPosition, actualPosition));
-
-    this.expectedPosition = expectedPosition;
-    this.actualPosition = actualPosition;
-  }
-
-  public boolean isBehind() {
-    return expectedPosition < actualPosition;
-  }
-
-  public boolean isAhead() {
-    return expectedPosition > actualPosition;
   }
 }

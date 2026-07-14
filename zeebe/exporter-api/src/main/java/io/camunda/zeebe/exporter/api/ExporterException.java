@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.exporter.api;
 
-public class ExporterException extends RuntimeException {
+public final class ExporterException extends RuntimeException {
   private static final long serialVersionUID = 9144017472787012481L;
   private final Compensation compensation;
 

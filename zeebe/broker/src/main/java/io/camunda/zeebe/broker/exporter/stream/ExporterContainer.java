@@ -265,12 +265,7 @@ final class ExporterContainer implements Controller {
         try {
           reopenExporter();
         } catch (final Exception reopenEx) {
-          context
-              .getLogger()
-              .error(
-                  "Failed to reopen exporter '{}'; manual intervention may be required",
-                  getId(),
-                  reopenEx);
+          context.getLogger().error("Failed to reopen exporter '{}'", getId(), reopenEx);
         }
       } else {
         context.getLogger().warn("Error on exporting record with key {}", typedEvent.getKey(), ex);
