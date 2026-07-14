@@ -13,6 +13,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.util.Either;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
@@ -33,6 +34,7 @@ public class RemoveMembersTransformer implements ConfigurationChangeRequest {
             .filter(clusterConfiguration::hasMember)
             .map(MemberLeaveOperation::new)
             .map(ClusterConfigurationChangeOperation.class::cast)
+            .sorted(Comparator.comparing(ClusterConfigurationChangeOperation::memberId))
             .toList();
     return Either.right(operations);
   }
