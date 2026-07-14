@@ -279,11 +279,9 @@ public class OidcOverrideBeansConfiguration {
 
   @Bean
   public OidcTokenEndpointCustomizer oidcTokenEndpointCustomizer(
-      final OidcProviderConfigurationPort oidcAuthenticationConfigurationRepository,
       final AssertionJwkProvider assertionJwkProvider,
       final ObjectProvider<ObservationRegistry> observationRegistry) {
     return new OidcTokenEndpointCustomizer(
-        oidcAuthenticationConfigurationRepository,
         assertionJwkProvider,
         restClient(observationRegistry.getIfAvailable(() -> ObservationRegistry.NOOP)));
   }
