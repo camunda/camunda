@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.0.82
+
+### 🩹 Fixes
+
+- Mark `AgentInstanceHistoryItemMetrics` sub-fields as nullable in preparation for the upcoming API contract change ([#57703](https://github.com/camunda/camunda/issues/57703)). The following fields are now nullable:
+  - `inputTokens`
+  - `outputTokens`
+  - `durationMs`
+
+### ❤️ Contributors
+
+- [@ce-dmelnych](https://github.com/ce-dmelnych)
+
 ## v0.0.81
 
 ### 🚀 Enhancements
