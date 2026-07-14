@@ -510,7 +510,7 @@ For `camunda/camunda` GHA workflows we use a GitHub feature to [technically limi
 * Allow actions in any [Camunda GitHub Enterprise organization](https://github.com/enterprises/camunda/organizations) like `camunda`, `bpmn-io`, etc.
 * Allow specific actions from 3rd parties that we need (full list see below).
 
-If you need to use a 3rd party action not on the list, ask the Monorepo DevOps team via Slack and explain the motivation.
+If you need to use a 3rd party action not on the list, ask the Engineering Operations team via Slack and explain the motivation.
 
 <details>
 <summary>List of allowed 3rd party actions and reusable workflows</summary>

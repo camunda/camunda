@@ -1,7 +1,7 @@
 ---
 name: Frontend SBOM Snyk
 
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 
 description: Generate a frontend SBOM and scan it with Snyk
 

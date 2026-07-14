@@ -24,15 +24,15 @@
 /testing/        @camunda/camundaex
 
 # General Automation, Unified CI and release helpers by Monorepo DevOps team
-/.github/actions/build*/*                                @camunda/monorepo-devops-team
-/.github/actions/is-fork/*                               @camunda/monorepo-devops-team
-/.github/actions/observe*/*                              @camunda/monorepo-devops-team
-/.github/actions/paths-filter/*                          @camunda/monorepo-devops-team
-/.github/actions/setup-build/*                           @camunda/monorepo-devops-team
-/.github/actions/setup-maven*/*                          @camunda/monorepo-devops-team
-/.github/actions/renew-github-token/*                    @camunda/monorepo-devops-team
-/.github/actions/dependency-vuln-check/*                 @camunda/monorepo-devops-team
-/.github/dependency-review-config.json                   @camunda/monorepo-devops-team
+/.github/actions/build*/*                                @camunda/engineering-operations
+/.github/actions/is-fork/*                               @camunda/engineering-operations
+/.github/actions/observe*/*                              @camunda/engineering-operations
+/.github/actions/paths-filter/*                          @camunda/engineering-operations
+/.github/actions/setup-build/*                           @camunda/engineering-operations
+/.github/actions/setup-maven*/*                          @camunda/engineering-operations
+/.github/actions/renew-github-token/*                    @camunda/engineering-operations
+/.github/actions/dependency-vuln-check/*                 @camunda/engineering-operations
+/.github/dependency-review-config.json                   @camunda/engineering-operations
 
 ###################
 ## Core Features ##
@@ -124,10 +124,10 @@
 ####################
 
 # CI skills
-/.claude/skills/act-testing/**             @camunda/monorepo-devops-team
-/.claude/skills/ci-security-compliance/**  @camunda/monorepo-devops-team
-/.claude/skills/ci-validation/**           @camunda/monorepo-devops-team
-/.claude/skills/ci-workflow-authoring/**   @camunda/monorepo-devops-team
+/.claude/skills/act-testing/**             @camunda/engineering-operations
+/.claude/skills/ci-security-compliance/**  @camunda/engineering-operations
+/.claude/skills/ci-validation/**           @camunda/engineering-operations
+/.claude/skills/ci-workflow-authoring/**   @camunda/engineering-operations
 
 # Engine-expert skill
 /.claude/skills/engine-expert/  @korthout @camunda/core-features

@@ -1,7 +1,7 @@
 name: 'Collect Flaky Tests'
 description: 'Collects and aggregates flaky test results from multiple CI jobs'
 
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 
 inputs:
     general-unit-tests-result:
