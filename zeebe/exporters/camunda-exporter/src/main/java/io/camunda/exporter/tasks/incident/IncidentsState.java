@@ -9,6 +9,7 @@ package io.camunda.exporter.tasks.incident;
 
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentDocument;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +36,18 @@ public record IncidentsState(
         new ConcurrentHashMap<>(),
         new ConcurrentHashMap<>(),
         new ConcurrentHashMap<>());
+  }
+
+  public void addIncidentDocument(final IncidentDocument incidentDocument) {
+    incidents.put(incidentDocument.id(), incidentDocument);
+  }
+
+  public Collection<IncidentDocument> getIncidentDocuments() {
+    return List.copyOf(incidents.values());
+  }
+
+  public void skipIncident(final IncidentDocument incidentDocument) {
+    incidents.remove(incidentDocument.id());
   }
 
   public boolean addPiIdsWithIncidentIds(final String piId, final String incidentId) {
