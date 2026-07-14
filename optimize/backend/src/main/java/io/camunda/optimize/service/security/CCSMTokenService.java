@@ -189,8 +189,18 @@ public class CCSMTokenService {
    *
    * <p>When a v1.0 token is detected, this method logs an actionable ERROR message and throws
    * {@link NotAuthorizedException} so the failure surfaces immediately.
+   *
+   * <p>Gated by {@code security.auth.ccsm.entraTokenVersionCheckEnabled} (default {@code true}).
+   * Set to {@code false} as a last-resort escape hatch if a deployment cannot immediately update
+   * the Azure app registration.
    */
   private void validateEntraTokenVersion(final String rawToken) {
+    if (!configurationService
+        .getAuthConfiguration()
+        .getCcsmAuthConfiguration()
+        .isEntraTokenVersionCheckEnabled()) {
+      return;
+    }
     final DecodedJWT decoded;
     try {
       decoded = authentication().decodeJWT(extractTokenFromAuthorizationValue(rawToken));

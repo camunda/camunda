@@ -23,6 +23,8 @@ import io.camunda.identity.sdk.authentication.exception.TokenDecodeException;
 import io.camunda.optimize.dto.optimize.UserDto;
 import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import io.camunda.optimize.service.util.configuration.security.AuthConfiguration;
+import io.camunda.optimize.service.util.configuration.security.CCSMAuthConfiguration;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,6 +45,8 @@ public class CCSMTokenServiceTest {
 
   @Mock private AuthCookieService authCookieService;
   @Mock private ConfigurationService configurationService;
+  @Mock private AuthConfiguration authConfiguration;
+  @Mock private CCSMAuthConfiguration ccsmAuthConfiguration;
   @Mock private Identity identity;
   @Mock private Authentication authentication;
   @Mock private AccessToken accessToken;
@@ -60,6 +64,10 @@ public class CCSMTokenServiceTest {
     lenient().when(accessToken.getPermissions()).thenReturn(ImmutableList.of(OPTIMIZE_PERMISSION));
     lenient().when(authentication.decodeJWT(ACCESS_TOKEN_VALUE)).thenReturn(decodedJWT);
     lenient().when(decodedJWT.getIssuer()).thenReturn("https://idp.example.com");
+    // Default: Entra version check is enabled (the production default)
+    lenient().when(configurationService.getAuthConfiguration()).thenReturn(authConfiguration);
+    lenient().when(authConfiguration.getCcsmAuthConfiguration()).thenReturn(ccsmAuthConfiguration);
+    lenient().when(ccsmAuthConfiguration.isEntraTokenVersionCheckEnabled()).thenReturn(true);
 
     ccsmTokenService = new CCSMTokenService(authCookieService, configurationService, identity);
   }
@@ -220,5 +228,18 @@ public class CCSMTokenServiceTest {
     assertThatThrownBy(() -> ccsmTokenService.verifyAccessToken(ACCESS_TOKEN_VALUE))
         .isInstanceOf(NotAuthorizedException.class)
         .hasMessageContaining("api.requestedAccessTokenVersion");
+  }
+
+  @Test
+  void shouldSkipEntraCheckWhenCheckDisabledViaConfig() {
+    // given — escape-hatch flag is off; issuer/ver stubs deliberately absent because the
+    // check returns before decoding the JWT
+    when(ccsmAuthConfiguration.isEntraTokenVersionCheckEnabled()).thenReturn(false);
+
+    // when — no exception; check is bypassed regardless of token content
+    final AccessToken result = ccsmTokenService.verifyToken(ACCESS_TOKEN_VALUE);
+
+    // then — token accepted despite being v1.0
+    assertThat(result).isSameAs(accessToken);
   }
 }
