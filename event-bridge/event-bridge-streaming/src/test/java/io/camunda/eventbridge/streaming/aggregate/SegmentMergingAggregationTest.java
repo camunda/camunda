@@ -281,6 +281,38 @@ final class SegmentMergingAggregationTest {
   }
 
   @Test
+  void shouldNotResurrectAPreRestartFinalizedWindowWhileTheClockReforms() {
+    // given a window finalized and evicted before a restart, with a later window still open
+    final KeyValueStore<DbBytes, DbBytes> store =
+        new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes());
+    final InMemoryResultSink<Windowed<String>, Long> sinkBefore = new InMemoryResultSink<>();
+    final SegmentMergingAggregation<String, Long> before =
+        merger(store, sinkBefore, TumblingWindows.ofSizeAndGrace(1_000L, 1_000L));
+    final Windowed<String> finalized = new Windowed<>("done", 0L);
+    before.merge(finalized, 5L, 1_000L, 1);
+    before.merge(new Windowed<>("open", 10_000L), 7L, 11_000L, 1);
+    before.checkpoint(); // clock 11s closes [0,1s); [10s,11s) stays open and recovers
+    assertThat(sinkBefore.get(finalized)).hasValue(5L);
+    assertThat(storedWindowStarts(store)).containsExactly(10_000L);
+
+    // when a fresh operator recovers and the finalized window's straggler arrives while the
+    // post-restart clock is still forming (no source has spoken yet)
+    final InMemoryResultSink<Windowed<String>, Long> sinkAfter = new InMemoryResultSink<>();
+    final SegmentMergingAggregation<String, Long> after =
+        merger(store, sinkAfter, TumblingWindows.ofSizeAndGrace(1_000L, 1_000L));
+    final List<Windowed<String>> dropped = new ArrayList<>();
+    after.onLateDrop((cell, eventTimeHint, clock) -> dropped.add(cell));
+    after.merge(finalized, 100L, 1_000L, 1);
+    after.flush();
+
+    // then the guard — floored at the max recovered window end — drops it: the finalized value
+    // is not overwritten by a fresh accumulator holding only the straggler
+    assertThat(dropped).containsExactly(finalized);
+    assertThat(sinkAfter.get(finalized)).isEmpty();
+    assertThat(storedWindowStarts(store)).containsExactly(10_000L);
+  }
+
+  @Test
   void shouldRecoverRunningTotalsFromTheStore() {
     // given a running total checkpointed to a shared store
     final KeyValueStore<DbBytes, DbBytes> store =

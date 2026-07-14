@@ -65,10 +65,13 @@ import org.agrona.collections.Long2LongHashMap.KeyIterator;
  * <p><b>Recovery.</b> A restart loses the per-source structure, so the clock restarts unknown and
  * waits for sources to speak: recovered cells alone never close windows (adopting the max recovered
  * window end immediately would let a source that recovered ahead finalize a slower source's
- * still-in-flight windows before it re-registers). To keep recovered-but-never-spoken state from
- * stalling finalization forever (an upstream that is drained and gone), the max recovered window
- * end is adopted as the clock once no source has spoken for a full idle timeout after the first
- * clock evaluation — the same escape hatch as an idle source.
+ * still-in-flight windows before it re-registers). The late-delta <em>guard</em>, however, is armed
+ * immediately: it is floored at the max recovered window end, so while the clock is still forming a
+ * straggler for a window finalized and evicted before the restart cannot resurrect it (folding it
+ * would overwrite the finalized serving row with a partial value). To keep recovered-but-never-
+ * spoken state from stalling finalization forever (an upstream that is drained and gone), the max
+ * recovered window end is adopted as the clock once no source has spoken for a full idle timeout
+ * after the first clock evaluation — the same escape hatch as an idle source.
  *
  * @param <K> the grouping key type
  * @param <ACC> the accumulator type
@@ -239,9 +242,13 @@ public final class SegmentMergingAggregation<K, ACC> {
     // cell and the idempotent sink would overwrite its finalized value. Never silent — the
     // listener is how a lagging source's losses become visible. The dropped delta still registers
     // its source as live (and records its progress): a lagging source must keep gating the clock
-    // so its still-open later windows are not closed early too.
-    if (clock != Long.MIN_VALUE && windowEnd(cell) + windows.graceMs() <= clock) {
-      lateDropListener.onLateDrop(cell, eventTimeHint, clock);
+    // so its still-open later windows are not closed early too. The guard is floored at the max
+    // recovered window end: while the post-restart clock is still forming, a straggler for a
+    // window finalized and evicted BEFORE the restart must not fold into a fresh accumulator and
+    // overwrite the finalized row with a partial value — the guard the pre-restart clock provided.
+    final long guardFloor = Math.max(clock, recoveredEventTime);
+    if (guardFloor != Long.MIN_VALUE && windowEnd(cell) + windows.graceMs() <= guardFloor) {
+      lateDropListener.onLateDrop(cell, eventTimeHint, guardFloor);
       observeSource(sourceId, eventTimeHint);
       return;
     }
