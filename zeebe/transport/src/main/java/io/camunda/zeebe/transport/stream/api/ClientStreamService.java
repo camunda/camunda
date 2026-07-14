@@ -15,12 +15,13 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Collection;
 import java.util.Optional;
+import java.util.function.Function;
 
 /**
  * Manages an instance of {@link ClientStreamer}. Intended to be the main entry point when setting
  * up the client side for remote streams, primarily via {@link
  * io.camunda.zeebe.transport.TransportFactory#createRemoteStreamClient(ClusterCommunicationService,
- * ClientStreamMetrics)}.
+ * Function)}.
  *
  * @param <M> the type of the streaming metadata
  */

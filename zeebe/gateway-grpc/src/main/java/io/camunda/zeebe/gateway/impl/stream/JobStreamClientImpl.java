@@ -36,7 +36,8 @@ public final class JobStreamClientImpl implements JobStreamClient {
     streamService =
         new TransportFactory(schedulingService)
             .createRemoteStreamClient(
-                clusterCommunicationService, new JobClientStreamMetrics(meterRegistry));
+                clusterCommunicationService,
+                physicalTenantId -> new JobClientStreamMetrics(meterRegistry, physicalTenantId));
   }
 
   @Override

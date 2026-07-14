@@ -25,7 +25,9 @@ import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -47,16 +49,28 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
   /** Tracks which physicalTenantId topics already have a RESTART_STREAMS listener registered. */
   private final Set<String> registeredRestartPhysicalTenants = new HashSet<>();
 
+  /**
+   * Caches one {@link ClientStreamMetrics} instance per physical tenant, shared by the registry and
+   * the manager so each tenant's meters are only registered once.
+   */
+  private final Map<String, ClientStreamMetrics> metricsByPhysicalTenantId = new HashMap<>();
+
   public ClientStreamServiceImpl(
-      final ClusterCommunicationService communicationService, final ClientStreamMetrics metrics) {
+      final ClusterCommunicationService communicationService,
+      final Function<String, ClientStreamMetrics> metricsFactory) {
     this.communicationService = communicationService;
-    registry = new ClientStreamRegistry<>(metrics);
+    final Function<String, ClientStreamMetrics> cachedMetricsFactory =
+        physicalTenantId ->
+            metricsByPhysicalTenantId.computeIfAbsent(physicalTenantId, metricsFactory);
+    registry = new ClientStreamRegistry<>(cachedMetricsFactory);
 
     // ClientStreamRequestManager must use same actor as this because it is mutating shared
     // ClientStream objects.
     clientStreamManager =
         new ClientStreamManager<>(
-            registry, new ClientStreamRequestManager<>(communicationService, actor), metrics);
+            registry,
+            new ClientStreamRequestManager<>(communicationService, actor),
+            cachedMetricsFactory);
     apiHandler = new ClientStreamApiHandler(clientStreamManager, actor);
   }
 

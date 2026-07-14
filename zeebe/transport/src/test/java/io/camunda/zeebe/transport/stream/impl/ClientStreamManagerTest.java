@@ -54,7 +54,7 @@ class ClientStreamManagerTest {
       new ClientStreamManager<>(
           registry,
           new ClientStreamRequestManager<>(mockTransport, new TestConcurrencyControl()),
-          metrics);
+          physicalTenantId -> metrics);
 
   @BeforeEach
   void setup() {
@@ -294,7 +294,9 @@ class ClientStreamManagerTest {
         .failsWithin(Duration.ofMillis(100))
         .withThrowableOfType(ExecutionException.class)
         .withCauseInstanceOf(NoSuchStreamException.class);
-    assertThat(metrics.getPushFailed()).isOne();
+    // the physicalTenantId of an already-removed stream is unknown, so the failure cannot be
+    // attributed to any tenant's metrics
+    assertThat(metrics.getPushFailed()).isZero();
   }
 
   @Test

@@ -483,7 +483,7 @@ final class StreamIntegrationTest {
       final var factory = new TransportFactory(actorScheduler);
       streamService =
           factory.createRemoteStreamClient(
-              cluster.getCommunicationService(), ClientStreamMetrics.noop());
+              cluster.getCommunicationService(), physicalTenantId -> ClientStreamMetrics.noop());
     }
 
     private void start() {
