@@ -26,12 +26,12 @@ const AvailableTools: React.FC<AvailableToolsProps> = memo(
 
     return (
       <ToolList>
-        {sortedTools.map((tool, i) => (
+        {sortedTools.map((tool) => (
           <li
-            key={`${tool.name}-${i}`}
-            aria-labelledby={`agent-instance-tool-${tool.name}-${i}`}
+            key={`${tool.name}`}
+            aria-labelledby={`agent-instance-tool-${tool.name}`}
           >
-            <ToolName id={`agent-instance-tool-${tool.name}-${i}`}>
+            <ToolName id={`agent-instance-tool-${tool.name}`}>
               {tool.name}
             </ToolName>
             {tool.description !== null && (
