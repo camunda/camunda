@@ -137,7 +137,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
    * </ul>
    */
   private CompletableFuture<Integer> processNextBatch() {
-    final var data = new AdditionalData();
+    final var data = new IncidentsState();
     final var batch = getPendingIncidentsBatch(data);
     if (batch.newIncidentStates().isEmpty()) {
       return CompletableFuture.completedFuture(0);
@@ -181,7 +181,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
             executor);
   }
 
-  private InstancesCheck searchForInstances(final AdditionalData data) {
+  private InstancesCheck searchForInstances(final IncidentsState data) {
     final var incidents = data.incidents().values();
 
     queryData(incidents, data);
@@ -213,7 +213,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
 
   private InstancesCheck checkDataAndCollectParentTreePaths(
       final Collection<IncidentDocument> incidents,
-      final AdditionalData data,
+      final IncidentsState data,
       final boolean forceIgnoreMissingData) {
 
     final Set<Long> processInstanceKeys =
@@ -277,7 +277,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
     return InstancesCheck.OK;
   }
 
-  private void queryData(final Collection<IncidentDocument> incidents, final AdditionalData data) {
+  private void queryData(final Collection<IncidentDocument> incidents, final IncidentsState data) {
     final var processInstanceIds =
         incidents.stream()
             .map(IncidentDocument::incident)
@@ -316,7 +316,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
   }
 
   private int processIncidents(
-      final AdditionalData data, final IncidentUpdateRepository.PendingIncidentUpdateBatch batch) {
+      final IncidentsState data, final IncidentUpdateRepository.PendingIncidentUpdateBatch batch) {
     final var bulkUpdate = new IncidentBulkUpdate();
     return mapActiveIncidentsToAffectedInstances(data)
         .thenApplyAsync(
@@ -341,7 +341,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
   }
 
   private void seedResolvedIncidentsAsActive(
-      final AdditionalData data, final IncidentUpdateRepository.PendingIncidentUpdateBatch batch) {
+      final IncidentsState data, final IncidentUpdateRepository.PendingIncidentUpdateBatch batch) {
     for (final var incident : data.incidents().values()) {
       final var newState = batch.newIncidentStates().get(incident.incident().getKey());
       if (newState != IncidentState.RESOLVED) {
@@ -364,7 +364,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
   }
 
   private CompletableFuture<Void> processIncidentInBatch(
-      final AdditionalData data,
+      final IncidentsState data,
       final IncidentDocument incident,
       final IncidentUpdateRepository.PendingIncidentUpdateBatch batch,
       final IncidentBulkUpdate bulkUpdate) {
@@ -428,7 +428,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
   }
 
   private CompletableFuture<Void> createFlowNodeInstanceUpdates(
-      final AdditionalData data,
+      final IncidentsState data,
       final IncidentDocument incident,
       final IncidentState newState,
       final List<String> fniIds,
@@ -501,7 +501,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
   }
 
   private void createFlowNodeInstanceUpdate(
-      final AdditionalData data,
+      final IncidentsState data,
       final IncidentDocument incident,
       final IncidentState newState,
       final String fniId,
@@ -536,7 +536,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
   }
 
   private CompletableFuture<Void> createProcessInstanceUpdates(
-      final AdditionalData data,
+      final IncidentsState data,
       final IncidentDocument incident,
       final IncidentState newState,
       final List<String> piIds,
@@ -588,7 +588,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
   }
 
   private void createProcessInstanceUpdate(
-      final AdditionalData data,
+      final IncidentsState data,
       final String incidentId,
       final IncidentState newState,
       final String piId,
@@ -656,7 +656,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
         id, index, Map.of(FlowNodeInstanceTemplate.INCIDENT, hasIncident), null);
   }
 
-  private CompletableFuture<Void> mapActiveIncidentsToAffectedInstances(final AdditionalData data) {
+  private CompletableFuture<Void> mapActiveIncidentsToAffectedInstances(final IncidentsState data) {
     final CompletableFuture<List<String>> treePathTermsFutures =
         FuturesUtil.parTraverse(
                 data.incidentTreePaths().values(),
@@ -685,7 +685,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
   }
 
   private IncidentUpdateRepository.PendingIncidentUpdateBatch getPendingIncidentsBatch(
-      final AdditionalData data) {
+      final IncidentsState data) {
     final IncidentUpdateRepository.PendingIncidentUpdateBatch pendingIncidentsBatch =
         repository
             .getPendingIncidentsBatch(metadata.getLastIncidentUpdatePosition(), batchSize)
