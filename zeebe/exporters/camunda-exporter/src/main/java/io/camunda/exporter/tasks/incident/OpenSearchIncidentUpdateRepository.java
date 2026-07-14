@@ -111,16 +111,14 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
   }
 
   @Override
-  public CompletionStage<Map<String, IncidentDocument>> getIncidentDocuments(
+  public CompletionStage<Collection<IncidentDocument>> getIncidentDocuments(
       final List<String> incidentIds) {
     final var request = createIncidentDocumentsRequest(incidentIds);
-    try {
-      return client
-          .search(request, IncidentEntity.class)
-          .thenApplyAsync(this::createIncidentDocuments, executor);
-    } catch (final Exception e) {
-      return CompletableFuture.failedFuture(e);
-    }
+
+    return fetchUnboundedDocumentCollection(
+        request,
+        IncidentEntity.class,
+        hit -> new IncidentDocument(hit.id(), hit.index(), hit.source()));
   }
 
   @Override
@@ -366,7 +364,7 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
         ._toBulkOperation();
   }
 
-  private SearchRequest createIncidentDocumentsRequest(final List<String> incidentIds) {
+  private SearchRequest.Builder createIncidentDocumentsRequest(final List<String> incidentIds) {
     final var idQ = QueryBuilders.ids().values(incidentIds).build().toQuery();
     final var partitionQ =
         QueryBuilders.term()
@@ -380,19 +378,7 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
         .query(q -> q.bool(b -> b.must(idQ, partitionQ)))
         .allowNoIndices(true)
         .ignoreUnavailable(true)
-        .sort(s -> s.field(f -> f.field(IncidentTemplate.KEY)))
-        .size(incidentIds.size())
-        .build();
-  }
-
-  private Map<String, IncidentDocument> createIncidentDocuments(
-      final SearchResponse<IncidentEntity> response) {
-    final Map<String, IncidentDocument> documents = new HashMap<>();
-    for (final var hit : response.hits().hits()) {
-      documents.put(hit.id(), new IncidentDocument(hit.id(), hit.index(), hit.source()));
-    }
-
-    return documents;
+        .sort(s -> s.field(f -> f.field(IncidentTemplate.KEY)));
   }
 
   private SearchRequest createPendingIncidentsBatchRequest(final int size, final Query query) {

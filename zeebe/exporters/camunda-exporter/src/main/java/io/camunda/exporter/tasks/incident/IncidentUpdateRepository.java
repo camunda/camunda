@@ -42,9 +42,9 @@ public interface IncidentUpdateRepository extends AutoCloseable {
    * documents may not be visible yet.
    *
    * @param incidentIds the IDs to filter on
-   * @return a map of {@link IncidentDocument} indexed by ID
+   * @return a collection of {@link IncidentDocument}
    */
-  CompletionStage<Map<String, IncidentDocument>> getIncidentDocuments(
+  CompletionStage<Collection<IncidentDocument>> getIncidentDocuments(
       final List<String> incidentIds);
 
   /**
@@ -184,9 +184,9 @@ public interface IncidentUpdateRepository extends AutoCloseable {
     }
 
     @Override
-    public CompletionStage<Map<String, IncidentDocument>> getIncidentDocuments(
+    public CompletionStage<Collection<IncidentDocument>> getIncidentDocuments(
         final List<String> incidentIds) {
-      return CompletableFuture.completedFuture(Map.of());
+      return CompletableFuture.completedFuture(List.of());
     }
 
     @Override

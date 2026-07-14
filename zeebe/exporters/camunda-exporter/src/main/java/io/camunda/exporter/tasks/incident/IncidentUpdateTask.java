@@ -703,16 +703,15 @@ public final class IncidentUpdateTask implements BackgroundTask {
 
     final var incidentIds =
         pendingIncidentsBatch.newIncidentStates().keySet().stream().map(String::valueOf).toList();
-    final Map<String, IncidentDocument> incidents =
+    final Collection<IncidentDocument> incidents =
         repository.getIncidentDocuments(incidentIds).toCompletableFuture().join();
-    for (final var incident : incidents.values()) {
+    final var absentIncidents = new HashSet<>(pendingIncidentsBatch.newIncidentStates().keySet());
+    for (final var incident : incidents) {
       state.addIncidentDocument(incident);
+      absentIncidents.remove(incident.incident().getKey());
     }
 
-    if (pendingIncidentsBatch.newIncidentStates().size() > incidents.size()) {
-      final var absentIncidents = new HashSet<>(pendingIncidentsBatch.newIncidentStates().keySet());
-      absentIncidents.removeAll(
-          incidents.values().stream().map(i -> i.incident().getKey()).collect(Collectors.toSet()));
+    if (!absentIncidents.isEmpty()) {
       if (!ignoreMissingData) {
         throw new ExporterException(
             """
