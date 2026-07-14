@@ -174,6 +174,10 @@ if [[ "$enable_optimize" == "true" ]]; then
   elif [[ "$secondaryStorage" =~ ^(elasticsearch)$ ]]; then
     # Secondary storage is ES: configures Optimize to use Elasticsearch properly.
     cp -v "values/camunda-platform-values-optimize-elasticsearch.yaml" "$TARGET_DIRECTORY/"
+  elif [[ "$secondaryStorage" =~ ^(none)$ ]]; then
+    # Optimize requires a secondary storage backend; it cannot run at all
+    # when secondary storage is disabled entirely.
+    echo "Optimize requires a secondary storage backend; ignoring enable_optimize=true because secondaryStorage=none"
   else
     # Secondary storage is not ES nor OS: Forcefully configures Optimize to
     # use Elasticsearch.
