@@ -38,8 +38,8 @@ import org.junit.Test;
  *
  * <p>Parallel MI spawns children until the activation threshold is exceeded; the incident is raised
  * on the child activation that crosses it and the remaining children are not spawned. When the body
- * is re-activated in a loop and the cumulative child count crosses the threshold, the incident fires
- * on the child activation that crosses it — the same way sequential MI counts its children
+ * is re-activated in a loop and the cumulative child count crosses the threshold, the incident
+ * fires on the child activation that crosses it — the same way sequential MI counts its children
  * one-by-one.
  */
 public final class LoopDetectionMultiInstanceIncidentTest {
