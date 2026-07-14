@@ -200,4 +200,61 @@ class MultiCamundaClientPropertiesResolverTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("primary");
   }
+
+  @Test
+  void shouldAllowSameAuthTypeWithDistinctCredentials() {
+    // given two clients sharing the basic auth type but with distinct credentials
+    final StandardEnvironment environment =
+        environmentWith(
+            Map.of(
+                "camunda.client.auth.method", "basic",
+                "camunda.clients.finance.auth.username", "financeuser",
+                "camunda.clients.finance.auth.password", "financepw",
+                "camunda.clients.risk.auth.username", "riskuser",
+                "camunda.clients.risk.auth.password", "riskpw"));
+
+    // when
+    final MultiCamundaClientProperties properties =
+        MultiCamundaClientPropertiesResolver.resolve(environment);
+
+    // then both inherit the same method, with their own identities
+    assertThat(properties.getClients().get("finance").getAuth().getUsername())
+        .isEqualTo("financeuser");
+    assertThat(properties.getClients().get("risk").getAuth().getUsername()).isEqualTo("riskuser");
+  }
+
+  @Test
+  void shouldAllowExplicitNoneAndUnsetAuthMethodTogether() {
+    // given one client with an explicit 'none' method and another leaving it unset - both mean no
+    // auth (NoopCredentialsProvider), so they must not be treated as mixed auth types
+    final StandardEnvironment environment =
+        environmentWith(
+            Map.of(
+                "camunda.clients.finance.auth.method", "none",
+                "camunda.clients.risk.grpc-address", "http://localhost:26500"));
+
+    // when
+    final MultiCamundaClientProperties properties =
+        MultiCamundaClientPropertiesResolver.resolve(environment);
+
+    // then both clients are resolved without a mixed-auth-type rejection
+    assertThat(properties.getClients()).containsKeys("finance", "risk");
+  }
+
+  @Test
+  void shouldRejectMixedAuthTypes() {
+    // given two clients declaring different auth methods
+    final StandardEnvironment environment =
+        environmentWith(
+            Map.of(
+                "camunda.clients.finance.auth.method", "oidc",
+                "camunda.clients.risk.auth.method", "basic"));
+
+    // when / then
+    assertThatThrownBy(() -> MultiCamundaClientPropertiesResolver.resolve(environment))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("authentication method")
+        .hasMessageContaining("oidc")
+        .hasMessageContaining("basic");
+  }
 }
