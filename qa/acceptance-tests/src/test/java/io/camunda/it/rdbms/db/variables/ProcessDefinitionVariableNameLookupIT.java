@@ -266,6 +266,30 @@ public class ProcessDefinitionVariableNameLookupIT {
   }
 
   @TestTemplate
+  public void shouldReturnEmptyListWhenCallerUnauthorizedOnTenant(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters writers = rdbmsService.createWriter(0L);
+    final var processDef =
+        ProcessDefinitionFixtures.createAndSaveRandomProcessDefinition(writers, b -> b);
+    final long procDefKey = processDef.processDefinitionKey();
+
+    createInstanceWithVariable(rdbmsService, procDefKey, "amount");
+
+    // when: caller is authorized on the correct process definition but a different tenant
+    final var names =
+        rdbmsService
+            .getVariableReader()
+            .searchVariableNames(
+                VariableNameQuery.of(b -> b.filter(f -> f.processDefinitionKeys(procDefKey))),
+                authorizedFor(processDef.processDefinitionId(), "some-other-tenant"));
+
+    // then: no names leaked across tenants
+    assertThat(names).isEmpty();
+  }
+
+  @TestTemplate
   public void shouldReturnEmptyListWhenNoProcessDefinitionKeyGiven(
       final CamundaRdbmsTestApplication testApplication) {
     // given
