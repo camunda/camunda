@@ -14,9 +14,18 @@ type OptionalFilter =
   | 'Parent Process Instance Key'
   | 'Batch Operation Key'
   | 'Error Message'
+  | 'Business ID'
   | 'Start Date Range'
   | 'End Date Range'
   | 'Failed job but retries left';
+
+export type AdvancedStringFilterOperator =
+  | 'equals'
+  | 'does not equal'
+  | 'contains'
+  | 'is one of'
+  | 'is not one of'
+  | 'exists';
 
 export class OperateFiltersPanelPage {
   private page: Page;
@@ -37,6 +46,8 @@ export class OperateFiltersPanelPage {
   readonly batchOperationKeyFilter: Locator;
   readonly resetFiltersButton: Locator;
   readonly errorMessageFilter: Locator;
+  readonly businessIdFilter: Locator;
+  readonly businessIdFilterType: Locator;
   readonly startDateFilter: Locator;
   readonly openVariableFilterModalButton: Locator;
   readonly variableFilterDialog: Locator;
@@ -104,6 +115,13 @@ export class OperateFiltersPanelPage {
     });
     this.errorMessageFilter = this.page.getByRole('textbox', {
       name: 'error message',
+    });
+    this.businessIdFilter = this.page.getByRole('textbox', {
+      name: 'Business ID',
+      exact: true,
+    });
+    this.businessIdFilterType = this.page.getByRole('combobox', {
+      name: 'Business ID filter type',
     });
     this.startDateFilter = this.page.getByRole('textbox', {
       name: 'start date range',
@@ -202,6 +220,20 @@ export class OperateFiltersPanelPage {
   async selectFlowNode(option: string) {
     await this.flowNodeFilter.click();
     await this.getOptionByName(option, false).click();
+  }
+
+  async fillBusinessIdFilter(value: string) {
+    await expect(this.businessIdFilter).toBeVisible();
+    await expect(this.businessIdFilter).toBeEnabled();
+    await this.businessIdFilter.click();
+    await this.businessIdFilter.fill('');
+    await this.businessIdFilter.pressSequentially(value);
+    await expect(this.businessIdFilter).toHaveValue(value, {timeout: 30000});
+  }
+
+  async selectBusinessIdFilterType(operator: AdvancedStringFilterOperator) {
+    await this.businessIdFilterType.click();
+    await this.page.getByRole('option', {name: operator, exact: true}).click();
   }
 
   async openVariableFilterModal() {
