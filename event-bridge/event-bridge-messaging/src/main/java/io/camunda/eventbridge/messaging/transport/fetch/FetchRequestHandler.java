@@ -40,7 +40,10 @@ public final class FetchRequestHandler implements RequestHandler {
 
   @Override
   public CompletableFuture<byte[]> handle(final byte[] requestBytes) {
-    return null;
+    throw new UnsupportedOperationException(
+        "Fetch responses stream their payload zero-copy; register this handler via"
+            + " RequestHandlerRegistry#registerWithManagedPayload instead of the plain byte[]"
+            + " path");
   }
 
   @Override
