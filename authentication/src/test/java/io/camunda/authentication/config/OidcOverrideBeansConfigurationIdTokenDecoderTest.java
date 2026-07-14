@@ -8,6 +8,7 @@
 package io.camunda.authentication.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
@@ -102,6 +103,25 @@ class OidcOverrideBeansConfigurationIdTokenDecoderTest {
     // neither instance was the object stored in the algorithm map.
     assertThat(decoderOne).isNotNull();
     assertThat(decoderTwo).isNotNull();
+  }
+
+  @Test
+  void shouldDefaultToRs256ForScopedRegistrationMissingFromGlobalRepository() {
+    // given
+    when(oidcProviderConfigurationPort.getOidcAuthenticationConfigurations()).thenReturn(Map.of());
+    final var tokenValidatorFactory =
+        new TokenValidatorFactory(Map.of(), Duration.ofSeconds(60), List.of());
+    final var configuration = new OidcOverrideBeansConfiguration(null);
+    final JwtDecoderFactory<ClientRegistration> decoderFactory =
+        configuration.idTokenDecoderFactory(tokenValidatorFactory, oidcProviderConfigurationPort);
+    final var scopedRegistration = buildRegistration("scoped");
+
+    // when / then — without the RS256 default the resolver returns null and
+    // OidcIdTokenDecoderFactory rejects the registration at decoder-build time with
+    // "missing_signature_verifier"; the default must yield a usable decoder instead.
+    assertThatCode(() -> decoderFactory.createDecoder(scopedRegistration))
+        .doesNotThrowAnyException();
+    assertThat(decoderFactory.createDecoder(scopedRegistration)).isNotNull();
   }
 
   private static ClientRegistration buildRegistration(final String registrationId) {

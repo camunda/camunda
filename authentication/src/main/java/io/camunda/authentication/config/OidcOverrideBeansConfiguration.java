@@ -9,6 +9,7 @@ package io.camunda.authentication.config;
 
 import static java.util.stream.Collectors.toMap;
 
+import io.camunda.authentication.pt.PhysicalTenantOidcProviders;
 import io.camunda.authentication.service.PhysicalTenantMembershipContextPropagator;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.context.MembershipResolutionContextPropagator;
@@ -22,7 +23,6 @@ import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.annotation.ConditionalOnAuthenticationMethod;
 import io.camunda.security.spring.converter.OidcTokenAuthenticationConverter;
-import io.camunda.security.spring.converter.OidcUserAuthenticationConverter;
 import io.camunda.security.spring.handler.OAuth2AuthenticationExceptionHandler;
 import io.camunda.security.spring.oidc.AssertionJwkProvider;
 import io.camunda.security.spring.oidc.OidcAccessTokenDecoderFactory;
@@ -37,6 +37,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -48,6 +49,7 @@ import org.springframework.boot.ssl.NoSuchSslBundleException;
 import org.springframework.boot.ssl.SslBundles;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.http.converter.FormHttpMessageConverter;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
@@ -191,14 +193,33 @@ public class OidcOverrideBeansConfiguration {
       final OidcAccessTokenDecoderFactory oidcAccessTokenDecoderFactory,
       final LazyTokenClaimsConverter tokenClaimsConverter,
       final HttpServletRequest request,
-      final OidcProviderConfigurationPort oidcProviderRepository) {
-    return new OidcUserAuthenticationConverter(
+      final OidcProviderConfigurationPort oidcProviderRepository,
+      final MembershipPort membershipPort,
+      final MembershipResolutionContextPropagator membershipResolutionContextPropagator,
+      final Environment environment) {
+    return new ProviderAwareOidcUserAuthenticationConverter(
         authorizedClientRepository,
         oidcAccessTokenDecoderFactory,
         tokenClaimsConverter,
         request,
         buildAdditionalJwkSetUrisByIssuer(oidcProviderRepository),
-        buildPreferIdTokenClaimsByRegistrationId(oidcProviderRepository));
+        buildPreferIdTokenClaimsByRegistrationId(oidcProviderRepository),
+        PhysicalTenantOidcProviders.tokenClaimsConvertersByRegistrationId(
+            environment, membershipPort, membershipResolutionContextPropagator),
+        buildIdentityClaimsByRegistrationId(environment));
+  }
+
+  private Map<String, List<String>> buildIdentityClaimsByRegistrationId(
+      final Environment environment) {
+    final Map<String, List<String>> identityClaims =
+        new LinkedHashMap<>(
+            PhysicalTenantOidcProviders.identityClaimsByRegistrationId(environment));
+    // The root default slot is not a named provider, so normalize its URI-valued identity claims
+    // (e.g. iss) under the default registration id too, matching the scoped registrations.
+    identityClaims.put(
+        OidcConfiguration.DEFAULT_REGISTRATION_ID,
+        PhysicalTenantOidcProviders.identityClaims(cslProperties.getAuthentication().getOidc()));
+    return identityClaims;
   }
 
   @Bean
@@ -235,7 +256,8 @@ public class OidcOverrideBeansConfiguration {
                 toMap(Map.Entry::getKey, e -> parseAlgorithm(e.getValue().getIdTokenAlgorithm())));
     decoderFactory.setJwsAlgorithmResolver(
         clientRegistration ->
-            algorithmByRegistrationId.get(clientRegistration.getRegistrationId()));
+            algorithmByRegistrationId.getOrDefault(
+                clientRegistration.getRegistrationId(), SignatureAlgorithm.RS256));
     return decoderFactory;
   }
 
