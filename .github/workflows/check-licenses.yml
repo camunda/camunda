@@ -181,7 +181,7 @@ jobs:
   observe-aborted-jobs:
     needs:
     - analyze
-    if: failure()
+    if: always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
     permissions:
       actions: read # required to read raw job logs for runner-abort detection
       checks: read
