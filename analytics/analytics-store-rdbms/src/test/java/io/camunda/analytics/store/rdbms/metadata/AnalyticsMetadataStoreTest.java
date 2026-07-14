@@ -67,7 +67,8 @@ final class AnalyticsMetadataStoreTest {
                 .dimension("bpmnProcessId", DimensionType.STRING)
                 .meter(
                     new Meter(
-                        "sla", "ratio", "durationMs", Map.of("op", "le", "threshold", "300000")))
+                            "sla", "ratio", "durationMs", Map.of("op", "le", "threshold", "300000"))
+                        .filtered(FilterPredicate.notNull("durationMs")))
                 .window(60_000L)
                 .build(),
             Map.of(0, 100L, 1, 250L),
@@ -98,6 +99,30 @@ final class AnalyticsMetadataStoreTest {
         .containsExactly(raw);
     assertThat(store.datasetSpecStore().search(DatasetSpecQuery.byKind(DatasetKind.TABLE)))
         .containsExactly(raw);
+  }
+
+  @Test
+  void shouldDeserializeSpecsPersistedWithoutMeterFilters() {
+    // given the JSON of a spec persisted before meters carried filters (no "filters" property)
+    final SpecJson json = new SpecJson();
+    final RegisteredDataset spec =
+        new DatasetRegistry()
+            .admit(
+                DatasetDeclaration.builder("legacy", FactType.PROCESS_INSTANCE)
+                    .dimension("bpmnProcessId", DimensionType.STRING)
+                    .meter(Meter.of("count", "count"))
+                    .window(60_000L)
+                    .build(),
+                Map.of(),
+                0L);
+    final String legacyJson = json.toJson(spec).replace(",\"filters\":[]", "");
+
+    // when deserialized under the filter-carrying shape
+    final RegisteredDataset reloaded = json.fromJson(legacyJson);
+
+    // then the meter normalizes to unfiltered rather than failing or carrying null
+    assertThat(reloaded.declaration().meters().get(0).filters()).isEmpty();
+    assertThat(reloaded).isEqualTo(spec);
   }
 
   @Test

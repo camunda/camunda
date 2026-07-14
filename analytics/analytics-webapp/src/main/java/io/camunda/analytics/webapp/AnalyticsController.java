@@ -230,7 +230,16 @@ public class AnalyticsController {
             .map(dim -> new DimensionView(dim.name(), dim.type().name(), dim.enrichment().name()))
             .toList(),
         d.meters().stream()
-            .map(m -> new MeterView(m.name(), m.type(), m.measureField(), m.params()))
+            .map(
+                m ->
+                    new MeterView(
+                        m.name(),
+                        m.type(),
+                        m.measureField(),
+                        m.params(),
+                        m.filters().stream()
+                            .map(f -> new FilterRequest(f.field(), f.operator(), f.value()))
+                            .toList()))
             .toList(),
         d.windowSizesMs(),
         d.keyField(),
@@ -278,8 +287,7 @@ public class AnalyticsController {
         }
       }
       if (meters != null) {
-        meters.forEach(
-            m -> builder.meter(new Meter(m.name(), m.type(), m.measureField(), m.params())));
+        meters.forEach(m -> builder.meter(m.toMeter()));
       }
       if (windowSizesMs != null) {
         windowSizesMs.forEach(builder::window);
@@ -293,8 +301,20 @@ public class AnalyticsController {
 
   public record DimensionRequest(String name, DimensionType type, EnrichmentTiming enrichment) {}
 
+  /** One declared meter; {@code filters} are the per-meter fold predicates (may be omitted). */
   public record MeterRequest(
-      String name, String type, String measureField, Map<String, String> params) {}
+      String name,
+      String type,
+      String measureField,
+      Map<String, String> params,
+      List<FilterRequest> filters) {
+
+    Meter toMeter() {
+      final List<FilterPredicate> predicates =
+          filters == null ? List.of() : filters.stream().map(FilterRequest::toPredicate).toList();
+      return new Meter(name, type, measureField, params, predicates);
+    }
+  }
 
   /** One declared filter; a missing operator means {@code EQUALS} (the pre-operator wire shape). */
   public record FilterRequest(String field, FilterPredicate.Operator operator, String value) {
@@ -320,5 +340,9 @@ public class AnalyticsController {
   public record DimensionView(String name, String type, String enrichment) {}
 
   public record MeterView(
-      String name, String type, String measureField, Map<String, String> params) {}
+      String name,
+      String type,
+      String measureField,
+      Map<String, String> params,
+      List<FilterRequest> filters) {}
 }

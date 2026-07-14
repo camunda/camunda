@@ -292,6 +292,36 @@ final class DatasetCompilerTest {
   }
 
   @Test
+  void shouldRejectInvalidPerMeterFilterAtCompileTime() {
+    // given a meter whose per-meter ordering filter carries a non-numeric bound
+    final Meter meter =
+        Meter.of("slow", MeterCatalog.COUNT)
+            .filtered(FilterPredicate.greaterThan("durationMs", "fast"));
+
+    // when compiled, then it is rejected naming the dataset, the meter, and the filter — the same
+    // admission gate as the dataset-level filters
+    assertThatThrownBy(() -> compiler.compile(1L, withMeter(meter)))
+        .isInstanceOf(DatasetValidationException.class)
+        .hasMessageContaining("dataset 'param-check'")
+        .hasMessageContaining("meter 'slow'")
+        .hasMessageContaining("filter on 'durationMs'")
+        .hasMessageContaining("'fast'");
+  }
+
+  @Test
+  void shouldCompileWellFormedPerMeterFilters() {
+    // given a meter filtered to present, bounded measures
+    final Meter meter =
+        Meter.of("slow", MeterCatalog.COUNT)
+            .filtered(
+                FilterPredicate.notNull("durationMs"),
+                FilterPredicate.greaterOrEqual("durationMs", "1000"));
+
+    // when / then it binds like any unfiltered meter
+    assertThat(compiler.compile(1L, withMeter(meter)).meters()).hasSize(1);
+  }
+
+  @Test
   void shouldCompileWellFormedOperatorFilters() {
     // given one filter per operator, each with a well-formed value
     final DatasetDeclaration declaration =

@@ -134,10 +134,10 @@ public final class DatasetCompiler {
   /**
    * The compile-time validation gate for the stringly typed filter values — an ordering operator
    * needs a numeric bound, {@code IN} a non-empty list (see {@link
-   * FilterPredicate#validateValue()}). A failure is rethrown as a {@link
-   * DatasetValidationException} carrying the dataset + filter context, the same admission gate as
-   * meter params: a bad declaration is rejected at compile/provisioning time instead of silently
-   * never matching a fact.
+   * FilterPredicate#validateValue()}). Covers the dataset-level filters and every meter's per-meter
+   * filters. A failure is rethrown as a {@link DatasetValidationException} carrying the dataset (+
+   * meter) + filter context, the same admission gate as meter params: a bad declaration is rejected
+   * at compile/provisioning time instead of silently never matching a fact.
    */
   private static void validateFilters(final DatasetDeclaration declaration) {
     for (final FilterPredicate filter : declaration.filters()) {
@@ -147,6 +147,25 @@ public final class DatasetCompiler {
         // reads: dataset 'x' declares an invalid filter on 'f' (GT): value must be ...
         throw new DatasetValidationException(
             "dataset '" + declaration.name() + "' declares an invalid " + e.getMessage(), e);
+      }
+    }
+    for (final Meter meter : declaration.meters()) {
+      for (final FilterPredicate filter : meter.filters()) {
+        try {
+          filter.validateValue();
+        } catch (final RuntimeException e) {
+          // reads: dataset 'x' meter 'm' (count) declares an invalid filter on 'f' (GT): ...
+          throw new DatasetValidationException(
+              "dataset '"
+                  + declaration.name()
+                  + "' meter '"
+                  + meter.name()
+                  + "' ("
+                  + meter.type()
+                  + ") declares an invalid "
+                  + e.getMessage(),
+              e);
+        }
       }
     }
   }
