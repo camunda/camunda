@@ -104,6 +104,10 @@ describe('validators', () => {
 
 		expect(validateBatchOperationKeyCharacters('&', {})).toBe(ERRORS.batchOperationKey);
 		expect(validateBatchOperationKeyCharacters('g', {})).toBe(ERRORS.batchOperationKey);
+		expect(validateBatchOperationKeyCharacters('a&', {})).toBe(ERRORS.batchOperationKey);
+		expect(validateBatchOperationKeyCharacters('1f4d40c3-7cce-4e51-8abe-0cda8d42f04f$', {})).toBe(
+			ERRORS.batchOperationKey,
+		);
 
 		expect(setTimeoutSpy).toHaveBeenCalledTimes(0);
 	});

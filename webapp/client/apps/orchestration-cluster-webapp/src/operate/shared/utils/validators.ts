@@ -68,7 +68,7 @@ const validateParentInstanceIdNotTooLong: FieldValidator<string | undefined> = (
  * Validates if value contains only characters from a key or UUID
  */
 const validateBatchOperationKeyCharacters: FieldValidator<string | undefined> = (value = '') => {
-	const schema = z.union([z.string().length(0), z.string().regex(/^[0-9]+$/), z.string().regex(/^[a-f0-9-]{1,36}/)]);
+	const schema = z.union([z.string().length(0), z.string().regex(/^[0-9]+$/), z.string().regex(/^[a-f0-9-]{1,36}$/)]);
 
 	if (!schema.safeParse(value).success) {
 		return i18n.t('operate.shared.validators.batchOperationKey');
