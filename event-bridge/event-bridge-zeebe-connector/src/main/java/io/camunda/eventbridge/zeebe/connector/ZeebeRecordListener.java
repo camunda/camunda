@@ -86,9 +86,7 @@ public final class ZeebeRecordListener implements AutoCloseable {
       }
 
       try {
-        for (final ZeebeRecord record : batch) {
-          processor.submit(record);
-        }
+        processor.submit(batch);
       } catch (final InterruptedException e) {
         Thread.currentThread().interrupt();
         break;

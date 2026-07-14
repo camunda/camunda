@@ -15,6 +15,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -131,6 +132,41 @@ final class ManagedConsumerTest {
     } finally {
       managed.close();
     }
+  }
+
+  @Test
+  void shouldAdvanceTheCommittedOffsetAcrossBatchesWithoutRecommittingUnchangedOffsets()
+      throws InterruptedException {
+    // given: two consecutive batches advancing the same partition's offset, then empty polls
+    final Consumer consumer = mock(Consumer.class);
+    when(consumer.getGroupId()).thenReturn("g1");
+    final CountDownLatch committed = new CountDownLatch(2);
+    when(consumer.commitOffset(any(), anyInt(), anyLong()))
+        .thenAnswer(
+            inv -> {
+              committed.countDown();
+              return CompletableFuture.completedFuture(null);
+            });
+    when(consumer.poll(anyInt(), any(Duration.class)))
+        .thenReturn(List.of(new Event(10L, "t1", 1, "a".getBytes(StandardCharsets.UTF_8))))
+        .thenReturn(List.of(new Event(11L, "t1", 1, "b".getBytes(StandardCharsets.UTF_8))))
+        .thenReturn(List.of());
+
+    final MessageHandler<Event> handler = event -> {};
+
+    // when
+    final ManagedConsumer<Event> managed =
+        new ManagedConsumer<>(consumer, executor, handler, null, true, 100, Duration.ofMillis(10));
+    try {
+      assertThat(committed.await(5, TimeUnit.SECONDS)).isTrue();
+    } finally {
+      managed.close();
+    }
+
+    // then: each batch committed its advanced offset exactly once — the unchanged offset is never
+    // re-committed by later (empty) batches or the final commit on close
+    verify(consumer, times(1)).commitOffset(eq("t1"), eq(1), eq(10L));
+    verify(consumer, times(1)).commitOffset(eq("t1"), eq(1), eq(11L));
   }
 
   @Test

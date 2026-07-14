@@ -61,10 +61,18 @@ public final class ManagedConsumer<T> implements MessageConsumer {
   /** Counts down when the loop has fully exited, so {@link #close()} can await it. */
   private final CountDownLatch stopped = new CountDownLatch(1);
 
-  /** Highest processed offset per partition, committed once auto-commit fires. */
-  private final Map<TopicPartition, Long> processed = new HashMap<>();
+  /**
+   * Commit progress per partition. The holders carry plain {@code long} offsets, so the per-record
+   * bookkeeping neither boxes nor allocates; a new holder (and its {@link TopicPartition}) is
+   * created only when a partition is seen for the first time.
+   */
+  private final Map<TopicPartition, PartitionProgress> progressByPartition = new HashMap<>();
 
-  private final Map<TopicPartition, Long> lastCommitted = new HashMap<>();
+  /**
+   * The last partition dispatched to — records of one partition arrive in runs, so this memo makes
+   * the per-record progress lookup allocation-free in the common case.
+   */
+  private PartitionProgress lastProgress;
 
   private volatile boolean running = true;
 
@@ -132,7 +140,7 @@ public final class ManagedConsumer<T> implements MessageConsumer {
    */
   @SuppressWarnings("unchecked")
   private boolean dispatch(final Event event) {
-    final TopicPartition tp = new TopicPartition(event.topic(), event.partitionId());
+    final PartitionProgress progress = progressFor(event.topic(), event.partitionId());
     try {
       final T record =
           deserializer == null
@@ -144,22 +152,41 @@ public final class ManagedConsumer<T> implements MessageConsumer {
           "Handler failed for {} at offset {}; stopping this consumer — the record is not"
               + " committed and will be redelivered to a consumer resuming from the committed"
               + " offsets",
-          tp,
+          progress.partition,
           event.position(),
           e);
       return false;
     }
-    processed.merge(tp, event.position(), Math::max);
+    if (event.position() > progress.processed) {
+      progress.processed = event.position();
+    }
     return true;
+  }
+
+  /** The commit-progress holder for {@code (topic, partitionId)}, creating it on first sight. */
+  private PartitionProgress progressFor(final String topic, final int partitionId) {
+    final PartitionProgress memo = lastProgress;
+    if (memo != null
+        && memo.partition.partition() == partitionId
+        && memo.partition.topic().equals(topic)) {
+      return memo;
+    }
+    final TopicPartition tp = new TopicPartition(topic, partitionId);
+    PartitionProgress progress = progressByPartition.get(tp);
+    if (progress == null) {
+      progress = new PartitionProgress(tp);
+      progressByPartition.put(tp, progress);
+    }
+    lastProgress = progress;
+    return progress;
   }
 
   /** Commits the max processed offset per partition that has advanced since the last commit. */
   private void commitProcessed() {
-    for (final Map.Entry<TopicPartition, Long> entry : processed.entrySet()) {
-      final TopicPartition tp = entry.getKey();
-      final long offset = entry.getValue();
-      final Long committed = lastCommitted.get(tp);
-      if (committed == null || offset > committed) {
+    for (final PartitionProgress progress : progressByPartition.values()) {
+      if (progress.processed > progress.committed) {
+        final TopicPartition tp = progress.partition;
+        final long offset = progress.processed;
         consumer
             .commitOffset(tp.topic(), tp.partition(), offset)
             .exceptionally(
@@ -167,7 +194,7 @@ public final class ManagedConsumer<T> implements MessageConsumer {
                   LOG.warn("Commit failed for {} at offset {}", tp, offset, error);
                   return null;
                 });
-        lastCommitted.put(tp, offset);
+        progress.committed = offset;
       }
     }
   }
@@ -188,5 +215,17 @@ public final class ManagedConsumer<T> implements MessageConsumer {
       commitProcessed();
     }
     consumer.close();
+  }
+
+  /** One partition's commit progress: the highest processed and the last committed offset. */
+  private static final class PartitionProgress {
+
+    private final TopicPartition partition;
+    private long processed = Long.MIN_VALUE;
+    private long committed = Long.MIN_VALUE;
+
+    private PartitionProgress(final TopicPartition partition) {
+      this.partition = partition;
+    }
   }
 }
