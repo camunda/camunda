@@ -43,6 +43,10 @@ public record SearchTermsQuery(String field, List<TypedValue> values) implements
       return terms(TypedValue.of(values, TypedValue::of));
     }
 
+    public Builder doubleTerms(final List<Double> values) {
+      return terms(TypedValue.of(values, TypedValue::of));
+    }
+
     public Builder terms(final List<TypedValue> values) {
       terms = addValuesToList(terms, values);
       return this;

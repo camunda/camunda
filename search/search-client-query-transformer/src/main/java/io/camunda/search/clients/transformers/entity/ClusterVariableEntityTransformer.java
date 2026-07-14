@@ -9,7 +9,9 @@ package io.camunda.search.clients.transformers.entity;
 
 import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.entities.ClusterVariableEntity;
+import io.camunda.search.entities.ClusterVariableEntity.MetadataEntry;
 import io.camunda.search.entities.ClusterVariableScope;
+import java.util.List;
 
 public class ClusterVariableEntityTransformer
     implements ServiceTransformer<
@@ -26,6 +28,20 @@ public class ClusterVariableEntityTransformer
         value.getFullValue(),
         value.getIsPreview(),
         ClusterVariableScope.valueOf(value.getScope().name()),
-        value.getTenantId());
+        value.getTenantId(),
+        toMetadata(value.getMetadata()));
+  }
+
+  private List<MetadataEntry> toMetadata(
+      final List<
+              io.camunda.webapps.schema.entities.clustervariable.ClusterVariableEntity
+                  .MetadataEntry>
+          metadata) {
+    if (metadata == null) {
+      return null;
+    }
+    return metadata.stream()
+        .map(m -> new MetadataEntry(m.key(), m.value(), m.valueNumber()))
+        .toList();
   }
 }

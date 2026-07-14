@@ -21,6 +21,7 @@ public record ClusterVariableFilter(
     List<UntypedOperation> valueOperations,
     List<Operation<String>> scopeOperations,
     List<Operation<String>> tenantIdOperations,
+    List<MetadataValueFilter> metadataOperations,
     Boolean isTruncated)
     implements FilterBase {
 
@@ -29,6 +30,7 @@ public record ClusterVariableFilter(
     List<UntypedOperation> valueOperations;
     List<Operation<String>> scopeOperations;
     List<Operation<String>> tenantIdOperations;
+    List<MetadataValueFilter> metadataOperations;
     Boolean isTruncated;
 
     public Builder nameOperations(final List<Operation<String>> operations) {
@@ -120,6 +122,16 @@ public record ClusterVariableFilter(
       return tenantIdOperations(collectValues(operation, operations));
     }
 
+    public Builder metadataOperations(final List<MetadataValueFilter> operations) {
+      metadataOperations = addValuesToList(metadataOperations, operations);
+      return this;
+    }
+
+    public Builder metadataOperations(
+        final MetadataValueFilter operation, final MetadataValueFilter... operations) {
+      return metadataOperations(collectValues(operation, operations));
+    }
+
     public Builder isTruncated(final Boolean value) {
       isTruncated = value;
       return this;
@@ -132,6 +144,7 @@ public record ClusterVariableFilter(
           Objects.requireNonNullElseGet(valueOperations, Collections::emptyList),
           Objects.requireNonNullElseGet(scopeOperations, Collections::emptyList),
           Objects.requireNonNullElseGet(tenantIdOperations, Collections::emptyList),
+          Objects.requireNonNullElseGet(metadataOperations, Collections::emptyList),
           isTruncated);
     }
   }
