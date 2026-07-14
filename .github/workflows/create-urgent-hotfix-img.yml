@@ -1,5 +1,5 @@
 # type: CI
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 
 # Description:
 # This GitHub Actions workflow creates Docker images for urgent hotfixes.

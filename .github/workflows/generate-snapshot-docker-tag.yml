@@ -22,7 +22,7 @@
 # because each stable branch maps to exactly one version.
 #
 # type: CI
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 name: Generate Docker Snapshot Tag
 
 permissions:

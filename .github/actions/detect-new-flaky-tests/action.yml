@@ -1,4 +1,4 @@
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 name: Detect New Flaky Tests
 
 description: >

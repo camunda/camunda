@@ -2,7 +2,7 @@
 # This is useful, for example, to retry dependency update PRs automatically in case of network
 # errors, flaky tests, etc.
 # type: CI Helper
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 name: Retry Workflow Run
 
 on:

@@ -1,4 +1,4 @@
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 name: Restore shared m2 SNAPSHOTs
 description: >-
   Download the run-scoped m2-installed.tar (the io.camunda SNAPSHOTs that build-distball

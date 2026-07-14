@@ -3,7 +3,7 @@
 # waits for required checks to complete, auto-merges using merge queue or direct merge,
 # and notifies the relevant C8 release process about the merge status.
 # type: CI Helper
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 name: Auto-merge release to stable
 
 on:
@@ -30,14 +30,14 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       DRY_RUN: ${{ vars.AUTO_MERGE_DRY_RUN || 'false' }}
       MERGE_QUEUE_TIMEOUT_MINUTES: ${{ vars.MERGE_QUEUE_TIMEOUT_MINUTES || '180' }}
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.ref }}
-      
+
       - name: Validate branch matching
         id: validate_branches
         env:
@@ -56,7 +56,7 @@ jobs:
             echo "❌ Invalid release branch format: $HEAD_REF"
             exit 1
           fi
-      
+
       - name: Check for merge conflicts
         id: check_conflicts
         run: |
@@ -67,7 +67,7 @@ jobs:
             echo "Checking mergeability (attempt $i/$MAX_RETRIES)..."
             # GitHub API provides mergeable status
             MERGEABLE=$(gh pr view ${{ github.event.pull_request.number }} --json mergeable --jq '.mergeable')
-            
+
             if [ "$MERGEABLE" = "MERGEABLE" ]; then
              echo "✅ PR is mergeable!"
               exit 0
@@ -77,7 +77,7 @@ jobs:
             elif [ "$MERGEABLE" = "UNKNOWN" ]; then
               if [ "$i" -eq "$MAX_RETRIES" ]; then
                 echo "❌ Mergeability still UNKNOWN after $MAX_RETRIES attempts"
-                exit 1  
+                exit 1
               fi
               echo "⏳ Mergeability is UNKNOWN, waiting ${RETRY_DELAY}s before retry..."
               sleep "$RETRY_DELAY"
@@ -91,13 +91,13 @@ jobs:
               sleep "$RETRY_DELAY"
             fi
           done
-      
+
       - name: Validate changes are version bumps only
         id: validate_changes
         run: |
           # Use glob pattern to capture all pom.xml files at any depth
           POM_DIFF=$(git diff origin/${{ github.base_ref }}...HEAD -- ':(glob)**/pom.xml')
-          
+
           # Check only pom.xml files changed
           CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
           if echo "$CHANGED_FILES" | grep -E -v 'pom\.xml$' | grep -q .; then
@@ -108,13 +108,13 @@ jobs:
           # Verify all changed pom.xml files are captured in POM_DIFF
           CHANGED_POM_COUNT=$(echo "$CHANGED_FILES" | grep -c 'pom\.xml$' || true)
           POM_DIFF_FILE_COUNT=$(echo "$POM_DIFF" | grep -c '^diff --git' || true)
-          
+
           if [ "$CHANGED_POM_COUNT" -ne "$POM_DIFF_FILE_COUNT" ]; then
             echo "❌ Pattern mismatch: GitHub reports $CHANGED_POM_COUNT pom.xml changed, glob captured $POM_DIFF_FILE_COUNT"
             exit 1
           fi
           echo "✅ Validated $CHANGED_POM_COUNT pom.xml files"
-          
+
           # Check only version tags modified in pom.xml
           # Whitelist of allowed property changes in release PRs:
           # - <version>: Main project version (X.Y.Z-SNAPSHOT)
@@ -129,38 +129,38 @@ jobs:
             '^[+-]\s*<version\.identity>'          # Identity version
             '^[+-]\s*<zeebe\.version>'             # Zeebe component version
           )
-          
+
           # Build regex from allowed patterns (join with |)
           ALLOWED_REGEX=$(IFS='|'; echo "${ALLOWED_PATTERNS[*]}")
-          
+
           NON_VERSION_CHANGES=$(echo "$POM_DIFF" | grep -E '^[+-]' | grep -vE "($ALLOWED_REGEX)" || true)
           if [ -n "$NON_VERSION_CHANGES" ]; then
             echo "❌ Non-version changes in pom.xml:"
             (echo "$NON_VERSION_CHANGES" | head -10) || true
             exit 1
           fi
-          
+
           # Validate version increment: X.Y.Z-SNAPSHOT → X.Y.(Z+1)-SNAPSHOT
           OLD_VER=$( (echo "$POM_DIFF" | grep -E '^-\s*<version>' | head -1 | sed -E 's/.*<version>([^<]+)<.*/\1/') 2>/dev/null || true)
           NEW_VER=$( (echo "$POM_DIFF" | grep -E '^\+\s*<version>' | head -1 | sed -E 's/.*<version>([^<]+)<.*/\1/') 2>/dev/null || true)
-          
+
           if [[ -n "$OLD_VER" && -n "$NEW_VER" ]]; then
             [[ "$OLD_VER" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)-SNAPSHOT$ ]] || { echo "❌ Invalid old version: $OLD_VER"; exit 1; }
             OLD_MAJ="${BASH_REMATCH[1]}"
             OLD_MIN="${BASH_REMATCH[2]}"
             OLD_PAT="${BASH_REMATCH[3]}"
-            
+
             [[ "$NEW_VER" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)-SNAPSHOT$ ]] || { echo "❌ Invalid new version: $NEW_VER"; exit 1; }
             NEW_MAJ="${BASH_REMATCH[1]}"
             NEW_MIN="${BASH_REMATCH[2]}"
             NEW_PAT="${BASH_REMATCH[3]}"
-            
+
             [[ "$NEW_MAJ" == "$OLD_MAJ" && "$NEW_MIN" == "$OLD_MIN" && "$NEW_PAT" == $((OLD_PAT + 1)) ]] || {
               echo "❌ Expected ${OLD_MAJ}.${OLD_MIN}.$((OLD_PAT + 1))-SNAPSHOT, got $NEW_VER"
               exit 1
             }
             echo "✅ Version: $OLD_VER → $NEW_VER"
-          fi      
+          fi
       - name: Wait for required checks
         id: wait_checks
         uses: camunda/infra-global-github-actions/wait-for-required-checks@1505e9e943f5f3b59803cdcf6b56a1fabb8d507a # main
@@ -181,8 +181,8 @@ jobs:
           vault-auth-method: approle
           vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
-          vault-url: ${{ secrets.VAULT_ADDR }}     
-      
+          vault-url: ${{ secrets.VAULT_ADDR }}
+
       - name: Approve PR
         # Proceed when checks pass OR when no required checks configured (skipped outcome)
         if: steps.wait_checks.outcome != 'failure'
@@ -194,7 +194,7 @@ jobs:
             # Override GH_TOKEN with GitHub App installation token.
             GH_TOKEN="${{ steps.github-token.outputs.token }}" gh pr review ${{ github.event.pull_request.number }} --approve --body "Auto-approved: Version bump changes validated successfully."
           fi
-         
+
       - name: Enable auto-merge (for merge queue)
         # Proceed when checks pass OR when no required checks configured (skipped outcome)
         if: steps.wait_checks.outcome != 'failure'
@@ -209,7 +209,7 @@ jobs:
             GH_TOKEN="${{ steps.github-token.outputs.token }}" gh pr merge ${{ github.event.pull_request.number }} --auto --squash
             echo "✅ Auto-merge enabled - PR will enter merge queue"
           fi
-      
+
       - name: Monitor merge queue status
         id: monitor_merge
         if: steps.wait_checks.outcome != 'failure'
@@ -222,7 +222,7 @@ jobs:
           app-token: ${{ steps.github-token.outputs.token }}
           repository-owner: ${{ github.repository_owner }}
           repository-name: ${{ github.event.repository.name }}
-      
+
       - name: Import Secrets
         if: always() && env.DRY_RUN != 'true'
         id: secrets
@@ -234,7 +234,7 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           exportEnv: false # we rely on step outputs, no need for environment variables
           secrets: |
-            secret/data/products/camunda/ci/monorepo-release CLIENT_CONFIG | clientConfig    
+            secret/data/products/camunda/ci/monorepo-release CLIENT_CONFIG | clientConfig
       - name: Report auto-merge result to Monorepo Release Process
         if: always() && env.DRY_RUN != 'true'
         continue-on-error: true
@@ -251,7 +251,7 @@ jobs:
               "pr_url": "${{ github.event.pull_request.html_url }}",
               "workflow_run_url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
             }
-      
+
       - name: Dry run summary
         if: always() && env.DRY_RUN == 'true'
         run: |
@@ -265,7 +265,7 @@ jobs:
           echo "  - Required checks: ${{ steps.wait_checks.outcome }}"
           echo "🔍 To enable actual execution, set repository variable AUTO_MERGE_DRY_RUN to 'false'"
           echo "🔍 ========================================"
-      
+
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -274,4 +274,4 @@ jobs:
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}    
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

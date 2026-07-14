@@ -1,5 +1,5 @@
 # type: Preview Environment
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 ---
 name: Preview Environment Teardown
 
@@ -24,7 +24,7 @@ on:
 jobs:
   teardown-preview:
     # For workflow_call: inputs.app-name is set (github.event_name is inherited from caller, not 'workflow_call')
-    # For PR events: check whether the unlabel name was deploy-preview || 
+    # For PR events: check whether the unlabel name was deploy-preview ||
     #   check whether the PR was closed/merged with deploy-preview label
     if: >
       inputs.app-name != '' || (
@@ -105,8 +105,8 @@ jobs:
 
   clean:
     if: >
-      always() && 
-        needs.teardown-preview.result != 'skipped' && 
+      always() &&
+        needs.teardown-preview.result != 'skipped' &&
         github.event_name == 'pull_request'
     uses: camunda/camunda/.github/workflows/preview-env-clean.yml@main
     needs: [teardown-preview]
@@ -116,8 +116,8 @@ jobs:
 
   comment:
     if: >
-      always() && 
-        needs.teardown-preview.result != 'skipped' && 
+      always() &&
+        needs.teardown-preview.result != 'skipped' &&
         github.event_name == 'pull_request'
     name: Remove Deployment Result Summary
     runs-on: ubuntu-latest

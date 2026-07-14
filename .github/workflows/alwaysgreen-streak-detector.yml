@@ -49,7 +49,7 @@ env:
   # .ci/scripts/ci/setup-medic-lookup.sh.
   MEDIC_TEST_AUTOMATION: '<!subteam^S09UF0EV0HG|test-automation-medic>'
   MEDIC_DISTRIBUTION: '<!subteam^S053K7C7QKU|distribution-medic>'
-  MEDIC_MONOREPO_DEVOPS: '<!subteam^S07D6C6B18T|monorepo-devops-medic>'
+  MEDIC_ENGINEERING_OPERATIONS: '<!subteam^S07D6C6B18T|monorepo-ci-medic>'
   MEDIC_CORE_FEATURES: '<!subteam^S08P2CU9V8W|core-features-medic>'
   # Marker used in the Slack message text so subsequent runs can find
   # their own previous message via conversations.history. Includes the
@@ -316,8 +316,8 @@ jobs:
               "@camunda/distribution")
                 mentions+=("${MEDIC_DISTRIBUTION}")
                 ;;
-              "@camunda/monorepo-devops-team")
-                mentions+=("${MEDIC_MONOREPO_DEVOPS}")
+              "@camunda/engineering-operations")
+                mentions+=("${MEDIC_ENGINEERING_OPERATIONS}")
                 ;;
               "@camunda/core-features")
                 mentions+=("${MEDIC_CORE_FEATURES}")
@@ -327,10 +327,10 @@ jobs:
 
           # If no failure context was attributable to a team (e.g. the
           # parent run died before any job emitted context), default to
-          # pinging the monorepo-devops medic since they own the workflow
+          # pinging the monorepo-ci-medic since they own the workflow
           # plumbing itself.
           if (( ${#mentions[@]} == 0 )); then
-            mentions+=("${MEDIC_MONOREPO_DEVOPS}")
+            mentions+=("${MEDIC_ENGINEERING_OPERATIONS}")
           fi
 
           # Dedup + join with spaces for the Slack message body.

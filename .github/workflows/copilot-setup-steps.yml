@@ -2,7 +2,7 @@
 # see_also: https://docs.github.com/en/enterprise-cloud@latest/copilot/how-tos/use-copilot-agents/coding-agent/customize-the-agent-environment
 # test location: /
 # type: AGENT_SETUP
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 ---
 name: "Copilot Setup Steps"
 
