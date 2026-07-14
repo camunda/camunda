@@ -285,9 +285,9 @@ public class BrokerBasedPropertiesOverride {
         engineBatchOperation.getQueryRetryBackoffFactor());
   }
 
-  private static void populateFromLoopDetection(final BrokerBasedProperties override, final Camunda camunda) {
-    final var loopDetection =
-        camunda.getProcessing().getEngine().getLoopDetection();
+  private static void populateFromLoopDetection(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final var loopDetection = camunda.getProcessing().getEngine().getLoopDetection();
     final var loopDetectionCfg = override.getExperimental().getEngine().getLoopDetection();
     loopDetectionCfg.setMaxElementActivationCount(loopDetection.getMaxElementActivationCount());
     loopDetectionCfg.setElementActivationRetryCooldown(
