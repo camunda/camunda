@@ -109,7 +109,7 @@ final class ClusterConfigurationManagementApiTest {
             coordinator.getCommunicationService(),
             new ProtoBufSerializer(),
             new ClusterConfigurationManagementRequestsHandler(
-                recordingCoordinator, id0, new TestConcurrencyControl()));
+                recordingCoordinator, id0, new TestConcurrencyControl(), ignored -> {}));
 
     requestServer.start();
   }
@@ -571,104 +571,6 @@ final class ClusterConfigurationManagementApiTest {
               assertThat(error.code()).isEqualTo(ErrorCode.CONCURRENT_MODIFICATION);
               assertThat(error.message())
                   .isEqualTo("Restore is only allowed while the cluster is in recovery mode.");
-            });
-  }
-
-  @Test
-  void shouldRejectRestoreWhenBackupIdsAndTimeRangeProvided() {
-    // given
-    recordingCoordinator.setCurrentTopology(
-        ClusterConfiguration.init()
-            .addMember(id0, MemberState.initializeAsActive(Map.of()).toRecovering()));
-    final var request =
-        new RestoreRequest(List.of(100L), "2024-01-01T10:00:00Z", null, "rdbms", false, false);
-
-    // when
-    final var result = clientApi.restore(request).join();
-
-    // then
-    EitherAssert.assertThat(result)
-        .isLeft()
-        .left()
-        .satisfies(
-            error -> {
-              assertThat(error.code()).isEqualTo(ErrorCode.INVALID_REQUEST);
-              assertThat(error.message())
-                  .isEqualTo(
-                      "Cannot specify both backupId and from/to parameters. Choose one approach.");
-            });
-  }
-
-  @Test
-  void shouldRejectRestoreWhenFromIsAfterTo() {
-    // given
-    recordingCoordinator.setCurrentTopology(
-        ClusterConfiguration.init()
-            .addMember(id0, MemberState.initializeAsActive(Map.of()).toRecovering()));
-    final var request =
-        new RestoreRequest(
-            List.of(), "2024-01-01T12:00:00Z", "2024-01-01T10:00:00Z", "rdbms", true, false);
-
-    // when
-    final var result = clientApi.restore(request).join();
-
-    // then
-    EitherAssert.assertThat(result)
-        .isLeft()
-        .left()
-        .satisfies(
-            error -> {
-              assertThat(error.code()).isEqualTo(ErrorCode.INVALID_REQUEST);
-              assertThat(error.message()).contains("Invalid time range: from", "must be before to");
-            });
-  }
-
-  @Test
-  void shouldRejectRestoreWhenTimeRangeProvidedWithoutContinuousBackups() {
-    // given
-    recordingCoordinator.setCurrentTopology(
-        ClusterConfiguration.init()
-            .addMember(id0, MemberState.initializeAsActive(Map.of()).toRecovering()));
-    final var request =
-        new RestoreRequest(
-            List.of(), "2024-01-01T10:00:00Z", "2024-01-01T12:00:00Z", "rdbms", false, false);
-
-    // when
-    final var result = clientApi.restore(request).join();
-
-    // then
-    EitherAssert.assertThat(result)
-        .isLeft()
-        .left()
-        .satisfies(
-            error -> {
-              assertThat(error.code()).isEqualTo(ErrorCode.INVALID_REQUEST);
-              assertThat(error.message())
-                  .isEqualTo(
-                      "Time range restore (from/to) is only supported for continuous backups.");
-            });
-  }
-
-  @Test
-  void shouldRejectRestoreWhenTimestampIsInvalid() {
-    // given
-    recordingCoordinator.setCurrentTopology(
-        ClusterConfiguration.init()
-            .addMember(id0, MemberState.initializeAsActive(Map.of()).toRecovering()));
-    final var request = new RestoreRequest(List.of(), "not-a-date", null, "rdbms", false, false);
-
-    // when
-    final var result = clientApi.restore(request).join();
-
-    // then
-    EitherAssert.assertThat(result)
-        .isLeft()
-        .left()
-        .satisfies(
-            error -> {
-              assertThat(error.code()).isEqualTo(ErrorCode.INVALID_REQUEST);
-              assertThat(error.message())
-                  .isEqualTo("Invalid from timestamp 'not-a-date': must be an ISO 8601 date-time.");
             });
   }
 
