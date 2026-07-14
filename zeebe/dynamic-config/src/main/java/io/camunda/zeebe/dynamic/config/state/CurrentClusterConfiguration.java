@@ -138,6 +138,13 @@ public record CurrentClusterConfiguration(
    * phasedChangeState} is merged by {@link PhasedChangeState#merge(PhasedChangeState)}.
    */
   public CurrentClusterConfiguration merge(final CurrentClusterConfiguration other) {
+    if (other.version() != version) {
+      throw new IllegalStateException(
+          String.format(
+              "Cannot merge cluster configurations with different versions: this=%d, other=%d",
+              version, other.version()));
+    }
+
     final var mergedGlobal = globalConfiguration.merge(other.globalConfiguration);
 
     final Map<String, PartitionGroupConfiguration> mergedGroups = new HashMap<>(partitionGroups);
