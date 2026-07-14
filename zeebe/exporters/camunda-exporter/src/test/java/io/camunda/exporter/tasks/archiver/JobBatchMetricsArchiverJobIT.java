@@ -15,11 +15,8 @@ import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.webapps.schema.descriptors.template.JobMetricsBatchTemplate;
 import io.camunda.webapps.schema.entities.jobmetricsbatch.JobMetricsBatchEntity;
 import java.time.OffsetDateTime;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.TestTemplate;
 
-@TestInstance(Lifecycle.PER_CLASS)
 public class JobBatchMetricsArchiverJobIT extends ArchiverJobIT<JobBatchMetricsArchiverJob> {
   @Override
   JobBatchMetricsArchiverJob createArchiveJob(
