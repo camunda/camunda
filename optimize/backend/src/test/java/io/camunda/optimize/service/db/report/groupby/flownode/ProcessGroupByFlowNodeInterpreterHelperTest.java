@@ -14,6 +14,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.optimize.dto.optimize.DefinitionType;
+import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -30,8 +33,10 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -141,6 +146,57 @@ class ProcessGroupByFlowNodeInterpreterHelperTest {
 
     // then no enrichment happens because the filter may legitimately exclude the missing node
     assertThat(groups).isEmpty();
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void shouldResolveAdHocSubProcessStructureFromOnlyTheFirstDefinition() {
+    // given a report with two definitions: the first has an ad-hoc subprocess ("ahsp") with tool
+    // "toolA", the second has an unrelated flow node that happens to share the ID "ahsp" (BPMN IDs
+    // are only unique within a single model, not across definitions)
+    underTest = helper();
+    final String firstDefinitionXml =
+        """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+            id="defs1" targetNamespace="http://bpmn.io/schema/bpmn">
+          <bpmn:process id="proc1" isExecutable="true">
+            <bpmn:adHocSubProcess id="ahsp">
+              <bpmn:serviceTask id="toolA" />
+            </bpmn:adHocSubProcess>
+          </bpmn:process>
+        </bpmn:definitions>
+        """;
+    final ReportDataDefinitionDto firstDefinition = new ReportDataDefinitionDto("first-key");
+    final ReportDataDefinitionDto secondDefinition = new ReportDataDefinitionDto("second-key");
+    final ProcessReportDataDto reportData = new ProcessReportDataDto();
+    reportData.setDefinitions(List.of(firstDefinition, secondDefinition));
+    when(context.getReportData()).thenReturn(reportData);
+    when(context.getOrComputeAttribute(any(), any()))
+        .thenAnswer(invocation -> ((Supplier<?>) invocation.getArgument(1)).get());
+    final ProcessDefinitionOptimizeDto firstDefinitionDto = new ProcessDefinitionOptimizeDto();
+    firstDefinitionDto.setBpmn20Xml(firstDefinitionXml);
+    when(definitionService.getDefinition(
+            DefinitionType.PROCESS,
+            firstDefinition.getKey(),
+            firstDefinition.getVersions(),
+            firstDefinition.getTenantIds()))
+        .thenReturn(Optional.of(firstDefinitionDto));
+
+    // when
+    final AdHocSubProcessStructure structure = underTest.resolveAdHocSubProcessStructure(context);
+
+    // then only the first definition's model is parsed: the second definition's model is never
+    // even fetched, so a coincidentally-shared ID from it cannot be misclassified as a container or
+    // tool
+    assertThat(structure.containerIds()).containsExactly("ahsp");
+    assertThat(structure.childIds()).containsExactly("toolA");
+    verify(definitionService, never())
+        .getDefinition(
+            DefinitionType.PROCESS,
+            secondDefinition.getKey(),
+            secondDefinition.getVersions(),
+            secondDefinition.getTenantIds());
   }
 
   @Test

@@ -116,7 +116,7 @@ public class ProcessGroupByFlowNodeInterpreterHelper {
   }
 
   /**
-   * Resolves, from the report's process definition model(s), which flow nodes are ad-hoc subprocess
+   * Resolves, from the report's process definition model, which flow nodes are ad-hoc subprocess
    * containers and which are their inner tool nodes. Used by the agent flow-node grouping to render
    * per-tool heat inside an expanded AI Agent (ad-hoc subprocess) while other agent nodes keep
    * their aggregated tool-call total. Ids that are themselves containers (nested ad-hoc
@@ -133,11 +133,20 @@ public class ProcessGroupByFlowNodeInterpreterHelper {
         () -> computeAdHocSubProcessStructure(context.getReportData()));
   }
 
+  /**
+   * Only the report's first definition is parsed: this grouping is exclusively paired with the
+   * heatmap views built by {@code AgenticControlDashboardService}, which only ever render a single
+   * concrete BPMN diagram (mirroring {@code ReportEvaluationHandler#populateHeatmapXml}, which
+   * likewise reads only the first definition for the diagram XML). BPMN flow-node IDs are unique
+   * only within a single model, not across definitions, so merging container/child IDs from more
+   * than one model would let an unrelated flow node in one definition collide with an ad-hoc
+   * subprocess container or tool ID in another, misclassifying it in every group's result.
+   */
   private AdHocSubProcessStructure computeAdHocSubProcessStructure(
       final ProcessReportDataDto reportData) {
     final Set<String> containerIds = new HashSet<>();
     final Set<String> childIds = new HashSet<>();
-    reportData.getDefinitions().stream()
+    reportData.getDefinitions().stream().findFirst().stream()
         .map(
             definitionDto ->
                 definitionService.getDefinition(
