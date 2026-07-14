@@ -514,6 +514,18 @@
 				},
 				"optionalFiltersMenu": {
 					"moreFilters": "More Filters"
+				},
+				"advancedStringFilter": {
+					"operatorEquals": "equals",
+					"operatorNotEquals": "does not equal",
+					"operatorContains": "contains",
+					"operatorIsOneOf": "is one of",
+					"operatorIsNotOneOf": "is not one of",
+					"operatorExists": "exists",
+					"operatorListPlaceholder": "separated by space or comma",
+					"operatorExistsPlaceholder": "true or false",
+					"operatorTypeLabel": "{{label}} filter type",
+					"selectOperator": "Select operator"
 				}
 			}
 		}
