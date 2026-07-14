@@ -92,6 +92,11 @@ public class ClusterVariablesAnnotationProcessor extends AbstractCamundaAnnotati
   }
 
   @Override
+  protected void clearDiscovered() {
+    clusterVariablesValues.clear();
+  }
+
+  @Override
   public void start(final CamundaClient client) {
     // Process global variables from properties
     final Map<String, Object> globalVariables = properties.getGlobal();

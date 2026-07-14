@@ -104,6 +104,11 @@ public class JobWorkerAnnotationProcessor extends AbstractCamundaAnnotationProce
   }
 
   @Override
+  protected void clearDiscovered() {
+    managedJobWorkers.clear();
+  }
+
+  @Override
   public void start(final CamundaClient client, final String clientName) {
     managedJobWorkers.forEach(
         managedJobWorker ->
