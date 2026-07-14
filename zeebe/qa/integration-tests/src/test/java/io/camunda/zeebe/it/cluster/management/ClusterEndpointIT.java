@@ -278,6 +278,24 @@ abstract class ClusterEndpointIT {
   }
 
   @Test
+  void shouldForceRemoveDefaultCoordinatorBroker() {
+    try (final var cluster = createCluster(brokerCount())) {
+      // given -- the default coordinator is the broker with the lowest member ID, i.e. broker 0
+      cluster.awaitCompleteTopology();
+      final var coordinatorMemberId = memberIdForBroker(0);
+      cluster.brokers().get(coordinatorMemberId).close();
+      final var actuator = ClusterActuator.of(cluster.availableGateway());
+
+      // when -- force remove the dead default coordinator broker
+      final var remainingBrokers = brokerIds(IntStream.range(1, brokerCount()).toArray());
+      final var response = actuator.scaleByBrokerIds(remainingBrokers, false, true);
+
+      // then -- the request succeeds, the zone-awareness pre-check does not block it
+      assertThat(response.getExpectedTopology()).hasSize(brokerCount() - 1);
+    }
+  }
+
+  @Test
   void shouldRequestAddBroker() {
     try (final var cluster = createCluster(minReplicationFactor())) {
       // given

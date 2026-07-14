@@ -23,7 +23,6 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
@@ -50,8 +49,9 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
 import org.springframework.http.HttpStatusCode;
@@ -71,6 +71,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Component
 @RestControllerEndpoint(id = "cluster")
 public class ClusterEndpoint {
+  private static final Logger LOG = LoggerFactory.getLogger(ClusterEndpoint.class);
   private static final Set<String> ALLOWED_QUERY_PARAMETERS =
       Set.of("dryRun", "force", "replicationFactor", "mode");
 
@@ -145,13 +146,10 @@ public class ClusterEndpoint {
       @RequestParam(defaultValue = "false") final boolean dryRun) {
     return switch (resource) {
       case brokers ->
-          withValidMembers(
-              List.of(id),
-              members ->
-                  ClusterApiUtils.mapOperationResponse(
-                      requestSender
-                          .removeMembers(new RemoveMembersRequest(Set.copyOf(members), dryRun))
-                          .join()));
+          ClusterApiUtils.mapOperationResponse(
+              requestSender
+                  .removeMembers(new RemoveMembersRequest(Set.of(MemberId.from(id)), dryRun))
+                  .join());
       case partitions -> ResponseEntity.status(501).body("Removing partitions is not supported");
       case changes -> {
         if (dryRun) {
@@ -292,17 +290,10 @@ public class ClusterEndpoint {
                 .map(MemberId::from)
                 .collect(Collectors.toSet())
             : Set.of();
-    final var allIds =
-        Stream.concat(brokersToAdd.stream(), brokersToRemove.stream()).collect(Collectors.toSet());
-    return withValidMemberIds(
-        allIds,
-        members -> {
-          final var patchRequest =
-              new ClusterPatchRequest(
-                  brokersToAdd, brokersToRemove, newPartitionCount, newReplicationFactor, dryRun);
-          return ClusterApiUtils.mapOperationResponse(
-              requestSender.patchCluster(patchRequest).join());
-        });
+    final var patchRequest =
+        new ClusterPatchRequest(
+            brokersToAdd, brokersToRemove, newPartitionCount, newReplicationFactor, dryRun);
+    return ClusterApiUtils.mapOperationResponse(requestSender.patchCluster(patchRequest).join());
   }
 
   private ResponseEntity<?> forceRemoveBrokers(
@@ -528,26 +519,6 @@ public class ClusterEndpoint {
     return items.stream().map(BrokerId::of).map(BrokerId::toString).toList();
   }
 
-  /**
-   * Checks whether the current cluster topology is zone-aware by inspecting the members. A cluster
-   * is zone-aware if any of its members have a zone set.
-   */
-  boolean isClusterZoneAware() {
-    try {
-      final var result = requestSender.getTopology().join();
-      if (result.isRight()) {
-        return isZoneAware(result.get());
-      }
-    } catch (final Exception ignored) {
-      // If we can't determine zone-awareness, assume non-zone-aware for backward compatibility
-    }
-    return false;
-  }
-
-  static boolean isZoneAware(final ClusterConfiguration config) {
-    return config.members().keySet().stream().anyMatch(m -> m.zone() != null);
-  }
-
   ResponseEntity<?> withValidMember(
       final String id, final Function<MemberId, ResponseEntity<?>> action) {
     return withValidMembers(List.of(id), list -> action.apply(list.stream().findFirst().get()));
@@ -579,40 +550,7 @@ public class ClusterEndpoint {
     if (!errors.isEmpty()) {
       return invalidRequest(String.join("; ", errors));
     }
-    return withValidMemberIds(parsed, action);
-  }
-
-  /**
-   * Parses and validates the given member ID strings against the cluster's zone-awareness, then
-   * passes the parsed {@link MemberId}s to the given action. Returns a 400 error response
-   * accumulating all validation errors if any ID is invalid.
-   */
-  ResponseEntity<?> withValidMemberIds(
-      final Collection<MemberId> ids,
-      final Function<Collection<MemberId>, ResponseEntity<?>> action) {
-    final boolean clusterIsZoneAware = isClusterZoneAware();
-    final List<String> errors = new ArrayList<>();
-
-    for (final var memberId : ids) {
-      if (clusterIsZoneAware && memberId.zone() == null) {
-        errors.add(
-            "'"
-                + memberId
-                + "' is a bare node ID, but this cluster is zone-aware — "
-                + "use '$zone_$nodeId' (e.g. 'zone-a_0')");
-      } else if (!clusterIsZoneAware && memberId.zone() != null) {
-        errors.add(
-            "'"
-                + memberId
-                + "' is a composite member ID, but this cluster is not zone-aware — "
-                + "use a bare integer node ID (e.g. '0')");
-      }
-    }
-
-    if (!errors.isEmpty()) {
-      return invalidRequest(String.join("; ", errors));
-    }
-    return action.apply(ids);
+    return action.apply(parsed);
   }
 
   public record PartitionAddRequest(int priority) {}

@@ -117,7 +117,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       // when - then
       assertThatCode(() -> actuator.scaleBrokers(List.of(0, 1, 2)))
           .isInstanceOf(FeignException.BadRequest.class)
-          .hasMessageContaining("bare node ID");
+          .hasMessageContaining("Members without a zone cannot be added to a zone-aware cluster");
     }
   }
 
@@ -131,7 +131,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       // when - then -- bare integer broker ID is rejected on zone-aware clusters
       assertThatCode(() -> actuator.addBroker(2))
           .isInstanceOf(FeignException.BadRequest.class)
-          .hasMessageContaining("bare node ID");
+          .hasMessageContaining("Members without a zone cannot be added to a zone-aware cluster");
     }
   }
 
@@ -145,7 +145,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       // when - then -- partition join is rejected on zone-aware clusters
       assertThatCode(() -> actuator.joinPartition(0, 1, 1))
           .isInstanceOf(FeignException.BadRequest.class)
-          .hasMessageContaining("zone-aware");
+          .hasMessageContaining("is not active");
     }
   }
 
@@ -159,7 +159,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       // when - then -- partition leave is rejected on zone-aware clusters
       assertThatCode(() -> actuator.leavePartition(0, 1))
           .isInstanceOf(FeignException.BadRequest.class)
-          .hasMessageContaining("zone-aware");
+          .hasMessageContaining("local member does not exist");
     }
   }
 
@@ -278,7 +278,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
                       .add(List.of(BrokerId.of(0), BrokerId.of(1))));
       assertThatCode(() -> actuator.patchCluster(request, false, false))
           .isInstanceOf(FeignException.BadRequest.class)
-          .hasMessageContaining("bare node ID");
+          .hasMessageContaining("Members without a zone cannot be added to a zone-aware cluster");
     }
   }
 }

@@ -123,6 +123,13 @@ public class MemberId extends NodeId {
   }
 
   /**
+   * @return if this memberId is bare, i.e. without a zone
+   */
+  public boolean isBare() {
+    return zone == null;
+  }
+
+  /**
    * @return {@code true} if this member id belongs to the given zone.
    */
   public boolean isInZone(final @Nullable String zone) {
