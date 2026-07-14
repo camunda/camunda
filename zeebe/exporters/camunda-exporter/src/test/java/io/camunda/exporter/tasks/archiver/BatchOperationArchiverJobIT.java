@@ -10,10 +10,18 @@ package io.camunda.exporter.tasks.archiver;
 import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
+<<<<<<< HEAD
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
+=======
+import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
+import io.camunda.webapps.schema.entities.auditlog.AuditLogEntityType;
+import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
+import io.camunda.webapps.schema.entities.operation.BatchOperationEntity.BatchOperationState;
+import java.time.OffsetDateTime;
+import org.junit.jupiter.api.TestTemplate;
+>>>>>>> 0ea77deb (fix: isolate index prefix and refresh scope per test across exporter ITs)
 
-@TestInstance(Lifecycle.PER_CLASS)
 public class BatchOperationArchiverJobIT extends ArchiverJobIT<BatchOperationArchiverJob> {
 
   @Override
