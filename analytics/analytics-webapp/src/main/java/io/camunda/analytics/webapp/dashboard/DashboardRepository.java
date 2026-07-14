@@ -53,6 +53,9 @@ public class DashboardRepository {
 
   private static final long ONE_HOUR_MS = 3_600_000L;
 
+  /** The cube every lifecycle-derived widget (and the cohort joins' "started" side) reads. */
+  private static final String LIFECYCLE_CUBE = "process-instances";
+
   /**
    * The process-instances cube's primitive lifecycle meters (per-transition counts composed via
    * per-meter filters, replacing the deprecated {@code lifecycle_summary} bundle) plus the
@@ -111,7 +114,7 @@ public class DashboardRepository {
     final TreeSet<String> ids = new TreeSet<>();
     for (final ReportRow row :
         total(
-            "process-instances",
+            LIFECYCLE_CUBE,
             List.of("bpmnProcessId"),
             null,
             null,
@@ -236,6 +239,18 @@ public class DashboardRepository {
     if (dataset == null) {
       return List.of();
     }
+    return ratios(dataset, meter, bpmnProcessId, fromWindow, toWindow, finestTier(dataset), memo);
+  }
+
+  /** The ratio series of one dataset's meter, bucketed at an explicit granularity. */
+  private List<RatioPoint> ratios(
+      final CompiledDataset dataset,
+      final String meter,
+      final String bpmnProcessId,
+      final Long fromWindow,
+      final Long toWindow,
+      final long granularityMs,
+      final Map<QueryKey, List<ReportRow>> memo) {
     final List<RatioPoint> out = new ArrayList<>();
     for (final ReportRow row :
         series(
@@ -245,6 +260,7 @@ public class DashboardRepository {
             toWindow,
             List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
             List.of(meter),
+            granularityMs,
             memo)) {
       if (row.measures().get(meter) instanceof final RatioResult r) {
         out.add(
@@ -255,16 +271,32 @@ public class DashboardRepository {
     return out;
   }
 
-  /** The declared dataset that owns a meter of the given name, or {@code null} if none does. */
+  /**
+   * The single declared dataset that owns a meter of the given name, or {@code null} if none does.
+   * Ambiguity is a loud failure, never a silent first-match: meter names are only unique per
+   * dataset (e.g. {@code count} exists in several standard cubes), so picking "the first" would
+   * make the answer depend on catalog iteration order and silently read the wrong cube.
+   */
   private CompiledDataset datasetWithMeter(final String meter) {
+    CompiledDataset owner = null;
     for (final CompiledDataset dataset : catalog.byName().values()) {
       for (final CompiledMeter compiled : dataset.meters()) {
         if (compiled.meterName().equals(meter)) {
-          return dataset;
+          if (owner != null) {
+            throw new IllegalStateException(
+                "meter '"
+                    + meter
+                    + "' is owned by more than one dataset ('"
+                    + owner.name()
+                    + "' and '"
+                    + dataset.name()
+                    + "') — qualify the read by dataset name instead of by meter name");
+          }
+          owner = dataset;
         }
       }
     }
-    return null;
+    return owner;
   }
 
   /** The per-window distinct-process estimate for a tenant. */
@@ -402,7 +434,7 @@ public class DashboardRepository {
       final Map<QueryKey, List<ReportRow>> memo) {
     final List<ReportRow> rows =
         total(
-            "process-instances",
+            LIFECYCLE_CUBE,
             List.of(),
             fromWindow,
             toWindow,
@@ -516,13 +548,20 @@ public class DashboardRepository {
     // (every instance that started in the window); the met/breached split comes from the
     // completion-based SLA ratio. Joining the two keeps "started" the true cohort size rather than
     // just its settled part — a completion-based total badly undercounts starts while a large
-    // backlog of instances is still running.
+    // backlog of instances is still running. Both sides are bucketed at one explicit common
+    // granularity (see joinGranularity) so the windowStart join keys align by construction.
+    final CompiledDataset ratioDataset = datasetWithMeter("sla_compliance");
+    final long joinMs = cohortJoinGranularity(ratioDataset);
     final Map<Long, RatioPoint> settled = new LinkedHashMap<>();
-    for (final RatioPoint p : ratios(bpmnProcessId, "sla_compliance", fromWindow, toWindow, memo)) {
-      settled.put(p.windowStart(), p);
+    if (ratioDataset != null) {
+      for (final RatioPoint p :
+          ratios(
+              ratioDataset, "sla_compliance", bpmnProcessId, fromWindow, toWindow, joinMs, memo)) {
+        settled.put(p.windowStart(), p);
+      }
     }
     final List<SlaCohortPoint> out = new ArrayList<>();
-    lifecycleByWindow(bpmnProcessId, fromWindow, toWindow, memo)
+    lifecycleByWindow(bpmnProcessId, fromWindow, toWindow, joinMs, memo)
         .forEach(
             (windowStart, lc) -> {
               final long started = lc.counts().activated();
@@ -553,12 +592,17 @@ public class DashboardRepository {
       final Long fromWindow,
       final Long toWindow,
       final Map<QueryKey, List<ReportRow>> memo) {
+    final CompiledDataset ratioDataset = datasetWithMeter("no_incident");
+    final long joinMs = cohortJoinGranularity(ratioDataset);
     final Map<Long, RatioPoint> settled = new LinkedHashMap<>();
-    for (final RatioPoint p : ratios(bpmnProcessId, "no_incident", fromWindow, toWindow, memo)) {
-      settled.put(p.windowStart(), p);
+    if (ratioDataset != null) {
+      for (final RatioPoint p :
+          ratios(ratioDataset, "no_incident", bpmnProcessId, fromWindow, toWindow, joinMs, memo)) {
+        settled.put(p.windowStart(), p);
+      }
     }
     final List<NoIncidentCohortPoint> out = new ArrayList<>();
-    lifecycleByWindow(bpmnProcessId, fromWindow, toWindow, memo)
+    lifecycleByWindow(bpmnProcessId, fromWindow, toWindow, joinMs, memo)
         .forEach(
             (windowStart, lc) -> {
               final long started = lc.counts().activated();
@@ -584,16 +628,18 @@ public class DashboardRepository {
       final String bpmnProcessId,
       final Long fromWindow,
       final Long toWindow,
+      final long granularityMs,
       final Map<QueryKey, List<ReportRow>> memo) {
     final Map<Long, LifecyclePoint> byWindow = new LinkedHashMap<>();
     for (final ReportRow row :
         series(
-            "process-instances",
+            LIFECYCLE_CUBE,
             List.of(),
             fromWindow,
             toWindow,
             List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
             LIFECYCLE_SERIES_METERS,
+            granularityMs,
             memo)) {
       final long[] bands =
           row.measures().get("duration_bands") instanceof final long[] histogram
@@ -623,7 +669,8 @@ public class DashboardRepository {
       final Long toWindow,
       final Map<QueryKey, List<ReportRow>> memo) {
     final List<DurationBucketPoint> out = new ArrayList<>();
-    lifecycleByWindow(bpmnProcessId, fromWindow, toWindow, memo)
+    lifecycleByWindow(
+            bpmnProcessId, fromWindow, toWindow, finestTier(catalog.require(LIFECYCLE_CUBE)), memo)
         .forEach(
             (windowStart, lc) ->
                 out.add(
@@ -672,6 +719,31 @@ public class DashboardRepository {
     return dataset.finestTier().windowMs();
   }
 
+  /**
+   * The bucket granularity for the cohort join of the lifecycle cube and a ratio cube on raw {@code
+   * windowStart}: the least common multiple of both datasets' finest tiers. Bucketing each side at
+   * its own tier aligns only while the two tiers happen to be equal — if either declaration
+   * changes, {@code settled.get(windowStart)} misses every row and the cohorts silently report
+   * {@code met = 0}. The LCM is a valid granularity for both cubes (a multiple of each finest tier
+   * — the planner invariant) and makes the join keys identical by construction. With no ratio
+   * dataset in the catalog the lifecycle side simply buckets at its own finest tier.
+   */
+  private long cohortJoinGranularity(final CompiledDataset ratioDataset) {
+    final long lifecycleMs = finestTier(catalog.require(LIFECYCLE_CUBE));
+    if (ratioDataset == null) {
+      return lifecycleMs;
+    }
+    final long ratioMs = finestTier(ratioDataset);
+    long a = lifecycleMs;
+    long b = ratioMs;
+    while (b != 0) {
+      final long rest = a % b;
+      a = b;
+      b = rest;
+    }
+    return lifecycleMs / a * ratioMs;
+  }
+
   /** A fresh single-call memo, so a per-widget endpoint reuses the same query paths. */
   private static Map<QueryKey, List<ReportRow>> newMemo() {
     return new HashMap<>();
@@ -679,8 +751,9 @@ public class DashboardRepository {
 
   /**
    * The identity of one serving query within a render. Keyed on the <em>raw</em> widget arguments
-   * (a {@code null} bound stays {@code null}), so two widgets asking the same question share one
-   * result even though the executed query resolves "now" per call.
+   * (a {@code null} bound stays {@code null}) plus the bucket granularity (0 for a total read,
+   * whose effective granularity is a function of the other components), so two widgets asking the
+   * same question share one result even though the executed query resolves "now" per call.
    */
   private record QueryKey(
       boolean series,
@@ -689,7 +762,8 @@ public class DashboardRepository {
       Long fromWindow,
       Long toWindow,
       List<FilterPredicate> filters,
-      List<String> meters) {}
+      List<String> meters,
+      long granularityMs) {}
 
   /** Per-window series: bucket at the cube's finest tier (one output row per stored window). */
   private List<ReportRow> series(
@@ -700,22 +774,41 @@ public class DashboardRepository {
       final List<FilterPredicate> filters,
       final List<String> meters,
       final Map<QueryKey, List<ReportRow>> memo) {
+    return series(
+        name,
+        groupBy,
+        fromWindow,
+        toWindow,
+        filters,
+        meters,
+        finestTier(catalog.require(name)),
+        memo);
+  }
+
+  /** Per-bucket series at an explicit granularity (a multiple of the cube's finest tier). */
+  private List<ReportRow> series(
+      final String name,
+      final List<String> groupBy,
+      final Long fromWindow,
+      final Long toWindow,
+      final List<FilterPredicate> filters,
+      final List<String> meters,
+      final long granularityMs,
+      final Map<QueryKey, List<ReportRow>> memo) {
     return memo.computeIfAbsent(
-        new QueryKey(true, name, groupBy, fromWindow, toWindow, filters, meters),
-        key -> {
-          final CompiledDataset dataset = catalog.require(name);
-          return executor
-              .execute(
-                  new ReportQuery(
-                      groupBy,
-                      fromMs(fromWindow),
-                      toMs(toWindow),
-                      finestTier(dataset),
-                      filters,
-                      meters),
-                  dataset)
-              .rows();
-        });
+        new QueryKey(true, name, groupBy, fromWindow, toWindow, filters, meters, granularityMs),
+        key ->
+            executor
+                .execute(
+                    new ReportQuery(
+                        groupBy,
+                        fromMs(fromWindow),
+                        toMs(toWindow),
+                        granularityMs,
+                        filters,
+                        meters),
+                    catalog.require(name))
+                .rows());
   }
 
   /**
@@ -732,7 +825,7 @@ public class DashboardRepository {
       final List<String> meters,
       final Map<QueryKey, List<ReportRow>> memo) {
     return memo.computeIfAbsent(
-        new QueryKey(false, name, groupBy, fromWindow, toWindow, filters, meters),
+        new QueryKey(false, name, groupBy, fromWindow, toWindow, filters, meters, 0L),
         key -> {
           final CompiledDataset dataset = catalog.require(name);
           final long toMs = toMs(toWindow);

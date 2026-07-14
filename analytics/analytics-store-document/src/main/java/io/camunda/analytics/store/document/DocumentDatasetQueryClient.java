@@ -72,18 +72,10 @@ public final class DocumentDatasetQueryClient implements DatasetQueryClient {
     final SearchQuery query = SearchQueryBuilders.and(cellFilters(fetch));
     final String index = DocumentCubeNames.datasetIndex(dataset.cubeId());
 
-    final SearchQueryResponse<Map> response =
-        searchClient.search(
-            RequestBuilders.searchRequest(r -> r.index(index).query(query).size(MAX_HITS)),
-            Map.class);
-
-    final List<Cell> cells = new ArrayList<>(response.hits().size());
-    for (final var hit : response.hits()) {
-      final Map<String, Object> source = source(hit.source());
-      if (source != null) {
-        cells.add(toCell(dataset, fetch.meters(), source));
-      }
-    }
+    // search_after paging like streamCells: a single page caps at the backend's 10k window, which
+    // silently truncated wide reads (many keys × many windows) — a correctness trap, not a limit.
+    final List<Cell> cells = new ArrayList<>();
+    forEachPage(index, query, source -> cells.add(toCell(dataset, fetch.meters(), source)));
     return cells;
   }
 

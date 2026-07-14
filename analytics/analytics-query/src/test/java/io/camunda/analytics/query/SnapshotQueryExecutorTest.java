@@ -100,6 +100,40 @@ final class SnapshotQueryExecutorTest {
   }
 
   @Test
+  void shouldTrimTheRangeToTheLastFullBucket() {
+    // given a range that is not a granularity multiple (4.5 minutes at 1-minute buckets)
+    final RecordingClient client =
+        new RecordingClient(List.of(point("order", 0L, 2L)), List.of(point("order", MINUTE, 3L)));
+
+    // when the series is materialised over (0, 4.5m]
+    final List<SnapshotSeriesPoint> series =
+        new SnapshotQueryExecutor(client)
+            .execute(new SnapshotQuery(0L, 4 * MINUTE + MINUTE / 2, MINUTE), dataset);
+
+    // then only full buckets are emitted (all on the grid, none past 4m) and the range fetch was
+    // trimmed to the last grid boundary — rows past it could never have been emitted
+    assertThat(series)
+        .extracting(SnapshotSeriesPoint::time)
+        .containsExactly(MINUTE, 2 * MINUTE, 3 * MINUTE, 4 * MINUTE);
+    assertThat(client.rangeToMs).isEqualTo(4 * MINUTE);
+  }
+
+  @Test
+  void shouldReturnNothingForARangeShorterThanOneBucket() {
+    // given a non-empty range that contains no grid boundary
+    final RecordingClient client = new RecordingClient(List.of(point("order", 0L, 2L)), List.of());
+
+    // when
+    final List<SnapshotSeriesPoint> series =
+        new SnapshotQueryExecutor(client)
+            .execute(new SnapshotQuery(0L, MINUTE / 2, MINUTE), dataset);
+
+    // then there is no grid point to emit (and no fetch was issued at all)
+    assertThat(series).isEmpty();
+    assertThat(client.rangeToMs).isNull();
+  }
+
+  @Test
   void shouldRejectAQueryWithoutSnapshotsOrOffGrid() {
     final DatasetQueryClient client = new StubClient(List.of(), List.of());
     final SnapshotQueryExecutor executor = new SnapshotQueryExecutor(client);
@@ -127,9 +161,38 @@ final class SnapshotQueryExecutorTest {
     return new SnapshotPoint(List.of(key), time, Map.of("active", active));
   }
 
+  /** A stub that additionally records the upper bound of the range fetch (null = not fetched). */
+  private static final class RecordingClient extends ClientBase {
+    private Long rangeToMs;
+
+    private RecordingClient(final List<SnapshotPoint> baseline, final List<SnapshotPoint> range) {
+      super(baseline, range);
+    }
+
+    @Override
+    public List<SnapshotPoint> snapshotRange(
+        final CompiledDataset dataset, final long fromMs, final long toMs) {
+      rangeToMs = toMs;
+      return super.snapshotRange(dataset, fromMs, toMs);
+    }
+  }
+
   /** A stub client serving canned snapshot reads; every other read is out of scope here. */
-  private record StubClient(List<SnapshotPoint> baseline, List<SnapshotPoint> range)
-      implements DatasetQueryClient {
+  private static final class StubClient extends ClientBase {
+    private StubClient(final List<SnapshotPoint> baseline, final List<SnapshotPoint> range) {
+      super(baseline, range);
+    }
+  }
+
+  private static class ClientBase implements DatasetQueryClient {
+
+    private final List<SnapshotPoint> baseline;
+    private final List<SnapshotPoint> range;
+
+    private ClientBase(final List<SnapshotPoint> baseline, final List<SnapshotPoint> range) {
+      this.baseline = baseline;
+      this.range = range;
+    }
 
     @Override
     public List<SnapshotPoint> snapshotBaseline(final CompiledDataset dataset, final long atMs) {
