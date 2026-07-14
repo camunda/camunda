@@ -16,7 +16,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /** Copied from the old post-importer */
-public record AdditionalData(
+public record IncidentsState(
     Map<String, IncidentDocument> incidents,
     Map<String, List<String>> flowNodeInstanceIndices,
     Map<String, List<String>> flowNodeInstanceInListViewIndices,
@@ -25,7 +25,7 @@ public record AdditionalData(
     Map<String, String> processInstanceIndices,
     Map<String, Set<String>> piIdsWithIncidentIds,
     Map<String, Set<String>> fniIdsWithIncidentIds) {
-  public AdditionalData() {
+  public IncidentsState() {
     this(
         new ConcurrentHashMap<>(),
         new ConcurrentHashMap<>(),
