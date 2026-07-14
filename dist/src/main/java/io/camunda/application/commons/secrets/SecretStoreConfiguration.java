@@ -19,7 +19,7 @@ import org.jspecify.annotations.NullMarked;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/** Registers a {@link SecretStoreRegistry} bean populated from the per-physical-tenant config. */
+/** Registers one {@link SecretStoreRegistry} per physical tenant, keyed by physical tenant ID. */
 @Configuration(proxyBeanMethods = false)
 @NullMarked
 public class SecretStoreConfiguration {
@@ -27,8 +27,9 @@ public class SecretStoreConfiguration {
   private static final NoopSecretStore NOOP_STORE = new NoopSecretStore();
 
   @Bean
-  public SecretStoreRegistry secretStoreRegistry(final PhysicalTenantResolver resolver) {
-    final Map<String, Map<String, SecretStore<?>>> storesByTenant = new LinkedHashMap<>();
+  public Map<String, SecretStoreRegistry> secretStoreRegistries(
+      final PhysicalTenantResolver resolver) {
+    final Map<String, SecretStoreRegistry> registries = new LinkedHashMap<>();
     resolver
         .mapValues(Camunda::getSecrets)
         .forEach(
@@ -54,8 +55,8 @@ public class SecretStoreConfiguration {
               if (stores.isEmpty()) {
                 stores.put("default", NOOP_STORE);
               }
-              storesByTenant.put(tenantId, Map.copyOf(stores));
+              registries.put(tenantId, new SecretStoreRegistry(Map.copyOf(stores)));
             });
-    return new SecretStoreRegistry(Map.copyOf(storesByTenant));
+    return Map.copyOf(registries);
   }
 }

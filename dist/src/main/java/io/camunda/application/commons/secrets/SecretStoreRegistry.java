@@ -9,35 +9,22 @@ package io.camunda.application.commons.secrets;
 
 import io.camunda.secretstore.SecretStore;
 import java.util.Map;
-import java.util.Set;
 import org.jspecify.annotations.NullMarked;
 
-/** Provides the configured {@link SecretStore}s per physical tenant, keyed by store ID. */
+/**
+ * Provides the configured {@link SecretStore}s for the current physical tenant, keyed by store ID.
+ */
 @NullMarked
 public final class SecretStoreRegistry {
 
-  private final Map<String, Map<String, SecretStore<?>>> storesByTenant;
+  private final Map<String, SecretStore<?>> stores;
 
-  public SecretStoreRegistry(final Map<String, Map<String, SecretStore<?>>> storesByTenant) {
-    this.storesByTenant = storesByTenant;
+  public SecretStoreRegistry(final Map<String, SecretStore<?>> stores) {
+    this.stores = stores;
   }
 
-  /**
-   * Returns all secret stores configured for the given physical tenant, keyed by store ID.
-   *
-   * @throws IllegalArgumentException if the tenant ID is not known
-   */
-  public Map<String, SecretStore<?>> getStores(final String physicalTenantId) {
-    final Map<String, SecretStore<?>> stores = storesByTenant.get(physicalTenantId);
-    if (stores == null) {
-      throw new IllegalArgumentException(
-          "No secret store registry entry for unknown physical tenant '" + physicalTenantId + "'");
-    }
+  /** Returns all configured secret stores, keyed by store ID. */
+  public Map<String, SecretStore<?>> getStores() {
     return stores;
-  }
-
-  /** Returns the set of all known physical tenant IDs. */
-  public Set<String> tenants() {
-    return storesByTenant.keySet();
   }
 }

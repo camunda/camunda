@@ -8,7 +8,6 @@
 package io.camunda.application.commons.secrets;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 import io.camunda.secretstore.NoopSecretStore;
 import io.camunda.secretstore.SecretStore;
@@ -20,40 +19,42 @@ class SecretStoreRegistryTest {
   private static final NoopSecretStore NOOP = new NoopSecretStore();
 
   @Test
-  void shouldThrowForUnknownTenant() {
+  void shouldReturnEmptyStoresWhenNoneConfigured() {
     // given
-    final var registry = new SecretStoreRegistry(Map.of("known-tenant", Map.of()));
-
-    // when / then
-    assertThatIllegalArgumentException()
-        .isThrownBy(() -> registry.getStores("unknown-tenant"))
-        .withMessageContaining("unknown-tenant");
-  }
-
-  @Test
-  void shouldReturnKnownTenants() {
-    // given
-    final var registry =
-        new SecretStoreRegistry(Map.of("tenant-a", Map.of(), "tenant-b", Map.of()));
+    final var registry = new SecretStoreRegistry(Map.of());
 
     // when
-    final var tenants = registry.tenants();
+    final var stores = registry.getStores();
 
     // then
-    assertThat(tenants).containsExactlyInAnyOrder("tenant-a", "tenant-b");
+    assertThat(stores).isEmpty();
   }
 
   @Test
-  void shouldGetStoresForKnownTenant() {
+  void shouldReturnConfiguredStore() {
     // given
     final var store = (SecretStore<?>) NOOP;
-    final var registry = new SecretStoreRegistry(Map.of("tenant", Map.of("default", store)));
+    final var registry = new SecretStoreRegistry(Map.of("default", store));
 
     // when
-    final var stores = registry.getStores("tenant");
+    final var stores = registry.getStores();
 
     // then
     assertThat(stores).containsKey("default");
     assertThat(stores.get("default")).isSameAs(store);
+  }
+
+  @Test
+  void shouldReturnAllConfiguredStores() {
+    // given
+    final var storeA = (SecretStore<?>) new NoopSecretStore();
+    final var storeB = (SecretStore<?>) new NoopSecretStore();
+    final var registry = new SecretStoreRegistry(Map.of("store-a", storeA, "store-b", storeB));
+
+    // when
+    final var stores = registry.getStores();
+
+    // then
+    assertThat(stores).containsKeys("store-a", "store-b");
   }
 }
