@@ -82,27 +82,30 @@ jobs:
         with:
           directory: ${{ env.SUITE_DIR }}
 
-      - name: Import Vault secrets
-        id: secrets
-        uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c
+      - name: Generate GitHub App token (qa-processes)
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6c85c5de572dbc1790e5e7b4636c2ad9f5b614d8 # generate-github-app-token-from-vault-secrets: v1.1.0
         with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false
-          secrets: |
-            secret/data/products/qa/ci/common GH_TOKEN ;
+          github-app-id-vault-key: GITHUB_APP_ID
+          github-app-id-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          github-app-private-key-vault-key: GITHUB_APP_SECRET
+          github-app-private-key-vault-path: secret/data/products/qa/ci/github.com/apps/camunda/qa-processes
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          owner: camunda
+          repositories: camunda
 
-      - name: Configure git with bot PAT
+      - name: Configure git with qa-processes token
         env:
-          TOKEN: ${{ steps.secrets.outputs.GH_TOKEN }}
+          TOKEN: ${{ steps.github-token.outputs.token }}
         run: |
           # The insteadOf rule also authenticates the clone that
           # `assert-json-body extract` performs against camunda/camunda.
           git config --global url."https://x-access-token:${TOKEN}@github.com/".insteadOf "https://github.com/"
-          git config --global user.name  "QA Responses Bot"
-          git config --global user.email "qa-responses-bot@camunda.com"
+          git config --global user.name  "qa-processes[bot]"
+          git config --global user.email "qa-processes[bot]@users.noreply.github.com"
 
       - name: Snapshot committed responses (pre-regeneration)
         run: |
@@ -152,7 +155,7 @@ jobs:
         id: push
         if: steps.diff.outputs.changed == 'true'
         env:
-          GH_TOKEN: ${{ steps.secrets.outputs.GH_TOKEN }}
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
         run: |
           set -euo pipefail
           stamp="$(date -u +%Y%m%d-%H%M%S)"
@@ -169,7 +172,7 @@ jobs:
       - name: Close stale regeneration PRs
         if: steps.diff.outputs.changed == 'true'
         env:
-          GH_TOKEN: ${{ steps.secrets.outputs.GH_TOKEN }}
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
         run: |
           set -euo pipefail
           title="test: regenerate API response assertions from latest ${TARGET_REF} OpenAPI spec"
@@ -203,7 +206,7 @@ jobs:
         id: pr
         if: steps.diff.outputs.changed == 'true'
         env:
-          GH_TOKEN: ${{ steps.secrets.outputs.GH_TOKEN }}
+          GH_TOKEN: ${{ steps.github-token.outputs.token }}
           BRANCH:   ${{ steps.push.outputs.branch }}
         run: |
           set -euo pipefail
@@ -223,36 +226,13 @@ jobs:
             --base "$TARGET_REF" \
             --head "$BRANCH" \
             --title "test: regenerate API response assertions from latest ${TARGET_REF} OpenAPI spec" \
-            --body-file /tmp/pr-body.md)
+            --body-file /tmp/pr-body.md \
+            --reviewer "camunda/test-automation-team")
           echo "url=${url}" >> "$GITHUB_OUTPUT"
 
           number=$(gh pr view "$url" --repo "$GITHUB_REPOSITORY" --json number --jq '.number')
           echo "number=${number}" >> "$GITHUB_OUTPUT"
           echo "Opened PR #${number}: ${url}"
-
-      - name: Request review from @camunda/test-automation-team
-        if: steps.diff.outputs.changed == 'true'
-        env:
-          # Use the built-in repo-scoped token here: requesting a *team* reviewer
-          # via the REST API needs only pull-requests:write, not the read:org
-          # scope that the Vault bot PAT lacks.
-          GH_TOKEN:  ${{ secrets.GITHUB_TOKEN }}
-          BOT_TOKEN: ${{ steps.secrets.outputs.GH_TOKEN }}
-          PR_NUMBER: ${{ steps.pr.outputs.number }}
-        run: |
-          set -euo pipefail
-          if gh api \
-              --method POST \
-              -H "Accept: application/vnd.github+json" \
-              "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/requested_reviewers" \
-              -f "team_reviewers[]=test-automation-team"; then
-            echo "Requested review from camunda/test-automation-team."
-          else
-            echo "::warning::REST reviewer request failed — retrying via gh CLI with the bot PAT."
-            GH_TOKEN="$BOT_TOKEN" gh pr edit "$PR_NUMBER" \
-              --repo "$GITHUB_REPOSITORY" \
-              --add-reviewer "camunda/test-automation-team"
-          fi
 
       - name: Job summary
         if: always()
