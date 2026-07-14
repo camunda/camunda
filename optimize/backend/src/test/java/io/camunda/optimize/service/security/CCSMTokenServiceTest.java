@@ -163,6 +163,36 @@ public class CCSMTokenServiceTest {
     assertThat(CCSMTokenService.isMicrosoftEntraIssuer("https://idp.example.com")).isFalse();
   }
 
+  @Test
+  void shouldRecognizeUsGovSovereignCloudIssuer() {
+    assertThat(
+            CCSMTokenService.isMicrosoftEntraIssuer(
+                "https://login.microsoftonline.us/tenant-id/v2.0"))
+        .isTrue();
+  }
+
+  @Test
+  void shouldRecognizeGermanySovereignCloudIssuer() {
+    assertThat(
+            CCSMTokenService.isMicrosoftEntraIssuer(
+                "https://login.microsoftonline.de/tenant-id/v2.0"))
+        .isTrue();
+  }
+
+  @Test
+  void shouldRecognizeChinaSovereignCloudLoginIssuer() {
+    assertThat(
+            CCSMTokenService.isMicrosoftEntraIssuer(
+                "https://login.partner.microsoftonline.cn/tenant-id/v2.0"))
+        .isTrue();
+  }
+
+  @Test
+  void shouldRecognizeChinaSovereignCloudStsIssuer() {
+    assertThat(CCSMTokenService.isMicrosoftEntraIssuer("https://sts.chinacloudapi.cn/tenant-id/"))
+        .isTrue();
+  }
+
   // --- verifyToken Entra version guard ---
 
   @Test
