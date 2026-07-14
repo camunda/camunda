@@ -90,7 +90,7 @@
     <version.msgpack>0.9.12</version.msgpack>
     <version.netty>4.2.16.Final</version.netty>
     <version.objenesis>3.5</version.objenesis>
-    <version.opentelemetry>1.63.0</version.opentelemetry>
+    <version.opentelemetry>1.64.0</version.opentelemetry>
     <version.opensearch.client>2.17.0</version.opensearch.client>
     <version.opensearch-java>3.7.0</version.opensearch-java>
     <!-- renovate: datasource=docker depName=opensearchproject/opensearch -->
