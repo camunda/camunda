@@ -420,7 +420,7 @@ class PartitionTransitionImplTest {
   }
 
   @Test
-  void shouldFailUnrecoverablyIfPreparationStepThrowsSynchronously() {
+  void shouldFailPreparationAndSkipTransitionIfPreparationStepThrowsSynchronously() {
     // given
     final var secondTerm = 2L;
     final var secondRole = Role.FOLLOWER;
@@ -457,7 +457,7 @@ class PartitionTransitionImplTest {
   }
 
   @Test
-  void shouldFailUnrecoverablyIfTransitionStepThrowsSynchronously() {
+  void shouldFailTransitionAndSkipRemainingStepsIfTransitionStepThrowsSynchronously() {
     // given
     final var testException = new IllegalStateException("TEST_EXCEPTION");
     when(mockStep1.transitionTo(mockContext, DEFAULT_TERM, DEFAULT_ROLE)).thenThrow(testException);
