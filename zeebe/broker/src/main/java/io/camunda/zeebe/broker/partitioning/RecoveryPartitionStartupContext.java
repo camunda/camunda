@@ -19,6 +19,7 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.file.Path;
+import org.jspecify.annotations.Nullable;
 
 /** Carries per-partition state through the recovery startup and shutdown steps. */
 public final class RecoveryPartitionStartupContext {
@@ -32,7 +33,7 @@ public final class RecoveryPartitionStartupContext {
   private final BrokerCfg brokerCfg;
   private final BrokerInfo brokerInfo;
   private final AtomixServerTransport gatewayBrokerTransport;
-  private final BackupStore backupStore;
+  private final @Nullable BackupStore backupStore;
   private ReadOnlyBackupService backupService;
   private ReadOnlyBackupApiRequestHandler backupApiRequestHandler;
 
@@ -46,7 +47,7 @@ public final class RecoveryPartitionStartupContext {
       final BrokerCfg brokerCfg,
       final BrokerInfo brokerInfo,
       final AtomixServerTransport gatewayBrokerTransport,
-      final BackupStore backupStore) {
+      final @Nullable BackupStore backupStore) {
     this.partitionId = partitionId;
     this.partitionDirectory = partitionDirectory;
     this.schedulingService = schedulingService;
@@ -100,7 +101,7 @@ public final class RecoveryPartitionStartupContext {
     return gatewayBrokerTransport;
   }
 
-  public BackupStore getBackupStore() {
+  public @Nullable BackupStore getBackupStore() {
     return backupStore;
   }
 

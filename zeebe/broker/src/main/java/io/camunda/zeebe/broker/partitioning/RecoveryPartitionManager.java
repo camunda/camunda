@@ -150,13 +150,11 @@ public final class RecoveryPartitionManager
       return;
     }
 
-    final List<RecoveryPartition> starting = new ArrayList<>();
-    final var startFutures = new ArrayList<ActorFuture<RecoveryPartition>>();
+    final var startFutures = new ArrayList<ActorFuture<Void>>();
     for (final var partitionMetadata : localPartitions) {
       LOG.info("Recovering partition {}", partitionMetadata.id());
       final var partition = RecoveryPartition.recovering(startupContext(partitionMetadata));
-      starting.add(partition);
-      startFutures.add(partition.start());
+      startFutures.add(startPartition(partition));
     }
 
     final var startAll =
@@ -164,11 +162,21 @@ public final class RecoveryPartitionManager
     concurrencyControl.runOnCompletion(
         startAll,
         (ignored, startError) -> {
-          if (startError != null) {
-            result.completeExceptionally(startError);
+          if (recoveryPartitions.isEmpty()) {
+            concurrencyControl.runOnCompletion(
+                closeBackupStore(),
+                (ignoredClose, ignoredCloseError) ->
+                    result.completeExceptionally(
+                        new IllegalStateException("No partitions recovered", startError)));
             return;
           }
-          recoveryPartitions.addAll(starting);
+          if (startError != null) {
+            LOG.warn(
+                "Recovered {}/{} partitions for partition group {}",
+                recoveryPartitions.size(),
+                localPartitions.size(),
+                partitionGroup);
+          }
           final var deactivateFutures =
               localPartitions.stream()
                   .map(p -> topologyManager.setInactive(p.id().number()))
@@ -215,27 +223,16 @@ public final class RecoveryPartitionManager
           if (stopError != null) {
             LOG.error("Failed to stop recovery partitions", stopError);
           }
-          if (backupStore == null) {
-            handleCompletion(result, stopError);
-            return;
-          }
-          final var store = backupStore;
-          backupStore = null;
-          store
-              .closeAsync()
-              .whenCompleteAsync(
-                  (ignore, closeError) ->
-                      handleCompletion(result, stopError != null ? stopError : closeError),
-                  concurrencyControl);
+          concurrencyControl.runOnCompletion(
+              closeBackupStore(),
+              (ignoredClose, ignoredCloseError) -> {
+                if (stopError != null) {
+                  result.completeExceptionally(stopError);
+                } else {
+                  result.complete(null);
+                }
+              });
         });
-  }
-
-  private void handleCompletion(final ActorFuture<Void> result, final Throwable error) {
-    if (error != null) {
-      result.completeExceptionally(error);
-    } else {
-      result.complete(null);
-    }
   }
 
   private Path partitionDirectory(final PartitionId partitionId) {
@@ -263,6 +260,57 @@ public final class RecoveryPartitionManager
         .stream()
         .filter(p -> p.members().contains(localMemberId))
         .toList();
+  }
+
+  private ActorFuture<Void> closeBackupStore() {
+    final var closed = concurrencyControl.<Void>createFuture();
+    if (backupStore == null) {
+      closed.complete(null);
+      return closed;
+    }
+    final var store = backupStore;
+    backupStore = null;
+    store
+        .closeAsync()
+        .whenCompleteAsync(
+            (ignore, closeError) -> {
+              if (closeError != null) {
+                LOG.error("Failed to close backup store", closeError);
+              }
+              closed.complete(null);
+            },
+            concurrencyControl);
+    return closed;
+  }
+
+  private ActorFuture<Void> startPartition(final RecoveryPartition partition) {
+    return partition
+        .start()
+        .andThen(
+            (started, startError) -> {
+              if (startError == null) {
+                recoveryPartitions.add(started);
+                return CompletableActorFuture.completed();
+              }
+              LOG.error(
+                  "Failed to start recovery partition for {}, stopping it",
+                  partition.partitionId(),
+                  startError);
+              return partition
+                  .stop()
+                  .andThen(
+                      (ignored, stopError) -> {
+                        if (stopError != null) {
+                          LOG.error(
+                              "Failed to stop partially started recovery partition for {}",
+                              partition.partitionId(),
+                              stopError);
+                        }
+                        return CompletableActorFuture.<Void>completedExceptionally(startError);
+                      },
+                      concurrencyControl);
+            },
+            concurrencyControl);
   }
 
   @Override
