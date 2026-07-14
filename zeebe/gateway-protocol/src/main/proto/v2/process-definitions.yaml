@@ -241,9 +241,7 @@ paths:
         - bearerAuth: []
         - basicAuth: []
       summary: Search process definition variable names
-      description: |-
-        Search for distinct variable names defined on a process definition, optionally narrowed
-        by a name prefix.
+      description: Search for distinct variable names defined on a process definition, optionally narrowed by the name filter.
       parameters:
         - name: processDefinitionKey
           in: path
