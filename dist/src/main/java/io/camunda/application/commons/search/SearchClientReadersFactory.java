@@ -150,7 +150,7 @@ public final class SearchClientReadersFactory {
             executor, descriptors.get(ListViewTemplate.class)) {};
     final var processInstanceStatisticsReader =
         new ProcessInstanceStatisticsDocumentReader(
-            executor, descriptors.get(ListViewTemplate.class));
+            executor, descriptors.get(FlowNodeInstanceTemplate.class));
     final var deployedResourceReader =
         new DeployedResourceDocumentReader(executor, descriptors.get(DeployedResourceIndex.class));
     final var sequenceFlowReader =
