@@ -176,6 +176,23 @@
       ]
     },
     {
+      "description": "Do not let Renovate edit generated agentic-workflow lock files *.lock.yml and managed upstream. Update by upgrading the gh-aw toolchain and recompiling, never via Renovate.",
+      "matchFileNames": [
+        ".github/workflows/*.lock.yml"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Keep the hand-authored copilot-setup-steps.yml gh-aw CLI installer in lockstep with the compiler version used for the *.lock.yml files. Upgrade the gh-aw toolchain deliberately (bump here + recompile), not via Renovate.",
+      "matchFileNames": [
+        ".github/workflows/copilot-setup-steps.yml"
+      ],
+      "matchPackageNames": [
+        "github/gh-aw-actions"
+      ],
+      "enabled": false
+    },
+    {
       "description": "Identify updates related to builds, tooling, etc. that should be routed to Monorepo DevOps team.",
       "matchManagers": [
         "custom.regex"
