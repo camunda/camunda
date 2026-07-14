@@ -11,7 +11,6 @@ import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
-import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupMetadata;
 import io.camunda.zeebe.backup.management.BackupMetadataSyncer;
@@ -419,30 +418,6 @@ public class RestoreManager implements CloseableSilently {
       // Not much we can do here, just report in case it's a bug in the shutdown process.
       LOG.warn("Interrupted while waiting for executor to shutdown", e);
       Thread.currentThread().interrupt();
-    }
-  }
-
-  static final class ValidatePartitionCount implements BackupValidator {
-    private final int expectedPartitionCount;
-
-    ValidatePartitionCount(final int expectedPartitionCount) {
-      this.expectedPartitionCount = expectedPartitionCount;
-    }
-
-    @Override
-    public BackupStatus validateStatus(final BackupStatus status) throws BackupNotValidException {
-      final var descriptor =
-          status
-              .descriptor()
-              .orElseThrow(
-                  () -> new BackupNotValidException(status, "Backup does not have a descriptor"));
-      if (descriptor.numberOfPartitions() != expectedPartitionCount) {
-        throw new BackupNotValidException(
-            status,
-            "Expected backup to have %d partitions, but has %d"
-                .formatted(expectedPartitionCount, descriptor.numberOfPartitions()));
-      }
-      return status;
     }
   }
 
