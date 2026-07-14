@@ -13,6 +13,7 @@ import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.window.Windowed;
 import io.camunda.eventbridge.streaming.window.Windows;
 import io.camunda.zeebe.db.impl.DbBytes;
+import java.nio.ByteOrder;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -22,6 +23,7 @@ import java.util.function.LongSupplier;
 import java.util.function.Predicate;
 import org.agrona.collections.Long2LongHashMap;
 import org.agrona.collections.Long2LongHashMap.KeyIterator;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Merges immutable segment deltas into <b>one running accumulator per cell</b> and converges an
@@ -62,16 +64,31 @@ import org.agrona.collections.Long2LongHashMap.KeyIterator;
  * (one implicit source), which makes the clock the plain max of the hints — today's single-source
  * behavior, unchanged.
  *
- * <p><b>Recovery.</b> A restart loses the per-source structure, so the clock restarts unknown and
- * waits for sources to speak: recovered cells alone never close windows (adopting the max recovered
- * window end immediately would let a source that recovered ahead finalize a slower source's
- * still-in-flight windows before it re-registers). The late-delta <em>guard</em>, however, is armed
- * immediately: it is floored at the max recovered window end, so while the clock is still forming a
- * straggler for a window finalized and evicted before the restart cannot resurrect it (folding it
- * would overwrite the finalized serving row with a partial value). To keep recovered-but-never-
- * spoken state from stalling finalization forever (an upstream that is drained and gone), the max
- * recovered window end is adopted as the clock once no source has spoken for a full idle timeout
- * after the first clock evaluation — the same escape hatch as an idle source.
+ * <p><b>Durable clock.</b> The published clock is persisted inside every commit cut, in the group's
+ * meta row of the shared cell store ({@link GroupedCellStore#putMeta}; one big-endian long). The
+ * meta row cannot collide with anything: its key is the bare 4-byte group — strictly shorter than
+ * any cell key, which always carries at least {@code group ++ windowStart} — and a group id belongs
+ * to exactly one operator (ids are allocated monotonically and never reused), so no sibling sharing
+ * the store writes this row. The per-source max map is deliberately <em>not</em> persisted: the
+ * clamped min fully determines both the late-delta guard and the finalization baseline, any future
+ * clock advance needs fresh deltas which re-register their sources anyway, and source idleness is
+ * wall-clock bookkeeping that cannot survive a restart — a restored max would either gate the clock
+ * on a dead source (if treated as live) or be excluded from the min (if treated as idle), i.e. be
+ * harmful or inert.
+ *
+ * <p><b>Recovery.</b> Restoring the persisted clock makes recovery exact: it is both the late-delta
+ * guard's floor — a straggler for a window finalized and evicted before the restart is dropped even
+ * when <em>no</em> open cell survived to hint at the pre-restart clock — and the finalization
+ * baseline, so closing windows resumes from the pre-restart frontier instead of waiting for the
+ * clock to re-form (no recovered window is closable at the recovered clock itself: the cut that
+ * persisted the clock finalized those first, so recovery cannot finalize a slower source's
+ * still-in-flight windows). A store written before the clock row existed recovers as before: the
+ * guard is floored at the max recovered window end and the clock restarts unknown, waiting for
+ * sources to speak. To keep recovered state from stalling finalization forever (an upstream that is
+ * drained and gone), the max recovered window end is adopted as the clock once no source has been
+ * live for a full idle timeout — never spoken (counted from the first clock evaluation) or spoken
+ * and gone silent; a source that spoke once and vanished no longer gates the recovered backlog,
+ * exactly as an idle source never gates the live clock.
  *
  * @param <K> the grouping key type
  * @param <ACC> the accumulator type
@@ -138,9 +155,17 @@ public final class SegmentMergingAggregation<K, ACC> {
   private final Long2LongHashMap sourceMaxEventTime = new Long2LongHashMap(Long.MIN_VALUE);
   private final Long2LongHashMap sourceLastSeenMs = new Long2LongHashMap(Long.MIN_VALUE);
   private long clock = Long.MIN_VALUE;
-  // The max recovered window end — the pre-restart clock's lower bound, adopted only by the
-  // recovery escape hatch (no source spoke for a full idle timeout after the first evaluation).
+  // The max recovered window end — adopted by the drained-and-gone escape hatch once no source
+  // has been live for a full idle timeout (see advanceClock).
   private long recoveredEventTime = Long.MIN_VALUE;
+  // The late-delta guard's floor for a store written before the durable clock existed: without a
+  // clock row the guard is armed at the max recovered window end, today's approximation. A store
+  // with a clock row restores the exact clock instead and leaves this at MIN_VALUE — the guard
+  // then cannot reject an open recovered cell's own in-grace stragglers.
+  private long recoveredGuardFloor = Long.MIN_VALUE;
+  // The clock as persisted by the last durably completed cut (or recovered from the clock row),
+  // so a cut rewrites the meta row only when the clock actually moved.
+  private long durableClock = Long.MIN_VALUE;
   private long firstClockEvaluationMs = Long.MIN_VALUE;
   private LongSupplier nowMs = System::currentTimeMillis;
   private long idleTimeoutMs = DEFAULT_IDLE_TIMEOUT_MS;
@@ -157,6 +182,9 @@ public final class SegmentMergingAggregation<K, ACC> {
   private CheckpointDelta<K> frozenCells;
   private Map<Windowed<K>, byte[]> frozenSerialized;
   private Set<Windowed<K>> frozenDeletes;
+  // The clock the frozen cut persists (captured at freeze so a fold after the barrier cannot leak
+  // in), or MIN_VALUE when the durable clock row is already current.
+  private long frozenClock = Long.MIN_VALUE;
 
   public SegmentMergingAggregation(
       final int group,
@@ -242,11 +270,12 @@ public final class SegmentMergingAggregation<K, ACC> {
     // cell and the idempotent sink would overwrite its finalized value. Never silent — the
     // listener is how a lagging source's losses become visible. The dropped delta still registers
     // its source as live (and records its progress): a lagging source must keep gating the clock
-    // so its still-open later windows are not closed early too. The guard is floored at the max
-    // recovered window end: while the post-restart clock is still forming, a straggler for a
-    // window finalized and evicted BEFORE the restart must not fold into a fresh accumulator and
-    // overwrite the finalized row with a partial value — the guard the pre-restart clock provided.
-    final long guardFloor = Math.max(clock, recoveredEventTime);
+    // so its still-open later windows are not closed early too. After a restart the recovered
+    // clock arms the guard immediately: a straggler for a window finalized and evicted BEFORE the
+    // restart must not fold into a fresh accumulator and overwrite the finalized row with a
+    // partial value. For a legacy store without a clock row, recoveredGuardFloor approximates the
+    // lost clock with the max recovered window end (see the class javadoc).
+    final long guardFloor = Math.max(clock, recoveredGuardFloor);
     if (guardFloor != Long.MIN_VALUE && windowEnd(cell) + windows.graceMs() <= guardFloor) {
       lateDropListener.onLateDrop(cell, eventTimeHint, guardFloor);
       observeSource(sourceId, eventTimeHint);
@@ -283,20 +312,16 @@ public final class SegmentMergingAggregation<K, ACC> {
    * Re-evaluates the stream-time clock: the min over the non-idle sources' max event times, clamped
    * monotonically non-decreasing (a source joining behind the clock, or idleness changing the min's
    * membership, must never regress the published watermark). With every known source idle the clock
-   * holds. The recovery escape hatch lives here too: recovered-but-never-spoken state adopts the
-   * max recovered window end once no source has spoken for a full idle timeout, so a
-   * drained-and-gone upstream cannot stall finalization forever.
+   * holds. The recovery escape hatch lives here too: recovered state adopts the max recovered
+   * window end once no source has been live for a full idle timeout — never spoken (counted from
+   * the first clock evaluation) or spoken and gone silent — so a drained-and-gone upstream cannot
+   * stall finalization forever, and a source that spoke once and vanished cannot block the hatch
+   * (it is idle, and an idle source never gates the clock).
    */
   private void advanceClock() {
     final long now = nowMs.getAsLong();
     if (firstClockEvaluationMs == Long.MIN_VALUE) {
       firstClockEvaluationMs = now;
-    }
-    if (sourceMaxEventTime.isEmpty()) {
-      if (recoveredEventTime != Long.MIN_VALUE && now - firstClockEvaluationMs >= idleTimeoutMs) {
-        clock = Math.max(clock, recoveredEventTime);
-      }
-      return;
     }
     long min = Long.MAX_VALUE;
     boolean anyLive = false;
@@ -311,7 +336,17 @@ public final class SegmentMergingAggregation<K, ACC> {
     }
     if (anyLive) {
       clock = Math.max(clock, min);
+      return;
     }
+    // No live source: the clock holds — except for the recovery escape hatch. A source that has
+    // spoken is idle only after a full idle timeout of silence, so reaching here with a non-empty
+    // source map already proves the timeout elapsed; with no source ever spoken it is counted
+    // from the first clock evaluation.
+    if (recoveredEventTime == Long.MIN_VALUE
+        || (sourceMaxEventTime.isEmpty() && now - firstClockEvaluationMs < idleTimeoutMs)) {
+      return;
+    }
+    clock = Math.max(clock, recoveredEventTime);
   }
 
   /** Wall-clock tick: converge the serving view for the cells changed since the last flush. */
@@ -388,12 +423,18 @@ public final class SegmentMergingAggregation<K, ACC> {
     frozenCells = delta;
     frozenSerialized = serialized;
     frozenDeletes = deletes;
+    // The cut's clock, captured at the barrier: exactly the clock that drove this cut's
+    // finalizations, so a fold advancing the clock after the freeze cannot leak in. MIN_VALUE when
+    // the durable row is already current — the persist then skips the rewrite. Monotonic across
+    // failed cuts: the live clock never regresses, so a retry freezes an equal-or-higher value.
+    frozenClock = clock > durableClock ? clock : Long.MIN_VALUE;
   }
 
   /**
    * IO thread, inside the caller's commit transaction: persists the frozen delta to the durable
    * cells — the at-freeze bytes for every frozen changed cell, a delete for every frozen evicted
-   * cell a completed cut had written (an eviction with no durable row persists nothing). Touches
+   * cell a completed cut had written (an eviction with no durable row persists nothing), and the
+   * frozen stream-time clock into the group's meta row when it moved since the last cut. Touches
    * only the frozen slot and the cell store (which the owner thread itself only uses on this path
    * and at recovery), never the live working state — the owner keeps folding concurrently.
    *
@@ -408,6 +449,9 @@ public final class SegmentMergingAggregation<K, ACC> {
     }
     for (final Windowed<K> cell : frozenDeletes) {
       cells.delete(cell);
+    }
+    if (frozenClock != Long.MIN_VALUE) {
+      cells.putMeta(encodeClock(frozenClock));
     }
   }
 
@@ -431,6 +475,9 @@ public final class SegmentMergingAggregation<K, ACC> {
     if (success) {
       durablyWritten.addAll(frozenCells.changed());
       durablyWritten.removeAll(frozenDeletes);
+      if (frozenClock != Long.MIN_VALUE) {
+        durableClock = frozenClock;
+      }
     } else {
       open.mergeBackCheckpointDelta(frozenCells);
       for (final Entry<Windowed<K>, byte[]> frozen : frozenSerialized.entrySet()) {
@@ -450,6 +497,7 @@ public final class SegmentMergingAggregation<K, ACC> {
     frozenCells = null;
     frozenSerialized = null;
     frozenDeletes = null;
+    frozenClock = Long.MIN_VALUE;
   }
 
   /**
@@ -499,15 +547,37 @@ public final class SegmentMergingAggregation<K, ACC> {
   }
 
   private void recover() {
-    cells.scanCells(
+    cells.scan(
         (cell, total) -> {
           open.put(cell, total);
           open.index(cell, windowEnd(cell));
           durablyWritten.add(cell);
           // Not adopted as the clock: recovered cells only bound where the pre-restart clock could
-          // have been. The escape hatch in advanceClock() adopts it if no source ever speaks.
+          // have been. The escape hatch in advanceClock() adopts it when no source stays live.
           recoveredEventTime = Math.max(recoveredEventTime, windowEnd(cell));
+        },
+        meta -> {
+          // The persisted clock: the exact published clock at the last completed cut, restored as
+          // the guard floor and the finalization baseline (see the class javadoc).
+          clock = decodeClock(meta);
+          durableClock = clock;
         });
+    if (durableClock == Long.MIN_VALUE) {
+      // A store written before the durable clock existed: approximate the lost clock's guard with
+      // the max recovered window end — exactly the pre-clock-row recovery behavior.
+      recoveredGuardFloor = recoveredEventTime;
+    }
+  }
+
+  /** The group's meta row value: the published stream-time clock, one big-endian long. */
+  private static byte[] encodeClock(final long clock) {
+    final byte[] meta = new byte[Long.BYTES];
+    new UnsafeBuffer(meta).putLong(0, clock, ByteOrder.BIG_ENDIAN);
+    return meta;
+  }
+
+  private static long decodeClock(final byte[] meta) {
+    return new UnsafeBuffer(meta).getLong(0, ByteOrder.BIG_ENDIAN);
   }
 
   private long windowEnd(final Windowed<K> cell) {

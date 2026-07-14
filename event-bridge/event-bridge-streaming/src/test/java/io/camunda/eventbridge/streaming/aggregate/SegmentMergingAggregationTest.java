@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -313,6 +314,142 @@ final class SegmentMergingAggregationTest {
   }
 
   @Test
+  void shouldDropAStragglerForAPreRestartFinalizedWindowWhenNoOpenCellRecovers() {
+    // given a no-grace window finalized and evicted before a restart, leaving ZERO open cells —
+    // only the persisted clock knows where the pre-restart operator had finalized
+    final KeyValueStore<DbBytes, DbBytes> store =
+        new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes());
+    final InMemoryResultSink<Windowed<String>, Long> sinkBefore = new InMemoryResultSink<>();
+    final SegmentMergingAggregation<String, Long> before =
+        merger(store, sinkBefore, TumblingWindows.of(1_000L));
+    final Windowed<String> finalized = new Windowed<>("done", 0L);
+    before.merge(finalized, 5L);
+    before.checkpoint(); // clock 1s closes [0,1s); nothing stays open
+    assertThat(sinkBefore.get(finalized)).hasValue(5L);
+    assertThat(storedWindowStarts(store)).isEmpty();
+    assertThat(storedClock(store)).hasValue(1_000L);
+
+    // when a fresh operator recovers over the same store and the finalized window's straggler
+    // arrives before any source has spoken
+    final InMemoryResultSink<Windowed<String>, Long> sinkAfter = new InMemoryResultSink<>();
+    final SegmentMergingAggregation<String, Long> after =
+        merger(store, sinkAfter, TumblingWindows.of(1_000L));
+    final List<Windowed<String>> dropped = new ArrayList<>();
+    after.onLateDrop((cell, eventTimeHint, clock) -> dropped.add(cell));
+    after.merge(finalized, 100L);
+    after.flush();
+
+    // then the recovered clock drops it — with no recovered cell to floor the guard at, only the
+    // persisted clock keeps the straggler from overwriting the finalized value with a fresh
+    // accumulator holding the straggler alone
+    assertThat(dropped).containsExactly(finalized);
+    assertThat(sinkAfter.get(finalized)).isEmpty();
+  }
+
+  @Test
+  void shouldFinalizeTheRecoveredBacklogAfterOneBriefSpeakerGoesSilent() {
+    // given two sources' open cells and their clock checkpointed by a previous incarnation
+    final KeyValueStore<DbBytes, DbBytes> store =
+        new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes());
+    final Windows windows = TumblingWindows.ofSizeAndGrace(1_000L, 1_000L);
+    final Windowed<String> slowCell = new Windowed<>("slow", 0L);
+    final Windowed<String> fastCell = new Windowed<>("fast", 9_000L);
+    final SegmentMergingAggregation<String, Long> before =
+        merger(store, new InMemoryResultSink<>(), windows);
+    before.merge(slowCell, 3L, 1_000L, 1);
+    before.merge(fastCell, 4L, 10_000L, 2);
+    before.checkpoint();
+    assertThat(storedClock(store)).hasValue(1_000L);
+
+    // when a fresh operator recovers, ONE source speaks once behind the recovered clock (an
+    // in-grace delta for an open window — the exact recovered clock lets it fold, where the old
+    // window-end guard floor would have dropped it), and then every source stays silent past the
+    // idle timeout
+    final long[] now = {0L};
+    final InMemoryResultSink<Windowed<String>, Long> sink = new InMemoryResultSink<>();
+    final SegmentMergingAggregation<String, Long> after = merger(store, sink, windows);
+    after.sourceIdleness(() -> now[0], 60_000L);
+    after.merge(new Windowed<>("brief", 0L), 1L, 500L, 3);
+    now[0] = 60_000L;
+    after.checkpoint();
+
+    // then the brief speaker did not wedge the escape hatch: with no source live for a full idle
+    // timeout, the max recovered window end is adopted and the recovered backlog finalizes
+    assertThat(sink.get(slowCell)).hasValue(3L);
+    assertThat(sink.get(new Windowed<>("brief", 0L))).hasValue(1L);
+    assertThat(storedWindowStarts(store)).containsExactly(9_000L);
+  }
+
+  @Test
+  void shouldRecoverAStoreWithoutAClockRowWithTheLegacyGuardFloor() {
+    // given open cells persisted by a cut that predates the durable clock (the clock row deleted
+    // to reproduce such a store bit-for-bit)
+    final KeyValueStore<DbBytes, DbBytes> store =
+        new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes());
+    final Windows windows = TumblingWindows.ofSizeAndGrace(1_000L, 1_000L);
+    final InMemoryResultSink<Windowed<String>, Long> sinkBefore = new InMemoryResultSink<>();
+    final SegmentMergingAggregation<String, Long> before = merger(store, sinkBefore, windows);
+    final Windowed<String> finalized = new Windowed<>("done", 0L);
+    before.merge(finalized, 5L, 1_000L, 1);
+    before.merge(new Windowed<>("open", 10_000L), 7L, 11_000L, 1);
+    before.checkpoint(); // clock 11s closes [0,1s); [10s,11s) stays open
+    deleteClockRow(store, 1);
+
+    // when a fresh operator recovers and the finalized window's straggler arrives while the clock
+    // re-forms from its sources
+    final InMemoryResultSink<Windowed<String>, Long> sinkAfter = new InMemoryResultSink<>();
+    final SegmentMergingAggregation<String, Long> after = merger(store, sinkAfter, windows);
+    final List<Windowed<String>> dropped = new ArrayList<>();
+    after.onLateDrop((cell, eventTimeHint, clock) -> dropped.add(cell));
+    after.merge(finalized, 100L, 1_000L, 1);
+    after.checkpoint();
+
+    // then recovery behaves exactly as before the durable clock existed: the guard is floored at
+    // the max recovered window end (the straggler is dropped), and the still-forming clock — the
+    // straggler's own low hint — closes no recovered window
+    assertThat(dropped).containsExactly(finalized);
+    assertThat(sinkAfter.get(finalized)).isEmpty();
+    assertThat(storedWindowStarts(store)).containsExactly(10_000L);
+  }
+
+  @Test
+  void shouldNotRegressTheDurableClockThroughAFailedCut() {
+    // given a durable clock from a completed cut
+    final AtomicBoolean failTransaction = new AtomicBoolean();
+    final TransactionRunner tx =
+        operations -> {
+          if (failTransaction.get()) {
+            throw new IllegalStateException("transaction failed");
+          }
+          operations.run();
+        };
+    final KeyValueStore<DbBytes, DbBytes> store =
+        new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes());
+    final SegmentMergingAggregation<String, Long> merger =
+        merger(store, new InMemoryResultSink<>(), keepOpen(), tx);
+    final Windowed<String> cell = new Windowed<>("k", 0L);
+    merger.merge(cell, 1L, 1_000L, 1);
+    merger.checkpoint();
+    assertThat(storedClock(store)).hasValue(1_000L);
+
+    // when a cut carrying a higher frozen clock fails, and the clock advances again before the
+    // retry
+    merger.merge(cell, 1L, 2_000L, 1);
+    failTransaction.set(true);
+    assertThatThrownBy(merger::checkpoint).hasMessage("transaction failed");
+    assertThat(storedClock(store))
+        .as("the failed cut left the durable clock untouched")
+        .hasValue(1_000L);
+    merger.merge(cell, 1L, 3_000L, 1);
+    failTransaction.set(false);
+    merger.checkpoint();
+
+    // then the retry froze the live (monotonically clamped) clock — an equal-or-higher value than
+    // the failed cut carried — so the durable clock never regresses
+    assertThat(storedClock(store)).hasValue(3_000L);
+  }
+
+  @Test
   void shouldRecoverRunningTotalsFromTheStore() {
     // given a running total checkpointed to a shared store
     final KeyValueStore<DbBytes, DbBytes> store =
@@ -394,7 +531,12 @@ final class SegmentMergingAggregationTest {
     assertThat(codec.serializations).isEqualTo(1);
     assertThat(codec.fromBytes(served.get(cell))).isEqualTo(7L);
     final List<byte[]> stored = new ArrayList<>();
-    store.forEach((key, value) -> stored.add(value.getBytes().clone()));
+    store.forEach(
+        (key, value) -> {
+          if (!isMetaRow(key)) {
+            stored.add(value.getBytes().clone());
+          }
+        });
     assertThat(stored).singleElement().isEqualTo(served.get(cell));
   }
 
@@ -415,9 +557,7 @@ final class SegmentMergingAggregationTest {
 
     // then exactly the windows ending at or before the watermark were finalized and evicted from
     // the durable store; the still-open ones were checkpointed
-    final List<Long> stored = new ArrayList<>();
-    store.forEach((key, value) -> stored.add(decodeWindowStart(key.getBytes())));
-    assertThat(stored).containsExactlyInAnyOrder(8_000L, 9_000L);
+    assertThat(storedWindowStarts(store)).containsExactlyInAnyOrder(8_000L, 9_000L);
     for (int i = 0; i < 8; i++) {
       assertThat(sink.get(new Windowed<>("k" + i, i * 1_000L))).hasValue(i + 1L);
     }
@@ -452,9 +592,7 @@ final class SegmentMergingAggregationTest {
     // deleted; only the fresh open cell remains
     assertThat(sink.get(new Windowed<>("a", 0L))).hasValue(3L);
     assertThat(sink.get(new Windowed<>("b", 1_000L))).hasValue(4L);
-    final List<Long> stored = new ArrayList<>();
-    store.forEach((key, value) -> stored.add(decodeWindowStart(key.getBytes())));
-    assertThat(stored).containsExactly(9_000L);
+    assertThat(storedWindowStarts(store)).containsExactly(9_000L);
   }
 
   @Test
@@ -485,17 +623,13 @@ final class SegmentMergingAggregationTest {
     // then the drained cell finalized at its window end (long before the grace backstop) and the
     // undrained one stayed open
     assertThat(sink.get(drained)).hasValue(10L);
-    final List<Long> stored = new ArrayList<>();
-    store.forEach((key, value) -> stored.add(decodeWindowStart(key.getBytes())));
-    assertThat(stored).containsExactly(0L);
+    assertThat(storedWindowStarts(store)).containsExactly(0L);
 
     // and the still-indexed candidate finalizes once it drains on a later checkpoint
     merger.merge(undrained, 7L);
     merger.checkpoint();
     assertThat(sink.get(undrained)).hasValue(10L);
-    final List<Long> remaining = new ArrayList<>();
-    store.forEach((key, value) -> remaining.add(decodeWindowStart(key.getBytes())));
-    assertThat(remaining).isEmpty();
+    assertThat(storedWindowStarts(store)).isEmpty();
   }
 
   @Test
@@ -517,10 +651,7 @@ final class SegmentMergingAggregationTest {
     // the last commit — not the close; a cell persisted ahead of the offset cut would be
     // double-folded when the uncommitted delta replays after restart
     assertThat(sinkBefore.get(cell)).hasValue(7L);
-    final List<Long> stored = new ArrayList<>();
-    final LongRecordValue codec = new LongRecordValue();
-    store.forEach((key, value) -> stored.add(codec.fromBytes(value.getBytes())));
-    assertThat(stored).containsExactly(3L);
+    assertThat(storedTotals(store)).containsExactly(3L);
 
     // and a fresh operator recovers the commit and folds the replayed delta exactly once
     final InMemoryResultSink<Windowed<String>, Long> sinkAfter = new InMemoryResultSink<>();
@@ -810,19 +941,53 @@ final class SegmentMergingAggregationTest {
     return ByteBuffer.wrap(cellKey).getLong(Integer.BYTES);
   }
 
-  /** Every durable cell's total, decoded through the accumulator codec. */
+  /** Whether the row is the group's meta row (the bare 4-byte group key holding the clock). */
+  private static boolean isMetaRow(final DbBytes key) {
+    return key.getBytes().length == Integer.BYTES;
+  }
+
+  /** Every durable cell's total, decoded through the accumulator codec; the meta row is skipped. */
   private static List<Long> storedTotals(final KeyValueStore<DbBytes, DbBytes> store) {
     final List<Long> stored = new ArrayList<>();
     final LongRecordValue codec = new LongRecordValue();
-    store.forEach((key, value) -> stored.add(codec.fromBytes(value.getBytes())));
+    store.forEach(
+        (key, value) -> {
+          if (!isMetaRow(key)) {
+            stored.add(codec.fromBytes(value.getBytes()));
+          }
+        });
     return stored;
   }
 
   /** Every durable cell's {@code windowStart}, identifying which cells have rows. */
   private static List<Long> storedWindowStarts(final KeyValueStore<DbBytes, DbBytes> store) {
     final List<Long> stored = new ArrayList<>();
-    store.forEach((key, value) -> stored.add(decodeWindowStart(key.getBytes())));
+    store.forEach(
+        (key, value) -> {
+          if (!isMetaRow(key)) {
+            stored.add(decodeWindowStart(key.getBytes()));
+          }
+        });
     return stored;
+  }
+
+  /** The persisted stream-time clock (the group's meta row), or empty when no row exists. */
+  private static Optional<Long> storedClock(final KeyValueStore<DbBytes, DbBytes> store) {
+    final List<Long> clock = new ArrayList<>();
+    store.forEach(
+        (key, value) -> {
+          if (isMetaRow(key)) {
+            clock.add(ByteBuffer.wrap(value.getBytes()).getLong());
+          }
+        });
+    return clock.isEmpty() ? Optional.empty() : Optional.of(clock.get(0));
+  }
+
+  /** Deletes the group's clock row, turning the store into one a pre-clock cut wrote. */
+  private static void deleteClockRow(final KeyValueStore<DbBytes, DbBytes> store, final int group) {
+    final DbBytes metaKey = new DbBytes();
+    metaKey.wrapBytes(ByteBuffer.allocate(Integer.BYTES).putInt(group).array());
+    store.delete(metaKey);
   }
 
   /** A window wide enough with grace that it stays open across the test. */
