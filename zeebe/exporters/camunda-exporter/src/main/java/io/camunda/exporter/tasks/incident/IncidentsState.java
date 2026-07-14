@@ -15,10 +15,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /** Copied from the old post-importer */
 public record IncidentsState(
-    Map<String, IncidentDocument> incidents,
+    Collection<IncidentDocument> incidentDocuments,
+    Set<String> incidentIdsToSkip,
     Map<String, List<String>> flowNodeInstanceIndices,
     Map<String, List<String>> flowNodeInstanceInListViewIndices,
     Map<Long, String> processInstanceTreePaths,
@@ -28,7 +30,8 @@ public record IncidentsState(
     Map<String, Set<String>> fniIdsWithIncidentIds) {
   public IncidentsState() {
     this(
-        new ConcurrentHashMap<>(),
+        new ConcurrentLinkedQueue<>(),
+        ConcurrentHashMap.newKeySet(),
         new ConcurrentHashMap<>(),
         new ConcurrentHashMap<>(),
         new ConcurrentHashMap<>(),
@@ -39,15 +42,17 @@ public record IncidentsState(
   }
 
   public void addIncidentDocument(final IncidentDocument incidentDocument) {
-    incidents.put(incidentDocument.id(), incidentDocument);
+    incidentDocuments.add(incidentDocument);
   }
 
   public Collection<IncidentDocument> getIncidentDocuments() {
-    return List.copyOf(incidents.values());
+    return incidentDocuments.stream()
+        .filter(incidentDocument -> !incidentIdsToSkip.contains(incidentDocument.id()))
+        .toList();
   }
 
   public void skipIncident(final IncidentDocument incidentDocument) {
-    incidents.remove(incidentDocument.id());
+    incidentIdsToSkip.add(incidentDocument.id());
   }
 
   public boolean addPiIdsWithIncidentIds(final String piId, final String incidentId) {
