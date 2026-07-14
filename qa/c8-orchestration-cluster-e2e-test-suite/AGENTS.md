@@ -313,11 +313,25 @@ gh search code --repo camunda/camunda "<aria-label / data-testid / endpoint>" --
 ```
 
 Bound the window with when the test first went red, and inspect the **entire** pass→fail commit
-range for a functional product change:
+range for a functional product change. **The CI checkout is a shallow clone (`fetch-depth: 1`), so
+local `git log`/`git blame` over history returns nothing** — this is exactly why past triage gave up
+with "git history unavailable". Pin via the GitHub API (server-side history, no clone needed) rather
+than local git:
 
 ```bash
-git log <last-green-sha>..<first-red-sha> --oneline -- <module-path>   # e.g. operate/ identity/
+# Preferred — works on the shallow CI checkout:
+gh api "repos/camunda/camunda/compare/<last-green-sha>...<first-red-sha>" \
+  --jq '.commits[] | "\(.sha[0:10])  \(.commit.message | split("\n")[0])"'
+# Narrow to a module's files, or find the surface that changed:
+gh api "repos/camunda/camunda/compare/<last-green-sha>...<first-red-sha>" \
+  --jq '.files[].filename' | grep -E '^operate/|^identity/|^tasklist/'
+gh search code --repo camunda/camunda "<aria-label / data-testid / endpoint>" --limit 5 --json path
+# Fallback only if you must use local git: unshallow first (slow on this monorepo):
+#   git fetch --unshallow   # or: git fetch --deepen=200
 ```
+
+Get the two boundary SHAs from the nightly run history (the `headSha` of the last green run and the
+first red run for this test — see the per-test `✓`/`✘` markers in the run logs).
 
 **Pinning a specific commit (or a documented behavior change) is REQUIRED for a product-bug verdict
 — this is the confidence gate. A `suspect_commit` of `"not pinned"` is no longer acceptable.** A real
