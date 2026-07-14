@@ -259,7 +259,7 @@ public class SearchClientReaderConfiguration {
   public ProcessInstanceStatisticsReader processInstanceStatisticsReader(
       final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
     return new ProcessInstanceStatisticsDocumentReader(
-        executor, descriptors.get(ListViewTemplate.class));
+        executor, descriptors.get(FlowNodeInstanceTemplate.class));
   }
 
   @Bean
