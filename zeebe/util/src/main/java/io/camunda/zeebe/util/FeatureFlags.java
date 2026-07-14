@@ -47,8 +47,9 @@ public final class FeatureFlags {
   private static final boolean ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR = true;
   private static final boolean ENABLE_IDENTITY_SETUP = true;
   private static final boolean ENABLE_MESSAGE_BODY_ON_EXPIRED = false;
-  // Kill-switch for a bug fix; intentionally enabled by default.
-  private static final boolean EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE = true;
+  // Kill-switch for a bug fix; disabled by default on this stable branch since the behavioral
+  // change was not backported deliberately (see the change's PR description).
+  private static final boolean EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE = false;
 
   private boolean yieldingDueDateChecker;
   private boolean enableActorMetrics;
@@ -102,7 +103,7 @@ public final class FeatureFlags {
         true, /* ENABLE_DUE_DATE_CHECKER_ASYNC */
         true, /* ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR */
         false, /* ENABLE_MESSAGE_BODY_ON_EXPIRED */
-        true /* EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE */
+        false /* EVALUATE_BOUNDARY_EVENT_CORRELATION_KEY_IN_ACTIVITY_SCOPE */
         /*, FOO_DEFAULT*/ );
   }
 

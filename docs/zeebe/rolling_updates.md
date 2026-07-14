@@ -71,27 +71,28 @@ Both prevent diverging states because old brokers will stop processing or replay
 
 ### Feature Flags
 
-Some processing changes use a feature flag as a kill-switch to allow operators to revert the new
+Some processing changes use a feature flag as a kill-switch to allow operators to opt into new
 behavior during a rolling update or upgrade. The `evaluateBoundaryEventCorrelationKeyInActivityScope`
-flag is one such example: when enabled (the default), a message boundary event evaluates its
-correlation key in the attached activity scope instead of the flow scope, which aligns it with other
-boundary-event expressions and fixes incident resolution for activity-local variables.
+flag is one such example: when enabled, a message boundary event evaluates its correlation key in
+the attached activity scope instead of the flow scope, which aligns it with other boundary-event
+expressions and fixes incident resolution for activity-local variables. On this branch the flag is
+**disabled by default**, preserving the legacy flow-scope behavior.
 
-If users need the legacy behavior during an upgrade, they can disable the flag cluster-wide and
-restart the brokers. In `broker.yaml`:
+Users who want the new behavior can enable the flag cluster-wide and restart the brokers. In
+`broker.yaml`:
 
 ```yaml
 zeebe:
   broker:
     experimental:
       features:
-        evaluateBoundaryEventCorrelationKeyInActivityScope: false
+        evaluateBoundaryEventCorrelationKeyInActivityScope: true
 ```
 
 Or via environment variable:
 
 ```
-ZEEBE_BROKER_EXPERIMENTAL_FEATURES_EVALUATEBOUNDARYEVENTCORRELATIONKEYINACTIVITYSCOPE=false
+ZEEBE_BROKER_EXPERIMENTAL_FEATURES_EVALUATEBOUNDARYEVENTCORRELATIONKEYINACTIVITYSCOPE=true
 ```
 
 ## Data migrations

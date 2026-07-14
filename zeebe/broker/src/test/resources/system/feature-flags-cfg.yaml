@@ -8,4 +8,4 @@ zeebe:
         enableTimerDueDateCheckerAsync: true
         enableStraightThroughProcessingLoopDetector: false
         enableMessageBodyOnExpired: false
-        evaluateBoundaryEventCorrelationKeyInActivityScope: false
+        evaluateBoundaryEventCorrelationKeyInActivityScope: true

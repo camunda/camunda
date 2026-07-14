@@ -187,13 +187,13 @@ final class FeatureFlagsCfgTest {
   }
 
   @Test
-  void shouldEvaluateBoundaryEventCorrelationKeyInActivityScopeByDefault() {
+  void shouldDisableEvaluateBoundaryEventCorrelationKeyInActivityScopeByDefault() {
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("empty", environment);
     final var featureFlagsCfg = cfg.getExperimental().getFeatures();
 
     // then
-    assertThat(featureFlagsCfg.isEvaluateBoundaryEventCorrelationKeyInActivityScope()).isTrue();
+    assertThat(featureFlagsCfg.isEvaluateBoundaryEventCorrelationKeyInActivityScope()).isFalse();
   }
 
   @Test
@@ -203,7 +203,7 @@ final class FeatureFlagsCfgTest {
     final var featureFlagsCfg = cfg.getExperimental().getFeatures();
 
     // then
-    assertThat(featureFlagsCfg.isEvaluateBoundaryEventCorrelationKeyInActivityScope()).isFalse();
+    assertThat(featureFlagsCfg.isEvaluateBoundaryEventCorrelationKeyInActivityScope()).isTrue();
   }
 
   @Test
@@ -211,13 +211,13 @@ final class FeatureFlagsCfgTest {
     // given
     environment.put(
         "zeebe.broker.experimental.features.evaluateBoundaryEventCorrelationKeyInActivityScope",
-        "false");
+        "true");
 
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("empty", environment);
     final var featureFlagsCfg = cfg.getExperimental().getFeatures();
 
     // then
-    assertThat(featureFlagsCfg.isEvaluateBoundaryEventCorrelationKeyInActivityScope()).isFalse();
+    assertThat(featureFlagsCfg.isEvaluateBoundaryEventCorrelationKeyInActivityScope()).isTrue();
   }
 }

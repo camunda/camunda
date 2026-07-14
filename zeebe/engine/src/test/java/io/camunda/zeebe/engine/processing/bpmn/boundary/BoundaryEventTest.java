@@ -45,7 +45,11 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public final class BoundaryEventTest {
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withFeatureFlags(ff -> ff.setEvaluateBoundaryEventCorrelationKeyInActivityScope(true));
+
   private static final String PROCESS_ID = "process";
   private static final BpmnModelInstance MULTIPLE_SEQUENCE_FLOWS =
       Bpmn.createExecutableProcess(PROCESS_ID)
