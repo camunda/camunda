@@ -19,7 +19,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMul
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
-import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
 import io.camunda.zeebe.engine.state.immutable.DistributionState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
@@ -261,7 +260,7 @@ public final class ProcessInstanceMigrationPreconditions {
    */
   public static void requireTargetProcessDefinitionNotDraining(
       final DeployedProcess targetProcessDefinition, final long targetProcessDefinitionKey) {
-    if (targetProcessDefinition.getState() == PersistedProcessState.DRAINING) {
+    if (targetProcessDefinition.isDraining()) {
       throw new ProcessInstanceMigrationPreconditionFailedException(
           String.format(
               ERROR_MESSAGE_TARGET_PROCESS_DEFINITION_DRAINING, targetProcessDefinitionKey),

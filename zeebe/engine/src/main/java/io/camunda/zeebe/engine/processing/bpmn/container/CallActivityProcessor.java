@@ -322,7 +322,7 @@ public final class CallActivityProcessor
   }
 
   private Either<Failure, DeployedProcess> rejectIfDraining(final DeployedProcess process) {
-    if (process.getState() == PersistedProcessState.DRAINING) {
+    if (process.isDraining()) {
       return Either.left(
           new Failure(
               String.format(
