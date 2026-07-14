@@ -264,16 +264,30 @@ public record CurrentClusterConfiguration(
     return switch (plan.currentPhase()) {
       case final GlobalPhase globalPhase ->
           updateGlobalConfiguration(
-              global ->
-                  global.startConfigurationChange(
-                      List.<ClusterConfigurationChangeOperation>copyOf(globalPhase.operations())));
+              global -> {
+                if (global.hasPendingChanges()) {
+                  throw new IllegalStateException(
+                      "Cannot activate global phase: global configuration already has pending changes");
+                }
+                return global.startConfigurationChange(
+                    List.<ClusterConfigurationChangeOperation>copyOf(globalPhase.operations()));
+              });
       case final PartitionGroupParallelPhase parallelPhase -> {
         var result = this;
         for (final var entry : parallelPhase.groupOperations().entrySet()) {
+          final var groupId = entry.getKey();
           final var operations = List.<ClusterConfigurationChangeOperation>copyOf(entry.getValue());
           result =
               result.updatePartitionGroupConfig(
-                  entry.getKey(), group -> group.startConfigurationChange(operations));
+                  groupId,
+                  group -> {
+                    if (group.hasPendingChanges()) {
+                      throw new IllegalStateException(
+                          "Cannot activate partition-group phase for %s: group already has pending changes"
+                              .formatted(groupId));
+                    }
+                    return group.startConfigurationChange(operations);
+                  });
         }
         yield result;
       }
