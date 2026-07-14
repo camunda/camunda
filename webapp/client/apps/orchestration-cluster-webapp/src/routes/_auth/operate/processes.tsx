@@ -27,7 +27,17 @@ export const Route = createFileRoute('/_auth/operate/processes')({
 	loader: ({context: {queryClient}}) =>
 		queryClient.ensureQueryData(queries.queryProcessDefinitions({page: {limit: 1000}})),
 	component: function ProcessesRoute() {
-		const search = Route.useSearch();
-		return <Processes {...search} />;
+		const {process, version, elementId, active, incidents, completed, canceled} = Route.useSearch();
+		return (
+			<Processes
+				process={process}
+				version={version}
+				elementId={elementId}
+				active={active}
+				incidents={incidents}
+				completed={completed}
+				canceled={canceled}
+			/>
+		);
 	},
 });
