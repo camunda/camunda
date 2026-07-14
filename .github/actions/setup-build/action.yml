@@ -1,7 +1,7 @@
 ---
 name: Setup build
 
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 
 description: Sets up the required stack to build, install, and run monorepo projects
 

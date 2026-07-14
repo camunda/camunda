@@ -1,6 +1,6 @@
 #!/bin/bash
 # Helper functions for collecting flaky test data
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 
 set -euo pipefail
 flaky_data='[]'

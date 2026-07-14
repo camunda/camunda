@@ -4,7 +4,7 @@
 ---
 name: Build Docker Image
 
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 
 description: Builds the Docker image
 

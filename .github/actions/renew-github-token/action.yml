@@ -13,7 +13,7 @@
 # See: https://github.com/actions/checkout/pull/2286 (persist-creds change)
 # See: https://github.com/camunda/camunda/issues/47369 (expired token in release job)
 
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 ---
 name: Renew GitHub Token
 

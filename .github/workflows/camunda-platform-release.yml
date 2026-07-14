@@ -1,7 +1,7 @@
+# type: Release
+# owner: @camunda/engineering-operations
 ---
 name: Camunda Platform Release Workflow
-
-# owner: @camunda/monorepo-devops-team
 
 on:
   workflow_call:
@@ -225,7 +225,7 @@ jobs:
           #   In order to disable QA/IT and the auto formatting during the release.
           #   It is unnecessary to release integration tests, and we don't want to run the auto-formatting unnecessarily.
 
-          
+
           ./mvnw release:perform -B \
             -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}" \
             -DlocalCheckout=${{ inputs.dryRun }} \
@@ -280,13 +280,13 @@ jobs:
             echo "deploymentId=not-found" >> "$GITHUB_OUTPUT"
             echo "ℹ️ No Maven Central deployment ID found in build output" >&2
           fi
-          
+
       - name: Validate flattened POM metadata
         if: ${{ inputs.dryRun }}
         uses: ./.github/actions/validate-pom-metadata
         with:
           search-root: target/checkout
-          
+
       - name: Collect Release artifacts
         id: release-artifacts
         run: |
@@ -575,7 +575,7 @@ jobs:
           command: |
             docker -D buildx imagetools create \
               --tag ${{ env.DOCKER_IMAGE }}:latest \
-              ${{ steps.build-operate-docker.outputs.image }} 
+              ${{ steps.build-operate-docker.outputs.image }}
       - name: Observe build status
         if: always()
         continue-on-error: true

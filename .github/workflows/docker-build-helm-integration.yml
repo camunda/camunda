@@ -97,7 +97,7 @@ jobs:
           OWNER_TEAM="none"
           FAILURE_CATEGORY="none"
           if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
-            OWNER_TEAM="@camunda/monorepo-devops-team"
+            OWNER_TEAM="@camunda/engineering-operations"
             FAILURE_CATEGORY="orchestration_should_run"
           fi
           jq -n \
@@ -646,7 +646,7 @@ jobs:
           OWNER_TEAM="none"
           FAILURE_CATEGORY="none"
           if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
-            OWNER_TEAM="@camunda/monorepo-devops-team"
+            OWNER_TEAM="@camunda/engineering-operations"
             FAILURE_CATEGORY="orchestration_identifier"
           fi
           jq -n \
@@ -1123,7 +1123,7 @@ jobs:
                 DOWNLOAD_ERR=$(tr '\n' ' ' < "$DOWNLOAD_LOG" 2>/dev/null | sed 's/  */ /g' | cut -c1-300)
                 echo "::warning::Could not download downstream json-report artifact: ${DOWNLOAD_ERR:-no stderr}" >&2
                 DOWNSTREAM_CATEGORY="unknown_artifact_unreachable"
-                DOWNSTREAM_OWNER="@camunda/monorepo-devops-team"
+                DOWNSTREAM_OWNER="@camunda/engineering-operations"
                 {
                   echo "### Downstream Category Unavailable"
                   echo ""
@@ -1194,7 +1194,7 @@ jobs:
               OWNER_TEAM="@camunda/test-automation-team"
               FAILURE_CATEGORY="saas_e2e"
             else
-              OWNER_TEAM="@camunda/monorepo-devops-team"
+              OWNER_TEAM="@camunda/engineering-operations"
               FAILURE_CATEGORY="orchestration_dispatch_or_wait"
             fi
           fi

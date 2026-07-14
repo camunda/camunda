@@ -1,7 +1,9 @@
+# type: CI Helper
+# owner: @camunda/engineering-operations
 ---
 name: Backport labeled merged pull requests
 
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations-team
 
 on:
   pull_request:
