@@ -884,6 +884,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     continue-on-error: true  # snapshot failure falls back to auto-parse; gate still runs
+    # Expose the real submit-step outcome so pr-vuln-check can fail closed on a
+    # failed snapshot. needs.<job>.result cannot be used here: job-level
+    # continue-on-error masks a failed job to result == 'success' (actions/toolkit#1739),
+    # which would silently no-op the gate's head-snapshot-succeeded guard.
+    outputs:
+      submitted: ${{ steps.submit.outcome }}
     permissions:
       contents: write  # required by Dependency Submission API
     steps:
@@ -894,6 +900,7 @@ jobs:
           distribution: temurin
           java-version: '21'
       - name: Submit Maven dependency snapshot
+        id: submit
         uses: advanced-security/maven-dependency-submission-action@b275d12641ac2d2108b2cbb7598b154ad2f2cee8 # v5.0.0
         with:
           token: ${{ github.token }}
@@ -941,6 +948,9 @@ jobs:
           head-sha: ${{ github.event.pull_request.head.sha }}
           base-ref: ${{ github.event.pull_request.base.ref }}
           snapshot-workflow: maven-dependency-snapshot.yml
+          # Real submit-step outcome, not needs.<job>.result (masked to 'success' by
+          # the snapshot job's continue-on-error). Empty (job died before the step) → fail closed.
+          head-snapshot-succeeded: ${{ needs.pr-maven-snapshot.outputs.submitted || 'failure' }}
       - name: Observe build status
         if: always()
         continue-on-error: true
