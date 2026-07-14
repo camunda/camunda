@@ -1,18 +1,18 @@
-# Optimize Elasticsearch values for Camunda Platform Chart.
+# Optimize OpenSearch values for Camunda Platform Chart.
 # https://github.com/camunda/camunda-platform-helm
 #
-# This configures Elasticsearch when it's used for Optimize.
+# This configures OpenSearch when it's used for Optimize.
 #
-# For the Elasticsearch as secondary storage configuration, see the
-# "camunda-platform-values-elasticsearch.yaml" file.
-# If you make changes to this file or the "camunda-platform-values-elasticsearch.yaml" file, make
+# For the OpenSearch as secondary storage configuration, see the
+# "camunda-platform-values-opensearch.yaml" file.
+# If you make changes to this file or the "camunda-platform-values-opensearch.yaml" file, make
 # sure to keep the other file in sync (minus the secondary storage-only options).
 
 orchestration:
   data:
     secondary-storage:
-      elasticsearch:
-        url: http://elasticsearch-es-http:9200
+      opensearch:
+        url: http://opensearch:9200
 
   # Secondary storage configuration is not configured here, but in the
   # Elasticsearch/OpenSearch/RDBMS-specific values file.
@@ -20,7 +20,7 @@ orchestration:
     # We need to configure the Elasticsearch/OpenSearch exporter to use 1 replica for the index,
     # otherwise it is vulnerable to node restarts
     # ES/OS exporter configuration is bound to the Optimize usage
-    - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_NUMBEROFREPLICAS
+    - name: ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_NUMBEROFREPLICAS
       value: "1"
 
     ## The values below are duplicated from
@@ -50,10 +50,7 @@ orchestration:
 ##########################################################################
 optimize:
   database:
-    elasticsearch:
+    opensearch:
       enabled: true
       url:
-        # The Elasticsearch host value is derived from the ECK Elasticsearch custom resource name.
-        # The ECK operator creates a service named "<resource-name>-es-http" for HTTP access.
-        # See load-tests/setup/default/resources/elasticsearch.yaml for the resource definition.
-        host: elasticsearch-es-http
+        host: opensearch
