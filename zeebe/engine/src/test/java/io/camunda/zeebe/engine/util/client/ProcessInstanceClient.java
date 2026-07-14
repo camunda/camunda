@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.util.AuthorizationUtil;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBusinessIdRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
@@ -27,11 +28,13 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceBusinessIdRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
@@ -413,6 +416,11 @@ public final class ProcessInstanceClient {
 
     public ProcessInstanceMigrationClient migration() {
       return new ProcessInstanceMigrationClient(writer, processInstanceKey, authorizedTenants);
+    }
+
+    public ProcessInstanceBusinessIdAssignmentClient businessIdAssignment() {
+      return new ProcessInstanceBusinessIdAssignmentClient(
+          writer, processInstanceKey, authorizedTenants);
     }
   }
 
@@ -1014,6 +1022,95 @@ public final class ProcessInstanceClient {
       } else {
         return expectation.apply(position);
       }
+    }
+  }
+
+  public static class ProcessInstanceBusinessIdAssignmentClient {
+
+    private static final Function<Long, Record<ProcessInstanceBusinessIdRecordValue>>
+        SUCCESS_EXPECTATION =
+            (position) ->
+                RecordingExporter.processInstanceBusinessIdRecords()
+                    .withIntent(ProcessInstanceBusinessIdIntent.ASSIGNED)
+                    .withSourceRecordPosition(position)
+                    .getFirst();
+
+    private static final Function<Long, Record<ProcessInstanceBusinessIdRecordValue>>
+        REJECTION_EXPECTATION =
+            (processInstanceKey) ->
+                RecordingExporter.processInstanceBusinessIdRecords()
+                    .onlyCommandRejections()
+                    .withIntent(ProcessInstanceBusinessIdIntent.ASSIGN)
+                    .withRecordKey(processInstanceKey)
+                    .withProcessInstanceKey(processInstanceKey)
+                    .getFirst();
+
+    private Function<Long, Record<ProcessInstanceBusinessIdRecordValue>> expectation =
+        SUCCESS_EXPECTATION;
+
+    private final CommandWriter writer;
+    private final long processInstanceKey;
+    private final ProcessInstanceBusinessIdRecord record;
+    private String[] authorizedTenants;
+
+    public ProcessInstanceBusinessIdAssignmentClient(
+        final CommandWriter writer,
+        final long processInstanceKey,
+        final String[] authorizedTenants) {
+      this.writer = writer;
+      this.processInstanceKey = processInstanceKey;
+      this.authorizedTenants = authorizedTenants;
+      record = new ProcessInstanceBusinessIdRecord().setProcessInstanceKey(processInstanceKey);
+    }
+
+    public ProcessInstanceBusinessIdAssignmentClient withBusinessId(final String businessId) {
+      record.setBusinessId(businessId);
+      return this;
+    }
+
+    public ProcessInstanceBusinessIdAssignmentClient forAuthorizedTenants(
+        final String... authorizedTenants) {
+      this.authorizedTenants = authorizedTenants;
+      return this;
+    }
+
+    public ProcessInstanceBusinessIdAssignmentClient expectRejection() {
+      expectation = REJECTION_EXPECTATION;
+      return this;
+    }
+
+    public Record<ProcessInstanceBusinessIdRecordValue> assign() {
+      final var position =
+          writer.writeCommand(
+              processInstanceKey,
+              ProcessInstanceBusinessIdIntent.ASSIGN,
+              record,
+              authorizedTenants);
+      return expectation == REJECTION_EXPECTATION
+          ? expectation.apply(processInstanceKey)
+          : expectation.apply(position);
+    }
+
+    public Record<ProcessInstanceBusinessIdRecordValue> assign(final String username) {
+      final var position =
+          writer.writeCommand(
+              processInstanceKey,
+              ProcessInstanceBusinessIdIntent.ASSIGN,
+              username,
+              record,
+              authorizedTenants);
+      return expectation == REJECTION_EXPECTATION
+          ? expectation.apply(processInstanceKey)
+          : expectation.apply(position);
+    }
+
+    /**
+     * Writes the ASSIGN command without awaiting a follow-up event. Used to exercise the idempotent
+     * no-op path, where an identical value produces no {@code ASSIGNED} event (see ADR 0006, D3).
+     */
+    public void assignExpectingNoEvent() {
+      writer.writeCommand(
+          processInstanceKey, ProcessInstanceBusinessIdIntent.ASSIGN, record, authorizedTenants);
     }
   }
 }

@@ -124,6 +124,9 @@ public class ElasticsearchExporterSchemaManager {
       if (index.processInstanceModification) {
         createValueIndexTemplate(ValueType.PROCESS_INSTANCE_MODIFICATION, version);
       }
+      if (index.processInstanceBusinessId) {
+        createValueIndexTemplate(ValueType.PROCESS_INSTANCE_BUSINESS_ID, version);
+      }
       if (index.processMessageSubscription) {
         createValueIndexTemplate(ValueType.PROCESS_MESSAGE_SUBSCRIPTION, version);
       }

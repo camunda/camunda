@@ -96,6 +96,7 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
       case PROCESS_INSTANCE_CREATION -> index.processInstanceCreation;
       case PROCESS_INSTANCE_MIGRATION -> index.processInstanceMigration;
       case PROCESS_INSTANCE_MODIFICATION -> index.processInstanceModification;
+      case PROCESS_INSTANCE_BUSINESS_ID -> index.processInstanceBusinessId;
       case PROCESS_MESSAGE_SUBSCRIPTION -> index.processMessageSubscription;
       case DECISION_REQUIREMENTS -> index.decisionRequirements;
       case DECISION -> index.decision;
@@ -220,6 +221,7 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
     public boolean processInstanceCreation = true;
     public boolean processInstanceMigration = true;
     public boolean processInstanceModification = true;
+    public boolean processInstanceBusinessId = true;
     public boolean processMessageSubscription = true;
     public boolean variable = true;
     public boolean variableDocument = true;
@@ -659,6 +661,8 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
           + processInstanceMigration
           + ", processInstanceModification="
           + processInstanceModification
+          + ", processInstanceBusinessId="
+          + processInstanceBusinessId
           + ", processMessageSubscription="
           + processMessageSubscription
           + ", variable="

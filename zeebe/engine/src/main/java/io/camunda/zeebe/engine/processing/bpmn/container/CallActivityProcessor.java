@@ -283,7 +283,10 @@ public final class CallActivityProcessor
       final BpmnElementContext context, final ExecutableCallActivity element) {
     final var businessIdExpression = element.getCalledElementBusinessId();
     if (businessIdExpression == null) {
-      return Either.right(context.getBusinessId());
+      // No explicit business id: inherit the parent's. Read it from the process-scope element
+      // instance (not the call-activity element's record copy) so a Business ID assigned late to a
+      // running instance is inherited by children started afterwards.
+      return Either.right(getParentBusinessId(context));
     }
     if (businessIdExpression.isStatic()) {
       return validateBusinessId(businessIdExpression.getExpression(), context);
@@ -292,6 +295,11 @@ public final class CallActivityProcessor
         .evaluateAnyExpression(
             businessIdExpression, context.getElementInstanceKey(), context.getTenantId())
         .flatMap(result -> resolveBusinessIdFromResult(result, context));
+  }
+
+  private String getParentBusinessId(final BpmnElementContext context) {
+    final var processInstance = stateBehavior.getElementInstance(context.getProcessInstanceKey());
+    return processInstance != null ? processInstance.getValue().getBusinessId() : "";
   }
 
   private Either<Failure, String> resolveBusinessIdFromResult(

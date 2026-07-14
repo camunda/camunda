@@ -101,6 +101,7 @@ public interface Intent {
     map.put(ValueType.PROCESS_EVENT, ProcessEventIntent.class);
     map.put(ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.class);
     map.put(ValueType.PROCESS_INSTANCE_BATCH, ProcessInstanceBatchIntent.class);
+    map.put(ValueType.PROCESS_INSTANCE_BUSINESS_ID, ProcessInstanceBusinessIdIntent.class);
     map.put(ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.class);
     map.put(ValueType.PROCESS_INSTANCE_MIGRATION, ProcessInstanceMigrationIntent.class);
     map.put(ValueType.PROCESS_INSTANCE_MODIFICATION, ProcessInstanceModificationIntent.class);
