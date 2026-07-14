@@ -16,17 +16,6 @@ import java.util.Objects;
 public record MetadataValueFilter(String key, List<UntypedOperation> valueOperations)
     implements FilterBase {
 
-  @Override
-  public String toString() {
-    return "MetadataValueFilter["
-        + "key="
-        + key
-        + ", "
-        + "valueOperations="
-        + valueOperations
-        + ']';
-  }
-
   public static final class Builder
       implements ObjectBuilder<MetadataValueFilter>, ListBuilder<MetadataValueFilter> {
 

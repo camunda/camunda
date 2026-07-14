@@ -8,25 +8,18 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
+import static io.camunda.search.clients.query.SearchQueryBuilders.doubleOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.exists;
-import static io.camunda.search.clients.query.SearchQueryBuilders.gt;
-import static io.camunda.search.clients.query.SearchQueryBuilders.gte;
-import static io.camunda.search.clients.query.SearchQueryBuilders.lt;
-import static io.camunda.search.clients.query.SearchQueryBuilders.lte;
 import static io.camunda.search.clients.query.SearchQueryBuilders.nestedQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.not;
-import static io.camunda.search.clients.query.SearchQueryBuilders.objectTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.search.clients.query.SearchQueryBuilders.variableOperations;
-import static io.camunda.search.clients.query.SearchQueryBuilders.wildcardQuery;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.search.clients.types.TypedValue;
-import io.camunda.search.entities.ValueTypeEnum;
 import io.camunda.search.filter.ClusterVariableFilter;
 import io.camunda.search.filter.MetadataValueFilter;
 import io.camunda.search.filter.Operation;
@@ -133,30 +126,41 @@ public final class ClusterVariableFilterTransformer
 
     final var innerClauses = new ArrayList<SearchQuery>();
     innerClauses.add(keyQuery);
-    for (final UntypedOperation operation : valueOperations) {
-      innerClauses.add(toMetadataValueQuery(operation));
-    }
+    innerClauses.addAll(toMetadataValueQueries(valueOperations));
     return nestedQuery(ClusterVariableIndex.METADATA, and(innerClauses));
   }
 
-  private SearchQuery toMetadataValueQuery(final UntypedOperation operation) {
-    final var numeric =
-        operation.type() == ValueTypeEnum.LONG || operation.type() == ValueTypeEnum.DOUBLE;
-    final var field =
-        numeric ? ClusterVariableIndex.METADATA_VALUE_NUMBER : ClusterVariableIndex.METADATA_VALUE;
-    return switch (operation.operator()) {
-      case EQUALS -> term(field, TypedValue.toTypedValue(operation.value()));
-      case NOT_EQUALS -> not(term(field, TypedValue.toTypedValue(operation.value())));
-      case EXISTS -> exists(field);
-      case IN -> objectTerms(field, operation.values());
-      case NOT_IN -> not(objectTerms(field, operation.values()));
-      case GREATER_THAN -> gt(field, operation.value());
-      case GREATER_THAN_EQUALS -> gte(field, operation.value());
-      case LOWER_THAN -> lt(field, operation.value());
-      case LOWER_THAN_EQUALS -> lte(field, operation.value());
-      // LIKE operators only work for string fields i.e. only on METADATA_VALUE
-      case LIKE -> wildcardQuery(ClusterVariableIndex.METADATA_VALUE, (String) operation.value());
-      case NOT_EXISTS -> not(exists(field));
-    };
+  private List<SearchQuery> toMetadataValueQueries(final List<UntypedOperation> operations) {
+    final var stringOps = new ArrayList<Operation<String>>();
+    final var numberOps = new ArrayList<Operation<Double>>();
+    final var queries = new ArrayList<SearchQuery>();
+    for (final var operation : operations) {
+      if (operation.operator() == Operator.EXISTS) {
+        // metadata.value is always populated (as a string representation) regardless of type;
+        // metadata.valueNumber is only ever an additional, derived field for numeric values
+        queries.add(exists(ClusterVariableIndex.METADATA_VALUE));
+        continue;
+      }
+      switch (operation.type()) {
+        // metadata.valueNumber is mapped as a double, so LONG and DOUBLE are both cast to Double
+        case LONG, DOUBLE -> numberOps.add(toDoubleOperation(operation));
+        // STRING and NULL live on the keyword field (booleans, documents, and arrays are
+        // rejected at the REST layer, so they never reach this transformer)
+        default -> stringOps.add(toStringOperation(operation));
+      }
+    }
+    queries.addAll(stringOperations(ClusterVariableIndex.METADATA_VALUE, stringOps));
+    queries.addAll(doubleOperations(ClusterVariableIndex.METADATA_VALUE_NUMBER, numberOps));
+    return queries;
+  }
+
+  private static Operation<String> toStringOperation(final UntypedOperation operation) {
+    final var values = operation.values().stream().map(String.class::cast).toList();
+    return new Operation<>(operation.operator(), values);
+  }
+
+  private static Operation<Double> toDoubleOperation(final UntypedOperation operation) {
+    final var values = operation.values().stream().map(v -> ((Number) v).doubleValue()).toList();
+    return new Operation<>(operation.operator(), values);
   }
 }

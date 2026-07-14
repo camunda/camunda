@@ -63,7 +63,22 @@ public final class ClusterVariableFilterMetadataTransformerTest extends Abstract
     assertIsTermQuery(inner.must().get(0), ClusterVariableIndex.METADATA_KEY, "schemaVersion");
     final var rangeQuery = (SearchRangeQuery) inner.must().get(1).queryOption();
     assertThat(rangeQuery.field()).isEqualTo(ClusterVariableIndex.METADATA_VALUE_NUMBER);
-    assertThat(rangeQuery.gte()).isEqualTo(2L);
+    assertThat(rangeQuery.gte()).isEqualTo(2.0);
+  }
+
+  @Test
+  public void shouldQueryMetadataByNumericDoubleRange() {
+    // when
+    final var searchQuery = transformMetadataQuery("schemaVersion", gte(2.5));
+
+    // then
+    final var nested = extractSingleNestedQuery(searchQuery);
+    final var inner = (SearchBoolQuery) nested.query().queryOption();
+    assertThat(inner.must()).hasSize(2);
+    assertIsTermQuery(inner.must().get(0), ClusterVariableIndex.METADATA_KEY, "schemaVersion");
+    final var rangeQuery = (SearchRangeQuery) inner.must().get(1).queryOption();
+    assertThat(rangeQuery.field()).isEqualTo(ClusterVariableIndex.METADATA_VALUE_NUMBER);
+    assertThat(rangeQuery.gte()).isEqualTo(2.5);
   }
 
   @Test
@@ -92,8 +107,9 @@ public final class ClusterVariableFilterMetadataTransformerTest extends Abstract
     final var inner = (SearchBoolQuery) nested.query().queryOption();
     assertThat(inner.must()).hasSize(2);
     assertIsTermQuery(inner.must().get(0), ClusterVariableIndex.METADATA_KEY, "kind");
+    // exists query should only check if the value exists (not the value number)
     final var existsQuery = (SearchExistsQuery) inner.must().get(1).queryOption();
-    assertThat(existsQuery.field()).matches(ClusterVariableIndex.METADATA_VALUE);
+    assertThat(existsQuery.field()).isEqualTo(ClusterVariableIndex.METADATA_VALUE);
   }
 
   @Test
@@ -154,7 +170,7 @@ public final class ClusterVariableFilterMetadataTransformerTest extends Abstract
     assertIsTermQuery(inner.must().get(0), ClusterVariableIndex.METADATA_KEY, "schemaVersion");
     final var rangeQuery = (SearchRangeQuery) inner.must().get(1).queryOption();
     assertThat(rangeQuery.field()).isEqualTo(ClusterVariableIndex.METADATA_VALUE_NUMBER);
-    assertThat(rangeQuery.lt()).isEqualTo(5L);
+    assertThat(rangeQuery.lt()).isEqualTo(5.0);
   }
 
   @Test
@@ -168,7 +184,7 @@ public final class ClusterVariableFilterMetadataTransformerTest extends Abstract
     assertIsTermQuery(inner.must().get(0), ClusterVariableIndex.METADATA_KEY, "schemaVersion");
     final var rangeQuery = (SearchRangeQuery) inner.must().get(1).queryOption();
     assertThat(rangeQuery.field()).isEqualTo(ClusterVariableIndex.METADATA_VALUE_NUMBER);
-    assertThat(rangeQuery.lte()).isEqualTo(5L);
+    assertThat(rangeQuery.lte()).isEqualTo(5.0);
   }
 
   @Test
@@ -182,7 +198,7 @@ public final class ClusterVariableFilterMetadataTransformerTest extends Abstract
     assertIsTermQuery(inner.must().get(0), ClusterVariableIndex.METADATA_KEY, "schemaVersion");
     final var rangeQuery = (SearchRangeQuery) inner.must().get(1).queryOption();
     assertThat(rangeQuery.field()).isEqualTo(ClusterVariableIndex.METADATA_VALUE_NUMBER);
-    assertThat(rangeQuery.gt()).isEqualTo(1L);
+    assertThat(rangeQuery.gt()).isEqualTo(1.0);
   }
 
   @Test
