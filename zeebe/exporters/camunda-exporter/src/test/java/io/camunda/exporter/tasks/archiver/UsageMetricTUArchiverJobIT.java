@@ -15,11 +15,8 @@ import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsTUEntity;
 import java.time.OffsetDateTime;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.TestTemplate;
 
-@TestInstance(Lifecycle.PER_CLASS)
 public class UsageMetricTUArchiverJobIT extends ArchiverJobIT<UsageMetricTUArchiverJob> {
   @Override
   protected String getExpectedLifecyclePolicyName() {
@@ -51,7 +48,7 @@ public class UsageMetricTUArchiverJobIT extends ArchiverJobIT<UsageMetricTUArchi
 
           final var metric = usageMetricTU("2020-01-15T10:00:00+00:00");
           store(template, client, metric);
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
@@ -77,7 +74,7 @@ public class UsageMetricTUArchiverJobIT extends ArchiverJobIT<UsageMetricTUArchi
 
           store(template, client, oldMetric);
           store(template, client, recentMetric);
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
@@ -104,7 +101,7 @@ public class UsageMetricTUArchiverJobIT extends ArchiverJobIT<UsageMetricTUArchi
 
           store(template, client, metric1);
           store(template, client, metric2);
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when
           final var archived = job.execute();
@@ -131,7 +128,7 @@ public class UsageMetricTUArchiverJobIT extends ArchiverJobIT<UsageMetricTUArchi
 
           store(template, client, januaryMetric);
           store(template, client, marchMetric);
-          client.refresh();
+          client.refresh(testPrefix);
 
           // when - first execution archives the oldest batch
           final var firstBatch = job.execute();
@@ -142,7 +139,7 @@ public class UsageMetricTUArchiverJobIT extends ArchiverJobIT<UsageMetricTUArchi
           verifyNotMoved(template, client, marchMetric);
 
           // when - second execution archives the next batch
-          client.refresh();
+          client.refresh(testPrefix);
           final var secondBatch = job.execute();
 
           // then
