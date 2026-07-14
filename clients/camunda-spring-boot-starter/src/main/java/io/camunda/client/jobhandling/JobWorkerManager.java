@@ -177,10 +177,7 @@ public class JobWorkerManager {
           "Stopping job worker: {}",
           LOGGER.isDebugEnabled()
               ? internalManagedJobWorker.getCurrent()
-              : String.format(
-                  "%s with type %s",
-                  internalManagedJobWorker.getCurrent().getName().value(),
-                  internalManagedJobWorker.getCurrent().getType().value()));
+              : describe(internalManagedJobWorker));
     }
     final boolean enabled = internalManagedJobWorker.getCurrent().getEnabled().value();
     final boolean closed = changeSet instanceof CloseChangeSet;
@@ -194,11 +191,20 @@ public class JobWorkerManager {
           "Starting job worker: {}",
           LOGGER.isDebugEnabled()
               ? internalManagedJobWorker.getCurrent()
-              : String.format(
-                  "%s with type %s",
-                  internalManagedJobWorker.getCurrent().getName().value(),
-                  internalManagedJobWorker.getCurrent().getType().value()));
+              : describe(internalManagedJobWorker));
     }
+  }
+
+  /**
+   * Renders a short worker description for the info-level start/stop logs, including the configured
+   * client name when the worker is bound to a named client (multi-client mode).
+   */
+  private static String describe(final InternalManagedJobWorker worker) {
+    final String clientSuffix =
+        worker.getClientName() == null ? "" : " on client '" + worker.getClientName() + "'";
+    return String.format(
+        "%s with type %s%s",
+        worker.getCurrent().getName().value(), worker.getCurrent().getType().value(), clientSuffix);
   }
 
   /**
