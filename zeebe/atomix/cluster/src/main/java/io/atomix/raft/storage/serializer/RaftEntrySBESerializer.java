@@ -166,6 +166,59 @@ public class RaftEntrySBESerializer implements RaftEntrySerializer {
     return entryOffset + headerEncoder.encodedLength() + configurationEntryEncoder.encodedLength();
   }
 
+  /**
+   * Peeks at a serialized entry (starting at offset 0 of the buffer) and reports whether it is an
+   * application entry, without materializing any entry objects. On {@code true}, the bounds of the
+   * application data within the same buffer are available via {@link #applicationDataOffset()} and
+   * {@link #applicationDataLength()}.
+   *
+   * <p>Allocation-free: only the reused flyweight decoders are wrapped. Intended for hot paths
+   * (index scans, per-block append hooks) that must locate application data without paying for a
+   * full {@link #readRaftLogEntry(DirectBuffer)}.
+   *
+   * @param buffer the buffer containing the serialized entry at offset 0
+   * @return {@code true} if the entry is an application entry
+   */
+  public boolean isApplicationEntry(final DirectBuffer buffer) {
+    headerDecoder.wrap(buffer, 0);
+    raftLogEntryDecoder.wrap(
+        buffer,
+        headerDecoder.encodedLength(),
+        headerDecoder.blockLength(),
+        headerDecoder.version());
+    if (raftLogEntryDecoder.type() != EntryType.ApplicationEntry) {
+      return false;
+    }
+
+    final int entryOffset = headerDecoder.encodedLength() + raftLogEntryDecoder.encodedLength();
+    headerDecoder.wrap(buffer, entryOffset);
+    applicationEntryDecoder.wrap(
+        buffer,
+        entryOffset + headerDecoder.encodedLength(),
+        headerDecoder.blockLength(),
+        headerDecoder.version());
+    return true;
+  }
+
+  /**
+   * Returns the offset of the application data within the buffer last passed to {@link
+   * #isApplicationEntry(DirectBuffer)}. Only valid after that call returned {@code true} and until
+   * the next use of this serializer.
+   */
+  public int applicationDataOffset() {
+    // after wrapping, the decoder's limit points at the variable-length data's length header
+    return applicationEntryDecoder.limit() + ApplicationEntryDecoder.applicationDataHeaderLength();
+  }
+
+  /**
+   * Returns the length of the application data of the buffer last passed to {@link
+   * #isApplicationEntry(DirectBuffer)}. Only valid after that call returned {@code true} and until
+   * the next use of this serializer.
+   */
+  public int applicationDataLength() {
+    return applicationEntryDecoder.applicationDataLength();
+  }
+
   @Override
   public RaftLogEntry readRaftLogEntry(final DirectBuffer buffer) {
     headerDecoder.wrap(buffer, 0);

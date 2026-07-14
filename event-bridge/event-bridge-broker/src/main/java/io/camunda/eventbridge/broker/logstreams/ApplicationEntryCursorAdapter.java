@@ -7,16 +7,28 @@
  */
 package io.camunda.eventbridge.broker.logstreams;
 
-import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
 import io.atomix.raft.storage.serializer.RaftEntrySBESerializer;
 import io.camunda.eventbridge.protocol.EventBridgeBatchBlockIterator;
 import io.camunda.zeebe.util.JournalIndexCursor;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
+/**
+ * Interprets a journal record's data as a raft entry and iterates the event-bridge batches of its
+ * application data.
+ *
+ * <p>Allocation-free: runs per journal record on self-warming fetch scans and per appended block on
+ * both leader and follower, so it peeks at the raft entry's headers via the serializer instead of
+ * materializing the full entry. All wire-format knowledge stays inside {@link
+ * RaftEntrySBESerializer}.
+ */
 public class ApplicationEntryCursorAdapter implements JournalIndexCursor {
 
   private final RaftEntrySBESerializer serializer = new RaftEntrySBESerializer();
   private final EventBridgeBatchBlockIterator iterator = new EventBridgeBatchBlockIterator();
+  // Reusable zero-based view of the application data, mirroring the slice a full
+  // deserialization would expose as the application entry's data buffer.
+  private final UnsafeBuffer applicationData = new UnsafeBuffer(0, 0);
 
   private boolean isApplicationEntry;
   private int baseOffset;
@@ -33,18 +45,17 @@ public class ApplicationEntryCursorAdapter implements JournalIndexCursor {
   @Override
   public void wrap(final DirectBuffer data, final int offset) {
     reset();
-    final var raftEntry = serializer.readRaftLogEntry(data);
-    isApplicationEntry = raftEntry.isApplicationEntry();
+    isApplicationEntry = serializer.isApplicationEntry(data);
 
     if (!isApplicationEntry) {
       return;
     }
 
-    baseOffset = offset + serializer.getApplicationEntrySerializedHeaderLength();
-    currentBlockOffset = 0;
-    nextBlockOffset = 0;
-    final var applicationEntry = (SerializedApplicationEntry) raftEntry.getApplicationEntry();
-    iterator.wrap(applicationEntry.data(), 0, applicationEntry.data().capacity());
+    final int dataOffset = serializer.applicationDataOffset();
+    final int dataLength = serializer.applicationDataLength();
+    baseOffset = offset + dataOffset;
+    applicationData.wrap(data, dataOffset, dataLength);
+    iterator.wrap(applicationData, 0, dataLength);
   }
 
   @Override
