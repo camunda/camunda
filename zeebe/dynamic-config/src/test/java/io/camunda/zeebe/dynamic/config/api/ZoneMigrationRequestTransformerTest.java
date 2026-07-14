@@ -53,31 +53,31 @@ final class ZoneMigrationRequestTransformerTest {
     assertThat(result).isRight();
     assertThat(result.get())
         // check is unordered because member ordering between runs is not stable
-        .containsExactlyInAnyOrder(
+        .containsExactly(
             new MemberJoinOperation(ZONE_A_0),
             new MemberJoinOperation(ZONE_A_1),
             new MemberJoinOperation(ZONE_A_2),
             new PartitionJoinOperation(ZONE_A_0, 1, 3),
-            new PartitionJoinOperation(ZONE_A_2, 1, 1),
             new PartitionJoinOperation(ZONE_A_1, 1, 2),
+            new PartitionJoinOperation(ZONE_A_2, 1, 1),
+            new PartitionLeaveOperation(BARE_0, 1, 1),
             new PartitionLeaveOperation(BARE_1, 1, 1),
             new PartitionLeaveOperation(BARE_2, 1, 1),
-            new PartitionLeaveOperation(BARE_0, 1, 1),
             new PartitionJoinOperation(ZONE_A_0, 2, 1),
-            new PartitionJoinOperation(ZONE_A_2, 2, 2),
             new PartitionJoinOperation(ZONE_A_1, 2, 3),
+            new PartitionJoinOperation(ZONE_A_2, 2, 2),
+            new PartitionLeaveOperation(BARE_0, 2, 1),
             new PartitionLeaveOperation(BARE_1, 2, 1),
             new PartitionLeaveOperation(BARE_2, 2, 1),
-            new PartitionLeaveOperation(BARE_0, 2, 1),
             new PartitionJoinOperation(ZONE_A_0, 3, 2),
-            new PartitionJoinOperation(ZONE_A_2, 3, 3),
             new PartitionJoinOperation(ZONE_A_1, 3, 1),
+            new PartitionJoinOperation(ZONE_A_2, 3, 3),
+            new PartitionLeaveOperation(BARE_0, 3, 1),
             new PartitionLeaveOperation(BARE_1, 3, 1),
             new PartitionLeaveOperation(BARE_2, 3, 1),
-            new PartitionLeaveOperation(BARE_0, 3, 1),
+            new MemberLeaveOperation(BARE_0),
             new MemberLeaveOperation(BARE_1),
-            new MemberLeaveOperation(BARE_2),
-            new MemberLeaveOperation(BARE_0));
+            new MemberLeaveOperation(BARE_2));
     final var newTopology = TestTopologyChangeSimulator.apply(configUpdatedTopology, result.get());
 
     // then
@@ -103,7 +103,7 @@ final class ZoneMigrationRequestTransformerTest {
 
     assertThat(operations)
         // check is unordered because member ordering between runs is not stable
-        .containsExactlyInAnyOrder(
+        .containsExactly(
             new MemberJoinOperation(ZONE_B_0),
             new MemberJoinOperation(ZONE_B_1),
             new PartitionJoinOperation(ZONE_B_0, 1, 3),
