@@ -104,6 +104,23 @@ class OidcOverrideBeansConfigurationIdTokenDecoderTest {
     assertThat(decoderTwo).isNotNull();
   }
 
+  @Test
+  void shouldDefaultToRs256ForScopedRegistrationMissingFromGlobalRepository() {
+    // given
+    when(oidcProviderConfigurationPort.getOidcAuthenticationConfigurations()).thenReturn(Map.of());
+    final var tokenValidatorFactory =
+        new TokenValidatorFactory(Map.of(), Duration.ofSeconds(60), List.of());
+    final var configuration = new OidcOverrideBeansConfiguration(null);
+    final JwtDecoderFactory<ClientRegistration> decoderFactory =
+        configuration.idTokenDecoderFactory(tokenValidatorFactory, oidcProviderConfigurationPort);
+
+    // when
+    final JwtDecoder decoder = decoderFactory.createDecoder(buildRegistration("scoped"));
+
+    // then
+    assertThat(decoder).isNotNull();
+  }
+
   private static ClientRegistration buildRegistration(final String registrationId) {
     return ClientRegistration.withRegistrationId(registrationId)
         .clientId("client-id")
