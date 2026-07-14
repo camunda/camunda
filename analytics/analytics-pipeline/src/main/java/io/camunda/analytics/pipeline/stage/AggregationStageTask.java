@@ -95,6 +95,8 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
   private final KeyValueStore<DbBytes, DbBytes> dedupStore;
   private final KeyValueStore<DbBytes, DbBytes> parkedStore;
   private final DatasetCatalog catalog;
+  // Nullable: without a registry the late-drop alarms still WARN, they just count nowhere.
+  private final MeterRegistry meterRegistry;
   private final long reloadCheckIntervalMs;
 
   private final DbInt offsetKey = new DbInt();
@@ -157,9 +159,11 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
       final KeyValueStore<DbBytes, DbBytes> dedupStore,
       final KeyValueStore<DbBytes, DbBytes> parkedStore,
       final DatasetCatalog catalog,
+      final MeterRegistry meterRegistry,
       final long reloadCheckIntervalMs,
       final long nowMs) {
     this.partition = partition;
+    this.meterRegistry = meterRegistry;
     this.epoch = epoch;
     this.datasetStore = datasetStore;
     // Stage the serving writes on the heap so a frozen cut flushes exactly the rows its barrier
@@ -227,6 +231,7 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
         dedupStore,
         parkedStore,
         catalog,
+        meterRegistry,
         reloadCheckIntervalMs,
         System.currentTimeMillis());
   }
@@ -254,7 +259,14 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
       final CubeWiring wiring =
           wiringByStreamId.computeIfAbsent(
               cube.compiled().streamId(),
-              streamId -> wireCube(cube, servingWriter, cellStore, provider::runInTransaction));
+              streamId ->
+                  wireCube(
+                      cube,
+                      servingWriter,
+                      cellStore,
+                      provider::runInTransaction,
+                      meterRegistry,
+                      partition));
       byStreamId.put(cube.compiled().streamId(), wiring.applier());
       mergers.addAll(wiring.mergers());
     }
@@ -437,7 +449,9 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
       final ActiveCube cube,
       final DatasetWriter writer,
       final KeyValueStore<DbBytes, DbBytes> cellStore,
-      final TransactionRunner tx) {
+      final TransactionRunner tx,
+      final MeterRegistry meterRegistry,
+      final int partition) {
     final CompiledDataset compiled = cube.compiled();
     final List<BoundMeter<?, ?>> bounds = compiled.meterBounds();
     final CompositeAggregateFunction aggregate = new CompositeAggregateFunction(bounds);
@@ -456,6 +470,9 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
               new DimensionKeyValue(compiled.grain()),
               new CompositeAccumulatorValue(bounds),
               tx);
+      // Closed-window drops are data loss, never silent: counted and WARN'd per cube tier.
+      merger.onLateDrop(
+          new LateDropAlarm(meterRegistry, partition, compiled.name(), tier.windowMs()));
       mergers.add(merger);
       tierMergers.add(new TierMerger(tier.windowMs(), merger));
     }

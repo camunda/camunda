@@ -188,6 +188,7 @@ final class AggregationStageTaskSnapshotTest {
             dedupStore,
             parkedStore,
             catalog,
+            null, // no meter registry: the late-drop alarm logs only
             0L,
             0L);
     provider = null; // owned by the task now; recreated explicitly for a restart

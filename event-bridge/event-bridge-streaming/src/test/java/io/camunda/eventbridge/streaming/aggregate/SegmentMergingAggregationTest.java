@@ -120,6 +120,37 @@ final class SegmentMergingAggregationTest {
   }
 
   @Test
+  void shouldReportADroppedLateDeltaToTheListener() {
+    // given a no-grace window and a wired late-drop observer
+    final InMemoryResultSink<Windowed<String>, Long> sink = new InMemoryResultSink<>();
+    final SegmentMergingAggregation<String, Long> merger =
+        merger(
+            new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes()),
+            sink,
+            TumblingWindows.of(1_000L));
+    final List<Windowed<String>> dropped = new ArrayList<>();
+    final List<Long> clocks = new ArrayList<>();
+    merger.onLateDrop(
+        (cell, eventTimeHint, maxEventTime) -> {
+          dropped.add(cell);
+          clocks.add(maxEventTime);
+        });
+    final Windowed<String> cell = new Windowed<>("k", 0L);
+
+    // when the window's delta closes it and a late delta follows
+    merger.merge(cell, 5L);
+    merger.checkpoint();
+    merger.merge(cell, 100L);
+    merger.flush();
+
+    // then only the late delta is observed, with the clock that had closed its window — and the
+    // finalized value stays untouched
+    assertThat(dropped).containsExactly(cell);
+    assertThat(clocks).containsExactly(1_000L);
+    assertThat(sink.get(cell)).hasValue(5L);
+  }
+
+  @Test
   void shouldRecoverRunningTotalsFromTheStore() {
     // given a running total checkpointed to a shared store
     final KeyValueStore<DbBytes, DbBytes> store =

@@ -140,6 +140,7 @@ final class AggregationStageTaskDedupPersistenceTest {
             dedupStore,
             parkedStore,
             catalog,
+            null, // no meter registry: the late-drop alarm logs only
             Long.MAX_VALUE, // no reload in these tests
             0L);
     task.init();

@@ -72,7 +72,19 @@ public final class SegmentMergingAggregation<K, ACC> {
     default void onWatermark(final long watermark) {}
   }
 
+  /**
+   * Observes a delta the closed-window guard dropped: its window ended more than the grace before
+   * the stream-time clock and was finalized/evicted, so folding it would resurrect the cell. Every
+   * drop is data missing from a finalized value — the alarm signal that an upstream source lags
+   * behind the clock (which is MAX-based over everything multiplexed onto this partition).
+   */
+  @FunctionalInterface
+  public interface LateDropListener<K> {
+    void onLateDrop(Windowed<K> cell, long eventTimeHint, long maxEventTime);
+  }
+
   private FinalizationListener<K, ACC> finalizationListener = (cell, value) -> {};
+  private LateDropListener<K> lateDropListener = (cell, eventTimeHint, maxEventTime) -> {};
 
   // Heap working set: one running accumulator per open cell, indexed by window end for due-window
   // finalization and tracked for flush/checkpoint deltas.
@@ -134,6 +146,11 @@ public final class SegmentMergingAggregation<K, ACC> {
     finalizationListener = listener;
   }
 
+  /** Wires the late-drop observer (before processing starts); at most one. */
+  public void onLateDrop(final LateDropListener<K> listener) {
+    lateDropListener = listener;
+  }
+
   /** Folds one (deduped) segment delta into {@code cell}'s running total and marks it changed. */
   public void merge(final Windowed<K> cell, final ACC delta) {
     merge(cell, delta, windowEnd(cell));
@@ -152,8 +169,10 @@ public final class SegmentMergingAggregation<K, ACC> {
    */
   public void merge(final Windowed<K> cell, final ACC delta, final long eventTimeHint) {
     // Drop deltas for a window that already closed and was evicted: folding one would resurrect the
-    // cell and the idempotent sink would overwrite its finalized value.
+    // cell and the idempotent sink would overwrite its finalized value. Never silent — the
+    // listener is how a lagging source's losses become visible.
     if (maxEventTime != Long.MIN_VALUE && windowEnd(cell) + windows.graceMs() <= maxEventTime) {
+      lateDropListener.onLateDrop(cell, eventTimeHint, maxEventTime);
       return;
     }
     // The running total is always an accumulator this operator owns: the first delta is folded

@@ -235,6 +235,7 @@ final class AggregationStageTaskReloadTest {
             dedupStore,
             parkedStore,
             catalog,
+            null, // no meter registry: the late-drop alarm logs only
             0L, // check the catalog at every commit
             0L);
   }
