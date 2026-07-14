@@ -10,11 +10,16 @@ package io.camunda.zeebe.dynamic.config.api;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
@@ -64,5 +69,26 @@ class AddMembersTransformerTest {
     // then
     EitherAssert.assertThat(result).isRight();
     assertThat(result.get()).isEmpty();
+  }
+
+  @Test
+  void shouldReturnErrorForZonedIdInFullyZonedCluster() {
+    final MemberId existingMember = MemberId.from("1");
+    final var addRequest = new AddMembersTransformer(Set.of(existingMember));
+    final var zonedConfiguration =
+        ClusterConfiguration.builder()
+            .members(Map.of(MemberId.from("zon-a", 0), MemberState.uninitialized()))
+            .partitionDistributorConfig(
+                Optional.of(new ZoneAwareConfig(List.of(new ZoneSpec("zone-a", 1, 1)))))
+            .build();
+
+    // when
+    final var result = addRequest.operations(zonedConfiguration);
+
+    // then
+    EitherAssert.assertThat(result)
+        .isLeft()
+        .left()
+        .satisfies(e -> assertThat(e).isInstanceOf(InvalidRequest.class));
   }
 }

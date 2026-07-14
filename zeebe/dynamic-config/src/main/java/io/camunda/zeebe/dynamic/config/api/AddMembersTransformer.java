@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dynamic.config.api;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
@@ -27,6 +28,12 @@ public class AddMembersTransformer implements ConfigurationChangeRequest {
   @Override
   public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
       final ClusterConfiguration clusterConfiguration) {
+    if (clusterConfiguration.isFullyZoneAware() && members.stream().anyMatch(MemberId::isBare)) {
+      return Either.left(
+          new InvalidRequest(
+              "Members without a zone cannot be added to a zone-aware cluster: "
+                  + members.stream().filter(MemberId::isBare).toList()));
+    }
     final var operations =
         members.stream()
             // only add members that are not already part of the cluster
