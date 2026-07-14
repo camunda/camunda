@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.assertj.core.groups.Tuple;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -46,10 +47,24 @@ abstract class AbstractDocumentDatasetStoreIT {
 
   private static final long MINUTE = 60_000L;
 
+  /** One batching writer per test — staged writes only reach the store at {@link #refresh()}. */
+  private DocumentDatasetWriter writer;
+
   abstract DocumentDatasetStore store();
 
-  /** Makes every prior write visible to search (the stores refresh on an interval otherwise). */
-  abstract void refresh();
+  /** Refreshes the store's indices so already-flushed writes become visible to search. */
+  abstract void refreshIndices();
+
+  @BeforeEach
+  void openWriter() {
+    writer = (DocumentDatasetWriter) store().writer();
+  }
+
+  /** Flushes the writer's staged batch and makes every write visible to search. */
+  final void refresh() {
+    writer.flush();
+    refreshIndices();
+  }
 
   private static DatasetCompiler compiler() {
     return new DatasetCompiler(
@@ -69,7 +84,6 @@ abstract class AbstractDocumentDatasetStoreIT {
                     .window(MINUTE)
                     .build());
     store().schemaManager().ensure(cube);
-    final DocumentDatasetWriter writer = (DocumentDatasetWriter) store().writer();
     final DimensionKey key = DimensionKey.of(cube.grain(), "orders");
     writer.upsertCell(cube, key, 0L, MINUTE, fold(cube, counts(10)), new WriteVersion(5, 100));
     refresh();
@@ -146,7 +160,6 @@ abstract class AbstractDocumentDatasetStoreIT {
     refresh();
 
     // when a fenced zombie re-writes an older absolute for the existing sample
-    final DocumentDatasetWriter writer = (DocumentDatasetWriter) store().writer();
     writer.upsertSnapshotRow(
         cube,
         DimensionKey.of(cube.grain(), "order"),
@@ -253,15 +266,13 @@ abstract class AbstractDocumentDatasetStoreIT {
                     .window(MINUTE)
                     .build());
     store().schemaManager().ensure(cube);
-    store()
-        .writer()
-        .upsertCell(
-            cube,
-            DimensionKey.of(cube.grain(), 3L),
-            0L,
-            MINUTE,
-            fold(cube, counts(5)),
-            WriteVersion.SEED);
+    writer.upsertCell(
+        cube,
+        DimensionKey.of(cube.grain(), 3L),
+        0L,
+        MINUTE,
+        fold(cube, counts(5)),
+        WriteVersion.SEED);
     refresh();
 
     // when grouped by the numeric dimension
@@ -279,15 +290,13 @@ abstract class AbstractDocumentDatasetStoreIT {
     final CompiledDataset cube = countCube(108L, "pd-null");
     store().schemaManager().ensure(cube);
     writeCell(cube, "orders", 0L, counts(3));
-    store()
-        .writer()
-        .upsertCell(
-            cube,
-            DimensionKey.of(cube.grain(), Collections.singletonList(null)),
-            0L,
-            MINUTE,
-            fold(cube, counts(2)),
-            WriteVersion.SEED);
+    writer.upsertCell(
+        cube,
+        DimensionKey.of(cube.grain(), Collections.singletonList(null)),
+        0L,
+        MINUTE,
+        fold(cube, counts(2)),
+        WriteVersion.SEED);
     refresh();
 
     // when grouped by the dimension
@@ -324,15 +333,13 @@ abstract class AbstractDocumentDatasetStoreIT {
                     .build());
     store().schemaManager().ensure(cube);
     writeCell(cube, "orders", 0L, durations(100L, 200L, 300L, 400L, 500L));
-    store()
-        .writer()
-        .upsertCell(
-            cube,
-            DimensionKey.of(cube.grain(), "ship"),
-            0L,
-            MINUTE,
-            fold(countOnly, counts(2)),
-            WriteVersion.SEED);
+    writer.upsertCell(
+        cube,
+        DimensionKey.of(cube.grain(), "ship"),
+        0L,
+        MINUTE,
+        fold(countOnly, counts(2)),
+        WriteVersion.SEED);
     refresh();
 
     // when read DIRECT at the tier granularity
@@ -357,6 +364,95 @@ abstract class AbstractDocumentDatasetStoreIT {
         .extracting(
             r -> r.groupValues().get(0), r -> r.measures().get("count"), r -> r.measures().get("p"))
         .containsExactlyInAnyOrder(Tuple.tuple("orders", 5L, 300.0), Tuple.tuple("ship", 2L, null));
+  }
+
+  @Test
+  void shouldChunkALargeFlushIntoMultipleBulkRequests() {
+    // given more staged cells than one bulk request may carry
+    final CompiledDataset cube = countCube(110L, "pd-chunk");
+    store().schemaManager().ensure(cube);
+    final int cells = DocumentDatasetWriter.MAX_BULK_ITEMS + 50;
+    for (int w = 0; w < cells; w++) {
+      writeCell(cube, "orders", w * MINUTE, counts(1));
+    }
+
+    // when they are flushed at one batch boundary
+    refresh();
+
+    // then every cell landed — the flush was split into a full chunk plus the remainder
+    final List<AggregatedRow> rows =
+        store()
+            .queryClient()
+            .fetchAggregated(
+                new AggregatedFetch(
+                    cube,
+                    MINUTE,
+                    0L,
+                    cells * MINUTE,
+                    List.of(),
+                    List.of("count"),
+                    List.of("bpmnProcessId"),
+                    cells * MINUTE,
+                    ReadStrategy.PUSH_DOWN));
+    assertThat(rows)
+        .extracting(r -> r.groupValues().get(0), r -> r.measures().get("count"))
+        .containsExactly(Tuple.tuple("orders", (long) cells));
+    assertThat(writer.fencedWrites()).isZero();
+  }
+
+  @Test
+  void shouldApplySiblingWritesWhenOneItemOfTheFlushIsFenced() {
+    // given a cell owned at (epoch 5, offset 100)
+    final CompiledDataset cube = countCube(111L, "pd-mixed");
+    store().schemaManager().ensure(cube);
+    writer.upsertCell(
+        cube,
+        DimensionKey.of(cube.grain(), "orders"),
+        0L,
+        MINUTE,
+        fold(cube, counts(10)),
+        new WriteVersion(5, 100));
+    refresh();
+
+    // when one flush carries a fenced zombie's stale overwrite next to a fresh sibling write
+    writer.upsertCell(
+        cube,
+        DimensionKey.of(cube.grain(), "orders"),
+        0L,
+        MINUTE,
+        fold(cube, counts(3)),
+        new WriteVersion(4, 999));
+    writer.upsertCell(
+        cube,
+        DimensionKey.of(cube.grain(), "ship"),
+        0L,
+        MINUTE,
+        fold(cube, counts(4)),
+        new WriteVersion(5, 100));
+    refresh();
+
+    // then the stale item was rejected and counted while its sibling applied
+    assertThat(groupedCounts(cube, "bpmnProcessId"))
+        .extracting(r -> r.groupValues().get(0), r -> r.measures().get("count"))
+        .containsExactlyInAnyOrder(Tuple.tuple("orders", 10L), Tuple.tuple("ship", 4L));
+    assertThat(writer.fencedWrites()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldKeepTheNewestWriteWhenTheSameCellIsUpsertedTwiceInOneFlush() {
+    // given the same cell upserted twice between two batch boundaries
+    final CompiledDataset cube = countCube(112L, "pd-lww");
+    store().schemaManager().ensure(cube);
+    final DimensionKey key = DimensionKey.of(cube.grain(), "orders");
+    writer.upsertCell(cube, key, 0L, MINUTE, fold(cube, counts(3)), new WriteVersion(5, 100));
+    writer.upsertCell(cube, key, 0L, MINUTE, fold(cube, counts(7)), new WriteVersion(5, 200));
+
+    // when the batch is flushed
+    refresh();
+
+    // then the newest write won and nothing was fenced (the older write never conflicts)
+    assertThat(servedCount(cube)).isEqualTo(7L);
+    assertThat(writer.fencedWrites()).isZero();
   }
 
   private List<AggregatedRow> groupedCounts(final CompiledDataset cube, final String dim) {
@@ -409,27 +505,23 @@ abstract class AbstractDocumentDatasetStoreIT {
       final String process,
       final long windowStart,
       final List<Fact> facts) {
-    store()
-        .writer()
-        .upsertCell(
-            cube,
-            DimensionKey.of(cube.grain(), process),
-            windowStart,
-            MINUTE,
-            fold(cube, facts),
-            WriteVersion.SEED);
+    writer.upsertCell(
+        cube,
+        DimensionKey.of(cube.grain(), process),
+        windowStart,
+        MINUTE,
+        fold(cube, facts),
+        WriteVersion.SEED);
   }
 
   private void writeSnapshot(
       final CompiledDataset cube, final String process, final long sampleTime, final int level) {
-    store()
-        .writer()
-        .upsertSnapshotRow(
-            cube,
-            DimensionKey.of(cube.grain(), Collections.singletonList(process)),
-            sampleTime,
-            levelAbsolute(cube, level),
-            new WriteVersion(1, sampleTime));
+    writer.upsertSnapshotRow(
+        cube,
+        DimensionKey.of(cube.grain(), Collections.singletonList(process)),
+        sampleTime,
+        levelAbsolute(cube, level),
+        new WriteVersion(1, sampleTime));
   }
 
   /** The cumulative absolute a snapshot row stores, folded as one signed delta. */

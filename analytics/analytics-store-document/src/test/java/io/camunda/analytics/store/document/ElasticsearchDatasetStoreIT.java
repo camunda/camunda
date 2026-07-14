@@ -52,7 +52,7 @@ final class ElasticsearchDatasetStoreIT extends AbstractDocumentDatasetStoreIT {
   }
 
   @Override
-  void refresh() {
+  void refreshIndices() {
     try {
       rawClient.indices().refresh(r -> r);
     } catch (final IOException e) {

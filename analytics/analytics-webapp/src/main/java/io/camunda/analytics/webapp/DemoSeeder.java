@@ -19,6 +19,7 @@ import io.camunda.analytics.meter.CompositeAggregateFunction;
 import io.camunda.analytics.query.DatasetQueryExecutor;
 import io.camunda.analytics.query.ReportQuery;
 import io.camunda.analytics.serving.spi.DatasetStore;
+import io.camunda.analytics.serving.spi.VersionedDatasetWriter;
 import io.camunda.analytics.serving.spi.WriteVersion;
 import java.util.ArrayList;
 import java.util.List;
@@ -57,6 +58,10 @@ public class DemoSeeder implements CommandLineRunner {
   private final DatasetCatalog catalog;
   private final DatasetQueryExecutor executor;
 
+  // One writer for the whole seeding run: a writer batches its writes until flush() (the store
+  // hands ownership of a fresh writer to each caller), so all seeds must share this instance.
+  private VersionedDatasetWriter writer;
+
   public DemoSeeder(
       final DatasetStore store, final DatasetCatalog catalog, final DatasetQueryExecutor executor) {
     this.store = store;
@@ -71,6 +76,7 @@ public class DemoSeeder implements CommandLineRunner {
       return;
     }
     LOG.info("Seeding demo analytics data into the serving store");
+    writer = store.writer();
     ensureSchemas();
     seedProcessInstances();
     seedProcessDuration();
@@ -78,7 +84,7 @@ public class DemoSeeder implements CommandLineRunner {
     seedElementCubes();
     seedDistinct();
     seedTopProcesses();
-    store.writer().flush();
+    writer.flush();
     LOG.info("Demo analytics data seeded");
   }
 
@@ -324,10 +330,8 @@ public class DemoSeeder implements CommandLineRunner {
       final DimensionKey key,
       final long windowStart,
       final List<Fact> facts) {
-    store
-        .writer()
-        .upsertCell(
-            dataset, key, windowStart, tier.windowMs(), fold(dataset, facts), WriteVersion.SEED);
+    writer.upsertCell(
+        dataset, key, windowStart, tier.windowMs(), fold(dataset, facts), WriteVersion.SEED);
   }
 
   /** Folds the facts into the dataset's composite accumulator — every meter slot at once. */
