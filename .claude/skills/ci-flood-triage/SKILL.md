@@ -1,8 +1,6 @@
 ---
 name: ci-flood-triage
-description: Triages a flood of CI incidents in camunda/camunda. Use when multiple CI incidents
-  open in a short window and the medic needs to orient fast — find the shared pattern, identify
-  outliers, and know what to do next. Re-runnable as new incidents arrive.
+description: Triages a flood of CI incidents in camunda/camunda. Use when multiple CI incidents open in a short window and the medic needs to orient fast — find the shared pattern, identify outliers, and know what to do next. Re-runnable as new incidents arrive.
 user-invocable: true
 argument-hint: "[minutes] — how far back to look, default 30"
 ---
