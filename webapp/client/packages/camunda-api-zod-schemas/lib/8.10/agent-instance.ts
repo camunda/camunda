@@ -164,9 +164,9 @@ const agentInstanceToolCallSchema = z.object({
 type AgentInstanceToolCall = z.infer<typeof agentInstanceToolCallSchema>;
 
 const agentInstanceHistoryItemMetricsSchema = z.object({
-	inputTokens: z.number(),
-	outputTokens: z.number(),
-	durationMs: z.number(),
+	inputTokens: z.number().nullable(),
+	outputTokens: z.number().nullable(),
+	durationMs: z.number().nullable(),
 });
 type AgentInstanceHistoryItemMetrics = z.infer<typeof agentInstanceHistoryItemMetricsSchema>;
 
