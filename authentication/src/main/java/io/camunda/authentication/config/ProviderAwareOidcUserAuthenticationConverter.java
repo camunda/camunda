@@ -22,6 +22,7 @@ import org.springframework.security.oauth2.client.authentication.OAuth2Authentic
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
 
 final class ProviderAwareOidcUserAuthenticationConverter extends OidcUserAuthenticationConverter {
 
@@ -65,7 +66,7 @@ final class ProviderAwareOidcUserAuthenticationConverter extends OidcUserAuthent
       return tokenClaimsConverter.convert(claims);
     } catch (final IllegalArgumentException e) {
       throw new OAuth2AuthenticationException(
-          new OAuth2Error("invalid_token", e.getMessage(), null), e);
+          new OAuth2Error(OAuth2ErrorCodes.INVALID_TOKEN, e.getMessage(), null), e);
     }
   }
 
