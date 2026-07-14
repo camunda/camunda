@@ -151,6 +151,15 @@ public class DashboardController {
     return repository.activatedInstances(bpmnProcessId, from, to);
   }
 
+  /** Instances ended (completed or terminated) for a process over the optional range. */
+  @GetMapping("/ended-instances")
+  public long endedInstances(
+      @RequestParam("process") final String bpmnProcessId,
+      @RequestParam(value = "from", required = false) final Long from,
+      @RequestParam(value = "to", required = false) final Long to) {
+    return repository.endedInstances(bpmnProcessId, from, to);
+  }
+
   /** Incidents per flow node (raised over the range + currently open) for a process. */
   @GetMapping("/incidents")
   public List<IncidentFlowNode> incidents(

@@ -421,6 +421,11 @@ public class DashboardRepository {
    * summary's observation count, which reads the COMPLETED-filtered duration cube and would
    * silently drop terminated instances from the books.
    */
+  public long endedInstances(
+      final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
+    return endedInstances(bpmnProcessId, fromWindow, toWindow, newMemo());
+  }
+
   private long endedInstances(
       final String bpmnProcessId,
       final Long fromWindow,

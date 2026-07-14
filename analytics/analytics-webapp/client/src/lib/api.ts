@@ -376,6 +376,8 @@ export const api = {
     getJson<number>(`/api/dashboard/active-instances?process=${q(process)}&tenant=${q(tenant)}`),
   activatedInstances: (process: string, range: TimeRange | null) =>
     getJson<number>(`/api/dashboard/activated-instances?process=${q(process)}${rangeQs(range)}`),
+  endedInstances: (process: string, range: TimeRange | null) =>
+    getJson<number>(`/api/dashboard/ended-instances?process=${q(process)}${rangeQs(range)}`),
   slaCohorts: (process: string, range: TimeRange | null) =>
     getJson<SlaCohortPoint[]>(`/api/dashboard/sla-cohorts?process=${q(process)}${rangeQs(range)}`),
   noIncidentCohorts: (process: string, range: TimeRange | null) =>

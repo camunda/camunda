@@ -36,6 +36,7 @@ export interface MetricsData {
   openIncidents: number;
   activeNow: number;
   activated: number;
+  ended: number;
 }
 
 /** Fetches every metric for the current selection; re-fetches when process/tenant/range change. */
@@ -68,6 +69,7 @@ export function useMetrics(
       api.openIncidents(process),
       api.activeInstances(process, tenant),
       api.activatedInstances(process, range),
+      api.endedInstances(process, range),
       api.noIncidentCohorts(process, range),
     ])
       .then(
@@ -85,6 +87,7 @@ export function useMetrics(
           openIncidents,
           activeNow,
           activated,
+          ended,
           noIncidentCohorts,
         ]) => {
           if (!cancelled) {
@@ -103,6 +106,7 @@ export function useMetrics(
               openIncidents,
               activeNow,
               activated,
+              ended,
             });
           }
         },
