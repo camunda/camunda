@@ -10,20 +10,29 @@ argument-hint: "[minutes] — how far back to look, default 30"
 # CI Flood Triage
 
 Gives the medic a fast orientation snapshot when a flood of CI incidents opens at once. Finds the
-shared pattern, flags outliers, and drafts a broadcast message — all without touching anything in
-incident.io.
+shared pattern, flags outliers, and drafts a broadcast message. Read-only by default — generating
+the snapshot never writes to incident.io. If the medic explicitly asks to merge incidents
+afterward, this skill can do that too, always with a confirmation step first (see Step 6).
 
 ## Prerequisites
 
-- **incident.io MCP** — required. Verify `incident_show` is available. If not, tell the user to
-  [configure the incident.io MCP server](https://docs.incident.io/ai/remote-mcp) and stop.
+- **incident.io MCP** — required. Verify the `mcp__incident-io__incident_show` tool is available.
+  If not, tell the user to [configure the incident.io MCP server](https://docs.incident.io/ai/remote-mcp)
+  and stop.
 
 Throughout this skill, MCP tools are referenced by their short verb (`incident_list`,
-`incident_show`); the actual identifier depends on which MCP server is configured.
+`incident_show`, `incident_update`); the actual tool name is namespaced by whichever MCP server
+is configured (e.g. `mcp__incident-io__incident_list`).
 
 ## Scope
 
-Multiple incidents only. If the user passes a single incident ID, redirect them to `/ci-incident`.
+Multiple incidents only. If the user passes a single incident ID, redirect them to `/ci-incident`
+for deep-dive investigation of that one incident.
+
+This skill owns the multi-incident merge action when the medic asks for it — it already has the
+correlation context (which incidents share a cause) needed to do that safely. `/ci-incident` is
+scoped to driving a single incident's investigation and status updates once assigned; it does not
+handle cross-incident merging.
 
 ## Procedure
 
@@ -51,8 +60,10 @@ Call `incident_list` with:
   incidents won't appear otherwise)
 - Page through all results until no more pages
 
-Read `config://organisation` to get the CI incident type ID and filter to it. If you can't
-determine the type ID, proceed without the filter and note this in the output.
+If the MCP server exposes a `config://organisation` resource (or equivalent), you may read it to
+find the CI incident type ID and filter to it. This is optional, not a required step — if the
+resource isn't available, or you can't determine the type ID from it, proceed without the filter
+(results may include non-CI incidents) and note this in the output.
 
 Record: total count, the list of (reference, name, summary, reported_at) for each.
 
@@ -75,16 +86,22 @@ data."
 
 ### Step 4 — Dig where uncertain
 
-If the hypothesis is unclear, or if summaries are thin, call `incident_show` on the incidents
-that are ambiguous. Prioritize:
-1. A sample of 3–5 that seem representative of the dominant group
-2. Any that look like outliers
+If the hypothesis is unclear, or summaries are thin, call `incident_show` on the incidents that
+need it — not the whole flood. That's normally:
+1. A handful representative of the dominant group (enough to confirm the shared cause — usually
+   3–5, more only if the group is large and heterogeneous)
+2. Every incident that looks like an outlier (there are usually few)
 
-Call in parallel batches of ~8. From each response, extract:
+Call these in parallel. From each response, extract:
 - Alert payload run URLs / run IDs
 - Any existing investigation content
 
-Use this to confirm or refute the grouping hypothesis.
+If a specific incident is still unclear after `incident_show` — thin alert payload, no shared run
+ID, genuinely ambiguous — invoke `/ci-incident <ID>` for that one incident to pull its full
+investigation context (Slack thread, matched runbook) before deciding where it belongs. Scope this
+to the incidents that actually need it; don't run it broadly across the flood.
+
+Use all of this to confirm or refute the grouping hypothesis.
 
 ### Step 5 — Output the triage snapshot
 
@@ -122,7 +139,7 @@ After the snapshot, stop and wait. Do not act on anything — no merging, no sta
 Slack posts — until the medic explicitly asks.
 
 If asked to merge incidents: list the exact IDs you'll merge and the target, then wait for
-explicit confirmation before calling any write tool.
+explicit confirmation before calling `incident_update` (or the equivalent merge write tool).
 
 If asked to post the draft broadcast: remind the medic that this skill does not post to Slack
 directly — they should copy-paste from the output above.
@@ -130,7 +147,8 @@ directly — they should copy-paste from the output above.
 ## Guardrails
 
 - Never post to Slack.
-- Never merge, update severity, or change status without explicit medic instruction.
+- Never merge, update severity, or change status without explicit medic instruction — the snapshot
+  in Step 5 is a recommendation, not an action.
 - Always show draft wording and get confirmation before any `incident_update` call.
 - Never assume an incident has been investigated — ask or check.
 - If the snapshot is a partial picture (flood still growing), say so and suggest re-running in
