@@ -23,9 +23,9 @@ import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
-import io.camunda.zeebe.dynamic.config.api.RestoreParameterValidator;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.dynamic.nodeid.fs.DataDirectoryProvider;
+import io.camunda.zeebe.restore.validation.RestoreValidator;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.time.Instant;
@@ -233,7 +233,8 @@ public class RestoreApp implements ApplicationRunner {
     final var toStr = to != null ? to.toString() : null;
     final var restoreRequest =
         new RestoreRequest(backupIds, fromStr, toStr, databaseType, continuousBackups, false);
-    RestoreParameterValidator.validate(restoreRequest);
+    final RestoreValidator validator = new RestoreValidator(backupStore);
+    validator.validate(restoreRequest);
   }
 
   private boolean hasTimeRange() {

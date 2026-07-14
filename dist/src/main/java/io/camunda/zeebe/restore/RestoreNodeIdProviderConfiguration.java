@@ -12,11 +12,17 @@ import static io.camunda.zeebe.broker.NodeIProviderConfigurationUtils.getNodeIdP
 import static io.camunda.zeebe.broker.NodeIProviderConfigurationUtils.getS3NodeIdRepository;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.atomix.cluster.MemberId;
+import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.configuration.Cluster;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.BrokerBasedProperties;
+import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
+import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
+import io.camunda.zeebe.broker.partitioning.topology.StaticConfigurationGenerator;
 import io.camunda.zeebe.broker.system.BrokerDataDirectoryCopier;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.dynamic.nodeid.RestoreStatusManager;
@@ -30,9 +36,12 @@ import io.camunda.zeebe.restore.RestoreApp.PostRestoreAction;
 import io.camunda.zeebe.restore.RestoreApp.PostRestoreActionContext;
 import io.camunda.zeebe.restore.RestoreApp.PreRestoreAction;
 import io.camunda.zeebe.restore.RestoreApp.PreRestoreActionResult;
+import io.camunda.zeebe.restore.validation.PostRestoreValidator;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -123,7 +132,8 @@ public class RestoreNodeIdProviderConfiguration {
 
   private static void validateAfterRestore(
       final BrokerBasedProperties brokerCfg, final PostRestoreActionContext context) {
-    if (!RestoreValidator.validate(brokerCfg)) {
+    final var postRestore = createPostRestoreValidator(brokerCfg);
+    if (!postRestore.verifyRestore()) {
       final String message;
       if (context.skippedRestore()) {
         message =
@@ -187,5 +197,30 @@ public class RestoreNodeIdProviderConfiguration {
     data.setDirectory(configuredDirectory.toString());
 
     return initializer;
+  }
+
+  private static PostRestoreValidator createPostRestoreValidator(final BrokerCfg brokerCfg) {
+    final var cluster = brokerCfg.getCluster();
+    final var localMember = MemberId.from(cluster.getZone(), cluster.getNodeId());
+    final var clusterTopology =
+        new PartitionDistribution(
+            StaticConfigurationGenerator.getStaticConfiguration(brokerCfg, localMember)
+                .generatePartitionDistribution());
+
+    final var partitionsToRestore =
+        clusterTopology.partitions().stream()
+            .filter(partitionMetadata -> partitionMetadata.members().contains(localMember))
+            .collect(Collectors.toSet());
+
+    final var dataDir = brokerCfg.getData().getDirectory();
+    final var partitionDirectories = new HashMap<PartitionMetadata, Path>();
+
+    partitionsToRestore.forEach(
+        partitionMetadata ->
+            partitionDirectories.put(
+                partitionMetadata,
+                RaftPartitionFactory.getPartitionDirectory(partitionMetadata.id(), dataDir)));
+
+    return new PostRestoreValidator(localMember, partitionDirectories, Path.of(dataDir));
   }
 }
