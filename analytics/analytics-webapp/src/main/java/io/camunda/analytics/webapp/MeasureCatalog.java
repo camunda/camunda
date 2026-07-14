@@ -169,7 +169,7 @@ public class MeasureCatalog {
             "duration",
             null,
             "duration",
-            params -> Meter.of("duration", MeterCatalog.EXECUTION_TIME_SUMMARY, "durationMs"),
+            params -> Meter.of("duration", MeterCatalog.EXECUTION_TIME, "durationMs"),
             List.of(MINUTE, HOUR));
     final Measure durationPercentile =
         new Measure(

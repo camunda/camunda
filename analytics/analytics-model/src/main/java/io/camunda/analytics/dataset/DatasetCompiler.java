@@ -18,6 +18,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Compiles a {@link DatasetDeclaration} into a runnable {@link CompiledDataset}: builds the grain
@@ -29,6 +31,8 @@ import java.util.Map;
  * the grain, the aggregates, and the serving schema.
  */
 public final class DatasetCompiler {
+
+  private static final Logger LOG = LoggerFactory.getLogger(DatasetCompiler.class);
 
   private final MeterCatalog catalog;
   private final MeterIdRegistry registry;
@@ -44,6 +48,13 @@ public final class DatasetCompiler {
           "projected dataset '" + declaration.name() + "' must be compiled via compileTable");
     }
     validateFilters(declaration);
+    for (final String duplicate : duplicatePercentileSketches(declaration)) {
+      LOG.warn(
+          "dataset '{}' declares {} — one KLL sketch can serve many ranks, so declare a single"
+              + " percentile meter carrying all ranks instead of paying for duplicate sketches",
+          declaration.name(),
+          duplicate);
+    }
     final List<DimensionColumn> columns = new ArrayList<>();
     final Map<String, EnrichmentTiming> enrichment = new LinkedHashMap<>();
     for (final DimensionSpec dimension : declaration.dimensions()) {
@@ -134,10 +145,10 @@ public final class DatasetCompiler {
   /**
    * The compile-time validation gate for the stringly typed filter values — an ordering operator
    * needs a numeric bound, {@code IN} a non-empty list (see {@link
-   * FilterPredicate#validateValue()}). A failure is rethrown as a {@link
-   * DatasetValidationException} carrying the dataset + filter context, the same admission gate as
-   * meter params: a bad declaration is rejected at compile/provisioning time instead of silently
-   * never matching a fact.
+   * FilterPredicate#validateValue()}). Covers the dataset-level filters and every meter's per-meter
+   * filters. A failure is rethrown as a {@link DatasetValidationException} carrying the dataset (+
+   * meter) + filter context, the same admission gate as meter params: a bad declaration is rejected
+   * at compile/provisioning time instead of silently never matching a fact.
    */
   private static void validateFilters(final DatasetDeclaration declaration) {
     for (final FilterPredicate filter : declaration.filters()) {
@@ -149,6 +160,58 @@ public final class DatasetCompiler {
             "dataset '" + declaration.name() + "' declares an invalid " + e.getMessage(), e);
       }
     }
+    for (final Meter meter : declaration.meters()) {
+      for (final FilterPredicate filter : meter.filters()) {
+        try {
+          filter.validateValue();
+        } catch (final RuntimeException e) {
+          // reads: dataset 'x' meter 'm' (count) declares an invalid filter on 'f' (GT): ...
+          throw new DatasetValidationException(
+              "dataset '"
+                  + declaration.name()
+                  + "' meter '"
+                  + meter.name()
+                  + "' ("
+                  + meter.type()
+                  + ") declares an invalid "
+                  + e.getMessage(),
+              e);
+        }
+      }
+    }
+  }
+
+  /**
+   * The duplicate-percentile-sketch lint: two {@code percentile} meters over the same measured
+   * field <em>and</em> the same per-meter filters fold the same observations into two KLL sketches,
+   * yet one sketch can serve any number of ranks. Differently-filtered percentile meters over one
+   * field are legitimately distinct sketches, so they are not flagged. A compile-time warning only
+   * — the declaration stays valid — returned as human-readable descriptions so the lint itself is
+   * testable without capturing log output.
+   */
+  static List<String> duplicatePercentileSketches(final DatasetDeclaration declaration) {
+    final Map<List<Object>, List<String>> byFold = new LinkedHashMap<>();
+    for (final Meter meter : declaration.meters()) {
+      if (MeterCatalog.PERCENTILE.equals(meter.type()) && meter.measureField() != null) {
+        byFold
+            .computeIfAbsent(List.of(meter.measureField(), meter.filters()), k -> new ArrayList<>())
+            .add(meter.name());
+      }
+    }
+    final List<String> duplicates = new ArrayList<>();
+    byFold.forEach(
+        (fold, names) -> {
+          if (names.size() > 1) {
+            duplicates.add(
+                names.size()
+                    + " percentile meters "
+                    + names
+                    + " over field '"
+                    + fold.get(0)
+                    + "' with identical filters");
+          }
+        });
+    return duplicates;
   }
 
   /**

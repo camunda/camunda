@@ -13,8 +13,10 @@ import io.camunda.analytics.dataset.DatasetCompiler;
 import io.camunda.analytics.dataset.DatasetDeclaration;
 import io.camunda.analytics.dataset.DatasetKind;
 import io.camunda.analytics.dataset.DatasetRegistry;
+import io.camunda.analytics.dataset.FilterPredicate;
 import io.camunda.analytics.dataset.RegisteredDataset;
 import io.camunda.analytics.dimension.DimensionType;
+import io.camunda.analytics.fact.Fact;
 import io.camunda.analytics.fact.FactType;
 import io.camunda.analytics.fact.Transition;
 import io.camunda.analytics.meter.Meter;
@@ -121,13 +123,43 @@ public final class StandardDatasets {
     return List.copyOf(tables);
   }
 
+  /**
+   * The duration-band edges (ms) of the completion-time histogram the dashboard renders: five
+   * bands, {@code [<10s, <30s, <60s, <120s, ≥120s]}.
+   */
+  private static final String DURATION_BAND_THRESHOLDS = "10000,30000,60000,120000";
+
   /** The standard dashboards as declarations (order is stable — it fixes cube/agg ids). */
   public static List<DatasetDeclaration> declarations() {
     return List.of(
-        // Process-instance throughput + duration summary per process definition.
+        // Process-instance throughput + duration summary per process definition, composed from
+        // primitive meters (per-meter filters) rather than the deprecated lifecycle_summary
+        // bundle: one COUNT per transition, plus the duration family (count/avg/min/max and the
+        // fixed completion-time bands) over the ended events. Every duration meter filters
+        // NOT_NULL(durationMs) — an ACTIVATED fact carries no duration, and folding MeasureRef's
+        // null-as-0 would skew every duration statistic toward zero.
         DatasetDeclaration.builder("process-instances", FactType.PROCESS_INSTANCE)
             .dimension("bpmnProcessId", DimensionType.STRING)
-            .meter(Meter.of("lifecycle", MeterCatalog.LIFECYCLE_SUMMARY, "durationMs"))
+            .meter(
+                Meter.of("activated", MeterCatalog.COUNT)
+                    .filtered(FilterPredicate.equals(Fact.TRANSITION, Transition.ACTIVATED.name())))
+            .meter(
+                Meter.of("completed", MeterCatalog.COUNT)
+                    .filtered(FilterPredicate.equals(Fact.TRANSITION, Transition.COMPLETED.name())))
+            .meter(
+                Meter.of("terminated", MeterCatalog.COUNT)
+                    .filtered(
+                        FilterPredicate.equals(Fact.TRANSITION, Transition.TERMINATED.name())))
+            .meter(
+                Meter.of("duration", MeterCatalog.EXECUTION_TIME, "durationMs")
+                    .filtered(FilterPredicate.notNull("durationMs")))
+            .meter(
+                new Meter(
+                        "duration_bands",
+                        MeterCatalog.HISTOGRAM,
+                        "durationMs",
+                        Map.of("thresholds", DURATION_BAND_THRESHOLDS))
+                    .filtered(FilterPredicate.notNull("durationMs")))
             .window(ONE_MINUTE_MS)
             .lateness(GRACE_MS)
             .build(),
@@ -187,12 +219,17 @@ public final class StandardDatasets {
             .window(ONE_HOUR_MS)
             .lateness(GRACE_MS)
             .build(),
-        // Completed flow-node duration summary per (process, element): count/avg/max + percentiles.
+        // Completed flow-node duration summary per (process, element), composed from primitives
+        // rather than the deprecated execution_time_summary bundle: count/avg/min/max as an
+        // additive execution-time meter (pushdown), percentiles as their own sketch. The dataset
+        // filter already restricts to completions (whose duration is always present), so no
+        // per-meter NOT_NULL is needed here.
         DatasetDeclaration.builder("element-duration", FactType.ELEMENT)
             .filterEquals("transition", Transition.COMPLETED.name())
             .dimension("bpmnProcessId", DimensionType.STRING)
             .dimension("elementId", DimensionType.STRING)
-            .meter(Meter.of("duration", MeterCatalog.EXECUTION_TIME_SUMMARY, "durationMs"))
+            .meter(Meter.of("duration", MeterCatalog.EXECUTION_TIME, "durationMs"))
+            .meter(Meter.of("duration_p", MeterCatalog.PERCENTILE, "durationMs"))
             .window(ONE_MINUTE_MS)
             .window(ONE_HOUR_MS)
             .lateness(GRACE_MS)

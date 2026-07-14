@@ -292,6 +292,64 @@ final class DatasetCompilerTest {
   }
 
   @Test
+  void shouldRejectInvalidPerMeterFilterAtCompileTime() {
+    // given a meter whose per-meter ordering filter carries a non-numeric bound
+    final Meter meter =
+        Meter.of("slow", MeterCatalog.COUNT)
+            .filtered(FilterPredicate.greaterThan("durationMs", "fast"));
+
+    // when compiled, then it is rejected naming the dataset, the meter, and the filter — the same
+    // admission gate as the dataset-level filters
+    assertThatThrownBy(() -> compiler.compile(1L, withMeter(meter)))
+        .isInstanceOf(DatasetValidationException.class)
+        .hasMessageContaining("dataset 'param-check'")
+        .hasMessageContaining("meter 'slow'")
+        .hasMessageContaining("filter on 'durationMs'")
+        .hasMessageContaining("'fast'");
+  }
+
+  @Test
+  void shouldCompileWellFormedPerMeterFilters() {
+    // given a meter filtered to present, bounded measures
+    final Meter meter =
+        Meter.of("slow", MeterCatalog.COUNT)
+            .filtered(
+                FilterPredicate.notNull("durationMs"),
+                FilterPredicate.greaterOrEqual("durationMs", "1000"));
+
+    // when / then it binds like any unfiltered meter
+    assertThat(compiler.compile(1L, withMeter(meter)).meters()).hasSize(1);
+  }
+
+  @Test
+  void shouldWarnOnDuplicatePercentileSketchesButStillCompile() {
+    // given two percentile meters folding the same observations (same field, same filters) next to
+    // a differently-filtered and a differently-measured percentile
+    final DatasetDeclaration declaration =
+        DatasetDeclaration.builder("sketch-lint", FactType.PROCESS_INSTANCE)
+            .dimension("bpmnProcessId", DimensionType.STRING)
+            .meter(Meter.of("p50", MeterCatalog.PERCENTILE, "durationMs"))
+            .meter(Meter.of("p95", MeterCatalog.PERCENTILE, "durationMs"))
+            .meter(
+                Meter.of("p95_present", MeterCatalog.PERCENTILE, "durationMs")
+                    .filtered(FilterPredicate.notNull("durationMs")))
+            .meter(Meter.of("p95_wait", MeterCatalog.PERCENTILE, "waitMs"))
+            .window(60_000L)
+            .build();
+
+    // when the lint runs, then exactly the identical-fold pair is flagged (one sketch can serve
+    // many ranks); differently-filtered or differently-measured sketches are legitimate
+    assertThat(DatasetCompiler.duplicatePercentileSketches(declaration))
+        .singleElement()
+        .asString()
+        .contains("p50", "p95", "durationMs")
+        .doesNotContain("p95_present", "p95_wait");
+
+    // and the declaration still compiles — a warning, not a rejection
+    assertThat(compiler.compile(1L, declaration).meters()).hasSize(4);
+  }
+
+  @Test
   void shouldCompileWellFormedOperatorFilters() {
     // given one filter per operator, each with a well-formed value
     final DatasetDeclaration declaration =

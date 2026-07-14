@@ -21,7 +21,11 @@ import io.camunda.eventbridge.streaming.aggregate.AggregateFunction;
  * it reads the transition and duration by name. Facts without a recognised transition contribute
  * only their duration (if any); a duration is folded only when present, so activations are not
  * counted as zero-duration observations.
+ *
+ * @deprecated the {@code lifecycle_summary} bundle predates per-meter filters; declare one filtered
+ *     count per transition plus the duration primitives instead. Kept for existing declarations.
  */
+@Deprecated
 public final class LifecycleSummaryAggregateFunction
     implements AggregateFunction<FactRow, LifecycleSummary, LifecycleSummaryResult> {
 

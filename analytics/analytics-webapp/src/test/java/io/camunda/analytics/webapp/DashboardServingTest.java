@@ -16,6 +16,7 @@ import io.camunda.analytics.query.TableQueryExecutor;
 import io.camunda.analytics.webapp.ServingTestSupport.Fixture;
 import io.camunda.analytics.webapp.dashboard.DashboardRepository;
 import io.camunda.analytics.webapp.dashboard.DistinctPoint;
+import io.camunda.analytics.webapp.dashboard.DurationBucketPoint;
 import io.camunda.analytics.webapp.dashboard.DurationPercentilePoint;
 import io.camunda.analytics.webapp.dashboard.RatioPoint;
 import java.util.ArrayList;
@@ -128,6 +129,38 @@ final class DashboardServingTest {
               assertThat(point.estimate()).isEqualTo(3L);
               assertThat(point.lowerBound()).isLessThanOrEqualTo(3L);
               assertThat(point.upperBound()).isGreaterThanOrEqualTo(3L);
+            });
+  }
+
+  @Test
+  void shouldDeriveLifecycleWidgetsFromThePrimitiveMeters() {
+    // given a process-instances window with 5 started, 3 completed (2s/20s/70s), 1 terminated
+    final List<Fact> facts = new ArrayList<>();
+    for (int i = 0; i < 5; i++) {
+      facts.add(Fact.builder(FactType.PROCESS_INSTANCE).transition(Transition.ACTIVATED).build());
+    }
+    facts.addAll(completed(2_000L, 20_000L, 70_000L));
+    facts.add(Fact.builder(FactType.PROCESS_INSTANCE).transition(Transition.TERMINATED).build());
+    final long window =
+        ServingTestSupport.seed(fixture, "process-instances", "activated", facts, PROCESS);
+
+    // when the lifecycle-derived widgets read the cube
+    final long activated = repository.activatedInstances(PROCESS, null, null);
+    final long activeNow = repository.activeInstances(PROCESS, TENANT);
+    final List<DurationBucketPoint> buckets = repository.durationBuckets(PROCESS, null, null);
+
+    // then the per-transition counts compose the same numbers the bundle used to report
+    assertThat(activated).isEqualTo(5L);
+    assertThat(activeNow).isEqualTo(1L); // 5 started − 3 completed − 1 terminated
+    assertThat(buckets)
+        .singleElement()
+        .satisfies(
+            point -> {
+              assertThat(point.windowStart()).isEqualTo(window);
+              assertThat(point.started()).isEqualTo(5L);
+              assertThat(point.open()).isEqualTo(1L);
+              // exact histogram bands [<10s, <30s, <60s, <120s, ≥120s] over the completions only
+              assertThat(point.bands()).containsExactly(1L, 1L, 0L, 1L, 0L);
             });
   }
 

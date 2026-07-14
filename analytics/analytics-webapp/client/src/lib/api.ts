@@ -126,14 +126,19 @@ export type FilterOperator =
   | "NOT_NULL";
 export type Combination = "UNION";
 
-/** The fixed catalog of meter types offered by the builder. */
+/**
+ * The fixed catalog of meter types offered by the builder. The deprecated bundle types
+ * (execution_time_summary, lifecycle_summary) are deliberately absent: new declarations compose
+ * primitives with per-meter filters instead; existing datasets that carry a bundle still render.
+ */
 export const METER_TYPES = [
   "count",
   "sum",
   "level",
+  "min",
+  "max",
+  "stddev",
   "execution_time",
-  "execution_time_summary",
-  "lifecycle_summary",
   "histogram",
   "percentile",
   "distinct",
@@ -153,6 +158,8 @@ export interface Meter {
   type: string;
   measureField?: string;
   params?: Record<string, string>;
+  /** Per-meter fold predicates (SQL FILTER-clause semantics); all must match. */
+  filters?: Filter[];
 }
 
 export interface Filter {

@@ -7,6 +7,8 @@
  */
 package io.camunda.analytics.meter;
 
+import io.camunda.analytics.dataset.CompiledFilter;
+import io.camunda.analytics.dataset.FilterPredicate;
 import io.camunda.analytics.dimension.FactRow;
 import io.camunda.eventbridge.streaming.aggregate.AggregateFunction;
 import java.util.List;
@@ -16,6 +18,13 @@ import java.util.List;
  * order, each delegating to that meter's bound {@link AggregateFunction}. Every admitted fact folds
  * into all slots at once, so all of a cube's meters travel the pipeline as <em>one</em> value — one
  * fold, one sealed delta, one shuffle stream, one merged cell, one serving row.
+ *
+ * <p>A meter's declared per-meter filters (SQL {@code FILTER}-clause semantics, see {@link
+ * Meter#filters()}) gate its slot at fold time only: {@link #add} skips a slot whose predicate
+ * conjunction rejects the fact. Predicates are compiled once here (never re-parsed per fact) and
+ * evaluated allocation-free ({@link CompiledFilter}). Merges are untouched — a shuffled delta or
+ * serving row has the same shape whether its slots were filtered or not, so the dedup and roll-up
+ * arithmetic downstream is oblivious to filtering.
  *
  * <p>A {@code null} slot is the identity: {@link #merge}/{@link #mergeInto} skip it, so a delta
  * decoded from an older, shorter layout (fewer slots than declared) merges as "no contribution" —
@@ -30,6 +39,8 @@ public final class CompositeAggregateFunction
     implements AggregateFunction<FactRow, Object[], Object[]> {
 
   private final AggregateFunction<FactRow, Object, Object>[] slots;
+  // Per slot: the meter's compiled predicate conjunction, or null when the meter is unfiltered.
+  private final CompiledFilter[][] slotFilters;
 
   @SuppressWarnings("unchecked")
   public CompositeAggregateFunction(final List<BoundMeter<?, ?>> meters) {
@@ -37,6 +48,13 @@ public final class CompositeAggregateFunction
         meters.stream()
             .map(meter -> (AggregateFunction<FactRow, Object, Object>) meter.aggregate())
             .toArray(AggregateFunction[]::new);
+    slotFilters = new CompiledFilter[meters.size()][];
+    for (int i = 0; i < meters.size(); i++) {
+      final List<FilterPredicate> filters = meters.get(i).meter().filters();
+      if (!filters.isEmpty()) {
+        slotFilters[i] = filters.stream().map(CompiledFilter::new).toArray(CompiledFilter[]::new);
+      }
+    }
   }
 
   @Override
@@ -51,9 +69,24 @@ public final class CompositeAggregateFunction
   @Override
   public Object[] add(final FactRow fact, final Object[] accumulator) {
     for (int i = 0; i < slots.length; i++) {
-      accumulator[i] = slots[i].add(fact, accumulator[i]);
+      if (admitted(slotFilters[i], fact)) {
+        accumulator[i] = slots[i].add(fact, accumulator[i]);
+      }
     }
     return accumulator;
+  }
+
+  /** Whether the fact passes a slot's predicate conjunction ({@code null} = unfiltered). */
+  private static boolean admitted(final CompiledFilter[] filters, final FactRow fact) {
+    if (filters == null) {
+      return true;
+    }
+    for (final CompiledFilter filter : filters) {
+      if (!filter.matches(fact)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   @Override

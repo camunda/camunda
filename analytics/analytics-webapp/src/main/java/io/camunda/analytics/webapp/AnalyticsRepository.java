@@ -9,8 +9,7 @@ package io.camunda.analytics.webapp;
 
 import io.camunda.analytics.dataset.CompiledDataset;
 import io.camunda.analytics.dataset.FilterPredicate;
-import io.camunda.analytics.metric.ExecutionTimeSummaryResult;
-import io.camunda.analytics.metric.LifecycleSummaryResult;
+import io.camunda.analytics.metric.ExecutionTimeResult;
 import io.camunda.analytics.query.DatasetQueryExecutor;
 import io.camunda.analytics.query.ReportQuery;
 import io.camunda.analytics.webapp.model.Dataset;
@@ -141,9 +140,11 @@ public class AnalyticsRepository {
   }
 
   /**
-   * Runs a report: process-instance lifecycle per process and 1-minute window, optionally filtered
-   * to the report's process. The region filter is not modeled by the lifecycle cube (no region
-   * dimension), so it is ignored and the region column reads empty.
+   * Runs a report: process-instance completions + duration stats per process and 1-minute window,
+   * optionally filtered to the report's process — read from the primitive meters (completed-count
+   * with a transition filter, execution-time over the ended events) that replaced the {@code
+   * lifecycle_summary} bundle. The region filter is not modeled by the process-instances cube (no
+   * region dimension), so it is ignored and the region column reads empty.
    */
   public List<ReportRow> runReport(final Report report) {
     final CompiledDataset dataset = catalog.require("process-instances");
@@ -156,20 +157,26 @@ public class AnalyticsRepository {
     }
     final ReportQuery query =
         new ReportQuery(
-            List.of("bpmnProcessId"), fromMs, toMs, MINUTE_MS, filters, List.of("lifecycle"));
+            List.of("bpmnProcessId"),
+            fromMs,
+            toMs,
+            MINUTE_MS,
+            filters,
+            List.of("completed", "duration"));
     final List<ReportRow> rows = new ArrayList<>();
     for (final var row : executor.execute(query, dataset).rows()) {
-      final LifecycleSummaryResult lifecycle =
-          (LifecycleSummaryResult) row.measures().get("lifecycle");
+      final long completed =
+          row.measures().get("completed") instanceof final Number n ? n.longValue() : 0L;
+      final ExecutionTimeResult duration = (ExecutionTimeResult) row.measures().get("duration");
       final Object process = row.dimensions().get("bpmnProcessId");
       rows.add(
           new ReportRow(
               "",
               process == null ? "" : process.toString(),
               row.windowStart(),
-              lifecycle.completed(),
-              lifecycle.duration().averageMs(),
-              lifecycle.duration().maxMs()));
+              completed,
+              duration.averageMs(),
+              duration.maxMs()));
     }
     rows.sort(
         Comparator.comparing(ReportRow::bpmnProcessId).thenComparingLong(ReportRow::windowStart));
@@ -204,8 +211,7 @@ public class AnalyticsRepository {
             List.of("duration"));
     final List<HeatmapCell> cells = new ArrayList<>();
     for (final var row : executor.execute(query, dataset).rows()) {
-      final ExecutionTimeSummaryResult d =
-          (ExecutionTimeSummaryResult) row.measures().get("duration");
+      final ExecutionTimeResult d = (ExecutionTimeResult) row.measures().get("duration");
       final Object elementId = row.dimensions().get("elementId");
       cells.add(
           new HeatmapCell(

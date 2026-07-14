@@ -7,7 +7,7 @@
  */
 package io.camunda.analytics.table;
 
-import io.camunda.analytics.aggregation.CompiledFilter;
+import io.camunda.analytics.dataset.CompiledFilter;
 import io.camunda.analytics.dataset.CompiledTable;
 import io.camunda.analytics.dataset.RegisteredDataset;
 import io.camunda.analytics.dimension.DimensionColumn;

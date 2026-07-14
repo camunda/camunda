@@ -71,11 +71,12 @@ final class AnalyticsRepositoryTest {
 
   @Test
   void shouldRunReportOverProcessInstanceLifecycle() {
-    // given — three completed instances of a process folded into the lifecycle cube
+    // given — three completed instances of a process folded into the process-instances cube
+    // (per-transition counts + duration primitives)
     ServingTestSupport.seed(
         fixture,
         "process-instances",
-        "lifecycle",
+        "completed",
         lifecycle(3, 1500L, 900L, 600L),
         "order-process");
     final Dataset dataset = repository.createDataset("Completions", "definition", 60_000L);
