@@ -54,6 +54,22 @@ public class CCSMTokenService {
   private static final String OPTIMIZE_PERMISSION = "write:*";
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(CCSMTokenService.class);
 
+  // Known Microsoft Entra / Azure AD issuer host roots across all cloud deployments:
+  //   Commercial:    login.microsoftonline.com, sts.windows.net
+  //   US Government: login.microsoftonline.us
+  //   Germany:       login.microsoftonline.de  (legacy sovereign, still active)
+  //   China:         login.partner.microsoftonline.cn, sts.chinacloudapi.cn
+  // Each entry matches both the exact host and any subdomain (e.g.
+  // "tenant.login.microsoftonline.us").
+  private static final List<String> ENTRA_ISSUER_ROOT_DOMAINS =
+      List.of(
+          "login.microsoftonline.com",
+          "login.microsoftonline.us",
+          "login.microsoftonline.de",
+          "login.partner.microsoftonline.cn",
+          "sts.windows.net",
+          "sts.chinacloudapi.cn");
+
   private final AuthCookieService authCookieService;
   private final ConfigurationService configurationService;
   private final Identity identity;
@@ -235,10 +251,8 @@ public class CCSMTokenService {
       return false;
     }
     final String lower = host.toLowerCase(Locale.ROOT);
-    return "login.microsoftonline.com".equals(lower)
-        || lower.endsWith(".login.microsoftonline.com")
-        || "sts.windows.net".equals(lower)
-        || lower.endsWith(".sts.windows.net");
+    return ENTRA_ISSUER_ROOT_DOMAINS.stream()
+        .anyMatch(domain -> lower.equals(domain) || lower.endsWith("." + domain));
   }
 
   public Tokens renewToken(final String refreshToken) {
