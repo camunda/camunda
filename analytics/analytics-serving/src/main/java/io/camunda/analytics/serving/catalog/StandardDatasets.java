@@ -135,9 +135,9 @@ public final class StandardDatasets {
         // Process-instance throughput + duration summary per process definition, composed from
         // primitive meters (per-meter filters) rather than the deprecated lifecycle_summary
         // bundle: one COUNT per transition, plus the duration family (count/avg/min/max and the
-        // fixed completion-time bands) over the ended events. Every duration meter filters
-        // NOT_NULL(durationMs) — an ACTIVATED fact carries no duration, and folding MeasureRef's
-        // null-as-0 would skew every duration statistic toward zero.
+        // fixed completion-time bands) over the ended events. The duration meters skip the
+        // duration-less ACTIVATED facts via the catalog's implicit NOT_NULL(measure) filter on
+        // numeric-measure kinds — no explicit declaration needed.
         DatasetDeclaration.builder("process-instances", FactType.PROCESS_INSTANCE)
             .dimension("bpmnProcessId", DimensionType.STRING)
             .meter(
@@ -150,16 +150,13 @@ public final class StandardDatasets {
                 Meter.of("terminated", MeterCatalog.COUNT)
                     .filtered(
                         FilterPredicate.equals(Fact.TRANSITION, Transition.TERMINATED.name())))
-            .meter(
-                Meter.of("duration", MeterCatalog.EXECUTION_TIME, "durationMs")
-                    .filtered(FilterPredicate.notNull("durationMs")))
+            .meter(Meter.of("duration", MeterCatalog.EXECUTION_TIME, "durationMs"))
             .meter(
                 new Meter(
-                        "duration_bands",
-                        MeterCatalog.HISTOGRAM,
-                        "durationMs",
-                        Map.of("thresholds", DURATION_BAND_THRESHOLDS))
-                    .filtered(FilterPredicate.notNull("durationMs")))
+                    "duration_bands",
+                    MeterCatalog.HISTOGRAM,
+                    "durationMs",
+                    Map.of("thresholds", DURATION_BAND_THRESHOLDS)))
             .window(ONE_MINUTE_MS)
             .lateness(GRACE_MS)
             .build(),

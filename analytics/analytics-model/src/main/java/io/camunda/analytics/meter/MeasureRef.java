@@ -18,8 +18,10 @@ import java.util.Objects;
  * <p>Null policy: a missing/{@code null} numeric field reads as {@code 0} and a missing string
  * field reads as {@code null} (which the distinct/top-k sketches already ignore). A boolean field
  * reads as {@code 1}/{@code 0} so a ratio can measure it (e.g. the no-incident share is {@code
- * hadIncident == 0}). Robust absent-value filtering is a later concern; a meter's measure is
- * expected present on the facts it consumes.
+ * hadIncident == 0}). The null-as-0 read is <em>load-bearing only for ratios</em>: numeric-measure
+ * meter kinds never see it in practice, because {@link MeterCatalog#bind} gives them an implicit
+ * {@code NOT_NULL(measure)} filter (SQL semantics — a fact without the measured field does not
+ * contribute a phantom 0 observation).
  */
 public record MeasureRef(String field) {
 

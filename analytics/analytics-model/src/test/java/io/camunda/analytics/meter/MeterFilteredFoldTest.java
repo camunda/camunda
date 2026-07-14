@@ -14,8 +14,10 @@ import io.camunda.analytics.fact.Fact;
 import io.camunda.analytics.fact.FactType;
 import io.camunda.analytics.fact.Transition;
 import io.camunda.analytics.metric.ExecutionTimeResult;
+import io.camunda.analytics.metric.RatioResult;
 import io.camunda.analytics.sketch.QuantileResult;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -86,13 +88,14 @@ final class MeterFilteredFoldTest {
   }
 
   @Test
-  void shouldSkipAbsentMeasureFactsWithANotNullFilter() {
-    // given the same percentile meter with and without the canonical NOT_NULL measure filter
+  void shouldImplicitlySkipAbsentMeasureFactsOnNumericMeters() {
+    // given a numeric-measure meter with NO declared filters, and one declaring the NOT_NULL
+    // explicitly — the catalog binds numeric kinds with the implicit measure-presence filter
     final List<BoundMeter<?, ?>> bounds =
         List.of(
-            catalog.bind(Meter.of("skewed", MeterCatalog.PERCENTILE, "durationMs")),
+            catalog.bind(Meter.of("implicit", MeterCatalog.PERCENTILE, "durationMs")),
             catalog.bind(
-                Meter.of("exact", MeterCatalog.PERCENTILE, "durationMs")
+                Meter.of("explicit", MeterCatalog.PERCENTILE, "durationMs")
                     .filtered(FilterPredicate.notNull("durationMs"))));
     final CompositeAggregateFunction aggregate = new CompositeAggregateFunction(bounds);
 
@@ -100,21 +103,47 @@ final class MeterFilteredFoldTest {
     Object[] acc = aggregate.createAccumulator();
     acc = aggregate.add(completed(1_000L), acc);
     acc = aggregate.add(completed(2_000L), acc);
-    acc = aggregate.add(activated(), acc); // no durationMs — MeasureRef reads it as 0
+    acc = aggregate.add(activated(), acc); // no durationMs — never a phantom 0 observation
     acc = aggregate.add(activated(), acc);
 
-    // then the unfiltered slot folded literal zeros (skewing the median to 0 for half-zero data)
+    // then both slots saw only the true observations (SQL semantics: SUM/percentile ignore NULLs)
     final Object[] results = aggregate.getResult(acc);
-    final QuantileResult skewed = (QuantileResult) results[0];
-    assertThat(skewed.count()).isEqualTo(4L);
-    assertThat(skewed.min()).isEqualTo(0.0);
+    for (final Object result : results) {
+      final QuantileResult quantile = (QuantileResult) result;
+      assertThat(quantile.count()).isEqualTo(2L);
+      assertThat(quantile.min()).isEqualTo(1_000.0);
+      assertThat(quantile.max()).isEqualTo(2_000.0);
+      assertThat(quantile.valueAt(0.5)).isBetween(1_000.0, 2_000.0);
+    }
+  }
 
-    // and the NOT_NULL-filtered slot only saw the true observations
-    final QuantileResult exact = (QuantileResult) results[1];
-    assertThat(exact.count()).isEqualTo(2L);
-    assertThat(exact.min()).isEqualTo(1_000.0);
-    assertThat(exact.max()).isEqualTo(2_000.0);
-    assertThat(exact.valueAt(0.5)).isBetween(1_000.0, 2_000.0);
+  @Test
+  void shouldKeepRatioCountingFactsWithoutTheMeasuredFlag() {
+    // given a no-incident-style ratio over a boolean flag — RATIO is deliberately excluded from
+    // the implicit presence filter: an absent flag reading 0 IS the information (no incident),
+    // and the denominator must count every fact
+    final List<BoundMeter<?, ?>> bounds =
+        List.of(
+            catalog.bind(
+                new Meter(
+                    "no_incident",
+                    MeterCatalog.RATIO,
+                    "hadIncident",
+                    Map.of("op", "eq", "threshold", "0"))));
+    final CompositeAggregateFunction aggregate = new CompositeAggregateFunction(bounds);
+
+    // when two flag-less facts fold alongside one incident
+    Object[] acc = aggregate.createAccumulator();
+    acc = aggregate.add(activated(), acc); // no hadIncident field — compliant
+    acc = aggregate.add(activated(), acc);
+    acc =
+        aggregate.add(
+            Fact.builder(FactType.PROCESS_INSTANCE).field("hadIncident", 1L).build(), acc);
+
+    // then the flag-less facts stayed in both the numerator and the denominator
+    final RatioResult ratio = (RatioResult) aggregate.getResult(acc)[0];
+    assertThat(ratio.matched()).isEqualTo(2L);
+    assertThat(ratio.total()).isEqualTo(3L);
   }
 
   @Test

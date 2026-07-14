@@ -7,6 +7,8 @@
  */
 package io.camunda.analytics.meter;
 
+import io.camunda.analytics.dataset.FilterPredicate;
+import io.camunda.analytics.dataset.FilterPredicate.Operator;
 import io.camunda.analytics.dimension.DimensionType;
 import io.camunda.analytics.metric.ExecutionTimeAccumulator;
 import io.camunda.analytics.metric.ExecutionTimeAccumulatorValue;
@@ -36,6 +38,7 @@ import io.camunda.analytics.sketch.QuantileAggregateFunction;
 import io.camunda.analytics.sketch.TopKAggregateFunction;
 import io.camunda.eventbridge.streaming.aggregate.MutableLongRecordValue;
 import io.camunda.eventbridge.streaming.aggregate.SumAggregateFunction;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -120,8 +123,22 @@ public final class MeterCatalog {
   }
 
   /**
+   * Numeric-measure meter kinds whose slot gets an implicit {@code NOT_NULL(measure)} filter at
+   * bind (SQL semantics: {@code SUM(x)}/{@code AVG(x)}/percentiles ignore NULL rows). Without it, a
+   * fact missing the measured field folds {@link MeasureRef}'s null-as-0 — a phantom observation
+   * silently skewing mins, moments, sketches, and band counts toward zero. Deliberately excluded:
+   * {@link #RATIO} (its denominator is <em>all</em> facts, and an absent boolean flag reading 0 is
+   * the information — e.g. no-incident compliance), {@link #DISTINCT}/{@link #TOP_K} (their
+   * sketches already ignore null values), {@link #COUNT} (measure-less), and the deprecated bundles
+   * (legacy semantics frozen).
+   */
+  private static final Set<String> IMPLICIT_MEASURE_PRESENCE =
+      Set.of(SUM, LEVEL, MIN, MAX, STDDEV, EXECUTION_TIME, HISTOGRAM, PERCENTILE);
+
+  /**
    * Resolves a meter declaration to its aggregate + accumulator codec; throws if the type is
-   * unknown.
+   * unknown. Numeric-measure kinds bind with the implicit measure-presence filter (see {@link
+   * #IMPLICIT_MEASURE_PRESENCE}).
    */
   public BoundMeter<?, ?> bind(final Meter meter) {
     Objects.requireNonNull(meter, "meter");
@@ -130,7 +147,29 @@ public final class MeterCatalog {
       throw new IllegalArgumentException(
           "unknown meter type '" + meter.type() + "'; known: " + ids());
     }
-    return type.bind(meter);
+    return type.bind(withImplicitPresenceFilter(meter));
+  }
+
+  /** The meter with {@code NOT_NULL(measure)} prepended, unless declared or not applicable. */
+  private static Meter withImplicitPresenceFilter(final Meter meter) {
+    if (!IMPLICIT_MEASURE_PRESENCE.contains(meter.type())
+        || meter.measureField() == null
+        || declaresMeasurePresence(meter)) {
+      return meter;
+    }
+    final List<FilterPredicate> filters = new ArrayList<>(meter.filters().size() + 1);
+    filters.add(FilterPredicate.notNull(meter.measureField()));
+    filters.addAll(meter.filters());
+    return new Meter(meter.name(), meter.type(), meter.measureField(), meter.params(), filters);
+  }
+
+  private static boolean declaresMeasurePresence(final Meter meter) {
+    for (final FilterPredicate filter : meter.filters()) {
+      if (filter.operator() == Operator.NOT_NULL && filter.field().equals(meter.measureField())) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /** A catalog with all built-in meter kinds registered. */
