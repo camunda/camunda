@@ -11,11 +11,11 @@ import io.atomix.cluster.BrokerMemberId;
 import io.atomix.utils.net.Address;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.exception.ServiceException;
 import io.camunda.service.management.PhysicalTenantManagementService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
-import io.camunda.zeebe.broker.client.api.NoTopologyAvailableException;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.util.VersionUtil;
 import java.util.ArrayList;
@@ -81,8 +81,9 @@ public final class TopologyServices extends PhysicalTenantManagementService<Topo
       final var clusterState = getTopology();
       if (clusterState == null) {
         return CompletableFuture.failedFuture(
-            new NoTopologyAvailableException(
-                "Cluster topology is not yet available. The gateway has not received cluster state from any broker."));
+            new ServiceException(
+                "Cluster topology is not yet available. The gateway has not received cluster state from any broker.",
+                ServiceException.Status.UNAVAILABLE));
       }
 
       final var topology = Topology.Builder.create();
